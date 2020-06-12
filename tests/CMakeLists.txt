@@ -14,7 +14,9 @@
    limitations under the License.
 ]]
 
-add_executable(tests main.cpp rlp_test.cpp)
+add_executable(tests
+  main.cpp
+  ../rlp/rlp_test.cpp)
 
 target_link_libraries(tests PUBLIC rlp)
 

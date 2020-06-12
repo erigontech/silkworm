@@ -14,18 +14,18 @@
    limitations under the License.
 */
 
-#include "../rlp/rlp.hpp"
+#include "rlp.hpp"
 
 #include <sstream>
 #include <string>
 
 #include "../externals/catch2/catch.hpp"
 
-using namespace silkworm;
+using namespace silkworm::rlp;
 
 std::string encode_str(uint64_t n) {
   std::ostringstream s;
-  rlp::encode(s, n);
+  encode(s, n);
   return s.str();
 }
 

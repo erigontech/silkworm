@@ -16,13 +16,11 @@
 
 #include "rlp.hpp"
 
-namespace rlp {
+namespace silkworm::rlp {
 void encode(std::ostream& s, uint64_t n) {
   if (n == 0) {
-    return;
-  }
-
-  if (n < (1ull << 7)) {
+    s << '\x80';
+  } else if (n < (1ull << 7)) {
     s << static_cast<char>(n);
   } else if (n < (1ull << 8)) {
     s << '\x81';
@@ -78,4 +76,4 @@ void encode(std::ostream& s, uint64_t n) {
     s << static_cast<char>(n);
   }
 }
-}  // namespace rlp
+}  // namespace silkworm::rlp

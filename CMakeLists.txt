@@ -31,9 +31,12 @@ else(MSVC)
 endif(MSVC)
 
 add_subdirectory(rlp)
+add_subdirectory(tests)
 
 add_executable(silkworm silkworm.cpp)
 
 target_link_libraries(silkworm PUBLIC rlp)
 
 target_include_directories(silkworm PUBLIC "${PROJECT_SOURCE_DIR}")
+
+enable_testing()

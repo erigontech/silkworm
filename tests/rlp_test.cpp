@@ -14,16 +14,30 @@
    limitations under the License.
 */
 
-#include <iostream>
+#include "../rlp/rlp.hpp"
 
-#include "rlp/rlp.hpp"
+#include <sstream>
+#include <string>
+
+#include "../externals/catch2/catch.hpp"
 
 using namespace silkworm;
 
-int main() {
-  std::cout << "Silkworm is under construction 🏗\n";
-  std::cout << "rlp(100) = ";
-  rlp::encode(std::cout, 100);
-  std::cout << "\nBelle journée 👋\n";
-  return 0;
+std::string encode_str(uint64_t n) {
+  std::ostringstream s;
+  rlp::encode(s, n);
+  return s.str();
+}
+
+using namespace std::string_literals;
+
+TEST_CASE("uint64", "[rlp]") {
+  SECTION("encode") {
+    REQUIRE(encode_str(0) == "\x80"s);
+    REQUIRE(encode_str(1) == "\x01"s);
+    REQUIRE(encode_str(0x7f) == "\x7f"s);
+    REQUIRE(encode_str(0x80) == "\x81\x80"s);
+    REQUIRE(encode_str(0x400) == "\x82\x04\x00"s);
+    REQUIRE(encode_str(0xffffb5ffffffffff) == "\x88\xFF\xFF\xB5\xFF\xFF\xFF\xFF\xFF"s);
+  }
 }

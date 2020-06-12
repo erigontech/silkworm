@@ -14,16 +14,5 @@
    limitations under the License.
 */
 
-#include <iostream>
-
-#include "rlp/rlp.hpp"
-
-using namespace silkworm;
-
-int main() {
-  std::cout << "Silkworm is under construction 🏗\n";
-  std::cout << "rlp(100) = ";
-  rlp::encode(std::cout, 100);
-  std::cout << "\nBelle journée 👋\n";
-  return 0;
-}
+#define CATCH_CONFIG_MAIN
+#include "../externals/catch2/catch.hpp"

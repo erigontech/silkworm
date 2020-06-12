@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "rlp.hpp"
+#include "encode.hpp"
 
 #include <sstream>
 #include <string>
@@ -31,8 +31,8 @@ std::string encode_str(uint64_t n) {
 
 using namespace std::string_literals;
 
-TEST_CASE("uint64", "[rlp]") {
-  SECTION("encode") {
+TEST_CASE("encode", "[rlp]") {
+  SECTION("uint64") {
     REQUIRE(encode_str(0) == "\x80"s);
     REQUIRE(encode_str(1) == "\x01"s);
     REQUIRE(encode_str(0x7f) == "\x7f"s);

@@ -16,7 +16,7 @@
 
 #include <iostream>
 
-#include "rlp/rlp.hpp"
+#include "rlp/encode.hpp"
 
 using namespace silkworm;
 

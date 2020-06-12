@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "rlp.hpp"
+#include "encode.hpp"
 
 namespace silkworm::rlp {
 void encode(std::ostream& s, uint64_t n) {

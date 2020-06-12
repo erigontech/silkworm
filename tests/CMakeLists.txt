@@ -14,9 +14,11 @@
    limitations under the License.
 ]]
 
+file(GLOB rlp_test_SRC "../rlp/*_test.cpp")
+
 add_executable(tests
   main.cpp
-  ../rlp/rlp_test.cpp)
+  ${rlp_test_SRC})
 
 target_link_libraries(tests PUBLIC rlp)
 

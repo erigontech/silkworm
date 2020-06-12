@@ -14,4 +14,6 @@
    limitations under the License.
 ]]
 
-add_library(rlp rlp.cpp)
+file(GLOB rlp_SRC "*.cpp")
+list(FILTER rlp_SRC EXCLUDE REGEX "_test\.cpp")
+add_library(rlp ${rlp_SRC})

@@ -1,4 +1,4 @@
-/*
+#[[
    Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,16 +12,6 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#include <iostream>
-
-#include "rlp/rlp.hpp"
-
-int main() {
-  std::cout << "Silkworm is under construction 🏗\n";
-  std::cout << "rlp(100) = ";
-  rlp::encode(std::cout, 100);
-  std::cout << "\nBelle journée 👋\n";
-  return 0;
-}
+add_library(rlp rlp.cpp)

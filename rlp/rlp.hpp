@@ -14,14 +14,16 @@
    limitations under the License.
 */
 
-#include <iostream>
+#ifndef SILKWORM_RLP_HPP_
+#define SILKWORM_RLP_HPP_
 
-#include "rlp/rlp.hpp"
+#include <stdint.h>
 
-int main() {
-  std::cout << "Silkworm is under construction 🏗\n";
-  std::cout << "rlp(100) = ";
-  rlp::encode(std::cout, 100);
-  std::cout << "\nBelle journée 👋\n";
-  return 0;
+#include <ostream>
+
+// https://eth.wiki/en/fundamentals/rlp
+namespace rlp {
+void encode(std::ostream&, uint64_t);
 }
+
+#endif  // SILKWORM_RLP_HPP_

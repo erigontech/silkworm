@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +12,17 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-file(GLOB db_test_SRC "../db/*_test.cpp")
-file(GLOB rlp_test_SRC "../rlp/*_test.cpp")
+#include "lmdb.hpp"
 
-add_executable(tests
-  main.cpp
-  ${db_test_SRC}
-  ${rlp_test_SRC})
+#include "../externals/catch2/catch.hpp"
 
-target_link_libraries(tests PUBLIC db rlp)
+namespace silkworm::db {
 
-add_test(
-  NAME tests
-  COMMAND test -o report.xml -r junit)
+TEST_CASE("basic", "[lmdb]") {
+  // TODO(Andrew) implement
+  TemporaryLmdbDatabase db;
+}
+
+}  // namespace silkworm::db

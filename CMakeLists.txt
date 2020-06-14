@@ -27,16 +27,15 @@ set(CMAKE_CXX_STANDARD 17)
 if(MSVC)
   add_compile_options(/W4 /WX)
 else(MSVC)
-  add_compile_options(-Wall -Wextra -pedantic -Werror)
+  add_compile_options(-Wall -Wextra -pedantic -Wno-c99-extensions -Werror)
 endif(MSVC)
 
+add_subdirectory(db)
 add_subdirectory(rlp)
 add_subdirectory(tests)
 
 add_executable(silkworm silkworm.cpp)
-
-target_link_libraries(silkworm PUBLIC rlp)
-
 target_include_directories(silkworm PUBLIC "${PROJECT_SOURCE_DIR}")
+target_link_libraries(silkworm PUBLIC db rlp)
 
 enable_testing()

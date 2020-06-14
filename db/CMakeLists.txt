@@ -14,16 +14,21 @@
    limitations under the License.
 ]]
 
-file(GLOB db_test_SRC "../db/*_test.cpp")
-file(GLOB rlp_test_SRC "../rlp/*_test.cpp")
+find_package(Boost 1.62 REQUIRED COMPONENTS filesystem)
 
-add_executable(tests
-  main.cpp
-  ${db_test_SRC}
-  ${rlp_test_SRC})
+if(MSVC)
+  find_package(LMDB)
+else()
+  find_path(LMDB_INCLUDE_DIR  NAMES lmdb.h PATHS "$ENV{LMDB_DIR}/include")
+  find_library(LMDB_LIBRARIES NAMES lmdb   PATHS "$ENV{LMDB_DIR}/lib" )
+endif()
+if(NOT LMDB_LIBRARIES OR NOT LMDB_INCLUDE_DIR)
+  message(FATAL_ERROR "lmdb library not found")
+endif()
 
-target_link_libraries(tests PUBLIC db rlp)
+file(GLOB db_SRC "*.cpp")
+list(FILTER db_SRC EXCLUDE REGEX "_test\.cpp")
 
-add_test(
-  NAME tests
-  COMMAND test -o report.xml -r junit)
+add_library(db ${db_SRC})
+target_include_directories(db PUBLIC ${Boost_INCLUDE_DIRS} ${LMDB_INCLUDE_DIR})
+target_link_libraries(db PUBLIC ${Boost_LIBRARIES} ${LMDB_LIBRARIES})

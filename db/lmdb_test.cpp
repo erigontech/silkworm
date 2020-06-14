@@ -21,8 +21,23 @@
 namespace silkworm::db {
 
 TEST_CASE("basic", "[lmdb]") {
-  // TODO(Andrew) implement
+  auto bucketName{"PLAIN-CST"};
+  auto key{"b1a4F4f387732B107D4F8e8816058bAB6D16397b"};
+  auto val{"abba"};
+
   TemporaryLmdbDatabase db;
+  auto txn = db.begin_ro_transaction();
+
+  CHECK_THROWS(txn->create_bucket(bucketName));
+
+  txn = db.begin_rw_transaction();
+  CHECK_THROWS(txn->get_bucket(bucketName));
+
+  auto bucket = txn->create_bucket(bucketName);
+  CHECK(!bucket->get(key).has_value());
+
+  bucket->put(key, val);
+  CHECK(bucket->get(key) == val);
 }
 
 }  // namespace silkworm::db

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-// TODO(Andrew) comments
+// See http://www.lmdb.tech/doc/index.html
 
 #ifndef SILKWORM_DB_LMDB_H_
 #define SILKWORM_DB_LMDB_H_
@@ -23,7 +23,6 @@
 #include <stdint.h>
 
 #include <boost/filesystem.hpp>
-#include <string_view>
 
 #include "database.hpp"
 
@@ -31,30 +30,44 @@ namespace silkworm::db {
 
 struct LmdbOptions {
   uint64_t map_size = 4ull << 40;  // 4TB by default
-  bool no_sync = false;            // MDB_NOSYNC
+  bool no_sync = true;             // MDB_NOSYNC
   bool no_meta_sync = false;       // MDB_NOMETASYNC
   bool write_map = false;          // MDB_WRITEMAP
+  unsigned max_buckets = 100;
 };
 
-/*
 class LmdbBucket : public Bucket {
  public:
-  void put(std::string_view key, std::string_view val) override;
+  void put(std::string_view key, std::string_view value) override;
 
   std::optional<std::string_view> get(std::string_view key) const override;
+
+ private:
+  friend class LmdbTransaction;
+
+  LmdbBucket(MDB_dbi dbi, MDB_txn* txn);
+
+  MDB_dbi dbi_{0};
+  MDB_txn* txn_{nullptr};
 };
 
 class LmdbTransaction : public Transaction {
  public:
-  std::unique_ptr<Bucket> get_bucket(std::string_view name) override;
+  ~LmdbTransaction() override;
 
-  bool create_bucket(std::string_view name) override;
+  std::unique_ptr<Bucket> create_bucket(const char* name) override;
+  std::unique_ptr<Bucket> get_bucket(const char* name) override;
 
   void commit() override;
-
   void rollback() override;
+
+ private:
+  friend class LmdbDatabase;
+
+  explicit LmdbTransaction(MDB_txn* txn);
+
+  MDB_txn* txn_{nullptr};
 };
-*/
 
 // Must not create several instances of the same database.
 class LmdbDatabase : public Database {
@@ -62,7 +75,7 @@ class LmdbDatabase : public Database {
   explicit LmdbDatabase(const char* path, const LmdbOptions& options = {});
   ~LmdbDatabase() override;
 
-  // std::unique_ptr<Transaction> new_txn() override;
+  std::unique_ptr<Transaction> begin_transaction(bool read_only) override;
 
  private:
   MDB_env* env_{nullptr};

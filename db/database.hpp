@@ -25,18 +25,19 @@
 
 namespace silkworm::db {
 
-/*
 class Bucket {
  public:
   Bucket(const Bucket&) = delete;
   Bucket& operator=(const Bucket&) = delete;
 
-  virtual void put(std::string_view key, std::string_view val) = 0;
+  virtual ~Bucket() = default;
+
+  virtual void put(std::string_view key, std::string_view value) = 0;
 
   virtual std::optional<std::string_view> get(std::string_view key) const = 0;
 
  protected:
-  virtual ~Bucket() = default;
+  Bucket() = default;
 };
 
 class Transaction {
@@ -44,30 +45,32 @@ class Transaction {
   Transaction(const Transaction&) = delete;
   Transaction& operator=(const Transaction&) = delete;
 
-  virtual std::unique_ptr<Bucket> get_bucket(std::string_view name) = 0;
+  virtual ~Transaction() = default;
 
-  virtual bool create_bucket(std::string_view name) = 0;
+  virtual std::unique_ptr<Bucket> create_bucket(const char* name) = 0;
+  virtual std::unique_ptr<Bucket> get_bucket(const char* name) = 0;
 
   virtual void commit() = 0;
-
   virtual void rollback() = 0;
 
  protected:
   Transaction() = default;
-  virtual ~Transaction() = default;
 };
-*/
 
 class Database {
  public:
   Database(const Database&) = delete;
   Database& operator=(const Database&) = delete;
 
-  // virtual std::unique_ptr<Transaction> new_txn();
+  virtual ~Database() = default;
+
+  virtual std::unique_ptr<Transaction> begin_transaction(bool read_only) = 0;
+
+  std::unique_ptr<Transaction> begin_ro_transaction() { return begin_transaction(true); }
+  std::unique_ptr<Transaction> begin_rw_transaction() { return begin_transaction(false); }
 
  protected:
   Database() = default;
-  virtual ~Database() = default;
 };
 
 }  // namespace silkworm::db

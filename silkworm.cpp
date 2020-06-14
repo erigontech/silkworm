@@ -18,12 +18,10 @@
 
 #include "rlp/encode.hpp"
 
-using namespace silkworm;
-
 int main() {
   std::cout << "Silkworm is under construction 🏗\n";
   std::cout << "rlp(100) = ";
-  rlp::encode(std::cout, 100);
+  silkworm::rlp::encode(std::cout, 100);
   std::cout << "\nBelle journée 👋\n";
   return 0;
 }

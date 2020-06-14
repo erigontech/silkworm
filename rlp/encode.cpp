@@ -17,63 +17,63 @@
 #include "encode.hpp"
 
 namespace silkworm::rlp {
-void encode(std::ostream& s, uint64_t n) {
+void encode(std::ostream& to, uint64_t n) {
   if (n == 0) {
-    s << '\x80';
+    to << '\x80';
   } else if (n < (1ull << 7)) {
-    s << static_cast<char>(n);
+    to << static_cast<char>(n);
   } else if (n < (1ull << 8)) {
-    s << '\x81';
-    s << static_cast<char>(n);
+    to << '\x81';
+    to << static_cast<char>(n);
   } else if (n < (1ull << 16)) {
-    s << '\x82';
-    s << static_cast<char>(n >> 8);
-    s << static_cast<char>(n);
+    to << '\x82';
+    to << static_cast<char>(n >> 8);
+    to << static_cast<char>(n);
   } else if (n < (1ull << 24)) {
-    s << '\x83';
-    s << static_cast<char>(n >> 16);
-    s << static_cast<char>(n >> 8);
-    s << static_cast<char>(n);
+    to << '\x83';
+    to << static_cast<char>(n >> 16);
+    to << static_cast<char>(n >> 8);
+    to << static_cast<char>(n);
   } else if (n < (1ull << 32)) {
-    s << '\x84';
-    s << static_cast<char>(n >> 24);
-    s << static_cast<char>(n >> 16);
-    s << static_cast<char>(n >> 8);
-    s << static_cast<char>(n);
+    to << '\x84';
+    to << static_cast<char>(n >> 24);
+    to << static_cast<char>(n >> 16);
+    to << static_cast<char>(n >> 8);
+    to << static_cast<char>(n);
   } else if (n < (1ull << 40)) {
-    s << '\x85';
-    s << static_cast<char>(n >> 32);
-    s << static_cast<char>(n >> 24);
-    s << static_cast<char>(n >> 16);
-    s << static_cast<char>(n >> 8);
-    s << static_cast<char>(n);
+    to << '\x85';
+    to << static_cast<char>(n >> 32);
+    to << static_cast<char>(n >> 24);
+    to << static_cast<char>(n >> 16);
+    to << static_cast<char>(n >> 8);
+    to << static_cast<char>(n);
   } else if (n < (1ull << 48)) {
-    s << '\x86';
-    s << static_cast<char>(n >> 40);
-    s << static_cast<char>(n >> 32);
-    s << static_cast<char>(n >> 24);
-    s << static_cast<char>(n >> 16);
-    s << static_cast<char>(n >> 8);
-    s << static_cast<char>(n);
+    to << '\x86';
+    to << static_cast<char>(n >> 40);
+    to << static_cast<char>(n >> 32);
+    to << static_cast<char>(n >> 24);
+    to << static_cast<char>(n >> 16);
+    to << static_cast<char>(n >> 8);
+    to << static_cast<char>(n);
   } else if (n < (1ull << 56)) {
-    s << '\x87';
-    s << static_cast<char>(n >> 48);
-    s << static_cast<char>(n >> 40);
-    s << static_cast<char>(n >> 32);
-    s << static_cast<char>(n >> 24);
-    s << static_cast<char>(n >> 16);
-    s << static_cast<char>(n >> 8);
-    s << static_cast<char>(n);
+    to << '\x87';
+    to << static_cast<char>(n >> 48);
+    to << static_cast<char>(n >> 40);
+    to << static_cast<char>(n >> 32);
+    to << static_cast<char>(n >> 24);
+    to << static_cast<char>(n >> 16);
+    to << static_cast<char>(n >> 8);
+    to << static_cast<char>(n);
   } else {
-    s << '\x88';
-    s << static_cast<char>(n >> 56);
-    s << static_cast<char>(n >> 48);
-    s << static_cast<char>(n >> 40);
-    s << static_cast<char>(n >> 32);
-    s << static_cast<char>(n >> 24);
-    s << static_cast<char>(n >> 16);
-    s << static_cast<char>(n >> 8);
-    s << static_cast<char>(n);
+    to << '\x88';
+    to << static_cast<char>(n >> 56);
+    to << static_cast<char>(n >> 48);
+    to << static_cast<char>(n >> 40);
+    to << static_cast<char>(n >> 32);
+    to << static_cast<char>(n >> 24);
+    to << static_cast<char>(n >> 16);
+    to << static_cast<char>(n >> 8);
+    to << static_cast<char>(n);
   }
 }
 }  // namespace silkworm::rlp

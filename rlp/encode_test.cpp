@@ -21,17 +21,17 @@
 
 #include "../externals/catch2/catch.hpp"
 
-using namespace silkworm::rlp;
-
+namespace {
 std::string encode_str(uint64_t n) {
   std::ostringstream s;
-  encode(s, n);
+  silkworm::rlp::encode(s, n);
   return s.str();
 }
-
-using namespace std::string_literals;
+}  // namespace
 
 TEST_CASE("encode", "[rlp]") {
+  using namespace std::string_literals;
+
   SECTION("uint64") {
     REQUIRE(encode_str(0) == "\x80"s);
     REQUIRE(encode_str(1) == "\x01"s);

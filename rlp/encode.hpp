@@ -14,6 +14,9 @@
    limitations under the License.
 */
 
+// RLP encoding functions as per
+// https://eth.wiki/en/fundamentals/rlp
+
 #ifndef SILKWORM_RLP_H_
 #define SILKWORM_RLP_H_
 
@@ -21,9 +24,8 @@
 
 #include <ostream>
 
-// https://eth.wiki/en/fundamentals/rlp
 namespace silkworm::rlp {
-void encode(std::ostream&, uint64_t);
+void encode(std::ostream& to, uint64_t n);
 }
 
 #endif  // SILKWORM_RLP_H_

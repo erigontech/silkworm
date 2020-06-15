@@ -19,7 +19,7 @@
 #include <sstream>
 #include <string>
 
-#include "../externals/catch2/catch.hpp"
+#include "catch2/catch.hpp"
 
 namespace {
 std::string encode_str(uint64_t n) {

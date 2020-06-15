@@ -30,5 +30,5 @@ file(GLOB db_SRC "*.cpp")
 list(FILTER db_SRC EXCLUDE REGEX "_test\.cpp")
 
 add_library(db ${db_SRC})
-target_include_directories(db PUBLIC ${Boost_INCLUDE_DIRS} ${LMDB_INCLUDE_DIR})
+target_include_directories(db PUBLIC "../externals" ${Boost_INCLUDE_DIRS} ${LMDB_INCLUDE_DIR})
 target_link_libraries(db PUBLIC ${Boost_LIBRARIES} ${LMDB_LIBRARIES})

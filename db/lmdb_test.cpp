@@ -16,7 +16,7 @@
 
 #include "lmdb.hpp"
 
-#include "catch2/catch.hpp"
+#include "../tests/catch.hpp"
 
 namespace silkworm::db {
 

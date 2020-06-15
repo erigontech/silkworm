@@ -14,9 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Catch2 CONFIG REQUIRED)
-
 file(GLOB_RECURSE SILKWORM_TEST_SRC "../*_test.cpp")
 
 add_executable(tests main.cpp ${SILKWORM_TEST_SRC})
-target_link_libraries(tests PUBLIC "${SILKWORM_LIBS}" Catch2::Catch2)
+target_link_libraries(tests PUBLIC "${SILKWORM_LIBS}")

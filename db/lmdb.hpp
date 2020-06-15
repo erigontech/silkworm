@@ -19,7 +19,7 @@
 #ifndef SILKWORM_DB_LMDB_H_
 #define SILKWORM_DB_LMDB_H_
 
-#include <lmdb.h>
+#include <lmdb/lmdb.h>
 #include <stdint.h>
 
 #include <boost/filesystem.hpp>

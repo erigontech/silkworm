@@ -14,16 +14,9 @@
    limitations under the License.
 ]]
 
-file(GLOB db_test_SRC "../db/*_test.cpp")
-file(GLOB rlp_test_SRC "../rlp/*_test.cpp")
+find_package(Catch2 CONFIG REQUIRED)
 
-add_executable(tests
-  main.cpp
-  ${db_test_SRC}
-  ${rlp_test_SRC})
+file(GLOB_RECURSE SILKWORM_TEST_SRC "../*_test.cpp")
 
-target_link_libraries(tests PUBLIC db rlp)
-
-add_test(
-  NAME tests
-  COMMAND test -o report.xml -r junit)
+add_executable(tests main.cpp ${SILKWORM_TEST_SRC})
+target_link_libraries(tests PUBLIC "${SILKWORM_LIBS}" Catch2::Catch2)

@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,31 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-hunter_add_package(Boost COMPONENTS filesystem)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+#ifndef SILKWORM_ETH_TRANSACTION_H_
+#define SILKWORM_ETH_TRANSACTION_H_
 
-hunter_add_package(lmdb)
-find_package(liblmdb CONFIG REQUIRED)
+#include <stdint.h>
 
-hunter_add_package(lmdbxx)
-find_package(lmdbxx CONFIG REQUIRED)
+#include <istream>
+#include <ostream>
 
-file(GLOB SILKWORM_DB_SRC "*.cpp" ".hpp")
-list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp")
+namespace silkworm {
 
-add_library(silkworm_db ${SILKWORM_DB_SRC})
-target_link_libraries(silkworm_db PUBLIC Boost::filesystem liblmdb::lmdb lmdbxx::lmdbxx)
+namespace eth {
+
+struct Transaction {
+  uint64_t nonce;
+};
+
+}  // namespace eth
+
+namespace rlp {
+void encode(std::ostream& to, const eth::Transaction& txn);
+eth::Transaction decode(std::istream& from);
+}  // namespace rlp
+
+}  // namespace silkworm
+
+#endif  // SILKWORM_ETH_TRANSACTION_H_

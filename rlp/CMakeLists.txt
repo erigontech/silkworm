@@ -14,6 +14,6 @@
    limitations under the License.
 ]]
 
-file(GLOB rlp_SRC "*.cpp")
-list(FILTER rlp_SRC EXCLUDE REGEX "_test\.cpp")
-add_library(rlp ${rlp_SRC})
+file(GLOB SILKWORM_RLP_SRC "*.cpp" "*.hpp")
+list(FILTER SILKWORM_RLP_SRC EXCLUDE REGEX "_test\.cpp")
+add_library(silkworm_rlp ${SILKWORM_RLP_SRC})

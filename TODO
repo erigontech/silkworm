@@ -1,1 +1,3 @@
 CI with test coverage
+
+Proper cmake–Catch2 integration

@@ -14,17 +14,11 @@
    limitations under the License.
 ]]
 
-hunter_add_package(Boost COMPONENTS filesystem)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+hunter_add_package(Microsoft.GSL)
+find_package(Microsoft.GSL CONFIG REQUIRED)
 
-hunter_add_package(lmdb)
-find_package(liblmdb CONFIG REQUIRED)
+file(GLOB SILKWORM_ETH_SRC "*.cpp" "*.hpp")
+list(FILTER SILKWORM_ETH_SRC EXCLUDE REGEX "_test\.cpp")
 
-hunter_add_package(lmdbxx)
-find_package(lmdbxx CONFIG REQUIRED)
-
-file(GLOB SILKWORM_DB_SRC "*.cpp" ".hpp")
-list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp")
-
-add_library(silkworm_db ${SILKWORM_DB_SRC})
-target_link_libraries(silkworm_db PUBLIC Boost::filesystem liblmdb::lmdb lmdbxx::lmdbxx)
+add_library(silkworm_eth ${SILKWORM_ETH_SRC})
+target_link_libraries(silkworm_eth PUBLIC Microsoft.GSL::GSL)

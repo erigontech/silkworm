@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,20 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-hunter_add_package(Boost COMPONENTS filesystem)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+#ifndef SILKWORM_ETH_COMMON_H_
+#define SILKWORM_ETH_COMMON_H_
 
-hunter_add_package(lmdb)
-find_package(liblmdb CONFIG REQUIRED)
+#include <cstddef>
+#include <gsl/span>
 
-hunter_add_package(lmdbxx)
-find_package(lmdbxx CONFIG REQUIRED)
+namespace silkworm::eth {
 
-file(GLOB SILKWORM_DB_SRC "*.cpp" ".hpp")
-list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp")
+constexpr unsigned kAddressLength{20};
 
-add_library(silkworm_db ${SILKWORM_DB_SRC})
-target_link_libraries(silkworm_db PUBLIC Boost::filesystem liblmdb::lmdb lmdbxx::lmdbxx)
+using Address = gsl::span<const std::byte, kAddressLength>;
+
+}  // namespace silkworm::eth
+
+#endif  // SILKWORM_ETH_COMMON_H_

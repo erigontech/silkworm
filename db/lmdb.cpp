@@ -47,6 +47,7 @@ std::optional<std::string_view> LmdbBucket::get(std::string_view key) const {
   MDB_val data;
   bool found = lmdb::dbi_get(txn_, dbi_, &key_val, &data);
   if (found) {
+    // TODO(Andrew) either copy or make the ramifications crystall clear in the API
     return from_mdb_val(data);
   } else {
     return {};
@@ -122,7 +123,7 @@ std::unique_ptr<Transaction> LmdbDatabase::begin_transaction(bool read_only) {
 TemporaryLmdbDatabase::TemporaryLmdbDatabase()
     : LmdbDatabase{new_tmp_dir(),
                    LmdbOptions{
-                       .map_size = 32 << 20,  // 32MB
+                       .map_size = 64 << 20,  // 64MB
                        .no_sync = true,
                        .no_meta_sync = true,
                        .write_map = true,

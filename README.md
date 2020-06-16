@@ -14,7 +14,7 @@ cmake -H. -B_build
 
 Then run the build itself
 ```
-cmake --build _build
+cmake --build _build -- -j
 ```
 Now you can run silkworm
 ```

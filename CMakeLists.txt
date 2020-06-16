@@ -16,6 +16,12 @@
 
 cmake_minimum_required(VERSION 3.5)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/cxx17.cmake)
+
 include("cmake/HunterGate.cmake")
 HunterGate(
     URL "https://github.com/cpp-pm/hunter/archive/v0.23.257.tar.gz"
@@ -23,12 +29,6 @@ HunterGate(
 )
 
 project(silkworm)
-
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
-
-set(CMAKE_CXX_STANDARD 17)
 
 if(MSVC)
   add_compile_options(/W4 /WX)
@@ -48,5 +48,5 @@ add_subdirectory(eth)
 add_subdirectory(tests)
 
 add_executable(silkworm silkworm.cpp)
-target_include_directories(silkworm PUBLIC "${PROJECT_SOURCE_DIR}")
-target_link_libraries(silkworm PUBLIC "${SILKWORM_LIBS}")
+target_include_directories(silkworm PRIVATE "${PROJECT_SOURCE_DIR}")
+target_link_libraries(silkworm PRIVATE "${SILKWORM_LIBS}")

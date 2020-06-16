@@ -20,12 +20,24 @@
 #ifndef SILKWORM_RLP_H_
 #define SILKWORM_RLP_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
+#include <intx/intx.hpp>
 #include <ostream>
+#include <string_view>
 
 namespace silkworm::rlp {
+
+static constexpr char kEmptyStringCode = '\x80';
+static constexpr char kEmptyListCode = '\xC0';
+
+void encode_length(std::ostream& to, size_t len);
+
+void encode(std::ostream& to, std::string_view s);
 void encode(std::ostream& to, uint64_t n);
-}
+void encode(std::ostream& to, intx::uint256 n);
+
+}  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLP_H_

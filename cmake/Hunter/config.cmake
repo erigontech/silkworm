@@ -14,11 +14,9 @@
    limitations under the License.
 ]]
 
-hunter_add_package(intx)
-find_package(intx CONFIG REQUIRED)
-
-file(GLOB SILKWORM_RLP_SRC "*.cpp" "*.hpp")
-list(FILTER SILKWORM_RLP_SRC EXCLUDE REGEX "_test\.cpp")
-
-add_library(silkworm_rlp ${SILKWORM_RLP_SRC})
-target_link_libraries(silkworm_rlp PUBLIC intx::intx)
+hunter_config(
+    intx
+    VERSION 0.4.0
+    URL https://github.com/chfast/intx/archive/v0.4.0.tar.gz
+    SHA1 8a2a0b0efa64899db972166a9b3568a6984c61bc
+)

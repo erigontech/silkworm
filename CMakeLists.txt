@@ -22,13 +22,14 @@ endif()
 
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/cxx17.cmake)
 
-include("cmake/HunterGate.cmake")
+include("cmake/Hunter/HunterGate.cmake")
 HunterGate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.23.257.tar.gz"
-    SHA1 "52203b35dfc2f975f4c22fc89f055476726e4288"
+  URL "https://github.com/cpp-pm/hunter/archive/v0.23.257.tar.gz"
+  SHA1 "52203b35dfc2f975f4c22fc89f055476726e4288"
+  LOCAL
 )
 
-project(silkworm)
+project(silkworm LANGUAGES CXX)
 
 if(MSVC)
   add_compile_options(/W4 /WX)

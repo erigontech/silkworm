@@ -27,4 +27,5 @@ file(GLOB SILKWORM_DB_SRC "*.cpp" ".hpp")
 list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp")
 
 add_library(silkworm_db ${SILKWORM_DB_SRC})
-target_link_libraries(silkworm_db PRIVATE Boost::filesystem liblmdb::lmdb lmdbxx::lmdbxx)
+# PUBLIC lmdbxx since we use its exceptions 
+target_link_libraries(silkworm_db PUBLIC lmdbxx::lmdbxx PRIVATE Boost::filesystem liblmdb::lmdb)

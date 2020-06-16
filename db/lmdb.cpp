@@ -16,7 +16,7 @@
 
 #include "lmdb.hpp"
 
-#include "lmdbxx/lmdb++.h"
+#include <lmdbxx/lmdb++.h>
 
 namespace {
 thread_local boost::filesystem::path last_tmp_dir;

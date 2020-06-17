@@ -27,9 +27,13 @@ const char* new_tmp_dir() {
   return last_tmp_dir.c_str();
 }
 
-MDB_val to_mdb_val(const std::string_view view) { return {view.size(), const_cast<char*>(view.data())}; }
+MDB_val to_mdb_val(const std::string_view view) {
+  return {view.size(), const_cast<char*>(view.data())};
+}
 
-std::string_view from_mdb_val(const MDB_val val) { return {static_cast<char*>(val.mv_data), val.mv_size}; }
+std::string_view from_mdb_val(const MDB_val val) {
+  return {static_cast<char*>(val.mv_data), val.mv_size};
+}
 }  // namespace
 
 namespace silkworm::db {

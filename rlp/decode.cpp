@@ -95,4 +95,30 @@ uint64_t decode_uint64(std::istream& from) {
   return read_uint64(from, h.length);
 }
 
+intx::uint256 decode_uint256(std::istream& from) {
+  Header h = decode_header(from);
+  if (h.list) {
+    throw DecodingError("unexpected list");
+  }
+  if (h.length > 32) {
+    throw DecodingError("uint256 overflow");
+  }
+
+  if (h.length == 0) {
+    return 0;
+  }
+
+  if (from.peek() == 0) {
+    throw silkworm::rlp::DecodingError("leading zero(s)");
+  }
+
+  thread_local intx::uint256 buf;
+
+  buf = 0;
+  char* p = reinterpret_cast<char*>(as_bytes(buf));
+  from.read(p + (32 - h.length), h.length);
+
+  return intx::bswap(buf);
+}
+
 }  // namespace silkworm::rlp

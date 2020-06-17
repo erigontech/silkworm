@@ -42,6 +42,11 @@ uint64_t decoded_uint64(const std::string& s) {
   return silkworm::rlp::decode_uint64(stream);
 }
 
+intx::uint256 decoded_uint256(const std::string& s) {
+  std::istringstream stream{s};
+  return silkworm::rlp::decode_uint256(stream);
+}
+
 }  // namespace
 
 namespace silkworm::rlp {
@@ -64,14 +69,31 @@ TEST_CASE("decode", "[rlp]") {
     CHECK(decoded_uint64(unhex("09")) == 9);
     CHECK(decoded_uint64(unhex("80")) == 0);
     CHECK(decoded_uint64(unhex("820505")) == 0x0505);
-    CHECK(decoded_uint64(unhex("850505050505")) == 0x0505050505);
+    CHECK(decoded_uint64(unhex("85CE05050505")) == 0xCE05050505);
 
     CHECK_THROWS_MATCHES(decoded_uint64(unhex("C0")), DecodingError, Message("unexpected list"));
     CHECK_THROWS_MATCHES(decoded_uint64(unhex("00")), DecodingError, Message("leading zero(s)"));
     CHECK_THROWS_MATCHES(decoded_uint64(unhex("8105")), DecodingError, Message("non-canonical single byte"));
-    CHECK_THROWS_MATCHES(decoded_uint64(unhex("820004")), DecodingError, Message("leading zero(s)"));
+    CHECK_THROWS_MATCHES(decoded_uint64(unhex("8200F4")), DecodingError, Message("leading zero(s)"));
     CHECK_THROWS_MATCHES(decoded_uint64(unhex("B8020004")), DecodingError, Message("non-canonical size"));
-    CHECK_THROWS_MATCHES(decoded_uint64(unhex("89FFFFFFFFFFFFFFFFFF7C")), DecodingError, Message("uint64 overflow"));
+    CHECK_THROWS_MATCHES(decoded_uint64(unhex("8AFFFFFFFFFFFFFFFFFF7C")), DecodingError, Message("uint64 overflow"));
+  }
+
+  SECTION("uint256") {
+    CHECK(decoded_uint256(unhex("09")) == 9);
+    CHECK(decoded_uint256(unhex("80")) == 0);
+    CHECK(decoded_uint256(unhex("820505")) == 0x0505);
+    CHECK(decoded_uint256(unhex("85CE05050505")) == 0xCE05050505);
+    CHECK(decoded_uint256(unhex("8AFFFFFFFFFFFFFFFFFF7C")) ==
+          intx::from_string<intx::uint256>("0xFFFFFFFFFFFFFFFFFF7C"));
+
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("C0")), DecodingError, Message("unexpected list"));
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("00")), DecodingError, Message("leading zero(s)"));
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("8105")), DecodingError, Message("non-canonical single byte"));
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("8200F4")), DecodingError, Message("leading zero(s)"));
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("B8020004")), DecodingError, Message("non-canonical size"));
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("A101000000000000000000000000000000000000008B000000000000000000000000")),
+                         DecodingError, Message("uint256 overflow"));
   }
 }
 

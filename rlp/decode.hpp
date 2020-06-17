@@ -45,7 +45,7 @@ Header decode_header(std::istream& from);
 
 std::string decode_string(std::istream& from);
 uint64_t decode_uint64(std::istream& from);
-// intx::uint256 decode_uint256(std::istream& from);
+intx::uint256 decode_uint256(std::istream& from);
 
 }  // namespace silkworm::rlp
 

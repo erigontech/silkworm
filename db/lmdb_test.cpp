@@ -28,6 +28,8 @@ TEST_CASE("basic", "[lmdb]") {
   TemporaryLmdbDatabase db;
   auto txn = db.begin_ro_transaction();
 
+  // TODO(Andrew) get rid of lmdbx and CHECK_THROWS_MATCHES against our own expections
+
   CHECK_THROWS(txn->create_bucket(bucketName));
 
   txn = db.begin_rw_transaction();

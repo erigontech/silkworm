@@ -21,6 +21,7 @@ namespace {
 std::string_view big_endian(uint64_t n) {
   thread_local uint64_t buf;
 
+  // We assume a little-endian architecture like amd64
   buf = intx::bswap(n);
   const char* p = reinterpret_cast<char*>(&buf);
   unsigned zero_bytes = intx::clz(n) / 8;
@@ -42,7 +43,7 @@ void encode_length(std::ostream& to, size_t len) {
 }
 
 void encode(std::ostream& to, std::string_view s) {
-  if (s.length() != 1 || static_cast<unsigned>(s[0]) >= 0x80) {
+  if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= 0x80) {
     encode_length(to, s.length());
   }
   to.write(s.data(), s.length());

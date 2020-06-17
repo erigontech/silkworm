@@ -23,8 +23,8 @@ find_package(liblmdb CONFIG REQUIRED)
 hunter_add_package(lmdbxx)
 find_package(lmdbxx CONFIG REQUIRED)
 
-file(GLOB SILKWORM_DB_SRC "*.cpp" ".hpp")
-list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp")
+file(GLOB SILKWORM_DB_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm_db ${SILKWORM_DB_SRC})
 # PUBLIC lmdbxx since we use its exceptions 

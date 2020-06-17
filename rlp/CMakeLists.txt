@@ -17,8 +17,8 @@
 hunter_add_package(intx)
 find_package(intx CONFIG REQUIRED)
 
-file(GLOB SILKWORM_RLP_SRC "*.cpp" "*.hpp")
-list(FILTER SILKWORM_RLP_SRC EXCLUDE REGEX "_test\.cpp")
+file(GLOB SILKWORM_RLP_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+list(FILTER SILKWORM_RLP_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm_rlp ${SILKWORM_RLP_SRC})
 target_link_libraries(silkworm_rlp PUBLIC intx::intx)

@@ -17,8 +17,8 @@
 // RLP encoding functions as per
 // https://eth.wiki/en/fundamentals/rlp
 
-#ifndef SILKWORM_RLP_H_
-#define SILKWORM_RLP_H_
+#ifndef SILKWORM_RLP_ENCODE_H_
+#define SILKWORM_RLP_ENCODE_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -40,4 +40,4 @@ void encode(std::ostream& to, intx::uint256 n);
 
 }  // namespace silkworm::rlp
 
-#endif  // SILKWORM_RLP_H_
+#endif  // SILKWORM_RLP_ENCODE_H_

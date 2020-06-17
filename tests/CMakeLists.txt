@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-file(GLOB_RECURSE SILKWORM_TEST_SRC "../*_test.cpp")
+file(GLOB_RECURSE SILKWORM_TEST_SRC CONFIGURE_DEPENDS "../*_test.cpp")
 
 add_executable(tests main.cpp ${SILKWORM_TEST_SRC})
 target_link_libraries(tests PRIVATE "${SILKWORM_LIBS}")

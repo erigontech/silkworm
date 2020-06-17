@@ -33,11 +33,11 @@ namespace silkworm::rlp {
 
 void encode_length(std::ostream& to, size_t len) {
   if (len < 56) {
-    to << static_cast<char>(kEmptyStringCode + len);
+    to.put(kEmptyStringCode + len);
   } else {
     std::string_view len_be = big_endian(len);
-    to << static_cast<char>('\xB7' + len_be.length());
-    to << len_be;
+    to.put('\xB7' + len_be.length());
+    to.write(len_be.data(), len_be.length());
   }
 }
 
@@ -45,18 +45,18 @@ void encode(std::ostream& to, std::string_view s) {
   if (s.length() != 1 || static_cast<unsigned>(s[0]) >= 0x80) {
     encode_length(to, s.length());
   }
-  to << s;
+  to.write(s.data(), s.length());
 }
 
 void encode(std::ostream& to, uint64_t n) {
   if (n == 0) {
-    to << '\x80';
+    to.put('\x80');
   } else if (n < 0x80) {
-    to << static_cast<char>(n);
+    to.put(n);
   } else {
     std::string_view be = big_endian(n);
-    to << static_cast<char>(kEmptyStringCode + be.length());
-    to << be;
+    to.put(kEmptyStringCode + be.length());
+    to.write(be.data(), be.length());
   }
 }
 
@@ -68,14 +68,14 @@ void encode(std::ostream& to, intx::uint256 n) {
   unsigned num_bytes = 32 - leading_zero_bits / 8;
 
   if (num_bits == 0) {
-    to << kEmptyStringCode;
+    to.put(kEmptyStringCode);
   } else if (num_bits <= 7) {
-    to << intx::narrow_cast<char>(n);
+    to.put(intx::narrow_cast<char>(n));
   } else {
-    to << static_cast<char>(kEmptyStringCode + num_bytes);
+    to.put(kEmptyStringCode + num_bytes);
     intx::be::store(buf, n);
     const uint8_t* begin = buf + (32 - num_bytes);
-    to << std::string_view{reinterpret_cast<const char*>(begin), num_bytes};
+    to.write(reinterpret_cast<const char*>(begin), num_bytes);
   }
 }
 

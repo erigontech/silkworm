@@ -22,11 +22,10 @@ endif()
 
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/cxx17.cmake)
 
-include("cmake/Hunter/HunterGate.cmake")
+include("cmake/HunterGate.cmake")
 HunterGate(
-  URL "https://github.com/cpp-pm/hunter/archive/v0.23.257.tar.gz"
-  SHA1 "52203b35dfc2f975f4c22fc89f055476726e4288"
-  LOCAL
+    URL "https://github.com/cpp-pm/hunter/archive/v0.23.258.tar.gz"
+    SHA1 "062a19ab13ce8dffa9a882b6ce3e43bdabdf75d3"
 )
 
 project(silkworm LANGUAGES CXX)

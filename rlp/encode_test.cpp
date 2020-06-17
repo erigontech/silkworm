@@ -31,16 +31,11 @@ std::string encoded(T x) {
   return s.str();
 }
 
-std::string hex(std::string_view in) {
-  std::string res;
-  res.reserve(in.size() * 2);
-  boost::algorithm::hex(in.begin(), in.end(), std::back_inserter(res));
-  return res;
-}
-
 }  // namespace
 
 TEST_CASE("encode", "[rlp]") {
+  using boost::algorithm::hex;
+
   SECTION("strings") {
     CHECK(hex(encoded("")) == "80");
     CHECK(hex(encoded("\x7B")) == "7B");

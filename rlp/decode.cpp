@@ -46,6 +46,8 @@ uint64_t read_uint64(std::istream& from, size_t len) {
 namespace silkworm::rlp {
 
 Header decode_header(std::istream& from) {
+  from.exceptions(std::ios_base::eofbit | std::ios_base::failbit | std::ios_base::badbit);
+
   Header h;
   uint8_t b = from.get();
   if (b < 0x80) {

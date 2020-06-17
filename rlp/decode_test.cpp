@@ -25,13 +25,6 @@
 
 namespace {
 
-std::string unhex(std::string_view in) {
-  std::string res;
-  res.reserve(in.size() / 2);
-  boost::algorithm::unhex(in.begin(), in.end(), std::back_inserter(res));
-  return res;
-}
-
 std::string decoded_string(const std::string& s) {
   std::istringstream stream{s};
   return silkworm::rlp::decode_string(stream);
@@ -52,48 +45,51 @@ intx::uint256 decoded_uint256(const std::string& s) {
 namespace silkworm::rlp {
 
 TEST_CASE("decode", "[rlp]") {
-  using namespace Catch;
+  using boost::algorithm::unhex;
+  using Catch::Message;
   using namespace std::string_literals;
 
   SECTION("strings") {
-    CHECK(decoded_string(unhex("00")) == "\x00"s);
-    CHECK(decoded_string(unhex("8D6162636465666768696A6B6C6D")) == "abcdefghijklm");
+    CHECK(decoded_string(unhex("00"s)) == "\x00"s);
+    CHECK(decoded_string(unhex("8D6162636465666768696A6B6C6D"s)) == "abcdefghijklm");
 
     CHECK(decoded_string("\xB8\x38Lorem ipsum dolor sit amet, consectetur adipisicing elit") ==
           "Lorem ipsum dolor sit amet, consectetur adipisicing elit");
 
-    CHECK_THROWS_MATCHES(decoded_string(unhex("C0")), DecodingError, Message("unexpected list"));
+    CHECK_THROWS_MATCHES(decoded_string(unhex("C0"s)), DecodingError, Message("unexpected list"));
   }
 
   SECTION("uint64") {
-    CHECK(decoded_uint64(unhex("09")) == 9);
-    CHECK(decoded_uint64(unhex("80")) == 0);
-    CHECK(decoded_uint64(unhex("820505")) == 0x0505);
-    CHECK(decoded_uint64(unhex("85CE05050505")) == 0xCE05050505);
+    CHECK(decoded_uint64(unhex("09"s)) == 9);
+    CHECK(decoded_uint64(unhex("80"s)) == 0);
+    CHECK(decoded_uint64(unhex("820505"s)) == 0x0505);
+    CHECK(decoded_uint64(unhex("85CE05050505"s)) == 0xCE05050505);
 
-    CHECK_THROWS_MATCHES(decoded_uint64(unhex("C0")), DecodingError, Message("unexpected list"));
-    CHECK_THROWS_MATCHES(decoded_uint64(unhex("00")), DecodingError, Message("leading zero(s)"));
-    CHECK_THROWS_MATCHES(decoded_uint64(unhex("8105")), DecodingError, Message("non-canonical single byte"));
-    CHECK_THROWS_MATCHES(decoded_uint64(unhex("8200F4")), DecodingError, Message("leading zero(s)"));
-    CHECK_THROWS_MATCHES(decoded_uint64(unhex("B8020004")), DecodingError, Message("non-canonical size"));
-    CHECK_THROWS_MATCHES(decoded_uint64(unhex("8AFFFFFFFFFFFFFFFFFF7C")), DecodingError, Message("uint64 overflow"));
+    CHECK_THROWS_MATCHES(decoded_uint64(unhex("C0"s)), DecodingError, Message("unexpected list"));
+    CHECK_THROWS_MATCHES(decoded_uint64(unhex("00"s)), DecodingError, Message("leading zero(s)"));
+    CHECK_THROWS_MATCHES(decoded_uint64(unhex("8105"s)), DecodingError, Message("non-canonical single byte"));
+    CHECK_THROWS_MATCHES(decoded_uint64(unhex("8200F4"s)), DecodingError, Message("leading zero(s)"));
+    CHECK_THROWS_MATCHES(decoded_uint64(unhex("B8020004"s)), DecodingError, Message("non-canonical size"));
+    CHECK_THROWS_MATCHES(decoded_uint64(unhex("8AFFFFFFFFFFFFFFFFFF7C"s)), DecodingError, Message("uint64 overflow"));
   }
 
   SECTION("uint256") {
-    CHECK(decoded_uint256(unhex("09")) == 9);
-    CHECK(decoded_uint256(unhex("80")) == 0);
-    CHECK(decoded_uint256(unhex("820505")) == 0x0505);
-    CHECK(decoded_uint256(unhex("85CE05050505")) == 0xCE05050505);
-    CHECK(decoded_uint256(unhex("8AFFFFFFFFFFFFFFFFFF7C")) ==
-          intx::from_string<intx::uint256>("0xFFFFFFFFFFFFFFFFFF7C"));
+    CHECK(decoded_uint256(unhex("09"s)) == 9);
+    CHECK(decoded_uint256(unhex("80"s)) == 0);
+    CHECK(decoded_uint256(unhex("820505"s)) == 0x0505);
+    CHECK(decoded_uint256(unhex("85CE05050505"s)) == 0xCE05050505);
+    CHECK(decoded_uint256(unhex("8AFFFFFFFFFFFFFFFFFF7C"s)) ==
+          intx::from_string<intx::uint256>("0xFFFFFFFFFFFFFFFFFF7C"s));
 
-    CHECK_THROWS_MATCHES(decoded_uint256(unhex("C0")), DecodingError, Message("unexpected list"));
-    CHECK_THROWS_MATCHES(decoded_uint256(unhex("00")), DecodingError, Message("leading zero(s)"));
-    CHECK_THROWS_MATCHES(decoded_uint256(unhex("8105")), DecodingError, Message("non-canonical single byte"));
-    CHECK_THROWS_MATCHES(decoded_uint256(unhex("8200F4")), DecodingError, Message("leading zero(s)"));
-    CHECK_THROWS_MATCHES(decoded_uint256(unhex("B8020004")), DecodingError, Message("non-canonical size"));
-    CHECK_THROWS_MATCHES(decoded_uint256(unhex("A101000000000000000000000000000000000000008B000000000000000000000000")),
-                         DecodingError, Message("uint256 overflow"));
+    CHECK_THROWS(decoded_uint256(unhex("8BFFFFFFFFFFFFFFFFFF7C"s)));  // EOF
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("C0"s)), DecodingError, Message("unexpected list"));
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("00"s)), DecodingError, Message("leading zero(s)"));
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("8105"s)), DecodingError, Message("non-canonical single byte"));
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("8200F4"s)), DecodingError, Message("leading zero(s)"));
+    CHECK_THROWS_MATCHES(decoded_uint256(unhex("B8020004"s)), DecodingError, Message("non-canonical size"));
+    CHECK_THROWS_MATCHES(
+        decoded_uint256(unhex("A101000000000000000000000000000000000000008B000000000000000000000000"s)), DecodingError,
+        Message("uint256 overflow"));
   }
 }
 

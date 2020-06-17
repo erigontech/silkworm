@@ -14,7 +14,10 @@
    limitations under the License.
 ]]
 
+hunter_add_package(Boost)
+find_package(Boost CONFIG REQUIRED)
+
 file(GLOB_RECURSE SILKWORM_TEST_SRC CONFIGURE_DEPENDS "../*_test.cpp")
 
 add_executable(tests main.cpp ${SILKWORM_TEST_SRC})
-target_link_libraries(tests PRIVATE "${SILKWORM_LIBS}")
+target_link_libraries(tests PRIVATE "${SILKWORM_LIBS}" Boost::boost)

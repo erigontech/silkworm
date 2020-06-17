@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +12,24 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-hunter_add_package(Microsoft.GSL)
-find_package(Microsoft.GSL CONFIG REQUIRED)
+#include "common.hpp"
 
-hunter_add_package(intx)
-find_package(intx CONFIG REQUIRED)
+#include <boost/algorithm/hex.hpp>
 
-hunter_add_package(Boost)
-find_package(Boost CONFIG REQUIRED)
+namespace silkworm::eth {
 
-file(GLOB SILKWORM_ETH_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-list(FILTER SILKWORM_ETH_SRC EXCLUDE REGEX "_test\.cpp$")
+Address hex_to_address(std::string_view hex) {
+  Address a;
+  a.fill(0);
+  static constexpr size_t kMaxNibbles = 2 * kAddressLength;
+  if (hex.length() <= kMaxNibbles) {
+    boost::algorithm::unhex(hex.begin(), hex.end(), a.begin());
+  } else {
+    boost::algorithm::unhex(hex.begin(), hex.begin() + kMaxNibbles, a.begin());
+  }
+  return a;
+}
 
-add_library(silkworm_eth ${SILKWORM_ETH_SRC})
-target_link_libraries(silkworm_eth
-                      PUBLIC Microsoft.GSL::GSL intx::intx
-                      PRIVATE silkworm_rlp Boost::boost)
+}  // namespace silkworm::eth

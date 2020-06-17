@@ -27,16 +27,13 @@
 #include <istream>
 #include <string>
 
+#include "encode.hpp"
+
 namespace silkworm::rlp {
 
 class DecodingError : public std::runtime_error {
  public:
   using std::runtime_error::runtime_error;
-};
-
-struct Header {
-  bool list{false};
-  uint64_t length{0};
 };
 
 // Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,

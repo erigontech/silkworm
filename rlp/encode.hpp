@@ -29,14 +29,25 @@
 
 namespace silkworm::rlp {
 
-static constexpr char kEmptyStringCode = '\x80';
-static constexpr char kEmptyListCode = '\xC0';
+static constexpr uint8_t kEmptyStringCode = 0x80;
+static constexpr uint8_t kEmptyListCode = 0xC0;
 
-void encode_length(std::ostream& to, size_t len);
+struct Header {
+  bool list{false};
+  uint64_t length{0};
+};
+
+void encode(std::ostream& to, Header header);
 
 void encode(std::ostream& to, std::string_view s);
 void encode(std::ostream& to, uint64_t n);
 void encode(std::ostream& to, intx::uint256 n);
+
+size_t length(Header header);
+
+size_t length(std::string_view s);
+size_t length(uint64_t n);
+size_t length(intx::uint256 n);
 
 }  // namespace silkworm::rlp
 

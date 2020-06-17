@@ -17,14 +17,25 @@
 #ifndef SILKWORM_ETH_COMMON_H_
 #define SILKWORM_ETH_COMMON_H_
 
-#include <cstddef>
+#include <stddef.h>
+#include <stdint.h>
+
+#include <array>
 #include <gsl/span>
+#include <string_view>
 
 namespace silkworm::eth {
 
-constexpr unsigned kAddressLength{20};
+constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
 
-using Address = gsl::span<const std::byte, kAddressLength>;
+constexpr size_t kAddressLength{20};
+
+using Address = std::array<char, kAddressLength>;
+
+using AddressRef = gsl::span<const char, kAddressLength>;
+
+// input will be truncated if necessary
+Address hex_to_address(std::string_view hex);
 
 }  // namespace silkworm::eth
 

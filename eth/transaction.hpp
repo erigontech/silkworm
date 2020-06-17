@@ -19,22 +19,35 @@
 
 #include <stdint.h>
 
+#include <intx/intx.hpp>
 #include <istream>
+#include <optional>
 #include <ostream>
+#include <string>
+
+#include "common.hpp"
 
 namespace silkworm {
 
 namespace eth {
 
 struct Transaction {
-  uint64_t nonce;
+  uint64_t nonce{0};
+  intx::uint256 gas_price;
+  uint64_t gas_limit{0};
+  std::optional<Address> to;
+  intx::uint256 value;
+  std::string data;
+  intx::uint256 v, r, s;  // signature
 };
+
+bool operator==(const Transaction& a, const Transaction& b);
 
 }  // namespace eth
 
 namespace rlp {
 void encode(std::ostream& to, const eth::Transaction& txn);
-eth::Transaction decode(std::istream& from);
+eth::Transaction decode_transaction(std::istream& from);
 }  // namespace rlp
 
 }  // namespace silkworm

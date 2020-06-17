@@ -16,15 +16,82 @@
 
 #include "transaction.hpp"
 
-namespace silkworm::rlp {
+#include "../rlp/decode.hpp"
+#include "../rlp/encode.hpp"
 
-void encode(std::ostream&, const eth::Transaction&) {
-  // TODO(Andrew) implement
+namespace {
+static constexpr uint8_t kAddressRlpCode = silkworm::rlp::kEmptyStringCode + silkworm::eth::kAddressLength;
 }
 
-eth::Transaction decode(std::istream&) {
+namespace silkworm {
+
+namespace eth {
+
+bool operator==(const Transaction& a, const Transaction& b) {
+  return a.nonce == b.nonce && a.gas_price == b.gas_price && a.gas_limit == b.gas_limit && a.to == b.to &&
+         a.value == b.value && a.data == b.data && a.v == b.v && a.r == b.r && a.s == b.s;
+}
+
+}  // namespace eth
+
+namespace rlp {
+void encode(std::ostream& to, const eth::Transaction& txn) {
+  Header h{.list = true, .length = 0};
+  h.length += length(txn.nonce);
+  h.length += length(txn.gas_price);
+  h.length += length(txn.gas_limit);
+  h.length += txn.to ? (eth::kAddressLength + 1) : 1;
+  h.length += length(txn.value);
+  h.length += length(txn.data);
+  h.length += length(txn.v);
+  h.length += length(txn.r);
+  h.length += length(txn.s);
+
+  encode(to, h);
+  encode(to, txn.nonce);
+  encode(to, txn.gas_price);
+  encode(to, txn.gas_limit);
+  if (txn.to) {
+    to.put(kAddressRlpCode);
+    to.write(txn.to->data(), eth::kAddressLength);
+  } else {
+    to.put(kEmptyStringCode);
+  }
+  encode(to, txn.value);
+  encode(to, txn.data);
+  encode(to, txn.v);
+  encode(to, txn.r);
+  encode(to, txn.s);
+}
+
+eth::Transaction decode_transaction(std::istream& from) {
+  Header h = decode_header(from);
+  if (!h.list) {
+    throw DecodingError("unexpected string");
+  }
+
   eth::Transaction txn;
-  // TODO(Andrew) implement
+  txn.nonce = decode_uint64(from);
+  txn.gas_price = decode_uint256(from);
+  txn.gas_limit = decode_uint64(from);
+
+  uint8_t toCode = from.get();
+  if (toCode == kAddressRlpCode) {
+    eth::Address a;
+    from.read(a.data(), eth::kAddressLength);
+    txn.to = a;
+  } else if (toCode != kEmptyStringCode) {
+    throw DecodingError("unexpected code for txn.to");
+  }
+
+  txn.value = decode_uint256(from);
+  txn.data = decode_string(from);
+  txn.v = decode_uint256(from);
+  txn.r = decode_uint256(from);
+  txn.s = decode_uint256(from);
+
   return txn;
 }
-}  // namespace silkworm::rlp
+
+}  // namespace rlp
+}  // namespace silkworm

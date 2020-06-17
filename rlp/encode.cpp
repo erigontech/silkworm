@@ -32,32 +32,58 @@ std::string_view big_endian(uint64_t n) {
 
 namespace silkworm::rlp {
 
-void encode_length(std::ostream& to, size_t len) {
-  if (len < 56) {
-    to.put(kEmptyStringCode + len);
+void encode(std::ostream& to, Header header) {
+  if (header.length < 56) {
+    uint8_t code = header.list ? kEmptyListCode : kEmptyStringCode;
+    to.put(code + header.length);
   } else {
-    std::string_view len_be = big_endian(len);
-    to.put('\xB7' + len_be.length());
+    std::string_view len_be = big_endian(header.length);
+    uint8_t code = header.list ? '\xF7' : '\xB7';
+    to.put(code + len_be.length());
     to.write(len_be.data(), len_be.length());
   }
 }
 
+size_t length(Header header) {
+  if (header.length < 56) {
+    return 1;
+  } else {
+    return 1 + 8 - intx::clz(header.length) / 8;
+  }
+}
+
 void encode(std::ostream& to, std::string_view s) {
-  if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= 0x80) {
-    encode_length(to, s.length());
+  if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= kEmptyStringCode) {
+    encode(to, Header{.list = false, .length = s.length()});
   }
   to.write(s.data(), s.length());
 }
 
+size_t length(std::string_view s) {
+  size_t len = s.length();
+  if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= kEmptyStringCode) {
+    len += length(Header{.list = false, .length = s.length()});
+  }
+  return len;
+}
+
 void encode(std::ostream& to, uint64_t n) {
   if (n == 0) {
-    to.put('\x80');
-  } else if (n < 0x80) {
+    to.put(kEmptyStringCode);
+  } else if (n < kEmptyStringCode) {
     to.put(n);
   } else {
     std::string_view be = big_endian(n);
     to.put(kEmptyStringCode + be.length());
     to.write(be.data(), be.length());
+  }
+}
+
+size_t length(uint64_t n) {
+  if (n < kEmptyStringCode) {
+    return 1;
+  } else {
+    return 1 + 8 - intx::clz(n) / 8;
   }
 }
 
@@ -77,6 +103,14 @@ void encode(std::ostream& to, intx::uint256 n) {
     intx::be::store(buf, n);
     const uint8_t* begin = buf + (32 - num_bytes);
     to.write(reinterpret_cast<const char*>(begin), num_bytes);
+  }
+}
+
+size_t length(intx::uint256 n) {
+  if (n < kEmptyStringCode) {
+    return 1;
+  } else {
+    return 1 + 8 - intx::clz(n) / 8;
   }
 }
 

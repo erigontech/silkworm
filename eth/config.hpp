@@ -53,6 +53,14 @@ struct ChainConfig {
 
   // https://eips.ethereum.org/EIPS/eip-2387
   std::optional<uint64_t> muir_glacier_block;
+
+  bool IsHomestead(uint64_t block_num) {
+    return homestead_block.has_value() && homestead_block <= block_num;
+  }
+
+  bool IsIstanbul(uint64_t block_num) {
+    return istanbul_block.has_value() && istanbul_block <= block_num;
+  }
 };
 
 constexpr ChainConfig kMainnetChainConfig{

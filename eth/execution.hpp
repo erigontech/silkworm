@@ -14,46 +14,47 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_EVM_H_
-#define SILKWORM_ETH_EVM_H_
+#ifndef SILKWORM_ETH_EXECUTION_H_
+#define SILKWORM_ETH_EXECUTION_H_
 
 #include <stdint.h>
 
 #include <stdexcept>
 #include <string>
 
+#include "config.hpp"
+#include "state.hpp"
 #include "transaction.hpp"
 
 namespace silkworm::eth {
 
-class GasLimitReached : public std::runtime_error {
- public:
-  GasLimitReached() : std::runtime_error{"gas limit reached"} {}
-};
-
-class GasPool {
- public:
-  uint64_t gas() const { return gas_; }
-
-  GasPool& operator+=(uint64_t amount);
-  GasPool& operator-=(uint64_t amount);
-
- private:
-  uint64_t gas_{0};
+enum class ExecutionError {
+  kOk = 0,
+  kNonceTooLow,
+  kNonceTooHigh,
+  kIntrinsicGas,
 };
 
 struct ExecutionResult {
   uint64_t used_gas{0};
-  // TODO(Andrew) err;
+  ExecutionError err{ExecutionError::kOk};
   std::string return_data;
 };
 
-class EVM {
+class ExecutionProcessor {
  public:
+  ExecutionProcessor(const ExecutionProcessor&) = delete;
+  ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
+
   // precondition: txn.from must be recovered
-  ExecutionResult Execute(const Transaction& txn, GasPool& available_gas);
+  ExecutionResult ExecuteTransaction(const Transaction& txn);
+
+ private:
+  uint64_t block_number_{0};
+  State state_;
+  ChainConfig chain_config_{kMainnetChainConfig};
 };
 
 }  // namespace silkworm::eth
 
-#endif  // SILKWORM_ETH_EVM_H_
+#endif  // SILKWORM_ETH_EXECUTION_H_

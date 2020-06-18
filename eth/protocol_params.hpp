@@ -14,33 +14,19 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_COMMON_H_
-#define SILKWORM_ETH_COMMON_H_
+#ifndef SILKWORM_ETH_PROTOCOL_PARAMS_H_
+#define SILKWORM_ETH_PROTOCOL_PARAMS_H_
 
-#include <stddef.h>
 #include <stdint.h>
 
-#include <array>
-#include <gsl/span>
-#include <string_view>
+namespace silkworm::eth::params {
 
-namespace silkworm::eth {
+uint64_t kTxGas{21000};
+uint64_t kTxGasContractCreation{53000};
+uint64_t kTxDataZeroGas{4};
+uint64_t kTxDataNonZeroGasFrontier{68};
+uint64_t kTxDataNonZeroGasEIP2028{16};
 
-constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
+}  // namespace silkworm::eth::params
 
-constexpr size_t kHashLength{20};
-
-constexpr size_t kAddressLength{20};
-
-using Hash = std::array<char, kHashLength>;
-
-using Address = std::array<char, kAddressLength>;
-
-using AddressRef = gsl::span<const char, kAddressLength>;
-
-// input will be truncated if necessary
-Address HexToAddress(std::string_view hex);
-
-}  // namespace silkworm::eth
-
-#endif  // SILKWORM_ETH_COMMON_H_
+#endif  // SILKWORM_ETH_PROTOCOL_PARAMS_H_

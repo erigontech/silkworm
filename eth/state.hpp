@@ -14,33 +14,22 @@
    limitations under the License.
 */
 
-#include "evm.hpp"
+#ifndef SILKWORM_ETH_STATE_H_
+#define SILKWORM_ETH_STATE_H_
 
-#include <gsl/gsl_assert>
-#include <limits>
+#include "common.hpp"
 
 namespace silkworm::eth {
 
-GasPool& GasPool::operator+=(uint64_t amount) {
-  if (gas_ > std::numeric_limits<uint64_t>::max() - amount) {
-    throw std::overflow_error{"gas pool pushed above uint64"};
-  }
-  gas_ += amount;
-  return *this;
-}
+// Intra-block state
+class State {
+ public:
+  State(const State&) = delete;
+  State& operator=(const State&) = delete;
 
-GasPool& GasPool::operator-=(uint64_t amount) {
-  if (gas_ < amount) {
-    throw GasLimitReached{};
-  }
-  gas_ -= amount;
-  return *this;
-}
-
-ExecutionResult Execute(const Transaction& txn, GasPool&) {
-  Expects(txn.from);
-  // TODO (Andrew) implement
-  return ExecutionResult{};
-}
+  uint64_t GetNonce(AddressRef address);
+};
 
 }  // namespace silkworm::eth
+
+#endif  // SILKWORM_ETH_STATE_H_

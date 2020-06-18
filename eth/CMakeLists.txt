@@ -20,10 +20,13 @@ find_package(intx CONFIG REQUIRED)
 hunter_add_package(Boost)
 find_package(Boost CONFIG REQUIRED)
 
+hunter_add_package(Microsoft.GSL)
+find_package(Microsoft.GSL CONFIG REQUIRED)
+
 file(GLOB SILKWORM_ETH_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SILKWORM_ETH_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm_eth ${SILKWORM_ETH_SRC})
 target_link_libraries(silkworm_eth
                       PUBLIC intx::intx
-                      PRIVATE silkworm_rlp Boost::boost)
+                      PRIVATE silkworm_rlp Boost::boost Microsoft.GSL::GSL)

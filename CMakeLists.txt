@@ -28,16 +28,12 @@ HunterGate(
     SHA1 "062a19ab13ce8dffa9a882b6ce3e43bdabdf75d3"
 )
 
-project(silkworm LANGUAGES CXX)
+project(silkworm)
 
 if(MSVC)
   add_compile_options(/W4 /WX)
 else()
-  add_compile_options(-Wall -Wextra -pedantic -Werror)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wno-c99-extensions)
+  add_compile_options(-Wall -Wextra -Werror)
 endif()
 
 set(SILKWORM_LIBS silkworm_db silkworm_rlp silkworm_eth)

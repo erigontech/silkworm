@@ -20,7 +20,7 @@
 
 namespace silkworm::eth {
 
-Address hex_to_address(std::string_view hex) {
+Address HexToAddress(std::string_view hex) {
   Address a;
   a.fill(0);
   static constexpr size_t kMaxNibbles = 2 * kAddressLength;

@@ -18,7 +18,7 @@
 
 namespace {
 
-std::string_view big_endian(uint64_t n) {
+std::string_view BigEndian(uint64_t n) {
   thread_local uint64_t buf;
 
   // We assume a little-endian architecture like amd64
@@ -32,19 +32,19 @@ std::string_view big_endian(uint64_t n) {
 
 namespace silkworm::rlp {
 
-void encode(std::ostream& to, Header header) {
+void Encode(std::ostream& to, Header header) {
   if (header.length < 56) {
     uint8_t code = header.list ? kEmptyListCode : kEmptyStringCode;
     to.put(code + header.length);
   } else {
-    std::string_view len_be = big_endian(header.length);
+    std::string_view len_be = BigEndian(header.length);
     uint8_t code = header.list ? '\xF7' : '\xB7';
     to.put(code + len_be.length());
     to.write(len_be.data(), len_be.length());
   }
 }
 
-size_t length(Header header) {
+size_t Length(Header header) {
   if (header.length < 56) {
     return 1;
   } else {
@@ -52,34 +52,34 @@ size_t length(Header header) {
   }
 }
 
-void encode(std::ostream& to, std::string_view s) {
+void Encode(std::ostream& to, std::string_view s) {
   if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= kEmptyStringCode) {
-    encode(to, Header{.list = false, .length = s.length()});
+    Encode(to, Header{.list = false, .length = s.length()});
   }
   to.write(s.data(), s.length());
 }
 
-size_t length(std::string_view s) {
+size_t Length(std::string_view s) {
   size_t len = s.length();
   if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= kEmptyStringCode) {
-    len += length(Header{.list = false, .length = s.length()});
+    len += Length(Header{.list = false, .length = s.length()});
   }
   return len;
 }
 
-void encode(std::ostream& to, uint64_t n) {
+void Encode(std::ostream& to, uint64_t n) {
   if (n == 0) {
     to.put(kEmptyStringCode);
   } else if (n < kEmptyStringCode) {
     to.put(n);
   } else {
-    std::string_view be = big_endian(n);
+    std::string_view be = BigEndian(n);
     to.put(kEmptyStringCode + be.length());
     to.write(be.data(), be.length());
   }
 }
 
-size_t length(uint64_t n) {
+size_t Length(uint64_t n) {
   if (n < kEmptyStringCode) {
     return 1;
   } else {
@@ -87,7 +87,7 @@ size_t length(uint64_t n) {
   }
 }
 
-void encode(std::ostream& to, intx::uint256 n) {
+void Encode(std::ostream& to, intx::uint256 n) {
   thread_local uint8_t buf[32];
 
   unsigned leading_zero_bits = clz(n);
@@ -106,7 +106,7 @@ void encode(std::ostream& to, intx::uint256 n) {
   }
 }
 
-size_t length(intx::uint256 n) {
+size_t Length(intx::uint256 n) {
   if (n < kEmptyStringCode) {
     return 1;
   } else {

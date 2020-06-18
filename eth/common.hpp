@@ -36,7 +36,7 @@ using Hash = std::array<char, kHashLength>;
 using Address = std::array<char, kAddressLength>;
 
 // input will be truncated if necessary
-Address hex_to_address(std::string_view hex);
+Address HexToAddress(std::string_view hex);
 
 }  // namespace silkworm::eth
 

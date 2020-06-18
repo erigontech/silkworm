@@ -26,20 +26,20 @@ TEST_CASE("basic", "[lmdb]") {
   auto val{"abba"};
 
   TemporaryLmdbDatabase db;
-  auto txn = db.begin_ro_transaction();
+  auto txn = db.BeginReadOnlyTransaction();
 
-  // TODO(Andrew) get rid of lmdbx and CHECK_THROWS_MATCHES against our own expections
+  // TODO(Andrew) get rid of lmdbx and CHECK_THROWS_MATCHES against our own
+  // expections
+  CHECK_THROWS(txn->CreateBucket(bucketName));
 
-  CHECK_THROWS(txn->create_bucket(bucketName));
+  txn = db.BeginReadWriteTransaction();
+  CHECK_THROWS(txn->GetBucket(bucketName));
 
-  txn = db.begin_rw_transaction();
-  CHECK_THROWS(txn->get_bucket(bucketName));
+  auto bucket = txn->CreateBucket(bucketName);
+  CHECK(!bucket->Get(key).has_value());
 
-  auto bucket = txn->create_bucket(bucketName);
-  CHECK(!bucket->get(key).has_value());
-
-  bucket->put(key, val);
-  CHECK(bucket->get(key) == val);
+  bucket->Put(key, val);
+  CHECK(bucket->Get(key) == val);
 }
 
 }  // namespace silkworm::db

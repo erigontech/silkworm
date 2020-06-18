@@ -38,11 +38,11 @@ class DecodingError : public std::runtime_error {
 
 // Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,
 // in which case the byte is put back.
-Header decode_header(std::istream& from);
+Header DecodeHeader(std::istream& from);
 
-std::string decode_string(std::istream& from);
-uint64_t decode_uint64(std::istream& from);
-intx::uint256 decode_uint256(std::istream& from);
+std::string DecodeString(std::istream& from);
+uint64_t DecodeUint64(std::istream& from);
+intx::uint256 DecodeUint256(std::istream& from);
 
 }  // namespace silkworm::rlp
 

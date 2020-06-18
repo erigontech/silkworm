@@ -38,9 +38,9 @@ struct LmdbOptions {
 
 class LmdbBucket : public Bucket {
  public:
-  void put(std::string_view key, std::string_view value) override;
+  void Put(std::string_view key, std::string_view value) override;
 
-  std::optional<std::string_view> get(std::string_view key) const override;
+  std::optional<std::string_view> Get(std::string_view key) const override;
 
  private:
   friend class LmdbTransaction;
@@ -55,11 +55,11 @@ class LmdbTransaction : public Transaction {
  public:
   ~LmdbTransaction() override;
 
-  std::unique_ptr<Bucket> create_bucket(const char* name) override;
-  std::unique_ptr<Bucket> get_bucket(const char* name) override;
+  std::unique_ptr<Bucket> CreateBucket(const char* name) override;
+  std::unique_ptr<Bucket> GetBucket(const char* name) override;
 
-  void commit() override;
-  void rollback() override;
+  void Commit() override;
+  void Rollback() override;
 
  private:
   friend class LmdbDatabase;
@@ -75,7 +75,7 @@ class LmdbDatabase : public Database {
   explicit LmdbDatabase(const char* path, const LmdbOptions& options = {});
   ~LmdbDatabase() override;
 
-  std::unique_ptr<Transaction> begin_transaction(bool read_only) override;
+  std::unique_ptr<Transaction> BeginTransaction(bool read_only) override;
 
  private:
   MDB_env* env_{nullptr};

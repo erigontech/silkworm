@@ -14,30 +14,25 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_COMMON_H_
-#define SILKWORM_ETH_COMMON_H_
+#ifndef SILKWORM_ETH_RECEIPT_H_
+#define SILKWORM_ETH_RECEIPT_H_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <variant>
+#include <vector>
 
-#include <array>
-#include <string_view>
+#include "bloom.hpp"
+#include "common.hpp"
+#include "log.hpp"
 
 namespace silkworm::eth {
 
-constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
-
-constexpr size_t kHashLength{20};
-
-constexpr size_t kAddressLength{20};
-
-using Hash = std::array<char, kHashLength>;
-
-using Address = std::array<char, kAddressLength>;
-
-// input will be truncated if necessary
-Address hex_to_address(std::string_view hex);
+struct Receipt {
+  std::variant<Hash, bool> post_state_or_status{false};  // failure = false, success = true
+  uint64_t cumulative_gas_used{0};
+  Bloom bloom;
+  std::vector<Log> logs;
+};
 
 }  // namespace silkworm::eth
 
-#endif  // SILKWORM_ETH_COMMON_H_
+#endif  // SILKWORM_ETH_RECEIPT_H_

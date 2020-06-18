@@ -14,30 +14,22 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_COMMON_H_
-#define SILKWORM_ETH_COMMON_H_
+#ifndef SILKWORM_ETH_LOG_H_
+#define SILKWORM_ETH_LOG_H_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <string>
+#include <vector>
 
-#include <array>
-#include <string_view>
+#include "common.hpp"
 
 namespace silkworm::eth {
 
-constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
-
-constexpr size_t kHashLength{20};
-
-constexpr size_t kAddressLength{20};
-
-using Hash = std::array<char, kHashLength>;
-
-using Address = std::array<char, kAddressLength>;
-
-// input will be truncated if necessary
-Address hex_to_address(std::string_view hex);
+struct Log {
+  Address address;
+  std::vector<Hash> topics;
+  std::string data;
+};
 
 }  // namespace silkworm::eth
 
-#endif  // SILKWORM_ETH_COMMON_H_
+#endif  // SILKWORM_ETH_LOG_H_

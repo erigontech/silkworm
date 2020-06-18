@@ -38,7 +38,8 @@ struct Transaction {
   std::optional<Address> to;
   intx::uint256 value;
   std::string data;
-  intx::uint256 v, r, s;  // signature
+  intx::uint256 v, r, s;        // signature
+  std::optional<Address> from;  // sender recovered from the signature
 };
 
 bool operator==(const Transaction& a, const Transaction& b);

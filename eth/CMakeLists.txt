@@ -14,9 +14,6 @@
    limitations under the License.
 ]]
 
-hunter_add_package(Microsoft.GSL)
-find_package(Microsoft.GSL CONFIG REQUIRED)
-
 hunter_add_package(intx)
 find_package(intx CONFIG REQUIRED)
 
@@ -28,5 +25,5 @@ list(FILTER SILKWORM_ETH_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm_eth ${SILKWORM_ETH_SRC})
 target_link_libraries(silkworm_eth
-                      PUBLIC Microsoft.GSL::GSL intx::intx
+                      PUBLIC intx::intx
                       PRIVATE silkworm_rlp Boost::boost)

@@ -95,7 +95,7 @@ LmdbDatabase::LmdbDatabase(const char* path, const LmdbOptions& options) {
   lmdb::env_set_max_dbs(env_, options.max_buckets);
   static_assert(sizeof(size_t) >= sizeof(uint64_t), "32 bit mode limits max LMDB size");
   lmdb::env_set_mapsize(env_, options.map_size);
-  unsigned flags{0};
+  unsigned flags{MDB_NORDAHEAD};
   if (options.no_sync) {
     flags |= MDB_NOSYNC;
   }

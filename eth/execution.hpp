@@ -28,16 +28,19 @@
 
 namespace silkworm::eth {
 
-enum class ExecutionError {
+enum class ValidityError {
   kOk = 0,
-  kNonceTooLow,
-  kNonceTooHigh,
+  kMissingSender,
+  kInvalidNonce,
   kIntrinsicGas,
+  kInsufficientFunds,
+  kBlockGasLimitReached,
 };
 
 struct ExecutionResult {
   uint64_t used_gas{0};
-  ExecutionError err{ExecutionError::kOk};
+  ValidityError error{ValidityError::kOk};
+  bool success{false};
   std::string return_data;
 };
 
@@ -50,8 +53,9 @@ class ExecutionProcessor {
   ExecutionResult ExecuteTransaction(const Transaction& txn);
 
  private:
-  uint64_t block_number_{0};
+  uint64_t gas_pool_{0};
   State state_;
+  uint64_t block_number_{0};
   ChainConfig chain_config_{kMainnetChainConfig};
 };
 

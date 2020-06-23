@@ -17,6 +17,8 @@
 #ifndef SILKWORM_ETH_STATE_H_
 #define SILKWORM_ETH_STATE_H_
 
+#include <intx/intx.hpp>
+
 #include "common.hpp"
 
 namespace silkworm::eth {
@@ -26,6 +28,10 @@ class State {
  public:
   State(const State&) = delete;
   State& operator=(const State&) = delete;
+
+  bool Exists(AddressRef address);
+
+  intx::uint256 GetBalance(AddressRef address);
 
   uint64_t GetNonce(AddressRef address);
 };

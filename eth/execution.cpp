@@ -17,7 +17,6 @@
 #include "execution.hpp"
 
 #include <algorithm>
-#include <gsl/gsl_assert>
 #include <intx/int128.hpp>
 #include <limits>
 #include <string_view>
@@ -29,9 +28,9 @@ namespace {
 
 using namespace silkworm::eth;
 
-intx::uint<128> IntrinsicGas(std::string_view data, bool contract_creation, bool homestead,
-                             bool eip2028) {
-  intx::uint<128> gas = params::kTxGas;
+intx::uint128 IntrinsicGas(std::string_view data, bool contract_creation, bool homestead,
+                           bool eip2028) {
+  intx::uint128 gas = params::kTxGas;
   if (contract_creation && homestead) {
     gas = params::kTxGasContractCreation;
   }
@@ -40,14 +39,14 @@ intx::uint<128> IntrinsicGas(std::string_view data, bool contract_creation, bool
     return gas;
   }
 
-  intx::uint<128> non_zero_bytes =
+  intx::uint128 non_zero_bytes =
       std::count_if(data.begin(), data.end(), [](char c) { return c != 0; });
 
   uint64_t nonZeroGas{eip2028 ? params::kTxDataNonZeroGasEIP2028
                               : params::kTxDataNonZeroGasFrontier};
   gas += non_zero_bytes * nonZeroGas;
 
-  intx::uint<128> zero_bytes = data.length() - non_zero_bytes;
+  intx::uint128 zero_bytes = data.length() - non_zero_bytes;
   gas += zero_bytes * params::kTxDataZeroGas;
 
   return gas;
@@ -58,16 +57,16 @@ intx::uint<128> IntrinsicGas(std::string_view data, bool contract_creation, bool
 namespace silkworm::eth {
 
 ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
-  Expects(txn.from);
-
   ExecutionResult res;
 
-  uint64_t nonce = state_.GetNonce(*txn.from);
-  if (nonce < txn.nonce) {
-    res.err = ExecutionError::kNonceTooHigh;
+  if (!txn.from || !state_.Exists(*txn.from)) {
+    res.error = ValidityError::kMissingSender;
     return res;
-  } else if (nonce > txn.nonce) {
-    res.err = ExecutionError::kNonceTooLow;
+  }
+
+  uint64_t nonce = state_.GetNonce(*txn.from);
+  if (nonce != txn.nonce) {
+    res.error = ValidityError::kInvalidNonce;
     return res;
   }
 
@@ -75,9 +74,22 @@ ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
   bool istanbul = chain_config_.IsIstanbul(block_number_);
   bool contract_creation = !txn.to;
 
-  intx::uint<128> gas = IntrinsicGas(txn.data, contract_creation, homestead, istanbul);
-  if (txn.gas_limit < gas) {
-    res.err = ExecutionError::kIntrinsicGas;
+  intx::uint128 g0 = IntrinsicGas(txn.data, contract_creation, homestead, istanbul);
+  if (txn.gas_limit < g0) {
+    res.error = ValidityError::kIntrinsicGas;
+    return res;
+  }
+
+  intx::uint512 v0 = intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price);
+  v0 += txn.value;
+
+  if (state_.GetBalance(*txn.from) < v0) {
+    res.error = ValidityError::kInsufficientFunds;
+    return res;
+  }
+
+  if (gas_pool_ < txn.gas_limit) {
+    res.error = ValidityError::kBlockGasLimitReached;
     return res;
   }
 

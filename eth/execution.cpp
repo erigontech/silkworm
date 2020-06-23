@@ -59,19 +59,21 @@ namespace silkworm::eth {
 ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
   ExecutionResult res;
 
-  if (!txn.from || !state_.Exists(*txn.from)) {
+  State& state = evm_.State();
+
+  if (!txn.from || !state.Exists(*txn.from)) {
     res.error = ValidityError::kMissingSender;
     return res;
   }
 
-  uint64_t nonce = state_.GetNonce(*txn.from);
+  uint64_t nonce = state.GetNonce(*txn.from);
   if (nonce != txn.nonce) {
     res.error = ValidityError::kInvalidNonce;
     return res;
   }
 
-  bool homestead = chain_config_.IsHomestead(block_number_);
-  bool istanbul = chain_config_.IsIstanbul(block_number_);
+  bool homestead = evm_.ChainConfig().IsHomestead(evm_.BlockNumber());
+  bool istanbul = evm_.ChainConfig().IsIstanbul(evm_.BlockNumber());
   bool contract_creation = !txn.to;
 
   intx::uint128 g0 = IntrinsicGas(txn.data, contract_creation, homestead, istanbul);
@@ -80,10 +82,10 @@ ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
     return res;
   }
 
-  intx::uint512 v0 = intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price);
-  v0 += txn.value;
+  intx::uint512 gas_cost = intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price);
+  intx::uint512 v0 = gas_cost + txn.value;
 
-  if (state_.GetBalance(*txn.from) < v0) {
+  if (state.GetBalance(*txn.from) < v0) {
     res.error = ValidityError::kInsufficientFunds;
     return res;
   }
@@ -93,9 +95,38 @@ ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
     return res;
   }
 
-  // TODO (Andrew) implement
+  state.SubBalance(*txn.from, gas_cost.lo);
+
+  uint64_t g = txn.gas_limit - g0.lo;
+  CallResult vm_res;
+  if (contract_creation) {
+    // Create itself increments the nonce
+    vm_res = evm_.Create(*txn.from, txn.data, g, txn.value);
+  } else {
+    state.SetNonce(*txn.from, nonce + 1);
+    vm_res = evm_.Call(*txn.from, *txn.to, txn.data, g, txn.value);
+  }
+
+  res.success = vm_res.success;
+
+  uint64_t remaining_gas = RefundGas(txn, vm_res.remaining_gas);
+  res.used_gas = txn.gas_limit - remaining_gas;
+
+  // award the miner
+  state.AddBalance(evm_.Coinbase(), res.used_gas * txn.gas_price);
 
   return res;
+}
+
+uint64_t ExecutionProcessor::RefundGas(const Transaction& txn, uint64_t remaining_gas) {
+  State& state = evm_.State();
+
+  uint64_t refund = std::min((txn.gas_limit - remaining_gas) / 2, state.GetRefund());
+  remaining_gas += refund;
+  gas_pool_ += remaining_gas;
+  state.AddBalance(*txn.from, remaining_gas * txn.gas_price);
+
+  return remaining_gas;
 }
 
 }  // namespace silkworm::eth

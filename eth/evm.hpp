@@ -14,33 +14,44 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_STATE_H_
-#define SILKWORM_ETH_STATE_H_
+#ifndef SILKWORM_ETH_EVM_H_
+#define SILKWORM_ETH_EVM_H_
+
+#include <stdint.h>
 
 #include <intx/intx.hpp>
+#include <string_view>
 
 #include "common.hpp"
+#include "config.hpp"
+#include "state.hpp"
 
 namespace silkworm::eth {
 
-// Intra-block state
-class State {
+struct CallResult {
+  uint64_t remaining_gas{0};
+  bool success{false};
+};
+
+class EVM {
  public:
-  State(const State&) = delete;
-  State& operator=(const State&) = delete;
+  EVM(const EVM&) = delete;
+  EVM& operator=(const EVM&) = delete;
 
-  bool Exists(AddressRef address) const;
+  AddressRef Coinbase() const;
+  uint64_t BlockNumber() const;
 
-  intx::uint256 GetBalance(AddressRef address) const;
-  void AddBalance(AddressRef address, const intx::uint256& addend);
-  void SubBalance(AddressRef address, const intx::uint256& subtrahend);
+  const ChainConfig& ChainConfig() const;
 
-  uint64_t GetNonce(AddressRef address) const;
-  void SetNonce(AddressRef address, uint64_t nonce);
+  State& State();
 
-  uint64_t GetRefund() const;
+  CallResult Create(AddressRef caller, std::string_view code, uint64_t gas,
+                    const intx::uint256& value);
+
+  CallResult Call(AddressRef caller, AddressRef recipient, std::string_view input, uint64_t gas,
+                  const intx::uint256& value);
 };
 
 }  // namespace silkworm::eth
 
-#endif  // SILKWORM_ETH_STATE_H_
+#endif  // SILKWORM_ETH_EVM_H_

@@ -22,8 +22,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "config.hpp"
-#include "state.hpp"
+#include "evm.hpp"
 #include "transaction.hpp"
 
 namespace silkworm::eth {
@@ -41,7 +40,6 @@ struct ExecutionResult {
   uint64_t used_gas{0};
   ValidityError error{ValidityError::kOk};
   bool success{false};
-  std::string return_data;
 };
 
 class ExecutionProcessor {
@@ -53,10 +51,10 @@ class ExecutionProcessor {
   ExecutionResult ExecuteTransaction(const Transaction& txn);
 
  private:
+  uint64_t RefundGas(const Transaction& txn, uint64_t remaining_gas);
+
   uint64_t gas_pool_{0};
-  State state_;
-  uint64_t block_number_{0};
-  ChainConfig chain_config_{kMainnetChainConfig};
+  EVM evm_;
 };
 
 }  // namespace silkworm::eth

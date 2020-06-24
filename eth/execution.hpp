@@ -47,7 +47,7 @@ class ExecutionProcessor {
   ExecutionProcessor(const ExecutionProcessor&) = delete;
   ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-  ExecutionProcessor(IntraBlockState& state, Address coinbase, uint64_t block_number);
+  ExecutionProcessor(IntraBlockState& state, evmc::address coinbase, uint64_t block_number);
 
   // precondition: txn.from must be recovered
   ExecutionResult ExecuteTransaction(const Transaction& txn);

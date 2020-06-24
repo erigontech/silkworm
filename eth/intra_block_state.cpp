@@ -20,17 +20,17 @@
 
 namespace silkworm::eth {
 
-bool IntraBlockState::Exists(AddressRef) const { return false; }
+bool IntraBlockState::Exists(const evmc::address&) const { return false; }
 
-intx::uint256 IntraBlockState::GetBalance(AddressRef) const { return 0; }
+intx::uint256 IntraBlockState::GetBalance(const evmc::address&) const { return 0; }
 
-void IntraBlockState::AddBalance(AddressRef, const intx::uint256&) {}
+void IntraBlockState::AddBalance(const evmc::address&, const intx::uint256&) {}
 
-void IntraBlockState::SubBalance(AddressRef, const intx::uint256&) {}
+void IntraBlockState::SubBalance(const evmc::address&, const intx::uint256&) {}
 
-uint64_t IntraBlockState::GetNonce(AddressRef) const { return 0; }
+uint64_t IntraBlockState::GetNonce(const evmc::address&) const { return 0; }
 
-void IntraBlockState::SetNonce(AddressRef, uint64_t) {}
+void IntraBlockState::SetNonce(const evmc::address&, uint64_t) {}
 
 uint64_t IntraBlockState::GetRefund() const { return 0; }
 

@@ -18,6 +18,7 @@
 
 #include "../rlp/decode.hpp"
 #include "../rlp/encode.hpp"
+#include "common.hpp"
 
 namespace {
 static constexpr uint8_t kAddressRlpCode =
@@ -55,7 +56,8 @@ void Encode(std::ostream& to, const eth::Transaction& txn) {
   Encode(to, txn.gas_limit);
   if (txn.to) {
     to.put(kAddressRlpCode);
-    to.write(txn.to->data(), eth::kAddressLength);
+    const void* ptr = txn.to->bytes;
+    to.write(static_cast<const char*>(ptr), eth::kAddressLength);
   } else {
     to.put(kEmptyStringCode);
   }
@@ -79,8 +81,9 @@ eth::Transaction DecodeTransaction(std::istream& from) {
 
   uint8_t toCode = from.get();
   if (toCode == kAddressRlpCode) {
-    eth::Address a;
-    from.read(a.data(), eth::kAddressLength);
+    evmc::address a;
+    void* ptr = a.bytes;
+    from.read(static_cast<char*>(ptr), eth::kAddressLength);
     txn.to = a;
   } else if (toCode != kEmptyStringCode) {
     throw DecodingError("unexpected code for txn.to");

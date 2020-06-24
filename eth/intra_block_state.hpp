@@ -17,9 +17,8 @@
 #ifndef SILKWORM_ETH_INTRA_BLOCK_STATE_H_
 #define SILKWORM_ETH_INTRA_BLOCK_STATE_H_
 
+#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-
-#include "common.hpp"
 
 namespace silkworm::eth {
 
@@ -30,14 +29,14 @@ class IntraBlockState {
 
   IntraBlockState() = default;
 
-  bool Exists(AddressRef address) const;
+  bool Exists(const evmc::address& address) const;
 
-  intx::uint256 GetBalance(AddressRef address) const;
-  void AddBalance(AddressRef address, const intx::uint256& addend);
-  void SubBalance(AddressRef address, const intx::uint256& subtrahend);
+  intx::uint256 GetBalance(const evmc::address& address) const;
+  void AddBalance(const evmc::address& address, const intx::uint256& addend);
+  void SubBalance(const evmc::address& address, const intx::uint256& subtrahend);
 
-  uint64_t GetNonce(AddressRef address) const;
-  void SetNonce(AddressRef address, uint64_t nonce);
+  uint64_t GetNonce(const evmc::address& address) const;
+  void SetNonce(const evmc::address& address, uint64_t nonce);
 
   uint64_t GetRefund() const;
 };

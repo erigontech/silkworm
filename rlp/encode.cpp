@@ -101,8 +101,8 @@ void Encode(std::ostream& to, intx::uint256 n) {
   } else {
     to.put(kEmptyStringCode + num_bytes);
     intx::be::store(buf, n);
-    const uint8_t* begin = buf + (32 - num_bytes);
-    to.write(reinterpret_cast<const char*>(begin), num_bytes);
+    const void* begin = buf + (32 - num_bytes);
+    to.write(static_cast<const char*>(begin), num_bytes);
   }
 }
 

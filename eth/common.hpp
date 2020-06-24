@@ -20,26 +20,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <array>
-#include <gsl/span>
-#include <string_view>
 
 namespace silkworm::eth {
 
 constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
 
-constexpr size_t kHashLength{20};
+constexpr size_t kHashLength{32};
 
 constexpr size_t kAddressLength{20};
-
-using Hash = std::array<char, kHashLength>;
-
-using Address = std::array<char, kAddressLength>;
-
-using AddressRef = gsl::span<const char, kAddressLength>;
-
-// input will be truncated if necessary
-Address HexToAddress(std::string_view hex);
 
 }  // namespace silkworm::eth
 

@@ -56,7 +56,7 @@ intx::uint128 IntrinsicGas(std::string_view data, bool contract_creation, bool h
 
 namespace silkworm::eth {
 
-ExecutionProcessor::ExecutionProcessor(IntraBlockState& state, Address coinbase,
+ExecutionProcessor::ExecutionProcessor(IntraBlockState& state, evmc::address coinbase,
                                        uint64_t block_number)
     : evm_{state, coinbase, block_number} {}
 

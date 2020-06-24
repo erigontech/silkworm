@@ -19,13 +19,12 @@
 
 #include <stdint.h>
 
+#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <istream>
 #include <optional>
 #include <ostream>
 #include <string>
-
-#include "common.hpp"
 
 namespace silkworm {
 
@@ -35,11 +34,11 @@ struct Transaction {
   uint64_t nonce{0};
   intx::uint256 gas_price;
   uint64_t gas_limit{0};
-  std::optional<Address> to;
+  std::optional<evmc::address> to;
   intx::uint256 value;
   std::string data;
-  intx::uint256 v, r, s;        // signature
-  std::optional<Address> from;  // sender recovered from the signature
+  intx::uint256 v, r, s;              // signature
+  std::optional<evmc::address> from;  // sender recovered from the signature
 };
 
 bool operator==(const Transaction& a, const Transaction& b);

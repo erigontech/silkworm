@@ -16,20 +16,25 @@
 
 #include "execution.hpp"
 
+#include <evmc/evmc.hpp>
+
 #include "../tests/catch.hpp"
+#include "common.hpp"
 
 namespace silkworm::eth {
 
 TEST_CASE("validation", "[execution]") {
-  Address miner{eth::HexToAddress("0x829bd824b016326a401d083b33d092293333a830")};
+  using namespace evmc::literals;
+
+  evmc::address miner = 0x829bd824b016326a401d083b33d092293333a830_address;
   uint64_t block_number{1};
 
   eth::Transaction txn{
       .nonce = 12,
       .gas_price = 20000000000,
       .gas_limit = 21000,
-      .to = eth::HexToAddress("0x727fc6a68321b754475c668a6abfb6e9e71c169a"),
-      .value = 10 * eth::kEther,
+      .to = 0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,
+      .value = 10 * kEther,
   };
 
   IntraBlockState state;
@@ -38,7 +43,7 @@ TEST_CASE("validation", "[execution]") {
   ExecutionResult res = processor.ExecuteTransaction(txn);
   CHECK(res.error == ValidationError::kMissingSender);
 
-  txn.from = eth::HexToAddress("0x68d7899b6635146a37d01934461d0c9e4b65ddda");
+  txn.from = 0x68d7899b6635146a37d01934461d0c9e4b65ddda_address;
   res = processor.ExecuteTransaction(txn);
   CHECK(res.error == ValidationError::kMissingSender);
 

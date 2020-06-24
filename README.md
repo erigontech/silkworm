@@ -32,5 +32,5 @@ We follow [Google's C++ Style Guide](https://google.github.io/styleguide/cppguid
 
 * .cpp & .hpp file extensions rather than .cc & .h for C++.
 * Exceptions are allowed.
-* `using namespace std::string_literals` is allowed.
+* User-defined literals are allowed.
 * Max line length is 100.

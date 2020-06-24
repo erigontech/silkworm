@@ -19,18 +19,20 @@
 #include <boost/algorithm/hex.hpp>
 
 #include "../tests/catch.hpp"
+#include "common.hpp"
 
 namespace silkworm {
 
 TEST_CASE("transaction", "[rlp]") {
   using boost::algorithm::unhex;
   using namespace std::string_literals;
+  using namespace evmc::literals;
 
   eth::Transaction txn{
       .nonce = 12,
       .gas_price = 20000000000,
       .gas_limit = 21000,
-      .to = eth::HexToAddress("727fc6a68321b754475c668a6abfb6e9e71c169a"),
+      .to = 0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,
       .value = 10 * eth::kEther,
       .data = unhex(
           "a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc971600000000000000000000015af1d78b58c4000"s),

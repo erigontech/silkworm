@@ -17,9 +17,9 @@
 #ifndef SILKWORM_ETH_EVM_H_
 #define SILKWORM_ETH_EVM_H_
 
-#include <evmc/evmc.h>
 #include <stdint.h>
 
+#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <string_view>
 
@@ -39,25 +39,25 @@ class EVM {
   EVM(const EVM&) = delete;
   EVM& operator=(const EVM&) = delete;
 
-  EVM(IntraBlockState& state, Address coinbase, uint64_t block_number);
+  EVM(IntraBlockState& state, evmc::address coinbase, uint64_t block_number);
 
-  AddressRef coinbase() const { return coinbase_; }
+  const evmc::address& coinbase() const { return coinbase_; }
   uint64_t block_number() const { return block_number_; }
 
   const ChainConfig& config() const { return config_; }
 
   IntraBlockState& state() { return state_; }
 
-  CallResult Create(AddressRef caller, std::string_view code, uint64_t gas,
+  CallResult Create(const evmc::address& caller, std::string_view code, uint64_t gas,
                     const intx::uint256& value);
 
-  CallResult Call(AddressRef caller, AddressRef recipient, std::string_view input, uint64_t gas,
-                  const intx::uint256& value);
+  CallResult Call(const evmc::address& caller, const evmc::address& recipient,
+                  std::string_view input, uint64_t gas, const intx::uint256& value);
 
  private:
   IntraBlockState& state_;
   ChainConfig config_{kMainnetChainConfig};
-  Address coinbase_;
+  evmc::address coinbase_;
   uint64_t block_number_{0};
 };
 

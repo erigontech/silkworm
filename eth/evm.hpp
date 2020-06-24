@@ -24,7 +24,7 @@
 
 #include "common.hpp"
 #include "config.hpp"
-#include "state.hpp"
+#include "intra_block_state.hpp"
 
 namespace silkworm::eth {
 
@@ -43,7 +43,7 @@ class EVM {
 
   const ChainConfig& ChainConfig() const;
 
-  State& State();
+  IntraBlockState& State();
 
   CallResult Create(AddressRef caller, std::string_view code, uint64_t gas,
                     const intx::uint256& value);

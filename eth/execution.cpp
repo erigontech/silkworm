@@ -59,7 +59,7 @@ namespace silkworm::eth {
 ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
   ExecutionResult res;
 
-  State& state = evm_.State();
+  IntraBlockState& state = evm_.State();
 
   if (!txn.from || !state.Exists(*txn.from)) {
     res.error = ValidityError::kMissingSender;
@@ -119,7 +119,7 @@ ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
 }
 
 uint64_t ExecutionProcessor::RefundGas(const Transaction& txn, uint64_t remaining_gas) {
-  State& state = evm_.State();
+  IntraBlockState& state = evm_.State();
 
   uint64_t refund = std::min((txn.gas_limit - remaining_gas) / 2, state.GetRefund());
   remaining_gas += refund;

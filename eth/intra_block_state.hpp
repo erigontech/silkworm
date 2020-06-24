@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_STATE_H_
-#define SILKWORM_ETH_STATE_H_
+#ifndef SILKWORM_ETH_INTRA_BLOCK_STATE_H_
+#define SILKWORM_ETH_INTRA_BLOCK_STATE_H_
 
 #include <intx/intx.hpp>
 
@@ -23,11 +23,10 @@
 
 namespace silkworm::eth {
 
-// Intra-block state
-class State {
+class IntraBlockState {
  public:
-  State(const State&) = delete;
-  State& operator=(const State&) = delete;
+  IntraBlockState(const IntraBlockState&) = delete;
+  IntraBlockState& operator=(const IntraBlockState&) = delete;
 
   bool Exists(AddressRef address) const;
 
@@ -43,4 +42,4 @@ class State {
 
 }  // namespace silkworm::eth
 
-#endif  // SILKWORM_ETH_STATE_H_
+#endif  // SILKWORM_ETH_INTRA_BLOCK_STATE_H_

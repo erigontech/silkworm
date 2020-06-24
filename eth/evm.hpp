@@ -17,6 +17,7 @@
 #ifndef SILKWORM_ETH_EVM_H_
 #define SILKWORM_ETH_EVM_H_
 
+#include <evmc/evmc.h>
 #include <stdint.h>
 
 #include <intx/intx.hpp>
@@ -30,7 +31,7 @@ namespace silkworm::eth {
 
 struct CallResult {
   uint64_t remaining_gas{0};
-  bool success{false};
+  evmc_status_code status{EVMC_SUCCESS};
 };
 
 class EVM {

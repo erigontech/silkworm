@@ -17,7 +17,13 @@
 hunter_add_package(Boost)
 find_package(Boost CONFIG REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_TEST_SRC CONFIGURE_DEPENDS "../*_test.cpp")
+file(GLOB SILKWORM_DB_TESTS CONFIGURE_DEPENDS "../db/*_test.cpp")
+file(GLOB SILKWORM_ETH_TESTS CONFIGURE_DEPENDS "../eth/*_test.cpp")
+file(GLOB SILKWORM_RLP_TESTS CONFIGURE_DEPENDS "../rlp/*_test.cpp")
 
-add_executable(tests main.cpp ${SILKWORM_TEST_SRC})
+add_executable(tests main.cpp
+              ${SILKWORM_DB_TESTS}
+              ${SILKWORM_ETH_TESTS}
+              ${SILKWORM_RLP_TESTS})
+
 target_link_libraries(tests PRIVATE "${SILKWORM_LIBS}" Boost::boost)

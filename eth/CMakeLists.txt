@@ -28,5 +28,5 @@ list(FILTER SILKWORM_ETH_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm_eth ${SILKWORM_ETH_SRC})
 target_link_libraries(silkworm_eth
-                      PUBLIC intx::intx Microsoft.GSL::GSL
+                      PUBLIC evmone intx::intx Microsoft.GSL::GSL
                       PRIVATE silkworm_rlp Boost::boost)

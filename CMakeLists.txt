@@ -16,13 +16,14 @@
 
 cmake_minimum_required(VERSION 3.12) # for CONFIGURE_DEPENDS
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
+include(evmone/cmake/cable/bootstrap.cmake)
+include(CableBuildType)
+include(CableToolchains)
 
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/cxx17.cmake)
+cable_configure_toolchain(DEFAULT cxx17)
+cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
-include("cmake/HunterGate.cmake")
+include("evmone/cmake/cable/HunterGate.cmake")
 HunterGate(
     URL "https://github.com/cpp-pm/hunter/archive/v0.23.258.tar.gz"
     SHA1 "062a19ab13ce8dffa9a882b6ce3e43bdabdf75d3"
@@ -38,9 +39,12 @@ endif()
 
 set(SILKWORM_LIBS silkworm_db silkworm_rlp silkworm_eth)
 
+add_subdirectory(evmone)
+
 add_subdirectory(db)
 add_subdirectory(rlp)
 add_subdirectory(eth)
+
 add_subdirectory(tests)
 
 add_executable(silkworm silkworm.cpp)

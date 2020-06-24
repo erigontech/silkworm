@@ -111,7 +111,7 @@ ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
     vm_res = evm_.Call(*txn.from, *txn.to, txn.data, g, txn.value);
   }
 
-  res.success = vm_res.success;
+  res.success = vm_res.status == EVMC_SUCCESS;
 
   uint64_t remaining_gas = RefundGas(txn, vm_res.remaining_gas);
   res.used_gas = txn.gas_limit - remaining_gas;

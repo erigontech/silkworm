@@ -1,0 +1,3 @@
+[submodule "evmone"]
+	path = evmone
+	url = https://github.com/ethereum/evmone.git

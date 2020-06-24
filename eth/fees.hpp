@@ -14,19 +14,21 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_PROTOCOL_PARAMS_H_
-#define SILKWORM_ETH_PROTOCOL_PARAMS_H_
+#ifndef SILKWORM_ETH_FEES_H_
+#define SILKWORM_ETH_FEES_H_
 
 #include <stdint.h>
 
-namespace silkworm::eth::params {
+namespace silkworm::eth::fees {
 
-uint64_t kTxGas{21000};
-uint64_t kTxGasContractCreation{53000};
-uint64_t kTxDataZeroGas{4};
-uint64_t kTxDataNonZeroGasFrontier{68};
-uint64_t kTxDataNonZeroGasEIP2028{16};
+uint64_t kRsclear{15000};
 
-}  // namespace silkworm::eth::params
+uint64_t kGtxCreate{32000};
+uint64_t kGtxDataZero{4};
+uint64_t kGtxDataNonZeroFrontier{68};
+uint64_t kGtxDataNonZeroEIP2028{16};
+uint64_t kGtransaction{21000};
 
-#endif  // SILKWORM_ETH_PROTOCOL_PARAMS_H_
+}  // namespace silkworm::eth::fees
+
+#endif  // SILKWORM_ETH_FEES_H_

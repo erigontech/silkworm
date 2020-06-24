@@ -1,3 +1,4 @@
 [submodule "evmone"]
 	path = evmone
-	url = https://github.com/ethereum/evmone.git
+	url = https://github.com/torquem-sa/evmone.git
+	branch = silkworm

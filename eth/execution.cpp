@@ -56,29 +56,33 @@ intx::uint128 IntrinsicGas(std::string_view data, bool contract_creation, bool h
 
 namespace silkworm::eth {
 
+ExecutionProcessor::ExecutionProcessor(IntraBlockState& state, Address coinbase,
+                                       uint64_t block_number)
+    : evm_{state, coinbase, block_number} {}
+
 ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
   ExecutionResult res;
 
-  IntraBlockState& state = evm_.State();
+  IntraBlockState& state = evm_.state();
 
   if (!txn.from || !state.Exists(*txn.from)) {
-    res.error = ValidityError::kMissingSender;
+    res.error = ValidationError::kMissingSender;
     return res;
   }
 
   uint64_t nonce = state.GetNonce(*txn.from);
   if (nonce != txn.nonce) {
-    res.error = ValidityError::kInvalidNonce;
+    res.error = ValidationError::kInvalidNonce;
     return res;
   }
 
-  bool homestead = evm_.ChainConfig().IsHomestead(evm_.BlockNumber());
-  bool istanbul = evm_.ChainConfig().IsIstanbul(evm_.BlockNumber());
+  bool homestead = evm_.config().IsHomestead(evm_.block_number());
+  bool istanbul = evm_.config().IsIstanbul(evm_.block_number());
   bool contract_creation = !txn.to;
 
   intx::uint128 g0 = IntrinsicGas(txn.data, contract_creation, homestead, istanbul);
   if (txn.gas_limit < g0) {
-    res.error = ValidityError::kIntrinsicGas;
+    res.error = ValidationError::kIntrinsicGas;
     return res;
   }
 
@@ -86,12 +90,12 @@ ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
   intx::uint512 v0 = gas_cost + txn.value;
 
   if (state.GetBalance(*txn.from) < v0) {
-    res.error = ValidityError::kInsufficientFunds;
+    res.error = ValidationError::kInsufficientFunds;
     return res;
   }
 
   if (gas_pool_ < txn.gas_limit) {
-    res.error = ValidityError::kBlockGasLimitReached;
+    res.error = ValidationError::kBlockGasLimitReached;
     return res;
   }
 
@@ -113,13 +117,13 @@ ExecutionResult ExecutionProcessor::ExecuteTransaction(const Transaction& txn) {
   res.used_gas = txn.gas_limit - remaining_gas;
 
   // award the miner
-  state.AddBalance(evm_.Coinbase(), res.used_gas * txn.gas_price);
+  state.AddBalance(evm_.coinbase(), res.used_gas * txn.gas_price);
 
   return res;
 }
 
 uint64_t ExecutionProcessor::RefundGas(const Transaction& txn, uint64_t remaining_gas) {
-  IntraBlockState& state = evm_.State();
+  IntraBlockState& state = evm_.state();
 
   uint64_t refund = std::min((txn.gas_limit - remaining_gas) / 2, state.GetRefund());
   remaining_gas += refund;

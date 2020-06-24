@@ -14,28 +14,23 @@
    limitations under the License.
 */
 
-#include "common.hpp"
-
-#include <boost/algorithm/hex.hpp>
+#include "evm.hpp"
 
 namespace silkworm::eth {
 
-Address HexToAddress(std::string_view hex) {
-  Address a;
-  a.fill(0);
-  static constexpr size_t kMaxNibbles = 2 * kAddressLength;
+EVM::EVM(IntraBlockState& state, Address coinbase, uint64_t block_number)
+    : state_{state}, coinbase_{coinbase}, block_number_{block_number} {}
 
-  // remove 0x
-  if (hex.length() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) {
-    hex = hex.substr(2);
-  }
+CallResult EVM::Create(AddressRef, std::string_view, uint64_t, const intx::uint256&) {
+  CallResult res;
+  // TODO(Andrew) implement
+  return res;
+}
 
-  if (hex.length() <= kMaxNibbles) {
-    boost::algorithm::unhex(hex.begin(), hex.end(), a.begin());
-  } else {
-    boost::algorithm::unhex(hex.begin(), hex.begin() + kMaxNibbles, a.begin());
-  }
-  return a;
+CallResult EVM::Call(AddressRef, AddressRef, std::string_view, uint64_t, const intx::uint256&) {
+  CallResult res;
+  // TODO(Andrew) implement
+  return res;
 }
 
 }  // namespace silkworm::eth

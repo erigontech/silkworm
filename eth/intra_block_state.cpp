@@ -14,28 +14,24 @@
    limitations under the License.
 */
 
-#include "common.hpp"
+// TODO(Andrew) implement
 
-#include <boost/algorithm/hex.hpp>
+#include "intra_block_state.hpp"
 
 namespace silkworm::eth {
 
-Address HexToAddress(std::string_view hex) {
-  Address a;
-  a.fill(0);
-  static constexpr size_t kMaxNibbles = 2 * kAddressLength;
+bool IntraBlockState::Exists(AddressRef) const { return false; }
 
-  // remove 0x
-  if (hex.length() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) {
-    hex = hex.substr(2);
-  }
+intx::uint256 IntraBlockState::GetBalance(AddressRef) const { return 0; }
 
-  if (hex.length() <= kMaxNibbles) {
-    boost::algorithm::unhex(hex.begin(), hex.end(), a.begin());
-  } else {
-    boost::algorithm::unhex(hex.begin(), hex.begin() + kMaxNibbles, a.begin());
-  }
-  return a;
-}
+void IntraBlockState::AddBalance(AddressRef, const intx::uint256&) {}
+
+void IntraBlockState::SubBalance(AddressRef, const intx::uint256&) {}
+
+uint64_t IntraBlockState::GetNonce(AddressRef) const { return 0; }
+
+void IntraBlockState::SetNonce(AddressRef, uint64_t) {}
+
+uint64_t IntraBlockState::GetRefund() const { return 0; }
 
 }  // namespace silkworm::eth

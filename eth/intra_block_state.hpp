@@ -28,6 +28,8 @@ class IntraBlockState {
   IntraBlockState(const IntraBlockState&) = delete;
   IntraBlockState& operator=(const IntraBlockState&) = delete;
 
+  IntraBlockState() = default;
+
   bool Exists(AddressRef address) const;
 
   intx::uint256 GetBalance(AddressRef address) const;

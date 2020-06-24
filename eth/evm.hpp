@@ -38,18 +38,26 @@ class EVM {
   EVM(const EVM&) = delete;
   EVM& operator=(const EVM&) = delete;
 
-  AddressRef Coinbase() const;
-  uint64_t BlockNumber() const;
+  EVM(IntraBlockState& state, Address coinbase, uint64_t block_number);
 
-  const ChainConfig& ChainConfig() const;
+  AddressRef coinbase() const { return coinbase_; }
+  uint64_t block_number() const { return block_number_; }
 
-  IntraBlockState& State();
+  const ChainConfig& config() const { return config_; }
+
+  IntraBlockState& state() { return state_; }
 
   CallResult Create(AddressRef caller, std::string_view code, uint64_t gas,
                     const intx::uint256& value);
 
   CallResult Call(AddressRef caller, AddressRef recipient, std::string_view input, uint64_t gas,
                   const intx::uint256& value);
+
+ private:
+  IntraBlockState& state_;
+  ChainConfig config_{kMainnetChainConfig};
+  Address coinbase_;
+  uint64_t block_number_{0};
 };
 
 }  // namespace silkworm::eth

@@ -50,10 +50,10 @@ class ExecutionProcessor {
   ExecutionProcessor(IntraBlockState& state, evmc::address coinbase, uint64_t block_number);
 
   // precondition: txn.from must be recovered
-  ExecutionResult ExecuteTransaction(const Transaction& txn);
+  ExecutionResult execute_transaction(const Transaction& txn);
 
  private:
-  uint64_t RefundGas(const Transaction& txn, uint64_t remaining_gas);
+  uint64_t refund_gas(const Transaction& txn, uint64_t remaining_gas);
 
   uint64_t gas_pool_{0};
   EVM evm_;

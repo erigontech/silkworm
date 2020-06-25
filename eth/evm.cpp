@@ -21,13 +21,13 @@ namespace silkworm::eth {
 EVM::EVM(IntraBlockState& state, evmc::address coinbase, uint64_t block_number)
     : state_{state}, coinbase_{coinbase}, block_number_{block_number} {}
 
-CallResult EVM::Create(const evmc::address&, std::string_view, uint64_t, const intx::uint256&) {
+CallResult EVM::create(const evmc::address&, std::string_view, uint64_t, const intx::uint256&) {
   CallResult res;
   // TODO(Andrew) implement
   return res;
 }
 
-CallResult EVM::Call(const evmc::address&, const evmc::address&, std::string_view, uint64_t,
+CallResult EVM::call(const evmc::address&, const evmc::address&, std::string_view, uint64_t,
                      const intx::uint256&) {
   CallResult res;
   // TODO(Andrew) implement

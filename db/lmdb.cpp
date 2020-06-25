@@ -21,17 +21,17 @@
 namespace {
 thread_local boost::filesystem::path last_tmp_dir;
 
-const char* NewTmpDir() {
+const char* new_tmp_dir() {
   last_tmp_dir = boost::filesystem::unique_path();
   boost::filesystem::create_directories(last_tmp_dir);
   return last_tmp_dir.c_str();
 }
 
-MDB_val ToMdbVal(const std::string_view view) {
+MDB_val to_mdb_val(const std::string_view view) {
   return {view.size(), const_cast<char*>(view.data())};
 }
 
-std::string_view FromMdbVal(const MDB_val val) {
+std::string_view from_mdb_val(const MDB_val val) {
   return {static_cast<char*>(val.mv_data), val.mv_size};
 }
 }  // namespace
@@ -40,20 +40,20 @@ namespace silkworm::db {
 
 LmdbBucket::LmdbBucket(MDB_dbi dbi, MDB_txn* txn) : dbi_{dbi}, txn_{txn} {}
 
-void LmdbBucket::Put(std::string_view key, std::string_view value) {
-  MDB_val key_mdb = ToMdbVal(key);
-  MDB_val val_mdb = ToMdbVal(value);
+void LmdbBucket::put(std::string_view key, std::string_view value) {
+  MDB_val key_mdb = to_mdb_val(key);
+  MDB_val val_mdb = to_mdb_val(value);
   lmdb::dbi_put(txn_, dbi_, &key_mdb, &val_mdb);
 }
 
-std::optional<std::string_view> LmdbBucket::Get(std::string_view key) const {
-  MDB_val key_val = ToMdbVal(key);
+std::optional<std::string_view> LmdbBucket::get(std::string_view key) const {
+  MDB_val key_val = to_mdb_val(key);
   MDB_val data;
   bool found = lmdb::dbi_get(txn_, dbi_, &key_val, &data);
   if (found) {
     // TODO(Andrew) either copy or make the ramifications crystall clear in the
     // API
-    return FromMdbVal(data);
+    return from_mdb_val(data);
   } else {
     return {};
   }
@@ -68,24 +68,24 @@ LmdbTransaction::~LmdbTransaction() {
   }
 }
 
-std::unique_ptr<Bucket> LmdbTransaction::CreateBucket(const char* name) {
+std::unique_ptr<Bucket> LmdbTransaction::create_bucket(const char* name) {
   MDB_dbi dbi;
   lmdb::dbi_open(txn_, name, MDB_CREATE, &dbi);
   return std::unique_ptr<LmdbBucket>{new LmdbBucket{dbi, txn_}};
 }
 
-std::unique_ptr<Bucket> LmdbTransaction::GetBucket(const char* name) {
+std::unique_ptr<Bucket> LmdbTransaction::get_bucket(const char* name) {
   MDB_dbi dbi;
   lmdb::dbi_open(txn_, name, /*flags=*/0, &dbi);
   return std::unique_ptr<LmdbBucket>{new LmdbBucket{dbi, txn_}};
 }
 
-void LmdbTransaction::Commit() {
+void LmdbTransaction::commit() {
   lmdb::txn_commit(txn_);
   txn_ = nullptr;
 }
 
-void LmdbTransaction::Rollback() {
+void LmdbTransaction::rollback() {
   lmdb::txn_abort(txn_);
   txn_ = nullptr;
 }
@@ -115,7 +115,7 @@ LmdbDatabase::~LmdbDatabase() {
   }
 }
 
-std::unique_ptr<Transaction> LmdbDatabase::BeginTransaction(bool read_only) {
+std::unique_ptr<Transaction> LmdbDatabase::begin_transaction(bool read_only) {
   unsigned flags{0};
   if (read_only) {
     flags |= MDB_RDONLY;
@@ -126,7 +126,7 @@ std::unique_ptr<Transaction> LmdbDatabase::BeginTransaction(bool read_only) {
 }
 
 TemporaryLmdbDatabase::TemporaryLmdbDatabase()
-    : LmdbDatabase{NewTmpDir(),
+    : LmdbDatabase{new_tmp_dir(),
                    LmdbOptions{
                        .map_size = 64 << 20,  // 64MB
                        .no_sync = true,

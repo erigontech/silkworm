@@ -38,22 +38,22 @@ bool operator==(const Transaction& a, const Transaction& b) {
 }  // namespace eth
 
 namespace rlp {
-void Encode(std::ostream& to, const eth::Transaction& txn) {
+void encode(std::ostream& to, const eth::Transaction& txn) {
   Header h{.list = true, .length = 0};
-  h.length += Length(txn.nonce);
-  h.length += Length(txn.gas_price);
-  h.length += Length(txn.gas_limit);
+  h.length += length(txn.nonce);
+  h.length += length(txn.gas_price);
+  h.length += length(txn.gas_limit);
   h.length += txn.to ? (eth::kAddressLength + 1) : 1;
-  h.length += Length(txn.value);
-  h.length += Length(txn.data);
-  h.length += Length(txn.v);
-  h.length += Length(txn.r);
-  h.length += Length(txn.s);
+  h.length += length(txn.value);
+  h.length += length(txn.data);
+  h.length += length(txn.v);
+  h.length += length(txn.r);
+  h.length += length(txn.s);
 
-  Encode(to, h);
-  Encode(to, txn.nonce);
-  Encode(to, txn.gas_price);
-  Encode(to, txn.gas_limit);
+  encode(to, h);
+  encode(to, txn.nonce);
+  encode(to, txn.gas_price);
+  encode(to, txn.gas_limit);
   if (txn.to) {
     to.put(kAddressRlpCode);
     const void* ptr = txn.to->bytes;
@@ -61,23 +61,23 @@ void Encode(std::ostream& to, const eth::Transaction& txn) {
   } else {
     to.put(kEmptyStringCode);
   }
-  Encode(to, txn.value);
-  Encode(to, txn.data);
-  Encode(to, txn.v);
-  Encode(to, txn.r);
-  Encode(to, txn.s);
+  encode(to, txn.value);
+  encode(to, txn.data);
+  encode(to, txn.v);
+  encode(to, txn.r);
+  encode(to, txn.s);
 }
 
-eth::Transaction DecodeTransaction(std::istream& from) {
-  Header h = DecodeHeader(from);
+eth::Transaction decode_transaction(std::istream& from) {
+  Header h = decode_header(from);
   if (!h.list) {
     throw DecodingError("unexpected string");
   }
 
   eth::Transaction txn;
-  txn.nonce = DecodeUint64(from);
-  txn.gas_price = DecodeUint256(from);
-  txn.gas_limit = DecodeUint64(from);
+  txn.nonce = decode_uint64(from);
+  txn.gas_price = decode_uint256(from);
+  txn.gas_limit = decode_uint64(from);
 
   uint8_t toCode = from.get();
   if (toCode == kAddressRlpCode) {
@@ -89,11 +89,11 @@ eth::Transaction DecodeTransaction(std::istream& from) {
     throw DecodingError("unexpected code for txn.to");
   }
 
-  txn.value = DecodeUint256(from);
-  txn.data = DecodeString(from);
-  txn.v = DecodeUint256(from);
-  txn.r = DecodeUint256(from);
-  txn.s = DecodeUint256(from);
+  txn.value = decode_uint256(from);
+  txn.data = decode_string(from);
+  txn.v = decode_uint256(from);
+  txn.r = decode_uint256(from);
+  txn.s = decode_uint256(from);
 
   return txn;
 }

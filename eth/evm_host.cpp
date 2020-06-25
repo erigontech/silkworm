@@ -24,26 +24,26 @@ namespace silkworm::eth {
 
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {
   // TODO(Andrew) Do empty accounts require any special treatment (mind EIP-161)?
-  return evm_.state().Exists(address);
+  return evm_.state().exists(address);
 }
 
-evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::bytes32& key) const
-    noexcept {
-  return evm_.state().GetStorage(address, key);
+evmc::bytes32 EvmHost::get_storage(const evmc::address& address,
+                                   const evmc::bytes32& key) const noexcept {
+  return evm_.state().get_storage(address, key);
 }
 
 evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evmc::bytes32& key,
                                          const evmc::bytes32& value) noexcept {
-  const evmc::bytes32& prev_val = evm_.state().GetStorage(address, key);
+  const evmc::bytes32& prev_val = evm_.state().get_storage(address, key);
 
   if (prev_val == value) return EVMC_STORAGE_UNCHANGED;
 
-  evm_.state().SetStorage(address, key, value);
+  evm_.state().set_storage(address, key, value);
 
   if (is_zero(prev_val)) return EVMC_STORAGE_ADDED;
 
   if (is_zero(value)) {
-    evm_.state().AddRefund(fees::kRsclear);
+    evm_.state().add_refund(fees::kRsclear);
     return EVMC_STORAGE_DELETED;
   }
 
@@ -53,21 +53,21 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
 }
 
 evmc::uint256be EvmHost::get_balance(const evmc::address& address) const noexcept {
-  intx::uint256 balance = evm_.state().GetBalance(address);
+  intx::uint256 balance = evm_.state().get_balance(address);
   return intx::be::store<evmc::uint256be>(balance);
 }
 
 size_t EvmHost::get_code_size(const evmc::address& address) const noexcept {
-  return evm_.state().GetCode(address).size();
+  return evm_.state().get_code(address).size();
 }
 
 evmc::bytes32 EvmHost::get_code_hash(const evmc::address& address) const noexcept {
-  return evm_.state().GetCodeHash(address);
+  return evm_.state().get_code_hash(address);
 }
 
 size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,
                           size_t buffer_size) const noexcept {
-  std::string_view code = evm_.state().GetCode(address);
+  std::string_view code = evm_.state().get_code(address);
 
   if (code_offset >= code.size()) return 0;
 

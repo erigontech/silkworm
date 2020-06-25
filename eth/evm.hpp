@@ -48,10 +48,10 @@ class EVM {
 
   IntraBlockState& state() { return state_; }
 
-  CallResult Create(const evmc::address& caller, std::string_view code, uint64_t gas,
+  CallResult create(const evmc::address& caller, std::string_view code, uint64_t gas,
                     const intx::uint256& value);
 
-  CallResult Call(const evmc::address& caller, const evmc::address& recipient,
+  CallResult call(const evmc::address& caller, const evmc::address& recipient,
                   std::string_view input, uint64_t gas, const intx::uint256& value);
 
  private:

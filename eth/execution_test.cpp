@@ -40,11 +40,11 @@ TEST_CASE("validation", "[execution]") {
   IntraBlockState state;
   ExecutionProcessor processor{state, miner, block_number};
 
-  ExecutionResult res = processor.ExecuteTransaction(txn);
+  ExecutionResult res = processor.execute_transaction(txn);
   CHECK(res.error == ValidationError::kMissingSender);
 
   txn.from = 0x68d7899b6635146a37d01934461d0c9e4b65ddda_address;
-  res = processor.ExecuteTransaction(txn);
+  res = processor.execute_transaction(txn);
   CHECK(res.error == ValidationError::kMissingSender);
 
   // TODO(Andrew) other validation errors

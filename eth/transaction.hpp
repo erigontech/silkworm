@@ -46,8 +46,8 @@ bool operator==(const Transaction& a, const Transaction& b);
 }  // namespace eth
 
 namespace rlp {
-void Encode(std::ostream& to, const eth::Transaction& txn);
-eth::Transaction DecodeTransaction(std::istream& from);
+void encode(std::ostream& to, const eth::Transaction& txn);
+eth::Transaction decode_transaction(std::istream& from);
 }  // namespace rlp
 
 }  // namespace silkworm

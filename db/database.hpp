@@ -32,9 +32,9 @@ class Bucket {
 
   virtual ~Bucket() = default;
 
-  virtual void Put(std::string_view key, std::string_view value) = 0;
+  virtual void put(std::string_view key, std::string_view value) = 0;
 
-  virtual std::optional<std::string_view> Get(std::string_view key) const = 0;
+  virtual std::optional<std::string_view> get(std::string_view key) const = 0;
 
  protected:
   Bucket() = default;
@@ -47,11 +47,11 @@ class Transaction {
 
   virtual ~Transaction() = default;
 
-  virtual std::unique_ptr<Bucket> CreateBucket(const char* name) = 0;
-  virtual std::unique_ptr<Bucket> GetBucket(const char* name) = 0;
+  virtual std::unique_ptr<Bucket> create_bucket(const char* name) = 0;
+  virtual std::unique_ptr<Bucket> get_bucket(const char* name) = 0;
 
-  virtual void Commit() = 0;
-  virtual void Rollback() = 0;
+  virtual void commit() = 0;
+  virtual void rollback() = 0;
 
  protected:
   Transaction() = default;
@@ -64,10 +64,10 @@ class Database {
 
   virtual ~Database() = default;
 
-  virtual std::unique_ptr<Transaction> BeginTransaction(bool read_only) = 0;
+  virtual std::unique_ptr<Transaction> begin_transaction(bool read_only) = 0;
 
-  std::unique_ptr<Transaction> BeginReadOnlyTransaction() { return BeginTransaction(true); }
-  std::unique_ptr<Transaction> BeginReadWriteTransaction() { return BeginTransaction(false); }
+  std::unique_ptr<Transaction> begin_ro_transaction() { return begin_transaction(true); }
+  std::unique_ptr<Transaction> begin_rw_transaction() { return begin_transaction(false); }
 
  protected:
   Database() = default;

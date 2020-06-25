@@ -17,17 +17,17 @@
 #ifndef SILKWORM_ETH_RECEIPT_H_
 #define SILKWORM_ETH_RECEIPT_H_
 
+#include <evmc/evmc.hpp>
 #include <variant>
 #include <vector>
 
 #include "bloom.hpp"
-#include "common.hpp"
 #include "log.hpp"
 
 namespace silkworm::eth {
 
 struct Receipt {
-  std::variant<Hash, bool> post_state_or_status{false};  // failure = false, success = true
+  std::variant<evmc::bytes32, bool> post_state_or_status{false};  // failure = false, success = true
   uint64_t cumulative_gas_used{0};
   Bloom bloom;
   std::vector<Log> logs;

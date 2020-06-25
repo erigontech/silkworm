@@ -20,7 +20,7 @@
 
 namespace {
 
-uint64_t ReadUint64(std::istream& from, size_t len) {
+uint64_t read_uint64(std::istream& from, size_t len) {
   Expects(len <= 8);
 
   if (len == 0) {
@@ -45,7 +45,7 @@ uint64_t ReadUint64(std::istream& from, size_t len) {
 
 namespace silkworm::rlp {
 
-Header DecodeHeader(std::istream& from) {
+Header decode_header(std::istream& from) {
   from.exceptions(std::ios_base::eofbit | std::ios_base::failbit | std::ios_base::badbit);
 
   Header h;
@@ -59,7 +59,7 @@ Header DecodeHeader(std::istream& from) {
       throw DecodingError("non-canonical single byte");
     }
   } else if (b < 0xC0) {
-    h.length = ReadUint64(from, b - 0xB7);
+    h.length = read_uint64(from, b - 0xB7);
     if (h.length < 56) {
       throw DecodingError("non-canonical size");
     }
@@ -68,7 +68,7 @@ Header DecodeHeader(std::istream& from) {
     h.length = b - 0xC0;
   } else {
     h.list = true;
-    h.length = ReadUint64(from, b - 0xF7);
+    h.length = read_uint64(from, b - 0xF7);
     if (h.length < 56) {
       throw DecodingError("non-canonical size");
     }
@@ -76,8 +76,8 @@ Header DecodeHeader(std::istream& from) {
   return h;
 }
 
-std::string DecodeString(std::istream& from) {
-  Header h = DecodeHeader(from);
+std::string decode_string(std::istream& from) {
+  Header h = decode_header(from);
   if (h.list) {
     throw DecodingError("unexpected list");
   }
@@ -86,19 +86,19 @@ std::string DecodeString(std::istream& from) {
   return str;
 }
 
-uint64_t DecodeUint64(std::istream& from) {
-  Header h = DecodeHeader(from);
+uint64_t decode_uint64(std::istream& from) {
+  Header h = decode_header(from);
   if (h.list) {
     throw DecodingError("unexpected list");
   }
   if (h.length > 8) {
     throw DecodingError("uint64 overflow");
   }
-  return ReadUint64(from, h.length);
+  return read_uint64(from, h.length);
 }
 
-intx::uint256 DecodeUint256(std::istream& from) {
-  Header h = DecodeHeader(from);
+intx::uint256 decode_uint256(std::istream& from) {
+  Header h = decode_header(from);
   if (h.list) {
     throw DecodingError("unexpected list");
   }

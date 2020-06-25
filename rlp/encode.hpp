@@ -37,17 +37,17 @@ struct Header {
   uint64_t length{0};
 };
 
-void Encode(std::ostream& to, Header header);
+void encode(std::ostream& to, Header header);
 
-void Encode(std::ostream& to, std::string_view s);
-void Encode(std::ostream& to, uint64_t n);
-void Encode(std::ostream& to, intx::uint256 n);
+void encode(std::ostream& to, std::string_view s);
+void encode(std::ostream& to, uint64_t n);
+void encode(std::ostream& to, intx::uint256 n);
 
-size_t Length(Header header);
+size_t length(Header header);
 
-size_t Length(std::string_view s);
-size_t Length(uint64_t n);
-size_t Length(intx::uint256 n);
+size_t length(std::string_view s);
+size_t length(uint64_t n);
+size_t length(intx::uint256 n);
 
 }  // namespace silkworm::rlp
 

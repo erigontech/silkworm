@@ -30,26 +30,26 @@ class IntraBlockState {
 
   IntraBlockState() = default;
 
-  bool Exists(const evmc::address& address) const;
-  void Create(const evmc::address& address, bool contract);
+  bool exists(const evmc::address& address) const;
+  void create(const evmc::address& address, bool contract);
 
-  intx::uint256 GetBalance(const evmc::address& address) const;
-  void AddBalance(const evmc::address& address, const intx::uint256& addend);
-  void SubBalance(const evmc::address& address, const intx::uint256& subtrahend);
+  intx::uint256 get_balance(const evmc::address& address) const;
+  void add_to_balance(const evmc::address& address, const intx::uint256& addend);
+  void subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend);
 
-  uint64_t GetNonce(const evmc::address& address) const;
-  void SetNonce(const evmc::address& address, uint64_t nonce);
+  uint64_t get_nonce(const evmc::address& address) const;
+  void set_nonce(const evmc::address& address, uint64_t nonce);
 
-  std::string_view GetCode(const evmc::address& address) const;
-  evmc::bytes32 GetCodeHash(const evmc::address& address) const;
+  std::string_view get_code(const evmc::address& address) const;
+  evmc::bytes32 get_code_hash(const evmc::address& address) const;
 
-  uint64_t GetRefund() const;
-  void AddRefund(uint64_t addend);
-  void SubRefund(uint64_t subtrahend);
+  uint64_t get_refund() const;
+  void add_refund(uint64_t addend);
+  void subtract_refund(uint64_t subtrahend);
 
-  evmc::bytes32 GetStorage(const evmc::address& address, const evmc::bytes32& key) const;
-  void SetStorage(const evmc::address& address, const evmc::bytes32& key,
-                  const evmc::bytes32& value);
+  evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const;
+  void set_storage(const evmc::address& address, const evmc::bytes32& key,
+                   const evmc::bytes32& value);
 };
 
 }  // namespace silkworm::eth

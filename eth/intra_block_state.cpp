@@ -20,35 +20,35 @@
 
 namespace silkworm::eth {
 
-bool IntraBlockState::Exists(const evmc::address&) const { return false; }
+bool IntraBlockState::exists(const evmc::address&) const { return false; }
 
-void IntraBlockState::Create(const evmc::address&, bool) {}
+void IntraBlockState::create(const evmc::address&, bool) {}
 
-intx::uint256 IntraBlockState::GetBalance(const evmc::address&) const { return 0; }
+intx::uint256 IntraBlockState::get_balance(const evmc::address&) const { return 0; }
 
-void IntraBlockState::AddBalance(const evmc::address&, const intx::uint256&) {}
+void IntraBlockState::add_to_balance(const evmc::address&, const intx::uint256&) {}
 
-void IntraBlockState::SubBalance(const evmc::address&, const intx::uint256&) {}
+void IntraBlockState::subtract_from_balance(const evmc::address&, const intx::uint256&) {}
 
-uint64_t IntraBlockState::GetNonce(const evmc::address&) const { return 0; }
+uint64_t IntraBlockState::get_nonce(const evmc::address&) const { return 0; }
 
-void IntraBlockState::SetNonce(const evmc::address&, uint64_t) {}
+void IntraBlockState::set_nonce(const evmc::address&, uint64_t) {}
 
-std::string_view IntraBlockState::GetCode(const evmc::address&) const { return {}; }
+std::string_view IntraBlockState::get_code(const evmc::address&) const { return {}; }
 
-evmc::bytes32 IntraBlockState::GetCodeHash(const evmc::address&) const { return {}; }
+evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address&) const { return {}; }
 
-uint64_t IntraBlockState::GetRefund() const { return 0; }
+uint64_t IntraBlockState::get_refund() const { return 0; }
 
-void IntraBlockState::AddRefund(uint64_t) {}
+void IntraBlockState::add_refund(uint64_t) {}
 
-void IntraBlockState::SubRefund(uint64_t) {}
+void IntraBlockState::subtract_refund(uint64_t) {}
 
-evmc::bytes32 IntraBlockState::GetStorage(const evmc::address&, const evmc::bytes32&) const {
+evmc::bytes32 IntraBlockState::get_storage(const evmc::address&, const evmc::bytes32&) const {
   return {};
 }
 
-void IntraBlockState::SetStorage(const evmc::address&, const evmc::bytes32&, const evmc::bytes32&) {
-}
+void IntraBlockState::set_storage(const evmc::address&, const evmc::bytes32&,
+                                  const evmc::bytes32&) {}
 
 }  // namespace silkworm::eth

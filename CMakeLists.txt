@@ -40,8 +40,7 @@ else()
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  # ignore clang::no_sanitize and friends in GCC
-  add_compile_options(-Wno-attributes)
+  add_compile_options(-Wno-attributes -Wno-missing-field-initializers)
 endif()
 
 set(SILKWORM_LIBS silkworm_db silkworm_rlp silkworm_eth)

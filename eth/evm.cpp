@@ -26,6 +26,8 @@ EVM::EVM(IntraBlockState& state, evmc::address coinbase, uint64_t block_number)
 CallResult EVM::create(const evmc::address&, std::string_view, uint64_t, const intx::uint256&) {
   CallResult res;
   // TODO(Andrew) implement
+  // https://github.com/ethereum/EIPs/issues/684
+  // https://eips.ethereum.org/EIPS/eip-170
   return res;
 }
 
@@ -39,7 +41,7 @@ CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient
   }
 
   if (state_.get_balance(caller) < value) {
-    res.status = static_cast<evmc_status_code>(EVMC_NOT_ENOUGH_FUNDS);
+    res.status = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
     return res;
   }
 

@@ -28,7 +28,7 @@
 #include "intra_block_state.hpp"
 
 // TODO(Andrew) merge back into evmc_status_code
-enum evmc_status_code_extra { EVMC_NOT_ENOUGH_FUNDS = 32 };
+enum evmc_status_code_extra { EVMC_BALANCE_TOO_LOW = 32 };
 
 namespace silkworm::eth {
 

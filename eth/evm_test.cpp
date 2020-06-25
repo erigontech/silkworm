@@ -36,7 +36,7 @@ TEST_CASE("value transfer", "[evm]") {
   CHECK(state.get_balance(to) == 0);
 
   CallResult res = evm.call(from, to, "", 0, value);
-  CHECK(res.status == static_cast<evmc_status_code>(EVMC_NOT_ENOUGH_FUNDS));
+  CHECK(res.status == static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW));
 
   state.add_to_balance(from, kEther);
 

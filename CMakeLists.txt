@@ -38,6 +38,11 @@ else()
   add_compile_options(-Wall -Wextra -Werror)
 endif()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # ignore clang::no_sanitize and friends in GCC
+  add_compile_options(-Wno-attributes)
+endif()
+
 set(SILKWORM_LIBS silkworm_db silkworm_rlp silkworm_eth)
 
 add_subdirectory(evmone)

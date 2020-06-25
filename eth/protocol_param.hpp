@@ -14,12 +14,16 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_FEES_H_
-#define SILKWORM_ETH_FEES_H_
+#ifndef SILKWORM_ETH_PROTOCOL_PARAM_H_
+#define SILKWORM_ETH_PROTOCOL_PARAM_H_
 
 #include <stdint.h>
 
-namespace silkworm::eth::fees {
+namespace silkworm::eth {
+
+// Fee schedule—see Appendix G of the Yellow Paper
+// https://ethereum.github.io/yellowpaper/paper.pdf
+namespace fee {
 
 constexpr uint64_t kRsclear{15000};
 
@@ -28,7 +32,12 @@ constexpr uint64_t kGtxDataZero{4};
 constexpr uint64_t kGtxDataNonZeroFrontier{68};
 constexpr uint64_t kGtxDataNonZeroEIP2028{16};
 constexpr uint64_t kGtransaction{21000};
+}  // namespace fee
 
-}  // namespace silkworm::eth::fees
+namespace param {
+constexpr size_t kMaxStackDepth{1024};
+}
 
-#endif  // SILKWORM_ETH_FEES_H_
+}  // namespace silkworm::eth
+
+#endif  // SILKWORM_ETH_PROTOCOL_PARAM_H_

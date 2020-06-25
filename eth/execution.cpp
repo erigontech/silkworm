@@ -22,7 +22,7 @@
 #include <string_view>
 #include <utility>
 
-#include "fees.hpp"
+#include "protocol_param.hpp"
 
 namespace {
 
@@ -30,9 +30,9 @@ using namespace silkworm::eth;
 
 intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation, bool homestead,
                             bool eip2028) {
-  intx::uint128 gas = fees::kGtransaction;
+  intx::uint128 gas = fee::kGtransaction;
   if (contract_creation && homestead) {
-    gas += fees::kGtxCreate;
+    gas += fee::kGtxCreate;
   }
 
   if (data.empty()) {
@@ -42,11 +42,11 @@ intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation, bool 
   intx::uint128 non_zero_bytes =
       std::count_if(data.begin(), data.end(), [](char c) { return c != 0; });
 
-  uint64_t nonZeroGas{eip2028 ? fees::kGtxDataNonZeroEIP2028 : fees::kGtxDataNonZeroFrontier};
+  uint64_t nonZeroGas{eip2028 ? fee::kGtxDataNonZeroEIP2028 : fee::kGtxDataNonZeroFrontier};
   gas += non_zero_bytes * nonZeroGas;
 
   intx::uint128 zero_bytes = data.length() - non_zero_bytes;
-  gas += zero_bytes * fees::kGtxDataZero;
+  gas += zero_bytes * fee::kGtxDataZero;
 
   return gas;
 }
@@ -75,8 +75,8 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
     return res;
   }
 
-  bool homestead = evm_.config().is_homestead(evm_.block_number());
-  bool istanbul = evm_.config().is_istanbul(evm_.block_number());
+  bool homestead = evm_.config().has_homestead(evm_.block_number());
+  bool istanbul = evm_.config().has_istanbul(evm_.block_number());
   bool contract_creation = !txn.to;
 
   intx::uint128 g0 = intrinsic_gas(txn.data, contract_creation, homestead, istanbul);

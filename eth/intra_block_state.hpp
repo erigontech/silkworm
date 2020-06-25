@@ -19,6 +19,7 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
+#include <map>
 #include <string_view>
 
 namespace silkworm::eth {
@@ -50,6 +51,10 @@ class IntraBlockState {
   evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const;
   void set_storage(const evmc::address& address, const evmc::bytes32& key,
                    const evmc::bytes32& value);
+
+ private:
+  // TODO(Andrew) rework
+  std::map<evmc::address, intx::uint256> balances_;
 };
 
 }  // namespace silkworm::eth

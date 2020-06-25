@@ -16,6 +16,8 @@
 
 #include "evm.hpp"
 
+#include "protocol_param.hpp"
+
 namespace silkworm::eth {
 
 EVM::EVM(IntraBlockState& state, evmc::address coinbase, uint64_t block_number)
@@ -27,10 +29,35 @@ CallResult EVM::create(const evmc::address&, std::string_view, uint64_t, const i
   return res;
 }
 
-CallResult EVM::call(const evmc::address&, const evmc::address&, std::string_view, uint64_t,
-                     const intx::uint256&) {
-  CallResult res;
-  // TODO(Andrew) implement
+CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient, std::string_view,
+                     uint64_t gas, const intx::uint256& value) {
+  CallResult res{.remaining_gas = gas, .status = EVMC_SUCCESS};
+
+  if (stack_depth_ > param::kMaxStackDepth) {
+    res.status = EVMC_CALL_DEPTH_EXCEEDED;
+    return res;
+  }
+
+  if (state_.get_balance(caller) < value) {
+    res.status = static_cast<evmc_status_code>(EVMC_NOT_ENOUGH_FUNDS);
+    return res;
+  }
+
+  if (!state_.exists(recipient)) {
+    // TODO(Andrew) precompiles
+
+    // https://eips.ethereum.org/EIPS/eip-161
+    if (config_.has_spurious_dragon(block_number_) && value == 0) {
+      return res;
+    }
+    state_.create(recipient, false);
+  }
+
+  state_.subtract_from_balance(caller, value);
+  state_.add_to_balance(recipient, value);
+
+  // TODO(Andrew) actually run the smart contract
+
   return res;
 }
 

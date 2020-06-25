@@ -27,6 +27,9 @@
 #include "config.hpp"
 #include "intra_block_state.hpp"
 
+// TODO(Andrew) merge back into evmc_status_code
+enum evmc_status_code_extra { EVMC_NOT_ENOUGH_FUNDS = 32 };
+
 namespace silkworm::eth {
 
 struct CallResult {
@@ -59,6 +62,7 @@ class EVM {
   ChainConfig config_{kMainnetChainConfig};
   evmc::address coinbase_;
   uint64_t block_number_{0};
+  size_t stack_depth_{0};
 };
 
 }  // namespace silkworm::eth

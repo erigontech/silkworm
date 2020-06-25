@@ -24,10 +24,11 @@ cable_configure_toolchain(DEFAULT cxx17-pic)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
 include("evmone/cmake/cable/HunterGate.cmake")
+set(HUNTER_USE_CACHE_SERVERS NO)
 HunterGate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.23.258.tar.gz"
-    SHA1 "062a19ab13ce8dffa9a882b6ce3e43bdabdf75d3"
-    FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/evmone/cmake/Hunter/config.cmake"
+  URL "https://github.com/cpp-pm/hunter/archive/v0.23.258.tar.gz"
+  SHA1 "062a19ab13ce8dffa9a882b6ce3e43bdabdf75d3"
+  FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/evmone/cmake/Hunter/config.cmake"
 )
 
 project(silkworm)

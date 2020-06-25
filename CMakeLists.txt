@@ -20,7 +20,7 @@ include(evmone/cmake/cable/bootstrap.cmake)
 include(CableBuildType)
 include(CableToolchains)
 
-cable_configure_toolchain(DEFAULT cxx17)
+cable_configure_toolchain(DEFAULT cxx17-pic)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
 include("evmone/cmake/cable/HunterGate.cmake")

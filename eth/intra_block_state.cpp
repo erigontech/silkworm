@@ -22,6 +22,8 @@ namespace silkworm::eth {
 
 bool IntraBlockState::Exists(const evmc::address&) const { return false; }
 
+void IntraBlockState::Create(const evmc::address&, bool) {}
+
 intx::uint256 IntraBlockState::GetBalance(const evmc::address&) const { return 0; }
 
 void IntraBlockState::AddBalance(const evmc::address&, const intx::uint256&) {}
@@ -32,6 +34,21 @@ uint64_t IntraBlockState::GetNonce(const evmc::address&) const { return 0; }
 
 void IntraBlockState::SetNonce(const evmc::address&, uint64_t) {}
 
+std::string_view IntraBlockState::GetCode(const evmc::address&) const { return {}; }
+
+evmc::bytes32 IntraBlockState::GetCodeHash(const evmc::address&) const { return {}; }
+
 uint64_t IntraBlockState::GetRefund() const { return 0; }
+
+void IntraBlockState::AddRefund(uint64_t) {}
+
+void IntraBlockState::SubRefund(uint64_t) {}
+
+evmc::bytes32 IntraBlockState::GetStorage(const evmc::address&, const evmc::bytes32&) const {
+  return {};
+}
+
+void IntraBlockState::SetStorage(const evmc::address&, const evmc::bytes32&, const evmc::bytes32&) {
+}
 
 }  // namespace silkworm::eth

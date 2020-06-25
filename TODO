@@ -1,3 +1,5 @@
 CI with test coverage under Linux (gcc)
 
 MDB_NOTLS and multithreading. Do we mix C++ and go in one process?
+
+Propagate noexcept from EvmHost

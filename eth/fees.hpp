@@ -21,13 +21,13 @@
 
 namespace silkworm::eth::fees {
 
-uint64_t kRsclear{15000};
+constexpr uint64_t kRsclear{15000};
 
-uint64_t kGtxCreate{32000};
-uint64_t kGtxDataZero{4};
-uint64_t kGtxDataNonZeroFrontier{68};
-uint64_t kGtxDataNonZeroEIP2028{16};
-uint64_t kGtransaction{21000};
+constexpr uint64_t kGtxCreate{32000};
+constexpr uint64_t kGtxDataZero{4};
+constexpr uint64_t kGtxDataNonZeroFrontier{68};
+constexpr uint64_t kGtxDataNonZeroEIP2028{16};
+constexpr uint64_t kGtransaction{21000};
 
 }  // namespace silkworm::eth::fees
 

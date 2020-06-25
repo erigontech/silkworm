@@ -19,6 +19,7 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
+#include <string_view>
 
 namespace silkworm::eth {
 
@@ -30,6 +31,7 @@ class IntraBlockState {
   IntraBlockState() = default;
 
   bool Exists(const evmc::address& address) const;
+  void Create(const evmc::address& address, bool contract);
 
   intx::uint256 GetBalance(const evmc::address& address) const;
   void AddBalance(const evmc::address& address, const intx::uint256& addend);
@@ -38,7 +40,16 @@ class IntraBlockState {
   uint64_t GetNonce(const evmc::address& address) const;
   void SetNonce(const evmc::address& address, uint64_t nonce);
 
+  std::string_view GetCode(const evmc::address& address) const;
+  evmc::bytes32 GetCodeHash(const evmc::address& address) const;
+
   uint64_t GetRefund() const;
+  void AddRefund(uint64_t addend);
+  void SubRefund(uint64_t subtrahend);
+
+  evmc::bytes32 GetStorage(const evmc::address& address, const evmc::bytes32& key) const;
+  void SetStorage(const evmc::address& address, const evmc::bytes32& key,
+                  const evmc::bytes32& value);
 };
 
 }  // namespace silkworm::eth

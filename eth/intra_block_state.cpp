@@ -44,7 +44,9 @@ void IntraBlockState::set_nonce(const evmc::address&, uint64_t) {}
 
 std::string_view IntraBlockState::get_code(const evmc::address&) const { return {}; }
 
-evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address&) const { return {}; }
+evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address&) const { return kEmptyHash; }
+
+void IntraBlockState::set_code(const evmc::address&, std::string_view) {}
 
 uint64_t IntraBlockState::get_refund() const { return 0; }
 
@@ -58,5 +60,7 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address&, const evmc::byt
 
 void IntraBlockState::set_storage(const evmc::address&, const evmc::bytes32&,
                                   const evmc::bytes32&) {}
+
+void IntraBlockState::revert_to_snapshot(const IntraBlockState&) {}
 
 }  // namespace silkworm::eth

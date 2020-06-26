@@ -21,13 +21,16 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
+#include <string>
 #include <string_view>
 
 #include "common.hpp"
 #include "config.hpp"
 #include "intra_block_state.hpp"
 
-// TODO(Andrew) merge back into evmc_status_code
+// TODO(Andrew) get rid of this when
+// https://github.com/ethereum/evmc/pull/528
+// is merged and released
 enum evmc_status_code_extra { EVMC_BALANCE_TOO_LOW = 32 };
 
 namespace silkworm::eth {
@@ -35,6 +38,10 @@ namespace silkworm::eth {
 struct CallResult {
   uint64_t remaining_gas{0};
   evmc_status_code status{EVMC_SUCCESS};
+};
+
+struct CreateResult : public CallResult {
+  std::string output;
 };
 
 class EVM {
@@ -51,19 +58,28 @@ class EVM {
 
   IntraBlockState& state() { return state_; }
 
-  CallResult create(const evmc::address& caller, std::string_view code, uint64_t gas,
-                    const intx::uint256& value);
+  CreateResult create(const evmc::address& caller, std::string_view code, uint64_t gas,
+                      const intx::uint256& value);
 
   CallResult call(const evmc::address& caller, const evmc::address& recipient,
                   std::string_view input, uint64_t gas, const intx::uint256& value);
 
  private:
+  CreateResult execute(std::string_view code, uint64_t gas, bool read_only);
+
   IntraBlockState& state_;
   ChainConfig config_{kMainnetChainConfig};
   evmc::address coinbase_;
   uint64_t block_number_{0};
   size_t stack_depth_{0};
 };
+
+// Yellow Paper, Section 7
+evmc::address create_address(const evmc::address& caller, uint64_t nonce);
+
+// https://eips.ethereum.org/EIPS/eip-1014
+evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
+                              const evmc::bytes32& code_hash);
 
 }  // namespace silkworm::eth
 

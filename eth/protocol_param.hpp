@@ -27,6 +27,8 @@ namespace fee {
 
 constexpr uint64_t kRsclear{15000};
 
+constexpr uint64_t kGcodeDeposit{200};
+
 constexpr uint64_t kGtxCreate{32000};
 constexpr uint64_t kGtxDataZero{4};
 constexpr uint64_t kGtxDataNonZeroFrontier{68};

@@ -43,6 +43,15 @@ void encode(std::ostream& to, std::string_view s);
 void encode(std::ostream& to, uint64_t n);
 void encode(std::ostream& to, intx::uint256 n);
 
+template <unsigned N>
+void encode(std::ostream& to, const uint8_t (&bytes)[N]) {
+  static_assert(N <= 55, "Complex RLP length encoding not supported");
+
+  to.put(kEmptyStringCode + N);
+  const void* ptr = bytes;
+  to.write(static_cast<const char*>(ptr), N);
+}
+
 size_t length(Header header);
 
 size_t length(std::string_view s);

@@ -24,8 +24,6 @@
 namespace silkworm::eth {
 
 TEST_CASE("validation", "[execution]") {
-  using namespace evmc::literals;
-
   evmc::address miner = 0x829bd824b016326a401d083b33d092293333a830_address;
   uint64_t block_number{1};
 

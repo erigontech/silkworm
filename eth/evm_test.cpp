@@ -21,8 +21,6 @@
 namespace silkworm::eth {
 
 TEST_CASE("value transfer", "[evm]") {
-  using namespace evmc::literals;
-
   uint64_t block_number{10336006};
   evmc::address miner{0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address};
   evmc::address from{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};

@@ -22,6 +22,8 @@
 #include <map>
 #include <string_view>
 
+#include "account.hpp"
+
 namespace silkworm::eth {
 
 class IntraBlockState {
@@ -54,7 +56,7 @@ class IntraBlockState {
 
  private:
   // TODO(Andrew) rework
-  std::map<evmc::address, intx::uint256> balances_;
+  std::map<evmc::address, Account> accounts_;
 };
 
 }  // namespace silkworm::eth

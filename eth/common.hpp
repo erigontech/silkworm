@@ -20,8 +20,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <evmc/evmc.hpp>
 
 namespace silkworm::eth {
+
+using namespace evmc::literals;
+
+constexpr evmc::bytes32 kEmptyHash =
+    0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32;
+
+constexpr evmc::bytes32 kEmptyRoot =
+    0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32;
 
 constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
 

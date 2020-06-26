@@ -25,17 +25,17 @@ bool IntraBlockState::exists(const evmc::address&) const { return false; }
 void IntraBlockState::create(const evmc::address&, bool) {}
 
 intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const {
-  auto it = balances_.find(address);
-  return it == balances_.end() ? intx::uint256{} : it->second;
+  auto it = accounts_.find(address);
+  return it == accounts_.end() ? intx::uint256{} : it->second.balance;
 }
 
 void IntraBlockState::add_to_balance(const evmc::address& address, const intx::uint256& addend) {
-  balances_[address] += addend;
+  accounts_[address].balance += addend;
 }
 
 void IntraBlockState::subtract_from_balance(const evmc::address& address,
                                             const intx::uint256& subtrahend) {
-  balances_[address] -= subtrahend;
+  accounts_[address].balance -= subtrahend;
 }
 
 uint64_t IntraBlockState::get_nonce(const evmc::address&) const { return 0; }

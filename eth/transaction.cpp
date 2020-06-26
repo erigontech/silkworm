@@ -20,11 +20,6 @@
 #include "../rlp/encode.hpp"
 #include "common.hpp"
 
-namespace {
-static constexpr uint8_t kAddressRlpCode =
-    silkworm::rlp::kEmptyStringCode + silkworm::eth::kAddressLength;
-}
-
 namespace silkworm {
 
 namespace eth {
@@ -55,9 +50,7 @@ void encode(std::ostream& to, const eth::Transaction& txn) {
   encode(to, txn.gas_price);
   encode(to, txn.gas_limit);
   if (txn.to) {
-    to.put(kAddressRlpCode);
-    const void* ptr = txn.to->bytes;
-    to.write(static_cast<const char*>(ptr), eth::kAddressLength);
+    encode(to, txn.to->bytes);
   } else {
     to.put(kEmptyStringCode);
   }
@@ -80,13 +73,10 @@ eth::Transaction decode_transaction(std::istream& from) {
   txn.gas_limit = decode_uint64(from);
 
   uint8_t toCode = from.get();
-  if (toCode == kAddressRlpCode) {
-    evmc::address a;
-    void* ptr = a.bytes;
-    from.read(static_cast<char*>(ptr), eth::kAddressLength);
-    txn.to = a;
-  } else if (toCode != kEmptyStringCode) {
-    throw DecodingError("unexpected code for txn.to");
+  if (toCode != kEmptyStringCode) {
+    from.unget();
+    txn.to = evmc::address{};
+    decode_bytes(from, txn.to->bytes);
   }
 
   txn.value = decode_uint256(from);
@@ -97,6 +87,5 @@ eth::Transaction decode_transaction(std::istream& from) {
 
   return txn;
 }
-
 }  // namespace rlp
 }  // namespace silkworm

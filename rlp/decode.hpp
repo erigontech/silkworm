@@ -44,6 +44,21 @@ std::string decode_string(std::istream& from);
 uint64_t decode_uint64(std::istream& from);
 intx::uint256 decode_uint256(std::istream& from);
 
+template <unsigned N>
+void decode_bytes(std::istream& from, uint8_t (&to)[N]) {
+  static_assert(N <= 55, "Complex RLP length encoding not supported");
+
+  from.exceptions(std::ios_base::eofbit | std::ios_base::failbit | std::ios_base::badbit);
+
+  uint8_t b = from.get();
+  if (b != kEmptyStringCode + N) {
+    throw DecodingError("unexpected length");
+  }
+
+  void* ptr = to;
+  from.read(static_cast<char*>(ptr), N);
+}
+
 }  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLP_DECODE_H_

@@ -112,8 +112,8 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
 
   res.success = vm_res.status == EVMC_SUCCESS;
 
-  uint64_t remaining_gas = refund_gas(txn, vm_res.remaining_gas);
-  res.used_gas = txn.gas_limit - remaining_gas;
+  uint64_t gas_left = refund_gas(txn, vm_res.gas_left);
+  res.used_gas = txn.gas_limit - gas_left;
 
   // award the miner
   state.add_to_balance(evm_.coinbase(), res.used_gas * txn.gas_price);
@@ -121,15 +121,15 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
   return res;
 }
 
-uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t remaining_gas) {
+uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) {
   IntraBlockState& state = evm_.state();
 
-  uint64_t refund = std::min((txn.gas_limit - remaining_gas) / 2, state.get_refund());
-  remaining_gas += refund;
-  gas_pool_ += remaining_gas;
-  state.add_to_balance(*txn.from, remaining_gas * txn.gas_price);
+  uint64_t refund = std::min((txn.gas_limit - gas_left) / 2, state.get_refund());
+  gas_left += refund;
+  gas_pool_ += gas_left;
+  state.add_to_balance(*txn.from, gas_left * txn.gas_price);
 
-  return remaining_gas;
+  return gas_left;
 }
 
 }  // namespace silkworm::eth

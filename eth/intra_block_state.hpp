@@ -60,6 +60,7 @@ class IntraBlockState {
  private:
   // TODO(Andrew) rework
   std::map<evmc::address, Account> accounts_;
+  std::map<evmc::address, std::map<evmc::bytes32, evmc::bytes32>> storage_;
 };
 
 }  // namespace silkworm::eth

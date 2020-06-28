@@ -54,12 +54,23 @@ void IntraBlockState::add_refund(uint64_t) {}
 
 void IntraBlockState::subtract_refund(uint64_t) {}
 
-evmc::bytes32 IntraBlockState::get_storage(const evmc::address&, const evmc::bytes32&) const {
-  return {};
+evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
+                                           const evmc::bytes32& key) const {
+  auto storage_it = storage_.find(address);
+  if (storage_it == storage_.end()) return {};
+
+  const std::map<evmc::bytes32, evmc::bytes32>& account_storage = storage_it->second;
+
+  auto entry_it = account_storage.find(key);
+  if (entry_it == account_storage.end()) return {};
+
+  return entry_it->second;
 }
 
-void IntraBlockState::set_storage(const evmc::address&, const evmc::bytes32&,
-                                  const evmc::bytes32&) {}
+void IntraBlockState::set_storage(const evmc::address& address, const evmc::bytes32& key,
+                                  const evmc::bytes32& value) {
+  storage_[address][key] = value;
+}
 
 void IntraBlockState::revert_to_snapshot(const IntraBlockState&) {}
 

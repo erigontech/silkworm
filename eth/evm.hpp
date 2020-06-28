@@ -36,8 +36,8 @@ enum evmc_status_code_extra { EVMC_BALANCE_TOO_LOW = 32 };
 namespace silkworm::eth {
 
 struct CallResult {
-  uint64_t remaining_gas{0};
   evmc_status_code status{EVMC_SUCCESS};
+  uint64_t gas_left{0};
 };
 
 struct CreateResult : public CallResult {
@@ -65,13 +65,17 @@ class EVM {
                   std::string_view input, uint64_t gas, const intx::uint256& value);
 
  private:
-  CreateResult execute(std::string_view code, uint64_t gas, bool read_only);
+  CreateResult execute(const evmc_message& message, std::string_view code);
+
+  evmc_revision revision() const noexcept;
 
   IntraBlockState& state_;
   ChainConfig config_{kMainnetChainConfig};
   evmc::address coinbase_;
   uint64_t block_number_{0};
-  size_t stack_depth_{0};
+
+  // TODO (Andrew) get rid of this?
+  int32_t stack_depth_{0};
 };
 
 // Yellow Paper, Section 7

@@ -87,15 +87,14 @@ TEST_CASE("smart contract", "[evm]") {
   CallResult res = evm.create(caller, code, gas, 0);
   CHECK(res.status == EVMC_OUT_OF_GAS);
 
-  /*
-  gas = fee::kGcodeDeposit * 3;
+  gas = 50'000;
   res = evm.create(caller, code, gas, 0);
   CHECK(res.status == EVMC_SUCCESS);
 
   evmc::address contract_address = create_address(caller, 0);
   evmc::bytes32 key0;
   CHECK(state.get_storage(contract_address, key0).bytes[31] == 0x2a);
-  */
+
   // TODO(Andrew) call the contract
 }
 

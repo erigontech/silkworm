@@ -38,6 +38,15 @@ constexpr size_t kHashLength{32};
 
 constexpr size_t kAddressLength{20};
 
+inline char* byte_pointer_cast(uint8_t* ptr) noexcept { return reinterpret_cast<char*>(ptr); }
+inline const char* byte_pointer_cast(const uint8_t* ptr) noexcept {
+  return reinterpret_cast<const char*>(ptr);
+}
+inline uint8_t* byte_pointer_cast(char* ptr) noexcept { return reinterpret_cast<uint8_t*>(ptr); }
+inline const uint8_t* byte_pointer_cast(const char* ptr) noexcept {
+  return reinterpret_cast<const uint8_t*>(ptr);
+}
+
 }  // namespace silkworm::eth
 
 #endif  // SILKWORM_ETH_COMMON_H_

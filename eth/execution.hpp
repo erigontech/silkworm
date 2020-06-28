@@ -53,7 +53,7 @@ class ExecutionProcessor {
   ExecutionResult execute_transaction(const Transaction& txn);
 
  private:
-  uint64_t refund_gas(const Transaction& txn, uint64_t remaining_gas);
+  uint64_t refund_gas(const Transaction& txn, uint64_t gas_left);
 
   uint64_t gas_pool_{0};
   EVM evm_;

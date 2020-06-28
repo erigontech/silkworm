@@ -16,11 +16,14 @@
 
 #include "evm.hpp"
 
+#include <evmone/evmone.h>
+
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <sstream>
 
 #include "../rlp/encode.hpp"
+#include "evm_host.hpp"
 #include "protocol_param.hpp"
 
 namespace silkworm::eth {
@@ -31,9 +34,9 @@ EVM::EVM(IntraBlockState& state, evmc::address coinbase, uint64_t block_number)
 CreateResult EVM::create(const evmc::address& caller, std::string_view code, uint64_t gas,
                          const intx::uint256& value) {
   CreateResult res;
-  res.remaining_gas = gas;
+  res.gas_left = gas;
 
-  if (stack_depth_ > param::kMaxStackDepth) {
+  if (stack_depth_ > static_cast<int32_t>(param::kMaxStackDepth)) {
     res.status = EVMC_CALL_DEPTH_EXCEEDED;
     return res;
   }
@@ -62,15 +65,27 @@ CreateResult EVM::create(const evmc::address& caller, std::string_view code, uin
   state_.subtract_from_balance(caller, value);
   state_.add_to_balance(contract_addr, value);
 
-  res = execute(code, gas, /*=read_only=*/false);
+  evmc_message message{
+      .kind = EVMC_CALL,  // TODO(Andrew) shouldn't it be EVMC_CREATE?
+      .flags = 0,
+      .depth = stack_depth_,
+      .gas = static_cast<int64_t>(gas),
+      .destination = contract_addr,
+      .sender = caller,
+      .input_data = nullptr,
+      .input_size = 0,
+      .value = intx::be::store<evmc::uint256be>(value),
+  };
+
+  res = execute(message, code);
 
   // TODO(Andrew)
   // https://eips.ethereum.org/EIPS/eip-170
 
   if (res.status == EVMC_SUCCESS) {
     uint64_t code_deploy_gas = res.output.length() * fee::kGcodeDeposit;
-    if (res.remaining_gas >= code_deploy_gas) {
-      res.remaining_gas -= code_deploy_gas;
+    if (res.gas_left >= code_deploy_gas) {
+      res.gas_left -= code_deploy_gas;
       state_.set_code(contract_addr, res.output);
     } else if (config_.has_homestead(block_number_)) {
       res.status = EVMC_OUT_OF_GAS;
@@ -80,7 +95,7 @@ CreateResult EVM::create(const evmc::address& caller, std::string_view code, uin
   if (res.status != EVMC_SUCCESS) {
     state_.revert_to_snapshot(snapshot);
     if (res.status != EVMC_REVERT) {
-      res.remaining_gas = 0;
+      res.gas_left = 0;
     }
   }
 
@@ -89,9 +104,9 @@ CreateResult EVM::create(const evmc::address& caller, std::string_view code, uin
 
 CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient, std::string_view,
                      uint64_t gas, const intx::uint256& value) {
-  CallResult res{.remaining_gas = gas, .status = EVMC_SUCCESS};
+  CallResult res{.status = EVMC_SUCCESS, .gas_left = gas};
 
-  if (stack_depth_ > param::kMaxStackDepth) {
+  if (stack_depth_ > static_cast<int32_t>(param::kMaxStackDepth)) {
     res.status = EVMC_CALL_DEPTH_EXCEEDED;
     return res;
   }
@@ -119,12 +134,35 @@ CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient
   return res;
 }
 
-CreateResult EVM::execute(std::string_view, uint64_t gas, bool) {
+CreateResult EVM::execute(const evmc_message& message, std::string_view code) {
+  evmc_vm* evmone = evmc_create_evmone();
+
+  EvmHost host{*this};
+
+  ++stack_depth_;
+  evmc::result evmone_res{evmone->execute(evmone, &host.get_interface(), host.to_context(),
+                                          revision(), &message, byte_pointer_cast(code.data()),
+                                          code.size())};
+  --stack_depth_;
+
   CreateResult res;
-  res.remaining_gas = gas;
-  res.status = EVMC_OUT_OF_GAS;
-  // TODO(Andrew) implement
+  res.status = evmone_res.status_code;
+  res.gas_left = evmone_res.gas_left;
+  res.output = std::string{byte_pointer_cast(evmone_res.output_data), evmone_res.output_size};
+
   return res;
+}
+
+evmc_revision EVM::revision() const noexcept {
+  if (config_.has_istanbul(block_number_)) return EVMC_ISTANBUL;
+  if (config_.has_petersburg(block_number_)) return EVMC_PETERSBURG;
+  if (config_.has_constantinople(block_number_)) return EVMC_CONSTANTINOPLE;
+  if (config_.has_byzantium(block_number_)) return EVMC_BYZANTIUM;
+  if (config_.has_spurious_dragon(block_number_)) return EVMC_SPURIOUS_DRAGON;
+  if (config_.has_tangerine_whistle(block_number_)) return EVMC_TANGERINE_WHISTLE;
+  if (config_.has_homestead(block_number_)) return EVMC_HOMESTEAD;
+
+  return EVMC_FRONTIER;
 }
 
 evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
@@ -136,8 +174,7 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
   rlp::encode(stream, nonce);
   std::string rlp = stream.str();
 
-  const void* data = rlp.data();
-  ethash::hash256 hash = ethash::keccak256(static_cast<const uint8_t*>(data), rlp.size());
+  ethash::hash256 hash = ethash::keccak256(byte_pointer_cast(rlp.data()), rlp.size());
 
   evmc::address address;
   std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);

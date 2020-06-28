@@ -22,5 +22,5 @@ list(FILTER SILKWORM_ETH_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm_eth ${SILKWORM_ETH_SRC})
 target_link_libraries(silkworm_eth
-                      PUBLIC evmone intx::intx
-                      PRIVATE silkworm_rlp)
+                      PUBLIC evmc intx::intx
+                      PRIVATE evmone silkworm_rlp)

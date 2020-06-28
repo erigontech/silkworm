@@ -54,15 +54,31 @@ struct ChainConfig {
   // https://eips.ethereum.org/EIPS/eip-2387
   std::optional<uint64_t> muir_glacier_block;
 
-  bool has_homestead(uint64_t block_num) const {
+  bool has_homestead(uint64_t block_num) const noexcept {
     return homestead_block.has_value() && homestead_block <= block_num;
   }
 
-  bool has_spurious_dragon(uint64_t block_num) const {
+  bool has_tangerine_whistle(uint64_t block_num) const noexcept {
+    return tangerine_whistle_block.has_value() && tangerine_whistle_block <= block_num;
+  }
+
+  bool has_spurious_dragon(uint64_t block_num) const noexcept {
     return spurious_dragon_block.has_value() && spurious_dragon_block <= block_num;
   }
 
-  bool has_istanbul(uint64_t block_num) const {
+  bool has_byzantium(uint64_t block_num) const noexcept {
+    return byzantium_block.has_value() && byzantium_block <= block_num;
+  }
+
+  bool has_constantinople(uint64_t block_num) const noexcept {
+    return constantinople_block.has_value() && constantinople_block <= block_num;
+  }
+
+  bool has_petersburg(uint64_t block_num) const noexcept {
+    return petersburg_block.has_value() && petersburg_block <= block_num;
+  }
+
+  bool has_istanbul(uint64_t block_num) const noexcept {
     return istanbul_block.has_value() && istanbul_block <= block_num;
   }
 };

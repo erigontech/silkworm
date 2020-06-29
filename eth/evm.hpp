@@ -85,6 +85,43 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce);
 evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
                               const evmc::bytes32& code_hash);
 
+class EvmHost : public evmc::Host {
+ public:
+  explicit EvmHost(EVM& evm) : evm_{evm} {}
+
+  bool account_exists(const evmc::address& address) const noexcept override;
+
+  evmc::bytes32 get_storage(const evmc::address& address,
+                            const evmc::bytes32& key) const noexcept override;
+
+  evmc_storage_status set_storage(const evmc::address& address, const evmc::bytes32& key,
+                                  const evmc::bytes32& value) noexcept override;
+
+  evmc::uint256be get_balance(const evmc::address& address) const noexcept override;
+
+  size_t get_code_size(const evmc::address& address) const noexcept override;
+
+  evmc::bytes32 get_code_hash(const evmc::address& address) const noexcept override;
+
+  size_t copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,
+                   size_t buffer_size) const noexcept override;
+
+  void selfdestruct(const evmc::address& address,
+                    const evmc::address& beneficiary) noexcept override;
+
+  evmc::result call(const evmc_message& message) noexcept override;
+
+  evmc_tx_context get_tx_context() const noexcept override;
+
+  evmc::bytes32 get_block_hash(int64_t block_number) const noexcept override;
+
+  void emit_log(const evmc::address& address, const uint8_t* data, size_t data_size,
+                const evmc::bytes32 topics[], size_t num_topics) noexcept override;
+
+ private:
+  EVM& evm_;
+};
+
 }  // namespace silkworm::eth
 
 #endif  // SILKWORM_ETH_EVM_H_

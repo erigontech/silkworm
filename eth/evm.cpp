@@ -51,7 +51,6 @@ CallResult EVM::create(const evmc::address& caller, std::string_view code, uint6
 
 // TODO (Andrew) propagate noexcept
 evmc::result EVM::create(const evmc_message& message) noexcept {
-  // TODO(Andrew) CREATE2
   evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
 
   if (message.depth >= static_cast<int32_t>(param::kMaxStackDepth)) {
@@ -66,7 +65,15 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
   }
 
   uint64_t nonce = state_.get_nonce(message.sender);
-  evmc::address contract_addr = create_address(message.sender, nonce);
+
+  evmc::address contract_addr;
+  if (message.kind == EVMC_CREATE) {
+    contract_addr = create_address(message.sender, nonce);
+  } else if (message.kind == EVMC_CREATE2) {
+    ethash::hash256 init_code_hash = ethash::keccak256(message.input_data, message.input_size);
+    contract_addr = create2_address(message.sender, message.create2_salt, init_code_hash.bytes);
+  }
+
   state_.set_nonce(message.sender, nonce + 1);
 
   if (state_.get_nonce(contract_addr) != 0 || state_.get_code_hash(contract_addr) != kEmptyHash) {
@@ -229,14 +236,14 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
 }
 
 evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
-                              const evmc::bytes32& code_hash) {
+                              uint8_t (&code_hash)[32]) noexcept {
   constexpr size_t n = 1 + kAddressLength + 2 * kHashLength;
   thread_local uint8_t buf[n];
 
   buf[0] = 0xff;
   std::memcpy(buf + 1, caller.bytes, kAddressLength);
   std::memcpy(buf + 1 + kAddressLength, salt.bytes, kHashLength);
-  std::memcpy(buf + 1 + kAddressLength + kHashLength, code_hash.bytes, kHashLength);
+  std::memcpy(buf + 1 + kAddressLength + kHashLength, code_hash, kHashLength);
 
   ethash::hash256 hash = ethash::keccak256(buf, n);
 

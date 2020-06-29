@@ -82,7 +82,7 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce);
 
 // https://eips.ethereum.org/EIPS/eip-1014
 evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
-                              const evmc::bytes32& code_hash);
+                              uint8_t (&code_hash)[32]) noexcept;
 
 class EvmHost : public evmc::Host {
  public:

@@ -38,7 +38,10 @@ constexpr uint64_t kGtransaction{21000};
 
 namespace param {
 constexpr size_t kMaxStackDepth{1024};
-}
+
+// https://eips.ethereum.org/EIPS/eip-170
+constexpr size_t kMaxCodeSize{0x6000};
+}  // namespace param
 
 }  // namespace silkworm::eth
 

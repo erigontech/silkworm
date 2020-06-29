@@ -78,12 +78,14 @@ CreateResult EVM::create(const evmc::address& caller, std::string_view code, uin
 
   res = execute(message, code);
 
-  // TODO(Andrew)
-  // https://eips.ethereum.org/EIPS/eip-170
-
   if (res.status == EVMC_SUCCESS) {
-    uint64_t code_deploy_gas = res.output.length() * fee::kGcodeDeposit;
-    if (res.gas_left >= code_deploy_gas) {
+    size_t code_len = res.output.length();
+    uint64_t code_deploy_gas = code_len * fee::kGcodeDeposit;
+
+    if (config_.has_spurious_dragon(block_number_) && code_len > param::kMaxCodeSize) {
+      // https://eips.ethereum.org/EIPS/eip-170
+      res.status = EVMC_OUT_OF_GAS;
+    } else if (res.gas_left >= code_deploy_gas) {
       res.gas_left -= code_deploy_gas;
       state_.set_code(contract_addr, res.output);
     } else if (config_.has_homestead(block_number_)) {

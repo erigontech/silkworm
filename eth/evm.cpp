@@ -153,7 +153,6 @@ CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient
 
 // TODO (Andrew) propagate noexcept
 evmc::result EVM::call(const evmc_message& message) noexcept {
-  // TODO(Andrew) CALLCODE, DELEGATECALL, STATICCALL
   evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
 
   if (message.depth >= static_cast<int32_t>(param::kMaxStackDepth)) {
@@ -162,25 +161,29 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
   }
 
   intx::uint256 value = intx::be::load<intx::uint256>(message.value);
-  if (state_.get_balance(message.sender) < value) {
-    res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
-    return res;
+  if (message.kind == EVMC_CALL || message.kind == EVMC_CALLCODE) {
+    if (state_.get_balance(message.sender) < value) {
+      res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
+      return res;
+    }
   }
 
   IntraBlockState snapshot = state_;
 
-  if (!state_.exists(message.destination)) {
-    // TODO(Andrew) precompiles
+  if (message.kind == EVMC_CALL) {
+    if (!state_.exists(message.destination)) {
+      // TODO(Andrew) precompiles
 
-    // https://eips.ethereum.org/EIPS/eip-161
-    if (config_.has_spurious_dragon(block_number_) && value == 0) {
-      return res;
+      // https://eips.ethereum.org/EIPS/eip-161
+      if (config_.has_spurious_dragon(block_number_) && value == 0) {
+        return res;
+      }
+      state_.create(message.destination, /*contract=*/false);
     }
-    state_.create(message.destination, /*contract=*/false);
-  }
 
-  state_.subtract_from_balance(message.sender, value);
-  state_.add_to_balance(message.destination, value);
+    state_.subtract_from_balance(message.sender, value);
+    state_.add_to_balance(message.destination, value);
+  }
 
   std::string_view code = state_.get_code(message.destination);
   if (code.empty()) return res;
@@ -199,6 +202,8 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
 evmc::result EVM::execute(const evmc_message& message, uint8_t const* code,
                           size_t code_size) noexcept {
+  // TODO(Andrew) precompiles
+
   evmc_vm* evmone = evmc_create_evmone();
 
   EvmHost host{*this};

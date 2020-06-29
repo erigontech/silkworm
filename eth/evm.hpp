@@ -40,10 +40,6 @@ struct CallResult {
   uint64_t gas_left{0};
 };
 
-struct CreateResult : public CallResult {
-  std::string output;
-};
-
 class EVM {
  public:
   EVM(const EVM&) = delete;
@@ -58,14 +54,20 @@ class EVM {
 
   IntraBlockState& state() { return state_; }
 
-  CreateResult create(const evmc::address& caller, std::string_view code, uint64_t gas,
-                      const intx::uint256& value);
+  CallResult create(const evmc::address& caller, std::string_view code, uint64_t gas,
+                    const intx::uint256& value);
 
   CallResult call(const evmc::address& caller, const evmc::address& recipient,
                   std::string_view input, uint64_t gas, const intx::uint256& value);
 
  private:
-  CreateResult execute(const evmc_message& message, std::string_view code);
+  friend class EvmHost;
+
+  evmc::result create(const evmc_message& message) noexcept;
+
+  evmc::result call(const evmc_message& message) noexcept;
+
+  evmc::result execute(const evmc_message& message, uint8_t const* code, size_t code_size) noexcept;
 
   evmc_revision revision() const noexcept;
 
@@ -73,9 +75,6 @@ class EVM {
   ChainConfig config_{kMainnetChainConfig};
   evmc::address coinbase_;
   uint64_t block_number_{0};
-
-  // TODO (Andrew) get rid of this?
-  int32_t stack_depth_{0};
 };
 
 // Yellow Paper, Section 7
@@ -87,7 +86,7 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
 
 class EvmHost : public evmc::Host {
  public:
-  explicit EvmHost(EVM& evm) : evm_{evm} {}
+  explicit EvmHost(EVM& evm) noexcept : evm_{evm} {}
 
   bool account_exists(const evmc::address& address) const noexcept override;
 

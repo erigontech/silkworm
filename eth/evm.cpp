@@ -30,28 +30,48 @@ namespace silkworm::eth {
 EVM::EVM(IntraBlockState& state, evmc::address coinbase, uint64_t block_number)
     : state_{state}, coinbase_{coinbase}, block_number_{block_number} {}
 
-CreateResult EVM::create(const evmc::address& caller, std::string_view code, uint64_t gas,
-                         const intx::uint256& value) {
-  CreateResult res;
-  res.gas_left = gas;
+CallResult EVM::create(const evmc::address& caller, std::string_view code, uint64_t gas,
+                       const intx::uint256& value) {
+  evmc_message message{
+      .kind = EVMC_CREATE,
+      .flags = 0,
+      .depth = 0,
+      .gas = static_cast<int64_t>(gas),
+      .destination = {},
+      .sender = caller,
+      .input_data = byte_pointer_cast(code.data()),
+      .input_size = code.size(),
+      .value = intx::be::store<evmc::uint256be>(value),
+  };
 
-  if (stack_depth_ > static_cast<int32_t>(param::kMaxStackDepth)) {
-    res.status = EVMC_CALL_DEPTH_EXCEEDED;
+  evmc::result res = create(message);
+
+  return {res.status_code, static_cast<uint64_t>(res.gas_left)};
+}
+
+// TODO (Andrew) propagate noexcept
+evmc::result EVM::create(const evmc_message& message) noexcept {
+  // TODO(Andrew) CREATE2
+  evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
+
+  if (message.depth >= static_cast<int32_t>(param::kMaxStackDepth)) {
+    res.status_code = EVMC_CALL_DEPTH_EXCEEDED;
     return res;
   }
 
-  if (state_.get_balance(caller) < value) {
-    res.status = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
+  intx::uint256 value = intx::be::load<intx::uint256>(message.value);
+  if (state_.get_balance(message.sender) < value) {
+    res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
     return res;
   }
 
-  uint64_t nonce = state_.get_nonce(caller);
-  evmc::address contract_addr = create_address(caller, nonce);
-  state_.set_nonce(caller, nonce + 1);
+  uint64_t nonce = state_.get_nonce(message.sender);
+  evmc::address contract_addr = create_address(message.sender, nonce);
+  state_.set_nonce(message.sender, nonce + 1);
 
   if (state_.get_nonce(contract_addr) != 0 || state_.get_code_hash(contract_addr) != kEmptyHash) {
     // https://github.com/ethereum/EIPs/issues/684
-    res.status = EVMC_INVALID_INSTRUCTION;
+    res.status_code = EVMC_INVALID_INSTRUCTION;
     return res;
   }
 
@@ -61,41 +81,43 @@ CreateResult EVM::create(const evmc::address& caller, std::string_view code, uin
     state_.set_nonce(contract_addr, 1);
   }
 
-  state_.subtract_from_balance(caller, value);
+  state_.subtract_from_balance(message.sender, value);
   state_.add_to_balance(contract_addr, value);
 
-  evmc_message message{
-      .kind = EVMC_CALL,  // TODO(Andrew) shouldn't it be EVMC_CREATE?
+  evmc_message deploy_message{
+      .kind = EVMC_CALL,
       .flags = 0,
-      .depth = stack_depth_,
-      .gas = static_cast<int64_t>(gas),
+      .depth = message.depth,
+      .gas = message.gas,
       .destination = contract_addr,
-      .sender = caller,
+      .sender = message.sender,
       .input_data = nullptr,
       .input_size = 0,
-      .value = intx::be::store<evmc::uint256be>(value),
+      .value = message.value,
   };
 
-  res = execute(message, code);
+  res = execute(deploy_message, message.input_data, message.input_size);
 
-  if (res.status == EVMC_SUCCESS) {
-    size_t code_len = res.output.length();
-    uint64_t code_deploy_gas = code_len * fee::kGcodeDeposit;
+  if (res.status_code == EVMC_SUCCESS) {
+    size_t code_len = res.output_size;
+    int64_t code_deploy_gas = code_len * fee::kGcodeDeposit;
 
     if (config_.has_spurious_dragon(block_number_) && code_len > param::kMaxCodeSize) {
       // https://eips.ethereum.org/EIPS/eip-170
-      res.status = EVMC_OUT_OF_GAS;
+      res.status_code = EVMC_OUT_OF_GAS;
     } else if (res.gas_left >= code_deploy_gas) {
       res.gas_left -= code_deploy_gas;
-      state_.set_code(contract_addr, res.output);
+      state_.set_code(contract_addr, {byte_pointer_cast(res.output_data), res.output_size});
     } else if (config_.has_homestead(block_number_)) {
-      res.status = EVMC_OUT_OF_GAS;
+      res.status_code = EVMC_OUT_OF_GAS;
     }
   }
 
-  if (res.status != EVMC_SUCCESS) {
+  if (res.status_code == EVMC_SUCCESS) {
+    res.create_address = contract_addr;
+  } else {
     state_.revert_to_snapshot(snapshot);
-    if (res.status != EVMC_REVERT) {
+    if (res.status_code != EVMC_REVERT) {
       res.gas_left = 0;
     }
   }
@@ -105,40 +127,10 @@ CreateResult EVM::create(const evmc::address& caller, std::string_view code, uin
 
 CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient,
                      std::string_view input, uint64_t gas, const intx::uint256& value) {
-  CallResult res{.status = EVMC_SUCCESS, .gas_left = gas};
-
-  if (stack_depth_ > static_cast<int32_t>(param::kMaxStackDepth)) {
-    res.status = EVMC_CALL_DEPTH_EXCEEDED;
-    return res;
-  }
-
-  if (state_.get_balance(caller) < value) {
-    res.status = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
-    return res;
-  }
-
-  IntraBlockState snapshot = state_;
-
-  if (!state_.exists(recipient)) {
-    // TODO(Andrew) precompiles
-
-    // https://eips.ethereum.org/EIPS/eip-161
-    if (config_.has_spurious_dragon(block_number_) && value == 0) {
-      return res;
-    }
-    state_.create(recipient, /*contract=*/false);
-  }
-
-  state_.subtract_from_balance(caller, value);
-  state_.add_to_balance(recipient, value);
-
-  std::string_view code = state_.get_code(recipient);
-  if (code.empty()) return res;
-
   evmc_message message{
       .kind = EVMC_CALL,
       .flags = 0,
-      .depth = stack_depth_,
+      .depth = 0,
       .gas = static_cast<int64_t>(gas),
       .destination = recipient,
       .sender = caller,
@@ -147,11 +139,50 @@ CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient
       .value = intx::be::store<evmc::uint256be>(value),
   };
 
-  res = execute(message, code);
+  evmc::result res = call(message);
 
-  if (res.status != EVMC_SUCCESS) {
+  return {res.status_code, static_cast<uint64_t>(res.gas_left)};
+}
+
+// TODO (Andrew) propagate noexcept
+evmc::result EVM::call(const evmc_message& message) noexcept {
+  // TODO(Andrew) CALLCODE, DELEGATECALL, STATICCALL
+  evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
+
+  if (message.depth >= static_cast<int32_t>(param::kMaxStackDepth)) {
+    res.status_code = EVMC_CALL_DEPTH_EXCEEDED;
+    return res;
+  }
+
+  intx::uint256 value = intx::be::load<intx::uint256>(message.value);
+  if (state_.get_balance(message.sender) < value) {
+    res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
+    return res;
+  }
+
+  IntraBlockState snapshot = state_;
+
+  if (!state_.exists(message.destination)) {
+    // TODO(Andrew) precompiles
+
+    // https://eips.ethereum.org/EIPS/eip-161
+    if (config_.has_spurious_dragon(block_number_) && value == 0) {
+      return res;
+    }
+    state_.create(message.destination, /*contract=*/false);
+  }
+
+  state_.subtract_from_balance(message.sender, value);
+  state_.add_to_balance(message.destination, value);
+
+  std::string_view code = state_.get_code(message.destination);
+  if (code.empty()) return res;
+
+  res = execute(message, byte_pointer_cast(code.data()), code.size());
+
+  if (res.status_code != EVMC_SUCCESS) {
     state_.revert_to_snapshot(snapshot);
-    if (res.status != EVMC_REVERT) {
+    if (res.status_code != EVMC_REVERT) {
       res.gas_left = 0;
     }
   }
@@ -159,23 +190,14 @@ CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient
   return res;
 }
 
-CreateResult EVM::execute(const evmc_message& message, std::string_view code) {
+evmc::result EVM::execute(const evmc_message& message, uint8_t const* code,
+                          size_t code_size) noexcept {
   evmc_vm* evmone = evmc_create_evmone();
 
   EvmHost host{*this};
 
-  ++stack_depth_;
-  evmc::result evmone_res{evmone->execute(evmone, &host.get_interface(), host.to_context(),
-                                          revision(), &message, byte_pointer_cast(code.data()),
-                                          code.size())};
-  --stack_depth_;
-
-  CreateResult res;
-  res.status = evmone_res.status_code;
-  res.gas_left = evmone_res.gas_left;
-  res.output = std::string{byte_pointer_cast(evmone_res.output_data), evmone_res.output_size};
-
-  return res;
+  return evmc::result{evmone->execute(evmone, &host.get_interface(), host.to_context(), revision(),
+                                      &message, code, code_size)};
 }
 
 evmc_revision EVM::revision() const noexcept {
@@ -282,8 +304,11 @@ void EvmHost::selfdestruct(const evmc::address&, const evmc::address&) noexcept 
 }
 
 evmc::result EvmHost::call(const evmc_message& message) noexcept {
-  // TODO(Andrew) implement
-  return {EVMC_REVERT, message.gas, message.input_data, message.input_size};
+  if (message.kind == EVMC_CREATE || message.kind == EVMC_CREATE2) {
+    return evm_.create(message);
+  } else {
+    return evm_.call(message);
+  }
 }
 
 evmc_tx_context EvmHost::get_tx_context() const noexcept {

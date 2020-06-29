@@ -20,6 +20,7 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <map>
+#include <string>
 #include <string_view>
 
 #include "account.hpp"
@@ -61,6 +62,7 @@ class IntraBlockState {
   // TODO(Andrew) rework
   std::map<evmc::address, Account> accounts_;
   std::map<evmc::address, std::map<evmc::bytes32, evmc::bytes32>> storage_;
+  std::map<evmc::address, std::string> code_;
 };
 
 }  // namespace silkworm::eth

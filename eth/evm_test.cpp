@@ -93,9 +93,12 @@ TEST_CASE("smart contract", "[evm]") {
 
   evmc::address contract_address = create_address(caller, 0);
   evmc::bytes32 key0;
-  CHECK(state.get_storage(contract_address, key0).bytes[31] == 0x2a);
+  CHECK(state.get_storage(contract_address, key0) == bytes_to_hash("\x2a"));
 
-  // TODO(Andrew) call the contract
+  evmc::bytes32 new_val{bytes_to_hash("\xf5")};
+  res = evm.call(caller, contract_address, hash_to_string_view(new_val), gas, 0);
+  CHECK(res.status == EVMC_SUCCESS);
+  CHECK(state.get_storage(contract_address, key0) == new_val);
 }
 
 }  // namespace silkworm::eth

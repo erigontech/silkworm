@@ -20,7 +20,9 @@
 
 namespace silkworm::eth {
 
-bool IntraBlockState::exists(const evmc::address&) const { return false; }
+bool IntraBlockState::exists(const evmc::address& address) const {
+  return accounts_.find(address) != accounts_.end() || code_.find(address) != code_.end();
+}
 
 void IntraBlockState::create(const evmc::address&, bool) {}
 
@@ -42,11 +44,16 @@ uint64_t IntraBlockState::get_nonce(const evmc::address&) const { return 0; }
 
 void IntraBlockState::set_nonce(const evmc::address&, uint64_t) {}
 
-std::string_view IntraBlockState::get_code(const evmc::address&) const { return {}; }
+std::string_view IntraBlockState::get_code(const evmc::address& address) const {
+  auto it = code_.find(address);
+  return it == code_.end() ? std::string_view{} : it->second;
+}
 
 evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address&) const { return kEmptyHash; }
 
-void IntraBlockState::set_code(const evmc::address&, std::string_view) {}
+void IntraBlockState::set_code(const evmc::address& address, std::string_view code) {
+  code_[address] = code;
+}
 
 uint64_t IntraBlockState::get_refund() const { return 0; }
 

@@ -20,7 +20,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <algorithm>
+#include <cstring>
 #include <evmc/evmc.hpp>
+#include <string_view>
 
 namespace silkworm::eth {
 
@@ -45,6 +48,17 @@ inline const char* byte_pointer_cast(const uint8_t* ptr) noexcept {
 inline uint8_t* byte_pointer_cast(char* ptr) noexcept { return reinterpret_cast<uint8_t*>(ptr); }
 inline const uint8_t* byte_pointer_cast(const char* ptr) noexcept {
   return reinterpret_cast<const uint8_t*>(ptr);
+}
+
+inline evmc::bytes32 bytes_to_hash(std::string_view bytes) {
+  evmc::bytes32 out;
+  size_t n = std::min(bytes.length(), kHashLength);
+  std::memcpy(out.bytes + kHashLength - n, bytes.data(), n);
+  return out;
+}
+
+inline std::string_view hash_to_string_view(const evmc::bytes32& hash) {
+  return {byte_pointer_cast(hash.bytes), kHashLength};
 }
 
 }  // namespace silkworm::eth

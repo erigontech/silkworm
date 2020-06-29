@@ -103,8 +103,8 @@ CreateResult EVM::create(const evmc::address& caller, std::string_view code, uin
   return res;
 }
 
-CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient, std::string_view,
-                     uint64_t gas, const intx::uint256& value) {
+CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient,
+                     std::string_view input, uint64_t gas, const intx::uint256& value) {
   CallResult res{.status = EVMC_SUCCESS, .gas_left = gas};
 
   if (stack_depth_ > static_cast<int32_t>(param::kMaxStackDepth)) {
@@ -116,6 +116,8 @@ CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient
     res.status = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
     return res;
   }
+
+  IntraBlockState snapshot = state_;
 
   if (!state_.exists(recipient)) {
     // TODO(Andrew) precompiles
@@ -130,7 +132,29 @@ CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient
   state_.subtract_from_balance(caller, value);
   state_.add_to_balance(recipient, value);
 
-  // TODO(Andrew) actually run the smart contract
+  std::string_view code = state_.get_code(recipient);
+  if (code.empty()) return res;
+
+  evmc_message message{
+      .kind = EVMC_CALL,
+      .flags = 0,
+      .depth = stack_depth_,
+      .gas = static_cast<int64_t>(gas),
+      .destination = recipient,
+      .sender = caller,
+      .input_data = byte_pointer_cast(input.data()),
+      .input_size = input.size(),
+      .value = intx::be::store<evmc::uint256be>(value),
+  };
+
+  res = execute(message, code);
+
+  if (res.status != EVMC_SUCCESS) {
+    state_.revert_to_snapshot(snapshot);
+    if (res.status != EVMC_REVERT) {
+      res.gas_left = 0;
+    }
+  }
 
   return res;
 }

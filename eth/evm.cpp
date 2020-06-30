@@ -161,7 +161,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
   }
 
   intx::uint256 value = intx::be::load<intx::uint256>(message.value);
-  if (message.kind == EVMC_CALL || message.kind == EVMC_CALLCODE) {
+  if (message.kind != EVMC_DELEGATECALL) {
     if (state_.get_balance(message.sender) < value) {
       res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
       return res;
@@ -170,7 +170,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
   IntraBlockState snapshot = state_;
 
-  if (message.kind == EVMC_CALL) {
+  if (message.kind == EVMC_CALL && !(message.flags & EVMC_STATIC)) {
     if (!state_.exists(message.destination)) {
       // TODO(Andrew) precompiles
 

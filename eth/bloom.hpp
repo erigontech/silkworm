@@ -18,6 +18,7 @@
 #define SILKWORM_ETH_BLOOM_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include <array>
 
@@ -25,7 +26,7 @@ namespace silkworm::eth {
 
 constexpr size_t kBloomByteLength{256};
 
-using Bloom = std::array<char, kBloomByteLength>;
+using Bloom = std::array<uint8_t, kBloomByteLength>;
 
 }  // namespace silkworm::eth
 

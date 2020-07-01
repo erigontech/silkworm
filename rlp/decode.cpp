@@ -82,6 +82,9 @@ std::string decode(std::istream& from) {
   if (h.list) {
     throw DecodingError("unexpected list");
   }
+  if (h.length > kMaxStringSize) {
+    throw DecodingError("string is too long");
+  }
   std::string str(h.length, '\0');
   from.read(str.data(), h.length);
   return str;

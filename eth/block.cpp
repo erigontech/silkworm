@@ -17,7 +17,6 @@
 #include "block.hpp"
 
 #include "../rlp/encode.hpp"
-#include "common.hpp"
 
 namespace silkworm {
 
@@ -32,7 +31,7 @@ void encode(std::ostream& to, const eth::BlockHeader& header) {
   rlp_head.length += length(header.gas_limit);
   rlp_head.length += length(header.gas_used);
   rlp_head.length += length(header.timestamp);
-  rlp_head.length += length(header.extra_data);
+  rlp_head.length += length(header.extra_data());
   rlp_head.length += 8 + 1;  // nonce
 
   encode_header(to, rlp_head);
@@ -49,7 +48,7 @@ void encode(std::ostream& to, const eth::BlockHeader& header) {
   encode(to, header.gas_limit);
   encode(to, header.gas_used);
   encode(to, header.timestamp);
-  encode(to, header.extra_data);
+  encode(to, header.extra_data());
   encode(to, header.mix_hash.bytes);
   encode(to, header.nonce);
 }
@@ -80,7 +79,17 @@ eth::BlockHeader decode(std::istream& from) {
   header.gas_limit = decode<uint64_t>(from);
   header.gas_used = decode<uint64_t>(from);
   header.timestamp = decode<uint64_t>(from);
-  header.extra_data = decode<std::string>(from);
+
+  Header extra_data_head = decode_header(from);
+  if (extra_data_head.list) {
+    throw DecodingError("extraData may not be list");
+  }
+  if (extra_data_head.length > 32) {
+    throw DecodingError("extraData must be no longer than 32 bytes");
+  }
+  header.extra_data_size_ = extra_data_head.length;
+  from.read(eth::byte_pointer_cast(header.extra_data_.bytes), header.extra_data_size_);
+
   decode_bytes(from, header.mix_hash.bytes);
   decode_bytes(from, header.nonce);
 

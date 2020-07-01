@@ -31,6 +31,8 @@
 
 namespace silkworm::rlp {
 
+constexpr size_t kMaxStringSize = 1024 * 1024;
+
 class DecodingError : public std::runtime_error {
  public:
   using std::runtime_error::runtime_error;

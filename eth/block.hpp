@@ -21,10 +21,11 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-#include <string>
+#include <string_view>
 
 #include "../rlp/decode.hpp"
 #include "bloom.hpp"
+#include "common.hpp"
 
 namespace silkworm {
 
@@ -43,9 +44,19 @@ struct BlockHeader {
   uint64_t gas_limit{0};
   uint64_t gas_used{0};
   uint64_t timestamp{0};
-  std::string extra_data;  // TODO(Andrew) evmc::bytes32 to protect against large lengths
+
+  std::string_view extra_data() const {
+    return {byte_pointer_cast(extra_data_.bytes), extra_data_size_};
+  }
+
   evmc::bytes32 mix_hash;
   uint8_t nonce[8]{0};
+
+ private:
+  friend BlockHeader rlp::decode<BlockHeader>(std::istream& from);
+
+  evmc::bytes32 extra_data_;
+  uint32_t extra_data_size_{0};
 };
 
 }  // namespace eth

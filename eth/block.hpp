@@ -23,6 +23,7 @@
 #include <intx/intx.hpp>
 #include <string>
 
+#include "../rlp/decode.hpp"
 #include "bloom.hpp"
 
 namespace silkworm {
@@ -42,7 +43,7 @@ struct BlockHeader {
   uint64_t gas_limit{0};
   uint64_t gas_used{0};
   uint64_t timestamp{0};
-  std::string extra_data;
+  std::string extra_data;  // TODO(Andrew) evmc::bytes32 to protect against large lengths
   evmc::bytes32 mix_hash;
   uint8_t nonce[8]{0};
 };
@@ -51,9 +52,10 @@ struct BlockHeader {
 
 namespace rlp {
 void encode(std::ostream& to, const eth::BlockHeader& header);
-eth::BlockHeader decode_block_header(std::istream& from);
-}  // namespace rlp
 
+template <>
+eth::BlockHeader decode(std::istream& from);
+}  // namespace rlp
 }  // namespace silkworm
 
 #endif  // SILKWORM_ETH_BLOCK_H_

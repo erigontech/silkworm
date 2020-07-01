@@ -16,7 +16,6 @@
 
 #include "account.hpp"
 
-#include "../rlp/decode.hpp"
 #include "../rlp/encode.hpp"
 
 namespace silkworm {
@@ -38,22 +37,23 @@ void encode(std::ostream& to, const eth::Account& account) {
   h.length += eth::kHashLength + 1;
   h.length += eth::kHashLength + 1;
 
-  encode(to, h);
+  encode_header(to, h);
   encode(to, account.nonce);
   encode(to, account.balance);
   encode(to, account.storage_root.bytes);
   encode(to, account.code_hash.bytes);
 }
 
-eth::Account decode_account(std::istream& from) {
+template <>
+eth::Account decode(std::istream& from) {
   Header h = decode_header(from);
   if (!h.list) {
     throw DecodingError("unexpected string");
   }
 
   eth::Account account;
-  account.nonce = decode_uint64(from);
-  account.balance = decode_uint256(from);
+  account.nonce = decode<uint64_t>(from);
+  account.balance = decode<intx::uint256>(from);
   decode_bytes(from, account.storage_root.bytes);
   decode_bytes(from, account.code_hash.bytes);
 

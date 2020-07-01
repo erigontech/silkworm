@@ -37,7 +37,7 @@ struct Header {
   uint64_t length{0};
 };
 
-void encode(std::ostream& to, Header header);
+void encode_header(std::ostream& to, Header header);
 
 void encode(std::ostream& to, std::string_view s);
 void encode(std::ostream& to, uint64_t n);
@@ -52,7 +52,7 @@ void encode(std::ostream& to, const uint8_t (&bytes)[N]) {
   to.write(static_cast<const char*>(ptr), N);
 }
 
-size_t length(Header header);
+size_t length_of_length(uint64_t length);
 
 size_t length(std::string_view s);
 size_t length(uint64_t n);

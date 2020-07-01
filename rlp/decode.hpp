@@ -40,9 +40,17 @@ class DecodingError : public std::runtime_error {
 // in which case the byte is put back.
 Header decode_header(std::istream& from);
 
-std::string decode_string(std::istream& from);
-uint64_t decode_uint64(std::istream& from);
-intx::uint256 decode_uint256(std::istream& from);
+template <class T>
+T decode(std::istream& from);
+
+template <>
+std::string decode(std::istream& from);
+
+template <>
+uint64_t decode(std::istream& from);
+
+template <>
+intx::uint256 decode(std::istream& from);
 
 template <unsigned N>
 void decode_bytes(std::istream& from, uint8_t (&to)[N]) {

@@ -21,6 +21,7 @@
 #include <istream>
 #include <ostream>
 
+#include "../rlp/decode.hpp"
 #include "common.hpp"
 
 namespace silkworm {
@@ -41,9 +42,10 @@ bool operator==(const Account& a, const Account& b);
 
 namespace rlp {
 void encode(std::ostream& to, const eth::Account& account);
-eth::Account decode_account(std::istream& from);
-}  // namespace rlp
 
+template <>
+eth::Account decode(std::istream& from);
+}  // namespace rlp
 }  // namespace silkworm
 
 #endif  // SILKWORM_ETH_ACCOUNT_H_

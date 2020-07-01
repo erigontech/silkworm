@@ -26,6 +26,8 @@
 #include <ostream>
 #include <string>
 
+#include "../rlp/decode.hpp"
+
 namespace silkworm {
 
 namespace eth {
@@ -47,9 +49,10 @@ bool operator==(const Transaction& a, const Transaction& b);
 
 namespace rlp {
 void encode(std::ostream& to, const eth::Transaction& txn);
-eth::Transaction decode_transaction(std::istream& from);
-}  // namespace rlp
 
+template <>
+eth::Transaction decode(std::istream& from);
+}  // namespace rlp
 }  // namespace silkworm
 
 #endif  // SILKWORM_ETH_TRANSACTION_H_

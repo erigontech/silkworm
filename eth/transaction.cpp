@@ -16,7 +16,6 @@
 
 #include "transaction.hpp"
 
-#include "../rlp/decode.hpp"
 #include "../rlp/encode.hpp"
 #include "common.hpp"
 
@@ -45,7 +44,7 @@ void encode(std::ostream& to, const eth::Transaction& txn) {
   h.length += length(txn.r);
   h.length += length(txn.s);
 
-  encode(to, h);
+  encode_header(to, h);
   encode(to, txn.nonce);
   encode(to, txn.gas_price);
   encode(to, txn.gas_limit);
@@ -61,16 +60,17 @@ void encode(std::ostream& to, const eth::Transaction& txn) {
   encode(to, txn.s);
 }
 
-eth::Transaction decode_transaction(std::istream& from) {
+template <>
+eth::Transaction decode(std::istream& from) {
   Header h = decode_header(from);
   if (!h.list) {
     throw DecodingError("unexpected string");
   }
 
   eth::Transaction txn;
-  txn.nonce = decode_uint64(from);
-  txn.gas_price = decode_uint256(from);
-  txn.gas_limit = decode_uint64(from);
+  txn.nonce = decode<uint64_t>(from);
+  txn.gas_price = decode<intx::uint256>(from);
+  txn.gas_limit = decode<uint64_t>(from);
 
   uint8_t toCode = from.get();
   if (toCode != kEmptyStringCode) {
@@ -79,11 +79,11 @@ eth::Transaction decode_transaction(std::istream& from) {
     decode_bytes(from, txn.to->bytes);
   }
 
-  txn.value = decode_uint256(from);
-  txn.data = decode_string(from);
-  txn.v = decode_uint256(from);
-  txn.r = decode_uint256(from);
-  txn.s = decode_uint256(from);
+  txn.value = decode<intx::uint256>(from);
+  txn.data = decode<std::string>(from);
+  txn.v = decode<intx::uint256>(from);
+  txn.r = decode<intx::uint256>(from);
+  txn.s = decode<intx::uint256>(from);
 
   return txn;
 }

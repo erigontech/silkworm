@@ -16,7 +16,6 @@
 
 #include "block.hpp"
 
-#include "../rlp/decode.hpp"
 #include "../rlp/encode.hpp"
 #include "common.hpp"
 
@@ -25,11 +24,9 @@ namespace silkworm {
 namespace rlp {
 
 void encode(std::ostream& to, const eth::BlockHeader& header) {
-  Header bloom_head{.list = false, .length = eth::kBloomByteLength};
-
   Header rlp_head{.list = true, .length = 6 * (eth::kHashLength + 1)};
   rlp_head.length += eth::kAddressLength + 1;  // beneficiary
-  rlp_head.length += eth::kBloomByteLength + length(bloom_head);
+  rlp_head.length += eth::kBloomByteLength + length_of_length(eth::kBloomByteLength);
   rlp_head.length += length(header.difficulty);
   rlp_head.length += length(header.number);
   rlp_head.length += length(header.gas_limit);
@@ -38,14 +35,14 @@ void encode(std::ostream& to, const eth::BlockHeader& header) {
   rlp_head.length += length(header.extra_data);
   rlp_head.length += 8 + 1;  // nonce
 
-  encode(to, rlp_head);
+  encode_header(to, rlp_head);
   encode(to, header.parent_hash.bytes);
   encode(to, header.ommers_hash.bytes);
   encode(to, header.beneficiary.bytes);
   encode(to, header.state_root.bytes);
   encode(to, header.transactions_root.bytes);
   encode(to, header.receipts_root.bytes);
-  encode(to, bloom_head);
+  encode_header(to, {.list = false, .length = eth::kBloomByteLength});
   to.write(eth::byte_pointer_cast(header.logs_bloom.data()), eth::kBloomByteLength);
   encode(to, header.difficulty);
   encode(to, header.number);
@@ -57,7 +54,8 @@ void encode(std::ostream& to, const eth::BlockHeader& header) {
   encode(to, header.nonce);
 }
 
-eth::BlockHeader decode_block_header(std::istream& from) {
+template <>
+eth::BlockHeader decode(std::istream& from) {
   Header rlp_head = decode_header(from);
   if (!rlp_head.list) {
     throw DecodingError("unexpected string");
@@ -77,12 +75,12 @@ eth::BlockHeader decode_block_header(std::istream& from) {
   }
   from.read(eth::byte_pointer_cast(header.logs_bloom.data()), eth::kBloomByteLength);
 
-  header.difficulty = decode_uint256(from);
-  header.number = decode_uint64(from);
-  header.gas_limit = decode_uint64(from);
-  header.gas_used = decode_uint64(from);
-  header.timestamp = decode_uint64(from);
-  header.extra_data = decode_string(from);
+  header.difficulty = decode<intx::uint256>(from);
+  header.number = decode<uint64_t>(from);
+  header.gas_limit = decode<uint64_t>(from);
+  header.gas_used = decode<uint64_t>(from);
+  header.timestamp = decode<uint64_t>(from);
+  header.extra_data = decode<std::string>(from);
   decode_bytes(from, header.mix_hash.bytes);
   decode_bytes(from, header.nonce);
 

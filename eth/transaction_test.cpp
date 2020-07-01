@@ -48,7 +48,7 @@ TEST_CASE("transaction", "[rlp]") {
   rlp::encode(to, txn);
 
   std::istringstream from{to.str()};
-  eth::Transaction decoded = rlp::decode_transaction(from);
+  eth::Transaction decoded = rlp::decode<eth::Transaction>(from);
   CHECK(decoded == txn);
 }
 }  // namespace silkworm

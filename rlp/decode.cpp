@@ -76,7 +76,8 @@ Header decode_header(std::istream& from) {
   return h;
 }
 
-std::string decode_string(std::istream& from) {
+template <>
+std::string decode(std::istream& from) {
   Header h = decode_header(from);
   if (h.list) {
     throw DecodingError("unexpected list");
@@ -86,7 +87,8 @@ std::string decode_string(std::istream& from) {
   return str;
 }
 
-uint64_t decode_uint64(std::istream& from) {
+template <>
+uint64_t decode(std::istream& from) {
   Header h = decode_header(from);
   if (h.list) {
     throw DecodingError("unexpected list");
@@ -97,7 +99,8 @@ uint64_t decode_uint64(std::istream& from) {
   return read_uint64(from, h.length);
 }
 
-intx::uint256 decode_uint256(std::istream& from) {
+template <>
+intx::uint256 decode(std::istream& from) {
   Header h = decode_header(from);
   if (h.list) {
     throw DecodingError("unexpected list");

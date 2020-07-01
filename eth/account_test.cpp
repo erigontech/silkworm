@@ -36,7 +36,7 @@ TEST_CASE("account", "[rlp]") {
   rlp::encode(to, account);
 
   std::istringstream from{to.str()};
-  eth::Account decoded = rlp::decode_account(from);
+  eth::Account decoded = rlp::decode<eth::Account>(from);
   CHECK(decoded == account);
 }
 }  // namespace silkworm

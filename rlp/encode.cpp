@@ -32,7 +32,7 @@ std::string_view big_endian(uint64_t n) {
 
 namespace silkworm::rlp {
 
-void encode(std::ostream& to, Header header) {
+void encode_header(std::ostream& to, Header header) {
   if (header.length < 56) {
     uint8_t code = header.list ? kEmptyListCode : kEmptyStringCode;
     to.put(code + header.length);
@@ -44,17 +44,17 @@ void encode(std::ostream& to, Header header) {
   }
 }
 
-size_t length(Header header) {
-  if (header.length < 56) {
+size_t length_of_length(uint64_t length) {
+  if (length < 56) {
     return 1;
   } else {
-    return 1 + 8 - intx::clz(header.length) / 8;
+    return 1 + 8 - intx::clz(length) / 8;
   }
 }
 
 void encode(std::ostream& to, std::string_view s) {
   if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= kEmptyStringCode) {
-    encode(to, Header{.list = false, .length = s.length()});
+    encode_header(to, {.list = false, .length = s.length()});
   }
   to.write(s.data(), s.length());
 }
@@ -62,7 +62,7 @@ void encode(std::ostream& to, std::string_view s) {
 size_t length(std::string_view s) {
   size_t len = s.length();
   if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= kEmptyStringCode) {
-    len += length(Header{.list = false, .length = s.length()});
+    len += length_of_length(s.length());
   }
   return len;
 }

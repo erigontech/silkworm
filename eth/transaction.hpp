@@ -44,7 +44,6 @@ struct Transaction {
 bool operator==(const Transaction& a, const Transaction& b);
 
 namespace rlp {
-void encode(std::ostream& to, const Transaction& txn);
 
 template <>
 void decode(std::istream& from, Transaction& to);

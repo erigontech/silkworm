@@ -22,10 +22,12 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <string_view>
+#include <vector>
 
 #include "bloom.hpp"
 #include "common.hpp"
 #include "rlp/decode.hpp"
+#include "transaction.hpp"
 
 namespace silkworm::eth {
 
@@ -57,8 +59,13 @@ struct BlockHeader {
   uint32_t extra_data_size_{0};
 };
 
+struct Block {
+  BlockHeader header;
+  std::vector<BlockHeader> ommers;
+  std::vector<Transaction> transactions;
+};
+
 namespace rlp {
-void encode(std::ostream& to, const BlockHeader& header);
 
 template <>
 void decode(std::istream& from, BlockHeader& to);

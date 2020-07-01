@@ -22,7 +22,7 @@ namespace silkworm::eth {
 
 namespace rlp {
 
-void encode(std::ostream& to, const BlockHeader& header) {
+static Header rlp_header(const BlockHeader& header) {
   Header rlp_head{.list = true, .payload_length = 6 * (kHashLength + 1)};
   rlp_head.payload_length += kAddressLength + 1;  // beneficiary
   rlp_head.payload_length += kBloomByteLength + length_of_length(kBloomByteLength);
@@ -33,8 +33,16 @@ void encode(std::ostream& to, const BlockHeader& header) {
   rlp_head.payload_length += length(header.timestamp);
   rlp_head.payload_length += length(header.extra_data());
   rlp_head.payload_length += 8 + 1;  // nonce
+  return rlp_head;
+}
 
-  encode_header(to, rlp_head);
+size_t length(const BlockHeader& header) {
+  Header rlp_head = rlp_header(header);
+  return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
+}
+
+void encode(std::ostream& to, const BlockHeader& header) {
+  encode_header(to, rlp_header(header));
   encode(to, header.parent_hash.bytes);
   encode(to, header.ommers_hash.bytes);
   encode(to, header.beneficiary.bytes);
@@ -51,6 +59,17 @@ void encode(std::ostream& to, const BlockHeader& header) {
   encode(to, header.extra_data());
   encode(to, header.mix_hash.bytes);
   encode(to, header.nonce);
+}
+
+void encode(std::ostream& to, const Block& block) {
+  Header rlp_head{.list = true, .payload_length = 0};
+  rlp_head.payload_length += length(block.header);
+  rlp_head.payload_length += length(block.ommers);
+  rlp_head.payload_length += length(block.transactions);
+  encode_header(to, rlp_head);
+  encode(to, block.header);
+  encode(to, block.ommers);
+  encode(to, block.transactions);
 }
 
 template <>

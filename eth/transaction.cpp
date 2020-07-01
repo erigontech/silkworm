@@ -28,7 +28,8 @@ bool operator==(const Transaction& a, const Transaction& b) {
 }
 
 namespace rlp {
-void encode(std::ostream& to, const Transaction& txn) {
+
+static Header rlp_header(const Transaction& txn) {
   Header h{.list = true, .payload_length = 0};
   h.payload_length += length(txn.nonce);
   h.payload_length += length(txn.gas_price);
@@ -39,8 +40,16 @@ void encode(std::ostream& to, const Transaction& txn) {
   h.payload_length += length(txn.v);
   h.payload_length += length(txn.r);
   h.payload_length += length(txn.s);
+  return h;
+}
 
-  encode_header(to, h);
+size_t length(const Transaction& txn) {
+  Header rlp_head = rlp_header(txn);
+  return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
+}
+
+void encode(std::ostream& to, const Transaction& txn) {
+  encode_header(to, rlp_header(txn));
   encode(to, txn.nonce);
   encode(to, txn.gas_price);
   encode(to, txn.gas_limit);

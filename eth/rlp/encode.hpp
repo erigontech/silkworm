@@ -28,7 +28,13 @@
 #include <string_view>
 #include <vector>
 
-namespace silkworm::eth::rlp {
+namespace silkworm::eth {
+
+struct Block;
+struct BlockHeader;
+struct Transaction;
+
+namespace rlp {
 
 static constexpr uint8_t kEmptyStringCode = 0x80;
 static constexpr uint8_t kEmptyListCode = 0xC0;
@@ -53,11 +59,27 @@ void encode(std::ostream& to, const uint8_t (&bytes)[N]) {
   to.write(static_cast<const char*>(ptr), N);
 }
 
+void encode(std::ostream& to, const Block& block);
+void encode(std::ostream& to, const BlockHeader& header);
+void encode(std::ostream& to, const Transaction& txn);
+
 size_t length_of_length(uint64_t payload_length);
 
 size_t length(std::string_view s);
 size_t length(uint64_t n);
 size_t length(intx::uint256 n);
+
+size_t length(const BlockHeader& header);
+size_t length(const Transaction& transaction);
+
+template <class T>
+size_t length(const std::vector<T>& v) {
+  size_t payload_length{0};
+  for (const T& x : v) {
+    payload_length += length(x);
+  }
+  return length_of_length(payload_length) + payload_length;
+}
 
 template <class T>
 void encode(std::ostream& to, const std::vector<T>& v) {
@@ -70,7 +92,7 @@ void encode(std::ostream& to, const std::vector<T>& v) {
     encode(to, x);
   }
 }
-
-}  // namespace silkworm::eth::rlp
+}  // namespace rlp
+}  // namespace silkworm::eth
 
 #endif  // SILKWORM_RLP_ENCODE_H_

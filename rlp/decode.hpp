@@ -26,6 +26,7 @@
 #include <intx/intx.hpp>
 #include <istream>
 #include <string>
+#include <vector>
 
 #include "encode.hpp"
 
@@ -69,6 +70,23 @@ void decode(std::istream& from, uint8_t (&to)[N]) {
   from.read(static_cast<char*>(ptr), N);
 }
 
+template <class T>
+void decode_vector(std::istream& from, std::vector<T>& to) {
+  Header h = decode_header(from);
+  if (!h.list) throw DecodingError("unexpected string");
+
+  to.clear();
+
+  int64_t end{from.tellg()};
+  end += h.length;
+
+  while (from.tellg() < end) {
+    to.emplace_back();
+    decode(from, to.back());
+  }
+
+  if (from.tellg() != end) throw DecodingError("list length mismatch");
+}
 }  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLP_DECODE_H_

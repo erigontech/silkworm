@@ -33,6 +33,14 @@ T decoded(const std::string& encoded) {
   return res;
 }
 
+template <class T>
+std::vector<T> decoded_vector(const std::string& encoded) {
+  std::istringstream stream{encoded};
+  std::vector<T> res;
+  silkworm::rlp::decode_vector<T>(stream, res);
+  return res;
+}
+
 }  // namespace
 
 namespace silkworm::rlp {
@@ -98,6 +106,12 @@ TEST_CASE("decode", "[rlp]") {
             unhex("A101000000000000000000000000000000000000008B000000000000000000000000"s)),
         DecodingError, Message("uint256 overflow"));
   }
-}
 
+  SECTION("vectors") {
+    CHECK(decoded_vector<intx::uint256>("\xC0") == std::vector<intx::uint256>{});
+    CHECK(decoded_vector<std::string>("\xC8\x83"
+                                      "cat\x83"
+                                      "dog") == std::vector<std::string>{"cat", "dog"});
+  }
+}
 }  // namespace silkworm::rlp

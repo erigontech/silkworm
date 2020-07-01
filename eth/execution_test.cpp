@@ -27,7 +27,7 @@ TEST_CASE("validation", "[execution]") {
   evmc::address miner = 0x829bd824b016326a401d083b33d092293333a830_address;
   uint64_t block_number{1};
 
-  eth::Transaction txn{
+  Transaction txn{
       .nonce = 12,
       .gas_price = 20000000000,
       .gas_limit = 21000,

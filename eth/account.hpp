@@ -24,9 +24,7 @@
 #include "common.hpp"
 #include "rlp/decode.hpp"
 
-namespace silkworm {
-
-namespace eth {
+namespace silkworm::eth {
 
 struct Account {
   uint64_t nonce{0};
@@ -38,14 +36,12 @@ struct Account {
 
 bool operator==(const Account& a, const Account& b);
 
-}  // namespace eth
-
 namespace rlp {
-void encode(std::ostream& to, const eth::Account& account);
+void encode(std::ostream& to, const Account& account);
 
 template <>
-void decode(std::istream& from, eth::Account& to);
+void decode(std::istream& from, Account& to);
 }  // namespace rlp
-}  // namespace silkworm
+}  // namespace silkworm::eth
 
 #endif  // SILKWORM_ETH_ACCOUNT_H_

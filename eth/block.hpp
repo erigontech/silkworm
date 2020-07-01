@@ -27,9 +27,7 @@
 #include "common.hpp"
 #include "rlp/decode.hpp"
 
-namespace silkworm {
-
-namespace eth {
+namespace silkworm::eth {
 
 struct BlockHeader {
   evmc::bytes32 parent_hash;
@@ -59,14 +57,12 @@ struct BlockHeader {
   uint32_t extra_data_size_{0};
 };
 
-}  // namespace eth
-
 namespace rlp {
-void encode(std::ostream& to, const eth::BlockHeader& header);
+void encode(std::ostream& to, const BlockHeader& header);
 
 template <>
-void decode(std::istream& from, eth::BlockHeader& to);
+void decode(std::istream& from, BlockHeader& to);
 }  // namespace rlp
-}  // namespace silkworm
+}  // namespace silkworm::eth
 
 #endif  // SILKWORM_ETH_BLOCK_H_

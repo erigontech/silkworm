@@ -28,7 +28,7 @@
 #include <string_view>
 #include <vector>
 
-namespace silkworm::rlp {
+namespace silkworm::eth::rlp {
 
 static constexpr uint8_t kEmptyStringCode = 0x80;
 static constexpr uint8_t kEmptyListCode = 0xC0;
@@ -71,6 +71,6 @@ void encode(std::ostream& to, const std::vector<T>& v) {
   }
 }
 
-}  // namespace silkworm::rlp
+}  // namespace silkworm::eth::rlp
 
 #endif  // SILKWORM_RLP_ENCODE_H_

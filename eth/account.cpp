@@ -18,24 +18,20 @@
 
 #include "rlp/encode.hpp"
 
-namespace silkworm {
-
-namespace eth {
+namespace silkworm::eth {
 
 bool operator==(const Account& a, const Account& b) {
   return a.nonce == b.nonce && a.balance == b.balance && a.storage_root == b.storage_root &&
          a.code_hash == b.code_hash && a.incarnation == b.incarnation;
 }
 
-}  // namespace eth
-
 namespace rlp {
-void encode(std::ostream& to, const eth::Account& account) {
+void encode(std::ostream& to, const Account& account) {
   Header h{.list = true, .length = 0};
   h.length += length(account.nonce);
   h.length += length(account.balance);
-  h.length += eth::kHashLength + 1;
-  h.length += eth::kHashLength + 1;
+  h.length += kHashLength + 1;
+  h.length += kHashLength + 1;
 
   encode_header(to, h);
   encode(to, account.nonce);
@@ -45,7 +41,7 @@ void encode(std::ostream& to, const eth::Account& account) {
 }
 
 template <>
-void decode(std::istream& from, eth::Account& to) {
+void decode(std::istream& from, Account& to) {
   Header h = decode_header(from);
   if (!h.list) {
     throw DecodingError("unexpected string");
@@ -57,4 +53,4 @@ void decode(std::istream& from, eth::Account& to) {
   decode(from, to.code_hash.bytes);
 }
 }  // namespace rlp
-}  // namespace silkworm
+}  // namespace silkworm::eth

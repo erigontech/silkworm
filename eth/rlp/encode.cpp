@@ -30,7 +30,7 @@ std::string_view big_endian(uint64_t n) {
 
 }  // namespace
 
-namespace silkworm::rlp {
+namespace silkworm::eth::rlp {
 
 void encode_header(std::ostream& to, Header header) {
   if (header.length < 56) {
@@ -114,4 +114,4 @@ size_t length(intx::uint256 n) {
   }
 }
 
-}  // namespace silkworm::rlp
+}  // namespace silkworm::eth::rlp

@@ -19,9 +19,7 @@
 #include "common.hpp"
 #include "rlp/encode.hpp"
 
-namespace silkworm {
-
-namespace eth {
+namespace silkworm::eth {
 
 bool operator==(const Transaction& a, const Transaction& b) {
   return a.nonce == b.nonce && a.gas_price == b.gas_price && a.gas_limit == b.gas_limit &&
@@ -29,15 +27,13 @@ bool operator==(const Transaction& a, const Transaction& b) {
          a.s == b.s;
 }
 
-}  // namespace eth
-
 namespace rlp {
-void encode(std::ostream& to, const eth::Transaction& txn) {
+void encode(std::ostream& to, const Transaction& txn) {
   Header h{.list = true, .length = 0};
   h.length += length(txn.nonce);
   h.length += length(txn.gas_price);
   h.length += length(txn.gas_limit);
-  h.length += txn.to ? (eth::kAddressLength + 1) : 1;
+  h.length += txn.to ? (kAddressLength + 1) : 1;
   h.length += length(txn.value);
   h.length += length(txn.data);
   h.length += length(txn.v);
@@ -61,7 +57,7 @@ void encode(std::ostream& to, const eth::Transaction& txn) {
 }
 
 template <>
-void decode(std::istream& from, eth::Transaction& to) {
+void decode(std::istream& from, Transaction& to) {
   Header h = decode_header(from);
   if (!h.list) {
     throw DecodingError("unexpected string");
@@ -85,4 +81,4 @@ void decode(std::istream& from, eth::Transaction& to) {
   decode(from, to.s);
 }
 }  // namespace rlp
-}  // namespace silkworm
+}  // namespace silkworm::eth

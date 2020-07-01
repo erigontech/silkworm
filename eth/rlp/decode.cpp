@@ -28,7 +28,7 @@ uint64_t read_uint64(std::istream& from, size_t len) {
   }
 
   if (from.peek() == 0) {
-    throw silkworm::rlp::DecodingError("leading zero(s)");
+    throw silkworm::eth::rlp::DecodingError("leading zero(s)");
   }
 
   thread_local uint64_t buf;
@@ -43,7 +43,7 @@ uint64_t read_uint64(std::istream& from, size_t len) {
 
 }  // namespace
 
-namespace silkworm::rlp {
+namespace silkworm::eth::rlp {
 
 Header decode_header(std::istream& from) {
   from.exceptions(std::ios_base::eofbit | std::ios_base::failbit | std::ios_base::badbit);
@@ -117,7 +117,7 @@ void decode(std::istream& from, intx::uint256& to) {
   }
 
   if (from.peek() == 0) {
-    throw silkworm::rlp::DecodingError("leading zero(s)");
+    throw DecodingError("leading zero(s)");
   }
 
   thread_local intx::uint256 buf;
@@ -129,4 +129,4 @@ void decode(std::istream& from, intx::uint256& to) {
   to = intx::bswap(buf);
 }
 
-}  // namespace silkworm::rlp
+}  // namespace silkworm::eth::rlp

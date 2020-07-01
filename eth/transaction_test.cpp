@@ -21,19 +21,19 @@
 
 #include "common.hpp"
 
-namespace silkworm {
+namespace silkworm::eth {
 
 TEST_CASE("transaction", "[rlp]") {
   using boost::algorithm::unhex;
   using namespace std::string_literals;
   using namespace evmc::literals;
 
-  eth::Transaction txn{
+  Transaction txn{
       .nonce = 12,
       .gas_price = 20000000000,
       .gas_limit = 21000,
       .to = 0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,
-      .value = 10 * eth::kEther,
+      .value = 10 * kEther,
       .data = unhex(
           "a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc971600000000000000000000015af1d78b58c4000"s),
       .v = intx::from_string<intx::uint256>(
@@ -48,8 +48,8 @@ TEST_CASE("transaction", "[rlp]") {
   rlp::encode(to, txn);
 
   std::istringstream from{to.str()};
-  eth::Transaction decoded;
-  rlp::decode<eth::Transaction>(from, decoded);
+  Transaction decoded;
+  rlp::decode<Transaction>(from, decoded);
   CHECK(decoded == txn);
 }
-}  // namespace silkworm
+}  // namespace silkworm::eth

@@ -19,14 +19,14 @@
 #include <catch2/catch.hpp>
 #include <sstream>
 
-namespace silkworm {
+namespace silkworm::eth {
 
 TEST_CASE("account", "[rlp]") {
   using namespace evmc::literals;
 
-  eth::Account account{
+  Account account{
       .nonce = 12,
-      .balance = 200 * eth::kEther,
+      .balance = 200 * kEther,
       .storage_root = 0xdde806bc028ddb3c73ddfbe1e19676224198e5d2cb205edb40e26da2a5310d5f_bytes32,
       .code_hash = 0x12580ee5fc5ea05a1a19a93cbc51830ae3607690b7c4a6996ea211aba5a966b2_bytes32,
   };
@@ -35,8 +35,8 @@ TEST_CASE("account", "[rlp]") {
   rlp::encode(to, account);
 
   std::istringstream from{to.str()};
-  eth::Account decoded;
-  rlp::decode<eth::Account>(from, decoded);
+  Account decoded;
+  rlp::decode<Account>(from, decoded);
   CHECK(decoded == account);
 }
-}  // namespace silkworm
+}  // namespace silkworm::eth

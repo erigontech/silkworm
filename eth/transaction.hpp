@@ -28,9 +28,7 @@
 
 #include "rlp/decode.hpp"
 
-namespace silkworm {
-
-namespace eth {
+namespace silkworm::eth {
 
 struct Transaction {
   uint64_t nonce{0};
@@ -45,14 +43,12 @@ struct Transaction {
 
 bool operator==(const Transaction& a, const Transaction& b);
 
-}  // namespace eth
-
 namespace rlp {
-void encode(std::ostream& to, const eth::Transaction& txn);
+void encode(std::ostream& to, const Transaction& txn);
 
 template <>
-void decode(std::istream& from, eth::Transaction& to);
+void decode(std::istream& from, Transaction& to);
 }  // namespace rlp
-}  // namespace silkworm
+}  // namespace silkworm::eth
 
 #endif  // SILKWORM_ETH_TRANSACTION_H_

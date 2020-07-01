@@ -18,14 +18,14 @@
 
 #include "rlp/encode.hpp"
 
-namespace silkworm {
+namespace silkworm::eth {
 
 namespace rlp {
 
-void encode(std::ostream& to, const eth::BlockHeader& header) {
-  Header rlp_head{.list = true, .length = 6 * (eth::kHashLength + 1)};
-  rlp_head.length += eth::kAddressLength + 1;  // beneficiary
-  rlp_head.length += eth::kBloomByteLength + length_of_length(eth::kBloomByteLength);
+void encode(std::ostream& to, const BlockHeader& header) {
+  Header rlp_head{.list = true, .length = 6 * (kHashLength + 1)};
+  rlp_head.length += kAddressLength + 1;  // beneficiary
+  rlp_head.length += kBloomByteLength + length_of_length(kBloomByteLength);
   rlp_head.length += length(header.difficulty);
   rlp_head.length += length(header.number);
   rlp_head.length += length(header.gas_limit);
@@ -41,8 +41,8 @@ void encode(std::ostream& to, const eth::BlockHeader& header) {
   encode(to, header.state_root.bytes);
   encode(to, header.transactions_root.bytes);
   encode(to, header.receipts_root.bytes);
-  encode_header(to, {.list = false, .length = eth::kBloomByteLength});
-  to.write(eth::byte_pointer_cast(header.logs_bloom.data()), eth::kBloomByteLength);
+  encode_header(to, {.list = false, .length = kBloomByteLength});
+  to.write(byte_pointer_cast(header.logs_bloom.data()), kBloomByteLength);
   encode(to, header.difficulty);
   encode(to, header.number);
   encode(to, header.gas_limit);
@@ -54,7 +54,7 @@ void encode(std::ostream& to, const eth::BlockHeader& header) {
 }
 
 template <>
-void decode(std::istream& from, eth::BlockHeader& to) {
+void decode(std::istream& from, BlockHeader& to) {
   Header rlp_head = decode_header(from);
   if (!rlp_head.list) {
     throw DecodingError("unexpected string");
@@ -68,10 +68,10 @@ void decode(std::istream& from, eth::BlockHeader& to) {
   decode(from, to.receipts_root.bytes);
 
   Header bloom_head = decode_header(from);
-  if (bloom_head.list || bloom_head.length != eth::kBloomByteLength) {
+  if (bloom_head.list || bloom_head.length != kBloomByteLength) {
     throw DecodingError("unorthodox logsBloom");
   }
-  from.read(eth::byte_pointer_cast(to.logs_bloom.data()), eth::kBloomByteLength);
+  from.read(byte_pointer_cast(to.logs_bloom.data()), kBloomByteLength);
 
   decode(from, to.difficulty);
   decode(from, to.number);
@@ -87,12 +87,10 @@ void decode(std::istream& from, eth::BlockHeader& to) {
     throw DecodingError("extraData must be no longer than 32 bytes");
   }
   to.extra_data_size_ = extra_data_head.length;
-  from.read(eth::byte_pointer_cast(to.extra_data_.bytes), to.extra_data_size_);
+  from.read(byte_pointer_cast(to.extra_data_.bytes), to.extra_data_size_);
 
   decode(from, to.mix_hash.bytes);
   decode(from, to.nonce);
 }
-
 }  // namespace rlp
-
-}  // namespace silkworm
+}  // namespace silkworm::eth

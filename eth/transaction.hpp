@@ -51,7 +51,7 @@ namespace rlp {
 void encode(std::ostream& to, const eth::Transaction& txn);
 
 template <>
-eth::Transaction decode(std::istream& from);
+void decode(std::istream& from, eth::Transaction& to);
 }  // namespace rlp
 }  // namespace silkworm
 

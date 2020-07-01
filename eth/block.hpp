@@ -53,7 +53,7 @@ struct BlockHeader {
   uint8_t nonce[8]{0};
 
  private:
-  friend BlockHeader rlp::decode<BlockHeader>(std::istream& from);
+  friend void rlp::decode<BlockHeader>(std::istream& from, BlockHeader& to);
 
   evmc::bytes32 extra_data_;
   uint32_t extra_data_size_{0};
@@ -65,7 +65,7 @@ namespace rlp {
 void encode(std::ostream& to, const eth::BlockHeader& header);
 
 template <>
-eth::BlockHeader decode(std::istream& from);
+void decode(std::istream& from, eth::BlockHeader& to);
 }  // namespace rlp
 }  // namespace silkworm
 

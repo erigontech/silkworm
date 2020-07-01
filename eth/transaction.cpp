@@ -61,31 +61,28 @@ void encode(std::ostream& to, const eth::Transaction& txn) {
 }
 
 template <>
-eth::Transaction decode(std::istream& from) {
+void decode(std::istream& from, eth::Transaction& to) {
   Header h = decode_header(from);
   if (!h.list) {
     throw DecodingError("unexpected string");
   }
 
-  eth::Transaction txn;
-  txn.nonce = decode<uint64_t>(from);
-  txn.gas_price = decode<intx::uint256>(from);
-  txn.gas_limit = decode<uint64_t>(from);
+  decode(from, to.nonce);
+  decode(from, to.gas_price);
+  decode(from, to.gas_limit);
 
   uint8_t toCode = from.get();
   if (toCode != kEmptyStringCode) {
     from.unget();
-    txn.to = evmc::address{};
-    decode_bytes(from, txn.to->bytes);
+    to.to = evmc::address{};
+    decode(from, to.to->bytes);
   }
 
-  txn.value = decode<intx::uint256>(from);
-  txn.data = decode<std::string>(from);
-  txn.v = decode<intx::uint256>(from);
-  txn.r = decode<intx::uint256>(from);
-  txn.s = decode<intx::uint256>(from);
-
-  return txn;
+  decode(from, to.value);
+  decode(from, to.data);
+  decode(from, to.v);
+  decode(from, to.r);
+  decode(from, to.s);
 }
 }  // namespace rlp
 }  // namespace silkworm

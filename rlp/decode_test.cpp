@@ -28,7 +28,9 @@ namespace {
 template <class T>
 T decoded(const std::string& encoded) {
   std::istringstream stream{encoded};
-  return silkworm::rlp::decode<T>(stream);
+  T res;
+  silkworm::rlp::decode<T>(stream, res);
+  return res;
 }
 
 }  // namespace

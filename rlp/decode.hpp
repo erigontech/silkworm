@@ -43,19 +43,19 @@ class DecodingError : public std::runtime_error {
 Header decode_header(std::istream& from);
 
 template <class T>
-T decode(std::istream& from);
+void decode(std::istream& from, T& to);
 
 template <>
-std::string decode(std::istream& from);
+void decode(std::istream& from, std::string& to);
 
 template <>
-uint64_t decode(std::istream& from);
+void decode(std::istream& from, uint64_t& to);
 
 template <>
-intx::uint256 decode(std::istream& from);
+void decode(std::istream& from, intx::uint256& to);
 
 template <unsigned N>
-void decode_bytes(std::istream& from, uint8_t (&to)[N]) {
+void decode(std::istream& from, uint8_t (&to)[N]) {
   static_assert(N <= 55, "Complex RLP length encoding not supported");
 
   from.exceptions(std::ios_base::eofbit | std::ios_base::failbit | std::ios_base::badbit);

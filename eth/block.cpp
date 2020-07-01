@@ -54,31 +54,30 @@ void encode(std::ostream& to, const eth::BlockHeader& header) {
 }
 
 template <>
-eth::BlockHeader decode(std::istream& from) {
+void decode(std::istream& from, eth::BlockHeader& to) {
   Header rlp_head = decode_header(from);
   if (!rlp_head.list) {
     throw DecodingError("unexpected string");
   }
 
-  eth::BlockHeader header;
-  decode_bytes(from, header.parent_hash.bytes);
-  decode_bytes(from, header.ommers_hash.bytes);
-  decode_bytes(from, header.beneficiary.bytes);
-  decode_bytes(from, header.state_root.bytes);
-  decode_bytes(from, header.transactions_root.bytes);
-  decode_bytes(from, header.receipts_root.bytes);
+  decode(from, to.parent_hash.bytes);
+  decode(from, to.ommers_hash.bytes);
+  decode(from, to.beneficiary.bytes);
+  decode(from, to.state_root.bytes);
+  decode(from, to.transactions_root.bytes);
+  decode(from, to.receipts_root.bytes);
 
   Header bloom_head = decode_header(from);
   if (bloom_head.list || bloom_head.length != eth::kBloomByteLength) {
     throw DecodingError("unorthodox logsBloom");
   }
-  from.read(eth::byte_pointer_cast(header.logs_bloom.data()), eth::kBloomByteLength);
+  from.read(eth::byte_pointer_cast(to.logs_bloom.data()), eth::kBloomByteLength);
 
-  header.difficulty = decode<intx::uint256>(from);
-  header.number = decode<uint64_t>(from);
-  header.gas_limit = decode<uint64_t>(from);
-  header.gas_used = decode<uint64_t>(from);
-  header.timestamp = decode<uint64_t>(from);
+  decode(from, to.difficulty);
+  decode(from, to.number);
+  decode(from, to.gas_limit);
+  decode(from, to.gas_used);
+  decode(from, to.timestamp);
 
   Header extra_data_head = decode_header(from);
   if (extra_data_head.list) {
@@ -87,13 +86,11 @@ eth::BlockHeader decode(std::istream& from) {
   if (extra_data_head.length > 32) {
     throw DecodingError("extraData must be no longer than 32 bytes");
   }
-  header.extra_data_size_ = extra_data_head.length;
-  from.read(eth::byte_pointer_cast(header.extra_data_.bytes), header.extra_data_size_);
+  to.extra_data_size_ = extra_data_head.length;
+  from.read(eth::byte_pointer_cast(to.extra_data_.bytes), to.extra_data_size_);
 
-  decode_bytes(from, header.mix_hash.bytes);
-  decode_bytes(from, header.nonce);
-
-  return header;
+  decode(from, to.mix_hash.bytes);
+  decode(from, to.nonce);
 }
 
 }  // namespace rlp

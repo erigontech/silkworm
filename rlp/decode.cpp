@@ -77,7 +77,7 @@ Header decode_header(std::istream& from) {
 }
 
 template <>
-std::string decode(std::istream& from) {
+void decode(std::istream& from, std::string& to) {
   Header h = decode_header(from);
   if (h.list) {
     throw DecodingError("unexpected list");
@@ -85,13 +85,12 @@ std::string decode(std::istream& from) {
   if (h.length > kMaxStringSize) {
     throw DecodingError("string is too long");
   }
-  std::string str(h.length, '\0');
-  from.read(str.data(), h.length);
-  return str;
+  to.resize(h.length);
+  from.read(to.data(), h.length);
 }
 
 template <>
-uint64_t decode(std::istream& from) {
+void decode(std::istream& from, uint64_t& to) {
   Header h = decode_header(from);
   if (h.list) {
     throw DecodingError("unexpected list");
@@ -99,11 +98,11 @@ uint64_t decode(std::istream& from) {
   if (h.length > 8) {
     throw DecodingError("uint64 overflow");
   }
-  return read_uint64(from, h.length);
+  to = read_uint64(from, h.length);
 }
 
 template <>
-intx::uint256 decode(std::istream& from) {
+void decode(std::istream& from, intx::uint256& to) {
   Header h = decode_header(from);
   if (h.list) {
     throw DecodingError("unexpected list");
@@ -113,7 +112,8 @@ intx::uint256 decode(std::istream& from) {
   }
 
   if (h.length == 0) {
-    return 0;
+    to = 0;
+    return;
   }
 
   if (from.peek() == 0) {
@@ -126,7 +126,7 @@ intx::uint256 decode(std::istream& from) {
   char* p = reinterpret_cast<char*>(as_bytes(buf));
   from.read(p + (32 - h.length), h.length);
 
-  return intx::bswap(buf);
+  to = intx::bswap(buf);
 }
 
 }  // namespace silkworm::rlp

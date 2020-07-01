@@ -45,19 +45,16 @@ void encode(std::ostream& to, const eth::Account& account) {
 }
 
 template <>
-eth::Account decode(std::istream& from) {
+void decode(std::istream& from, eth::Account& to) {
   Header h = decode_header(from);
   if (!h.list) {
     throw DecodingError("unexpected string");
   }
 
-  eth::Account account;
-  account.nonce = decode<uint64_t>(from);
-  account.balance = decode<intx::uint256>(from);
-  decode_bytes(from, account.storage_root.bytes);
-  decode_bytes(from, account.code_hash.bytes);
-
-  return account;
+  decode(from, to.nonce);
+  decode(from, to.balance);
+  decode(from, to.storage_root.bytes);
+  decode(from, to.code_hash.bytes);
 }
 }  // namespace rlp
 }  // namespace silkworm

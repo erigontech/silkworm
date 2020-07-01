@@ -82,4 +82,12 @@ TEST_CASE("Encode", "[rlp]") {
               "0x0100020003000400050006000700080009000A0B4B000C000D000E01"))) ==
           "9C0100020003000400050006000700080009000A0B4B000C000D000E01");
   }
+
+  SECTION("vectors") {
+    CHECK(hex(encoded(std::vector<std::string>{})) == "C0");
+    CHECK(encoded(std::vector<std::string>{"cat", "dog"}) ==
+          "\xC8\x83"
+          "cat\x83"
+          "dog");
+  }
 }

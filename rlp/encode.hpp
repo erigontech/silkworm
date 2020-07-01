@@ -26,6 +26,7 @@
 #include <intx/intx.hpp>
 #include <ostream>
 #include <string_view>
+#include <vector>
 
 namespace silkworm::rlp {
 
@@ -57,6 +58,18 @@ size_t length_of_length(uint64_t length);
 size_t length(std::string_view s);
 size_t length(uint64_t n);
 size_t length(intx::uint256 n);
+
+template <class T>
+void encode(std::ostream& to, const std::vector<T>& v) {
+  Header h{.list = true, .length = 0};
+  for (const T& x : v) {
+    h.length += length(x);
+  }
+  encode_header(to, h);
+  for (const T& x : v) {
+    encode(to, x);
+  }
+}
 
 }  // namespace silkworm::rlp
 

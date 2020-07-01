@@ -18,9 +18,9 @@
 
 #include <gsl/gsl_assert>
 
-namespace {
+namespace silkworm::eth::rlp {
 
-uint64_t read_uint64(std::istream& from, size_t len) {
+static uint64_t read_uint64(std::istream& from, size_t len) {
   Expects(len <= 8);
 
   if (len == 0) {
@@ -28,7 +28,7 @@ uint64_t read_uint64(std::istream& from, size_t len) {
   }
 
   if (from.peek() == 0) {
-    throw silkworm::eth::rlp::DecodingError("leading zero(s)");
+    throw DecodingError("leading zero(s)");
   }
 
   thread_local uint64_t buf;
@@ -40,10 +40,6 @@ uint64_t read_uint64(std::istream& from, size_t len) {
   // We assume a little-endian architecture like amd64
   return intx::bswap(buf);
 }
-
-}  // namespace
-
-namespace silkworm::eth::rlp {
 
 Header decode_header(std::istream& from) {
   from.exceptions(std::ios_base::eofbit | std::ios_base::failbit | std::ios_base::badbit);

@@ -24,12 +24,10 @@
 
 #include "protocol_param.hpp"
 
-namespace {
+namespace silkworm::eth {
 
-using namespace silkworm::eth;
-
-intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation, bool homestead,
-                            bool eip2028) {
+static intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation, bool homestead,
+                                   bool eip2028) {
   intx::uint128 gas = fee::kGtransaction;
   if (contract_creation && homestead) {
     gas += fee::kGtxCreate;
@@ -50,10 +48,6 @@ intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation, bool 
 
   return gas;
 }
-
-}  // namespace
-
-namespace silkworm::eth {
 
 ExecutionProcessor::ExecutionProcessor(IntraBlockState& state, evmc::address coinbase,
                                        uint64_t block_number)

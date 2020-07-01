@@ -21,27 +21,23 @@
 #include <sstream>
 #include <string_view>
 
-namespace {
+namespace silkworm::eth::rlp {
 
 template <class T>
-T decoded(const std::string& encoded) {
+static T decoded(const std::string& encoded) {
   std::istringstream stream{encoded};
   T res;
-  silkworm::eth::rlp::decode<T>(stream, res);
+  decode<T>(stream, res);
   return res;
 }
 
 template <class T>
-std::vector<T> decoded_vector(const std::string& encoded) {
+static std::vector<T> decoded_vector(const std::string& encoded) {
   std::istringstream stream{encoded};
   std::vector<T> res;
-  silkworm::eth::rlp::decode_vector<T>(stream, res);
+  decode_vector<T>(stream, res);
   return res;
 }
-
-}  // namespace
-
-namespace silkworm::eth::rlp {
 
 TEST_CASE("decode", "[rlp]") {
   using boost::algorithm::unhex;

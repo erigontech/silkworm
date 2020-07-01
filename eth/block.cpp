@@ -61,17 +61,6 @@ void encode(std::ostream& to, const BlockHeader& header) {
   encode(to, header.nonce);
 }
 
-void encode(std::ostream& to, const Block& block) {
-  Header rlp_head{.list = true, .payload_length = 0};
-  rlp_head.payload_length += length(block.header);
-  rlp_head.payload_length += length(block.ommers);
-  rlp_head.payload_length += length(block.transactions);
-  encode_header(to, rlp_head);
-  encode(to, block.header);
-  encode(to, block.ommers);
-  encode(to, block.transactions);
-}
-
 template <>
 void decode(std::istream& from, BlockHeader& to) {
   Header rlp_head = decode_header(from);
@@ -110,6 +99,29 @@ void decode(std::istream& from, BlockHeader& to) {
 
   decode(from, to.mix_hash.bytes);
   decode(from, to.nonce);
+}
+
+void encode(std::ostream& to, const Block& block) {
+  Header rlp_head{.list = true, .payload_length = 0};
+  rlp_head.payload_length += length(block.header);
+  rlp_head.payload_length += length(block.ommers);
+  rlp_head.payload_length += length(block.transactions);
+  encode_header(to, rlp_head);
+  encode(to, block.header);
+  encode(to, block.ommers);
+  encode(to, block.transactions);
+}
+
+template <>
+void decode(std::istream& from, Block& to) {
+  Header rlp_head = decode_header(from);
+  if (!rlp_head.list) {
+    throw DecodingError("unexpected string");
+  }
+
+  decode(from, to.header);
+  decode_vector(from, to.ommers);
+  decode_vector(from, to.transactions);
 }
 }  // namespace rlp
 }  // namespace silkworm::eth

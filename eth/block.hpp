@@ -68,6 +68,9 @@ struct Block {
 namespace rlp {
 
 template <>
+void decode(std::istream& from, Block& to);
+
+template <>
 void decode(std::istream& from, BlockHeader& to);
 }  // namespace rlp
 }  // namespace silkworm::eth

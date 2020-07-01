@@ -17,11 +17,9 @@
 #include "decode.hpp"
 
 #include <boost/algorithm/hex.hpp>
+#include <catch2/catch.hpp>
 #include <sstream>
 #include <string_view>
-
-// TODO(Andrew) Hunter's Catch
-#include "../../tests/catch.hpp"
 
 namespace {
 

@@ -16,9 +16,8 @@
 
 #include "account.hpp"
 
+#include <catch2/catch.hpp>
 #include <sstream>
-
-#include "../tests/catch.hpp"
 
 namespace silkworm {
 

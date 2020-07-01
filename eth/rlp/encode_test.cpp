@@ -17,11 +17,10 @@
 #include "encode.hpp"
 
 #include <boost/algorithm/hex.hpp>
+#include <catch2/catch.hpp>
 #include <iterator>
 #include <sstream>
 #include <string>
-
-#include "../../tests/catch.hpp"
 
 namespace {
 

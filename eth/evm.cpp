@@ -226,8 +226,8 @@ evmc_revision EVM::revision() const noexcept {
 
 evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
   std::ostringstream stream;
-  rlp::Header h{.list = true, .length = kAddressLength};
-  h.length += rlp::length(nonce);
+  rlp::Header h{.list = true, .payload_length = kAddressLength};
+  h.payload_length += rlp::length(nonce);
   rlp::encode_header(stream, h);
   rlp::encode(stream, caller.bytes);
   rlp::encode(stream, nonce);

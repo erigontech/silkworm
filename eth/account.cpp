@@ -27,11 +27,11 @@ bool operator==(const Account& a, const Account& b) {
 
 namespace rlp {
 void encode(std::ostream& to, const Account& account) {
-  Header h{.list = true, .length = 0};
-  h.length += length(account.nonce);
-  h.length += length(account.balance);
-  h.length += kHashLength + 1;
-  h.length += kHashLength + 1;
+  Header h{.list = true, .payload_length = 0};
+  h.payload_length += length(account.nonce);
+  h.payload_length += length(account.balance);
+  h.payload_length += kHashLength + 1;
+  h.payload_length += kHashLength + 1;
 
   encode_header(to, h);
   encode(to, account.nonce);

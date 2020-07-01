@@ -33,28 +33,28 @@ std::string_view big_endian(uint64_t n) {
 namespace silkworm::eth::rlp {
 
 void encode_header(std::ostream& to, Header header) {
-  if (header.length < 56) {
+  if (header.payload_length < 56) {
     uint8_t code = header.list ? kEmptyListCode : kEmptyStringCode;
-    to.put(code + header.length);
+    to.put(code + header.payload_length);
   } else {
-    std::string_view len_be = big_endian(header.length);
+    std::string_view len_be = big_endian(header.payload_length);
     uint8_t code = header.list ? '\xF7' : '\xB7';
     to.put(code + len_be.length());
     to.write(len_be.data(), len_be.length());
   }
 }
 
-size_t length_of_length(uint64_t length) {
-  if (length < 56) {
+size_t length_of_length(uint64_t payload_length) {
+  if (payload_length < 56) {
     return 1;
   } else {
-    return 1 + 8 - intx::clz(length) / 8;
+    return 1 + 8 - intx::clz(payload_length) / 8;
   }
 }
 
 void encode(std::ostream& to, std::string_view s) {
   if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= kEmptyStringCode) {
-    encode_header(to, {.list = false, .length = s.length()});
+    encode_header(to, {.list = false, .payload_length = s.length()});
   }
   to.write(s.data(), s.length());
 }

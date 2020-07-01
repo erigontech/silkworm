@@ -78,7 +78,7 @@ void decode_vector(std::istream& from, std::vector<T>& to) {
   to.clear();
 
   int64_t end{from.tellg()};
-  end += h.length;
+  end += h.payload_length;
 
   while (from.tellg() < end) {
     to.emplace_back();

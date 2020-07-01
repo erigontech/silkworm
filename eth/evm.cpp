@@ -22,8 +22,8 @@
 #include <ethash/keccak.hpp>
 #include <sstream>
 
-#include "../rlp/encode.hpp"
 #include "protocol_param.hpp"
+#include "rlp/encode.hpp"
 
 namespace silkworm::eth {
 

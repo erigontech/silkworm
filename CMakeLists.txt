@@ -43,12 +43,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes -Wno-missing-field-initializers)
 endif()
 
-set(SILKWORM_LIBS silkworm_db silkworm_rlp silkworm_eth)
+set(SILKWORM_LIBS silkworm_db silkworm_eth)
 
 add_subdirectory(evmone)
 
 add_subdirectory(db)
-add_subdirectory(rlp)
 add_subdirectory(eth)
 
 add_subdirectory(tests)

@@ -16,7 +16,7 @@
 
 #include "block.hpp"
 
-#include "../rlp/encode.hpp"
+#include "rlp/encode.hpp"
 
 namespace silkworm {
 

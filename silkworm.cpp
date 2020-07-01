@@ -16,7 +16,7 @@
 
 #include <iostream>
 
-#include "rlp/encode.hpp"
+#include "eth/rlp/encode.hpp"
 
 int main() {
   std::cout << "Silkworm is under construction 🏗\n";

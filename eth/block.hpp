@@ -23,9 +23,9 @@
 #include <intx/intx.hpp>
 #include <string_view>
 
-#include "../rlp/decode.hpp"
 #include "bloom.hpp"
 #include "common.hpp"
+#include "rlp/decode.hpp"
 
 namespace silkworm {
 

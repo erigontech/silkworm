@@ -21,7 +21,7 @@
 #include <string_view>
 
 // TODO(Andrew) Hunter's Catch
-#include "../tests/catch.hpp"
+#include "../../tests/catch.hpp"
 
 namespace {
 

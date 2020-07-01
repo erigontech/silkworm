@@ -26,7 +26,7 @@
 #include <ostream>
 #include <string>
 
-#include "../rlp/decode.hpp"
+#include "rlp/decode.hpp"
 
 namespace silkworm {
 

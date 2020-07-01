@@ -21,8 +21,8 @@
 #include <istream>
 #include <ostream>
 
-#include "../rlp/decode.hpp"
 #include "common.hpp"
+#include "rlp/decode.hpp"
 
 namespace silkworm {
 

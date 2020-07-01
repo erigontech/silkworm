@@ -21,7 +21,8 @@
 #include <sstream>
 #include <string>
 
-#include "../tests/catch.hpp"
+#include "../../tests/catch.hpp"
+
 namespace {
 
 template <typename T>

@@ -29,8 +29,7 @@
 
 namespace silkworm::eth {
 
-EVM::EVM(IntraBlockState& state, evmc::address coinbase, uint64_t block_number)
-    : state_{state}, coinbase_{coinbase}, block_number_{block_number} {}
+EVM::EVM(IntraBlockState& state, const Block& block) : state_{state}, block_{block} {}
 
 CallResult EVM::create(const evmc::address& caller, std::string_view code, uint64_t gas,
                        const intx::uint256& value) {
@@ -86,7 +85,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 
   IntraBlockState snapshot = state_;
   state_.create(contract_addr, /*contract=*/true);
-  if (config_.has_spurious_dragon(block_number_)) {
+  if (config_.has_spurious_dragon(block_.header.number)) {
     state_.set_nonce(contract_addr, 1);
   }
 
@@ -111,13 +110,13 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
     size_t code_len = res.output_size;
     int64_t code_deploy_gas = code_len * fee::kGcodeDeposit;
 
-    if (config_.has_spurious_dragon(block_number_) && code_len > param::kMaxCodeSize) {
+    if (config_.has_spurious_dragon(block_.header.number) && code_len > param::kMaxCodeSize) {
       // https://eips.ethereum.org/EIPS/eip-170
       res.status_code = EVMC_OUT_OF_GAS;
     } else if (res.gas_left >= code_deploy_gas) {
       res.gas_left -= code_deploy_gas;
       state_.set_code(contract_addr, {byte_pointer_cast(res.output_data), res.output_size});
-    } else if (config_.has_homestead(block_number_)) {
+    } else if (config_.has_homestead(block_.header.number)) {
       res.status_code = EVMC_OUT_OF_GAS;
     }
   }
@@ -177,7 +176,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
       // TODO(Andrew) precompiles
 
       // https://eips.ethereum.org/EIPS/eip-161
-      if (config_.has_spurious_dragon(block_number_) && value == 0) {
+      if (config_.has_spurious_dragon(block_.header.number) && value == 0) {
         return res;
       }
       state_.create(message.destination, /*contract=*/false);
@@ -215,13 +214,15 @@ evmc::result EVM::execute(const evmc_message& message, uint8_t const* code,
 }
 
 evmc_revision EVM::revision() const noexcept {
-  if (config_.has_istanbul(block_number_)) return EVMC_ISTANBUL;
-  if (config_.has_petersburg(block_number_)) return EVMC_PETERSBURG;
-  if (config_.has_constantinople(block_number_)) return EVMC_CONSTANTINOPLE;
-  if (config_.has_byzantium(block_number_)) return EVMC_BYZANTIUM;
-  if (config_.has_spurious_dragon(block_number_)) return EVMC_SPURIOUS_DRAGON;
-  if (config_.has_tangerine_whistle(block_number_)) return EVMC_TANGERINE_WHISTLE;
-  if (config_.has_homestead(block_number_)) return EVMC_HOMESTEAD;
+  uint64_t block_number = block_.header.number;
+
+  if (config_.has_istanbul(block_number)) return EVMC_ISTANBUL;
+  if (config_.has_petersburg(block_number)) return EVMC_PETERSBURG;
+  if (config_.has_constantinople(block_number)) return EVMC_CONSTANTINOPLE;
+  if (config_.has_byzantium(block_number)) return EVMC_BYZANTIUM;
+  if (config_.has_spurious_dragon(block_number)) return EVMC_SPURIOUS_DRAGON;
+  if (config_.has_tangerine_whistle(block_number)) return EVMC_TANGERINE_WHISTLE;
+  if (config_.has_homestead(block_number)) return EVMC_HOMESTEAD;
 
   return EVMC_FRONTIER;
 }
@@ -327,8 +328,13 @@ evmc::result EvmHost::call(const evmc_message& message) noexcept {
 
 evmc_tx_context EvmHost::get_tx_context() const noexcept {
   evmc_tx_context context;
-  context.block_coinbase = evm_.coinbase();
-  // TODO(Andrew) implement the rest
+  // TODO (Andrew) tx_gas_price & tx_origin
+  context.block_coinbase = evm_.block_.header.beneficiary;
+  context.block_number = evm_.block_.header.number;
+  context.block_timestamp = evm_.block_.header.timestamp;
+  context.block_gas_limit = evm_.block_.header.gas_limit;
+  intx::be::store(context.block_difficulty.bytes, evm_.block_.header.difficulty);
+  intx::be::store(context.chain_id.bytes, intx::uint256{evm_.config_.chain_id});
   return context;
 }
 

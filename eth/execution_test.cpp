@@ -24,8 +24,9 @@
 namespace silkworm::eth {
 
 TEST_CASE("validation", "[execution]") {
-  evmc::address miner = 0x829bd824b016326a401d083b33d092293333a830_address;
-  uint64_t block_number{1};
+  Block block;
+  block.header.number = 1;
+  block.header.beneficiary = 0x829bd824b016326a401d083b33d092293333a830_address;
 
   Transaction txn{
       .nonce = 12,
@@ -36,7 +37,7 @@ TEST_CASE("validation", "[execution]") {
   };
 
   IntraBlockState state;
-  ExecutionProcessor processor{state, miner, block_number};
+  ExecutionProcessor processor{state, block};
 
   ExecutionResult res = processor.execute_transaction(txn);
   CHECK(res.error == ValidationError::kMissingSender);

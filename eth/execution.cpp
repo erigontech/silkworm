@@ -49,9 +49,8 @@ static intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation
   return gas;
 }
 
-ExecutionProcessor::ExecutionProcessor(IntraBlockState& state, evmc::address coinbase,
-                                       uint64_t block_number)
-    : evm_{state, coinbase, block_number} {}
+ExecutionProcessor::ExecutionProcessor(IntraBlockState& state, const Block& block)
+    : evm_{state, block} {}
 
 ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) {
   ExecutionResult res;
@@ -69,8 +68,9 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
     return res;
   }
 
-  bool homestead = evm_.config().has_homestead(evm_.block_number());
-  bool istanbul = evm_.config().has_istanbul(evm_.block_number());
+  uint64_t block_number = evm_.block().header.number;
+  bool homestead = evm_.config().has_homestead(block_number);
+  bool istanbul = evm_.config().has_istanbul(block_number);
   bool contract_creation = !txn.to;
 
   intx::uint128 g0 = intrinsic_gas(txn.data, contract_creation, homestead, istanbul);
@@ -110,7 +110,7 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
   res.gas_used = txn.gas_limit - gas_left;
 
   // award the miner
-  state.add_to_balance(evm_.coinbase(), res.gas_used * txn.gas_price);
+  state.add_to_balance(evm_.block().header.beneficiary, res.gas_used * txn.gas_price);
 
   state.finalize_transaction();
 

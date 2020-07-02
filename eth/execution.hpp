@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "block.hpp"
 #include "evm.hpp"
 #include "receipt.hpp"
 #include "transaction.hpp"
@@ -48,7 +49,7 @@ class ExecutionProcessor {
   ExecutionProcessor(const ExecutionProcessor&) = delete;
   ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-  ExecutionProcessor(IntraBlockState& state, evmc::address coinbase, uint64_t block_number);
+  ExecutionProcessor(IntraBlockState& state, const Block& block);
 
   // precondition: txn.from must be recovered
   ExecutionResult execute_transaction(const Transaction& txn);

@@ -25,14 +25,16 @@
 namespace silkworm::eth {
 
 TEST_CASE("value transfer", "[evm]") {
-  uint64_t block_number{10336006};
-  evmc::address miner{0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address};
+  Block block;
+  block.header.number = 10336006;
+  block.header.beneficiary = 0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address;
+
   evmc::address from{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
   evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};
   intx::uint256 value{10'200'000'000'000'000};
 
   IntraBlockState state;
-  EVM evm{state, miner, block_number};
+  EVM evm{state, block};
 
   CHECK(state.get_balance(from) == 0);
   CHECK(state.get_balance(to) == 0);
@@ -53,8 +55,9 @@ TEST_CASE("smart contract", "[evm]") {
   using boost::algorithm::unhex;
   using namespace std::string_literals;
 
-  uint64_t block_number{10336006};
-  evmc::address miner{0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address};
+  Block block;
+  block.header.number = 10336006;
+  block.header.beneficiary = 0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address;
   evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 
   // This contract initially sets its 0th storage to 0x2a
@@ -81,7 +84,7 @@ TEST_CASE("smart contract", "[evm]") {
   // 27     SSTORE         // storage[0] = input[0]
 
   IntraBlockState state;
-  EVM evm{state, miner, block_number};
+  EVM evm{state, block};
 
   uint64_t gas{0};
   CallResult res = evm.create(caller, code, gas, 0);

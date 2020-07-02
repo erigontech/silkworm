@@ -24,6 +24,7 @@
 #include <string>
 #include <string_view>
 
+#include "block.hpp"
 #include "common.hpp"
 #include "config.hpp"
 #include "intra_block_state.hpp"
@@ -46,10 +47,9 @@ class EVM {
   EVM(const EVM&) = delete;
   EVM& operator=(const EVM&) = delete;
 
-  EVM(IntraBlockState& state, evmc::address coinbase, uint64_t block_number);
+  EVM(IntraBlockState& state, const Block& block);
 
-  const evmc::address& coinbase() const { return coinbase_; }
-  uint64_t block_number() const { return block_number_; }
+  const Block& block() const { return block_; }
 
   const ChainConfig& config() const { return config_; }
 
@@ -76,8 +76,7 @@ class EVM {
 
   IntraBlockState& state_;
   ChainConfig config_{kEthMainnetChainConfig};
-  evmc::address coinbase_;
-  uint64_t block_number_{0};
+  Block block_;
 };
 
 // Yellow Paper, Section 7

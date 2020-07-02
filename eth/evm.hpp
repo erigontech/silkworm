@@ -75,7 +75,7 @@ class EVM {
   evmc_revision revision() const noexcept;
 
   IntraBlockState& state_;
-  ChainConfig config_{kMainnetChainConfig};
+  ChainConfig config_{kEthMainnetChainConfig};
   evmc::address coinbase_;
   uint64_t block_number_{0};
 };

@@ -27,6 +27,7 @@
 #include "common.hpp"
 #include "config.hpp"
 #include "intra_block_state.hpp"
+#include "log.hpp"
 
 // TODO(Andrew) get rid of this when
 // https://github.com/ethereum/evmc/pull/528
@@ -59,6 +60,8 @@ class EVM {
 
   CallResult call(const evmc::address& caller, const evmc::address& recipient,
                   std::string_view input, uint64_t gas, const intx::uint256& value);
+
+  std::vector<Log> logs;
 
  private:
   friend class EvmHost;

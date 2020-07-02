@@ -81,4 +81,6 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
 
 void IntraBlockState::revert_to_snapshot(const IntraBlockState&) {}
 
+void IntraBlockState::finalize_transaction() {}
+
 }  // namespace silkworm::eth

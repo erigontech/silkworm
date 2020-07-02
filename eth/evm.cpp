@@ -18,8 +18,10 @@
 
 #include <evmone/evmone.h>
 
+#include <algorithm>
 #include <cstring>
 #include <ethash/keccak.hpp>
+#include <iterator>
 #include <sstream>
 
 #include "protocol_param.hpp"
@@ -335,9 +337,12 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t) const noexcept {
   return {};
 }
 
-void EvmHost::emit_log(const evmc::address&, const uint8_t*, size_t, const evmc::bytes32[],
-                       size_t) noexcept {
-  // TODO(Andrew) implement
+void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t data_size,
+                       const evmc::bytes32 topics[], size_t num_topics) noexcept {
+  Log log{.address = address};
+  std::copy_n(topics, num_topics, std::back_inserter(log.topics));
+  std::copy_n(data, data_size, std::back_inserter(log.data));
+  evm_.logs.push_back(log);
 }
 
 }  // namespace silkworm::eth

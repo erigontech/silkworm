@@ -58,6 +58,8 @@ class IntraBlockState {
 
   void revert_to_snapshot(const IntraBlockState& snapshot);
 
+  void finalize_transaction();
+
  private:
   // TODO(Andrew) rework
   std::map<evmc::address, Account> accounts_;

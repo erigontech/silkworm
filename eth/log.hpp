@@ -25,8 +25,8 @@
 namespace silkworm::eth {
 
 struct Log {
-  Address address;
-  std::vector<Hash> topics;
+  evmc::address address;
+  std::vector<evmc::bytes32> topics;
   std::string data;
 };
 

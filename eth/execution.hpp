@@ -23,6 +23,7 @@
 #include <string>
 
 #include "evm.hpp"
+#include "receipt.hpp"
 #include "transaction.hpp"
 
 namespace silkworm::eth {
@@ -37,9 +38,9 @@ enum class ValidationError {
 };
 
 struct ExecutionResult {
-  uint64_t used_gas{0};
   ValidationError error{ValidationError::kOk};
-  bool success{false};
+  uint64_t gas_used{0};
+  Receipt receipt;
 };
 
 class ExecutionProcessor {
@@ -56,6 +57,7 @@ class ExecutionProcessor {
   uint64_t refund_gas(const Transaction& txn, uint64_t gas_left);
 
   uint64_t gas_pool_{0};
+  uint64_t cumulative_gas_used_{0};
   EVM evm_;
 };
 

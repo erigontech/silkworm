@@ -21,6 +21,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "block.hpp"
 #include "evm.hpp"
@@ -36,6 +37,11 @@ enum class ValidationError {
   kIntrinsicGas,
   kInsufficientFunds,
   kBlockGasLimitReached,
+};
+
+class ExecutionError : public std::runtime_error {
+ public:
+  using std::runtime_error::runtime_error;
 };
 
 struct ExecutionResult {
@@ -54,10 +60,14 @@ class ExecutionProcessor {
   // precondition: txn.from must be recovered
   ExecutionResult execute_transaction(const Transaction& txn);
 
+  std::vector<Receipt> execute_block();
+
  private:
+  uint64_t available_gas() const;
   uint64_t refund_gas(const Transaction& txn, uint64_t gas_left);
 
-  uint64_t gas_pool_{0};
+  void apply_rewards();
+
   uint64_t cumulative_gas_used_{0};
   EVM evm_;
 };

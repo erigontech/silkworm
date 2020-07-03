@@ -19,6 +19,8 @@
 
 #include <stdint.h>
 
+#include "common.hpp"
+
 namespace silkworm::eth {
 
 // Fee schedule—see Appendix G of the Yellow Paper
@@ -41,6 +43,10 @@ constexpr size_t kMaxStackDepth{1024};
 
 // https://eips.ethereum.org/EIPS/eip-170
 constexpr size_t kMaxCodeSize{0x6000};
+
+constexpr uint64_t kFrontierBlockReward{5 * kEther};
+constexpr uint64_t kByzantiumBlockReward{3 * kEther};
+constexpr uint64_t kConstantinopleBlockReward{2 * kEther};
 }  // namespace param
 
 }  // namespace silkworm::eth

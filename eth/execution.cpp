@@ -87,7 +87,7 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
     return res;
   }
 
-  if (gas_pool_ < txn.gas_limit) {
+  if (available_gas() < txn.gas_limit) {
     res.error = ValidationError::kBlockGasLimitReached;
     return res;
   }
@@ -124,15 +124,58 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
   return res;
 }
 
+uint64_t ExecutionProcessor::available_gas() const {
+  return evm_.block().header.gas_limit - cumulative_gas_used_;
+}
+
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) {
   IntraBlockState& state = evm_.state();
 
   uint64_t refund = std::min((txn.gas_limit - gas_left) / 2, state.get_refund());
   gas_left += refund;
-  gas_pool_ += gas_left;
   state.add_to_balance(*txn.from, gas_left * txn.gas_price);
 
   return gas_left;
+}
+
+std::vector<Receipt> ExecutionProcessor::execute_block() {
+  std::vector<Receipt> receipts;
+
+  // TODO(Andrew) DAO block
+
+  cumulative_gas_used_ = 0;
+  for (const Transaction& txn : evm_.block().transactions) {
+    ExecutionResult res = execute_transaction(txn);
+    if (res.error != ValidationError::kOk) {
+      throw ExecutionError("ValidationError " + std::to_string(static_cast<int>(res.error)));
+    }
+    receipts.push_back(res.receipt);
+  }
+
+  apply_rewards();
+
+  return receipts;
+}
+
+void ExecutionProcessor::apply_rewards() {
+  uint64_t block_number = evm_.block().header.number;
+  intx::uint256 block_reward;
+  if (evm_.config().has_constantinople(block_number)) {
+    block_reward = param::kConstantinopleBlockReward;
+  } else if (evm_.config().has_byzantium(block_number)) {
+    block_reward = param::kByzantiumBlockReward;
+  } else {
+    block_reward = param::kFrontierBlockReward;
+  }
+
+  intx::uint256 miner_reward = block_reward;
+  for (const BlockHeader& ommer : evm_.block().ommers) {
+    intx::uint256 ommer_reward = (8 + ommer.number - block_number) * block_reward / 8;
+    evm_.state().add_to_balance(ommer.beneficiary, ommer_reward);
+    miner_reward += block_reward / 32;
+  }
+
+  evm_.state().add_to_balance(evm_.block().header.beneficiary, miner_reward);
 }
 
 }  // namespace silkworm::eth

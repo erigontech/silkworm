@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_BLOOM_H_
-#define SILKWORM_ETH_BLOOM_H_
+#ifndef SILKWORM_TYPES_BLOOM_H_
+#define SILKWORM_TYPES_BLOOM_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -30,4 +30,4 @@ using Bloom = std::array<uint8_t, kBloomByteLength>;
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_BLOOM_H_
+#endif  // SILKWORM_TYPES_BLOOM_H_

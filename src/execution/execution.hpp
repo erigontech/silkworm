@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_EXECUTION_H_
-#define SILKWORM_ETH_EXECUTION_H_
+#ifndef SILKWORM_EXECUTION_EXECUTION_H_
+#define SILKWORM_EXECUTION_EXECUTION_H_
 
 #include <stdint.h>
 
@@ -73,4 +73,4 @@ class ExecutionProcessor {
 };
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_EXECUTION_H_
+#endif  // SILKWORM_EXECUTION_EXECUTION_H_

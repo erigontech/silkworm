@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_RECEIPT_H_
-#define SILKWORM_ETH_RECEIPT_H_
+#ifndef SILKWORM_TYPES_RECEIPT_H_
+#define SILKWORM_TYPES_RECEIPT_H_
 
 #include <evmc/evmc.hpp>
 #include <variant>
@@ -34,4 +34,4 @@ struct Receipt {
 };
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_RECEIPT_H_
+#endif  // SILKWORM_TYPES_RECEIPT_H_

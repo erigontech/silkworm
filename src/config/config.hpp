@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_CONFIG_H_
-#define SILKWORM_ETH_CONFIG_H_
+#ifndef SILKWORM_CONFIG_CONFIG_H_
+#define SILKWORM_CONFIG_CONFIG_H_
 
 #include <stdint.h>
 
@@ -124,4 +124,4 @@ constexpr ChainConfig kEtcMainnetChainConfig{
 };
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_CONFIG_H_
+#endif  // SILKWORM_CONFIG_CONFIG_H_

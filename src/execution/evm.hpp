@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_EVM_H_
-#define SILKWORM_ETH_EVM_H_
+#ifndef SILKWORM_EXECUTION_EVM_H_
+#define SILKWORM_EXECUTION_EVM_H_
 
 #include <stdint.h>
 
@@ -124,4 +124,4 @@ class EvmHost : public evmc::Host {
 };
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_EVM_H_
+#endif  // SILKWORM_EXECUTION_EVM_H_

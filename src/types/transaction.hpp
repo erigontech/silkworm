@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_TRANSACTION_H_
-#define SILKWORM_ETH_TRANSACTION_H_
+#ifndef SILKWORM_TYPES_TRANSACTION_H_
+#define SILKWORM_TYPES_TRANSACTION_H_
 
 #include <stdint.h>
 
@@ -50,4 +50,4 @@ void decode(std::istream& from, Transaction& to);
 }  // namespace rlp
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_TRANSACTION_H_
+#endif  // SILKWORM_TYPES_TRANSACTION_H_

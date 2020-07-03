@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_INTRA_BLOCK_STATE_H_
-#define SILKWORM_ETH_INTRA_BLOCK_STATE_H_
+#ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_H_
+#define SILKWORM_STATE_INTRA_BLOCK_STATE_H_
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
@@ -68,4 +68,4 @@ class IntraBlockState {
 };
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_INTRA_BLOCK_STATE_H_
+#endif  // SILKWORM_STATE_INTRA_BLOCK_STATE_H_

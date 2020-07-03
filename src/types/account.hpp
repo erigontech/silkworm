@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_ACCOUNT_H_
-#define SILKWORM_ETH_ACCOUNT_H_
+#ifndef SILKWORM_TYPES_ACCOUNT_H_
+#define SILKWORM_TYPES_ACCOUNT_H_
 
 #include <intx/intx.hpp>
 #include <istream>
@@ -44,4 +44,4 @@ void decode(std::istream& from, Account& to);
 }  // namespace rlp
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_ACCOUNT_H_
+#endif  // SILKWORM_TYPES_ACCOUNT_H_

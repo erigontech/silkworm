@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_LOG_H_
-#define SILKWORM_ETH_LOG_H_
+#ifndef SILKWORM_TYPES_LOG_H_
+#define SILKWORM_TYPES_LOG_H_
 
 #include <string>
 #include <vector>
@@ -31,4 +31,4 @@ struct Log {
 };
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_LOG_H_
+#endif  // SILKWORM_TYPES_LOG_H_

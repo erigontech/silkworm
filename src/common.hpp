@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_COMMON_H_
-#define SILKWORM_ETH_COMMON_H_
+#ifndef SILKWORM_COMMON_H_
+#define SILKWORM_COMMON_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -62,4 +62,4 @@ inline std::string_view hash_to_string_view(const evmc::bytes32& hash) {
 }
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_COMMON_H_
+#endif  // SILKWORM_COMMON_H_

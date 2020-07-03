@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETH_BLOCK_H_
-#define SILKWORM_ETH_BLOCK_H_
+#ifndef SILKWORM_TYPES_BLOCK_H_
+#define SILKWORM_TYPES_BLOCK_H_
 
 #include <stdint.h>
 
@@ -75,4 +75,4 @@ void decode(std::istream& from, BlockHeader& to);
 }  // namespace rlp
 }  // namespace silkworm
 
-#endif  // SILKWORM_ETH_BLOCK_H_
+#endif  // SILKWORM_TYPES_BLOCK_H_

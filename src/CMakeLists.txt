@@ -32,8 +32,8 @@ find_package(Microsoft.GSL CONFIG REQUIRED)
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
-add_library(silkworm_eth ${SILKWORM_SRC})
-target_include_directories(silkworm_eth PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(silkworm_eth
+add_library(libsilkworm ${SILKWORM_SRC})
+target_include_directories(libsilkworm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(libsilkworm
                       PUBLIC evmc evmone intx::intx lmdbxx::lmdbxx # PUBLIC lmdbxx since we use its exceptions 
                       PRIVATE liblmdb::lmdb Boost::filesystem Microsoft.GSL::GSL)

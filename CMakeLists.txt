@@ -45,8 +45,17 @@ endif()
 
 add_subdirectory(evmone)
 add_subdirectory(src)
-add_subdirectory(tests)
 
-add_executable(silkworm silkworm.cpp)
-target_include_directories(silkworm PRIVATE "${PROJECT_SOURCE_DIR}")
-target_link_libraries(silkworm PRIVATE silkworm_eth)
+add_executable(silkworm cmd/silkworm.cpp)
+target_link_libraries(silkworm PRIVATE libsilkworm)
+
+# Unit tests
+
+hunter_add_package(Catch)
+find_package(Catch2 CONFIG REQUIRED)
+hunter_add_package(Boost)
+find_package(Boost CONFIG REQUIRED)
+
+file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "src/*_test.cpp")
+add_executable(tests cmd/tests.cpp ${SILKWORM_TESTS})
+target_link_libraries(tests PRIVATE libsilkworm Catch2::Catch2 Boost::boost)

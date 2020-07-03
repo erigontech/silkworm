@@ -22,7 +22,7 @@ _build/silkworm
 ```
 or its tests
 ```
-_build/tests/tests
+_build/tests
 ```
 
 # Code style

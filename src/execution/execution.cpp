@@ -95,6 +95,7 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
   state.subtract_from_balance(*txn.from, gas_cost.lo);
 
   evm_.logs.clear();
+  evm_.refund = 0;
 
   uint64_t g = txn.gas_limit - g0.lo;
   CallResult vm_res;
@@ -131,7 +132,7 @@ uint64_t ExecutionProcessor::available_gas() const {
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) {
   IntraBlockState& state = evm_.state();
 
-  uint64_t refund = std::min((txn.gas_limit - gas_left) / 2, state.get_refund());
+  uint64_t refund = std::min((txn.gas_limit - gas_left) / 2, evm_.refund);
   gas_left += refund;
   state.add_to_balance(*txn.from, gas_left * txn.gas_price);
 

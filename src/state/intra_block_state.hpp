@@ -48,10 +48,6 @@ class IntraBlockState {
   evmc::bytes32 get_code_hash(const evmc::address& address) const;
   void set_code(const evmc::address& address, std::string_view code);
 
-  uint64_t get_refund() const;
-  void add_refund(uint64_t addend);
-  void subtract_refund(uint64_t subtrahend);
-
   evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const;
   void set_storage(const evmc::address& address, const evmc::bytes32& key,
                    const evmc::bytes32& value);

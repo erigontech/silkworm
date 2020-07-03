@@ -55,12 +55,6 @@ void IntraBlockState::set_code(const evmc::address& address, std::string_view co
   code_[address] = code;
 }
 
-uint64_t IntraBlockState::get_refund() const { return 0; }
-
-void IntraBlockState::add_refund(uint64_t) {}
-
-void IntraBlockState::subtract_refund(uint64_t) {}
-
 evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
                                            const evmc::bytes32& key) const {
   auto storage_it = storage_.find(address);

@@ -62,6 +62,7 @@ class EVM {
                   std::string_view input, uint64_t gas, const intx::uint256& value);
 
   std::vector<Log> logs;
+  uint64_t refund{0};
 
  private:
   friend class EvmHost;

@@ -281,7 +281,7 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
   if (is_zero(prev_val)) return EVMC_STORAGE_ADDED;
 
   if (is_zero(value)) {
-    evm_.state().add_refund(fee::kRsclear);
+    evm_.refund += fee::kRsclear;
     return EVMC_STORAGE_DELETED;
   }
 

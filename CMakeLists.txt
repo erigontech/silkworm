@@ -44,7 +44,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 add_subdirectory(evmone)
-add_subdirectory(eth)
+add_subdirectory(src)
 add_subdirectory(tests)
 
 add_executable(silkworm silkworm.cpp)

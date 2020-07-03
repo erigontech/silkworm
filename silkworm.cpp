@@ -16,7 +16,8 @@
 
 #include <iostream>
 
-#include "eth/rlp/encode.hpp"
+// TODO(Andrew) FIXME
+#include "src/rlp/encode.hpp"
 
 int main() {
   std::cout << "Silkworm is under construction 🏗\n";

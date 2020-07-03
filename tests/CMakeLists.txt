@@ -20,7 +20,7 @@ find_package(Boost CONFIG REQUIRED)
 hunter_add_package(Catch)
 find_package(Catch2 CONFIG REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "../eth/*_test.cpp")
+file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "../src/*_test.cpp")
 
 add_executable(tests main.cpp ${SILKWORM_TESTS})
 

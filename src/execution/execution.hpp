@@ -23,10 +23,10 @@
 #include <string>
 #include <vector>
 
-#include "block.hpp"
 #include "evm.hpp"
-#include "receipt.hpp"
-#include "transaction.hpp"
+#include "types/block.hpp"
+#include "types/receipt.hpp"
+#include "types/transaction.hpp"
 
 namespace silkworm {
 

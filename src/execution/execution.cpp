@@ -22,7 +22,7 @@
 #include <string_view>
 #include <utility>
 
-#include "protocol_param.hpp"
+#include "config/protocol_param.hpp"
 
 namespace silkworm {
 

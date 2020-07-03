@@ -24,11 +24,11 @@
 #include <string>
 #include <string_view>
 
-#include "block.hpp"
 #include "common.hpp"
-#include "config.hpp"
-#include "intra_block_state.hpp"
-#include "log.hpp"
+#include "config/config.hpp"
+#include "state/intra_block_state.hpp"
+#include "types/block.hpp"
+#include "types/log.hpp"
 
 // TODO(Andrew) get rid of this when
 // https://github.com/ethereum/evmc/pull/528

@@ -23,7 +23,7 @@
 #include <string>
 #include <string_view>
 
-#include "account.hpp"
+#include "types/account.hpp"
 
 namespace silkworm {
 

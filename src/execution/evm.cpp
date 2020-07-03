@@ -24,7 +24,7 @@
 #include <iterator>
 #include <sstream>
 
-#include "protocol_param.hpp"
+#include "config/protocol_param.hpp"
 #include "rlp/encode.hpp"
 
 namespace silkworm {

@@ -20,7 +20,7 @@
 #include <catch2/catch.hpp>
 #include <string>
 
-#include "protocol_param.hpp"
+#include "config/protocol_param.hpp"
 
 namespace silkworm {
 

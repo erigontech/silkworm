@@ -24,7 +24,7 @@
 #include "bloom.hpp"
 #include "log.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 struct Receipt {
   std::variant<evmc::bytes32, bool> post_state_or_status{false};  // failure = false, success = true
@@ -32,7 +32,6 @@ struct Receipt {
   Bloom bloom;
   std::vector<Log> logs;
 };
-
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_RECEIPT_H_

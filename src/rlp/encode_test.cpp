@@ -27,7 +27,7 @@ namespace {
 template <typename T>
 std::string encoded(T x) {
   std::ostringstream s;
-  silkworm::eth::rlp::encode(s, x);
+  silkworm::rlp::encode(s, x);
   return s.str();
 }
 

@@ -24,7 +24,7 @@
 
 #include "protocol_param.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 static intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation, bool homestead,
                                    bool eip2028) {
@@ -177,5 +177,4 @@ void ExecutionProcessor::apply_rewards() {
 
   evm_.state().add_to_balance(evm_.block().header.beneficiary, miner_reward);
 }
-
-}  // namespace silkworm::eth
+}  // namespace silkworm

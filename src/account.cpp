@@ -18,7 +18,7 @@
 
 #include "rlp/encode.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 bool operator==(const Account& a, const Account& b) {
   return a.nonce == b.nonce && a.balance == b.balance && a.storage_root == b.storage_root &&
@@ -53,4 +53,4 @@ void decode(std::istream& from, Account& to) {
   decode(from, to.code_hash.bytes);
 }
 }  // namespace rlp
-}  // namespace silkworm::eth
+}  // namespace silkworm

@@ -28,7 +28,7 @@
 #include "receipt.hpp"
 #include "transaction.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 enum class ValidationError {
   kOk = 0,
@@ -71,7 +71,6 @@ class ExecutionProcessor {
   uint64_t cumulative_gas_used_{0};
   EVM evm_;
 };
-
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_EXECUTION_H_

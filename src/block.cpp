@@ -18,7 +18,7 @@
 
 #include "rlp/encode.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 namespace rlp {
 
@@ -124,4 +124,4 @@ void decode(std::istream& from, Block& to) {
   decode_vector(from, to.transactions);
 }
 }  // namespace rlp
-}  // namespace silkworm::eth
+}  // namespace silkworm

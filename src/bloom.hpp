@@ -22,12 +22,12 @@
 
 #include <array>
 
-namespace silkworm::eth {
+namespace silkworm {
 
 constexpr size_t kBloomByteLength{256};
 
 using Bloom = std::array<uint8_t, kBloomByteLength>;
 
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_BLOOM_H_

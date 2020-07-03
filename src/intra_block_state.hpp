@@ -25,7 +25,7 @@
 
 #include "account.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 class IntraBlockState {
  public:
@@ -66,7 +66,6 @@ class IntraBlockState {
   std::map<evmc::address, std::map<evmc::bytes32, evmc::bytes32>> storage_;
   std::map<evmc::address, std::string> code_;
 };
-
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_INTRA_BLOCK_STATE_H_

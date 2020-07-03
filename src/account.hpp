@@ -24,7 +24,7 @@
 #include "common.hpp"
 #include "rlp/decode.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 struct Account {
   uint64_t nonce{0};
@@ -42,6 +42,6 @@ void encode(std::ostream& to, const Account& account);
 template <>
 void decode(std::istream& from, Account& to);
 }  // namespace rlp
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_ACCOUNT_H_

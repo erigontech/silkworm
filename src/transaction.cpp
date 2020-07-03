@@ -19,7 +19,7 @@
 #include "common.hpp"
 #include "rlp/encode.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 bool operator==(const Transaction& a, const Transaction& b) {
   return a.nonce == b.nonce && a.gas_price == b.gas_price && a.gas_limit == b.gas_limit &&
@@ -90,4 +90,4 @@ void decode(std::istream& from, Transaction& to) {
   decode(from, to.s);
 }
 }  // namespace rlp
-}  // namespace silkworm::eth
+}  // namespace silkworm

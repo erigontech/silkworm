@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 #include <sstream>
 
-namespace silkworm::eth {
+namespace silkworm {
 
 TEST_CASE("account", "[rlp]") {
   using namespace evmc::literals;
@@ -39,4 +39,4 @@ TEST_CASE("account", "[rlp]") {
   rlp::decode<Account>(from, decoded);
   CHECK(decoded == account);
 }
-}  // namespace silkworm::eth
+}  // namespace silkworm

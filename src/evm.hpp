@@ -35,7 +35,7 @@
 // is merged and released
 enum evmc_status_code_extra { EVMC_BALANCE_TOO_LOW = 32 };
 
-namespace silkworm::eth {
+namespace silkworm {
 
 struct CallResult {
   evmc_status_code status{EVMC_SUCCESS};
@@ -122,7 +122,6 @@ class EvmHost : public evmc::Host {
  private:
   EVM& evm_;
 };
-
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_EVM_H_

@@ -29,7 +29,7 @@
 #include "rlp/decode.hpp"
 #include "transaction.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 struct BlockHeader {
   evmc::bytes32 parent_hash;
@@ -73,6 +73,6 @@ void decode(std::istream& from, Block& to);
 template <>
 void decode(std::istream& from, BlockHeader& to);
 }  // namespace rlp
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_BLOCK_H_

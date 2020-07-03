@@ -18,7 +18,7 @@
 
 #include "intra_block_state.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 bool IntraBlockState::exists(const evmc::address& address) const {
   return accounts_.find(address) != accounts_.end() || code_.find(address) != code_.end();
@@ -82,5 +82,4 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
 void IntraBlockState::revert_to_snapshot(const IntraBlockState&) {}
 
 void IntraBlockState::finalize_transaction() {}
-
-}  // namespace silkworm::eth
+}  // namespace silkworm

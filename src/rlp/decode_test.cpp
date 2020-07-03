@@ -21,7 +21,7 @@
 #include <sstream>
 #include <string_view>
 
-namespace silkworm::eth::rlp {
+namespace silkworm::rlp {
 
 template <class T>
 static T decoded(const std::string& encoded) {
@@ -108,4 +108,4 @@ TEST_CASE("decode", "[rlp]") {
                                       "dog") == std::vector<std::string>{"cat", "dog"});
   }
 }
-}  // namespace silkworm::eth::rlp
+}  // namespace silkworm::rlp

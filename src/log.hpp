@@ -22,14 +22,13 @@
 
 #include "common.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 struct Log {
   evmc::address address;
   std::vector<evmc::bytes32> topics;
   std::string data;
 };
-
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_LOG_H_

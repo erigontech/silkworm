@@ -22,7 +22,7 @@
 
 #include "protocol_param.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 TEST_CASE("value transfer", "[evm]") {
   Block block;
@@ -103,5 +103,4 @@ TEST_CASE("smart contract", "[evm]") {
   CHECK(res.status == EVMC_SUCCESS);
   CHECK(state.get_storage(contract_address, key0) == new_val);
 }
-
-}  // namespace silkworm::eth
+}  // namespace silkworm

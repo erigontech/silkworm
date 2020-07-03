@@ -21,7 +21,7 @@
 
 #include "common.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 // Fee schedule—see Appendix G of the Yellow Paper
 // https://ethereum.github.io/yellowpaper/paper.pdf
@@ -48,7 +48,6 @@ constexpr uint64_t kFrontierBlockReward{5 * kEther};
 constexpr uint64_t kByzantiumBlockReward{3 * kEther};
 constexpr uint64_t kConstantinopleBlockReward{2 * kEther};
 }  // namespace param
-
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_PROTOCOL_PARAM_H_

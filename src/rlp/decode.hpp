@@ -30,7 +30,7 @@
 
 #include "encode.hpp"
 
-namespace silkworm::eth::rlp {
+namespace silkworm::rlp {
 
 constexpr size_t kMaxStringSize = 1024 * 1024;
 
@@ -87,6 +87,6 @@ void decode_vector(std::istream& from, std::vector<T>& to) {
 
   if (from.tellg() != end) throw DecodingError("list length mismatch");
 }
-}  // namespace silkworm::eth::rlp
+}  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLP_DECODE_H_

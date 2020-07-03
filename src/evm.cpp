@@ -27,7 +27,7 @@
 #include "protocol_param.hpp"
 #include "rlp/encode.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 EVM::EVM(IntraBlockState& state, const Block& block) : state_{state}, block_{block} {}
 
@@ -350,5 +350,4 @@ void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t
   std::copy_n(data, data_size, std::back_inserter(log.data));
   evm_.logs.push_back(log);
 }
-
-}  // namespace silkworm::eth
+}  // namespace silkworm

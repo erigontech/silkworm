@@ -21,7 +21,7 @@
 
 #include "common.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 TEST_CASE("validation", "[execution]") {
   Block block;
@@ -48,5 +48,4 @@ TEST_CASE("validation", "[execution]") {
 
   // TODO(Andrew) other validation errors
 }
-
-}  // namespace silkworm::eth
+}  // namespace silkworm

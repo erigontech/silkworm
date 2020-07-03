@@ -28,7 +28,7 @@
 #include <string_view>
 #include <vector>
 
-namespace silkworm::eth {
+namespace silkworm {
 
 struct Block;
 struct BlockHeader;
@@ -93,6 +93,6 @@ void encode(std::ostream& to, const std::vector<T>& v) {
   }
 }
 }  // namespace rlp
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_RLP_ENCODE_H_

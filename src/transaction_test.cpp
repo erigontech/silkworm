@@ -21,7 +21,7 @@
 
 #include "common.hpp"
 
-namespace silkworm::eth {
+namespace silkworm {
 
 TEST_CASE("transaction", "[rlp]") {
   using boost::algorithm::unhex;
@@ -52,4 +52,4 @@ TEST_CASE("transaction", "[rlp]") {
   rlp::decode<Transaction>(from, decoded);
   CHECK(decoded == txn);
 }
-}  // namespace silkworm::eth
+}  // namespace silkworm

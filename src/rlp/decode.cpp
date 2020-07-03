@@ -18,7 +18,7 @@
 
 #include <gsl/gsl_assert>
 
-namespace silkworm::eth::rlp {
+namespace silkworm::rlp {
 
 static uint64_t read_uint64(std::istream& from, size_t len) {
   Expects(len <= 8);
@@ -124,5 +124,4 @@ void decode(std::istream& from, intx::uint256& to) {
 
   to = intx::bswap(buf);
 }
-
-}  // namespace silkworm::eth::rlp
+}  // namespace silkworm::rlp

@@ -25,7 +25,7 @@
 #include <evmc/evmc.hpp>
 #include <string_view>
 
-namespace silkworm::eth {
+namespace silkworm {
 
 using namespace evmc::literals;
 
@@ -60,7 +60,6 @@ inline evmc::bytes32 bytes_to_hash(std::string_view bytes) {
 inline std::string_view hash_to_string_view(const evmc::bytes32& hash) {
   return {byte_pointer_cast(hash.bytes), kHashLength};
 }
-
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_COMMON_H_

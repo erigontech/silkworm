@@ -21,7 +21,7 @@
 
 #include <optional>
 
-namespace silkworm::eth {
+namespace silkworm {
 
 struct ChainConfig {
   // https://eips.ethereum.org/EIPS/eip-155
@@ -122,6 +122,6 @@ constexpr ChainConfig kEtcMainnetChainConfig{
     .petersburg_block = 9'573'000,
     .istanbul_block = 10'500'839,
 };
-}  // namespace silkworm::eth
+}  // namespace silkworm
 
 #endif  // SILKWORM_ETH_CONFIG_H_

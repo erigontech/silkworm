@@ -20,11 +20,8 @@ find_package(Boost CONFIG REQUIRED)
 hunter_add_package(Catch)
 find_package(Catch2 CONFIG REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_DB_TESTS CONFIGURE_DEPENDS "../db/*_test.cpp")
-file(GLOB_RECURSE SILKWORM_ETH_TESTS CONFIGURE_DEPENDS "../eth/*_test.cpp")
+file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "../eth/*_test.cpp")
 
-add_executable(tests main.cpp
-              ${SILKWORM_DB_TESTS}
-              ${SILKWORM_ETH_TESTS})
+add_executable(tests main.cpp ${SILKWORM_TESTS})
 
-target_link_libraries(tests PRIVATE Catch2::Catch2 "${SILKWORM_LIBS}" Boost::boost)
+target_link_libraries(tests PRIVATE Catch2::Catch2 silkworm_eth Boost::boost)

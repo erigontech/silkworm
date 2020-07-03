@@ -14,16 +14,25 @@
    limitations under the License.
 ]]
 
+hunter_add_package(Boost COMPONENTS filesystem)
+find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+
 hunter_add_package(intx)
 find_package(intx CONFIG REQUIRED)
+
+hunter_add_package(lmdb)
+find_package(liblmdb CONFIG REQUIRED)
+
+hunter_add_package(lmdbxx)
+find_package(lmdbxx CONFIG REQUIRED)
 
 hunter_add_package(Microsoft.GSL)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_ETH_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
-list(FILTER SILKWORM_ETH_SRC EXCLUDE REGEX "_test\.cpp$")
+file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
-add_library(silkworm_eth ${SILKWORM_ETH_SRC})
+add_library(silkworm_eth ${SILKWORM_SRC})
 target_link_libraries(silkworm_eth
-                      PUBLIC evmc intx::intx
-                      PRIVATE evmone Microsoft.GSL::GSL)
+                      PUBLIC evmc evmone intx::intx lmdbxx::lmdbxx # PUBLIC lmdbxx since we use its exceptions 
+                      PRIVATE liblmdb::lmdb Boost::filesystem Microsoft.GSL::GSL)

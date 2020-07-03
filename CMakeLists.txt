@@ -43,15 +43,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes -Wno-missing-field-initializers)
 endif()
 
-set(SILKWORM_LIBS silkworm_db silkworm_eth)
-
 add_subdirectory(evmone)
-
-add_subdirectory(db)
 add_subdirectory(eth)
-
 add_subdirectory(tests)
 
 add_executable(silkworm silkworm.cpp)
 target_include_directories(silkworm PRIVATE "${PROJECT_SOURCE_DIR}")
-target_link_libraries(silkworm PRIVATE "${SILKWORM_LIBS}")
+target_link_libraries(silkworm PRIVATE silkworm_eth)

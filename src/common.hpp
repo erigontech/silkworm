@@ -29,17 +29,17 @@ namespace silkworm {
 
 using namespace evmc::literals;
 
+constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
+
+constexpr size_t kAddressLength{20};
+
+constexpr size_t kHashLength{32};
+
 constexpr evmc::bytes32 kEmptyHash =
     0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32;
 
 constexpr evmc::bytes32 kEmptyRoot =
     0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32;
-
-constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
-
-constexpr size_t kHashLength{32};
-
-constexpr size_t kAddressLength{20};
 
 inline char* byte_pointer_cast(uint8_t* ptr) noexcept { return reinterpret_cast<char*>(ptr); }
 inline const char* byte_pointer_cast(const uint8_t* ptr) noexcept {

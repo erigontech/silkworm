@@ -35,5 +35,5 @@ list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 add_library(libsilkworm ${SILKWORM_SRC})
 target_include_directories(libsilkworm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(libsilkworm
-                      PUBLIC evmc evmone intx::intx lmdbxx::lmdbxx # PUBLIC lmdbxx since we use its exceptions 
-                      PRIVATE liblmdb::lmdb Boost::filesystem Microsoft.GSL::GSL)
+                      PUBLIC evmc intx::intx lmdbxx::lmdbxx # PUBLIC lmdbxx since we use its exceptions 
+                      PRIVATE evmone liblmdb::lmdb Boost::filesystem Microsoft.GSL::GSL)

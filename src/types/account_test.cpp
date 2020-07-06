@@ -21,7 +21,7 @@
 
 namespace silkworm {
 
-TEST_CASE("account", "[rlp]") {
+TEST_CASE("Account RLP") {
   using namespace evmc::literals;
 
   Account account{

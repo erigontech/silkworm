@@ -24,7 +24,7 @@
 
 namespace silkworm {
 
-TEST_CASE("value transfer", "[evm]") {
+TEST_CASE("EVM value transfer") {
   Block block;
   block.header.number = 10336006;
   block.header.beneficiary = 0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address;
@@ -52,7 +52,7 @@ TEST_CASE("value transfer", "[evm]") {
   CHECK(state.get_balance(to) == value);
 }
 
-TEST_CASE("smart contract", "[evm]") {
+TEST_CASE("EVM smart contract") {
   using boost::algorithm::unhex;
   using namespace std::string_literals;
 

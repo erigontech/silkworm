@@ -21,7 +21,7 @@
 
 namespace silkworm {
 
-TEST_CASE("validation", "[execution]") {
+TEST_CASE("Execution validation") {
   Block block;
   block.header.number = 1;
   block.header.beneficiary = 0x829bd824b016326a401d083b33d092293333a830_address;

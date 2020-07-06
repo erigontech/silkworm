@@ -20,7 +20,7 @@
 
 namespace silkworm::db {
 
-TEST_CASE("basic", "[lmdb]") {
+TEST_CASE("LMDB basics") {
   auto bucketName{"PLAIN-CST"};
   auto key{"b1a4F4f387732B107D4F8e8816058bAB6D16397b"};
   auto val{"abba"};

@@ -33,7 +33,7 @@ std::string encoded(T x) {
 
 }  // namespace
 
-TEST_CASE("Encode", "[rlp]") {
+TEST_CASE("RLP encoding") {
   using boost::algorithm::hex;
 
   SECTION("strings") {

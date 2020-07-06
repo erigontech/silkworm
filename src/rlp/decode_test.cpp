@@ -39,7 +39,7 @@ static std::vector<T> decoded_vector(const std::string& encoded) {
   return res;
 }
 
-TEST_CASE("decode", "[rlp]") {
+TEST_CASE("RLP decoding") {
   using boost::algorithm::unhex;
   using Catch::Message;
   using namespace std::string_literals;

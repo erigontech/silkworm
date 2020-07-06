@@ -23,7 +23,7 @@
 
 namespace silkworm {
 
-TEST_CASE("transaction", "[rlp]") {
+TEST_CASE("Transaction RLP") {
   using boost::algorithm::unhex;
   using namespace std::string_literals;
   using namespace evmc::literals;

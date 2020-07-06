@@ -8,21 +8,22 @@ C++ implementation of the Ethereum protocol.
 Building silkworm requires [cmake](https://cgold.readthedocs.io/en/latest/first-step/installation.html) and a C++17 compiler.
 Once the prerequisites are installed, bootstrap cmake build by running
 ```
-cmake -H. -B_build
+cd build
+cmake ..
 ```
-(In the future you don't have to run `cmake -H. -B_build` again.)
+(In the future you don't have to run `cmake ..` again.)
 
 Then run the build itself
 ```
-cmake --build _build -- -j
+cmake --build . -j
 ```
 Now you can run silkworm
 ```
-_build/silkworm
+./silkworm
 ```
 or its tests
 ```
-_build/tests
+ctest
 ```
 
 # Code style

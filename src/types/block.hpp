@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "bloom.hpp"
-#include "common.hpp"
+#include "common/util.hpp"
 #include "rlp/decode.hpp"
 #include "transaction.hpp"
 

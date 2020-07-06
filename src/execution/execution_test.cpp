@@ -19,8 +19,6 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
-#include "common.hpp"
-
 namespace silkworm {
 
 TEST_CASE("validation", "[execution]") {

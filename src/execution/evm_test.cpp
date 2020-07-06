@@ -96,7 +96,8 @@ TEST_CASE("smart contract", "[evm]") {
   res = evm.create(caller, code, gas, 0);
   CHECK(res.status == EVMC_SUCCESS);
 
-  evmc::address contract_address = create_address(caller, 1);
+  uint64_t nonce{1};
+  evmc::address contract_address = create_address(caller, nonce);
   evmc::bytes32 key0;
   CHECK(state.get_storage(contract_address, key0) == bytes_to_hash("\x2a"));
 

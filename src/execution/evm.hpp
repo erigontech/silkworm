@@ -24,7 +24,6 @@
 #include <string>
 #include <string_view>
 
-#include "common.hpp"
 #include "config/config.hpp"
 #include "state/intra_block_state.hpp"
 #include "types/block.hpp"

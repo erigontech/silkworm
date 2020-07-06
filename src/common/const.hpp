@@ -14,20 +14,29 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_LOG_H_
-#define SILKWORM_TYPES_LOG_H_
+#ifndef SILKWORM_COMMON_CONST_H_
+#define SILKWORM_COMMON_CONST_H_
+
+#include <stdint.h>
 
 #include <evmc/evmc.hpp>
-#include <string>
-#include <vector>
 
 namespace silkworm {
 
-struct Log {
-  evmc::address address;
-  std::vector<evmc::bytes32> topics;
-  std::string data;
-};
+using namespace evmc::literals;
+
+constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
+
+constexpr size_t kAddressLength{20};
+
+constexpr size_t kHashLength{32};
+
+constexpr evmc::bytes32 kEmptyHash =
+    0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32;
+
+constexpr evmc::bytes32 kEmptyRoot =
+    0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32;
+
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_LOG_H_
+#endif  // SILKWORM_COMMON_CONST_H_

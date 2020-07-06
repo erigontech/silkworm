@@ -14,34 +14,19 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_H_
-#define SILKWORM_COMMON_H_
-
-#include <stddef.h>
-#include <stdint.h>
+#ifndef SILKWORM_COMMON_UTIL_H_
+#define SILKWORM_COMMON_UTIL_H_
 
 #include <algorithm>
 #include <boost/algorithm/hex.hpp>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/stream.hpp>
 #include <cstring>
 #include <evmc/evmc.hpp>
-#include <string>
-#include <string_view>
+
+#include "const.hpp"
 
 namespace silkworm {
-
-using namespace evmc::literals;
-
-constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
-
-constexpr size_t kAddressLength{20};
-
-constexpr size_t kHashLength{32};
-
-constexpr evmc::bytes32 kEmptyHash =
-    0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32;
-
-constexpr evmc::bytes32 kEmptyRoot =
-    0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32;
 
 inline char* byte_pointer_cast(uint8_t* ptr) noexcept { return reinterpret_cast<char*>(ptr); }
 inline const char* byte_pointer_cast(const uint8_t* ptr) noexcept {
@@ -66,6 +51,11 @@ inline std::string_view hash_as_string_view(const evmc::bytes32& hash) {
 inline std::string hash_to_hex(const evmc::bytes32& hash) {
   return boost::algorithm::hex_lower(std::string{hash_as_string_view(hash)});
 }
+
+inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> string_view_as_stream(
+    std::string_view sv) {
+  return {sv.begin(), sv.size()};
+}
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_H_
+#endif  // SILKWORM_COMMON_UTIL_H_

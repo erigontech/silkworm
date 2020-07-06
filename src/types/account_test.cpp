@@ -31,12 +31,11 @@ TEST_CASE("account", "[rlp]") {
       .code_hash = 0x12580ee5fc5ea05a1a19a93cbc51830ae3607690b7c4a6996ea211aba5a966b2_bytes32,
   };
 
-  std::ostringstream to;
-  rlp::encode(to, account);
+  std::stringstream stream;
+  rlp::encode(stream, account);
 
-  std::istringstream from{to.str()};
   Account decoded;
-  rlp::decode<Account>(from, decoded);
+  rlp::decode<Account>(stream, decoded);
   CHECK(decoded == account);
 }
 }  // namespace silkworm

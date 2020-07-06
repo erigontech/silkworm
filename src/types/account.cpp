@@ -25,6 +25,14 @@ bool operator==(const Account& a, const Account& b) {
          a.code_hash == b.code_hash && a.incarnation == b.incarnation;
 }
 
+Account decode_account_from_storage(std::string_view encoded) {
+  Account a;
+  if (encoded.empty()) return a;
+
+  // TODO(Andrew) implement
+  return a;
+}
+
 namespace rlp {
 void encode(std::ostream& to, const Account& account) {
   Header h{.list = true, .payload_length = 0};

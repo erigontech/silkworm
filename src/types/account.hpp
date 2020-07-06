@@ -20,8 +20,9 @@
 #include <intx/intx.hpp>
 #include <istream>
 #include <ostream>
+#include <string_view>
 
-#include "common.hpp"
+#include "common/const.hpp"
 #include "rlp/decode.hpp"
 
 namespace silkworm {
@@ -35,6 +36,9 @@ struct Account {
 };
 
 bool operator==(const Account& a, const Account& b);
+
+// turbo-geth compatibility
+Account decode_account_from_storage(std::string_view encoded);
 
 namespace rlp {
 void encode(std::ostream& to, const Account& account);

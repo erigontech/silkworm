@@ -19,7 +19,7 @@
 #include <boost/algorithm/hex.hpp>
 #include <catch2/catch.hpp>
 
-#include "common.hpp"
+#include "common/const.hpp"
 
 namespace silkworm {
 
@@ -44,12 +44,11 @@ TEST_CASE("transaction", "[rlp]") {
           "0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718"),
   };
 
-  std::ostringstream to;
-  rlp::encode(to, txn);
+  std::stringstream stream;
+  rlp::encode(stream, txn);
 
-  std::istringstream from{to.str()};
   Transaction decoded;
-  rlp::decode<Transaction>(from, decoded);
+  rlp::decode<Transaction>(stream, decoded);
   CHECK(decoded == txn);
 }
 }  // namespace silkworm

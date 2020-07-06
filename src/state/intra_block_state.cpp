@@ -19,6 +19,8 @@
 #include <cstring>
 #include <ethash/keccak.hpp>
 
+#include "common/util.hpp"
+
 namespace silkworm {
 
 IntraBlockState::Object* IntraBlockState::get_object(const evmc::address& address) const {

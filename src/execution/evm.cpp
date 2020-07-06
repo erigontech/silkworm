@@ -83,7 +83,6 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
     return res;
   }
 
-  int snapshot = state_.take_snapshot();
   state_.create_contract(contract_addr);
   if (config_.has_spurious_dragon(block_.header.number)) {
     state_.set_nonce(contract_addr, 1);
@@ -123,11 +122,8 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 
   if (res.status_code == EVMC_SUCCESS) {
     res.create_address = contract_addr;
-  } else {
-    state_.revert_to_snapshot(snapshot);
-    if (res.status_code != EVMC_REVERT) {
-      res.gas_left = 0;
-    }
+  } else if (res.status_code != EVMC_REVERT) {
+    res.gas_left = 0;
   }
 
   return res;
@@ -169,8 +165,6 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     }
   }
 
-  int snapshot = state_.take_snapshot();
-
   if (message.kind == EVMC_CALL && !(message.flags & EVMC_STATIC)) {
     if (!state_.exists(message.destination)) {
       // TODO(Andrew) precompiles
@@ -190,11 +184,8 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
   res = execute(message, byte_pointer_cast(code.data()), code.size());
 
-  if (res.status_code != EVMC_SUCCESS) {
-    state_.revert_to_snapshot(snapshot);
-    if (res.status_code != EVMC_REVERT) {
-      res.gas_left = 0;
-    }
+  if (res.status_code != EVMC_SUCCESS && res.status_code != EVMC_REVERT) {
+    res.gas_left = 0;
   }
 
   return res;

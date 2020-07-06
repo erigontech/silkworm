@@ -54,8 +54,8 @@ class IntraBlockState {
   void set_storage(const evmc::address& address, const evmc::bytes32& key,
                    const evmc::bytes32& value);
 
-  int take_snapshot() const;
-  void revert_to_snapshot(int snapshot);
+  void rollback();
+  void commit();
 
  private:
   using Storage = std::map<evmc::bytes32, evmc::bytes32>;

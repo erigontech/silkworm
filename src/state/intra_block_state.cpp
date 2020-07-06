@@ -150,12 +150,11 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
   get_or_create_object(address).current_storage[key] = value;
 }
 
-int IntraBlockState::take_snapshot() const {
+void IntraBlockState::rollback() {
   // TODO(Andrew) implement
-  return 0;
 }
 
-void IntraBlockState::revert_to_snapshot(int) {
+void IntraBlockState::commit() {
   // TODO(Andrew) implement
 }
 

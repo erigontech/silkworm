@@ -93,6 +93,7 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
   }
 
   state.subtract_from_balance(*txn.from, gas_cost.lo);
+  state.commit();
 
   evm_.logs.clear();
   evm_.refund = 0;
@@ -107,11 +108,17 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
     vm_res = evm_.call(*txn.from, *txn.to, txn.data, g, txn.value);
   }
 
+  if (vm_res.status != EVMC_SUCCESS) {
+    state.rollback();
+  }
+
   uint64_t gas_left = refund_gas(txn, vm_res.gas_left);
   res.gas_used = txn.gas_limit - gas_left;
 
   // award the miner
   state.add_to_balance(evm_.block().header.beneficiary, res.gas_used * txn.gas_price);
+
+  state.commit();
 
   cumulative_gas_used_ += res.gas_used;
 

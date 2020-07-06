@@ -20,7 +20,7 @@
 
 namespace silkworm::rlp {
 
-static uint64_t read_uint64(std::istream& from, size_t len) {
+uint64_t read_uint64(std::istream& from, size_t len) {
   Expects(len <= 8);
 
   if (len == 0) {

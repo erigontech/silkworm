@@ -87,6 +87,8 @@ void decode_vector(std::istream& from, std::vector<T>& to) {
 
   if (from.tellg() != end) throw DecodingError("list length mismatch");
 }
+
+uint64_t read_uint64(std::istream& from, size_t len);
 }  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLP_DECODE_H_

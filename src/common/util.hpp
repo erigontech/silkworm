@@ -52,6 +52,7 @@ inline std::string hash_to_hex(const evmc::bytes32& hash) {
   return boost::algorithm::hex_lower(std::string{hash_as_string_view(hash)});
 }
 
+// TODO(Andrew) get rid of streams in RLP
 inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> string_view_as_stream(
     std::string_view sv) {
   return {sv.begin(), sv.size()};

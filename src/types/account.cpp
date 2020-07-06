@@ -16,7 +16,8 @@
 
 #include "account.hpp"
 
-#include "rlp/encode.hpp"
+#include "common/util.hpp"
+#include "rlp/decode.hpp"
 
 namespace silkworm {
 
@@ -29,7 +30,51 @@ Account decode_account_from_storage(std::string_view encoded) {
   Account a;
   if (encoded.empty()) return a;
 
-  // TODO(Andrew) implement
+  uint8_t field_set = encoded[0];
+  size_t pos = 1;
+
+  if (field_set & 1) {
+    uint8_t len = encoded[pos++];
+    if (encoded.length() < pos + len) {
+      throw rlp::DecodingError("input too short for account nonce");
+    }
+    auto stream = string_view_as_stream(encoded.substr(pos));
+    a.nonce = rlp::read_uint64(stream, len);
+    pos += len;
+  }
+
+  if (field_set & 2) {
+    uint8_t len = encoded[pos++];
+    if (encoded.length() < pos + len) {
+      throw rlp::DecodingError("input too short for account balance");
+    }
+    std::memcpy(&as_bytes(a.balance)[32 - len], &encoded[pos], len);
+    a.balance = bswap(a.balance);
+    pos += len;
+  }
+
+  if (field_set & 4) {
+    uint8_t len = encoded[pos++];
+    if (encoded.length() < pos + len) {
+      throw rlp::DecodingError("input too short for account incarnation");
+    }
+    auto stream = string_view_as_stream(encoded.substr(pos));
+    a.incarnation = rlp::read_uint64(stream, len);
+    pos += len;
+  }
+
+  if (field_set & 8) {
+    uint8_t len = encoded[pos++];
+    if (len != kHashLength) {
+      throw rlp::DecodingError("codeHash should be 32 bytes long,");
+    }
+    if (encoded.length() < pos + len) {
+      throw rlp::DecodingError("input too short for account codeHash");
+    }
+    std::memcpy(a.code_hash.bytes, &encoded[pos], kHashLength);
+    pos += len;
+  }
+
   return a;
 }
 

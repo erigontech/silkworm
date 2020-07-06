@@ -16,6 +16,7 @@
 
 #include "account.hpp"
 
+#include <boost/algorithm/hex.hpp>
 #include <catch2/catch.hpp>
 #include <sstream>
 
@@ -37,5 +38,22 @@ TEST_CASE("Account RLP") {
   Account decoded;
   rlp::decode<Account>(stream, decoded);
   CHECK(decoded == account);
+}
+
+TEST_CASE("Decode account from storage") {
+  using boost::algorithm::unhex;
+  using namespace std::string_literals;
+
+  std::string encoded =
+      unhex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239"s);
+
+  Account decoded = decode_account_from_storage(encoded);
+
+  CHECK(decoded.nonce == 2);
+  CHECK(decoded.balance == 1000);
+  CHECK(decoded.storage_root == kEmptyRoot);
+  CHECK(decoded.code_hash ==
+        0xf1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239_bytes32);
+  CHECK(decoded.incarnation == 5);
 }
 }  // namespace silkworm

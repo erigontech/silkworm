@@ -37,7 +37,7 @@ struct Account {
 
 bool operator==(const Account& a, const Account& b);
 
-// turbo-geth compatibility
+// turbo-geth (*Account)DecodeForStorage
 Account decode_account_from_storage(std::string_view encoded);
 
 namespace rlp {

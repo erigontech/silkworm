@@ -33,7 +33,8 @@ TEST_CASE("value transfer", "[evm]") {
   evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};
   intx::uint256 value{10'200'000'000'000'000};
 
-  IntraBlockState state;
+  state::Reader reader;
+  IntraBlockState state{reader};
   EVM evm{state, block};
 
   CHECK(state.get_balance(from) == 0);
@@ -83,7 +84,8 @@ TEST_CASE("smart contract", "[evm]") {
   // 25     PUSH1  => 00
   // 27     SSTORE         // storage[0] = input[0]
 
-  IntraBlockState state;
+  state::Reader reader;
+  IntraBlockState state{reader};
   EVM evm{state, block};
 
   uint64_t gas{0};
@@ -94,12 +96,12 @@ TEST_CASE("smart contract", "[evm]") {
   res = evm.create(caller, code, gas, 0);
   CHECK(res.status == EVMC_SUCCESS);
 
-  evmc::address contract_address = create_address(caller, 0);
+  evmc::address contract_address = create_address(caller, 1);
   evmc::bytes32 key0;
   CHECK(state.get_storage(contract_address, key0) == bytes_to_hash("\x2a"));
 
   evmc::bytes32 new_val{bytes_to_hash("\xf5")};
-  res = evm.call(caller, contract_address, hash_to_string_view(new_val), gas, 0);
+  res = evm.call(caller, contract_address, hash_as_string_view(new_val), gas, 0);
   CHECK(res.status == EVMC_SUCCESS);
   CHECK(state.get_storage(contract_address, key0) == new_val);
 }

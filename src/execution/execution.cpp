@@ -113,8 +113,6 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
   // award the miner
   state.add_to_balance(evm_.block().header.beneficiary, res.gas_used * txn.gas_price);
 
-  state.finalize_transaction();
-
   cumulative_gas_used_ += res.gas_used;
 
   res.receipt.post_state_or_status = vm_res.status == EVMC_SUCCESS;

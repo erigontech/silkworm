@@ -36,7 +36,8 @@ TEST_CASE("validation", "[execution]") {
       .value = 10 * kEther,
   };
 
-  IntraBlockState state;
+  state::Reader reader;
+  IntraBlockState state{reader};
   ExecutionProcessor processor{state, block};
 
   ExecutionResult res = processor.execute_transaction(txn);

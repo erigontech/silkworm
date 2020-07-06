@@ -20,22 +20,24 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 
+#include "reader.hpp"
 #include "types/account.hpp"
 
 namespace silkworm {
 
 class IntraBlockState {
  public:
-  IntraBlockState(const IntraBlockState&) = default;
-  IntraBlockState& operator=(const IntraBlockState&) = default;
+  IntraBlockState(const IntraBlockState&) = delete;
+  IntraBlockState& operator=(const IntraBlockState&) = delete;
 
-  IntraBlockState() = default;
+  explicit IntraBlockState(state::Reader& state_reader) : db_{state_reader} {}
 
   bool exists(const evmc::address& address) const;
-  void create(const evmc::address& address, bool contract);
+  void create_contract(const evmc::address& address);
 
   intx::uint256 get_balance(const evmc::address& address) const;
   void add_to_balance(const evmc::address& address, const intx::uint256& addend);
@@ -52,15 +54,25 @@ class IntraBlockState {
   void set_storage(const evmc::address& address, const evmc::bytes32& key,
                    const evmc::bytes32& value);
 
-  void revert_to_snapshot(const IntraBlockState& snapshot);
-
-  void finalize_transaction();
+  int take_snapshot() const;
+  void revert_to_snapshot(int snapshot);
 
  private:
-  // TODO(Andrew) rework
-  std::map<evmc::address, Account> accounts_;
-  std::map<evmc::address, std::map<evmc::bytes32, evmc::bytes32>> storage_;
-  std::map<evmc::address, std::string> code_;
+  using Storage = std::map<evmc::bytes32, evmc::bytes32>;
+
+  struct Object {
+    std::optional<Account> original;
+    std::optional<Account> current;
+    Storage original_storage;
+    Storage current_storage;
+    std::optional<std::string> code;
+  };
+
+  Object* get_object(const evmc::address& address) const;
+  Object& get_or_create_object(const evmc::address& address);
+
+  state::Reader& db_;
+  mutable std::map<evmc::address, Object> objects_;
 };
 }  // namespace silkworm
 

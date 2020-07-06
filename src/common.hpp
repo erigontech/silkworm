@@ -21,8 +21,10 @@
 #include <stdint.h>
 
 #include <algorithm>
+#include <boost/algorithm/hex.hpp>
 #include <cstring>
 #include <evmc/evmc.hpp>
+#include <string>
 #include <string_view>
 
 namespace silkworm {
@@ -57,8 +59,12 @@ inline evmc::bytes32 bytes_to_hash(std::string_view bytes) {
   return out;
 }
 
-inline std::string_view hash_to_string_view(const evmc::bytes32& hash) {
+inline std::string_view hash_as_string_view(const evmc::bytes32& hash) {
   return {byte_pointer_cast(hash.bytes), kHashLength};
+}
+
+inline std::string hash_to_hex(const evmc::bytes32& hash) {
+  return boost::algorithm::hex_lower(std::string{hash_as_string_view(hash)});
 }
 }  // namespace silkworm
 

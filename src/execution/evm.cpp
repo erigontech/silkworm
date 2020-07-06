@@ -83,8 +83,8 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
     return res;
   }
 
-  IntraBlockState snapshot = state_;
-  state_.create(contract_addr, /*contract=*/true);
+  int snapshot = state_.take_snapshot();
+  state_.create_contract(contract_addr);
   if (config_.has_spurious_dragon(block_.header.number)) {
     state_.set_nonce(contract_addr, 1);
   }
@@ -169,7 +169,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     }
   }
 
-  IntraBlockState snapshot = state_;
+  int snapshot = state_.take_snapshot();
 
   if (message.kind == EVMC_CALL && !(message.flags & EVMC_STATIC)) {
     if (!state_.exists(message.destination)) {
@@ -179,7 +179,6 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
       if (config_.has_spurious_dragon(block_.header.number) && value == 0) {
         return res;
       }
-      state_.create(message.destination, /*contract=*/false);
     }
 
     state_.subtract_from_balance(message.sender, value);

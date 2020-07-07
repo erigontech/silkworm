@@ -27,7 +27,9 @@ IntraBlockState::Object* IntraBlockState::get_object(const evmc::address& addres
   auto it = objects_.find(address);
   if (it != objects_.end()) return &it->second;
 
-  std::optional<Account> account = db_.read_account(address);
+  if (!db_) return nullptr;
+
+  std::optional<Account> account = db_->read_account(address);
   if (!account) return nullptr;
 
   Object& obj = objects_[address];
@@ -107,8 +109,9 @@ std::string_view IntraBlockState::get_code(const evmc::address& address) const {
   if (!obj || !obj->current) return {};
   if (obj->code) return *obj->code;
   if (obj->current->code_hash == kEmptyHash) return {};
+  if (!db_) return {};
 
-  obj->code = db_.read_account_code(address);
+  obj->code = db_->read_account_code(address);
   return *obj->code;
 }
 
@@ -140,7 +143,10 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
   it = obj->original_storage.find(key);
   if (it != obj->original_storage.end()) return it->second;
 
-  evmc::bytes32 val = db_.read_account_storage(address, incarnation, key);
+  evmc::bytes32 val;
+  if (db_) {
+    val = db_->read_account_storage(address, incarnation, key);
+  }
   obj->original_storage[key] = val;
   return val;
 }

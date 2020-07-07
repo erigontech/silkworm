@@ -44,6 +44,10 @@ inline evmc::bytes32 bytes_to_hash(std::string_view bytes) {
   return out;
 }
 
+inline std::string_view address_as_string_view(const evmc::address& address) {
+  return {byte_pointer_cast(address.bytes), kAddressLength};
+}
+
 inline std::string_view hash_as_string_view(const evmc::bytes32& hash) {
   return {byte_pointer_cast(hash.bytes), kHashLength};
 }

@@ -16,17 +16,34 @@
 
 #include "reader.hpp"
 
-// TODO(Andrew) implement
+#include "common/util.hpp"
+#include "db/bucket.hpp"
 
 namespace silkworm::state {
 
-std::optional<Account> Reader::read_account(const evmc::address&) const { return {}; }
+std::optional<Account> Reader::read_account(const evmc::address& address) const {
+  std::optional<std::string> encoded = get(address_as_string_view(address));
+  if (!encoded) return {};
 
-std::string Reader::read_account_code(const evmc::address&) const { return ""; }
+  return decode_account_from_storage(*encoded);
+}
+
+std::string Reader::read_account_code(const evmc::address&) const {
+  // TODO(Andrew) implement
+  return "";
+}
 
 evmc::bytes32 Reader::read_account_storage(const evmc::address&, uint64_t,
                                            const evmc::bytes32&) const {
+  // TODO(Andrew) implement
   return {};
 }
 
+std::optional<std::string> Reader::get(std::string_view key) const {
+  std::unique_ptr<db::Transaction> txn = db_.begin_ro_transaction();
+  // TODO(Andrew) historic data
+  std::unique_ptr<db::Bucket> bucket = txn->get_bucket(db::bucket::kPlainState);
+  std::optional<std::string_view> val = bucket->get(key);
+  return val ? std::string{*val} : nullptr;
+}
 }  // namespace silkworm::state

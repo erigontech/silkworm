@@ -33,8 +33,7 @@ TEST_CASE("EVM value transfer") {
   evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};
   intx::uint256 value{10'200'000'000'000'000};
 
-  state::Reader reader;
-  IntraBlockState state{reader};
+  IntraBlockState state{nullptr};
   EVM evm{state, block};
 
   CHECK(state.get_balance(from) == 0);
@@ -84,8 +83,7 @@ TEST_CASE("EVM smart contract") {
   // 25     PUSH1  => 00
   // 27     SSTORE         // storage[0] = input[0]
 
-  state::Reader reader;
-  IntraBlockState state{reader};
+  IntraBlockState state{nullptr};
   EVM evm{state, block};
 
   uint64_t gas{0};

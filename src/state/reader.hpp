@@ -21,6 +21,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "db/database.hpp"
 #include "types/account.hpp"
@@ -31,8 +32,7 @@ class Reader {
   Reader(const Reader&) = delete;
   Reader& operator=(const Reader&) = delete;
 
-  Reader() = default;
-  // explicit Reader(db::Database& db) : db_{db} {}
+  explicit Reader(db::Database& db) : db_{db} {}
 
   std::optional<Account> read_account(const evmc::address& address) const;
   std::string read_account_code(const evmc::address& address) const;
@@ -40,7 +40,9 @@ class Reader {
                                      const evmc::bytes32& key) const;
 
  private:
-  // db::Database& db_;
+  std::optional<std::string> get(std::string_view key) const;
+
+  db::Database& db_;
 };
 }  // namespace silkworm::state
 

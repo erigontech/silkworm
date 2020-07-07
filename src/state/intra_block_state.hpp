@@ -34,7 +34,7 @@ class IntraBlockState {
   IntraBlockState(const IntraBlockState&) = delete;
   IntraBlockState& operator=(const IntraBlockState&) = delete;
 
-  explicit IntraBlockState(state::Reader& state_reader) : db_{state_reader} {}
+  explicit IntraBlockState(state::Reader* state_reader) : db_{state_reader} {}
 
   bool exists(const evmc::address& address) const;
   void create_contract(const evmc::address& address);
@@ -71,7 +71,7 @@ class IntraBlockState {
   Object* get_object(const evmc::address& address) const;
   Object& get_or_create_object(const evmc::address& address);
 
-  state::Reader& db_;
+  state::Reader* db_{nullptr};
   mutable std::map<evmc::address, Object> objects_;
 };
 }  // namespace silkworm

@@ -29,7 +29,7 @@
 namespace silkworm {
 
 struct Account {
-  // turbo-geth (*Account)EncodeForStorage
+  // Turbo-Geth (*Account)EncodeForStorage
   std::string encode_for_storage() const;
 
   uint64_t nonce{0};
@@ -41,7 +41,7 @@ struct Account {
 
 bool operator==(const Account& a, const Account& b);
 
-// turbo-geth (*Account)DecodeForStorage
+// Turbo-Geth (*Account)DecodeForStorage
 Account decode_account_from_storage(std::string_view encoded);
 
 namespace rlp {

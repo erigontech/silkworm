@@ -23,6 +23,7 @@
 #include <set>
 #include <string>
 
+#include "change_set.hpp"
 #include "types/account.hpp"
 
 namespace silkworm::state {
@@ -38,7 +39,7 @@ class Writer {
                      const evmc::bytes32& original, const evmc::bytes32& committed);
 
  private:
-  std::map<evmc::address, std::string> account_changes_;
+  AccountChanges account_changes_;
   std::set<evmc::address> changed_storage_;
   std::map<std::string, std::string> storage_changes_;
 };

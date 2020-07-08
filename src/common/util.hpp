@@ -28,12 +28,12 @@
 
 namespace silkworm {
 
-inline char* byte_pointer_cast(uint8_t* ptr) noexcept { return reinterpret_cast<char*>(ptr); }
-inline const char* byte_pointer_cast(const uint8_t* ptr) noexcept {
+inline char* byte_ptr_cast(uint8_t* ptr) noexcept { return reinterpret_cast<char*>(ptr); }
+inline const char* byte_ptr_cast(const uint8_t* ptr) noexcept {
   return reinterpret_cast<const char*>(ptr);
 }
-inline uint8_t* byte_pointer_cast(char* ptr) noexcept { return reinterpret_cast<uint8_t*>(ptr); }
-inline const uint8_t* byte_pointer_cast(const char* ptr) noexcept {
+inline uint8_t* byte_ptr_cast(char* ptr) noexcept { return reinterpret_cast<uint8_t*>(ptr); }
+inline const uint8_t* byte_ptr_cast(const char* ptr) noexcept {
   return reinterpret_cast<const uint8_t*>(ptr);
 }
 
@@ -45,11 +45,11 @@ inline evmc::bytes32 bytes_to_hash(std::string_view bytes) {
 }
 
 inline std::string_view address_as_string_view(const evmc::address& address) {
-  return {byte_pointer_cast(address.bytes), kAddressLength};
+  return {byte_ptr_cast(address.bytes), kAddressLength};
 }
 
 inline std::string_view hash_as_string_view(const evmc::bytes32& hash) {
-  return {byte_pointer_cast(hash.bytes), kHashLength};
+  return {byte_ptr_cast(hash.bytes), kHashLength};
 }
 
 inline std::string hash_to_hex(const evmc::bytes32& hash) {

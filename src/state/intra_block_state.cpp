@@ -123,7 +123,7 @@ evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const
 void IntraBlockState::set_code(const evmc::address& address, std::string_view code) {
   Object& obj = get_or_create_object(address);
   obj.code = code;
-  ethash::hash256 hash = ethash::keccak256(byte_pointer_cast(code.data()), code.size());
+  ethash::hash256 hash = ethash::keccak256(byte_ptr_cast(code.data()), code.size());
   std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
 }
 

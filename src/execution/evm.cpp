@@ -40,7 +40,7 @@ CallResult EVM::create(const evmc::address& caller, std::string_view code, uint6
       .gas = static_cast<int64_t>(gas),
       .destination = {},
       .sender = caller,
-      .input_data = byte_pointer_cast(code.data()),
+      .input_data = byte_ptr_cast(code.data()),
       .input_size = code.size(),
       .value = intx::be::store<evmc::uint256be>(value),
   };
@@ -114,7 +114,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
       res.status_code = EVMC_OUT_OF_GAS;
     } else if (res.gas_left >= code_deploy_gas) {
       res.gas_left -= code_deploy_gas;
-      state_.set_code(contract_addr, {byte_pointer_cast(res.output_data), res.output_size});
+      state_.set_code(contract_addr, {byte_ptr_cast(res.output_data), res.output_size});
     } else if (config_.has_homestead(block_.header.number)) {
       res.status_code = EVMC_OUT_OF_GAS;
     }
@@ -138,7 +138,7 @@ CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient
       .gas = static_cast<int64_t>(gas),
       .destination = recipient,
       .sender = caller,
-      .input_data = byte_pointer_cast(input.data()),
+      .input_data = byte_ptr_cast(input.data()),
       .input_size = input.size(),
       .value = intx::be::store<evmc::uint256be>(value),
   };
@@ -182,7 +182,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
   std::string_view code = state_.get_code(message.destination);
   if (code.empty()) return res;
 
-  res = execute(message, byte_pointer_cast(code.data()), code.size());
+  res = execute(message, byte_ptr_cast(code.data()), code.size());
 
   if (res.status_code != EVMC_SUCCESS && res.status_code != EVMC_REVERT) {
     res.gas_left = 0;
@@ -226,7 +226,7 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
   rlp::encode(stream, nonce);
   std::string rlp = stream.str();
 
-  ethash::hash256 hash = ethash::keccak256(byte_pointer_cast(rlp.data()), rlp.size());
+  ethash::hash256 hash = ethash::keccak256(byte_ptr_cast(rlp.data()), rlp.size());
 
   evmc::address address;
   std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);

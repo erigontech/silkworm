@@ -50,7 +50,7 @@ void encode(std::ostream& to, const BlockHeader& header) {
   encode(to, header.transactions_root.bytes);
   encode(to, header.receipts_root.bytes);
   encode_header(to, {.list = false, .payload_length = kBloomByteLength});
-  to.write(byte_pointer_cast(header.logs_bloom.data()), kBloomByteLength);
+  to.write(byte_ptr_cast(header.logs_bloom.data()), kBloomByteLength);
   encode(to, header.difficulty);
   encode(to, header.number);
   encode(to, header.gas_limit);
@@ -79,7 +79,7 @@ void decode(std::istream& from, BlockHeader& to) {
   if (bloom_head.list || bloom_head.payload_length != kBloomByteLength) {
     throw DecodingError("unorthodox logsBloom");
   }
-  from.read(byte_pointer_cast(to.logs_bloom.data()), kBloomByteLength);
+  from.read(byte_ptr_cast(to.logs_bloom.data()), kBloomByteLength);
 
   decode(from, to.difficulty);
   decode(from, to.number);
@@ -95,7 +95,7 @@ void decode(std::istream& from, BlockHeader& to) {
     throw DecodingError("extraData must be no longer than 32 bytes");
   }
   to.extra_data_size_ = extra_data_head.payload_length;
-  from.read(byte_pointer_cast(to.extra_data_.bytes), to.extra_data_size_);
+  from.read(byte_ptr_cast(to.extra_data_.bytes), to.extra_data_size_);
 
   decode(from, to.mix_hash.bytes);
   decode(from, to.nonce);

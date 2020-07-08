@@ -54,7 +54,7 @@ std::string Account::encode_for_storage() const {
   if (code_hash != kEmptyHash) {
     field_set |= 8;
     res.push_back(kHashLength);
-    res.append(byte_pointer_cast(code_hash.bytes), kHashLength);
+    res.append(byte_ptr_cast(code_hash.bytes), kHashLength);
   }
 
   res[0] = field_set;

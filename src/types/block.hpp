@@ -46,7 +46,7 @@ struct BlockHeader {
   uint64_t timestamp{0};
 
   std::string_view extra_data() const {
-    return {byte_pointer_cast(extra_data_.bytes), extra_data_size_};
+    return {byte_ptr_cast(extra_data_.bytes), extra_data_size_};
   }
 
   evmc::bytes32 mix_hash;

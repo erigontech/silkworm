@@ -153,6 +153,8 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
 
 void IntraBlockState::set_storage(const evmc::address& address, const evmc::bytes32& key,
                                   const evmc::bytes32& value) {
+  evmc::bytes32 prev = get_storage(address, key);
+  if (prev == value) return;
   get_or_create_object(address).current_storage[key] = value;
 }
 
@@ -164,4 +166,21 @@ void IntraBlockState::commit() {
   // TODO(Andrew) implement
 }
 
+void IntraBlockState::write_block(state::Writer& state_writer) {
+  for (const auto& entry : objects_) {
+    const evmc::address& address = entry.first;
+    const Object& obj = entry.second;
+    state_writer.write_account(address, obj.original, obj.current);
+    for (const auto& storage_entry : obj.current_storage) {
+      const evmc::bytes32& key = storage_entry.first;
+      uint64_t incarnation = obj.current->incarnation;
+      evmc::bytes32 original_val;
+      if (obj.original && obj.original->incarnation == incarnation) {
+        auto it = obj.original_storage.find(key);
+        if (it != obj.original_storage.end()) original_val = it->second;
+      }
+      state_writer.write_storage(address, incarnation, key, original_val, storage_entry.second);
+    }
+  }
+}
 }  // namespace silkworm

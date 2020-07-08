@@ -26,6 +26,7 @@
 
 #include "reader.hpp"
 #include "types/account.hpp"
+#include "writer.hpp"
 
 namespace silkworm {
 
@@ -56,6 +57,8 @@ class IntraBlockState {
 
   void rollback();
   void commit();
+
+  void write_block(state::Writer& state_writer);
 
  private:
   using Storage = std::map<evmc::bytes32, evmc::bytes32>;

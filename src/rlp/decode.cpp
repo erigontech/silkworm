@@ -17,12 +17,12 @@
 #include "decode.hpp"
 
 #include <boost/endian/conversion.hpp>
-#include <gsl/gsl_assert>
+#include <cassert>
 
 namespace silkworm::rlp {
 
 uint64_t read_uint64(std::istream& from, size_t len) {
-  Expects(len <= 8);
+  assert(len <= 8);
 
   if (len == 0) {
     return 0;

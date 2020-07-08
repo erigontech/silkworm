@@ -16,19 +16,7 @@
 
 #include "encode.hpp"
 
-namespace {
-
-std::string_view big_endian(uint64_t n) {
-  thread_local uint64_t buf;
-
-  // We assume a little-endian architecture like amd64
-  buf = intx::bswap(n);
-  const char* p = reinterpret_cast<char*>(&buf);
-  unsigned zero_bytes = intx::clz(n) / 8;
-  return {p + zero_bytes, 8 - zero_bytes};
-}
-
-}  // namespace
+#include <boost/endian/conversion.hpp>
 
 namespace silkworm::rlp {
 
@@ -87,30 +75,43 @@ size_t length(uint64_t n) {
   }
 }
 
-void encode(std::ostream& to, intx::uint256 n) {
-  thread_local uint8_t buf[32];
-
-  unsigned leading_zero_bits = clz(n);
-  unsigned num_bits = 256 - leading_zero_bits;
-  unsigned num_bytes = 32 - leading_zero_bits / 8;
-
-  if (num_bits == 0) {
+void encode(std::ostream& to, const intx::uint256& n) {
+  if (n == 0) {
     to.put(kEmptyStringCode);
-  } else if (num_bits <= 7) {
+  } else if (n < kEmptyStringCode) {
     to.put(intx::narrow_cast<char>(n));
   } else {
-    to.put(kEmptyStringCode + num_bytes);
-    intx::be::store(buf, n);
-    const void* begin = buf + (32 - num_bytes);
-    to.write(static_cast<const char*>(begin), num_bytes);
+    std::string_view be = big_endian(n);
+    to.put(kEmptyStringCode + be.length());
+    to.write(be.data(), be.length());
   }
 }
 
-size_t length(intx::uint256 n) {
+size_t length(const intx::uint256& n) {
   if (n < kEmptyStringCode) {
     return 1;
   } else {
-    return 1 + 8 - intx::clz(n) / 8;
+    return 1 + 32 - intx::clz(n) / 8;
   }
+}
+
+std::string_view big_endian(uint64_t n) {
+  thread_local uint64_t buf;
+
+  static_assert(boost::endian::order::native == boost::endian::order::little,
+                "We assume a little-endian architecture like amd64");
+  buf = intx::bswap(n);
+  const char* p = reinterpret_cast<char*>(&buf);
+  unsigned zero_bytes = intx::clz(n) / 8;
+  return {p + zero_bytes, 8 - zero_bytes};
+}
+
+std::string_view big_endian(const intx::uint256& n) {
+  thread_local uint8_t buf[32];
+
+  intx::be::store(buf, n);
+  const char* p = reinterpret_cast<char*>(&buf);
+  unsigned zero_bytes = intx::clz(n) / 8;
+  return {p + zero_bytes, 32 - zero_bytes};
 }
 }  // namespace silkworm::rlp

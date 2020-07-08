@@ -26,6 +26,41 @@ bool operator==(const Account& a, const Account& b) {
          a.code_hash == b.code_hash && a.incarnation == b.incarnation;
 }
 
+std::string Account::encode_for_storage() const {
+  std::string res(1, '\0');
+  uint8_t field_set{0};
+
+  if (nonce != 0) {
+    field_set = 1;
+    std::string_view be{rlp::big_endian(nonce)};
+    res.push_back(be.length());
+    res.append(be);
+  }
+
+  if (balance != 0) {
+    field_set |= 2;
+    std::string_view be{rlp::big_endian(balance)};
+    res.push_back(be.length());
+    res.append(be);
+  }
+
+  if (incarnation != 0) {
+    field_set |= 4;
+    std::string_view be{rlp::big_endian(incarnation)};
+    res.push_back(be.length());
+    res.append(be);
+  }
+
+  if (code_hash != kEmptyHash) {
+    field_set |= 8;
+    res.push_back(kHashLength);
+    res.append(byte_pointer_cast(code_hash.bytes), kHashLength);
+  }
+
+  res[0] = field_set;
+  return res;
+}
+
 Account decode_account_from_storage(std::string_view encoded) {
   Account a;
   if (encoded.empty()) return a;

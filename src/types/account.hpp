@@ -20,6 +20,7 @@
 #include <intx/intx.hpp>
 #include <istream>
 #include <ostream>
+#include <string>
 #include <string_view>
 
 #include "common/const.hpp"
@@ -28,6 +29,9 @@
 namespace silkworm {
 
 struct Account {
+  // turbo-geth (*Account)EncodeForStorage
+  std::string encode_for_storage() const;
+
   uint64_t nonce{0};
   intx::uint256 balance;
   evmc::bytes32 storage_root{kEmptyRoot};

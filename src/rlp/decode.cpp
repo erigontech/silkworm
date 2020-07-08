@@ -16,6 +16,7 @@
 
 #include "decode.hpp"
 
+#include <boost/endian/conversion.hpp>
 #include <gsl/gsl_assert>
 
 namespace silkworm::rlp {
@@ -37,7 +38,8 @@ uint64_t read_uint64(std::istream& from, size_t len) {
   char* p = reinterpret_cast<char*>(&buf);
   from.read(p + (8 - len), len);
 
-  // We assume a little-endian architecture like amd64
+  static_assert(boost::endian::order::native == boost::endian::order::little,
+                "We assume a little-endian architecture like amd64");
   return intx::bswap(buf);
 }
 

@@ -48,7 +48,7 @@ void encode_header(std::ostream& to, Header header);
 
 void encode(std::ostream& to, std::string_view s);
 void encode(std::ostream& to, uint64_t n);
-void encode(std::ostream& to, intx::uint256 n);
+void encode(std::ostream& to, const intx::uint256& n);
 
 template <unsigned N>
 void encode(std::ostream& to, const uint8_t (&bytes)[N]) {
@@ -67,7 +67,7 @@ size_t length_of_length(uint64_t payload_length);
 
 size_t length(std::string_view s);
 size_t length(uint64_t n);
-size_t length(intx::uint256 n);
+size_t length(const intx::uint256& n);
 
 size_t length(const BlockHeader& header);
 size_t length(const Transaction& transaction);
@@ -92,6 +92,10 @@ void encode(std::ostream& to, const std::vector<T>& v) {
     encode(to, x);
   }
 }
+
+// view of a thread-local buffer, must be consumed straight away
+std::string_view big_endian(uint64_t n);
+std::string_view big_endian(const intx::uint256& n);
 }  // namespace rlp
 }  // namespace silkworm
 

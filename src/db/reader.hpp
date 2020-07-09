@@ -14,14 +14,18 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_BUCKET_H_
-#define SILKWORM_DB_BUCKET_H_
+#ifndef SILKWORM_DB_READER_H_
+#define SILKWORM_DB_READER_H_
 
-namespace silkworm::db::bucket {
-constexpr const char* kPlainState{"PLAIN-CST"};
-constexpr const char* kPlainAccountChangeSet{"PLAIN-ACS"};
-constexpr const char* kBlockHeader{"h"};
-constexpr const char* kBlockBody{"b"};
-}  // namespace silkworm::db::bucket
+#include <optional>
 
-#endif  // SILKWORM_DB_BUCKET_H_
+#include "database.hpp"
+#include "state/change_set.hpp"
+#include "types/block.hpp"
+
+namespace silkworm::db {
+std::optional<Block> get_block(Database& db, uint64_t block_number);
+std::optional<AccountChanges> get_account_changes(Database& db, uint64_t block_number);
+}  // namespace silkworm::db
+
+#endif  // SILKWORM_DB_READER_H_

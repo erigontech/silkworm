@@ -41,7 +41,7 @@ evmc::bytes32 Reader::read_account_storage(const evmc::address&, uint64_t,
 
 std::optional<std::string> Reader::get(std::string_view key) const {
   std::unique_ptr<db::Transaction> txn = db_.begin_ro_transaction();
-  // TODO(Andrew) historic data
+  // TODO[TOP](Andrew) historic data
   std::unique_ptr<db::Bucket> bucket = txn->get_bucket(db::bucket::kPlainState);
   std::optional<std::string_view> val = bucket->get(key);
   return val ? std::string{*val} : nullptr;

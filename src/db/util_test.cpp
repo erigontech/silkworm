@@ -14,14 +14,13 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_BUCKET_H_
-#define SILKWORM_DB_BUCKET_H_
+#include "util.hpp"
 
-namespace silkworm::db::bucket {
-constexpr const char* kPlainState{"PLAIN-CST"};
-constexpr const char* kPlainAccountChangeSet{"PLAIN-ACS"};
-constexpr const char* kBlockHeader{"h"};
-constexpr const char* kBlockBody{"b"};
-}  // namespace silkworm::db::bucket
+#include <catch2/catch.hpp>
 
-#endif  // SILKWORM_DB_BUCKET_H_
+namespace silkworm::db {
+TEST_CASE("DB encode block number") {
+  CHECK(encode_block_number(1) == "\x21");
+  CHECK(encode_block_number(0x9f101c) == "\x80\x9f\x10\x1c");
+}
+}  // namespace silkworm::db

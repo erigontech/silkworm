@@ -5,6 +5,3 @@ MDB_NOTLS and multithreading. Do we mix C++ and go in one process?
 Propagate noexcept from EvmHost
 
 YP: https://github.com/ethereum/EIPs/issues/684
-
-check_change_sets
-    plain state with LMDB

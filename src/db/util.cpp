@@ -18,8 +18,10 @@
 
 #include <boost/endian/conversion.hpp>
 #include <cstring>
+#include <intx/int128.hpp>
 
 #include "common/util.hpp"
+#include "rlp/encode.hpp"
 
 namespace silkworm::db {
 std::string storage_key(const evmc::address& address, uint64_t incarnation,
@@ -29,5 +31,22 @@ std::string storage_key(const evmc::address& address, uint64_t incarnation,
   boost::endian::store_big_u64(byte_ptr_cast(res.data() + kAddressLength), ~incarnation);
   std::memcpy(res.data() + kAddressLength + 8, key.bytes, kHashLength);
   return res;
+}
+
+std::string header_hash_key(uint64_t block_number) {
+  std::string key{encode_block_number(block_number)};
+  key.push_back('n');
+  return key;
+}
+
+std::string encode_block_number(uint64_t block_number) {
+  unsigned zero_bits = intx::clz(block_number);
+  assert(zero_bits >= 5);
+  uint8_t byte_count = 8 - (zero_bits - 5) / 8;
+  std::string encoded(byte_count, '\0');
+  std::string_view be{rlp::big_endian(block_number)};
+  std::memcpy(encoded.data() + byte_count - be.length(), be.data(), be.length());
+  encoded[0] |= byte_count << 5;
+  return encoded;
 }
 }  // namespace silkworm::db

@@ -32,11 +32,15 @@ class Writer {
   Writer(const Writer&) = delete;
   Writer& operator=(const Writer&) = delete;
 
+  Writer() = default;
+
   void write_account(const evmc::address& address, std::optional<Account> original,
                      std::optional<Account> committed);
 
   void write_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
                      const evmc::bytes32& original, const evmc::bytes32& committed);
+
+  const AccountChanges& account_changes() const { return account_changes_; }
 
  private:
   AccountChanges account_changes_;

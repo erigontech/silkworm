@@ -19,8 +19,8 @@
 #include <catch2/catch.hpp>
 
 namespace silkworm::db {
-TEST_CASE("DB encode block number") {
-  CHECK(encode_block_number(1) == "\x21");
-  CHECK(encode_block_number(0x9f101c) == "\x80\x9f\x10\x1c");
+TEST_CASE("DB encode timestamp") {
+  CHECK(encode_timestamp(1) == "\x21");
+  CHECK(encode_timestamp(0x9f101c) == "\x80\x9f\x10\x1c");
 }
 }  // namespace silkworm::db

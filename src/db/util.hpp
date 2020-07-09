@@ -21,6 +21,7 @@
 
 #include <evmc/evmc.hpp>
 #include <string>
+#include <string_view>
 
 namespace silkworm::db {
 // Turbo-Geth PlainGenerateCompositeStorageKey
@@ -30,9 +31,12 @@ std::string storage_key(const evmc::address& address, uint64_t incarnation,
 // Turbo-Geth HeaderHashKey
 std::string header_hash_key(uint64_t block_number);
 
+// Turbo-Geth HeaderKey & BlockBodyKey
+std::string block_key(uint64_t block_number, std::string_view hash);
+
 // Turbo-Geth EncodeTimestamp
 // If a < b, then Encoding(a) < Encoding(b) lexicographically
-std::string encode_block_number(uint64_t block_number);
+std::string encode_timestamp(uint64_t block_number);
 }  // namespace silkworm::db
 
 #endif  // SILKWORM_DB_UTIL_H_

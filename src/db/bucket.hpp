@@ -22,6 +22,7 @@ constexpr const char* kPlainState{"PLAIN-CST"};
 constexpr const char* kPlainAccountChangeSet{"PLAIN-ACS"};
 constexpr const char* kBlockHeader{"h"};
 constexpr const char* kBlockBody{"b"};
+constexpr const char* kSenders{"txSenders"};
 }  // namespace silkworm::db::bucket
 
 #endif  // SILKWORM_DB_BUCKET_H_

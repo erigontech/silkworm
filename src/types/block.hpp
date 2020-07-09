@@ -68,6 +68,11 @@ struct Block : public BlockBody {
   BlockHeader header;
 };
 
+struct BlockWithHash {
+  Block block;
+  evmc::bytes32 hash;
+};
+
 namespace rlp {
 
 template <>

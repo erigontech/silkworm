@@ -14,7 +14,9 @@
    limitations under the License.
 */
 
+#include <cstdlib>
 #include <iostream>
+#include <string>
 
 #include "db/lmdb.hpp"
 #include "db/reader.hpp"
@@ -23,22 +25,23 @@
 #include "state/reader.hpp"
 
 int main() {
-  const char* db_path{"~/Library/Ethereum/geth/chaindata"};
-
   using namespace silkworm;
-  db::LmdbDatabase db{db_path};
+
+  std::string db_path{std::getenv("HOME")};
+  db_path += "/Library/Ethereum/geth/chaindata";
+  db::LmdbDatabase db{db_path.c_str()};
 
   uint64_t block_num{1};
-  for (std::optional<Block> block = db::get_block(db, block_num); block; ++block_num) {
+  for (std::optional<BlockWithHash> bh = db::get_block(db, block_num); bh; ++block_num) {
     // TODO[TOP](Andrew) read senders
 
     state::Reader reader{db};
     IntraBlockState state{&reader};
-    ExecutionProcessor processor{state, *block};
+    ExecutionProcessor processor{state, bh->block};
 
     std::vector<Receipt> receipts = processor.execute_block();
 
-    if (processor.gas_used() != block->header.gas_used) {
+    if (processor.gas_used() != bh->block.header.gas_used) {
       std::cerr << "gasUsed is mismatched for block " << block_num << '\n';
       return -1;
     }
@@ -50,7 +53,7 @@ int main() {
 
     // TODO[TOP](Andrew) check account & storage changes
 
-    if (block_num % 100 == 0) {
+    if (block_num % 1000 == 0) {
       std::cout << "Checked " << block_num << " blocks\n";
     }
   }

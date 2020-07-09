@@ -24,7 +24,7 @@
 #include "types/block.hpp"
 
 namespace silkworm::db {
-std::optional<Block> get_block(Database& db, uint64_t block_number);
+std::optional<BlockWithHash> get_block(Database& db, uint64_t block_number);
 std::optional<AccountChanges> get_account_changes(Database& db, uint64_t block_number);
 }  // namespace silkworm::db
 

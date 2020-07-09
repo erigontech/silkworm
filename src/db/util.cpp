@@ -17,6 +17,7 @@
 #include "util.hpp"
 
 #include <boost/endian/conversion.hpp>
+#include <cassert>
 #include <cstring>
 #include <intx/int128.hpp>
 
@@ -34,12 +35,21 @@ std::string storage_key(const evmc::address& address, uint64_t incarnation,
 }
 
 std::string header_hash_key(uint64_t block_number) {
-  std::string key{encode_block_number(block_number)};
-  key.push_back('n');
+  std::string key(8 + 1, '\0');
+  boost::endian::store_big_u64(byte_ptr_cast(key.data()), block_number);
+  key[8] = 'n';
   return key;
 }
 
-std::string encode_block_number(uint64_t block_number) {
+std::string block_key(uint64_t block_number, std::string_view hash) {
+  assert(hash.length() == kHashLength);
+  std::string key(8 + kHashLength, '\0');
+  boost::endian::store_big_u64(byte_ptr_cast(key.data()), block_number);
+  std::memcpy(key.data() + 8, hash.data(), kHashLength);
+  return key;
+}
+
+std::string encode_timestamp(uint64_t block_number) {
   unsigned zero_bits = intx::clz(block_number);
   assert(zero_bits >= 5);
   uint8_t byte_count = 8 - (zero_bits - 5) / 8;

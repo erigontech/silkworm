@@ -21,30 +21,37 @@
 #include "util.hpp"
 
 namespace silkworm::db {
-std::optional<Block> get_block(Database& db, uint64_t block_number) {
+std::optional<BlockWithHash> get_block(Database& db, uint64_t block_number) {
+  BlockWithHash bh{};
   std::unique_ptr<db::Transaction> txn{db.begin_ro_transaction()};
+
   std::unique_ptr<db::Bucket> header_bucket{txn->get_bucket(db::bucket::kBlockHeader)};
   std::optional<std::string_view> hash_val{header_bucket->get(header_hash_key(block_number))};
   if (!hash_val) return {};
-  std::string block_key{encode_block_number(block_number)};
-  block_key.append(*hash_val);
-  std::optional<std::string_view> header_rlp{header_bucket->get(block_key)};
+
+  std::memcpy(bh.hash.bytes, hash_val->data(), kHashLength);
+  std::string key{block_key(block_number, *hash_val)};
+
+  std::optional<std::string_view> header_rlp{header_bucket->get(key)};
   if (!header_rlp) return {};
-  Block block{};
+
   auto header_stream{string_view_as_stream(*header_rlp)};
-  rlp::decode(header_stream, block.header);
+  rlp::decode(header_stream, bh.block.header);
+
   std::unique_ptr<db::Bucket> body_bucket{txn->get_bucket(db::bucket::kBlockBody)};
-  std::optional<std::string_view> body_rlp{body_bucket->get(block_key)};
+  std::optional<std::string_view> body_rlp{body_bucket->get(key)};
   if (!body_rlp) return {};
+
   auto body_stream{string_view_as_stream(*body_rlp)};
-  rlp::decode<BlockBody>(body_stream, block);
-  return block;
+  rlp::decode<BlockBody>(body_stream, bh.block);
+
+  return bh;
 }
 
 std::optional<AccountChanges> get_account_changes(Database& db, uint64_t block_number) {
   std::unique_ptr<db::Transaction> txn{db.begin_ro_transaction()};
   std::unique_ptr<db::Bucket> bucket{txn->get_bucket(db::bucket::kPlainAccountChangeSet)};
-  std::optional<std::string_view> val{bucket->get(encode_block_number(block_number))};
+  std::optional<std::string_view> val{bucket->get(encode_timestamp(block_number))};
   if (!val) return {};
   return decode_account_changes(*val);
 }

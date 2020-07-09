@@ -23,6 +23,9 @@
 #include <optional>
 #include <string_view>
 
+#include "state/change_set.hpp"
+#include "types/block.hpp"
+
 namespace silkworm::db {
 
 class Bucket {
@@ -68,6 +71,9 @@ class Database {
 
   std::unique_ptr<Transaction> begin_ro_transaction() { return begin_transaction(true); }
   std::unique_ptr<Transaction> begin_rw_transaction() { return begin_transaction(false); }
+
+  std::optional<BlockWithHash> get_block(uint64_t block_number);
+  std::optional<AccountChanges> get_account_changes(uint64_t block_number);
 
  protected:
   Database() = default;

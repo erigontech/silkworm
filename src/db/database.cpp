@@ -14,18 +14,18 @@
    limitations under the License.
 */
 
-#include "reader.hpp"
+#include "database.hpp"
 
 #include "bucket.hpp"
 #include "types/block.hpp"
 #include "util.hpp"
 
 namespace silkworm::db {
-std::optional<BlockWithHash> get_block(Database& db, uint64_t block_number) {
+std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   BlockWithHash bh{};
-  std::unique_ptr<db::Transaction> txn{db.begin_ro_transaction()};
+  std::unique_ptr<Transaction> txn{begin_ro_transaction()};
 
-  std::unique_ptr<db::Bucket> header_bucket{txn->get_bucket(db::bucket::kBlockHeader)};
+  std::unique_ptr<Bucket> header_bucket{txn->get_bucket(bucket::kBlockHeader)};
   std::optional<std::string_view> hash_val{header_bucket->get(header_hash_key(block_number))};
   if (!hash_val) return {};
 
@@ -38,7 +38,7 @@ std::optional<BlockWithHash> get_block(Database& db, uint64_t block_number) {
   auto header_stream{string_view_as_stream(*header_rlp)};
   rlp::decode(header_stream, bh.block.header);
 
-  std::unique_ptr<db::Bucket> body_bucket{txn->get_bucket(db::bucket::kBlockBody)};
+  std::unique_ptr<Bucket> body_bucket{txn->get_bucket(bucket::kBlockBody)};
   std::optional<std::string_view> body_rlp{body_bucket->get(key)};
   if (!body_rlp) return {};
 
@@ -48,9 +48,9 @@ std::optional<BlockWithHash> get_block(Database& db, uint64_t block_number) {
   return bh;
 }
 
-std::optional<AccountChanges> get_account_changes(Database& db, uint64_t block_number) {
-  std::unique_ptr<db::Transaction> txn{db.begin_ro_transaction()};
-  std::unique_ptr<db::Bucket> bucket{txn->get_bucket(db::bucket::kPlainAccountChangeSet)};
+std::optional<AccountChanges> Database::get_account_changes(uint64_t block_number) {
+  std::unique_ptr<Transaction> txn{begin_ro_transaction()};
+  std::unique_ptr<Bucket> bucket{txn->get_bucket(bucket::kPlainAccountChangeSet)};
   std::optional<std::string_view> val{bucket->get(encode_timestamp(block_number))};
   if (!val) return {};
   return decode_account_changes(*val);

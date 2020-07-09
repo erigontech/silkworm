@@ -19,7 +19,6 @@
 #include <string>
 
 #include "db/lmdb.hpp"
-#include "db/reader.hpp"
 #include "execution/processor.hpp"
 #include "state/intra_block_state.hpp"
 #include "state/reader.hpp"
@@ -32,7 +31,7 @@ int main() {
   db::LmdbDatabase db{db_path.c_str()};
 
   uint64_t block_num{1};
-  for (std::optional<BlockWithHash> bh = db::get_block(db, block_num); bh; ++block_num) {
+  for (std::optional<BlockWithHash> bh = db.get_block(block_num); bh; ++block_num) {
     // TODO[TOP](Andrew) read senders
 
     state::Reader reader{db};
@@ -51,7 +50,13 @@ int main() {
     state::Writer writer;
     state.write_block(writer);
 
-    // TODO[TOP](Andrew) check account & storage changes
+    std::optional<AccountChanges> expected{db.get_account_changes(block_num)};
+    if (writer.account_changes() != expected) {
+      std::cerr << "Unexpected account changes for block " << block_num << '\n';
+      return -2;
+    }
+
+    // TODO[TOP](Andrew) storage changes
 
     if (block_num % 1000 == 0) {
       std::cout << "Checked " << block_num << " blocks\n";

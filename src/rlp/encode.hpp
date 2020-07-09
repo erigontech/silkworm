@@ -30,7 +30,7 @@
 
 namespace silkworm {
 
-struct Block;
+struct BlockBody;
 struct BlockHeader;
 struct Transaction;
 
@@ -59,7 +59,7 @@ void encode(std::ostream& to, const uint8_t (&bytes)[N]) {
   to.write(static_cast<const char*>(ptr), N);
 }
 
-void encode(std::ostream& to, const Block& block);
+void encode(std::ostream& to, const BlockBody& block_body);
 void encode(std::ostream& to, const BlockHeader& header);
 void encode(std::ostream& to, const Transaction& txn);
 

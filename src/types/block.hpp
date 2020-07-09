@@ -59,16 +59,19 @@ struct BlockHeader {
   uint32_t extra_data_size_{0};
 };
 
-struct Block {
-  BlockHeader header;
+struct BlockBody {
   std::vector<BlockHeader> ommers;
   std::vector<Transaction> transactions;
+};
+
+struct Block : public BlockBody {
+  BlockHeader header;
 };
 
 namespace rlp {
 
 template <>
-void decode(std::istream& from, Block& to);
+void decode(std::istream& from, BlockBody& to);
 
 template <>
 void decode(std::istream& from, BlockHeader& to);

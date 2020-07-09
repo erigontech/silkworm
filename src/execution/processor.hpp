@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_EXECUTION_H_
-#define SILKWORM_EXECUTION_EXECUTION_H_
+#ifndef SILKWORM_EXECUTION_PROCESSOR_H_
+#define SILKWORM_EXECUTION_PROCESSOR_H_
 
 #include <stdint.h>
 
@@ -62,15 +62,17 @@ class ExecutionProcessor {
 
   std::vector<Receipt> execute_block();
 
+  uint64_t gas_used() const { return gas_used_; }
+
  private:
   uint64_t available_gas() const;
   uint64_t refund_gas(const Transaction& txn, uint64_t gas_left);
 
   void apply_rewards();
 
-  uint64_t cumulative_gas_used_{0};
+  uint64_t gas_used_{0};
   EVM evm_;
 };
 }  // namespace silkworm
 
-#endif  // SILKWORM_EXECUTION_EXECUTION_H_
+#endif  // SILKWORM_EXECUTION_PROCESSOR_H_

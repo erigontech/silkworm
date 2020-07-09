@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "execution.hpp"
+#include "processor.hpp"
 
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>

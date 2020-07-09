@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "execution.hpp"
+#include "processor.hpp"
 
 #include <algorithm>
 #include <intx/int128.hpp>
@@ -120,10 +120,10 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
 
   state.commit();
 
-  cumulative_gas_used_ += res.gas_used;
+  gas_used_ += res.gas_used;
 
   res.receipt.post_state_or_status = vm_res.status == EVMC_SUCCESS;
-  res.receipt.cumulative_gas_used = cumulative_gas_used_;
+  res.receipt.cumulative_gas_used = gas_used_;
   res.receipt.logs = evm_.logs;
   // TODO(Andrew) Bloom
 
@@ -131,7 +131,7 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
 }
 
 uint64_t ExecutionProcessor::available_gas() const {
-  return evm_.block().header.gas_limit - cumulative_gas_used_;
+  return evm_.block().header.gas_limit - gas_used_;
 }
 
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) {
@@ -149,7 +149,7 @@ std::vector<Receipt> ExecutionProcessor::execute_block() {
 
   // TODO(Andrew) DAO block
 
-  cumulative_gas_used_ = 0;
+  gas_used_ = 0;
   for (const Transaction& txn : evm_.block().transactions) {
     ExecutionResult res = execute_transaction(txn);
     if (res.error != ValidationError::kOk) {

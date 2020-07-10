@@ -27,6 +27,24 @@
 
 namespace silkworm::db {
 
+struct Entry {
+  std::string_view key;
+  std::string_view value;
+};
+
+class Cursor {
+ public:
+  Cursor(const Cursor&) = delete;
+  Cursor& operator=(const Cursor&) = delete;
+
+  virtual ~Cursor() = default;
+
+  virtual std::optional<Entry> seek(std::string_view prefix) = 0;
+
+ protected:
+  Cursor() = default;
+};
+
 class Bucket {
  public:
   Bucket(const Bucket&) = delete;
@@ -37,6 +55,8 @@ class Bucket {
   virtual void put(std::string_view key, std::string_view value) = 0;
 
   virtual std::optional<std::string_view> get(std::string_view key) const = 0;
+
+  virtual std::unique_ptr<Cursor> cursor() = 0;
 
  protected:
   Bucket() = default;
@@ -77,8 +97,12 @@ class Database {
 
  protected:
   Database() = default;
-};
 
+ private:
+  // Turbo-Geth FindByHistory
+  std::optional<std::string_view> find_in_history(Transaction& txn, bool storage,
+                                                  std::string_view key, uint64_t block_number);
+};
 }  // namespace silkworm::db
 
 #endif  // SILKWORM_DB_DATABASE_H_

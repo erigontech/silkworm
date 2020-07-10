@@ -48,21 +48,31 @@ std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   return bh;
 }
 
-std::optional<Account> Database::get_account(const evmc::address& address, uint64_t) {
+std::optional<Account> Database::get_account(const evmc::address& address, uint64_t block_number) {
   std::string_view key{address_as_string_view(address)};
   std::unique_ptr<Transaction> txn{begin_ro_transaction()};
-  // TODO[TOP](Andrew) historic data
-  std::unique_ptr<Bucket> bucket{txn->get_bucket(bucket::kPlainState)};
-  std::optional<std::string_view> encoded = bucket->get(key);
+  std::optional<std::string_view> encoded = find_in_history(*txn, false, key, block_number);
+  if (!encoded) {
+    std::unique_ptr<Bucket> bucket{txn->get_bucket(bucket::kPlainState)};
+    encoded = bucket->get(key);
+  }
   if (!encoded) return {};
   return decode_account_from_storage(*encoded);
 }
 
 std::optional<AccountChanges> Database::get_account_changes(uint64_t block_number) {
   std::unique_ptr<Transaction> txn{begin_ro_transaction()};
-  std::unique_ptr<Bucket> bucket{txn->get_bucket(bucket::kPlainAccountChangeSet)};
+  std::unique_ptr<Bucket> bucket{txn->get_bucket(bucket::kPlainAccountChanges)};
   std::optional<std::string_view> val{bucket->get(encode_timestamp(block_number))};
   if (!val) return {};
   return decode_account_changes(*val);
+}
+
+std::optional<std::string_view> Database::find_in_history(Transaction& txn, bool storage,
+                                                          std::string_view, uint64_t) {
+  const char* bucket_name{storage ? bucket::kStorageHistory : bucket::kAccountHistory};
+  std::unique_ptr<Bucket> bucket{txn.get_bucket(bucket_name)};
+  // TODO[TOP](Andrew) implement
+  return {};
 }
 }  // namespace silkworm::db

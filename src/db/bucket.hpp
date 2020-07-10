@@ -17,9 +17,13 @@
 #ifndef SILKWORM_DB_BUCKET_H_
 #define SILKWORM_DB_BUCKET_H_
 
+// Turbo-Geth common/dbutils/bucket.go
 namespace silkworm::db::bucket {
 constexpr const char* kPlainState{"PLAIN-CST"};
-constexpr const char* kPlainAccountChangeSet{"PLAIN-ACS"};
+constexpr const char* kPlainAccountChanges{"PLAIN-ACS"};
+constexpr const char* kPlainStorageChanges{"PLAIN-SCS"};
+constexpr const char* kAccountHistory{"hAT"};
+constexpr const char* kStorageHistory{"hST"};
 constexpr const char* kBlockHeader{"h"};
 constexpr const char* kBlockBody{"b"};
 constexpr const char* kSenders{"txSenders"};

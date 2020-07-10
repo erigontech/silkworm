@@ -16,30 +16,43 @@
 
 #include "lmdb.hpp"
 
+#include <lmdbxx/lmdb++.h>
+
 #include <catch2/catch.hpp>
 
 namespace silkworm::db {
 
-TEST_CASE("LMDB basics") {
-  auto bucketName{"PLAIN-CST"};
+TEST_CASE("LMDB") {
+  auto bucket_name{"XXX"};
   auto key{"b1a4F4f387732B107D4F8e8816058bAB6D16397b"};
   auto val{"abba"};
 
-  TemporaryLmdbDatabase db;
-  auto txn = db.begin_ro_transaction();
+  TemporaryLmdbDatabase db{};
+  auto txn{db.begin_ro_transaction()};
 
-  // TODO(Andrew) get rid of lmdbx and CHECK_THROWS_MATCHES against our own
-  // expections
-  CHECK_THROWS(txn->create_bucket(bucketName));
+  CHECK_THROWS_MATCHES(txn->create_bucket(bucket_name), lmdb::error,
+                       Catch::Message("mdb_dbi_open: Permission denied"));
 
   txn = db.begin_rw_transaction();
-  CHECK_THROWS(txn->get_bucket(bucketName));
+  CHECK_THROWS_MATCHES(
+      txn->get_bucket(bucket_name), lmdb::error,
+      Catch::Message("mdb_dbi_open: MDB_NOTFOUND: No matching key/data pair found"));
 
-  auto bucket = txn->create_bucket(bucketName);
-  CHECK(!bucket->get(key).has_value());
+  auto bucket{txn->create_bucket(bucket_name)};
+  CHECK(!bucket->get(key));
 
   bucket->put(key, val);
   CHECK(bucket->get(key) == val);
-}
 
+  SECTION("cursor") {
+    auto cursor{bucket->cursor()};
+    std::optional<Entry> entry{cursor->seek("a")};
+    REQUIRE(entry);
+    CHECK(entry->key == key);
+    CHECK(entry->value == val);
+
+    entry = cursor->seek("c");
+    CHECK(!entry);
+  }
+}
 }  // namespace silkworm::db

@@ -18,6 +18,8 @@
 
 #include <lmdbxx/lmdb++.h>
 
+#include <memory>
+
 namespace {
 thread_local boost::filesystem::path last_tmp_dir;
 
@@ -38,6 +40,23 @@ std::string_view from_mdb_val(const MDB_val val) {
 
 namespace silkworm::db {
 
+LmdbCursor::~LmdbCursor() {
+  if (cursor_) {
+    lmdb::cursor_close(cursor_);
+    cursor_ = nullptr;
+  }
+}
+
+std::optional<Entry> LmdbCursor::seek(std::string_view prefix) {
+  MDB_val key{to_mdb_val(prefix)};
+  MDB_val value;
+  MDB_cursor_op op{prefix.empty() ? MDB_FIRST : MDB_SET_RANGE};
+  bool found = lmdb::cursor_get(cursor_, &key, &value, op);
+  if (!found) return {};
+
+  return Entry{.key = from_mdb_val(key), .value = from_mdb_val(value)};
+}
+
 LmdbBucket::LmdbBucket(MDB_dbi dbi, MDB_txn* txn) : dbi_{dbi}, txn_{txn} {}
 
 void LmdbBucket::put(std::string_view key, std::string_view value) {
@@ -50,13 +69,16 @@ std::optional<std::string_view> LmdbBucket::get(std::string_view key) const {
   MDB_val key_val = to_mdb_val(key);
   MDB_val data;
   bool found = lmdb::dbi_get(txn_, dbi_, &key_val, &data);
-  if (found) {
-    // TODO(Andrew) either copy or make the ramifications crystall clear in the
-    // API
-    return from_mdb_val(data);
-  } else {
-    return {};
-  }
+  if (!found) return {};
+
+  // TODO(Andrew) either copy or make the ramifications crystall clear in the API
+  return from_mdb_val(data);
+}
+
+std::unique_ptr<Cursor> LmdbBucket::cursor() {
+  MDB_cursor* cursor{};
+  lmdb::cursor_open(txn_, dbi_, &cursor);
+  return std::make_unique<LmdbCursor>(cursor);
 }
 
 LmdbTransaction::LmdbTransaction(MDB_txn* txn) : txn_{txn} {};
@@ -71,13 +93,13 @@ LmdbTransaction::~LmdbTransaction() {
 std::unique_ptr<Bucket> LmdbTransaction::create_bucket(const char* name) {
   MDB_dbi dbi;
   lmdb::dbi_open(txn_, name, MDB_CREATE, &dbi);
-  return std::unique_ptr<LmdbBucket>{new LmdbBucket{dbi, txn_}};
+  return std::make_unique<LmdbBucket>(dbi, txn_);
 }
 
 std::unique_ptr<Bucket> LmdbTransaction::get_bucket(const char* name) {
   MDB_dbi dbi;
   lmdb::dbi_open(txn_, name, /*flags=*/0, &dbi);
-  return std::unique_ptr<LmdbBucket>{new LmdbBucket{dbi, txn_}};
+  return std::make_unique<LmdbBucket>(dbi, txn_);
 }
 
 void LmdbTransaction::commit() {
@@ -122,7 +144,7 @@ std::unique_ptr<Transaction> LmdbDatabase::begin_transaction(bool read_only) {
   }
   MDB_txn* txn{nullptr};
   lmdb::txn_begin(env_, /*parent=*/nullptr, flags, &txn);
-  return std::unique_ptr<LmdbTransaction>{new LmdbTransaction{txn}};
+  return std::make_unique<LmdbTransaction>(txn);
 }
 
 TemporaryLmdbDatabase::TemporaryLmdbDatabase()

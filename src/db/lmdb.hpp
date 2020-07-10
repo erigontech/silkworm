@@ -36,23 +36,37 @@ struct LmdbOptions {
   unsigned max_buckets = 100;
 };
 
+class LmdbCursor : public Cursor {
+ public:
+  explicit LmdbCursor(MDB_cursor* cursor) : cursor_{cursor} {}
+
+  ~LmdbCursor() override;
+
+  std::optional<Entry> seek(std::string_view prefix) override;
+
+ private:
+  MDB_cursor* cursor_{nullptr};
+};
+
 class LmdbBucket : public Bucket {
  public:
+  LmdbBucket(MDB_dbi dbi, MDB_txn* txn);
+
   void put(std::string_view key, std::string_view value) override;
 
   std::optional<std::string_view> get(std::string_view key) const override;
 
+  std::unique_ptr<Cursor> cursor() override;
+
  private:
-  friend class LmdbTransaction;
-
-  LmdbBucket(MDB_dbi dbi, MDB_txn* txn);
-
   MDB_dbi dbi_{0};
   MDB_txn* txn_{nullptr};
 };
 
 class LmdbTransaction : public Transaction {
  public:
+  explicit LmdbTransaction(MDB_txn* txn);
+
   ~LmdbTransaction() override;
 
   std::unique_ptr<Bucket> create_bucket(const char* name) override;
@@ -62,10 +76,6 @@ class LmdbTransaction : public Transaction {
   void rollback() override;
 
  private:
-  friend class LmdbDatabase;
-
-  explicit LmdbTransaction(MDB_txn* txn);
-
   MDB_txn* txn_{nullptr};
 };
 

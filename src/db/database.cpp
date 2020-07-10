@@ -48,6 +48,16 @@ std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   return bh;
 }
 
+std::optional<Account> Database::get_account(const evmc::address& address, uint64_t) {
+  std::string_view key{address_as_string_view(address)};
+  std::unique_ptr<Transaction> txn{begin_ro_transaction()};
+  // TODO[TOP](Andrew) historic data
+  std::unique_ptr<Bucket> bucket{txn->get_bucket(bucket::kPlainState)};
+  std::optional<std::string_view> encoded = bucket->get(key);
+  if (!encoded) return {};
+  return decode_account_from_storage(*encoded);
+}
+
 std::optional<AccountChanges> Database::get_account_changes(uint64_t block_number) {
   std::unique_ptr<Transaction> txn{begin_ro_transaction()};
   std::unique_ptr<Bucket> bucket{txn->get_bucket(bucket::kPlainAccountChangeSet)};

@@ -34,7 +34,7 @@ int main() {
   for (std::optional<BlockWithHash> bh = db.get_block(block_num); bh; ++block_num) {
     // TODO[TOP](Andrew) read senders
 
-    state::Reader reader{db};
+    state::Reader reader{db, block_num};
     IntraBlockState state{&reader};
     ExecutionProcessor processor{state, bh->block};
 

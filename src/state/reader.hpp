@@ -32,7 +32,7 @@ class Reader {
   Reader(const Reader&) = delete;
   Reader& operator=(const Reader&) = delete;
 
-  explicit Reader(db::Database& db) : db_{db} {}
+  Reader(db::Database& db, uint64_t block_number) : db_{db}, block_number_{block_number} {}
 
   std::optional<Account> read_account(const evmc::address& address) const;
   std::string read_account_code(const evmc::address& address) const;
@@ -40,9 +40,8 @@ class Reader {
                                      const evmc::bytes32& key) const;
 
  private:
-  std::optional<std::string> get(std::string_view key) const;
-
   db::Database& db_;
+  uint64_t block_number_{0};
 };
 }  // namespace silkworm::state
 

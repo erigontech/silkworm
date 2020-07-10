@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-// TODO(Andrew) comments
-
 #ifndef SILKWORM_DB_DATABASE_H_
 #define SILKWORM_DB_DATABASE_H_
 
@@ -24,6 +22,7 @@
 #include <string_view>
 
 #include "state/change_set.hpp"
+#include "types/account.hpp"
 #include "types/block.hpp"
 
 namespace silkworm::db {
@@ -73,6 +72,7 @@ class Database {
   std::unique_ptr<Transaction> begin_rw_transaction() { return begin_transaction(false); }
 
   std::optional<BlockWithHash> get_block(uint64_t block_number);
+  std::optional<Account> get_account(const evmc::address& address, uint64_t block_number);
   std::optional<AccountChanges> get_account_changes(uint64_t block_number);
 
  protected:

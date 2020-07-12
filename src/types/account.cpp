@@ -71,7 +71,7 @@ Account decode_account_from_storage(std::string_view encoded) {
   if (field_set & 1) {
     uint8_t len = encoded[pos++];
     if (encoded.length() < pos + len) {
-      throw rlp::DecodingError("input too short for account nonce");
+      throw DecodingError("input too short for account nonce");
     }
     auto stream = string_view_as_stream(encoded.substr(pos));
     a.nonce = rlp::read_uint64(stream, len);
@@ -81,7 +81,7 @@ Account decode_account_from_storage(std::string_view encoded) {
   if (field_set & 2) {
     uint8_t len = encoded[pos++];
     if (encoded.length() < pos + len) {
-      throw rlp::DecodingError("input too short for account balance");
+      throw DecodingError("input too short for account balance");
     }
     std::memcpy(&as_bytes(a.balance)[32 - len], &encoded[pos], len);
     a.balance = bswap(a.balance);
@@ -91,7 +91,7 @@ Account decode_account_from_storage(std::string_view encoded) {
   if (field_set & 4) {
     uint8_t len = encoded[pos++];
     if (encoded.length() < pos + len) {
-      throw rlp::DecodingError("input too short for account incarnation");
+      throw DecodingError("input too short for account incarnation");
     }
     auto stream = string_view_as_stream(encoded.substr(pos));
     a.incarnation = rlp::read_uint64(stream, len);
@@ -101,10 +101,10 @@ Account decode_account_from_storage(std::string_view encoded) {
   if (field_set & 8) {
     uint8_t len = encoded[pos++];
     if (len != kHashLength) {
-      throw rlp::DecodingError("codeHash should be 32 bytes long,");
+      throw DecodingError("codeHash should be 32 bytes long,");
     }
     if (encoded.length() < pos + len) {
-      throw rlp::DecodingError("input too short for account codeHash");
+      throw DecodingError("input too short for account codeHash");
     }
     std::memcpy(a.code_hash.bytes, &encoded[pos], kHashLength);
     pos += len;

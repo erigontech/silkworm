@@ -28,16 +28,12 @@
 #include <string>
 #include <vector>
 
+#include "common/decoding_error.hpp"
 #include "encode.hpp"
 
 namespace silkworm::rlp {
 
 constexpr size_t kMaxStringSize = 1024 * 1024;
-
-class DecodingError : public std::runtime_error {
- public:
-  using std::runtime_error::runtime_error;
-};
 
 // Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,
 // in which case the byte is put back.

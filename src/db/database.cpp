@@ -57,7 +57,7 @@ std::optional<Account> Database::get_account(const evmc::address& address, uint6
     auto bucket{txn->get_bucket(bucket::kPlainState)};
     encoded = bucket->get(key);
   }
-  if (!encoded) return {};
+  if (!encoded || encoded->empty()) return {};
   return decode_account_from_storage(*encoded);
 }
 
@@ -91,7 +91,7 @@ std::optional<std::string_view> Database::find_in_history(Transaction& txn, bool
   std::optional<history_index::SearchResult> res{history_index::find(entry->value, block_number)};
   if (!res) return {};
 
-  if (res->new_record && !storage) return "";
+  if (res->new_record && !storage) return std::string_view{};
 
   auto change_name{storage ? bucket::kPlainStorageChanges : bucket::kPlainAccountChanges};
   auto change_bucket{txn.get_bucket(change_name)};

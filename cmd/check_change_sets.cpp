@@ -50,7 +50,7 @@ int main() {
     state::Writer writer;
     state.write_block(writer);
 
-    std::optional<AccountChanges> expected{db.get_account_changes(block_num)};
+    std::optional<db::AccountChanges> expected{db.get_account_changes(block_num)};
     if (writer.account_changes() != expected) {
       std::cerr << "Unexpected account changes for block " << block_num << '\n';
       return -2;

@@ -14,20 +14,26 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_CHANGE_SET_H_
-#define SILKWORM_STATE_CHANGE_SET_H_
+#ifndef SILKWORM_DB_CHANGE_H_
+#define SILKWORM_DB_CHANGE_H_
 
 #include <evmc/evmc.hpp>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 
-namespace silkworm {
+namespace silkworm::db {
 
 using AccountChanges = std::map<evmc::address, std::string>;
 
 // Turbo-Geth decodeAccountsWithKeyLen
-AccountChanges decode_account_changes(std::string_view b);
-}  // namespace silkworm
+AccountChanges decode_account_changes(std::string_view encoded);
 
-#endif  // SILKWORM_STATE_CHANGE_SET_H_
+namespace change {
+// Turbo-Geth (AccountChangeSetPlainBytes)Find
+std::optional<std::string_view> find_account(std::string_view encoded, std::string_view key);
+}  // namespace change
+}  // namespace silkworm::db
+
+#endif  // SILKWORM_DB_CHANGE_H_

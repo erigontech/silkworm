@@ -21,7 +21,7 @@
 #include <optional>
 #include <string_view>
 
-#include "state/change_set.hpp"
+#include "change.hpp"
 #include "types/account.hpp"
 #include "types/block.hpp"
 

@@ -17,15 +17,16 @@
 #include "database.hpp"
 
 #include "bucket.hpp"
+#include "history_index.hpp"
 #include "types/block.hpp"
 #include "util.hpp"
 
 namespace silkworm::db {
 std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   BlockWithHash bh{};
-  std::unique_ptr<Transaction> txn{begin_ro_transaction()};
+  auto txn{begin_ro_transaction()};
 
-  std::unique_ptr<Bucket> header_bucket{txn->get_bucket(bucket::kBlockHeader)};
+  auto header_bucket{txn->get_bucket(bucket::kBlockHeader)};
   std::optional<std::string_view> hash_val{header_bucket->get(header_hash_key(block_number))};
   if (!hash_val) return {};
 
@@ -38,7 +39,7 @@ std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   auto header_stream{string_view_as_stream(*header_rlp)};
   rlp::decode(header_stream, bh.block.header);
 
-  std::unique_ptr<Bucket> body_bucket{txn->get_bucket(bucket::kBlockBody)};
+  auto body_bucket{txn->get_bucket(bucket::kBlockBody)};
   std::optional<std::string_view> body_rlp{body_bucket->get(key)};
   if (!body_rlp) return {};
 
@@ -49,11 +50,11 @@ std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
 }
 
 std::optional<Account> Database::get_account(const evmc::address& address, uint64_t block_number) {
-  std::string_view key{address_as_string_view(address)};
-  std::unique_ptr<Transaction> txn{begin_ro_transaction()};
+  auto key{address_as_string_view(address)};
+  auto txn{begin_ro_transaction()};
   std::optional<std::string_view> encoded = find_in_history(*txn, false, key, block_number);
   if (!encoded) {
-    std::unique_ptr<Bucket> bucket{txn->get_bucket(bucket::kPlainState)};
+    auto bucket{txn->get_bucket(bucket::kPlainState)};
     encoded = bucket->get(key);
   }
   if (!encoded) return {};
@@ -61,18 +62,49 @@ std::optional<Account> Database::get_account(const evmc::address& address, uint6
 }
 
 std::optional<AccountChanges> Database::get_account_changes(uint64_t block_number) {
-  std::unique_ptr<Transaction> txn{begin_ro_transaction()};
-  std::unique_ptr<Bucket> bucket{txn->get_bucket(bucket::kPlainAccountChanges)};
+  auto txn{begin_ro_transaction()};
+  auto bucket{txn->get_bucket(bucket::kPlainAccountChanges)};
   std::optional<std::string_view> val{bucket->get(encode_timestamp(block_number))};
   if (!val) return {};
   return decode_account_changes(*val);
 }
 
 std::optional<std::string_view> Database::find_in_history(Transaction& txn, bool storage,
-                                                          std::string_view, uint64_t) {
-  const char* bucket_name{storage ? bucket::kStorageHistory : bucket::kAccountHistory};
-  std::unique_ptr<Bucket> bucket{txn.get_bucket(bucket_name)};
-  // TODO[TOP](Andrew) implement
-  return {};
+                                                          std::string_view key,
+                                                          uint64_t block_number) {
+  auto history_name{storage ? bucket::kStorageHistory : bucket::kAccountHistory};
+  auto history_bucket{txn.get_bucket(history_name)};
+  auto cursor{history_bucket->cursor()};
+  std::optional<Entry> entry{cursor->seek(key)};
+  if (!entry) return {};
+
+  std::string_view k{entry->key};
+  if (storage) {
+    if (k.substr(0, kAddressLength) != key.substr(0, kAddressLength) ||
+        k.substr(kAddressLength, kHashLength) != key.substr(kAddressLength + kIncarnationLength)) {
+      return {};
+    }
+  } else if (!k.starts_with(key)) {
+    return {};
+  }
+
+  std::optional<history_index::SearchResult> res{history_index::find(entry->value, block_number)};
+  if (!res) return {};
+
+  if (res->new_record && !storage) return "";
+
+  auto change_name{storage ? bucket::kPlainStorageChanges : bucket::kPlainAccountChanges};
+  auto change_bucket{txn.get_bucket(change_name)};
+
+  uint64_t change_block{res->change_block};
+  std::optional<std::string_view> changes{change_bucket->get(encode_timestamp(change_block))};
+  if (!changes) return {};
+
+  if (storage) {
+    // TODO(Andrew) implement
+    return {};
+  } else {
+    return change::find_account(*changes, key);
+  }
 }
 }  // namespace silkworm::db

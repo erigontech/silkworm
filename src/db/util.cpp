@@ -50,13 +50,14 @@ std::string block_key(uint64_t block_number, std::string_view hash) {
 }
 
 std::string encode_timestamp(uint64_t block_number) {
+  constexpr uint8_t byte_count_bits{3};
   unsigned zero_bits = intx::clz(block_number);
-  assert(zero_bits >= 5);
-  uint8_t byte_count = 8 - (zero_bits - 5) / 8;
+  assert(zero_bits >= byte_count_bits);
+  uint8_t byte_count = 8 - (zero_bits - byte_count_bits) / 8;
   std::string encoded(byte_count, '\0');
   std::string_view be{rlp::big_endian(block_number)};
   std::memcpy(encoded.data() + byte_count - be.length(), be.data(), be.length());
-  encoded[0] |= byte_count << 5;
+  encoded[0] |= byte_count << (8 - byte_count_bits);
   return encoded;
 }
 }  // namespace silkworm::db

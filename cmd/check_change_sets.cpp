@@ -30,8 +30,8 @@ int main() {
   db_path += "/Library/Ethereum/geth/chaindata";
   db::LmdbDatabase db{db_path.c_str()};
 
-  uint64_t block_num{1};
-  for (std::optional<BlockWithHash> bh = db.get_block(block_num); bh; ++block_num) {
+  uint64_t block_num{0};
+  while (std::optional<BlockWithHash> bh = db.get_block(++block_num)) {
     // TODO[TOP](Andrew) read senders
 
     state::Reader reader{db, block_num};
@@ -62,6 +62,6 @@ int main() {
       std::cout << "Checked " << block_num << " blocks\n";
     }
   }
-  std::cout << "Checked " << block_num << " blocks\n";
+  std::cout << "Checked all " << (block_num - 1) << " available blocks\n";
   return 0;
 }

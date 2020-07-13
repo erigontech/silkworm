@@ -104,4 +104,9 @@ TEST_CASE("EVM smart contract") {
   CHECK(res.status == EVMC_SUCCESS);
   CHECK(state.get_storage(contract_address, key0) == new_val);
 }
+
+TEST_CASE("Create address") {
+  CHECK(create_address(0xfbe0afcd7658ba86be41922059dd879c192d4c73_address, 0) ==
+        0xc669eaad75042be84daaf9b461b0e868b9ac1871_address);
+}
 }  // namespace silkworm

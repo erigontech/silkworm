@@ -52,8 +52,8 @@ add_subdirectory(src)
 add_executable(silkworm cmd/silkworm.cpp)
 target_link_libraries(silkworm PRIVATE libsilkworm)
 
-add_executable(check_change_sets cmd/check_change_sets.cpp)
-target_link_libraries(check_change_sets PRIVATE libsilkworm)
+add_executable(check_changes cmd/check_changes.cpp)
+target_link_libraries(check_changes PRIVATE libsilkworm)
 
 # Unit tests
 enable_testing()

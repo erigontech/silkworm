@@ -65,8 +65,10 @@ class IntraBlockState {
 
   struct Object {
     std::optional<Account> original;
+    std::optional<Account> committed;
     std::optional<Account> current;
     Storage original_storage;
+    Storage committed_storage;
     Storage current_storage;
     std::optional<std::string> code;
   };

@@ -159,6 +159,7 @@ std::vector<Receipt> ExecutionProcessor::execute_block() {
   }
 
   apply_rewards();
+  evm_.state().commit();
 
   return receipts;
 }

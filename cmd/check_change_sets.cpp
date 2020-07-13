@@ -52,7 +52,26 @@ int main() {
 
     std::optional<db::AccountChanges> expected{db.get_account_changes(block_num)};
     if (writer.account_changes() != expected) {
-      std::cerr << "Unexpected account changes for block " << block_num << '\n';
+      std::cerr << "Unexpected account changes for block " << block_num << " 😲\n";
+      if (expected) {
+        for (const auto& e : *expected) {
+          if (writer.account_changes().count(e.first) == 0) {
+            std::cerr << address_to_hex(e.first) << " is missing\n";
+          } else if (std::string val{writer.account_changes().at(e.first)}; val != e.second) {
+            std::cerr << "Value mismatch for " << address_to_hex(e.first) << ":\n";
+            std::cerr << boost::algorithm::hex_lower(val) << "\n";
+            std::cerr << "vs expected\n";
+            std::cerr << boost::algorithm::hex_lower(e.second) << "\n";
+          }
+        }
+        for (const auto& e : writer.account_changes()) {
+          if (expected->count(e.first) == 0) {
+            std::cerr << address_to_hex(e.first) << " is unexpected\n";
+          }
+        }
+      } else {
+        std::cerr << "Nil expected account changes\n";
+      }
       return -2;
     }
 
@@ -62,6 +81,6 @@ int main() {
       std::cout << "Checked " << block_num << " blocks\n";
     }
   }
-  std::cout << "Checked all " << (block_num - 1) << " available blocks\n";
+  std::cout << "All " << (block_num - 1) << " available blocks have been checked 😅\n";
   return 0;
 }

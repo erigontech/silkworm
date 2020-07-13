@@ -52,6 +52,10 @@ inline std::string_view hash_as_string_view(const evmc::bytes32& hash) {
   return {byte_ptr_cast(hash.bytes), kHashLength};
 }
 
+inline std::string address_to_hex(const evmc::address& address) {
+  return boost::algorithm::hex_lower(std::string{address_as_string_view(address)});
+}
+
 inline std::string hash_to_hex(const evmc::bytes32& hash) {
   return boost::algorithm::hex_lower(std::string{hash_as_string_view(hash)});
 }

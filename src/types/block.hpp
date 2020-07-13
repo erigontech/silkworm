@@ -60,8 +60,8 @@ struct BlockHeader {
 };
 
 struct BlockBody {
-  std::vector<BlockHeader> ommers;
   std::vector<Transaction> transactions;
+  std::vector<BlockHeader> ommers;
 };
 
 struct Block : public BlockBody {

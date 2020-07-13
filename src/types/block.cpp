@@ -103,11 +103,11 @@ void decode(std::istream& from, BlockHeader& to) {
 
 void encode(std::ostream& to, const BlockBody& block_body) {
   Header rlp_head{.list = true, .payload_length = 0};
-  rlp_head.payload_length += length(block_body.ommers);
   rlp_head.payload_length += length(block_body.transactions);
+  rlp_head.payload_length += length(block_body.ommers);
   encode_header(to, rlp_head);
-  encode(to, block_body.ommers);
   encode(to, block_body.transactions);
+  encode(to, block_body.ommers);
 }
 
 template <>
@@ -117,8 +117,8 @@ void decode(std::istream& from, BlockBody& to) {
     throw DecodingError("unexpected string");
   }
 
-  decode_vector(from, to.ommers);
   decode_vector(from, to.transactions);
+  decode_vector(from, to.ommers);
 }
 }  // namespace rlp
 }  // namespace silkworm

@@ -167,7 +167,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
   if (message.kind == EVMC_CALL && !(message.flags & EVMC_STATIC)) {
     if (!state_.exists(message.destination)) {
-      // TODO(Andrew) precompiles
+      // TODO[TOP](Andrew) precompiles
 
       // https://eips.ethereum.org/EIPS/eip-161
       if (config_.has_spurious_dragon(block_.header.number) && value == 0) {
@@ -193,7 +193,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
 evmc::result EVM::execute(const evmc_message& message, uint8_t const* code,
                           size_t code_size) noexcept {
-  // TODO(Andrew) precompiles
+  // TODO[TOP](Andrew) precompiles
 
   evmc_vm* evmone = evmc_create_evmone();
 
@@ -218,7 +218,7 @@ evmc_revision EVM::revision() const noexcept {
 }
 
 evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
-  std::ostringstream stream;
+  std::ostringstream stream{};
   rlp::Header h{.list = true, .payload_length = 1 + kAddressLength};
   h.payload_length += rlp::length(nonce);
   rlp::encode_header(stream, h);
@@ -226,7 +226,7 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
   rlp::encode(stream, nonce);
   std::string rlp = stream.str();
 
-  ethash::hash256 hash = ethash::keccak256(byte_ptr_cast(rlp.data()), rlp.size());
+  ethash::hash256 hash{ethash::keccak256(byte_ptr_cast(rlp.data()), rlp.size())};
 
   evmc::address address;
   std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);
@@ -235,7 +235,7 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
 
 evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
                               uint8_t (&code_hash)[32]) noexcept {
-  constexpr size_t n = 1 + kAddressLength + 2 * kHashLength;
+  constexpr size_t n{1 + kAddressLength + 2 * kHashLength};
   thread_local uint8_t buf[n];
 
   buf[0] = 0xff;
@@ -243,7 +243,7 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
   std::memcpy(buf + 1 + kAddressLength, salt.bytes, kHashLength);
   std::memcpy(buf + 1 + kAddressLength + kHashLength, code_hash, kHashLength);
 
-  ethash::hash256 hash = ethash::keccak256(buf, n);
+  ethash::hash256 hash{ethash::keccak256(buf, n)};
 
   evmc::address address;
   std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);

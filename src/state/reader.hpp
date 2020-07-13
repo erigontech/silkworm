@@ -35,9 +35,9 @@ class Reader {
   Reader(db::Database& db, uint64_t block_number) : db_{db}, block_number_{block_number} {}
 
   std::optional<Account> read_account(const evmc::address& address) const;
-  std::string read_account_code(const evmc::address& address) const;
-  evmc::bytes32 read_account_storage(const evmc::address& address, uint64_t incarnation,
-                                     const evmc::bytes32& key) const;
+  std::string read_code(const evmc::bytes32& code_hash) const;
+  evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
+                             const evmc::bytes32& key) const;
 
  private:
   db::Database& db_;

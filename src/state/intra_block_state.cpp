@@ -109,7 +109,7 @@ std::string_view IntraBlockState::get_code(const evmc::address& address) const {
   if (obj->current->code_hash == kEmptyHash) return {};
   if (!db_) return {};
 
-  obj->code = db_->read_account_code(address);
+  obj->code = db_->read_code(obj->current->code_hash);
   return *obj->code;
 }
 
@@ -121,7 +121,7 @@ evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const
 void IntraBlockState::set_code(const evmc::address& address, std::string_view code) {
   Object& obj{get_or_create_object(address)};
   obj.code = code;
-  ethash::hash256 hash = ethash::keccak256(byte_ptr_cast(code.data()), code.size());
+  ethash::hash256 hash{ethash::keccak256(byte_ptr_cast(code.data()), code.size())};
   std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
 }
 
@@ -144,7 +144,7 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
   if (it != obj->original_storage.end()) return it->second;
 
   evmc::bytes32 val{};
-  if (db_) val = db_->read_account_storage(address, incarnation, key);
+  if (db_) val = db_->read_storage(address, incarnation, key);
 
   obj->original_storage[key] = val;
   return val;

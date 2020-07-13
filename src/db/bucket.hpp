@@ -24,6 +24,7 @@ constexpr const char* kPlainAccountChanges{"PLAIN-ACS"};
 constexpr const char* kPlainStorageChanges{"PLAIN-SCS"};
 constexpr const char* kAccountHistory{"hAT"};
 constexpr const char* kStorageHistory{"hST"};
+constexpr const char* kCode{"CODE"};
 constexpr const char* kBlockHeader{"h"};
 constexpr const char* kBlockBody{"b"};
 constexpr const char* kSenders{"txSenders"};

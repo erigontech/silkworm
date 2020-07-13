@@ -25,14 +25,12 @@ std::optional<Account> Reader::read_account(const evmc::address& address) const 
   return db_.get_account(address, block_number_);
 }
 
-std::string Reader::read_account_code(const evmc::address&) const {
-  // TODO(Andrew) implement
-  return "";
+std::string Reader::read_code(const evmc::bytes32& code_hash) const {
+  return db_.get_code(code_hash);
 }
 
-evmc::bytes32 Reader::read_account_storage(const evmc::address&, uint64_t,
-                                           const evmc::bytes32&) const {
-  // TODO(Andrew) implement
+evmc::bytes32 Reader::read_storage(const evmc::address&, uint64_t, const evmc::bytes32&) const {
+  // TODO[TOP](Andrew) implement
   return {};
 }
 }  // namespace silkworm::state

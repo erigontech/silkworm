@@ -65,13 +65,21 @@ std::vector<evmc::address> Database::get_senders(uint64_t block_number,
 std::optional<Account> Database::get_account(const evmc::address& address, uint64_t block_number) {
   auto key{address_as_string_view(address)};
   auto txn{begin_ro_transaction()};
-  std::optional<std::string_view> encoded = find_in_history(*txn, false, key, block_number);
+  std::optional<std::string_view> encoded{find_in_history(*txn, false, key, block_number)};
   if (!encoded) {
     auto bucket{txn->get_bucket(bucket::kPlainState)};
     encoded = bucket->get(key);
   }
   if (!encoded || encoded->empty()) return {};
   return decode_account_from_storage(*encoded);
+}
+
+std::string Database::get_code(const evmc::bytes32& code_hash) {
+  auto txn{begin_ro_transaction()};
+  auto bucket{txn->get_bucket(bucket::kCode)};
+  std::optional<std::string_view> val{bucket->get(hash_as_string_view(code_hash))};
+  if (!val) return {};
+  return std::string{*val};
 }
 
 std::optional<AccountChanges> Database::get_account_changes(uint64_t block_number) {

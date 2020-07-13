@@ -20,6 +20,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 #include "change.hpp"
 #include "types/account.hpp"
@@ -92,6 +93,7 @@ class Database {
   std::unique_ptr<Transaction> begin_rw_transaction() { return begin_transaction(false); }
 
   std::optional<BlockWithHash> get_block(uint64_t block_number);
+  std::vector<evmc::address> get_senders(uint64_t block_number, const evmc::bytes32& block_hash);
   std::optional<Account> get_account(const evmc::address& address, uint64_t block_number);
   std::optional<AccountChanges> get_account_changes(uint64_t block_number);
 

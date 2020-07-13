@@ -32,7 +32,7 @@ std::string storage_key(const evmc::address& address, uint64_t incarnation,
 std::string header_hash_key(uint64_t block_number);
 
 // Turbo-Geth HeaderKey & BlockBodyKey
-std::string block_key(uint64_t block_number, std::string_view hash);
+std::string block_key(uint64_t block_number, const evmc::bytes32& hash);
 
 // Turbo-Geth IndexChunkKey
 std::string history_index_key(std::string_view key, uint64_t block_number);

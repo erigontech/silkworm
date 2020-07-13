@@ -41,11 +41,10 @@ std::string header_hash_key(uint64_t block_number) {
   return key;
 }
 
-std::string block_key(uint64_t block_number, std::string_view hash) {
-  assert(hash.length() == kHashLength);
+std::string block_key(uint64_t block_number, const evmc::bytes32& hash) {
   std::string key(8 + kHashLength, '\0');
   boost::endian::store_big_u64(byte_ptr_cast(key.data()), block_number);
-  std::memcpy(key.data() + 8, hash.data(), kHashLength);
+  std::memcpy(key.data() + 8, hash.bytes, kHashLength);
   return key;
 }
 

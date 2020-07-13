@@ -32,7 +32,11 @@ int main() {
 
   uint64_t block_num{0};
   while (std::optional<BlockWithHash> bh = db.get_block(++block_num)) {
-    // TODO[TOP](Andrew) read senders
+    std::vector<evmc::address> senders{db.get_senders(block_num, bh->hash)};
+    assert(senders.size() == bh->block.transactions.size());
+    for (size_t i{0}; i < senders.size(); ++i) {
+      bh->block.transactions[i].from = senders[i];
+    }
 
     state::Reader reader{db, block_num};
     IntraBlockState state{&reader};

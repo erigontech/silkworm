@@ -31,7 +31,7 @@ std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   if (!hash_val) return {};
 
   std::memcpy(bh.hash.bytes, hash_val->data(), kHashLength);
-  std::string key{block_key(block_number, *hash_val)};
+  std::string key{block_key(block_number, bh.hash)};
 
   std::optional<std::string_view> header_rlp{header_bucket->get(key)};
   if (!header_rlp) return {};
@@ -47,6 +47,19 @@ std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   rlp::decode<BlockBody>(body_stream, bh.block);
 
   return bh;
+}
+
+std::vector<evmc::address> Database::get_senders(uint64_t block_number,
+                                                 const evmc::bytes32& block_hash) {
+  auto txn{begin_ro_transaction()};
+  auto bucket{txn->get_bucket(bucket::kSenders)};
+  std::vector<evmc::address> senders{};
+  std::optional<std::string_view> data{bucket->get(block_key(block_number, block_hash))};
+  if (!data) return senders;
+  assert(data->length() % kAddressLength == 0);
+  senders.resize(data->length() / kAddressLength);
+  std::memcpy(senders.data(), data->data(), data->size());
+  return senders;
 }
 
 std::optional<Account> Database::get_account(const evmc::address& address, uint64_t block_number) {

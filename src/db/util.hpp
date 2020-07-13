@@ -34,6 +34,9 @@ std::string header_hash_key(uint64_t block_number);
 // Turbo-Geth HeaderKey & BlockBodyKey
 std::string block_key(uint64_t block_number, std::string_view hash);
 
+// Turbo-Geth IndexChunkKey
+std::string history_index_key(std::string_view key, uint64_t block_number);
+
 // Turbo-Geth EncodeTimestamp
 // If a < b, then Encoding(a) < Encoding(b) lexicographically
 std::string encode_timestamp(uint64_t block_number);

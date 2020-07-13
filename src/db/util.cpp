@@ -49,6 +49,24 @@ std::string block_key(uint64_t block_number, std::string_view hash) {
   return key;
 }
 
+std::string history_index_key(std::string_view key, uint64_t block_number) {
+  std::string res{};
+  if (key.length() == kAddressLength) {  // accounts
+    res = key;
+    res.resize(kAddressLength + 8);
+    boost::endian::store_big_u64(byte_ptr_cast(&res[kAddressLength]), block_number);
+  } else if (key.length() == kAddressLength + kHashLength + kIncarnationLength) {  // storage
+    // remove incarnation and add block number
+    res.resize(kAddressLength + kHashLength + 8);
+    std::memcpy(&res[0], &key[0], kAddressLength);
+    std::memcpy(&res[kAddressLength], &key[kAddressLength + kIncarnationLength], kHashLength);
+    boost::endian::store_big_u64(byte_ptr_cast(&res[kAddressLength + kHashLength]), block_number);
+  } else {
+    throw std::invalid_argument{"unexpected key length"};
+  }
+  return res;
+}
+
 std::string encode_timestamp(uint64_t block_number) {
   constexpr uint8_t byte_count_bits{3};
   unsigned zero_bits = intx::clz(block_number);

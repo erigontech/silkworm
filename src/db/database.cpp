@@ -75,7 +75,7 @@ std::optional<std::string_view> Database::find_in_history(Transaction& txn, bool
   auto history_name{storage ? bucket::kStorageHistory : bucket::kAccountHistory};
   auto history_bucket{txn.get_bucket(history_name)};
   auto cursor{history_bucket->cursor()};
-  std::optional<Entry> entry{cursor->seek(key)};
+  std::optional<Entry> entry{cursor->seek(history_index_key(key, block_number))};
   if (!entry) return {};
 
   std::string_view k{entry->key};

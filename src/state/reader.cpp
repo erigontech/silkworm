@@ -29,8 +29,8 @@ std::string Reader::read_code(const evmc::bytes32& code_hash) const {
   return db_.get_code(code_hash);
 }
 
-evmc::bytes32 Reader::read_storage(const evmc::address&, uint64_t, const evmc::bytes32&) const {
-  // TODO[TOP](Andrew) implement
-  return {};
+evmc::bytes32 Reader::read_storage(const evmc::address& address, uint64_t incarnation,
+                                   const evmc::bytes32& key) const {
+  return db_.get_storage(address, incarnation, key, block_number_);
 }
 }  // namespace silkworm::state

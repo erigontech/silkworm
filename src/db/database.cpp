@@ -65,7 +65,8 @@ std::vector<evmc::address> Database::get_senders(uint64_t block_number,
 std::optional<Account> Database::get_account(const evmc::address& address, uint64_t block_number) {
   auto key{address_as_string_view(address)};
   auto txn{begin_ro_transaction()};
-  std::optional<std::string_view> encoded{find_in_history(*txn, false, key, block_number)};
+  std::optional<std::string_view> encoded{
+      find_in_history(*txn, /*storage=*/false, key, block_number)};
   if (!encoded) {
     auto bucket{txn->get_bucket(bucket::kPlainState)};
     encoded = bucket->get(key);
@@ -88,6 +89,23 @@ std::optional<AccountChanges> Database::get_account_changes(uint64_t block_numbe
   std::optional<std::string_view> val{bucket->get(encode_timestamp(block_number))};
   if (!val) return {};
   return decode_account_changes(*val);
+}
+
+evmc::bytes32 Database::get_storage(const evmc::address& address, uint64_t incarnation,
+                                    const evmc::bytes32& key, uint64_t block_number) {
+  auto composite_key{storage_key(address, incarnation, key)};
+  auto txn{begin_ro_transaction()};
+  std::optional<std::string_view> val{
+      find_in_history(*txn, /*storage=*/true, composite_key, block_number)};
+  if (!val) {
+    auto bucket{txn->get_bucket(bucket::kPlainState)};
+    val = bucket->get(composite_key);
+  }
+  if (!val || val->length() != kHashLength) return {};
+
+  evmc::bytes32 res;
+  std::memcpy(res.bytes, val->data(), kHashLength);
+  return res;
 }
 
 std::optional<std::string_view> Database::find_in_history(Transaction& txn, bool storage,

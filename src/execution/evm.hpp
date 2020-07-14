@@ -74,6 +74,9 @@ class EVM {
 
   evmc_revision revision() const noexcept;
 
+  uint8_t number_of_precompiles() const noexcept;
+  bool is_precompiled(const evmc::address& contract) const noexcept;
+
   IntraBlockState& state_;
   ChainConfig config_{kEthMainnetChainConfig};
   Block block_;

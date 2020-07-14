@@ -25,6 +25,7 @@
 #include <sstream>
 
 #include "config/protocol_param.hpp"
+#include "precompiled.hpp"
 #include "rlp/encode.hpp"
 
 namespace silkworm {
@@ -158,31 +159,44 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
   }
 
   intx::uint256 value = intx::be::load<intx::uint256>(message.value);
-  if (message.kind != EVMC_DELEGATECALL) {
-    if (state_.get_balance(message.sender) < value) {
-      res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
-      return res;
-    }
+  if (message.kind != EVMC_DELEGATECALL && state_.get_balance(message.sender) < value) {
+    res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
+    return res;
+  }
+
+  bool precompiled{is_precompiled(message.destination)};
+
+  // https://eips.ethereum.org/EIPS/eip-161
+  if (value == 0 && config_.has_spurious_dragon(block_.header.number) &&
+      !state_.exists(message.destination) && !precompiled) {
+    return res;
   }
 
   if (message.kind == EVMC_CALL && !(message.flags & EVMC_STATIC)) {
-    if (!state_.exists(message.destination)) {
-      // TODO[TOP](Andrew) precompiles
-
-      // https://eips.ethereum.org/EIPS/eip-161
-      if (config_.has_spurious_dragon(block_.header.number) && value == 0) {
-        return res;
-      }
-    }
-
     state_.subtract_from_balance(message.sender, value);
     state_.add_to_balance(message.destination, value);
   }
 
-  std::string_view code = state_.get_code(message.destination);
-  if (code.empty()) return res;
-
-  res = execute(message, byte_ptr_cast(code.data()), code.size());
+  if (precompiled) {
+    uint8_t num{message.destination.bytes[kAddressLength - 1]};
+    precompiled::Contract contract{precompiled::kContracts[num - 1]};
+    std::string_view input{byte_ptr_cast(message.input_data), message.input_size};
+    int64_t gas = contract.gas(input, revision());
+    if (gas > message.gas) {
+      res.status_code = EVMC_OUT_OF_GAS;
+    } else {
+      std::optional<std::string> output{contract.run(input)};
+      if (output) {
+        res = {EVMC_SUCCESS, message.gas - gas, byte_ptr_cast(output->data()), output->size()};
+      } else {
+        res.status_code = EVMC_PRECOMPILE_FAILURE;
+      }
+    }
+  } else {
+    std::string_view code = state_.get_code(message.destination);
+    if (code.empty()) return res;
+    res = execute(message, byte_ptr_cast(code.data()), code.size());
+  }
 
   if (res.status_code != EVMC_SUCCESS && res.status_code != EVMC_REVERT) {
     res.gas_left = 0;
@@ -193,12 +207,8 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
 evmc::result EVM::execute(const evmc_message& message, uint8_t const* code,
                           size_t code_size) noexcept {
-  // TODO[TOP](Andrew) precompiles
-
-  evmc_vm* evmone = evmc_create_evmone();
-
+  evmc_vm* evmone{evmc_create_evmone()};
   EvmHost host{*this};
-
   return evmc::result{evmone->execute(evmone, &host.get_interface(), host.to_context(), revision(),
                                       &message, code, code_size)};
 }
@@ -215,6 +225,22 @@ evmc_revision EVM::revision() const noexcept {
   if (config_.has_homestead(block_number)) return EVMC_HOMESTEAD;
 
   return EVMC_FRONTIER;
+}
+
+uint8_t EVM::number_of_precompiles() const noexcept {
+  uint64_t block_number = block_.header.number;
+
+  if (config_.has_istanbul(block_number)) return precompiled::kNumOfIstanbulContracts;
+  if (config_.has_byzantium(block_number)) return precompiled::kNumOfByzantiumContracts;
+
+  return precompiled::kNumOfFrontierContracts;
+}
+
+bool EVM::is_precompiled(const evmc::address& contract) const noexcept {
+  if (is_zero(contract)) return false;
+  evmc::address max_precompiled{};
+  max_precompiled.bytes[kAddressLength - 1] = number_of_precompiles();
+  return contract <= max_precompiled;
 }
 
 evmc::address create_address(const evmc::address& caller, uint64_t nonce) {

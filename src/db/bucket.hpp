@@ -20,11 +20,12 @@
 // Turbo-Geth common/dbutils/bucket.go
 namespace silkworm::db::bucket {
 constexpr const char* kPlainState{"PLAIN-CST"};
-constexpr const char* kPlainAccountChanges{"PLAIN-ACS"};
-constexpr const char* kPlainStorageChanges{"PLAIN-SCS"};
+constexpr const char* kAccountChanges{"PLAIN-ACS"};
+constexpr const char* kStorageChanges{"PLAIN-SCS"};
 constexpr const char* kAccountHistory{"hAT"};
 constexpr const char* kStorageHistory{"hST"};
 constexpr const char* kCode{"CODE"};
+constexpr const char* kCodeHash{"PLAIN-contractCode"};
 constexpr const char* kBlockHeader{"h"};
 constexpr const char* kBlockBody{"b"};
 constexpr const char* kSenders{"txSenders"};

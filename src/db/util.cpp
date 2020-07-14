@@ -25,12 +25,20 @@
 #include "rlp/encode.hpp"
 
 namespace silkworm::db {
-std::string storage_key(const evmc::address& address, uint64_t incarnation,
-                        const evmc::bytes32& key) {
-  std::string res(kAddressLength + 8 + kHashLength, '\0');
+
+std::string storage_prefix(const evmc::address& address, uint64_t incarnation) {
+  std::string res(kAddressLength + kIncarnationLength, '\0');
   std::memcpy(res.data(), address.bytes, kAddressLength);
   boost::endian::store_big_u64(byte_ptr_cast(res.data() + kAddressLength), ~incarnation);
-  std::memcpy(res.data() + kAddressLength + 8, key.bytes, kHashLength);
+  return res;
+}
+
+std::string storage_key(const evmc::address& address, uint64_t incarnation,
+                        const evmc::bytes32& key) {
+  std::string res(kAddressLength + kIncarnationLength + kHashLength, '\0');
+  std::memcpy(res.data(), address.bytes, kAddressLength);
+  boost::endian::store_big_u64(byte_ptr_cast(res.data() + kAddressLength), ~incarnation);
+  std::memcpy(res.data() + kAddressLength + kIncarnationLength, key.bytes, kHashLength);
   return res;
 }
 

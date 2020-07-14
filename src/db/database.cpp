@@ -62,17 +62,30 @@ std::vector<evmc::address> Database::get_senders(uint64_t block_number,
   return senders;
 }
 
-std::optional<Account> Database::get_account(const evmc::address& address, uint64_t block_number) {
+std::optional<Account> Database::get_account(const evmc::address& address, uint64_t block_num) {
   auto key{address_as_string_view(address)};
   auto txn{begin_ro_transaction()};
-  std::optional<std::string_view> encoded{
-      find_in_history(*txn, /*storage=*/false, key, block_number)};
+
+  std::optional<std::string_view> encoded{find_in_history(*txn, /*storage=*/false, key, block_num)};
   if (!encoded) {
-    auto bucket{txn->get_bucket(bucket::kPlainState)};
-    encoded = bucket->get(key);
+    auto state_bucket{txn->get_bucket(bucket::kPlainState)};
+    encoded = state_bucket->get(key);
   }
   if (!encoded || encoded->empty()) return {};
-  return decode_account_from_storage(*encoded);
+
+  std::optional<Account> acc{decode_account_from_storage(*encoded)};
+
+  if (acc && acc->incarnation > 0 && acc->code_hash == kEmptyHash) {
+    // restore code hash
+    auto code_hash_bucket{txn->get_bucket(bucket::kCodeHash)};
+    std::optional<std::string_view> hash{
+        code_hash_bucket->get(storage_prefix(address, acc->incarnation))};
+    if (hash && hash->length() == kHashLength) {
+      std::memcpy(acc->code_hash.bytes, hash->data(), kHashLength);
+    }
+  }
+
+  return acc;
 }
 
 std::string Database::get_code(const evmc::bytes32& code_hash) {
@@ -85,7 +98,7 @@ std::string Database::get_code(const evmc::bytes32& code_hash) {
 
 std::optional<AccountChanges> Database::get_account_changes(uint64_t block_number) {
   auto txn{begin_ro_transaction()};
-  auto bucket{txn->get_bucket(bucket::kPlainAccountChanges)};
+  auto bucket{txn->get_bucket(bucket::kAccountChanges)};
   std::optional<std::string_view> val{bucket->get(encode_timestamp(block_number))};
   if (!val) return {};
   return decode_account_changes(*val);
@@ -132,7 +145,7 @@ std::optional<std::string_view> Database::find_in_history(Transaction& txn, bool
 
   if (res->new_record && !storage) return std::string_view{};
 
-  auto change_name{storage ? bucket::kPlainStorageChanges : bucket::kPlainAccountChanges};
+  auto change_name{storage ? bucket::kStorageChanges : bucket::kAccountChanges};
   auto change_bucket{txn.get_bucket(change_name)};
 
   uint64_t change_block{res->change_block};

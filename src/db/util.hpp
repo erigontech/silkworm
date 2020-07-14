@@ -24,6 +24,9 @@
 #include <string_view>
 
 namespace silkworm::db {
+// Turbo-Geth PlainGenerateStoragePrefix
+std::string storage_prefix(const evmc::address& address, uint64_t incarnation);
+
 // Turbo-Geth PlainGenerateCompositeStorageKey
 std::string storage_key(const evmc::address& address, uint64_t incarnation,
                         const evmc::bytes32& key);

@@ -45,7 +45,7 @@ int main() {
     std::vector<Receipt> receipts = processor.execute_block();
 
     if (processor.gas_used() != bh->block.header.gas_used) {
-      std::cerr << "gasUsed is mismatched for block " << block_num << '\n';
+      std::cerr << "gasUsed mismatch for block " << block_num << '\n';
       return -1;
     }
 

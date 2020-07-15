@@ -30,7 +30,7 @@ namespace silkworm {
 
 struct Account {
   // Turbo-Geth (*Account)EncodeForStorage
-  std::string encode_for_storage() const;
+  std::string encode_for_storage(bool omit_code_hash) const;
 
   uint64_t nonce{0};
   intx::uint256 balance;

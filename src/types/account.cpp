@@ -26,7 +26,7 @@ bool operator==(const Account& a, const Account& b) {
          a.code_hash == b.code_hash && a.incarnation == b.incarnation;
 }
 
-std::string Account::encode_for_storage() const {
+std::string Account::encode_for_storage(bool omit_code_hash) const {
   std::string res(1, '\0');
   uint8_t field_set{0};
 
@@ -51,7 +51,7 @@ std::string Account::encode_for_storage() const {
     res.append(be);
   }
 
-  if (code_hash != kEmptyHash) {
+  if (code_hash != kEmptyHash && !omit_code_hash) {
     field_set |= 8;
     res.push_back(kHashLength);
     res.append(byte_ptr_cast(code_hash.bytes), kHashLength);

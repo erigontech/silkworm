@@ -26,7 +26,8 @@ void Writer::write_account(const evmc::address& address, std::optional<Account> 
   if (original == committed && changed_storage_.count(address) == 0) return;
 
   if (original) {
-    account_changes_[address] = original->encode_for_storage();
+    bool omit_code_hash{committed};
+    account_changes_[address] = original->encode_for_storage(omit_code_hash);
   } else {
     account_changes_[address] = {};
   }

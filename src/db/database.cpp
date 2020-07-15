@@ -63,7 +63,7 @@ std::vector<evmc::address> Database::get_senders(uint64_t block_number,
 }
 
 std::optional<Account> Database::get_account(const evmc::address& address, uint64_t block_num) {
-  auto key{address_as_string_view(address)};
+  auto key{view_of_address(address)};
   auto txn{begin_ro_transaction()};
 
   std::optional<std::string_view> encoded{find_in_history(*txn, /*storage=*/false, key, block_num)};
@@ -91,7 +91,7 @@ std::optional<Account> Database::get_account(const evmc::address& address, uint6
 std::string Database::get_code(const evmc::bytes32& code_hash) {
   auto txn{begin_ro_transaction()};
   auto bucket{txn->get_bucket(bucket::kCode)};
-  std::optional<std::string_view> val{bucket->get(hash_as_string_view(code_hash))};
+  std::optional<std::string_view> val{bucket->get(view_of_hash(code_hash))};
   if (!val) return {};
   return std::string{*val};
 }
@@ -101,7 +101,7 @@ std::optional<AccountChanges> Database::get_account_changes(uint64_t block_numbe
   auto bucket{txn->get_bucket(bucket::kAccountChanges)};
   std::optional<std::string_view> val{bucket->get(encode_timestamp(block_number))};
   if (!val) return {};
-  return decode_account_changes(*val);
+  return AccountChanges::decode(*val);
 }
 
 evmc::bytes32 Database::get_storage(const evmc::address& address, uint64_t incarnation,
@@ -153,10 +153,9 @@ std::optional<std::string_view> Database::find_in_history(Transaction& txn, bool
   if (!changes) return {};
 
   if (storage) {
-    // TODO(Andrew) implement
-    return {};
+    return StorageChanges::find(*changes, key);
   } else {
-    return change::find_account(*changes, key);
+    return AccountChanges::find(*changes, key);
   }
 }
 }  // namespace silkworm::db

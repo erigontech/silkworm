@@ -28,6 +28,8 @@
 
 namespace silkworm {
 
+static_assert(sizeof(char) == sizeof(uint8_t));
+
 inline char* byte_ptr_cast(uint8_t* ptr) noexcept { return reinterpret_cast<char*>(ptr); }
 inline const char* byte_ptr_cast(const uint8_t* ptr) noexcept {
   return reinterpret_cast<const char*>(ptr);
@@ -44,20 +46,20 @@ inline evmc::bytes32 bytes_to_hash(std::string_view bytes) {
   return out;
 }
 
-inline std::string_view address_as_string_view(const evmc::address& address) {
+inline std::string_view view_of_address(const evmc::address& address) {
   return {byte_ptr_cast(address.bytes), kAddressLength};
 }
 
-inline std::string_view hash_as_string_view(const evmc::bytes32& hash) {
+inline std::string_view view_of_hash(const evmc::bytes32& hash) {
   return {byte_ptr_cast(hash.bytes), kHashLength};
 }
 
 inline std::string address_to_hex(const evmc::address& address) {
-  return boost::algorithm::hex_lower(std::string{address_as_string_view(address)});
+  return boost::algorithm::hex_lower(std::string{view_of_address(address)});
 }
 
 inline std::string hash_to_hex(const evmc::bytes32& hash) {
-  return boost::algorithm::hex_lower(std::string{hash_as_string_view(hash)});
+  return boost::algorithm::hex_lower(std::string{view_of_hash(hash)});
 }
 
 // TODO(Andrew) get rid of streams in RLP

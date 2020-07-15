@@ -32,6 +32,7 @@ constexpr size_t kAddressLength{20};
 constexpr size_t kHashLength{32};
 
 constexpr size_t kIncarnationLength{8};
+static_assert(kIncarnationLength == sizeof(uint64_t));
 
 constexpr evmc::bytes32 kEmptyHash =
     0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32;

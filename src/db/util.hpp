@@ -17,6 +17,11 @@
 #ifndef SILKWORM_DB_UTIL_H_
 #define SILKWORM_DB_UTIL_H_
 
+/*
+Part of the compatibility layer with the Turbo-Geth DB format;
+see its package dbutils.
+*/
+
 #include <stdint.h>
 
 #include <evmc/evmc.hpp>

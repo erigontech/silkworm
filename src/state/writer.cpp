@@ -38,7 +38,7 @@ void Writer::write_storage(const evmc::address& address, uint64_t incarnation,
   if (committed == original) return;
   changed_storage_.insert(address);
   std::string storage_key{db::storage_key(address, incarnation, key)};
-  storage_changes_[storage_key] = hash_as_string_view(original);
+  storage_changes_[storage_key] = view_of_hash(original);
 }
 
 }  // namespace silkworm::state

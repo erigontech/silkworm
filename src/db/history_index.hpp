@@ -17,7 +17,10 @@
 #ifndef SILKWORM_DB_HISTORY_INDEX_H_
 #define SILKWORM_DB_HISTORY_INDEX_H_
 
-// Turbo-Geth common/dbutils/history_index.go
+/*
+Part of the compatibility layer with the Turbo-Geth DB format;
+see its common/dbutils/history_index.go.
+*/
 
 #include <stdint.h>
 

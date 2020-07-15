@@ -100,7 +100,7 @@ TEST_CASE("EVM smart contract") {
   CHECK(state.get_storage(contract_address, key0) == bytes_to_hash("\x2a"));
 
   evmc::bytes32 new_val{bytes_to_hash("\xf5")};
-  res = evm.call(caller, contract_address, hash_as_string_view(new_val), gas, 0);
+  res = evm.call(caller, contract_address, view_of_hash(new_val), gas, 0);
   CHECK(res.status == EVMC_SUCCESS);
   CHECK(state.get_storage(contract_address, key0) == new_val);
 }

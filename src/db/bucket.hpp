@@ -17,7 +17,11 @@
 #ifndef SILKWORM_DB_BUCKET_H_
 #define SILKWORM_DB_BUCKET_H_
 
-// Turbo-Geth common/dbutils/bucket.go
+/*
+Part of the compatibility layer with the Turbo-Geth DB format;
+see its common/dbutils/bucket.go.
+*/
+
 namespace silkworm::db::bucket {
 constexpr const char* kPlainState{"PLAIN-CST"};
 constexpr const char* kAccountChanges{"PLAIN-ACS"};

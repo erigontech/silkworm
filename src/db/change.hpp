@@ -17,6 +17,11 @@
 #ifndef SILKWORM_DB_CHANGE_H_
 #define SILKWORM_DB_CHANGE_H_
 
+/*
+Part of the compatibility layer with the Turbo-Geth DB format;
+see its package changeset.
+*/
+
 #include <evmc/evmc.hpp>
 #include <map>
 #include <optional>
@@ -25,15 +30,20 @@
 
 namespace silkworm::db {
 
-using AccountChanges = std::map<evmc::address, std::string>;
+class AccountChanges : public std::map<evmc::address, std::string> {
+ public:
+  // Turbo-Geth decodeAccountsWithKeyLen
+  static AccountChanges decode(std::string_view encoded);
 
-// Turbo-Geth decodeAccountsWithKeyLen
-AccountChanges decode_account_changes(std::string_view encoded);
+  // Turbo-Geth (AccountChangeSetPlainBytes)Find
+  static std::optional<std::string_view> find(std::string_view encoded, std::string_view key);
+};
 
-namespace change {
-// Turbo-Geth (AccountChangeSetPlainBytes)Find
-std::optional<std::string_view> find_account(std::string_view encoded, std::string_view key);
-}  // namespace change
+class StorageChanges {
+ public:
+  // Turbo-Geth (StorageChangeSetPlainBytes)FindWithIncarnation
+  static std::optional<std::string_view> find(std::string_view encoded, std::string_view key);
+};
 }  // namespace silkworm::db
 
 #endif  // SILKWORM_DB_CHANGE_H_

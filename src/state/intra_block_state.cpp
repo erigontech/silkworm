@@ -70,11 +70,12 @@ void IntraBlockState::create_contract(const evmc::address& address) {
     }
   }
 
-  if (prev_incarnation) {
-    created.current->incarnation = *prev_incarnation + 1;
-  } else {
-    created.current->incarnation = 1;
+  if (!prev_incarnation) {
+    // TODO(Andrew) read previous incarnation from the DB instead
+    prev_incarnation = 0;
   }
+
+  created.current->incarnation = *prev_incarnation + 1;
 
   objects_[address] = created;
 }
@@ -179,17 +180,19 @@ void IntraBlockState::write_block(state::Writer& state_writer) {
   for (const auto& entry : objects_) {
     const evmc::address& address{entry.first};
     const Object& obj{entry.second};
-    state_writer.write_account(address, obj.original, obj.committed);
+
     for (const auto& storage_entry : obj.committed_storage) {
-      const evmc::bytes32& key = storage_entry.first;
-      uint64_t incarnation = obj.committed->incarnation;
-      evmc::bytes32 original_val;
+      const evmc::bytes32& key{storage_entry.first};
+      uint64_t incarnation{obj.committed->incarnation};
+      evmc::bytes32 original_val{};
       if (obj.original && obj.original->incarnation == incarnation) {
         auto it = obj.original_storage.find(key);
         if (it != obj.original_storage.end()) original_val = it->second;
       }
       state_writer.write_storage(address, incarnation, key, original_val, storage_entry.second);
     }
+
+    state_writer.write_account(address, obj.original, obj.committed);
   }
 }
 }  // namespace silkworm

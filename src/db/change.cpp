@@ -96,7 +96,7 @@ std::string_view find_value(std::string_view b, uint32_t i) {
   b = b.substr(12);
   uint32_t val_pos{num_of_uint8 + num_of_uint16 * 2 + num_of_uint32 * 4};
 
-  auto val_index = [=](uint32_t i) -> uint32_t {
+  auto val_index{[=](uint32_t i) -> uint32_t {
     if (i < num_of_uint8) {
       return static_cast<uint8_t>(b[i]);
     } else if (i < num_of_uint8 + num_of_uint16) {
@@ -106,7 +106,7 @@ std::string_view find_value(std::string_view b, uint32_t i) {
       uint32_t pos{num_of_uint8 + num_of_uint16 * 2 + (i - num_of_uint8 - num_of_uint16) * 4};
       return load_big_u32(byte_ptr_cast(&b[pos]));
     }
-  };
+  }};
 
   uint32_t start{i > 0 ? val_index(i - 1) : 0};
   uint32_t end{val_index(i)};
@@ -180,15 +180,14 @@ std::optional<std::string_view> StorageChanges::find(std::string_view b,
     uint64_t found_incarnation{kDefaultIncarnation};
 
     std::string_view inc_view{b.substr(incarnation_pos)};
-    auto incarnation_contract_idx = [inc_view](uint32_t i) {
-      return load_big_u32(byte_ptr_cast(&inc_view[12 * i]));
-    };
+    auto incarnation_contract_idx{
+        [inc_view](uint32_t i) { return load_big_u32(byte_ptr_cast(&inc_view[12 * i])); }};
 
-    uint32_t incarnation_idx{
-        *std::lower_bound(CI(0), CI(num_of_non_default_incarnations), contract_idx,
-                          [incarnation_contract_idx](uint32_t i, uint32_t contract_idx) {
-                            return incarnation_contract_idx(i) < contract_idx;
-                          })};
+    uint32_t incarnation_idx{*std::lower_bound(CI(0), CI(num_of_non_default_incarnations),
+                                               contract_idx,
+                                               [&](uint32_t i, uint32_t contract_idx) {
+                                                 return incarnation_contract_idx(i) < contract_idx;
+                                               })};
 
     if (incarnation_idx < num_of_non_default_incarnations &&
         incarnation_contract_idx(incarnation_idx) == contract_idx) {

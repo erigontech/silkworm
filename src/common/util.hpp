@@ -39,31 +39,35 @@ inline const uint8_t* byte_ptr_cast(const char* ptr) noexcept {
   return reinterpret_cast<const uint8_t*>(ptr);
 }
 
-inline evmc::bytes32 bytes_to_hash(std::string_view bytes) {
+inline evmc::bytes32 to_hash(std::string_view bytes) {
   evmc::bytes32 out;
   size_t n = std::min(bytes.length(), kHashLength);
   std::memcpy(out.bytes + kHashLength - n, bytes.data(), n);
   return out;
 }
 
-inline std::string_view view_of_address(const evmc::address& address) {
+inline std::string_view full_view(const evmc::address& address) {
   return {byte_ptr_cast(address.bytes), kAddressLength};
 }
 
-inline std::string_view view_of_hash(const evmc::bytes32& hash) {
+inline std::string_view full_view(const evmc::bytes32& hash) {
   return {byte_ptr_cast(hash.bytes), kHashLength};
 }
 
-inline std::string address_to_hex(const evmc::address& address) {
-  return boost::algorithm::hex_lower(std::string{view_of_address(address)});
+// Leading zero bytes are stripped
+std::string_view zeroless_view(const evmc::bytes32& hash);
+
+inline std::string to_hex(const evmc::address& address) {
+  return boost::algorithm::hex_lower(std::string{full_view(address)});
 }
 
-inline std::string hash_to_hex(const evmc::bytes32& hash) {
-  return boost::algorithm::hex_lower(std::string{view_of_hash(hash)});
+inline std::string to_hex(const evmc::bytes32& hash) {
+  return boost::algorithm::hex_lower(std::string{full_view(hash)});
 }
 
-// TODO(Andrew) get rid of streams in RLP
-inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> string_view_as_stream(
+inline std::string to_hex(const std::string& str) { return boost::algorithm::hex_lower(str); }
+
+inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> as_stream(
     std::string_view sv) {
   return {sv.begin(), sv.size()};
 }

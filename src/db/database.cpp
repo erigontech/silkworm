@@ -36,14 +36,14 @@ std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   std::optional<std::string_view> header_rlp{header_bucket->get(key)};
   if (!header_rlp) return {};
 
-  auto header_stream{string_view_as_stream(*header_rlp)};
+  auto header_stream{as_stream(*header_rlp)};
   rlp::decode(header_stream, bh.block.header);
 
   auto body_bucket{txn->get_bucket(bucket::kBlockBody)};
   std::optional<std::string_view> body_rlp{body_bucket->get(key)};
   if (!body_rlp) return {};
 
-  auto body_stream{string_view_as_stream(*body_rlp)};
+  auto body_stream{as_stream(*body_rlp)};
   rlp::decode<BlockBody>(body_stream, bh.block);
 
   return bh;
@@ -63,7 +63,7 @@ std::vector<evmc::address> Database::get_senders(uint64_t block_number,
 }
 
 std::optional<Account> Database::get_account(const evmc::address& address, uint64_t block_num) {
-  auto key{view_of_address(address)};
+  auto key{full_view(address)};
   auto txn{begin_ro_transaction()};
 
   std::optional<std::string_view> encoded{find_in_history(*txn, /*storage=*/false, key, block_num)};
@@ -91,7 +91,7 @@ std::optional<Account> Database::get_account(const evmc::address& address, uint6
 std::string Database::get_code(const evmc::bytes32& code_hash) {
   auto txn{begin_ro_transaction()};
   auto bucket{txn->get_bucket(bucket::kCode)};
-  std::optional<std::string_view> val{bucket->get(view_of_hash(code_hash))};
+  std::optional<std::string_view> val{bucket->get(full_view(code_hash))};
   if (!val) return {};
   return std::string{*val};
 }
@@ -102,6 +102,14 @@ std::optional<AccountChanges> Database::get_account_changes(uint64_t block_numbe
   std::optional<std::string_view> val{bucket->get(encode_timestamp(block_number))};
   if (!val) return {};
   return AccountChanges::decode(*val);
+}
+
+std::string Database::get_storage_changes(uint64_t block_number) {
+  auto txn{begin_ro_transaction()};
+  auto bucket{txn->get_bucket(bucket::kStorageChanges)};
+  std::optional<std::string_view> val{bucket->get(encode_timestamp(block_number))};
+  if (!val) return {};
+  return std::string{*val};
 }
 
 evmc::bytes32 Database::get_storage(const evmc::address& address, uint64_t incarnation,

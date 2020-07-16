@@ -98,6 +98,7 @@ class Database {
   std::string get_code(const evmc::bytes32& code_hash);
   std::optional<Account> get_account(const evmc::address& address, uint64_t block_number);
   std::optional<AccountChanges> get_account_changes(uint64_t block_number);
+  std::string get_storage_changes(uint64_t block_number);
   evmc::bytes32 get_storage(const evmc::address& address, uint64_t incarnation,
                             const evmc::bytes32& key, uint64_t block_number);
 

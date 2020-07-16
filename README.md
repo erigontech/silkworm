@@ -24,7 +24,7 @@ Now you can run silkworm
 ```
 or its tests
 ```
-ctest --output-on-failure
+./tests
 ```
 
 # Code style

@@ -39,8 +39,11 @@ class AccountChanges : public std::map<evmc::address, std::string> {
   static std::optional<std::string_view> find(std::string_view encoded, std::string_view key);
 };
 
-class StorageChanges {
+class StorageChanges : public std::map<std::string, std::string> {
  public:
+  // Turbo-Geth EncodeStoragePlain
+  std::string encode() const;
+
   // Turbo-Geth (StorageChangeSetPlainBytes)FindWithIncarnation
   static std::optional<std::string_view> find(std::string_view encoded, std::string_view key);
 };

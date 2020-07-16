@@ -62,18 +62,18 @@ std::string Account::encode_for_storage(bool omit_code_hash) const {
 }
 
 Account decode_account_from_storage(std::string_view encoded) {
-  Account a;
+  Account a{};
   if (encoded.empty()) return a;
 
   uint8_t field_set = encoded[0];
-  size_t pos = 1;
+  size_t pos{1};
 
   if (field_set & 1) {
     uint8_t len = encoded[pos++];
     if (encoded.length() < pos + len) {
       throw DecodingError("input too short for account nonce");
     }
-    auto stream = string_view_as_stream(encoded.substr(pos));
+    auto stream{as_stream(encoded.substr(pos))};
     a.nonce = rlp::read_uint64(stream, len);
     pos += len;
   }
@@ -93,7 +93,7 @@ Account decode_account_from_storage(std::string_view encoded) {
     if (encoded.length() < pos + len) {
       throw DecodingError("input too short for account incarnation");
     }
-    auto stream = string_view_as_stream(encoded.substr(pos));
+    auto stream{as_stream(encoded.substr(pos))};
     a.incarnation = rlp::read_uint64(stream, len);
     pos += len;
   }

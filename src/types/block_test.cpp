@@ -45,8 +45,8 @@ TEST_CASE("BlockBody RLP") {
             "6e64616c6c202d2045746865724e696e6a61a0f8c94dfe61cf26dcdf8cffeda3"
             "37cf6a903d65c449d7691a022837f6e2d994598868b769c5451a7aea"s)};
 
-  BlockBody bb;
-  auto in{string_view_as_stream(rlp)};
+  BlockBody bb{};
+  auto in{as_stream(rlp)};
   rlp::decode(in, bb);
   CHECK(bb.transactions.size() == 0);
   REQUIRE(bb.ommers.size() == 1);

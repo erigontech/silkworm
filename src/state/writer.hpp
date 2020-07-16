@@ -41,11 +41,12 @@ class Writer {
                      const evmc::bytes32& original, const evmc::bytes32& committed);
 
   const db::AccountChanges& account_changes() const { return account_changes_; }
+  const db::StorageChanges& storage_changes() const { return storage_changes_; }
 
  private:
   db::AccountChanges account_changes_;
+  db::StorageChanges storage_changes_;
   std::set<evmc::address> changed_storage_;
-  std::map<std::string, std::string> storage_changes_;
 };
 }  // namespace silkworm::state
 

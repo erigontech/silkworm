@@ -43,9 +43,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes -Wno-missing-field-initializers)
 endif()
 
-# Enable C++20 STL goodies
-add_compile_definitions(_LIBCPP_STD_VER=20)
-
 add_subdirectory(evmone)
 add_subdirectory(src)
 

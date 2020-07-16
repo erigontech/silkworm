@@ -67,6 +67,11 @@ inline std::string to_hex(const evmc::bytes32& hash) {
 
 inline std::string to_hex(const std::string& str) { return boost::algorithm::hex_lower(str); }
 
+// TODO(Andrew) replace by std::string_view::starts_with when we switch to C++20
+inline bool has_prefix(std::string_view s, std::string_view prefix) {
+  return s.substr(0, prefix.size()) == prefix;
+}
+
 inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> as_stream(
     std::string_view sv) {
   return {sv.begin(), sv.size()};

@@ -144,7 +144,7 @@ std::optional<std::string_view> Database::find_in_history(Transaction& txn, bool
         k.substr(kAddressLength, kHashLength) != key.substr(kAddressLength + kIncarnationLength)) {
       return {};
     }
-  } else if (!k.starts_with(key)) {
+  } else if (!has_prefix(k, key)) {
     return {};
   }
 

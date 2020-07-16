@@ -122,10 +122,10 @@ evmc::bytes32 Database::get_storage(const evmc::address& address, uint64_t incar
     auto bucket{txn->get_bucket(bucket::kPlainState)};
     val = bucket->get(composite_key);
   }
-  if (!val || val->length() != kHashLength) return {};
+  if (!val) return {};
 
-  evmc::bytes32 res;
-  std::memcpy(res.bytes, val->data(), kHashLength);
+  evmc::bytes32 res{};
+  std::memcpy(res.bytes + kHashLength - val->length(), val->data(), val->length());
   return res;
 }
 

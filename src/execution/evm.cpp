@@ -51,7 +51,7 @@ CallResult EVM::create(const evmc::address& caller, std::string_view code, uint6
   return {res.status_code, static_cast<uint64_t>(res.gas_left)};
 }
 
-// TODO (Andrew) propagate noexcept
+// TODO(Andrew) propagate noexcept
 evmc::result EVM::create(const evmc_message& message) noexcept {
   evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
 
@@ -149,7 +149,7 @@ CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient
   return {res.status_code, static_cast<uint64_t>(res.gas_left)};
 }
 
-// TODO (Andrew) propagate noexcept
+// TODO(Andrew) propagate noexcept
 evmc::result EVM::call(const evmc_message& message) noexcept {
   evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
 
@@ -277,12 +277,12 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
 }
 
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {
-  // TODO(Andrew) Do empty accounts require any special treatment (mind EIP-161)?
+  // TODO[Spurious Dragon] Do empty accounts require any special treatment (mind EIP-161)?
   return evm_.state().exists(address);
 }
 
-evmc::bytes32 EvmHost::get_storage(const evmc::address& address,
-                                   const evmc::bytes32& key) const noexcept {
+evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::bytes32& key) const
+    noexcept {
   return evm_.state().get_storage(address, key);
 }
 
@@ -297,13 +297,13 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
   if (is_zero(prev_val)) return EVMC_STORAGE_ADDED;
 
   if (is_zero(value)) {
-    evm_.refund += fee::kRsclear;
+    evm_.substate.refund += fee::kRsclear;
     return EVMC_STORAGE_DELETED;
   }
 
   return EVMC_STORAGE_MODIFIED;
 
-  // TODO(Andrew) EIP-2200
+  // TODO[Istanbul] EIP-2200
 }
 
 evmc::uint256be EvmHost::get_balance(const evmc::address& address) const noexcept {
@@ -331,7 +331,7 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
 }
 
 void EvmHost::selfdestruct(const evmc::address&, const evmc::address&) noexcept {
-  // TODO(Andrew) implement
+  // TODO[Frontier] implement
 }
 
 evmc::result EvmHost::call(const evmc_message& message) noexcept {
@@ -344,7 +344,7 @@ evmc::result EvmHost::call(const evmc_message& message) noexcept {
 
 evmc_tx_context EvmHost::get_tx_context() const noexcept {
   evmc_tx_context context;
-  // TODO (Andrew) tx_gas_price & tx_origin
+  // TODO[Frontier] tx_gas_price & tx_origin
   context.block_coinbase = evm_.block_.header.beneficiary;
   context.block_number = evm_.block_.header.number;
   context.block_timestamp = evm_.block_.header.timestamp;
@@ -355,7 +355,7 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
 }
 
 evmc::bytes32 EvmHost::get_block_hash(int64_t) const noexcept {
-  // TODO(Andrew) implement
+  // TODO[Frontier] implement
   return {};
 }
 
@@ -364,6 +364,6 @@ void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t
   Log log{.address = address};
   std::copy_n(topics, num_topics, std::back_inserter(log.topics));
   std::copy_n(data, data_size, std::back_inserter(log.data));
-  evm_.logs.push_back(log);
+  evm_.substate.logs.push_back(log);
 }
 }  // namespace silkworm

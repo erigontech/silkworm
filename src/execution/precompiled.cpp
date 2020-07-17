@@ -25,7 +25,7 @@ namespace silkworm::precompiled {
 uint64_t ecrec_gas(std::string_view, evmc_revision) noexcept { return 3'000; }
 
 std::optional<std::string> ecrec_run(std::string_view) noexcept {
-  // TODO(Andrew) implement
+  // TODO[Frontier] implement
   return {};
 }
 
@@ -34,7 +34,7 @@ uint64_t sha256_gas(std::string_view input, evmc_revision) noexcept {
 }
 
 std::optional<std::string> sha256_run(std::string_view) noexcept {
-  // TODO(Andrew) implement
+  // TODO[Frontier] implement
   return {};
 }
 
@@ -43,7 +43,7 @@ uint64_t rip160_gas(std::string_view input, evmc_revision) noexcept {
 }
 
 std::optional<std::string> rip160_run(std::string_view) noexcept {
-  // TODO(Andrew) implement
+  // TODO[Frontier] implement
   return {};
 }
 
@@ -54,12 +54,12 @@ uint64_t id_gas(std::string_view input, evmc_revision) noexcept {
 std::optional<std::string> id_run(std::string_view input) noexcept { return std::string{input}; }
 
 uint64_t expmod_gas(std::string_view, evmc_revision) noexcept {
-  // TODO(Andrew) implement
+  // TODO[Byzantium] implement
   return 0;
 }
 
 std::optional<std::string> expmod_run(std::string_view) noexcept {
-  // TODO(Andrew) implement
+  // TODO[Byzantium] implement
   return {};
 }
 
@@ -68,7 +68,7 @@ uint64_t bn_add_gas(std::string_view, evmc_revision rev) noexcept {
 }
 
 std::optional<std::string> bn_add_run(std::string_view) noexcept {
-  // TODO(Andrew) implement
+  // TODO[Byzantium] implement
   return {};
 }
 
@@ -77,7 +77,7 @@ uint64_t bn_mul_gas(std::string_view, evmc_revision rev) noexcept {
 }
 
 std::optional<std::string> bn_mul_run(std::string_view) noexcept {
-  // TODO(Andrew) implement
+  // TODO[Byzantium] implement
   return {};
 }
 
@@ -87,7 +87,7 @@ uint64_t snarkv_gas(std::string_view input, evmc_revision rev) noexcept {
 }
 
 std::optional<std::string> snarkv_run(std::string_view) noexcept {
-  // TODO(Andrew) implement
+  // TODO[Byzantium] implement
   return {};
 }
 
@@ -97,7 +97,7 @@ uint64_t blake2_f_gas(std::string_view input, evmc_revision) noexcept {
 }
 
 std::optional<std::string> blake2_f_run(std::string_view) noexcept {
-  // TODO(Andrew) implement
+  // TODO[Istanbul] implement
   return {};
 }
 }  // namespace silkworm::precompiled

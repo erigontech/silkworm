@@ -26,8 +26,8 @@
 
 #include "config/config.hpp"
 #include "state/intra_block_state.hpp"
+#include "state/substate.hpp"
 #include "types/block.hpp"
-#include "types/log.hpp"
 
 // TODO(Andrew) get rid of this when
 // https://github.com/ethereum/evmc/pull/528
@@ -60,8 +60,7 @@ class EVM {
   CallResult call(const evmc::address& caller, const evmc::address& recipient,
                   std::string_view input, uint64_t gas, const intx::uint256& value);
 
-  std::vector<Log> logs;
-  uint64_t refund{0};
+  Substate substate;
 
  private:
   friend class EvmHost;
@@ -95,8 +94,8 @@ class EvmHost : public evmc::Host {
 
   bool account_exists(const evmc::address& address) const noexcept override;
 
-  evmc::bytes32 get_storage(const evmc::address& address,
-                            const evmc::bytes32& key) const noexcept override;
+  evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const
+      noexcept override;
 
   evmc_storage_status set_storage(const evmc::address& address, const evmc::bytes32& key,
                                   const evmc::bytes32& value) noexcept override;

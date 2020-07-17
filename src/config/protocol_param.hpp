@@ -27,15 +27,15 @@ namespace silkworm {
 // https://ethereum.github.io/yellowpaper/paper.pdf
 namespace fee {
 
-constexpr uint64_t kRsclear{15000};
+constexpr uint64_t kRsclear{15'000};
 
 constexpr uint64_t kGcodeDeposit{200};
 
-constexpr uint64_t kGtxCreate{32000};
+constexpr uint64_t kGtxCreate{32'000};
 constexpr uint64_t kGtxDataZero{4};
 constexpr uint64_t kGtxDataNonZeroFrontier{68};
 constexpr uint64_t kGtxDataNonZeroEIP2028{16};
-constexpr uint64_t kGtransaction{21000};
+constexpr uint64_t kGtransaction{21'000};
 }  // namespace fee
 
 namespace param {

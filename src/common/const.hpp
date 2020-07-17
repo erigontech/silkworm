@@ -25,7 +25,8 @@ namespace silkworm {
 
 using namespace evmc::literals;
 
-constexpr uint64_t kEther{1'000'000'000'000'000'000};  // = 10^18
+constexpr uint64_t kGiga{1'000'000'000};   // = 10^9
+constexpr uint64_t kEther{kGiga * kGiga};  // = 10^18
 
 constexpr size_t kAddressLength{20};
 

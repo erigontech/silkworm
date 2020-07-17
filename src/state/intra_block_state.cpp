@@ -71,7 +71,7 @@ void IntraBlockState::create_contract(const evmc::address& address) {
   }
 
   if (!prev_incarnation) {
-    // TODO(Andrew) read previous incarnation from the DB instead
+    // TODO[Constantinople] read previous incarnation from the DB instead
     prev_incarnation = 0;
   }
 

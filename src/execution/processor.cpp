@@ -94,9 +94,7 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
 
   state.subtract_from_balance(*txn.from, gas_cost.lo);
   state.commit();
-
-  evm_.logs.clear();
-  evm_.refund = 0;
+  evm_.substate.clear();
 
   uint64_t g = txn.gas_limit - g0.lo;
   CallResult vm_res;
@@ -110,6 +108,7 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
 
   if (vm_res.status != EVMC_SUCCESS) {
     state.rollback();
+    evm_.substate.clear();
   }
 
   uint64_t gas_left = refund_gas(txn, vm_res.gas_left);
@@ -124,8 +123,8 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
 
   res.receipt.post_state_or_status = vm_res.status == EVMC_SUCCESS;
   res.receipt.cumulative_gas_used = gas_used_;
-  res.receipt.logs = evm_.logs;
-  // TODO(Andrew) Bloom
+  res.receipt.logs = evm_.substate.logs;
+  // TODO[Byzantium] Bloom
 
   return res;
 }
@@ -137,7 +136,7 @@ uint64_t ExecutionProcessor::available_gas() const {
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) {
   IntraBlockState& state = evm_.state();
 
-  uint64_t refund = std::min((txn.gas_limit - gas_left) / 2, evm_.refund);
+  uint64_t refund = std::min((txn.gas_limit - gas_left) / 2, evm_.substate.refund);
   gas_left += refund;
   state.add_to_balance(*txn.from, gas_left * txn.gas_price);
 

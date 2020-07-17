@@ -52,7 +52,7 @@ int main() {
       return -1;
     }
 
-    // TODO(Andrew) check receipts post-Byzantium
+    // TODO[Byzantium] check receipts
 
     state::Writer writer;
     state.write_block(writer);

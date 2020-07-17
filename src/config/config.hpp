@@ -37,7 +37,7 @@ struct ChainConfig {
   // https://ecips.ethereumclassic.org/ECIPs/ecip-1015
   std::optional<uint64_t> tangerine_whistle_block;
 
-  // TODO (Andrew) EIP-160 was applied to ETC before the rest of Spurious Dragon; see
+  // TODO[ETC] EIP-160 was applied to ETC before the rest of Spurious Dragon; see
   // https://ecips.ethereumclassic.org/ECIPs/ecip-1066
 
   // https://eips.ethereum.org/EIPS/eip-607
@@ -63,8 +63,7 @@ struct ChainConfig {
   // https://eips.ethereum.org/EIPS/eip-2387
   std::optional<uint64_t> muir_glacier_block;
 
-  // TODO(Andrew)
-  // https://ecips.ethereumclassic.org/ECIPs/ecip-1017
+  // TODO[ETC] ECIP-1017
 
   bool has_homestead(uint64_t block_num) const noexcept {
     return homestead_block.has_value() && homestead_block <= block_num;

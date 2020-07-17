@@ -46,6 +46,8 @@ CallResult EVM::create(const evmc::address& caller, std::string_view code, uint6
       .value = intx::be::store<evmc::uint256be>(value),
   };
 
+  state_.set_nonce(caller, state_.get_nonce(caller) - 1);
+
   evmc::result res = create(message);
 
   return {res.status_code, static_cast<uint64_t>(res.gas_left)};
@@ -297,7 +299,7 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
   if (is_zero(prev_val)) return EVMC_STORAGE_ADDED;
 
   if (is_zero(value)) {
-    evm_.substate.refund += fee::kRsclear;
+    evm_.substate_.refund += fee::kRsclear;
     return EVMC_STORAGE_DELETED;
   }
 
@@ -364,6 +366,6 @@ void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t
   Log log{.address = address};
   std::copy_n(topics, num_topics, std::back_inserter(log.topics));
   std::copy_n(data, data_size, std::back_inserter(log.data));
-  evm_.substate.logs.push_back(log);
+  evm_.substate_.logs.push_back(log);
 }
 }  // namespace silkworm

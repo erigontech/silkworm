@@ -87,15 +87,18 @@ TEST_CASE("EVM smart contract") {
   EVM evm{state, block};
 
   uint64_t gas{0};
+  uint64_t nonce{1};
+  state.set_nonce(caller, nonce);
   CallResult res{evm.create(caller, code, gas, 0)};
   CHECK(res.status == EVMC_OUT_OF_GAS);
 
   gas = 50'000;
+  nonce = 2;
+  state.set_nonce(caller, nonce);
   res = evm.create(caller, code, gas, 0);
   CHECK(res.status == EVMC_SUCCESS);
 
-  uint64_t nonce{1};
-  evmc::address contract_address{create_address(caller, nonce)};
+  evmc::address contract_address{create_address(caller, nonce - 1)};
   evmc::bytes32 key0{};
   CHECK(state.get_storage(contract_address, key0) == to_hash("\x2a"));
 

@@ -97,13 +97,7 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
   state.commit();
   evm_.substate().clear();
 
-  uint64_t g = txn.gas_limit - g0.lo;
-  CallResult vm_res;
-  if (contract_creation) {
-    vm_res = evm_.create(*txn.from, txn.data, g, txn.value);
-  } else {
-    vm_res = evm_.call(*txn.from, *txn.to, txn.data, g, txn.value);
-  }
+  CallResult vm_res{evm_.execute(txn, txn.gas_limit - g0.lo)};
 
   if (vm_res.status != EVMC_SUCCESS) {
     state.rollback();

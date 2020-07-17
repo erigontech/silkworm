@@ -25,7 +25,7 @@
 namespace silkworm {
 
 TEST_CASE("EVM value transfer") {
-  Block block;
+  Block block{};
   block.header.number = 10336006;
   block.header.beneficiary = 0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address;
 
@@ -39,12 +39,17 @@ TEST_CASE("EVM value transfer") {
   CHECK(state.get_balance(from) == 0);
   CHECK(state.get_balance(to) == 0);
 
-  CallResult res = evm.call(from, to, "", 0, value);
+  Transaction txn{};
+  txn.from = from;
+  txn.to = to;
+  txn.value = value;
+
+  CallResult res{evm.execute(txn, 0)};
   CHECK(res.status == static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW));
 
   state.add_to_balance(from, kEther);
 
-  res = evm.call(from, to, "", 0, value);
+  res = evm.execute(txn, 0);
   CHECK(res.status == EVMC_SUCCESS);
 
   CHECK(state.get_balance(from) == kEther - value);
@@ -55,7 +60,7 @@ TEST_CASE("EVM smart contract") {
   using boost::algorithm::unhex;
   using namespace std::string_literals;
 
-  Block block;
+  Block block{};
   block.header.number = 10336006;
   block.header.beneficiary = 0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address;
   evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
@@ -86,16 +91,20 @@ TEST_CASE("EVM smart contract") {
   IntraBlockState state{nullptr};
   EVM evm{state, block};
 
-  uint64_t gas{0};
+  Transaction txn{};
+  txn.from = caller;
+  txn.data = code;
+
   uint64_t nonce{1};
   state.set_nonce(caller, nonce);
-  CallResult res{evm.create(caller, code, gas, 0)};
+  uint64_t gas{0};
+  CallResult res{evm.execute(txn, gas)};
   CHECK(res.status == EVMC_OUT_OF_GAS);
 
-  gas = 50'000;
   nonce = 2;
   state.set_nonce(caller, nonce);
-  res = evm.create(caller, code, gas, 0);
+  gas = 50'000;
+  res = evm.execute(txn, gas);
   CHECK(res.status == EVMC_SUCCESS);
 
   evmc::address contract_address{create_address(caller, nonce - 1)};
@@ -103,7 +112,10 @@ TEST_CASE("EVM smart contract") {
   CHECK(state.get_storage(contract_address, key0) == to_hash("\x2a"));
 
   evmc::bytes32 new_val{to_hash("\xf5")};
-  res = evm.call(caller, contract_address, full_view(new_val), gas, 0);
+  txn.to = contract_address;
+  txn.data = full_view(new_val);
+
+  res = evm.execute(txn, gas);
   CHECK(res.status == EVMC_SUCCESS);
   CHECK(state.get_storage(contract_address, key0) == new_val);
 }

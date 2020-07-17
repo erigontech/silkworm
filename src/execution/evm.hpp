@@ -55,11 +55,7 @@ class EVM {
   IntraBlockState& state() { return state_; }
   Substate& substate() { return substate_; }
 
-  CallResult create(const evmc::address& caller, std::string_view code, uint64_t gas,
-                    const intx::uint256& value);
-
-  CallResult call(const evmc::address& caller, const evmc::address& recipient,
-                  std::string_view input, uint64_t gas, const intx::uint256& value);
+  CallResult execute(const Transaction& txn, uint64_t gas);
 
  private:
   friend class EvmHost;
@@ -79,6 +75,7 @@ class EVM {
   IntraBlockState& state_;
   Substate substate_;
   Block block_;
+  const Transaction* txn_{nullptr};
 };
 
 // Yellow Paper, Section 7

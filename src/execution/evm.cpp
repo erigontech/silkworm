@@ -32,23 +32,28 @@ namespace silkworm {
 
 EVM::EVM(IntraBlockState& state, const Block& block) : state_{state}, block_{block} {}
 
-CallResult EVM::create(const evmc::address& caller, std::string_view code, uint64_t gas,
-                       const intx::uint256& value) {
+CallResult EVM::execute(const Transaction& txn, uint64_t gas) {
+  txn_ = &txn;
+
+  bool contract_creation{!txn.to};
+
   evmc_message message{
-      .kind = EVMC_CREATE,
+      .kind = contract_creation ? EVMC_CREATE : EVMC_CALL,
       .flags = 0,
       .depth = 0,
       .gas = static_cast<int64_t>(gas),
-      .destination = {},
-      .sender = caller,
-      .input_data = byte_ptr_cast(code.data()),
-      .input_size = code.size(),
-      .value = intx::be::store<evmc::uint256be>(value),
+      .destination = txn.to ? *txn.to : evmc::address{},
+      .sender = *txn.from,
+      .input_data = byte_ptr_cast(&txn.data[0]),
+      .input_size = txn.data.size(),
+      .value = intx::be::store<evmc::uint256be>(txn.value),
   };
 
-  state_.set_nonce(caller, state_.get_nonce(caller) - 1);
+  if (contract_creation) {
+    state_.set_nonce(*txn.from, state_.get_nonce(*txn.from) - 1);
+  }
 
-  evmc::result res = create(message);
+  evmc::result res{contract_creation ? create(message) : call(message)};
 
   return {res.status_code, static_cast<uint64_t>(res.gas_left)};
 }
@@ -130,25 +135,6 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
   }
 
   return res;
-}
-
-CallResult EVM::call(const evmc::address& caller, const evmc::address& recipient,
-                     std::string_view input, uint64_t gas, const intx::uint256& value) {
-  evmc_message message{
-      .kind = EVMC_CALL,
-      .flags = 0,
-      .depth = 0,
-      .gas = static_cast<int64_t>(gas),
-      .destination = recipient,
-      .sender = caller,
-      .input_data = byte_ptr_cast(input.data()),
-      .input_size = input.size(),
-      .value = intx::be::store<evmc::uint256be>(value),
-  };
-
-  evmc::result res = call(message);
-
-  return {res.status_code, static_cast<uint64_t>(res.gas_left)};
 }
 
 // TODO(Andrew) propagate noexcept
@@ -344,9 +330,11 @@ evmc::result EvmHost::call(const evmc_message& message) noexcept {
   }
 }
 
+// TODO(Andrew) use HostContext for caching
 evmc_tx_context EvmHost::get_tx_context() const noexcept {
   evmc_tx_context context;
-  // TODO[Frontier] tx_gas_price & tx_origin
+  intx::be::store(context.tx_gas_price.bytes, evm_.txn_->gas_price);
+  context.tx_origin = *evm_.txn_->from;
   context.block_coinbase = evm_.block_.header.beneficiary;
   context.block_number = evm_.block_.header.number;
   context.block_timestamp = evm_.block_.header.timestamp;

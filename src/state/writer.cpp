@@ -23,10 +23,12 @@ namespace silkworm::state {
 
 void Writer::write_account(const evmc::address& address, std::optional<Account> original,
                            std::optional<Account> committed) {
-  if (original == committed && changed_storage_.count(address) == 0) return;
+  bool account_deleted{!committed};
+
+  if (!account_deleted && committed == original && changed_storage_.count(address) == 0) return;
 
   if (original) {
-    bool omit_code_hash{committed};
+    bool omit_code_hash{!account_deleted};
     account_changes_[address] = original->encode_for_storage(omit_code_hash);
   } else {
     account_changes_[address] = {};

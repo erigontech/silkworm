@@ -84,6 +84,7 @@ void IntraBlockState::destruct(const evmc::address& address) {
   Object* obj{get_object(address)};
   if (!obj) return;
   obj->current.reset();
+  obj->current_storage.clear();
 }
 
 intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const {

@@ -14,29 +14,25 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_SUBSTATE_H_
-#define SILKWORM_STATE_SUBSTATE_H_
+#ifndef SILKWORM_CHAIN_BLOCK_CHAIN_H_
+#define SILKWORM_CHAIN_BLOCK_CHAIN_H_
 
-#include <stdint.h>
-
-#include <vector>
-
-#include "types/log.hpp"
+#include "config.hpp"
 
 namespace silkworm {
 
-// See Section 6.1 "Substate" of the Yellow Paper.
-class Substate {
+class BlockChain {
  public:
-  Substate(const Substate&) = delete;
-  Substate& operator=(const Substate&) = delete;
+  BlockChain(const BlockChain&) = delete;
+  BlockChain& operator=(const BlockChain&) = delete;
 
-  std::vector<Log> logs;
-  // TODO[Spurious Dragon] touched accounts
-  uint64_t refund{0};
+  BlockChain() = default;
 
-  void clear();
+  const ChainConfig& config() const { return config_; }
+
+ private:
+  ChainConfig config_{kEthMainnetChainConfig};
 };
 }  // namespace silkworm
 
-#endif  // SILKWORM_STATE_SUBSTATE_H_
+#endif  // SILKWORM_CHAIN_BLOCK_CHAIN_H_

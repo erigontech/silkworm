@@ -20,11 +20,12 @@
 #include <catch2/catch.hpp>
 #include <string>
 
-#include "config/protocol_param.hpp"
+#include "protocol_param.hpp"
 
 namespace silkworm {
 
 TEST_CASE("EVM value transfer") {
+  BlockChain chain{};
   Block block{};
   block.header.number = 10336006;
   block.header.beneficiary = 0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address;
@@ -34,7 +35,7 @@ TEST_CASE("EVM value transfer") {
   intx::uint256 value{10'200'000'000'000'000};
 
   IntraBlockState state{nullptr};
-  EVM evm{state, block};
+  EVM evm{chain, block, state};
 
   CHECK(state.get_balance(from) == 0);
   CHECK(state.get_balance(to) == 0);
@@ -60,6 +61,7 @@ TEST_CASE("EVM smart contract") {
   using boost::algorithm::unhex;
   using namespace std::string_literals;
 
+  BlockChain chain{};
   Block block{};
   block.header.number = 10336006;
   block.header.beneficiary = 0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address;
@@ -89,7 +91,7 @@ TEST_CASE("EVM smart contract") {
   // 27     SSTORE         // storage[0] = input[0]
 
   IntraBlockState state{nullptr};
-  EVM evm{state, block};
+  EVM evm{chain, block, state};
 
   Transaction txn{};
   txn.from = caller;

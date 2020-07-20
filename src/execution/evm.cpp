@@ -24,13 +24,14 @@
 #include <iterator>
 #include <sstream>
 
-#include "config/protocol_param.hpp"
 #include "precompiled.hpp"
+#include "protocol_param.hpp"
 #include "rlp/encode.hpp"
 
 namespace silkworm {
 
-EVM::EVM(IntraBlockState& state, const Block& block) : state_{state}, block_{block} {}
+EVM::EVM(const BlockChain& chain, const Block& block, IntraBlockState& state)
+    : chain_{chain}, block_{block}, state_{state} {}
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) {
   txn_ = &txn;
@@ -91,8 +92,11 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
     return res;
   }
 
+  uint64_t block_num{block_.header.number};
+  bool spurious_dragon{config().has_spurious_dragon(block_num)};
+
   state_.create_contract(contract_addr);
-  if (config_.has_spurious_dragon(block_.header.number)) {
+  if (spurious_dragon) {
     state_.set_nonce(contract_addr, 1);
   }
 
@@ -117,13 +121,13 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
     size_t code_len = res.output_size;
     int64_t code_deploy_gas = code_len * fee::kGCodeDeposit;
 
-    if (config_.has_spurious_dragon(block_.header.number) && code_len > param::kMaxCodeSize) {
+    if (spurious_dragon && code_len > param::kMaxCodeSize) {
       // https://eips.ethereum.org/EIPS/eip-170
       res.status_code = EVMC_OUT_OF_GAS;
     } else if (res.gas_left >= code_deploy_gas) {
       res.gas_left -= code_deploy_gas;
       state_.set_code(contract_addr, {byte_ptr_cast(res.output_data), res.output_size});
-    } else if (config_.has_homestead(block_.header.number)) {
+    } else if (config().has_homestead(block_num)) {
       res.status_code = EVMC_OUT_OF_GAS;
     }
   }
@@ -155,7 +159,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
   bool precompiled{is_precompiled(message.destination)};
 
   // https://eips.ethereum.org/EIPS/eip-161
-  if (value == 0 && config_.has_spurious_dragon(block_.header.number) &&
+  if (value == 0 && config().has_spurious_dragon(block_.header.number) &&
       !state_.exists(message.destination) && !precompiled) {
     return res;
   }
@@ -202,24 +206,24 @@ evmc::result EVM::execute(const evmc_message& message, uint8_t const* code,
 }
 
 evmc_revision EVM::revision() const noexcept {
-  uint64_t block_number = block_.header.number;
+  uint64_t block_number{block_.header.number};
 
-  if (config_.has_istanbul(block_number)) return EVMC_ISTANBUL;
-  if (config_.has_petersburg(block_number)) return EVMC_PETERSBURG;
-  if (config_.has_constantinople(block_number)) return EVMC_CONSTANTINOPLE;
-  if (config_.has_byzantium(block_number)) return EVMC_BYZANTIUM;
-  if (config_.has_spurious_dragon(block_number)) return EVMC_SPURIOUS_DRAGON;
-  if (config_.has_tangerine_whistle(block_number)) return EVMC_TANGERINE_WHISTLE;
-  if (config_.has_homestead(block_number)) return EVMC_HOMESTEAD;
+  if (config().has_istanbul(block_number)) return EVMC_ISTANBUL;
+  if (config().has_petersburg(block_number)) return EVMC_PETERSBURG;
+  if (config().has_constantinople(block_number)) return EVMC_CONSTANTINOPLE;
+  if (config().has_byzantium(block_number)) return EVMC_BYZANTIUM;
+  if (config().has_spurious_dragon(block_number)) return EVMC_SPURIOUS_DRAGON;
+  if (config().has_tangerine_whistle(block_number)) return EVMC_TANGERINE_WHISTLE;
+  if (config().has_homestead(block_number)) return EVMC_HOMESTEAD;
 
   return EVMC_FRONTIER;
 }
 
 uint8_t EVM::number_of_precompiles() const noexcept {
-  uint64_t block_number = block_.header.number;
+  uint64_t block_number{block_.header.number};
 
-  if (config_.has_istanbul(block_number)) return precompiled::kNumOfIstanbulContracts;
-  if (config_.has_byzantium(block_number)) return precompiled::kNumOfByzantiumContracts;
+  if (config().has_istanbul(block_number)) return precompiled::kNumOfIstanbulContracts;
+  if (config().has_byzantium(block_number)) return precompiled::kNumOfByzantiumContracts;
 
   return precompiled::kNumOfFrontierContracts;
 }
@@ -295,7 +299,7 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
 }
 
 evmc::uint256be EvmHost::get_balance(const evmc::address& address) const noexcept {
-  intx::uint256 balance = evm_.state().get_balance(address);
+  intx::uint256 balance{evm_.state().get_balance(address)};
   return intx::be::store<evmc::uint256be>(balance);
 }
 
@@ -309,7 +313,7 @@ evmc::bytes32 EvmHost::get_code_hash(const evmc::address& address) const noexcep
 
 size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,
                           size_t buffer_size) const noexcept {
-  std::string_view code = evm_.state().get_code(address);
+  std::string_view code{evm_.state().get_code(address)};
 
   if (code_offset >= code.size()) return 0;
 
@@ -344,7 +348,7 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
   context.block_timestamp = evm_.block_.header.timestamp;
   context.block_gas_limit = evm_.block_.header.gas_limit;
   intx::be::store(context.block_difficulty.bytes, evm_.block_.header.difficulty);
-  intx::be::store(context.chain_id.bytes, intx::uint256{evm_.config_.chain_id});
+  intx::be::store(context.chain_id.bytes, intx::uint256{evm_.config().chain_id});
   return context;
 }
 

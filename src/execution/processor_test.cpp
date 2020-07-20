@@ -19,12 +19,13 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
-#include "config/protocol_param.hpp"
+#include "protocol_param.hpp"
 
 namespace silkworm {
 
 TEST_CASE("Execution validation") {
-  Block block;
+  BlockChain chain{};
+  Block block{};
   block.header.number = 1;
   block.header.beneficiary = 0x829bd824b016326a401d083b33d092293333a830_address;
 
@@ -37,7 +38,7 @@ TEST_CASE("Execution validation") {
   };
 
   IntraBlockState state{nullptr};
-  ExecutionProcessor processor{state, block};
+  ExecutionProcessor processor{chain, block, state};
 
   ExecutionResult res{processor.execute_transaction(txn)};
   CHECK(res.error == ValidationError::kMissingSender);
@@ -53,6 +54,7 @@ TEST_CASE("No refund on error") {
   using boost::algorithm::unhex;
   using namespace std::string_literals;
 
+  BlockChain chain{};
   Block block{};
   block.header.number = 10'050'107;
   block.header.gas_limit = 328'646;
@@ -84,7 +86,7 @@ TEST_CASE("No refund on error") {
   */
 
   IntraBlockState state{nullptr};
-  ExecutionProcessor processor{state, block};
+  ExecutionProcessor processor{chain, block, state};
 
   Transaction txn{
       .nonce = nonce,

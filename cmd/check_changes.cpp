@@ -30,6 +30,8 @@ int main() {
   db_path += "/Library/Ethereum/geth/chaindata";
   db::LmdbDatabase db{db_path.c_str()};
 
+  BlockChain chain{};
+
   uint64_t block_num{0};
   while (std::optional<BlockWithHash> bh = db.get_block(++block_num)) {
     std::vector<evmc::address> senders{db.get_senders(block_num, bh->hash)};
@@ -40,7 +42,7 @@ int main() {
 
     state::Reader reader{db, block_num};
     IntraBlockState state{&reader};
-    ExecutionProcessor processor{state, bh->block};
+    ExecutionProcessor processor{chain, bh->block, state};
 
     std::vector<Receipt> receipts = processor.execute_block();
 

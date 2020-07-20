@@ -24,7 +24,7 @@
 #include <string>
 #include <string_view>
 
-#include "config/config.hpp"
+#include "chain/block_chain.hpp"
 #include "state/intra_block_state.hpp"
 #include "state/substate.hpp"
 #include "types/block.hpp"
@@ -46,11 +46,11 @@ class EVM {
   EVM(const EVM&) = delete;
   EVM& operator=(const EVM&) = delete;
 
-  EVM(IntraBlockState& state, const Block& block);
+  EVM(const BlockChain& chain, const Block& block, IntraBlockState& state);
 
   const Block& block() const { return block_; }
 
-  const ChainConfig& config() const { return config_; }
+  const ChainConfig& config() const { return chain_.config(); }
 
   IntraBlockState& state() { return state_; }
   Substate& substate() { return substate_; }
@@ -71,10 +71,10 @@ class EVM {
   uint8_t number_of_precompiles() const noexcept;
   bool is_precompiled(const evmc::address& contract) const noexcept;
 
-  ChainConfig config_{kEthMainnetChainConfig};
+  const BlockChain& chain_;
+  const Block& block_;
   IntraBlockState& state_;
-  Substate substate_;
-  Block block_;
+  Substate substate_{};
   const Transaction* txn_{nullptr};
 };
 

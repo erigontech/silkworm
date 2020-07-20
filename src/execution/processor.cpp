@@ -22,7 +22,7 @@
 #include <string_view>
 #include <utility>
 
-#include "config/protocol_param.hpp"
+#include "protocol_param.hpp"
 
 namespace silkworm {
 
@@ -49,8 +49,9 @@ static intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation
   return gas;
 }
 
-ExecutionProcessor::ExecutionProcessor(IntraBlockState& state, const Block& block)
-    : evm_{state, block} {}
+ExecutionProcessor::ExecutionProcessor(const BlockChain& chain, const Block& block,
+                                       IntraBlockState& state)
+    : evm_{chain, block, state} {}
 
 ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) {
   ExecutionResult res;

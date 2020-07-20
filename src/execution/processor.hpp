@@ -55,7 +55,7 @@ class ExecutionProcessor {
   ExecutionProcessor(const ExecutionProcessor&) = delete;
   ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-  ExecutionProcessor(IntraBlockState& state, const Block& block);
+  ExecutionProcessor(const BlockChain& chain, const Block& block, IntraBlockState& state);
 
   // precondition: txn.from must be recovered
   ExecutionResult execute_transaction(const Transaction& txn);

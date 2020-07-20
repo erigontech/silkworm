@@ -30,7 +30,7 @@ int main() {
   db_path += "/Library/Ethereum/geth/chaindata";
   db::LmdbDatabase db{db_path.c_str()};
 
-  BlockChain chain{};
+  BlockChain chain{&db};
 
   uint64_t block_num{0};
   while (std::optional<BlockWithHash> bh = db.get_block(++block_num)) {

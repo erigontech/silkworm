@@ -93,6 +93,7 @@ class Database {
   std::unique_ptr<Transaction> begin_ro_transaction() { return begin_transaction(true); }
   std::unique_ptr<Transaction> begin_rw_transaction() { return begin_transaction(false); }
 
+  std::optional<BlockHeader> get_header(uint64_t block_number, const evmc::bytes32& block_hash);
   std::optional<BlockWithHash> get_block(uint64_t block_number);
   std::vector<evmc::address> get_senders(uint64_t block_number, const evmc::bytes32& block_hash);
   std::string get_code(const evmc::bytes32& code_hash);

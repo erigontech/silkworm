@@ -14,30 +14,14 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_BLOCK_CHAIN_H_
-#define SILKWORM_CHAIN_BLOCK_CHAIN_H_
-
-#include "config.hpp"
-#include "db/database.hpp"
+#include "block_chain.hpp"
 
 namespace silkworm {
+BlockChain::BlockChain(db::Database* db) : db_{db} {}
 
-class BlockChain {
- public:
-  BlockChain(const BlockChain&) = delete;
-  BlockChain& operator=(const BlockChain&) = delete;
-
-  explicit BlockChain(db::Database* db);
-
-  const ChainConfig& config() const { return config_; }
-
-  std::optional<BlockHeader> get_header(uint64_t block_number,
-                                        const evmc::bytes32& block_hash) const;
-
- private:
-  ChainConfig config_{kEthMainnetChainConfig};
-  db::Database* db_{nullptr};
-};
+std::optional<BlockHeader> BlockChain::get_header(uint64_t block_number,
+                                                  const evmc::bytes32& block_hash) const {
+  if (!db_) return {};
+  return db_->get_header(block_number, block_hash);
+}
 }  // namespace silkworm
-
-#endif  // SILKWORM_CHAIN_BLOCK_CHAIN_H_

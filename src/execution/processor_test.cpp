@@ -24,7 +24,7 @@
 namespace silkworm {
 
 TEST_CASE("Execution validation") {
-  BlockChain chain{};
+  BlockChain chain{nullptr};
   Block block{};
   block.header.number = 1;
   block.header.beneficiary = 0x829bd824b016326a401d083b33d092293333a830_address;
@@ -54,7 +54,7 @@ TEST_CASE("No refund on error") {
   using boost::algorithm::unhex;
   using namespace std::string_literals;
 
-  BlockChain chain{};
+  BlockChain chain{nullptr};
   Block block{};
   block.header.number = 10'050'107;
   block.header.gas_limit = 328'646;

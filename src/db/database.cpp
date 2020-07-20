@@ -22,6 +22,20 @@
 #include "util.hpp"
 
 namespace silkworm::db {
+std::optional<BlockHeader> Database::get_header(uint64_t block_number,
+                                                const evmc::bytes32& block_hash) {
+  auto txn{begin_ro_transaction()};
+  auto bucket{txn->get_bucket(bucket::kBlockHeader)};
+  std::string key{block_key(block_number, block_hash)};
+  std::optional<std::string_view> header_rlp{bucket->get(key)};
+  if (!header_rlp) return {};
+
+  BlockHeader header;
+  auto header_stream{as_stream(*header_rlp)};
+  rlp::decode(header_stream, header);
+  return header;
+}
+
 std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   BlockWithHash bh{};
   auto txn{begin_ro_transaction()};

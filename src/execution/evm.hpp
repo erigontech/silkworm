@@ -23,6 +23,7 @@
 #include <intx/intx.hpp>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "chain/block_chain.hpp"
 #include "state/intra_block_state.hpp"
@@ -76,6 +77,7 @@ class EVM {
   IntraBlockState& state_;
   Substate substate_{};
   const Transaction* txn_{nullptr};
+  std::vector<evmc::bytes32> block_hashes_{};
 };
 
 // Yellow Paper, Section 7

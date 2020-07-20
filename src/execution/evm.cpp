@@ -352,9 +352,26 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
   return context;
 }
 
-evmc::bytes32 EvmHost::get_block_hash(int64_t) const noexcept {
-  // TODO[Frontier] implement
-  return {};
+evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
+  uint64_t base_number{evm_.block_.header.number};
+  std::vector<evmc::bytes32>& hashes{evm_.block_hashes_};
+
+  if (hashes.empty()) {
+    hashes.push_back(evm_.block_.header.parent_hash);
+  }
+
+  uint64_t old_size{hashes.size()};
+  uint64_t new_size{base_number - n};
+
+  if (old_size < new_size) hashes.resize(new_size);
+
+  for (uint64_t i{old_size}; i < new_size; ++i) {
+    std::optional<BlockHeader> header{evm_.chain_.get_header(base_number - i, hashes[i - 1])};
+    if (!header) break;
+    hashes[i] = header->parent_hash;
+  }
+
+  return hashes[new_size - 1];
 }
 
 void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t data_size,

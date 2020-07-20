@@ -80,6 +80,12 @@ void IntraBlockState::create_contract(const evmc::address& address) {
   objects_[address] = created;
 }
 
+void IntraBlockState::destruct(const evmc::address& address) {
+  Object* obj{get_object(address)};
+  if (!obj) return;
+  obj->current.reset();
+}
+
 intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const {
   Object* obj{get_object(address)};
   return obj && obj->current ? obj->current->balance : 0;

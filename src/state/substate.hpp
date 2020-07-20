@@ -28,7 +28,6 @@ namespace silkworm {
 // See Section 6.1 "Substate" of the Yellow Paper.
 class Substate {
  public:
-  // TODO[Frontier] self-destructs
   std::vector<Log> logs;
   // TODO[Spurious Dragon] touched accounts
   uint64_t refund{0};

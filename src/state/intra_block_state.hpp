@@ -39,6 +39,7 @@ class IntraBlockState {
 
   bool exists(const evmc::address& address) const;
   void create_contract(const evmc::address& address);
+  void destruct(const evmc::address& address);
 
   intx::uint256 get_balance(const evmc::address& address) const;
   void add_to_balance(const evmc::address& address, const intx::uint256& addend);

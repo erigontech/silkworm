@@ -31,7 +31,7 @@ TEST_CASE("Execution validation") {
   Transaction txn{
       .nonce = 12,
       .gas_price = 20 * kGiga,
-      .gas_limit = fee::kGtransaction,
+      .gas_limit = fee::kGTransaction,
       .to = 0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,
       .value = 10 * kEther,
   };
@@ -111,7 +111,7 @@ TEST_CASE("No refund on error") {
   txn.data.clear();
 
   // But then there's not enough gas for the BALANCE operation
-  txn.gas_limit = fee::kGtransaction + 5'020;
+  txn.gas_limit = fee::kGTransaction + 5'020;
 
   res = processor.execute_transaction(txn);
   CHECK(res.error == ValidationError::kOk);

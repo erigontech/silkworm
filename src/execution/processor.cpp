@@ -28,9 +28,9 @@ namespace silkworm {
 
 static intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation, bool homestead,
                                    bool eip2028) {
-  intx::uint128 gas = fee::kGtransaction;
+  intx::uint128 gas = fee::kGTransaction;
   if (contract_creation && homestead) {
-    gas += fee::kGtxCreate;
+    gas += fee::kGTxCreate;
   }
 
   if (data.empty()) {
@@ -40,11 +40,11 @@ static intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation
   intx::uint128 non_zero_bytes =
       std::count_if(data.begin(), data.end(), [](char c) { return c != 0; });
 
-  uint64_t nonZeroGas{eip2028 ? fee::kGtxDataNonZeroEIP2028 : fee::kGtxDataNonZeroFrontier};
+  uint64_t nonZeroGas{eip2028 ? fee::kGTxDataNonZeroEIP2028 : fee::kGTxDataNonZeroFrontier};
   gas += non_zero_bytes * nonZeroGas;
 
   intx::uint128 zero_bytes = data.length() - non_zero_bytes;
-  gas += zero_bytes * fee::kGtxDataZero;
+  gas += zero_bytes * fee::kGTxDataZero;
 
   return gas;
 }

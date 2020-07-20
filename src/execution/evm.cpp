@@ -115,7 +115,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 
   if (res.status_code == EVMC_SUCCESS) {
     size_t code_len = res.output_size;
-    int64_t code_deploy_gas = code_len * fee::kGcodeDeposit;
+    int64_t code_deploy_gas = code_len * fee::kGCodeDeposit;
 
     if (config_.has_spurious_dragon(block_.header.number) && code_len > param::kMaxCodeSize) {
       // https://eips.ethereum.org/EIPS/eip-170
@@ -285,7 +285,7 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
   if (is_zero(prev_val)) return EVMC_STORAGE_ADDED;
 
   if (is_zero(value)) {
-    evm_.substate_.refund += fee::kRsclear;
+    evm_.substate_.refund += fee::kRSClear;
     return EVMC_STORAGE_DELETED;
   }
 
@@ -318,8 +318,12 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
   return n;
 }
 
-void EvmHost::selfdestruct(const evmc::address&, const evmc::address&) noexcept {
-  // TODO[Frontier] implement
+void EvmHost::selfdestruct(const evmc::address& address,
+                           const evmc::address& beneficiary) noexcept {
+  if (!evm_.state().exists(address)) return;
+  evm_.state().add_to_balance(beneficiary, evm_.state().get_balance(address));
+  evm_.state().destruct(address);
+  evm_.substate().refund += fee::kRSelfDestruct;
 }
 
 evmc::result EvmHost::call(const evmc_message& message) noexcept {

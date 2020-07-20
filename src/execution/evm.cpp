@@ -92,6 +92,9 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
     return res;
   }
 
+  IntraBlockState snapshot{state_};
+  Substate sub_snapshot{substate_};
+
   uint64_t block_num{block_.header.number};
   bool spurious_dragon{config().has_spurious_dragon(block_num)};
 
@@ -134,8 +137,12 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 
   if (res.status_code == EVMC_SUCCESS) {
     res.create_address = contract_addr;
-  } else if (res.status_code != EVMC_REVERT) {
-    res.gas_left = 0;
+  } else {
+    state_ = snapshot;
+    substate_ = sub_snapshot;
+    if (res.status_code != EVMC_REVERT) {
+      res.gas_left = 0;
+    }
   }
 
   return res;
@@ -164,6 +171,9 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     return res;
   }
 
+  IntraBlockState snapshot{state_};
+  Substate sub_snapshot{substate_};
+
   if (message.kind == EVMC_CALL && !(message.flags & EVMC_STATIC)) {
     state_.subtract_from_balance(message.sender, value);
     state_.add_to_balance(message.destination, value);
@@ -190,8 +200,12 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     res = execute(message, byte_ptr_cast(code.data()), code.size());
   }
 
-  if (res.status_code != EVMC_SUCCESS && res.status_code != EVMC_REVERT) {
-    res.gas_left = 0;
+  if (res.status_code != EVMC_SUCCESS) {
+    state_ = snapshot;
+    substate_ = sub_snapshot;
+    if (res.status_code != EVMC_REVERT) {
+      res.gas_left = 0;
+    }
   }
 
   return res;

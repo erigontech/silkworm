@@ -34,7 +34,6 @@ IntraBlockState::Object* IntraBlockState::get_object(const evmc::address& addres
 
   Object& obj{objects_[address]};
   obj.original = *account;
-  obj.committed = *account;
   obj.current = *account;
   return &obj;
 }
@@ -59,12 +58,9 @@ void IntraBlockState::create_contract(const evmc::address& address) {
   Object* prev{get_object(address)};
   if (prev) {
     created.original = prev->original;
-    created.committed = prev->committed;
     if (prev->current) {
       created.current->balance = prev->current->balance;
       prev_incarnation = prev->current->incarnation;
-    } else if (prev->committed) {
-      prev_incarnation = prev->committed->incarnation;
     } else if (prev->original) {
       prev_incarnation = prev->original->incarnation;
     }
@@ -143,10 +139,6 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
 
   uint64_t incarnation{obj->current->incarnation};
 
-  if (!obj->committed || obj->committed->incarnation != incarnation) return {};
-  it = obj->committed_storage.find(key);
-  if (it != obj->committed_storage.end()) return it->second;
-
   if (!obj->original || obj->original->incarnation != incarnation) return {};
   it = obj->original_storage.find(key);
   if (it != obj->original_storage.end()) return it->second;
@@ -165,32 +157,14 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
   get_or_create_object(address).current_storage[key] = value;
 }
 
-void IntraBlockState::rollback() {
-  for (auto& entry : objects_) {
-    Object& obj{entry.second};
-    obj.current = obj.committed;
-    obj.current_storage.clear();
-  }
-}
-
-void IntraBlockState::commit() {
-  for (auto& entry : objects_) {
-    Object& obj{entry.second};
-    obj.committed = obj.current;
-    obj.current_storage.insert(obj.committed_storage.begin(), obj.committed_storage.end());
-    std::swap(obj.current_storage, obj.committed_storage);
-    obj.current_storage.clear();
-  }
-}
-
 void IntraBlockState::write_block(state::Writer& state_writer) {
   for (const auto& entry : objects_) {
     const evmc::address& address{entry.first};
     const Object& obj{entry.second};
 
-    for (const auto& storage_entry : obj.committed_storage) {
+    for (const auto& storage_entry : obj.current_storage) {
       const evmc::bytes32& key{storage_entry.first};
-      uint64_t incarnation{obj.committed->incarnation};
+      uint64_t incarnation{obj.current->incarnation};
       evmc::bytes32 original_val{};
       if (obj.original && obj.original->incarnation == incarnation) {
         auto it = obj.original_storage.find(key);
@@ -199,7 +173,7 @@ void IntraBlockState::write_block(state::Writer& state_writer) {
       state_writer.write_storage(address, incarnation, key, original_val, storage_entry.second);
     }
 
-    state_writer.write_account(address, obj.original, obj.committed);
+    state_writer.write_account(address, obj.original, obj.current);
   }
 }
 }  // namespace silkworm

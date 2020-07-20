@@ -32,8 +32,8 @@ namespace silkworm {
 
 class IntraBlockState {
  public:
-  IntraBlockState(const IntraBlockState&) = delete;
-  IntraBlockState& operator=(const IntraBlockState&) = delete;
+  IntraBlockState(const IntraBlockState&) = default;
+  IntraBlockState& operator=(const IntraBlockState&) = default;
 
   explicit IntraBlockState(state::Reader* state_reader) : db_{state_reader} {}
 
@@ -56,9 +56,6 @@ class IntraBlockState {
   void set_storage(const evmc::address& address, const evmc::bytes32& key,
                    const evmc::bytes32& value);
 
-  void rollback();
-  void commit();
-
   void write_block(state::Writer& state_writer);
 
  private:
@@ -66,10 +63,8 @@ class IntraBlockState {
 
   struct Object {
     std::optional<Account> original;
-    std::optional<Account> committed;
     std::optional<Account> current;
     Storage original_storage;
-    Storage committed_storage;
     Storage current_storage;
     std::optional<std::string> code;
   };

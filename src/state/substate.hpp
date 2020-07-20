@@ -28,8 +28,8 @@ namespace silkworm {
 // See Section 6.1 "Substate" of the Yellow Paper.
 class Substate {
  public:
-  Substate(const Substate&) = delete;
-  Substate& operator=(const Substate&) = delete;
+  Substate(const Substate&) = default;
+  Substate& operator=(const Substate&) = default;
 
   std::vector<Log> logs;
   // TODO[Spurious Dragon] touched accounts

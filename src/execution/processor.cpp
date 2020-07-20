@@ -95,23 +95,16 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
 
   state.subtract_from_balance(*txn.from, gas_cost.lo);
   state.set_nonce(*txn.from, nonce + 1);
-  state.commit();
+
   evm_.substate().clear();
 
   CallResult vm_res{evm_.execute(txn, txn.gas_limit - g0.lo)};
-
-  if (vm_res.status != EVMC_SUCCESS) {
-    state.rollback();
-    evm_.substate().clear();
-  }
 
   uint64_t gas_left = refund_gas(txn, vm_res.gas_left);
   res.gas_used = txn.gas_limit - gas_left;
 
   // award the miner
   state.add_to_balance(evm_.block().header.beneficiary, res.gas_used * txn.gas_price);
-
-  state.commit();
 
   gas_used_ += res.gas_used;
 
@@ -152,7 +145,6 @@ std::vector<Receipt> ExecutionProcessor::execute_block() {
   }
 
   apply_rewards();
-  evm_.state().commit();
 
   return receipts;
 }

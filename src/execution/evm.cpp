@@ -193,7 +193,14 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
   } else {
     std::string_view code = state_.get_code(message.destination);
     if (code.empty()) return res;
-    res = execute(message, byte_ptr_cast(code.data()), code.size());
+
+    evmc_message msg{message};
+    if (msg.kind == EVMC_CALLCODE) {
+      // TODO[Homestead] Double check DELEGATECALL (+test)
+      msg.destination = msg.sender;
+    }
+
+    res = execute(msg, byte_ptr_cast(code.data()), code.size());
   }
 
   if (res.status_code != EVMC_SUCCESS) {

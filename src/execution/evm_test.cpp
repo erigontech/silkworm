@@ -97,19 +97,15 @@ TEST_CASE("Smart contract with storage") {
   txn.from = caller;
   txn.data = code;
 
-  uint64_t nonce{1};
-  state.set_nonce(caller, nonce);
   uint64_t gas{0};
   CallResult res{evm.execute(txn, gas)};
   CHECK(res.status == EVMC_OUT_OF_GAS);
 
-  nonce = 2;
-  state.set_nonce(caller, nonce);
   gas = 50'000;
   res = evm.execute(txn, gas);
   CHECK(res.status == EVMC_SUCCESS);
 
-  evmc::address contract_address{create_address(caller, nonce - 1)};
+  evmc::address contract_address{create_address(caller, /*nonce=*/1)};
   evmc::bytes32 key0{};
   CHECK(state.get_storage(contract_address, key0) == to_hash("\x2a"));
 
@@ -163,13 +159,11 @@ TEST_CASE("Double self-destruct") {
   txn.from = caller;
   txn.data = code;
 
-  uint64_t nonce{1};
-  state.set_nonce(caller, nonce);
   uint64_t gas{1'000'000};
   CallResult res{evm.execute(txn, gas)};
   CHECK(res.status == EVMC_SUCCESS);
 
-  evmc::address contract_address{create_address(caller, nonce - 1)};
+  evmc::address contract_address{create_address(caller, /*nonce=*/0)};
   evmc::bytes32 key0{};
   CHECK(state.get_storage(contract_address, key0) == to_hash("\x2a"));
 

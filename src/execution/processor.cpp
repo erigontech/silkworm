@@ -94,7 +94,10 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
   }
 
   state.subtract_from_balance(*txn.from, gas_cost.lo);
-  state.set_nonce(*txn.from, nonce + 1);
+  if (!contract_creation) {
+    // EVM itself increments the nonce for contract creation
+    state.set_nonce(*txn.from, nonce + 1);
+  }
 
   evm_.substate().clear();
 

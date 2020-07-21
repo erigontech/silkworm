@@ -50,10 +50,6 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) {
       .value = intx::be::store<evmc::uint256be>(txn.value),
   };
 
-  if (contract_creation) {
-    state_.set_nonce(*txn.from, state_.get_nonce(*txn.from) - 1);
-  }
-
   evmc::result res{contract_creation ? create(message) : call(message)};
 
   return {res.status_code, static_cast<uint64_t>(res.gas_left)};

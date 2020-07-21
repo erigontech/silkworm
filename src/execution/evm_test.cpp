@@ -24,7 +24,7 @@
 
 namespace silkworm {
 
-TEST_CASE("EVM value transfer") {
+TEST_CASE("Value transfer") {
   BlockChain chain{nullptr};
   Block block{};
   block.header.number = 10336006;
@@ -57,13 +57,13 @@ TEST_CASE("EVM value transfer") {
   CHECK(state.get_balance(to) == value);
 }
 
-TEST_CASE("EVM smart contract") {
+TEST_CASE("Smart contract with storage") {
   using boost::algorithm::unhex;
   using namespace std::string_literals;
 
   BlockChain chain{nullptr};
   Block block{};
-  block.header.number = 10336006;
+  block.header.number = 10'336'006;
   block.header.beneficiary = 0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address;
   evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 
@@ -120,6 +120,74 @@ TEST_CASE("EVM smart contract") {
   res = evm.execute(txn, gas);
   CHECK(res.status == EVMC_SUCCESS);
   CHECK(state.get_storage(contract_address, key0) == new_val);
+}
+
+TEST_CASE("Double self-destruct") {
+  using boost::algorithm::unhex;
+  using namespace std::string_literals;
+
+  BlockChain chain{nullptr};
+  Block block{};
+  block.header.number = 116'525;
+  block.header.beneficiary = 0xe6a7a1d47ff21b6321162aea7c6cb457d5476bca_address;
+  evmc::address caller{0xc876c021ece519a8cb7d3d1b8eea2d1cee9929ba_address};
+
+  // This contract initially sets its 0th storage to 0x2a.
+  // When called, it updates the 0th storage to the input provided
+  // an then self-destructs.
+  std::string code = unhex("602a60005560088060106000396000f360003580600055ff"s);
+  /* https://github.com/CoinCulture/evm-tools
+  0      PUSH1  => 2a
+  2      PUSH1  => 00
+  4      SSTORE
+  5      PUSH1  => 08
+  7      DUP1
+  8      PUSH1  => 10
+  10     PUSH1  => 00
+  12     CODECOPY
+  13     PUSH1  => 00
+  15     RETURN
+---------------------------
+  16     PUSH1  => 00
+  18     CALLDATALOAD
+  19     DUP1
+  20     PUSH1  => 00
+  22     SSTORE
+  23     SUICIDE
+  */
+
+  IntraBlockState state{nullptr};
+  EVM evm{chain, block, state};
+
+  Transaction txn{};
+  txn.from = caller;
+  txn.data = code;
+
+  uint64_t nonce{1};
+  state.set_nonce(caller, nonce);
+  uint64_t gas{1'000'000};
+  CallResult res{evm.execute(txn, gas)};
+  CHECK(res.status == EVMC_SUCCESS);
+
+  evmc::address contract_address{create_address(caller, nonce - 1)};
+  evmc::bytes32 key0{};
+  CHECK(state.get_storage(contract_address, key0) == to_hash("\x2a"));
+
+  // Call the contract so that it self-destructs
+  evmc::bytes32 new_val{to_hash("\xf5")};
+  txn.to = contract_address;
+  txn.data = full_view(new_val);
+
+  res = evm.execute(txn, gas);
+  CHECK(res.status == EVMC_SUCCESS);
+  CHECK(state.get_storage(contract_address, key0) == evmc::bytes32{});
+  CHECK(res.gas_left < gas);
+
+  // Now the contract is self-destructed, this is a simple value transfer
+  res = evm.execute(txn, gas);
+  CHECK(res.status == EVMC_SUCCESS);
+  CHECK(state.get_storage(contract_address, key0) == evmc::bytes32{});
+  CHECK(res.gas_left == gas);
 }
 
 TEST_CASE("Create address") {

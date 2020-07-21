@@ -81,6 +81,7 @@ void IntraBlockState::destruct(const evmc::address& address) {
   if (!obj) return;
   obj->current.reset();
   obj->current_storage.clear();
+  obj->code.reset();
 }
 
 intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const {
@@ -108,12 +109,13 @@ void IntraBlockState::set_nonce(const evmc::address& address, uint64_t nonce) {
 
 std::string_view IntraBlockState::get_code(const evmc::address& address) const {
   Object* obj{get_object(address)};
-  if (!obj || !obj->current) return {};
-  if (obj->code) return *obj->code;
-  if (obj->current->code_hash == kEmptyHash) return {};
-  if (!db_) return {};
 
+  if (!obj || !obj->current || obj->current->code_hash == kEmptyHash) return {};
+  if (obj->code) return *obj->code;
+
+  if (!db_) return {};
   obj->code = db_->read_code(obj->current->code_hash);
+
   return *obj->code;
 }
 

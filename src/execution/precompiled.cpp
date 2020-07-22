@@ -17,16 +17,42 @@
 #include "precompiled.hpp"
 
 #include <boost/endian/conversion.hpp>
+#include <cstring>
+#include <ethash/keccak.hpp>
 
 #include "common/util.hpp"
+#include "crypto/ecdsa.hpp"
 
 namespace silkworm::precompiled {
 
 uint64_t ecrec_gas(std::string_view, evmc_revision) noexcept { return 3'000; }
 
-std::optional<std::string> ecrec_run(std::string_view) noexcept {
-  // TODO[Frontier] implement
-  return {};
+std::optional<std::string> ecrec_run(std::string_view input) noexcept {
+  constexpr size_t kInputLen{128};
+  std::string d{input};
+  if (d.length() < kInputLen) {
+    d.resize(kInputLen, '\0');
+  }
+
+  auto v{intx::be::unsafe::load<intx::uint256>(byte_ptr_cast(&d[32]))};
+  auto r{intx::be::unsafe::load<intx::uint256>(byte_ptr_cast(&d[64]))};
+  auto s{intx::be::unsafe::load<intx::uint256>(byte_ptr_cast(&d[96]))};
+
+  v -= 27;
+
+  if (!ecdsa::inputs_are_valid(v, r, s)) return "";
+
+  std::optional<std::string> key{
+      ecdsa::recover(d.substr(0, 32), d.substr(64, 64), static_cast<uint8_t>(v))};
+  if (!key) return "";
+
+  // Ignore the first byte of the public key
+  ethash::hash256 hash{ethash::keccak256(byte_ptr_cast(key->data() + 1), key->length() - 1)};
+
+  std::string out(32, '\0');
+  std::memcpy(&out[12], &hash.bytes[12], 32 - 12);
+
+  return out;
 }
 
 uint64_t sha256_gas(std::string_view input, evmc_revision) noexcept {

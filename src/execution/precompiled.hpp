@@ -24,7 +24,7 @@
 #include <string>
 #include <string_view>
 
-// See Yellow Paper, Appendix E. Precompiled Contracts
+// See Yellow Paper, Appendix E "Precompiled Contracts"
 namespace silkworm::precompiled {
 
 using GasFunction = uint64_t (*)(std::string_view input, evmc_revision) noexcept;

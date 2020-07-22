@@ -33,6 +33,14 @@ HunterGate(
 
 project(silkworm)
 
+# secp256k1
+add_compile_definitions(USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
+add_compile_definitions(USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
+add_compile_definitions(ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
+add_compile_definitions(ENABLE_MODULE_RECOVERY)
+add_library(secp256k1 secp256k1/src/secp256k1.c)
+target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
+
 if(MSVC)
   add_compile_options(/W4 /WX)
 else()

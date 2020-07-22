@@ -20,11 +20,10 @@
 
 namespace silkworm {
 TEST_CASE("Zeroless view") {
-  using namespace std::string_view_literals;
-
-  CHECK(zeroless_view(0x0000000000000000000000000000000000000000000000000000000000000000_bytes32) ==
-        ""sv);
-  CHECK(zeroless_view(0x000000000000000000000000000000000000000000000000000000000004bc00_bytes32) ==
-        "\x04\xbc\x00"sv);
+  CHECK(to_hex(zeroless_view(
+            0x0000000000000000000000000000000000000000000000000000000000000000_bytes32)) == "");
+  CHECK(to_hex(zeroless_view(
+            0x000000000000000000000000000000000000000000000000000000000004bc00_bytes32)) ==
+        "04bc00");
 }
 }  // namespace silkworm

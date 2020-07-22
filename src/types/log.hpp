@@ -18,15 +18,16 @@
 #define SILKWORM_TYPES_LOG_H_
 
 #include <evmc/evmc.hpp>
-#include <string>
 #include <vector>
+
+#include "common/base.hpp"
 
 namespace silkworm {
 
 struct Log {
   evmc::address address;
   std::vector<evmc::bytes32> topics;
-  std::string data;
+  Bytes data;
 };
 }  // namespace silkworm
 

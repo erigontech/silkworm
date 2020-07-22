@@ -107,7 +107,7 @@ void IntraBlockState::set_nonce(const evmc::address& address, uint64_t nonce) {
   get_or_create_object(address).current->nonce = nonce;
 }
 
-std::string_view IntraBlockState::get_code(const evmc::address& address) const {
+ByteView IntraBlockState::get_code(const evmc::address& address) const {
   Object* obj{get_object(address)};
 
   if (!obj || !obj->current || obj->current->code_hash == kEmptyHash) return {};
@@ -124,10 +124,10 @@ evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const
   return obj && obj->current ? obj->current->code_hash : kEmptyHash;
 }
 
-void IntraBlockState::set_code(const evmc::address& address, std::string_view code) {
+void IntraBlockState::set_code(const evmc::address& address, ByteView code) {
   Object& obj{get_or_create_object(address)};
   obj.code = code;
-  ethash::hash256 hash{ethash::keccak256(byte_ptr_cast(code.data()), code.size())};
+  ethash::hash256 hash{ethash::keccak256(code.data(), code.size())};
   std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
 }
 

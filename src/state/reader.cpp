@@ -25,9 +25,7 @@ std::optional<Account> Reader::read_account(const evmc::address& address) const 
   return db_.get_account(address, block_number_);
 }
 
-std::string Reader::read_code(const evmc::bytes32& code_hash) const {
-  return db_.get_code(code_hash);
-}
+Bytes Reader::read_code(const evmc::bytes32& code_hash) const { return db_.get_code(code_hash); }
 
 evmc::bytes32 Reader::read_storage(const evmc::address& address, uint64_t incarnation,
                                    const evmc::bytes32& key) const {

@@ -22,32 +22,27 @@ Part of the compatibility layer with the Turbo-Geth DB format;
 see its package dbutils.
 */
 
-#include <stdint.h>
-
-#include <evmc/evmc.hpp>
-#include <string>
-#include <string_view>
+#include "common/base.hpp"
 
 namespace silkworm::db {
 // Turbo-Geth PlainGenerateStoragePrefix
-std::string storage_prefix(const evmc::address& address, uint64_t incarnation);
+Bytes storage_prefix(const evmc::address& address, uint64_t incarnation);
 
 // Turbo-Geth PlainGenerateCompositeStorageKey
-std::string storage_key(const evmc::address& address, uint64_t incarnation,
-                        const evmc::bytes32& key);
+Bytes storage_key(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key);
 
 // Turbo-Geth HeaderHashKey
-std::string header_hash_key(uint64_t block_number);
+Bytes header_hash_key(uint64_t block_number);
 
 // Turbo-Geth HeaderKey & BlockBodyKey
-std::string block_key(uint64_t block_number, const evmc::bytes32& hash);
+Bytes block_key(uint64_t block_number, const evmc::bytes32& hash);
 
 // Turbo-Geth IndexChunkKey
-std::string history_index_key(std::string_view key, uint64_t block_number);
+Bytes history_index_key(ByteView key, uint64_t block_number);
 
 // Turbo-Geth EncodeTimestamp
 // If a < b, then Encoding(a) < Encoding(b) lexicographically
-std::string encode_timestamp(uint64_t block_number);
+Bytes encode_timestamp(uint64_t block_number);
 }  // namespace silkworm::db
 
 #endif  // SILKWORM_DB_UTIL_H_

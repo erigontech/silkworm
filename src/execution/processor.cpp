@@ -19,14 +19,13 @@
 #include <algorithm>
 #include <intx/int128.hpp>
 #include <limits>
-#include <string_view>
 #include <utility>
 
 #include "protocol_param.hpp"
 
 namespace silkworm {
 
-static intx::uint128 intrinsic_gas(std::string_view data, bool contract_creation, bool homestead,
+static intx::uint128 intrinsic_gas(ByteView data, bool contract_creation, bool homestead,
                                    bool eip2028) {
   intx::uint128 gas = fee::kGTransaction;
   if (contract_creation && homestead) {

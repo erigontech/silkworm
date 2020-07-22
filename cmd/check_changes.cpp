@@ -66,7 +66,7 @@ int main() {
         for (const auto& e : *db_account_changes) {
           if (writer.account_changes().count(e.first) == 0) {
             std::cerr << to_hex(e.first) << " is missing\n";
-          } else if (std::string val{writer.account_changes().at(e.first)}; val != e.second) {
+          } else if (Bytes val{writer.account_changes().at(e.first)}; val != e.second) {
             std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
             std::cerr << to_hex(val) << "\n";
             std::cerr << "vs DB\n";
@@ -84,8 +84,8 @@ int main() {
       return -2;
     }
 
-    std::string db_storage_changes{db.get_storage_changes(block_num)};
-    std::string calculated_storage_changes{};
+    Bytes db_storage_changes{db.get_storage_changes(block_num)};
+    Bytes calculated_storage_changes{};
     if (!writer.storage_changes().empty()) {
       calculated_storage_changes = writer.storage_changes().encode();
     }

@@ -21,8 +21,8 @@
 
 #include <intx/intx.hpp>
 #include <optional>
-#include <string>
-#include <string_view>
+
+#include "common/base.hpp"
 
 namespace silkworm::ecdsa {
 
@@ -31,8 +31,7 @@ constexpr auto kSecp256k1n{intx::from_string<intx::uint256>(
 
 bool inputs_are_valid(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s);
 
-std::optional<std::string> recover(std::string_view message, std::string_view signature,
-                                   uint8_t recovery_id);
+std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id);
 }  // namespace silkworm::ecdsa
 
 #endif  // SILKWORM_CRYPTO_ECDSA_H_

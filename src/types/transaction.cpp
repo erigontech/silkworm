@@ -16,7 +16,7 @@
 
 #include "transaction.hpp"
 
-#include "common/const.hpp"
+#include "common/base.hpp"
 #include "rlp/encode.hpp"
 
 namespace silkworm {

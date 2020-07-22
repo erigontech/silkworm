@@ -19,6 +19,8 @@
 #include <boost/endian/conversion.hpp>
 #include <cassert>
 
+#include "common/util.hpp"
+
 namespace silkworm::rlp {
 
 uint64_t read_uint64(std::istream& from, size_t len) {
@@ -35,7 +37,7 @@ uint64_t read_uint64(std::istream& from, size_t len) {
   thread_local uint64_t buf;
 
   buf = 0;
-  char* p = reinterpret_cast<char*>(&buf);
+  char* p{reinterpret_cast<char*>(&buf)};
   from.read(p + (8 - len), len);
 
   static_assert(boost::endian::order::native == boost::endian::order::little,
@@ -75,7 +77,7 @@ Header decode_header(std::istream& from) {
 }
 
 template <>
-void decode(std::istream& from, std::string& to) {
+void decode(std::istream& from, Bytes& to) {
   Header h = decode_header(from);
   if (h.list) {
     throw DecodingError("unexpected list");
@@ -84,7 +86,7 @@ void decode(std::istream& from, std::string& to) {
     throw DecodingError("string is too long");
   }
   to.resize(h.payload_length);
-  from.read(to.data(), h.payload_length);
+  from.read(byte_ptr_cast(to.data()), h.payload_length);
 }
 
 template <>

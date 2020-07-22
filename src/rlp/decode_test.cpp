@@ -16,96 +16,87 @@
 
 #include "decode.hpp"
 
-#include <boost/algorithm/hex.hpp>
 #include <catch2/catch.hpp>
-#include <sstream>
-#include <string_view>
+
+#include "common/util.hpp"
 
 namespace silkworm::rlp {
 
 template <class T>
-static T decoded(const std::string& encoded) {
-  std::istringstream stream{encoded};
+static T decode_hex(std::string_view hex) {
+  Bytes bytes{from_hex(hex)};
+  auto stream{as_stream(bytes)};
   T res;
   decode<T>(stream, res);
   return res;
 }
 
 template <class T>
-static std::vector<T> decoded_vector(const std::string& encoded) {
-  std::istringstream stream{encoded};
+static std::vector<T> vector_decode_hex(std::string_view hex) {
+  Bytes bytes{from_hex(hex)};
+  auto stream{as_stream(bytes)};
   std::vector<T> res;
   decode_vector<T>(stream, res);
   return res;
 }
 
 TEST_CASE("RLP decoding") {
-  using boost::algorithm::unhex;
   using Catch::Message;
-  using namespace std::string_literals;
 
   SECTION("strings") {
-    CHECK(decoded<std::string>(unhex("00"s)) == "\x00"s);
-    CHECK(decoded<std::string>(unhex("8D6162636465666768696A6B6C6D"s)) == "abcdefghijklm");
+    CHECK(to_hex(decode_hex<Bytes>("00")) == "00");
+    CHECK(to_hex(decode_hex<Bytes>("8D6F62636465666768696A6B6C6D")) ==
+          "6f62636465666768696a6b6c6d");
 
-    CHECK(
-        decoded<std::string>("\xB8\x38Lorem ipsum dolor sit amet, consectetur adipisicing elit") ==
-        "Lorem ipsum dolor sit amet, consectetur adipisicing elit");
-
-    CHECK_THROWS_MATCHES(decoded<std::string>(unhex("C0"s)), DecodingError,
-                         Message("unexpected list"));
+    CHECK_THROWS_MATCHES(decode_hex<Bytes>("C0"), DecodingError, Message("unexpected list"));
   }
 
   SECTION("uint64") {
-    CHECK(decoded<uint64_t>(unhex("09"s)) == 9);
-    CHECK(decoded<uint64_t>(unhex("80"s)) == 0);
-    CHECK(decoded<uint64_t>(unhex("820505"s)) == 0x0505);
-    CHECK(decoded<uint64_t>(unhex("85CE05050505"s)) == 0xCE05050505);
+    CHECK(decode_hex<uint64_t>("09") == 9);
+    CHECK(decode_hex<uint64_t>("80") == 0);
+    CHECK(decode_hex<uint64_t>("820505") == 0x0505);
+    CHECK(decode_hex<uint64_t>("85CE05050505") == 0xCE05050505);
 
-    CHECK_THROWS_MATCHES(decoded<uint64_t>(unhex("C0"s)), DecodingError,
-                         Message("unexpected list"));
-    CHECK_THROWS_MATCHES(decoded<uint64_t>(unhex("00"s)), DecodingError,
-                         Message("leading zero(s)"));
-    CHECK_THROWS_MATCHES(decoded<uint64_t>(unhex("8105"s)), DecodingError,
+    CHECK_THROWS_MATCHES(decode_hex<uint64_t>("C0"), DecodingError, Message("unexpected list"));
+    CHECK_THROWS_MATCHES(decode_hex<uint64_t>("00"), DecodingError, Message("leading zero(s)"));
+    CHECK_THROWS_MATCHES(decode_hex<uint64_t>("8105"), DecodingError,
                          Message("non-canonical single byte"));
-    CHECK_THROWS_MATCHES(decoded<uint64_t>(unhex("8200F4"s)), DecodingError,
-                         Message("leading zero(s)"));
-    CHECK_THROWS_MATCHES(decoded<uint64_t>(unhex("B8020004"s)), DecodingError,
+    CHECK_THROWS_MATCHES(decode_hex<uint64_t>("8200F4"), DecodingError, Message("leading zero(s)"));
+    CHECK_THROWS_MATCHES(decode_hex<uint64_t>("B8020004"), DecodingError,
                          Message("non-canonical size"));
-    CHECK_THROWS_MATCHES(decoded<uint64_t>(unhex("8AFFFFFFFFFFFFFFFFFF7C"s)), DecodingError,
+    CHECK_THROWS_MATCHES(decode_hex<uint64_t>("8AFFFFFFFFFFFFFFFFFF7C"), DecodingError,
                          Message("uint64 overflow"));
   }
 
   SECTION("uint256") {
-    CHECK(decoded<intx::uint256>(unhex("09"s)) == 9);
-    CHECK(decoded<intx::uint256>(unhex("80"s)) == 0);
-    CHECK(decoded<intx::uint256>(unhex("820505"s)) == 0x0505);
-    CHECK(decoded<intx::uint256>(unhex("85CE05050505"s)) == 0xCE05050505);
-    CHECK(decoded<intx::uint256>(unhex("8AFFFFFFFFFFFFFFFFFF7C"s)) ==
-          intx::from_string<intx::uint256>("0xFFFFFFFFFFFFFFFFFF7C"s));
+    CHECK(decode_hex<intx::uint256>("09") == 9);
+    CHECK(decode_hex<intx::uint256>("80") == 0);
+    CHECK(decode_hex<intx::uint256>("820505") == 0x0505);
+    CHECK(decode_hex<intx::uint256>("85CE05050505") == 0xCE05050505);
+    CHECK(decode_hex<intx::uint256>("8AFFFFFFFFFFFFFFFFFF7C") ==
+          intx::from_string<intx::uint256>("0xFFFFFFFFFFFFFFFFFF7C"));
 
-    CHECK_THROWS(decoded<intx::uint256>(unhex("8BFFFFFFFFFFFFFFFFFF7C"s)));  // EOF
-    CHECK_THROWS_MATCHES(decoded<intx::uint256>(unhex("C0"s)), DecodingError,
+    CHECK_THROWS(decode_hex<intx::uint256>("8BFFFFFFFFFFFFFFFFFF7C"));  // EOF
+    CHECK_THROWS_MATCHES(decode_hex<intx::uint256>("C0"), DecodingError,
                          Message("unexpected list"));
-    CHECK_THROWS_MATCHES(decoded<intx::uint256>(unhex("00"s)), DecodingError,
+    CHECK_THROWS_MATCHES(decode_hex<intx::uint256>("00"), DecodingError,
                          Message("leading zero(s)"));
-    CHECK_THROWS_MATCHES(decoded<intx::uint256>(unhex("8105"s)), DecodingError,
+    CHECK_THROWS_MATCHES(decode_hex<intx::uint256>("8105"), DecodingError,
                          Message("non-canonical single byte"));
-    CHECK_THROWS_MATCHES(decoded<intx::uint256>(unhex("8200F4"s)), DecodingError,
+    CHECK_THROWS_MATCHES(decode_hex<intx::uint256>("8200F4"), DecodingError,
                          Message("leading zero(s)"));
-    CHECK_THROWS_MATCHES(decoded<intx::uint256>(unhex("B8020004"s)), DecodingError,
+    CHECK_THROWS_MATCHES(decode_hex<intx::uint256>("B8020004"), DecodingError,
                          Message("non-canonical size"));
     CHECK_THROWS_MATCHES(
-        decoded<intx::uint256>(
-            unhex("A101000000000000000000000000000000000000008B000000000000000000000000"s)),
+        decode_hex<intx::uint256>(
+            "A101000000000000000000000000000000000000008B000000000000000000000000"),
         DecodingError, Message("uint256 overflow"));
   }
 
   SECTION("vectors") {
-    CHECK(decoded_vector<intx::uint256>("\xC0") == std::vector<intx::uint256>{});
-    CHECK(decoded_vector<std::string>("\xC8\x83"
-                                      "cat\x83"
-                                      "dog") == std::vector<std::string>{"cat", "dog"});
+    CHECK(vector_decode_hex<intx::uint256>("C0") == std::vector<intx::uint256>{});
+    CHECK(vector_decode_hex<uint64_t>("C883BBCCB583FFC0B5") ==
+          std::vector<uint64_t>{0xBBCCB5, 0xFFC0B5});
   }
 }
 }  // namespace silkworm::rlp

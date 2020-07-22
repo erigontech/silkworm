@@ -35,33 +35,32 @@ constexpr uint64_t kDefaultIncarnation{1};
 constexpr uint32_t kAddressLen{kAddressLength};
 constexpr uint32_t kHashLen{kHashLength};
 
-std::tuple<uint32_t, uint32_t> decode_account_meta(std::string_view b) {
+std::tuple<uint32_t, uint32_t> decode_account_meta(ByteView b) {
   using boost::endian::load_big_u32;
 
   if (b.length() < 4) throw DecodingError("input too short");
 
-  uint32_t n{load_big_u32(byte_ptr_cast(&b[0]))};
+  uint32_t n{load_big_u32(&b[0])};
 
   uint32_t val_pos{4 + n * kAddressLen + 4 * n};
   if (b.length() < val_pos) throw DecodingError("input too short");
 
-  uint32_t total_val_len{load_big_u32(byte_ptr_cast(&b[val_pos - 4]))};
+  uint32_t total_val_len{load_big_u32(&b[val_pos - 4])};
   if (b.length() < val_pos + total_val_len) throw DecodingError("input too short");
 
   return {n, val_pos};
 }
 
-std::tuple<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t> decode_storage_meta(
-    std::string_view b) {
+std::tuple<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t> decode_storage_meta(ByteView b) {
   using boost::endian::load_big_u32;
 
   if (b.length() < 4) throw DecodingError("input too short");
 
-  uint32_t num_of_contracts{load_big_u32(byte_ptr_cast(&b[0]))};
+  uint32_t num_of_contracts{load_big_u32(&b[0])};
   uint32_t pos{num_of_contracts * (kAddressLen + 4)};
-  uint32_t num_of_entries{load_big_u32(byte_ptr_cast(&b[pos]))};
+  uint32_t num_of_entries{load_big_u32(&b[pos])};
   pos += 4;
-  uint32_t num_of_non_default_incarnations{load_big_u32(byte_ptr_cast(&b[pos]))};
+  uint32_t num_of_non_default_incarnations{load_big_u32(&b[pos])};
   uint32_t incarnation_pos{pos + 4};
   uint32_t key_pos{incarnation_pos + num_of_non_default_incarnations * 12};
   uint32_t val_pos{key_pos + num_of_entries * kHashLen};
@@ -69,43 +68,43 @@ std::tuple<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t> decode_storage_meta
   return {num_of_contracts, num_of_non_default_incarnations, incarnation_pos, key_pos, val_pos};
 }
 
-std::string_view account_address(std::string_view b, uint32_t i) {
+ByteView account_address(ByteView b, uint32_t i) {
   return b.substr(4 + i * kAddressLen, kAddressLen);
 };
 
-std::string_view storage_address(std::string_view b, uint32_t i) {
+ByteView storage_address(ByteView b, uint32_t i) {
   return b.substr(4 + i * (4 + kAddressLen), kAddressLen);
 };
 
-std::pair<uint32_t, uint32_t> account_indices(std::string_view lengths, uint32_t i) {
+std::pair<uint32_t, uint32_t> account_indices(ByteView lengths, uint32_t i) {
   using boost::endian::load_big_u32;
 
   uint32_t idx0{0};
-  if (i > 0) idx0 = load_big_u32(byte_ptr_cast(&lengths[4 * (i - 1)]));
-  uint32_t idx1 = load_big_u32(byte_ptr_cast(&lengths[4 * i]));
+  if (i > 0) idx0 = load_big_u32(&lengths[4 * (i - 1)]);
+  uint32_t idx1 = load_big_u32(&lengths[4 * i]);
 
   return {idx0, idx1};
 }
 
-std::string_view find_value(std::string_view b, uint32_t i) {
+ByteView find_value(ByteView b, uint32_t i) {
   using boost::endian::load_big_u16;
   using boost::endian::load_big_u32;
 
-  uint32_t num_of_uint8{load_big_u32(byte_ptr_cast(&b[0]))};
-  uint32_t num_of_uint16{load_big_u32(byte_ptr_cast(&b[4]))};
-  uint32_t num_of_uint32{load_big_u32(byte_ptr_cast(&b[8]))};
+  uint32_t num_of_uint8{load_big_u32(&b[0])};
+  uint32_t num_of_uint16{load_big_u32(&b[4])};
+  uint32_t num_of_uint32{load_big_u32(&b[8])};
   b = b.substr(12);
   uint32_t val_pos{num_of_uint8 + num_of_uint16 * 2 + num_of_uint32 * 4};
 
   auto val_index{[=](uint32_t i) -> uint32_t {
     if (i < num_of_uint8) {
-      return static_cast<uint8_t>(b[i]);
+      return b[i];
     } else if (i < num_of_uint8 + num_of_uint16) {
       uint32_t pos{num_of_uint8 + (i - num_of_uint8) * 2};
-      return load_big_u16(byte_ptr_cast(&b[pos]));
+      return load_big_u16(&b[pos]);
     } else {
       uint32_t pos{num_of_uint8 + num_of_uint16 * 2 + (i - num_of_uint8 - num_of_uint16) * 4};
-      return load_big_u32(byte_ptr_cast(&b[pos]));
+      return load_big_u32(&b[pos]);
     }
   }};
 
@@ -116,20 +115,20 @@ std::string_view find_value(std::string_view b, uint32_t i) {
 }
 
 struct Contract {
-  std::string_view address;
+  ByteView address;
   uint64_t incarnation{0};
-  std::vector<std::string_view> keys;
-  std::vector<std::string_view> vals;
+  std::vector<ByteView> keys;
+  std::vector<ByteView> vals;
 };
 }  // namespace
 
 namespace silkworm::db {
 
-AccountChanges AccountChanges::decode(std::string_view b) {
+AccountChanges AccountChanges::decode(ByteView b) {
   if (b.empty()) return {};
 
   auto [n, val_pos]{decode_account_meta(b)};
-  std::string_view lengths{b.substr(4 + n * kAddressLen)};
+  ByteView lengths{b.substr(4 + n * kAddressLen)};
 
   AccountChanges changes;
   for (uint32_t i{0}; i < n; ++i) {
@@ -141,7 +140,7 @@ AccountChanges AccountChanges::decode(std::string_view b) {
   return changes;
 }
 
-std::optional<std::string_view> AccountChanges::find(std::string_view b, std::string_view key) {
+std::optional<ByteView> AccountChanges::find(ByteView b, ByteView key) {
   using CI = boost::counting_iterator<uint32_t>;
 
   assert(key.length() == kAddressLen);
@@ -150,7 +149,7 @@ std::optional<std::string_view> AccountChanges::find(std::string_view b, std::st
 
   auto [n, val_pos]{decode_account_meta(b)};
 
-  uint32_t i{*std::lower_bound(CI(0), CI(n), key, [b](uint32_t i, std::string_view address) {
+  uint32_t i{*std::lower_bound(CI(0), CI(n), key, [b](uint32_t i, ByteView address) {
     return account_address(b, i) < address;
   })};
 
@@ -185,30 +184,30 @@ followed by the values themselves.
 
 All integers are stored as big-endian.
 */
-std::string StorageChanges::encode() const {
+Bytes StorageChanges::encode() const {
   using namespace boost::endian;
 
   uint32_t num_of_non_default_incarnations{0};
-  std::string non_default_incarnations{};
+  Bytes non_default_incarnations{};
 
   uint32_t num_of_uint8_val_lens{0};
   uint32_t num_of_uint16_val_lens{0};
   uint32_t num_of_uint32_val_lens{0};
   uint32_t len_of_vals{0};
-  std::string val_lens{};
+  Bytes val_lens{};
 
   std::vector<Contract> contracts{};
 
-  std::string_view prev{};
+  ByteView prev{};
   for (const auto& entry : *this) {
-    std::string_view contract_key{entry.first.data(), kAddressLen + kIncarnationLength};
+    ByteView contract_key{entry.first.data(), kAddressLen + kIncarnationLength};
     if (contract_key != prev) {
-      uint64_t incarnation{~load_big_u64(byte_ptr_cast(&contract_key[kAddressLen]))};
+      uint64_t incarnation{~load_big_u64(&contract_key[kAddressLen])};
       if (incarnation != kDefaultIncarnation) {
         size_t pos{non_default_incarnations.size()};
         non_default_incarnations.resize(pos + kIncarnationLength + 4);
-        store_big_u32(byte_ptr_cast(&non_default_incarnations[pos]), contracts.size());
-        store_big_u64(byte_ptr_cast(&non_default_incarnations[pos + 4]), ~incarnation);
+        store_big_u32(&non_default_incarnations[pos], contracts.size());
+        store_big_u64(&non_default_incarnations[pos + 4], ~incarnation);
         ++num_of_non_default_incarnations;
       }
       contracts.push_back({contract_key.substr(0, kAddressLen), incarnation, {}, {}});
@@ -224,21 +223,21 @@ std::string StorageChanges::encode() const {
     } else if (len_of_vals < 0x10000) {
       size_t pos{val_lens.size()};
       val_lens.resize(pos + 2);
-      store_big_u16(byte_ptr_cast(&val_lens[pos]), len_of_vals);
+      store_big_u16(&val_lens[pos], len_of_vals);
       ++num_of_uint16_val_lens;
     } else {
       size_t pos{val_lens.size()};
       val_lens.resize(pos + 4);
-      store_big_u16(byte_ptr_cast(&val_lens[pos]), len_of_vals);
+      store_big_u16(&val_lens[pos], len_of_vals);
       ++num_of_uint32_val_lens;
     }
   }
 
-  std::string out(4 + contracts.size() * (kAddressLen + 4) + 4 + non_default_incarnations.length() +
-                      size() * kHashLen + 3 * 4 + val_lens.length() + len_of_vals,
-                  '\0');
+  Bytes out(4 + contracts.size() * (kAddressLen + 4) + 4 + non_default_incarnations.length() +
+                size() * kHashLen + 3 * 4 + val_lens.length() + len_of_vals,
+            '\0');
 
-  store_big_u32(byte_ptr_cast(&out[0]), contracts.size());
+  store_big_u32(&out[0], contracts.size());
 
   uint32_t pos{4};
   uint32_t num_of_keys{0};
@@ -247,13 +246,13 @@ std::string StorageChanges::encode() const {
     std::memcpy(&out[pos], &entry.address[0], kAddressLen);
     pos += kAddressLen;
     num_of_keys += entry.keys.size();
-    store_big_u32(byte_ptr_cast(&out[pos]), num_of_keys);
+    store_big_u32(&out[pos], num_of_keys);
     pos += 4;
   }
 
   assert(num_of_keys == size());
 
-  store_big_u32(byte_ptr_cast(&out[pos]), num_of_non_default_incarnations);
+  store_big_u32(&out[pos], num_of_non_default_incarnations);
   pos += 4;
 
   std::memcpy(&out[pos], &non_default_incarnations[0], non_default_incarnations.length());
@@ -266,11 +265,11 @@ std::string StorageChanges::encode() const {
     }
   }
 
-  store_big_u32(byte_ptr_cast(&out[pos]), num_of_uint8_val_lens);
+  store_big_u32(&out[pos], num_of_uint8_val_lens);
   pos += 4;
-  store_big_u32(byte_ptr_cast(&out[pos]), num_of_uint16_val_lens);
+  store_big_u32(&out[pos], num_of_uint16_val_lens);
   pos += 4;
-  store_big_u32(byte_ptr_cast(&out[pos]), num_of_uint32_val_lens);
+  store_big_u32(&out[pos], num_of_uint32_val_lens);
   pos += 4;
 
   std::memcpy(&out[pos], &val_lens[0], val_lens.length());
@@ -286,8 +285,7 @@ std::string StorageChanges::encode() const {
   return out;
 }
 
-std::optional<std::string_view> StorageChanges::find(std::string_view b,
-                                                     std::string_view composite_key) {
+std::optional<ByteView> StorageChanges::find(ByteView b, ByteView composite_key) {
   using CI = boost::counting_iterator<uint32_t>;
   using boost::endian::load_big_u32;
   using boost::endian::load_big_u64;
@@ -296,16 +294,16 @@ std::optional<std::string_view> StorageChanges::find(std::string_view b,
 
   if (b.empty()) return {};
 
-  std::string_view address{composite_key.substr(0, kAddressLen)};
-  uint64_t incarnation{~load_big_u64(byte_ptr_cast(&composite_key[kAddressLen]))};
-  std::string_view key{composite_key.substr(kAddressLen + kIncarnationLength)};
+  ByteView address{composite_key.substr(0, kAddressLen)};
+  uint64_t incarnation{~load_big_u64(&composite_key[kAddressLen])};
+  ByteView key{composite_key.substr(kAddressLen + kIncarnationLength)};
 
   auto [num_of_contracts, num_of_non_default_incarnations, incarnation_pos, key_pos,
         val_pos]{decode_storage_meta(b)};
 
   uint32_t contract_idx{*std::lower_bound(
       CI(0), CI(num_of_contracts), address,
-      [b](uint32_t i, std::string_view address) { return storage_address(b, i) < address; })};
+      [b](uint32_t i, ByteView address) { return storage_address(b, i) < address; })};
 
   if (contract_idx >= num_of_contracts || storage_address(b, contract_idx) != address) return {};
 
@@ -318,9 +316,9 @@ std::optional<std::string_view> StorageChanges::find(std::string_view b,
   if (incarnation > 0) {
     bool found{false};
 
-    std::string_view inc_view{b.substr(incarnation_pos)};
+    ByteView inc_view{b.substr(incarnation_pos)};
     auto incarnation_contract_idx{
-        [inc_view](uint32_t i) { return load_big_u32(byte_ptr_cast(&inc_view[12 * i])); }};
+        [inc_view](uint32_t i) { return load_big_u32(&inc_view[12 * i]); }};
 
     for (uint32_t i{0}; i < num_of_incarnations; ++i) {
       uint32_t incarnation_idx{
@@ -332,7 +330,7 @@ std::optional<std::string_view> StorageChanges::find(std::string_view b,
       uint64_t found_incarnation{kDefaultIncarnation};
       if (incarnation_idx < num_of_non_default_incarnations &&
           incarnation_contract_idx(incarnation_idx) == contract_idx) {
-        found_incarnation = ~load_big_u64(byte_ptr_cast(&inc_view[12 * incarnation_idx + 4]));
+        found_incarnation = ~load_big_u64(&inc_view[12 * incarnation_idx + 4]);
       }
 
       if (found_incarnation == incarnation) {
@@ -348,15 +346,14 @@ std::optional<std::string_view> StorageChanges::find(std::string_view b,
 
   uint32_t from{0};
   if (contract_idx > 0) {
-    from = load_big_u32(byte_ptr_cast(&b[contract_idx * (kAddressLen + 4)]));
+    from = load_big_u32(&b[contract_idx * (kAddressLen + 4)]);
   }
-  uint32_t to{load_big_u32(byte_ptr_cast(&b[(contract_idx + 1) * (kAddressLen + 4)]))};
+  uint32_t to{load_big_u32(&b[(contract_idx + 1) * (kAddressLen + 4)])};
 
-  std::string_view key_view{b.substr(key_pos)};
-  uint32_t key_idx{
-      *std::lower_bound(CI(from), CI(to), key, [key_view](uint32_t i, std::string_view key) {
-        return key_view.substr(i * kHashLen, kHashLen) < key;
-      })};
+  ByteView key_view{b.substr(key_pos)};
+  uint32_t key_idx{*std::lower_bound(CI(from), CI(to), key, [key_view](uint32_t i, ByteView key) {
+    return key_view.substr(i * kHashLen, kHashLen) < key;
+  })};
   if (key_idx == to || key_view.substr(key_idx * kHashLen, kHashLen) != key) return {};
 
   return find_value(b.substr(val_pos), key_idx);

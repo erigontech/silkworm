@@ -22,6 +22,8 @@
 #include <sstream>
 #include <string>
 
+#include "common/util.hpp"
+
 namespace {
 
 template <typename T>
@@ -33,19 +35,16 @@ std::string encoded(T x) {
 
 }  // namespace
 
+namespace silkworm {
+
 TEST_CASE("RLP encoding") {
   using boost::algorithm::hex;
 
   SECTION("strings") {
-    CHECK(hex(encoded("")) == "80");
-    CHECK(hex(encoded("\x7B")) == "7B");
-    CHECK(hex(encoded("\x80")) == "8180");
-
-    CHECK(encoded("abba") ==
-          "\x84"
-          "abba");
-    CHECK(encoded("Lorem ipsum dolor sit amet, consectetur adipisicing elit") ==
-          "\xB8\x38Lorem ipsum dolor sit amet, consectetur adipisicing elit");
+    CHECK(hex(encoded(ByteView{})) == "80");
+    CHECK(hex(encoded(from_hex("7B"))) == "7B");
+    CHECK(hex(encoded(from_hex("80"))) == "8180");
+    CHECK(hex(encoded(from_hex("ABBA"))) == "82ABBA");
   }
 
   SECTION("uint64") {
@@ -84,10 +83,8 @@ TEST_CASE("RLP encoding") {
   }
 
   SECTION("vectors") {
-    CHECK(hex(encoded(std::vector<std::string>{})) == "C0");
-    CHECK(encoded(std::vector<std::string>{"cat", "dog"}) ==
-          "\xC8\x83"
-          "cat\x83"
-          "dog");
+    CHECK(hex(encoded(std::vector<uint64_t>{})) == "C0");
+    CHECK(hex(encoded(std::vector<uint64_t>{0xFFCCB5, 0xFFC0B5})) == "C883FFCCB583FFC0B5");
   }
 }
+}  // namespace silkworm

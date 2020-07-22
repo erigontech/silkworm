@@ -21,9 +21,8 @@
 #include <intx/intx.hpp>
 #include <map>
 #include <optional>
-#include <string>
-#include <string_view>
 
+#include "common/base.hpp"
 #include "reader.hpp"
 #include "types/account.hpp"
 #include "writer.hpp"
@@ -48,9 +47,9 @@ class IntraBlockState {
   uint64_t get_nonce(const evmc::address& address) const;
   void set_nonce(const evmc::address& address, uint64_t nonce);
 
-  std::string_view get_code(const evmc::address& address) const;
+  ByteView get_code(const evmc::address& address) const;
   evmc::bytes32 get_code_hash(const evmc::address& address) const;
-  void set_code(const evmc::address& address, std::string_view code);
+  void set_code(const evmc::address& address, ByteView code);
 
   evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const;
   void set_storage(const evmc::address& address, const evmc::bytes32& key,
@@ -66,7 +65,7 @@ class IntraBlockState {
     std::optional<Account> current;
     Storage original_storage;
     Storage current_storage;
-    std::optional<std::string> code;
+    std::optional<Bytes> code;
   };
 
   Object* get_object(const evmc::address& address) const;

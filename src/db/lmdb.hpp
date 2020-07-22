@@ -42,7 +42,7 @@ class LmdbCursor : public Cursor {
 
   ~LmdbCursor() override;
 
-  std::optional<Entry> seek(std::string_view prefix) override;
+  std::optional<Entry> seek(ByteView prefix) override;
 
  private:
   MDB_cursor* cursor_{nullptr};
@@ -52,9 +52,9 @@ class LmdbBucket : public Bucket {
  public:
   LmdbBucket(MDB_dbi dbi, MDB_txn* txn);
 
-  void put(std::string_view key, std::string_view value) override;
+  void put(ByteView key, ByteView value) override;
 
-  std::optional<std::string_view> get(std::string_view key) const override;
+  std::optional<ByteView> get(ByteView key) const override;
 
   std::unique_ptr<Cursor> cursor() override;
 

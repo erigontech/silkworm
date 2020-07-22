@@ -21,7 +21,6 @@
 #include <map>
 #include <optional>
 #include <set>
-#include <string>
 
 #include "db/change.hpp"
 #include "types/account.hpp"

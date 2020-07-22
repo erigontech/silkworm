@@ -31,25 +31,24 @@ bool inputs_are_valid(const intx::uint256& v, const intx::uint256& r, const intx
   return r < kSecp256k1n && s < kSecp256k1n;
 }
 
-std::optional<std::string> recover(std::string_view message, std::string_view signature,
-                                   uint8_t recovery_id) {
+std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id) {
   if (message.length() != 32) return {};
   if (signature.length() != 64) return {};
 
   secp256k1_ecdsa_recoverable_signature sig;
-  if (!secp256k1_ecdsa_recoverable_signature_parse_compact(
-          kDefaultContext, &sig, byte_ptr_cast(&signature[0]), recovery_id)) {
+  if (!secp256k1_ecdsa_recoverable_signature_parse_compact(kDefaultContext, &sig, &signature[0],
+                                                           recovery_id)) {
     return {};
   }
 
   secp256k1_pubkey pub_key;
-  if (!secp256k1_ecdsa_recover(kDefaultContext, &pub_key, &sig, byte_ptr_cast(&message[0]))) {
+  if (!secp256k1_ecdsa_recover(kDefaultContext, &pub_key, &sig, &message[0])) {
     return {};
   }
 
   size_t kOutLen{65};
-  std::string out(kOutLen, '\0');
-  secp256k1_ec_pubkey_serialize(kDefaultContext, byte_ptr_cast(&out[0]), &kOutLen, &pub_key,
+  Bytes out(kOutLen, '\0');
+  secp256k1_ec_pubkey_serialize(kDefaultContext, &out[0], &kOutLen, &pub_key,
                                 SECP256K1_EC_UNCOMPRESSED);
   return out;
 }

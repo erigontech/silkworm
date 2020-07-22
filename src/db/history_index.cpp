@@ -26,15 +26,15 @@ namespace silkworm::db::history_index {
 
 constexpr size_t item_len{3};
 
-uint64_t elem(std::string_view elements, uint64_t min_element, uint32_t i) {
+uint64_t elem(ByteView elements, uint64_t min_element, uint32_t i) {
   uint64_t x{min_element};
-  x += (static_cast<uint8_t>(elements[i * item_len]) & 0x7f) << 16;
-  x += static_cast<uint8_t>(elements[i * item_len + 1]) << 8;
-  x += static_cast<uint8_t>(elements[i * item_len + 2]);
+  x += (elements[i * item_len] & 0x7f) << 16;
+  x += elements[i * item_len + 1] << 8;
+  x += elements[i * item_len + 2];
   return x;
 };
 
-std::optional<SearchResult> find(std::string_view hi, uint64_t v) {
+std::optional<SearchResult> find(ByteView hi, uint64_t v) {
   if (hi.length() < 8) {
     throw DecodingError("minimal length of index chunk is 8");
   }
@@ -45,8 +45,8 @@ std::optional<SearchResult> find(std::string_view hi, uint64_t v) {
   using boost::endian::load_big_u64;
 
   size_t n{(hi.length() - 8) / item_len};
-  uint64_t min_element{load_big_u64(byte_ptr_cast(hi.data()))};
-  std::string_view elements{hi.substr(8)};
+  uint64_t min_element{load_big_u64(hi.data())};
+  ByteView elements{hi.substr(8)};
 
   uint32_t i{*std::lower_bound(boost::counting_iterator<uint32_t>(0),
                                boost::counting_iterator<uint32_t>(n), v,

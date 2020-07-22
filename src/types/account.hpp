@@ -20,17 +20,15 @@
 #include <intx/intx.hpp>
 #include <istream>
 #include <ostream>
-#include <string>
-#include <string_view>
 
-#include "common/const.hpp"
+#include "common/base.hpp"
 #include "rlp/decode.hpp"
 
 namespace silkworm {
 
 struct Account {
   // Turbo-Geth (*Account)EncodeForStorage
-  std::string encode_for_storage(bool omit_code_hash) const;
+  Bytes encode_for_storage(bool omit_code_hash) const;
 
   uint64_t nonce{0};
   intx::uint256 balance;
@@ -42,7 +40,7 @@ struct Account {
 bool operator==(const Account& a, const Account& b);
 
 // Turbo-Geth (*Account)DecodeForStorage
-Account decode_account_from_storage(std::string_view encoded);
+Account decode_account_from_storage(ByteView encoded);
 
 namespace rlp {
 void encode(std::ostream& to, const Account& account);

@@ -17,14 +17,10 @@
 #ifndef SILKWORM_COMMON_UTIL_H_
 #define SILKWORM_COMMON_UTIL_H_
 
-#include <algorithm>
-#include <boost/algorithm/hex.hpp>
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/stream.hpp>
-#include <cstring>
-#include <evmc/evmc.hpp>
 
-#include "const.hpp"
+#include "base.hpp"
 
 namespace silkworm {
 
@@ -39,42 +35,26 @@ inline const uint8_t* byte_ptr_cast(const char* ptr) noexcept {
   return reinterpret_cast<const uint8_t*>(ptr);
 }
 
-inline evmc::bytes32 to_hash(std::string_view bytes) {
-  evmc::bytes32 out;
-  size_t n = std::min(bytes.length(), kHashLength);
-  std::memcpy(out.bytes + kHashLength - n, bytes.data(), n);
-  return out;
-}
+evmc::bytes32 to_hash(ByteView bytes);
 
-inline std::string_view full_view(const evmc::address& address) {
-  return {byte_ptr_cast(address.bytes), kAddressLength};
-}
-
-inline std::string_view full_view(const evmc::bytes32& hash) {
-  return {byte_ptr_cast(hash.bytes), kHashLength};
-}
+inline ByteView full_view(const evmc::address& address) { return {address.bytes, kAddressLength}; }
+inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHashLength}; }
 
 // Leading zero bytes are stripped
-std::string_view zeroless_view(const evmc::bytes32& hash);
+ByteView zeroless_view(const evmc::bytes32& hash);
 
-inline std::string to_hex(const evmc::address& address) {
-  return boost::algorithm::hex_lower(std::string{full_view(address)});
-}
+std::string to_hex(const evmc::address& address);
+std::string to_hex(const evmc::bytes32& hash);
+std::string to_hex(ByteView bytes);
 
-inline std::string to_hex(const evmc::bytes32& hash) {
-  return boost::algorithm::hex_lower(std::string{full_view(hash)});
-}
+Bytes from_hex(std::string_view hex);
 
-inline std::string to_hex(const std::string& str) { return boost::algorithm::hex_lower(str); }
-
-// TODO(Andrew) replace by std::string_view::starts_with when we switch to C++20
-inline bool has_prefix(std::string_view s, std::string_view prefix) {
-  return s.substr(0, prefix.size()) == prefix;
-}
+// TODO(Andrew) replace by starts_with when we switch to C++20
+inline bool has_prefix(ByteView s, ByteView prefix) { return s.substr(0, prefix.size()) == prefix; }
 
 inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> as_stream(
-    std::string_view sv) {
-  return {sv.begin(), sv.size()};
+    ByteView view) {
+  return {byte_ptr_cast(view.begin()), view.size()};
 }
 }  // namespace silkworm
 

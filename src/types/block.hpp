@@ -21,7 +21,6 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-#include <string_view>
 #include <vector>
 
 #include "bloom.hpp"
@@ -45,9 +44,7 @@ struct BlockHeader {
   uint64_t gas_used{0};
   uint64_t timestamp{0};
 
-  std::string_view extra_data() const {
-    return {byte_ptr_cast(extra_data_.bytes), extra_data_size_};
-  }
+  ByteView extra_data() const { return {extra_data_.bytes, extra_data_size_}; }
 
   evmc::bytes32 mix_hash;
   uint8_t nonce[8]{0};

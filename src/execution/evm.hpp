@@ -21,8 +21,6 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-#include <string>
-#include <string_view>
 #include <vector>
 
 #include "chain/block_chain.hpp"

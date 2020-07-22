@@ -20,7 +20,6 @@
 #include <stdint.h>
 
 #include <stdexcept>
-#include <string>
 #include <vector>
 
 #include "evm.hpp"

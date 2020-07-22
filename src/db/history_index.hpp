@@ -22,10 +22,9 @@ Part of the compatibility layer with the Turbo-Geth DB format;
 see its common/dbutils/history_index.go.
 */
 
-#include <stdint.h>
-
 #include <optional>
-#include <string_view>
+
+#include "common/base.hpp"
 
 namespace silkworm::db::history_index {
 
@@ -35,7 +34,8 @@ struct SearchResult {
 };
 
 // Turbo-Geth (HistoryIndexBytes)Search
-std::optional<SearchResult> find(std::string_view index, uint64_t v);
+std::optional<SearchResult> find(ByteView index, uint64_t v);
+
 }  // namespace silkworm::db::history_index
 
 #endif  // SILKWORM_DB_HISTORY_INDEX_H_

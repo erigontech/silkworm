@@ -19,19 +19,18 @@
 
 #include <memory>
 #include <optional>
-#include <string>
-#include <string_view>
 #include <vector>
 
 #include "change.hpp"
+#include "common/base.hpp"
 #include "types/account.hpp"
 #include "types/block.hpp"
 
 namespace silkworm::db {
 
 struct Entry {
-  std::string_view key;
-  std::string_view value;
+  ByteView key;
+  ByteView value;
 };
 
 class Cursor {
@@ -41,7 +40,7 @@ class Cursor {
 
   virtual ~Cursor() = default;
 
-  virtual std::optional<Entry> seek(std::string_view prefix) = 0;
+  virtual std::optional<Entry> seek(ByteView prefix) = 0;
 
  protected:
   Cursor() = default;
@@ -54,9 +53,9 @@ class Bucket {
 
   virtual ~Bucket() = default;
 
-  virtual void put(std::string_view key, std::string_view value) = 0;
+  virtual void put(ByteView key, ByteView value) = 0;
 
-  virtual std::optional<std::string_view> get(std::string_view key) const = 0;
+  virtual std::optional<ByteView> get(ByteView key) const = 0;
 
   virtual std::unique_ptr<Cursor> cursor() = 0;
 
@@ -96,10 +95,10 @@ class Database {
   std::optional<BlockHeader> get_header(uint64_t block_number, const evmc::bytes32& block_hash);
   std::optional<BlockWithHash> get_block(uint64_t block_number);
   std::vector<evmc::address> get_senders(uint64_t block_number, const evmc::bytes32& block_hash);
-  std::string get_code(const evmc::bytes32& code_hash);
+  Bytes get_code(const evmc::bytes32& code_hash);
   std::optional<Account> get_account(const evmc::address& address, uint64_t block_number);
   std::optional<AccountChanges> get_account_changes(uint64_t block_number);
-  std::string get_storage_changes(uint64_t block_number);
+  Bytes get_storage_changes(uint64_t block_number);
   evmc::bytes32 get_storage(const evmc::address& address, uint64_t incarnation,
                             const evmc::bytes32& key, uint64_t block_number);
 
@@ -108,8 +107,8 @@ class Database {
 
  private:
   // Turbo-Geth FindByHistory
-  std::optional<std::string_view> find_in_history(Transaction& txn, bool storage,
-                                                  std::string_view key, uint64_t block_number);
+  std::optional<ByteView> find_in_history(Transaction& txn, bool storage, ByteView key,
+                                          uint64_t block_number);
 };
 }  // namespace silkworm::db
 

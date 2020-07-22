@@ -25,27 +25,27 @@ see its package changeset.
 #include <evmc/evmc.hpp>
 #include <map>
 #include <optional>
-#include <string>
-#include <string_view>
+
+#include "common/base.hpp"
 
 namespace silkworm::db {
 
-class AccountChanges : public std::map<evmc::address, std::string> {
+class AccountChanges : public std::map<evmc::address, Bytes> {
  public:
   // Turbo-Geth decodeAccountsWithKeyLen
-  static AccountChanges decode(std::string_view encoded);
+  static AccountChanges decode(ByteView encoded);
 
   // Turbo-Geth (AccountChangeSetPlainBytes)Find
-  static std::optional<std::string_view> find(std::string_view encoded, std::string_view key);
+  static std::optional<ByteView> find(ByteView encoded, ByteView key);
 };
 
-class StorageChanges : public std::map<std::string, std::string> {
+class StorageChanges : public std::map<Bytes, Bytes> {
  public:
   // Turbo-Geth EncodeStoragePlain
-  std::string encode() const;
+  Bytes encode() const;
 
   // Turbo-Geth (StorageChangeSetPlainBytes)FindWithIncarnation
-  static std::optional<std::string_view> find(std::string_view encoded, std::string_view key);
+  static std::optional<ByteView> find(ByteView encoded, ByteView key);
 };
 }  // namespace silkworm::db
 

@@ -16,15 +16,14 @@
 
 #include "history_index.hpp"
 
-#include <boost/algorithm/hex.hpp>
 #include <catch2/catch.hpp>
+
+#include "common/util.hpp"
 
 namespace silkworm::db::history_index {
 
 TEST_CASE("History index search") {
-  using namespace std::string_literals;
-
-  std::string index{boost::algorithm::unhex("0000000000000003000000000002000005"s)};
+  Bytes index{from_hex("0000000000000003000000000002000005")};
 
   CHECK(find(index, 1)->change_block == 3);
   CHECK(find(index, 3)->change_block == 3);

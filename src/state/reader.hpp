@@ -17,11 +17,7 @@
 #ifndef SILKWORM_STATE_READER_H_
 #define SILKWORM_STATE_READER_H_
 
-#include <stdint.h>
-
 #include <optional>
-#include <string>
-#include <string_view>
 
 #include "db/database.hpp"
 #include "types/account.hpp"
@@ -35,7 +31,7 @@ class Reader {
   Reader(db::Database& db, uint64_t block_number) : db_{db}, block_number_{block_number} {}
 
   std::optional<Account> read_account(const evmc::address& address) const;
-  std::string read_code(const evmc::bytes32& code_hash) const;
+  Bytes read_code(const evmc::bytes32& code_hash) const;
   evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
                              const evmc::bytes32& key) const;
 

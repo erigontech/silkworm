@@ -20,13 +20,11 @@
 #ifndef SILKWORM_RLP_ENCODE_H_
 #define SILKWORM_RLP_ENCODE_H_
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include <intx/intx.hpp>
 #include <ostream>
-#include <string_view>
 #include <vector>
+
+#include "common/base.hpp"
 
 namespace silkworm {
 
@@ -46,7 +44,7 @@ struct Header {
 
 void encode_header(std::ostream& to, Header header);
 
-void encode(std::ostream& to, std::string_view s);
+void encode(std::ostream& to, ByteView s);
 void encode(std::ostream& to, uint64_t n);
 void encode(std::ostream& to, const intx::uint256& n);
 
@@ -65,7 +63,7 @@ void encode(std::ostream& to, const Transaction& txn);
 
 size_t length_of_length(uint64_t payload_length);
 
-size_t length(std::string_view s);
+size_t length(ByteView s);
 size_t length(uint64_t n);
 size_t length(const intx::uint256& n);
 
@@ -94,8 +92,8 @@ void encode(std::ostream& to, const std::vector<T>& v) {
 }
 
 // view of a thread-local buffer, must be consumed straight away
-std::string_view big_endian(uint64_t n);
-std::string_view big_endian(const intx::uint256& n);
+ByteView big_endian(uint64_t n);
+ByteView big_endian(const intx::uint256& n);
 }  // namespace rlp
 }  // namespace silkworm
 

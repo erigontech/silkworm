@@ -17,14 +17,11 @@
 #ifndef SILKWORM_TYPES_TRANSACTION_H_
 #define SILKWORM_TYPES_TRANSACTION_H_
 
-#include <stdint.h>
-
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <istream>
 #include <optional>
 #include <ostream>
-#include <string>
 
 #include "rlp/decode.hpp"
 
@@ -36,7 +33,7 @@ struct Transaction {
   uint64_t gas_limit{0};
   std::optional<evmc::address> to;
   intx::uint256 value;
-  std::string data;
+  Bytes data;
   intx::uint256 v, r, s;              // signature
   std::optional<evmc::address> from;  // sender recovered from the signature
 };

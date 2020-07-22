@@ -23,9 +23,9 @@
 namespace silkworm::db {
 
 TEST_CASE("LMDB") {
-  auto bucket_name{"XXX"};
-  auto key{"b1a4F4f387732B107D4F8e8816058bAB6D16397b"};
-  auto val{"abba"};
+  const char* bucket_name{"XXX"};
+  Bytes key{from_hex("b1a4F4f387732B107D4F8e8816058bAB6D16397b")};
+  Bytes val{from_hex("abba")};
 
   TemporaryLmdbDatabase db{};
   auto txn{db.begin_ro_transaction()};
@@ -46,12 +46,12 @@ TEST_CASE("LMDB") {
 
   SECTION("cursor") {
     auto cursor{bucket->cursor()};
-    std::optional<Entry> entry{cursor->seek("a")};
+    std::optional<Entry> entry{cursor->seek(from_hex("a0"))};
     REQUIRE(entry);
     CHECK(entry->key == key);
     CHECK(entry->value == val);
 
-    entry = cursor->seek("c");
+    entry = cursor->seek(from_hex("c0"));
     CHECK(!entry);
   }
 }

@@ -18,10 +18,12 @@
 
 #include <catch2/catch.hpp>
 
+#include "common/util.hpp"
+
 namespace silkworm::db {
 TEST_CASE("DB encode timestamp") {
-  CHECK(encode_timestamp(1) == "\x21");
-  CHECK(encode_timestamp(8) == "\x28");
-  CHECK(encode_timestamp(0x9f101c) == "\x80\x9f\x10\x1c");
+  CHECK(to_hex(encode_timestamp(1)) == "21");
+  CHECK(to_hex(encode_timestamp(8)) == "28");
+  CHECK(to_hex(encode_timestamp(0x9f101c)) == "809f101c");
 }
 }  // namespace silkworm::db

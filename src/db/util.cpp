@@ -26,62 +26,61 @@
 
 namespace silkworm::db {
 
-std::string storage_prefix(const evmc::address& address, uint64_t incarnation) {
-  std::string res(kAddressLength + kIncarnationLength, '\0');
-  std::memcpy(res.data(), address.bytes, kAddressLength);
-  boost::endian::store_big_u64(byte_ptr_cast(res.data() + kAddressLength), ~incarnation);
+Bytes storage_prefix(const evmc::address& address, uint64_t incarnation) {
+  Bytes res(kAddressLength + kIncarnationLength, '\0');
+  std::memcpy(&res[0], address.bytes, kAddressLength);
+  boost::endian::store_big_u64(&res[kAddressLength], ~incarnation);
   return res;
 }
 
-std::string storage_key(const evmc::address& address, uint64_t incarnation,
-                        const evmc::bytes32& key) {
-  std::string res(kAddressLength + kIncarnationLength + kHashLength, '\0');
-  std::memcpy(res.data(), address.bytes, kAddressLength);
-  boost::endian::store_big_u64(byte_ptr_cast(res.data() + kAddressLength), ~incarnation);
-  std::memcpy(res.data() + kAddressLength + kIncarnationLength, key.bytes, kHashLength);
+Bytes storage_key(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key) {
+  Bytes res(kAddressLength + kIncarnationLength + kHashLength, '\0');
+  std::memcpy(&res[0], address.bytes, kAddressLength);
+  boost::endian::store_big_u64(&res[kAddressLength], ~incarnation);
+  std::memcpy(&res[kAddressLength + kIncarnationLength], key.bytes, kHashLength);
   return res;
 }
 
-std::string header_hash_key(uint64_t block_number) {
-  std::string key(8 + 1, '\0');
-  boost::endian::store_big_u64(byte_ptr_cast(key.data()), block_number);
+Bytes header_hash_key(uint64_t block_number) {
+  Bytes key(8 + 1, '\0');
+  boost::endian::store_big_u64(&key[0], block_number);
   key[8] = 'n';
   return key;
 }
 
-std::string block_key(uint64_t block_number, const evmc::bytes32& hash) {
-  std::string key(8 + kHashLength, '\0');
-  boost::endian::store_big_u64(byte_ptr_cast(key.data()), block_number);
-  std::memcpy(key.data() + 8, hash.bytes, kHashLength);
+Bytes block_key(uint64_t block_number, const evmc::bytes32& hash) {
+  Bytes key(8 + kHashLength, '\0');
+  boost::endian::store_big_u64(&key[0], block_number);
+  std::memcpy(&key[8], hash.bytes, kHashLength);
   return key;
 }
 
-std::string history_index_key(std::string_view key, uint64_t block_number) {
-  std::string res{};
+Bytes history_index_key(ByteView key, uint64_t block_number) {
+  Bytes res{};
   if (key.length() == kAddressLength) {  // accounts
     res = key;
     res.resize(kAddressLength + 8);
-    boost::endian::store_big_u64(byte_ptr_cast(&res[kAddressLength]), block_number);
+    boost::endian::store_big_u64(&res[kAddressLength], block_number);
   } else if (key.length() == kAddressLength + kHashLength + kIncarnationLength) {  // storage
     // remove incarnation and add block number
     res.resize(kAddressLength + kHashLength + 8);
     std::memcpy(&res[0], &key[0], kAddressLength);
     std::memcpy(&res[kAddressLength], &key[kAddressLength + kIncarnationLength], kHashLength);
-    boost::endian::store_big_u64(byte_ptr_cast(&res[kAddressLength + kHashLength]), block_number);
+    boost::endian::store_big_u64(&res[kAddressLength + kHashLength], block_number);
   } else {
     throw std::invalid_argument{"unexpected key length"};
   }
   return res;
 }
 
-std::string encode_timestamp(uint64_t block_number) {
+Bytes encode_timestamp(uint64_t block_number) {
   constexpr uint8_t byte_count_bits{3};
-  unsigned zero_bits = intx::clz(block_number);
+  unsigned zero_bits{intx::clz(block_number)};
   assert(zero_bits >= byte_count_bits);
   uint8_t byte_count = 8 - (zero_bits - byte_count_bits) / 8;
-  std::string encoded(byte_count, '\0');
-  std::string_view be{rlp::big_endian(block_number)};
-  std::memcpy(encoded.data() + byte_count - be.length(), be.data(), be.length());
+  Bytes encoded(byte_count, '\0');
+  ByteView be{rlp::big_endian(block_number)};
+  std::memcpy(&encoded[byte_count - be.length()], &be[0], be.length());
   encoded[0] |= byte_count << (8 - byte_count_bits);
   return encoded;
 }

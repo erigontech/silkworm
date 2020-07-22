@@ -21,6 +21,8 @@
 #include <memory>
 
 namespace {
+using namespace silkworm;
+
 thread_local boost::filesystem::path last_tmp_dir;
 
 const char* new_tmp_dir() {
@@ -29,12 +31,16 @@ const char* new_tmp_dir() {
   return last_tmp_dir.c_str();
 }
 
-MDB_val to_mdb_val(const std::string_view view) {
-  return {view.size(), const_cast<char*>(view.data())};
+MDB_val to_mdb_val(ByteView view) {
+  MDB_val val;
+  val.mv_data = const_cast<uint8_t*>(view.data());
+  val.mv_size = view.size();
+  return val;
 }
 
-std::string_view from_mdb_val(const MDB_val val) {
-  return {static_cast<char*>(val.mv_data), val.mv_size};
+ByteView from_mdb_val(const MDB_val val) {
+  auto* ptr{static_cast<uint8_t*>(val.mv_data)};
+  return {ptr, val.mv_size};
 }
 }  // namespace
 
@@ -47,7 +53,7 @@ LmdbCursor::~LmdbCursor() {
   }
 }
 
-std::optional<Entry> LmdbCursor::seek(std::string_view prefix) {
+std::optional<Entry> LmdbCursor::seek(ByteView prefix) {
   MDB_val key{to_mdb_val(prefix)};
   MDB_val value;
   MDB_cursor_op op{prefix.empty() ? MDB_FIRST : MDB_SET_RANGE};
@@ -59,13 +65,13 @@ std::optional<Entry> LmdbCursor::seek(std::string_view prefix) {
 
 LmdbBucket::LmdbBucket(MDB_dbi dbi, MDB_txn* txn) : dbi_{dbi}, txn_{txn} {}
 
-void LmdbBucket::put(std::string_view key, std::string_view value) {
+void LmdbBucket::put(ByteView key, ByteView value) {
   MDB_val key_mdb = to_mdb_val(key);
   MDB_val val_mdb = to_mdb_val(value);
   lmdb::dbi_put(txn_, dbi_, &key_mdb, &val_mdb);
 }
 
-std::optional<std::string_view> LmdbBucket::get(std::string_view key) const {
+std::optional<ByteView> LmdbBucket::get(ByteView key) const {
   MDB_val key_val = to_mdb_val(key);
   MDB_val data;
   bool found = lmdb::dbi_get(txn_, dbi_, &key_val, &data);

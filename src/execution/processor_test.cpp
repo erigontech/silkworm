@@ -51,9 +51,6 @@ TEST_CASE("Execution validation") {
 }
 
 TEST_CASE("No refund on error") {
-  using boost::algorithm::unhex;
-  using namespace std::string_literals;
-
   BlockChain chain{nullptr};
   Block block{};
   block.header.number = 10'050'107;
@@ -64,7 +61,7 @@ TEST_CASE("No refund on error") {
 
   // This contract initially sets its 0th storage to 0x2a.
   // When called, it updates the 0th storage to the input provided.
-  std::string code = unhex("602a60005560098060106000396000f36000358060005531"s);
+  Bytes code{from_hex("602a60005560098060106000396000f36000358060005531")};
   /* https://github.com/CoinCulture/evm-tools
   0      PUSH1  => 2a
   2      PUSH1  => 00

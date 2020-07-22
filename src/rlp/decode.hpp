@@ -20,14 +20,11 @@
 #ifndef SILKWORM_RLP_DECODE_H_
 #define SILKWORM_RLP_DECODE_H_
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include <intx/intx.hpp>
 #include <istream>
-#include <string>
 #include <vector>
 
+#include "common/base.hpp"
 #include "common/decoding_error.hpp"
 #include "encode.hpp"
 
@@ -43,7 +40,7 @@ template <class T>
 void decode(std::istream& from, T& to);
 
 template <>
-void decode(std::istream& from, std::string& to);
+void decode(std::istream& from, Bytes& to);
 
 template <>
 void decode(std::istream& from, uint64_t& to);

@@ -16,26 +16,22 @@
 
 #include "transaction.hpp"
 
-#include <boost/algorithm/hex.hpp>
 #include <catch2/catch.hpp>
+#include <sstream>
 
-#include "common/const.hpp"
+#include "common/util.hpp"
 
 namespace silkworm {
 
 TEST_CASE("Transaction RLP") {
-  using boost::algorithm::unhex;
-  using namespace std::string_literals;
-  using namespace evmc::literals;
-
   Transaction txn{
       .nonce = 12,
       .gas_price = 20000000000,
       .gas_limit = 21000,
       .to = 0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,
       .value = 10 * kEther,
-      .data = unhex(
-          "a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc971600000000000000000000015af1d78b58c4000"s),
+      .data = from_hex("a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc9716000000000000000000"
+                       "00015af1d78b58c4000"),
       .v = intx::from_string<intx::uint256>(
           "0x5a896eab396e6ff9d78e157224bc66aa4593114b1f87dadf73d035fa6c3930fc"),
       .r = intx::from_string<intx::uint256>(

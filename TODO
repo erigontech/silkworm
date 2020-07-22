@@ -1,9 +1,11 @@
 Comments!!!
 
+Incarnation anti-invert
+
 CI with test coverage under Linux (gcc)
 
-MDB_NOTLS and multithreading. Do we mix C++ and go in one process?
+MDB_NOTLS and multi-threading. Do we mix C++ and go in one process?
 
 Propagate noexcept from EvmHost
 
-YP: https://github.com/ethereum/EIPs/issues/684
+Get rid of byte_ptr_cast & other casts

@@ -16,7 +16,6 @@
 
 #include "change.hpp"
 
-#include <boost/algorithm/hex.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
@@ -25,9 +24,6 @@
 
 namespace silkworm::db {
 TEST_CASE("Storage change") {
-  using namespace std::string_literals;
-  using namespace evmc::literals;
-
   auto contract_a{0x6f0e0cdac6c716a00bd8db4d0eee4f2bfccf8e6a_address};
   auto contract_b{0xc5acb79c258108f288288bc26f7820d06f45f08c_address};
   auto contract_c{0x1cbdd8336800dc3fe27daf5fb5188f0502ac1fc7_address};
@@ -47,7 +43,7 @@ TEST_CASE("Storage change") {
   auto val5{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
   auto val6{0xec89478783348038046b42cc126a3c4e351977b5f4cf5e3c4f4d8385adbf8046_bytes32};
 
-  std::string encoded{boost::algorithm::unhex(
+  Bytes encoded{from_hex(
       "000000041cbdd8336800dc3fe27daf5fb5188f0502ac1fc7000000016f0e0cdac6c716a00bd8db4d0eee4f2bfccf"
       "8e6a000000036f0e0cdac6c716a00bd8db4d0eee4f2bfccf8e6a00000004c5acb79c258108f288288bc26f7820d0"
       "6f45f08c000000060000000200000000fffffffffffffffa00000001fffffffffffffffd4fdf6c1878d2469b4968"
@@ -57,7 +53,7 @@ TEST_CASE("Storage change") {
       "0000000000000000000000010bece5a88f7b038f806dbef77c0b462506e4b566c5be7dd44e8e2fc7b1f6a99c0000"
       "00060000000000000000204060607173207a386cdf40716455365db189633e822d3a7598558901f2255e64cb5e42"
       "4714ec89478783348038046b42cc126a3c4e351977b5f4cf5e3c4f4d8385adbf804633bf0d0c348a2ef1b3a12b6a"
-      "535e1e25a56d3624e45603e469626d80fd78c7622506e4b566c5be7dd44e8e2fc7b1f6a99c0459"s)};
+      "535e1e25a56d3624e45603e469626d80fd78c7622506e4b566c5be7dd44e8e2fc7b1f6a99c0459")};
 
   StorageChanges sc{};
   sc[storage_key(contract_a, 2, key1)] = zeroless_view(val1);

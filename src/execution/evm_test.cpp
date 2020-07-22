@@ -16,9 +16,7 @@
 
 #include "evm.hpp"
 
-#include <boost/algorithm/hex.hpp>
 #include <catch2/catch.hpp>
-#include <string>
 
 #include "protocol_param.hpp"
 
@@ -58,9 +56,6 @@ TEST_CASE("Value transfer") {
 }
 
 TEST_CASE("Smart contract with storage") {
-  using boost::algorithm::unhex;
-  using namespace std::string_literals;
-
   BlockChain chain{nullptr};
   Block block{};
   block.header.number = 10'336'006;
@@ -70,7 +65,7 @@ TEST_CASE("Smart contract with storage") {
   // This contract initially sets its 0th storage to 0x2a
   // and its 1st storage to 0x01c9.
   // When called, it updates the 0th storage to the input provided.
-  std::string code = unhex("602a6000556101c960015560068060166000396000f3600035600055"s);
+  Bytes code{from_hex("602a6000556101c960015560068060166000396000f3600035600055")};
   // https://github.com/CoinCulture/evm-tools
   // 0      PUSH1  => 2a
   // 2      PUSH1  => 00
@@ -107,9 +102,9 @@ TEST_CASE("Smart contract with storage") {
 
   evmc::address contract_address{create_address(caller, /*nonce=*/1)};
   evmc::bytes32 key0{};
-  CHECK(state.get_storage(contract_address, key0) == to_hash("\x2a"));
+  CHECK(to_hex(zeroless_view(state.get_storage(contract_address, key0))) == "2a");
 
-  evmc::bytes32 new_val{to_hash("\xf5")};
+  evmc::bytes32 new_val{to_hash(from_hex("f5"))};
   txn.to = contract_address;
   txn.data = full_view(new_val);
 
@@ -119,9 +114,6 @@ TEST_CASE("Smart contract with storage") {
 }
 
 TEST_CASE("Double self-destruct") {
-  using boost::algorithm::unhex;
-  using namespace std::string_literals;
-
   BlockChain chain{nullptr};
   Block block{};
   block.header.number = 116'525;
@@ -131,7 +123,7 @@ TEST_CASE("Double self-destruct") {
   // This contract initially sets its 0th storage to 0x2a.
   // When called, it updates the 0th storage to the input provided
   // an then self-destructs.
-  std::string code = unhex("602a60005560088060106000396000f360003580600055ff"s);
+  Bytes code{from_hex("602a60005560088060106000396000f360003580600055ff")};
   /* https://github.com/CoinCulture/evm-tools
   0      PUSH1  => 2a
   2      PUSH1  => 00
@@ -165,10 +157,10 @@ TEST_CASE("Double self-destruct") {
 
   evmc::address contract_address{create_address(caller, /*nonce=*/0)};
   evmc::bytes32 key0{};
-  CHECK(state.get_storage(contract_address, key0) == to_hash("\x2a"));
+  CHECK(to_hex(zeroless_view(state.get_storage(contract_address, key0))) == "2a");
 
   // Call the contract so that it self-destructs
-  evmc::bytes32 new_val{to_hash("\xf5")};
+  evmc::bytes32 new_val{to_hash(from_hex("f5"))};
   txn.to = contract_address;
   txn.data = full_view(new_val);
 

@@ -18,17 +18,19 @@
 
 #include <boost/endian/conversion.hpp>
 
+#include "common/util.hpp"
+
 namespace silkworm::rlp {
 
 void encode_header(std::ostream& to, Header header) {
   if (header.payload_length < 56) {
-    uint8_t code = header.list ? kEmptyListCode : kEmptyStringCode;
+    uint8_t code{header.list ? kEmptyListCode : kEmptyStringCode};
     to.put(code + header.payload_length);
   } else {
-    std::string_view len_be = big_endian(header.payload_length);
+    ByteView len_be{big_endian(header.payload_length)};
     uint8_t code = header.list ? '\xF7' : '\xB7';
     to.put(code + len_be.length());
-    to.write(len_be.data(), len_be.length());
+    to.write(byte_ptr_cast(len_be.data()), len_be.length());
   }
 }
 
@@ -40,16 +42,16 @@ size_t length_of_length(uint64_t payload_length) {
   }
 }
 
-void encode(std::ostream& to, std::string_view s) {
-  if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= kEmptyStringCode) {
+void encode(std::ostream& to, ByteView s) {
+  if (s.length() != 1 || s[0] >= kEmptyStringCode) {
     encode_header(to, {.list = false, .payload_length = s.length()});
   }
-  to.write(s.data(), s.length());
+  to.write(byte_ptr_cast(s.data()), s.length());
 }
 
-size_t length(std::string_view s) {
+size_t length(ByteView s) {
   size_t len = s.length();
-  if (s.length() != 1 || static_cast<uint8_t>(s[0]) >= kEmptyStringCode) {
+  if (s.length() != 1 || s[0] >= kEmptyStringCode) {
     len += length_of_length(s.length());
   }
   return len;
@@ -61,9 +63,9 @@ void encode(std::ostream& to, uint64_t n) {
   } else if (n < kEmptyStringCode) {
     to.put(n);
   } else {
-    std::string_view be = big_endian(n);
+    ByteView be = big_endian(n);
     to.put(kEmptyStringCode + be.length());
-    to.write(be.data(), be.length());
+    to.write(byte_ptr_cast(be.data()), be.length());
   }
 }
 
@@ -81,9 +83,9 @@ void encode(std::ostream& to, const intx::uint256& n) {
   } else if (n < kEmptyStringCode) {
     to.put(intx::narrow_cast<char>(n));
   } else {
-    std::string_view be = big_endian(n);
+    ByteView be = big_endian(n);
     to.put(kEmptyStringCode + be.length());
-    to.write(be.data(), be.length());
+    to.write(byte_ptr_cast(be.data()), be.length());
   }
 }
 
@@ -95,23 +97,22 @@ size_t length(const intx::uint256& n) {
   }
 }
 
-std::string_view big_endian(uint64_t n) {
+ByteView big_endian(uint64_t n) {
   thread_local uint64_t buf;
 
   static_assert(boost::endian::order::native == boost::endian::order::little,
                 "We assume a little-endian architecture like amd64");
   buf = intx::bswap(n);
-  const char* p = reinterpret_cast<char*>(&buf);
+  const uint8_t* p{reinterpret_cast<uint8_t*>(&buf)};
   unsigned zero_bytes = intx::clz(n) / 8;
   return {p + zero_bytes, 8 - zero_bytes};
 }
 
-std::string_view big_endian(const intx::uint256& n) {
+ByteView big_endian(const intx::uint256& n) {
   thread_local uint8_t buf[32];
 
   intx::be::store(buf, n);
-  const char* p = reinterpret_cast<char*>(&buf);
   unsigned zero_bytes = intx::clz(n) / 8;
-  return {p + zero_bytes, 32 - zero_bytes};
+  return {buf + zero_bytes, 32 - zero_bytes};
 }
 }  // namespace silkworm::rlp

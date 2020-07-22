@@ -25,104 +25,104 @@
 
 namespace silkworm::precompiled {
 
-uint64_t ecrec_gas(std::string_view, evmc_revision) noexcept { return 3'000; }
+uint64_t ecrec_gas(ByteView, evmc_revision) noexcept { return 3'000; }
 
-std::optional<std::string> ecrec_run(std::string_view input) noexcept {
+std::optional<Bytes> ecrec_run(ByteView input) noexcept {
   constexpr size_t kInputLen{128};
-  std::string d{input};
+  Bytes d{input};
   if (d.length() < kInputLen) {
     d.resize(kInputLen, '\0');
   }
 
-  auto v{intx::be::unsafe::load<intx::uint256>(byte_ptr_cast(&d[32]))};
-  auto r{intx::be::unsafe::load<intx::uint256>(byte_ptr_cast(&d[64]))};
-  auto s{intx::be::unsafe::load<intx::uint256>(byte_ptr_cast(&d[96]))};
+  auto v{intx::be::unsafe::load<intx::uint256>(&d[32])};
+  auto r{intx::be::unsafe::load<intx::uint256>(&d[64])};
+  auto s{intx::be::unsafe::load<intx::uint256>(&d[96])};
 
   v -= 27;
 
-  if (!ecdsa::inputs_are_valid(v, r, s)) return "";
+  if (!ecdsa::inputs_are_valid(v, r, s)) return Bytes{};
 
-  std::optional<std::string> key{
-      ecdsa::recover(d.substr(0, 32), d.substr(64, 64), static_cast<uint8_t>(v))};
-  if (!key) return "";
+  std::optional<Bytes> key{
+      ecdsa::recover(d.substr(0, 32), d.substr(64, 64), intx::narrow_cast<uint8_t>(v))};
+  if (!key) return Bytes{};
 
   // Ignore the first byte of the public key
-  ethash::hash256 hash{ethash::keccak256(byte_ptr_cast(key->data() + 1), key->length() - 1)};
+  ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
 
-  std::string out(32, '\0');
+  Bytes out(32, '\0');
   std::memcpy(&out[12], &hash.bytes[12], 32 - 12);
 
   return out;
 }
 
-uint64_t sha256_gas(std::string_view input, evmc_revision) noexcept {
+uint64_t sha256_gas(ByteView input, evmc_revision) noexcept {
   return 60 + 12 * ((input.length() + 31) / 32);
 }
 
-std::optional<std::string> sha256_run(std::string_view) noexcept {
+std::optional<Bytes> sha256_run(ByteView) noexcept {
   // TODO[Frontier] implement
   return {};
 }
 
-uint64_t rip160_gas(std::string_view input, evmc_revision) noexcept {
+uint64_t rip160_gas(ByteView input, evmc_revision) noexcept {
   return 600 + 120 * ((input.length() + 31) / 32);
 }
 
-std::optional<std::string> rip160_run(std::string_view) noexcept {
+std::optional<Bytes> rip160_run(ByteView) noexcept {
   // TODO[Frontier] implement
   return {};
 }
 
-uint64_t id_gas(std::string_view input, evmc_revision) noexcept {
+uint64_t id_gas(ByteView input, evmc_revision) noexcept {
   return 15 + 3 * ((input.length() + 31) / 32);
 }
 
-std::optional<std::string> id_run(std::string_view input) noexcept { return std::string{input}; }
+std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
 
-uint64_t expmod_gas(std::string_view, evmc_revision) noexcept {
+uint64_t expmod_gas(ByteView, evmc_revision) noexcept {
   // TODO[Byzantium] implement
   return 0;
 }
 
-std::optional<std::string> expmod_run(std::string_view) noexcept {
+std::optional<Bytes> expmod_run(ByteView) noexcept {
   // TODO[Byzantium] implement
   return {};
 }
 
-uint64_t bn_add_gas(std::string_view, evmc_revision rev) noexcept {
+uint64_t bn_add_gas(ByteView, evmc_revision rev) noexcept {
   return rev >= EVMC_ISTANBUL ? 150 : 500;
 }
 
-std::optional<std::string> bn_add_run(std::string_view) noexcept {
+std::optional<Bytes> bn_add_run(ByteView) noexcept {
   // TODO[Byzantium] implement
   return {};
 }
 
-uint64_t bn_mul_gas(std::string_view, evmc_revision rev) noexcept {
+uint64_t bn_mul_gas(ByteView, evmc_revision rev) noexcept {
   return rev >= EVMC_ISTANBUL ? 6'000 : 40'000;
 }
 
-std::optional<std::string> bn_mul_run(std::string_view) noexcept {
+std::optional<Bytes> bn_mul_run(ByteView) noexcept {
   // TODO[Byzantium] implement
   return {};
 }
 
-uint64_t snarkv_gas(std::string_view input, evmc_revision rev) noexcept {
+uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
   uint64_t k{input.length() / 192};
   return rev >= EVMC_ISTANBUL ? 34'000 * k + 45'000 : 80'000 * k + 100'000;
 }
 
-std::optional<std::string> snarkv_run(std::string_view) noexcept {
+std::optional<Bytes> snarkv_run(ByteView) noexcept {
   // TODO[Byzantium] implement
   return {};
 }
 
-uint64_t blake2_f_gas(std::string_view input, evmc_revision) noexcept {
+uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
   if (input.length() < 4) return 0;  // blake2_f_run will fail anyway
-  return boost::endian::load_big_u32(byte_ptr_cast(input.data()));
+  return boost::endian::load_big_u32(input.data());
 }
 
-std::optional<std::string> blake2_f_run(std::string_view) noexcept {
+std::optional<Bytes> blake2_f_run(ByteView) noexcept {
   // TODO[Istanbul] implement
   return {};
 }

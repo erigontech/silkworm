@@ -45,7 +45,7 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) {
       .gas = static_cast<int64_t>(gas),
       .destination = txn.to ? *txn.to : evmc::address{},
       .sender = *txn.from,
-      .input_data = byte_ptr_cast(&txn.data[0]),
+      .input_data = &txn.data[0],
       .input_size = txn.data.size(),
       .value = intx::be::store<evmc::uint256be>(txn.value),
   };
@@ -125,7 +125,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
       res.status_code = EVMC_OUT_OF_GAS;
     } else if (res.gas_left >= code_deploy_gas) {
       res.gas_left -= code_deploy_gas;
-      state_.set_code(contract_addr, {byte_ptr_cast(res.output_data), res.output_size});
+      state_.set_code(contract_addr, {res.output_data, res.output_size});
     } else if (config().has_homestead(block_num)) {
       res.status_code = EVMC_OUT_OF_GAS;
     }
@@ -178,20 +178,20 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
   if (precompiled) {
     uint8_t num{message.destination.bytes[kAddressLength - 1]};
     precompiled::Contract contract{precompiled::kContracts[num - 1]};
-    std::string_view input{byte_ptr_cast(message.input_data), message.input_size};
+    ByteView input{message.input_data, message.input_size};
     int64_t gas = contract.gas(input, revision());
     if (gas > message.gas) {
       res.status_code = EVMC_OUT_OF_GAS;
     } else {
-      std::optional<std::string> output{contract.run(input)};
+      std::optional<Bytes> output{contract.run(input)};
       if (output) {
-        res = {EVMC_SUCCESS, message.gas - gas, byte_ptr_cast(output->data()), output->size()};
+        res = {EVMC_SUCCESS, message.gas - gas, output->data(), output->size()};
       } else {
         res.status_code = EVMC_PRECOMPILE_FAILURE;
       }
     }
   } else {
-    std::string_view code = state_.get_code(message.destination);
+    ByteView code = state_.get_code(message.destination);
     if (code.empty()) return res;
 
     evmc_message msg{message};
@@ -200,7 +200,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
       msg.destination = msg.sender;
     }
 
-    res = execute(msg, byte_ptr_cast(code.data()), code.size());
+    res = execute(msg, code.data(), code.size());
   }
 
   if (res.status_code != EVMC_SUCCESS) {
@@ -330,7 +330,7 @@ evmc::bytes32 EvmHost::get_code_hash(const evmc::address& address) const noexcep
 
 size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,
                           size_t buffer_size) const noexcept {
-  std::string_view code{evm_.state().get_code(address)};
+  ByteView code{evm_.state().get_code(address)};
 
   if (code_offset >= code.size()) return 0;
 

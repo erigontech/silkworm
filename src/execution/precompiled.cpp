@@ -16,6 +16,9 @@
 
 #include "precompiled.hpp"
 
+#include <cryptopp/ripemd.h>
+#include <cryptopp/sha.h>
+
 #include <boost/endian/conversion.hpp>
 #include <cstring>
 #include <ethash/keccak.hpp>
@@ -59,18 +62,22 @@ uint64_t sha256_gas(ByteView input, evmc_revision) noexcept {
   return 60 + 12 * ((input.length() + 31) / 32);
 }
 
-std::optional<Bytes> sha256_run(ByteView) noexcept {
-  // TODO[Frontier] implement
-  return {};
+std::optional<Bytes> sha256_run(ByteView input) noexcept {
+  Bytes out(CryptoPP::SHA256::DIGESTSIZE, '\0');
+  CryptoPP::SHA256 hash;
+  hash.CalculateDigest(&out[0], input.data(), input.length());
+  return out;
 }
 
 uint64_t rip160_gas(ByteView input, evmc_revision) noexcept {
   return 600 + 120 * ((input.length() + 31) / 32);
 }
 
-std::optional<Bytes> rip160_run(ByteView) noexcept {
-  // TODO[Frontier] implement
-  return {};
+std::optional<Bytes> rip160_run(ByteView input) noexcept {
+  Bytes out(32, '\0');
+  CryptoPP::RIPEMD160 hash;
+  hash.CalculateDigest(&out[12], input.data(), input.length());
+  return out;
 }
 
 uint64_t id_gas(ByteView input, evmc_revision) noexcept {

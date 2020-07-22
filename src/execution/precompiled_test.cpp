@@ -40,4 +40,24 @@ TEST_CASE("Ecrecover") {
   out = ecrec_run(in);
   CHECK((out && out->empty()));
 }
+
+TEST_CASE("SHA256") {
+  Bytes in{from_hex(
+      "38d18acb67d25c8bb9942764b62f18e17054f66a817bd4295423adf9ed98873e0000000000000000000000000000"
+      "00000000000000000000000000000000001b38d18acb67d25c8bb9942764b62f18e17054f66a817bd4295423adf9"
+      "ed98873e789d1dd423d25f0772d2748d60f7e4b81bb14d086eba8e8e8efb6dcff8a4ae02")};
+  std::optional<Bytes> out{sha256_run(in)};
+  REQUIRE(out);
+  CHECK(to_hex(*out) == "811c7003375852fabd0d362e40e68607a12bdabae61a7d068fe5fdd1dbbf2a5d");
+}
+
+TEST_CASE("RIPEMD160") {
+  Bytes in{from_hex(
+      "38d18acb67d25c8bb9942764b62f18e17054f66a817bd4295423adf9ed98873e0000000000000000000000000000"
+      "00000000000000000000000000000000001b38d18acb67d25c8bb9942764b62f18e17054f66a817bd4295423adf9"
+      "ed98873e789d1dd423d25f0772d2748d60f7e4b81bb14d086eba8e8e8efb6dcff8a4ae02")};
+  std::optional<Bytes> out{rip160_run(in)};
+  REQUIRE(out);
+  CHECK(to_hex(*out) == "0000000000000000000000009215b8d9882ff46f0dfde6684d78e831467f65e6");
+}
 }  // namespace silkworm::precompiled

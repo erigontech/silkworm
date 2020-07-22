@@ -43,7 +43,8 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
 
   v -= 27;
 
-  if (!ecdsa::inputs_are_valid(v, r, s)) return Bytes{};
+  // https://eips.ethereum.org/EIPS/eip-2
+  if (!ecdsa::inputs_are_valid(v, r, s, /*homestead=*/false)) return Bytes{};
 
   std::optional<Bytes> key{
       ecdsa::recover(d.substr(0, 32), d.substr(64, 64), intx::narrow_cast<uint8_t>(v))};

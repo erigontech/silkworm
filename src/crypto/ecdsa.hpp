@@ -29,7 +29,8 @@ namespace silkworm::ecdsa {
 constexpr auto kSecp256k1n{intx::from_string<intx::uint256>(
     "115792089237316195423570985008687907852837564279074904382605163141518161494337")};
 
-bool inputs_are_valid(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s);
+bool inputs_are_valid(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
+                      bool homestead);
 
 std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id);
 }  // namespace silkworm::ecdsa

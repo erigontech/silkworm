@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <intx/int128.hpp>
 #include <limits>
+#include <magic_enum.hpp>
 #include <utility>
 
 #include "protocol_param.hpp"
@@ -141,7 +142,7 @@ std::vector<Receipt> ExecutionProcessor::execute_block() {
   for (const Transaction& txn : evm_.block().transactions) {
     ExecutionResult res = execute_transaction(txn);
     if (res.error != ValidationError::kOk) {
-      throw ExecutionError("ValidationError " + std::to_string(static_cast<int>(res.error)));
+      throw ExecutionError("ValidationError " + std::string{magic_enum::enum_name(res.error)});
     }
     receipts.push_back(res.receipt);
   }

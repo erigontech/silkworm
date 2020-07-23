@@ -18,7 +18,6 @@
 
 #include "bucket.hpp"
 #include "history_index.hpp"
-#include "types/block.hpp"
 #include "util.hpp"
 
 namespace silkworm::db {

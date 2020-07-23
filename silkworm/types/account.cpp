@@ -16,8 +16,8 @@
 
 #include "account.hpp"
 
-#include "common/util.hpp"
-#include "rlp/decode.hpp"
+#include <silkworm/common/util.hpp>
+#include <silkworm/rlp/decode.hpp>
 
 namespace silkworm {
 

@@ -18,9 +18,8 @@
 #define SILKWORM_STATE_READER_H_
 
 #include <optional>
-
-#include "db/database.hpp"
-#include "types/account.hpp"
+#include <silkworm/db/database.hpp>
+#include <silkworm/types/account.hpp>
 
 namespace silkworm::state {
 class Reader {

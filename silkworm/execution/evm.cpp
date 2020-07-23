@@ -22,11 +22,11 @@
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <iterator>
+#include <silkworm/rlp/encode.hpp>
 #include <sstream>
 
 #include "precompiled.hpp"
 #include "protocol_param.hpp"
-#include "rlp/encode.hpp"
 
 namespace silkworm {
 

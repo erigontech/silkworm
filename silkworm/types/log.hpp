@@ -18,9 +18,8 @@
 #define SILKWORM_TYPES_LOG_H_
 
 #include <evmc/evmc.hpp>
+#include <silkworm/common/base.hpp>
 #include <vector>
-
-#include "common/base.hpp"
 
 namespace silkworm {
 

@@ -18,7 +18,7 @@
 
 #include <secp256k1_recovery.h>
 
-#include "common/util.hpp"
+#include <silkworm/common/util.hpp>
 
 namespace silkworm::ecdsa {
 

@@ -23,8 +23,7 @@
 #include <stdint.h>
 
 #include <boost/filesystem.hpp>
-
-#include "database.hpp"
+#include <silkworm/db/database.hpp>
 
 namespace silkworm::db {
 

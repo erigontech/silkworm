@@ -19,8 +19,7 @@
 
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/stream.hpp>
-
-#include "base.hpp"
+#include <silkworm/common/base.hpp>
 
 namespace silkworm {
 
@@ -49,7 +48,7 @@ std::string to_hex(ByteView bytes);
 
 Bytes from_hex(std::string_view hex);
 
-// TODO(Andrew) replace by starts_with when we switch to C++20
+// TODO[C++20] replace by starts_with
 inline bool has_prefix(ByteView s, ByteView prefix) { return s.substr(0, prefix.size()) == prefix; }
 
 inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> as_stream(

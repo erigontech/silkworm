@@ -22,9 +22,8 @@
 #include <boost/endian/conversion.hpp>
 #include <cstring>
 #include <ethash/keccak.hpp>
-
-#include "common/util.hpp"
-#include "crypto/ecdsa.hpp"
+#include <silkworm/common/util.hpp>
+#include <silkworm/crypto/ecdsa.hpp>
 
 namespace silkworm::precompiled {
 

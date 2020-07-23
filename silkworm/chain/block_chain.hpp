@@ -17,8 +17,8 @@
 #ifndef SILKWORM_CHAIN_BLOCK_CHAIN_H_
 #define SILKWORM_CHAIN_BLOCK_CHAIN_H_
 
-#include "config.hpp"
-#include "db/database.hpp"
+#include <silkworm/chain/config.hpp>
+#include <silkworm/db/database.hpp>
 
 namespace silkworm {
 

@@ -25,8 +25,7 @@ see its package changeset.
 #include <evmc/evmc.hpp>
 #include <map>
 #include <optional>
-
-#include "common/base.hpp"
+#include <silkworm/common/base.hpp>
 
 namespace silkworm::db {
 

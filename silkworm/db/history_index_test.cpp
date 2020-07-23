@@ -17,8 +17,7 @@
 #include "history_index.hpp"
 
 #include <catch2/catch.hpp>
-
-#include "common/util.hpp"
+#include <silkworm/common/util.hpp>
 
 namespace silkworm::db::history_index {
 

@@ -21,12 +21,11 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
+#include <silkworm/common/util.hpp>
+#include <silkworm/rlp/decode.hpp>
+#include <silkworm/types/bloom.hpp>
+#include <silkworm/types/transaction.hpp>
 #include <vector>
-
-#include "bloom.hpp"
-#include "common/util.hpp"
-#include "rlp/decode.hpp"
-#include "transaction.hpp"
 
 namespace silkworm {
 

@@ -19,9 +19,8 @@
 
 #include <stdint.h>
 
+#include <silkworm/types/log.hpp>
 #include <vector>
-
-#include "types/log.hpp"
 
 namespace silkworm {
 

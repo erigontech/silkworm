@@ -21,12 +21,11 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
+#include <silkworm/chain/block_chain.hpp>
+#include <silkworm/state/intra_block_state.hpp>
+#include <silkworm/state/substate.hpp>
+#include <silkworm/types/block.hpp>
 #include <vector>
-
-#include "chain/block_chain.hpp"
-#include "state/intra_block_state.hpp"
-#include "state/substate.hpp"
-#include "types/block.hpp"
 
 // TODO(Andrew) get rid of this when
 // https://github.com/ethereum/evmc/pull/528

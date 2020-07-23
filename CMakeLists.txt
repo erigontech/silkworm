@@ -52,7 +52,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 add_subdirectory(evmone)
-add_subdirectory(src)
+add_subdirectory(silkworm)
 
 add_executable(check_changes cmd/check_changes.cpp)
 target_link_libraries(check_changes PRIVATE silkworm)
@@ -65,7 +65,7 @@ find_package(Catch2 CONFIG REQUIRED)
 hunter_add_package(Boost)
 find_package(Boost CONFIG REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "src/*_test.cpp")
+file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "silkworm/*_test.cpp")
 add_executable(tests cmd/tests.cpp ${SILKWORM_TESTS})
 target_link_libraries(tests silkworm Catch2::Catch2 Boost::boost)
 

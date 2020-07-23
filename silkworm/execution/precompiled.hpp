@@ -20,8 +20,7 @@
 #include <evmc/evmc.h>
 
 #include <optional>
-
-#include "common/base.hpp"
+#include <silkworm/common/base.hpp>
 
 // See Yellow Paper, Appendix E "Precompiled Contracts"
 namespace silkworm::precompiled {

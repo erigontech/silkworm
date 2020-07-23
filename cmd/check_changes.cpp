@@ -16,12 +16,11 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <silkworm/db/lmdb.hpp>
+#include <silkworm/execution/processor.hpp>
+#include <silkworm/state/intra_block_state.hpp>
+#include <silkworm/state/reader.hpp>
 #include <string>
-
-#include "db/lmdb.hpp"
-#include "execution/processor.hpp"
-#include "state/intra_block_state.hpp"
-#include "state/reader.hpp"
 
 int main() {
   using namespace silkworm;

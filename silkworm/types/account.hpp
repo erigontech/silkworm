@@ -20,9 +20,8 @@
 #include <intx/intx.hpp>
 #include <istream>
 #include <ostream>
-
-#include "common/base.hpp"
-#include "rlp/decode.hpp"
+#include <silkworm/common/base.hpp>
+#include <silkworm/rlp/decode.hpp>
 
 namespace silkworm {
 

@@ -21,11 +21,10 @@
 #include <intx/intx.hpp>
 #include <map>
 #include <optional>
-
-#include "common/base.hpp"
-#include "reader.hpp"
-#include "types/account.hpp"
-#include "writer.hpp"
+#include <silkworm/common/base.hpp>
+#include <silkworm/state/reader.hpp>
+#include <silkworm/state/writer.hpp>
+#include <silkworm/types/account.hpp>
 
 namespace silkworm {
 

@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-#include "common/base.hpp"
+#include <silkworm/common/base.hpp>
 
 namespace silkworm {
 

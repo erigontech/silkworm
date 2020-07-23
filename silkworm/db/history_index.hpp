@@ -23,8 +23,7 @@ see its common/dbutils/history_index.go.
 */
 
 #include <optional>
-
-#include "common/base.hpp"
+#include <silkworm/common/base.hpp>
 
 namespace silkworm::db::history_index {
 

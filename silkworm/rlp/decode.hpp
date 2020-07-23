@@ -22,11 +22,10 @@
 
 #include <intx/intx.hpp>
 #include <istream>
+#include <silkworm/common/base.hpp>
+#include <silkworm/common/decoding_error.hpp>
+#include <silkworm/rlp/encode.hpp>
 #include <vector>
-
-#include "common/base.hpp"
-#include "common/decoding_error.hpp"
-#include "encode.hpp"
 
 namespace silkworm::rlp {
 

@@ -16,8 +16,8 @@
 
 #include "writer.hpp"
 
-#include "common/util.hpp"
-#include "db/util.hpp"
+#include <silkworm/common/util.hpp>
+#include <silkworm/db/util.hpp>
 
 namespace silkworm::state {
 

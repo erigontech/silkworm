@@ -18,8 +18,7 @@
 
 #include <boost/endian/conversion.hpp>
 #include <cassert>
-
-#include "common/util.hpp"
+#include <silkworm/common/util.hpp>
 
 namespace silkworm::rlp {
 

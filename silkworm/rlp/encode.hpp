@@ -22,9 +22,8 @@
 
 #include <intx/intx.hpp>
 #include <ostream>
+#include <silkworm/common/base.hpp>
 #include <vector>
-
-#include "common/base.hpp"
 
 namespace silkworm {
 

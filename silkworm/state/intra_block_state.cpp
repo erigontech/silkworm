@@ -18,8 +18,7 @@
 
 #include <cstring>
 #include <ethash/keccak.hpp>
-
-#include "common/util.hpp"
+#include <silkworm/common/util.hpp>
 
 namespace silkworm {
 

@@ -9,3 +9,5 @@ MDB_NOTLS and multi-threading. Do we mix C++ and go in one process?
 Propagate noexcept from EvmHost
 
 Get rid of byte_ptr_cast & other casts
+
+Get rid of Boost filesystem

@@ -16,8 +16,8 @@
 
 #include "reader.hpp"
 
-#include "common/util.hpp"
-#include "db/bucket.hpp"
+#include <silkworm/common/util.hpp>
+#include <silkworm/db/bucket.hpp>
 
 namespace silkworm::state {
 

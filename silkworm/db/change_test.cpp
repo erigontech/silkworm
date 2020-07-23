@@ -18,9 +18,8 @@
 
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
-
-#include "common/util.hpp"
-#include "util.hpp"
+#include <silkworm/common/util.hpp>
+#include <silkworm/db/util.hpp>
 
 namespace silkworm::db {
 TEST_CASE("Storage change") {

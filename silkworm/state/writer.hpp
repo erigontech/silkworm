@@ -21,9 +21,8 @@
 #include <map>
 #include <optional>
 #include <set>
-
-#include "db/change.hpp"
-#include "types/account.hpp"
+#include <silkworm/db/change.hpp>
+#include <silkworm/types/account.hpp>
 
 namespace silkworm::state {
 class Writer {

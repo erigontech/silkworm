@@ -18,11 +18,10 @@
 #define SILKWORM_TYPES_RECEIPT_H_
 
 #include <evmc/evmc.hpp>
+#include <silkworm/types/bloom.hpp>
+#include <silkworm/types/log.hpp>
 #include <variant>
 #include <vector>
-
-#include "bloom.hpp"
-#include "log.hpp"
 
 namespace silkworm {
 

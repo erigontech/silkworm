@@ -20,9 +20,8 @@
 #include <cassert>
 #include <cstring>
 #include <intx/int128.hpp>
-
-#include "common/util.hpp"
-#include "rlp/encode.hpp"
+#include <silkworm/common/util.hpp>
+#include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::db {
 

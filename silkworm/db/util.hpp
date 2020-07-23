@@ -22,7 +22,7 @@ Part of the compatibility layer with the Turbo-Geth DB format;
 see its package dbutils.
 */
 
-#include "common/base.hpp"
+#include <silkworm/common/base.hpp>
 
 namespace silkworm::db {
 // Turbo-Geth PlainGenerateStoragePrefix

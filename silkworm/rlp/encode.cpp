@@ -17,8 +17,7 @@
 #include "encode.hpp"
 
 #include <boost/endian/conversion.hpp>
-
-#include "common/util.hpp"
+#include <silkworm/common/util.hpp>
 
 namespace silkworm::rlp {
 

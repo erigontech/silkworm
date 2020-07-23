@@ -22,7 +22,7 @@
 #include <silkworm/state/reader.hpp>
 #include <string>
 
-int main() {
+int main(int argc, char* argv[]) {
   using namespace silkworm;
 
   std::string db_path{std::getenv("HOME")};
@@ -31,8 +31,12 @@ int main() {
 
   BlockChain chain{&db};
 
-  uint64_t block_num{0};
-  while (std::optional<BlockWithHash> bh = db.get_block(++block_num)) {
+  uint64_t block_num{1};
+  if (argc == 2) {
+    block_num = std::stoull(argv[1]);
+  }
+
+  for (; std::optional<BlockWithHash> bh = db.get_block(block_num); ++block_num) {
     std::vector<evmc::address> senders{db.get_senders(block_num, bh->hash)};
     assert(senders.size() == bh->block.transactions.size());
     for (size_t i{0}; i < senders.size(); ++i) {
@@ -46,7 +50,7 @@ int main() {
     std::vector<Receipt> receipts = processor.execute_block();
 
     if (processor.gas_used() != bh->block.header.gas_used) {
-      std::cerr << "gasUsed mismatch for block " << block_num << ":\n";
+      std::cerr << "gasUsed mismatch for block " << block_num << " 😠\n";
       std::cerr << processor.gas_used() << '\n';
       std::cerr << "vs expected\n";
       std::cerr << bh->block.header.gas_used << '\n';
@@ -97,9 +101,9 @@ int main() {
     }
 
     if (block_num % 1000 == 0) {
-      std::cout << "Checked " << block_num << " blocks\n";
+      std::cout << "Checked blocks ≤ " << block_num << "\n";
     }
   }
-  std::cout << "All " << (block_num - 1) << " available blocks have been checked 😅\n";
+  std::cout << "All available blocks < " << block_num << " have been checked 😅\n";
   return 0;
 }

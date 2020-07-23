@@ -191,7 +191,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
       }
     }
   } else {
-    ByteView code = state_.get_code(message.destination);
+    Bytes code{state_.get_code(message.destination)};
     if (code.empty()) return res;
 
     evmc_message msg{message};

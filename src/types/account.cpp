@@ -107,7 +107,6 @@ Account decode_account_from_storage(ByteView encoded) {
       throw DecodingError("input too short for account codeHash");
     }
     std::memcpy(a.code_hash.bytes, &encoded[pos], kHashLength);
-    pos += len;
   }
 
   return a;

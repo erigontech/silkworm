@@ -32,9 +32,9 @@ find_package(cryptopp CONFIG REQUIRED)
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
-add_library(libsilkworm ${SILKWORM_SRC})
+add_library(silkworm ${SILKWORM_SRC})
 # TODO(Andrew) consider src -> silkworm
-target_include_directories(libsilkworm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(libsilkworm
+target_include_directories(silkworm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(silkworm
                       PUBLIC evmc intx::intx lmdbxx::lmdbxx # PUBLIC lmdbxx since we use its exceptions 
                       PRIVATE evmone secp256k1 cryptopp-static liblmdb::lmdb Boost::filesystem)

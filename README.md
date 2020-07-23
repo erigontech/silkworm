@@ -19,11 +19,11 @@ Then run the build itself
 ```
 cmake --build . -j
 ```
-Now you can run silkworm
+Now you can check database changes with silkworm
 ```
-./silkworm
+./check_changes
 ```
-or its tests
+or run tests
 ```
 ./tests
 ```

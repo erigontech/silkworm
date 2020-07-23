@@ -54,11 +54,8 @@ endif()
 add_subdirectory(evmone)
 add_subdirectory(src)
 
-add_executable(silkworm cmd/silkworm.cpp)
-target_link_libraries(silkworm PRIVATE libsilkworm)
-
 add_executable(check_changes cmd/check_changes.cpp)
-target_link_libraries(check_changes PRIVATE libsilkworm)
+target_link_libraries(check_changes PRIVATE silkworm)
 
 # Unit tests
 enable_testing()
@@ -70,7 +67,7 @@ find_package(Boost CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "src/*_test.cpp")
 add_executable(tests cmd/tests.cpp ${SILKWORM_TESTS})
-target_link_libraries(tests libsilkworm Catch2::Catch2 Boost::boost)
+target_link_libraries(tests silkworm Catch2::Catch2 Boost::boost)
 
 include(CTest)
 include(Catch)

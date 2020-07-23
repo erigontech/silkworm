@@ -25,7 +25,6 @@ namespace silkworm::ecdsa {
 static secp256k1_context* kDefaultContext{
     secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)};
 
-// TODO[Homestead] stricter checks
 bool inputs_are_valid(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
                       bool homestead) {
   if (r == 0 || s == 0 || v > 1) return false;

@@ -39,8 +39,6 @@ constexpr uint64_t kGTransaction{21'000};
 }  // namespace fee
 
 namespace param {
-constexpr size_t kMaxStackDepth{1024};
-
 // https://eips.ethereum.org/EIPS/eip-170
 constexpr size_t kMaxCodeSize{0x6000};
 

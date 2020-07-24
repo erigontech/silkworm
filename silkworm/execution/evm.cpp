@@ -59,11 +59,6 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) {
 evmc::result EVM::create(const evmc_message& message) noexcept {
   evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
 
-  if (message.depth >= static_cast<int32_t>(param::kMaxStackDepth)) {
-    res.status_code = EVMC_CALL_DEPTH_EXCEEDED;
-    return res;
-  }
-
   intx::uint256 value = intx::be::load<intx::uint256>(message.value);
   if (state_.get_balance(message.sender) < value) {
     res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
@@ -147,11 +142,6 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 // TODO(Andrew) propagate noexcept
 evmc::result EVM::call(const evmc_message& message) noexcept {
   evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
-
-  if (message.depth >= static_cast<int32_t>(param::kMaxStackDepth)) {
-    res.status_code = EVMC_CALL_DEPTH_EXCEEDED;
-    return res;
-  }
 
   intx::uint256 value = intx::be::load<intx::uint256>(message.value);
   if (message.kind != EVMC_DELEGATECALL && state_.get_balance(message.sender) < value) {

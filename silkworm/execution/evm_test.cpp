@@ -176,6 +176,69 @@ TEST_CASE("Double self-destruct") {
   CHECK(res.gas_left == gas);
 }
 
+TEST_CASE("Maximum call depth") {
+  BlockChain chain{nullptr};
+  Block block{};
+  block.header.number = 1'431'916;
+  evmc::address caller{0x8e4d1ea201b908ab5e1f5a1c3f9f1b4f6c1e9cf1_address};
+  evmc::address contract{0x3589d05a1ec4af9f65b0e5554e645707775ee43c_address};
+
+  // The contract just calls itself recursively a given number of times.
+  Bytes code{from_hex("60003580600857005b6001900360005260008060208180305a6103009003f1602357fe5b")};
+  /* https://github.com/CoinCulture/evm-tools
+  0      PUSH1  => 00
+  2      CALLDATALOAD
+  3      DUP1
+  4      PUSH1  => 08
+  6      JUMPI
+  7      STOP
+  8      JUMPDEST
+  9      PUSH1  => 01
+  11     SWAP1
+  12     SUB
+  13     PUSH1  => 00
+  15     MSTORE
+  16     PUSH1  => 00
+  18     DUP1
+  19     PUSH1  => 20
+  21     DUP2
+  22     DUP1
+  23     ADDRESS
+  24     GAS
+  25     PUSH2  => 0300
+  28     SWAP1
+  29     SUB
+  30     CALL
+  31     PUSH1  => 23
+  33     JUMPI
+  34     INVALID
+  35     JUMPDEST
+  */
+
+  IntraBlockState state{nullptr};
+  state.set_code(contract, code);
+
+  EVM evm{chain, block, state};
+
+  Transaction txn{};
+  txn.from = caller;
+  txn.to = contract;
+
+  uint64_t gas{1'000'000};
+  CallResult res{evm.execute(txn, gas)};
+  CHECK(res.status == EVMC_SUCCESS);
+
+  evmc::bytes32 num_of_recursions{to_hash(from_hex("0400"))};
+  txn.data = full_view(num_of_recursions);
+  res = evm.execute(txn, gas);
+  CHECK(res.status == EVMC_SUCCESS);
+
+  num_of_recursions = to_hash(from_hex("0401"));
+  txn.data = full_view(num_of_recursions);
+  res = evm.execute(txn, gas);
+  CHECK(res.status == EVMC_INVALID_INSTRUCTION);
+}
+
 TEST_CASE("Create address") {
   CHECK(create_address(0xfbe0afcd7658ba86be41922059dd879c192d4c73_address, 0) ==
         0xc669eaad75042be84daaf9b461b0e868b9ac1871_address);

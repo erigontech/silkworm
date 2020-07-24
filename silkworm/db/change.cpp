@@ -20,7 +20,6 @@
 #include <boost/endian/conversion.hpp>
 #include <boost/iterator/counting_iterator.hpp>
 #include <cstring>
-#include <silkworm/common/decoding_error.hpp>
 #include <silkworm/common/util.hpp>
 #include <tuple>
 #include <vector>

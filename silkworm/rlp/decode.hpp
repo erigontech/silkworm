@@ -23,7 +23,6 @@
 #include <intx/intx.hpp>
 #include <istream>
 #include <silkworm/common/base.hpp>
-#include <silkworm/common/decoding_error.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <vector>
 

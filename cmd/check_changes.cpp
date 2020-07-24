@@ -49,9 +49,9 @@ int main(int argc, char* argv[]) {
 
     std::vector<Receipt> receipts = processor.execute_block();
 
-    if (processor.gas_used() != bh->block.header.gas_used) {
+    if (processor.cumulative_gas_used() != bh->block.header.gas_used) {
       std::cerr << "gasUsed mismatch for block " << block_num << " 😠\n";
-      std::cerr << processor.gas_used() << '\n';
+      std::cerr << processor.cumulative_gas_used() << '\n';
       std::cerr << "vs expected\n";
       std::cerr << bh->block.header.gas_used << '\n';
       return -1;

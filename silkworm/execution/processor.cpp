@@ -18,7 +18,6 @@
 
 #include <algorithm>
 #include <intx/int128.hpp>
-#include <magic_enum.hpp>
 #include <utility>
 
 #include "protocol_param.hpp"
@@ -27,22 +26,20 @@ namespace silkworm {
 
 static intx::uint128 intrinsic_gas(ByteView data, bool contract_creation, bool homestead,
                                    bool eip2028) {
-  intx::uint128 gas = fee::kGTransaction;
+  intx::uint128 gas{fee::kGTransaction};
   if (contract_creation && homestead) {
     gas += fee::kGTxCreate;
   }
 
-  if (data.empty()) {
-    return gas;
-  }
+  if (data.empty()) return gas;
 
-  intx::uint128 non_zero_bytes =
-      std::count_if(data.begin(), data.end(), [](char c) { return c != 0; });
+  intx::uint128 non_zero_bytes{
+      std::count_if(data.begin(), data.end(), [](char c) { return c != 0; })};
 
   uint64_t nonZeroGas{eip2028 ? fee::kGTxDataNonZeroEIP2028 : fee::kGTxDataNonZeroFrontier};
   gas += non_zero_bytes * nonZeroGas;
 
-  intx::uint128 zero_bytes = data.length() - non_zero_bytes;
+  intx::uint128 zero_bytes{data.length() - non_zero_bytes};
   gas += zero_bytes * fee::kGTxDataZero;
 
   return gas;
@@ -52,45 +49,28 @@ ExecutionProcessor::ExecutionProcessor(const BlockChain& chain, const Block& blo
                                        IntraBlockState& state)
     : evm_{chain, block, state} {}
 
-ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) {
-  ExecutionResult res;
+Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
+  IntraBlockState& state{evm_.state()};
 
-  IntraBlockState& state = evm_.state();
+  if (!txn.from || !state.exists(*txn.from)) throw ValidationError("missing sender");
 
-  if (!txn.from || !state.exists(*txn.from)) {
-    res.error = ValidationError::kMissingSender;
-    return res;
-  }
+  uint64_t nonce{state.get_nonce(*txn.from)};
+  if (nonce != txn.nonce) throw ValidationError("invalid nonce");
 
-  uint64_t nonce = state.get_nonce(*txn.from);
-  if (nonce != txn.nonce) {
-    res.error = ValidationError::kInvalidNonce;
-    return res;
-  }
+  uint64_t block_number{evm_.block().header.number};
+  bool homestead{evm_.config().has_homestead(block_number)};
+  bool istanbul{evm_.config().has_istanbul(block_number)};
+  bool contract_creation{!txn.to};
 
-  uint64_t block_number = evm_.block().header.number;
-  bool homestead = evm_.config().has_homestead(block_number);
-  bool istanbul = evm_.config().has_istanbul(block_number);
-  bool contract_creation = !txn.to;
+  intx::uint128 g0{intrinsic_gas(txn.data, contract_creation, homestead, istanbul)};
+  if (txn.gas_limit < g0) throw ValidationError("intrinsic gas");
 
-  intx::uint128 g0 = intrinsic_gas(txn.data, contract_creation, homestead, istanbul);
-  if (txn.gas_limit < g0) {
-    res.error = ValidationError::kIntrinsicGas;
-    return res;
-  }
+  intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price)};
+  intx::uint512 v0{gas_cost + txn.value};
 
-  intx::uint512 gas_cost = intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price);
-  intx::uint512 v0 = gas_cost + txn.value;
+  if (state.get_balance(*txn.from) < v0) throw ValidationError("insufficient funds");
 
-  if (state.get_balance(*txn.from) < v0) {
-    res.error = ValidationError::kInsufficientFunds;
-    return res;
-  }
-
-  if (available_gas() < txn.gas_limit) {
-    res.error = ValidationError::kBlockGasLimitReached;
-    return res;
-  }
+  if (available_gas() < txn.gas_limit) throw ValidationError("block gas limit reached");
 
   state.subtract_from_balance(*txn.from, gas_cost.lo);
   if (!contract_creation) {
@@ -102,30 +82,32 @@ ExecutionResult ExecutionProcessor::execute_transaction(const Transaction& txn) 
 
   CallResult vm_res{evm_.execute(txn, txn.gas_limit - g0.lo)};
 
-  uint64_t gas_left = refund_gas(txn, vm_res.gas_left);
-  res.gas_used = txn.gas_limit - gas_left;
+  uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left)};
 
   // award the miner
-  state.add_to_balance(evm_.block().header.beneficiary, res.gas_used * txn.gas_price);
+  state.add_to_balance(evm_.block().header.beneficiary, gas_used * txn.gas_price);
 
-  gas_used_ += res.gas_used;
+  cumulative_gas_used_ += gas_used;
 
-  res.receipt.post_state_or_status = vm_res.status == EVMC_SUCCESS;
-  res.receipt.cumulative_gas_used = gas_used_;
-  res.receipt.logs = evm_.substate().logs;
-  // TODO[Byzantium] Bloom
+  // TODO[Byzantium] populate bloom
+  Bloom bloom{};
 
-  return res;
+  return {
+      .post_state_or_status = vm_res.status == EVMC_SUCCESS,
+      .cumulative_gas_used = cumulative_gas_used_,
+      .bloom = bloom,
+      .logs = evm_.substate().logs,
+  };
 }
 
 uint64_t ExecutionProcessor::available_gas() const {
-  return evm_.block().header.gas_limit - gas_used_;
+  return evm_.block().header.gas_limit - cumulative_gas_used_;
 }
 
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) {
-  IntraBlockState& state = evm_.state();
+  IntraBlockState& state{evm_.state()};
 
-  uint64_t refund = std::min((txn.gas_limit - gas_left) / 2, evm_.substate().refund);
+  uint64_t refund{std::min((txn.gas_limit - gas_left) / 2, evm_.substate().refund)};
   gas_left += refund;
   state.add_to_balance(*txn.from, gas_left * txn.gas_price);
 
@@ -133,17 +115,13 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
 }
 
 std::vector<Receipt> ExecutionProcessor::execute_block() {
-  std::vector<Receipt> receipts;
+  std::vector<Receipt> receipts{};
 
   // TODO(Andrew) DAO block
 
-  gas_used_ = 0;
+  cumulative_gas_used_ = 0;
   for (const Transaction& txn : evm_.block().transactions) {
-    ExecutionResult res = execute_transaction(txn);
-    if (res.error != ValidationError::kOk) {
-      throw ExecutionError("ValidationError " + std::string{magic_enum::enum_name(res.error)});
-    }
-    receipts.push_back(res.receipt);
+    receipts.push_back(execute_transaction(txn));
   }
 
   apply_rewards();
@@ -152,7 +130,7 @@ std::vector<Receipt> ExecutionProcessor::execute_block() {
 }
 
 void ExecutionProcessor::apply_rewards() {
-  uint64_t block_number = evm_.block().header.number;
+  uint64_t block_number{evm_.block().header.number};
   intx::uint256 block_reward;
   if (evm_.config().has_constantinople(block_number)) {
     block_reward = param::kConstantinopleBlockReward;
@@ -162,9 +140,9 @@ void ExecutionProcessor::apply_rewards() {
     block_reward = param::kFrontierBlockReward;
   }
 
-  intx::uint256 miner_reward = block_reward;
+  intx::uint256 miner_reward{block_reward};
   for (const BlockHeader& ommer : evm_.block().ommers) {
-    intx::uint256 ommer_reward = (8 + ommer.number - block_number) * block_reward / 8;
+    intx::uint256 ommer_reward{(8 + ommer.number - block_number) * block_reward / 8};
     evm_.state().add_to_balance(ommer.beneficiary, ommer_reward);
     miner_reward += block_reward / 32;
   }

@@ -24,6 +24,8 @@
 namespace silkworm {
 
 TEST_CASE("Execution validation") {
+  using Catch::Message;
+
   BlockChain chain{nullptr};
   Block block{};
   block.header.number = 1;
@@ -40,12 +42,13 @@ TEST_CASE("Execution validation") {
   IntraBlockState state{nullptr};
   ExecutionProcessor processor{chain, block, state};
 
-  ExecutionResult res{processor.execute_transaction(txn)};
-  CHECK(res.error == ValidationError::kMissingSender);
+  CHECK_THROWS_MATCHES(processor.execute_transaction(txn), ValidationError,
+                       Message("missing sender"));
 
+  // sender is still not in the state
   txn.from = 0x68d7899b6635146a37d01934461d0c9e4b65ddda_address;
-  res = processor.execute_transaction(txn);
-  CHECK(res.error == ValidationError::kMissingSender);
+  CHECK_THROWS_MATCHES(processor.execute_transaction(txn), ValidationError,
+                       Message("missing sender"));
 
   // TODO(Andrew) other validation errors
 }
@@ -98,9 +101,8 @@ TEST_CASE("No refund on error") {
   state.set_nonce(caller, nonce);
   txn.from = caller;
 
-  ExecutionResult res{processor.execute_transaction(txn)};
-  CHECK(res.error == ValidationError::kOk);
-  CHECK(std::get<bool>(res.receipt.post_state_or_status));
+  Receipt receipt1{processor.execute_transaction(txn)};
+  CHECK(std::get<bool>(receipt1.post_state_or_status));
 
   // Call the newly created contract
   txn.nonce = nonce + 1;
@@ -112,9 +114,8 @@ TEST_CASE("No refund on error") {
   // But then there's not enough gas for the BALANCE operation
   txn.gas_limit = fee::kGTransaction + 5'020;
 
-  res = processor.execute_transaction(txn);
-  CHECK(res.error == ValidationError::kOk);
-  CHECK(!std::get<bool>(res.receipt.post_state_or_status));
-  CHECK(res.gas_used == txn.gas_limit);
+  Receipt receipt2{processor.execute_transaction(txn)};
+  CHECK(!std::get<bool>(receipt2.post_state_or_status));
+  CHECK(receipt2.cumulative_gas_used - receipt1.cumulative_gas_used == txn.gas_limit);
 }
 }  // namespace silkworm

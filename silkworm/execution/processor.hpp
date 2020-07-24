@@ -28,24 +28,9 @@
 
 namespace silkworm {
 
-enum class ValidationError {
-  kOk = 0,
-  kMissingSender,
-  kInvalidNonce,
-  kIntrinsicGas,
-  kInsufficientFunds,
-  kBlockGasLimitReached,
-};
-
-class ExecutionError : public std::runtime_error {
+class ValidationError : public std::runtime_error {
  public:
   using std::runtime_error::runtime_error;
-};
-
-struct ExecutionResult {
-  ValidationError error{ValidationError::kOk};
-  uint64_t gas_used{0};
-  Receipt receipt;
 };
 
 class ExecutionProcessor {
@@ -56,11 +41,11 @@ class ExecutionProcessor {
   ExecutionProcessor(const BlockChain& chain, const Block& block, IntraBlockState& state);
 
   // precondition: txn.from must be recovered
-  ExecutionResult execute_transaction(const Transaction& txn);
+  Receipt execute_transaction(const Transaction& txn);
 
   std::vector<Receipt> execute_block();
 
-  uint64_t gas_used() const { return gas_used_; }
+  uint64_t cumulative_gas_used() const { return cumulative_gas_used_; }
 
  private:
   uint64_t available_gas() const;
@@ -68,7 +53,7 @@ class ExecutionProcessor {
 
   void apply_rewards();
 
-  uint64_t gas_used_{0};
+  uint64_t cumulative_gas_used_{0};
   EVM evm_;
 };
 }  // namespace silkworm

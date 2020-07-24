@@ -29,12 +29,6 @@ find_package(lmdbxx CONFIG REQUIRED)
 hunter_add_package(cryptopp)
 find_package(cryptopp CONFIG REQUIRED)
 
-CPMAddPackage(
-    NAME magic_enum
-    GITHUB_REPOSITORY Neargye/magic_enum
-    VERSION 0.6.6
-)
-
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
@@ -42,4 +36,4 @@ add_library(silkworm ${SILKWORM_SRC})
 target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 target_link_libraries(silkworm
                       PUBLIC evmc intx::intx lmdbxx::lmdbxx # PUBLIC lmdbxx since we use its exceptions 
-                      PRIVATE evmone secp256k1 cryptopp-static liblmdb::lmdb Boost::filesystem magic_enum)
+                      PRIVATE evmone secp256k1 cryptopp-static liblmdb::lmdb Boost::filesystem)

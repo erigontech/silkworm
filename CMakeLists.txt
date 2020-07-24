@@ -31,8 +31,6 @@ HunterGate(
   FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/evmone/cmake/Hunter/config.cmake"
 )
 
-include(cmake/CPM.cmake)
-
 project(silkworm)
 
 # secp256k1

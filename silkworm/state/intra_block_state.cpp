@@ -39,8 +39,12 @@ IntraBlockState::Object* IntraBlockState::get_object(const evmc::address& addres
 
 IntraBlockState::Object& IntraBlockState::get_or_create_object(const evmc::address& address) {
   Object* obj{get_object(address)};
-  if (!obj) obj = &objects_[address];
-  if (!obj->current) obj->current = Account{};
+  if (!obj) {
+    obj = &objects_[address];
+  }
+  if (!obj->current) {
+    obj->current = Account{};
+  }
   return *obj;
 }
 
@@ -86,6 +90,10 @@ void IntraBlockState::destruct(const evmc::address& address) {
 intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const {
   Object* obj{get_object(address)};
   return obj && obj->current ? obj->current->balance : 0;
+}
+
+void IntraBlockState::set_balance(const evmc::address& address, const intx::uint256& value) {
+  get_or_create_object(address).current->balance = value;
 }
 
 void IntraBlockState::add_to_balance(const evmc::address& address, const intx::uint256& addend) {

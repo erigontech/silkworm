@@ -16,9 +16,16 @@
 
 #include "substate.hpp"
 
+#include <silkworm/execution/protocol_param.hpp>
+
 namespace silkworm {
 
+uint64_t Substate::total_refund() const {
+  return refund + fee::kRSelfDestruct * self_destructs.size();
+}
+
 void Substate::clear() {
+  self_destructs.clear();
   logs.clear();
   refund = 0;
 }

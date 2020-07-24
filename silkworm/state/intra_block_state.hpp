@@ -40,6 +40,7 @@ class IntraBlockState {
   void destruct(const evmc::address& address);
 
   intx::uint256 get_balance(const evmc::address& address) const;
+  void set_balance(const evmc::address& address, const intx::uint256& value);
   void add_to_balance(const evmc::address& address, const intx::uint256& addend);
   void subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend);
 

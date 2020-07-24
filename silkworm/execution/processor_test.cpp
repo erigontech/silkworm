@@ -118,4 +118,98 @@ TEST_CASE("No refund on error") {
   CHECK(!std::get<bool>(receipt2.post_state_or_status));
   CHECK(receipt2.cumulative_gas_used - receipt1.cumulative_gas_used == txn.gas_limit);
 }
+
+TEST_CASE("Self-destruct") {
+  BlockChain chain{nullptr};
+  Block block{};
+  block.header.number = 1'487'375;
+  block.header.gas_limit = 4'712'388;
+  block.header.beneficiary = 0x61c808d82a3ac53231750dadc13c777b59310bd9_address;
+  evmc::address suicidal_address{0x6d20c1c07e56b7098eb8c50ee03ba0f6f498a91d_address};
+  evmc::address caller_address{0x4bf2054ffae7a454a35fd8cf4be21b23b1f25a6f_address};
+
+  // The contract self-destructs if called with zero value.
+  Bytes suicidal_code{from_hex("346007576000ff5b")};
+  /* https://github.com/CoinCulture/evm-tools
+  0      CALLVALUE
+  1      PUSH1  => 07
+  3      JUMPI
+  4      PUSH1  => 00
+  6      SUICIDE
+  7      JUMPDEST
+  */
+
+  // The caller calls the suicidal three times:
+  // twice with zero value and once with non-zero value.
+  Bytes caller_code{
+      from_hex("600080808080803561eeeef150600080808080803561eeeef15060008080806005813561eeeef1")};
+  /* https://github.com/CoinCulture/evm-tools
+  0      PUSH1  => 00
+  2      DUP1
+  3      DUP1
+  4      DUP1
+  5      DUP1
+  6      DUP1
+  7      CALLDATALOAD
+  8      PUSH2  => eeee
+  11     CALL
+  12     POP
+  13     PUSH1  => 00
+  15     DUP1
+  16     DUP1
+  17     DUP1
+  18     DUP1
+  19     DUP1
+  20     CALLDATALOAD
+  21     PUSH2  => eeee
+  24     CALL
+  25     POP
+  26     PUSH1  => 00
+  28     DUP1
+  29     DUP1
+  30     DUP1
+  31     PUSH1  => 05
+  33     DUP2
+  34     CALLDATALOAD
+  35     PUSH2  => eeee
+  38     CALL
+  */
+
+  IntraBlockState state{nullptr};
+  ExecutionProcessor processor{chain, block, state};
+
+  state.add_to_balance(caller_address, kEther);
+  state.set_code(caller_address, caller_code);
+  state.set_code(suicidal_address, suicidal_code);
+
+  Transaction txn{
+      .nonce = 0,
+      .gas_price = 20 * kGiga,
+      .gas_limit = 100'000,
+      .to = caller_address,
+      .value = 0,
+  };
+  txn.from = caller_address;
+
+  evmc::bytes32 address_as_hash{to_hash(full_view(suicidal_address))};
+  txn.data = full_view(address_as_hash);
+
+  Receipt receipt1{processor.execute_transaction(txn)};
+  CHECK(std::get<bool>(receipt1.post_state_or_status));
+
+  CHECK(!state.exists(suicidal_address));
+
+  // Now the contract is self-destructed, this is a simple value transfer
+  txn.nonce = 1;
+  txn.to = suicidal_address;
+  txn.data.clear();
+
+  Receipt receipt2{processor.execute_transaction(txn)};
+  CHECK(std::get<bool>(receipt2.post_state_or_status));
+
+  CHECK(state.exists(suicidal_address));
+  CHECK(state.get_balance(suicidal_address) == 0);
+
+  CHECK(receipt2.cumulative_gas_used == receipt1.cumulative_gas_used + fee::kGTransaction);
+}
 }  // namespace silkworm

@@ -87,6 +87,10 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
   // award the miner
   state.add_to_balance(evm_.block().header.beneficiary, gas_used * txn.gas_price);
 
+  for (const evmc::address& a : evm_.substate().self_destructs) {
+    evm_.state().destruct(a);
+  }
+
   cumulative_gas_used_ += gas_used;
 
   // TODO[Byzantium] populate bloom
@@ -105,12 +109,9 @@ uint64_t ExecutionProcessor::available_gas() const {
 }
 
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) {
-  IntraBlockState& state{evm_.state()};
-
-  uint64_t refund{std::min((txn.gas_limit - gas_left) / 2, evm_.substate().refund)};
+  uint64_t refund{std::min((txn.gas_limit - gas_left) / 2, evm_.substate().total_refund())};
   gas_left += refund;
-  state.add_to_balance(*txn.from, gas_left * txn.gas_price);
-
+  evm_.state().add_to_balance(*txn.from, gas_left * txn.gas_price);
   return gas_left;
 }
 

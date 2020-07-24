@@ -331,10 +331,10 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
 
 void EvmHost::selfdestruct(const evmc::address& address,
                            const evmc::address& beneficiary) noexcept {
-  if (!evm_.state().exists(address)) return;
+  evm_.substate().self_destructs.insert(address);
+  // TODO[Spurious Dragon] EIP-161
   evm_.state().add_to_balance(beneficiary, evm_.state().get_balance(address));
-  evm_.state().destruct(address);
-  evm_.substate().refund += fee::kRSelfDestruct;
+  evm_.state().set_balance(address, 0);
 }
 
 evmc::result EvmHost::call(const evmc_message& message) noexcept {

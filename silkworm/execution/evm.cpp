@@ -59,19 +59,19 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) {
 evmc::result EVM::create(const evmc_message& message) noexcept {
   evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
 
-  intx::uint256 value = intx::be::load<intx::uint256>(message.value);
+  auto value{intx::be::load<intx::uint256>(message.value)};
   if (state_.get_balance(message.sender) < value) {
     res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
     return res;
   }
 
-  uint64_t nonce = state_.get_nonce(message.sender);
+  uint64_t nonce{state_.get_nonce(message.sender)};
 
   evmc::address contract_addr;
   if (message.kind == EVMC_CREATE) {
     contract_addr = create_address(message.sender, nonce);
   } else if (message.kind == EVMC_CREATE2) {
-    ethash::hash256 init_code_hash = ethash::keccak256(message.input_data, message.input_size);
+    auto init_code_hash{ethash::keccak256(message.input_data, message.input_size)};
     contract_addr = create2_address(message.sender, message.create2_salt, init_code_hash.bytes);
   }
 
@@ -112,13 +112,13 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
   res = execute(deploy_message, message.input_data, message.input_size);
 
   if (res.status_code == EVMC_SUCCESS) {
-    size_t code_len = res.output_size;
-    int64_t code_deploy_gas = code_len * fee::kGCodeDeposit;
+    size_t code_len{res.output_size};
+    uint64_t code_deploy_gas{code_len * fee::kGCodeDeposit};
 
     if (spurious_dragon && code_len > param::kMaxCodeSize) {
       // https://eips.ethereum.org/EIPS/eip-170
       res.status_code = EVMC_OUT_OF_GAS;
-    } else if (res.gas_left >= code_deploy_gas) {
+    } else if (res.gas_left >= 0 && static_cast<uint64_t>(res.gas_left) >= code_deploy_gas) {
       res.gas_left -= code_deploy_gas;
       state_.set_code(contract_addr, {res.output_data, res.output_size});
     } else if (config().has_homestead(block_num)) {
@@ -287,7 +287,7 @@ evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::byt
 
 evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evmc::bytes32& key,
                                          const evmc::bytes32& value) noexcept {
-  const evmc::bytes32& prev_val = evm_.state().get_storage(address, key);
+  const evmc::bytes32& prev_val{evm_.state().get_storage(address, key)};
 
   if (prev_val == value) return EVMC_STORAGE_UNCHANGED;
 
@@ -324,7 +324,7 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
 
   if (code_offset >= code.size()) return 0;
 
-  size_t n = std::min(buffer_size, code.size() - code_offset);
+  size_t n{std::min(buffer_size, code.size() - code_offset)};
   std::copy_n(&code[code_offset], n, buffer_data);
   return n;
 }

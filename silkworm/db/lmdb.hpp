@@ -22,7 +22,6 @@
 #include <lmdb/lmdb.h>
 #include <stdint.h>
 
-#include <boost/filesystem.hpp>
 #include <silkworm/db/database.hpp>
 
 namespace silkworm::db {
@@ -32,6 +31,7 @@ struct LmdbOptions {
   bool no_sync = true;             // MDB_NOSYNC
   bool no_meta_sync = false;       // MDB_NOMETASYNC
   bool write_map = false;          // MDB_WRITEMAP
+  bool no_sub_dir = false;         // MDB_NOSUBDIR
   unsigned max_buckets = 100;
 };
 
@@ -86,7 +86,7 @@ class LmdbDatabase : public Database {
 
   std::unique_ptr<Transaction> begin_transaction(bool read_only) override;
 
- private:
+ protected:
   MDB_env* env_{nullptr};
 };
 
@@ -96,7 +96,7 @@ class TemporaryLmdbDatabase : public LmdbDatabase {
   ~TemporaryLmdbDatabase() override;
 
  private:
-  boost::filesystem::path tmp_dir_;
+  const char* tmp_file_{nullptr};
 };
 }  // namespace silkworm::db
 

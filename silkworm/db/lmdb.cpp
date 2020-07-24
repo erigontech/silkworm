@@ -18,33 +18,22 @@
 
 #include <lmdbxx/lmdb++.h>
 
+#include <cstdio>
 #include <memory>
 
-namespace {
-using namespace silkworm;
+namespace silkworm::db {
 
-thread_local boost::filesystem::path last_tmp_dir;
-
-const char* new_tmp_dir() {
-  last_tmp_dir = boost::filesystem::unique_path();
-  boost::filesystem::create_directories(last_tmp_dir);
-  return last_tmp_dir.c_str();
-}
-
-MDB_val to_mdb_val(ByteView view) {
+static MDB_val to_mdb_val(ByteView view) {
   MDB_val val;
   val.mv_data = const_cast<uint8_t*>(view.data());
   val.mv_size = view.size();
   return val;
 }
 
-ByteView from_mdb_val(const MDB_val val) {
+static ByteView from_mdb_val(const MDB_val val) {
   auto* ptr{static_cast<uint8_t*>(val.mv_data)};
   return {ptr, val.mv_size};
 }
-}  // namespace
-
-namespace silkworm::db {
 
 LmdbCursor::~LmdbCursor() {
   if (cursor_) {
@@ -133,6 +122,9 @@ LmdbDatabase::LmdbDatabase(const char* path, const LmdbOptions& options) {
   if (options.write_map) {
     flags |= MDB_WRITEMAP;
   }
+  if (options.no_sub_dir) {
+    flags |= MDB_NOSUBDIR;
+  }
   lmdb::env_open(env_, path, flags, lmdb::env::default_mode);
 }
 
@@ -154,18 +146,29 @@ std::unique_ptr<Transaction> LmdbDatabase::begin_transaction(bool read_only) {
 }
 
 TemporaryLmdbDatabase::TemporaryLmdbDatabase()
-    : LmdbDatabase{new_tmp_dir(),
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    : LmdbDatabase{std::tmpnam(nullptr),
+#pragma GCC diagnostic pop
                    LmdbOptions{
                        .map_size = 64 << 20,  // 64MB
                        .no_sync = true,
                        .no_meta_sync = true,
                        .write_map = true,
-                   }},
-      tmp_dir_{last_tmp_dir} {}
-
-TemporaryLmdbDatabase::~TemporaryLmdbDatabase() {
-  boost::system::error_code ec;
-  boost::filesystem::remove_all(tmp_dir_, ec);
+                       .no_sub_dir = true,
+                   }} {
+  mdb_env_get_path(env_, &tmp_file_);
 }
 
+TemporaryLmdbDatabase::~TemporaryLmdbDatabase() {
+  if (env_) {
+    mdb_env_close(env_);
+    env_ = nullptr;
+  }
+
+  if (tmp_file_) {
+    std::remove(tmp_file_);
+    tmp_file_ = nullptr;
+  }
+}
 }  // namespace silkworm::db

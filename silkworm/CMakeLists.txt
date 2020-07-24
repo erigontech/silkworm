@@ -14,8 +14,8 @@
    limitations under the License.
 ]]
 
-hunter_add_package(Boost COMPONENTS filesystem)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+hunter_add_package(Boost)
+find_package(Boost CONFIG REQUIRED)
 
 hunter_add_package(intx)
 find_package(intx CONFIG REQUIRED)
@@ -34,6 +34,8 @@ list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm ${SILKWORM_SRC})
 target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
+
+# PUBLIC lmdbxx since we use its exceptions
 target_link_libraries(silkworm
-                      PUBLIC evmc intx::intx lmdbxx::lmdbxx # PUBLIC lmdbxx since we use its exceptions 
-                      PRIVATE evmone secp256k1 cryptopp-static liblmdb::lmdb Boost::filesystem)
+                      PUBLIC evmc intx::intx Boost::boost lmdbxx::lmdbxx
+                      PRIVATE evmone secp256k1 cryptopp-static liblmdb::lmdb)

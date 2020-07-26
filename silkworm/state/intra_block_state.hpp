@@ -17,9 +17,10 @@
 #ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_H_
 #define SILKWORM_STATE_INTRA_BLOCK_STATE_H_
 
+#include <absl/container/flat_hash_map.h>
+
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-#include <map>
 #include <optional>
 #include <silkworm/common/base.hpp>
 #include <silkworm/state/reader.hpp>
@@ -58,7 +59,7 @@ class IntraBlockState {
   void write_block(state::Writer& state_writer);
 
  private:
-  using Storage = std::map<evmc::bytes32, evmc::bytes32>;
+  using Storage = absl::flat_hash_map<evmc::bytes32, evmc::bytes32>;
 
   struct Object {
     std::optional<Account> original;
@@ -72,7 +73,7 @@ class IntraBlockState {
   Object& get_or_create_object(const evmc::address& address);
 
   state::Reader* db_{nullptr};
-  mutable std::map<evmc::address, Object> objects_;
+  mutable absl::flat_hash_map<evmc::address, Object> objects_;
 };
 }  // namespace silkworm
 

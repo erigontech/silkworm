@@ -33,6 +33,8 @@ HunterGate(
 
 project(silkworm)
 
+add_subdirectory(abseil-cpp)
+
 # secp256k1
 add_compile_definitions(USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
 add_compile_definitions(USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)

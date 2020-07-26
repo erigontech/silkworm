@@ -17,9 +17,6 @@
 hunter_add_package(Boost)
 find_package(Boost CONFIG REQUIRED)
 
-hunter_add_package(intx)
-find_package(intx CONFIG REQUIRED)
-
 hunter_add_package(lmdb)
 find_package(liblmdb CONFIG REQUIRED)
 
@@ -33,9 +30,10 @@ file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm ${SILKWORM_SRC})
-target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
+target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR}
+                                    "${CMAKE_SOURCE_DIR}/cpp-lru-cache/include")
 
 # PUBLIC lmdbxx since we use its exceptions
 target_link_libraries(silkworm
-                      PUBLIC evmc intx::intx Boost::boost lmdbxx::lmdbxx
-                      PRIVATE evmone secp256k1 cryptopp-static liblmdb::lmdb)
+                      PUBLIC evmc intx::intx Boost::boost liblmdb::lmdb lmdbxx::lmdbxx
+                      PRIVATE evmone secp256k1 cryptopp-static)

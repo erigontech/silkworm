@@ -16,15 +16,16 @@
 
 #include "evm.hpp"
 
-#include <evmone/evmone.h>
-
 #include <algorithm>
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <iterator>
+#include <memory>
 #include <silkworm/rlp/encode.hpp>
 #include <sstream>
 
+#include "analysis.hpp"
+#include "execution.hpp"
 #include "precompiled.hpp"
 #include "protocol_param.hpp"
 
@@ -208,10 +209,29 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 evmc::result EVM::execute(const evmc_message& message, uint8_t const* code,
                           size_t code_size) noexcept {
   address_stack_.push(message.destination);
-  evmc_vm* evmone{evmc_create_evmone()};
+
   EvmHost host{*this};
-  evmc::result res{evmone->execute(evmone, &host.get_interface(), host.to_context(), revision(),
-                                   &message, code, code_size)};
+  evmc_revision rev{revision()};
+
+  auto analysis{evmone::analyze(rev, code, code_size)};
+
+  auto state{std::make_unique<evmone::execution_state>()};
+  state->analysis = &analysis;
+  state->msg = &message;
+  state->code = code;
+  state->code_size = code_size;
+  state->host = evmc::HostContext{host.get_interface(), host.to_context()};
+  state->gas_left = message.gas;
+  state->rev = rev;
+
+  const auto* instr{&state->analysis->instrs[0]};
+  while (instr != nullptr) {
+    instr = instr->fn(instr, *state);
+  }
+
+  evmc::result res{evmc::make_result(state->status, state->gas_left,
+                                     &state->memory[state->output_offset], state->output_size)};
+
   address_stack_.pop();
   return res;
 }

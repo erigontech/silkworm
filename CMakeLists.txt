@@ -20,7 +20,7 @@ include(evmone/cmake/cable/bootstrap.cmake)
 include(CableBuildType)
 include(CableToolchains)
 
-cable_configure_toolchain(DEFAULT cxx17-pic)
+cable_configure_toolchain(DEFAULT cxx17)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
 include(evmone/cmake/cable/HunterGate.cmake)
@@ -41,6 +41,7 @@ add_compile_definitions(ENABLE_MODULE_RECOVERY)
 add_library(secp256k1 secp256k1/src/secp256k1.c)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
 
+# Compiler options
 if(MSVC)
   add_compile_options(/W4 /WX)
 else()
@@ -51,7 +52,27 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes -Wno-missing-field-initializers)
 endif()
 
-add_subdirectory(evmone)
+# Some required packages
+hunter_add_package(ethash)
+find_package(ethash CONFIG REQUIRED)
+hunter_add_package(intx)
+find_package(intx CONFIG REQUIRED)
+
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmone/evmc/.git)
+    message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
+endif()
+add_subdirectory(evmone/evmc)
+
+# evmone
+add_library(evmone evmone/lib/evmone/analysis.cpp
+                   evmone/lib/evmone/analysis.hpp
+                   evmone/lib/evmone/instructions.cpp
+                   evmone/lib/evmone/limits.hpp
+                   evmone/lib/evmone/opcodes_helpers.h)
+target_include_directories(evmone PUBLIC evmone/lib/evmone)
+target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
+
+# silkworm itself
 add_subdirectory(silkworm)
 
 add_executable(check_changes cmd/check_changes.cpp)

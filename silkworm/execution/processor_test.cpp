@@ -139,7 +139,7 @@ TEST_CASE("Self-destruct") {
   7      JUMPDEST
   */
 
-  // The caller calls the suicidal three times:
+  // The caller calls the input contract three times:
   // twice with zero value and once with non-zero value.
   Bytes caller_code{
       from_hex("600080808080803561eeeef150600080808080803561eeeef15060008080806005813561eeeef1")};

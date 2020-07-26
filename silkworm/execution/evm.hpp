@@ -25,6 +25,7 @@
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/state/substate.hpp>
 #include <silkworm/types/block.hpp>
+#include <stack>
 #include <vector>
 
 // TODO(Andrew) get rid of this when
@@ -75,6 +76,7 @@ class EVM {
   Substate substate_{};
   const Transaction* txn_{nullptr};
   std::vector<evmc::bytes32> block_hashes_{};
+  std::stack<evmc::address> address_stack_{};
 };
 
 // Yellow Paper, Section 7

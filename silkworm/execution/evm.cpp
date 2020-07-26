@@ -186,8 +186,9 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
     evmc_message msg{message};
     if (msg.kind == EVMC_CALLCODE) {
-      // TODO[Homestead] Double check DELEGATECALL (+test)
       msg.destination = msg.sender;
+    } else if (msg.kind == EVMC_DELEGATECALL) {
+      msg.destination = address_stack_.top();
     }
 
     res = execute(msg, code.data(), code.size());
@@ -206,10 +207,13 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
 evmc::result EVM::execute(const evmc_message& message, uint8_t const* code,
                           size_t code_size) noexcept {
+  address_stack_.push(message.destination);
   evmc_vm* evmone{evmc_create_evmone()};
   EvmHost host{*this};
-  return evmc::result{evmone->execute(evmone, &host.get_interface(), host.to_context(), revision(),
-                                      &message, code, code_size)};
+  evmc::result res{evmone->execute(evmone, &host.get_interface(), host.to_context(), revision(),
+                                   &message, code, code_size)};
+  address_stack_.pop();
+  return res;
 }
 
 evmc_revision EVM::revision() const noexcept {
@@ -345,7 +349,6 @@ evmc::result EvmHost::call(const evmc_message& message) noexcept {
   }
 }
 
-// TODO(Andrew) use HostContext for caching
 evmc_tx_context EvmHost::get_tx_context() const noexcept {
   evmc_tx_context context;
   intx::be::store(context.tx_gas_price.bytes, evm_.txn_->gas_price);

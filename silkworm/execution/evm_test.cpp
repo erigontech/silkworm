@@ -176,6 +176,54 @@ TEST_CASE("Maximum call depth") {
   CHECK(res.status == EVMC_INVALID_INSTRUCTION);
 }
 
+TEST_CASE("DELEGATECALL") {
+  BlockChain chain{nullptr};
+  Block block{};
+  block.header.number = 1'639'560;
+  evmc::address caller_address{0x8e4d1ea201b908ab5e1f5a1c3f9f1b4f6c1e9cf1_address};
+  evmc::address callee_address{0x3589d05a1ec4af9f65b0e5554e645707775ee43c_address};
+
+  // The callee writes the ADDRESS to storage.
+  Bytes callee_code{from_hex("30600055")};
+  /* https://github.com/CoinCulture/evm-tools
+  0      ADDRESS
+  1      PUSH1  => 00
+  3      SSTORE
+  */
+
+  // The caller delegate-calls the input contract.
+  Bytes caller_code{from_hex("6000808080803561eeeef4")};
+  /* https://github.com/CoinCulture/evm-tools
+  0      PUSH1  => 00
+  2      DUP1
+  3      DUP1
+  4      DUP1
+  5      DUP1
+  6      CALLDATALOAD
+  7      PUSH2  => eeee
+  10     DELEGATECALL
+  */
+
+  IntraBlockState state{nullptr};
+  state.set_code(caller_address, caller_code);
+  state.set_code(callee_address, callee_code);
+
+  EVM evm{chain, block, state};
+
+  Transaction txn{};
+  txn.from = caller_address;
+  txn.to = caller_address;
+  txn.data = full_view(to_hash(full_view(callee_address)));
+
+  uint64_t gas{1'000'000};
+  CallResult res{evm.execute(txn, gas)};
+  CHECK(res.status == EVMC_SUCCESS);
+
+  evmc::bytes32 key0{};
+  CHECK(to_hex(zeroless_view(state.get_storage(caller_address, key0))) ==
+        to_hex(full_view(caller_address)));
+}
+
 TEST_CASE("Create address") {
   CHECK(create_address(0xfbe0afcd7658ba86be41922059dd879c192d4c73_address, 0) ==
         0xc669eaad75042be84daaf9b461b0e868b9ac1871_address);

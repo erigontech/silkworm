@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <intx/int128.hpp>
+#include <silkworm/chain/dao.hpp>
 #include <utility>
 
 #include "protocol_param.hpp"
@@ -118,7 +119,9 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
 std::vector<Receipt> ExecutionProcessor::execute_block() {
   std::vector<Receipt> receipts{};
 
-  // TODO(Andrew) DAO block
+  if (evm_.block().header.number == evm_.config().dao_block) {
+    dao::transfer_balances(evm_.state());
+  }
 
   cumulative_gas_used_ = 0;
   for (const Transaction& txn : evm_.block().transactions) {

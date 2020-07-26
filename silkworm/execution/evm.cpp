@@ -25,6 +25,7 @@
 #include <sstream>
 
 #include "analysis.hpp"
+#include "analysis_cache.hpp"
 #include "execution.hpp"
 #include "precompiled.hpp"
 #include "protocol_param.hpp"
@@ -213,10 +214,15 @@ evmc::result EVM::execute(const evmc_message& message, uint8_t const* code,
   EvmHost host{*this};
   evmc_revision rev{revision()};
 
-  auto analysis{evmone::analyze(rev, code, code_size)};
+  AnalysisCache::instance().update_revision(rev);
+  Bytes key{code, code_size};
+  if (!AnalysisCache::instance().exists(key)) {
+    AnalysisCache::instance().put(key, evmone::analyze(rev, code, code_size));
+  }
+  std::shared_ptr<evmone::code_analysis> analysis{AnalysisCache::instance().get(key)};
 
   auto state{std::make_unique<evmone::execution_state>()};
-  state->analysis = &analysis;
+  state->analysis = analysis.get();
   state->msg = &message;
   state->code = code;
   state->code_size = code_size;

@@ -30,8 +30,7 @@ file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm ${SILKWORM_SRC})
-target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR}
-                                    "${CMAKE_SOURCE_DIR}/cpp-lru-cache/include")
+target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 
 # PUBLIC lmdbxx since we use its exceptions
 target_link_libraries(silkworm

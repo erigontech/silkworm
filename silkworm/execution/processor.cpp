@@ -80,8 +80,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
     state.set_nonce(*txn.from, nonce + 1);
   }
 
-  evm_.substate().clear();
-  evm_.state().touched().clear();
+  evm_.state().clear_substate();
 
   CallResult vm_res{evm_.execute(txn, txn.gas_limit - g0.lo)};
 
@@ -90,16 +89,9 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
   // award the miner
   state.add_to_balance(evm_.block().header.beneficiary, gas_used * txn.gas_price);
 
-  for (const evmc::address& a : evm_.substate().self_destructs) {
-    evm_.state().destruct(a);
-  }
-
+  evm_.state().destruct_suicides();
   if (spurious_dragon) {
-    for (const evmc::address& a : evm_.state().touched()) {
-      if (evm_.state().dead(a)) {
-        evm_.state().destruct(a);
-      }
-    }
+    evm_.state().destruct_touched_dead();
   }
 
   cumulative_gas_used_ += gas_used;
@@ -111,7 +103,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
       .post_state_or_status = vm_res.status == EVMC_SUCCESS,
       .cumulative_gas_used = cumulative_gas_used_,
       .bloom = bloom,
-      .logs = evm_.substate().logs,
+      .logs = evm_.state().logs(),
   };
 }
 
@@ -120,7 +112,7 @@ uint64_t ExecutionProcessor::available_gas() const {
 }
 
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) {
-  uint64_t refund{std::min((txn.gas_limit - gas_left) / 2, evm_.substate().total_refund())};
+  uint64_t refund{std::min((txn.gas_limit - gas_left) / 2, evm_.state().total_refund())};
   gas_left += refund;
   evm_.state().add_to_balance(*txn.from, gas_left * txn.gas_price);
   return gas_left;

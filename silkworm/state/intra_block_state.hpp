@@ -27,6 +27,8 @@
 #include <silkworm/state/reader.hpp>
 #include <silkworm/state/writer.hpp>
 #include <silkworm/types/account.hpp>
+#include <silkworm/types/log.hpp>
+#include <vector>
 
 namespace silkworm {
 
@@ -37,13 +39,16 @@ class IntraBlockState {
 
   explicit IntraBlockState(state::Reader* state_reader) : db_{state_reader} {}
 
-  // https://eips.ethereum.org/EIPS/eip-161
-  absl::flat_hash_set<evmc::address>& touched() { return touched_; }
-  bool dead(const evmc::address& address) const;
   bool exists(const evmc::address& address) const;
 
+  // https://eips.ethereum.org/EIPS/eip-161
+  bool dead(const evmc::address& address) const;
+
   void create_contract(const evmc::address& address);
-  void destruct(const evmc::address& address);
+
+  void record_suicide(const evmc::address& address);
+  void destruct_suicides();
+  void destruct_touched_dead();
 
   intx::uint256 get_balance(const evmc::address& address) const;
   void set_balance(const evmc::address& address, const intx::uint256& value);
@@ -63,6 +68,17 @@ class IntraBlockState {
 
   void write_block(state::Writer& state_writer);
 
+  // See Section 6.1 "Substate" of the Yellow Paper
+  void clear_substate();
+
+  void add_log(const Log& log);
+
+  const std::vector<Log>& logs() const { return logs_; }
+
+  void add_refund(uint64_t addend);
+
+  uint64_t total_refund() const;
+
  private:
   using Storage = absl::flat_hash_map<evmc::bytes32, evmc::bytes32>;
 
@@ -77,9 +93,17 @@ class IntraBlockState {
   Object* get_object(const evmc::address& address) const;
   Object& get_or_create_object(const evmc::address& address);
 
+  void destruct(const evmc::address& address);
+
   state::Reader* db_{nullptr};
+
   mutable absl::flat_hash_map<evmc::address, Object> objects_;
+
+  // substate
+  absl::flat_hash_set<evmc::address> self_destructs_;
+  std::vector<Log> logs_;
   absl::flat_hash_set<evmc::address> touched_;
+  uint64_t refund_{0};
 };
 }  // namespace silkworm
 

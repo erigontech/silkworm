@@ -19,6 +19,7 @@
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/execution/protocol_param.hpp>
 
 namespace silkworm {
 
@@ -86,6 +87,24 @@ void IntraBlockState::create_contract(const evmc::address& address) {
   created.current->incarnation = *prev_incarnation + 1;
 
   objects_[address] = created;
+}
+
+void IntraBlockState::record_suicide(const evmc::address& address) {
+  self_destructs_.insert(address);
+}
+
+void IntraBlockState::destruct_suicides() {
+  for (const evmc::address& a : self_destructs_) {
+    destruct(a);
+  }
+}
+
+void IntraBlockState::destruct_touched_dead() {
+  for (const evmc::address& a : touched_) {
+    if (dead(a)) {
+      destruct(a);
+    }
+  }
 }
 
 void IntraBlockState::destruct(const evmc::address& address) {
@@ -196,5 +215,20 @@ void IntraBlockState::write_block(state::Writer& state_writer) {
 
     state_writer.write_account(address, obj.original, obj.current);
   }
+}
+
+void IntraBlockState::clear_substate() {
+  self_destructs_.clear();
+  logs_.clear();
+  touched_.clear();
+  refund_ = 0;
+}
+
+void IntraBlockState::add_log(const Log& log) { logs_.push_back(log); }
+
+void IntraBlockState::add_refund(uint64_t addend) { refund_ += addend; }
+
+uint64_t IntraBlockState::total_refund() const {
+  return refund_ + fee::kRSelfDestruct * self_destructs_.size();
 }
 }  // namespace silkworm

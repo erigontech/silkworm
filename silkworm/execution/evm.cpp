@@ -86,7 +86,6 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
   }
 
   IntraBlockState snapshot{state_};
-  Substate sub_snapshot{substate_};
 
   uint64_t block_num{block_.header.number};
   bool spurious_dragon{config().has_spurious_dragon(block_num)};
@@ -132,7 +131,6 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
     res.create_address = contract_addr;
   } else {
     state_ = snapshot;
-    substate_ = sub_snapshot;
     if (res.status_code != EVMC_REVERT) {
       res.gas_left = 0;
     }
@@ -160,7 +158,6 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
   }
 
   IntraBlockState snapshot{state_};
-  Substate sub_snapshot{substate_};
 
   if (message.kind == EVMC_CALL && !(message.flags & EVMC_STATIC)) {
     state_.subtract_from_balance(message.sender, value);
@@ -200,7 +197,6 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
   if (res.status_code != EVMC_SUCCESS) {
     state_ = snapshot;
-    substate_ = sub_snapshot;
     if (res.status_code != EVMC_REVERT) {
       res.gas_left = 0;
     }
@@ -336,7 +332,7 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
   if (is_zero(prev_val)) return EVMC_STORAGE_ADDED;
 
   if (is_zero(value)) {
-    evm_.substate_.refund += fee::kRSClear;
+    evm_.state().add_refund(fee::kRSClear);
     return EVMC_STORAGE_DELETED;
   }
 
@@ -371,7 +367,7 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
 
 void EvmHost::selfdestruct(const evmc::address& address,
                            const evmc::address& beneficiary) noexcept {
-  evm_.substate().self_destructs.insert(address);
+  evm_.state().record_suicide(address);
   intx::uint256 balance{evm_.state().get_balance(address)};
   if (balance != 0 || !evm_.config().has_spurious_dragon(evm_.block_.header.number)) {
     evm_.state().add_to_balance(beneficiary, balance);
@@ -427,6 +423,6 @@ void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t
   Log log{.address = address};
   std::copy_n(topics, num_topics, std::back_inserter(log.topics));
   std::copy_n(data, data_size, std::back_inserter(log.data));
-  evm_.substate_.logs.push_back(log);
+  evm_.state().add_log(log);
 }
 }  // namespace silkworm

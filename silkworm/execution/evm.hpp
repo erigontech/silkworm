@@ -23,7 +23,6 @@
 #include <intx/intx.hpp>
 #include <silkworm/chain/block_chain.hpp>
 #include <silkworm/state/intra_block_state.hpp>
-#include <silkworm/state/substate.hpp>
 #include <silkworm/types/block.hpp>
 #include <stack>
 #include <vector>
@@ -52,7 +51,6 @@ class EVM {
   const ChainConfig& config() const { return chain_.config(); }
 
   IntraBlockState& state() { return state_; }
-  Substate& substate() { return substate_; }
 
   CallResult execute(const Transaction& txn, uint64_t gas);
 
@@ -74,7 +72,6 @@ class EVM {
   const BlockChain& chain_;
   const Block& block_;
   IntraBlockState& state_;
-  Substate substate_{};
   const Transaction* txn_{nullptr};
   std::vector<evmc::bytes32> block_hashes_{};
   std::stack<evmc::address> address_stack_{};

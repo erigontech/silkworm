@@ -14,6 +14,10 @@
    limitations under the License.
 */
 
+#include <absl/flags/flag.h>
+#include <absl/flags/parse.h>
+#include <absl/flags/usage.h>
+
 #include <cstdlib>
 #include <iostream>
 #include <silkworm/db/lmdb.hpp>
@@ -22,19 +26,25 @@
 #include <silkworm/state/reader.hpp>
 #include <string>
 
+std::string default_db_path() {
+  std::string home{std::getenv("HOME")};
+  return home + "/Library/Ethereum/geth/chaindata";
+}
+
+ABSL_FLAG(std::string, db, default_db_path(), "chain DB path");
+ABSL_FLAG(uint64_t, block, 1, "block number to start with");
+
 int main(int argc, char* argv[]) {
+  absl::SetProgramUsageMessage(
+      "Executes Ethereum blocks and compares resulting change sets against DB.");
+  absl::ParseCommandLine(argc, argv);
+
   using namespace silkworm;
 
-  std::string db_path{std::getenv("HOME")};
-  db_path += "/Library/Ethereum/geth/chaindata";
-  db::LmdbDatabase db{db_path.c_str()};
-
+  db::LmdbDatabase db{absl::GetFlag(FLAGS_db).c_str()};
   BlockChain chain{&db};
 
-  uint64_t block_num{1};
-  if (argc == 2) {
-    block_num = std::stoull(argv[1]);
-  }
+  uint64_t block_num{absl::GetFlag(FLAGS_block)};
 
   for (; std::optional<BlockWithHash> bh = db.get_block(block_num); ++block_num) {
     std::vector<evmc::address> senders{db.get_senders(block_num, bh->hash)};

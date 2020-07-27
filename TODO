@@ -1,7 +1,5 @@
 Comments!!!
 
-Incarnation anti-invert
-
 CI with test coverage under Linux (gcc)
 
 MDB_NOTLS and multi-threading. Do we mix C++ and go in one process?

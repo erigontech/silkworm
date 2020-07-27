@@ -28,14 +28,14 @@ namespace silkworm::db {
 Bytes storage_prefix(const evmc::address& address, uint64_t incarnation) {
   Bytes res(kAddressLength + kIncarnationLength, '\0');
   std::memcpy(&res[0], address.bytes, kAddressLength);
-  boost::endian::store_big_u64(&res[kAddressLength], ~incarnation);
+  boost::endian::store_big_u64(&res[kAddressLength], incarnation);
   return res;
 }
 
 Bytes storage_key(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key) {
   Bytes res(kAddressLength + kIncarnationLength + kHashLength, '\0');
   std::memcpy(&res[0], address.bytes, kAddressLength);
-  boost::endian::store_big_u64(&res[kAddressLength], ~incarnation);
+  boost::endian::store_big_u64(&res[kAddressLength], incarnation);
   std::memcpy(&res[kAddressLength + kIncarnationLength], key.bytes, kHashLength);
   return res;
 }

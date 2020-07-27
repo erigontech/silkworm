@@ -169,7 +169,7 @@ num_of_contracts uint32
 num_of_non_default_incarnations uint32
 [num_of_non_default_incarnations]{
   contract_idx uint32
-  ~incarnation uint64
+  incarnation uint64
 }
 [num_of_entries]keys   bytes32
 num_of_uint8_val_lens  uint32
@@ -200,12 +200,12 @@ Bytes StorageChanges::encode() const {
   for (const auto& entry : *this) {
     ByteView contract_key{entry.first.data(), kAddressLen + kIncarnationLength};
     if (contract_key != prev) {
-      uint64_t incarnation{~load_big_u64(&contract_key[kAddressLen])};
+      uint64_t incarnation{load_big_u64(&contract_key[kAddressLen])};
       if (incarnation != kDefaultIncarnation) {
         size_t pos{non_default_incarnations.size()};
         non_default_incarnations.resize(pos + kIncarnationLength + 4);
         store_big_u32(&non_default_incarnations[pos], contracts.size());
-        store_big_u64(&non_default_incarnations[pos + 4], ~incarnation);
+        store_big_u64(&non_default_incarnations[pos + 4], incarnation);
         ++num_of_non_default_incarnations;
       }
       contracts.push_back({contract_key.substr(0, kAddressLen), incarnation, {}, {}});
@@ -293,7 +293,7 @@ std::optional<ByteView> StorageChanges::find(ByteView b, ByteView composite_key)
   if (b.empty()) return {};
 
   ByteView address{composite_key.substr(0, kAddressLen)};
-  uint64_t incarnation{~load_big_u64(&composite_key[kAddressLen])};
+  uint64_t incarnation{load_big_u64(&composite_key[kAddressLen])};
   ByteView key{composite_key.substr(kAddressLen + kIncarnationLength)};
 
   auto [num_of_contracts, num_of_non_default_incarnations, incarnation_pos, key_pos,
@@ -328,7 +328,7 @@ std::optional<ByteView> StorageChanges::find(ByteView b, ByteView composite_key)
       uint64_t found_incarnation{kDefaultIncarnation};
       if (incarnation_idx < num_of_non_default_incarnations &&
           incarnation_contract_idx(incarnation_idx) == contract_idx) {
-        found_incarnation = ~load_big_u64(&inc_view[12 * incarnation_idx + 4]);
+        found_incarnation = load_big_u64(&inc_view[12 * incarnation_idx + 4]);
       }
 
       if (found_incarnation == incarnation) {

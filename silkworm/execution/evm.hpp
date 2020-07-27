@@ -63,7 +63,8 @@ class EVM {
 
   evmc::result call(const evmc_message& message) noexcept;
 
-  evmc::result execute(const evmc_message& message, uint8_t const* code, size_t code_size) noexcept;
+  evmc::result execute(const evmc_message& message, ByteView code,
+                       std::optional<evmc::bytes32> code_hash) noexcept;
 
   evmc_revision revision() const noexcept;
 

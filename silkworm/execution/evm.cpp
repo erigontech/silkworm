@@ -111,7 +111,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
       .value = message.value,
   };
 
-  res = execute(deploy_message, message.input_data, message.input_size);
+  res = execute(deploy_message, ByteView{message.input_data, message.input_size}, {});
 
   if (res.status_code == EVMC_SUCCESS) {
     size_t code_len{res.output_size};
@@ -186,6 +186,8 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     Bytes code{state_.get_code(message.destination)};
     if (code.empty()) return res;
 
+    evmc::bytes32 code_hash{state_.get_code_hash(message.destination)};
+
     evmc_message msg{message};
     if (msg.kind == EVMC_CALLCODE) {
       msg.destination = msg.sender;
@@ -193,7 +195,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
       msg.destination = address_stack_.top();
     }
 
-    res = execute(msg, code.data(), code.size());
+    res = execute(msg, code, code_hash);
   }
 
   if (res.status_code != EVMC_SUCCESS) {
@@ -207,25 +209,30 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
   return res;
 }
 
-evmc::result EVM::execute(const evmc_message& message, uint8_t const* code,
-                          size_t code_size) noexcept {
+evmc::result EVM::execute(const evmc_message& message, ByteView code,
+                          std::optional<evmc::bytes32> code_hash) noexcept {
   address_stack_.push(message.destination);
 
   EvmHost host{*this};
   evmc_revision rev{revision()};
 
-  AnalysisCache::instance().update_revision(rev);
-  Bytes key{code, code_size};
-  if (!AnalysisCache::instance().exists(key)) {
-    AnalysisCache::instance().put(key, evmone::analyze(rev, code, code_size));
+  std::shared_ptr<evmone::code_analysis> analysis;
+  if (code_hash) {
+    AnalysisCache::instance().update_revision(rev);
+    if (!AnalysisCache::instance().exists(*code_hash)) {
+      AnalysisCache::instance().put(*code_hash, evmone::analyze(rev, code.data(), code.size()));
+    }
+    analysis = AnalysisCache::instance().get(*code_hash);
+  } else {
+    analysis =
+        std::make_shared<evmone::code_analysis>(evmone::analyze(rev, code.data(), code.size()));
   }
-  std::shared_ptr<evmone::code_analysis> analysis{AnalysisCache::instance().get(key)};
 
   auto state{std::make_unique<evmone::execution_state>()};
   state->analysis = analysis.get();
   state->msg = &message;
-  state->code = code;
-  state->code_size = code_size;
+  state->code = code.data();
+  state->code_size = code.size();
   state->host = evmc::HostContext{host.get_interface(), host.to_context()};
   state->gas_left = message.gas;
   state->rev = rev;

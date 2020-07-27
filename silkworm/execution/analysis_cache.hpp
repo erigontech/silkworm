@@ -17,8 +17,7 @@
 #ifndef SILKWORM_EXECUTION_ANALYSIS_CACHE_H_
 #define SILKWORM_EXECUTION_ANALYSIS_CACHE_H_
 
-#include <evmc/evmc.h>
-
+#include <evmc/evmc.hpp>
 #include <lrucache/lrucache.hpp>
 #include <memory>
 #include <silkworm/common/base.hpp>
@@ -40,16 +39,16 @@ class AnalysisCache {
 
   void update_revision(evmc_revision revision);
 
-  bool exists(const Bytes& key) const { return cache_.exists(key); }
+  bool exists(const evmc::bytes32& key) const { return cache_.exists(key); }
 
-  std::shared_ptr<evmone::code_analysis> get(const Bytes& key) { return cache_.get(key); }
+  std::shared_ptr<evmone::code_analysis> get(const evmc::bytes32& key) { return cache_.get(key); }
 
-  void put(const Bytes& key, evmone::code_analysis&& value);
+  void put(const evmc::bytes32& key, evmone::code_analysis&& value);
 
  private:
   AnalysisCache() : cache_{kMaxSize} {}
 
-  cache::lru_cache<Bytes, std::shared_ptr<evmone::code_analysis>> cache_;
+  cache::lru_cache<evmc::bytes32, std::shared_ptr<evmone::code_analysis>> cache_;
   evmc_revision revision_{EVMC_MAX_REVISION};
 };
 }  // namespace silkworm

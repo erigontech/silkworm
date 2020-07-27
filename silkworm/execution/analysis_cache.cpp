@@ -35,7 +35,7 @@ void AnalysisCache::update_revision(evmc_revision revision) {
   revision_ = revision;
 }
 
-void AnalysisCache::put(const Bytes& key, evmone::code_analysis&& value) {
+void AnalysisCache::put(const evmc::bytes32& key, evmone::code_analysis&& value) {
   cache_.put(key, std::make_shared<evmone::code_analysis>(std::move(value)));
 }
 }  // namespace silkworm

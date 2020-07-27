@@ -28,7 +28,7 @@
 
 std::string default_db_path() {
   std::string home{std::getenv("HOME")};
-  return home + "/Library/Ethereum/geth/chaindata";
+  return home + "/Library/TurboGeth/geth/chaindata";
 }
 
 ABSL_FLAG(std::string, db, default_db_path(), "chain DB path");

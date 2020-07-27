@@ -17,10 +17,10 @@
 #ifndef SILKWORM_STATE_SUBSTATE_H_
 #define SILKWORM_STATE_SUBSTATE_H_
 
+#include <absl/container/flat_hash_set.h>
 #include <stdint.h>
 
 #include <silkworm/types/log.hpp>
-#include <unordered_set>
 #include <vector>
 
 namespace silkworm {
@@ -31,9 +31,8 @@ class Substate {
   Substate(const Substate&) = default;
   Substate& operator=(const Substate&) = default;
 
-  std::unordered_set<evmc::address> self_destructs;
+  absl::flat_hash_set<evmc::address> self_destructs;
   std::vector<Log> logs;
-  // TODO[Spurious Dragon] touched accounts
   uint64_t refund{0};
 
   uint64_t total_refund() const;

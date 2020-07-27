@@ -26,6 +26,7 @@
 namespace silkworm {
 
 // See Section 6.1 "Substate" of the Yellow Paper.
+// Touched accounts live in IntraBlockState.
 class Substate {
  public:
   Substate(const Substate&) = default;

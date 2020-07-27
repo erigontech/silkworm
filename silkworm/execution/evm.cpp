@@ -313,8 +313,11 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
 }
 
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {
-  // TODO[Spurious Dragon] Do empty accounts require any special treatment (mind EIP-161)?
-  return evm_.state().exists(address);
+  if (evm_.config().has_spurious_dragon(evm_.block_.header.number)) {
+    return !evm_.state().dead(address);
+  } else {
+    return evm_.state().exists(address);
+  }
 }
 
 evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::bytes32& key) const
@@ -369,8 +372,10 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
 void EvmHost::selfdestruct(const evmc::address& address,
                            const evmc::address& beneficiary) noexcept {
   evm_.substate().self_destructs.insert(address);
-  // TODO[Spurious Dragon] EIP-161
-  evm_.state().add_to_balance(beneficiary, evm_.state().get_balance(address));
+  intx::uint256 balance{evm_.state().get_balance(address)};
+  if (balance != 0 || !evm_.config().has_spurious_dragon(evm_.block_.header.number)) {
+    evm_.state().add_to_balance(beneficiary, balance);
+  }
   evm_.state().set_balance(address, 0);
 }
 

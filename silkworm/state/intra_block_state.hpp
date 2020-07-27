@@ -18,6 +18,7 @@
 #define SILKWORM_STATE_INTRA_BLOCK_STATE_H_
 
 #include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
@@ -36,7 +37,11 @@ class IntraBlockState {
 
   explicit IntraBlockState(state::Reader* state_reader) : db_{state_reader} {}
 
+  // https://eips.ethereum.org/EIPS/eip-161
+  absl::flat_hash_set<evmc::address>& touched() { return touched_; }
+  bool dead(const evmc::address& address) const;
   bool exists(const evmc::address& address) const;
+
   void create_contract(const evmc::address& address);
   void destruct(const evmc::address& address);
 
@@ -74,6 +79,7 @@ class IntraBlockState {
 
   state::Reader* db_{nullptr};
   mutable absl::flat_hash_map<evmc::address, Object> objects_;
+  absl::flat_hash_set<evmc::address> touched_;
 };
 }  // namespace silkworm
 

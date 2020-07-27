@@ -53,6 +53,15 @@ bool IntraBlockState::exists(const evmc::address& address) const {
   return obj && obj->current;
 }
 
+bool IntraBlockState::dead(const evmc::address& address) const {
+  Object* obj{get_object(address)};
+  if (!obj || !obj->current) {
+    return true;
+  }
+  return obj->current->code_hash == kEmptyHash && obj->current->nonce == 0 &&
+         obj->current->balance == 0;
+}
+
 void IntraBlockState::create_contract(const evmc::address& address) {
   Object created{};
   created.current = Account{};
@@ -94,15 +103,18 @@ intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const {
 
 void IntraBlockState::set_balance(const evmc::address& address, const intx::uint256& value) {
   get_or_create_object(address).current->balance = value;
+  touched_.insert(address);
 }
 
 void IntraBlockState::add_to_balance(const evmc::address& address, const intx::uint256& addend) {
   get_or_create_object(address).current->balance += addend;
+  touched_.insert(address);
 }
 
 void IntraBlockState::subtract_from_balance(const evmc::address& address,
                                             const intx::uint256& subtrahend) {
   get_or_create_object(address).current->balance -= subtrahend;
+  touched_.insert(address);
 }
 
 uint64_t IntraBlockState::get_nonce(const evmc::address& address) const {

@@ -60,6 +60,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
 
   uint64_t block_number{evm_.block().header.number};
   bool homestead{evm_.config().has_homestead(block_number)};
+  bool spurious_dragon{evm_.config().has_spurious_dragon(block_number)};
   bool istanbul{evm_.config().has_istanbul(block_number)};
   bool contract_creation{!txn.to};
 
@@ -80,6 +81,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
   }
 
   evm_.substate().clear();
+  evm_.state().touched().clear();
 
   CallResult vm_res{evm_.execute(txn, txn.gas_limit - g0.lo)};
 
@@ -90,6 +92,14 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
 
   for (const evmc::address& a : evm_.substate().self_destructs) {
     evm_.state().destruct(a);
+  }
+
+  if (spurious_dragon) {
+    for (const evmc::address& a : evm_.state().touched()) {
+      if (evm_.state().dead(a)) {
+        evm_.state().destruct(a);
+      }
+    }
   }
 
   cumulative_gas_used_ += gas_used;

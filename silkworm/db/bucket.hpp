@@ -21,8 +21,8 @@
 Part of the compatibility layer with the Turbo-Geth DB format;
 see its common/dbutils/bucket.go.
 */
-
 namespace silkworm::db::bucket {
+
 constexpr const char* kPlainState{"PLAIN-CST"};
 constexpr const char* kAccountChanges{"PLAIN-ACS"};
 constexpr const char* kStorageChanges{"PLAIN-SCS"};
@@ -30,9 +30,14 @@ constexpr const char* kAccountHistory{"hAT"};
 constexpr const char* kStorageHistory{"hST"};
 constexpr const char* kCode{"CODE"};
 constexpr const char* kCodeHash{"PLAIN-contractCode"};
-constexpr const char* kBlockHeader{"h"};
-constexpr const char* kBlockBody{"b"};
+constexpr const char* kBlockHeaders{"h"};
+constexpr const char* kBlockBodies{"b"};
 constexpr const char* kSenders{"txSenders"};
+
+constexpr const char* kBuckets[]{
+    kPlainState, kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory,
+    kCode,       kCodeHash,       kBlockHeaders,   kBlockBodies,    kSenders,
+};
 }  // namespace silkworm::db::bucket
 
 #endif  // SILKWORM_DB_BUCKET_H_

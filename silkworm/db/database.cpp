@@ -24,7 +24,7 @@ namespace silkworm::db {
 std::optional<BlockHeader> Database::get_header(uint64_t block_number,
                                                 const evmc::bytes32& block_hash) {
   auto txn{begin_ro_transaction()};
-  auto bucket{txn->get_bucket(bucket::kBlockHeader)};
+  auto bucket{txn->get_bucket(bucket::kBlockHeaders)};
   Bytes key{block_key(block_number, block_hash)};
   std::optional<ByteView> header_rlp{bucket->get(key)};
   if (!header_rlp) return {};
@@ -39,7 +39,7 @@ std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   BlockWithHash bh{};
   auto txn{begin_ro_transaction()};
 
-  auto header_bucket{txn->get_bucket(bucket::kBlockHeader)};
+  auto header_bucket{txn->get_bucket(bucket::kBlockHeaders)};
   std::optional<ByteView> hash_val{header_bucket->get(header_hash_key(block_number))};
   if (!hash_val) return {};
 
@@ -52,7 +52,7 @@ std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
   auto header_stream{as_stream(*header_rlp)};
   rlp::decode(header_stream, bh.block.header);
 
-  auto body_bucket{txn->get_bucket(bucket::kBlockBody)};
+  auto body_bucket{txn->get_bucket(bucket::kBlockBodies)};
   std::optional<ByteView> body_rlp{body_bucket->get(key)};
   if (!body_rlp) return {};
 

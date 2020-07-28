@@ -32,8 +32,8 @@ std::string default_db_path() {
 }
 
 ABSL_FLAG(std::string, db, default_db_path(), "chain DB path");
-ABSL_FLAG(uint64_t, from, 1, "start from block number");
-ABSL_FLAG(uint64_t, to, UINT64_MAX, "check up to block number");
+ABSL_FLAG(uint64_t, from, 1, "start from block number (inclusive)");
+ABSL_FLAG(uint64_t, to, UINT64_MAX, "check up to block number (exclusive)");
 
 int main(int argc, char* argv[]) {
   absl::SetProgramUsageMessage(
@@ -45,10 +45,11 @@ int main(int argc, char* argv[]) {
   db::LmdbDatabase db{absl::GetFlag(FLAGS_db).c_str()};
   BlockChain chain{&db};
 
-  uint64_t limit{absl::GetFlag(FLAGS_to)};
-  uint64_t block_num{absl::GetFlag(FLAGS_from)};
+  const uint64_t from{absl::GetFlag(FLAGS_from)};
+  const uint64_t to{absl::GetFlag(FLAGS_to)};
 
-  for (; block_num < limit; ++block_num) {
+  uint64_t block_num{from};
+  for (; block_num < to; ++block_num) {
     std::optional<BlockWithHash> bh = db.get_block(block_num);
     if (!bh) {
       break;
@@ -122,6 +123,6 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  std::cout << "All blocks < " << block_num << " have been checked 😅\n";
+  std::cout << "Blocks [" << from << "; " << block_num << ") have been checked 😅\n";
   return 0;
 }

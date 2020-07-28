@@ -22,11 +22,11 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-#include <optional>
-#include <silkworm/common/base.hpp>
+#include <memory>
+#include <silkworm/state/delta.hpp>
+#include <silkworm/state/object.hpp>
 #include <silkworm/state/reader.hpp>
 #include <silkworm/state/writer.hpp>
-#include <silkworm/types/account.hpp>
 #include <silkworm/types/log.hpp>
 #include <vector>
 
@@ -34,8 +34,23 @@ namespace silkworm {
 
 class IntraBlockState {
  public:
-  IntraBlockState(const IntraBlockState&) = default;
-  IntraBlockState& operator=(const IntraBlockState&) = default;
+  class Snapshot {
+   public:
+    Snapshot(Snapshot&&) = default;
+    Snapshot& operator=(Snapshot&&) = default;
+
+   private:
+    friend class IntraBlockState;
+
+    Snapshot() = default;
+
+    size_t journal_size_{0};
+    size_t log_size_{0};
+    uint64_t refund_{0};
+  };
+
+  IntraBlockState(const IntraBlockState&) = delete;
+  IntraBlockState& operator=(const IntraBlockState&) = delete;
 
   explicit IntraBlockState(state::Reader* state_reader) : db_{state_reader} {}
 
@@ -68,8 +83,11 @@ class IntraBlockState {
 
   void write_block(state::Writer& state_writer);
 
+  Snapshot take_snapshot() const;
+  void revert_to_snapshot(const Snapshot& snapshot);
+
   // See Section 6.1 "Substate" of the Yellow Paper
-  void clear_substate();
+  void clear_journal_and_substate();
 
   void add_log(const Log& log);
 
@@ -80,24 +98,30 @@ class IntraBlockState {
   uint64_t total_refund() const;
 
  private:
-  using Storage = absl::flat_hash_map<evmc::bytes32, evmc::bytes32>;
+  friend class state::CreateDelta;
+  friend class state::UpdateDelta;
+  friend class state::SuicideDelta;
+  friend class state::TouchDelta;
+  friend class state::StorageDelta;
 
-  struct Object {
-    std::optional<Account> original;
-    std::optional<Account> current;
-    Storage original_storage;
-    Storage current_storage;
-    std::optional<Bytes> code;
+  struct Storage {
+    absl::flat_hash_map<evmc::bytes32, evmc::bytes32> original;
+    absl::flat_hash_map<evmc::bytes32, evmc::bytes32> current;
   };
 
-  Object* get_object(const evmc::address& address) const;
-  Object& get_or_create_object(const evmc::address& address);
+  state::Object* get_object(const evmc::address& address) const;
+  state::Object& get_or_create_object(const evmc::address& address);
+
+  void touch(const evmc::address& address);
 
   void destruct(const evmc::address& address);
 
   state::Reader* db_{nullptr};
 
-  mutable absl::flat_hash_map<evmc::address, Object> objects_;
+  mutable absl::flat_hash_map<evmc::address, state::Object> objects_;
+  mutable absl::flat_hash_map<evmc::address, Storage> storage_;
+
+  std::vector<std::unique_ptr<state::Delta>> journal_;
 
   // substate
   absl::flat_hash_set<evmc::address> self_destructs_;

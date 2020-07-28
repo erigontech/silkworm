@@ -80,7 +80,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
     state.set_nonce(*txn.from, nonce + 1);
   }
 
-  evm_.state().clear_substate();
+  evm_.state().clear_journal_and_substate();
 
   CallResult vm_res{evm_.execute(txn, txn.gas_limit - g0.lo)};
 

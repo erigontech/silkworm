@@ -32,7 +32,8 @@ std::string default_db_path() {
 }
 
 ABSL_FLAG(std::string, db, default_db_path(), "chain DB path");
-ABSL_FLAG(uint64_t, block, 1, "block number to start with");
+ABSL_FLAG(uint64_t, from, 1, "start from block number");
+ABSL_FLAG(uint64_t, to, UINT64_MAX, "check up to block number");
 
 int main(int argc, char* argv[]) {
   absl::SetProgramUsageMessage(
@@ -44,9 +45,15 @@ int main(int argc, char* argv[]) {
   db::LmdbDatabase db{absl::GetFlag(FLAGS_db).c_str()};
   BlockChain chain{&db};
 
-  uint64_t block_num{absl::GetFlag(FLAGS_block)};
+  uint64_t limit{absl::GetFlag(FLAGS_to)};
+  uint64_t block_num{absl::GetFlag(FLAGS_from)};
 
-  for (; std::optional<BlockWithHash> bh = db.get_block(block_num); ++block_num) {
+  for (; block_num < limit; ++block_num) {
+    std::optional<BlockWithHash> bh = db.get_block(block_num);
+    if (!bh) {
+      break;
+    }
+
     std::vector<evmc::address> senders{db.get_senders(block_num, bh->hash)};
     assert(senders.size() == bh->block.transactions.size());
     for (size_t i{0}; i < senders.size(); ++i) {
@@ -114,6 +121,7 @@ int main(int argc, char* argv[]) {
       std::cout << "Checked blocks ≤ " << block_num << "\n";
     }
   }
-  std::cout << "All available blocks < " << block_num << " have been checked 😅\n";
+
+  std::cout << "All blocks < " << block_num << " have been checked 😅\n";
   return 0;
 }

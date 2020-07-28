@@ -87,6 +87,9 @@ void IntraBlockState::create_contract(const evmc::address& address) {
     } else if (prev->original) {
       prev_incarnation = prev->original->incarnation;
     }
+    journal_.push_back(std::make_unique<state::UpdateDelta>(address, *prev));
+  } else {
+    journal_.push_back(std::make_unique<state::CreateDelta>(address));
   }
 
   if (!prev_incarnation) {
@@ -97,12 +100,6 @@ void IntraBlockState::create_contract(const evmc::address& address) {
   created.current->incarnation = *prev_incarnation + 1;
 
   objects_[address] = created;
-
-  if (prev) {
-    journal_.push_back(std::make_unique<state::UpdateDelta>(address, *prev));
-  } else {
-    journal_.push_back(std::make_unique<state::CreateDelta>(address));
-  }
 }
 
 void IntraBlockState::touch(const evmc::address& address) {

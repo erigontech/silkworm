@@ -145,19 +145,20 @@ std::unique_ptr<Transaction> LmdbDatabase::begin_transaction(bool read_only) {
   return std::make_unique<LmdbTransaction>(txn);
 }
 
-TemporaryLmdbDatabase::TemporaryLmdbDatabase()
-    : LmdbDatabase{
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-          std::tmpnam(nullptr),
+static char* temporary_file_name() { return std::tmpnam(nullptr); }
 #pragma GCC diagnostic pop
-          LmdbOptions{
-              .map_size = 32 << 20,  // 32MiB
-              .no_sync = true,
-              .no_meta_sync = true,
-              .write_map = true,
-              .no_sub_dir = true,
-          }} {
+
+TemporaryLmdbDatabase::TemporaryLmdbDatabase()
+    : LmdbDatabase{temporary_file_name(),
+                   LmdbOptions{
+                       .map_size = 32 << 20,  // 32MiB
+                       .no_sync = true,
+                       .no_meta_sync = true,
+                       .write_map = true,
+                       .no_sub_dir = true,
+                   }} {
   mdb_env_get_path(env_, &tmp_file_);
 }
 

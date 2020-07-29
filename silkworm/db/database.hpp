@@ -94,7 +94,7 @@ class Database {
   std::optional<BlockHeader> get_header(uint64_t block_number, const evmc::bytes32& block_hash);
   std::optional<BlockWithHash> get_block(uint64_t block_number);
   std::vector<evmc::address> get_senders(uint64_t block_number, const evmc::bytes32& block_hash);
-  Bytes get_code(const evmc::bytes32& code_hash);
+  std::optional<Bytes> get_code(const evmc::bytes32& code_hash);
   std::optional<Account> get_account(const evmc::address& address, uint64_t block_number);
   std::optional<AccountChanges> get_account_changes(uint64_t block_number);
   Bytes get_storage_changes(uint64_t block_number);

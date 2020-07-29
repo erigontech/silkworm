@@ -100,7 +100,7 @@ std::optional<Account> Database::get_account(const evmc::address& address, uint6
   return acc;
 }
 
-Bytes Database::get_code(const evmc::bytes32& code_hash) {
+std::optional<Bytes> Database::get_code(const evmc::bytes32& code_hash) {
   auto txn{begin_ro_transaction()};
   auto bucket{txn->get_bucket(bucket::kCode)};
   std::optional<ByteView> val{bucket->get(full_view(code_hash))};

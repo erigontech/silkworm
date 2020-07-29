@@ -47,11 +47,6 @@ TEST_CASE("Execution validation") {
   CHECK_THROWS_MATCHES(processor.execute_transaction(txn), ValidationError,
                        Message("missing sender"));
 
-  // sender is still not in the state
-  txn.from = 0x68d7899b6635146a37d01934461d0c9e4b65ddda_address;
-  CHECK_THROWS_MATCHES(processor.execute_transaction(txn), ValidationError,
-                       Message("sender " + to_hex(*txn.from) + " does not exist"));
-
   // TODO(Andrew) other validation errors
 }
 

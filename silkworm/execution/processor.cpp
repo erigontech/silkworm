@@ -59,10 +59,6 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
     throw ValidationError("missing sender");
   }
 
-  if (!state.exists(*txn.from)) {
-    throw ValidationError("sender " + to_hex(*txn.from) + " does not exist");
-  }
-
   uint64_t nonce{state.get_nonce(*txn.from)};
   if (nonce != txn.nonce) {
     throw ValidationError("invalid nonce");

@@ -16,6 +16,10 @@
 
 cmake_minimum_required(VERSION 3.12) # for CONFIGURE_DEPENDS
 
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmone/evmc/.git)
+    message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
+endif()
+
 include(evmone/cmake/cable/bootstrap.cmake)
 include(CableBuildType)
 include(CableToolchains)
@@ -60,9 +64,6 @@ find_package(ethash CONFIG REQUIRED)
 hunter_add_package(intx)
 find_package(intx CONFIG REQUIRED)
 
-if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmone/evmc/.git)
-    message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
-endif()
 add_subdirectory(evmone/evmc)
 
 # evmone

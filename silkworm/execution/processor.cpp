@@ -144,6 +144,12 @@ std::vector<Receipt> ExecutionProcessor::execute_block() {
 
   apply_rewards();
 
+  // See Yellow Paper, Appendix K "Anomalies on the Main Network"
+  if (evm_.block().header.number == evm_.config().ripemd_deletion_block) {
+    constexpr evmc::address ripemd_address{0x0000000000000000000000000000000000000003_address};
+    evm_.state().destruct(ripemd_address);
+  }
+
   return receipts;
 }
 

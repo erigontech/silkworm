@@ -44,6 +44,9 @@ struct ChainConfig {
   // https://ecips.ethereumclassic.org/ECIPs/ecip-1054
   std::optional<uint64_t> spurious_dragon_block;
 
+  // Yellow Paper, Appendix K "Anomalies on the Main Network"
+  std::optional<uint64_t> ripemd_deletion_block;
+
   // https://eips.ethereum.org/EIPS/eip-609
   // https://ecips.ethereumclassic.org/ECIPs/ecip-1054
   std::optional<uint64_t> byzantium_block;
@@ -101,6 +104,7 @@ constexpr ChainConfig kEthMainnetChainConfig{
     .dao_block = 1'920'000,
     .tangerine_whistle_block = 2'463'000,
     .spurious_dragon_block = 2'675'000,
+    .ripemd_deletion_block = 2'675'119,
     .byzantium_block = 4'370'000,
     .constantinople_block = 7'280'000,
     .petersburg_block = 7'280'000,
@@ -116,6 +120,7 @@ constexpr ChainConfig kEtcMainnetChainConfig{
     .dao_block = {},
     .tangerine_whistle_block = 2'500'000,
     .spurious_dragon_block = 8'772'000,
+    .ripemd_deletion_block = {},
     .byzantium_block = 8'772'000,
     .constantinople_block = 9'573'000,
     .petersburg_block = 9'573'000,

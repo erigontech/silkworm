@@ -61,6 +61,8 @@ class IntraBlockState {
 
   void create_contract(const evmc::address& address);
 
+  void destruct(const evmc::address& address);
+
   void record_suicide(const evmc::address& address);
   void destruct_suicides();
   void destruct_touched_dead();
@@ -113,8 +115,6 @@ class IntraBlockState {
   state::Object& get_or_create_object(const evmc::address& address);
 
   void touch(const evmc::address& address);
-
-  void destruct(const evmc::address& address);
 
   state::Reader* db_{nullptr};
 

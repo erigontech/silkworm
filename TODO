@@ -5,10 +5,12 @@ https://github.com/ledgerwatch/turbo-geth/pull/807
 
 CI with test coverage under Linux (gcc)
 
-MDB_NOTLS and multi-threading. Do we mix C++ and go in one process?
+-march=native toolchain
 
 Propagate noexcept from EvmHost
 
 Get rid of byte_ptr_cast & other casts
 
 Replace Boost with Abseil?
+
+MDB_NOTLS and multi-threading. Do we mix C++ and go in one process?

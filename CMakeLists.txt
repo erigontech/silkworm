@@ -52,6 +52,7 @@ if(MSVC)
   add_compile_options(/W4 /WX)
 else()
   add_compile_options(-Wall -Wextra -Werror)
+  add_compile_options(-gline-tables-only) # for profiling
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

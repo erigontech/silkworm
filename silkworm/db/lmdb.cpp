@@ -151,7 +151,7 @@ TemporaryLmdbDatabase::TemporaryLmdbDatabase()
     : LmdbDatabase{std::tmpnam(nullptr),
 #pragma GCC diagnostic pop
                    LmdbOptions{
-                       .map_size = 64 << 20,  // 64MB
+                       .map_size = 32 << 20,  // 32MiB
                        .no_sync = true,
                        .no_meta_sync = true,
                        .write_map = true,

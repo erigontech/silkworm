@@ -54,7 +54,7 @@ class lru_cache {
     return _cache_items_map.find(key) != _cache_items_map.end();
   }
 
-  size_t size() const { return _cache_items_map.size(); }
+  size_t size() const noexcept { return _cache_items_map.size(); }
 
   void clear() noexcept {
     _cache_items_list.clear();

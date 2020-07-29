@@ -32,7 +32,9 @@ static intx::uint128 intrinsic_gas(ByteView data, bool contract_creation, bool h
     gas += fee::kGTxCreate;
   }
 
-  if (data.empty()) return gas;
+  if (data.empty()) {
+    return gas;
+  }
 
   intx::uint128 non_zero_bytes{
       std::count_if(data.begin(), data.end(), [](char c) { return c != 0; })};
@@ -53,10 +55,18 @@ ExecutionProcessor::ExecutionProcessor(const BlockChain& chain, const Block& blo
 Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
   IntraBlockState& state{evm_.state()};
 
-  if (!txn.from || !state.exists(*txn.from)) throw ValidationError("missing sender");
+  if (!txn.from) {
+    throw ValidationError("missing sender");
+  }
+
+  if (!state.exists(*txn.from)) {
+    throw ValidationError("sender " + to_hex(*txn.from) + " does not exist");
+  }
 
   uint64_t nonce{state.get_nonce(*txn.from)};
-  if (nonce != txn.nonce) throw ValidationError("invalid nonce");
+  if (nonce != txn.nonce) {
+    throw ValidationError("invalid nonce");
+  }
 
   uint64_t block_number{evm_.block().header.number};
   bool homestead{evm_.config().has_homestead(block_number)};
@@ -65,14 +75,20 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
   bool contract_creation{!txn.to};
 
   intx::uint128 g0{intrinsic_gas(txn.data, contract_creation, homestead, istanbul)};
-  if (txn.gas_limit < g0) throw ValidationError("intrinsic gas");
+  if (txn.gas_limit < g0) {
+    throw ValidationError("intrinsic gas");
+  }
 
   intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price)};
   intx::uint512 v0{gas_cost + txn.value};
 
-  if (state.get_balance(*txn.from) < v0) throw ValidationError("insufficient funds");
+  if (state.get_balance(*txn.from) < v0) {
+    throw ValidationError("insufficient funds");
+  }
 
-  if (available_gas() < txn.gas_limit) throw ValidationError("block gas limit reached");
+  if (available_gas() < txn.gas_limit) {
+    throw ValidationError("block gas limit reached");
+  }
 
   state.subtract_from_balance(*txn.from, gas_cost.lo);
   if (!contract_creation) {

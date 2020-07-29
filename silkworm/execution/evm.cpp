@@ -205,10 +205,11 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
   return res;
 }
 
-evmc::result EVM::execute(const evmc_message& message, ByteView code,
+evmc::result EVM::execute(const evmc_message& msg, ByteView code,
                           std::optional<evmc::bytes32> code_hash) noexcept {
-  address_stack_.push(message.destination);
+  address_stack_.push(msg.destination);
 
+  // TODO(Andrew) consider evmc::HostContext for caching
   EvmHost host{*this};
   evmc_revision rev{revision()};
 
@@ -224,14 +225,9 @@ evmc::result EVM::execute(const evmc_message& message, ByteView code,
         std::make_shared<evmone::code_analysis>(evmone::analyze(rev, code.data(), code.size()));
   }
 
-  auto state{std::make_unique<evmone::execution_state>()};
+  auto state{std::make_unique<evmone::execution_state>(
+      msg, rev, host.get_interface(), host.to_context(), code.data(), code.size())};
   state->analysis = analysis.get();
-  state->msg = &message;
-  state->code = code.data();
-  state->code_size = code.size();
-  state->host = evmc::HostContext{host.get_interface(), host.to_context()};
-  state->gas_left = message.gas;
-  state->rev = rev;
 
   const auto* instr{&state->analysis->instrs[0]};
   while (instr != nullptr) {

@@ -16,6 +16,7 @@
 
 #include "state_pool.hpp"
 
+#include <cassert>
 #include <utility>
 
 #include "analysis.hpp"

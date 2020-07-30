@@ -54,7 +54,7 @@ else()
   add_compile_options(-Wall -Wextra -Werror)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
   add_compile_options(-gline-tables-only) # for profiling
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes -Wno-missing-field-initializers)

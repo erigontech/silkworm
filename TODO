@@ -1,8 +1,5 @@
 Comments!!!
 
-HistoryIndex_Idempotent
-https://github.com/ledgerwatch/turbo-geth/pull/807
-
 CI with test coverage under Linux (gcc)
 
 -march=native toolchain

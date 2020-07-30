@@ -20,7 +20,6 @@
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <iterator>
-#include <memory>
 #include <silkworm/rlp/encode.hpp>
 #include <sstream>
 
@@ -29,6 +28,7 @@
 #include "execution.hpp"
 #include "precompiled.hpp"
 #include "protocol_param.hpp"
+#include "state_pool.hpp"
 
 namespace silkworm {
 
@@ -209,7 +209,6 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code,
                           std::optional<evmc::bytes32> code_hash) noexcept {
   address_stack_.push(msg.destination);
 
-  // TODO(Andrew) consider evmc::HostContext for caching
   EvmHost host{*this};
   evmc_revision rev{revision()};
 
@@ -225,8 +224,19 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code,
         std::make_shared<evmone::code_analysis>(evmone::analyze(rev, code.data(), code.size()));
   }
 
-  auto state{std::make_unique<evmone::execution_state>(
-      msg, rev, host.get_interface(), host.to_context(), code.data(), code.size())};
+  while (!ExecutionStatePool::instance().spare_objects()) {
+    ExecutionStatePool::instance().add(std::make_unique<evmone::execution_state>(
+        msg, rev, host.get_interface(), host.to_context(), code.data(), code.size()));
+  }
+
+  evmone::execution_state* state{ExecutionStatePool::instance().grab()};
+  state->clear();
+
+  state->gas_left = msg.gas;
+  state->msg = &msg;
+  state->host = evmc::HostContext{host.get_interface(), host.to_context()};
+  state->rev = rev;
+  state->code = code;
   state->analysis = analysis.get();
 
   const auto* instr{&state->analysis->instrs[0]};
@@ -237,7 +247,9 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code,
   evmc::result res{evmc::make_result(state->status, state->gas_left,
                                      &state->memory[state->output_offset], state->output_size)};
 
+  ExecutionStatePool::instance().release();
   address_stack_.pop();
+
   return res;
 }
 

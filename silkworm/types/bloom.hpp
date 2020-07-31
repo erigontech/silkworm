@@ -21,12 +21,18 @@
 #include <stdint.h>
 
 #include <array>
+#include <silkworm/types/log.hpp>
+#include <vector>
 
 namespace silkworm {
 
 constexpr size_t kBloomByteLength{256};
 
 using Bloom = std::array<uint8_t, kBloomByteLength>;
+
+inline ByteView full_view(const Bloom& bloom) { return {bloom.data(), kBloomByteLength}; }
+
+Bloom logs_bloom(const std::vector<Log>& logs);
 
 }  // namespace silkworm
 

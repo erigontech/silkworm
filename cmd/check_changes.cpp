@@ -65,7 +65,12 @@ int main(int argc, char* argv[]) {
     IntraBlockState state{&reader};
     ExecutionProcessor processor{chain, bh->block, state};
 
-    std::vector<Receipt> receipts = processor.execute_block();
+    try {
+      std::vector<Receipt> receipts = processor.execute_block();
+    } catch (ValidationError& err) {
+      std::cerr << "ValidationError in block " << block_num << " 🤬\n";
+      throw err;
+    }
 
     if (processor.cumulative_gas_used() != bh->block.header.gas_used) {
       std::cerr << "gasUsed mismatch for block " << block_num << " 😠\n";

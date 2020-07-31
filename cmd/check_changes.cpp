@@ -17,6 +17,7 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
+#include <absl/time/time.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -47,6 +48,8 @@ int main(int argc, char* argv[]) {
 
   const uint64_t from{absl::GetFlag(FLAGS_from)};
   const uint64_t to{absl::GetFlag(FLAGS_to)};
+
+  absl::Time t1{absl::Now()};
 
   uint64_t block_num{from};
   for (; block_num < to; ++block_num) {
@@ -124,7 +127,10 @@ int main(int argc, char* argv[]) {
     }
 
     if (block_num % 1000 == 0) {
-      std::cout << "Checked blocks ≤ " << block_num << "\n";
+      absl::Time t2{absl::Now()};
+      std::cout << "Checked blocks ≤ " << block_num << " in " << absl::ToInt64Seconds(t2 - t1)
+                << " s\n";
+      t1 = t2;
     }
   }
 

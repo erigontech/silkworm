@@ -18,7 +18,7 @@ Then run the build itself
 ```
 cmake --build . -j
 ```
-Now you can check database changes with silkworm
+Now you can check database changes (produced by [Turbo-Geth](https://github.com/ledgerwatch/turbo-geth)) with silkworm
 ```
 ./check_changes
 ```

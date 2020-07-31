@@ -83,7 +83,7 @@ target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
 add_subdirectory(silkworm)
 
 add_executable(check_changes cmd/check_changes.cpp)
-target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse)
+target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time)
 
 # Unit tests
 enable_testing()

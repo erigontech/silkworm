@@ -36,15 +36,21 @@ constexpr uint32_t kHashLen{kHashLength};
 std::tuple<uint32_t, uint32_t> decode_account_meta(ByteView b) {
   using boost::endian::load_big_u32;
 
-  if (b.length() < 4) throw DecodingError("input too short");
+  if (b.length() < 4) {
+    throw DecodingError("input too short");
+  }
 
   uint32_t n{load_big_u32(&b[0])};
 
   uint32_t val_pos{4 + n * kAddressLen + 4 * n};
-  if (b.length() < val_pos) throw DecodingError("input too short");
+  if (b.length() < val_pos) {
+    throw DecodingError("input too short");
+  }
 
   uint32_t total_val_len{load_big_u32(&b[val_pos - 4])};
-  if (b.length() < val_pos + total_val_len) throw DecodingError("input too short");
+  if (b.length() < val_pos + total_val_len) {
+    throw DecodingError("input too short");
+  }
 
   return {n, val_pos};
 }
@@ -52,7 +58,9 @@ std::tuple<uint32_t, uint32_t> decode_account_meta(ByteView b) {
 std::tuple<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t> decode_storage_meta(ByteView b) {
   using boost::endian::load_big_u32;
 
-  if (b.length() < 4) throw DecodingError("input too short");
+  if (b.length() < 4) {
+    throw DecodingError("input too short");
+  }
 
   uint32_t num_of_contracts{load_big_u32(&b[0])};
   uint32_t pos{num_of_contracts * (kAddressLen + 4)};
@@ -78,7 +86,9 @@ std::pair<uint32_t, uint32_t> account_indices(ByteView lengths, uint32_t i) {
   using boost::endian::load_big_u32;
 
   uint32_t idx0{0};
-  if (i > 0) idx0 = load_big_u32(&lengths[4 * (i - 1)]);
+  if (i > 0) {
+    idx0 = load_big_u32(&lengths[4 * (i - 1)]);
+  }
   uint32_t idx1 = load_big_u32(&lengths[4 * i]);
 
   return {idx0, idx1};
@@ -123,7 +133,9 @@ struct Contract {
 namespace silkworm::db {
 
 AccountChanges AccountChanges::decode(ByteView b) {
-  if (b.empty()) return {};
+  if (b.empty()) {
+    return {};
+  }
 
   auto [n, val_pos]{decode_account_meta(b)};
   ByteView lengths{b.substr(4 + n * kAddressLen)};
@@ -143,7 +155,9 @@ std::optional<ByteView> AccountChanges::find(ByteView b, ByteView key) {
 
   assert(key.length() == kAddressLen);
 
-  if (b.empty()) return {};
+  if (b.empty()) {
+    return {};
+  }
 
   auto [n, val_pos]{decode_account_meta(b)};
 
@@ -151,7 +165,9 @@ std::optional<ByteView> AccountChanges::find(ByteView b, ByteView key) {
     return account_address(b, i) < address;
   })};
 
-  if (i >= n || account_address(b, i) != key) return {};
+  if (i >= n || account_address(b, i) != key) {
+    return {};
+  }
 
   auto [idx0, idx1]{account_indices(b.substr(4 + n * kAddressLen), i)};
 
@@ -290,7 +306,9 @@ std::optional<ByteView> StorageChanges::find(ByteView b, ByteView composite_key)
 
   assert(composite_key.length() == kAddressLen + kIncarnationLength + kHashLen);
 
-  if (b.empty()) return {};
+  if (b.empty()) {
+    return {};
+  }
 
   ByteView address{composite_key.substr(0, kAddressLen)};
   uint64_t incarnation{load_big_u64(&composite_key[kAddressLen])};
@@ -303,7 +321,9 @@ std::optional<ByteView> StorageChanges::find(ByteView b, ByteView composite_key)
       CI(0), CI(num_of_contracts), address,
       [b](uint32_t i, ByteView address) { return storage_address(b, i) < address; })};
 
-  if (contract_idx >= num_of_contracts || storage_address(b, contract_idx) != address) return {};
+  if (contract_idx >= num_of_contracts || storage_address(b, contract_idx) != address) {
+    return {};
+  }
 
   uint32_t num_of_incarnations{1};
   while (contract_idx + num_of_incarnations < num_of_contracts &&
@@ -339,7 +359,9 @@ std::optional<ByteView> StorageChanges::find(ByteView b, ByteView composite_key)
       }
     }
 
-    if (!found) return {};
+    if (!found) {
+      return {};
+    }
   }
 
   uint32_t from{0};
@@ -352,7 +374,9 @@ std::optional<ByteView> StorageChanges::find(ByteView b, ByteView composite_key)
   uint32_t key_idx{*std::lower_bound(CI(from), CI(to), key, [key_view](uint32_t i, ByteView key) {
     return key_view.substr(i * kHashLen, kHashLen) < key;
   })};
-  if (key_idx == to || key_view.substr(key_idx * kHashLen, kHashLen) != key) return {};
+  if (key_idx == to || key_view.substr(key_idx * kHashLen, kHashLen) != key) {
+    return {};
+  }
 
   return find_value(b.substr(val_pos), key_idx);
 }

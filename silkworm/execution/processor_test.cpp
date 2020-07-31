@@ -345,4 +345,45 @@ TEST_CASE("Out of Gas during account re-creation") {
   // only the caller and the miner should be changed
   CHECK(writer.account_changes().size() == 2);
 }
+
+TEST_CASE("Empty suicide beneficiary") {
+  Block block{};
+  block.header.number = 2'687'389;
+  block.header.gas_limit = 4'712'388;
+  block.header.beneficiary = 0x2a65aca4d5fc5b5c859090a6c34d164135398226_address;
+  evmc::address caller{0x5ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f_address};
+  evmc::address suicide_beneficiary{0xee098e6c2a43d9e2c04f08f0c3a87b0ba59079d5_address};
+
+  Transaction txn{
+      .nonce = 0,
+      .gas_price = 30 * kGiga,
+      .gas_limit = 360'000,
+      .to = {},
+      .value = 0,
+      .data =
+          from_hex("0x6000607f5359610043806100135939610056566c010000000000000000000000007fee098e6c2"
+                   "a43d9e2c04f08f0c3a87b0ba59079d4d53532071d6cd0cb86facd5605ff6100008061003f600039"
+                   "61003f565b6000f35b816000f0905050596100718061006c59396100dd5661005f8061000e60003"
+                   "961006d566000603f5359610043806100135939610056566c010000000000000000000000007fee"
+                   "098e6c2a43d9e2c04f08f0c3a87b0ba59079d4d53532071d6cd0cb86facd5605ff6100008061003"
+                   "f60003961003f565b6000f35b816000f0905050fe5b6000f35b816000f090506040526000600060"
+                   "0060006000604051620249f0f15061000080610108600039610108565b6000f3"),
+  };
+  txn.from = caller;
+
+  IntraBlockState state{nullptr};
+  state.add_to_balance(caller, kEther);
+
+  BlockChain chain{nullptr};
+  ExecutionProcessor processor{chain, block, state};
+
+  Receipt receipt{processor.execute_transaction(txn)};
+  CHECK(std::get<bool>(receipt.post_state_or_status));
+
+  state::Writer writer{};
+  state.write_block(writer);
+
+  // suicide_beneficiary should've been touched and deleted
+  CHECK(writer.account_changes().count(suicide_beneficiary) == 1);
+}
 }  // namespace silkworm

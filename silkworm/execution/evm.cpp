@@ -376,10 +376,7 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
 void EvmHost::selfdestruct(const evmc::address& address,
                            const evmc::address& beneficiary) noexcept {
   evm_.state().record_suicide(address);
-  intx::uint256 balance{evm_.state().get_balance(address)};
-  if (balance != 0 || !evm_.config().has_spurious_dragon(evm_.block_.header.number)) {
-    evm_.state().add_to_balance(beneficiary, balance);
-  }
+  evm_.state().add_to_balance(beneficiary, evm_.state().get_balance(address));
   evm_.state().set_balance(address, 0);
 }
 

@@ -45,7 +45,7 @@ Bytes history_index_key(ByteView key, uint64_t block_number);
 // If a < b, then Encoding(a) < Encoding(b) lexicographically
 Bytes encode_timestamp(uint64_t block_number);
 
-// Default batabase path
+// Default database path
 std::string default_path();
 }  // namespace silkworm::db
 

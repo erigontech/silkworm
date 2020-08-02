@@ -23,6 +23,7 @@ see its package dbutils.
 */
 
 #include <silkworm/common/base.hpp>
+#include <string>
 
 namespace silkworm::db {
 // Turbo-Geth PlainGenerateStoragePrefix
@@ -43,6 +44,9 @@ Bytes history_index_key(ByteView key, uint64_t block_number);
 // Turbo-Geth EncodeTimestamp
 // If a < b, then Encoding(a) < Encoding(b) lexicographically
 Bytes encode_timestamp(uint64_t block_number);
+
+// Default batabase path
+std::string default_path();
 }  // namespace silkworm::db
 
 #endif  // SILKWORM_DB_UTIL_H_

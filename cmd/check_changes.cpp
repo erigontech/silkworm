@@ -19,20 +19,15 @@
 #include <absl/flags/usage.h>
 #include <absl/time/time.h>
 
-#include <cstdlib>
 #include <iostream>
 #include <silkworm/db/lmdb.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/state/reader.hpp>
 #include <string>
 
-std::string default_db_path() {
-  std::string home{std::getenv("HOME")};
-  return home + "/Library/TurboGeth/geth/chaindata";
-}
-
-ABSL_FLAG(std::string, db, default_db_path(), "chain DB path");
+ABSL_FLAG(std::string, db, silkworm::db::default_path(), "chain DB path");
 ABSL_FLAG(uint64_t, from, 1, "start from block number (inclusive)");
 ABSL_FLAG(uint64_t, to, UINT64_MAX, "check up to block number (exclusive)");
 

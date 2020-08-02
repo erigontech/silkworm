@@ -18,6 +18,7 @@
 
 #include <boost/endian/conversion.hpp>
 #include <cassert>
+#include <cstdlib>
 #include <cstring>
 #include <intx/int128.hpp>
 #include <silkworm/common/util.hpp>
@@ -82,5 +83,44 @@ Bytes encode_timestamp(uint64_t block_number) {
   std::memcpy(&encoded[byte_count - be.length()], &be[0], be.length());
   encoded[0] |= byte_count << (8 - byte_count_bits);
   return encoded;
+}
+
+// See Turbo-Geth DefaultDataDir
+std::string default_path() {
+  std::string base_dir{};
+
+  const char* env{std::getenv("XDG_DATA_HOME")};
+  if (env) {
+    base_dir = env;
+  } else {
+    env = std::getenv("LOCALAPPDATA");
+    if (env) {
+      base_dir = env;
+    }
+  }
+
+  if (base_dir.empty()) {
+    env = std::getenv("HOME");
+    if (!env) {
+      return {};
+    }
+    std::string home_dir{env};
+
+#ifdef _WIN32
+    base_dir = home_dir + "/AppData/Roaming";
+#elif __APPLE__
+    base_dir = home_dir + "/Library";
+#else
+    base_dir = home_dir + "/.local/share";
+#endif
+  }
+
+#if defined(_WIN32) || defined(__APPLE__)
+  base_dir += "/TurboGeth";
+#else
+  base_dir += "/turbogeth";
+#endif
+
+  return base_dir + "/tg/chaindata";
 }
 }  // namespace silkworm::db

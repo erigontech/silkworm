@@ -27,7 +27,7 @@
 namespace silkworm::db {
 
 struct LmdbOptions {
-  uint64_t map_size = 4ull << 40;  // 4TiB by default
+  uint64_t map_size = 2ull << 40;  // 2TiB by default
   bool no_sync = true;             // MDB_NOSYNC
   bool no_meta_sync = false;       // MDB_NOMETASYNC
   bool write_map = false;          // MDB_WRITEMAP

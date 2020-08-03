@@ -78,7 +78,9 @@ int main(int argc, char* argv[]) {
       return -1;
     }
 
-    // TODO[Byzantium] check receipts
+    if (chain.config().has_byzantium(block_num)) {
+      // TODO[Byzantium] check receipts
+    }
 
     state::Writer writer;
     state.write_block(writer);

@@ -36,6 +36,11 @@ inline const uint8_t* byte_ptr_cast(const char* ptr) noexcept {
 
 evmc::bytes32 to_hash(ByteView bytes);
 
+template <unsigned N>
+ByteView full_view(const uint8_t (&bytes)[N]) {
+  return {bytes, N};
+}
+
 inline ByteView full_view(const evmc::address& address) { return {address.bytes, kAddressLength}; }
 inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHashLength}; }
 
@@ -50,6 +55,15 @@ Bytes from_hex(std::string_view hex);
 
 // TODO[C++20] replace by starts_with
 inline bool has_prefix(ByteView s, ByteView prefix) { return s.substr(0, prefix.size()) == prefix; }
+
+// TODO[C++20] replace by std::popcount
+inline int popcount(unsigned x) {
+#ifdef _MSC_VER
+  return __popcnt(x);
+#else
+  return __builtin_popcount(x);
+#endif
+}
 
 inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> as_stream(
     ByteView view) {

@@ -61,8 +61,8 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 # Some required packages
-hunter_add_package(ethash)
-find_package(ethash CONFIG REQUIRED)
+#hunter_add_package(ethash)
+#find_package(ethash CONFIG REQUIRED)
 hunter_add_package(intx)
 find_package(intx CONFIG REQUIRED)
 
@@ -77,7 +77,8 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/limits.hpp
                    evmone/lib/evmone/opcodes_helpers.h)
 target_include_directories(evmone PUBLIC evmone/lib/evmone)
-target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
+#target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
+target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE)
 
 # silkworm itself
 add_subdirectory(silkworm)

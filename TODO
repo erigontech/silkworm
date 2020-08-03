@@ -2,6 +2,8 @@ Comments!!!
 
 CI with test coverage under Linux (gcc)
 
+Consider replacing ethash::keccak with cryptopp
+
 Propagate noexcept from EvmHost
 
 Get rid of byte_ptr_cast & other casts

@@ -41,7 +41,11 @@ add_subdirectory(abseil-cpp)
 
 # secp256k1
 add_compile_definitions(USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
-add_compile_definitions(USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
+if(MSVC)
+  add_compile_definitions(USE_FIELD_10X26 USE_SCALAR_8X32)
+else()
+  add_compile_definitions(USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
+endif()
 add_compile_definitions(ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
 add_compile_definitions(ENABLE_MODULE_RECOVERY)
 add_library(secp256k1 secp256k1/src/secp256k1.c)

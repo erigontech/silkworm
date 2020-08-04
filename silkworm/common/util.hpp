@@ -21,6 +21,8 @@
 
 namespace silkworm {
 
+// Converts bytes to hash; input is cropped if necessary.
+// Short inputs are left-padded with 0s.
 evmc::bytes32 to_hash(ByteView bytes);
 
 template <unsigned N>

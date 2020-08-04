@@ -32,7 +32,7 @@ set(HUNTER_USE_CACHE_SERVERS NO)
 HunterGate(
   URL "https://github.com/cpp-pm/hunter/archive/v0.23.258.tar.gz"
   SHA1 "062a19ab13ce8dffa9a882b6ce3e43bdabdf75d3"
-  FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/evmone/cmake/Hunter/config.cmake"
+  FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake"
 )
 
 project(silkworm)

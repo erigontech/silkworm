@@ -50,6 +50,7 @@ target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/inclu
 # Compiler options
 if(MSVC)
   add_compile_options(/W4 /WX)
+  add_compile_options(/we5030) # Silence warnings about gnu attributes
 else()
   add_compile_options(-Wall -Wextra -Werror)
 endif()

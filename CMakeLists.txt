@@ -53,8 +53,9 @@ target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/inclu
 
 # Compiler options
 if(MSVC)
-  add_compile_options(/W4 /WX)
-  add_compile_options(/we5030) # Silence warnings about gnu attributes
+  add_compile_options(/W4)
+  add_compile_options(/wd5030) # Silence warnings about gnu attributes
+  add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
 else()
   add_compile_options(-Wall -Wextra -Werror)
 endif()

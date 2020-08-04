@@ -20,7 +20,6 @@
 #include <ethash/keccak.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
-#include <sstream>
 
 namespace silkworm::trie {
 
@@ -31,19 +30,22 @@ void HashBuilder::add(ByteView, ByteView) {
 }
 
 evmc::bytes32 HashBuilder::root_hash() {
+  thread_local Bytes rlp;
+  thread_local ethash::hash256 hash;
+
   evmc::bytes32 res{};
-  std::ostringstream stream{};
+
+  rlp.clear();
 
   if (popcount(branch_mask_) == 0) {
     Bytes path{encoded_path(/*terminating=*/true)};
     rlp::Header h{.list = true, .payload_length = rlp::length(path)};
     h.payload_length += rlp::length(value_);
-    rlp::encode_header(stream, h);
-    rlp::encode(stream, path);
-    rlp::encode(stream, value_);
-    std::string rlp{stream.str()};
+    rlp::encode_header(rlp, h);
+    rlp::encode(rlp, path);
+    rlp::encode(rlp, value_);
 
-    ethash::hash256 hash{ethash::keccak256(byte_ptr_cast(rlp.data()), rlp.length())};
+    hash = ethash::keccak256(rlp.data(), rlp.length());
     std::memcpy(res.bytes, hash.bytes, kHashLength);
     return res;
   } else {

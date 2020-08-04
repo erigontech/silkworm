@@ -16,6 +16,7 @@
 
 #include "block.hpp"
 
+#include <cstring>
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm {
@@ -37,11 +38,11 @@ static Header rlp_header(const BlockHeader& header) {
 }
 
 size_t length(const BlockHeader& header) {
-  Header rlp_head = rlp_header(header);
+  Header rlp_head{rlp_header(header)};
   return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
 }
 
-void encode(std::ostream& to, const BlockHeader& header) {
+void encode(Bytes& to, const BlockHeader& header) {
   encode_header(to, rlp_header(header));
   encode(to, header.parent_hash.bytes);
   encode(to, header.ommers_hash.bytes);
@@ -49,8 +50,7 @@ void encode(std::ostream& to, const BlockHeader& header) {
   encode(to, header.state_root.bytes);
   encode(to, header.transactions_root.bytes);
   encode(to, header.receipts_root.bytes);
-  encode_header(to, {.list = false, .payload_length = kBloomByteLength});
-  to.write(byte_ptr_cast(header.logs_bloom.data()), kBloomByteLength);
+  encode(to, full_view(header.logs_bloom));
   encode(to, header.difficulty);
   encode(to, header.number);
   encode(to, header.gas_limit);
@@ -62,8 +62,8 @@ void encode(std::ostream& to, const BlockHeader& header) {
 }
 
 template <>
-void decode(std::istream& from, BlockHeader& to) {
-  Header rlp_head = decode_header(from);
+void decode(ByteView& from, BlockHeader& to) {
+  Header rlp_head{decode_header(from)};
   if (!rlp_head.list) {
     throw DecodingError("unexpected string");
   }
@@ -79,7 +79,8 @@ void decode(std::istream& from, BlockHeader& to) {
   if (bloom_head.list || bloom_head.payload_length != kBloomByteLength) {
     throw DecodingError("unorthodox logsBloom");
   }
-  from.read(byte_ptr_cast(to.logs_bloom.data()), kBloomByteLength);
+  std::memcpy(to.logs_bloom.data(), from.data(), kBloomByteLength);
+  from.remove_prefix(kBloomByteLength);
 
   decode(from, to.difficulty);
   decode(from, to.number);
@@ -95,13 +96,14 @@ void decode(std::istream& from, BlockHeader& to) {
     throw DecodingError("extraData must be no longer than 32 bytes");
   }
   to.extra_data_size_ = extra_data_head.payload_length;
-  from.read(byte_ptr_cast(to.extra_data_.bytes), to.extra_data_size_);
+  std::memcpy(to.extra_data_.bytes, from.data(), to.extra_data_size_);
+  from.remove_prefix(to.extra_data_size_);
 
   decode(from, to.mix_hash.bytes);
   decode(from, to.nonce);
 }
 
-void encode(std::ostream& to, const BlockBody& block_body) {
+void encode(Bytes& to, const BlockBody& block_body) {
   Header rlp_head{.list = true, .payload_length = 0};
   rlp_head.payload_length += length(block_body.transactions);
   rlp_head.payload_length += length(block_body.ommers);
@@ -111,8 +113,8 @@ void encode(std::ostream& to, const BlockBody& block_body) {
 }
 
 template <>
-void decode(std::istream& from, BlockBody& to) {
-  Header rlp_head = decode_header(from);
+void decode(ByteView& from, BlockBody& to) {
+  Header rlp_head{decode_header(from)};
   if (!rlp_head.list) {
     throw DecodingError("unexpected string");
   }

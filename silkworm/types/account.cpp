@@ -73,8 +73,7 @@ Account decode_account_from_storage(ByteView encoded) {
     if (encoded.length() < pos + len) {
       throw DecodingError("input too short for account nonce");
     }
-    auto stream{as_stream(encoded.substr(pos))};
-    a.nonce = rlp::read_uint64(stream, len);
+    a.nonce = rlp::read_uint64(encoded.substr(pos, len));
     pos += len;
   }
 
@@ -93,8 +92,7 @@ Account decode_account_from_storage(ByteView encoded) {
     if (encoded.length() < pos + len) {
       throw DecodingError("input too short for account incarnation");
     }
-    auto stream{as_stream(encoded.substr(pos))};
-    a.incarnation = rlp::read_uint64(stream, len);
+    a.incarnation = rlp::read_uint64(encoded.substr(pos, len));
     pos += len;
   }
 
@@ -113,7 +111,7 @@ Account decode_account_from_storage(ByteView encoded) {
 }
 
 namespace rlp {
-void encode(std::ostream& to, const Account& account) {
+void encode(Bytes& to, const Account& account) {
   Header h{.list = true, .payload_length = 0};
   h.payload_length += length(account.nonce);
   h.payload_length += length(account.balance);
@@ -128,7 +126,7 @@ void encode(std::ostream& to, const Account& account) {
 }
 
 template <>
-void decode(std::istream& from, Account& to) {
+void decode(ByteView& from, Account& to) {
   Header h = decode_header(from);
   if (!h.list) {
     throw DecodingError("unexpected string");

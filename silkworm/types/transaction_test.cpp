@@ -18,7 +18,6 @@
 
 #include <catch2/catch.hpp>
 #include <silkworm/common/util.hpp>
-#include <sstream>
 
 namespace silkworm {
 
@@ -39,11 +38,12 @@ TEST_CASE("Transaction RLP") {
           "0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718"),
   };
 
-  std::stringstream stream;
-  rlp::encode(stream, txn);
+  Bytes encoded{};
+  rlp::encode(encoded, txn);
 
   Transaction decoded;
-  rlp::decode<Transaction>(stream, decoded);
+  ByteView view{encoded};
+  rlp::decode<Transaction>(view, decoded);
   CHECK(decoded == txn);
 }
 }  // namespace silkworm

@@ -18,7 +18,6 @@
 
 #include <catch2/catch.hpp>
 #include <silkworm/common/util.hpp>
-#include <sstream>
 
 namespace silkworm {
 
@@ -30,11 +29,12 @@ TEST_CASE("Account RLP") {
       .code_hash = 0x12580ee5fc5ea05a1a19a93cbc51830ae3607690b7c4a6996ea211aba5a966b2_bytes32,
   };
 
-  std::stringstream stream;
-  rlp::encode(stream, account);
+  Bytes encoded{};
+  rlp::encode(encoded, account);
 
   Account decoded;
-  rlp::decode<Account>(stream, decoded);
+  ByteView view{encoded};
+  rlp::decode<Account>(view, decoded);
   CHECK(decoded == account);
 }
 

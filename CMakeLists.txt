@@ -90,12 +90,10 @@ enable_testing()
 
 hunter_add_package(Catch)
 find_package(Catch2 CONFIG REQUIRED)
-hunter_add_package(Boost)
-find_package(Boost CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "silkworm/*_test.cpp")
 add_executable(tests cmd/tests.cpp ${SILKWORM_TESTS})
-target_link_libraries(tests silkworm Catch2::Catch2 Boost::boost)
+target_link_libraries(tests silkworm Catch2::Catch2)
 
 include(CTest)
 include(Catch)

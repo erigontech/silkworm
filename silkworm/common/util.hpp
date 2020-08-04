@@ -17,22 +17,9 @@
 #ifndef SILKWORM_COMMON_UTIL_H_
 #define SILKWORM_COMMON_UTIL_H_
 
-#include <boost/iostreams/device/array.hpp>
-#include <boost/iostreams/stream.hpp>
 #include <silkworm/common/base.hpp>
 
 namespace silkworm {
-
-static_assert(sizeof(char) == sizeof(uint8_t));
-
-inline char* byte_ptr_cast(uint8_t* ptr) noexcept { return reinterpret_cast<char*>(ptr); }
-inline const char* byte_ptr_cast(const uint8_t* ptr) noexcept {
-  return reinterpret_cast<const char*>(ptr);
-}
-inline uint8_t* byte_ptr_cast(char* ptr) noexcept { return reinterpret_cast<uint8_t*>(ptr); }
-inline const uint8_t* byte_ptr_cast(const char* ptr) noexcept {
-  return reinterpret_cast<const uint8_t*>(ptr);
-}
 
 evmc::bytes32 to_hash(ByteView bytes);
 
@@ -63,11 +50,6 @@ inline int popcount(unsigned x) {
 #else
   return __builtin_popcount(x);
 #endif
-}
-
-inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> as_stream(
-    ByteView view) {
-  return {byte_ptr_cast(view.begin()), view.size()};
 }
 }  // namespace silkworm
 

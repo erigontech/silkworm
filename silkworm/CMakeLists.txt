@@ -30,7 +30,6 @@ file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm ${SILKWORM_SRC})
-target_compile_features(silkworm PUBLIC cxx_std_20)
 target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 
 target_link_libraries(silkworm

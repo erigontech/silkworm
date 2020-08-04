@@ -24,11 +24,35 @@ namespace silkworm::trie {
 
 // https://eth.wiki/fundamentals/patricia-tree#example-trie
 TEST_CASE("HashBuilder") {
-  Bytes key0{from_hex("646f")};
-  Bytes val0{from_hex("76657262")};
-  HashBuilder hb{key0, val0};
-  Bytes rlp0{from_hex("c98320646f8476657262")};
+  // The first entry
+  Bytes key0{from_hex("646f")};      // "do"
+  Bytes val0{from_hex("76657262")};  // "verb"
+
+  // leaf node
+  Bytes rlp0{from_hex("c98320") + key0 + from_hex("84") + val0};
   ethash::hash256 hash0{ethash::keccak256(rlp0.data(), rlp0.size())};
+
+  HashBuilder hb{key0, val0};
   CHECK(to_hex(hb.root_hash()) == to_hex(full_view(hash0.bytes)));
+
+  // ------------------------------------------------------------------------------------------
+  // Add the second entry
+  Bytes key1{key0 + from_hex("67")};   // "dog"
+  Bytes val1{from_hex("7075707079")};  // "puppy"
+
+  // leaf node
+  Bytes rlp1_0{from_hex("c73785") + val1};
+  REQUIRE(rlp1_0.length() < 32);
+
+  // branch node
+  Bytes rlp1_1{from_hex("dd80808080808088") + rlp1_0 + from_hex("80808080808080808084") + val0};
+  REQUIRE(rlp1_1.length() < 32);
+
+  // extension node
+  Bytes rlp1{from_hex("e38300") + key0 + from_hex("9e") + rlp1_1};
+  ethash::hash256 hash1{ethash::keccak256(rlp1.data(), rlp1.size())};
+
+  hb.add(key1, val1);
+  CHECK(to_hex(hb.root_hash()) == to_hex(full_view(hash1.bytes)));
 }
 }  // namespace silkworm::trie

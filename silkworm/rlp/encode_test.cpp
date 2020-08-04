@@ -17,9 +17,7 @@
 #include "encode.hpp"
 
 #include <catch2/catch.hpp>
-#include <iterator>
 #include <silkworm/common/util.hpp>
-#include <string>
 
 namespace silkworm {
 

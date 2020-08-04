@@ -40,6 +40,8 @@ class HashBuilder {
   evmc::bytes32 root_hash();
 
  private:
+  Bytes branch_node_rlp() const;
+
   Bytes encoded_path(bool terminating) const;
 
   Bytes path_;

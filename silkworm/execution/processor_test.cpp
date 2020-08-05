@@ -38,12 +38,12 @@ TEST_CASE("Zero gas price") {
   evmc::address sender{0x004512399a230565b99be5c3b0030a56f3ace68c_address};
 
   Transaction txn{
-      .nonce = 0,
-      .gas_price = 0,
-      .gas_limit = 764'017,
-      .to = {},
-      .value = 0,
-      .data = from_hex(
+      0,        // nonce
+      0,        // gas_price
+      764'017,  // gas_limit
+      {},       // to
+      0,        // value
+      from_hex(
           "0x6060604052610922806100126000396000f3606060405236156100b6576000357c01000000000000000000"
           "000000000000000000000000000000000000009004806317e7dd22146100bb5780633562fd20146100ee5780"
           "633eba9ed21461011457806344bfa56e1461013a5780634c77e5ba146101c35780635a2bf25a1461020a5780"
@@ -147,12 +147,12 @@ TEST_CASE("No refund on error") {
   ExecutionProcessor processor{chain, block, state};
 
   Transaction txn{
-      .nonce = nonce,
-      .gas_price = 59 * kGiga,
-      .gas_limit = 103'858,
-      .to = {},
-      .value = 0,
-      .data = code,
+      nonce,       // nonce
+      59 * kGiga,  // gas_price
+      103'858,     // gas_limit
+      {},          // to
+      0,           // value
+      code,        // data
   };
 
   state.add_to_balance(caller, kEther);
@@ -241,11 +241,11 @@ TEST_CASE("Self-destruct") {
   state.set_code(suicidal_address, suicidal_code);
 
   Transaction txn{
-      .nonce = 0,
-      .gas_price = 20 * kGiga,
-      .gas_limit = 100'000,
-      .to = caller_address,
-      .value = 0,
+      0,               // nonce
+      20 * kGiga,      // gas_price
+      100'000,         // gas_limit
+      caller_address,  // to
+      0,               // value
   };
   txn.from = caller_address;
 
@@ -303,12 +303,12 @@ TEST_CASE("Out of Gas during account re-creation") {
   }
 
   Transaction txn{
-      .nonce = nonce,
-      .gas_price = 20 * kGiga,
-      .gas_limit = 690'000,
-      .to = {},
-      .value = 0,
-      .data = from_hex(
+      nonce,       // nonce
+      20 * kGiga,  // gas_price
+      690'000,     // gas_limit
+      {},          // to
+      0,           // value
+      from_hex(
           "0x6060604052604051610ca3380380610ca3833981016040528080518201919060200150505b600281511015"
           "61003357610002565b8060006000509080519060200190828054828255906000526020600020908101928215"
           "6100a4579160200282015b828111156100a35782518260006101000a81548173ffffffffffffffffffffffff"
@@ -416,19 +416,18 @@ TEST_CASE("Empty suicide beneficiary") {
   evmc::address suicide_beneficiary{0xee098e6c2a43d9e2c04f08f0c3a87b0ba59079d5_address};
 
   Transaction txn{
-      .nonce = 0,
-      .gas_price = 30 * kGiga,
-      .gas_limit = 360'000,
-      .to = {},
-      .value = 0,
-      .data =
-          from_hex("0x6000607f5359610043806100135939610056566c010000000000000000000000007fee098e6c2"
-                   "a43d9e2c04f08f0c3a87b0ba59079d4d53532071d6cd0cb86facd5605ff6100008061003f600039"
-                   "61003f565b6000f35b816000f0905050596100718061006c59396100dd5661005f8061000e60003"
-                   "961006d566000603f5359610043806100135939610056566c010000000000000000000000007fee"
-                   "098e6c2a43d9e2c04f08f0c3a87b0ba59079d4d53532071d6cd0cb86facd5605ff6100008061003"
-                   "f60003961003f565b6000f35b816000f0905050fe5b6000f35b816000f090506040526000600060"
-                   "0060006000604051620249f0f15061000080610108600039610108565b6000f3"),
+      0,           // nonce
+      30 * kGiga,  // gas_price
+      360'000,     // gas_limit
+      {},          // to
+      0,           // value
+      from_hex("0x6000607f5359610043806100135939610056566c010000000000000000000000007fee098e6c2"
+               "a43d9e2c04f08f0c3a87b0ba59079d4d53532071d6cd0cb86facd5605ff6100008061003f600039"
+               "61003f565b6000f35b816000f0905050596100718061006c59396100dd5661005f8061000e60003"
+               "961006d566000603f5359610043806100135939610056566c010000000000000000000000007fee"
+               "098e6c2a43d9e2c04f08f0c3a87b0ba59079d4d53532071d6cd0cb86facd5605ff6100008061003"
+               "f60003961003f565b6000f35b816000f0905050fe5b6000f35b816000f090506040526000600060"
+               "0060006000604051620249f0f15061000080610108600039610108565b6000f3"),
   };
   txn.from = caller;
 

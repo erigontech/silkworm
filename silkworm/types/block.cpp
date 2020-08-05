@@ -24,7 +24,7 @@ namespace silkworm {
 namespace rlp {
 
 static Header rlp_header(const BlockHeader& header) {
-  Header rlp_head{.list = true, .payload_length = 6 * (kHashLength + 1)};
+  Header rlp_head{true, 6 * (kHashLength + 1)};
   rlp_head.payload_length += kAddressLength + 1;  // beneficiary
   rlp_head.payload_length += kBloomByteLength + length_of_length(kBloomByteLength);
   rlp_head.payload_length += length(header.difficulty);
@@ -104,7 +104,7 @@ void decode(ByteView& from, BlockHeader& to) {
 }
 
 void encode(Bytes& to, const BlockBody& block_body) {
-  Header rlp_head{.list = true, .payload_length = 0};
+  Header rlp_head{true, 0};
   rlp_head.payload_length += length(block_body.transactions);
   rlp_head.payload_length += length(block_body.ommers);
   encode_header(to, rlp_head);

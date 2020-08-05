@@ -43,7 +43,7 @@ size_t length_of_length(uint64_t payload_length) {
 
 void encode(Bytes& to, ByteView s) {
   if (s.length() != 1 || s[0] >= kEmptyStringCode) {
-    encode_header(to, {.list = false, .payload_length = s.length()});
+    encode_header(to, {false, s.length()});
   }
   to.append(s);
 }

@@ -32,7 +32,7 @@ set(HUNTER_USE_CACHE_SERVERS NO)
 HunterGate(
   URL "https://github.com/cpp-pm/hunter/archive/v0.23.258.tar.gz"
   SHA1 "062a19ab13ce8dffa9a882b6ce3e43bdabdf75d3"
-  FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/evmone/cmake/Hunter/config.cmake"
+  FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake"
 )
 
 project(silkworm)
@@ -53,7 +53,10 @@ target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/inclu
 
 # Compiler options
 if(MSVC)
-  add_compile_options(/W4 /WX)
+  add_compile_options(/W4)
+  add_compile_options(/wd5030) # Silence warnings about gnu attributes
+  add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
+  add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
 else()
   add_compile_options(-Wall -Wextra -Werror)
 endif()

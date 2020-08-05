@@ -55,8 +55,10 @@ std::optional<SearchResult> find(ByteView hi, uint64_t v) {
   if (i == n) {
     return {};
   } else {
-    return SearchResult{.change_block = elem(elements, min_element, i),
-                        .new_record = (elements[i * item_len] & 0x80) != 0};
+    return SearchResult{
+        elem(elements, min_element, i),       // change_block
+        (elements[i * item_len] & 0x80) != 0  // new_record
+    };
   }
 }
 }  // namespace silkworm::db::history_index

@@ -109,10 +109,10 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
   cumulative_gas_used_ += gas_used;
 
   return {
-      .post_state_or_status = vm_res.status == EVMC_SUCCESS,
-      .cumulative_gas_used = cumulative_gas_used_,
-      .bloom = logs_bloom(evm_.state().logs()),
-      .logs = evm_.state().logs(),
+      vm_res.status == EVMC_SUCCESS,    // post_state_or_status
+      cumulative_gas_used_,             // cumulative_gas_used
+      logs_bloom(evm_.state().logs()),  // bloom
+      evm_.state().logs(),              // logs
   };
 }
 

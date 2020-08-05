@@ -23,17 +23,16 @@ namespace silkworm {
 TEST_CASE("Hardcoded Bloom") {
   std::vector<Log> logs{
       {
-          .address = 0x22341ae42d6dd7384bc8584e50419ea3ac75b83f_address,
-          .topics = {0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32},
+          0x22341ae42d6dd7384bc8584e50419ea3ac75b83f_address,                            // address
+          {0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32},  // topics
       },
       {
-          .address = 0xe7fb22dfef11920312e4989a3a2b81e2ebf05986_address,
-          .topics =
-              {
-                  0x7f1fef85c4b037150d3675218e0cdb7cf38fea354759471e309f3354918a442f_bytes32,
-                  0xd85629c7eaae9ea4a10234fed31bc0aeda29b2683ebe0c1882499d272621f6b6_bytes32,
-              },
-          .data = from_hex("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7b"),
+          0xe7fb22dfef11920312e4989a3a2b81e2ebf05986_address,  // address
+          {
+              0x7f1fef85c4b037150d3675218e0cdb7cf38fea354759471e309f3354918a442f_bytes32,
+              0xd85629c7eaae9ea4a10234fed31bc0aeda29b2683ebe0c1882499d272621f6b6_bytes32,
+          },                                                                           // topics
+          from_hex("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7b"),  // data
       },
   };
   Bloom bloom{logs_bloom(logs)};

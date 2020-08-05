@@ -23,19 +23,19 @@ namespace silkworm {
 
 TEST_CASE("Transaction RLP") {
   Transaction txn{
-      .nonce = 12,
-      .gas_price = 20000000000,
-      .gas_limit = 21000,
-      .to = 0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,
-      .value = 10 * kEther,
-      .data = from_hex("a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc9716000000000000000000"
-                       "00015af1d78b58c4000"),
-      .v = intx::from_string<intx::uint256>(
-          "0x5a896eab396e6ff9d78e157224bc66aa4593114b1f87dadf73d035fa6c3930fc"),
-      .r = intx::from_string<intx::uint256>(
-          "0xbe67e0a07db67da8d446f76add590e54b6e92cb6b8f9835aeb67540579a27717"),
-      .s = intx::from_string<intx::uint256>(
-          "0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718"),
+      12,                                                  // nonce
+      20000000000,                                         // .gas_price
+      21000,                                               // .gas_limit
+      0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,  // to
+      10 * kEther,                                         // .value
+      from_hex("a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc9716000000000000000000"
+               "00015af1d78b58c4000"),  // data
+      intx::from_string<intx::uint256>(
+          "0x5a896eab396e6ff9d78e157224bc66aa4593114b1f87dadf73d035fa6c3930fc"),  // v
+      intx::from_string<intx::uint256>(
+          "0xbe67e0a07db67da8d446f76add590e54b6e92cb6b8f9835aeb67540579a27717"),  // r
+      intx::from_string<intx::uint256>(
+          "0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718"),  // s
   };
 
   Bytes encoded{};

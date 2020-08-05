@@ -18,6 +18,9 @@
 #define SILKWORM_COMMON_UTIL_H_
 
 #include <silkworm/common/base.hpp>
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 
 namespace silkworm {
 
@@ -52,6 +55,7 @@ inline int popcount(unsigned x) {
 #else
   return __builtin_popcount(x);
 #endif
+
 }
 }  // namespace silkworm
 

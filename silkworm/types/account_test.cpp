@@ -23,10 +23,10 @@ namespace silkworm {
 
 TEST_CASE("Account RLP") {
   Account account{
-      .nonce = 12,
-      .balance = 200 * kEther,
-      .storage_root = 0xdde806bc028ddb3c73ddfbe1e19676224198e5d2cb205edb40e26da2a5310d5f_bytes32,
-      .code_hash = 0x12580ee5fc5ea05a1a19a93cbc51830ae3607690b7c4a6996ea211aba5a966b2_bytes32,
+      12,                                                                          // nonce
+      200 * kEther,                                                                // balance
+      0xdde806bc028ddb3c73ddfbe1e19676224198e5d2cb205edb40e26da2a5310d5f_bytes32,  // storage_root
+      0x12580ee5fc5ea05a1a19a93cbc51830ae3607690b7c4a6996ea211aba5a966b2_bytes32,  // code_hash
   };
 
   Bytes encoded{};

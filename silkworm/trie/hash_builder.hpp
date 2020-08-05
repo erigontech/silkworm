@@ -37,9 +37,11 @@ class HashBuilder {
   // Consequently, duplicate keys are not allowed.
   void add(ByteView key, ByteView val);
 
-  evmc::bytes32 root_hash();
+  evmc::bytes32 root_hash() const;
 
  private:
+  Bytes node_rlp(ByteView path) const;
+
   Bytes branch_node_rlp() const;
 
   Bytes path_;

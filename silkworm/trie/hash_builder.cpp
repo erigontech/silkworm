@@ -75,6 +75,14 @@ static Bytes short_node_rlp(ByteView encoded_path, ByteView payload) {
   return rlp;
 }
 
+static Bytes leaf_node_rlp(ByteView path, ByteView value) {
+  return short_node_rlp(encode_path(path, /*terminating=*/true), value);
+}
+
+static Bytes extension_node_rlp(ByteView path, ByteView child_ref) {
+  return short_node_rlp(encode_path(path, /*terminating=*/false), child_ref);
+}
+
 static ByteView node_ref(ByteView rlp) {
   if (rlp.length() < kHashLength) {
     return rlp;
@@ -95,36 +103,40 @@ void HashBuilder::add(ByteView packed, ByteView val) {
   size_t matching_bytes = std::distance(
       key.begin(), std::mismatch(key.begin(), key.begin() + len, path_.begin()).first);
 
-  if (matching_bytes == len) {  // full match
-    // insert the nibble into the branch
+  if (matching_bytes == len) {
+    // full match
     uint8_t nibble{key[len]};
+    // TODO[Byzantium] nibble clash
     branch_mask_ |= 1u << nibble;
-
-    // and the child
-    Bytes leaf_path{encode_path(key.substr(len + 1), /*terminating=*/true)};
-    children_[nibble] = node_ref(short_node_rlp(leaf_path, val));
-  } else {  // new branch
-    // TODO[Byzantium] implement branching
+    children_[nibble] = leaf_node_rlp(key.substr(len + 1), val);
+  } else {
+    // new branch
+    children_[path_[len]] = node_rlp(path_.substr(len + 1));
+    children_[key[len]] = leaf_node_rlp(key.substr(len + 1), val);
+    branch_mask_ = 0;
+    branch_mask_ |= 1u << path_[len];
+    branch_mask_ |= 1u << key[len];
+    path_.resize(len);
+    value_.clear();
   }
 }
 
-evmc::bytes32 HashBuilder::root_hash() {
-  Bytes rlp;
-  if (popcount(branch_mask_) == 0) {
-    // leaf node
-    rlp = short_node_rlp(encode_path(path_, /*terminating=*/true), value_);
-  } else if (path_.empty()) {
-    // branch node
-    rlp = branch_node_rlp();
-  } else {
-    // extension node
-    rlp = short_node_rlp(encode_path(path_, /*terminating=*/false), node_ref(branch_node_rlp()));
-  }
-
+evmc::bytes32 HashBuilder::root_hash() const {
+  Bytes rlp{node_rlp(path_)};
   ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
   evmc::bytes32 res{};
   std::memcpy(res.bytes, hash.bytes, kHashLength);
   return res;
+}
+
+Bytes HashBuilder::node_rlp(ByteView path) const {
+  if (popcount(branch_mask_) == 0) {
+    return leaf_node_rlp(path, value_);
+  } else if (path.empty()) {
+    return branch_node_rlp();
+  } else {
+    return extension_node_rlp(path, node_ref(branch_node_rlp()));
+  }
 }
 
 Bytes HashBuilder::branch_node_rlp() const {
@@ -134,14 +146,14 @@ Bytes HashBuilder::branch_node_rlp() const {
   h.payload_length = 16;
   for (int i{0}; i < 16; ++i) {
     if (branch_mask_ & (1u << i)) {
-      h.payload_length += children_[i].length();
+      h.payload_length += std::min(children_[i].length(), kHashLength);
     }
   }
   h.payload_length += rlp::length(value_);
   rlp::encode_header(rlp, h);
   for (int i{0}; i < 16; ++i) {
     if (branch_mask_ & (1u << i)) {
-      rlp::encode(rlp, children_[i]);
+      rlp::encode(rlp, node_ref(children_[i]));
     } else {
       rlp.push_back(rlp::kEmptyStringCode);
     }

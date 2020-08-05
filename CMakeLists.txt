@@ -58,13 +58,13 @@ if(MSVC)
   add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
   add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
 else()
-  add_compile_options(-Wall -Wextra -Werror)
+  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
   add_compile_options(-gline-tables-only) # for profiling
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  add_compile_options(-Wno-attributes -Wno-missing-field-initializers)
+  add_compile_options(-Wno-attributes)
 endif()
 
 # Some required packages

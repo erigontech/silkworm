@@ -42,10 +42,7 @@ class HashBuilder {
  private:
   Bytes branch_node_rlp() const;
 
-  Bytes encoded_path(bool terminating) const;
-
   Bytes path_;
-  bool odd_{false};
   uint16_t branch_mask_{0};
   std::array<Bytes, 16> children_;
   Bytes value_;

@@ -6,7 +6,7 @@ It's conceived as an evolution of the [Turbo-Geth](https://github.com/ledgerwatc
 as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth_release.html#Licence-and-language-migration-plan-out-of-scope-for-the-release).
 
 # Building the source
-
+## Linux 
 Building silkworm requires [cmake](https://cgold.readthedocs.io/en/latest/first-step/installation.html) and a C++17 compiler.
 Once the prerequisites are installed, bootstrap cmake build by running
 ```
@@ -28,6 +28,14 @@ or run tests
 ```
 ./tests
 ```
+## Windows (Visual Studio Community Edition 2019)
+* Install [Visual Studio Community Edition](https://visualstudio.microsoft.com/en/vs/community/) with CMake and Windows SDK options enabled.
+* Open Visual Studio and select File -> CMake... 
+* Browse the folder where you have cloned this repository and select the file CMakeLists.txt
+* Let CMake cache generation complete (it may take several minutes)
+* Solution explorer shows the project tree.
+* To build simply `CTRL+Shift+B`
+* Binaries are written to `%USERPROFILE%\CMakeBuilds\silkworm\build` If you want to change this path simply edit `CMakeSettings.json` file.
 
 # Code style
 

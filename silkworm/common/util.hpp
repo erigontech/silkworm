@@ -53,7 +53,7 @@ inline bool has_prefix(ByteView s, ByteView prefix) { return s.substr(0, prefix.
 
 inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> as_stream(
     ByteView view) {
-  return {byte_ptr_cast(view.begin()), view.size()};
+  return {byte_ptr_cast(view.data()), view.size()};
 }
 }  // namespace silkworm
 

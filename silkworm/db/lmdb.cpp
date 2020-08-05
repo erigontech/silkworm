@@ -49,7 +49,7 @@ std::optional<Entry> LmdbCursor::seek(ByteView prefix) {
   bool found = lmdb::cursor_get(cursor_, &key, &value, op);
   if (!found) return {};
 
-  return Entry{.key = from_mdb_val(key), .value = from_mdb_val(value)};
+  return Entry{from_mdb_val(key), from_mdb_val(value)};
 }
 
 LmdbBucket::LmdbBucket(MDB_dbi dbi, MDB_txn* txn) : dbi_{dbi}, txn_{txn} {}
@@ -153,11 +153,11 @@ static char* temporary_file_name() { return std::tmpnam(nullptr); }
 TemporaryLmdbDatabase::TemporaryLmdbDatabase()
     : LmdbDatabase{temporary_file_name(),
                    LmdbOptions{
-                       .map_size = 32 << 20,  // 32MiB
-                       .no_sync = true,
-                       .no_meta_sync = true,
-                       .write_map = true,
-                       .no_sub_dir = true,
+                       32 << 20,  // map_size = 32MiB
+                       true,      // no_sync
+                       true,      // no_meta_sync
+                       true,      // .write_map
+                       true,      // no_sub_dir
                    }} {
   mdb_env_get_path(env_, &tmp_file_);
 }

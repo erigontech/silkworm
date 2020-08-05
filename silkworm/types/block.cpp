@@ -23,7 +23,7 @@ namespace silkworm {
 namespace rlp {
 
 static Header rlp_header(const BlockHeader& header) {
-  Header rlp_head{.list = true, .payload_length = 6 * (kHashLength + 1)};
+  Header rlp_head{true, 6 * (kHashLength + 1)};
   rlp_head.payload_length += kAddressLength + 1;  // beneficiary
   rlp_head.payload_length += kBloomByteLength + length_of_length(kBloomByteLength);
   rlp_head.payload_length += length(header.difficulty);
@@ -49,7 +49,7 @@ void encode(std::ostream& to, const BlockHeader& header) {
   encode(to, header.state_root.bytes);
   encode(to, header.transactions_root.bytes);
   encode(to, header.receipts_root.bytes);
-  encode_header(to, {.list = false, .payload_length = kBloomByteLength});
+  encode_header(to, {false, kBloomByteLength});
   to.write(byte_ptr_cast(header.logs_bloom.data()), kBloomByteLength);
   encode(to, header.difficulty);
   encode(to, header.number);
@@ -102,7 +102,7 @@ void decode(std::istream& from, BlockHeader& to) {
 }
 
 void encode(std::ostream& to, const BlockBody& block_body) {
-  Header rlp_head{.list = true, .payload_length = 0};
+  Header rlp_head{true, 0};
   rlp_head.payload_length += length(block_body.transactions);
   rlp_head.payload_length += length(block_body.ommers);
   encode_header(to, rlp_head);

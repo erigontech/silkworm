@@ -30,7 +30,7 @@ bool operator==(const Transaction& a, const Transaction& b) {
 namespace rlp {
 
 static Header rlp_header(const Transaction& txn) {
-  Header h{.list = true, .payload_length = 0};
+  Header h{true, 0};
   h.payload_length += length(txn.nonce);
   h.payload_length += length(txn.gas_price);
   h.payload_length += length(txn.gas_limit);

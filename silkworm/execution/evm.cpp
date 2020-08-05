@@ -41,15 +41,15 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) {
   bool contract_creation{!txn.to};
 
   evmc_message message{
-      .kind = contract_creation ? EVMC_CREATE : EVMC_CALL,
-      .flags = 0,
-      .depth = 0,
-      .gas = static_cast<int64_t>(gas),
-      .destination = txn.to ? *txn.to : evmc::address{},
-      .sender = *txn.from,
-      .input_data = &txn.data[0],
-      .input_size = txn.data.size(),
-      .value = intx::be::store<evmc::uint256be>(txn.value),
+      contract_creation ? EVMC_CREATE : EVMC_CALL,  // kind
+      0,                                            // flags
+      0,                                            // depth
+      static_cast<int64_t>(gas),                    // gas
+      txn.to ? *txn.to : evmc::address{},           // destination
+      *txn.from,                                    // sender
+      &txn.data[0],                                 // input_data
+      txn.data.size(),                              // input_size
+      intx::be::store<evmc::uint256be>(txn.value),  // value
   };
 
   evmc::result res{contract_creation ? create(message) : call(message)};
@@ -99,15 +99,15 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
   state_.add_to_balance(contract_addr, value);
 
   evmc_message deploy_message{
-      .kind = EVMC_CALL,
-      .flags = 0,
-      .depth = message.depth,
-      .gas = message.gas,
-      .destination = contract_addr,
-      .sender = message.sender,
-      .input_data = nullptr,
-      .input_size = 0,
-      .value = message.value,
+      EVMC_CALL,       // kind
+      0,               // flags
+      message.depth,   // depth
+      message.gas,     // gas
+      contract_addr,   // destination
+      message.sender,  // sender
+      nullptr,         // input_data
+      0,               // input_size
+      message.value,   // value
   };
 
   res = execute(deploy_message, ByteView{message.input_data, message.input_size}, {});
@@ -285,7 +285,7 @@ bool EVM::is_precompiled(const evmc::address& contract) const noexcept {
 
 evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
   std::ostringstream stream{};
-  rlp::Header h{.list = true, .payload_length = 1 + kAddressLength};
+  rlp::Header h{true, 1 + kAddressLength};
   h.payload_length += rlp::length(nonce);
   rlp::encode_header(stream, h);
   rlp::encode(stream, caller.bytes);
@@ -425,7 +425,7 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
 
 void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t data_size,
                        const evmc::bytes32 topics[], size_t num_topics) noexcept {
-  Log log{.address = address};
+  Log log{address};
   std::copy_n(topics, num_topics, std::back_inserter(log.topics));
   std::copy_n(data, data_size, std::back_inserter(log.data));
   evm_.state().add_log(log);

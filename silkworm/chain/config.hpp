@@ -98,33 +98,31 @@ struct ChainConfig {
 };
 
 constexpr ChainConfig kEthMainnetChainConfig{
-    .chain_id = 1,
-
-    .homestead_block = 1'150'000,
-    .dao_block = 1'920'000,
-    .tangerine_whistle_block = 2'463'000,
-    .spurious_dragon_block = 2'675'000,
-    .ripemd_deletion_block = 2'675'119,
-    .byzantium_block = 4'370'000,
-    .constantinople_block = 7'280'000,
-    .petersburg_block = 7'280'000,
-    .istanbul_block = 9'069'000,
-    .muir_glacier_block = 9'200'000,
+    1,          // Chain id
+    1'150'000,  // homestead_block
+    1'920'000,  // dao_block
+    2'463'000,  // tangerine_whistle_block
+    2'675'000,  // spurious_dragon_block
+    2'675'119,  // ripemd_deletion_block
+    4'370'000,  // byzantium_block
+    7'280'000,  // constantinople_block
+    7'280'000,  // petersburg_block
+    9'069'000,  // istanbul_block
+    9'200'000,  // muir_glacier_block
 };
 
 // https://ecips.ethereumclassic.org/ECIPs/ecip-1066
 constexpr ChainConfig kEtcMainnetChainConfig{
-    .chain_id = 61,
-
-    .homestead_block = 1'150'000,
-    .dao_block = {},
-    .tangerine_whistle_block = 2'500'000,
-    .spurious_dragon_block = 8'772'000,
-    .ripemd_deletion_block = {},
-    .byzantium_block = 8'772'000,
-    .constantinople_block = 9'573'000,
-    .petersburg_block = 9'573'000,
-    .istanbul_block = 10'500'839,
+    61,          // chain_id
+    1'150'000,   // homestead_block
+    {},          // dao_block
+    2'500'000,   // tangerine_whistle_block
+    8'772'000,   // spurious_dragon_block
+    {},          // ripemd_deletion_block
+    8'772'000,   // byzantium_block
+    9'573'000,   // constantinople_block
+    9'573'000,   // petersburg_block
+    10'500'839,  // istanbul_block
 };
 }  // namespace silkworm
 

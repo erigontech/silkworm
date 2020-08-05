@@ -80,7 +80,7 @@ size_t length(const std::vector<T>& v) {
 
 template <class T>
 void encode(std::ostream& to, const std::vector<T>& v) {
-  Header h{.list = true, .payload_length = 0};
+  Header h{true, 0};
   for (const T& x : v) {
     h.payload_length += length(x);
   }

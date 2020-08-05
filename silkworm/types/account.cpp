@@ -114,7 +114,7 @@ Account decode_account_from_storage(ByteView encoded) {
 
 namespace rlp {
 void encode(std::ostream& to, const Account& account) {
-  Header h{.list = true, .payload_length = 0};
+  Header h{true, 0};
   h.payload_length += length(account.nonce);
   h.payload_length += length(account.balance);
   h.payload_length += kHashLength + 1;

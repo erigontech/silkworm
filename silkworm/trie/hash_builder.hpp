@@ -35,6 +35,8 @@ class HashBuilder {
 
   // Entries must be added in the strictly increasing lexicographic order (by key).
   // Consequently, duplicate keys are not allowed.
+  // In addition, a key may not be a prefix of another key
+  // (e.g. keys "ab" & "ab05" are mutually exclusive).
   void add(ByteView key, ByteView val);
 
   evmc::bytes32 root_hash() const;

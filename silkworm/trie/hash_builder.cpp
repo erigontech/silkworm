@@ -88,7 +88,8 @@ static ByteView node_ref(ByteView rlp) {
     return rlp;
   }
 
-  ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
+  thread_local ethash::hash256 hash;
+  hash = ethash::keccak256(rlp.data(), rlp.length());
   return {hash.bytes, kHashLength};
 }
 
@@ -100,23 +101,23 @@ void HashBuilder::add(ByteView packed, ByteView val) {
   assert(key > path_);
 
   size_t len{std::min(key.length(), path_.length())};
-  size_t matching_bytes = std::distance(
-      key.begin(), std::mismatch(key.begin(), key.begin() + len, path_.begin()).first);
+  size_t match = std::distance(key.begin(),
+                               std::mismatch(key.begin(), key.begin() + len, path_.begin()).first);
 
-  if (matching_bytes == len) {
+  if (match == len) {
     // full match
     uint8_t nibble{key[len]};
     // TODO[Byzantium] nibble clash
     branch_mask_ |= 1u << nibble;
-    children_[nibble] = leaf_node_rlp(key.substr(len + 1), val);
+    children_[nibble] = leaf_node_rlp(ByteView{key}.substr(len + 1), val);
   } else {
     // new branch
-    children_[path_[len]] = node_rlp(path_.substr(len + 1));
-    children_[key[len]] = leaf_node_rlp(key.substr(len + 1), val);
+    children_[path_[match]] = node_rlp(ByteView{path_}.substr(match + 1));
+    children_[key[match]] = leaf_node_rlp(ByteView{key}.substr(match + 1), val);
     branch_mask_ = 0;
-    branch_mask_ |= 1u << path_[len];
-    branch_mask_ |= 1u << key[len];
-    path_.resize(len);
+    branch_mask_ |= 1u << path_[match];
+    branch_mask_ |= 1u << key[match];
+    path_.resize(match);
     value_.clear();
   }
 }

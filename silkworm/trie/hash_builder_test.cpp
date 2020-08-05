@@ -16,13 +16,14 @@
 
 #include "hash_builder.hpp"
 
+#include <algorithm>
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
+#include <iterator>
 #include <silkworm/common/util.hpp>
 
 namespace silkworm::trie {
 
-// https://eth.wiki/fundamentals/patricia-tree#example-trie
 TEST_CASE("HashBuilder") {
   // The first entry
   Bytes key0{from_hex("646f")};      // "do"
@@ -37,19 +38,27 @@ TEST_CASE("HashBuilder") {
 
   // ------------------------------------------------------------------------------------------
   // Add the second entry
-  Bytes key1{key0 + from_hex("67")};   // "dog"
+  Bytes key1{from_hex("676f6f64")};    // "good"
   Bytes val1{from_hex("7075707079")};  // "puppy"
 
-  // leaf node
-  Bytes rlp1_0{from_hex("c73785") + val1};
+  // leaf node 0
+  Bytes rlp1_0{from_hex("c882206f84") + val0};
   REQUIRE(rlp1_0.length() < 32);
 
-  // branch node
-  Bytes rlp1_1{from_hex("dd80808080808088") + rlp1_0 + from_hex("80808080808080808084") + val0};
+  // leaf node 1
+  Bytes rlp1_1{from_hex("cb84206f6f6485") + val1};
   REQUIRE(rlp1_1.length() < 32);
 
+  // branch node
+  Bytes rlp1_2{from_hex("e68080808089") + rlp1_0 + from_hex("80808c") + rlp1_1 +
+               from_hex("808080808080808080")};
+  REQUIRE(rlp1_2.length() >= 32);
+
+  ethash::hash256 hash1_2{ethash::keccak256(rlp1_2.data(), rlp1_2.size())};
+
   // extension node
-  Bytes rlp1{from_hex("e38300") + key0 + from_hex("9e") + rlp1_1};
+  Bytes rlp1{from_hex("e216a0")};
+  std::copy_n(hash1_2.bytes, kHashLength, std::back_inserter(rlp1));
   ethash::hash256 hash1{ethash::keccak256(rlp1.data(), rlp1.size())};
 
   hb.add(key1, val1);

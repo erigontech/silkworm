@@ -21,7 +21,6 @@
 #define SILKWORM_RLP_ENCODE_H_
 
 #include <intx/intx.hpp>
-#include <ostream>
 #include <silkworm/common/base.hpp>
 #include <vector>
 
@@ -33,32 +32,30 @@ struct Transaction;
 
 namespace rlp {
 
-static constexpr uint8_t kEmptyStringCode = 0x80;
-static constexpr uint8_t kEmptyListCode = 0xC0;
-
 struct Header {
   bool list{false};
   uint64_t payload_length{0};
 };
 
-void encode_header(std::ostream& to, Header header);
+static constexpr uint8_t kEmptyStringCode = 0x80;
+static constexpr uint8_t kEmptyListCode = 0xC0;
 
-void encode(std::ostream& to, ByteView s);
-void encode(std::ostream& to, uint64_t n);
-void encode(std::ostream& to, const intx::uint256& n);
+void encode_header(Bytes& to, Header header);
+
+void encode(Bytes& to, ByteView s);
+void encode(Bytes& to, uint64_t n);
+void encode(Bytes& to, const intx::uint256& n);
 
 template <unsigned N>
-void encode(std::ostream& to, const uint8_t (&bytes)[N]) {
+void encode(Bytes& to, const uint8_t (&bytes)[N]) {
   static_assert(N <= 55, "Complex RLP length encoding not supported");
-
-  to.put(kEmptyStringCode + N);
-  const void* ptr = bytes;
-  to.write(static_cast<const char*>(ptr), N);
+  to.push_back(kEmptyStringCode + N);
+  to.append(bytes, N);
 }
 
-void encode(std::ostream& to, const BlockBody& block_body);
-void encode(std::ostream& to, const BlockHeader& header);
-void encode(std::ostream& to, const Transaction& txn);
+void encode(Bytes& to, const BlockBody& block_body);
+void encode(Bytes& to, const BlockHeader& header);
+void encode(Bytes& to, const Transaction& txn);
 
 size_t length_of_length(uint64_t payload_length);
 
@@ -79,7 +76,7 @@ size_t length(const std::vector<T>& v) {
 }
 
 template <class T>
-void encode(std::ostream& to, const std::vector<T>& v) {
+void encode(Bytes& to, const std::vector<T>& v) {
   Header h{true, 0};
   for (const T& x : v) {
     h.payload_length += length(x);

@@ -19,9 +19,7 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-#include <istream>
 #include <optional>
-#include <ostream>
 #include <silkworm/rlp/decode.hpp>
 
 namespace silkworm {
@@ -42,7 +40,7 @@ bool operator==(const Transaction& a, const Transaction& b);
 namespace rlp {
 
 template <>
-void decode(std::istream& from, Transaction& to);
+void decode(ByteView& from, Transaction& to);
 }  // namespace rlp
 }  // namespace silkworm
 

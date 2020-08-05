@@ -24,18 +24,18 @@ namespace silkworm::rlp {
 template <class T>
 static T decode_hex(std::string_view hex) {
   Bytes bytes{from_hex(hex)};
-  auto stream{as_stream(bytes)};
+  ByteView view{bytes};
   T res;
-  decode<T>(stream, res);
+  decode<T>(view, res);
   return res;
 }
 
 template <class T>
 static std::vector<T> vector_decode_hex(std::string_view hex) {
   Bytes bytes{from_hex(hex)};
-  auto stream{as_stream(bytes)};
+  ByteView view{bytes};
   std::vector<T> res;
-  decode_vector<T>(stream, res);
+  decode_vector<T>(view, res);
   return res;
 }
 

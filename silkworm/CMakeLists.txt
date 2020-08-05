@@ -36,4 +36,4 @@ target_link_libraries(silkworm
                       PUBLIC evmc intx::intx Boost::boost liblmdb::lmdb
                              absl::flat_hash_map absl::flat_hash_set
                              lmdbxx::lmdbxx # PUBLIC lmdbxx since we use its exceptions
-                      PRIVATE evmone secp256k1 cryptopp-static)
+                      PRIVATE evmone secp256k1 cryptopp-static ethash::keccak)

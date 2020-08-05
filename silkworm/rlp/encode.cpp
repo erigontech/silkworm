@@ -21,15 +21,15 @@
 
 namespace silkworm::rlp {
 
-void encode_header(std::ostream& to, Header header) {
+void encode_header(Bytes& to, Header header) {
   if (header.payload_length < 56) {
     uint8_t code{header.list ? kEmptyListCode : kEmptyStringCode};
-    to.put(code + header.payload_length);
+    to.push_back(code + header.payload_length);
   } else {
     ByteView len_be{big_endian(header.payload_length)};
     uint8_t code = header.list ? '\xF7' : '\xB7';
-    to.put(code + len_be.length());
-    to.write(byte_ptr_cast(len_be.data()), len_be.length());
+    to.push_back(code + len_be.length());
+    to.append(len_be);
   }
 }
 
@@ -41,30 +41,30 @@ size_t length_of_length(uint64_t payload_length) {
   }
 }
 
-void encode(std::ostream& to, ByteView s) {
+void encode(Bytes& to, ByteView s) {
   if (s.length() != 1 || s[0] >= kEmptyStringCode) {
     encode_header(to, {false, s.length()});
   }
-  to.write(byte_ptr_cast(s.data()), s.length());
+  to.append(s);
 }
 
 size_t length(ByteView s) {
-  size_t len = s.length();
+  size_t len{s.length()};
   if (s.length() != 1 || s[0] >= kEmptyStringCode) {
     len += length_of_length(s.length());
   }
   return len;
 }
 
-void encode(std::ostream& to, uint64_t n) {
+void encode(Bytes& to, uint64_t n) {
   if (n == 0) {
-    to.put(kEmptyStringCode);
+    to.push_back(kEmptyStringCode);
   } else if (n < kEmptyStringCode) {
-    to.put(n);
+    to.push_back(n);
   } else {
     ByteView be = big_endian(n);
-    to.put(kEmptyStringCode + be.length());
-    to.write(byte_ptr_cast(be.data()), be.length());
+    to.push_back(kEmptyStringCode + be.length());
+    to.append(be);
   }
 }
 
@@ -76,15 +76,15 @@ size_t length(uint64_t n) {
   }
 }
 
-void encode(std::ostream& to, const intx::uint256& n) {
+void encode(Bytes& to, const intx::uint256& n) {
   if (n == 0) {
-    to.put(kEmptyStringCode);
+    to.push_back(kEmptyStringCode);
   } else if (n < kEmptyStringCode) {
-    to.put(intx::narrow_cast<char>(n));
+    to.push_back(intx::narrow_cast<uint8_t>(n));
   } else {
     ByteView be = big_endian(n);
-    to.put(kEmptyStringCode + be.length());
-    to.write(byte_ptr_cast(be.data()), be.length());
+    to.push_back(kEmptyStringCode + be.length());
+    to.append(be);
   }
 }
 

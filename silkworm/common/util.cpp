@@ -38,21 +38,9 @@ ByteView zeroless_view(const evmc::bytes32& hash) {
   return {hash.bytes + zero_bytes, kHashLength - zero_bytes};
 }
 
-std::string to_hex(const evmc::address& address) {
-  std::string out{};
-  out.reserve(2 * kAddressLength);
-  boost::algorithm::hex_lower(std::begin(address.bytes), std::end(address.bytes),
-                              std::back_inserter(out));
-  return out;
-}
+std::string to_hex(const evmc::address& address) { return to_hex(full_view(address)); }
 
-std::string to_hex(const evmc::bytes32& hash) {
-  std::string out{};
-  out.reserve(2 * kHashLength);
-  boost::algorithm::hex_lower(std::begin(hash.bytes), std::end(hash.bytes),
-                              std::back_inserter(out));
-  return out;
-}
+std::string to_hex(const evmc::bytes32& hash) { return to_hex(full_view(hash)); }
 
 std::string to_hex(ByteView bytes) {
   std::string out{};

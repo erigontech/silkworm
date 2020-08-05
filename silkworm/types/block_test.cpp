@@ -16,9 +16,7 @@
 
 #include "block.hpp"
 
-#include <boost/algorithm/hex.hpp>
 #include <catch2/catch.hpp>
-#include <sstream>
 
 namespace silkworm {
 
@@ -44,7 +42,7 @@ TEST_CASE("BlockBody RLP") {
       "37cf6a903d65c449d7691a022837f6e2d994598868b769c5451a7aea"};
 
   Bytes rlp_bytes{from_hex(rlp_hex)};
-  auto in{as_stream(rlp_bytes)};
+  ByteView in{rlp_bytes};
   BlockBody bb{};
 
   rlp::decode(in, bb);
@@ -55,8 +53,8 @@ TEST_CASE("BlockBody RLP") {
   CHECK(bb.ommers[0].beneficiary == 0xc8ebccc5f5689fa8659d83713341e5ad19349448_address);
   CHECK(bb.ommers[0].difficulty == 17'171'480'576);
 
-  std::ostringstream out{};
+  Bytes out{};
   rlp::encode(out, bb);
-  CHECK(boost::algorithm::hex_lower(out.str()) == rlp_hex);
+  CHECK(to_hex(out) == rlp_hex);
 }
 }  // namespace silkworm

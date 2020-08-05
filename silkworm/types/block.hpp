@@ -49,7 +49,7 @@ struct BlockHeader {
   uint8_t nonce[8]{0};
 
  private:
-  friend void rlp::decode<BlockHeader>(std::istream& from, BlockHeader& to);
+  friend void rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to);
 
   evmc::bytes32 extra_data_;
   uint32_t extra_data_size_{0};
@@ -72,10 +72,10 @@ struct BlockWithHash {
 namespace rlp {
 
 template <>
-void decode(std::istream& from, BlockBody& to);
+void decode(ByteView& from, BlockBody& to);
 
 template <>
-void decode(std::istream& from, BlockHeader& to);
+void decode(ByteView& from, BlockHeader& to);
 }  // namespace rlp
 }  // namespace silkworm
 

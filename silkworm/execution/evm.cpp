@@ -21,7 +21,6 @@
 #include <ethash/keccak.hpp>
 #include <iterator>
 #include <silkworm/rlp/encode.hpp>
-#include <sstream>
 
 #include "analysis.hpp"
 #include "analysis_cache.hpp"
@@ -284,15 +283,17 @@ bool EVM::is_precompiled(const evmc::address& contract) const noexcept {
 }
 
 evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
-  std::ostringstream stream{};
+  thread_local Bytes rlp;
+  rlp.clear();
+
   rlp::Header h{true, 1 + kAddressLength};
   h.payload_length += rlp::length(nonce);
-  rlp::encode_header(stream, h);
-  rlp::encode(stream, caller.bytes);
-  rlp::encode(stream, nonce);
-  std::string rlp = stream.str();
+  rlp::encode_header(rlp, h);
+  rlp::encode(rlp, caller.bytes);
+  rlp::encode(rlp, nonce);
 
-  ethash::hash256 hash{ethash::keccak256(byte_ptr_cast(rlp.data()), rlp.size())};
+  thread_local ethash::hash256 hash;
+  hash = ethash::keccak256(rlp.data(), rlp.size());
 
   evmc::address address;
   std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);

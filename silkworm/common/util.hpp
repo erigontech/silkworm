@@ -17,24 +17,18 @@
 #ifndef SILKWORM_COMMON_UTIL_H_
 #define SILKWORM_COMMON_UTIL_H_
 
-#include <boost/iostreams/device/array.hpp>
-#include <boost/iostreams/stream.hpp>
 #include <silkworm/common/base.hpp>
 
 namespace silkworm {
 
-static_assert(sizeof(char) == sizeof(uint8_t));
-
-inline char* byte_ptr_cast(uint8_t* ptr) noexcept { return reinterpret_cast<char*>(ptr); }
-inline const char* byte_ptr_cast(const uint8_t* ptr) noexcept {
-  return reinterpret_cast<const char*>(ptr);
-}
-inline uint8_t* byte_ptr_cast(char* ptr) noexcept { return reinterpret_cast<uint8_t*>(ptr); }
-inline const uint8_t* byte_ptr_cast(const char* ptr) noexcept {
-  return reinterpret_cast<const uint8_t*>(ptr);
-}
-
+// Converts bytes to hash; input is cropped if necessary.
+// Short inputs are left-padded with 0s.
 evmc::bytes32 to_hash(ByteView bytes);
+
+template <unsigned N>
+ByteView full_view(const uint8_t (&bytes)[N]) {
+  return {bytes, N};
+}
 
 inline ByteView full_view(const evmc::address& address) { return {address.bytes, kAddressLength}; }
 inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHashLength}; }
@@ -51,9 +45,14 @@ Bytes from_hex(std::string_view hex);
 // TODO[C++20] replace by starts_with
 inline bool has_prefix(ByteView s, ByteView prefix) { return s.substr(0, prefix.size()) == prefix; }
 
-inline boost::iostreams::stream<boost::iostreams::basic_array_source<char>> as_stream(
-    ByteView view) {
-  return {byte_ptr_cast(view.data()), view.size()};
+// TODO[C++20] replace by std::popcount
+inline int popcount(unsigned x) {
+#ifdef _MSC_VER
+  return __popcnt(x);
+#else
+  return __builtin_popcount(x);
+#endif
+
 }
 }  // namespace silkworm
 

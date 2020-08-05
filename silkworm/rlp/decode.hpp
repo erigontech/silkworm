@@ -20,66 +20,66 @@
 #ifndef SILKWORM_RLP_DECODE_H_
 #define SILKWORM_RLP_DECODE_H_
 
+#include <cstring>
 #include <intx/intx.hpp>
-#include <istream>
 #include <silkworm/common/base.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <vector>
 
 namespace silkworm::rlp {
 
-constexpr size_t kMaxStringSize = 1024 * 1024;
-
 // Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,
 // in which case the byte is put back.
-Header decode_header(std::istream& from);
+Header decode_header(ByteView& from);
 
 template <class T>
-void decode(std::istream& from, T& to);
+void decode(ByteView& from, T& to);
 
 template <>
-void decode(std::istream& from, Bytes& to);
+void decode(ByteView& from, Bytes& to);
 
 template <>
-void decode(std::istream& from, uint64_t& to);
+void decode(ByteView& from, uint64_t& to);
 
 template <>
-void decode(std::istream& from, intx::uint256& to);
+void decode(ByteView& from, intx::uint256& to);
 
 template <unsigned N>
-void decode(std::istream& from, uint8_t (&to)[N]) {
+void decode(ByteView& from, uint8_t (&to)[N]) {
   static_assert(N <= 55, "Complex RLP length encoding not supported");
 
-  from.exceptions(std::ios_base::eofbit | std::ios_base::failbit | std::ios_base::badbit);
+  if (from.length() < N + 1) {
+    throw DecodingError("input too short");
+  }
 
-  uint8_t b = from.get();
-  if (b != kEmptyStringCode + N) {
+  if (from[0] != kEmptyStringCode + N) {
     throw DecodingError("unexpected length");
   }
 
-  void* ptr = to;
-  from.read(static_cast<char*>(ptr), N);
+  std::memcpy(to, &from[1], N);
+  from.remove_prefix(N + 1);
 }
 
 template <class T>
-void decode_vector(std::istream& from, std::vector<T>& to) {
-  Header h = decode_header(from);
-  if (!h.list) throw DecodingError("unexpected string");
+void decode_vector(ByteView& from, std::vector<T>& to) {
+  Header h{decode_header(from)};
+  if (!h.list) {
+    throw DecodingError("unexpected string");
+  }
 
   to.clear();
 
-  int64_t end{from.tellg()};
-  end += h.payload_length;
-
-  while (from.tellg() < end) {
+  ByteView payload_view{from.substr(0, h.payload_length)};
+  while (!payload_view.empty()) {
     to.emplace_back();
-    decode(from, to.back());
+    decode(payload_view, to.back());
   }
 
-  if (from.tellg() != end) throw DecodingError("list length mismatch");
+  from.remove_prefix(h.payload_length);
 }
 
-uint64_t read_uint64(std::istream& from, size_t len);
+uint64_t read_uint64(ByteView from);
+
 }  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLP_DECODE_H_

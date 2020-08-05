@@ -48,7 +48,7 @@ size_t length(const Transaction& txn) {
   return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
 }
 
-void encode(std::ostream& to, const Transaction& txn) {
+void encode(Bytes& to, const Transaction& txn) {
   encode_header(to, rlp_header(txn));
   encode(to, txn.nonce);
   encode(to, txn.gas_price);
@@ -56,7 +56,7 @@ void encode(std::ostream& to, const Transaction& txn) {
   if (txn.to) {
     encode(to, txn.to->bytes);
   } else {
-    to.put(kEmptyStringCode);
+    to.push_back(kEmptyStringCode);
   }
   encode(to, txn.value);
   encode(to, txn.data);
@@ -66,8 +66,8 @@ void encode(std::ostream& to, const Transaction& txn) {
 }
 
 template <>
-void decode(std::istream& from, Transaction& to) {
-  Header h = decode_header(from);
+void decode(ByteView& from, Transaction& to) {
+  Header h{decode_header(from)};
   if (!h.list) {
     throw DecodingError("unexpected string");
   }
@@ -76,9 +76,10 @@ void decode(std::istream& from, Transaction& to) {
   decode(from, to.gas_price);
   decode(from, to.gas_limit);
 
-  uint8_t toCode = from.get();
-  if (toCode != kEmptyStringCode) {
-    from.unget();
+  if (from[0] == kEmptyStringCode) {
+    to.to = {};
+    from.remove_prefix(1);
+  } else {
     to.to = evmc::address{};
     decode(from, to.to->bytes);
   }

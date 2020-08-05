@@ -18,8 +18,6 @@
 #define SILKWORM_TYPES_ACCOUNT_H_
 
 #include <intx/intx.hpp>
-#include <istream>
-#include <ostream>
 #include <silkworm/common/base.hpp>
 #include <silkworm/rlp/decode.hpp>
 
@@ -42,10 +40,10 @@ bool operator==(const Account& a, const Account& b);
 Account decode_account_from_storage(ByteView encoded);
 
 namespace rlp {
-void encode(std::ostream& to, const Account& account);
+void encode(Bytes& to, const Account& account);
 
 template <>
-void decode(std::istream& from, Account& to);
+void decode(ByteView& from, Account& to);
 }  // namespace rlp
 }  // namespace silkworm
 

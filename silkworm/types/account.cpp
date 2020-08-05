@@ -111,7 +111,7 @@ Account decode_account_from_storage(ByteView encoded) {
 }
 
 namespace rlp {
-=======
+
 void encode(Bytes& to, const Account& account) {
   Header h{true, 0};
   h.payload_length += length(account.nonce);

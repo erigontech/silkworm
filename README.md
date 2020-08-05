@@ -29,7 +29,8 @@ or run tests
 ./tests
 ```
 ## Windows (Visual Studio Community Edition 2019)
-* Install [Visual Studio Community Edition](https://visualstudio.microsoft.com/en/vs/community/) with CMake and Windows SDK options enabled.
+* Install [Visual Studio](https://www.visualstudio.com/downloads/). Community edition is fine.
+* Make sure your setup includes CMake support and Windows 10 SDK (10.0.17134.0)
 * Open Visual Studio and select File -> CMake... 
 * Browse the folder where you have cloned this repository and select the file CMakeLists.txt
 * Let CMake cache generation complete (it may take several minutes)

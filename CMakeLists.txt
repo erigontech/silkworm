@@ -56,6 +56,7 @@ if(MSVC)
   add_compile_options(/W4)
   add_compile_options(/wd5030) # Silence warnings about gnu attributes
   add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
+  add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
 else()
   add_compile_options(-Wall -Wextra -Werror)
 endif()
@@ -89,7 +90,13 @@ target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
 add_subdirectory(silkworm)
 
 add_executable(check_changes cmd/check_changes.cpp)
-target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time)
+
+if(MSVC)
+  # lmdb requires link to ntdll.lib
+  target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time ntdll.lib)
+else()
+  target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time)
+endif(MSVC)
 
 # Unit tests
 enable_testing()
@@ -101,7 +108,13 @@ find_package(Boost CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "silkworm/*_test.cpp")
 add_executable(tests cmd/tests.cpp ${SILKWORM_TESTS})
-target_link_libraries(tests silkworm Catch2::Catch2 Boost::boost)
+
+if(MSVC)
+  # lmdb requires link to ntdll.lib
+  target_link_libraries(tests silkworm Catch2::Catch2 Boost::boost ntdll.lib)
+else()
+  target_link_libraries(tests silkworm Catch2::Catch2 Boost::boost)
+endif(MSVC)
 
 include(CTest)
 include(Catch)

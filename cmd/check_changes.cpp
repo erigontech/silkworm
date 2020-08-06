@@ -25,6 +25,7 @@
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/state/reader.hpp>
+#include <silkworm/trie/vector_root.hpp>
 #include <string>
 
 ABSL_FLAG(std::string, db, silkworm::db::default_path(), "chain DB path");
@@ -63,8 +64,9 @@ int main(int argc, char* argv[]) {
     IntraBlockState state{&reader};
     ExecutionProcessor processor{chain, bh->block, state};
 
+    std::vector<Receipt> receipts;
     try {
-      std::vector<Receipt> receipts = processor.execute_block();
+      receipts = processor.execute_block();
     } catch (ValidationError& err) {
       std::cerr << "ValidationError in block " << block_num << " 🤬\n";
       throw err;
@@ -79,7 +81,11 @@ int main(int argc, char* argv[]) {
     }
 
     if (chain.config().has_byzantium(block_num)) {
-      // TODO[Byzantium] check receipts
+      evmc::bytes32 receipt_root{trie::root_hash(receipts)};
+      if (receipt_root != bh->block.header.receipts_root) {
+        std::cerr << "Receipt root mismatch for block " << block_num << " 😖\n";
+        return -2;
+      }
     }
 
     state::Writer writer;
@@ -107,7 +113,7 @@ int main(int argc, char* argv[]) {
       } else {
         std::cerr << "Nil DB account changes\n";
       }
-      return -2;
+      return -3;
     }
 
     Bytes db_storage_changes{db.get_storage_changes(block_num)};
@@ -120,7 +126,7 @@ int main(int argc, char* argv[]) {
       std::cerr << to_hex(calculated_storage_changes) << "\n";
       std::cerr << "vs DB\n";
       std::cerr << to_hex(db_storage_changes) << "\n";
-      return -3;
+      return -4;
     }
 
     if (block_num % 1000 == 0) {

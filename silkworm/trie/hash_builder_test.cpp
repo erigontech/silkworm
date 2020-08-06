@@ -33,8 +33,8 @@ TEST_CASE("HashBuilder") {
   Bytes rlp0{from_hex("c98320") + key0 + from_hex("84") + val0};
   ethash::hash256 hash0{ethash::keccak256(rlp0.data(), rlp0.size())};
 
-  HashBuilder hb{key0, val0};
-  CHECK(to_hex(hb.root_hash()) == to_hex(full_view(hash0.bytes)));
+  HashBuilder hb0{key0, val0};
+  CHECK(to_hex(hb0.root_hash()) == to_hex(full_view(hash0.bytes)));
 
   // ------------------------------------------------------------------------------------------
   // Add the second entry
@@ -61,7 +61,8 @@ TEST_CASE("HashBuilder") {
   std::copy_n(hash1_2.bytes, kHashLength, std::back_inserter(rlp1));
   ethash::hash256 hash1{ethash::keccak256(rlp1.data(), rlp1.size())};
 
-  hb.add(key1, val1);
-  CHECK(to_hex(hb.root_hash()) == to_hex(full_view(hash1.bytes)));
+  HashBuilder hb1{key0, val0};
+  hb1.add(key1, val1);
+  CHECK(to_hex(hb1.root_hash()) == to_hex(full_view(hash1.bytes)));
 }
 }  // namespace silkworm::trie

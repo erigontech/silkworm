@@ -58,4 +58,14 @@ Bytes from_hex(std::string_view hex) {
   boost::algorithm::unhex(hex.begin(), hex.end(), std::back_inserter(out));
   return out;
 }
+
+size_t prefix_length(ByteView a, ByteView b) {
+  size_t len{std::min(a.length(), b.length())};
+  for (size_t i{0}; i < len; ++i) {
+    if (a[i] != b[i]) {
+      return i;
+    }
+  }
+  return len;
+}
 }  // namespace silkworm

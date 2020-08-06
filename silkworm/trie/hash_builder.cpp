@@ -20,7 +20,6 @@
 #include <cassert>
 #include <cstring>
 #include <ethash/keccak.hpp>
-#include <iterator>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 
@@ -88,77 +87,120 @@ static ByteView node_ref(ByteView rlp) {
     return rlp;
   }
 
-  ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
+  thread_local ethash::hash256 hash;
+  hash = ethash::keccak256(rlp.data(), rlp.length());
   return {hash.bytes, kHashLength};
 }
+HashBuilder::HashBuilder(ByteView key0, ByteView value0)
+    : key_{unpack_nibbles(key0)}, value_{value0} {}
 
-HashBuilder::HashBuilder(ByteView key0, ByteView val0)
-    : path_{unpack_nibbles(key0)}, value_{val0} {}
-
-void HashBuilder::add(ByteView packed, ByteView val) {
+void HashBuilder::add(ByteView packed, ByteView value) {
   Bytes key{unpack_nibbles(packed)};
-  assert(key > path_);
-
-  size_t len{std::min(key.length(), path_.length())};
-  size_t matching_bytes = std::distance(
-      key.begin(), std::mismatch(key.begin(), key.begin() + len, path_.begin()).first);
-
-  if (matching_bytes == len) {
-    // full match
-    uint8_t nibble{key[len]};
-    // TODO[Byzantium] nibble clash
-    branch_mask_ |= 1u << nibble;
-    children_[nibble] = leaf_node_rlp(key.substr(len + 1), val);
-  } else {
-    // new branch
-    children_[path_[len]] = node_rlp(path_.substr(len + 1));
-    children_[key[len]] = leaf_node_rlp(key.substr(len + 1), val);
-    branch_mask_ = 0;
-    branch_mask_ |= 1u << path_[len];
-    branch_mask_ |= 1u << key[len];
-    path_.resize(len);
-    value_.clear();
-  }
+  assert(key > key_);
+  gen_struct_step(key_, key, value_);
+  key_ = key;
+  value_ = value;
 }
 
-evmc::bytes32 HashBuilder::root_hash() const {
-  Bytes rlp{node_rlp(path_)};
-  ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
+evmc::bytes32 HashBuilder::root_hash() {
+  gen_struct_step(key_, {}, value_);
+  key_.clear();
+  value_.clear();
+
+  Bytes& node_ref{stack_.back()};
   evmc::bytes32 res{};
-  std::memcpy(res.bytes, hash.bytes, kHashLength);
+  if (node_ref.length() == kHashLength) {
+    std::memcpy(res.bytes, node_ref.data(), kHashLength);
+  } else {
+    ethash::hash256 hash{ethash::keccak256(node_ref.data(), node_ref.length())};
+    std::memcpy(res.bytes, hash.bytes, kHashLength);
+  }
   return res;
 }
 
-Bytes HashBuilder::node_rlp(ByteView path) const {
-  if (popcount(branch_mask_) == 0) {
-    return leaf_node_rlp(path, value_);
-  } else if (path.empty()) {
-    return branch_node_rlp();
-  } else {
-    return extension_node_rlp(path, node_ref(branch_node_rlp()));
+// https://github.com/ledgerwatch/turbo-geth/blob/master/docs/programmers_guide/guide.md#generating-the-structural-information-from-the-sequence-of-keys
+void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const ByteView value) {
+  for (bool build_extensions{false};; build_extensions = true) {
+    const bool prec_exists{!groups_.empty()};
+    const size_t prec_len{groups_.empty() ? 0 : groups_.size() - 1};
+    const size_t succ_len{prefix_length(succ, curr)};
+    const size_t max_len{std::max(prec_len, succ_len)};
+    assert(max_len < curr.length());
+
+    // Add the digit immediately following the max common prefix and compute length of remainder
+    // length
+    const uint8_t extra_digit{curr[max_len]};
+    if (groups_.size() <= max_len) {
+      groups_.resize(max_len + 1);
+    }
+    groups_[max_len] |= 1u << extra_digit;
+
+    size_t remainder_start{max_len};
+    if (!succ.empty() || prec_exists) {
+      ++remainder_start;
+    }
+
+    const ByteView short_node_key{curr.substr(remainder_start)};
+    if (!build_extensions) {
+      stack_.emplace_back(node_ref(leaf_node_rlp(short_node_key, value)));
+    } else if (!short_node_key.empty()) {
+      stack_.back() = node_ref(extension_node_rlp(short_node_key, stack_.back()));
+    }
+
+    // Check for the optional part
+    if (prec_len <= succ_len && !succ.empty()) {
+      return;
+    }
+
+    // Close the immediately encompassing prefix group, if needed
+    if (!succ.empty() || prec_exists) {
+      branch_ref(groups_[max_len]);
+    }
+
+    groups_.resize(max_len);
+
+    // Check the end of recursion
+    if (prec_len == 0) {
+      return;
+    }
+
+    // Identify preceding key for the buildExtensions invocation
+    curr = curr.substr(0, prec_len);
+    while (!groups_.empty() && groups_.back() == 0) {
+      groups_.pop_back();
+    }
   }
 }
 
-Bytes HashBuilder::branch_node_rlp() const {
-  Bytes rlp{};
+// Takes children from the stack and replaces them with branch node ref.
+void HashBuilder::branch_ref(uint16_t mask) {
+  const size_t first_child_idx{stack_.size() - popcount(mask)};
+
   rlp::Header h;
   h.list = true;
-  h.payload_length = 16;
-  for (int i{0}; i < 16; ++i) {
-    if (branch_mask_ & (1u << i)) {
-      h.payload_length += std::min(children_[i].length(), kHashLength);
+  h.payload_length = 17;
+
+  for (size_t i{first_child_idx}, digit{0}; digit < 16; ++digit) {
+    if (mask & (1u << digit)) {
+      h.payload_length += stack_[i++].length();
     }
   }
-  h.payload_length += rlp::length(value_);
+
+  Bytes rlp{};
   rlp::encode_header(rlp, h);
-  for (int i{0}; i < 16; ++i) {
-    if (branch_mask_ & (1u << i)) {
-      rlp::encode(rlp, node_ref(children_[i]));
+
+  for (size_t i{first_child_idx}, digit{0}; digit < 16; ++digit) {
+    if (mask & (1u << digit)) {
+      rlp::encode(rlp, stack_[i++]);
     } else {
       rlp.push_back(rlp::kEmptyStringCode);
     }
   }
-  rlp::encode(rlp, value_);
-  return rlp;
+
+  // branch nodes with values are not supported
+  rlp.push_back(rlp::kEmptyStringCode);
+
+  stack_.resize(first_child_idx + 1);
+  stack_.back() = node_ref(rlp);
 }
 }  // namespace silkworm::trie

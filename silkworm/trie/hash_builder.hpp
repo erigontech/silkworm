@@ -17,8 +17,8 @@
 #ifndef SILKWORM_TRIE_HASH_BUILDER_H_
 #define SILKWORM_TRIE_HASH_BUILDER_H_
 
-#include <array>
 #include <silkworm/common/base.hpp>
+#include <vector>
 
 namespace silkworm::trie {
 
@@ -31,23 +31,27 @@ class HashBuilder {
   HashBuilder& operator=(const HashBuilder&) = delete;
 
   // Must be constructed with the very first (lexicographically) key/value pair.
-  HashBuilder(ByteView key0, ByteView val0);
+  HashBuilder(ByteView key0, ByteView value0);
 
   // Entries must be added in the strictly increasing lexicographic order (by key).
   // Consequently, duplicate keys are not allowed.
-  void add(ByteView key, ByteView val);
+  // In addition, a key may not be a prefix of another key
+  // (e.g. keys "ab" & "ab05" are mutually exclusive).
+  void add(ByteView key, ByteView value);
 
-  evmc::bytes32 root_hash() const;
+  // May only be called after all entries have been added.
+  evmc::bytes32 root_hash();
 
  private:
-  Bytes node_rlp(ByteView path) const;
+  void gen_struct_step(ByteView curr, ByteView succ, ByteView value);
 
-  Bytes branch_node_rlp() const;
+  void branch_ref(uint16_t mask);
 
-  Bytes path_;
-  uint16_t branch_mask_{0};
-  std::array<Bytes, 16> children_;
+  Bytes key_;  // unpacked – one nibble per byte
   Bytes value_;
+
+  std::vector<uint16_t> groups_;
+  std::vector<Bytes> stack_;  // node references: hashes or embedded RLPs
 };
 }  // namespace silkworm::trie
 

@@ -16,6 +16,8 @@
 
 #include "database.hpp"
 
+#include <cassert>
+
 #include "bucket.hpp"
 #include "history_index.hpp"
 #include "util.hpp"

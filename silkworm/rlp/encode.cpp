@@ -41,6 +41,11 @@ size_t length_of_length(uint64_t payload_length) {
   }
 }
 
+void encode(Bytes& to, const evmc::bytes32& hash) {
+  to.push_back(kEmptyStringCode + kHashLength);
+  to.append(full_view(hash));
+}
+
 void encode(Bytes& to, ByteView s) {
   if (s.length() != 1 || s[0] >= kEmptyStringCode) {
     encode_header(to, {false, s.length()});

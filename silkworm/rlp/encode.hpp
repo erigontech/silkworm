@@ -28,6 +28,8 @@ namespace silkworm {
 
 struct BlockBody;
 struct BlockHeader;
+struct Log;
+struct Receipt;
 struct Transaction;
 
 namespace rlp {
@@ -42,9 +44,10 @@ static constexpr uint8_t kEmptyListCode = 0xC0;
 
 void encode_header(Bytes& to, Header header);
 
-void encode(Bytes& to, ByteView s);
-void encode(Bytes& to, uint64_t n);
-void encode(Bytes& to, const intx::uint256& n);
+void encode(Bytes& to, const evmc::bytes32&);
+void encode(Bytes& to, ByteView);
+void encode(Bytes& to, uint64_t);
+void encode(Bytes& to, const intx::uint256&);
 
 template <unsigned N>
 void encode(Bytes& to, const uint8_t (&bytes)[N]) {
@@ -53,18 +56,24 @@ void encode(Bytes& to, const uint8_t (&bytes)[N]) {
   to.append(bytes, N);
 }
 
-void encode(Bytes& to, const BlockBody& block_body);
-void encode(Bytes& to, const BlockHeader& header);
-void encode(Bytes& to, const Transaction& txn);
+void encode(Bytes& to, const BlockBody&);
+void encode(Bytes& to, const BlockHeader&);
+void encode(Bytes& to, const Log&);
+void encode(Bytes& to, const Receipt&);
+void encode(Bytes& to, const Transaction&);
 
 size_t length_of_length(uint64_t payload_length);
 
-size_t length(ByteView s);
-size_t length(uint64_t n);
-size_t length(const intx::uint256& n);
+inline size_t length(const evmc::bytes32&) { return kHashLength + 1; }
 
-size_t length(const BlockHeader& header);
-size_t length(const Transaction& transaction);
+size_t length(ByteView);
+size_t length(uint64_t);
+size_t length(const intx::uint256&);
+
+size_t length(const BlockHeader&);
+size_t length(const Log&);
+size_t length(const Receipt&);
+size_t length(const Transaction&);
 
 template <class T>
 size_t length(const std::vector<T>& v) {

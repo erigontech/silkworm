@@ -143,7 +143,7 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
     const ByteView short_node_key{curr.substr(remainder_start)};
     if (!build_extensions) {
       stack_.emplace_back(node_ref(leaf_node_rlp(short_node_key, value)));
-    } else {
+    } else if (!short_node_key.empty()) {
       stack_.back() = node_ref(extension_node_rlp(short_node_key, stack_.back()));
     }
 

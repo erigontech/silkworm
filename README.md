@@ -40,7 +40,7 @@ or run tests
 
 # Code style
 
-We use the standard C++17 programming language, plus C++20 designated initializers.
+We use the standard C++17 programming language.
 We follow [Google's C++ Style Guide](https://google.github.io/styleguide/cppguide.html) with the following differences:
 
 * `snake_case` for function names.

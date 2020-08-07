@@ -17,6 +17,7 @@ platform: x64
 
 before_build:
   - cd "%APPVEYOR_BUILD_FOLDER%"
+  - git submodule update --init --recursive
   - cmake -H. -Bbuild
 
 build:

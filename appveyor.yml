@@ -28,4 +28,4 @@ build:
 
 test_script:
   - cd build
-  - Debug\tests.exe
+  - Debug\tests.exe -s

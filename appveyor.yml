@@ -15,6 +15,9 @@
 image: Visual Studio 2019
 platform: x64
 
+cache:
+  - C:\.hunter
+
 before_build:
   - cd "%APPVEYOR_BUILD_FOLDER%"
   - git submodule update --init --recursive

@@ -1,6 +1,6 @@
-CI with test coverage under Linux (gcc) and Windows
-
 Comments!!!
+
+CI with test coverage under Linux (gcc)
 
 Propagate noexcept from EvmHost
 

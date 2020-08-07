@@ -28,4 +28,4 @@ build:
 
 test_script:
   - cd build
-  - tests.exe
+  - ctest -V

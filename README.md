@@ -8,6 +8,11 @@ as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth
 [![Build status](https://ci.appveyor.com/api/projects/status/8npida1piyqw1844?svg=true)](https://ci.appveyor.com/project/torquem/silkworm)
 
 # Building the source
+
+# Clone the repository
+
+`git clone --recurse-submodules https://github.com/torquem-ch/silkworm.git`
+
 ## Linux & macOS
 Building silkworm requires [cmake](https://cgold.readthedocs.io/en/latest/first-step/installation.html) and a C++17 compiler.
 Once the prerequisites are installed, bootstrap cmake build by running

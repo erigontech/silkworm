@@ -93,21 +93,26 @@ std::string default_path() {
   if (env) {
     base_dir = env;
   } else {
-    env = std::getenv("LOCALAPPDATA");
+    env = std::getenv("APPDATA");
     if (env) {
       base_dir = env;
     }
   }
 
   if (base_dir.empty()) {
+#if defined(_WIN32)
+    /* Should not happen */
+    return base_dir;
+#else
     env = std::getenv("HOME");
     if (!env) {
-      return {};
+      return base_dir;
     }
+#endif
     std::string home_dir{env};
 
 #ifdef _WIN32
-    base_dir = home_dir + "/AppData/Roaming";
+    base_dir = home_dir;
 #elif __APPLE__
     base_dir = home_dir + "/Library";
 #else

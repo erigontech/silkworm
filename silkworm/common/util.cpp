@@ -51,7 +51,7 @@ std::string to_hex(ByteView bytes) {
 
 Bytes from_hex(std::string_view hex) {
   if (hex.length() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) {
-    hex = hex.substr(2);
+    hex.remove_prefix(2);
   }
   Bytes out{};
   out.reserve(hex.length() / 2);

@@ -28,9 +28,31 @@ static secp256k1_context* kDefaultContext{
 bool inputs_are_valid(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
                       bool homestead) {
   if (r == 0 || s == 0 || v > 1) return false;
-  if (homestead && 2 * s > kSecp256k1n) return false;
+  if (homestead && s > kSecp256k1n_div2) return false;
   return r < kSecp256k1n && s < kSecp256k1n;
 }
+
+bool is_valid_signature(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
+                        bool homestead, uint64_t chain_id) {
+
+    if (!is_valid_signature_recovery(get_signature_recovery(v, chain_id)))
+    {
+        return false;
+    }
+
+    if (r == 0 || r > kSecp256k1n || s == 0 || s > homestead ? kSecp256k1n_div2 : kSecp256k1n)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+intx::uint256 get_signature_recovery(const intx::uint256& v, uint64_t chain_id) {
+  return chain_id ? v - (2 * chain_id + 35) : v - 27;
+}
+
+bool is_valid_signature_recovery(intx::uint256 recovery) { return recovery == 0 || recovery == 1; }
 
 std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id) {
   if (message.length() != 32) return {};

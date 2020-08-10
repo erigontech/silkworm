@@ -59,8 +59,7 @@ jobs:
       - test
       - run:
           name: "Upload coverage data"
-          command: |
-            codecov --gcov-root ~/build
+          command: codecov --gcov-root ~/project
 
 workflows:
   version: 2

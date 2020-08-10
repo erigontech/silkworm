@@ -1,0 +1,65 @@
+#   Copyright 2020 The Silkworm Authors
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+version: 2.1
+
+executors:
+  linux:
+    docker:
+      - image: ethereum/cpp-build-env:12-gcc-9
+
+commands:
+  build:
+    steps:
+      - checkout
+      - run:
+          name: "Update submodules"
+          command: git submodule update --init --recursive
+      - restore_cache:
+          name: "Restore Hunter cache"
+          key: hunter-{{arch}}
+      - run:
+          name: "Cmake"
+          working_directory: ~/build
+          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+      - save_cache:
+          name: "Save Hunter cache"
+          key: hunter-{{arch}}
+          paths:
+            - ~/.hunter
+      - run:
+          name: "Build"
+          command: cmake --build ~/build -j
+
+  test:
+    steps:
+    - run:
+        name: "Test"
+        working_directory: ~/build
+        command: ctest --output-on-failure
+
+jobs:
+  build_and_test:
+    executor: linux
+    environment:
+      BUILD_TYPE: Debug
+    steps:
+      - build
+      - test
+
+workflows:
+  version: 2
+  silkworm:
+    jobs:
+      - build_and_test

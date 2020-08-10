@@ -66,4 +66,4 @@ workflows:
   version: 2
   silkworm:
     jobs:
-      - build_and_test
+      - test_coverage

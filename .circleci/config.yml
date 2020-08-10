@@ -50,13 +50,17 @@ commands:
         command: ctest --output-on-failure
 
 jobs:
-  build_and_test:
+  test_coverage:
     executor: linux
     environment:
       BUILD_TYPE: Debug
     steps:
       - build
       - test
+      - run:
+          name: "Upload coverage data"
+          command: |
+            codecov --gcov-root ~/build
 
 workflows:
   version: 2

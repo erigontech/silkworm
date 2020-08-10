@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-cmake_minimum_required(VERSION 3.12) # for CONFIGURE_DEPENDS
+cmake_minimum_required(VERSION 3.13)
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmone/evmc/.git)
     message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
@@ -65,6 +65,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
   add_compile_options(-gline-tables-only) # for profiling
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes)
+endif()
+
+if(CMAKE_BUILD_TYPE EQUAL "DEBUG" AND NOT MSVC)
+  add_compile_options(--coverage)
+  add_link_options(--coverage)
 endif()
 
 # Some required packages

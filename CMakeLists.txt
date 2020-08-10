@@ -67,12 +67,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes)
 endif()
 
-# Code coverage
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  add_compile_options(--coverage)
-  add_link_options(--coverage)
-endif()
-
 # Some required packages
 hunter_add_package(ethash)
 find_package(ethash CONFIG REQUIRED)

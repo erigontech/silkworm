@@ -50,19 +50,16 @@ commands:
         command: ctest --output-on-failure
 
 jobs:
-  test_coverage:
+  build_and_test:
     executor: linux
     environment:
       BUILD_TYPE: Debug
     steps:
       - build
       - test
-      - run:
-          name: "Upload coverage data"
-          command: codecov --gcov-root ~/project
 
 workflows:
   version: 2
   silkworm:
     jobs:
-      - test_coverage
+      - build_and_test

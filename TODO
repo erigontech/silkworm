@@ -1,9 +1,7 @@
-CI with test coverage under Linux (gcc) and Windows
-
 Comments!!!
 
 Propagate noexcept from EvmHost
 
-Replace Boost with Abseil?
+Test code coverage in CI
 
 MDB_NOTLS and multi-threading. Do we mix C++ and go in one process?

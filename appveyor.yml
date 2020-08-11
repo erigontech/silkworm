@@ -43,3 +43,4 @@ build:
 
 on_failure:
   - ps: Get-ChildItem C:/.hunter/_Base/062a19a/be6efaf/09e6b72/Build/OpenSSL/Build/OpenSSL-prefix/src/OpenSSL-stamp/OpenSSL-configure-*.log | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
+  - ps: Push-AppveyorArtifact C:/.hunter/_Base/062a19a/be6efaf/09e6b72/Build/OpenSSL/Build/configure_1_1_plus.cmake

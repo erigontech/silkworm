@@ -36,7 +36,7 @@ before_build:
   - dir
   - cd "%APPVEYOR_BUILD_FOLDER%"
   - git submodule update --init --recursive
-  - cmake -H. -Bbuild -DOPENSSL_ROOT_DIR="C:/OpenSSL-Win64"
+  - cmake -H. -Bbuild -DOPENSSL_ROOT_DIR="C:/OpenSSL-Win64" -DCMAKE_EXECUTE_PROCESS_COMMAND_ECHO=STDERR
 
 build:
   project: build\silkworm.sln

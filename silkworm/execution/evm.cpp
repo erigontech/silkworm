@@ -20,8 +20,8 @@
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <iterator>
-#include <silkworm/rlp/encode.hpp>
 
+#include "address.hpp"
 #include "analysis.hpp"
 #include "analysis_cache.hpp"
 #include "execution.hpp"
@@ -280,41 +280,6 @@ bool EVM::is_precompiled(const evmc::address& contract) const noexcept {
   evmc::address max_precompiled{};
   max_precompiled.bytes[kAddressLength - 1] = number_of_precompiles();
   return contract <= max_precompiled;
-}
-
-evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
-  thread_local Bytes rlp;
-  rlp.clear();
-
-  rlp::Header h{true, 1 + kAddressLength};
-  h.payload_length += rlp::length(nonce);
-  rlp::encode_header(rlp, h);
-  rlp::encode(rlp, caller.bytes);
-  rlp::encode(rlp, nonce);
-
-  thread_local ethash::hash256 hash;
-  hash = ethash::keccak256(rlp.data(), rlp.size());
-
-  evmc::address address;
-  std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);
-  return address;
-}
-
-evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
-                              uint8_t (&code_hash)[32]) noexcept {
-  constexpr size_t n{1 + kAddressLength + 2 * kHashLength};
-  thread_local uint8_t buf[n];
-
-  buf[0] = 0xff;
-  std::memcpy(buf + 1, caller.bytes, kAddressLength);
-  std::memcpy(buf + 1 + kAddressLength, salt.bytes, kHashLength);
-  std::memcpy(buf + 1 + kAddressLength + kHashLength, code_hash, kHashLength);
-
-  ethash::hash256 hash{ethash::keccak256(buf, n)};
-
-  evmc::address address;
-  std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);
-  return address;
 }
 
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {

@@ -18,6 +18,7 @@
 
 #include <catch2/catch.hpp>
 
+#include "address.hpp"
 #include "protocol_param.hpp"
 
 namespace silkworm {
@@ -280,10 +281,5 @@ TEST_CASE("CREATE should only return on failure") {
   evmc::address contract_address{create_address(caller, /*nonce=*/0)};
   evmc::bytes32 key0{};
   CHECK(is_zero(state.get_storage(contract_address, key0)));
-}
-
-TEST_CASE("Create address") {
-  CHECK(create_address(0xfbe0afcd7658ba86be41922059dd879c192d4c73_address, 0) ==
-        0xc669eaad75042be84daaf9b461b0e868b9ac1871_address);
 }
 }  // namespace silkworm

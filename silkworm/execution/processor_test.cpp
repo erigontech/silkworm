@@ -21,6 +21,7 @@
 #include <silkworm/db/bucket.hpp>
 #include <silkworm/db/lmdb.hpp>
 
+#include "address.hpp"
 #include "protocol_param.hpp"
 
 namespace silkworm {

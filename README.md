@@ -15,7 +15,11 @@ as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth
 `git clone --recurse-submodules https://github.com/torquem-ch/silkworm.git`
 
 ## Linux & macOS
-Building silkworm requires [cmake](https://cgold.readthedocs.io/en/latest/first-step/installation.html) and a C++17 compiler.
+Building silkworm requires:
+* [CMake](http://cmake.org)
+* [GMP](http://gmplib.org)
+* C++17 compiler (Clang or GCC)
+
 Once the prerequisites are installed, bootstrap cmake build by running
 ```
 mkdir build

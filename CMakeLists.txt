@@ -37,6 +37,7 @@ HunterGate(
 
 project(silkworm)
 
+# Abseil
 add_subdirectory(abseil-cpp)
 
 # secp256k1
@@ -50,6 +51,11 @@ add_compile_definitions(ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMOR
 add_compile_definitions(ENABLE_MODULE_RECOVERY)
 add_library(secp256k1 secp256k1/src/secp256k1.c)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
+
+# libff
+hunter_add_package(OpenSSL)
+option(WITH_PROCPS "Use procps for memory profiling" OFF)
+add_subdirectory(libff)
 
 # Compiler options
 if(MSVC)
@@ -67,7 +73,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes)
 endif()
 
-# Some required packages
+# Some other required packages
 hunter_add_package(ethash)
 find_package(ethash CONFIG REQUIRED)
 hunter_add_package(intx)

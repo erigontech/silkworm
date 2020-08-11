@@ -44,18 +44,21 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
   v -= 27;
 
   // https://eips.ethereum.org/EIPS/eip-2
-  if (!ecdsa::inputs_are_valid(v, r, s, /*homestead=*/false)) return Bytes{};
+  if (!ecdsa::inputs_are_valid(v, r, s, /*homestead=*/false)) {
+    return Bytes{};
+  }
 
   std::optional<Bytes> key{
       ecdsa::recover(d.substr(0, 32), d.substr(64, 64), intx::narrow_cast<uint8_t>(v))};
-  if (!key) return Bytes{};
+  if (!key) {
+    return Bytes{};
+  }
 
   // Ignore the first byte of the public key
   ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
 
   Bytes out(32, '\0');
   std::memcpy(&out[12], &hash.bytes[12], 32 - 12);
-
   return out;
 }
 
@@ -131,7 +134,10 @@ std::optional<Bytes> snarkv_run(ByteView) noexcept {
 }
 
 uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
-  if (input.length() < 4) return 0;  // blake2_f_run will fail anyway
+  if (input.length() < 4) {
+    // blake2_f_run will fail anyway
+    return 0;
+  }
   return boost::endian::load_big_u32(input.data());
 }
 

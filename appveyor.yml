@@ -17,6 +17,8 @@ platform: x64
 
 environment:
   OPENSSL_ROOT_DIR: C:\OpenSSL-v111-Win64
+  OPENSSL_LIBRARIES: C:\OpenSSL-v111-Win64\include
+  OPENSSL_INCLUDE_DIR: C:\OpenSSL-v111-Win64\lib
 
 cache:
   - C:\.hunter

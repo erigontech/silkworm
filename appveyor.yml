@@ -16,9 +16,9 @@ image: Visual Studio 2019
 platform: x64
 
 environment:
-  OPENSSL_ROOT_DIR: C:\OpenSSL-v111-Win64
-  OPENSSL_LIBRARIES: C:\OpenSSL-v111-Win64\include
-  OPENSSL_INCLUDE_DIR: C:\OpenSSL-v111-Win64\lib
+  OPENSSL_ROOT_DIR: C:\OpenSSL-Win64
+  OPENSSL_LIBRARIES: C:\OpenSSL-Win64\include
+  OPENSSL_INCLUDE_DIR: C:\OpenSSL-Win64\lib
 
 cache:
   - C:\.hunter
@@ -36,7 +36,7 @@ before_build:
   - dir
   - cd "%APPVEYOR_BUILD_FOLDER%"
   - git submodule update --init --recursive
-  - cmake -H. -Bbuild -DOPENSSL_ROOT_DIR="C:/OpenSSL-v111-Win64"
+  - cmake -H. -Bbuild -DOPENSSL_ROOT_DIR="C:/OpenSSL-Win64"
 
 build:
   project: build\silkworm.sln

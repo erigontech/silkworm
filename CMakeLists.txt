@@ -54,7 +54,16 @@ target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/inclu
 
 # libff
 hunter_add_package(OpenSSL)
-option(WITH_PROCPS "Use procps for memory profiling" OFF)
+option(
+  WITH_PROCPS
+  "Use procps for memory profiling"
+  OFF
+)
+option(
+  IS_LIBFF_PARENT
+  "Install submodule dependencies if caller originates from here"
+  OFF
+)
 add_subdirectory(libff)
 
 # Compiler options

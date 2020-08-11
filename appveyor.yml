@@ -24,6 +24,12 @@ cache:
   - C:\.hunter
 
 before_build:
+  - cd "%OPENSSL_ROOT_DIR%"
+  - dir
+  - cd "%OPENSSL_LIBRARIES%"
+  - dir
+  - cd "%OPENSSL_INCLUDE_DIR%"
+  - dir
   - cd "%APPVEYOR_BUILD_FOLDER%"
   - git submodule update --init --recursive
   - cmake -H. -Bbuild -DOPENSSL_ROOT_DIR="C:/OpenSSL-v111-Win64"

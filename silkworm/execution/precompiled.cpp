@@ -22,6 +22,7 @@
 #include <boost/endian/conversion.hpp>
 #include <cstring>
 #include <ethash/keccak.hpp>
+#include <iostream>  // TODO[Byzantium] remove
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 
@@ -87,11 +88,13 @@ uint64_t id_gas(ByteView input, evmc_revision) noexcept {
 std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
 
 uint64_t expmod_gas(ByteView, evmc_revision) noexcept {
+  std::cerr << "[Byzantium] expmod_gas!!!\n";
   // TODO[Byzantium] implement
   return 0;
 }
 
 std::optional<Bytes> expmod_run(ByteView) noexcept {
+  std::cerr << "[Byzantium] expmod_run!!!\n";
   // TODO[Byzantium] implement
   return {};
 }
@@ -101,6 +104,7 @@ uint64_t bn_add_gas(ByteView, evmc_revision rev) noexcept {
 }
 
 std::optional<Bytes> bn_add_run(ByteView) noexcept {
+  std::cerr << "[Byzantium] bn_add_run!!!\n";
   // TODO[Byzantium] implement
   return {};
 }
@@ -110,6 +114,7 @@ uint64_t bn_mul_gas(ByteView, evmc_revision rev) noexcept {
 }
 
 std::optional<Bytes> bn_mul_run(ByteView) noexcept {
+  std::cerr << "[Byzantium] bn_mul_run!!!\n";
   // TODO[Byzantium] implement
   return {};
 }
@@ -120,6 +125,7 @@ uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
 }
 
 std::optional<Bytes> snarkv_run(ByteView) noexcept {
+  std::cerr << "[Byzantium] snarkv_run!!!\n";
   // TODO[Byzantium] implement
   return {};
 }

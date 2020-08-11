@@ -53,8 +53,8 @@ add_library(secp256k1 secp256k1/src/secp256k1.c)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
 
 # libff
-find_package(OpenSSL)
-if(NOT OpenSSL_FOUND)
+include(FindOpenSSL)
+if(NOT OPENSSL_FOUND)
   hunter_add_package(OpenSSL)
 endif()
 option(

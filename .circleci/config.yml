@@ -17,7 +17,7 @@ version: 2.1
 executors:
   linux:
     docker:
-      - image: ethereum/cpp-build-env:12-gcc-9
+      - image: ethereum/cpp-build-env:14-gcc-10
 
 commands:
   build:
@@ -30,7 +30,7 @@ commands:
           name: "Install GMP"
           command: |
             sudo apt-get update
-            sudo apt-get install libgmp3-dev
+            sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
           key: hunter-{{arch}}

@@ -23,6 +23,10 @@ environment:
 cache:
   - C:\.hunter
 
+artifacts:
+  - path: 'C:/.hunter/_Base/062a19a/be6efaf/09e6b72/Build/OpenSSL/Build/OpenSSL-prefix/src/OpenSSL-stamp/OpenSSL-configure-*.log'
+    name: test logs
+
 before_build:
   - cd "%OPENSSL_ROOT_DIR%"
   - dir

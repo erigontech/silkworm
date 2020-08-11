@@ -21,7 +21,7 @@ cache:
 before_build:
   - cd "%APPVEYOR_BUILD_FOLDER%"
   - git submodule update --init --recursive
-  - cmake -H. -Bbuild
+  - cmake -H. -Bbuild -DHUNTER_STATUS_DEBUG=ON
 
 build:
   project: build\silkworm.sln

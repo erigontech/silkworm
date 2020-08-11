@@ -40,3 +40,6 @@ before_build:
 
 build:
   project: build\silkworm.sln
+
+on_failure:
+  - ps: Get-ChildItem C:/.hunter/_Base/062a19a/be6efaf/09e6b72/Build/OpenSSL/Build/OpenSSL-prefix/src/OpenSSL-stamp/OpenSSL-configure-*.log | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }

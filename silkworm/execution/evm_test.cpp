@@ -23,15 +23,14 @@
 namespace silkworm {
 
 TEST_CASE("Value transfer") {
-  BlockChain chain{nullptr};
   Block block{};
   block.header.number = 10336006;
-  block.header.beneficiary = 0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address;
 
   evmc::address from{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
   evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};
   intx::uint256 value{10'200'000'000'000'000};
 
+  BlockChain chain{nullptr};
   IntraBlockState state{nullptr};
   EVM evm{chain, block, state};
 
@@ -56,10 +55,8 @@ TEST_CASE("Value transfer") {
 }
 
 TEST_CASE("Smart contract with storage") {
-  BlockChain chain{nullptr};
   Block block{};
   block.header.number = 10'336'006;
-  block.header.beneficiary = 0x4c549990a7ef3fea8784406c1eecc98bf4211fa5_address;
   evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 
   // This contract initially sets its 0th storage to 0x2a
@@ -85,6 +82,7 @@ TEST_CASE("Smart contract with storage") {
   // 25     PUSH1  => 00
   // 27     SSTORE         // storage[0] = input[0]
 
+  BlockChain chain{nullptr};
   IntraBlockState state{nullptr};
   EVM evm{chain, block, state};
 
@@ -114,7 +112,6 @@ TEST_CASE("Smart contract with storage") {
 }
 
 TEST_CASE("Maximum call depth") {
-  BlockChain chain{nullptr};
   Block block{};
   block.header.number = 1'431'916;
   evmc::address caller{0x8e4d1ea201b908ab5e1f5a1c3f9f1b4f6c1e9cf1_address};
@@ -155,6 +152,7 @@ TEST_CASE("Maximum call depth") {
   IntraBlockState state{nullptr};
   state.set_code(contract, code);
 
+  BlockChain chain{nullptr};
   EVM evm{chain, block, state};
 
   Transaction txn{};
@@ -177,7 +175,6 @@ TEST_CASE("Maximum call depth") {
 }
 
 TEST_CASE("DELEGATECALL") {
-  BlockChain chain{nullptr};
   Block block{};
   block.header.number = 1'639'560;
   evmc::address caller_address{0x8e4d1ea201b908ab5e1f5a1c3f9f1b4f6c1e9cf1_address};
@@ -208,6 +205,7 @@ TEST_CASE("DELEGATECALL") {
   state.set_code(caller_address, caller_code);
   state.set_code(callee_address, callee_code);
 
+  BlockChain chain{nullptr};
   EVM evm{chain, block, state};
 
   Transaction txn{};
@@ -222,6 +220,66 @@ TEST_CASE("DELEGATECALL") {
   evmc::bytes32 key0{};
   CHECK(to_hex(zeroless_view(state.get_storage(caller_address, key0))) ==
         to_hex(full_view(caller_address)));
+}
+
+// https://eips.ethereum.org/EIPS/eip-211#specification
+TEST_CASE("CREATE should only return on failure") {
+  Block block{};
+  block.header.number = 4'575'910;
+  evmc::address caller{0xf466859ead1932d743d622cb74fc058882e8648a_address};
+
+  Bytes code{
+      from_hex("0x602180601360003960006000f0503d600055006211223360005260206000602060006000600461900"
+               "0f1503d60005560206000f3")};
+  /* https://github.com/CoinCulture/evm-tools
+  0      PUSH1  => 21
+  2      DUP1
+  3      PUSH1  => 13
+  5      PUSH1  => 00
+  7      CODECOPY
+  8      PUSH1  => 00
+  10     PUSH1  => 00
+  12     CREATE
+  13     POP
+  14     RETURNDATASIZE
+  15     PUSH1  => 00
+  17     SSTORE
+  18     STOP
+  19     PUSH3  => 112233
+  23     PUSH1  => 00
+  25     MSTORE
+  26     PUSH1  => 20
+  28     PUSH1  => 00
+  30     PUSH1  => 20
+  32     PUSH1  => 00
+  34     PUSH1  => 00
+  36     PUSH1  => 04
+  38     PUSH2  => 9000
+  41     CALL
+  42     POP
+  43     RETURNDATASIZE
+  44     PUSH1  => 00
+  46     SSTORE
+  47     PUSH1  => 20
+  49     PUSH1  => 00
+  51     RETURN
+  */
+
+  BlockChain chain{nullptr};
+  IntraBlockState state{nullptr};
+  EVM evm{chain, block, state};
+
+  Transaction txn{};
+  txn.from = caller;
+  txn.data = code;
+
+  uint64_t gas{150'000};
+  CallResult res{evm.execute(txn, gas)};
+  CHECK(res.status == EVMC_SUCCESS);
+
+  evmc::address contract_address{create_address(caller, /*nonce=*/0)};
+  evmc::bytes32 key0{};
+  CHECK(is_zero(state.get_storage(contract_address, key0)));
 }
 
 TEST_CASE("Create address") {

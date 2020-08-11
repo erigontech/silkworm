@@ -325,8 +325,8 @@ bool EvmHost::account_exists(const evmc::address& address) const noexcept {
   }
 }
 
-evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::bytes32& key) const
-    noexcept {
+evmc::bytes32 EvmHost::get_storage(const evmc::address& address,
+                                   const evmc::bytes32& key) const noexcept {
   return evm_.state().get_storage(address, key);
 }
 
@@ -334,11 +334,15 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
                                          const evmc::bytes32& value) noexcept {
   const evmc::bytes32& prev_val{evm_.state().get_storage(address, key)};
 
-  if (prev_val == value) return EVMC_STORAGE_UNCHANGED;
+  if (prev_val == value) {
+    return EVMC_STORAGE_UNCHANGED;
+  }
 
   evm_.state().set_storage(address, key, value);
 
-  if (is_zero(prev_val)) return EVMC_STORAGE_ADDED;
+  if (is_zero(prev_val)) {
+    return EVMC_STORAGE_ADDED;
+  }
 
   if (is_zero(value)) {
     evm_.state().add_refund(fee::kRSClear);
@@ -367,7 +371,9 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
                           size_t buffer_size) const noexcept {
   ByteView code{evm_.state().get_code(address)};
 
-  if (code_offset >= code.size()) return 0;
+  if (code_offset >= code.size()) {
+    return 0;
+  }
 
   size_t n{std::min(buffer_size, code.size() - code_offset)};
   std::copy_n(&code[code_offset], n, buffer_data);
@@ -383,7 +389,15 @@ void EvmHost::selfdestruct(const evmc::address& address,
 
 evmc::result EvmHost::call(const evmc_message& message) noexcept {
   if (message.kind == EVMC_CREATE || message.kind == EVMC_CREATE2) {
-    return evm_.create(message);
+    evmc::result res{evm_.create(message)};
+    if (res.status_code == EVMC_SUCCESS) {
+      // https://eips.ethereum.org/EIPS/eip-211
+      evmc::result res_with_no_output{res.status_code, res.gas_left, nullptr, 0};
+      res_with_no_output.create_address = res.create_address;
+      return res_with_no_output;
+    } else {
+      return res;
+    }
   } else {
     return evm_.call(message);
   }

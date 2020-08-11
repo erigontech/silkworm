@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmone/evmc/.git)
-    message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
+  message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
 endif()
 
 include(evmone/cmake/cable/bootstrap.cmake)

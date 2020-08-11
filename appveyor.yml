@@ -24,6 +24,8 @@ cache:
   - C:\.hunter
 
 before_build:
+  - cd "%OPENSSL_ROOT_DIR%
+  - dir
   - cd "%APPVEYOR_BUILD_FOLDER%"
   - git submodule update --init --recursive
   - cmake -H. -Bbuild

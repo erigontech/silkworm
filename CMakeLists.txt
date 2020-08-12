@@ -53,7 +53,6 @@ add_library(secp256k1 secp256k1/src/secp256k1.c)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
 
 # libff
-hunter_add_package(OpenSSL)
 option(
   WITH_PROCPS
   "Use procps for memory profiling"

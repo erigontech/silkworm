@@ -30,8 +30,8 @@ cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 include(evmone/cmake/cable/HunterGate.cmake)
 set(HUNTER_USE_CACHE_SERVERS NO)
 HunterGate(
-  URL "https://github.com/cpp-pm/hunter/archive/v0.23.250.tar.gz"
-  SHA1 "0e6ce3072a280110f33162e0265fb3796652673f"
+  URL "https://github.com/cpp-pm/hunter/archive/v0.23.258.tar.gz"
+  SHA1 "062a19ab13ce8dffa9a882b6ce3e43bdabdf75d3"
   FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake"
 )
 
@@ -53,10 +53,7 @@ add_library(secp256k1 secp256k1/src/secp256k1.c)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
 
 # libff
-include(FindOpenSSL)
-if(NOT OPENSSL_FOUND)
-  hunter_add_package(OpenSSL)
-endif()
+hunter_add_package(OpenSSL)
 option(
   WITH_PROCPS
   "Use procps for memory profiling"

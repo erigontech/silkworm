@@ -15,32 +15,13 @@
 image: Visual Studio 2019
 platform: x64
 
-environment:
-  OPENSSL_ROOT_DIR: C:\OpenSSL-Win64
-  OPENSSL_LIBRARIES: C:\OpenSSL-Win64\include
-  OPENSSL_INCLUDE_DIR: C:\OpenSSL-Win64\lib
-
 cache:
   - C:\.hunter
 
-artifacts:
-  - path: 'C:/.hunter/_Base/062a19a/be6efaf/09e6b72/Build/OpenSSL/Build/OpenSSL-prefix/src/OpenSSL-stamp/OpenSSL-configure-*.log'
-    name: test logs
-
 before_build:
-  - cd "%OPENSSL_ROOT_DIR%"
-  - dir
-  - cd "%OPENSSL_LIBRARIES%"
-  - dir
-  - cd "%OPENSSL_INCLUDE_DIR%"
-  - dir
   - cd "%APPVEYOR_BUILD_FOLDER%"
   - git submodule update --init --recursive
-  - cmake -H. -Bbuild -DOPENSSL_ROOT_DIR="C:/OpenSSL-Win64" -DCMAKE_EXECUTE_PROCESS_COMMAND_ECHO=STDERR
+  - cmake -H. -Bbuild
 
 build:
   project: build\silkworm.sln
-
-on_failure:
-  - ps: Push-AppveyorArtifact C:/projects/silkworm/build/CMakeFiles/CMakeOutput.log
-  - ps: Push-AppveyorArtifact C:/projects/silkworm/build/CMakeFiles/CMakeError.log

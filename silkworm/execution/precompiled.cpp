@@ -25,6 +25,7 @@
 #include <iostream>  // TODO[Byzantium] remove
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
+#include <silkworm/crypto/snark.hpp>
 
 namespace silkworm::precompiled {
 
@@ -116,10 +117,18 @@ uint64_t bn_mul_gas(ByteView, evmc_revision rev) noexcept {
   return rev >= EVMC_ISTANBUL ? 6'000 : 40'000;
 }
 
-std::optional<Bytes> bn_mul_run(ByteView) noexcept {
-  std::cerr << "[Byzantium] bn_mul_run!!!\n";
-  // TODO[Byzantium] implement
-  return {};
+std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
+  input = right_pad(input, 96);
+
+  std::optional<libff::alt_bn128_G1> x{snark::decode_g1_element(input.substr(0, 64))};
+  if (!x) {
+    return {};
+  }
+
+  auto n{snark::to_bigint(input.substr(64, 32))};
+
+  libff::alt_bn128_G1 product{n * *x};
+  return snark::encode_g1_element(product);
 }
 
 uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {

@@ -59,4 +59,16 @@ TEST_CASE("RIPEMD160") {
   REQUIRE(out);
   CHECK(to_hex(*out) == "0000000000000000000000009215b8d9882ff46f0dfde6684d78e831467f65e6");
 }
+
+TEST_CASE("BN_MUL") {
+  Bytes in{
+      from_hex("1a87b0584ce92f4593d161480614f2989035225609f08058ccfa3d0f940febe31a2f3c951f6dadcc7ee"
+               "9007dff81504b0fcd6d7cf59996efdc33d92bf7f9f8f600000000000000000000000000000000000000"
+               "00000000000000000000000009")};
+  std::optional<Bytes> out{bn_mul_run(in)};
+  REQUIRE(out);
+  CHECK(to_hex(*out) ==
+        "1dbad7d39dbc56379f78fac1bca147dc8e66de1b9d183c7b167351bfe0aeab742cd757d51289cd8dbd0acf9e67"
+        "3ad67d0f0a89f912af47ed1be53664f5692575");
+}
 }  // namespace silkworm::precompiled

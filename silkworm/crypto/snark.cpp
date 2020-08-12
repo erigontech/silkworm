@@ -23,10 +23,12 @@
 
 namespace silkworm::snark {
 
-static bool kLibffInitialized = []() {
-  libff::alt_bn128_pp::init_public_params();
-  return true;
-}();
+static void init_libff() noexcept {
+  [[maybe_unused]] static bool initialized = []() noexcept {
+    libff::alt_bn128_pp::init_public_params();
+    return true;
+  }();
+}
 
 libff::bigint<libff::alt_bn128_q_limbs> to_bigint(ByteView be) noexcept {
   mpz_t m;
@@ -40,6 +42,7 @@ libff::bigint<libff::alt_bn128_q_limbs> to_bigint(ByteView be) noexcept {
 std::optional<libff::alt_bn128_G1> decode_g1_element(ByteView bytes64_be) noexcept {
   assert(bytes64_be.size() == 64);
 
+  init_libff();
   using namespace libff;
 
   auto x{to_bigint(bytes64_be.substr(0, 32))};
@@ -64,6 +67,8 @@ std::optional<libff::alt_bn128_G1> decode_g1_element(ByteView bytes64_be) noexce
 }
 
 Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept {
+  init_libff();
+
   Bytes out(64, '\0');
   if (p.is_zero()) {
     return out;

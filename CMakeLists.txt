@@ -53,6 +53,14 @@ add_library(secp256k1 secp256k1/src/secp256k1.c)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
 
 # libff
+set(
+  CURVE
+  "ALT_BN128"
+  CACHE
+  STRING
+  "Default curve: one of ALT_BN128, BN128, EDWARDS, MNT4, MNT6"
+  FORCE
+)
 option(
   WITH_PROCPS
   "Use procps for memory profiling"

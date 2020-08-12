@@ -17,7 +17,7 @@ as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth
 ## Linux & macOS
 Building silkworm requires:
 * [CMake](http://cmake.org)
-* [GMP](http://gmplib.org)
+* [GMP](http://gmplib.org) (`sudo apt-get install libgmp3-dev` or `brew install gmp`)
 * C++17 compiler (Clang or GCC)
 
 Once the prerequisites are installed, bootstrap cmake build by running

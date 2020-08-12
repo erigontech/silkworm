@@ -21,8 +21,6 @@ cache:
 before_build:
   - curl -o C:\gmp.zip -L https://github.com/ShiftMediaProject/gmp/releases/download/6.2.1/libgmp_6.2.1_msvc16.zip
   - 7z x C:\gmp.zip -oC:\GMP
-  - cd C:\GMP
-  - dir
   - cd "%APPVEYOR_BUILD_FOLDER%"
   - git submodule update --init --recursive
   - SET INCLUDE=C:\GMP\include;%INCLUDE%

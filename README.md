@@ -41,8 +41,9 @@ or run tests
 ./tests
 ```
 ## Windows (Visual Studio Community Edition 2019)
+* Download [GMP](https://github.com/ShiftMediaProject/gmp/releases) and add it to your `INCLUDE` and `PATH` environment variables.
 * Install [Visual Studio](https://www.visualstudio.com/downloads/). Community edition is fine.
-* Make sure your setup includes CMake support and Windows 10 SDK (10.0.17134.0)
+* Make sure your setup includes CMake support and Windows 10 SDK.
 * Open Visual Studio and select File -> CMake... 
 * Browse the folder where you have cloned this repository and select the file CMakeLists.txt
 * Let CMake cache generation complete (it may take several minutes)

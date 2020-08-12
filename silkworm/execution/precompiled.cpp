@@ -107,10 +107,21 @@ uint64_t bn_add_gas(ByteView, evmc_revision rev) noexcept {
   return rev >= EVMC_ISTANBUL ? 150 : 500;
 }
 
-std::optional<Bytes> bn_add_run(ByteView) noexcept {
-  std::cerr << "[Byzantium] bn_add_run!!!\n";
-  // TODO[Byzantium] implement
-  return {};
+std::optional<Bytes> bn_add_run(ByteView input) noexcept {
+  input = right_pad(input, 128);
+
+  std::optional<libff::alt_bn128_G1> x{snark::decode_g1_element(input.substr(0, 64))};
+  if (!x) {
+    return {};
+  }
+
+  std::optional<libff::alt_bn128_G1> y{snark::decode_g1_element(input.substr(64, 64))};
+  if (!y) {
+    return {};
+  }
+
+  libff::alt_bn128_G1 sum{*x + *y};
+  return snark::encode_g1_element(sum);
 }
 
 uint64_t bn_mul_gas(ByteView, evmc_revision rev) noexcept {

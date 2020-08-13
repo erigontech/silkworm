@@ -19,6 +19,17 @@
 #include <catch2/catch.hpp>
 
 namespace silkworm {
+
+TEST_CASE("Padding") {
+  CHECK(to_hex(left_pad(from_hex("a5"), 3)) == "0000a5");
+  CHECK(to_hex(right_pad(from_hex("a5"), 3)) == "a50000");
+
+  CHECK(to_hex(left_pad(from_hex("5a0b54d5dc17e0aadc383d2db4"), 3)) ==
+        "5a0b54d5dc17e0aadc383d2db4");
+  CHECK(to_hex(right_pad(from_hex("5a0b54d5dc17e0aadc383d2db4"), 3)) ==
+        "5a0b54d5dc17e0aadc383d2db4");
+}
+
 TEST_CASE("Zeroless view") {
   CHECK(to_hex(zeroless_view(
             0x0000000000000000000000000000000000000000000000000000000000000000_bytes32)) == "");

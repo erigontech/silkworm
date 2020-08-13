@@ -32,16 +32,14 @@ list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 add_library(silkworm ${SILKWORM_SRC})
 target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 
+set(SILKWORM_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set
+                         liblmdb::lmdb evmc intx::intx ff
+                         lmdbxx::lmdbxx) # PUBLIC lmdbxx since we use its exceptions
+
+set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::boost)
+
 if(MSVC)
-target_link_libraries(silkworm
-                      PUBLIC evmc intx::intx Boost::boost liblmdb::lmdb
-                             absl::flat_hash_map absl::flat_hash_set
-                             lmdbxx::lmdbxx # PUBLIC lmdbxx since we use its exceptions
-                      PRIVATE evmone secp256k1 cryptopp-static ethash::keccak ntdll.lib)
-else()
-target_link_libraries(silkworm
-                      PUBLIC evmc intx::intx Boost::boost liblmdb::lmdb
-                             absl::flat_hash_map absl::flat_hash_set
-                             lmdbxx::lmdbxx # PUBLIC lmdbxx since we use its exceptions
-                      PRIVATE evmone secp256k1 cryptopp-static ethash::keccak)
+  list(APPEND SILKWORM_PRIVATE_LIBS ntdll.lib)
 endif(MSVC)
+
+target_link_libraries(silkworm PUBLIC ${SILKWORM_PUBLIC_LIBS} PRIVATE ${SILKWORM_PRIVATE_LIBS})

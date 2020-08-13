@@ -18,6 +18,7 @@
 #define SILKWORM_CRYPTO_SNARK_H_
 
 #include <libff/algebra/curves/alt_bn128/alt_bn128_g1.hpp>
+#include <libff/algebra/curves/alt_bn128/alt_bn128_g2.hpp>
 #include <optional>
 #include <silkworm/common/base.hpp>
 
@@ -30,9 +31,15 @@ namespace silkworm::snark {
 
 using Scalar = libff::bigint<libff::alt_bn128_q_limbs>;
 
+// Must be called prior to invoking any other method.
+// May be called many times from multiple threads.
+void init_libff() noexcept;
+
 Scalar to_scalar(ByteView big_endian) noexcept;
 
 std::optional<libff::alt_bn128_G1> decode_g1_element(ByteView bytes64_be) noexcept;
+
+std::optional<libff::alt_bn128_G2> decode_g2_element(ByteView bytes128_be) noexcept;
 
 Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept;
 

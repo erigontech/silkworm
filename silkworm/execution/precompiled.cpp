@@ -136,7 +136,7 @@ std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
     return {};
   }
 
-  auto n{snark::to_bigint(input.substr(64, 32))};
+  snark::Scalar n{snark::to_scalar(input.substr(64, 32))};
 
   libff::alt_bn128_G1 product{n * *x};
   return snark::encode_g1_element(product);

@@ -30,11 +30,11 @@ static void init_libff() noexcept {
   }();
 }
 
-libff::bigint<libff::alt_bn128_q_limbs> to_bigint(ByteView be) noexcept {
+Scalar to_scalar(ByteView be) noexcept {
   mpz_t m;
   mpz_init(m);
   mpz_import(m, be.size(), /*order=*/1, /*size=*/1, /*endian=*/0, /*nails=*/0, &be[0]);
-  libff::bigint<libff::alt_bn128_q_limbs> out{m};
+  Scalar out{m};
   mpz_clear(m);
   return out;
 }
@@ -45,12 +45,12 @@ std::optional<libff::alt_bn128_G1> decode_g1_element(ByteView bytes64_be) noexce
   init_libff();
   using namespace libff;
 
-  auto x{to_bigint(bytes64_be.substr(0, 32))};
+  Scalar x{to_scalar(bytes64_be.substr(0, 32))};
   if (mpn_cmp(x.data, alt_bn128_modulus_q.data, alt_bn128_q_limbs) >= 0) {
     return {};
   }
 
-  auto y{to_bigint(bytes64_be.substr(32, 32))};
+  Scalar y{to_scalar(bytes64_be.substr(32, 32))};
   if (mpn_cmp(y.data, alt_bn128_modulus_q.data, alt_bn128_q_limbs) >= 0) {
     return {};
   }

@@ -28,7 +28,9 @@
 
 namespace silkworm::snark {
 
-libff::bigint<libff::alt_bn128_q_limbs> to_bigint(ByteView big_endian) noexcept;
+using Scalar = libff::bigint<libff::alt_bn128_q_limbs>;
+
+Scalar to_scalar(ByteView big_endian) noexcept;
 
 std::optional<libff::alt_bn128_G1> decode_g1_element(ByteView bytes64_be) noexcept;
 

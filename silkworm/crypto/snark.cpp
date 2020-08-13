@@ -21,11 +21,15 @@
 #include <cassert>
 #include <cstring>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
+#include <libff/common/profiling.hpp>
 
 namespace silkworm::snark {
 
-static void init_libff() noexcept {
+void init_libff() noexcept {
+  // magic static
   [[maybe_unused]] static bool initialized = []() noexcept {
+    libff::inhibit_profiling_info = true;
+    libff::inhibit_profiling_counters = true;
     libff::alt_bn128_pp::init_public_params();
     return true;
   }();
@@ -40,36 +44,81 @@ Scalar to_scalar(ByteView be) noexcept {
   return out;
 }
 
+// Notation warning: Yellow Paper's p is the same libff's q.
+// Returns x < p (YP notation).
+static bool valid_element_of_fp(const Scalar& x) noexcept {
+  return mpn_cmp(x.data, libff::alt_bn128_modulus_q.data, libff::alt_bn128_q_limbs) < 0;
+}
+
 std::optional<libff::alt_bn128_G1> decode_g1_element(ByteView bytes64_be) noexcept {
   assert(bytes64_be.size() == 64);
 
-  init_libff();
-  using namespace libff;
-
   Scalar x{to_scalar(bytes64_be.substr(0, 32))};
-  if (mpn_cmp(x.data, alt_bn128_modulus_q.data, alt_bn128_q_limbs) >= 0) {
+  if (!valid_element_of_fp(x)) {
     return {};
   }
 
   Scalar y{to_scalar(bytes64_be.substr(32, 32))};
-  if (mpn_cmp(y.data, alt_bn128_modulus_q.data, alt_bn128_q_limbs) >= 0) {
+  if (!valid_element_of_fp(y)) {
     return {};
   }
 
   if (x.is_zero() && y.is_zero()) {
-    return alt_bn128_G1::zero();
+    return libff::alt_bn128_G1::zero();
   }
 
-  alt_bn128_G1 point{x, y, alt_bn128_Fq::one()};
+  libff::alt_bn128_G1 point{x, y, libff::alt_bn128_Fq::one()};
   if (!point.is_well_formed()) {
     return {};
   }
   return point;
 }
 
-Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept {
-  init_libff();
+static std::optional<libff::alt_bn128_Fq2> decode_fp2_element(ByteView bytes64_be) noexcept {
+  assert(bytes64_be.size() == 64);
 
+  // big-endian encoding
+  Scalar c0{to_scalar(bytes64_be.substr(32, 32))};
+  Scalar c1{to_scalar(bytes64_be.substr(0, 32))};
+
+  if (!valid_element_of_fp(c0) || !valid_element_of_fp(c1)) {
+    return {};
+  }
+
+  return libff::alt_bn128_Fq2{c0, c1};
+}
+
+std::optional<libff::alt_bn128_G2> decode_g2_element(ByteView bytes128_be) noexcept {
+  assert(bytes128_be.size() == 128);
+
+  std::optional<libff::alt_bn128_Fq2> x{decode_fp2_element(bytes128_be.substr(0, 64))};
+  if (!x) {
+    return {};
+  }
+
+  std::optional<libff::alt_bn128_Fq2> y{decode_fp2_element(bytes128_be.substr(64, 64))};
+  if (!y) {
+    return {};
+  }
+
+  if (x->is_zero() && y->is_zero()) {
+    return libff::alt_bn128_G2::zero();
+  }
+
+  libff::alt_bn128_G2 point{*x, *y, libff::alt_bn128_Fq2::one()};
+  if (!point.is_well_formed()) {
+    return {};
+  }
+
+  if (!(libff::alt_bn128_G2::order() * point).is_zero()) {
+    // wrong order, doesn't belong to the subgroup G2
+    return {};
+  }
+
+  return point;
+}
+
+Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept {
   Bytes out(64, '\0');
   if (p.is_zero()) {
     return out;

@@ -23,22 +23,18 @@
 
 namespace silkworm {
 
-ByteView left_pad(ByteView view, size_t min_size) {
-  if (view.size() >= min_size) {
-    return view;
-  }
-  thread_local Bytes padded;
-  padded.clear();
-  padded.resize(min_size);
-  std::memcpy(&padded[min_size - view.size()], &view[0], view.size());
-  return padded;
-}
-
 ByteView right_pad(ByteView view, size_t min_size) {
   if (view.size() >= min_size) {
     return view;
   }
+
   thread_local Bytes padded;
+
+  if (view.data() == padded.data()) {
+    padded.resize(min_size);
+    return padded;
+  }
+
   padded.clear();
   padded.resize(min_size);
   std::memcpy(&padded[0], &view[0], view.size());

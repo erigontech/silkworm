@@ -89,15 +89,6 @@ class LmdbDatabase : public Database {
  protected:
   MDB_env* env_{nullptr};
 };
-
-class TemporaryLmdbDatabase : public LmdbDatabase {
- public:
-  TemporaryLmdbDatabase();
-  ~TemporaryLmdbDatabase() override;
-
- private:
-  const char* tmp_file_{nullptr};
-};
 }  // namespace silkworm::db
 
 #endif  // SILKWORM_DB_LMDB_H_

@@ -25,34 +25,38 @@ namespace silkworm::ecdsa {
 static secp256k1_context* kDefaultContext{
     secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)};
 
-bool inputs_are_valid(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
-                      bool homestead) {
-  if (r == 0 || s == 0 || v > 1) return false;
-  if (homestead && s > kSecp256k1n_div2) return false;
-  return r < kSecp256k1n && s < kSecp256k1n;
+bool ValidateSignatureValues(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
+                             const intx::uint256& chainID, bool homestead) {
+  if (r == 0 || s == 0) {
+    return false;
+  }
+  if (!IsValidSignatureRecoveryID(GetSignatureRecoveryID(v, chainID))) {
+    return false;
+  }
+  if (r >= kSecp256k1n && s >= kSecp256k1n) {
+    return false;
+  }
+  // reject upper range of s values (ECDSA malleability)
+  // see discussion in secp256k1/libsecp256k1/include/secp256k1.h
+  if (homestead && s > kSecp256k1Halfn) {
+    return false;
+  }
+  return true;
 }
 
-bool is_valid_signature(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
-                        bool homestead, uint64_t chain_id) {
-
-    if (!is_valid_signature_recovery(get_signature_recovery(v, chain_id)))
-    {
-        return false;
-    }
-
-    if (r == 0 || r > kSecp256k1n || s == 0 || s > homestead ? kSecp256k1n_div2 : kSecp256k1n)
-    {
-        return false;
-    }
-
-    return true;
+intx::uint256 GetSignatureRecoveryID(const intx::uint256& v, const intx::uint256& chainID) {
+  return chainID ? v - (2 * chainID + 35) : v - 27;
 }
 
-intx::uint256 get_signature_recovery(const intx::uint256& v, uint64_t chain_id) {
-  return chain_id ? v - (2 * chain_id + 35) : v - 27;
-}
+bool IsValidSignatureRecoveryID(const intx::uint256& recovery) { return recovery == 0 || recovery == 1; }
 
-bool is_valid_signature_recovery(intx::uint256 recovery) { return recovery == 0 || recovery == 1; }
+intx::uint256 ComputeChainIDfromV(const intx::uint256& v) {
+  intx::uint256 out{0};
+  if (v != 27 && v != 28) {
+    out = (v - 35) / 2;
+  }
+  return out;
+}
 
 std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id) {
   if (message.length() != 32) return {};

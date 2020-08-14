@@ -27,18 +27,19 @@ namespace silkworm::ecdsa {
 
 constexpr auto kSecp256k1n{intx::from_string<intx::uint256>(
     "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141")};
-constexpr auto kSecp256k1n_div2{intx::from_string<intx::uint256>(
+constexpr auto kSecp256k1Halfn{intx::from_string<intx::uint256>(
     "0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0")};
 
-bool inputs_are_valid(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
-                      bool homestead);
+// ValidateSignatureValues verifies whether the signature values are valid with
+// the given chain rules. The v value is assumed to be either 0 or 1
+bool ValidateSignatureValues(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
+                             const intx::uint256& chainID, bool homestead);
 
-bool is_valid_signature(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
-    bool homestead, uint64_t chain_id);
+intx::uint256 GetSignatureRecoveryID(const intx::uint256& v, const intx::uint256& chainID);
 
-intx::uint256 get_signature_recovery(const intx::uint256& v, uint64_t chain_id);
+bool IsValidSignatureRecoveryID(const intx::uint256& recovery);
 
-bool is_valid_signature_recovery(intx::uint256 recovery);
+intx::uint256 ComputeChainIDfromV(const intx::uint256& v);
 
 std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id);
 }  // namespace silkworm::ecdsa

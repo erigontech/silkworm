@@ -40,14 +40,14 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
   auto r{intx::be::unsafe::load<intx::uint256>(&d[64])};
   auto s{intx::be::unsafe::load<intx::uint256>(&d[96])};
 
-  v -= 27;
+  auto chainID = ecdsa::ComputeChainIDfromV(v);
 
   // https://eips.ethereum.org/EIPS/eip-2
-  if (!ecdsa::inputs_are_valid(v, r, s, /*homestead=*/false)) return Bytes{};
+  if (!ecdsa::ValidateSignatureValues(v, r, s, chainID, /*homestead=*/false)) return Bytes{};
 
   std::optional<Bytes> key{
       ecdsa::recover(d.substr(0, 32), d.substr(64, 64), intx::narrow_cast<uint8_t>(v))};
-  if (!key) return Bytes{};
+  if (!key || (int)key->at(0) != 4) return Bytes{};
 
   // Ignore the first byte of the public key
   ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};

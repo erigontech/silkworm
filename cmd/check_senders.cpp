@@ -133,7 +133,6 @@ int main(int argc, char* argv[]) {
     uint64_t processed_txs{0};
     uint64_t processed_blks{0};
 
-    Bytes message(32, '\0');
     Bytes signature(64, '\0');
     bool validSignature{false};
 
@@ -141,6 +140,18 @@ int main(int argc, char* argv[]) {
       std::optional<BlockWithHash> bh = db.get_block(block_num);
       if (!bh || shouldStop) {
         break;
+      }
+
+      // If no transactions to process continue
+      // to next block
+      if (!bh->block.transactions.size()){
+          continue;
+      }
+
+      std::vector<evmc::address> senders{ db.get_senders(block_num, bh->hash) };
+      if (senders.size() == bh->block.transactions.size()) {
+          // Already processed block
+          continue;
       }
 
       // Loop block's transactions
@@ -173,7 +184,7 @@ int main(int argc, char* argv[]) {
         Bytes rlp{};
         encodeTxforSigning(rlp, tx, txChainID);
         ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
-        std::memcpy(&message[0], hash.bytes, 32);
+        ByteView message{ hash.bytes, 32 };
 
         // Bytecopy in reverse endianness for r and s
         for (int i{0}; i < 2; i++) {
@@ -193,7 +204,8 @@ int main(int argc, char* argv[]) {
           // Ignore the first byte of the public key
           ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
           evmc::address out{};
-          std::memcpy(out.bytes, &hash.bytes[12], 32 - 12);
+          std::memcpy(out.bytes, &hash.bytes[12], 20);
+          senders.push_back(out);
 
           if (po_debug) {
             std::cout << "Block #" << std::dec << block_num << " tx #" << processed_txs
@@ -208,6 +220,8 @@ int main(int argc, char* argv[]) {
 
         processed_txs++;
       }
+
+      // TODO(Andrea) Persist
 
       if (processed_txs && po_debug) {
         return 0;

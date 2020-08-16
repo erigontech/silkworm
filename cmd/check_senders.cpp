@@ -113,6 +113,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     signal(SIGINT, sigHandler);
+    signal(SIGTERM, sigHandler);
 
     // If database path is provided (and has passed CLI::ExistingDirectory validator
     // check whether it is empty

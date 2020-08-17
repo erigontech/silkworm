@@ -44,12 +44,13 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
   auto s{intx::be::unsafe::load<intx::uint256>(&d[96])};
 
   auto chainID = ecdsa::ComputeChainIDfromV(v);
+  auto recoveryID = ecdsa::GetSignatureRecoveryID(v, chainID);
 
   // https://eips.ethereum.org/EIPS/eip-2
   if (!ecdsa::ValidateSignatureValues(v, r, s, chainID, /*homestead=*/false)) return Bytes{};
 
   std::optional<Bytes> key{
-      ecdsa::recover(d.substr(0, 32), d.substr(64, 64), intx::narrow_cast<uint8_t>(v))};
+      ecdsa::recover(d.substr(0, 32), d.substr(64, 64), intx::narrow_cast<uint8_t>(recoveryID))};
   if (!key || (int)key->at(0) != 4) return Bytes{};
 
   // Ignore the first byte of the public key

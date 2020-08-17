@@ -19,8 +19,9 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 #include <silkworm/db/bucket.hpp>
-#include <silkworm/db/lmdb.hpp>
+#include <silkworm/db/temp_lmdb_test.hpp>
 
+#include "address.hpp"
 #include "protocol_param.hpp"
 
 namespace silkworm {

@@ -1,9 +1,0 @@
-CI with test coverage under Linux (gcc) and Windows
-
-Comments!!!
-
-Propagate noexcept from EvmHost
-
-Replace Boost with Abseil?
-
-MDB_NOTLS and multi-threading. Do we mix C++ and go in one process?

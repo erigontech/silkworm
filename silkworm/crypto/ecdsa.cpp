@@ -59,8 +59,9 @@ intx::uint256 ComputeChainIDfromV(const intx::uint256& v) {
 }
 
 std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id) {
-  if (message.length() != 32) return {};
-  if (signature.length() != 64) return {};
+  if (message.length() != 32 || signature.length() != 64) {
+    return {};
+  }
 
   secp256k1_ecdsa_recoverable_signature sig;
   if (!secp256k1_ecdsa_recoverable_signature_parse_compact(kDefaultContext, &sig, &signature[0],

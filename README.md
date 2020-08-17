@@ -5,7 +5,8 @@ C++ implementation of the Ethereum protocol.
 It's conceived as an evolution of the [Turbo-Geth](https://github.com/ledgerwatch/turbo-geth) project,
 as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth_release.html#Licence-and-language-migration-plan-out-of-scope-for-the-release).
 
-[![Build status](https://ci.appveyor.com/api/projects/status/8npida1piyqw1844?svg=true)](https://ci.appveyor.com/project/torquem/silkworm)
+[![CircleCI](https://circleci.com/gh/torquem-ch/silkworm.svg?style=svg)](https://circleci.com/gh/torquem-ch/silkworm)
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/8npida1piyqw1844?svg=true)](https://ci.appveyor.com/project/torquem/silkworm)
 
 # Building the source
 
@@ -14,7 +15,11 @@ as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth
 `git clone --recurse-submodules https://github.com/torquem-ch/silkworm.git`
 
 ## Linux & macOS
-Building silkworm requires [cmake](https://cgold.readthedocs.io/en/latest/first-step/installation.html) and a C++17 compiler.
+Building silkworm requires:
+* [CMake](http://cmake.org)
+* [GMP](http://gmplib.org) (`sudo apt-get install libgmp3-dev` or `brew install gmp`)
+* C++17 compiler (Clang or GCC)
+
 Once the prerequisites are installed, bootstrap cmake build by running
 ```
 mkdir build
@@ -36,8 +41,9 @@ or run tests
 ./tests
 ```
 ## Windows (Visual Studio Community Edition 2019)
+* Download [GMP](https://github.com/ShiftMediaProject/gmp/releases) and add it to your `INCLUDE` and `PATH` environment variables.
 * Install [Visual Studio](https://www.visualstudio.com/downloads/). Community edition is fine.
-* Make sure your setup includes CMake support and Windows 10 SDK (10.0.17134.0)
+* Make sure your setup includes CMake support and Windows 10 SDK.
 * Open Visual Studio and select File -> CMake... 
 * Browse the folder where you have cloned this repository and select the file CMakeLists.txt
 * Let CMake cache generation complete (it may take several minutes)

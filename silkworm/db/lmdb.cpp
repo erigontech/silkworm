@@ -144,33 +144,4 @@ std::unique_ptr<Transaction> LmdbDatabase::begin_transaction(bool read_only) {
   lmdb::txn_begin(env_, /*parent=*/nullptr, flags, &txn);
   return std::make_unique<LmdbTransaction>(txn);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-static char* temporary_file_name() { return std::tmpnam(nullptr); }
-#pragma GCC diagnostic pop
-
-TemporaryLmdbDatabase::TemporaryLmdbDatabase()
-    : LmdbDatabase{temporary_file_name(),
-                   LmdbOptions{
-                       32 << 20,  // map_size = 32MiB
-                       true,      // no_sync
-                       true,      // no_meta_sync
-                       true,      // .write_map
-                       true,      // no_sub_dir
-                   }} {
-  mdb_env_get_path(env_, &tmp_file_);
-}
-
-TemporaryLmdbDatabase::~TemporaryLmdbDatabase() {
-  if (env_) {
-    mdb_env_close(env_);
-    env_ = nullptr;
-  }
-
-  if (tmp_file_) {
-    std::remove(tmp_file_);
-    tmp_file_ = nullptr;
-  }
-}
 }  // namespace silkworm::db

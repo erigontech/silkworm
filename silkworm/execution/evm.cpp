@@ -20,8 +20,8 @@
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <iterator>
-#include <silkworm/rlp/encode.hpp>
 
+#include "address.hpp"
 #include "analysis.hpp"
 #include "analysis_cache.hpp"
 #include "execution.hpp"
@@ -282,41 +282,6 @@ bool EVM::is_precompiled(const evmc::address& contract) const noexcept {
   return contract <= max_precompiled;
 }
 
-evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
-  thread_local Bytes rlp;
-  rlp.clear();
-
-  rlp::Header h{true, 1 + kAddressLength};
-  h.payload_length += rlp::length(nonce);
-  rlp::encode_header(rlp, h);
-  rlp::encode(rlp, caller.bytes);
-  rlp::encode(rlp, nonce);
-
-  thread_local ethash::hash256 hash;
-  hash = ethash::keccak256(rlp.data(), rlp.size());
-
-  evmc::address address;
-  std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);
-  return address;
-}
-
-evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
-                              uint8_t (&code_hash)[32]) noexcept {
-  constexpr size_t n{1 + kAddressLength + 2 * kHashLength};
-  thread_local uint8_t buf[n];
-
-  buf[0] = 0xff;
-  std::memcpy(buf + 1, caller.bytes, kAddressLength);
-  std::memcpy(buf + 1 + kAddressLength, salt.bytes, kHashLength);
-  std::memcpy(buf + 1 + kAddressLength + kHashLength, code_hash, kHashLength);
-
-  ethash::hash256 hash{ethash::keccak256(buf, n)};
-
-  evmc::address address;
-  std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);
-  return address;
-}
-
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {
   if (evm_.config().has_spurious_dragon(evm_.block_.header.number)) {
     return !evm_.state().dead(address);
@@ -325,8 +290,8 @@ bool EvmHost::account_exists(const evmc::address& address) const noexcept {
   }
 }
 
-evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::bytes32& key) const
-    noexcept {
+evmc::bytes32 EvmHost::get_storage(const evmc::address& address,
+                                   const evmc::bytes32& key) const noexcept {
   return evm_.state().get_storage(address, key);
 }
 
@@ -334,11 +299,15 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
                                          const evmc::bytes32& value) noexcept {
   const evmc::bytes32& prev_val{evm_.state().get_storage(address, key)};
 
-  if (prev_val == value) return EVMC_STORAGE_UNCHANGED;
+  if (prev_val == value) {
+    return EVMC_STORAGE_UNCHANGED;
+  }
 
   evm_.state().set_storage(address, key, value);
 
-  if (is_zero(prev_val)) return EVMC_STORAGE_ADDED;
+  if (is_zero(prev_val)) {
+    return EVMC_STORAGE_ADDED;
+  }
 
   if (is_zero(value)) {
     evm_.state().add_refund(fee::kRSClear);
@@ -367,7 +336,9 @@ size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint
                           size_t buffer_size) const noexcept {
   ByteView code{evm_.state().get_code(address)};
 
-  if (code_offset >= code.size()) return 0;
+  if (code_offset >= code.size()) {
+    return 0;
+  }
 
   size_t n{std::min(buffer_size, code.size() - code_offset)};
   std::copy_n(&code[code_offset], n, buffer_data);
@@ -383,7 +354,15 @@ void EvmHost::selfdestruct(const evmc::address& address,
 
 evmc::result EvmHost::call(const evmc_message& message) noexcept {
   if (message.kind == EVMC_CREATE || message.kind == EVMC_CREATE2) {
-    return evm_.create(message);
+    evmc::result res{evm_.create(message)};
+    if (res.status_code == EVMC_SUCCESS) {
+      // https://eips.ethereum.org/EIPS/eip-211
+      evmc::result res_with_no_output{res.status_code, res.gas_left, nullptr, 0};
+      res_with_no_output.create_address = res.create_address;
+      return res_with_no_output;
+    } else {
+      return res;
+    }
   } else {
     return evm_.call(message);
   }

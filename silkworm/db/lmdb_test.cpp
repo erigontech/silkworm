@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#include "lmdb.hpp"
-
 #include <lmdbxx/lmdb++.h>
 
 #include <catch2/catch.hpp>
+
+#include "temp_lmdb_test.hpp"
 
 namespace silkworm::db {
 

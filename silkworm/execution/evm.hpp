@@ -77,21 +77,14 @@ class EVM {
   std::stack<evmc::address> address_stack_{};
 };
 
-// Yellow Paper, Section 7
-evmc::address create_address(const evmc::address& caller, uint64_t nonce);
-
-// https://eips.ethereum.org/EIPS/eip-1014
-evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
-                              uint8_t (&code_hash)[32]) noexcept;
-
 class EvmHost : public evmc::Host {
  public:
   explicit EvmHost(EVM& evm) noexcept : evm_{evm} {}
 
   bool account_exists(const evmc::address& address) const noexcept override;
 
-  evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const
-      noexcept override;
+  evmc::bytes32 get_storage(const evmc::address& address,
+                            const evmc::bytes32& key) const noexcept override;
 
   evmc_storage_status set_storage(const evmc::address& address, const evmc::bytes32& key,
                                   const evmc::bytes32& value) noexcept override;

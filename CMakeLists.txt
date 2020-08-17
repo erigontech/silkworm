@@ -14,10 +14,10 @@
    limitations under the License.
 ]]
 
-cmake_minimum_required(VERSION 3.12) # for CONFIGURE_DEPENDS
+cmake_minimum_required(VERSION 3.13)
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmone/evmc/.git)
-    message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
+  message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
 endif()
 
 include(evmone/cmake/cable/bootstrap.cmake)
@@ -37,6 +37,7 @@ HunterGate(
 
 project(silkworm)
 
+# Abseil
 add_subdirectory(abseil-cpp)
 
 # secp256k1
@@ -50,6 +51,27 @@ add_compile_definitions(ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMOR
 add_compile_definitions(ENABLE_MODULE_RECOVERY)
 add_library(secp256k1 secp256k1/src/secp256k1.c)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
+
+# libff
+set(
+  CURVE
+  "ALT_BN128"
+  CACHE
+  STRING
+  "Default curve: one of ALT_BN128, BN128, EDWARDS, MNT4, MNT6"
+  FORCE
+)
+option(
+  WITH_PROCPS
+  "Use procps for memory profiling"
+  OFF
+)
+option(
+  IS_LIBFF_PARENT
+  "Install submodule dependencies if caller originates from here"
+  OFF
+)
+add_subdirectory(libff)
 
 # Compiler options
 if(MSVC)
@@ -67,7 +89,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes)
 endif()
 
-# Some required packages
+# Some other required packages
 hunter_add_package(ethash)
 find_package(ethash CONFIG REQUIRED)
 hunter_add_package(intx)

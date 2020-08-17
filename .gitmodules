@@ -8,3 +8,7 @@
 [submodule "abseil-cpp"]
 	path = abseil-cpp
 	url = https://github.com/abseil/abseil-cpp.git
+[submodule "libff"]
+	path = libff
+	url = https://github.com/torquem-ch/libff.git
+	branch = optional_openssl

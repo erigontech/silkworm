@@ -22,8 +22,11 @@
 #include <boost/endian/conversion.hpp>
 #include <cstring>
 #include <ethash/keccak.hpp>
+#include <iostream>  // TODO[Byzantium] remove
+#include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
+#include <silkworm/crypto/snark.hpp>
 
 namespace silkworm::precompiled {
 
@@ -54,7 +57,6 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
 
   Bytes out(32, '\0');
   std::memcpy(&out[12], &hash.bytes[12], 32 - 12);
-
   return out;
 }
 
@@ -87,11 +89,13 @@ uint64_t id_gas(ByteView input, evmc_revision) noexcept {
 std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
 
 uint64_t expmod_gas(ByteView, evmc_revision) noexcept {
+  std::cerr << "[Byzantium] expmod_gas!!!\n";
   // TODO[Byzantium] implement
   return 0;
 }
 
 std::optional<Bytes> expmod_run(ByteView) noexcept {
+  std::cerr << "[Byzantium] expmod_run!!!\n";
   // TODO[Byzantium] implement
   return {};
 }
@@ -100,32 +104,95 @@ uint64_t bn_add_gas(ByteView, evmc_revision rev) noexcept {
   return rev >= EVMC_ISTANBUL ? 150 : 500;
 }
 
-std::optional<Bytes> bn_add_run(ByteView) noexcept {
-  // TODO[Byzantium] implement
-  return {};
+std::optional<Bytes> bn_add_run(ByteView input) noexcept {
+  input = right_pad(input, 128);
+
+  snark::init_libff();
+
+  std::optional<libff::alt_bn128_G1> x{snark::decode_g1_element(input.substr(0, 64))};
+  if (!x) {
+    return {};
+  }
+
+  std::optional<libff::alt_bn128_G1> y{snark::decode_g1_element(input.substr(64, 64))};
+  if (!y) {
+    return {};
+  }
+
+  libff::alt_bn128_G1 sum{*x + *y};
+  return snark::encode_g1_element(sum);
 }
 
 uint64_t bn_mul_gas(ByteView, evmc_revision rev) noexcept {
   return rev >= EVMC_ISTANBUL ? 6'000 : 40'000;
 }
 
-std::optional<Bytes> bn_mul_run(ByteView) noexcept {
-  // TODO[Byzantium] implement
-  return {};
+std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
+  input = right_pad(input, 96);
+
+  snark::init_libff();
+
+  std::optional<libff::alt_bn128_G1> x{snark::decode_g1_element(input.substr(0, 64))};
+  if (!x) {
+    return {};
+  }
+
+  snark::Scalar n{snark::to_scalar(input.substr(64, 32))};
+
+  libff::alt_bn128_G1 product{n * *x};
+  return snark::encode_g1_element(product);
 }
 
+static constexpr size_t kSnarkvStride{192};
+
 uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
-  uint64_t k{input.length() / 192};
+  uint64_t k{input.length() / kSnarkvStride};
   return rev >= EVMC_ISTANBUL ? 34'000 * k + 45'000 : 80'000 * k + 100'000;
 }
 
-std::optional<Bytes> snarkv_run(ByteView) noexcept {
-  // TODO[Byzantium] implement
-  return {};
+std::optional<Bytes> snarkv_run(ByteView input) noexcept {
+  if (input.size() % kSnarkvStride != 0) {
+    return {};
+  }
+  size_t k{input.size() / kSnarkvStride};
+
+  snark::init_libff();
+  using namespace libff;
+
+  static const auto one{alt_bn128_Fq12::one()};
+  auto accumulator{one};
+
+  for (size_t i{0}; i < k; ++i) {
+    std::optional<alt_bn128_G1> a{snark::decode_g1_element(input.substr(i * kSnarkvStride, 64))};
+    if (!a) {
+      return {};
+    }
+    std::optional<alt_bn128_G2> b{
+        snark::decode_g2_element(input.substr(i * kSnarkvStride + 64, 128))};
+    if (!b) {
+      return {};
+    }
+
+    if (a->is_zero() || b->is_zero()) {
+      continue;
+    }
+
+    accumulator = accumulator *
+                  alt_bn128_miller_loop(alt_bn128_precompute_G1(*a), alt_bn128_precompute_G2(*b));
+  }
+
+  Bytes out(32, '\0');
+  if (alt_bn128_final_exponentiation(accumulator) == one) {
+    out[31] = 1;
+  }
+  return out;
 }
 
 uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
-  if (input.length() < 4) return 0;  // blake2_f_run will fail anyway
+  if (input.length() < 4) {
+    // blake2_f_run will fail anyway
+    return 0;
+  }
   return boost::endian::load_big_u32(input.data());
 }
 

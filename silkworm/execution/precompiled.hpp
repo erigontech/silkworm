@@ -45,18 +45,23 @@ std::optional<Bytes> rip160_run(ByteView input) noexcept;
 uint64_t id_gas(ByteView input, evmc_revision) noexcept;
 std::optional<Bytes> id_run(ByteView input) noexcept;
 
+// https://eips.ethereum.org/EIPS/eip-198
 uint64_t expmod_gas(ByteView input, evmc_revision) noexcept;
 std::optional<Bytes> expmod_run(ByteView input) noexcept;
 
+// https://eips.ethereum.org/EIPS/eip-196
 uint64_t bn_add_gas(ByteView input, evmc_revision) noexcept;
 std::optional<Bytes> bn_add_run(ByteView input) noexcept;
 
+// https://eips.ethereum.org/EIPS/eip-196
 uint64_t bn_mul_gas(ByteView input, evmc_revision) noexcept;
 std::optional<Bytes> bn_mul_run(ByteView input) noexcept;
 
+// https://eips.ethereum.org/EIPS/eip-197
 uint64_t snarkv_gas(ByteView input, evmc_revision) noexcept;
 std::optional<Bytes> snarkv_run(ByteView input) noexcept;
 
+// https://eips.ethereum.org/EIPS/eip-152
 uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept;
 std::optional<Bytes> blake2_f_run(ByteView input) noexcept;
 

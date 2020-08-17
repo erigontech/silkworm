@@ -41,10 +41,12 @@ or run tests
 ./tests
 ```
 ## Windows (Visual Studio Community Edition 2019)
-* Download [GMP](https://github.com/ShiftMediaProject/gmp/releases) and add it to your `INCLUDE` and `PATH` environment variables.
+### Prerequisites
+* Download [GMP](https://github.com/ShiftMediaProject/gmp/releases). Extract archive contents in a folder of your choice (eg. `C:\libgmp`). Create two new environment variables: `GMP_LIBRARY` set to `C:/libgmp/lib/x64/gmp.lib` and `GMP_INCLUDE_DIR` set to `C:/libgmp/include/`. Also ensure your `PATH` variable includes `C:/libgmp/bin/x64/`. (should you have extracted the contents of archive in other path than `C:/libgmp` change the previous environment variables paths accordingly)
 * Install [Visual Studio](https://www.visualstudio.com/downloads/). Community edition is fine.
 * Make sure your setup includes CMake support and Windows 10 SDK.
-* Open Visual Studio and select File -> CMake... 
+### Build
+* Open Visual Studio and select File -> CMake...
 * Browse the folder where you have cloned this repository and select the file CMakeLists.txt
 * Let CMake cache generation complete (it may take several minutes)
 * Solution explorer shows the project tree.

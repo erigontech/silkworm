@@ -7,10 +7,21 @@
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\silkworm\\build\\${name}",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\silkworm\\install\\${name}",
-      "cmakeCommandArgs": "",
+      "cmakeCommandArgs": "-Wno-dev",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "variables": []
+      "variables": [
+        {
+          "name": "GMP_LIBRARY",
+          "value": "${env.GMP_LIBRARY}",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "GMP_INCLUDE_DIR",
+          "value": "${env.GMP_INCLUDE_DIR}",
+          "type": "PATH"
+        }
+      ]
     }
   ]
 }

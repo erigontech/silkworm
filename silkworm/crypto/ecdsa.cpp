@@ -25,12 +25,12 @@ namespace silkworm::ecdsa {
 static secp256k1_context* kDefaultContext{
     secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)};
 
-bool ValidateSignatureValues(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
-                             const intx::uint256& chainID, bool homestead) {
+bool is_valid_signature(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
+                        const intx::uint256& chainID, bool homestead) {
   if (r == 0 || s == 0) {
     return false;
   }
-  if (!IsValidSignatureRecoveryID(GetSignatureRecoveryID(v, chainID))) {
+  if (!is_valid_signature_recovery_id(get_signature_recovery_id(v, chainID))) {
     return false;
   }
   if (r >= kSecp256k1n && s >= kSecp256k1n) {
@@ -44,13 +44,15 @@ bool ValidateSignatureValues(const intx::uint256& v, const intx::uint256& r, con
   return true;
 }
 
-intx::uint256 GetSignatureRecoveryID(const intx::uint256& v, const intx::uint256& chainID) {
+intx::uint256 get_signature_recovery_id(const intx::uint256& v, const intx::uint256& chainID) {
   return chainID ? v - (2 * chainID + 35) : v - 27;
 }
 
-bool IsValidSignatureRecoveryID(const intx::uint256& recovery) { return recovery == 0 || recovery == 1; }
+bool is_valid_signature_recovery_id(const intx::uint256& recovery) {
+  return recovery == 0 || recovery == 1;
+}
 
-intx::uint256 ComputeChainIDfromV(const intx::uint256& v) {
+intx::uint256 get_chainid_from_v(const intx::uint256& v) {
   intx::uint256 out{0};
   if (v != 27 && v != 28) {
     out = (v - 35) / 2;

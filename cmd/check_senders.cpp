@@ -36,7 +36,7 @@ using namespace silkworm;
 
 bool shouldStop{ false };
 
-void sigHandler(int signum) {
+void sig_handler(int signum) {
   (void)signum;
   std::cout << std::endl
             << "Request for termination intercepted. Stopping ..." << std::endl
@@ -44,7 +44,7 @@ void sigHandler(int signum) {
   shouldStop = true;
 }
 
-void encodeTxforSigning(Bytes& to, const Transaction& txn, const intx::uint256& chainID) {
+void encode_tx_for_signing(Bytes& to, const Transaction& txn, const intx::uint256& chainID) {
 
     using namespace rlp;
 
@@ -112,8 +112,8 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    signal(SIGINT, sigHandler);
-    signal(SIGTERM, sigHandler);
+    signal(SIGINT, sig_handler);
+    signal(SIGTERM, sig_handler);
 
     // If database path is provided (and has passed CLI::ExistingDirectory validator
     // check whether it is empty
@@ -157,8 +157,8 @@ int main(int argc, char* argv[]) {
 
       // Loop block's transactions
       for (silkworm::Transaction tx : bh->block.transactions) {
-        auto txChainID = ecdsa::ComputeChainIDfromV(tx.v);
-        validSignature = silkworm::ecdsa::ValidateSignatureValues(
+        auto txChainID = ecdsa::get_chainid_from_v(tx.v);
+        validSignature = silkworm::ecdsa::is_valid_signature(
             tx.v, tx.r, tx.s, txChainID, chain.config().has_homestead(block_num));
 
         // Apply EIP-155 unless protected Tx (i.e. v ∈{27,28} thus chainID == 0)
@@ -179,13 +179,13 @@ int main(int argc, char* argv[]) {
         }
 
         auto recoveryID =
-            intx::narrow_cast<uint8_t>(ecdsa::GetSignatureRecoveryID(tx.v, txChainID));
+            intx::narrow_cast<uint8_t>(ecdsa::get_signature_recovery_id(tx.v, txChainID));
 
         // Hash the Tx for signing
         Bytes rlp{};
-        encodeTxforSigning(rlp, tx, txChainID);
-        ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
-        ByteView message{ hash.bytes, 32 };
+        encode_tx_for_signing(rlp, tx, txChainID);
+        ethash::hash256 rlp_hash{ethash::keccak256(rlp.data(), rlp.length())};
+        ByteView message{ rlp_hash.bytes, 32 };
 
         // Bytecopy in reverse endianness for r and s
         for (int i{0}; i < 2; i++) {
@@ -203,9 +203,9 @@ int main(int argc, char* argv[]) {
           return -2;
         } else {
           // Ignore the first byte of the public key
-          ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
+          ethash::hash256 key_hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
           evmc::address out{};
-          std::memcpy(out.bytes, &hash.bytes[12], 20);
+          std::memcpy(out.bytes, &key_hash.bytes[12], 20);
           senders.push_back(out);
 
           if (po_debug) {

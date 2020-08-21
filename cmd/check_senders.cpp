@@ -354,6 +354,10 @@ int main(int argc, char* argv[]) {
     uint64_t block_num{po_from_block};
     uint64_t fetched_blocks{0};
 
+    // TODO (Andrea) read blocks using cursor
+    // Access to blocks by key/hash get slower
+    // and slower as higher gets the key.
+
     for (; block_num < po_to_block; ++block_num) {
         std::optional<BlockWithHash> bh = db.get_block(block_num);
         if (!bh || shouldStop) {
@@ -457,7 +461,9 @@ int main(int argc, char* argv[]) {
 
     // Stop all recoverers
     for (size_t r = 0; r < recoverers_.size(); r++) {
+        std::cout << format_time() << " Waiting for recoverer thread #" << r << " to complete ...";
         recoverers_.at(r)->stop(true);
+        std::cout << " Done !" << std::endl;
     }
 
     std::cout << format_time() << " Blocks (" << po_from_block << " ... " << block_num << "] have been processed 😅\n"

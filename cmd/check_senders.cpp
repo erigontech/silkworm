@@ -268,7 +268,7 @@ int main(int argc, char* argv[]) {
         db_path_set->required();
     }
 
-    app.add_flag("-d,--debug", po_debug, "Stops and show data on first occurence");
+    app.add_flag("-d,--debug", po_debug, "May be ignored.");
     app.add_option("--rthreads", po_num_threads, "Number of recovering threads", true)->check(CLI::Range(1u, get_host_cpus() - 1));
     app.add_option("--from,-f", po_from_block, "Initial block number to process (inclusive)", true)->check(range32);
     app.add_option("--to,-t", po_to_block, "Final block number to process (exclusive)", true)->check(range32);
@@ -341,7 +341,7 @@ int main(int argc, char* argv[]) {
 
     // Start recoverers
     for (size_t r = 0; r < recoverers_.size(); r++) {
-        std::cout << "Starting recoverer thread #" << r << " ... " << std::endl;
+        std::cout << format_time()  << " Starting recoverer thread #" << r << " ... " << std::endl;
         recoverers_.at(r)->start();
     }
 
@@ -373,7 +373,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        // Should we overflow the batch queue the work
+        // Should we overflow the batch queue dispatch the work
         // to the recoverer thread
         if (batchTxsCount + bh->block.transactions.size() >= po_batch_size)
         {
@@ -382,7 +382,7 @@ int main(int argc, char* argv[]) {
             std::cout << format_time() << " Fetched blocks ≤ " << (fetched_blocks - 1) << " in " << std::fixed
                       << std::setprecision(2) << elapsedS << " s. Dispatching " << batchTxsCount
                       << " tx signatures to thread #" << nextRecovererId << " for address recovery " << std::endl;
-
+            t1 = t2;
             recoverers_.at(nextRecovererId)->set_work(recoverPackages);
             recoverers_.at(nextRecovererId)->kick();
             recoverPackages.clear();
@@ -460,8 +460,8 @@ int main(int argc, char* argv[]) {
         recoverers_.at(r)->stop(true);
     }
 
-    std::cout << "Blocks (" << po_from_block << " ... " << block_num << "] have been processed 😅" << std::endl;
-    std::cout << "Overall time " << std::fixed << std::setprecision(2)
+    std::cout << format_time() << " Blocks (" << po_from_block << " ... " << block_num << "] have been processed 😅\n"
+              << "Overall time " << std::fixed << std::setprecision(2)
               << (bch::duration_cast<bch::milliseconds>(bch::steady_clock::now() - start).count() / 1000.0) << " s"
               << std::endl;
 

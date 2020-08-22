@@ -22,9 +22,11 @@
 #include <ethash/keccak.hpp>
 #include <iostream>
 #include <silkworm/chain/block_chain.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/db/lmdb.hpp>
+#include <silkworm/db/bucket.hpp>
 #include <silkworm/db/util.hpp>
 #include <string>
 
@@ -247,6 +249,43 @@ std::string format_time(boost::posix_time::ptime now = boost::posix_time::micros
     return std::string{buf};
 }
 
+std::optional<BlockBody> get_body_from_cursor(uint64_t block_num, std::unique_ptr<db::Cursor>& headers_cursor,
+                                              std::unique_ptr<db::Cursor>& bodies_cursor) noexcept {
+    BlockBody body{};
+    Bytes block_header_key{ db::header_hash_key(block_num) };
+    std::optional<db::Entry> block_header_entry{ headers_cursor->seek(block_header_key) };
+    if (!block_header_entry) {
+        return{};
+    }
+
+    Bytes block_body_key{ db::block_key(block_num, block_header_entry->value.substr(0, 32)) };
+
+    // Only interested in block body
+    std::optional<db::Entry> block_body_entry{ bodies_cursor->seek(block_body_key) };
+    if (!block_body_entry) {
+        return{};
+    }
+
+    rlp::decode(block_body_entry->value, body);
+    return body;
+
+}
+
+std::optional<BlockBody> get_body_from_cursor_next(std::unique_ptr<db::Cursor>& bodies_cursor) {
+
+    // Only interested in block body
+    std::optional<db::Entry> block_body_entry{ bodies_cursor->next() };
+    if (!block_body_entry) {
+        return{};
+    }
+
+    BlockBody body{};
+    rlp::decode(block_body_entry->value, body);
+    return body;
+
+
+}
+
 int main(int argc, char* argv[]) {
     CLI::App app("Walks Ethereum blocks and recovers senders.");
 
@@ -295,6 +334,15 @@ int main(int argc, char* argv[]) {
     // Initialize db
     db::LmdbDatabase db{po_db_path.c_str()};
     BlockChain chain{&db};
+
+    // Get database objects
+    auto dbTx{ db.begin_ro_transaction() };
+    auto headers_bucket{dbTx->get_bucket(db::bucket::kBlockHeaders)};
+    auto bodies_bucket{dbTx->get_bucket(db::bucket::kBlockBodies)};
+    auto senders_bucket{dbTx->get_bucket(db::bucket::kSenders)};
+
+    auto headers_cursor{headers_bucket->cursor()};
+    auto bodies_cursor{bodies_bucket->cursor()};
 
 
     // Temporary file number
@@ -354,95 +402,171 @@ int main(int argc, char* argv[]) {
     uint64_t block_num{po_from_block};
     uint64_t fetched_blocks{0};
 
-    // TODO (Andrea) read blocks using cursor
-    // Access to blocks by key/hash get slower
-    // and slower as higher gets the key.
-
-    for (; block_num < po_to_block; ++block_num) {
-        std::optional<BlockWithHash> bh = db.get_block(block_num);
-        if (!bh || shouldStop) {
-            break;
-        }
-
+    std::optional<BlockBody> bb = get_body_from_cursor(block_num, headers_cursor, bodies_cursor);
+    while (!shouldStop && bb && block_num <= po_to_block)
+    {
         fetched_blocks++;
-        // If no transactions to process continue
-        // to next block
-        if (!bh->block.transactions.size()) {
-            continue;
-        }
 
-        std::vector<evmc::address> senders{ db.get_senders(block_num, bh->hash) };
-        if (senders.size() == bh->block.transactions.size()) {
-            // Already processed block ?
-            continue;
-        }
+        if (bb->transactions.size()) {
 
-        // Should we overflow the batch queue dispatch the work
-        // to the recoverer thread
-        if (batchTxsCount + bh->block.transactions.size() >= po_batch_size)
-        {
-            bch::time_point t2{ bch::steady_clock::now() };
-            double elapsedS = (bch::duration_cast<bch::milliseconds>(t2 - t1).count() / 1000.0);
-            std::cout << format_time() << " Fetched blocks ≤ " << (fetched_blocks - 1) << " in " << std::fixed
-                      << std::setprecision(2) << elapsedS << " s. Dispatching " << batchTxsCount
-                      << " tx signatures to thread #" << nextRecovererId << " for address recovery " << std::endl;
-            t1 = t2;
-            recoverers_.at(nextRecovererId)->set_work(recoverPackages);
-            recoverers_.at(nextRecovererId)->kick();
-            recoverPackages.clear();
-            batchTxsCount = 0;
-            if (++nextRecovererId == (uint32_t)recoverers_.size()) {
-                nextRecovererId = 0;
-            }
-        }
-
-        // TODO - Verify we have to persist returned results
-
-        // Loop block's transactions and enqueue work packages
-        for (const silkworm::Transaction& tx : bh->block.transactions) {
-
-            intx::uint256 txChainID = ecdsa::get_chainid_from_v(tx.v);
-            bool txValidSig = silkworm::ecdsa::is_valid_signature(tx.v, tx.r, tx.s, txChainID,
-                                                                  chain.config().has_homestead(block_num));
-
-            // Apply EIP-155 unless protected Tx (i.e. v ∈{27,28} thus chainID == 0)
-            if (txValidSig && chain.config().has_spurious_dragon(block_num) && txChainID) {
-                if (intx::narrow_cast<uint64_t>(txChainID) != chain.config().chain_id) {
-                    txValidSig = false;
+            // Should we overflow the batch queue dispatch the work
+            // to the recoverer thread
+            if (batchTxsCount + bb->transactions.size() >= po_batch_size)
+            {
+                bch::time_point t2{ bch::steady_clock::now() };
+                double elapsedS = (bch::duration_cast<bch::milliseconds>(t2 - t1).count() / 1000.0);
+                std::cout << format_time() << " Fetched blocks ≤ " << (fetched_blocks - 1) << " in " << std::fixed
+                    << std::setprecision(2) << elapsedS << " s. Dispatching " << batchTxsCount
+                    << " tx signatures to thread #" << nextRecovererId << " for address recovery " << std::endl;
+                t1 = t2;
+                recoverers_.at(nextRecovererId)->set_work(recoverPackages);
+                recoverers_.at(nextRecovererId)->kick();
+                recoverPackages.clear();
+                batchTxsCount = 0;
+                if (++nextRecovererId == (uint32_t)recoverers_.size()) {
+                    nextRecovererId = 0;
                 }
             }
 
-            if (!txValidSig) {
-                std::cerr << "Tx signature validation failed block #" << block_num << "\n"
-                          << "r " << intx::hex(tx.r) << "\n"
-                          << "s " << intx::hex(tx.s) << "\n"
-                          << "v " << intx::hex(tx.v) << "\n"
-                          << "Homestead == " << (chain.config().has_homestead(block_num) ? "ON" : "OFF") << "\n"
-                          << "Spurious Dragon == " << (chain.config().has_spurious_dragon(block_num) ? "ON" : "OFF")
-                          << std::endl;
-                errorCode = -3;
+            // TODO - Verify we have to persist returned results
+
+            // Loop block's transactions and enqueue work packages
+            for (const silkworm::Transaction& tx : bb->transactions) {
+
+                intx::uint256 txChainID = ecdsa::get_chainid_from_v(tx.v);
+                bool txValidSig = silkworm::ecdsa::is_valid_signature(tx.v, tx.r, tx.s, txChainID,
+                    chain.config().has_homestead(block_num));
+
+                // Apply EIP-155 unless protected Tx (i.e. v ∈{27,28} thus chainID == 0)
+                if (txValidSig && chain.config().has_spurious_dragon(block_num) && txChainID) {
+                    if (intx::narrow_cast<uint64_t>(txChainID) != chain.config().chain_id) {
+                        txValidSig = false;
+                    }
+                }
+
+                if (!txValidSig) {
+                    std::cerr << "Tx signature validation failed block #" << block_num << "\n"
+                        << "r " << intx::hex(tx.r) << "\n"
+                        << "s " << intx::hex(tx.s) << "\n"
+                        << "v " << intx::hex(tx.v) << "\n"
+                        << "Homestead == " << (chain.config().has_homestead(block_num) ? "ON" : "OFF") << "\n"
+                        << "Spurious Dragon == " << (chain.config().has_spurious_dragon(block_num) ? "ON" : "OFF")
+                        << std::endl;
+                    errorCode = -3;
+                    break;
+                }
+
+                uint8_t txSigRecoveryId = intx::narrow_cast<uint8_t>(ecdsa::get_signature_recovery_id(tx.v, txChainID));
+
+                // Hash the Tx for signing
+                Bytes rlp{};
+                encode_tx_for_signing(rlp, tx, txChainID);
+                ethash::hash256 txMessageHash{ ethash::keccak256(rlp.data(), rlp.length()) };
+
+                Recoverer::package rp{ block_num, txMessageHash, txSigRecoveryId, tx.r, tx.s };
+
+                recoverPackages.push_back(rp);
+                batchTxsCount++;
+
+            }
+
+            if (errorCode) {
                 break;
             }
 
-            uint8_t txSigRecoveryId = intx::narrow_cast<uint8_t>(ecdsa::get_signature_recovery_id(tx.v, txChainID));
-
-            // Hash the Tx for signing
-            Bytes rlp{};
-            encode_tx_for_signing(rlp, tx, txChainID);
-            ethash::hash256 txMessageHash{ethash::keccak256(rlp.data(), rlp.length())};
-
-            Recoverer::package rp{block_num, txMessageHash, txSigRecoveryId, tx.r, tx.s};
-
-            recoverPackages.push_back(rp);
-            batchTxsCount++;
 
         }
 
-        if (errorCode) {
-            break;
-        }
-
+        block_num++;
+        bb = get_body_from_cursor_next(bodies_cursor);
     }
+
+    //for (; block_num < po_to_block; ++block_num) {
+
+    //    std::optional<BlockBody> bb = get_body_from_cursor(block_num, headers_cursor, bodies_cursor);
+    //    if (!bb || shouldStop) {
+    //        break;
+    //    }
+
+    //    fetched_blocks++;
+    //    // If no transactions to process continue
+    //    // to next block
+    //    if (!bb->transactions.size()) {
+    //        continue;
+    //    }
+
+    //    //std::vector<evmc::address> senders{ db.get_senders(block_num, bh->hash) };
+    //    //if (senders.size() == bh->block.transactions.size()) {
+    //    //    // Already processed block ?
+    //    //    continue;
+    //    //}
+
+    //    // Should we overflow the batch queue dispatch the work
+    //    // to the recoverer thread
+    //    if (batchTxsCount + bb->transactions.size() >= po_batch_size)
+    //    {
+    //        bch::time_point t2{ bch::steady_clock::now() };
+    //        double elapsedS = (bch::duration_cast<bch::milliseconds>(t2 - t1).count() / 1000.0);
+    //        std::cout << format_time() << " Fetched blocks ≤ " << (fetched_blocks - 1) << " in " << std::fixed
+    //                  << std::setprecision(2) << elapsedS << " s. Dispatching " << batchTxsCount
+    //                  << " tx signatures to thread #" << nextRecovererId << " for address recovery " << std::endl;
+    //        t1 = t2;
+    //        recoverers_.at(nextRecovererId)->set_work(recoverPackages);
+    //        recoverers_.at(nextRecovererId)->kick();
+    //        recoverPackages.clear();
+    //        batchTxsCount = 0;
+    //        if (++nextRecovererId == (uint32_t)recoverers_.size()) {
+    //            nextRecovererId = 0;
+    //        }
+    //    }
+
+    //    // TODO - Verify we have to persist returned results
+
+    //    // Loop block's transactions and enqueue work packages
+    //    for (const silkworm::Transaction& tx : bb->transactions) {
+
+    //        intx::uint256 txChainID = ecdsa::get_chainid_from_v(tx.v);
+    //        bool txValidSig = silkworm::ecdsa::is_valid_signature(tx.v, tx.r, tx.s, txChainID,
+    //                                                              chain.config().has_homestead(block_num));
+
+    //        // Apply EIP-155 unless protected Tx (i.e. v ∈{27,28} thus chainID == 0)
+    //        if (txValidSig && chain.config().has_spurious_dragon(block_num) && txChainID) {
+    //            if (intx::narrow_cast<uint64_t>(txChainID) != chain.config().chain_id) {
+    //                txValidSig = false;
+    //            }
+    //        }
+
+    //        if (!txValidSig) {
+    //            std::cerr << "Tx signature validation failed block #" << block_num << "\n"
+    //                      << "r " << intx::hex(tx.r) << "\n"
+    //                      << "s " << intx::hex(tx.s) << "\n"
+    //                      << "v " << intx::hex(tx.v) << "\n"
+    //                      << "Homestead == " << (chain.config().has_homestead(block_num) ? "ON" : "OFF") << "\n"
+    //                      << "Spurious Dragon == " << (chain.config().has_spurious_dragon(block_num) ? "ON" : "OFF")
+    //                      << std::endl;
+    //            errorCode = -3;
+    //            break;
+    //        }
+
+    //        uint8_t txSigRecoveryId = intx::narrow_cast<uint8_t>(ecdsa::get_signature_recovery_id(tx.v, txChainID));
+
+    //        // Hash the Tx for signing
+    //        Bytes rlp{};
+    //        encode_tx_for_signing(rlp, tx, txChainID);
+    //        ethash::hash256 txMessageHash{ethash::keccak256(rlp.data(), rlp.length())};
+
+    //        Recoverer::package rp{block_num, txMessageHash, txSigRecoveryId, tx.r, tx.s};
+
+    //        recoverPackages.push_back(rp);
+    //        batchTxsCount++;
+
+    //    }
+
+    //    if (errorCode) {
+    //        break;
+    //    }
+
+    //}
 
     // Should we have any partially filled batch deliver it now
     if (batchTxsCount)

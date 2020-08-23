@@ -291,7 +291,7 @@ Bytes StorageChanges::encode() const {
 
   for (const auto& contract : contracts) {
     for (const auto& val : contract.vals) {
-      std::memcpy(&out[pos], &val[0], val.length());
+      std::memcpy(&out[pos], val.data(), val.length());
       pos += val.length();
     }
   }

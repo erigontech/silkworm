@@ -243,8 +243,8 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code,
     instr = instr->fn(instr, *state);
   }
 
-  evmc::result res{evmc::make_result(state->status, state->gas_left,
-                                     &state->memory[state->output_offset], state->output_size)};
+  const uint8_t* output_data{state->output_size ? &state->memory[state->output_offset] : nullptr};
+  evmc::result res{evmc::make_result(state->status, state->gas_left, output_data, state->output_size)};
 
   ExecutionStatePool::instance().release();
   address_stack_.pop();

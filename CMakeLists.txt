@@ -79,6 +79,8 @@ if(MSVC)
   add_compile_options(/wd5030) # Silence warnings about gnu attributes
   add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
   add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
+
+  set(CMAKE_EXE_LINKER_FLAGS "/STACK:10000000")
 else()
   add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers)
 endif()

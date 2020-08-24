@@ -19,14 +19,19 @@
 #include <cryptopp/ripemd.h>
 #include <cryptopp/sha.h>
 
+#include <algorithm>
 #include <boost/endian/conversion.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <cstring>
 #include <ethash/keccak.hpp>
-#include <iostream>  // TODO[Byzantium] remove
+#include <iostream>  // TODO[Istanbul] remove
+#include <iterator>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/crypto/snark.hpp>
+
+#include "protocol_param.hpp"
 
 namespace silkworm::precompiled {
 
@@ -92,16 +97,109 @@ uint64_t id_gas(ByteView input, evmc_revision) noexcept {
 
 std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
 
-uint64_t expmod_gas(ByteView, evmc_revision) noexcept {
-  std::cerr << "[Byzantium] expmod_gas!!!\n";
-  // TODO[Byzantium] implement
-  return 0;
+static uint64_t mult_complexity(uint64_t x) {
+  if (x <= 64) {
+    return x * x;
+  } else if (x <= 1024) {
+    return x * x / 4 + 96 * x - 3072;
+  } else {
+    return x * x / 16 + 480 * x - 199680;
+  }
 }
 
-std::optional<Bytes> expmod_run(ByteView) noexcept {
-  std::cerr << "[Byzantium] expmod_run!!!\n";
-  // TODO[Byzantium] implement
-  return {};
+uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
+  input = right_pad(input, 3 * 32);
+
+  intx::uint256 base_length{intx::be::unsafe::load<intx::uint256>(&input[0])};
+  intx::uint256 exponent_length{intx::be::unsafe::load<intx::uint256>(&input[32])};
+  intx::uint256 modulus_length{intx::be::unsafe::load<intx::uint256>(&input[64])};
+
+  if (base_length == 0 && modulus_length == 0) {
+    return 0;
+  }
+
+  if (intx::count_significant_words<uint32_t>(base_length) > 1 ||
+      intx::count_significant_words<uint32_t>(exponent_length) > 1 ||
+      intx::count_significant_words<uint32_t>(modulus_length) > 1) {
+    return UINT64_MAX;
+  }
+
+  uint64_t base_len{intx::narrow_cast<uint64_t>(base_length)};
+  uint64_t exponent_len{intx::narrow_cast<uint64_t>(exponent_length)};
+  uint64_t modulus_len{intx::narrow_cast<uint64_t>(modulus_length)};
+
+  input.remove_prefix(3 * 32);
+
+  intx::uint256 exp_head{0};  // first 32 bytes of the exponent
+  if (input.length() > base_len) {
+    input = right_pad(input, base_len + 32);
+    exp_head = intx::be::unsafe::load<intx::uint256>(&input[base_len]);
+  }
+  unsigned bit_len{256 - clz(exp_head)};
+
+  uint64_t adjusted_exponent_len{0};
+  if (exponent_len > 32) {
+    adjusted_exponent_len = 8 * (exponent_len - 32);
+  }
+  if (bit_len > 1) {
+    adjusted_exponent_len += bit_len - 1;
+  }
+
+  if (adjusted_exponent_len < 1) {
+    adjusted_exponent_len = 1;
+  }
+
+  return mult_complexity(std::max(modulus_len, base_len)) * adjusted_exponent_len /
+         fee::kGQuadDivisor;
+}
+
+std::optional<Bytes> expmod_run(ByteView input) noexcept {
+  input = right_pad(input, 3 * 32);
+
+  uint64_t base_len{boost::endian::load_big_u64(&input[24])};
+  input.remove_prefix(32);
+
+  uint64_t exponent_len{boost::endian::load_big_u64(&input[24])};
+  input.remove_prefix(32);
+
+  uint64_t modulus_len{boost::endian::load_big_u64(&input[24])};
+  input.remove_prefix(32);
+
+  if (modulus_len == 0) {
+    return Bytes{};
+  }
+
+  input = right_pad(input, base_len + exponent_len + modulus_len);
+
+  boost::multiprecision::cpp_int base{};
+  if (base_len) {
+    import_bits(base, &input[0], &input[base_len]);
+    input.remove_prefix(base_len);
+  }
+
+  boost::multiprecision::cpp_int exponent{};
+  if (exponent_len) {
+    import_bits(exponent, &input[0], &input[exponent_len]);
+    input.remove_prefix(exponent_len);
+  }
+
+  boost::multiprecision::cpp_int modulus{};
+  if (modulus_len) {
+    import_bits(modulus, &input[0], &input[modulus_len]);
+  }
+
+  if (modulus == 0) {
+    return Bytes{};
+  }
+
+  boost::multiprecision::cpp_int result{boost::multiprecision::powm(base, exponent, modulus)};
+
+  Bytes out{};
+  export_bits(result, std::back_inserter(out), 8);
+  assert(out.size() <= modulus_len);
+  out.insert(0, modulus_len - out.size(), '\0');
+
+  return out;
 }
 
 uint64_t bn_add_gas(ByteView, evmc_revision rev) noexcept {
@@ -201,7 +299,7 @@ uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
 }
 
 std::optional<Bytes> blake2_f_run(ByteView) noexcept {
-  // TODO[Istanbul] implement
+  std::cerr << "[Istanbul] blake2_f_run!!!\n";
   return {};
 }
 }  // namespace silkworm::precompiled

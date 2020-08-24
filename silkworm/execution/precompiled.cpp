@@ -139,7 +139,11 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
     adjusted_exponent_len += bit_len - 1;
   }
 
-  return mult_complexity(std::max(modulus_len, base_len)) * std::max(adjusted_exponent_len, 1ull) /
+  if (adjusted_exponent_len == 0) {
+    adjusted_exponent_len = 1;
+  }
+
+  return mult_complexity(std::max(modulus_len, base_len)) * adjusted_exponent_len /
          fee::kGQuadDivisor;
 }
 

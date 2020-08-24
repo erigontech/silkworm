@@ -36,6 +36,8 @@ constexpr uint64_t kGTxDataZero{4};
 constexpr uint64_t kGTxDataNonZeroFrontier{68};
 constexpr uint64_t kGTxDataNonZeroEIP2028{16};
 constexpr uint64_t kGTransaction{21'000};
+
+constexpr uint64_t kGQuadDivisor{20};
 }  // namespace fee
 
 namespace param {

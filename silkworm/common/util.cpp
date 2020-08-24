@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <boost/algorithm/hex.hpp>
+#include <cassert>
 #include <cstring>
 #include <iterator>
 
@@ -30,14 +31,16 @@ ByteView right_pad(ByteView view, size_t min_size) {
 
   thread_local Bytes padded;
 
-  if (view.data() == padded.data()) {
-    padded.resize(min_size);
-    return padded;
+  if (padded.size() < view.size()) {
+    padded.resize(view.size());
   }
 
-  padded.clear();
+  std::memmove(padded.data(), view.data(), view.size());
+
+  assert(view.size() < min_size);
+  padded.resize(view.size());
   padded.resize(min_size);
-  std::memcpy(&padded[0], &view[0], view.size());
+
   return padded;
 }
 

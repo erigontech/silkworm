@@ -29,8 +29,8 @@ namespace silkworm {
 // Otherwise returns unmodified view.
 //
 // Might return a view of a thread-local buffer,
-// which must be consumed prior to the next invocation,
-// unless it's repeated padding of the same thing.
+// which must be consumed prior to the next invocation.
+// However, the same view may be padded repeatedly.
 ByteView right_pad(ByteView view, size_t min_size);
 
 // Converts bytes to hash; input is cropped if necessary.

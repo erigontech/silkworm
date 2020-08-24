@@ -246,7 +246,8 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code,
   }
 
   const uint8_t* output_data{state->output_size ? &state->memory[state->output_offset] : nullptr};
-  evmc::result res{evmc::make_result(state->status, state->gas_left, output_data, state->output_size)};
+  evmc::result res{
+      evmc::make_result(state->status, state->gas_left, output_data, state->output_size)};
 
   ExecutionStatePool::instance().release();
   address_stack_.pop();
@@ -357,13 +358,15 @@ void EvmHost::selfdestruct(const evmc::address& address,
 evmc::result EvmHost::call(const evmc_message& message) noexcept {
   if (message.kind == EVMC_CREATE || message.kind == EVMC_CREATE2) {
     evmc::result res{evm_.create(message)};
-    if (res.status_code == EVMC_SUCCESS) {
-      // https://eips.ethereum.org/EIPS/eip-211
+
+    // https://eips.ethereum.org/EIPS/eip-211
+    if (res.status_code == EVMC_REVERT) {
+      // Go Ethereum returns CREATE output only in case of REVERT
+      return res;
+    } else {
       evmc::result res_with_no_output{res.status_code, res.gas_left, nullptr, 0};
       res_with_no_output.create_address = res.create_address;
       return res_with_no_output;
-    } else {
-      return res;
     }
   } else {
     return evm_.call(message);

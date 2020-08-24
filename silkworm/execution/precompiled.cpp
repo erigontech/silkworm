@@ -21,9 +21,11 @@
 
 #include <algorithm>
 #include <boost/endian/conversion.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <iostream>  // TODO[Istanbul] remove
+#include <iterator>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
@@ -112,6 +114,10 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
   intx::uint256 exponent_length{intx::be::unsafe::load<intx::uint256>(&input[32])};
   intx::uint256 modulus_length{intx::be::unsafe::load<intx::uint256>(&input[64])};
 
+  if (base_length == 0 && modulus_length == 0) {
+    return 0;
+  }
+
   if (intx::count_significant_words<uint32_t>(base_length) > 1 ||
       intx::count_significant_words<uint32_t>(exponent_length) > 1 ||
       intx::count_significant_words<uint32_t>(modulus_length) > 1) {
@@ -139,7 +145,7 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
     adjusted_exponent_len += bit_len - 1;
   }
 
-  if (adjusted_exponent_len == 0) {
+  if (adjusted_exponent_len < 1) {
     adjusted_exponent_len = 1;
   }
 
@@ -147,10 +153,53 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
          fee::kGQuadDivisor;
 }
 
-std::optional<Bytes> expmod_run(ByteView) noexcept {
-  std::cerr << "[Byzantium] expmod_run!!!\n";
-  // TODO[Byzantium] implement
-  return {};
+std::optional<Bytes> expmod_run(ByteView input) noexcept {
+  input = right_pad(input, 3 * 32);
+
+  uint64_t base_len{boost::endian::load_big_u64(&input[24])};
+  input.remove_prefix(32);
+
+  uint64_t exponent_len{boost::endian::load_big_u64(&input[24])};
+  input.remove_prefix(32);
+
+  uint64_t modulus_len{boost::endian::load_big_u64(&input[24])};
+  input.remove_prefix(32);
+
+  if (modulus_len == 0) {
+    return Bytes{};
+  }
+
+  input = right_pad(input, base_len + exponent_len + modulus_len);
+
+  boost::multiprecision::cpp_int base{};
+  if (base_len) {
+    import_bits(base, &input[0], &input[base_len]);
+    input.remove_prefix(base_len);
+  }
+
+  boost::multiprecision::cpp_int exponent{};
+  if (exponent_len) {
+    import_bits(exponent, &input[0], &input[exponent_len]);
+    input.remove_prefix(exponent_len);
+  }
+
+  boost::multiprecision::cpp_int modulus{};
+  if (modulus_len) {
+    import_bits(modulus, &input[0], &input[modulus_len]);
+  }
+
+  if (modulus == 0) {
+    return Bytes{};
+  }
+
+  boost::multiprecision::cpp_int result{boost::multiprecision::powm(base, exponent, modulus)};
+
+  Bytes out{};
+  export_bits(result, std::back_inserter(out), 8);
+  assert(out.size() <= modulus_len);
+  out.insert(0, modulus_len - out.size(), '\0');
+
+  return out;
 }
 
 uint64_t bn_add_gas(ByteView, evmc_revision rev) noexcept {

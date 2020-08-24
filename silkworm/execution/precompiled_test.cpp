@@ -68,8 +68,30 @@ TEST_CASE("EXPMOD") {
                "03"
                "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e"
                "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f")};
-
   CHECK(expmod_gas(in, EVMC_BYZANTIUM) == 13056);
+
+  std::optional<Bytes> out{expmod_run(in)};
+  REQUIRE(out);
+  CHECK(to_hex(*out) == "0000000000000000000000000000000000000000000000000000000000000001");
+
+  in = from_hex(
+      "0000000000000000000000000000000000000000000000000000000000000000"
+      "0000000000000000000000000000000000000000000000000000000000000020"
+      "0000000000000000000000000000000000000000000000000000000000000020"
+      "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e"
+      "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f");
+
+  out = expmod_run(in);
+  REQUIRE(out);
+  CHECK(to_hex(*out) == "0000000000000000000000000000000000000000000000000000000000000000");
+
+  in = from_hex(
+      "0000000000000000000000000000000000000000000000000000000000000000"
+      "0000000000000000000000000000000000000000000000000000000000000020"
+      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"
+      "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd");
+  CHECK(expmod_gas(in, EVMC_BYZANTIUM) == UINT64_MAX);
 }
 
 TEST_CASE("BN_ADD") {

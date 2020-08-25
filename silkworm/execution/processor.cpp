@@ -17,7 +17,9 @@
 #include "processor.hpp"
 
 #include <algorithm>
+#include <ethash/keccak.hpp>
 #include <intx/int128.hpp>
+#include <iostream>
 #include <silkworm/chain/dao.hpp>
 #include <utility>
 
@@ -51,6 +53,14 @@ static intx::uint128 intrinsic_gas(ByteView data, bool contract_creation, bool h
 ExecutionProcessor::ExecutionProcessor(const BlockChain& chain, const Block& block,
                                        IntraBlockState& state)
     : evm_{chain, block, state} {}
+
+[[maybe_unused]] static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
+  thread_local Bytes rlp;
+  rlp.clear();
+  rlp::encode(rlp, txn);
+  ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.size())};
+  std::cout << "0x" << to_hex(full_view(hash.bytes)) << " " << gas_used << "\n";
+}
 
 Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
   IntraBlockState& state{evm_.state()};

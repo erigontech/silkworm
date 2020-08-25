@@ -132,8 +132,12 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
 
   intx::uint256 exp_head{0};  // first 32 bytes of the exponent
   if (input.length() > base_len) {
-    input = right_pad(input, base_len + 32);
-    exp_head = intx::be::unsafe::load<intx::uint256>(&input[base_len]);
+    ByteView exp_input{right_pad(input.substr(base_len), 32)};
+    if (exponent_len < 32) {
+      exp_input = exp_input.substr(0, exponent_len);
+      exp_input = left_pad(exp_input, 32);
+    }
+    exp_head = intx::be::unsafe::load<intx::uint256>(exp_input.data());
   }
   unsigned bit_len{256 - clz(exp_head)};
 

@@ -25,19 +25,12 @@
 namespace silkworm {
 
 // If a given view is shorter than min_size,
-// pads it to the left with 0s up to min_size.
-// Otherwise returns unmodified view.
-//
-// Might return a view of a thread-local buffer,
-// which must be consumed prior to the next invocation.
-ByteView left_pad(ByteView view, size_t min_size);
-
-// If a given view is shorter than min_size,
 // pads it to the right with 0s up to min_size.
 // Otherwise returns unmodified view.
 //
 // Might return a view of a thread-local buffer,
 // which must be consumed prior to the next invocation.
+// However, the same view may be padded repeatedly.
 ByteView right_pad(ByteView view, size_t min_size);
 
 // Converts bytes to hash; input is cropped if necessary.

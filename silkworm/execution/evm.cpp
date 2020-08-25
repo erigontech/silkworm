@@ -142,7 +142,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 evmc::result EVM::call(const evmc_message& message) noexcept {
   evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
 
-  intx::uint256 value = intx::be::load<intx::uint256>(message.value);
+  auto value{intx::be::load<intx::uint256>(message.value)};
   if (message.kind != EVMC_DELEGATECALL && state_.get_balance(message.sender) < value) {
     res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
     return res;
@@ -168,7 +168,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     precompiled::Contract contract{precompiled::kContracts[num - 1]};
     ByteView input{message.input_data, message.input_size};
     int64_t gas = contract.gas(input, revision());
-    if (gas > message.gas) {
+    if (gas < 0 || gas > message.gas) {
       res.status_code = EVMC_OUT_OF_GAS;
     } else {
       std::optional<Bytes> output{contract.run(input)};
@@ -180,7 +180,9 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     }
   } else {
     Bytes code{state_.get_code(message.destination)};
-    if (code.empty()) return res;
+    if (code.empty()) {
+      return res;
+    }
 
     evmc::bytes32 code_hash{state_.get_code_hash(message.destination)};
 
@@ -243,8 +245,9 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code,
     instr = instr->fn(instr, *state);
   }
 
-  evmc::result res{evmc::make_result(state->status, state->gas_left,
-                                     &state->memory[state->output_offset], state->output_size)};
+  const uint8_t* output_data{state->output_size ? &state->memory[state->output_offset] : nullptr};
+  evmc::result res{
+      evmc::make_result(state->status, state->gas_left, output_data, state->output_size)};
 
   ExecutionStatePool::instance().release();
   address_stack_.pop();
@@ -355,13 +358,15 @@ void EvmHost::selfdestruct(const evmc::address& address,
 evmc::result EvmHost::call(const evmc_message& message) noexcept {
   if (message.kind == EVMC_CREATE || message.kind == EVMC_CREATE2) {
     evmc::result res{evm_.create(message)};
-    if (res.status_code == EVMC_SUCCESS) {
-      // https://eips.ethereum.org/EIPS/eip-211
+
+    // https://eips.ethereum.org/EIPS/eip-211
+    if (res.status_code == EVMC_REVERT) {
+      // Go Ethereum returns CREATE output only in case of REVERT
+      return res;
+    } else {
       evmc::result res_with_no_output{res.status_code, res.gas_left, nullptr, 0};
       res_with_no_output.create_address = res.create_address;
       return res_with_no_output;
-    } else {
-      return res;
     }
   } else {
     return evm_.call(message);

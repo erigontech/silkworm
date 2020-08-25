@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
     if (block_num % 1000 == 0) {
       absl::Time t2{absl::Now()};
       std::cout << "Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1)
-                << " s\n";
+                << " s" << std::endl;
       t1 = t2;
     }
   }

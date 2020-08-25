@@ -25,12 +25,23 @@ TEST_CASE("Padding") {
   CHECK(to_hex(right_pad(from_hex("5a0b54d5dc17e0aadc383d2db4"), 3)) ==
         "5a0b54d5dc17e0aadc383d2db4");
 
+  CHECK(to_hex(left_pad(from_hex("a5"), 3)) == "0000a5");
+  CHECK(to_hex(left_pad(from_hex("5a0b54d5dc17e0aadc383d2db4"), 3)) ==
+        "5a0b54d5dc17e0aadc383d2db4");
+
   ByteView repeatedly_padded{right_pad(from_hex("b8c4"), 3)};
   CHECK(to_hex(repeatedly_padded) == "b8c400");
   repeatedly_padded.remove_prefix(1);
   CHECK(to_hex(repeatedly_padded) == "c400");
   repeatedly_padded = right_pad(repeatedly_padded, 4);
   CHECK(to_hex(repeatedly_padded) == "c4000000");
+
+  repeatedly_padded = left_pad(from_hex("b8c4"), 3);
+  CHECK(to_hex(repeatedly_padded) == "00b8c4");
+  repeatedly_padded.remove_suffix(1);
+  CHECK(to_hex(repeatedly_padded) == "00b8");
+  repeatedly_padded = left_pad(repeatedly_padded, 4);
+  CHECK(to_hex(repeatedly_padded) == "000000b8");
 }
 
 TEST_CASE("Zeroless view") {

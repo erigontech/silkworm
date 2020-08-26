@@ -20,10 +20,3 @@ hunter_config(
     URL https://github.com/chfast/ethash/archive/v0.5.2.tar.gz
     SHA1 8d2859a9d09721ed7007007bd59a77c0bd9b2bee
 )
-
-hunter_config(
-    intx
-    VERSION 0.5.0
-    URL https://github.com/chfast/intx/archive/v0.5.0.tar.gz
-    SHA1 7f917cfe9046278d348a5cf36c20f9847d351807
-)

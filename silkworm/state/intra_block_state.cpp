@@ -93,8 +93,11 @@ void IntraBlockState::create_contract(const evmc::address& address) {
   }
 
   if (!prev_incarnation) {
-    // TODO[Constantinople] read previous incarnation from the DB instead
-    prev_incarnation = 0;
+    if (db_) {
+      prev_incarnation = db_->read_account_incarnation(address);
+    } else {
+      prev_incarnation = 0;
+    }
   }
 
   created.current->incarnation = *prev_incarnation + 1;

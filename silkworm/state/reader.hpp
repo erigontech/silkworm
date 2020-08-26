@@ -34,6 +34,8 @@ class Reader {
   evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
                              const evmc::bytes32& key) const;
 
+  uint64_t read_account_incarnation(const evmc::address& address) const;
+
  private:
   db::Database& db_;
   uint64_t block_number_{0};

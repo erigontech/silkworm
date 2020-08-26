@@ -61,16 +61,11 @@ set(
   "Default curve: one of ALT_BN128, BN128, EDWARDS, MNT4, MNT6"
   FORCE
 )
-option(
-  WITH_PROCPS
-  "Use procps for memory profiling"
-  OFF
-)
-option(
-  IS_LIBFF_PARENT
-  "Install submodule dependencies if caller originates from here"
-  OFF
-)
+option(WITH_PROCPS "" OFF)
+option(IS_LIBFF_PARENT "" OFF)
+if(MSVC)
+  option(MPIR_INSTEAD_OF_GMP "" ON)
+endif()
 add_subdirectory(libff)
 
 # Compiler options

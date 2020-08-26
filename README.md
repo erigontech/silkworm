@@ -16,9 +16,9 @@ as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth
 
 ## Linux & macOS
 Building silkworm requires:
+* C++17 compiler (GCC or Clang)
 * [CMake](http://cmake.org)
 * [GMP](http://gmplib.org) (`sudo apt-get install libgmp3-dev` or `brew install gmp`)
-* C++17 compiler (Clang or GCC)
 
 Once the prerequisites are installed, bootstrap cmake build by running
 ```
@@ -40,10 +40,13 @@ or run tests
 ```
 ./tests
 ```
-## Windows (Visual Studio Community Edition 2019)
-* Download [GMP](https://github.com/ShiftMediaProject/gmp/releases) and add it to your `INCLUDE` and `PATH` environment variables.
-* Install [Visual Studio](https://www.visualstudio.com/downloads/). Community edition is fine.
+## Windows
+* Install [Visual Studio](https://www.visualstudio.com/downloads) 2019. Community edition is fine.
 * Make sure your setup includes CMake support and Windows 10 SDK.
+* Install [vcpkg](https://github.com/microsoft/vcpkg#quick-start-windows).
+* `.\vcpkg\vcpkg install mpir:x64-windows`
+* Add <VCPKG_ROOT>\installed\x64-windows\include to your `INCLUDE` environment variable.
+* Add <VCPKG_ROOT>\installed\x64-windows\bin to your `PATH` environment variable.
 * Open Visual Studio and select File -> CMake... 
 * Browse the folder where you have cloned this repository and select the file CMakeLists.txt
 * Let CMake cache generation complete (it may take several minutes)

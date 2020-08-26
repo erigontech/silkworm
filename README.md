@@ -43,7 +43,7 @@ or run tests
 ## Windows
 * Install [Visual Studio](https://www.visualstudio.com/downloads) 2019. Community edition is fine.
 * Make sure your setup includes CMake support and Windows 10 SDK.
-* Install [vcpkg][https://github.com/microsoft/vcpkg#quick-start-windows].
+* Install [vcpkg](https://github.com/microsoft/vcpkg#quick-start-windows).
 * `.\vcpkg\vcpkg install mpir:x64-windows`
 * Add <VCPKG_ROOT>\installed\x64-windows\include to your `INCLUDE` environment variable.
 * Add <VCPKG_ROOT>\installed\x64-windows\bin to your `PATH` environment variable.

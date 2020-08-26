@@ -19,6 +19,7 @@
 #include <absl/flags/usage.h>
 #include <absl/time/time.h>
 
+#include <filesystem>
 #include <iostream>
 #include <silkworm/db/lmdb.hpp>
 #include <silkworm/db/util.hpp>
@@ -36,6 +37,14 @@ int main(int argc, char* argv[]) {
   absl::SetProgramUsageMessage(
       "Executes Ethereum blocks and compares resulting change sets against DB.");
   absl::ParseCommandLine(argc, argv);
+
+  if (!std::filesystem::exists(absl::GetFlag(FLAGS_db))) {
+    std::cerr << absl::GetFlag(FLAGS_db) << " does not exist.\n";
+    std::cerr << "Use --db flag to point to a Turbo-Geth populated chaindata.\n";
+    return -1;
+  }
+
+  std::cout << "Checking change sets in " << absl::GetFlag(FLAGS_db) << "\n";
 
   using namespace silkworm;
 
@@ -77,14 +86,14 @@ int main(int argc, char* argv[]) {
       std::cerr << processor.cumulative_gas_used() << '\n';
       std::cerr << "vs expected\n";
       std::cerr << bh->block.header.gas_used << '\n';
-      return -1;
+      return -2;
     }
 
     if (chain.config().has_byzantium(block_num)) {
       evmc::bytes32 receipt_root{trie::root_hash(receipts)};
       if (receipt_root != bh->block.header.receipts_root) {
         std::cerr << "Receipt root mismatch for block " << block_num << " 😖\n";
-        return -2;
+        return -3;
       }
     }
 
@@ -113,7 +122,7 @@ int main(int argc, char* argv[]) {
       } else {
         std::cerr << "Nil DB account changes\n";
       }
-      return -3;
+      return -4;
     }
 
     Bytes db_storage_changes{db.get_storage_changes(block_num)};
@@ -126,7 +135,7 @@ int main(int argc, char* argv[]) {
       std::cerr << to_hex(calculated_storage_changes) << "\n";
       std::cerr << "vs DB\n";
       std::cerr << to_hex(db_storage_changes) << "\n";
-      return -4;
+      return -5;
     }
 
     if (block_num % 1000 == 0) {

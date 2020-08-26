@@ -177,19 +177,19 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
 
   boost::multiprecision::cpp_int base{};
   if (base_len) {
-    import_bits(base, &input[0], &input[base_len]);
+    import_bits(base, input.data(), input.data() + base_len);
     input.remove_prefix(base_len);
   }
 
   boost::multiprecision::cpp_int exponent{};
   if (exponent_len) {
-    import_bits(exponent, &input[0], &input[exponent_len]);
+    import_bits(exponent, input.data(), input.data() + exponent_len);
     input.remove_prefix(exponent_len);
   }
 
   boost::multiprecision::cpp_int modulus{};
   if (modulus_len) {
-    import_bits(modulus, &input[0], &input[modulus_len]);
+    import_bits(modulus, input.data(), input.data() + modulus_len);
   }
 
   if (modulus == 0) {

@@ -20,7 +20,7 @@ Building silkworm requires:
 * [CMake](http://cmake.org)
 * [GMP](http://gmplib.org) (`sudo apt-get install libgmp3-dev` or `brew install gmp`)
 
-Once the prerequisites are installed, bootstrap cmake build by running
+Once the prerequisites are installed, bootstrap cmake by running
 ```
 mkdir build
 cd build
@@ -30,7 +30,7 @@ cmake ..
 
 Then run the build itself
 ```
-cmake --build . -j
+make -j
 ```
 Now you can check database changes (produced by [Turbo-Geth](https://github.com/ledgerwatch/turbo-geth)) with silkworm
 ```

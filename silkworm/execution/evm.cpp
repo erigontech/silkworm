@@ -332,7 +332,11 @@ size_t EvmHost::get_code_size(const evmc::address& address) const noexcept {
 }
 
 evmc::bytes32 EvmHost::get_code_hash(const evmc::address& address) const noexcept {
-  return evm_.state().get_code_hash(address);
+  if (evm_.state().dead(address)) {
+    return {};
+  } else {
+    return evm_.state().get_code_hash(address);
+  }
 }
 
 size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,

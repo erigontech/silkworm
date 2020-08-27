@@ -122,7 +122,6 @@ int main(int argc, char* argv[]) {
       } else {
         std::cerr << "Nil DB account changes\n";
       }
-      return -4;
     }
 
     Bytes db_storage_changes{db.get_storage_changes(block_num)};
@@ -135,7 +134,6 @@ int main(int argc, char* argv[]) {
       std::cerr << to_hex(calculated_storage_changes) << "\n";
       std::cerr << "vs DB\n";
       std::cerr << to_hex(db_storage_changes) << "\n";
-      return -5;
     }
 
     if (block_num % 1000 == 0) {
@@ -146,6 +144,6 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  std::cout << "Blocks [" << from << "; " << block_num << ") have been checked 😅\n";
+  std::cout << "Blocks [" << from << "; " << block_num << ") have been checked\n";
   return 0;
 }

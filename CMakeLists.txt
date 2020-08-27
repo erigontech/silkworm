@@ -120,8 +120,12 @@ hunter_add_package(Boost COMPONENTS system filesystem chrono)
 find_package(Boost CONFIG REQUIRED COMPONENTS system filesystem chrono)
 hunter_add_package(CLI11)
 find_package(CLI11 CONFIG REQUIRED)
+
 add_executable(check_senders cmd/check_senders.cpp)
 target_link_libraries(check_senders PRIVATE silkworm Boost::boost Boost::filesystem Boost::chrono CLI11::CLI11)
+
+add_executable(check_db cmd/check_db.cpp)
+target_link_libraries(check_db PRIVATE silkworm Boost::boost Boost::filesystem Boost::chrono CLI11::CLI11)
 
 # Unit tests
 enable_testing()

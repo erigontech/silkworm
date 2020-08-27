@@ -18,67 +18,70 @@
 
 namespace silkworm::db {
 
-    ChainDb* ChainDb::instance()
-    {
-        ChainDb* sin = singleton_.load();
-        if (!sin) {
-            boost::mutex::scoped_lock l(singleton_mtx_);
-            sin = singleton_.load();
-            if (!sin) {
-                sin = new ChainDb();
-                singleton_.store(sin);
-            }
-        }
-        return sin;
-    }
+    //boost::atomic<ChainDb*> ChainDb::singleton_;
+    //boost::mutex ChainDb::singleton_mtx_;
 
-    void ChainDb::open(const char* path, const ChainDbOptions& options)
-    {
-        try
-        {
-            boost::mutex::scoped_lock l(singleton_mtx_);
-            if (env_.has_value() && env_->handle()) {
-                throw std::runtime_error("Can't re-open");
-            }
-            env_ = lmdb::env::create();
-            env_->set_max_dbs(options.max_buckets);
-            env_->set_mapsize(options.map_size);
-            env_->set_flags(MDB_NORDAHEAD);
+    //ChainDb* ChainDb::instance()
+    //{
+    //    ChainDb* sin = singleton_.load();
+    //    if (!sin) {
+    //        boost::mutex::scoped_lock l(singleton_mtx_);
+    //        sin = singleton_.load();
+    //        if (!sin) {
+    //            sin = new ChainDb();
+    //            singleton_.store(sin);
+    //        }
+    //    }
+    //    return sin;
+    //}
 
-            if (options.no_sync) {
-                env_->set_flags(MDB_NOSYNC);
-            }
-            if (options.no_meta_sync) {
-                env_->set_flags(MDB_NOMETASYNC);
-            }
-            if (options.write_map) {
-                env_->set_flags(MDB_WRITEMAP);
-            }
-            if (options.no_sub_dir) {
-                env_->set_flags(MDB_NOSUBDIR);
-            }
-            env_->open(path, 0, lmdb::env::default_mode);
-        }
-        catch (const std::exception& ex)
-        {
-            // Something gone wrong
-            // TODO(Andrea) log error
-            env_.reset();
-        }
+    //void ChainDb::open(const char* path, const ChainDbOptions& options)
+    //{
+    //    try
+    //    {
+    //        boost::mutex::scoped_lock l(singleton_mtx_);
+    //        if (env_.has_value() && env_->handle()) {
+    //            throw std::runtime_error("Can't re-open");
+    //        }
+    //        env_ = lmdb::env::create();
+    //        env_->set_max_dbs(options.max_buckets);
+    //        env_->set_mapsize(options.map_size);
+    //        env_->set_flags(MDB_NORDAHEAD);
 
-    }
+    //        if (options.no_sync) {
+    //            env_->set_flags(MDB_NOSYNC);
+    //        }
+    //        if (options.no_meta_sync) {
+    //            env_->set_flags(MDB_NOMETASYNC);
+    //        }
+    //        if (options.write_map) {
+    //            env_->set_flags(MDB_WRITEMAP);
+    //        }
+    //        if (options.no_sub_dir) {
+    //            env_->set_flags(MDB_NOSUBDIR);
+    //        }
+    //        env_->open(path, 0, lmdb::env::default_mode);
+    //    }
+    //    catch (const std::exception& ex)
+    //    {
+    //        // Something gone wrong
+    //        // TODO(Andrea) log error
+    //        env_.reset();
+    //    }
 
-    void ChainDb::close()
-    {
-        boost::mutex::scoped_lock l(singleton_mtx_);
-        if (env_.has_value() && env_->handle()) {
-            env_->close();
-        }
-        env_.reset();
-    }
+    //}
 
-    bool ChainDb::is_opened() { return (env_.has_value() && env_.value().handle()); }
+    //void ChainDb::close()
+    //{
+    //    boost::mutex::scoped_lock l(singleton_mtx_);
+    //    if (env_.has_value() && env_->handle()) {
+    //        env_->close();
+    //    }
+    //    env_.reset();
+    //}
 
-    std::optional<lmdb::env>& ChainDb::get_env() { return env_; }
+    //bool ChainDb::is_opened() { return (env_.has_value() && env_.value().handle()); }
+
+    //std::optional<lmdb::env>& ChainDb::get_env() { return env_; }
 
 }  // namespace silkworm::db

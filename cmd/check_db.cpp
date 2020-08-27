@@ -69,10 +69,9 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    // Initialize db
-    db::ChainDb* db = db::ChainDb::instance();
-    db->open(po_db_path.c_str());
-    db->close();
+    silkworm::db::Env env{};
+    int rc{ 0 };
+    env.create(silkworm::db::Env::default_flags, &rc);
 
-    return errorCode;
+    return rc;
 }

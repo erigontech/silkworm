@@ -188,6 +188,8 @@ extern "C" {
   /* This is simply an alias for blake2b */
   int blake2( void *out, size_t outlen, const void *in, size_t inlen, const void *key, size_t keylen );
 
+  void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES], size_t r );
+
 #if defined(__cplusplus)
 }
 #endif

@@ -130,7 +130,7 @@ namespace silkworm::db {
 
         template <typename T>
         struct ReferenceReleaseHandler {
-            static int release(T arg) {
+            static int release(T* arg) {
                 (void)arg;
                 return MDB_SUCCESS;
             }

@@ -338,6 +338,8 @@ void IntraBlockState::add_log(const Log& log) { logs_.push_back(log); }
 
 void IntraBlockState::add_refund(uint64_t addend) { refund_ += addend; }
 
+void IntraBlockState::subtract_refund(uint64_t subtrahend) { refund_ -= subtrahend; }
+
 uint64_t IntraBlockState::total_refund() const {
   return refund_ + fee::kRSelfDestruct * self_destructs_.size();
 }

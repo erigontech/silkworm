@@ -26,6 +26,12 @@ namespace silkworm {
 // Fee schedule—see Appendix G of the Yellow Paper
 // https://ethereum.github.io/yellowpaper/paper.pdf
 namespace fee {
+constexpr uint64_t kGSLoadTangerineWhistle{200};
+constexpr uint64_t kGSLoadIstanbul{800};
+
+constexpr uint64_t kGSSet{20'000};
+constexpr uint64_t kGSReset{5'000};
+
 constexpr uint64_t kRSClear{15'000};
 constexpr uint64_t kRSelfDestruct{24'000};
 

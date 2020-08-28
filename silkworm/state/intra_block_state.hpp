@@ -102,6 +102,7 @@ class IntraBlockState {
   const std::vector<Log>& logs() const { return logs_; }
 
   void add_refund(uint64_t addend);
+  void subtract_refund(uint64_t subtrahend);
 
   uint64_t total_refund() const;
 

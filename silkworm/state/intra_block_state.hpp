@@ -107,7 +107,7 @@ class IntraBlockState {
   friend class state::StorageDelta;
 
   struct Storage {
-    absl::flat_hash_map<evmc::bytes32, evmc::bytes32> original;
+    absl::flat_hash_map<evmc::bytes32, evmc::bytes32> initial;
     absl::flat_hash_map<evmc::bytes32, evmc::bytes32> current;
   };
 

@@ -39,7 +39,7 @@ state::Object* IntraBlockState::get_object(const evmc::address& address) const {
   }
 
   auto& obj{objects_[address]};
-  obj.original = *account;
+  obj.initial = *account;
   obj.current = *account;
   return &obj;
 }
@@ -80,12 +80,12 @@ void IntraBlockState::create_contract(const evmc::address& address) {
   std::optional<uint64_t> prev_incarnation{};
   const state::Object* prev{get_object(address)};
   if (prev) {
-    created.original = prev->original;
+    created.initial = prev->initial;
     if (prev->current) {
       created.current->balance = prev->current->balance;
       prev_incarnation = prev->current->incarnation;
-    } else if (prev->original) {
-      prev_incarnation = prev->original->incarnation;
+    } else if (prev->initial) {
+      prev_incarnation = prev->initial->incarnation;
     }
     journal_.push_back(std::make_unique<state::UpdateDelta>(address, *prev));
   } else {
@@ -229,12 +229,12 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
   }
 
   uint64_t incarnation{obj->current->incarnation};
-  if (!obj->original || obj->original->incarnation != incarnation) {
+  if (!obj->initial || obj->initial->incarnation != incarnation) {
     return {};
   }
 
-  it = storage.original.find(key);
-  if (it != storage.original.end()) {
+  it = storage.initial.find(key);
+  if (it != storage.initial.end()) {
     return it->second;
   }
 
@@ -243,7 +243,7 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
     val = db_->read_storage(address, incarnation, key);
   }
 
-  storage.original[key] = val;
+  storage.initial[key] = val;
   return val;
 }
 
@@ -273,26 +273,26 @@ void IntraBlockState::write_block(state::Writer& state_writer) {
 
     for (const auto& entry : storage.current) {
       const evmc::bytes32& key{entry.first};
-      const evmc::bytes32& val{entry.second};
+      const evmc::bytes32& current_val{entry.second};
 
       uint64_t incarnation{obj.current->incarnation};
 
-      evmc::bytes32 original_val{};
-      if (obj.original && obj.original->incarnation == incarnation) {
-        auto it2{storage.original.find(key)};
-        if (it2 != storage.original.end()) {
-          original_val = it2->second;
+      evmc::bytes32 initial_val{};
+      if (obj.initial && obj.initial->incarnation == incarnation) {
+        auto it2{storage.initial.find(key)};
+        if (it2 != storage.initial.end()) {
+          initial_val = it2->second;
         }
       }
 
-      state_writer.write_storage(address, incarnation, key, original_val, val);
+      state_writer.write_storage(address, incarnation, key, initial_val, current_val);
     }
   }
 
   for (const auto& entry : objects_) {
     const evmc::address& address{entry.first};
     const state::Object& obj{entry.second};
-    state_writer.write_account(address, obj.original, obj.current);
+    state_writer.write_account(address, obj.initial, obj.current);
   }
 }
 

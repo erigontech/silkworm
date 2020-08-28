@@ -43,6 +43,6 @@ StorageDelta::StorageDelta(evmc::address address, evmc::bytes32 key, evmc::bytes
     : address_{std::move(address)}, key_{std::move(key)}, previous_{std::move(previous)} {}
 
 void StorageDelta::revert(IntraBlockState& state) {
-  state.storage_[address_].current[key_] = previous_;
+  state.storage_[address_][key_].current = previous_;
 }
 }  // namespace silkworm::state

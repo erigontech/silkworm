@@ -223,9 +223,9 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
 
   Storage& storage{storage_[address]};
 
-  auto it{storage.current.find(key)};
-  if (it != storage.current.end()) {
-    return it->second;
+  auto it{storage.find(key)};
+  if (it != storage.end()) {
+    return it->second.current;
   }
 
   uint64_t incarnation{obj->current->incarnation};
@@ -233,17 +233,13 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
     return {};
   }
 
-  it = storage.initial.find(key);
-  if (it != storage.initial.end()) {
-    return it->second;
-  }
-
   evmc::bytes32 val{};
   if (db_) {
     val = db_->read_storage(address, incarnation, key);
   }
 
-  storage.initial[key] = val;
+  storage_[address][key].initial = val;
+  storage_[address][key].current = val;
   return val;
 }
 
@@ -253,7 +249,7 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
   if (prev == value) {
     return;
   }
-  storage_[address].current[key] = value;
+  storage_[address][key].current = value;
   journal_.push_back(std::make_unique<state::StorageDelta>(address, key, prev));
 }
 
@@ -271,21 +267,11 @@ void IntraBlockState::write_block(state::Writer& state_writer) {
       continue;
     }
 
-    for (const auto& entry : storage.current) {
+    for (const auto& entry : storage) {
       const evmc::bytes32& key{entry.first};
-      const evmc::bytes32& current_val{entry.second};
-
+      const StorageValue& val{entry.second};
       uint64_t incarnation{obj.current->incarnation};
-
-      evmc::bytes32 initial_val{};
-      if (obj.initial && obj.initial->incarnation == incarnation) {
-        auto it2{storage.initial.find(key)};
-        if (it2 != storage.initial.end()) {
-          initial_val = it2->second;
-        }
-      }
-
-      state_writer.write_storage(address, incarnation, key, initial_val, current_val);
+      state_writer.write_storage(address, incarnation, key, val.initial, val.current);
     }
   }
 

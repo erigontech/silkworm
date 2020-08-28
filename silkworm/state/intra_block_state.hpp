@@ -106,10 +106,12 @@ class IntraBlockState {
   friend class state::TouchDelta;
   friend class state::StorageDelta;
 
-  struct Storage {
-    absl::flat_hash_map<evmc::bytes32, evmc::bytes32> initial;
-    absl::flat_hash_map<evmc::bytes32, evmc::bytes32> current;
+  struct StorageValue {
+    evmc::bytes32 initial{};
+    evmc::bytes32 current{};
   };
+
+  using Storage = absl::flat_hash_map<evmc::bytes32, StorageValue>;
 
   state::Object* get_object(const evmc::address& address) const;
   state::Object& get_or_create_object(const evmc::address& address);

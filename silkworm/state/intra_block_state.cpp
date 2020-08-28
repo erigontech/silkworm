@@ -214,23 +214,35 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) {
   std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
 }
 
-evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
-                                           const evmc::bytes32& key) const {
+evmc::bytes32 IntraBlockState::get_current_storage(const evmc::address& address,
+                                                   const evmc::bytes32& key) const {
+  const StorageValue* val{get_storage(address, key)};
+  return val ? val->current : evmc::bytes32{};
+}
+
+evmc::bytes32 IntraBlockState::get_original_storage(const evmc::address& address,
+                                                    const evmc::bytes32& key) const {
+  const StorageValue* val{get_storage(address, key)};
+  return val ? val->original : evmc::bytes32{};
+}
+
+const IntraBlockState::StorageValue* IntraBlockState::get_storage(const evmc::address& address,
+                                                                  const evmc::bytes32& key) const {
   auto* obj{get_object(address)};
   if (!obj || !obj->current) {
-    return {};
+    return nullptr;
   }
 
   Storage& storage{storage_[address]};
 
   auto it{storage.find(key)};
   if (it != storage.end()) {
-    return it->second.current;
+    return &it->second;
   }
 
   uint64_t incarnation{obj->current->incarnation};
   if (!obj->initial || obj->initial->incarnation != incarnation) {
-    return {};
+    return nullptr;
   }
 
   evmc::bytes32 val{};
@@ -238,14 +250,18 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address,
     val = db_->read_storage(address, incarnation, key);
   }
 
-  storage_[address][key].initial = val;
-  storage_[address][key].current = val;
-  return val;
+  IntraBlockState::StorageValue& entry{storage_[address][key]};
+
+  entry.initial = val;
+  entry.original = val;
+  entry.current = val;
+
+  return &entry;
 }
 
 void IntraBlockState::set_storage(const evmc::address& address, const evmc::bytes32& key,
                                   const evmc::bytes32& value) {
-  evmc::bytes32 prev{get_storage(address, key)};
+  evmc::bytes32 prev{get_current_storage(address, key)};
   if (prev == value) {
     return;
   }
@@ -297,6 +313,15 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
   journal_.resize(snapshot.journal_size_);
   logs_.resize(snapshot.log_size_);
   refund_ = snapshot.refund_;
+}
+
+void IntraBlockState::finalize_transaction() {
+  for (auto& x : storage_) {
+    for (auto& entry : x.second) {
+      StorageValue& val{entry.second};
+      val.original = val.current;
+    }
+  }
 }
 
 void IntraBlockState::clear_journal_and_substate() {

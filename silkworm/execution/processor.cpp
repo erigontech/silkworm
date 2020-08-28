@@ -116,6 +116,8 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
     evm_.state().destruct_touched_dead();
   }
 
+  evm_.state().finalize_transaction();
+
   cumulative_gas_used_ += gas_used;
 
   return {

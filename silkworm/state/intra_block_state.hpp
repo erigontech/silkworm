@@ -79,7 +79,11 @@ class IntraBlockState {
   evmc::bytes32 get_code_hash(const evmc::address& address) const;
   void set_code(const evmc::address& address, ByteView code);
 
-  evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const;
+  evmc::bytes32 get_current_storage(const evmc::address& address, const evmc::bytes32& key) const;
+
+  // https://eips.ethereum.org/EIPS/eip-2200
+  evmc::bytes32 get_original_storage(const evmc::address& address, const evmc::bytes32& key) const;
+
   void set_storage(const evmc::address& address, const evmc::bytes32& key,
                    const evmc::bytes32& value);
 
@@ -87,6 +91,8 @@ class IntraBlockState {
 
   Snapshot take_snapshot() const;
   void revert_to_snapshot(const Snapshot& snapshot);
+
+  void finalize_transaction();
 
   // See Section 6.1 "Substate" of the Yellow Paper
   void clear_journal_and_substate();
@@ -107,11 +113,14 @@ class IntraBlockState {
   friend class state::StorageDelta;
 
   struct StorageValue {
-    evmc::bytes32 initial{};
-    evmc::bytes32 current{};
+    evmc::bytes32 initial{};   // value at the begining of the block
+    evmc::bytes32 original{};  // value at the begining of the transaction; see EIP-2200
+    evmc::bytes32 current{};   // current value
   };
 
   using Storage = absl::flat_hash_map<evmc::bytes32, StorageValue>;
+
+  const StorageValue* get_storage(const evmc::address& address, const evmc::bytes32& key) const;
 
   state::Object* get_object(const evmc::address& address) const;
   state::Object& get_or_create_object(const evmc::address& address);

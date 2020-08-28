@@ -295,12 +295,12 @@ bool EvmHost::account_exists(const evmc::address& address) const noexcept {
 
 evmc::bytes32 EvmHost::get_storage(const evmc::address& address,
                                    const evmc::bytes32& key) const noexcept {
-  return evm_.state().get_storage(address, key);
+  return evm_.state().get_current_storage(address, key);
 }
 
 evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evmc::bytes32& key,
                                          const evmc::bytes32& value) noexcept {
-  const evmc::bytes32& prev_val{evm_.state().get_storage(address, key)};
+  const evmc::bytes32& prev_val{evm_.state().get_current_storage(address, key)};
 
   if (prev_val == value) {
     return EVMC_STORAGE_UNCHANGED;

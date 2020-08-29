@@ -32,11 +32,11 @@ class Writer {
 
   Writer() = default;
 
-  void write_account(const evmc::address& address, std::optional<Account> original,
-                     std::optional<Account> committed);
+  void write_account(const evmc::address& address, std::optional<Account> initial,
+                     std::optional<Account> current);
 
   void write_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
-                     const evmc::bytes32& original, const evmc::bytes32& committed);
+                     const evmc::bytes32& initial, const evmc::bytes32& current);
 
   const db::AccountChanges& account_changes() const { return account_changes_; }
   const db::StorageChanges& storage_changes() const { return storage_changes_; }

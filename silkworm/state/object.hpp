@@ -24,7 +24,7 @@
 namespace silkworm::state {
 
 struct Object {
-  std::optional<Account> original;
+  std::optional<Account> initial;
   std::optional<Account> current;
   std::optional<Bytes> code;
 };

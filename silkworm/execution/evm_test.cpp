@@ -282,4 +282,33 @@ TEST_CASE("CREATE should only return on failure") {
   evmc::bytes32 key0{};
   CHECK(is_zero(state.get_current_storage(contract_address, key0)));
 }
+
+// https://github.com/ethereum/EIPs/issues/684
+TEST_CASE("Contract overwrite") {
+  Block block{};
+  block.header.number = 7'753'545;
+
+  Bytes old_code{from_hex("6000")};
+  Bytes new_code{from_hex("6001")};
+
+  evmc::address caller{0x92a1d964b8fc79c5694343cc943c27a94a3be131_address};
+
+  evmc::address contract_address{create_address(caller, /*nonce=*/0)};
+
+  IntraBlockState state{nullptr};
+  state.set_code(contract_address, old_code);
+
+  BlockChain chain{nullptr};
+  EVM evm{chain, block, state};
+
+  Transaction txn{};
+  txn.from = caller;
+  txn.data = new_code;
+
+  uint64_t gas{100'000};
+  CallResult res{evm.execute(txn, gas)};
+
+  CHECK(res.status == EVMC_INVALID_INSTRUCTION);
+  CHECK(res.gas_left == 0);
+}
 }  // namespace silkworm

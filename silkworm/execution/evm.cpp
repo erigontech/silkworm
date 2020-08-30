@@ -81,6 +81,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
   if (state_.get_nonce(contract_addr) != 0 || state_.get_code_hash(contract_addr) != kEmptyHash) {
     // https://github.com/ethereum/EIPs/issues/684
     res.status_code = EVMC_INVALID_INSTRUCTION;
+    res.gas_left = 0;
     return res;
   }
 

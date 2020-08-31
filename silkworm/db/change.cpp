@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <boost/endian/conversion.hpp>
 #include <boost/iterator/counting_iterator.hpp>
+#include <cassert>
 #include <cstring>
 #include <silkworm/common/util.hpp>
 #include <tuple>

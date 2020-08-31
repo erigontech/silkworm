@@ -31,6 +31,6 @@ hunter_config(
 hunter_config(
   Boost
   VERSION 1.74.0
-  URL https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.7z
-  SHA1 2ce4b892d259daeb7b670959a204a24f338c2bf9
+  URL https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.tar.gz
+  SHA1 107cebeec706988639cf2932fc0ce43200de4c0a
 )

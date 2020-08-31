@@ -8,4 +8,4 @@
 [submodule "libff"]
 	path = libff
 	url = https://github.com/torquem-ch/libff.git
-	branch = mpir
+	branch = win

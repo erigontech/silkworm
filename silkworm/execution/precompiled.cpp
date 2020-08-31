@@ -286,8 +286,6 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept {
 
     accumulator = accumulator *
                   alt_bn128_miller_loop(alt_bn128_precompute_G1(*a), alt_bn128_precompute_G2(*b));
-
-    accumulator.print();
   }
 
   Bytes out(32, '\0');

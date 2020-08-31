@@ -32,21 +32,21 @@ Bytes Account::encode_for_storage(bool omit_code_hash) const {
   if (nonce != 0) {
     field_set = 1;
     ByteView be{rlp::big_endian(nonce)};
-    res.push_back(be.length());
+    res.push_back(static_cast<uint8_t>(be.length()));
     res.append(be);
   }
 
   if (balance != 0) {
     field_set |= 2;
     ByteView be{rlp::big_endian(balance)};
-    res.push_back(be.length());
+    res.push_back(static_cast<uint8_t>(be.length()));
     res.append(be);
   }
 
   if (incarnation != 0) {
     field_set |= 4;
     ByteView be{rlp::big_endian(incarnation)};
-    res.push_back(be.length());
+    res.push_back(static_cast<uint8_t>(be.length()));
     res.append(be);
   }
 

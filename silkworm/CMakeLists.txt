@@ -31,6 +31,10 @@ list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_compile_definitions(NATIVE_LITTLE_ENDIAN)
 
+if(MSVC)
+  add_compile_options(/W4)
+endif()
+
 add_library(silkworm ${SILKWORM_SRC})
 target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 

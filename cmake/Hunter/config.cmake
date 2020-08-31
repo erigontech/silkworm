@@ -27,10 +27,3 @@ hunter_config(
   URL https://github.com/torquem-ch/lmdb/archive/v0.9.26.tar.gz
   SHA1 ed1f187022ae44d51816400343e219c8a1c7ccd6
 )
-
-hunter_config(
-  Boost
-  VERSION 1.73.0
-  URL https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.gz
-  SHA1 c295292ef8b50aa3095115c810aabd9b6ed09b07
-)

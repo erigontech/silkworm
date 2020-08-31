@@ -35,4 +35,4 @@ build:
 
 test_script:
   - cd Build
-  - ctest
+  - ctest --output-on-failure

@@ -32,3 +32,7 @@ before_build:
 
 build:
   project: build\silkworm.sln
+
+test_script:
+  - cd Build
+  - ctest

@@ -140,14 +140,14 @@ TEST_CASE("BN_MUL") {
 TEST_CASE("SNARKV") {
   // empty input
   Bytes in{};
-  // std::optional<Bytes> out{snarkv_run(in)};
-  //  REQUIRE(out);
-  //  CHECK(to_hex(*out) == "0000000000000000000000000000000000000000000000000000000000000001");
+  std::optional<Bytes> out{snarkv_run(in)};
+  REQUIRE(out);
+  CHECK(to_hex(*out) == "0000000000000000000000000000000000000000000000000000000000000001");
 
   // input size is not a multiple of 192
-  // in = from_hex("ab");
-  //  out = snarkv_run(in);
-  // CHECK(!out);
+  in = from_hex("ab");
+  out = snarkv_run(in);
+  CHECK(!out);
 
   in = from_hex(
       "0f25929bcb43d5a57391564615c9e70a992b10eafa4db109709649cf48c50dd216da2f5cb6be7a0aa72c440c53c9"
@@ -159,10 +159,10 @@ TEST_CASE("SNARKV") {
       "35a9e71297e485b7aef312c21800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed0906"
       "89d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b12c85ea5db8c6deb4aab71808dcb408f"
       "e3d1e7690c43d37b4ce6cc0166fa7daa");
-  std::optional<Bytes> out{snarkv_run(in)};
+  out = snarkv_run(in);
   REQUIRE(out);
   CHECK(to_hex(*out) == "0000000000000000000000000000000000000000000000000000000000000001");
-  /*
+
   in = from_hex(
       "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000"
       "000000000000000000000000000000000002198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7"
@@ -172,7 +172,6 @@ TEST_CASE("SNARKV") {
   out = snarkv_run(in);
   REQUIRE(out);
   CHECK(to_hex(*out) == "0000000000000000000000000000000000000000000000000000000000000000");
-  */
 }
 
 // https://eips.ethereum.org/EIPS/eip-152#test-cases

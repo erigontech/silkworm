@@ -91,7 +91,7 @@ std::optional<Account> Database::get_account(const evmc::address& address, uint6
   auto key{full_view(address)};
   auto txn{begin_ro_transaction()};
 
-  std::optional<ByteView> encoded{find_in_history(*txn, /*storage=*/false, key, block_num)};
+  std::optional<ByteView> encoded{find_account_in_history(*txn, key, block_num)};
   if (!encoded) {
     auto state_bucket{txn->get_bucket(bucket::kPlainState)};
     encoded = state_bucket->get(key);
@@ -148,7 +148,7 @@ evmc::bytes32 Database::get_storage(const evmc::address& address, uint64_t incar
                                     const evmc::bytes32& key, uint64_t block_number) {
   auto composite_key{storage_key(address, incarnation, key)};
   auto txn{begin_ro_transaction()};
-  std::optional<ByteView> val{find_in_history(*txn, /*storage=*/true, composite_key, block_number)};
+  std::optional<ByteView> val{find_storage_in_history(*txn, composite_key, block_number)};
   if (!val) {
     auto bucket{txn->get_bucket(bucket::kPlainState)};
     val = bucket->get(composite_key);
@@ -162,23 +162,12 @@ evmc::bytes32 Database::get_storage(const evmc::address& address, uint64_t incar
   return res;
 }
 
-std::optional<ByteView> Database::find_in_history(Transaction& txn, bool storage, ByteView key,
-                                                  uint64_t block_number) {
-  auto history_name{storage ? bucket::kStorageHistory : bucket::kAccountHistory};
-  auto history_bucket{txn.get_bucket(history_name)};
+std::optional<ByteView> Database::find_account_in_history(Transaction& txn, ByteView key,
+                                                          uint64_t block_number) {
+  auto history_bucket{txn.get_bucket(bucket::kAccountHistory)};
   auto cursor{history_bucket->cursor()};
   std::optional<Entry> entry{cursor->seek(history_index_key(key, block_number))};
-  if (!entry) {
-    return {};
-  }
-
-  ByteView k{entry->key};
-  if (storage) {
-    if (k.substr(0, kAddressLength) != key.substr(0, kAddressLength) ||
-        k.substr(kAddressLength, kHashLength) != key.substr(kAddressLength + kIncarnationLength)) {
-      return {};
-    }
-  } else if (!has_prefix(k, key)) {
+  if (!entry || !has_prefix(entry->key, key)) {
     return {};
   }
 
@@ -187,23 +176,47 @@ std::optional<ByteView> Database::find_in_history(Transaction& txn, bool storage
     return {};
   }
 
-  if (res->new_record && !storage) {
+  if (res->new_record) {
     return ByteView{};
   }
 
-  auto change_name{storage ? bucket::kStorageChanges : bucket::kAccountChanges};
-  auto change_bucket{txn.get_bucket(change_name)};
-
+  auto change_bucket{txn.get_bucket(bucket::kAccountChanges)};
   uint64_t change_block{res->change_block};
   std::optional<ByteView> changes{change_bucket->get(encode_timestamp(change_block))};
   if (!changes) {
     return {};
   }
 
-  if (storage) {
-    return StorageChanges::find(*changes, key);
-  } else {
-    return AccountChanges::find(*changes, key);
+  return AccountChanges::find(*changes, key);
+}
+
+std::optional<ByteView> Database::find_storage_in_history(Transaction& txn, ByteView key,
+                                                          uint64_t block_number) {
+  auto history_bucket{txn.get_bucket(bucket::kStorageHistory)};
+  auto cursor{history_bucket->cursor()};
+  std::optional<Entry> entry{cursor->seek(history_index_key(key, block_number))};
+  if (!entry) {
+    return {};
   }
+
+  ByteView k{entry->key};
+  if (k.substr(0, kAddressLength) != key.substr(0, kAddressLength) ||
+      k.substr(kAddressLength, kHashLength) != key.substr(kAddressLength + kIncarnationLength)) {
+    return {};
+  }
+
+  std::optional<history_index::SearchResult> res{history_index::find(entry->value, block_number)};
+  if (!res) {
+    return {};
+  }
+
+  auto change_bucket{txn.get_bucket(bucket::kStorageChanges)};
+  uint64_t change_block{res->change_block};
+  std::optional<ByteView> changes{change_bucket->get(encode_timestamp(change_block))};
+  if (!changes) {
+    return {};
+  }
+
+  return StorageChanges::find(*changes, key);
 }
 }  // namespace silkworm::db

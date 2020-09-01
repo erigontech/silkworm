@@ -105,9 +105,15 @@ class Database {
   Database() = default;
 
  private:
-  // Turbo-Geth FindByHistory
-  std::optional<ByteView> find_in_history(Transaction& txn, bool storage, ByteView key,
-                                          uint64_t block_number);
+  // Tries to find a historical (non-current) value of an account as of a given block.
+  // See also Turbo-Geth FindByHistory.
+  std::optional<ByteView> find_account_in_history(Transaction& txn, ByteView key,
+                                                  uint64_t block_number);
+
+  // Tries to find a historical (non-current) value of a storage as of a given block.
+  // See also Turbo-Geth FindByHistory.
+  std::optional<ByteView> find_storage_in_history(Transaction& txn, ByteView key,
+                                                  uint64_t block_number);
 };
 }  // namespace silkworm::db
 

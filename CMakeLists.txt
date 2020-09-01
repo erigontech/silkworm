@@ -37,6 +37,10 @@ HunterGate(
 
 project(silkworm)
 
+if(MSVC)
+  add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+endif()
+
 hunter_add_package(abseil)
 find_package(absl CONFIG REQUIRED)
 
@@ -70,10 +74,11 @@ add_subdirectory(libff)
 
 # Compiler options
 if(MSVC)
-  add_compile_options(/W4)
   add_compile_options(/wd5030) # Silence warnings about gnu attributes
   add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
   add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
+
+  add_link_options(/ignore:4099)
 
   set(CMAKE_EXE_LINKER_FLAGS "/STACK:10000000")
 else()

@@ -27,6 +27,7 @@
 #include <ethash/keccak.hpp>
 #include <iterator>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
+#include <limits>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/crypto/snark.hpp>
@@ -313,7 +314,7 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
 
   blake2b_state state{};
   if (f) {
-    state.f[0] = -1;
+    state.f[0] = std::numeric_limits<uint64_t>::max();
   }
 
   static_assert(boost::endian::order::native == boost::endian::order::little);

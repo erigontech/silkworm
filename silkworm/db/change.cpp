@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <boost/endian/conversion.hpp>
 #include <boost/iterator/counting_iterator.hpp>
+#include <cassert>
 #include <cstring>
 #include <silkworm/common/util.hpp>
 #include <tuple>
@@ -220,7 +221,7 @@ Bytes StorageChanges::encode() const {
       if (incarnation != kDefaultIncarnation) {
         size_t pos{non_default_incarnations.size()};
         non_default_incarnations.resize(pos + kIncarnationLength + 4);
-        store_big_u32(&non_default_incarnations[pos], contracts.size());
+        store_big_u32(&non_default_incarnations[pos], static_cast<uint32_t>(contracts.size()));
         store_big_u64(&non_default_incarnations[pos + 4], incarnation);
         ++num_of_non_default_incarnations;
       }
@@ -230,19 +231,19 @@ Bytes StorageChanges::encode() const {
     contracts.back().keys.emplace_back(&entry.first[kAddressLen + kIncarnationLength], kHashLen);
     contracts.back().vals.emplace_back(entry.second);
 
-    len_of_vals += entry.second.length();
+    len_of_vals += static_cast<uint32_t>(entry.second.length());
     if (len_of_vals < 0x100) {
       val_lens.push_back(static_cast<uint8_t>(len_of_vals));
       ++num_of_uint8_val_lens;
     } else if (len_of_vals < 0x10000) {
       size_t pos{val_lens.size()};
       val_lens.resize(pos + 2);
-      store_big_u16(&val_lens[pos], len_of_vals);
+      store_big_u16(&val_lens[pos], static_cast<uint16_t>(len_of_vals));
       ++num_of_uint16_val_lens;
     } else {
       size_t pos{val_lens.size()};
       val_lens.resize(pos + 4);
-      store_big_u16(&val_lens[pos], len_of_vals);
+      store_big_u32(&val_lens[pos], len_of_vals);
       ++num_of_uint32_val_lens;
     }
   }
@@ -251,15 +252,15 @@ Bytes StorageChanges::encode() const {
                 size() * kHashLen + 3 * 4 + val_lens.length() + len_of_vals,
             '\0');
 
-  store_big_u32(&out[0], contracts.size());
+  store_big_u32(&out[0], static_cast<uint32_t>(contracts.size()));
 
-  uint32_t pos{4};
+  size_t pos{4};
   uint32_t num_of_keys{0};
 
   for (const auto& entry : contracts) {
     std::memcpy(&out[pos], &entry.address[0], kAddressLen);
     pos += kAddressLen;
-    num_of_keys += entry.keys.size();
+    num_of_keys += static_cast<uint32_t>(entry.keys.size());
     store_big_u32(&out[pos], num_of_keys);
     pos += 4;
   }

@@ -9,3 +9,6 @@
 	path = libff
 	url = https://github.com/torquem-ch/libff.git
 	branch = win
+[submodule "tests"]
+	path = tests
+	url = https://github.com/ethereum/tests.git

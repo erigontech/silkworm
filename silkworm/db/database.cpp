@@ -162,6 +162,50 @@ evmc::bytes32 Database::get_storage(const evmc::address& address, uint64_t incar
   return res;
 }
 
+std::optional<uint64_t> Database::previous_incarnation(const evmc::address& address,
+                                                       uint64_t block_number) {
+  auto key{full_view(address)};
+  auto txn{begin_ro_transaction()};
+  auto history_bucket{txn->get_bucket(bucket::kAccountHistory)};
+  auto change_bucket{txn->get_bucket(bucket::kAccountChanges)};
+  auto cursor{history_bucket->cursor()};
+
+  while (true) {
+    std::optional<Entry> entry{cursor->seek(history_index_key(key, block_number))};
+    if (!entry || !has_prefix(entry->key, key)) {
+      return {};
+    }
+
+    std::optional<history_index::SearchResult> changed_at{
+        history_index::find(entry->value, block_number)};
+    if (!changed_at) {
+      return {};
+    }
+
+    uint64_t change_block{changed_at->change_block};
+    std::optional<ByteView> changes{change_bucket->get(encode_timestamp(change_block))};
+    if (!changes) {
+      return {};
+    }
+
+    std::optional<ByteView> encoded{AccountChanges::find(*changes, key)};
+    if (encoded && !encoded->empty()) {
+      std::optional<Account> acc{decode_account_from_storage(*encoded)};
+      if (acc && acc->incarnation > 0) {
+        return acc->incarnation;
+      }
+    }
+
+    // The account was deleted or had zero incarnation,
+    // so go further back in time.
+    changed_at = history_index::find_previous(entry->value, block_number);
+    if (!changed_at) {
+      return {};
+    }
+    block_number = changed_at->change_block;
+  }
+}
+
 std::optional<ByteView> Database::find_account_in_history(Transaction& txn, ByteView key,
                                                           uint64_t block_number) {
   auto history_bucket{txn.get_bucket(bucket::kAccountHistory)};

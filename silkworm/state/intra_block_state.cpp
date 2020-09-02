@@ -92,9 +92,9 @@ void IntraBlockState::create_contract(const evmc::address& address) {
     journal_.push_back(std::make_unique<state::CreateDelta>(address));
   }
 
-  if (!prev_incarnation) {
+  if (!prev_incarnation || prev_incarnation == 0) {
     if (db_) {
-      prev_incarnation = db_->read_account_incarnation(address);
+      prev_incarnation = db_->previous_incarnation(address);
     } else {
       prev_incarnation = 0;
     }

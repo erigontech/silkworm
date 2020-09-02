@@ -34,7 +34,8 @@ class Reader {
   evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
                              const evmc::bytes32& key) const;
 
-  uint64_t read_account_incarnation(const evmc::address& address) const;
+  // Previous non-zero incarnation of an account; 0 if none exists
+  uint64_t previous_incarnation(const evmc::address& address) const;
 
  private:
   db::Database& db_;

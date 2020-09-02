@@ -44,7 +44,8 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  std::cout << "Checking change sets in " << absl::GetFlag(FLAGS_db) << "\n";
+  absl::Time t1{absl::Now()};
+  std::cout << t1 << " Checking change sets in " << absl::GetFlag(FLAGS_db) << "\n";
 
   using namespace silkworm;
 
@@ -53,8 +54,6 @@ int main(int argc, char* argv[]) {
 
   const uint64_t from{absl::GetFlag(FLAGS_from)};
   const uint64_t to{absl::GetFlag(FLAGS_to)};
-
-  absl::Time t1{absl::Now()};
 
   uint64_t block_num{from};
   for (; block_num < to; ++block_num) {
@@ -144,6 +143,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  std::cout << "Blocks [" << from << "; " << block_num << ") have been checked\n";
+  t1 = absl::Now();
+  std::cout << t1 << " Blocks [" << from << "; " << block_num << ") have been checked\n";
   return 0;
 }

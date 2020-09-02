@@ -36,8 +36,8 @@ evmc::bytes32 Reader::read_storage(const evmc::address& address, uint64_t incarn
   return db_.get_storage(address, incarnation, key, block_number_);
 }
 
-uint64_t Reader::read_account_incarnation(const evmc::address&) const {
-  // TODO[Andrew] read historical incarnation from the DB
-  return 0;
+uint64_t Reader::previous_incarnation(const evmc::address& address) const {
+  std::optional<uint64_t> incarnation{db_.previous_incarnation(address, block_number_)};
+  return incarnation ? *incarnation : 0;
 }
 }  // namespace silkworm::state

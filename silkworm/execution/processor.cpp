@@ -55,8 +55,7 @@ ExecutionProcessor::ExecutionProcessor(const BlockChain& chain, const Block& blo
     : evm_{chain, block, state} {}
 
 [[maybe_unused]] static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
-  thread_local Bytes rlp;
-  rlp.clear();
+  Bytes rlp{};
   rlp::encode(rlp, txn);
   ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.size())};
   std::cout << "0x" << to_hex(full_view(hash.bytes)) << " " << gas_used << "\n";

@@ -33,6 +33,10 @@ struct Transaction {
   Bytes data;
   intx::uint256 v, r, s;              // signature
   std::optional<evmc::address> from;  // sender recovered from the signature
+
+  // Populates the from field with recovered sender.
+  // See Yellow Paper, Appendix F "Signing Transactions"
+  void recover_sender();
 };
 
 bool operator==(const Transaction& a, const Transaction& b);

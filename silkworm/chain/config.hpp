@@ -98,7 +98,7 @@ struct ChainConfig {
 };
 
 constexpr ChainConfig kEthMainnetChainConfig{
-    1,          // Chain id
+    1,          // chain_id
     1'150'000,  // homestead_block
     1'920'000,  // dao_block
     2'463'000,  // tangerine_whistle_block
@@ -123,6 +123,21 @@ constexpr ChainConfig kEtcMainnetChainConfig{
     9'573'000,   // constantinople_block
     9'573'000,   // petersburg_block
     10'500'839,  // istanbul_block
+    {},          // muir_glacier_block
+};
+
+constexpr ChainConfig kTestSuiteConfig{
+    1,   // chain_id
+    1,   // homestead_block
+    {},  // dao_block
+    1,   // tangerine_whistle_block
+    1,   // spurious_dragon_block
+    {},  // ripemd_deletion_block
+    1,   // byzantium_block
+    1,   // constantinople_block
+    1,   // petersburg_block
+    1,   // istanbul_block
+    1,   // muir_glacier_block
 };
 }  // namespace silkworm
 

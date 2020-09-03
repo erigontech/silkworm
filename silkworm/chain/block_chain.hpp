@@ -29,13 +29,15 @@ class BlockChain {
 
   explicit BlockChain(db::Database* db);
 
-  const ChainConfig& config() const { return config_; }
-
   std::optional<BlockHeader> get_header(uint64_t block_number,
                                         const evmc::bytes32& block_hash) const;
 
+  ChainConfig config{kEthMainnetChainConfig};
+
+  // only used if db is null
+  BlockHeader test_genesis_header{};
+
  private:
-  ChainConfig config_{kEthMainnetChainConfig};
   db::Database* db_{nullptr};
 };
 }  // namespace silkworm

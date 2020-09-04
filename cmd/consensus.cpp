@@ -16,6 +16,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <nlohmann/json.hpp>
 #include <silkworm/chain/block_chain.hpp>
 #include <silkworm/common/util.hpp>
@@ -28,6 +29,111 @@
 
 static constexpr size_t kColumnWidth{50};
 
+static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
+    {"Frontier",
+     {
+         1,  // chain_id
+     }},
+    {"Homestead",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+     }},
+    {"EIP150",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+     }},
+    {"EIP158",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+     }},
+    {"Byzantium",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+     }},
+    {"Constantinople",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+     }},
+    {"ConstantinopleFix",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+         0,  // petersburg_block
+     }},
+    {"Istanbul",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+         0,  // petersburg_block
+         0,  // istanbul_block
+     }},
+    {"FrontierToHomesteadAt5",
+     {
+         1,  // chain_id
+         5,  // homestead_block
+     }},
+    {"HomesteadToEIP150At5",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         5,  // tangerine_whistle_block
+     }},
+    {"HomesteadToDaoAt5",
+     {
+         1,   // chain_id
+         0,   // homestead_block
+         {},  // tangerine_whistle_block
+         {},  // spurious_dragon_block
+         {},  // byzantium_block
+         {},  // constantinople_block
+         {},  // petersburg_block
+         {},  // istanbul_block
+         {},  // muir_glacier_block
+         5,   // dao_block
+     }},
+    {"EIP158ToByzantiumAt5",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         5,  // byzantium_block
+     }},
+    {"ByzantiumToConstantinopleFixAt5",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         5,  // constantinople_block
+         5,  // petersburg_block
+     }},
+};
+
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
 bool run_blockchain_test(const nlohmann::json& j) {
   using namespace silkworm;
@@ -38,7 +144,8 @@ bool run_blockchain_test(const nlohmann::json& j) {
   rlp::decode(genesis_view, genesis_block);
 
   BlockChain chain{nullptr};
-  chain.config = kTestSuiteConfig;
+  std::string network{j["network"].get<std::string>()};
+  chain.config = kNetworkConfig.at(network);
   chain.test_genesis_header = genesis_block.header;
 
   IntraBlockState state{nullptr};

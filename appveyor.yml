@@ -36,4 +36,4 @@ build:
 test_script:
   - cd Build
   - ctest --output-on-failure
-  - consensus
+  - Debug\consensus.exe

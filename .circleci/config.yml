@@ -56,7 +56,7 @@ commands:
     - run:
         name: "Ethereum Consensus Tests"
         working_directory: ~/build
-        command: consensus
+        command: ./consensus
 
 jobs:
   build_and_test:

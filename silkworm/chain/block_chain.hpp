@@ -32,7 +32,7 @@ class BlockChain {
   std::optional<BlockHeader> get_header(uint64_t block_number,
                                         const evmc::bytes32& block_hash) const;
 
-  ChainConfig config{kEthMainnetChainConfig};
+  ChainConfig config{kEthMainnetConfig};
 
   // only used if db is null
   BlockHeader test_genesis_header{};

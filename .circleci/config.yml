@@ -50,9 +50,13 @@ commands:
   test:
     steps:
     - run:
-        name: "Test"
+        name: "Unit Tests"
         working_directory: ~/build
         command: ctest --output-on-failure
+    - run:
+        name: "Ethereum Consensus Tests"
+        working_directory: ~/build
+        command: ./consensus
 
 jobs:
   build_and_test:

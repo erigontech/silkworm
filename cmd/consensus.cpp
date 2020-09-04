@@ -14,8 +14,10 @@
    limitations under the License.
 */
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <nlohmann/json.hpp>
 #include <silkworm/chain/block_chain.hpp>
 #include <silkworm/common/util.hpp>
@@ -28,6 +30,111 @@
 
 static constexpr size_t kColumnWidth{50};
 
+static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
+    {"Frontier",
+     {
+         1,  // chain_id
+     }},
+    {"Homestead",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+     }},
+    {"EIP150",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+     }},
+    {"EIP158",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+     }},
+    {"Byzantium",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+     }},
+    {"Constantinople",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+     }},
+    {"ConstantinopleFix",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+         0,  // petersburg_block
+     }},
+    {"Istanbul",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+         0,  // petersburg_block
+         0,  // istanbul_block
+     }},
+    {"FrontierToHomesteadAt5",
+     {
+         1,  // chain_id
+         5,  // homestead_block
+     }},
+    {"HomesteadToEIP150At5",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         5,  // tangerine_whistle_block
+     }},
+    {"HomesteadToDaoAt5",
+     {
+         1,   // chain_id
+         0,   // homestead_block
+         {},  // tangerine_whistle_block
+         {},  // spurious_dragon_block
+         {},  // byzantium_block
+         {},  // constantinople_block
+         {},  // petersburg_block
+         {},  // istanbul_block
+         {},  // muir_glacier_block
+         5,   // dao_block
+     }},
+    {"EIP158ToByzantiumAt5",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         5,  // byzantium_block
+     }},
+    {"ByzantiumToConstantinopleFixAt5",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         5,  // constantinople_block
+         5,  // petersburg_block
+     }},
+};
+
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
 bool run_blockchain_test(const nlohmann::json& j) {
   using namespace silkworm;
@@ -38,7 +145,8 @@ bool run_blockchain_test(const nlohmann::json& j) {
   rlp::decode(genesis_view, genesis_block);
 
   BlockChain chain{nullptr};
-  chain.config = kTestSuiteConfig;
+  std::string network{j["network"].get<std::string>()};
+  chain.config = kNetworkConfig.at(network);
   chain.test_genesis_header = genesis_block.header;
 
   IntraBlockState state{nullptr};
@@ -46,7 +154,7 @@ bool run_blockchain_test(const nlohmann::json& j) {
     evmc::address address{to_address(from_hex(entry.key()))};
     const nlohmann::json& account{entry.value()};
     Bytes balance{from_hex(account["balance"].get<std::string>())};
-    state.set_balance(address, rlp::read_uint256(balance));
+    state.set_balance(address, rlp::read_uint256(balance, /*allow_leading_zeros=*/true));
     state.set_code(address, from_hex(account["code"].get<std::string>()));
     Bytes nonce{from_hex(account["nonce"].get<std::string>())};
     state.set_nonce(address, rlp::read_uint64(nonce, /*allow_leading_zeros=*/true));
@@ -72,13 +180,15 @@ bool run_blockchain_test(const nlohmann::json& j) {
     processor.execute_block();
   }
 
+  // TODO[Issue #23] postStateHash
+
   for (const auto& entry : j["postState"].items()) {
     evmc::address address{to_address(from_hex(entry.key()))};
     const nlohmann::json& account{entry.value()};
 
     Bytes expected_balance{from_hex(account["balance"].get<std::string>())};
     intx::uint256 actual_balance{state.get_balance(address)};
-    if (actual_balance != rlp::read_uint256(expected_balance)) {
+    if (actual_balance != rlp::read_uint256(expected_balance, /*allow_leading_zeros=*/true)) {
       std::cout << "Balance mismatch for " << entry.key() << ":\n";
       std::cout << to_string(actual_balance, 16) << " ≠ " << account["balance"] << "\n";
       return false;
@@ -117,26 +227,17 @@ bool run_blockchain_test(const nlohmann::json& j) {
   return true;
 }
 
-bool run_blockchain_file(std::string_view file_name) {
-  std::cout << file_name << ":\n";
-
-  std::string file_path{SILKWORM_CONSENSUS_TEST_DIR};
-  file_path += "/BlockchainTests/";
-  file_path += file_name;
-  file_path += ".json";
-
+bool run_blockchain_file(const std::filesystem::path& file_path) {
   std::ifstream in{file_path};
   nlohmann::json json;
   in >> json;
 
   bool all_passed{true};
   for (const auto& test : json.items()) {
-    std::cout << "  " << test.key() << "\n";
-
     bool passed{run_blockchain_test(test.value())};
 
-    std::cout << "  " << test.key() << " ";
-    for (size_t i{test.key().length() + 3}; i < kColumnWidth; ++i) {
+    std::cout << test.key() << " ";
+    for (size_t i{test.key().length() + 1}; i < kColumnWidth; ++i) {
       std::cout << '.';
     }
 
@@ -151,8 +252,27 @@ bool run_blockchain_file(std::string_view file_name) {
   return all_passed;
 }
 
+bool run_blockchain_dir(const std::filesystem::path& dir) {
+  bool success{true};
+  for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+    success &= run_blockchain_file(entry);
+  }
+  return success;
+}
+
 int main() {
-  bool success{run_blockchain_file("GeneralStateTests/stExample/add11")};
-  // TODO[Issue #23] the rest
+  std::filesystem::path root_dir{SILKWORM_CONSENSUS_TEST_DIR};
+  root_dir /= "BlockchainTests";
+
+  bool success{true};
+  for (const auto& dir : {
+           root_dir / "GeneralStateTests" / "stArgsZeroOneBalance",
+           root_dir / "GeneralStateTests" / "stAttackTest",
+           root_dir / "GeneralStateTests" / "stBadOpcode",
+           root_dir / "GeneralStateTests" / "stExample",
+           // TODO[Issue #23] the rest
+       }) {
+    success &= run_blockchain_dir(dir);
+  }
   return success ? 0 : 1;
 }

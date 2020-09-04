@@ -30,9 +30,6 @@ struct ChainConfig {
   // https://eips.ethereum.org/EIPS/eip-606
   std::optional<uint64_t> homestead_block;
 
-  // https://eips.ethereum.org/EIPS/eip-779
-  std::optional<uint64_t> dao_block;
-
   // https://eips.ethereum.org/EIPS/eip-608
   // https://ecips.ethereumclassic.org/ECIPs/ecip-1015
   std::optional<uint64_t> tangerine_whistle_block;
@@ -43,9 +40,6 @@ struct ChainConfig {
   // https://eips.ethereum.org/EIPS/eip-607
   // https://ecips.ethereumclassic.org/ECIPs/ecip-1054
   std::optional<uint64_t> spurious_dragon_block;
-
-  // Yellow Paper, Appendix K "Anomalies on the Main Network"
-  std::optional<uint64_t> ripemd_deletion_block;
 
   // https://eips.ethereum.org/EIPS/eip-609
   // https://ecips.ethereumclassic.org/ECIPs/ecip-1054
@@ -65,6 +59,12 @@ struct ChainConfig {
 
   // https://eips.ethereum.org/EIPS/eip-2387
   std::optional<uint64_t> muir_glacier_block;
+
+  // https://eips.ethereum.org/EIPS/eip-779
+  std::optional<uint64_t> dao_block;
+
+  // Yellow Paper, Appendix K "Anomalies on the Main Network"
+  std::optional<uint64_t> ripemd_deletion_block;
 
   // TODO[ETC] ECIP-1017
 
@@ -97,47 +97,33 @@ struct ChainConfig {
   }
 };
 
-constexpr ChainConfig kEthMainnetChainConfig{
-    1,          // chain_id
+constexpr ChainConfig kEthMainnetConfig{
+    1,  // chain_id
+
     1'150'000,  // homestead_block
-    1'920'000,  // dao_block
     2'463'000,  // tangerine_whistle_block
     2'675'000,  // spurious_dragon_block
-    2'675'119,  // ripemd_deletion_block
     4'370'000,  // byzantium_block
     7'280'000,  // constantinople_block
     7'280'000,  // petersburg_block
     9'069'000,  // istanbul_block
     9'200'000,  // muir_glacier_block
+
+    1'920'000,  // dao_block
+    2'675'119,  // ripemd_deletion_block
 };
 
 // https://ecips.ethereumclassic.org/ECIPs/ecip-1066
-constexpr ChainConfig kEtcMainnetChainConfig{
-    61,          // chain_id
+constexpr ChainConfig kEtcMainnetConfig{
+    61,  // chain_id
+
     1'150'000,   // homestead_block
-    {},          // dao_block
     2'500'000,   // tangerine_whistle_block
     8'772'000,   // spurious_dragon_block
-    {},          // ripemd_deletion_block
     8'772'000,   // byzantium_block
     9'573'000,   // constantinople_block
     9'573'000,   // petersburg_block
     10'500'839,  // istanbul_block
-    {},          // muir_glacier_block
-};
-
-constexpr ChainConfig kTestSuiteConfig{
-    1,   // chain_id
-    1,   // homestead_block
-    {},  // dao_block
-    1,   // tangerine_whistle_block
-    1,   // spurious_dragon_block
-    {},  // ripemd_deletion_block
-    1,   // byzantium_block
-    1,   // constantinople_block
-    1,   // petersburg_block
-    1,   // istanbul_block
-    1,   // muir_glacier_block
 };
 }  // namespace silkworm
 

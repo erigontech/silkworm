@@ -52,23 +52,24 @@ TEST_CASE("Zeroless view") {
         "04bc00");
 }
 
-TEST_CASE("to_hash") {
-  CHECK(to_hex(to_hash(from_hex("05"))) ==
+TEST_CASE("to_bytes32") {
+  CHECK(to_hex(to_bytes32(from_hex("05"))) ==
         "0000000000000000000000000000000000000000000000000000000000000005");
 
-  CHECK(to_hex(to_hash(from_hex("0x05"))) ==
+  CHECK(to_hex(to_bytes32(from_hex("0x05"))) ==
         "0000000000000000000000000000000000000000000000000000000000000005");
 
-  CHECK(to_hex(to_hash(
+  CHECK(to_hex(to_bytes32(
             from_hex("9d36d8120b564f654564a91259a6ca6d37d6473827d45210190ad10f8ca451f2"))) ==
         "9d36d8120b564f654564a91259a6ca6d37d6473827d45210190ad10f8ca451f2");
 
-  CHECK(to_hex(to_hash(
+  CHECK(to_hex(to_bytes32(
             from_hex("0X9d36d8120b564f654564a91259a6ca6d37d6473827d45210190ad10f8ca451f2"))) ==
         "9d36d8120b564f654564a91259a6ca6d37d6473827d45210190ad10f8ca451f2");
 
-  CHECK(to_hex(to_hash(from_hex("7576351873263824fff23784264823469344629364396429864239864938264a"
-                                "8236423964bbb009874e"))) ==
-        "7576351873263824fff23784264823469344629364396429864239864938264a");
+  CHECK(
+      to_hex(to_bytes32(from_hex("7576351873263824fff23784264823469344629364396429864239864938264a"
+                                 "8236423964bbb009874e"))) ==
+      "7576351873263824fff23784264823469344629364396429864239864938264a");
 }
 }  // namespace silkworm

@@ -36,10 +36,15 @@ Now you can check database changes (produced by [Turbo-Geth](https://github.com/
 ```
 ./check_changes
 ```
-or run tests
+and also run either the unit tests
 ```
-./tests
+./unit_test
 ```
+or [Ethereum Consensus Tests](https://github.com/ethereum/tests)
+```
+./consensus
+```
+
 ## Windows
 * Install [Visual Studio](https://www.visualstudio.com/downloads) 2019. Community edition is fine.
 * Make sure your setup includes CMake support and Windows 10 SDK.

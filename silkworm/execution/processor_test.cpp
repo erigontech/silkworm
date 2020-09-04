@@ -250,7 +250,7 @@ TEST_CASE("Self-destruct") {
   };
   txn.from = caller_address;
 
-  evmc::bytes32 address_as_hash{to_hash(full_view(suicidal_address))};
+  evmc::bytes32 address_as_hash{to_bytes32(full_view(suicidal_address))};
   txn.data = full_view(address_as_hash);
 
   Receipt receipt1{processor.execute_transaction(txn)};

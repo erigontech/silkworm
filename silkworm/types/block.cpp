@@ -122,5 +122,17 @@ void decode(ByteView& from, BlockBody& to) {
   decode_vector(from, to.transactions);
   decode_vector(from, to.ommers);
 }
+
+template <>
+void decode(ByteView& from, Block& to) {
+  Header rlp_head{decode_header(from)};
+  if (!rlp_head.list) {
+    throw DecodingError("unexpected string");
+  }
+
+  decode(from, to.header);
+  decode_vector(from, to.transactions);
+  decode_vector(from, to.ommers);
+}
 }  // namespace rlp
 }  // namespace silkworm

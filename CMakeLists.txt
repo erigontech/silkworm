@@ -110,11 +110,20 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
 target_include_directories(evmone PUBLIC evmone/lib/evmone)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
 
-# silkworm itself
+# Silkworm itself
 add_subdirectory(silkworm)
 
 add_executable(check_changes cmd/check_changes.cpp)
 target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time)
+
+# Ethereum Consensus Tests
+hunter_add_package(nlohmann_json)
+find_package(nlohmann_json CONFIG REQUIRED)
+
+add_compile_definitions(SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
+
+add_executable(consensus cmd/consensus.cpp)
+target_link_libraries(consensus PRIVATE silkworm nlohmann_json::nlohmann_json)
 
 # Unit tests
 enable_testing()
@@ -123,9 +132,9 @@ hunter_add_package(Catch)
 find_package(Catch2 CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "silkworm/*_test.cpp")
-add_executable(tests cmd/tests.cpp ${SILKWORM_TESTS})
-target_link_libraries(tests silkworm Catch2::Catch2)
+add_executable(unit_test cmd/unit_test.cpp ${SILKWORM_TESTS})
+target_link_libraries(unit_test silkworm Catch2::Catch2)
 
 include(CTest)
 include(Catch)
-catch_discover_tests(tests)
+catch_discover_tests(unit_test)

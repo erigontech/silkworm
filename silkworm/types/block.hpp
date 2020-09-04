@@ -76,6 +76,9 @@ void decode(ByteView& from, BlockBody& to);
 
 template <>
 void decode(ByteView& from, BlockHeader& to);
+
+template <>
+void decode(ByteView& from, Block& to);
 }  // namespace rlp
 }  // namespace silkworm
 

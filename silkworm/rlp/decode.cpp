@@ -22,25 +22,54 @@
 
 namespace silkworm::rlp {
 
-uint64_t read_uint64(ByteView from) {
-  assert(from.length() <= 8);
+uint64_t read_uint64(ByteView be, bool allow_leading_zeros) {
+  static constexpr size_t kMaxBytes{8};
+  static_assert(sizeof(uint64_t) == kMaxBytes);
 
-  if (from.empty()) {
+  if (be.length() > kMaxBytes) {
+    throw DecodingError("uint64 overflow");
+  }
+
+  if (be.empty()) {
     return 0;
   }
 
-  if (from[0] == 0) {
+  if (be[0] == 0 && !allow_leading_zeros) {
     throw DecodingError("leading zero(s)");
   }
 
-  thread_local uint64_t buf;
+  uint64_t buf{0};
 
-  buf = 0;
   auto* p{reinterpret_cast<uint8_t*>(&buf)};
-  std::memcpy(p + (8 - from.length()), &from[0], from.length());
+  std::memcpy(p + (kMaxBytes - be.length()), &be[0], be.length());
 
   static_assert(boost::endian::order::native == boost::endian::order::little,
                 "We assume a little-endian architecture like amd64");
+  return intx::bswap(buf);
+}
+
+intx::uint256 read_uint256(ByteView be, bool allow_leading_zeros) {
+  static constexpr size_t kMaxBytes{32};
+  static_assert(sizeof(intx::uint256) == kMaxBytes);
+
+  if (be.length() > kMaxBytes) {
+    throw DecodingError("uint256 overflow");
+  }
+
+  if (be.empty()) {
+    return 0;
+  }
+
+  if (be[0] == 0 && !allow_leading_zeros) {
+    throw DecodingError("leading zero(s)");
+  }
+
+  intx::uint256 buf{0};
+
+  uint8_t* p{as_bytes(buf)};
+  std::memcpy(p + (kMaxBytes - be.length()), &be[0], be.length());
+
+  static_assert(boost::endian::order::native == boost::endian::order::little);
   return intx::bswap(buf);
 }
 
@@ -116,10 +145,6 @@ void decode(ByteView& from, uint64_t& to) {
   if (h.list) {
     throw DecodingError("unexpected list");
   }
-  if (h.payload_length > 8) {
-    throw DecodingError("uint64 overflow");
-  }
-
   to = read_uint64(from.substr(0, h.payload_length));
   from.remove_prefix(h.payload_length);
 }
@@ -127,29 +152,10 @@ void decode(ByteView& from, uint64_t& to) {
 template <>
 void decode(ByteView& from, intx::uint256& to) {
   Header h{decode_header(from)};
-
   if (h.list) {
     throw DecodingError("unexpected list");
   }
-  if (h.payload_length > 32) {
-    throw DecodingError("uint256 overflow");
-  }
-
-  if (h.payload_length == 0) {
-    to = 0;
-    return;
-  }
-
-  if (from[0] == 0) {
-    throw DecodingError("leading zero(s)");
-  }
-
-  thread_local intx::uint256 buf;
-
-  buf = 0;
-  std::memcpy(as_bytes(buf) + (32 - h.payload_length), &from[0], h.payload_length);
-  to = intx::bswap(buf);
-
+  to = read_uint256(from.substr(0, h.payload_length));
   from.remove_prefix(h.payload_length);
 }
 }  // namespace silkworm::rlp

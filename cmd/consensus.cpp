@@ -28,7 +28,24 @@
 #include <string>
 #include <string_view>
 
-static constexpr size_t kColumnWidth{50};
+namespace fs = std::filesystem;
+
+static const fs::path kRootDir{SILKWORM_CONSENSUS_TEST_DIR};
+
+static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
+
+// TODO[Issue #23] make the excluded tests pass
+static const std::set<fs::path> kExcludedTests{
+    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2.json",
+    kBlockchainDir / "GeneralStateTests" / "stPreCompiledContracts2" / "modexpRandomInput.json",
+    kBlockchainDir / "GeneralStateTests" / "stRevertTest" / "RevertInCreateInInit.json",
+    kBlockchainDir / "GeneralStateTests" / "stReturnDataTest" /
+        "modexp_modsize0_returndatasize.json",
+    kBlockchainDir / "GeneralStateTests" / "stSStoreTest" / "InitCollision.json",
+    kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
+};
+
+static constexpr size_t kColumnWidth{60};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",
@@ -165,6 +182,8 @@ bool run_blockchain_test(const nlohmann::json& j) {
     }
   }
 
+  state.finalize_transaction();
+
   for (const auto& b : j["blocks"]) {
     Bytes rlp{from_hex(b["rlp"].get<std::string>())};
     ByteView view{rlp};
@@ -179,8 +198,6 @@ bool run_blockchain_test(const nlohmann::json& j) {
     ExecutionProcessor processor{chain, block, state};
     processor.execute_block();
   }
-
-  // TODO[Issue #23] postStateHash
 
   for (const auto& entry : j["postState"].items()) {
     evmc::address address{to_address(from_hex(entry.key()))};
@@ -223,56 +240,70 @@ bool run_blockchain_test(const nlohmann::json& j) {
     }
   }
 
-  // TODO[Issue #23] check that there are no other changes
   return true;
 }
 
-bool run_blockchain_file(const std::filesystem::path& file_path) {
+struct RunResult {
+  size_t passed{0};
+  size_t failed{0};
+};
+
+RunResult run_blockchain_file(const fs::path& file_path) {
   std::ifstream in{file_path};
   nlohmann::json json;
   in >> json;
 
-  bool all_passed{true};
+  RunResult res{};
+
   for (const auto& test : json.items()) {
-    bool passed{run_blockchain_test(test.value())};
+    if (!test.value().contains("postState")) {
+      std::cout << "postStateHash is not supported\n";
+      std::cout << test.key() << " ";
+      for (size_t i{test.key().length() + 1}; i < kColumnWidth; ++i) {
+        std::cout << '.';
+      }
+      std::cout << " Skipped\n";
 
-    std::cout << test.key() << " ";
-    for (size_t i{test.key().length() + 1}; i < kColumnWidth; ++i) {
-      std::cout << '.';
+      continue;
     }
 
-    if (passed) {
-      std::cout << "\033[0;32m  Passed\033[0m\n";
+    if (run_blockchain_test(test.value())) {
+      ++res.passed;
     } else {
+      ++res.failed;
+      std::cout << test.key() << " ";
+      for (size_t i{test.key().length() + 1}; i < kColumnWidth; ++i) {
+        std::cout << '.';
+      }
       std::cout << "\033[1;31m  Failed\033[0m\n";
-      all_passed = false;
     }
   }
 
-  return all_passed;
-}
-
-bool run_blockchain_dir(const std::filesystem::path& dir) {
-  bool success{true};
-  for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-    success &= run_blockchain_file(entry);
-  }
-  return success;
+  return res;
 }
 
 int main() {
-  std::filesystem::path root_dir{SILKWORM_CONSENSUS_TEST_DIR};
-  root_dir /= "BlockchainTests";
+  size_t passed{0};
+  size_t failed{0};
 
-  bool success{true};
-  for (const auto& dir : {
-           root_dir / "GeneralStateTests" / "stArgsZeroOneBalance",
-           root_dir / "GeneralStateTests" / "stAttackTest",
-           root_dir / "GeneralStateTests" / "stBadOpcode",
-           root_dir / "GeneralStateTests" / "stExample",
-           // TODO[Issue #23] the rest
-       }) {
-    success &= run_blockchain_dir(dir);
+  // TODO[Issue #23] TransitionTests and the rest of BlockchainTests
+  for (auto i = fs::recursive_directory_iterator(kBlockchainDir / "GeneralStateTests");
+       i != fs::recursive_directory_iterator(); ++i) {
+    if (kExcludedTests.count(*i)) {
+      i.disable_recursion_pending();
+    } else if (i->is_regular_file()) {
+      RunResult res{run_blockchain_file(*i)};
+      passed += res.passed;
+      failed += res.failed;
+    }
   }
-  return success ? 0 : 1;
+
+  if (failed == 0) {
+    std::cout << "\033[0;32mAll " << passed << " tests passed\033[0m\n";
+  } else {
+    std::cout << "\033[1;31m" << failed << " tests failed\033[0m"
+              << " out of " << (passed + failed) << "\n";
+  }
+
+  return failed;
 }

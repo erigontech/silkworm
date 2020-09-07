@@ -83,6 +83,8 @@ if(MSVC)
   set(CMAKE_EXE_LINKER_FLAGS "/STACK:10000000")
 else()
   add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers)
+
+  set(CMAKE_EXE_LINKER_FLAGS "-Wl,-stack_size -Wl,0x1000000")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")

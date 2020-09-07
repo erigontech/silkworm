@@ -22,7 +22,9 @@
 
 #include <lmdb/lmdb.h>
 
+#include <iostream>
 #include <string>
+#include <thread>
 
 // Check windows
 #if _WIN32 || _WIN64
@@ -46,231 +48,176 @@
 #error "32 bit environment limits LMDB size"
 #endif // !ENVIRONMENT64
 
-#define LMDB_ENABLE_EXCEPTIONS
-
 namespace silkworm::db {
 
-    class db_exception : public std::exception
-    {
-    public:
-     db_exception(int err, const std::string errstr = NULL) : err_(err), errstr_(std::move(errstr)){};
-     ~db_exception() noexcept {};
-     virtual const char* what() noexcept {
-         return errstr_.c_str();
-     }
-     int err() noexcept { return err_; }
+    namespace lmdb {
 
-    private:
-     const int err_;
-     const std::string errstr_;
-    };
+        // An exception thrown by lmdb.
+        class exception : public std::exception {
+           public:
+            exception(int err, const char* errstr) : err_{err}, message_{std::move(errstr)} {};
+            virtual const char* what() noexcept { return message_; }
+            int err() { return err_; }
+           private:
+            int err_;
+            const char* message_;
+        };
 
-    namespace detail
-    {
-        std::string lmdb_err_string(int err) noexcept {
-            switch (err) {
-                case MDB_SUCCESS:
-                    return "Success";  // We should never get here
-                case MDB_KEYEXIST:
-                    return "Key/Data pair already exists";
-                case MDB_NOTFOUND:
-                    return "Key/Data pair not found (EOF)";
-                case MDB_PAGE_NOTFOUND:
-                    return "Requested page not found - Possible database corruption";
-                case MDB_CORRUPTED:
-                    return "Located page was wrong type";
-                case MDB_PANIC:
-                    return "Update of meta page failed or environment had fatal error";
-                case MDB_VERSION_MISMATCH:
-                    return "Environment version mismatch";
-                case MDB_INVALID:
-                    return "File is not a valid LMDB file";
-                case MDB_MAP_FULL:
-                    return "Environment mapsize reached";
-                case MDB_DBS_FULL:
-                    return "Environment maxdbs reached";
-                case MDB_READERS_FULL:
-                    return "Environment maxreaders reached";
-                case MDB_TLS_FULL:
-                    return "Too many TLS keys in use";
-                case MDB_TXN_FULL:
-                    return "Transaction has too many dirty pages";
-                case MDB_CURSOR_FULL:
-                    return "Cursor stack too deep - internal error";
-                case MDB_PAGE_FULL:
-                    return "Page has not enough space - internal error";
-                case MDB_MAP_RESIZED:
-                    return "Database contents grew beyond environment mapsize";
-                case MDB_INCOMPATIBLE:
-                    return "Operation and DB incompatible, or DB type changed";
-                case MDB_BAD_RSLOT:
-                    return "Invalid reuse of reader locktable slot";
-                case MDB_BAD_TXN:
-                    return "Transaction must abort, has a child, or is invalid";
-                case MDB_BAD_VALSIZE:
-                    return "Unsupported size of key/DB name/data, or wrong DUPFIXED size";
-                case MDB_BAD_DBI:
-                    return "The specified DBI was changed unexpectedly";
-                case MDB_PROBLEM:
-                    return "Unexpected problem - txn should abort";
-                default:
-                    std::string ret{"Unrecognized error code : " + std::to_string(err)};
-                    return ret;
+        static inline int err_handler(int err, bool shouldthrow = false) {
+            if (err != MDB_SUCCESS && shouldthrow) {
+                throw exception(err, mdb_strerror(err));
             }
-        }
-
-        static inline int lmdb_err_handler(int err) {
-#if defined(LMDB_ENABLE_EXCEPTIONS)
-            if (err != MDB_SUCCESS) {
-                throw db_exception(err, lmdb_err_string(err));
-            }
-#endif
             return err;
         }
 
-        template <typename T>
-        struct ReferenceReleaseHandler {
-            static int release(T* arg) {
-                (void)arg;
-                return MDB_SUCCESS;
-            }
+        class Env;  // environment : 1:1 relation among env and opened files
+        class Txn;  // transaction : every read write operation lives in a transaction
+        class Dbi;  // named database interface (aka bucket)
+        class Crs;  // cursor for a bucket
+
+        class Env {
+
+        private:
+
+            MDB_env* handle_{nullptr};
+
+            bool opened_{false};
+            std::mutex count_mtx_;
+
+            std::map<std::thread::id, int> ro_txns_{};
+            std::map<std::thread::id, int> rw_txns_{};
+
+           public:
+            static constexpr unsigned int default_flags{0};
+            static constexpr mdb_mode_t default_mode{0644};
+
+            Env(const unsigned flags = default_flags);
+            ~Env() noexcept;
+
+            MDB_env** handle(void) { return &handle_; }
+            bool is_opened(void) { return opened_; }
+            bool is_ro(void);
+
+            void open(const char* path, const unsigned int flags = default_flags, const mdb_mode_t mode = default_mode);
+            void close() noexcept;
+
+            int get_flags(unsigned int* flags);
+            int get_max_keysize(void);
+            int get_max_readers(unsigned int* count);
+
+            int set_flags(const unsigned int flags, const bool onoff = true);
+            int set_mapsize(const size_t size);
+            int set_max_dbs(const unsigned int count);
+            int set_max_readers(const unsigned int count);
+            int sync(const bool force = true);
+
+            int get_ro_txns(void);
+            int get_rw_txns(void);
+            void touch_ro_txns(int count);
+            void touch_rw_txns(int count);
+
+            std::unique_ptr<Txn> begin_transaction(unsigned int flags = 0);
+            std::unique_ptr<Txn> begin_ro_transaction(unsigned int flags = 0);
+            std::unique_ptr<Txn> begin_rw_transaction(unsigned int flags = 0);
+
         };
 
-        // Basic wrapper class for native
-        // Lmdb objects
-        template<typename T>
-        class Wrapper
-        {
-        public:
-            typedef T lmdb_type;
-        protected:
-            lmdb_type* object_;
-        public:
-         Wrapper() : object_(NULL){};
-         Wrapper(const lmdb_type&& obj) : object_(obj){};
-         Wrapper(const Wrapper<lmdb_type>& rhs) {
-             lmdb_err_handler(release());
-             object_ = rhs.object_;
-         }
-         Wrapper(Wrapper<lmdb_type>&& rhs) {
-             object_ = rhs.object_;
-             rhs.object_ = NULL;
-         }
-         Wrapper<lmdb_type>& operator=(const Wrapper<lmdb_type>& rhs) {
-             if (this != &rhs) {
-                 lmdb_err_handler(release());
-                 object_ = rhs.object_;
-             }
-             return *this;
-         }
-         Wrapper<lmdb_type>& operator=(Wrapper<lmdb_type>& rhs) {
-             if (this != &rhs) {
-                 lmdb_err_handler(release());
-                 object_ = rhs.object_;
-                 rhs.object_ = NULL;
-             }
-             return *this;
-         }
-         Wrapper<lmdb_type>& operator=(const lmdb_type&& rhs) {
-             lmdb_err_handler(release());
-             object_ = rhs;
-             return *this;
-         }
-         const lmdb_type& operator ()() const { return object_; }
-         lmdb_type& operator ()() { return object_; }
-         const lmdb_type get() { return object_; }
-         ~Wrapper() {
-             if (object_ != NULL) release();
-         };
+        class Txn {
 
-        protected:
+           protected:
 
-         int release() {
-             if (object_ != NULL) {
-                 return ReferenceReleaseHandler<lmdb_type>::release(object_);
-             }
-             return MDB_SUCCESS;
-         }
+            Env* parent_env_;
+            MDB_txn* handle_;
+            unsigned int flags_;
+            Txn(Env* parent, MDB_txn* txn, unsigned int flags);
+
+           private:
+            static MDB_txn* open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
+
+            std::vector<Crs*> cursors_{};
+
+           public:
+            explicit Txn(Env* parent, unsigned int flags = 0);
+            ~Txn();
+
+            MDB_txn** handle() { return &handle_; }
+            bool is_ro(void);
+
+            std::unique_ptr<Dbi> open_bucket(const char* name, unsigned int flags = 0);
+            std::unique_ptr<Crs> open_cursor(MDB_dbi bucket);
+
+            Txn(const Txn& src) = delete;
+            Txn& operator=(const Txn& src) = delete;
+            Txn(Txn&& rhs) = delete;
+            Txn& operator=(Txn&& rhs) = delete;
+
+            void close_cursors(void);
+            void abort(void);
+            int commit(void);
         };
 
-    } //namespace detail
+        class Dbi {
+           protected:
+            Dbi(Env* parent_env, Txn* parent_txn, MDB_dbi dbi);
+
+           private:
+            static MDB_dbi open_bucket(Env* parent_env, Txn* parent_txn, const char* name, unsigned int flags = 0);
+
+           public:
+            explicit Dbi(Env* env, Txn* txn, const char* name, unsigned int flags = 0);
+
+            int get_flags(unsigned int* flags);
+            int get_stat(MDB_stat* stat);
+            int get(MDB_val* key, MDB_val* data);
+            int del(MDB_val* key, MDB_val* data);
+            int put(MDB_val* key, MDB_val* data, unsigned int flags = 0);
+            int drop(int del);
+
+            std::unique_ptr<Crs> get_cursor(void);
+
+           private:
+            Env* parent_env_;
+            Txn* parent_txn_;
+            MDB_dbi handle_;
+            bool opened_{true};
+        };
+
+        class Crs {
+
+        protected:
+
+            Crs(std::vector<Crs*> &coll, Env* parent_env, Txn* parent_txn, MDB_cursor* handle, MDB_dbi bucket);
+
+        private:
+
+            static MDB_cursor* open_cursor(Env* parent_env, Txn* parent_txn, MDB_dbi dbi);
+
+        public:
+         explicit Crs(std::vector<Crs*> &coll, Env* env, Txn* txn, MDB_dbi dbi);
+         int get(MDB_val* key, MDB_val* data, MDB_cursor_op operation);  // Gets data on behalf of operation
+         int seek(MDB_val* key, MDB_val* data);                          // Tries find a key in bucket
+         int current(MDB_val* key, MDB_val* data);                       // Gets data from current cursor position
+         int first(MDB_val* key, MDB_val* data);                         // Move cursor at first item in bucket
+         int prev(MDB_val* key, MDB_val* data);                          // Move cursor at previous item in bucket
+         int next(MDB_val* key, MDB_val* data);                          // Move cursor at next item in bucket
+         int last(MDB_val* key, MDB_val* data);                          // Move cursor at last item in bucket
+         int del(unsigned int flags = 0);                                // Delete key/data pair at current position
+         int put(MDB_val* key, MDB_val* data, unsigned int flags = 0);   // Store data by cursor
+         int count(mdb_size_t* count);  // Returns the count of duplicates at current position
+         void close(void);              // Close the cursor and frees the handle
+        private:
+         std::vector<Crs*>* coll_;
+         Env* parent_env_;
+         Txn* parent_txn_;
+         MDB_dbi bucket_;
+         MDB_cursor* handle_;
+        };
+
+    }  // namespace lmdb
 
 
-    class Env : public detail::Wrapper<MDB_env> {
-       public:
-
-           static constexpr unsigned int default_flags{ 0 };
-           static constexpr mdb_mode_t default_mode{ 0644 };
-
-           void close() noexcept {
-               // TODO(Andrea) check it was not previously closed
-               mdb_env_close(object_);
-           }
-
-           void create(const unsigned flags = default_flags, int* rc = NULL) {
-               int res{detail::lmdb_err_handler(mdb_env_create(&object_))};
-               if (rc != NULL) {
-                   *rc = res;
-                   if (res != MDB_SUCCESS) return;
-               };
-
-               if (!flags) return;
-               res = detail::lmdb_err_handler(mdb_env_set_flags(object_, flags, 1));
-               if (res) {
-                   if (rc != NULL) *rc = res;
-                   mdb_env_close(object_);
-               }
-           }
-
-           void open(const char* path, const unsigned int flags = default_flags, const mdb_mode_t mode = default_mode, int* rc = NULL) {
-               int res{detail::lmdb_err_handler(mdb_env_open(object_, path, flags, mode))};
-               if (rc != NULL) *rc = res;
-               if (res != MDB_SUCCESS) close();
-           }
-
-           void sync(const bool force = true, int* rc = NULL) {
-               int res{detail::lmdb_err_handler(mdb_env_sync(object_, force))};
-               if (rc != NULL) *rc = res;
-           }
-
-
-    };
-
-    struct ChainDbOptions {
-        uint64_t map_size = 2ull << 40;  // 2TiB by default
-        bool no_sync = true;             // MDB_NOSYNC
-        bool no_meta_sync = false;       // MDB_NOMETASYNC
-        bool write_map = false;          // MDB_WRITEMAP
-        bool no_sub_dir = false;         // MDB_NOSUBDIR
-        unsigned max_buckets = 100;
-    };
-
-
-    //class ChainDb {
-    //   public:
-
-    //    static ChainDb* instance();
-
-    //    void open(const char* path, const ChainDbOptions& options = {});
-    //    void close();
-
-    //    bool is_opened();
-
-    //    std::optional<lmdb::env>& get_env();
-
-    //   private:
-    //    ChainDb() = default;
-    //    ~ChainDb() = default;
-    //    ChainDb(const ChainDb&) = delete;
-    //    ChainDb& operator=(const ChainDb&) = delete;
-
-    //    // Singleton
-    //    static boost::atomic<ChainDb*> singleton_ ;
-    //    static boost::mutex singleton_mtx_;
-
-    //    // Lmdb
-    //    std::optional<lmdb::env> env_{};
-    //};
+    std::shared_ptr<lmdb::Env> get_env(const char* path, const unsigned int flags = lmdb::Env::default_flags,
+                                       const mdb_mode_t mode = lmdb::Env::default_mode);
 
 }  // namespace silkworm::db
 

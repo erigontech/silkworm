@@ -18,6 +18,7 @@
 #include <boost/filesystem.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
+#include <silkworm/db/bucket.hpp>
 
 #include <string>
 #include <csignal>
@@ -69,9 +70,56 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    silkworm::db::Env env{};
-    int rc{ 0 };
-    env.create(silkworm::db::Env::default_flags, &rc);
+    try
+    {
+        auto env = db::get_env(po_db_path.c_str());
+        std::cout << "Database is " << (env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
+        {
+            auto txn_ro = env->begin_ro_transaction();
+            MDB_stat s{};
+            auto headers = txn_ro->open_bucket(db::bucket::kBlockHeaders);
+            headers->get_stat(&s);
+            std::cout << "Headers Table has " << s.ms_entries << " entries" << std::endl;
+            auto bodies = txn_ro->open_bucket(db::bucket::kBlockBodies);
+            bodies->get_stat(&s);
+            std::cout << "Bodies  Table has " << s.ms_entries << " entries" << std::endl;
 
-    return rc;
+            size_t totalEntries{s.ms_entries};
+            size_t batchEntries{totalEntries / 20};
+            uint32_t percent{0};
+
+            auto bodies_cursor = bodies->get_cursor();
+            MDB_val key;
+            MDB_val data;
+            int rc{bodies_cursor->first(&key, &data)};
+            while (rc == MDB_SUCCESS)
+            {
+                batchEntries--;
+                if (!batchEntries) {
+                    batchEntries = totalEntries / 20;
+                    percent += 5;
+                    std::cout << "Navigated " << percent << "% of block bodies" << std::endl;
+                }
+                rc = bodies_cursor->next(&key, &data);
+            }
+
+            bodies_cursor->close();
+            txn_ro->commit();
+        }
+        env->close();
+        std::cout << "Database is " << (env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
+    }
+    catch (db::lmdb::exception& ex)
+    {
+        // This handles specific lmdb errors
+        std::cout << ex.what() << " " << ex.err() << std::endl;
+    }
+    catch (std::runtime_error& ex)
+    {
+        // This handles runtime ligic errors
+        // eg. trying to open two rw txns
+        std::cout << ex.what() << std::endl;
+    }
+
+    return 0;
 }

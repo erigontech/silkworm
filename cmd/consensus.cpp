@@ -36,12 +36,8 @@ static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
 
 // TODO[Issue #23] make the excluded tests pass
 static const std::set<fs::path> kExcludedTests{
-    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "Create2Recursive.json",
     kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2.json",
-    kBlockchainDir / "GeneralStateTests" / "stQuadraticComplexityTest" / "Create1000.json",
-    kBlockchainDir / "GeneralStateTests" / "stQuadraticComplexityTest" / "Create1000Byzantium.json",
     kBlockchainDir / "GeneralStateTests" / "stPreCompiledContracts2" / "modexpRandomInput.json",
-    kBlockchainDir / "GeneralStateTests" / "stRecursiveCreate" / "recursiveCreateReturnValue.json",
     kBlockchainDir / "GeneralStateTests" / "stRevertTest" / "RevertInCreateInInit.json",
     kBlockchainDir / "GeneralStateTests" / "stReturnDataTest" /
         "modexp_modsize0_returndatasize.json",
@@ -49,7 +45,7 @@ static const std::set<fs::path> kExcludedTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
 };
 
-static constexpr size_t kColumnWidth{90};
+static constexpr size_t kColumnWidth{60};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",
@@ -203,8 +199,6 @@ bool run_blockchain_test(const nlohmann::json& j) {
     processor.execute_block();
   }
 
-  // TODO[Issue #23] postStateHash
-
   for (const auto& entry : j["postState"].items()) {
     evmc::address address{to_address(from_hex(entry.key()))};
     const nlohmann::json& account{entry.value()};
@@ -262,6 +256,17 @@ RunResult run_blockchain_file(const fs::path& file_path) {
   RunResult res{};
 
   for (const auto& test : json.items()) {
+    if (!test.value().contains("postState")) {
+      std::cout << "postStateHash is not supported\n";
+      std::cout << test.key() << " ";
+      for (size_t i{test.key().length() + 1}; i < kColumnWidth; ++i) {
+        std::cout << '.';
+      }
+      std::cout << " Skipped\n";
+
+      continue;
+    }
+
     if (run_blockchain_test(test.value())) {
       ++res.passed;
     } else {

@@ -39,10 +39,16 @@ TouchDelta::TouchDelta(evmc::address address) : address_{std::move(address)} {}
 
 void TouchDelta::revert(IntraBlockState& state) { state.touched_.erase(address_); }
 
-StorageDelta::StorageDelta(evmc::address address, evmc::bytes32 key, evmc::bytes32 previous)
+StorageChangeDelta::StorageChangeDelta(evmc::address address, evmc::bytes32 key,
+                                       evmc::bytes32 previous)
     : address_{std::move(address)}, key_{std::move(key)}, previous_{std::move(previous)} {}
 
-void StorageDelta::revert(IntraBlockState& state) {
+void StorageChangeDelta::revert(IntraBlockState& state) {
   state.storage_[address_][key_].current = previous_;
 }
+
+StorageWipeDelta::StorageWipeDelta(evmc::address address, state::Storage storage)
+    : address_{std::move(address)}, storage_{std::move(storage)} {}
+
+void StorageWipeDelta::revert(IntraBlockState& state) { state.storage_[address_] = storage_; }
 }  // namespace silkworm::state

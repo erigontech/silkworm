@@ -86,9 +86,9 @@ class TouchDelta : public Delta {
 };
 
 // Storage updated.
-class StorageDelta : public Delta {
+class StorageChangeDelta : public Delta {
  public:
-  StorageDelta(evmc::address address, evmc::bytes32 key, evmc::bytes32 previous);
+  StorageChangeDelta(evmc::address address, evmc::bytes32 key, evmc::bytes32 previous);
 
   void revert(IntraBlockState& state) override;
 
@@ -96,6 +96,17 @@ class StorageDelta : public Delta {
   evmc::address address_;
   evmc::bytes32 key_;
   evmc::bytes32 previous_;
+};
+
+class StorageWipeDelta : public Delta {
+ public:
+  StorageWipeDelta(evmc::address address, state::Storage storage);
+
+  void revert(IntraBlockState& state) override;
+
+ private:
+  evmc::address address_;
+  state::Storage storage_;
 };
 }  // namespace state
 }  // namespace silkworm

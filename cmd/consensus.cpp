@@ -36,12 +36,9 @@ static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
 
 // TODO[Issue #23] make the excluded tests pass
 static const std::set<fs::path> kExcludedTests{
-    kBlockchainDir / "GeneralStateTests" / "stCreate2" / "RevertInCreateInInitCreate2.json",
     kBlockchainDir / "GeneralStateTests" / "stPreCompiledContracts2" / "modexpRandomInput.json",
-    kBlockchainDir / "GeneralStateTests" / "stRevertTest" / "RevertInCreateInInit.json",
     kBlockchainDir / "GeneralStateTests" / "stReturnDataTest" /
         "modexp_modsize0_returndatasize.json",
-    kBlockchainDir / "GeneralStateTests" / "stSStoreTest" / "InitCollision.json",
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
 };
 
@@ -288,7 +285,7 @@ int main() {
 
   // TODO[Issue #23] TransitionTests and the rest of BlockchainTests
   for (auto i = fs::recursive_directory_iterator(kBlockchainDir / "GeneralStateTests");
-       i != fs::recursive_directory_iterator(); ++i) {
+       i != fs::recursive_directory_iterator{}; ++i) {
     if (kExcludedTests.count(*i)) {
       i.disable_recursion_pending();
     } else if (i->is_regular_file()) {

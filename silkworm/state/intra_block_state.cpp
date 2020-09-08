@@ -103,6 +103,12 @@ void IntraBlockState::create_contract(const evmc::address& address) {
   created.current->incarnation = *prev_incarnation + 1;
 
   objects_[address] = created;
+
+  auto it{storage_.find(address)};
+  if (it != storage_.end()) {
+    journal_.push_back(std::make_unique<state::StorageWipeDelta>(address, it->second));
+    storage_.erase(address);
+  }
 }
 
 void IntraBlockState::touch(const evmc::address& address) {
@@ -216,24 +222,24 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) {
 
 evmc::bytes32 IntraBlockState::get_current_storage(const evmc::address& address,
                                                    const evmc::bytes32& key) const {
-  const StorageValue* val{get_storage(address, key)};
+  const state::StorageValue* val{get_storage(address, key)};
   return val ? val->current : evmc::bytes32{};
 }
 
 evmc::bytes32 IntraBlockState::get_original_storage(const evmc::address& address,
                                                     const evmc::bytes32& key) const {
-  const StorageValue* val{get_storage(address, key)};
+  const state::StorageValue* val{get_storage(address, key)};
   return val ? val->original : evmc::bytes32{};
 }
 
-const IntraBlockState::StorageValue* IntraBlockState::get_storage(const evmc::address& address,
-                                                                  const evmc::bytes32& key) const {
+const state::StorageValue* IntraBlockState::get_storage(const evmc::address& address,
+                                                        const evmc::bytes32& key) const {
   auto* obj{get_object(address)};
   if (!obj || !obj->current) {
     return nullptr;
   }
 
-  Storage& storage{storage_[address]};
+  state::Storage& storage{storage_[address]};
 
   auto it{storage.find(key)};
   if (it != storage.end()) {
@@ -250,7 +256,7 @@ const IntraBlockState::StorageValue* IntraBlockState::get_storage(const evmc::ad
     val = db_->read_storage(address, incarnation, key);
   }
 
-  IntraBlockState::StorageValue& entry{storage_[address][key]};
+  state::StorageValue& entry{storage_[address][key]};
 
   entry.initial = val;
   entry.original = val;
@@ -266,13 +272,13 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     return;
   }
   storage_[address][key].current = value;
-  journal_.push_back(std::make_unique<state::StorageDelta>(address, key, prev));
+  journal_.push_back(std::make_unique<state::StorageChangeDelta>(address, key, prev));
 }
 
 void IntraBlockState::write_block(state::Writer& state_writer) {
   for (const auto& x : storage_) {
     const evmc::address& address{x.first};
-    const Storage& storage{x.second};
+    const state::Storage& storage{x.second};
 
     auto it1{objects_.find(address)};
     if (it1 == objects_.end()) {
@@ -285,7 +291,7 @@ void IntraBlockState::write_block(state::Writer& state_writer) {
 
     for (const auto& entry : storage) {
       const evmc::bytes32& key{entry.first};
-      const StorageValue& val{entry.second};
+      const state::StorageValue& val{entry.second};
       uint64_t incarnation{obj.current->incarnation};
       state_writer.write_storage(address, incarnation, key, val.initial, val.current);
     }
@@ -318,7 +324,7 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
 void IntraBlockState::finalize_transaction() {
   for (auto& x : storage_) {
     for (auto& entry : x.second) {
-      StorageValue& val{entry.second};
+      state::StorageValue& val{entry.second};
       val.original = val.current;
     }
   }

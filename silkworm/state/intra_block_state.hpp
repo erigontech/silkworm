@@ -111,17 +111,11 @@ class IntraBlockState {
   friend class state::UpdateDelta;
   friend class state::SuicideDelta;
   friend class state::TouchDelta;
-  friend class state::StorageDelta;
+  friend class state::StorageChangeDelta;
+  friend class state::StorageWipeDelta;
 
-  struct StorageValue {
-    evmc::bytes32 initial{};   // value at the begining of the block
-    evmc::bytes32 original{};  // value at the begining of the transaction; see EIP-2200
-    evmc::bytes32 current{};   // current value
-  };
-
-  using Storage = absl::flat_hash_map<evmc::bytes32, StorageValue>;
-
-  const StorageValue* get_storage(const evmc::address& address, const evmc::bytes32& key) const;
+  const state::StorageValue* get_storage(const evmc::address& address,
+                                         const evmc::bytes32& key) const;
 
   state::Object* get_object(const evmc::address& address) const;
   state::Object& get_or_create_object(const evmc::address& address);
@@ -131,7 +125,7 @@ class IntraBlockState {
   state::Reader* db_{nullptr};
 
   mutable absl::flat_hash_map<evmc::address, state::Object> objects_;
-  mutable absl::flat_hash_map<evmc::address, Storage> storage_;
+  mutable absl::flat_hash_map<evmc::address, state::Storage> storage_;
 
   std::vector<std::unique_ptr<state::Delta>> journal_;
 

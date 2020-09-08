@@ -17,6 +17,8 @@
 #ifndef SILKWORM_STATE_OBJECT_H_
 #define SILKWORM_STATE_OBJECT_H_
 
+#include <absl/container/flat_hash_map.h>
+
 #include <optional>
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/account.hpp>
@@ -28,6 +30,14 @@ struct Object {
   std::optional<Account> current;
   std::optional<Bytes> code;
 };
+
+struct StorageValue {
+  evmc::bytes32 initial{};   // value at the begining of the block
+  evmc::bytes32 original{};  // value at the begining of the transaction; see EIP-2200
+  evmc::bytes32 current{};   // current value
+};
+
+using Storage = absl::flat_hash_map<evmc::bytes32, StorageValue>;
 }  // namespace silkworm::state
 
 #endif  // SILKWORM_STATE_OBJECT_H_

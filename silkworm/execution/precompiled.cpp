@@ -153,10 +153,8 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
     adjusted_exponent_len = 1;
   }
 
-  intx::uint256 gas{mult_complexity(std::max(mod_len256, base_len256))};
-  gas *= adjusted_exponent_len;
-  gas /= fee::kGQuadDivisor;
-
+  intx::uint256 gas{mult_complexity(std::max(mod_len256, base_len256)) * adjusted_exponent_len /
+                    fee::kGQuadDivisor};
   if (intx::count_significant_words<uint64_t>(gas) > 1) {
     return UINT64_MAX;
   } else {
@@ -200,7 +198,7 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
   }
 
   if (modulus == 0) {
-    return Bytes{};
+    return Bytes(modulus_len, '\0');
   }
 
   boost::multiprecision::cpp_int result{boost::multiprecision::powm(base, exponent, modulus)};

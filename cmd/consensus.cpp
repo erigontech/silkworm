@@ -45,7 +45,6 @@ static const std::set<fs::path> kSlowTests{
 // TODO[Issue #23] make the failing tests work
 static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "InvalidBlocks",
-    kBlockchainDir / "TransitionTests" / "bcEIP158ToByzantium" / "ByzantiumTransition.json",
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
         "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
@@ -54,10 +53,6 @@ static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
     kBlockchainDir / "ValidBlocks" / "bcForkStressTest" / "ForkStressTest.json",
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
-    kBlockchainDir / "ValidBlocks" / "bcStateTests",
-    "blockhashTests.json",
-    kBlockchainDir / "ValidBlocks" / "bcStateTests",
-    "blockhashNonConstArg.json",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
 };
 
@@ -190,7 +185,7 @@ IntraBlockState pre_state(const nlohmann::json& pre) {
   return state;
 }
 
-bool run_block(const nlohmann::json& b, const BlockChain& chain, IntraBlockState& state) {
+bool run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& state) {
   bool invalid{b.contains("expectException")};
 
   Block block;
@@ -215,6 +210,8 @@ bool run_block(const nlohmann::json& b, const BlockChain& chain, IntraBlockState
     std::cout << "Extra RLP input\n";
     return false;
   }
+
+  chain.insert_block(block);
 
   for (Transaction& txn : block.transactions) {
     txn.recover_sender();
@@ -292,7 +289,7 @@ bool run_blockchain_test(const nlohmann::json& j) {
   BlockChain chain{nullptr};
   std::string network{j["network"].get<std::string>()};
   chain.config = kNetworkConfig.at(network);
-  chain.test_genesis_header = genesis_block.header;
+  chain.insert_block(genesis_block);
 
   IntraBlockState state{pre_state(j["pre"])};
 

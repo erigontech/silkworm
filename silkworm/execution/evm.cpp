@@ -439,11 +439,15 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
   uint64_t old_size{hashes.size()};
   uint64_t new_size{base_number - n};
 
-  if (old_size < new_size) hashes.resize(new_size);
+  if (old_size < new_size) {
+    hashes.resize(new_size);
+  }
 
   for (uint64_t i{old_size}; i < new_size; ++i) {
     std::optional<BlockHeader> header{evm_.chain_.get_header(base_number - i, hashes[i - 1])};
-    if (!header) break;
+    if (!header) {
+      break;
+    }
     hashes[i] = header->parent_hash;
   }
 

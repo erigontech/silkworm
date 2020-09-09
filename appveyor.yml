@@ -14,6 +14,7 @@
 
 image: Visual Studio 2019
 platform: x64
+configuration: Release
 
 install:
   - cd c:\Tools\vcpkg
@@ -21,7 +22,7 @@ install:
 
 cache:
   - C:\Tools\vcpkg\installed -> .appveyor.yml
-  - C:\.hunter -> CMakeLists.txt, cmake\Hunter\config.cmake
+  - C:\.hunter -> .appveyor.yml, CMakeLists.txt, cmake\Hunter\config.cmake
 
 before_build:
   - cd "%APPVEYOR_BUILD_FOLDER%"
@@ -36,4 +37,4 @@ build:
 test_script:
   - cd Build
   - ctest --output-on-failure
-  - Debug\consensus.exe
+  - Release\consensus.exe

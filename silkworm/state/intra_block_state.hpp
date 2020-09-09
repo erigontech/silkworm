@@ -49,8 +49,8 @@ class IntraBlockState {
     uint64_t refund_{0};
   };
 
-  IntraBlockState(const IntraBlockState&) = delete;
-  IntraBlockState& operator=(const IntraBlockState&) = delete;
+  IntraBlockState(IntraBlockState&& other) = default;
+  IntraBlockState& operator=(IntraBlockState&& other) = default;
 
   explicit IntraBlockState(state::Reader* state_reader) : db_{state_reader} {}
 

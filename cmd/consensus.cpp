@@ -28,17 +28,40 @@
 #include <string>
 #include <string_view>
 
+// See https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
+
+using namespace silkworm;
+
 namespace fs = std::filesystem;
 
 static const fs::path kRootDir{SILKWORM_CONSENSUS_TEST_DIR};
 
 static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
 
-static const std::set<fs::path> kExcludedTests{
+static const std::set<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
 };
 
-static constexpr size_t kColumnWidth{60};
+// TODO[Issue #23] make the failing tests work
+static const std::set<fs::path> kFailingTests{
+    kBlockchainDir / "InvalidBlocks",
+    kBlockchainDir / "TransitionTests" / "bcEIP158ToByzantium" / "ByzantiumTransition.json",
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
+        "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
+        "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
+    kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
+    kBlockchainDir / "ValidBlocks" / "bcForkStressTest" / "ForkStressTest.json",
+    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
+    kBlockchainDir / "ValidBlocks" / "bcStateTests",
+    "blockhashTests.json",
+    kBlockchainDir / "ValidBlocks" / "bcStateTests",
+    "blockhashNonConstArg.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
+};
+
+static constexpr size_t kColumnWidth{70};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",
@@ -145,22 +168,10 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
      }},
 };
 
-// https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-bool run_blockchain_test(const nlohmann::json& j) {
-  using namespace silkworm;
-
-  Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>())};
-  ByteView genesis_view{genesis_rlp};
-  Block genesis_block;
-  rlp::decode(genesis_view, genesis_block);
-
-  BlockChain chain{nullptr};
-  std::string network{j["network"].get<std::string>()};
-  chain.config = kNetworkConfig.at(network);
-  chain.test_genesis_header = genesis_block.header;
-
+IntraBlockState pre_state(const nlohmann::json& pre) {
   IntraBlockState state{nullptr};
-  for (const auto& entry : j["pre"].items()) {
+
+  for (const auto& entry : pre.items()) {
     evmc::address address{to_address(from_hex(entry.key()))};
     const nlohmann::json& account{entry.value()};
     Bytes balance{from_hex(account["balance"].get<std::string>())};
@@ -176,23 +187,59 @@ bool run_blockchain_test(const nlohmann::json& j) {
   }
 
   state.finalize_transaction();
+  return state;
+}
 
-  for (const auto& b : j["blocks"]) {
+bool run_block(const nlohmann::json& b, const BlockChain& chain, IntraBlockState& state) {
+  bool invalid{b.contains("expectException")};
+
+  Block block;
+  ByteView view{};
+
+  try {
     Bytes rlp{from_hex(b["rlp"].get<std::string>())};
-    ByteView view{rlp};
-    Block block;
-    // TODO[Issue #23] invalid blocks
+    view = rlp;
     rlp::decode(view, block);
-
-    for (Transaction& txn : block.transactions) {
-      txn.recover_sender();
+  } catch (const std::exception& e) {
+    if (invalid) {
+      return true;
     }
-
-    ExecutionProcessor processor{chain, block, state};
-    processor.execute_block();
+    std::cout << e.what() << "\n";
+    return false;
   }
 
-  for (const auto& entry : j["postState"].items()) {
+  if (!view.empty()) {
+    if (invalid) {
+      return true;
+    }
+    std::cout << "Extra RLP input\n";
+    return false;
+  }
+
+  for (Transaction& txn : block.transactions) {
+    txn.recover_sender();
+  }
+
+  ExecutionProcessor processor{chain, block, state};
+  try {
+    processor.execute_block();
+  } catch (const ValidationError& e) {
+    if (invalid) {
+      return true;
+    }
+    std::cout << e.what() << "\n";
+    return false;
+  }
+
+  if (invalid) {
+    std::cout << "Invalid block executed successfully\n";
+    std::cout << "Expected: " << b["expectException"] << "\n";
+  }
+  return !invalid;
+}
+
+bool check_post(const IntraBlockState& state, const nlohmann::json& expected) {
+  for (const auto& entry : expected.items()) {
     evmc::address address{to_address(from_hex(entry.key()))};
     const nlohmann::json& account{entry.value()};
 
@@ -236,9 +283,32 @@ bool run_blockchain_test(const nlohmann::json& j) {
   return true;
 }
 
+bool run_blockchain_test(const nlohmann::json& j) {
+  Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>())};
+  ByteView genesis_view{genesis_rlp};
+  Block genesis_block;
+  rlp::decode(genesis_view, genesis_block);
+
+  BlockChain chain{nullptr};
+  std::string network{j["network"].get<std::string>()};
+  chain.config = kNetworkConfig.at(network);
+  chain.test_genesis_header = genesis_block.header;
+
+  IntraBlockState state{pre_state(j["pre"])};
+
+  for (const auto& b : j["blocks"]) {
+    if (!run_block(b, chain, state)) {
+      return false;
+    }
+  }
+
+  return check_post(state, j["postState"]);
+}
+
 struct RunResult {
   size_t passed{0};
   size_t failed{0};
+  size_t skipped{0};
 };
 
 RunResult run_blockchain_file(const fs::path& file_path) {
@@ -257,6 +327,7 @@ RunResult run_blockchain_file(const fs::path& file_path) {
       }
       std::cout << " Skipped\n";
 
+      ++res.skipped;
       continue;
     }
 
@@ -278,25 +349,29 @@ RunResult run_blockchain_file(const fs::path& file_path) {
 int main() {
   size_t passed{0};
   size_t failed{0};
+  size_t skipped{0};
 
-  // TODO[Issue #23] TransitionTests and the rest of BlockchainTests
-  for (auto i = fs::recursive_directory_iterator(kBlockchainDir / "GeneralStateTests");
+  for (auto i = fs::recursive_directory_iterator(kBlockchainDir);
        i != fs::recursive_directory_iterator{}; ++i) {
-    if (kExcludedTests.count(*i)) {
+    if (kSlowTests.count(*i) || kFailingTests.count(*i)) {
       i.disable_recursion_pending();
     } else if (i->is_regular_file()) {
       RunResult res{run_blockchain_file(*i)};
       passed += res.passed;
       failed += res.failed;
+      skipped += res.skipped;
     }
   }
 
-  if (failed == 0) {
-    std::cout << "\033[0;32mAll " << passed << " tests passed\033[0m\n";
-  } else {
-    std::cout << "\033[1;31m" << failed << " tests failed\033[0m"
-              << " out of " << (passed + failed) << "\n";
+  std::cout << "\033[0;32m" << passed << " tests passed\033[0m, ";
+  if (failed) {
+    std::cout << "\033[1;31m";
   }
+  std::cout << failed << " failed";
+  if (failed) {
+    std::cout << "\033[0m";
+  }
+  std::cout << ", " << skipped << " skipped\n";
 
   return failed;
 }

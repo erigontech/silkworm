@@ -34,11 +34,7 @@ static const fs::path kRootDir{SILKWORM_CONSENSUS_TEST_DIR};
 
 static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
 
-// TODO[Issue #23] make the excluded tests pass
 static const std::set<fs::path> kExcludedTests{
-    kBlockchainDir / "GeneralStateTests" / "stPreCompiledContracts2" / "modexpRandomInput.json",
-    kBlockchainDir / "GeneralStateTests" / "stReturnDataTest" /
-        "modexp_modsize0_returndatasize.json",
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
 };
 

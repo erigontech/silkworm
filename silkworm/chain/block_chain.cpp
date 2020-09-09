@@ -16,17 +16,24 @@
 
 #include "block_chain.hpp"
 
+#include <cassert>
+
 namespace silkworm {
 BlockChain::BlockChain(db::Database* db) : db_{db} {}
 
 std::optional<BlockHeader> BlockChain::get_header(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const {
-  if (db_) {
+  if (block_number < headers_.size()) {
+    return headers_[block_number];
+  } else if (db_) {
     return db_->get_header(block_number, block_hash);
-  } else if (block_number == 0) {
-    return test_genesis_header;
   } else {
     return {};
   }
+}
+
+void BlockChain::insert_block(const Block& block) {
+  assert(block.header.number == headers_.size());
+  headers_.push_back(block.header);
 }
 }  // namespace silkworm

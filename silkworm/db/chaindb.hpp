@@ -52,7 +52,24 @@ namespace silkworm::db {
 
     namespace lmdb {
 
-        // An exception thrown by lmdb.
+        /**
+        * Options to pass to env when opening file
+        */
+        struct options {
+            uint64_t map_size = 2ull << 40;  // 2TiB by default
+            bool no_tls = true;              // MDB_NOTLS
+            bool no_rdahead = true;          // MDB_NORDAHEAD
+            bool no_sync = true;             // MDB_NOSYNC
+            bool no_meta_sync = false;       // MDB_NOMETASYNC
+            bool write_map = false;          // MDB_WRITEMAP
+            bool no_sub_dir = false;         // MDB_NOSUBDIR
+            unsigned max_buckets = 128;      // Max open buckets/dbi
+            mdb_mode_t mode = 0644;          // Filesystem mode
+        };
+
+        /**
+        * Exception thrown by lmdb
+        */
         class exception : public std::exception {
            public:
             exception(int err, const char* errstr) : err_{err}, message_{std::move(errstr)} {};
@@ -63,6 +80,9 @@ namespace silkworm::db {
             const char* message_;
         };
 
+        /**
+         * Handles return codes from API calls and optionally throws
+         */
         static inline int err_handler(int err, bool shouldthrow = false) {
             if (err != MDB_SUCCESS && shouldthrow) {
                 throw exception(err, mdb_strerror(err));
@@ -70,11 +90,13 @@ namespace silkworm::db {
             return err;
         }
 
-        class Env;  // environment : 1:1 relation among env and opened files
-        class Txn;  // transaction : every read write operation lives in a transaction
-        class Dbi;  // named database interface (aka bucket)
-        class Crs;  // cursor for a bucket
+        class Env;
+        class Txn;
+        class Bkt;
 
+        /**
+        * MDB_env wrapper
+        */
         class Env {
 
         private:
@@ -82,23 +104,39 @@ namespace silkworm::db {
             MDB_env* handle_{nullptr};
 
             bool opened_{false};
-            std::mutex count_mtx_;
 
-            std::map<std::thread::id, int> ro_txns_{};
-            std::map<std::thread::id, int> rw_txns_{};
+
+            friend class Txn;
+
+            std::mutex count_mtx_;  // Lock to prevent concurrent access to transactions counters maps
+            std::map<std::thread::id, int> ro_txns_{};  // A per thread maintaned count of opened ro transactions
+            std::map<std::thread::id, int> rw_txns_{};  // A per thread maintaned count of opened rw transactions
+
+            /*
+            * A transaction and its cursors must only be used by a single thread,
+            * and a thread may only have one transaction at a time.
+            * Only exception is when parent environment is opened with MDB_NOTLS flag
+            * which causes the allowance of unlimited ro transactions.
+            * So when a thread begins a new transaction (see begin_transaction)
+            * env is checked for corresponding slot and eventually allows or
+            * prohibits the transaction opening
+            */
+
+            int get_ro_txns(void); // Returns number of opened ro transactions for calling thread
+            int get_rw_txns(void); // Returns number of opened rw transactions for calling thread
+            void touch_ro_txns(int count); // Ro transaction count incrementer/decrementer
+            void touch_rw_txns(int count); // Ro transaction count incrementer/decrementer
 
            public:
-            static constexpr unsigned int default_flags{0};
-            static constexpr mdb_mode_t default_mode{0644};
 
-            Env(const unsigned flags = default_flags);
+            Env(const unsigned flags = 0);
             ~Env() noexcept;
 
             MDB_env** handle(void) { return &handle_; }
             bool is_opened(void) { return opened_; }
             bool is_ro(void);
 
-            void open(const char* path, const unsigned int flags = default_flags, const mdb_mode_t mode = default_mode);
+            void open(const char* path, const unsigned int flags, const mdb_mode_t mode);
             void close() noexcept;
 
             int get_flags(unsigned int* flags);
@@ -111,40 +149,52 @@ namespace silkworm::db {
             int set_max_readers(const unsigned int count);
             int sync(const bool force = true);
 
-            int get_ro_txns(void);
-            int get_rw_txns(void);
-            void touch_ro_txns(int count);
-            void touch_rw_txns(int count);
-
             std::unique_ptr<Txn> begin_transaction(unsigned int flags = 0);
             std::unique_ptr<Txn> begin_ro_transaction(unsigned int flags = 0);
             std::unique_ptr<Txn> begin_rw_transaction(unsigned int flags = 0);
 
         };
 
+        /**
+        * MDB_txn wrapper
+        */
         class Txn {
 
-           protected:
+           private:
 
-            Env* parent_env_;
-            MDB_txn* handle_;
-            unsigned int flags_;
+            static MDB_txn* open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
             Txn(Env* parent, MDB_txn* txn, unsigned int flags);
 
-           private:
-            static MDB_txn* open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
+            Env* parent_env_;     // Pointer to env this transaction belongs to
+            MDB_txn* handle_;     // This transaction lmdb handle
+            unsigned int flags_;  // Flags this transaction has been opened with
 
-            std::vector<Crs*> cursors_{};
+            /*
+            * A dbi is an unsigned int handle to a table in database.
+            * Opening dbi(s) is required to get access to cursors but handle is
+            * valid environment wise. Open dbi on demand when required access to
+            * a cursor and keep a map of handles internally. Closing of dbis is not
+            * apparently not needed.
+            * Key -> the name of the named db
+            * Val -> the MDB_dbi handle
+            */
+
+            std::map<std::string, MDB_dbi> dbis_;
+            std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const char* name, unsigned int flags = 0);
+            std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const std::string name, unsigned int flags = 0);
+
+            std::vector<Bkt*> bkts_{};  // Collection of buckets this transaction has opened
 
            public:
+
             explicit Txn(Env* parent, unsigned int flags = 0);
             ~Txn();
 
             MDB_txn** handle() { return &handle_; }
-            bool is_ro(void);
 
-            std::unique_ptr<Dbi> open_bucket(const char* name, unsigned int flags = 0);
-            std::unique_ptr<Crs> open_cursor(MDB_dbi bucket);
+            bool is_ro(void); // Whether this transaction is readonly
+
+            std::unique_ptr<Bkt> open(const char* name, unsigned int flags = 0);
 
             Txn(const Txn& src) = delete;
             Txn& operator=(const Txn& src) = delete;
@@ -156,68 +206,131 @@ namespace silkworm::db {
             int commit(void);
         };
 
-        class Dbi {
-           protected:
-            Dbi(Env* parent_env, Txn* parent_txn, MDB_dbi dbi);
-
-           private:
-            static MDB_dbi open_bucket(Env* parent_env, Txn* parent_txn, const char* name, unsigned int flags = 0);
-
-           public:
-            explicit Dbi(Env* env, Txn* txn, const char* name, unsigned int flags = 0);
-
-            int get_flags(unsigned int* flags);
-            int get_stat(MDB_stat* stat);
-            int get(MDB_val* key, MDB_val* data);
-            int del(MDB_val* key, MDB_val* data);
-            int put(MDB_val* key, MDB_val* data, unsigned int flags = 0);
-            int drop(int del);
-
-            std::unique_ptr<Crs> get_cursor(void);
-
-           private:
-            Env* parent_env_;
-            Txn* parent_txn_;
-            MDB_dbi handle_;
-            bool opened_{true};
-        };
-
-        class Crs {
-
-        protected:
-
-            Crs(std::vector<Crs*> &coll, Env* parent_env, Txn* parent_txn, MDB_cursor* handle, MDB_dbi bucket);
-
-        private:
-
-            static MDB_cursor* open_cursor(Env* parent_env, Txn* parent_txn, MDB_dbi dbi);
+        /**
+        * A bucket is an hybrid which wraps both an MDB_dbi
+        * and an MDB_cursor
+        */
+        class Bkt {
 
         public:
-         explicit Crs(std::vector<Crs*> &coll, Env* env, Txn* txn, MDB_dbi dbi);
-         int get(MDB_val* key, MDB_val* data, MDB_cursor_op operation);  // Gets data on behalf of operation
-         int seek(MDB_val* key, MDB_val* data);                          // Tries find a key in bucket
-         int current(MDB_val* key, MDB_val* data);                       // Gets data from current cursor position
-         int first(MDB_val* key, MDB_val* data);                         // Move cursor at first item in bucket
-         int prev(MDB_val* key, MDB_val* data);                          // Move cursor at previous item in bucket
-         int next(MDB_val* key, MDB_val* data);                          // Move cursor at next item in bucket
-         int last(MDB_val* key, MDB_val* data);                          // Move cursor at last item in bucket
-         int del(unsigned int flags = 0);                                // Delete key/data pair at current position
-         int put(MDB_val* key, MDB_val* data, unsigned int flags = 0);   // Store data by cursor
-         int count(mdb_size_t* count);  // Returns the count of duplicates at current position
-         void close(void);              // Close the cursor and frees the handle
-        private:
-         std::vector<Crs*>* coll_;
-         Env* parent_env_;
-         Txn* parent_txn_;
-         MDB_dbi bucket_;
-         MDB_cursor* handle_;
+
+            explicit Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name);
+
+            /*
+            * MDB_dbi interfaces
+            */
+            int get_flags(unsigned int* flags);  // Returns the flags used to open the bucket
+            int get_stat(MDB_stat* stat);        // Returns stat info about the bucket
+            int get_rcount(mdb_size_t* count);   // Returns the number of records held in bucket
+
+            /*
+            * MDB_cursor interfaces
+            */
+
+            int seek(MDB_val* key, MDB_val* data);         // Position cursor to first key >= of given key
+            int seek_exact(MDB_val* key, MDB_val* data);   // Position cursor to key == of given key
+            int get_current(MDB_val* key, MDB_val* data);  // Gets data from current cursor position
+            int del_current(bool dupdata = false);         // Delete key/data pair at current cursor position
+            int get_first(MDB_val* key, MDB_val* data);    // Move cursor at first item in bucket
+            int get_prev(MDB_val* key, MDB_val* data);     // Move cursor at previous item in bucket
+            int get_next(MDB_val* key, MDB_val* data);     // Move cursor at next item in bucket
+            int get_last(MDB_val* key, MDB_val* data);     // Move cursor at last item in bucket
+            int get_dcount(mdb_size_t* count);             // Returns the count of duplicates at current position
+
+            /* @brief Stores key/data pairs into the database using cursor.
+            *
+            * The cursor is positioned at the new item, or on failure usually near it.
+            * For more fine grained options see #put_current(), #put_nodup, #put_noovrw,
+            * #put_reserve(), #put_append(), #put_append_dup() and #put_multiple()
+            */
+            int put(MDB_val* key, MDB_val* data);
+
+            /* @brief Replace the k/d pair at current cursor position
+            *
+            * The key parameter must be provided and must match the one at current cursor position
+            * If env has MDB_DUPSORT the data item must still sort into the same place.
+            * This is intended to be used when the new data is the same size as the old, otherwise
+            * it will simply perform a delete of the old record followed by an inster
+            */
+            int put_current(MDB_val* key, MDB_val* data);
+
+            /* @brief Inserts the new k/d pair only if it does not already appear in database
+            *
+            * This operation may only be invoked if the database was opened with MDB_DUPSORT
+            * Function will return MDB_KEYEXISTS if the k/v data pair already appears in the
+            * database.
+            */
+            int put_nodup(MDB_val* key, MDB_val* data);
+
+            /* @brief Inserts the new k/v pair only if it does not already appear in database
+            *
+            * Function will return MDB_KEYEXISTS if the k/d data pair already appears in the
+            * database even if the database supports duplicates (MDB_DUPSORT)
+            */
+            int put_noovrw(MDB_val* key, MDB_val* data);
+
+            /* @brief Reserves space for data of giben size but doesn't copy data.
+            *
+            * Function must NOT be used if the database was opened with MDB_DUPSORT
+            */
+            int put_reserve(MDB_val* key, MDB_val* data);
+
+            /* @brief Append the given k/d pair to the end of the database.
+            *
+            * No key comparisons are performed. This function allows fast bulk loading
+            * when keys are already known to be in the correct order. Loading unsorted
+            * keys by this function will cause a MDB_KEYEXIST error.
+            */
+            int put_append(MDB_val* key, MDB_val* data);
+
+            /* @brief Append the given k/d pair to the end of the database.
+            *
+            * No key comparisons are performed. This function allows fast bulk loading
+            * when keys are already known to be in the correct order. Loading unsorted
+            * keys by this function will cause a MDB_KEYEXIST error.
+            * Use this function for SORTED dup data.
+            */
+            int put_append_dup(MDB_val* key, MDB_val* data);
+
+            /* @brief Stores multiple contiguous data elements in a single request
+            *
+            * This function may only be used if the database was opened with MDB_DUPFIXED
+            * The data argument MUST be an array of TWO MDB_val.
+            * First MDB_val must be as :
+            * - mv_size the size of a single data element
+            * - mv_data pointer to the beginning of first data element
+            * Second MDB_val must be as :
+            * - mv_size the number of data elements to store
+            * - mv_data can be anything as it is ignored
+            *
+            * On return of the function the 2ND MDB_val.mv_size will hold the number
+            * of elements effectively written.
+            */
+            int put_multiple(MDB_val* key, MDB_val* data);
+
+            void close(void);  // Close the cursor (not the dbi) and frees the handle
+
+           private:
+
+            static MDB_cursor* open_cursor(Txn* parent, MDB_dbi dbi);
+            Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor);
+
+            int get(MDB_val* key, MDB_val* data,
+                    MDB_cursor_op operation);  // Gets data by cursor on behalf of operation
+            int put(MDB_val* key, MDB_val* data,
+                    unsigned int flag);  // Puts data by cursor on behalf of operation
+
+            Txn* parent_txn_;          // The transaction this bucket belongs to
+            MDB_dbi dbi_;              // The underlying MDB_dbi handle for this instance
+            std::string dbi_name_;     // The name of the dbi
+            MDB_cursor* cursor_;       // The underlying MDB_cursor for this instance
+            std::vector<Bkt*>* coll_;  // Pointer to collection of all cursors
         };
 
     }  // namespace lmdb
 
 
-    std::shared_ptr<lmdb::Env> get_env(const char* path, const unsigned int flags = lmdb::Env::default_flags,
-                                       const mdb_mode_t mode = lmdb::Env::default_mode);
+    std::shared_ptr<lmdb::Env> get_env(const char* path, lmdb::options opts = {}, bool forwriting = false);
 
 }  // namespace silkworm::db
 

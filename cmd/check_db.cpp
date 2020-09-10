@@ -16,9 +16,11 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/endian/conversion.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/db/bucket.hpp>
+#include <silkworm/types/block.hpp>
 
 #include <string>
 #include <csignal>
@@ -70,40 +72,150 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    evmc::bytes32* canonical_headers{nullptr};
+    uint64_t canonical_headers_count{0};
+
     try
     {
         auto env = db::get_env(po_db_path.c_str());
         std::cout << "Database is " << (env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
         {
             auto txn_ro = env->begin_ro_transaction();
-            MDB_stat s{};
-            auto headers = txn_ro->open_bucket(db::bucket::kBlockHeaders);
-            headers->get_stat(&s);
-            std::cout << "Headers Table has " << s.ms_entries << " entries" << std::endl;
-            auto bodies = txn_ro->open_bucket(db::bucket::kBlockBodies);
-            bodies->get_stat(&s);
-            std::cout << "Bodies  Table has " << s.ms_entries << " entries" << std::endl;
+            MDB_val key, data;
+            int rc{0};
 
-            size_t totalEntries{s.ms_entries};
-            size_t batchEntries{totalEntries / 20};
+            // Uncomment the following block if you want a list
+            // of named buckets stored into the database
+            //auto unnamed = txn_ro->open(0);
+            //unnamed->get_stat(&s);
+            //std::cout << "Database contains " << s.ms_entries << " named buckets" << std::endl;
+            //int rc{unnamed->get_first(&hkey, &hdata)};
+            //while (!shouldStop && rc == MDB_SUCCESS)
+            //{
+            //    std::string_view svkey{ static_cast<char*>(hkey.mv_data), hkey.mv_size };
+            //    std::cout << "Bucket " << svkey << "\n";
+            //    rc = unnamed->get_next(&hkey, &hdata);
+            //}
+            //std::cout << "\n" << std::endl;
+
+            auto headers = txn_ro->open(db::bucket::kBlockHeaders);
+
+            size_t headers_records{0};
+            (void)headers->get_rcount(&headers_records);
+            size_t batch_size{headers_records / 50};
             uint32_t percent{0};
 
-            auto bodies_cursor = bodies->get_cursor();
-            MDB_val key;
-            MDB_val data;
-            int rc{bodies_cursor->first(&key, &data)};
-            while (rc == MDB_SUCCESS)
+            std::cout << "Headers Table has " << headers_records << " records" << std::endl;
+
+            // Dirty way to get last block number (from actually stored headers)
+            uint64_t highest_block{0};
+            rc = headers->get_last(&key, &data);
+            while (!shouldStop && rc == MDB_SUCCESS)
             {
-                batchEntries--;
-                if (!batchEntries) {
-                    batchEntries = totalEntries / 20;
-                    percent += 5;
-                    std::cout << "Navigated " << percent << "% of block bodies" << std::endl;
+                ByteView v{ static_cast<uint8_t*>(key.mv_data), key.mv_size };
+                if (v[8] != 'n') {
+                    headers->get_prev(&key, &data);
+                    continue;
                 }
-                rc = bodies_cursor->next(&key, &data);
+                highest_block = boost::endian::load_big_u64(&v[0]);
+                break;
             }
 
-            bodies_cursor->close();
+            std::cout << "Highest canonical block number " << highest_block << std::endl;
+
+            // Try allocate enough memory space to fit all cananonical header hashes
+            // which need to be processed
+            canonical_headers = static_cast<evmc::bytes32*>(std::calloc((highest_block + 1), kHashLength));
+            if (!canonical_headers) {
+                // not enough space to store all
+                throw std::runtime_error("Can't allocate space for canonical hashes");
+            }
+
+            // Navigate all headers to load canonical hashes
+            rc = headers->get_first(&key, &data);
+            while (!shouldStop && rc == MDB_SUCCESS)
+            {
+                // Canonical header key is 9 bytes (8 blocknumber + 'n')
+                if (key.mv_size == 9) {
+                    ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
+                    if (v[8] == 'n') {
+                        uint64_t header_block = boost::endian::load_big_u64(&v[0]);
+                        memcpy((void*)&canonical_headers[header_block], data.mv_data, kHashLength);
+                        canonical_headers_count++;
+                    }
+                }
+
+                batch_size--;
+                if (!batch_size) {
+                    batch_size = headers_records / 50;
+                    percent += 2;
+                    std::cout << "Navigated " << percent << "% of headers bucket. Canonical records found " << canonical_headers_count << std::endl;
+                }
+                rc = headers->get_next(&key, &data);
+            }
+
+            // Can now close headers bucket
+            // It actually closes the cursor, not the bucket itself
+            headers->close();
+
+            // Open bodies bucket and iterate to load transactions (if any in the block)
+            auto bodies = txn_ro->open(db::bucket::kBlockBodies);
+            uint64_t bodies_records{0};
+            (void)bodies->get_rcount(&bodies_records);
+
+            batch_size = canonical_headers_count / 50 ;
+            percent = 0;
+            uint64_t total_transactions{0};
+
+            std::cout << "Bodies Table has " << bodies_records << " records. Canonical headers " << canonical_headers_count << std::endl;
+
+            rc = bodies->get_first(&key, &data);
+            for (uint64_t block_num = 0; !shouldStop && block_num < canonical_headers_count && rc == MDB_SUCCESS; block_num++)
+            {
+                while (!shouldStop && rc == MDB_SUCCESS) {
+                    ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
+                    uint64_t body_block{boost::endian::load_big_u64(&v[0])};
+
+                    if (body_block < block_num) {
+                        // We're behind with bodies wrt headers
+                        rc = bodies->get_next(&key, &data);
+                        continue;
+                    } else if (body_block > block_num) {
+                        // We're ahead with bodies wrt headers
+                        // Should not occurr. Raise an exception
+                        break;
+                    }
+
+                    // Check header hash is the same
+                    if (memcmp((void*)&v[8], (void*)&canonical_headers[block_num], 32) != 0) {
+                        rc = bodies->get_next(&key, &data);
+                        continue;
+                    }
+
+                    // We have a block with same canonical header in key
+                    // If data contains something process it
+                    if (data.mv_size > 3)
+                    {
+                        ByteView bv{ static_cast<uint8_t*>(data.mv_data), data.mv_size };
+                        BlockBody body{};
+                        rlp::decode(bv, body);
+                        total_transactions += body.transactions.size();
+                    }
+
+                    // Eventually move to next block
+                    rc = bodies->get_next(&key, &data);
+                }
+
+                batch_size--;
+                if (!batch_size) {
+                    batch_size = canonical_headers_count / 50;
+                    percent += 2;
+                    std::cout << "Navigated " << percent << "% of block canonical headers. Processed transactions " << total_transactions << std::endl;
+                }
+
+            }
+
+            bodies->close();
             txn_ro->commit();
         }
         env->close();

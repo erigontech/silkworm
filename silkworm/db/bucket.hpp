@@ -30,13 +30,17 @@ constexpr const char* kAccountHistory{"hAT"};
 constexpr const char* kStorageHistory{"hST"};
 constexpr const char* kCode{"CODE"};
 constexpr const char* kCodeHash{"PLAIN-contractCode"};
+constexpr const char* kLastBlock{"LastBlock"};
+constexpr const char* kLastFast{"LastFast"};
+constexpr const char* kLastHeader{"LastHeader"};
 constexpr const char* kBlockHeaders{"h"};
 constexpr const char* kBlockBodies{"b"};
 constexpr const char* kSenders{"txSenders"};
 
 constexpr const char* kBuckets[]{
     kPlainState, kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory,
-    kCode,       kCodeHash,       kBlockHeaders,   kBlockBodies,    kSenders,
+    kCode,       kCodeHash,       kLastBlock,      kLastFast,       kLastHeader,
+    kBlockHeaders,   kBlockBodies,    kSenders
 };
 }  // namespace silkworm::db::bucket
 

@@ -183,6 +183,35 @@ namespace silkworm::db {
             return retvar;
         }
 
+        std::optional<std::pair<std::string, MDB_dbi>> Txn::open_dbi(const char* name, unsigned int flags) {
+            std::string namestr{};
+            if (name) {
+                namestr.assign(name);
+            }
+            return open_dbi(namestr, flags);
+        }
+
+        std::optional<std::pair<std::string, MDB_dbi>> Txn::open_dbi(const std::string name, unsigned int flags) {
+
+            // Lookup value in map
+            auto iter = dbis_.find(name);
+            if (iter != dbis_.end()) {
+                return {std::pair(iter->first, iter->second)};
+            }
+
+            // TODO(Andrea)
+            // Every bucket has its own set of flags
+            // Lookup somewhere how to configure a bucket
+            MDB_dbi newdbi{0};
+
+            // Allow execption to throw when opening
+            int rc{err_handler(mdb_dbi_open(handle_, (name.empty() ? 0 :name.c_str()), flags, &newdbi))};
+            if (rc) return {};
+
+            dbis_[name] = newdbi;
+            return {std::pair(name, newdbi)};
+        }
+
         Txn::Txn(Env* parent, unsigned int flags) : Txn(parent, open_transaction(parent, nullptr, flags), flags) {}
         Txn::~Txn() {
 
@@ -198,22 +227,21 @@ namespace silkworm::db {
 
         bool Txn::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
-        std::unique_ptr<Dbi> Txn::open_bucket(const char* name, unsigned int flags)
+        std::unique_ptr<Bkt> Txn::open(const char* name, unsigned int flags)
         {
-            return std::make_unique<Dbi>(parent_env_, this, name, flags);
-        }
-
-        std::unique_ptr<Crs> Txn::open_cursor(MDB_dbi bucket)
-        {
-            return std::make_unique<Crs>(cursors_, parent_env_, this, bucket);
+            std::optional<std::pair<std::string, MDB_dbi>> dbi{open_dbi(name, flags)};
+            if (!dbi) {
+                throw exception(MDB_NOTFOUND, mdb_strerror(MDB_NOTFOUND));
+            }
+            return std::make_unique<Bkt>(this, bkts_, dbi.value().second, dbi.value().first);
         }
 
         void Txn::close_cursors(void)
         {
-            decltype(cursors_) tmp;
-            std::swap(cursors_, tmp);
-            for (auto& cursor : tmp) {
-                cursor->close();
+            decltype(bkts_) tmp;
+            std::swap(bkts_, tmp);
+            for (auto& bkt : tmp) {
+                bkt->close();
             }
         }
 
@@ -246,113 +274,80 @@ namespace silkworm::db {
             return rc;
         }
 
-        Dbi::Dbi(Env* parent_env, Txn* parent_txn, MDB_dbi dbi)
-            : parent_env_{parent_env}, parent_txn_{parent_txn}, handle_{dbi} {}
-
-        MDB_dbi Dbi::open_bucket(Env* parent_env, Txn* parent_txn, const char* name, unsigned int flags)
-        {
-            if (!parent_env->is_opened() || !*parent_txn->handle()) {
-                throw std::runtime_error("Database or transaction closed");
-            }
-            MDB_dbi retvar{0};
-            (void)err_handler(mdb_dbi_open(*parent_txn->handle(), name, flags, &retvar), true);
-            return retvar;
-        }
-
-        Dbi::Dbi(Env* env, Txn* txn, const char* name, unsigned int flags)
-            : Dbi(env, txn, open_bucket(env, txn, name, flags)) {}
-
-        int Dbi::get_flags(unsigned int* flags) {
-            if (!opened_) {
-                throw std::runtime_error("Closed or invalid handle");
-            }
-            return err_handler(mdb_dbi_flags(*parent_txn_->handle(), handle_, flags));
-        }
-
-        int Dbi::get_stat(MDB_stat* stat) {
-            if (!opened_) {
-                throw std::runtime_error("Closed or invalid handle");
-            }
-            return err_handler(mdb_stat(*parent_txn_->handle(), handle_, stat));
-        }
-
-        int Dbi::get(MDB_val* key, MDB_val* data) {
-            if (!opened_) {
-                throw std::runtime_error("Closed or invalid handle");
-            }
-            return err_handler(mdb_get(*parent_txn_->handle(), handle_, key, data));
-        }
-
-        int Dbi::del(MDB_val* key, MDB_val* data) {
-            if (!opened_) {
-                throw std::runtime_error("Closed or invalid handle");
-            }
-            return err_handler(mdb_del(*parent_txn_->handle(), handle_, key, data));
-        }
-
-        int Dbi::put(MDB_val* key, MDB_val* data, unsigned int flags) {
-            if (!opened_) {
-                throw std::runtime_error("Closed or invalid handle");
-            }
-            return err_handler(mdb_put(*parent_txn_->handle(), handle_, key, data, flags));
-        }
-
-        int Dbi::drop(int del) {
-            int rc{err_handler(mdb_drop(*parent_txn_->handle(), handle_, del))};
-            if (rc == MDB_SUCCESS && del) opened_ = false;
-            return rc;
-        }
-
-        std::unique_ptr<Crs> Dbi::get_cursor(void) { return parent_txn_->open_cursor(handle_); }
-
         /*
-        * Cursors
+        * Buckets
         */
 
-        Crs::Crs(std::vector<Crs*>& coll, Env* parent_env, Txn* parent_txn, MDB_cursor* handle, MDB_dbi bucket)
-            : coll_{&coll}, parent_env_{parent_env}, parent_txn_{parent_txn}, bucket_{bucket}, handle_{handle} {
-            coll_->emplace_back(this);
-        }
+        Bkt::Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name)
+            : Bkt::Bkt(parent, coll, dbi, dbi_name, open_cursor(parent, dbi)) {}
 
-        MDB_cursor* Crs::open_cursor(Env* parent_env, Txn* parent_txn, MDB_dbi dbi)
+        MDB_cursor* Bkt::open_cursor(Txn* parent, MDB_dbi dbi)
         {
-            if (!parent_env->is_opened() || !*parent_txn->handle()) {
+            if (!*parent->handle()) {
                 throw std::runtime_error("Database or transaction closed");
             }
-
-            MDB_cursor* retvar{nullptr};
-            (void)err_handler(mdb_cursor_open(*parent_txn->handle(), dbi, &retvar), true);
+            MDB_cursor* retvar{ nullptr };
+            (void)err_handler(mdb_cursor_open(*parent->handle(), dbi, &retvar), true);
             return retvar;
         }
 
-        Crs::Crs(std::vector<Crs*> &coll, Env* env, Txn* txn, MDB_dbi dbi) : Crs(coll, env, txn, open_cursor(env, txn, dbi), dbi) {}
+        Bkt::Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor)
+            : parent_txn_{ parent }, dbi_{ dbi }, dbi_name_{ std::move(dbi_name)}, cursor_{ cursor }, coll_{ &coll } {}
 
-        int Crs::get(MDB_val* key, MDB_val* data, MDB_cursor_op operation) {
-            int rc{err_handler(mdb_cursor_get(handle_, key, data, operation))};
+        int Bkt::get_flags(unsigned int* flags) {
+            return err_handler(mdb_dbi_flags(*parent_txn_->handle(), dbi_, flags));
+        }
+
+        int Bkt::get_stat(MDB_stat* stat) { return err_handler(mdb_stat(*parent_txn_->handle(), dbi_, stat)); }
+
+        int Bkt::get_rcount(mdb_size_t* count)
+        {
+            MDB_stat stat{};
+            int rc{get_stat(&stat)};
+            if (!rc) *count = stat.ms_entries;
             return rc;
         }
 
-        int Crs::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
-
-        int Crs::current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
-
-        int Crs::first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
-
-        int Crs::prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
-
-        int Crs::next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
-
-        int Crs::last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
-
-        int Crs::del(unsigned int flags) { return err_handler(mdb_cursor_del(handle_, flags)); }
-
-        int Crs::put(MDB_val* key, MDB_val* data, unsigned int flags) {
-            return err_handler(mdb_cursor_put(handle_, key, data, flags));
+        int Bkt::get(MDB_val* key, MDB_val* data, MDB_cursor_op operation) {
+            if (!cursor_) {
+                throw exception(EINVAL, mdb_strerror(EINVAL));
+            }
+            int rc{ err_handler(mdb_cursor_get(cursor_, key, data, operation)) };
+            return rc;
         }
 
-        int Crs::count(mdb_size_t* count) { return err_handler(mdb_cursor_count(handle_, count)); }
+        int Bkt::put(MDB_val* key, MDB_val* data, unsigned int flag) {
+            if (!cursor_) {
+                throw exception(EINVAL, mdb_strerror(EINVAL));
+            }
+            int rc{ err_handler(mdb_cursor_put(cursor_, key, data, flag)) };
+            return rc;
+        }
 
-        void Crs::close() {
+        int Bkt::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }
+        int Bkt::seek_exact(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
+        int Bkt::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
+        int Bkt::del_current(bool dupdata) {
+            return err_handler(mdb_cursor_del(cursor_, (dupdata ? MDB_NODUPDATA : 0u)));
+        }
+        int Bkt::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
+        int Bkt::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
+        int Bkt::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
+        int Bkt::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
+        int Bkt::get_dcount(mdb_size_t* count) { return err_handler(mdb_cursor_count(cursor_, count)); }
+
+        int Bkt::put(MDB_val* key, MDB_val* data) { return put(key, data, 0u); }
+        int Bkt::put_current(MDB_val* key, MDB_val* data) { return put(key, data, MDB_CURRENT); }
+        int Bkt::put_nodup(MDB_val* key, MDB_val* data) { return put(key, data, MDB_NODUPDATA); }
+        int Bkt::put_noovrw(MDB_val* key, MDB_val* data) { return put(key, data, MDB_NOOVERWRITE); }
+        int Bkt::put_reserve(MDB_val* key, MDB_val* data) { return put(key, data, MDB_RESERVE); }
+        int Bkt::put_append(MDB_val* key, MDB_val* data) { return put(key, data, MDB_APPEND); }
+        int Bkt::put_append_dup(MDB_val* key, MDB_val* data) { return put(key, data, MDB_APPENDDUP); }
+        int Bkt::put_multiple(MDB_val* key, MDB_val* data) { return put(key, data, MDB_MULTIPLE); }
+
+        void Bkt::close() {
+
+            if (!cursor_) return;
 
             // Remove self from collection of cursors
             // opened for this transaction
@@ -362,16 +357,16 @@ namespace silkworm::db {
                 coll_ = nullptr;
             }
 
-            // Eventually free handle
-            if (handle_) {
-                mdb_cursor_close(handle_);
-                handle_ = nullptr;
-            }
+            // Free the cursor handle
+            // There is no need to close the dbi_ handle
+            mdb_cursor_close(cursor_);
+            cursor_ = nullptr;
         }
+
 
 }  // namespace lmdb
 
-    std::shared_ptr<lmdb::Env> get_env(const char* path, const unsigned int flags, const mdb_mode_t mode)
+    std::shared_ptr<lmdb::Env> get_env(const char* path, lmdb::options opts, bool forwriting)
     {
         struct Value {
             std::weak_ptr<lmdb::Env> wp;
@@ -380,6 +375,16 @@ namespace silkworm::db {
 
         static std::map<size_t, Value> s_envs;
         static std::mutex s_mtx;
+
+        // Compute flags for required instance
+        unsigned int flags{0};
+        if (opts.no_tls) flags |= MDB_NOTLS;
+        if (opts.no_rdahead) flags |= MDB_NORDAHEAD;
+        if (opts.no_sync) flags |= MDB_NOSYNC;
+        if (opts.no_sync) flags |= MDB_NOSYNC;
+        if (opts.no_meta_sync) flags |= MDB_NOMETASYNC;
+        if (opts.write_map) flags |= MDB_WRITEMAP;
+        if (opts.no_sub_dir) flags |= MDB_NOSUBDIR;
 
         // There's a 1:1 relation among env and the opened
         // database file. Build a hash of the path
@@ -406,11 +411,9 @@ namespace silkworm::db {
 
         // Create new instance and open db file(s)
         auto newitem = std::make_shared<lmdb::Env>();
-        (void)newitem->set_mapsize(2ull << 40);
-        (void)newitem->set_max_dbs(128);
-        newitem->open(path, flags | MDB_NOTLS, mode); // Throws on error
-
-
+        (void)newitem->set_mapsize(opts.map_size);
+        (void)newitem->set_max_dbs(opts.max_buckets);
+        newitem->open(path, flags | (forwriting ? MDB_RDONLY : 0), opts.mode); // Throws on error
 
         s_envs[envkey] = {newitem, flags};
         return newitem;

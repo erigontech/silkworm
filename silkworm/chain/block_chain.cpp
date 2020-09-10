@@ -16,7 +16,7 @@
 
 #include "block_chain.hpp"
 
-#include <cassert>
+#include <stdexcept>
 
 namespace silkworm {
 BlockChain::BlockChain(db::Database* db) : db_{db} {}
@@ -33,7 +33,9 @@ std::optional<BlockHeader> BlockChain::get_header(uint64_t block_number,
 }
 
 void BlockChain::insert_block(const Block& block) {
-  assert(block.header.number == headers_.size());
+  if (block.header.number != headers_.size()) {
+    throw std::logic_error{"forks are not supported yet"};
+  }
   headers_.push_back(block.header);
 }
 }  // namespace silkworm

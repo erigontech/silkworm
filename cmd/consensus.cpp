@@ -45,13 +45,17 @@ static const std::set<fs::path> kSlowTests{
 // TODO[Issue #23] make the failing tests work
 static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "InvalidBlocks",
+
+    // Expected: "UnknownParent"
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
+
+    // forks are not supported yet
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
         "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
         "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
-    kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
     kBlockchainDir / "ValidBlocks" / "bcForkStressTest" / "ForkStressTest.json",
+    kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
 };

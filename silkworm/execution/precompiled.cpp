@@ -100,11 +100,11 @@ std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
 
 static intx::uint256 mult_complexity(const intx::uint256& x) {
   if (x <= 64) {
-    return x * x;
+    return sqr(x);
   } else if (x <= 1024) {
-    return x * x / 4 + 96 * x - 3072;
+    return (sqr(x) >> 2) + 96 * x - 3072;
   } else {
-    return x * x / 16 + 480 * x - 199680;
+    return (sqr(x) >> 4) + 480 * x - 199680;
   }
 }
 

@@ -92,7 +92,13 @@ jobs:
           name: "Upload to Codecov"
           command: |
             sudo pip3 install --upgrade --quiet --no-cache-dir codecov
-            codecov --required --file ~/build/silkworm.lcov -X gcov
+
+            counter=1
+            until codecov --required --file ~/build/silkworm.lcov -X gcov || [ $counter = 5 ]; do
+              counter=$((counter+1))
+              sleep 1
+              echo "Try #$counter..."
+            done
 
 workflows:
   version: 2

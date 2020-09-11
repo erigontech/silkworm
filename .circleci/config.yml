@@ -14,11 +14,6 @@
 
 version: 2.1
 
-executors:
-  linux:
-    docker:
-      - image: ethereum/cpp-build-env:14-gcc-10
-
 commands:
   build:
     steps:
@@ -59,16 +54,49 @@ commands:
         command: ./consensus
 
 jobs:
-  build_and_test:
-    executor: linux
+  linux-gcc-debug:
     environment:
       BUILD_TYPE: Debug
+    docker:
+      - image: ethereum/cpp-build-env:14-gcc-10
     steps:
       - build
       - test
+
+  linux-clang-coverage:
+    environment:
+      BUILD_TYPE: Debug
+    docker:
+      - image: ethereum/cpp-build-env:14-clang-10
+    steps:
+      - build
+      - run:
+          name: "Unit Tests"
+          working_directory: ~/build
+          command: |
+            ./unit_test
+            mv default.profraw unit_test.profraw
+      - run:
+          name: "Ethereum Consensus Tests"
+          working_directory: ~/build
+          command: |
+            ./consensus
+            mv default.profraw consensus.profraw
+      - run:
+          name: "Coverage"
+          working_directory: ~/build
+          command: |
+            llvm-profdata merge *.profraw -o profdata
+            llvm-cov export -instr-profile profdata -format=lcov ./unit_test > silkworm.lcov
+      - run:
+          name: "Upload to Codecov"
+          command: |
+            sudo pip3 install --upgrade --quiet --no-cache-dir codecov
+            codecov --required --file ~/build/silkworm.lcov -X gcov
 
 workflows:
   version: 2
   silkworm:
     jobs:
-      - build_and_test
+      - linux-gcc-debug
+      - linux-clang-coverage

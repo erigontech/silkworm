@@ -18,6 +18,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/endian/conversion.hpp>
 #include <silkworm/db/chaindb.hpp>
+#include <silkworm/chain/config.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/db/bucket.hpp>
 #include <silkworm/types/block.hpp>
@@ -72,8 +73,10 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    evmc::bytes32* canonical_headers{nullptr};
-    uint64_t canonical_headers_count{0};
+
+    //ChainConfig config{kEtcMainnetChainConfig};  // Main net config flags
+    evmc::bytes32* canonical_headers{nullptr};   // Storage space for canonical headers
+    uint64_t canonical_headers_count{0};         // Overall number of canonical headers collected
 
     try
     {
@@ -125,10 +128,13 @@ int main(int argc, char* argv[]) {
 
             // Try allocate enough memory space to fit all cananonical header hashes
             // which need to be processed
-            canonical_headers = static_cast<evmc::bytes32*>(std::calloc((highest_block + 1), kHashLength));
-            if (!canonical_headers) {
-                // not enough space to store all
-                throw std::runtime_error("Can't allocate space for canonical hashes");
+            {
+                void* mem{std::calloc((highest_block + 1), kHashLength)};
+                if (!mem) {
+                    // not enough space to store all
+                    throw std::runtime_error("Can't allocate space for canonical hashes");
+                }
+                canonical_headers = static_cast<evmc::bytes32*>(mem);
             }
 
             // Navigate all headers to load canonical hashes
@@ -182,7 +188,8 @@ int main(int argc, char* argv[]) {
                         continue;
                     } else if (body_block > block_num) {
                         // We're ahead with bodies wrt headers
-                        // Should not occurr. Raise an exception
+                        // Should not happen.
+                        // TODO(Andrea) Raise an exception
                         break;
                     }
 
@@ -196,9 +203,15 @@ int main(int argc, char* argv[]) {
                     // If data contains something process it
                     if (data.mv_size > 3)
                     {
-                        ByteView bv{ static_cast<uint8_t*>(data.mv_data), data.mv_size };
+                        ByteView bv{static_cast<uint8_t*>(data.mv_data), data.mv_size};
+
+                        // Actually rlp-decoding the whole block adds a
+                        // little overhead as transactions are decoded as
+                        // well as ommers which actually are not needed
+                        // in this scope. Worth optimize it ?
                         BlockBody body{};
                         rlp::decode(bv, body);
+
                         total_transactions += body.transactions.size();
                     }
 

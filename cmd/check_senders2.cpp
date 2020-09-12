@@ -360,7 +360,7 @@ int main(int argc, char* argv[]) {
     uint32_t process_batch_id{0};                          // Batch identifier sent to recoverer thread
     boost::atomic<uint32_t> flush_batch_id{0};             // Holder of queue flushing order
 
-    uint64_t total_transaction{0};  // Overall number of transactions processed
+    uint64_t total_transactions{0};  // Overall number of transactions processed
 
     // Temporary file number
     uint32_t tmpFileId{ 0 };
@@ -387,7 +387,7 @@ int main(int argc, char* argv[]) {
             total_size += result.second.mv_size;
         }
 
-        // TODO(Andrea)
+        // TODO(Andrea) Build keys for insertion into senders bucket
         // Loop al results and for each block build its key
         // data is already the second member of the tuples returned in results.
 
@@ -555,7 +555,6 @@ int main(int argc, char* argv[]) {
 
             batch_size = canonical_headers_count / (100 / percent_step) ;
             percent = 0;
-            uint64_t total_transactions{0};
 
             std::cout << format_time() << " Bodies Table has " << bodies_records << " records." << std::endl;
 

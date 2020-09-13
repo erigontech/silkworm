@@ -174,7 +174,7 @@ void ExecutionProcessor::apply_rewards() {
 
   intx::uint256 miner_reward{block_reward};
   for (const BlockHeader& ommer : evm_.block().ommers) {
-    intx::uint256 ommer_reward{(8 + ommer.number - block_number) * block_reward / 8};
+    intx::uint256 ommer_reward{((8 + ommer.number - block_number) * block_reward) >> 3};
     evm_.state().add_to_balance(ommer.beneficiary, ommer_reward);
     miner_reward += block_reward / 32;
   }

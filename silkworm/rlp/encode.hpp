@@ -67,7 +67,7 @@ size_t length_of_length(uint64_t payload_length);
 inline size_t length(const evmc::bytes32&) { return kHashLength + 1; }
 
 size_t length(ByteView);
-size_t length(uint64_t);
+size_t length(uint64_t) noexcept;
 size_t length(const intx::uint256&);
 
 size_t length(const BlockHeader&);

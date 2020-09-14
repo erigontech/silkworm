@@ -18,11 +18,11 @@
 
 namespace silkworm::state {
 
-std::optional<Account> Reader::read_account(const evmc::address& address) const {
+std::optional<Account> Reader::read_account(const evmc::address& address) const noexcept {
   return db_.get_account(address, block_number_);
 }
 
-Bytes Reader::read_code(const evmc::bytes32& code_hash) const {
+Bytes Reader::read_code(const evmc::bytes32& code_hash) const noexcept {
   std::optional<Bytes> code{db_.get_code(code_hash)};
   if (code) {
     return *code;
@@ -32,11 +32,11 @@ Bytes Reader::read_code(const evmc::bytes32& code_hash) const {
 }
 
 evmc::bytes32 Reader::read_storage(const evmc::address& address, uint64_t incarnation,
-                                   const evmc::bytes32& key) const {
+                                   const evmc::bytes32& key) const noexcept {
   return db_.get_storage(address, incarnation, key, block_number_);
 }
 
-uint64_t Reader::previous_incarnation(const evmc::address& address) const {
+uint64_t Reader::previous_incarnation(const evmc::address& address) const noexcept {
   std::optional<uint64_t> incarnation{db_.previous_incarnation(address, block_number_)};
   return incarnation ? *incarnation : 0;
 }

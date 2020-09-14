@@ -22,7 +22,7 @@ namespace silkworm {
 BlockChain::BlockChain(db::Database* db) : db_{db} {}
 
 std::optional<BlockHeader> BlockChain::get_header(uint64_t block_number,
-                                                  const evmc::bytes32& block_hash) const {
+                                                  const evmc::bytes32& block_hash) const noexcept {
   if (block_number < headers_.size()) {
     return headers_[block_number];
   } else if (db_) {

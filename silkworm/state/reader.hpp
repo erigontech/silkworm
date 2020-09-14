@@ -27,15 +27,15 @@ class Reader {
   Reader(const Reader&) = delete;
   Reader& operator=(const Reader&) = delete;
 
-  Reader(db::Database& db, uint64_t block_number) : db_{db}, block_number_{block_number} {}
+  Reader(db::Database& db, uint64_t block_number) noexcept : db_{db}, block_number_{block_number} {}
 
-  std::optional<Account> read_account(const evmc::address& address) const;
-  Bytes read_code(const evmc::bytes32& code_hash) const;
+  std::optional<Account> read_account(const evmc::address& address) const noexcept;
+  Bytes read_code(const evmc::bytes32& code_hash) const noexcept;
   evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
-                             const evmc::bytes32& key) const;
+                             const evmc::bytes32& key) const noexcept;
 
   // Previous non-zero incarnation of an account; 0 if none exists
-  uint64_t previous_incarnation(const evmc::address& address) const;
+  uint64_t previous_incarnation(const evmc::address& address) const noexcept;
 
  private:
   db::Database& db_;

@@ -52,59 +52,62 @@ class IntraBlockState {
   IntraBlockState(IntraBlockState&& other) = default;
   IntraBlockState& operator=(IntraBlockState&& other) = default;
 
-  explicit IntraBlockState(state::Reader* state_reader) : db_{state_reader} {}
+  explicit IntraBlockState(state::Reader* state_reader) noexcept : db_{state_reader} {}
 
-  bool exists(const evmc::address& address) const;
+  bool exists(const evmc::address& address) const noexcept;
 
   // https://eips.ethereum.org/EIPS/eip-161
-  bool dead(const evmc::address& address) const;
+  bool dead(const evmc::address& address) const noexcept;
 
-  void create_contract(const evmc::address& address);
+  void create_contract(const evmc::address& address) noexcept;
 
   void destruct(const evmc::address& address);
 
-  void record_suicide(const evmc::address& address);
+  void record_suicide(const evmc::address& address) noexcept;
   void destruct_suicides();
   void destruct_touched_dead();
 
-  intx::uint256 get_balance(const evmc::address& address) const;
-  void set_balance(const evmc::address& address, const intx::uint256& value);
-  void add_to_balance(const evmc::address& address, const intx::uint256& addend);
-  void subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend);
+  intx::uint256 get_balance(const evmc::address& address) const noexcept;
+  void set_balance(const evmc::address& address, const intx::uint256& value) noexcept;
+  void add_to_balance(const evmc::address& address, const intx::uint256& addend) noexcept;
+  void subtract_from_balance(const evmc::address& address,
+                             const intx::uint256& subtrahend) noexcept;
 
-  uint64_t get_nonce(const evmc::address& address) const;
-  void set_nonce(const evmc::address& address, uint64_t nonce);
+  uint64_t get_nonce(const evmc::address& address) const noexcept;
+  void set_nonce(const evmc::address& address, uint64_t nonce) noexcept;
 
-  ByteView get_code(const evmc::address& address) const;
-  evmc::bytes32 get_code_hash(const evmc::address& address) const;
-  void set_code(const evmc::address& address, ByteView code);
+  ByteView get_code(const evmc::address& address) const noexcept;
+  evmc::bytes32 get_code_hash(const evmc::address& address) const noexcept;
+  void set_code(const evmc::address& address, ByteView code) noexcept;
 
-  evmc::bytes32 get_current_storage(const evmc::address& address, const evmc::bytes32& key) const;
+  evmc::bytes32 get_current_storage(const evmc::address& address,
+                                    const evmc::bytes32& key) const noexcept;
 
   // https://eips.ethereum.org/EIPS/eip-2200
-  evmc::bytes32 get_original_storage(const evmc::address& address, const evmc::bytes32& key) const;
+  evmc::bytes32 get_original_storage(const evmc::address& address,
+                                     const evmc::bytes32& key) const noexcept;
 
   void set_storage(const evmc::address& address, const evmc::bytes32& key,
-                   const evmc::bytes32& value);
+                   const evmc::bytes32& value) noexcept;
 
   void write_block(state::Writer& state_writer);
 
-  Snapshot take_snapshot() const;
-  void revert_to_snapshot(const Snapshot& snapshot);
+  Snapshot take_snapshot() const noexcept;
+  void revert_to_snapshot(const Snapshot& snapshot) noexcept;
 
   void finalize_transaction();
 
   // See Section 6.1 "Substate" of the Yellow Paper
   void clear_journal_and_substate();
 
-  void add_log(const Log& log);
+  void add_log(const Log& log) noexcept;
 
-  const std::vector<Log>& logs() const { return logs_; }
+  const std::vector<Log>& logs() const noexcept { return logs_; }
 
-  void add_refund(uint64_t addend);
-  void subtract_refund(uint64_t subtrahend);
+  void add_refund(uint64_t addend) noexcept;
+  void subtract_refund(uint64_t subtrahend) noexcept;
 
-  uint64_t total_refund() const;
+  uint64_t total_refund() const noexcept;
 
  private:
   friend class state::CreateDelta;
@@ -115,12 +118,12 @@ class IntraBlockState {
   friend class state::StorageWipeDelta;
 
   const state::StorageValue* get_storage(const evmc::address& address,
-                                         const evmc::bytes32& key) const;
+                                         const evmc::bytes32& key) const noexcept;
 
-  state::Object* get_object(const evmc::address& address) const;
-  state::Object& get_or_create_object(const evmc::address& address);
+  state::Object* get_object(const evmc::address& address) const noexcept;
+  state::Object& get_or_create_object(const evmc::address& address) noexcept;
 
-  void touch(const evmc::address& address);
+  void touch(const evmc::address& address) noexcept;
 
   state::Reader* db_{nullptr};
 

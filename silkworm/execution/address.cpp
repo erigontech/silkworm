@@ -21,7 +21,7 @@
 
 namespace silkworm {
 
-evmc::address create_address(const evmc::address& caller, uint64_t nonce) {
+evmc::address create_address(const evmc::address& caller, uint64_t nonce) noexcept {
   rlp::Header h{true, 1 + kAddressLength};
   h.payload_length += rlp::length(nonce);
 

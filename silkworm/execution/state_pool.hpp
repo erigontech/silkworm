@@ -28,19 +28,19 @@ namespace silkworm {
 
 class ExecutionStatePool {
  public:
-  static ExecutionStatePool& instance();
+  static ExecutionStatePool& instance() noexcept;
 
   ExecutionStatePool(const ExecutionStatePool&) = delete;
   ExecutionStatePool& operator=(const ExecutionStatePool&) = delete;
 
-  void add(std::unique_ptr<evmone::execution_state> new_object);
+  void add(std::unique_ptr<evmone::execution_state> new_object) noexcept;
 
-  bool spare_objects() const;
+  bool spare_objects() const noexcept;
 
   // may only be called if spare_objects
-  evmone::execution_state* grab();
+  evmone::execution_state* grab() noexcept;
 
-  void release();
+  void release() noexcept;
 
  private:
   ExecutionStatePool() {}

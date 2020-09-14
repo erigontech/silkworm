@@ -17,6 +17,7 @@
 #include "evm.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <iterator>
@@ -31,10 +32,10 @@
 
 namespace silkworm {
 
-EVM::EVM(const BlockChain& chain, const Block& block, IntraBlockState& state)
+EVM::EVM(const BlockChain& chain, const Block& block, IntraBlockState& state) noexcept
     : chain_{chain}, block_{block}, state_{state} {}
 
-CallResult EVM::execute(const Transaction& txn, uint64_t gas) {
+CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
   txn_ = &txn;
 
   bool contract_creation{!txn.to};
@@ -56,7 +57,6 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) {
   return {res.status_code, static_cast<uint64_t>(res.gas_left)};
 }
 
-// TODO(Andrew) propagate noexcept
 evmc::result EVM::create(const evmc_message& message) noexcept {
   evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
 
@@ -68,7 +68,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 
   uint64_t nonce{state_.get_nonce(message.sender)};
 
-  evmc::address contract_addr;
+  evmc::address contract_addr{};
   if (message.kind == EVMC_CREATE) {
     contract_addr = create_address(message.sender, nonce);
   } else if (message.kind == EVMC_CREATE2) {
@@ -139,7 +139,6 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
   return res;
 }
 
-// TODO(Andrew) propagate noexcept
 evmc::result EVM::call(const evmc_message& message) noexcept {
   evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
 
@@ -241,9 +240,9 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code,
   state->code = code;
   state->analysis = analysis.get();
 
-  const auto* instr{&state->analysis->instrs[0]};
-  while (instr != nullptr) {
-    instr = instr->fn(instr, *state);
+  const auto* instruction{&state->analysis->instrs[0]};
+  while (instruction != nullptr) {
+    instruction = instruction->fn(instruction, *state);
   }
 
   const uint8_t* output_data{state->output_size ? &state->memory[state->output_offset] : nullptr};
@@ -273,14 +272,20 @@ evmc_revision EVM::revision() const noexcept {
 uint8_t EVM::number_of_precompiles() const noexcept {
   uint64_t block_number{block_.header.number};
 
-  if (config().has_istanbul(block_number)) return precompiled::kNumOfIstanbulContracts;
-  if (config().has_byzantium(block_number)) return precompiled::kNumOfByzantiumContracts;
+  if (config().has_istanbul(block_number)) {
+    return precompiled::kNumOfIstanbulContracts;
+  }
+  if (config().has_byzantium(block_number)) {
+    return precompiled::kNumOfByzantiumContracts;
+  }
 
   return precompiled::kNumOfFrontierContracts;
 }
 
 bool EVM::is_precompiled(const evmc::address& contract) const noexcept {
-  if (is_zero(contract)) return false;
+  if (is_zero(contract)) {
+    return false;
+  }
   evmc::address max_precompiled{};
   max_precompiled.bytes[kAddressLength - 1] = number_of_precompiles();
   return contract <= max_precompiled;
@@ -430,15 +435,15 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
 
 evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
   uint64_t base_number{evm_.block_.header.number};
-  std::vector<evmc::bytes32>& hashes{evm_.block_hashes_};
+  uint64_t new_size{base_number - n};
+  assert(new_size <= 256);
 
+  std::vector<evmc::bytes32>& hashes{evm_.block_hashes_};
   if (hashes.empty()) {
     hashes.push_back(evm_.block_.header.parent_hash);
   }
 
   uint64_t old_size{hashes.size()};
-  uint64_t new_size{base_number - n};
-
   if (old_size < new_size) {
     hashes.resize(new_size);
   }

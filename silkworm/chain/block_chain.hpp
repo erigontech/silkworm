@@ -31,7 +31,7 @@ class BlockChain {
   explicit BlockChain(db::Database* db);
 
   std::optional<BlockHeader> get_header(uint64_t block_number,
-                                        const evmc::bytes32& block_hash) const;
+                                        const evmc::bytes32& block_hash) const noexcept;
 
   // not ready for production yet, use for tests only
   void insert_block(const Block& block);

@@ -23,7 +23,7 @@
 
 namespace silkworm {
 // Yellow Paper, Section 7
-evmc::address create_address(const evmc::address& caller, uint64_t nonce);
+evmc::address create_address(const evmc::address& caller, uint64_t nonce) noexcept;
 
 // https://eips.ethereum.org/EIPS/eip-1014
 evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,

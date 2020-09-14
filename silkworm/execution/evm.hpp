@@ -44,15 +44,15 @@ class EVM {
   EVM(const EVM&) = delete;
   EVM& operator=(const EVM&) = delete;
 
-  EVM(const BlockChain& chain, const Block& block, IntraBlockState& state);
+  EVM(const BlockChain& chain, const Block& block, IntraBlockState& state) noexcept;
 
-  const Block& block() const { return block_; }
+  const Block& block() const noexcept { return block_; }
 
-  const ChainConfig& config() const { return chain_.config; }
+  const ChainConfig& config() const noexcept { return chain_.config; }
 
-  IntraBlockState& state() { return state_; }
+  IntraBlockState& state() noexcept { return state_; }
 
-  CallResult execute(const Transaction& txn, uint64_t gas);
+  CallResult execute(const Transaction& txn, uint64_t gas) noexcept;
 
  private:
   friend class EvmHost;

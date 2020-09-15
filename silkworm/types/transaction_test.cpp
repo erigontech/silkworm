@@ -63,7 +63,7 @@ TEST_CASE("Recover sender") {
           "0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
   };
 
-  txn.recover_sender();
+  txn.recover_sender(/*homestead=*/true, {});
   CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
 }
 }  // namespace silkworm

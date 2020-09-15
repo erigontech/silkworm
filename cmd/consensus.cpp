@@ -28,7 +28,7 @@
 #include <string>
 #include <string_view>
 
-// See https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
+// See https://ethereum-tests.readthedocs.io
 
 using namespace silkworm;
 
@@ -37,6 +37,8 @@ namespace fs = std::filesystem;
 static const fs::path kRootDir{SILKWORM_CONSENSUS_TEST_DIR};
 
 static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
+
+static const fs::path kTransactionDir{kRootDir / "TransactionTests"};
 
 static const std::set<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
@@ -49,7 +51,7 @@ static const std::set<fs::path> kFailingTests{
     // Expected: "UnknownParent"
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
 
-    // forks are not supported yet
+    // Forks are not supported yet
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
         "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
@@ -58,6 +60,19 @@ static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
+
+    // TODO[Issue #23] We don't check intrinsic gas in run_transaction_test
+    kTransactionDir / "ttData" / "DataTestNotEnoughGAS.json",
+    kTransactionDir / "ttData" / "dataTx_bcValidBlockTestFrontier.json",
+    kTransactionDir / "ttEIP2028",
+    kTransactionDir / "ttGasLimit" / "NotEnoughGasLimit.json",
+    kTransactionDir / "ttSignature" / "EmptyTransaction.json",
+
+    // Nonce >= 2^64 is not supported
+    kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
+
+    // Gas limit >= 2^64 is not supported
+    kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
 static constexpr size_t kColumnWidth{70};
@@ -167,6 +182,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
      }},
 };
 
+// https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
 IntraBlockState pre_state(const nlohmann::json& pre) {
   IntraBlockState state{nullptr};
 
@@ -216,9 +232,14 @@ bool run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& stat
   }
 
   chain.insert_block(block);
+  uint64_t block_number{block.header.number};
 
   for (Transaction& txn : block.transactions) {
-    txn.recover_sender();
+    if (chain.config.has_spurious_dragon(block_number)) {
+      txn.recover_sender(chain.config.has_homestead(block_number), chain.config.chain_id);
+    } else {
+      txn.recover_sender(chain.config.has_homestead(block_number), {});
+    }
   }
 
   ExecutionProcessor processor{chain, block, state};
@@ -284,6 +305,7 @@ bool check_post(const IntraBlockState& state, const nlohmann::json& expected) {
   return true;
 }
 
+// https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
 bool run_blockchain_test(const nlohmann::json& j) {
   Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>())};
   ByteView genesis_view{genesis_rlp};
@@ -306,12 +328,36 @@ bool run_blockchain_test(const nlohmann::json& j) {
   return check_post(state, j["postState"]);
 }
 
+static void print_skipped_test(std::string_view key) {
+  std::cout << key << " ";
+  for (size_t i{key.length() + 1}; i < kColumnWidth; ++i) {
+    std::cout << '.';
+  }
+  std::cout << " Skipped\n";
+}
+
+static void print_failed_test(std::string_view key) {
+  std::cout << key << " ";
+  for (size_t i{key.length() + 1}; i < kColumnWidth; ++i) {
+    std::cout << '.';
+  }
+  std::cout << "\033[1;31m  Failed\033[0m\n";
+}
+
 struct RunResult {
   size_t passed{0};
   size_t failed{0};
   size_t skipped{0};
+
+  RunResult& operator+=(const RunResult& rhs) {
+    passed += rhs.passed;
+    failed += rhs.failed;
+    skipped += rhs.skipped;
+    return *this;
+  }
 };
 
+// https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
 RunResult run_blockchain_file(const fs::path& file_path) {
   std::ifstream in{file_path};
   nlohmann::json json;
@@ -322,12 +368,7 @@ RunResult run_blockchain_file(const fs::path& file_path) {
   for (const auto& test : json.items()) {
     if (!test.value().contains("postState")) {
       std::cout << "postStateHash is not supported\n";
-      std::cout << test.key() << " ";
-      for (size_t i{test.key().length() + 1}; i < kColumnWidth; ++i) {
-        std::cout << '.';
-      }
-      std::cout << " Skipped\n";
-
+      print_skipped_test(test.key());
       ++res.skipped;
       continue;
     }
@@ -336,11 +377,87 @@ RunResult run_blockchain_file(const fs::path& file_path) {
       ++res.passed;
     } else {
       ++res.failed;
-      std::cout << test.key() << " ";
-      for (size_t i{test.key().length() + 1}; i < kColumnWidth; ++i) {
-        std::cout << '.';
+      print_failed_test(test.key());
+    }
+  }
+
+  return res;
+}
+
+// https://ethereum-tests.readthedocs.io/en/latest/test_types/transaction_tests.html
+bool run_transaction_test(const nlohmann::json& j) {
+  Transaction txn;
+  bool decoded{false};
+  try {
+    Bytes rlp{from_hex(j["rlp"].get<std::string>())};
+    ByteView view{rlp};
+    rlp::decode(view, txn);
+    decoded = view.empty();
+  } catch (const std::exception&) {
+  }
+
+  for (const auto& entry : j.items()) {
+    if (entry.key() == "rlp" || entry.key() == "_info") {
+      continue;
+    }
+
+    bool valid{entry.value().contains("sender")};
+
+    if (!decoded) {
+      if (valid) {
+        std::cout << "Failed to decode valid transaction\n";
+        return false;
+      } else {
+        continue;
       }
-      std::cout << "\033[1;31m  Failed\033[0m\n";
+    }
+
+    ChainConfig config{kNetworkConfig.at(entry.key())};
+    if (config.has_spurious_dragon(0)) {
+      txn.recover_sender(config.has_homestead(0), config.chain_id);
+    } else {
+      txn.recover_sender(config.has_homestead(0), {});
+    }
+
+    if (valid && !txn.from.has_value()) {
+      std::cout << "Failed to recover sender\n";
+      return false;
+    }
+
+    if (!valid && txn.from.has_value()) {
+      std::cout << entry.key() << "\n";
+      std::cout << "Sender recovered for invalid transaction\n";
+      return false;
+    }
+
+    if (!valid) {
+      continue;
+    }
+
+    std::string expected{entry.value()["sender"].get<std::string>()};
+    if (to_hex(*txn.from) != expected) {
+      std::cout << "Sender mismatch for " << entry.key() << ":\n";
+      std::cout << to_hex(*txn.from) << " ≠ " << expected << "\n";
+      return false;
+    }
+  }
+
+  return true;
+}
+
+RunResult run_transaction_file(const fs::path& file_path) {
+  std::ifstream in{file_path};
+  nlohmann::json json;
+  in >> json;
+
+  RunResult res{};
+
+  for (const auto& test : json.items()) {
+    if (run_transaction_test(test.value())) {
+      ++res.passed;
+    } else {
+      ++res.failed;
+      print_failed_test(test.key());
     }
   }
 
@@ -348,31 +465,35 @@ RunResult run_blockchain_file(const fs::path& file_path) {
 }
 
 int main() {
-  size_t passed{0};
-  size_t failed{0};
-  size_t skipped{0};
+  RunResult res{};
 
   for (auto i = fs::recursive_directory_iterator(kBlockchainDir);
        i != fs::recursive_directory_iterator{}; ++i) {
     if (kSlowTests.count(*i) || kFailingTests.count(*i)) {
       i.disable_recursion_pending();
     } else if (i->is_regular_file()) {
-      RunResult res{run_blockchain_file(*i)};
-      passed += res.passed;
-      failed += res.failed;
-      skipped += res.skipped;
+      res += run_blockchain_file(*i);
     }
   }
 
-  std::cout << "\033[0;32m" << passed << " tests passed\033[0m, ";
-  if (failed) {
+  for (auto i = fs::recursive_directory_iterator(kTransactionDir);
+       i != fs::recursive_directory_iterator{}; ++i) {
+    if (kFailingTests.count(*i)) {
+      i.disable_recursion_pending();
+    } else if (i->is_regular_file()) {
+      res += run_transaction_file(*i);
+    }
+  }
+
+  std::cout << "\033[0;32m" << res.passed << " tests passed\033[0m, ";
+  if (res.failed) {
     std::cout << "\033[1;31m";
   }
-  std::cout << failed << " failed";
-  if (failed) {
+  std::cout << res.failed << " failed";
+  if (res.failed) {
     std::cout << "\033[0m";
   }
-  std::cout << ", " << skipped << " skipped\n";
+  std::cout << ", " << res.skipped << " skipped\n";
 
-  return failed;
+  return res.failed;
 }

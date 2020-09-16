@@ -74,14 +74,14 @@ Bytes history_index_key(ByteView key, uint64_t block_number) {
 }
 
 Bytes encode_timestamp(uint64_t block_number) {
-  constexpr size_t byte_count_bits{3};
+  static constexpr size_t kByteCountBits{3};
   size_t zero_bits{intx::clz(block_number)};
-  assert(zero_bits >= byte_count_bits);
-  size_t byte_count{8 - (zero_bits - byte_count_bits) / 8};
+  assert(zero_bits >= kByteCountBits);
+  size_t byte_count{8 - (zero_bits - kByteCountBits) / 8};
   Bytes encoded(byte_count, '\0');
   ByteView be{rlp::big_endian(block_number)};
   std::memcpy(&encoded[byte_count - be.length()], &be[0], be.length());
-  encoded[0] |= byte_count << (8 - byte_count_bits);
+  encoded[0] |= byte_count << (8 - kByteCountBits);
   return encoded;
 }
 

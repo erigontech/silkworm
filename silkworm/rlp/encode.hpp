@@ -39,8 +39,8 @@ struct Header {
   uint64_t payload_length{0};
 };
 
-static constexpr uint8_t kEmptyStringCode = 0x80;
-static constexpr uint8_t kEmptyListCode = 0xC0;
+constexpr uint8_t kEmptyStringCode = 0x80;
+constexpr uint8_t kEmptyListCode = 0xC0;
 
 void encode_header(Bytes& to, Header header);
 

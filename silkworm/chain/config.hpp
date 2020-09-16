@@ -95,6 +95,10 @@ struct ChainConfig {
   bool has_istanbul(uint64_t block_num) const noexcept {
     return istanbul_block.has_value() && istanbul_block <= block_num;
   }
+
+  bool has_muir_glacier(uint64_t block_num) const noexcept {
+    return muir_glacier_block.has_value() && muir_glacier_block <= block_num;
+  }
 };
 
 constexpr ChainConfig kEthMainnetConfig{

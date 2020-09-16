@@ -30,7 +30,8 @@ bool inputs_are_valid(const intx::uint256& v, const intx::uint256& r, const intx
   if (r == 0 || s == 0 || v > 1) {
     return false;
   }
-  if (homestead && 2 * s > kSecp256k1n) {
+  if (homestead && s > kSecp256k1nDiv2) {
+    // https://eips.ethereum.org/EIPS/eip-2
     return false;
   }
   return r < kSecp256k1n && s < kSecp256k1n;

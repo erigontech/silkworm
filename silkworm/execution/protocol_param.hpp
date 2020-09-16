@@ -40,7 +40,7 @@ constexpr uint64_t kGCodeDeposit{200};
 constexpr uint64_t kGTxCreate{32'000};
 constexpr uint64_t kGTxDataZero{4};
 constexpr uint64_t kGTxDataNonZeroFrontier{68};
-constexpr uint64_t kGTxDataNonZeroEIP2028{16};
+constexpr uint64_t kGTxDataNonZeroIstanbul{16};
 constexpr uint64_t kGTransaction{21'000};
 
 constexpr uint64_t kGQuadDivisor{20};

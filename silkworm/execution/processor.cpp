@@ -27,24 +27,23 @@
 
 namespace silkworm {
 
-static intx::uint128 intrinsic_gas(ByteView data, bool contract_creation, bool homestead,
-                                   bool eip2028) {
+intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) {
   intx::uint128 gas{fee::kGTransaction};
-  if (contract_creation && homestead) {
+  if (!txn.to && homestead) {
     gas += fee::kGTxCreate;
   }
 
-  if (data.empty()) {
+  if (txn.data.empty()) {
     return gas;
   }
 
   intx::uint128 non_zero_bytes{
-      std::count_if(data.begin(), data.end(), [](char c) { return c != 0; })};
+      std::count_if(txn.data.begin(), txn.data.end(), [](char c) { return c != 0; })};
 
-  uint64_t nonZeroGas{eip2028 ? fee::kGTxDataNonZeroEIP2028 : fee::kGTxDataNonZeroFrontier};
+  uint64_t nonZeroGas{istanbul ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
   gas += non_zero_bytes * nonZeroGas;
 
-  intx::uint128 zero_bytes{data.length() - non_zero_bytes};
+  intx::uint128 zero_bytes{txn.data.length() - non_zero_bytes};
   gas += zero_bytes * fee::kGTxDataZero;
 
   return gas;
@@ -77,9 +76,8 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
   bool homestead{evm_.config().has_homestead(block_number)};
   bool spurious_dragon{evm_.config().has_spurious_dragon(block_number)};
   bool istanbul{evm_.config().has_istanbul(block_number)};
-  bool contract_creation{!txn.to};
 
-  intx::uint128 g0{intrinsic_gas(txn.data, contract_creation, homestead, istanbul)};
+  intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
   if (txn.gas_limit < g0) {
     throw ValidationError("intrinsic gas");
   }
@@ -96,7 +94,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
   }
 
   state.subtract_from_balance(*txn.from, gas_cost.lo);
-  if (!contract_creation) {
+  if (txn.to) {
     // EVM itself increments the nonce for contract creation
     state.set_nonce(*txn.from, nonce + 1);
   }

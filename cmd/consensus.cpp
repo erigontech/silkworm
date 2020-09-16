@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -51,16 +52,6 @@ static const std::set<fs::path> kFailingTests{
     // Expected: "UnknownParent"
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
 
-    // Reorgs are not supported yet
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
-        "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
-        "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
-    kBlockchainDir / "ValidBlocks" / "bcForkStressTest" / "ForkStressTest.json",
-    kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
-    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
-
     // Nonce >= 2^64 is not supported
     kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
 
@@ -68,7 +59,7 @@ static const std::set<fs::path> kFailingTests{
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
-static constexpr size_t kColumnWidth{70};
+static constexpr size_t kColumnWidth{80};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",
@@ -198,7 +189,9 @@ IntraBlockState pre_state(const nlohmann::json& pre) {
   return state;
 }
 
-bool run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& state) {
+enum Status { kPassed, kFailed, kSkipped };
+
+Status run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& state) {
   bool invalid{b.contains("expectException")};
 
   Block block;
@@ -210,21 +203,26 @@ bool run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& stat
     rlp::decode(view, block);
   } catch (const std::exception& e) {
     if (invalid) {
-      return true;
+      return kPassed;
     }
     std::cout << e.what() << "\n";
-    return false;
+    return kFailed;
   }
 
   if (!view.empty()) {
     if (invalid) {
-      return true;
+      return kPassed;
     }
     std::cout << "Extra RLP input\n";
-    return false;
+    return kFailed;
   }
 
-  chain.insert_block(block);
+  try {
+    chain.insert_block(block);
+  } catch (const std::exception& e) {
+    std::cout << e.what() << "\n";
+    return kSkipped;
+  }
 
   uint64_t block_number{block.header.number};
   bool homestead{chain.config.has_homestead(block_number)};
@@ -243,17 +241,19 @@ bool run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& stat
     processor.execute_block();
   } catch (const ValidationError& e) {
     if (invalid) {
-      return true;
+      return kPassed;
     }
     std::cout << e.what() << "\n";
-    return false;
+    return kFailed;
   }
 
   if (invalid) {
     std::cout << "Invalid block executed successfully\n";
     std::cout << "Expected: " << b["expectException"] << "\n";
+    return kFailed;
   }
-  return !invalid;
+
+  return kPassed;
 }
 
 bool check_post(const IntraBlockState& state, const nlohmann::json& expected) {
@@ -302,7 +302,7 @@ bool check_post(const IntraBlockState& state, const nlohmann::json& expected) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-bool run_blockchain_test(const nlohmann::json& j) {
+Status run_blockchain_test(const nlohmann::json& j) {
   Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>())};
   ByteView genesis_view{genesis_rlp};
   Block genesis_block;
@@ -316,64 +316,84 @@ bool run_blockchain_test(const nlohmann::json& j) {
   IntraBlockState state{pre_state(j["pre"])};
 
   for (const auto& b : j["blocks"]) {
-    if (!run_block(b, chain, state)) {
-      return false;
+    Status status{run_block(b, chain, state)};
+    if (status != kPassed) {
+      return status;
     }
   }
 
-  return check_post(state, j["postState"]);
+  if (check_post(state, j["postState"])) {
+    return kPassed;
+  } else {
+    return kFailed;
+  }
 }
 
-static void print_skipped_test(std::string_view key) {
+static void print_test_status(std::string_view key, Status status) {
   std::cout << key << " ";
   for (size_t i{key.length() + 1}; i < kColumnWidth; ++i) {
     std::cout << '.';
   }
-  std::cout << " Skipped\n";
-}
-
-static void print_failed_test(std::string_view key) {
-  std::cout << key << " ";
-  for (size_t i{key.length() + 1}; i < kColumnWidth; ++i) {
-    std::cout << '.';
+  switch (status) {
+    case kPassed:
+      std::cout << "\033[0;32m  Passed\033[0m\n";
+      break;
+    case kFailed:
+      std::cout << "\033[1;31m  Failed\033[0m\n";
+      break;
+    case kSkipped:
+      std::cout << " Skipped\n";
+      break;
   }
-  std::cout << "\033[1;31m  Failed\033[0m\n";
 }
 
-struct RunResult {
+struct RunResults {
   size_t passed{0};
   size_t failed{0};
   size_t skipped{0};
 
-  RunResult& operator+=(const RunResult& rhs) {
+  RunResults& operator+=(const RunResults& rhs) {
     passed += rhs.passed;
     failed += rhs.failed;
     skipped += rhs.skipped;
     return *this;
   }
+
+  void add(Status status) {
+    switch (status) {
+      case kPassed:
+        ++passed;
+        break;
+      case kFailed:
+        ++failed;
+        break;
+      case kSkipped:
+        ++skipped;
+        break;
+    }
+  }
 };
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-RunResult run_blockchain_file(const fs::path& file_path) {
+RunResults run_blockchain_file(const fs::path& file_path) {
   std::ifstream in{file_path};
   nlohmann::json json;
   in >> json;
 
-  RunResult res{};
+  RunResults res{};
 
   for (const auto& test : json.items()) {
     if (!test.value().contains("postState")) {
       std::cout << "postStateHash is not supported\n";
-      print_skipped_test(test.key());
+      print_test_status(test.key(), kSkipped);
       ++res.skipped;
       continue;
     }
 
-    if (run_blockchain_test(test.value())) {
-      ++res.passed;
-    } else {
-      ++res.failed;
-      print_failed_test(test.key());
+    Status status{run_blockchain_test(test.value())};
+    res.add(status);
+    if (status != kPassed) {
+      print_test_status(test.key(), kSkipped);
     }
   }
 
@@ -381,7 +401,7 @@ RunResult run_blockchain_file(const fs::path& file_path) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/transaction_tests.html
-bool run_transaction_test(const nlohmann::json& j) {
+Status run_transaction_test(const nlohmann::json& j) {
   Transaction txn;
   bool decoded{false};
   try {
@@ -402,7 +422,7 @@ bool run_transaction_test(const nlohmann::json& j) {
     if (!decoded) {
       if (valid) {
         std::cout << "Failed to decode valid transaction\n";
-        return false;
+        return kFailed;
       } else {
         continue;
       }
@@ -417,7 +437,7 @@ bool run_transaction_test(const nlohmann::json& j) {
     if (g0 > txn.gas_limit) {
       if (valid) {
         std::cout << "g0 > gas_limit for valid transaction\n";
-        return false;
+        return kFailed;
       } else {
         continue;
       }
@@ -431,13 +451,13 @@ bool run_transaction_test(const nlohmann::json& j) {
 
     if (valid && !txn.from.has_value()) {
       std::cout << "Failed to recover sender\n";
-      return false;
+      return kFailed;
     }
 
     if (!valid && txn.from.has_value()) {
       std::cout << entry.key() << "\n";
       std::cout << "Sender recovered for invalid transaction\n";
-      return false;
+      return kFailed;
     }
 
     if (!valid) {
@@ -448,26 +468,25 @@ bool run_transaction_test(const nlohmann::json& j) {
     if (to_hex(*txn.from) != expected) {
       std::cout << "Sender mismatch for " << entry.key() << ":\n";
       std::cout << to_hex(*txn.from) << " ≠ " << expected << "\n";
-      return false;
+      return kFailed;
     }
   }
 
-  return true;
+  return kPassed;
 }
 
-RunResult run_transaction_file(const fs::path& file_path) {
+RunResults run_transaction_file(const fs::path& file_path) {
   std::ifstream in{file_path};
   nlohmann::json json;
   in >> json;
 
-  RunResult res{};
+  RunResults res{};
 
   for (const auto& test : json.items()) {
-    if (run_transaction_test(test.value())) {
-      ++res.passed;
-    } else {
-      ++res.failed;
-      print_failed_test(test.key());
+    Status status{run_transaction_test(test.value())};
+    res.add(status);
+    if (status != kPassed) {
+      print_test_status(test.key(), kSkipped);
     }
   }
 
@@ -475,7 +494,7 @@ RunResult run_transaction_file(const fs::path& file_path) {
 }
 
 int main() {
-  RunResult res{};
+  RunResults res{};
 
   for (auto i = fs::recursive_directory_iterator(kBlockchainDir);
        i != fs::recursive_directory_iterator{}; ++i) {

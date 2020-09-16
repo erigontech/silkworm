@@ -34,7 +34,7 @@ std::optional<BlockHeader> BlockChain::get_header(uint64_t block_number,
 
 void BlockChain::insert_block(const Block& block) {
   if (block.header.number != headers_.size()) {
-    throw std::logic_error{"Reorgs are not supported yet"};
+    throw std::logic_error{"reorgs are not supported yet"};
   }
   headers_.push_back(block.header);
 }

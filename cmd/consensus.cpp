@@ -51,7 +51,7 @@ static const std::set<fs::path> kFailingTests{
     // Expected: "UnknownParent"
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
 
-    // Forks are not supported yet
+    // Reorgs are not supported yet
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
         "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
@@ -60,13 +60,6 @@ static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
-
-    // TODO[Issue #23] We don't check intrinsic gas in run_transaction_test
-    kTransactionDir / "ttData" / "DataTestNotEnoughGAS.json",
-    kTransactionDir / "ttData" / "dataTx_bcValidBlockTestFrontier.json",
-    kTransactionDir / "ttEIP2028",
-    kTransactionDir / "ttGasLimit" / "NotEnoughGasLimit.json",
-    kTransactionDir / "ttSignature" / "EmptyTransaction.json",
 
     // Nonce >= 2^64 is not supported
     kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
@@ -232,13 +225,16 @@ bool run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& stat
   }
 
   chain.insert_block(block);
+
   uint64_t block_number{block.header.number};
+  bool homestead{chain.config.has_homestead(block_number)};
+  bool spurious_dragon{chain.config.has_spurious_dragon(block_number)};
 
   for (Transaction& txn : block.transactions) {
-    if (chain.config.has_spurious_dragon(block_number)) {
-      txn.recover_sender(chain.config.has_homestead(block_number), chain.config.chain_id);
+    if (spurious_dragon) {
+      txn.recover_sender(homestead, chain.config.chain_id);
     } else {
-      txn.recover_sender(chain.config.has_homestead(block_number), {});
+      txn.recover_sender(homestead, {});
     }
   }
 
@@ -413,10 +409,24 @@ bool run_transaction_test(const nlohmann::json& j) {
     }
 
     ChainConfig config{kNetworkConfig.at(entry.key())};
-    if (config.has_spurious_dragon(0)) {
-      txn.recover_sender(config.has_homestead(0), config.chain_id);
+    bool homestead{config.has_homestead(0)};
+    bool spurious_dragon{config.has_spurious_dragon(0)};
+    bool istanbul{config.has_istanbul(0)};
+
+    intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
+    if (g0 > txn.gas_limit) {
+      if (valid) {
+        std::cout << "g0 > gas_limit for valid transaction\n";
+        return false;
+      } else {
+        continue;
+      }
+    }
+
+    if (spurious_dragon) {
+      txn.recover_sender(homestead, config.chain_id);
     } else {
-      txn.recover_sender(config.has_homestead(0), {});
+      txn.recover_sender(homestead, {});
     }
 
     if (valid && !txn.from.has_value()) {

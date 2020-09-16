@@ -259,7 +259,7 @@ Status run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& st
   return kPassed;
 }
 
-bool check_post(const IntraBlockState& state, const nlohmann::json& expected) {
+bool post_check(const IntraBlockState& state, const nlohmann::json& expected) {
   for (const auto& entry : expected.items()) {
     evmc::address address{to_address(from_hex(entry.key()))};
     const nlohmann::json& account{entry.value()};
@@ -305,7 +305,12 @@ bool check_post(const IntraBlockState& state, const nlohmann::json& expected) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-Status run_blockchain_test(const nlohmann::json& j) {
+Status blockchain_test(const nlohmann::json& j) {
+  if (!j.contains("postState")) {
+    std::cout << "postStateHash is not supported\n";
+    return kSkipped;
+  }
+
   Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>())};
   ByteView genesis_view{genesis_rlp};
   Block genesis_block;
@@ -325,7 +330,7 @@ Status run_blockchain_test(const nlohmann::json& j) {
     }
   }
 
-  if (check_post(state, j["postState"])) {
+  if (post_check(state, j["postState"])) {
     return kPassed;
   } else {
     return kFailed;
@@ -377,8 +382,7 @@ struct RunResults {
   }
 };
 
-// https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-RunResults run_blockchain_file(const fs::path& file_path) {
+RunResults run_test_file(const fs::path& file_path, Status (*runner)(const nlohmann::json&)) {
   std::ifstream in{file_path};
   nlohmann::json json;
   in >> json;
@@ -386,14 +390,7 @@ RunResults run_blockchain_file(const fs::path& file_path) {
   RunResults res{};
 
   for (const auto& test : json.items()) {
-    if (!test.value().contains("postState")) {
-      std::cout << "postStateHash is not supported\n";
-      print_test_status(test.key(), kSkipped);
-      ++res.skipped;
-      continue;
-    }
-
-    Status status{run_blockchain_test(test.value())};
+    Status status{runner(test.value())};
     res.add(status);
     if (status != kPassed) {
       print_test_status(test.key(), status);
@@ -404,7 +401,7 @@ RunResults run_blockchain_file(const fs::path& file_path) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/transaction_tests.html
-Status run_transaction_test(const nlohmann::json& j) {
+Status transaction_test(const nlohmann::json& j) {
   Transaction txn;
   bool decoded{false};
   try {
@@ -478,26 +475,8 @@ Status run_transaction_test(const nlohmann::json& j) {
   return kPassed;
 }
 
-RunResults run_transaction_file(const fs::path& file_path) {
-  std::ifstream in{file_path};
-  nlohmann::json json;
-  in >> json;
-
-  RunResults res{};
-
-  for (const auto& test : json.items()) {
-    Status status{run_transaction_test(test.value())};
-    res.add(status);
-    if (status != kPassed) {
-      print_test_status(test.key(), status);
-    }
-  }
-
-  return res;
-}
-
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
-Status run_difficulty_test(const nlohmann::json& j) {
+Status difficulty_test(const nlohmann::json& j) {
   auto parent_timestamp{std::stoll(j["parentTimestamp"].get<std::string>(), 0, 0)};
   auto parent_difficulty{std::stoll(j["parentDifficulty"].get<std::string>(), 0, 0)};
   auto current_timestamp{std::stoll(j["currentTimestamp"].get<std::string>(), 0, 0)};
@@ -516,35 +495,17 @@ Status run_difficulty_test(const nlohmann::json& j) {
   }
 }
 
-RunResults run_difficulty_file(const fs::path& file_path) {
-  std::ifstream in{file_path};
-  nlohmann::json json;
-  in >> json;
-
-  RunResults res{};
-
-  for (const auto& test : json.items()) {
-    Status status{run_difficulty_test(test.value())};
-    res.add(status);
-    if (status != kPassed) {
-      print_test_status(test.key(), status);
-    }
-  }
-
-  return res;
-}
-
 int main() {
   RunResults res{};
 
-  run_difficulty_file(kDifficultyDir / "difficulty.json");
+  run_test_file(kDifficultyDir / "difficulty.json", difficulty_test);
 
   for (auto i = fs::recursive_directory_iterator(kBlockchainDir);
        i != fs::recursive_directory_iterator{}; ++i) {
     if (kSlowTests.count(*i) || kFailingTests.count(*i)) {
       i.disable_recursion_pending();
     } else if (i->is_regular_file()) {
-      res += run_blockchain_file(*i);
+      res += run_test_file(*i, blockchain_test);
     }
   }
 
@@ -553,7 +514,7 @@ int main() {
     if (kFailingTests.count(*i)) {
       i.disable_recursion_pending();
     } else if (i->is_regular_file()) {
-      res += run_transaction_file(*i);
+      res += run_test_file(*i, transaction_test);
     }
   }
 

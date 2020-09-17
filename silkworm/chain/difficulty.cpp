@@ -19,16 +19,15 @@
 namespace silkworm {
 
 static intx::uint256 difficulty_bomb(intx::uint256 difficulty, uint64_t block_number) {
-  if (difficulty < kMinDifficulty) {
-    difficulty = kMinDifficulty;
-  }
-
   const uint64_t n{block_number / 100000};
   if (n >= 2) {
     static constexpr intx::uint256 one{1};
     difficulty += one << (n - 2);
   }
 
+  if (difficulty < kMinDifficulty) {
+    difficulty = kMinDifficulty;
+  }
   return difficulty;
 }
 

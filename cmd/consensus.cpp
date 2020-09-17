@@ -185,7 +185,7 @@ static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
     {"difficulty.json", kEthMainnetConfig},
     {"difficultyByzantium.json", kNetworkConfig.at("Byzantium")},
     {"difficultyConstantinople.json", kNetworkConfig.at("Constantinople")},
-    // TODO[Issue #23] {"difficultyCustomMainNetwork.json", kEthMainnetConfig},
+    {"difficultyCustomMainNetwork.json", kEthMainnetConfig},
     {"difficultyEIP2384_random_to20M.json", kNetworkConfig.at("EIP2384")},
     {"difficultyEIP2384_random.json", kNetworkConfig.at("EIP2384")},
     {"difficultyEIP2384.json", kNetworkConfig.at("EIP2384")},

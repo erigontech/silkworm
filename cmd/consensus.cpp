@@ -167,6 +167,32 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
          5,  // constantinople_block
          5,  // petersburg_block
      }},
+    {"EIP2384",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+         0,  // petersburg_block
+         0,  // istanbul_block
+         0,  // muir_glacier_block
+     }},
+};
+
+static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
+    {"difficulty.json", kEthMainnetConfig},
+    {"difficultyByzantium.json", kNetworkConfig.at("Byzantium")},
+    {"difficultyConstantinople.json", kNetworkConfig.at("Constantinople")},
+    // TODO[Issue #23] {"difficultyCustomMainNetwork.json", kEthMainnetConfig},
+    {"difficultyEIP2384_random_to20M.json", kNetworkConfig.at("EIP2384")},
+    {"difficultyEIP2384_random.json", kNetworkConfig.at("EIP2384")},
+    {"difficultyEIP2384.json", kNetworkConfig.at("EIP2384")},
+    {"difficultyFrontier.json", kNetworkConfig.at("Frontier")},
+    {"difficultyHomestead.json", kNetworkConfig.at("Homestead")},
+    {"difficultyMainNetwork.json", kEthMainnetConfig},
+    {"difficultyRopsten.json", kRopstenConfig},
 };
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
@@ -305,7 +331,7 @@ bool post_check(const IntraBlockState& state, const nlohmann::json& expected) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-Status blockchain_test(const nlohmann::json& j) {
+Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
   if (!j.contains("postState")) {
     std::cout << "postStateHash is not supported\n";
     return kSkipped;
@@ -383,7 +409,9 @@ struct RunResults {
 };
 
 [[nodiscard]] RunResults run_test_file(const fs::path& file_path,
-                                       Status (*runner)(const nlohmann::json&)) {
+                                       Status (*runner)(const nlohmann::json&,
+                                                        std::optional<ChainConfig>),
+                                       std::optional<ChainConfig> config = {}) {
   std::ifstream in{file_path};
   nlohmann::json json;
   in >> json;
@@ -391,7 +419,7 @@ struct RunResults {
   RunResults res{};
 
   for (const auto& test : json.items()) {
-    Status status{runner(test.value())};
+    Status status{runner(test.value(), config)};
     res.add(status);
     if (status != kPassed) {
       print_test_status(test.key(), status);
@@ -402,7 +430,7 @@ struct RunResults {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/transaction_tests.html
-Status transaction_test(const nlohmann::json& j) {
+Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
   Transaction txn;
   bool decoded{false};
   try {
@@ -477,7 +505,7 @@ Status transaction_test(const nlohmann::json& j) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
-Status difficulty_test(const nlohmann::json& j) {
+Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> config) {
   auto parent_timestamp{std::stoll(j["parentTimestamp"].get<std::string>(), 0, 0)};
   auto parent_difficulty{
       intx::from_string<intx::uint256>(j["parentDifficulty"].get<std::string>())};
@@ -486,17 +514,20 @@ Status difficulty_test(const nlohmann::json& j) {
   auto current_difficulty{
       intx::from_string<intx::uint256>(j["currentDifficulty"].get<std::string>())};
 
-  auto parent_uncles{j["parentUncles"].get<std::string>()};
-  bool parent_has_uncles{parent_uncles !=
-                         "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"};
+  bool parent_has_uncles{false};
+  if (j.contains("parentUncles")) {
+    auto parent_uncles{j["parentUncles"].get<std::string>()};
+    parent_has_uncles =
+        parent_uncles != "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
+  }
 
   intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp,
                                                            parent_difficulty, parent_timestamp,
-                                                           parent_has_uncles, kEthMainnetConfig)};
-
+                                                           parent_has_uncles, *config)};
   if (calculated_difficulty == current_difficulty) {
     return kPassed;
   } else {
+    std::cout << "Difficulty mismatch for block " << block_number << "\n";
     std::cout << hex(calculated_difficulty) << " ≠ " << hex(current_difficulty) << "\n";
     return kFailed;
   }
@@ -505,8 +536,9 @@ Status difficulty_test(const nlohmann::json& j) {
 int main() {
   RunResults res{};
 
-  res += run_test_file(kDifficultyDir / "difficulty.json", difficulty_test);
-  res += run_test_file(kDifficultyDir / "difficultyMainNetwork.json", difficulty_test);
+  for (const auto& entry : kDifficultyConfig) {
+    res += run_test_file(kDifficultyDir / entry.first, difficulty_test, entry.second);
+  }
 
   for (auto i = fs::recursive_directory_iterator(kBlockchainDir);
        i != fs::recursive_directory_iterator{}; ++i) {

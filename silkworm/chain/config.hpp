@@ -117,6 +117,19 @@ constexpr ChainConfig kEthMainnetConfig{
     2'675'119,  // ripemd_deletion_block
 };
 
+constexpr ChainConfig kRopstenConfig{
+    3,  // chain_id
+
+    0,          // homestead_block
+    0,          // tangerine_whistle_block
+    10,         // spurious_dragon_block
+    1'700'000,  // byzantium_block
+    4'230'000,  // constantinople_block
+    4'939'394,  // petersburg_block
+    6'485'846,  // istanbul_block
+    7'117'117,  // muir_glacier_block
+};
+
 // https://ecips.ethereumclassic.org/ECIPs/ecip-1066
 constexpr ChainConfig kEtcMainnetConfig{
     61,  // chain_id

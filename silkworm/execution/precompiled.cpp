@@ -39,7 +39,7 @@ namespace silkworm::precompiled {
 uint64_t ecrec_gas(ByteView, evmc_revision) noexcept { return 3'000; }
 
 std::optional<Bytes> ecrec_run(ByteView input) noexcept {
-  constexpr size_t kInputLen{128};
+  static constexpr size_t kInputLen{128};
   Bytes d{input};
   if (d.length() < kInputLen) {
     d.resize(kInputLen, '\0');
@@ -254,7 +254,7 @@ std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
   return snark::encode_g1_element(product);
 }
 
-static constexpr size_t kSnarkvStride{192};
+constexpr size_t kSnarkvStride{192};
 
 uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
   uint64_t k{input.length() / kSnarkvStride};

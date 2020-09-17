@@ -39,15 +39,15 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce) noexce
 
 evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
                               uint8_t (&code_hash)[32]) noexcept {
-  constexpr size_t n{1 + kAddressLength + 2 * kHashLength};
-  uint8_t buf[n];
+  static constexpr size_t kN{1 + kAddressLength + 2 * kHashLength};
+  uint8_t buf[kN];
 
   buf[0] = 0xff;
   std::memcpy(buf + 1, caller.bytes, kAddressLength);
   std::memcpy(buf + 1 + kAddressLength, salt.bytes, kHashLength);
   std::memcpy(buf + 1 + kAddressLength + kHashLength, code_hash, kHashLength);
 
-  ethash::hash256 hash{ethash::keccak256(buf, n)};
+  ethash::hash256 hash{ethash::keccak256(buf, kN)};
 
   evmc::address address{};
   std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);

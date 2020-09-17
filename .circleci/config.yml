@@ -87,7 +87,7 @@ jobs:
           working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata -format=lcov ./unit_test > silkworm.lcov
+            llvm-cov export -instr-profile profdata -format=lcov ./unit_test -object ./consensus > silkworm.lcov
       - run:
           name: "Upload to Codecov"
           command: |

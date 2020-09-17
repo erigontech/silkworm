@@ -21,6 +21,7 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include <silkworm/chain/block_chain.hpp>
+#include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
@@ -36,6 +37,8 @@ using namespace silkworm;
 namespace fs = std::filesystem;
 
 static const fs::path kRootDir{SILKWORM_CONSENSUS_TEST_DIR};
+
+static const fs::path kDifficultyDir{kRootDir / "BasicTests"};
 
 static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
 
@@ -59,7 +62,7 @@ static const std::set<fs::path> kFailingTests{
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
-static constexpr size_t kColumnWidth{80};
+constexpr size_t kColumnWidth{80};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",
@@ -164,6 +167,32 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
          5,  // constantinople_block
          5,  // petersburg_block
      }},
+    {"EIP2384",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+         0,  // petersburg_block
+         0,  // istanbul_block
+         0,  // muir_glacier_block
+     }},
+};
+
+static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
+    {"difficulty.json", kEthMainnetConfig},
+    {"difficultyByzantium.json", kNetworkConfig.at("Byzantium")},
+    {"difficultyConstantinople.json", kNetworkConfig.at("Constantinople")},
+    {"difficultyCustomMainNetwork.json", kEthMainnetConfig},
+    {"difficultyEIP2384_random_to20M.json", kNetworkConfig.at("EIP2384")},
+    {"difficultyEIP2384_random.json", kNetworkConfig.at("EIP2384")},
+    {"difficultyEIP2384.json", kNetworkConfig.at("EIP2384")},
+    {"difficultyFrontier.json", kNetworkConfig.at("Frontier")},
+    {"difficultyHomestead.json", kNetworkConfig.at("Homestead")},
+    {"difficultyMainNetwork.json", kEthMainnetConfig},
+    {"difficultyRopsten.json", kRopstenConfig},
 };
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
@@ -256,7 +285,7 @@ Status run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& st
   return kPassed;
 }
 
-bool check_post(const IntraBlockState& state, const nlohmann::json& expected) {
+bool post_check(const IntraBlockState& state, const nlohmann::json& expected) {
   for (const auto& entry : expected.items()) {
     evmc::address address{to_address(from_hex(entry.key()))};
     const nlohmann::json& account{entry.value()};
@@ -302,7 +331,12 @@ bool check_post(const IntraBlockState& state, const nlohmann::json& expected) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-Status run_blockchain_test(const nlohmann::json& j) {
+Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
+  if (!j.contains("postState")) {
+    std::cout << "postStateHash is not supported\n";
+    return kSkipped;
+  }
+
   Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>())};
   ByteView genesis_view{genesis_rlp};
   Block genesis_block;
@@ -322,7 +356,7 @@ Status run_blockchain_test(const nlohmann::json& j) {
     }
   }
 
-  if (check_post(state, j["postState"])) {
+  if (post_check(state, j["postState"])) {
     return kPassed;
   } else {
     return kFailed;
@@ -374,8 +408,10 @@ struct RunResults {
   }
 };
 
-// https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-RunResults run_blockchain_file(const fs::path& file_path) {
+[[nodiscard]] RunResults run_test_file(const fs::path& file_path,
+                                       Status (*runner)(const nlohmann::json&,
+                                                        std::optional<ChainConfig>),
+                                       std::optional<ChainConfig> config = {}) {
   std::ifstream in{file_path};
   nlohmann::json json;
   in >> json;
@@ -383,17 +419,10 @@ RunResults run_blockchain_file(const fs::path& file_path) {
   RunResults res{};
 
   for (const auto& test : json.items()) {
-    if (!test.value().contains("postState")) {
-      std::cout << "postStateHash is not supported\n";
-      print_test_status(test.key(), kSkipped);
-      ++res.skipped;
-      continue;
-    }
-
-    Status status{run_blockchain_test(test.value())};
+    Status status{runner(test.value(), config)};
     res.add(status);
     if (status != kPassed) {
-      print_test_status(test.key(), kSkipped);
+      print_test_status(test.key(), status);
     }
   }
 
@@ -401,7 +430,7 @@ RunResults run_blockchain_file(const fs::path& file_path) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/transaction_tests.html
-Status run_transaction_test(const nlohmann::json& j) {
+Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
   Transaction txn;
   bool decoded{false};
   try {
@@ -475,33 +504,48 @@ Status run_transaction_test(const nlohmann::json& j) {
   return kPassed;
 }
 
-RunResults run_transaction_file(const fs::path& file_path) {
-  std::ifstream in{file_path};
-  nlohmann::json json;
-  in >> json;
+// https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
+Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> config) {
+  auto parent_timestamp{std::stoll(j["parentTimestamp"].get<std::string>(), 0, 0)};
+  auto parent_difficulty{
+      intx::from_string<intx::uint256>(j["parentDifficulty"].get<std::string>())};
+  auto current_timestamp{std::stoll(j["currentTimestamp"].get<std::string>(), 0, 0)};
+  auto block_number{std::stoll(j["currentBlockNumber"].get<std::string>(), 0, 0)};
+  auto current_difficulty{
+      intx::from_string<intx::uint256>(j["currentDifficulty"].get<std::string>())};
 
-  RunResults res{};
-
-  for (const auto& test : json.items()) {
-    Status status{run_transaction_test(test.value())};
-    res.add(status);
-    if (status != kPassed) {
-      print_test_status(test.key(), kSkipped);
-    }
+  bool parent_has_uncles{false};
+  if (j.contains("parentUncles")) {
+    auto parent_uncles{j["parentUncles"].get<std::string>()};
+    parent_has_uncles =
+        parent_uncles != "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
   }
 
-  return res;
+  intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp,
+                                                           parent_difficulty, parent_timestamp,
+                                                           parent_has_uncles, *config)};
+  if (calculated_difficulty == current_difficulty) {
+    return kPassed;
+  } else {
+    std::cout << "Difficulty mismatch for block " << block_number << "\n";
+    std::cout << hex(calculated_difficulty) << " ≠ " << hex(current_difficulty) << "\n";
+    return kFailed;
+  }
 }
 
 int main() {
   RunResults res{};
+
+  for (const auto& entry : kDifficultyConfig) {
+    res += run_test_file(kDifficultyDir / entry.first, difficulty_test, entry.second);
+  }
 
   for (auto i = fs::recursive_directory_iterator(kBlockchainDir);
        i != fs::recursive_directory_iterator{}; ++i) {
     if (kSlowTests.count(*i) || kFailingTests.count(*i)) {
       i.disable_recursion_pending();
     } else if (i->is_regular_file()) {
-      res += run_blockchain_file(*i);
+      res += run_test_file(*i, blockchain_test);
     }
   }
 
@@ -510,7 +554,7 @@ int main() {
     if (kFailingTests.count(*i)) {
       i.disable_recursion_pending();
     } else if (i->is_regular_file()) {
-      res += run_transaction_file(*i);
+      res += run_test_file(*i, transaction_test);
     }
   }
 

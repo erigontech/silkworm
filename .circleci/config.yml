@@ -28,7 +28,7 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{arch}}-{{.Environment.COMPILER}}-{{checksum "CMakeLists.txt"}}-{{checksum "cmake/Hunter/config.cmake"}}
+          key: &hunter-cache-key hunter-{{arch}}-{{ .Environment.CIRCLE_JOB }}-{{checksum "CMakeLists.txt"}}-{{checksum "cmake/Hunter/config.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
@@ -57,7 +57,6 @@ jobs:
   linux-gcc-debug:
     environment:
       BUILD_TYPE: Debug
-      COMPILER: gcc
     docker:
       - image: ethereum/cpp-build-env:14-gcc-10
     steps:
@@ -67,7 +66,6 @@ jobs:
   linux-clang-coverage:
     environment:
       BUILD_TYPE: Debug
-      COMPILER: clang
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
     steps:

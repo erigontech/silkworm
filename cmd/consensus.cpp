@@ -382,7 +382,8 @@ struct RunResults {
   }
 };
 
-RunResults run_test_file(const fs::path& file_path, Status (*runner)(const nlohmann::json&)) {
+[[nodiscard]] RunResults run_test_file(const fs::path& file_path,
+                                       Status (*runner)(const nlohmann::json&)) {
   std::ifstream in{file_path};
   nlohmann::json json;
   in >> json;
@@ -478,19 +479,25 @@ Status transaction_test(const nlohmann::json& j) {
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
 Status difficulty_test(const nlohmann::json& j) {
   auto parent_timestamp{std::stoll(j["parentTimestamp"].get<std::string>(), 0, 0)};
-  auto parent_difficulty{std::stoll(j["parentDifficulty"].get<std::string>(), 0, 0)};
+  auto parent_difficulty{
+      intx::from_string<intx::uint256>(j["parentDifficulty"].get<std::string>())};
   auto current_timestamp{std::stoll(j["currentTimestamp"].get<std::string>(), 0, 0)};
   auto block_number{std::stoll(j["currentBlockNumber"].get<std::string>(), 0, 0)};
-  auto current_difficulty{std::stoll(j["currentDifficulty"].get<std::string>(), 0, 0)};
+  auto current_difficulty{
+      intx::from_string<intx::uint256>(j["currentDifficulty"].get<std::string>())};
 
   auto parent_uncles{j["parentUncles"].get<std::string>()};
   bool parent_has_uncles{parent_uncles !=
                          "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"};
 
-  if (canonical_difficulty(block_number, current_timestamp, parent_difficulty, parent_timestamp,
-                           parent_has_uncles, kEthMainnetConfig) == current_difficulty) {
+  intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp,
+                                                           parent_difficulty, parent_timestamp,
+                                                           parent_has_uncles, kEthMainnetConfig)};
+
+  if (calculated_difficulty == current_difficulty) {
     return kPassed;
   } else {
+    std::cout << hex(calculated_difficulty) << " ≠ " << hex(current_difficulty) << "\n";
     return kFailed;
   }
 }
@@ -498,7 +505,8 @@ Status difficulty_test(const nlohmann::json& j) {
 int main() {
   RunResults res{};
 
-  run_test_file(kDifficultyDir / "difficulty.json", difficulty_test);
+  res += run_test_file(kDifficultyDir / "difficulty.json", difficulty_test);
+  res += run_test_file(kDifficultyDir / "difficultyMainNetwork.json", difficulty_test);
 
   for (auto i = fs::recursive_directory_iterator(kBlockchainDir);
        i != fs::recursive_directory_iterator{}; ++i) {

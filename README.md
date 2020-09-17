@@ -66,7 +66,7 @@ We use the standard C++17 programming language.
 We follow [Google's C++ Style Guide](https://google.github.io/styleguide/cppguide.html) with the following differences:
 
 * `snake_case` for function names.
-* .cpp & .hpp file extensions rather than .cc & .h for C++.
+* .cpp & .hpp file extensions for C++; .c & .h are reserved for C.
 * Exceptions are allowed.
 * User-defined literals are allowed.
 * Max line length is 100.

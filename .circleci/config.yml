@@ -28,7 +28,7 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{arch}}-{{checksum "CMakeLists.txt"}}-{{checksum "cmake/Hunter/config.cmake"}}
+          key: &hunter-cache-key hunter-{{arch}}-{{ .Environment.CIRCLE_JOB }}-{{checksum "CMakeLists.txt"}}-{{checksum "cmake/Hunter/config.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build

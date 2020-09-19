@@ -26,30 +26,34 @@ static secp256k1_context* kDefaultContext{
     secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)};
 
 bool is_valid_signature(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
-                        const intx::uint256& chainID, bool homestead) {
-  if (r == 0 || s == 0) {
-    return false;
-  }
-  if (!is_valid_signature_recovery_id(get_signature_recovery_id(v, chainID))) {
-    return false;
-  }
-  if (r >= kSecp256k1n && s >= kSecp256k1n) {
-    return false;
-  }
-  // reject upper range of s values (ECDSA malleability)
-  // see discussion in secp256k1/libsecp256k1/include/secp256k1.h
-  if (homestead && s > kSecp256k1Halfn) {
-    return false;
-  }
-  return true;
+                        const intx::uint256& chainID, bool homestead, uint8_t* recoveryId) {
+    if (r == 0 || s == 0) {
+        return false;
+    }
+    uint8_t recovery{intx::narrow_cast<uint8_t>(get_signature_recovery_id(v, chainID))};
+    if (!is_valid_signature_recovery_id(recovery)) {
+        return false;
+    }
+    if (recoveryId) {
+        *recoveryId = recovery;
+    }
+    if (r >= kSecp256k1n && s >= kSecp256k1n) {
+        return false;
+    }
+    // reject upper range of s values (ECDSA malleability)
+    // see discussion in secp256k1/libsecp256k1/include/secp256k1.h
+    if (homestead && s > kSecp256k1Halfn) {
+        return false;
+    }
+    return true;
 }
 
 intx::uint256 get_signature_recovery_id(const intx::uint256& v, const intx::uint256& chainID) {
   return chainID ? v - (2 * chainID + 35) : v - 27;
 }
 
-bool is_valid_signature_recovery_id(const intx::uint256& recovery) {
-  return recovery == 0 || recovery == 1;
+bool is_valid_signature_recovery_id(const uint8_t& recoveryId) {
+  return recoveryId == 0 || recoveryId == 1;
 }
 
 intx::uint256 get_chainid_from_v(const intx::uint256& v) {

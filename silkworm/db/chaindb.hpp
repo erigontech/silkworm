@@ -68,13 +68,14 @@ namespace silkworm::db {
         };
 
         /**
-        * Exception thrown by lmdb
-        */
+         * Exception thrown by lmdb
+         */
         class exception : public std::exception {
            public:
             exception(int err, const char* errstr) : err_{err}, message_{std::move(errstr)} {};
             virtual const char* what() noexcept { return message_; }
             int err() { return err_; }
+
            private:
             int err_;
             const char* message_;

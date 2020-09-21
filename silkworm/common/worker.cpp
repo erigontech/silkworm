@@ -30,7 +30,7 @@ void Worker::start() {
         return;
     }
 
-    thread_.reset(new boost::thread([&]() {
+    thread_.reset(new std::thread([&]() {
         WorkerState expected{WorkerState::kStarting};
         if (state_.compare_exchange_strong(expected, WorkerState::kStarted)) {
             try {

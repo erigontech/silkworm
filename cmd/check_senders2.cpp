@@ -136,7 +136,6 @@ class Recoverer : public silkworm::Worker {
     // Basic work loop (overrides Worker::work())
     void work() final {
 
-        const boost::posix_time::time_duration kickWaitDuration{boost::posix_time::seconds(1)};
         bool recovery_error_{ false };
 
         // Try allocate enough memory to store
@@ -149,8 +148,8 @@ class Recoverer : public silkworm::Worker {
         while (!should_stop()) {
             bool expectedKick{true};
             if (!kicked_.compare_exchange_strong(expectedKick, false, std::memory_order_relaxed)) {
-                boost::mutex::scoped_lock l(xwork_);
-                kicked_signal_.timed_wait(l, kickWaitDuration);
+                std::unique_lock l(xwork_);
+                kicked_signal_.wait_for(l, std::chrono::seconds(1));
                 continue;
             }
 
@@ -311,7 +310,7 @@ bool start_workers(std::vector<std::unique_ptr<Recoverer>> &workers) {
         std::cout << format_time() << " Starting worker thread #" << r << std::endl;
         workers.at(r)->start();
         // Wait for thread to init properly
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(5));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
         if (workers.at(r)->get_state() != Worker::WorkerState::kStarted) {
             return false;
         }
@@ -477,7 +476,7 @@ int main(int argc, char* argv[]) {
         // Ensure threads flush in the right order to preserve key sorting
         // Threads waits for its ticket before flushing
         while (flush_batch_id.load(boost::memory_order::relaxed) != batch_id) {
-            boost::this_thread::sleep_for(boost::chrono::milliseconds(5));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
         // Prevent threads from flushing their results while

@@ -36,7 +36,7 @@ set(SILKWORM_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set
                          liblmdb::lmdb evmc intx::intx ff
                          lmdbxx::lmdbxx) # PUBLIC lmdbxx since we use its exceptions
 
-set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::atomic Boost::boost Boost::thread)
+set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::boost)
 
 if(MSVC)
   list(APPEND SILKWORM_PRIVATE_LIBS ntdll.lib)

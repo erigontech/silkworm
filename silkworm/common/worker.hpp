@@ -17,11 +17,12 @@
 #ifndef SILKWORM_WORKER_H_
 #define SILKWORM_WORKER_H_
 
-#include <boost/thread.hpp>
 #include <boost/signals2.hpp>
 
 #include <atomic>
+#include <condition_variable>
 #include <iostream>
+#include <thread>
 
 namespace silkworm {
 
@@ -48,11 +49,11 @@ class Worker {
 
    protected:
     std::atomic<WorkerState> state_{WorkerState::kStopped};
-    std::unique_ptr<boost::thread> thread_{nullptr};
+    std::unique_ptr<std::thread> thread_{nullptr};
 
     std::atomic<bool> kicked_{false};
-    boost::condition_variable kicked_signal_{};
-    mutable boost::mutex xwork_;
+    std::condition_variable kicked_signal_{};
+    mutable std::mutex xwork_;
 
    private:
     virtual void work() = 0;

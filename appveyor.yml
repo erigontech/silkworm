@@ -22,7 +22,7 @@ install:
 
 cache:
   - C:\Tools\vcpkg\installed -> .appveyor.yml
-  - C:\.hunter -> .appveyor.yml, CMakeLists.txt, cmake\Hunter\config.cmake
+  - C:\.hunter -> .appveyor.yml, CMakeLists.txt, silkworm\CMakeLists.txt, cmake\Hunter\config.cmake
 
 before_build:
   - cd "%APPVEYOR_BUILD_FOLDER%"

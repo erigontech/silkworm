@@ -57,4 +57,61 @@ TEST_CASE("BlockBody RLP") {
   rlp::encode(out, bb);
   CHECK(to_hex(out) == rlp_hex);
 }
+
+TEST_CASE("BlockBody RLP 2") {
+  BlockBody body{};
+  body.transactions.resize(2);
+
+  body.transactions[0].nonce = 172339;
+  body.transactions[0].gas_price = 50 * kGiga;
+  body.transactions[0].gas_limit = 90'000;
+  body.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
+  body.transactions[0].value = 1'027'501'080 * kGiga;
+  body.transactions[0].data = {};
+  body.transactions[0].w = 27;
+  body.transactions[0].r = intx::from_string<intx::uint256>(
+      "0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353");
+  body.transactions[0].s = intx::from_string<intx::uint256>(
+      "0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
+
+  body.transactions[1].nonce = 1;
+  body.transactions[1].gas_price = 50 * kGiga;
+  body.transactions[1].gas_limit = 1'000'000;
+  body.transactions[1].to = {};
+  body.transactions[1].value = 0;
+  body.transactions[1].data = from_hex("602a6000556101c960015560068060166000396000f3600035600055");
+  body.transactions[1].w = 37;
+  body.transactions[1].r = intx::from_string<intx::uint256>(
+      "0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
+  body.transactions[1].s = intx::from_string<intx::uint256>(
+      "0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
+
+  body.ommers.resize(1);
+  body.ommers[0].parent_hash =
+      0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55_bytes32;
+  body.ommers[0].ommers_hash = kEmptyListHash;
+  body.ommers[0].beneficiary = 0x0c729be7c39543c3d549282a40395299d987cec2_address;
+  body.ommers[0].state_root =
+      0xc2bcdfd012534fa0b19ffba5fae6fc81edd390e9b7d5007d1e92e8e835286e9d_bytes32;
+  body.ommers[0].transactions_root = kEmptyRoot;
+  body.ommers[0].receipts_root = kEmptyRoot;
+  body.ommers[0].difficulty = 12'555'442'155'599;
+  body.ommers[0].number = 1'000'013;
+  body.ommers[0].gas_limit = 3'141'592;
+  body.ommers[0].gas_used = 0;
+  body.ommers[0].timestamp = 1455404305;
+  body.ommers[0].mix_hash =
+      0xf0a53dfdd6c2f2a661e718ef29092de60d81d45f84044bec7bf4b36630b2bc08_bytes32;
+  body.ommers[0].nonce[7] = 35;
+
+  Bytes rlp{};
+  rlp::encode(rlp, body);
+
+  ByteView view{rlp};
+  BlockBody decoded{};
+  rlp::decode(view, decoded);
+
+  CHECK(view.empty());
+  CHECK(decoded == body);
+}
 }  // namespace silkworm

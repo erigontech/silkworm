@@ -124,9 +124,6 @@ find_package(CLI11 CONFIG REQUIRED)
 add_executable(check_senders cmd/check_senders.cpp)
 target_link_libraries(check_senders PRIVATE silkworm Boost::boost Boost::filesystem Boost::chrono CLI11::CLI11)
 
-add_executable(check_senders2 cmd/check_senders2.cpp)
-target_link_libraries(check_senders2 PRIVATE silkworm Boost::boost Boost::filesystem Boost::chrono CLI11::CLI11)
-
 add_executable(check_db cmd/check_db.cpp)
 target_link_libraries(check_db PRIVATE silkworm Boost::boost Boost::filesystem Boost::chrono CLI11::CLI11)
 

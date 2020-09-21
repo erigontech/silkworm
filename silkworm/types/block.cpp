@@ -95,7 +95,7 @@ void decode(ByteView& from, BlockHeader& to) {
   if (extra_data_head.payload_length > 32) {
     throw DecodingError("extraData must be no longer than 32 bytes");
   }
-  to.extra_data_size_ = extra_data_head.payload_length;
+  to.extra_data_size_ = static_cast<uint32_t>(extra_data_head.payload_length);
   std::memcpy(to.extra_data_.bytes, from.data(), to.extra_data_size_);
   from.remove_prefix(to.extra_data_size_);
 
@@ -119,6 +119,18 @@ void decode(ByteView& from, BlockBody& to) {
     throw DecodingError("unexpected string");
   }
 
+  decode_vector(from, to.transactions);
+  decode_vector(from, to.ommers);
+}
+
+template <>
+void decode(ByteView& from, Block& to) {
+  Header rlp_head{decode_header(from)};
+  if (!rlp_head.list) {
+    throw DecodingError("unexpected string");
+  }
+
+  decode(from, to.header);
   decode_vector(from, to.transactions);
   decode_vector(from, to.ommers);
 }

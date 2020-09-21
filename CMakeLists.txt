@@ -30,15 +30,19 @@ cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 include(evmone/cmake/cable/HunterGate.cmake)
 set(HUNTER_USE_CACHE_SERVERS NO)
 HunterGate(
-  URL "https://github.com/cpp-pm/hunter/archive/v0.23.258.tar.gz"
-  SHA1 "062a19ab13ce8dffa9a882b6ce3e43bdabdf75d3"
+  URL "https://github.com/cpp-pm/hunter/archive/v0.23.267.tar.gz"
+  SHA1 "9c5c7fa6e17c2ae15dd922184bc7c51235aaae70"
   FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake"
 )
 
 project(silkworm)
 
-# Abseil
-add_subdirectory(abseil-cpp)
+if(MSVC)
+  add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+endif()
+
+hunter_add_package(abseil)
+find_package(absl CONFIG REQUIRED)
 
 # secp256k1
 add_compile_definitions(USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
@@ -61,24 +65,20 @@ set(
   "Default curve: one of ALT_BN128, BN128, EDWARDS, MNT4, MNT6"
   FORCE
 )
-option(
-  WITH_PROCPS
-  "Use procps for memory profiling"
-  OFF
-)
-option(
-  IS_LIBFF_PARENT
-  "Install submodule dependencies if caller originates from here"
-  OFF
-)
+option(WITH_PROCPS "" OFF)
+option(IS_LIBFF_PARENT "" OFF)
+if(MSVC)
+  option(MPIR_INSTEAD_OF_GMP "" ON)
+endif()
 add_subdirectory(libff)
 
 # Compiler options
 if(MSVC)
-  add_compile_options(/W4)
   add_compile_options(/wd5030) # Silence warnings about gnu attributes
   add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
   add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
+
+  add_link_options(/ignore:4099)
 
   set(CMAKE_EXE_LINKER_FLAGS "/STACK:10000000")
 else()
@@ -110,7 +110,7 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
 target_include_directories(evmone PUBLIC evmone/lib/evmone)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
 
-# silkworm itself
+# Silkworm itself
 add_subdirectory(silkworm)
 
 add_executable(check_changes cmd/check_changes.cpp)
@@ -127,6 +127,15 @@ target_link_libraries(check_senders PRIVATE silkworm Boost::boost Boost::filesys
 add_executable(check_db cmd/check_db.cpp)
 target_link_libraries(check_db PRIVATE silkworm Boost::boost Boost::filesystem Boost::chrono CLI11::CLI11)
 
+# Ethereum Consensus Tests
+hunter_add_package(nlohmann_json)
+find_package(nlohmann_json CONFIG REQUIRED)
+
+add_compile_definitions(SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
+
+add_executable(consensus cmd/consensus.cpp)
+target_link_libraries(consensus PRIVATE silkworm nlohmann_json::nlohmann_json)
+
 # Unit tests
 enable_testing()
 
@@ -134,9 +143,9 @@ hunter_add_package(Catch)
 find_package(Catch2 CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "silkworm/*_test.cpp")
-add_executable(tests cmd/tests.cpp ${SILKWORM_TESTS})
-target_link_libraries(tests silkworm Catch2::Catch2)
+add_executable(unit_test cmd/unit_test.cpp ${SILKWORM_TESTS})
+target_link_libraries(unit_test silkworm Catch2::Catch2)
 
 include(CTest)
 include(Catch)
-catch_discover_tests(tests)
+catch_discover_tests(unit_test)

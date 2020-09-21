@@ -16,11 +16,11 @@ as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth
 
 ## Linux & macOS
 Building silkworm requires:
+* C++17 compiler (GCC or Clang)
 * [CMake](http://cmake.org)
 * [GMP](http://gmplib.org) (`sudo apt-get install libgmp3-dev` or `brew install gmp`)
-* C++17 compiler (Clang or GCC)
 
-Once the prerequisites are installed, bootstrap cmake build by running
+Once the prerequisites are installed, bootstrap cmake by running
 ```
 mkdir build
 cd build
@@ -30,22 +30,28 @@ cmake ..
 
 Then run the build itself
 ```
-cmake --build . -j
+make -j
 ```
 Now you can check database changes (produced by [Turbo-Geth](https://github.com/ledgerwatch/turbo-geth)) with silkworm
 ```
 ./check_changes
 ```
-or run tests
+and also run either the unit tests
 ```
-./tests
+./unit_test
 ```
-## Windows (Visual Studio Community Edition 2019)
-### Prerequisites
-* Download [GMP](https://github.com/ShiftMediaProject/gmp/releases). Extract archive contents in a folder of your choice (eg. `C:\libgmp`). Create two new environment variables: `GMP_LIBRARY` set to `C:/libgmp/lib/x64/gmp.lib` and `GMP_INCLUDE_DIR` set to `C:/libgmp/include/`. Also ensure your `PATH` variable includes `C:/libgmp/bin/x64/`. (should you have extracted the contents of archive in other path than `C:/libgmp` change the previous environment variables paths accordingly)
-* Install [Visual Studio](https://www.visualstudio.com/downloads/). Community edition is fine.
+or [Ethereum Consensus Tests](https://github.com/ethereum/tests)
+```
+./consensus
+```
+
+## Windows
+* Install [Visual Studio](https://www.visualstudio.com/downloads) 2019. Community edition is fine.
 * Make sure your setup includes CMake support and Windows 10 SDK.
-### Build
+* Install [vcpkg](https://github.com/microsoft/vcpkg#quick-start-windows).
+* `.\vcpkg\vcpkg install mpir:x64-windows`
+* Add <VCPKG_ROOT>\installed\x64-windows\include to your `INCLUDE` environment variable.
+* Add <VCPKG_ROOT>\installed\x64-windows\bin to your `PATH` environment variable.
 * Open Visual Studio and select File -> CMake...
 * Browse the folder where you have cloned this repository and select the file CMakeLists.txt
 * Let CMake cache generation complete (it may take several minutes)

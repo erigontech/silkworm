@@ -32,9 +32,12 @@ struct SearchResult {
   bool new_record{false};
 };
 
-// Turbo-Geth (HistoryIndexBytes)Search
+// Finds the smallest element equal or greater than v.
+// See also Turbo-Geth (HistoryIndexBytes)Search
 std::optional<SearchResult> find(ByteView index, uint64_t v);
 
+// Finds the largest element less than v.
+std::optional<SearchResult> find_previous(ByteView index, uint64_t v);
 }  // namespace silkworm::db::history_index
 
 #endif  // SILKWORM_DB_HISTORY_INDEX_H_

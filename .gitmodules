@@ -5,10 +5,10 @@
 [submodule "secp256k1"]
 	path = secp256k1
 	url = https://github.com/bitcoin-core/secp256k1.git
-[submodule "abseil-cpp"]
-	path = abseil-cpp
-	url = https://github.com/abseil/abseil-cpp.git
 [submodule "libff"]
 	path = libff
 	url = https://github.com/torquem-ch/libff.git
-	branch = optional_openssl
+	branch = win
+[submodule "tests"]
+	path = tests
+	url = https://github.com/ethereum/tests.git

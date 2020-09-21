@@ -24,11 +24,11 @@ namespace silkworm::rlp {
 void encode_header(Bytes& to, Header header) {
   if (header.payload_length < 56) {
     uint8_t code{header.list ? kEmptyListCode : kEmptyStringCode};
-    to.push_back(code + header.payload_length);
+    to.push_back(static_cast<uint8_t>(code + header.payload_length));
   } else {
     ByteView len_be{big_endian(header.payload_length)};
     uint8_t code = header.list ? '\xF7' : '\xB7';
-    to.push_back(code + len_be.length());
+    to.push_back(static_cast<uint8_t>(code + len_be.length()));
     to.append(len_be);
   }
 }
@@ -65,10 +65,10 @@ void encode(Bytes& to, uint64_t n) {
   if (n == 0) {
     to.push_back(kEmptyStringCode);
   } else if (n < kEmptyStringCode) {
-    to.push_back(n);
+    to.push_back(static_cast<uint8_t>(n));
   } else {
-    ByteView be = big_endian(n);
-    to.push_back(kEmptyStringCode + be.length());
+    ByteView be{big_endian(n)};
+    to.push_back(static_cast<uint8_t>(kEmptyStringCode + be.length()));
     to.append(be);
   }
 }
@@ -87,8 +87,8 @@ void encode(Bytes& to, const intx::uint256& n) {
   } else if (n < kEmptyStringCode) {
     to.push_back(intx::narrow_cast<uint8_t>(n));
   } else {
-    ByteView be = big_endian(n);
-    to.push_back(kEmptyStringCode + be.length());
+    ByteView be{big_endian(n)};
+    to.push_back(static_cast<uint8_t>(kEmptyStringCode + be.length()));
     to.append(be);
   }
 }

@@ -15,15 +15,15 @@
 ]]
 
 hunter_config(
-    ethash
-    VERSION 0.5.2
-    URL https://github.com/chfast/ethash/archive/v0.5.2.tar.gz
-    SHA1 8d2859a9d09721ed7007007bd59a77c0bd9b2bee
+  ethash
+  VERSION 0.5.2
+  URL https://github.com/chfast/ethash/archive/v0.5.2.tar.gz
+  SHA1 8d2859a9d09721ed7007007bd59a77c0bd9b2bee
 )
 
 hunter_config(
-    intx
-    VERSION 0.5.0
-    URL https://github.com/chfast/intx/archive/v0.5.0.tar.gz
-    SHA1 7f917cfe9046278d348a5cf36c20f9847d351807
+  lmdb
+  VERSION 0.9.26
+  URL https://github.com/torquem-ch/lmdb/archive/v0.9.26.tar.gz
+  SHA1 ed1f187022ae44d51816400343e219c8a1c7ccd6
 )

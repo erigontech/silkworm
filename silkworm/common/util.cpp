@@ -24,6 +24,28 @@
 
 namespace silkworm {
 
+ByteView left_pad(ByteView view, size_t min_size) {
+  if (view.size() >= min_size) {
+    return view;
+  }
+
+  thread_local Bytes padded;
+
+  if (padded.size() < min_size) {
+    padded.resize(min_size);
+  }
+
+  assert(view.size() < min_size);
+  size_t prefix_len{min_size - view.size()};
+
+  std::memmove(padded.data() + prefix_len, view.data(), view.size());
+
+  padded.resize(min_size);
+  std::fill_n(padded.data(), prefix_len, '\0');
+
+  return padded;
+}
+
 ByteView right_pad(ByteView view, size_t min_size) {
   if (view.size() >= min_size) {
     return view;
@@ -44,7 +66,14 @@ ByteView right_pad(ByteView view, size_t min_size) {
   return padded;
 }
 
-evmc::bytes32 to_hash(ByteView bytes) {
+evmc::address to_address(ByteView bytes) {
+  evmc::address out;
+  size_t n{std::min(bytes.length(), kAddressLength)};
+  std::memcpy(out.bytes + kAddressLength - n, bytes.data(), n);
+  return out;
+}
+
+evmc::bytes32 to_bytes32(ByteView bytes) {
   evmc::bytes32 out;
   size_t n{std::min(bytes.length(), kHashLength)};
   std::memcpy(out.bytes + kHashLength - n, bytes.data(), n);

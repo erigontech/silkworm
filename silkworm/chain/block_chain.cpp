@@ -21,7 +21,12 @@ BlockChain::BlockChain(db::Database* db) : db_{db} {}
 
 std::optional<BlockHeader> BlockChain::get_header(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const {
-  if (!db_) return {};
-  return db_->get_header(block_number, block_hash);
+  if (db_) {
+    return db_->get_header(block_number, block_hash);
+  } else if (block_number == 0) {
+    return test_genesis_header;
+  } else {
+    return {};
+  }
 }
 }  // namespace silkworm

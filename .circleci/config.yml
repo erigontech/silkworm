@@ -33,7 +33,7 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{arch}}-{{checksum "CMakeLists.txt"}}
+          key: &hunter-cache-key hunter-{{arch}}-{{checksum "CMakeLists.txt"}}-{{checksum "cmake/Hunter/config.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
@@ -50,9 +50,13 @@ commands:
   test:
     steps:
     - run:
-        name: "Test"
+        name: "Unit Tests"
         working_directory: ~/build
         command: ctest --output-on-failure
+    - run:
+        name: "Ethereum Consensus Tests"
+        working_directory: ~/build
+        command: ./consensus
 
 jobs:
   build_and_test:

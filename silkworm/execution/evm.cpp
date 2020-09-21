@@ -81,6 +81,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
   if (state_.get_nonce(contract_addr) != 0 || state_.get_code_hash(contract_addr) != kEmptyHash) {
     // https://github.com/ethereum/EIPs/issues/684
     res.status_code = EVMC_INVALID_INSTRUCTION;
+    res.gas_left = 0;
     return res;
   }
 
@@ -295,31 +296,68 @@ bool EvmHost::account_exists(const evmc::address& address) const noexcept {
 
 evmc::bytes32 EvmHost::get_storage(const evmc::address& address,
                                    const evmc::bytes32& key) const noexcept {
-  return evm_.state().get_storage(address, key);
+  return evm_.state().get_current_storage(address, key);
 }
 
 evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evmc::bytes32& key,
-                                         const evmc::bytes32& value) noexcept {
-  const evmc::bytes32& prev_val{evm_.state().get_storage(address, key)};
+                                         const evmc::bytes32& new_val) noexcept {
+  evmc::bytes32 current_val{evm_.state().get_current_storage(address, key)};
 
-  if (prev_val == value) {
+  if (current_val == new_val) {
     return EVMC_STORAGE_UNCHANGED;
   }
 
-  evm_.state().set_storage(address, key, value);
+  evm_.state().set_storage(address, key, new_val);
 
-  if (is_zero(prev_val)) {
-    return EVMC_STORAGE_ADDED;
+  uint64_t block_number{evm_.block_.header.number};
+  bool eip1283{evm_.config().has_istanbul(block_number) ||
+               (evm_.config().has_constantinople(block_number) &&
+                !evm_.config().has_petersburg(block_number))};
+
+  if (!eip1283) {
+    if (is_zero(current_val)) {
+      return EVMC_STORAGE_ADDED;
+    }
+
+    if (is_zero(new_val)) {
+      evm_.state().add_refund(fee::kRSClear);
+      return EVMC_STORAGE_DELETED;
+    }
+
+    return EVMC_STORAGE_MODIFIED;
   }
 
-  if (is_zero(value)) {
-    evm_.state().add_refund(fee::kRSClear);
-    return EVMC_STORAGE_DELETED;
+  uint64_t sload_cost{evm_.config().has_istanbul(block_number) ? fee::kGSLoadIstanbul
+                                                               : fee::kGSLoadTangerineWhistle};
+  // https://eips.ethereum.org/EIPS/eip-1283
+  evmc::bytes32 original_val{evm_.state().get_original_storage(address, key)};
+
+  if (original_val == current_val) {
+    if (is_zero(original_val)) {
+      return EVMC_STORAGE_ADDED;
+    }
+    if (is_zero(new_val)) {
+      evm_.state().add_refund(fee::kRSClear);
+    }
+    return EVMC_STORAGE_MODIFIED;
+  } else {
+    if (!is_zero(original_val)) {
+      if (is_zero(current_val)) {
+        evm_.state().subtract_refund(fee::kRSClear);
+      }
+      if (is_zero(new_val)) {
+        evm_.state().add_refund(fee::kRSClear);
+      }
+    }
+    if (original_val == new_val) {
+      if (is_zero(original_val)) {
+        evm_.state().add_refund(fee::kGSSet - sload_cost);
+      } else {
+        evm_.state().add_refund(fee::kGSReset - sload_cost);
+      }
+    }
+    return EVMC_STORAGE_MODIFIED_AGAIN;
   }
-
-  return EVMC_STORAGE_MODIFIED;
-
-  // TODO[Istanbul] EIP-2200
 }
 
 evmc::uint256be EvmHost::get_balance(const evmc::address& address) const noexcept {
@@ -332,7 +370,11 @@ size_t EvmHost::get_code_size(const evmc::address& address) const noexcept {
 }
 
 evmc::bytes32 EvmHost::get_code_hash(const evmc::address& address) const noexcept {
-  return evm_.state().get_code_hash(address);
+  if (evm_.state().dead(address)) {
+    return {};
+  } else {
+    return evm_.state().get_code_hash(address);
+  }
 }
 
 size_t EvmHost::copy_code(const evmc::address& address, size_t code_offset, uint8_t* buffer_data,

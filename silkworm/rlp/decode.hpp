@@ -78,7 +78,9 @@ void decode_vector(ByteView& from, std::vector<T>& to) {
   from.remove_prefix(h.payload_length);
 }
 
-uint64_t read_uint64(ByteView from);
+uint64_t read_uint64(ByteView big_endian, bool allow_leading_zeros = false);
+
+intx::uint256 read_uint256(ByteView big_endian, bool allow_leading_zeros = false);
 
 }  // namespace silkworm::rlp
 

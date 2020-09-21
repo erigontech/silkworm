@@ -48,7 +48,7 @@ class EVM {
 
   const Block& block() const { return block_; }
 
-  const ChainConfig& config() const { return chain_.config(); }
+  const ChainConfig& config() const { return chain_.config; }
 
   IntraBlockState& state() { return state_; }
 

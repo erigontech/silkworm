@@ -26,8 +26,14 @@ find_package(lmdbxx CONFIG REQUIRED)
 hunter_add_package(cryptopp)
 find_package(cryptopp CONFIG REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
+
+add_compile_definitions(NATIVE_LITTLE_ENDIAN)
+
+if(MSVC)
+  add_compile_options(/W4)
+endif()
 
 add_library(silkworm ${SILKWORM_SRC})
 target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})

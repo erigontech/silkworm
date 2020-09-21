@@ -18,15 +18,16 @@
 
 #include <cryptopp/ripemd.h>
 #include <cryptopp/sha.h>
+#include <silkworm/crypto/blake2.h>
 
 #include <algorithm>
 #include <boost/endian/conversion.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <cstring>
 #include <ethash/keccak.hpp>
-#include <iostream>  // TODO[Istanbul] remove
 #include <iterator>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
+#include <limits>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/crypto/snark.hpp>
@@ -129,8 +130,12 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
 
   intx::uint256 exp_head{0};  // first 32 bytes of the exponent
   if (input.length() > base_len) {
-    input = right_pad(input, base_len + 32);
-    exp_head = intx::be::unsafe::load<intx::uint256>(&input[base_len]);
+    ByteView exp_input{right_pad(input.substr(base_len), 32)};
+    if (exponent_len < 32) {
+      exp_input = exp_input.substr(0, exponent_len);
+      exp_input = left_pad(exp_input, 32);
+    }
+    exp_head = intx::be::unsafe::load<intx::uint256>(exp_input.data());
   }
   unsigned bit_len{256 - clz(exp_head)};
 
@@ -170,19 +175,19 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
 
   boost::multiprecision::cpp_int base{};
   if (base_len) {
-    import_bits(base, &input[0], &input[base_len]);
+    import_bits(base, input.data(), input.data() + base_len);
     input.remove_prefix(base_len);
   }
 
   boost::multiprecision::cpp_int exponent{};
   if (exponent_len) {
-    import_bits(exponent, &input[0], &input[exponent_len]);
+    import_bits(exponent, input.data(), input.data() + exponent_len);
     input.remove_prefix(exponent_len);
   }
 
   boost::multiprecision::cpp_int modulus{};
   if (modulus_len) {
-    import_bits(modulus, &input[0], &input[modulus_len]);
+    import_bits(modulus, input.data(), input.data() + modulus_len);
   }
 
   if (modulus == 0) {
@@ -295,8 +300,34 @@ uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
   return boost::endian::load_big_u32(input.data());
 }
 
-std::optional<Bytes> blake2_f_run(ByteView) noexcept {
-  std::cerr << "[Istanbul] blake2_f_run!!!\n";
-  return {};
+std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
+  if (input.size() != 213) {
+    return {};
+  }
+  uint8_t f{input[212]};
+  if (f != 0 && f != 1) {
+    return {};
+  }
+
+  blake2b_state state{};
+  if (f) {
+    state.f[0] = std::numeric_limits<uint64_t>::max();
+  }
+
+  static_assert(boost::endian::order::native == boost::endian::order::little);
+  static_assert(sizeof(state.h) == 8 * 8);
+  std::memcpy(&state.h, input.data() + 4, 8 * 8);
+
+  uint8_t block[BLAKE2B_BLOCKBYTES];
+  std::memcpy(block, input.data() + 68, BLAKE2B_BLOCKBYTES);
+
+  std::memcpy(&state.t, input.data() + 196, 8 * 2);
+
+  uint32_t r{boost::endian::load_big_u32(input.data())};
+  blake2b_compress(&state, block, r);
+
+  Bytes out(8 * 8, '\0');
+  std::memcpy(&out[0], &state.h[0], 8 * 8);
+  return out;
 }
 }  // namespace silkworm::precompiled

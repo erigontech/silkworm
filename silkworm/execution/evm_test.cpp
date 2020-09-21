@@ -101,15 +101,15 @@ TEST_CASE("Smart contract with storage") {
 
   evmc::address contract_address{create_address(caller, /*nonce=*/1)};
   evmc::bytes32 key0{};
-  CHECK(to_hex(zeroless_view(state.get_storage(contract_address, key0))) == "2a");
+  CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0))) == "2a");
 
-  evmc::bytes32 new_val{to_hash(from_hex("f5"))};
+  evmc::bytes32 new_val{to_bytes32(from_hex("f5"))};
   txn.to = contract_address;
   txn.data = full_view(new_val);
 
   res = evm.execute(txn, gas);
   CHECK(res.status == EVMC_SUCCESS);
-  CHECK(state.get_storage(contract_address, key0) == new_val);
+  CHECK(state.get_current_storage(contract_address, key0) == new_val);
 }
 
 TEST_CASE("Maximum call depth") {
@@ -164,12 +164,12 @@ TEST_CASE("Maximum call depth") {
   CallResult res{evm.execute(txn, gas)};
   CHECK(res.status == EVMC_SUCCESS);
 
-  evmc::bytes32 num_of_recursions{to_hash(from_hex("0400"))};
+  evmc::bytes32 num_of_recursions{to_bytes32(from_hex("0400"))};
   txn.data = full_view(num_of_recursions);
   res = evm.execute(txn, gas);
   CHECK(res.status == EVMC_SUCCESS);
 
-  num_of_recursions = to_hash(from_hex("0401"));
+  num_of_recursions = to_bytes32(from_hex("0401"));
   txn.data = full_view(num_of_recursions);
   res = evm.execute(txn, gas);
   CHECK(res.status == EVMC_INVALID_INSTRUCTION);
@@ -212,14 +212,14 @@ TEST_CASE("DELEGATECALL") {
   Transaction txn{};
   txn.from = caller_address;
   txn.to = caller_address;
-  txn.data = full_view(to_hash(full_view(callee_address)));
+  txn.data = full_view(to_bytes32(full_view(callee_address)));
 
   uint64_t gas{1'000'000};
   CallResult res{evm.execute(txn, gas)};
   CHECK(res.status == EVMC_SUCCESS);
 
   evmc::bytes32 key0{};
-  CHECK(to_hex(zeroless_view(state.get_storage(caller_address, key0))) ==
+  CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0))) ==
         to_hex(full_view(caller_address)));
 }
 
@@ -280,6 +280,35 @@ TEST_CASE("CREATE should only return on failure") {
 
   evmc::address contract_address{create_address(caller, /*nonce=*/0)};
   evmc::bytes32 key0{};
-  CHECK(is_zero(state.get_storage(contract_address, key0)));
+  CHECK(is_zero(state.get_current_storage(contract_address, key0)));
+}
+
+// https://github.com/ethereum/EIPs/issues/684
+TEST_CASE("Contract overwrite") {
+  Block block{};
+  block.header.number = 7'753'545;
+
+  Bytes old_code{from_hex("6000")};
+  Bytes new_code{from_hex("6001")};
+
+  evmc::address caller{0x92a1d964b8fc79c5694343cc943c27a94a3be131_address};
+
+  evmc::address contract_address{create_address(caller, /*nonce=*/0)};
+
+  IntraBlockState state{nullptr};
+  state.set_code(contract_address, old_code);
+
+  BlockChain chain{nullptr};
+  EVM evm{chain, block, state};
+
+  Transaction txn{};
+  txn.from = caller;
+  txn.data = new_code;
+
+  uint64_t gas{100'000};
+  CallResult res{evm.execute(txn, gas)};
+
+  CHECK(res.status == EVMC_INVALID_INSTRUCTION);
+  CHECK(res.gas_left == 0);
 }
 }  // namespace silkworm

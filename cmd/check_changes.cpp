@@ -19,6 +19,7 @@
 #include <absl/flags/usage.h>
 #include <absl/time/time.h>
 
+#include <filesystem>
 #include <iostream>
 #include <silkworm/db/lmdb.hpp>
 #include <silkworm/db/util.hpp>
@@ -37,6 +38,15 @@ int main(int argc, char* argv[]) {
       "Executes Ethereum blocks and compares resulting change sets against DB.");
   absl::ParseCommandLine(argc, argv);
 
+  if (!std::filesystem::exists(absl::GetFlag(FLAGS_db))) {
+    std::cerr << absl::GetFlag(FLAGS_db) << " does not exist.\n";
+    std::cerr << "Use --db flag to point to a Turbo-Geth populated chaindata.\n";
+    return -1;
+  }
+
+  absl::Time t1{absl::Now()};
+  std::cout << t1 << " Checking change sets in " << absl::GetFlag(FLAGS_db) << "\n";
+
   using namespace silkworm;
 
   db::LmdbDatabase db{absl::GetFlag(FLAGS_db).c_str()};
@@ -44,8 +54,6 @@ int main(int argc, char* argv[]) {
 
   const uint64_t from{absl::GetFlag(FLAGS_from)};
   const uint64_t to{absl::GetFlag(FLAGS_to)};
-
-  absl::Time t1{absl::Now()};
 
   uint64_t block_num{from};
   for (; block_num < to; ++block_num) {
@@ -77,14 +85,14 @@ int main(int argc, char* argv[]) {
       std::cerr << processor.cumulative_gas_used() << '\n';
       std::cerr << "vs expected\n";
       std::cerr << bh->block.header.gas_used << '\n';
-      return -1;
+      return -2;
     }
 
-    if (chain.config().has_byzantium(block_num)) {
+    if (chain.config.has_byzantium(block_num)) {
       evmc::bytes32 receipt_root{trie::root_hash(receipts)};
       if (receipt_root != bh->block.header.receipts_root) {
         std::cerr << "Receipt root mismatch for block " << block_num << " 😖\n";
-        return -2;
+        return -3;
       }
     }
 
@@ -113,7 +121,6 @@ int main(int argc, char* argv[]) {
       } else {
         std::cerr << "Nil DB account changes\n";
       }
-      return -3;
     }
 
     Bytes db_storage_changes{db.get_storage_changes(block_num)};
@@ -126,7 +133,6 @@ int main(int argc, char* argv[]) {
       std::cerr << to_hex(calculated_storage_changes) << "\n";
       std::cerr << "vs DB\n";
       std::cerr << to_hex(db_storage_changes) << "\n";
-      return -4;
     }
 
     if (block_num % 1000 == 0) {
@@ -137,6 +143,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  std::cout << "Blocks [" << from << "; " << block_num << ") have been checked 😅\n";
+  t1 = absl::Now();
+  std::cout << t1 << " Blocks [" << from << "; " << block_num << ") have been checked\n";
   return 0;
 }

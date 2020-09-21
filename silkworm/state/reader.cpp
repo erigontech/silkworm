@@ -16,9 +16,6 @@
 
 #include "reader.hpp"
 
-#include <silkworm/common/util.hpp>
-#include <silkworm/db/bucket.hpp>
-
 namespace silkworm::state {
 
 std::optional<Account> Reader::read_account(const evmc::address& address) const {
@@ -37,5 +34,10 @@ Bytes Reader::read_code(const evmc::bytes32& code_hash) const {
 evmc::bytes32 Reader::read_storage(const evmc::address& address, uint64_t incarnation,
                                    const evmc::bytes32& key) const {
   return db_.get_storage(address, incarnation, key, block_number_);
+}
+
+uint64_t Reader::previous_incarnation(const evmc::address& address) const {
+  std::optional<uint64_t> incarnation{db_.previous_incarnation(address, block_number_)};
+  return incarnation ? *incarnation : 0;
 }
 }  // namespace silkworm::state

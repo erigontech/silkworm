@@ -517,8 +517,7 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
   bool parent_has_uncles{false};
   if (j.contains("parentUncles")) {
     auto parent_uncles{j["parentUncles"].get<std::string>()};
-    parent_has_uncles =
-        parent_uncles != "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347";
+    parent_has_uncles = from_hex(parent_uncles) != full_view(kEmptyListHash);
   }
 
   intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp,

@@ -433,7 +433,7 @@ int main(int argc, char* argv[]) {
     app.add_option("--from,-f", po_from_block, "Initial block number to process (inclusive)", true)->check(range32);
     app.add_option("--to,-t", po_to_block, "Final block number to process (exclusive)", true)->check(range32);
     app.add_option("--batch", po_batch_size, "Number of transactions to process per batch", true)
-        ->check(CLI::Range((size_t)1'000, (size_t)100'000));
+        ->check(CLI::Range((size_t)1'000, (size_t)1'000'000));
 
     CLI11_PARSE(app, argc, argv);
 
@@ -490,27 +490,24 @@ int main(int argc, char* argv[]) {
 
         // This prevents waiting threads to be stuck forever
         if (should_stop_ || recovery_error) {
-            flush_batch_id.store(++batch_id, boost::memory_order::relaxed);
             if (recovery_error) {
                 workers_thread_error_.store(true);
             }
-            workers_in_flight--;
-            return;
-        };
-
-        // Append results to senders bucket
-        int rc{0};
-        Bytes senders_key(40, '\0');
-        MDB_val key{40, (void*)&senders_key[0]};
-        for (auto& result : results) {
-            boost::endian::store_big_u64(&senders_key[0], result.first);
-            memcpy((void*)&senders_key[8], (void*)&canonical_headers[result.first - po_from_block], kHashLength);
-            rc = lmdb_senders->put_append(&key, &result.second);
-            if (rc != MDB_SUCCESS) {
-                workers_thread_error_.store(true);
-                break;
+        } else {
+            // Append results to senders bucket
+            int rc{0};
+            Bytes senders_key(40, '\0');
+            MDB_val key{40, (void*)&senders_key[0]};
+            for (auto& result : results) {
+                boost::endian::store_big_u64(&senders_key[0], result.first);
+                memcpy((void*)&senders_key[8], (void*)&canonical_headers[result.first - po_from_block], kHashLength);
+                rc = lmdb_senders->put_append(&key, &result.second);
+                if (rc != MDB_SUCCESS) {
+                    workers_thread_error_.store(true);
+                    break;
+                }
             }
-        }
+        };
 
         // Ready to serve next thread
         flush_batch_id.store(++batch_id, boost::memory_order::relaxed);
@@ -540,7 +537,7 @@ int main(int argc, char* argv[]) {
     if (!start_workers(recoverers_)) {
         std::cout << format_time() << " Unable to start required recoverers" << std::endl;
         stop_workers(recoverers_);
-        return 0;
+        return -1;
     }
 
     try
@@ -747,7 +744,7 @@ int main(int argc, char* argv[]) {
 
             // Should we have a partially filled work package deliver it now
             if (batchTxsCount) {
-                recoverers_.at(nextRecovererId)->set_work(process_batch_id++, recoverPackages);
+                recoverers_.at(nextRecovererId)->set_work(process_batch_id, recoverPackages);
                 recoverers_.at(nextRecovererId)->kick();
                 workers_in_flight++;
                 ready_for_write.store(true, std::memory_order_relaxed);

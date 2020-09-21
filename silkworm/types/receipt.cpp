@@ -33,11 +33,6 @@ static Header header(const Receipt& r) {
   return h;
 }
 
-size_t length(const Receipt& r) {
-  Header h{header(r)};
-  return length_of_length(h.payload_length) + h.payload_length;
-}
-
 void encode(Bytes& to, const Receipt& r) {
   encode_header(to, header(r));
   if (std::holds_alternative<evmc::bytes32>(r.post_state_or_status)) {

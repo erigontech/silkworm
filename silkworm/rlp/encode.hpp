@@ -84,7 +84,6 @@ size_t length(const intx::uint256&);
 
 size_t length(const BlockHeader&);
 size_t length(const Log&);
-size_t length(const Receipt&);
 size_t length(const Transaction&);
 
 template <class T>

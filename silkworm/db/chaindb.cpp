@@ -18,11 +18,10 @@
 
 namespace silkworm::db {
 
-    namespace lmdb
-    {
+    namespace lmdb {
         /*
-        * Environment
-        */
+         * Environment
+         */
 
         Env::Env(const unsigned flags) {
             int ret{err_handler(mdb_env_create(&handle_), true)};
@@ -36,10 +35,9 @@ namespace silkworm::db {
         }
         Env::~Env() noexcept { close(); }
 
-        bool Env::is_ro(void)
-        {
+        bool Env::is_ro(void) {
             if (!handle_) return false;
-            unsigned int env_flags{ 0 };
+            unsigned int env_flags{0};
             get_flags(&env_flags);
             return (env_flags & MDB_RDONLY) == MDB_RDONLY;
         }
@@ -58,38 +56,28 @@ namespace silkworm::db {
             }
         }
 
-        int Env::get_flags(unsigned int* flags) {
-            return err_handler(mdb_env_get_flags(handle_, flags));
-        }
+        int Env::get_flags(unsigned int* flags) { return err_handler(mdb_env_get_flags(handle_, flags)); }
 
         int Env::get_max_keysize(void) {
             if (!handle_) return 0;
             return mdb_env_get_maxkeysize(handle_);
         }
 
-        int Env::get_max_readers(unsigned int* count) {
-            return err_handler(mdb_env_get_maxreaders(handle_, count));
-        }
+        int Env::get_max_readers(unsigned int* count) { return err_handler(mdb_env_get_maxreaders(handle_, count)); }
 
         int Env::set_flags(const unsigned int flags, const bool onoff) {
             return err_handler(mdb_env_set_flags(handle_, flags, onoff ? 1 : 0));
         }
 
-        int Env::set_mapsize(const size_t size) {
-            return err_handler(mdb_env_set_mapsize(handle_, size));
-        }
+        int Env::set_mapsize(const size_t size) { return err_handler(mdb_env_set_mapsize(handle_, size)); }
 
-        int Env::set_max_dbs(const unsigned int count) {
-            return err_handler(mdb_env_set_maxdbs(handle_, count));
-        }
+        int Env::set_max_dbs(const unsigned int count) { return err_handler(mdb_env_set_maxdbs(handle_, count)); }
 
         int Env::set_max_readers(const unsigned int count) {
             return err_handler(mdb_env_set_maxreaders(handle_, count));
         }
 
-        int Env::sync(const bool force) {
-            return err_handler(mdb_env_sync(handle_, force));
-        }
+        int Env::sync(const bool force) { return err_handler(mdb_env_sync(handle_, force)); }
 
         int Env::get_ro_txns(void) { return ro_txns_[std::this_thread::get_id()]; }
         int Env::get_rw_txns(void) { return rw_txns_[std::this_thread::get_id()]; }
@@ -116,22 +104,21 @@ namespace silkworm::db {
         }
 
         /*
-        * Transactions
-        */
+         * Transactions
+         */
 
         Txn::Txn(Env* parent, MDB_txn* txn, unsigned int flags) : parent_env_{parent}, handle_{txn}, flags_{flags} {}
 
-        MDB_txn* Txn::open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags)
-        {
+        MDB_txn* Txn::open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags) {
             if (!parent_env->is_opened()) {
                 throw std::runtime_error("Can't open a transaction on a closed db");
             }
 
             /*
-            * A transaction and its cursors must only be used by a single thread,
-            * and a thread may only have one transaction at a time.
-            * If MDB_NOTLS is in use this does not apply to read-only transactions
-            */
+             * A transaction and its cursors must only be used by a single thread,
+             * and a thread may only have one transaction at a time.
+             * If MDB_NOTLS is in use this does not apply to read-only transactions
+             */
 
             if (parent_env->get_rw_txns()) {
                 throw std::runtime_error("Rw transaction already pending in this thread");
@@ -192,7 +179,6 @@ namespace silkworm::db {
         }
 
         std::optional<std::pair<std::string, MDB_dbi>> Txn::open_dbi(const std::string name, unsigned int flags) {
-
             // Lookup value in map
             auto iter = dbis_.find(name);
             if (iter != dbis_.end()) {
@@ -205,7 +191,7 @@ namespace silkworm::db {
             MDB_dbi newdbi{0};
 
             // Allow execption to throw when opening
-            int rc{err_handler(mdb_dbi_open(handle_, (name.empty() ? 0 :name.c_str()), flags, &newdbi))};
+            int rc{err_handler(mdb_dbi_open(handle_, (name.empty() ? 0 : name.c_str()), flags, &newdbi))};
             if (rc) return {};
 
             dbis_[name] = newdbi;
@@ -214,21 +200,19 @@ namespace silkworm::db {
 
         Txn::Txn(Env* parent, unsigned int flags) : Txn(parent, open_transaction(parent, nullptr, flags), flags) {}
         Txn::~Txn() {
-
             // TODO(Andrea)
             /* Call to destructor if txn is pending may cause
-            * unpredictable results as it requires to access
-            * parent env and decrement the number of opened txns
-            * if parent_env has already been voided (eg. program termination)
-            * this causes a segfault
-            */
+             * unpredictable results as it requires to access
+             * parent env and decrement the number of opened txns
+             * if parent_env has already been voided (eg. program termination)
+             * this causes a segfault
+             */
             abort();
         }
 
         bool Txn::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
-        std::unique_ptr<Bkt> Txn::open(const char* name, unsigned int flags)
-        {
+        std::unique_ptr<Bkt> Txn::open(const char* name, unsigned int flags) {
             std::optional<std::pair<std::string, MDB_dbi>> dbi{open_dbi(name, flags)};
             if (!dbi) {
                 throw exception(MDB_NOTFOUND, mdb_strerror(MDB_NOTFOUND));
@@ -236,8 +220,7 @@ namespace silkworm::db {
             return std::make_unique<Bkt>(this, bkts_, dbi.value().second, dbi.value().first);
         }
 
-        void Txn::close_cursors(void)
-        {
+        void Txn::close_cursors(void) {
             decltype(bkts_) tmp;
             std::swap(bkts_, tmp);
             for (auto& bkt : tmp) {
@@ -245,8 +228,7 @@ namespace silkworm::db {
             }
         }
 
-        void Txn::abort(void)
-        {
+        void Txn::abort(void) {
             if (!handle_) return;
             close_cursors();
             mdb_txn_abort(handle_);
@@ -258,8 +240,7 @@ namespace silkworm::db {
             handle_ = nullptr;
         }
 
-        int Txn::commit(void)
-        {
+        int Txn::commit(void) {
             if (!handle_) return 0;
             close_cursors();
             int rc{err_handler(mdb_txn_commit(handle_))};
@@ -275,24 +256,23 @@ namespace silkworm::db {
         }
 
         /*
-        * Buckets
-        */
+         * Buckets
+         */
 
         Bkt::Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name)
             : Bkt::Bkt(parent, coll, dbi, dbi_name, open_cursor(parent, dbi)) {}
 
-        MDB_cursor* Bkt::open_cursor(Txn* parent, MDB_dbi dbi)
-        {
+        MDB_cursor* Bkt::open_cursor(Txn* parent, MDB_dbi dbi) {
             if (!*parent->handle()) {
                 throw std::runtime_error("Database or transaction closed");
             }
-            MDB_cursor* retvar{ nullptr };
+            MDB_cursor* retvar{nullptr};
             (void)err_handler(mdb_cursor_open(*parent->handle(), dbi, &retvar), true);
             return retvar;
         }
 
         Bkt::Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor)
-            : parent_txn_{ parent }, dbi_{ dbi }, dbi_name_{ std::move(dbi_name)}, cursor_{ cursor }, coll_{ &coll } {}
+            : parent_txn_{parent}, dbi_{dbi}, dbi_name_{std::move(dbi_name)}, cursor_{cursor}, coll_{&coll} {}
 
         int Bkt::get_flags(unsigned int* flags) {
             return err_handler(mdb_dbi_flags(*parent_txn_->handle(), dbi_, flags));
@@ -300,8 +280,7 @@ namespace silkworm::db {
 
         int Bkt::get_stat(MDB_stat* stat) { return err_handler(mdb_stat(*parent_txn_->handle(), dbi_, stat)); }
 
-        int Bkt::get_rcount(mdb_size_t* count)
-        {
+        int Bkt::get_rcount(size_t* count) {
             MDB_stat stat{};
             int rc{get_stat(&stat)};
             if (!rc) *count = stat.ms_entries;
@@ -312,7 +291,7 @@ namespace silkworm::db {
             if (!cursor_) {
                 throw exception(EINVAL, mdb_strerror(EINVAL));
             }
-            int rc{ err_handler(mdb_cursor_get(cursor_, key, data, operation)) };
+            int rc{err_handler(mdb_cursor_get(cursor_, key, data, operation))};
             return rc;
         }
 
@@ -320,7 +299,7 @@ namespace silkworm::db {
             if (!cursor_) {
                 throw exception(EINVAL, mdb_strerror(EINVAL));
             }
-            int rc{ err_handler(mdb_cursor_put(cursor_, key, data, flag)) };
+            int rc{err_handler(mdb_cursor_put(cursor_, key, data, flag))};
             return rc;
         }
 
@@ -334,7 +313,7 @@ namespace silkworm::db {
         int Bkt::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
         int Bkt::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
         int Bkt::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
-        int Bkt::get_dcount(mdb_size_t* count) { return err_handler(mdb_cursor_count(cursor_, count)); }
+        int Bkt::get_dcount(size_t* count) { return err_handler(mdb_cursor_count(cursor_, count)); }
 
         int Bkt::put(MDB_val* key, MDB_val* data) { return put(key, data, 0u); }
         int Bkt::put_current(MDB_val* key, MDB_val* data) { return put(key, data, MDB_CURRENT); }
@@ -346,7 +325,6 @@ namespace silkworm::db {
         int Bkt::put_multiple(MDB_val* key, MDB_val* data) { return put(key, data, MDB_MULTIPLE); }
 
         void Bkt::close() {
-
             if (!cursor_) return;
 
             // Remove self from collection of cursors
@@ -364,10 +342,9 @@ namespace silkworm::db {
         }
 
 
-}  // namespace lmdb
+    }  // namespace lmdb
 
-    std::shared_ptr<lmdb::Env> get_env(const char* path, lmdb::options opts, bool forwriting)
-    {
+    std::shared_ptr<lmdb::Env> get_env(const char* path, lmdb::options opts, bool forwriting) {
         struct Value {
             std::weak_ptr<lmdb::Env> wp;
             unsigned int flags;
@@ -413,7 +390,7 @@ namespace silkworm::db {
         auto newitem = std::make_shared<lmdb::Env>();
         (void)newitem->set_mapsize(opts.map_size);
         (void)newitem->set_max_dbs(opts.max_buckets);
-        newitem->open(path, flags | (forwriting ? MDB_RDONLY : 0), opts.mode); // Throws on error
+        newitem->open(path, flags | (forwriting ? MDB_RDONLY : 0), opts.mode);  // Throws on error
 
         s_envs[envkey] = {newitem, flags};
         return newitem;

@@ -17,14 +17,17 @@
 #ifndef SILKWORM_DB_CHAINDB_H_
 #define SILKWORM_DB_CHAINDB_H_
 
-#include <boost/atomic.hpp>
-#include <boost/thread.hpp>
-
 #include <lmdb/lmdb.h>
 
+#include <atomic>
+#include <exception>
 #include <iostream>
+#include <map>
+#include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
+#include <vector>
 
 // Check windows
 #if _WIN32 || _WIN64
@@ -46,15 +49,15 @@
 
 #ifndef ENVIRONMENT64
 #error "32 bit environment limits LMDB size"
-#endif // !ENVIRONMENT64
+#endif  // !ENVIRONMENT64
 
 namespace silkworm::db {
 
     namespace lmdb {
 
         /**
-        * Options to pass to env when opening file
-        */
+         * Options to pass to env when opening file
+         */
         struct options {
             uint64_t map_size = 2ull << 40;  // 2TiB by default
             bool no_tls = true;              // MDB_NOTLS
@@ -96,12 +99,10 @@ namespace silkworm::db {
         class Bkt;
 
         /**
-        * MDB_env wrapper
-        */
+         * MDB_env wrapper
+         */
         class Env {
-
-        private:
-
+           private:
             MDB_env* handle_{nullptr};
 
             bool opened_{false};
@@ -114,22 +115,21 @@ namespace silkworm::db {
             std::map<std::thread::id, int> rw_txns_{};  // A per thread maintaned count of opened rw transactions
 
             /*
-            * A transaction and its cursors must only be used by a single thread,
-            * and a thread may only have one transaction at a time.
-            * Only exception is when parent environment is opened with MDB_NOTLS flag
-            * which causes the allowance of unlimited ro transactions.
-            * So when a thread begins a new transaction (see begin_transaction)
-            * env is checked for corresponding slot and eventually allows or
-            * prohibits the transaction opening
-            */
+             * A transaction and its cursors must only be used by a single thread,
+             * and a thread may only have one transaction at a time.
+             * Only exception is when parent environment is opened with MDB_NOTLS flag
+             * which causes the allowance of unlimited ro transactions.
+             * So when a thread begins a new transaction (see begin_transaction)
+             * env is checked for corresponding slot and eventually allows or
+             * prohibits the transaction opening
+             */
 
-            int get_ro_txns(void); // Returns number of opened ro transactions for calling thread
-            int get_rw_txns(void); // Returns number of opened rw transactions for calling thread
-            void touch_ro_txns(int count); // Ro transaction count incrementer/decrementer
-            void touch_rw_txns(int count); // Ro transaction count incrementer/decrementer
+            int get_ro_txns(void);          // Returns number of opened ro transactions for calling thread
+            int get_rw_txns(void);          // Returns number of opened rw transactions for calling thread
+            void touch_ro_txns(int count);  // Ro transaction count incrementer/decrementer
+            void touch_rw_txns(int count);  // Ro transaction count incrementer/decrementer
 
            public:
-
             Env(const unsigned flags = 0);
             ~Env() noexcept;
 
@@ -153,16 +153,13 @@ namespace silkworm::db {
             std::unique_ptr<Txn> begin_transaction(unsigned int flags = 0);
             std::unique_ptr<Txn> begin_ro_transaction(unsigned int flags = 0);
             std::unique_ptr<Txn> begin_rw_transaction(unsigned int flags = 0);
-
         };
 
         /**
-        * MDB_txn wrapper
-        */
+         * MDB_txn wrapper
+         */
         class Txn {
-
            private:
-
             static MDB_txn* open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
             Txn(Env* parent, MDB_txn* txn, unsigned int flags);
 
@@ -171,14 +168,14 @@ namespace silkworm::db {
             unsigned int flags_;  // Flags this transaction has been opened with
 
             /*
-            * A dbi is an unsigned int handle to a table in database.
-            * Opening dbi(s) is required to get access to cursors but handle is
-            * valid environment wise. Open dbi on demand when required access to
-            * a cursor and keep a map of handles internally. Closing of dbis is not
-            * apparently not needed.
-            * Key -> the name of the named db
-            * Val -> the MDB_dbi handle
-            */
+             * A dbi is an unsigned int handle to a table in database.
+             * Opening dbi(s) is required to get access to cursors but handle is
+             * valid environment wise. Open dbi on demand when required access to
+             * a cursor and keep a map of handles internally. Closing of dbis is not
+             * apparently not needed.
+             * Key -> the name of the named db
+             * Val -> the MDB_dbi handle
+             */
 
             std::map<std::string, MDB_dbi> dbis_;
             std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const char* name, unsigned int flags = 0);
@@ -187,13 +184,12 @@ namespace silkworm::db {
             std::vector<Bkt*> bkts_{};  // Collection of buckets this transaction has opened
 
            public:
-
             explicit Txn(Env* parent, unsigned int flags = 0);
             ~Txn();
 
             MDB_txn** handle() { return &handle_; }
 
-            bool is_ro(void); // Whether this transaction is readonly
+            bool is_ro(void);  // Whether this transaction is readonly
 
             std::unique_ptr<Bkt> open(const char* name, unsigned int flags = 0);
 
@@ -208,25 +204,23 @@ namespace silkworm::db {
         };
 
         /**
-        * A bucket is an hybrid which wraps both an MDB_dbi
-        * and an MDB_cursor
-        */
+         * A bucket is an hybrid which wraps both an MDB_dbi
+         * and an MDB_cursor
+         */
         class Bkt {
-
-        public:
-
+           public:
             explicit Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name);
 
             /*
-            * MDB_dbi interfaces
-            */
+             * MDB_dbi interfaces
+             */
             int get_flags(unsigned int* flags);  // Returns the flags used to open the bucket
             int get_stat(MDB_stat* stat);        // Returns stat info about the bucket
-            int get_rcount(mdb_size_t* count);   // Returns the number of records held in bucket
+            int get_rcount(size_t* count);       // Returns the number of records held in bucket
 
             /*
-            * MDB_cursor interfaces
-            */
+             * MDB_cursor interfaces
+             */
 
             int seek(MDB_val* key, MDB_val* data);         // Position cursor to first key >= of given key
             int seek_exact(MDB_val* key, MDB_val* data);   // Position cursor to key == of given key
@@ -236,83 +230,82 @@ namespace silkworm::db {
             int get_prev(MDB_val* key, MDB_val* data);     // Move cursor at previous item in bucket
             int get_next(MDB_val* key, MDB_val* data);     // Move cursor at next item in bucket
             int get_last(MDB_val* key, MDB_val* data);     // Move cursor at last item in bucket
-            int get_dcount(mdb_size_t* count);             // Returns the count of duplicates at current position
+            int get_dcount(size_t* count);                 // Returns the count of duplicates at current position
 
             /* @brief Stores key/data pairs into the database using cursor.
-            *
-            * The cursor is positioned at the new item, or on failure usually near it.
-            * For more fine grained options see #put_current(), #put_nodup, #put_noovrw,
-            * #put_reserve(), #put_append(), #put_append_dup() and #put_multiple()
-            */
+             *
+             * The cursor is positioned at the new item, or on failure usually near it.
+             * For more fine grained options see #put_current(), #put_nodup, #put_noovrw,
+             * #put_reserve(), #put_append(), #put_append_dup() and #put_multiple()
+             */
             int put(MDB_val* key, MDB_val* data);
 
             /* @brief Replace the k/d pair at current cursor position
-            *
-            * The key parameter must be provided and must match the one at current cursor position
-            * If env has MDB_DUPSORT the data item must still sort into the same place.
-            * This is intended to be used when the new data is the same size as the old, otherwise
-            * it will simply perform a delete of the old record followed by an inster
-            */
+             *
+             * The key parameter must be provided and must match the one at current cursor position
+             * If env has MDB_DUPSORT the data item must still sort into the same place.
+             * This is intended to be used when the new data is the same size as the old, otherwise
+             * it will simply perform a delete of the old record followed by an inster
+             */
             int put_current(MDB_val* key, MDB_val* data);
 
             /* @brief Inserts the new k/d pair only if it does not already appear in database
-            *
-            * This operation may only be invoked if the database was opened with MDB_DUPSORT
-            * Function will return MDB_KEYEXISTS if the k/v data pair already appears in the
-            * database.
-            */
+             *
+             * This operation may only be invoked if the database was opened with MDB_DUPSORT
+             * Function will return MDB_KEYEXISTS if the k/v data pair already appears in the
+             * database.
+             */
             int put_nodup(MDB_val* key, MDB_val* data);
 
             /* @brief Inserts the new k/v pair only if it does not already appear in database
-            *
-            * Function will return MDB_KEYEXISTS if the k/d data pair already appears in the
-            * database even if the database supports duplicates (MDB_DUPSORT)
-            */
+             *
+             * Function will return MDB_KEYEXISTS if the k/d data pair already appears in the
+             * database even if the database supports duplicates (MDB_DUPSORT)
+             */
             int put_noovrw(MDB_val* key, MDB_val* data);
 
             /* @brief Reserves space for data of giben size but doesn't copy data.
-            *
-            * Function must NOT be used if the database was opened with MDB_DUPSORT
-            */
+             *
+             * Function must NOT be used if the database was opened with MDB_DUPSORT
+             */
             int put_reserve(MDB_val* key, MDB_val* data);
 
             /* @brief Append the given k/d pair to the end of the database.
-            *
-            * No key comparisons are performed. This function allows fast bulk loading
-            * when keys are already known to be in the correct order. Loading unsorted
-            * keys by this function will cause a MDB_KEYEXIST error.
-            */
+             *
+             * No key comparisons are performed. This function allows fast bulk loading
+             * when keys are already known to be in the correct order. Loading unsorted
+             * keys by this function will cause a MDB_KEYEXIST error.
+             */
             int put_append(MDB_val* key, MDB_val* data);
 
             /* @brief Append the given k/d pair to the end of the database.
-            *
-            * No key comparisons are performed. This function allows fast bulk loading
-            * when keys are already known to be in the correct order. Loading unsorted
-            * keys by this function will cause a MDB_KEYEXIST error.
-            * Use this function for SORTED dup data.
-            */
+             *
+             * No key comparisons are performed. This function allows fast bulk loading
+             * when keys are already known to be in the correct order. Loading unsorted
+             * keys by this function will cause a MDB_KEYEXIST error.
+             * Use this function for SORTED dup data.
+             */
             int put_append_dup(MDB_val* key, MDB_val* data);
 
             /* @brief Stores multiple contiguous data elements in a single request
-            *
-            * This function may only be used if the database was opened with MDB_DUPFIXED
-            * The data argument MUST be an array of TWO MDB_val.
-            * First MDB_val must be as :
-            * - mv_size the size of a single data element
-            * - mv_data pointer to the beginning of first data element
-            * Second MDB_val must be as :
-            * - mv_size the number of data elements to store
-            * - mv_data can be anything as it is ignored
-            *
-            * On return of the function the 2ND MDB_val.mv_size will hold the number
-            * of elements effectively written.
-            */
+             *
+             * This function may only be used if the database was opened with MDB_DUPFIXED
+             * The data argument MUST be an array of TWO MDB_val.
+             * First MDB_val must be as :
+             * - mv_size the size of a single data element
+             * - mv_data pointer to the beginning of first data element
+             * Second MDB_val must be as :
+             * - mv_size the number of data elements to store
+             * - mv_data can be anything as it is ignored
+             *
+             * On return of the function the 2ND MDB_val.mv_size will hold the number
+             * of elements effectively written.
+             */
             int put_multiple(MDB_val* key, MDB_val* data);
 
             void close(void);  // Close the cursor (not the dbi) and frees the handle
 
            private:
-
             static MDB_cursor* open_cursor(Txn* parent, MDB_dbi dbi);
             Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor);
 

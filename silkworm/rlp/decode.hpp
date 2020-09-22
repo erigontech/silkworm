@@ -20,7 +20,9 @@
 #ifndef SILKWORM_RLP_DECODE_H_
 #define SILKWORM_RLP_DECODE_H_
 
+#include <array>
 #include <cstring>
+#include <gsl/span>
 #include <intx/intx.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/rlp/encode.hpp>
@@ -44,8 +46,8 @@ void decode(ByteView& from, uint64_t& to);
 template <>
 void decode(ByteView& from, intx::uint256& to);
 
-template <unsigned N>
-void decode(ByteView& from, uint8_t (&to)[N]) {
+template <size_t N>
+void decode(ByteView& from, gsl::span<uint8_t, N> to) {
   static_assert(N <= 55, "Complex RLP length encoding not supported");
 
   if (from.length() < N + 1) {
@@ -56,8 +58,18 @@ void decode(ByteView& from, uint8_t (&to)[N]) {
     throw DecodingError("unexpected length");
   }
 
-  std::memcpy(to, &from[1], N);
+  std::memcpy(to.data(), &from[1], N);
   from.remove_prefix(N + 1);
+}
+
+template <size_t N>
+void decode(ByteView& from, uint8_t (&to)[N]) {
+  decode<N>(from, gsl::span<uint8_t, N>{to});
+}
+
+template <size_t N>
+void decode(ByteView& from, std::array<uint8_t, N>& to) {
+  decode<N>(from, gsl::span<uint8_t, N>{to});
 }
 
 template <class T>

@@ -95,6 +95,10 @@ struct ChainConfig {
   bool has_istanbul(uint64_t block_num) const noexcept {
     return istanbul_block.has_value() && istanbul_block <= block_num;
   }
+
+  bool has_muir_glacier(uint64_t block_num) const noexcept {
+    return muir_glacier_block.has_value() && muir_glacier_block <= block_num;
+  }
 };
 
 constexpr ChainConfig kEthMainnetConfig{
@@ -111,6 +115,19 @@ constexpr ChainConfig kEthMainnetConfig{
 
     1'920'000,  // dao_block
     2'675'119,  // ripemd_deletion_block
+};
+
+constexpr ChainConfig kRopstenConfig{
+    3,  // chain_id
+
+    0,          // homestead_block
+    0,          // tangerine_whistle_block
+    10,         // spurious_dragon_block
+    1'700'000,  // byzantium_block
+    4'230'000,  // constantinople_block
+    4'939'394,  // petersburg_block
+    6'485'846,  // istanbul_block
+    7'117'117,  // muir_glacier_block
 };
 
 // https://ecips.ethereumclassic.org/ECIPs/ecip-1066

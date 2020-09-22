@@ -62,7 +62,9 @@ Bytes Account::encode_for_storage(bool omit_code_hash) const {
 
 Account decode_account_from_storage(ByteView encoded) {
   Account a{};
-  if (encoded.empty()) return a;
+  if (encoded.empty()) {
+    return a;
+  }
 
   uint8_t field_set = encoded[0];
   size_t pos{1};

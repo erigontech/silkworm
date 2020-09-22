@@ -14,12 +14,14 @@
    limitations under the License.
 */
 
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <silkworm/chain/block_chain.hpp>
+#include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
@@ -28,7 +30,39 @@
 #include <string>
 #include <string_view>
 
-static constexpr size_t kColumnWidth{50};
+// See https://ethereum-tests.readthedocs.io
+
+using namespace silkworm;
+
+namespace fs = std::filesystem;
+
+static const fs::path kRootDir{SILKWORM_CONSENSUS_TEST_DIR};
+
+static const fs::path kDifficultyDir{kRootDir / "BasicTests"};
+
+static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
+
+static const fs::path kTransactionDir{kRootDir / "TransactionTests"};
+
+static const std::set<fs::path> kSlowTests{
+    kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
+};
+
+// TODO[Issue #23] make the failing tests work
+static const std::set<fs::path> kFailingTests{
+    kBlockchainDir / "InvalidBlocks",
+
+    // Expected: "UnknownParent"
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
+
+    // Nonce >= 2^64 is not supported
+    kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
+
+    // Gas limit >= 2^64 is not supported
+    kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
+};
+
+constexpr size_t kColumnWidth{80};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",
@@ -133,24 +167,39 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
          5,  // constantinople_block
          5,  // petersburg_block
      }},
+    {"EIP2384",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+         0,  // petersburg_block
+         0,  // istanbul_block
+         0,  // muir_glacier_block
+     }},
 };
 
-// https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-bool run_blockchain_test(const nlohmann::json& j) {
-  using namespace silkworm;
+static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
+    {"difficulty.json", kEthMainnetConfig},
+    {"difficultyByzantium.json", kNetworkConfig.at("Byzantium")},
+    {"difficultyConstantinople.json", kNetworkConfig.at("Constantinople")},
+    {"difficultyCustomMainNetwork.json", kEthMainnetConfig},
+    {"difficultyEIP2384_random_to20M.json", kNetworkConfig.at("EIP2384")},
+    {"difficultyEIP2384_random.json", kNetworkConfig.at("EIP2384")},
+    {"difficultyEIP2384.json", kNetworkConfig.at("EIP2384")},
+    {"difficultyFrontier.json", kNetworkConfig.at("Frontier")},
+    {"difficultyHomestead.json", kNetworkConfig.at("Homestead")},
+    {"difficultyMainNetwork.json", kEthMainnetConfig},
+    {"difficultyRopsten.json", kRopstenConfig},
+};
 
-  Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>())};
-  ByteView genesis_view{genesis_rlp};
-  Block genesis_block;
-  rlp::decode(genesis_view, genesis_block);
-
-  BlockChain chain{nullptr};
-  std::string network{j["network"].get<std::string>()};
-  chain.config = kNetworkConfig.at(network);
-  chain.test_genesis_header = genesis_block.header;
-
+// https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
+IntraBlockState pre_state(const nlohmann::json& pre) {
   IntraBlockState state{nullptr};
-  for (const auto& entry : j["pre"].items()) {
+
+  for (const auto& entry : pre.items()) {
     evmc::address address{to_address(from_hex(entry.key()))};
     const nlohmann::json& account{entry.value()};
     Bytes balance{from_hex(account["balance"].get<std::string>())};
@@ -165,24 +214,79 @@ bool run_blockchain_test(const nlohmann::json& j) {
     }
   }
 
-  for (const auto& b : j["blocks"]) {
+  state.finalize_transaction();
+  return state;
+}
+
+enum Status { kPassed, kFailed, kSkipped };
+
+Status run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& state) {
+  bool invalid{b.contains("expectException")};
+
+  Block block;
+  ByteView view{};
+
+  try {
     Bytes rlp{from_hex(b["rlp"].get<std::string>())};
-    ByteView view{rlp};
-    Block block;
-    // TODO[Issue #23] invalid blocks
+    view = rlp;
     rlp::decode(view, block);
-
-    for (Transaction& txn : block.transactions) {
-      txn.recover_sender();
+  } catch (const std::exception& e) {
+    if (invalid) {
+      return kPassed;
     }
-
-    ExecutionProcessor processor{chain, block, state};
-    processor.execute_block();
+    std::cout << e.what() << "\n";
+    return kFailed;
   }
 
-  // TODO[Issue #23] postStateHash
+  if (!view.empty()) {
+    if (invalid) {
+      return kPassed;
+    }
+    std::cout << "Extra RLP input\n";
+    return kFailed;
+  }
 
-  for (const auto& entry : j["postState"].items()) {
+  try {
+    chain.insert_block(block);
+  } catch (const std::exception& e) {
+    std::cout << e.what() << "\n";
+    return kSkipped;
+  }
+
+  uint64_t block_number{block.header.number};
+  bool homestead{chain.config.has_homestead(block_number)};
+  bool spurious_dragon{chain.config.has_spurious_dragon(block_number)};
+
+  for (Transaction& txn : block.transactions) {
+    if (spurious_dragon) {
+      txn.recover_sender(homestead, chain.config.chain_id);
+    } else {
+      txn.recover_sender(homestead, {});
+    }
+  }
+
+  ExecutionProcessor processor{chain, block, state};
+  try {
+    processor.execute_block();
+  } catch (const ValidationError& e) {
+    if (invalid) {
+      return kPassed;
+    }
+    std::cout << e.what() << "\n";
+    return kFailed;
+  }
+
+  if (invalid) {
+    std::cout << "Invalid block executed successfully\n";
+    std::cout << "Expected: " << b["expectException"] << "\n";
+    return kFailed;
+  }
+
+  return kPassed;
+}
+
+bool post_check(const IntraBlockState& state, const nlohmann::json& expected) {
+  for (const auto& entry : expected.items()) {
     evmc::address address{to_address(from_hex(entry.key()))};
     const nlohmann::json& account{entry.value()};
 
@@ -223,56 +327,245 @@ bool run_blockchain_test(const nlohmann::json& j) {
     }
   }
 
-  // TODO[Issue #23] check that there are no other changes
   return true;
 }
 
-bool run_blockchain_file(const std::filesystem::path& file_path) {
+// https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
+Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
+  if (!j.contains("postState")) {
+    std::cout << "postStateHash is not supported\n";
+    return kSkipped;
+  }
+
+  Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>())};
+  ByteView genesis_view{genesis_rlp};
+  Block genesis_block;
+  rlp::decode(genesis_view, genesis_block);
+
+  BlockChain chain{nullptr};
+  std::string network{j["network"].get<std::string>()};
+  chain.config = kNetworkConfig.at(network);
+  chain.insert_block(genesis_block);
+
+  IntraBlockState state{pre_state(j["pre"])};
+
+  for (const auto& b : j["blocks"]) {
+    Status status{run_block(b, chain, state)};
+    if (status != kPassed) {
+      return status;
+    }
+  }
+
+  if (post_check(state, j["postState"])) {
+    return kPassed;
+  } else {
+    return kFailed;
+  }
+}
+
+static void print_test_status(std::string_view key, Status status) {
+  std::cout << key << " ";
+  for (size_t i{key.length() + 1}; i < kColumnWidth; ++i) {
+    std::cout << '.';
+  }
+  switch (status) {
+    case kPassed:
+      std::cout << "\033[0;32m  Passed\033[0m\n";
+      break;
+    case kFailed:
+      std::cout << "\033[1;31m  Failed\033[0m\n";
+      break;
+    case kSkipped:
+      std::cout << " Skipped\n";
+      break;
+  }
+}
+
+struct RunResults {
+  size_t passed{0};
+  size_t failed{0};
+  size_t skipped{0};
+
+  RunResults& operator+=(const RunResults& rhs) {
+    passed += rhs.passed;
+    failed += rhs.failed;
+    skipped += rhs.skipped;
+    return *this;
+  }
+
+  void add(Status status) {
+    switch (status) {
+      case kPassed:
+        ++passed;
+        break;
+      case kFailed:
+        ++failed;
+        break;
+      case kSkipped:
+        ++skipped;
+        break;
+    }
+  }
+};
+
+[[nodiscard]] RunResults run_test_file(const fs::path& file_path,
+                                       Status (*runner)(const nlohmann::json&,
+                                                        std::optional<ChainConfig>),
+                                       std::optional<ChainConfig> config = {}) {
   std::ifstream in{file_path};
   nlohmann::json json;
   in >> json;
 
-  bool all_passed{true};
+  RunResults res{};
+
   for (const auto& test : json.items()) {
-    bool passed{run_blockchain_test(test.value())};
-
-    std::cout << test.key() << " ";
-    for (size_t i{test.key().length() + 1}; i < kColumnWidth; ++i) {
-      std::cout << '.';
-    }
-
-    if (passed) {
-      std::cout << "\033[0;32m  Passed\033[0m\n";
-    } else {
-      std::cout << "\033[1;31m  Failed\033[0m\n";
-      all_passed = false;
+    Status status{runner(test.value(), config)};
+    res.add(status);
+    if (status != kPassed) {
+      print_test_status(test.key(), status);
     }
   }
 
-  return all_passed;
+  return res;
 }
 
-bool run_blockchain_dir(const std::filesystem::path& dir) {
-  bool success{true};
-  for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-    success &= run_blockchain_file(entry);
+// https://ethereum-tests.readthedocs.io/en/latest/test_types/transaction_tests.html
+Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
+  Transaction txn;
+  bool decoded{false};
+  try {
+    Bytes rlp{from_hex(j["rlp"].get<std::string>())};
+    ByteView view{rlp};
+    rlp::decode(view, txn);
+    decoded = view.empty();
+  } catch (const std::exception&) {
   }
-  return success;
+
+  for (const auto& entry : j.items()) {
+    if (entry.key() == "rlp" || entry.key() == "_info") {
+      continue;
+    }
+
+    bool valid{entry.value().contains("sender")};
+
+    if (!decoded) {
+      if (valid) {
+        std::cout << "Failed to decode valid transaction\n";
+        return kFailed;
+      } else {
+        continue;
+      }
+    }
+
+    ChainConfig config{kNetworkConfig.at(entry.key())};
+    bool homestead{config.has_homestead(0)};
+    bool spurious_dragon{config.has_spurious_dragon(0)};
+    bool istanbul{config.has_istanbul(0)};
+
+    intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
+    if (g0 > txn.gas_limit) {
+      if (valid) {
+        std::cout << "g0 > gas_limit for valid transaction\n";
+        return kFailed;
+      } else {
+        continue;
+      }
+    }
+
+    if (spurious_dragon) {
+      txn.recover_sender(homestead, config.chain_id);
+    } else {
+      txn.recover_sender(homestead, {});
+    }
+
+    if (valid && !txn.from.has_value()) {
+      std::cout << "Failed to recover sender\n";
+      return kFailed;
+    }
+
+    if (!valid && txn.from.has_value()) {
+      std::cout << entry.key() << "\n";
+      std::cout << "Sender recovered for invalid transaction\n";
+      return kFailed;
+    }
+
+    if (!valid) {
+      continue;
+    }
+
+    std::string expected{entry.value()["sender"].get<std::string>()};
+    if (to_hex(*txn.from) != expected) {
+      std::cout << "Sender mismatch for " << entry.key() << ":\n";
+      std::cout << to_hex(*txn.from) << " ≠ " << expected << "\n";
+      return kFailed;
+    }
+  }
+
+  return kPassed;
+}
+
+// https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
+Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> config) {
+  auto parent_timestamp{std::stoll(j["parentTimestamp"].get<std::string>(), 0, 0)};
+  auto parent_difficulty{
+      intx::from_string<intx::uint256>(j["parentDifficulty"].get<std::string>())};
+  auto current_timestamp{std::stoll(j["currentTimestamp"].get<std::string>(), 0, 0)};
+  auto block_number{std::stoll(j["currentBlockNumber"].get<std::string>(), 0, 0)};
+  auto current_difficulty{
+      intx::from_string<intx::uint256>(j["currentDifficulty"].get<std::string>())};
+
+  bool parent_has_uncles{false};
+  if (j.contains("parentUncles")) {
+    auto parent_uncles{j["parentUncles"].get<std::string>()};
+    parent_has_uncles = from_hex(parent_uncles) != full_view(kEmptyListHash);
+  }
+
+  intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp,
+                                                           parent_difficulty, parent_timestamp,
+                                                           parent_has_uncles, *config)};
+  if (calculated_difficulty == current_difficulty) {
+    return kPassed;
+  } else {
+    std::cout << "Difficulty mismatch for block " << block_number << "\n";
+    std::cout << hex(calculated_difficulty) << " ≠ " << hex(current_difficulty) << "\n";
+    return kFailed;
+  }
 }
 
 int main() {
-  std::filesystem::path root_dir{SILKWORM_CONSENSUS_TEST_DIR};
-  root_dir /= "BlockchainTests";
+  RunResults res{};
 
-  bool success{true};
-  for (const auto& dir : {
-           root_dir / "GeneralStateTests" / "stArgsZeroOneBalance",
-           root_dir / "GeneralStateTests" / "stAttackTest",
-           root_dir / "GeneralStateTests" / "stBadOpcode",
-           root_dir / "GeneralStateTests" / "stExample",
-           // TODO[Issue #23] the rest
-       }) {
-    success &= run_blockchain_dir(dir);
+  for (const auto& entry : kDifficultyConfig) {
+    res += run_test_file(kDifficultyDir / entry.first, difficulty_test, entry.second);
   }
-  return success ? 0 : 1;
+
+  for (auto i = fs::recursive_directory_iterator(kBlockchainDir);
+       i != fs::recursive_directory_iterator{}; ++i) {
+    if (kSlowTests.count(*i) || kFailingTests.count(*i)) {
+      i.disable_recursion_pending();
+    } else if (i->is_regular_file()) {
+      res += run_test_file(*i, blockchain_test);
+    }
+  }
+
+  for (auto i = fs::recursive_directory_iterator(kTransactionDir);
+       i != fs::recursive_directory_iterator{}; ++i) {
+    if (kFailingTests.count(*i)) {
+      i.disable_recursion_pending();
+    } else if (i->is_regular_file()) {
+      res += run_test_file(*i, transaction_test);
+    }
+  }
+
+  std::cout << "\033[0;32m" << res.passed << " tests passed\033[0m, ";
+  if (res.failed) {
+    std::cout << "\033[1;31m";
+  }
+  std::cout << res.failed << " failed";
+  if (res.failed) {
+    std::cout << "\033[0m";
+  }
+  std::cout << ", " << res.skipped << " skipped\n";
+
+  return res.failed;
 }

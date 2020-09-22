@@ -39,7 +39,7 @@ namespace silkworm::precompiled {
 uint64_t ecrec_gas(ByteView, evmc_revision) noexcept { return 3'000; }
 
 std::optional<Bytes> ecrec_run(ByteView input) noexcept {
-  constexpr size_t kInputLen{128};
+  static constexpr size_t kInputLen{128};
   Bytes d{input};
   if (d.length() < kInputLen) {
     d.resize(kInputLen, '\0');
@@ -95,53 +95,52 @@ uint64_t id_gas(ByteView input, evmc_revision) noexcept {
 
 std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
 
-static uint64_t mult_complexity(uint64_t x) {
+static intx::uint256 mult_complexity(const intx::uint256& x) {
   if (x <= 64) {
-    return x * x;
+    return sqr(x);
   } else if (x <= 1024) {
-    return x * x / 4 + 96 * x - 3072;
+    return (sqr(x) >> 2) + 96 * x - 3072;
   } else {
-    return x * x / 16 + 480 * x - 199680;
+    return (sqr(x) >> 4) + 480 * x - 199680;
   }
 }
 
 uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
   input = right_pad(input, 3 * 32);
 
-  intx::uint256 base_length{intx::be::unsafe::load<intx::uint256>(&input[0])};
-  intx::uint256 exponent_length{intx::be::unsafe::load<intx::uint256>(&input[32])};
-  intx::uint256 modulus_length{intx::be::unsafe::load<intx::uint256>(&input[64])};
+  intx::uint256 base_len256{intx::be::unsafe::load<intx::uint256>(&input[0])};
+  intx::uint256 exp_len256{intx::be::unsafe::load<intx::uint256>(&input[32])};
+  intx::uint256 mod_len256{intx::be::unsafe::load<intx::uint256>(&input[64])};
 
-  if (base_length == 0 && modulus_length == 0) {
+  if (base_len256 == 0 && mod_len256 == 0) {
     return 0;
   }
 
-  if (intx::count_significant_words<uint32_t>(base_length) > 1 ||
-      intx::count_significant_words<uint32_t>(exponent_length) > 1 ||
-      intx::count_significant_words<uint32_t>(modulus_length) > 1) {
+  if (intx::count_significant_words<uint64_t>(base_len256) > 1 ||
+      intx::count_significant_words<uint64_t>(exp_len256) > 1 ||
+      intx::count_significant_words<uint64_t>(mod_len256) > 1) {
     return UINT64_MAX;
   }
 
-  uint64_t base_len{intx::narrow_cast<uint64_t>(base_length)};
-  uint64_t exponent_len{intx::narrow_cast<uint64_t>(exponent_length)};
-  uint64_t modulus_len{intx::narrow_cast<uint64_t>(modulus_length)};
+  uint64_t base_len64{intx::narrow_cast<uint64_t>(base_len256)};
+  uint64_t exp_len64{intx::narrow_cast<uint64_t>(exp_len256)};
 
   input.remove_prefix(3 * 32);
 
   intx::uint256 exp_head{0};  // first 32 bytes of the exponent
-  if (input.length() > base_len) {
-    ByteView exp_input{right_pad(input.substr(base_len), 32)};
-    if (exponent_len < 32) {
-      exp_input = exp_input.substr(0, exponent_len);
+  if (input.length() > base_len64) {
+    ByteView exp_input{right_pad(input.substr(base_len64), 32)};
+    if (exp_len64 < 32) {
+      exp_input = exp_input.substr(0, exp_len64);
       exp_input = left_pad(exp_input, 32);
     }
     exp_head = intx::be::unsafe::load<intx::uint256>(exp_input.data());
   }
   unsigned bit_len{256 - clz(exp_head)};
 
-  uint64_t adjusted_exponent_len{0};
-  if (exponent_len > 32) {
-    adjusted_exponent_len = 8 * (exponent_len - 32);
+  intx::uint256 adjusted_exponent_len{0};
+  if (exp_len256 > 32) {
+    adjusted_exponent_len = 8 * (exp_len256 - 32);
   }
   if (bit_len > 1) {
     adjusted_exponent_len += bit_len - 1;
@@ -151,8 +150,13 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
     adjusted_exponent_len = 1;
   }
 
-  return mult_complexity(std::max(modulus_len, base_len)) * adjusted_exponent_len /
-         fee::kGQuadDivisor;
+  intx::uint256 gas{mult_complexity(std::max(mod_len256, base_len256)) * adjusted_exponent_len /
+                    fee::kGQuadDivisor};
+  if (intx::count_significant_words<uint64_t>(gas) > 1) {
+    return UINT64_MAX;
+  } else {
+    return intx::narrow_cast<uint64_t>(gas);
+  }
 }
 
 std::optional<Bytes> expmod_run(ByteView input) noexcept {
@@ -191,7 +195,7 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
   }
 
   if (modulus == 0) {
-    return Bytes{};
+    return Bytes(modulus_len, '\0');
   }
 
   boost::multiprecision::cpp_int result{boost::multiprecision::powm(base, exponent, modulus)};
@@ -247,7 +251,7 @@ std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
   return snark::encode_g1_element(product);
 }
 
-static constexpr size_t kSnarkvStride{192};
+constexpr size_t kSnarkvStride{192};
 
 uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
   uint64_t k{input.length() / kSnarkvStride};

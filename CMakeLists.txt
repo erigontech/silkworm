@@ -74,21 +74,31 @@ add_subdirectory(libff)
 
 # Compiler options
 if(MSVC)
-  add_compile_options(/wd5030) # Silence warnings about gnu attributes
+  add_compile_options(/wd5030) # Silence warnings about GNU attributes
   add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
   add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
 
   add_link_options(/ignore:4099)
-
-  set(CMAKE_EXE_LINKER_FLAGS "/STACK:10000000")
+  add_link_options(/STACK:10000000)
 else()
   add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
-  add_compile_options(-gline-tables-only) # for profiling
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # coverage
+    add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+    add_link_options(-fprofile-instr-generate -fcoverage-mapping)
+  else()
+    # profiling
+    add_compile_options(-gline-tables-only)
+  endif()
+endif()
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  add_link_options(-Wl,-stack_size -Wl,0x1000000)
 endif()
 
 # Some other required packages

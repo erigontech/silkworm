@@ -22,7 +22,7 @@
 
 namespace silkworm::db::history_index {
 
-static constexpr size_t kItemLen{3};
+constexpr size_t kItemLen{3};
 
 static uint64_t elem(ByteView elements, uint64_t min_element, uint32_t i) {
   uint64_t x{min_element};

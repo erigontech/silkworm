@@ -22,27 +22,37 @@
 
 namespace silkworm::state {
 
-CreateDelta::CreateDelta(evmc::address address) : address_{std::move(address)} {}
+CreateDelta::CreateDelta(evmc::address address) noexcept : address_{std::move(address)} {}
 
-void CreateDelta::revert(IntraBlockState& state) { state.objects_.erase(address_); }
+void CreateDelta::revert(IntraBlockState& state) noexcept { state.objects_.erase(address_); }
 
-UpdateDelta::UpdateDelta(evmc::address address, state::Object previous)
+UpdateDelta::UpdateDelta(evmc::address address, state::Object previous) noexcept
     : address_{std::move(address)}, previous_{std::move(previous)} {}
 
-void UpdateDelta::revert(IntraBlockState& state) { state.objects_[address_] = previous_; }
+void UpdateDelta::revert(IntraBlockState& state) noexcept { state.objects_[address_] = previous_; }
 
-SuicideDelta::SuicideDelta(evmc::address address) : address_{std::move(address)} {}
+SuicideDelta::SuicideDelta(evmc::address address) noexcept : address_{std::move(address)} {}
 
-void SuicideDelta::revert(IntraBlockState& state) { state.self_destructs_.erase(address_); }
+void SuicideDelta::revert(IntraBlockState& state) noexcept {
+  state.self_destructs_.erase(address_);
+}
 
-TouchDelta::TouchDelta(evmc::address address) : address_{std::move(address)} {}
+TouchDelta::TouchDelta(evmc::address address) noexcept : address_{std::move(address)} {}
 
-void TouchDelta::revert(IntraBlockState& state) { state.touched_.erase(address_); }
+void TouchDelta::revert(IntraBlockState& state) noexcept { state.touched_.erase(address_); }
 
-StorageDelta::StorageDelta(evmc::address address, evmc::bytes32 key, evmc::bytes32 previous)
+StorageChangeDelta::StorageChangeDelta(evmc::address address, evmc::bytes32 key,
+                                       evmc::bytes32 previous) noexcept
     : address_{std::move(address)}, key_{std::move(key)}, previous_{std::move(previous)} {}
 
-void StorageDelta::revert(IntraBlockState& state) {
+void StorageChangeDelta::revert(IntraBlockState& state) noexcept {
   state.storage_[address_][key_].current = previous_;
+}
+
+StorageWipeDelta::StorageWipeDelta(evmc::address address, state::Storage storage) noexcept
+    : address_{std::move(address)}, storage_{std::move(storage)} {}
+
+void StorageWipeDelta::revert(IntraBlockState& state) noexcept {
+  state.storage_[address_] = storage_;
 }
 }  // namespace silkworm::state

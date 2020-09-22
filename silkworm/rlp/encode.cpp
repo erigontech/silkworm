@@ -73,7 +73,7 @@ void encode(Bytes& to, uint64_t n) {
   }
 }
 
-size_t length(uint64_t n) {
+size_t length(uint64_t n) noexcept {
   if (n < kEmptyStringCode) {
     return 1;
   } else {

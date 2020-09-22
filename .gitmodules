@@ -12,3 +12,7 @@
 [submodule "tests"]
 	path = tests
 	url = https://github.com/ethereum/tests.git
+[submodule "cpp-lru-cache"]
+	path = cpp-lru-cache
+	url = https://github.com/torquem-ch/cpp-lru-cache.git
+	branch = clear

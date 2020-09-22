@@ -19,8 +19,11 @@
 #include <catch2/catch.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/types/receipt.hpp>
+#include <silkworm/types/transaction.hpp>
 
 namespace silkworm::trie {
+
+TEST_CASE("Empty root hash") { CHECK(root_hash(std::vector<Transaction>{}) == kEmptyRoot); }
 
 TEST_CASE("Hardcoded root hash") {
   std::vector<Receipt> receipts{

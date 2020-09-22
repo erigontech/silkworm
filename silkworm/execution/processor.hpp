@@ -56,6 +56,11 @@ class ExecutionProcessor {
   uint64_t cumulative_gas_used_{0};
   EVM evm_;
 };
+
+// Returns the intrinsic gas of a transaction.
+// Refer to g0 in Section 6.2 "Execution" of the Yellow Paper.
+intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul);
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_EXECUTION_PROCESSOR_H_

@@ -19,6 +19,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/database.hpp>
+#include <vector>
 
 namespace silkworm {
 
@@ -30,15 +31,16 @@ class BlockChain {
   explicit BlockChain(db::Database* db);
 
   std::optional<BlockHeader> get_header(uint64_t block_number,
-                                        const evmc::bytes32& block_hash) const;
+                                        const evmc::bytes32& block_hash) const noexcept;
+
+  // not ready for production yet, use for tests only
+  void insert_block(const Block& block);
 
   ChainConfig config{kEthMainnetConfig};
 
-  // only used if db is null
-  BlockHeader test_genesis_header{};
-
  private:
   db::Database* db_{nullptr};
+  std::vector<BlockHeader> headers_;
 };
 }  // namespace silkworm
 

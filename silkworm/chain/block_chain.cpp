@@ -16,17 +16,26 @@
 
 #include "block_chain.hpp"
 
+#include <stdexcept>
+
 namespace silkworm {
 BlockChain::BlockChain(db::Database* db) : db_{db} {}
 
 std::optional<BlockHeader> BlockChain::get_header(uint64_t block_number,
-                                                  const evmc::bytes32& block_hash) const {
-  if (db_) {
+                                                  const evmc::bytes32& block_hash) const noexcept {
+  if (block_number < headers_.size()) {
+    return headers_[block_number];
+  } else if (db_) {
     return db_->get_header(block_number, block_hash);
-  } else if (block_number == 0) {
-    return test_genesis_header;
   } else {
     return {};
   }
+}
+
+void BlockChain::insert_block(const Block& block) {
+  if (block.header.number != headers_.size()) {
+    throw std::logic_error{"reorgs are not supported yet"};
+  }
+  headers_.push_back(block.header);
 }
 }  // namespace silkworm

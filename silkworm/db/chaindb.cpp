@@ -217,20 +217,12 @@ namespace silkworm::db {
             if (!dbi) {
                 throw exception(MDB_NOTFOUND, mdb_strerror(MDB_NOTFOUND));
             }
-            return std::make_unique<Bkt>(this, bkts_, dbi.value().second, dbi.value().first);
-        }
-
-        void Txn::close_cursors(void) {
-            decltype(bkts_) tmp;
-            std::swap(bkts_, tmp);
-            for (auto& bkt : tmp) {
-                bkt->close();
-            }
+            return std::make_unique<Bkt>(this, dbi.value().second, dbi.value().first);
         }
 
         void Txn::abort(void) {
             if (!handle_) return;
-            close_cursors();
+            on_before_abort_signal();
             mdb_txn_abort(handle_);
             if (is_ro()) {
                 parent_env_->touch_ro_txns(-1);
@@ -242,7 +234,7 @@ namespace silkworm::db {
 
         int Txn::commit(void) {
             if (!handle_) return 0;
-            close_cursors();
+            on_before_commit_signal();
             int rc{err_handler(mdb_txn_commit(handle_))};
             if (rc == MDB_SUCCESS) {
                 if (is_ro()) {
@@ -259,8 +251,10 @@ namespace silkworm::db {
          * Buckets
          */
 
-        Bkt::Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name)
-            : Bkt::Bkt(parent, coll, dbi, dbi_name, open_cursor(parent, dbi)) {}
+        Bkt::Bkt(Txn* parent, MDB_dbi dbi, std::string dbi_name)
+            : Bkt::Bkt(parent, dbi, dbi_name, open_cursor(parent, dbi)) {}
+
+        Bkt::~Bkt() { close(); }
 
         MDB_cursor* Bkt::open_cursor(Txn* parent, MDB_dbi dbi) {
             if (!*parent->handle()) {
@@ -271,8 +265,11 @@ namespace silkworm::db {
             return retvar;
         }
 
-        Bkt::Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor)
-            : parent_txn_{parent}, dbi_{dbi}, dbi_name_{std::move(dbi_name)}, cursor_{cursor}, coll_{&coll} {}
+        Bkt::Bkt(Txn* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor)
+            : parent_txn_{parent}, dbi_{dbi}, dbi_name_{std::move(dbi_name)}, cursor_{cursor} {
+            parent->on_before_abort_signal.connect(boost::bind(&Bkt::close, this));
+            parent->on_before_commit_signal.connect(boost::bind(&Bkt::close, this));
+        }
 
         int Bkt::get_flags(unsigned int* flags) {
             return err_handler(mdb_dbi_flags(*parent_txn_->handle(), dbi_, flags));
@@ -325,18 +322,10 @@ namespace silkworm::db {
         int Bkt::put_multiple(MDB_val* key, MDB_val* data) { return put(key, data, MDB_MULTIPLE); }
 
         void Bkt::close() {
-            if (!cursor_) return;
-
-            // Remove self from collection of cursors
-            // opened for this transaction
-            if (coll_) {
-                auto iter = std::find(coll_->begin(), coll_->end(), this);
-                if (iter != coll_->end()) coll_->erase(iter);
-                coll_ = nullptr;
-            }
 
             // Free the cursor handle
             // There is no need to close the dbi_ handle
+            if (!cursor_) return;
             mdb_cursor_close(cursor_);
             cursor_ = nullptr;
         }

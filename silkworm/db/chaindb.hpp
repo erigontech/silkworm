@@ -19,6 +19,8 @@
 
 #include <lmdb/lmdb.h>
 
+#include <boost/signals2/signal.hpp>
+
 #include <atomic>
 #include <exception>
 #include <iostream>
@@ -107,7 +109,6 @@ namespace silkworm::db {
 
             bool opened_{false};
 
-
             friend class Txn;
 
             std::mutex count_mtx_;  // Lock to prevent concurrent access to transactions counters maps
@@ -181,8 +182,6 @@ namespace silkworm::db {
             std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const char* name, unsigned int flags = 0);
             std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const std::string name, unsigned int flags = 0);
 
-            std::vector<Bkt*> bkts_{};  // Collection of buckets this transaction has opened
-
            public:
             explicit Txn(Env* parent, unsigned int flags = 0);
             ~Txn();
@@ -198,7 +197,9 @@ namespace silkworm::db {
             Txn(Txn&& rhs) = delete;
             Txn& operator=(Txn&& rhs) = delete;
 
-            void close_cursors(void);
+            boost::signals2::signal<void(void)> on_before_abort_signal;
+            boost::signals2::signal<void(void)> on_before_commit_signal;
+
             void abort(void);
             int commit(void);
         };
@@ -209,7 +210,8 @@ namespace silkworm::db {
          */
         class Bkt {
            public:
-            explicit Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name);
+            explicit Bkt(Txn* parent, MDB_dbi dbi, std::string dbi_name);
+            ~Bkt();
 
             /*
              * MDB_dbi interfaces
@@ -304,10 +306,11 @@ namespace silkworm::db {
             int put_multiple(MDB_val* key, MDB_val* data);
 
             void close(void);  // Close the cursor (not the dbi) and frees the handle
+            bool is_opened(void) { return cursor_ != nullptr; }
 
            private:
             static MDB_cursor* open_cursor(Txn* parent, MDB_dbi dbi);
-            Bkt(Txn* parent, std::vector<Bkt*>& coll, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor);
+            Bkt(Txn* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor);
 
             int get(MDB_val* key, MDB_val* data,
                     MDB_cursor_op operation);  // Gets data by cursor on behalf of operation
@@ -318,7 +321,6 @@ namespace silkworm::db {
             MDB_dbi dbi_;              // The underlying MDB_dbi handle for this instance
             std::string dbi_name_;     // The name of the dbi
             MDB_cursor* cursor_;       // The underlying MDB_cursor for this instance
-            std::vector<Bkt*>* coll_;  // Pointer to collection of all cursors
         };
 
     }  // namespace lmdb

@@ -56,9 +56,10 @@ bool is_valid_signature_recovery_id(const uint8_t& recoveryId) { return recovery
 
 uint64_t get_chainid_from_v(const intx::uint256& v) {
     uint64_t out{0};
-    if (v != 27 && v != 28) {
-        out = (intx::narrow_cast<uint64_t>(v) - 35) / 2;
+    if (v == 27u || v == 28u) {
+        return out;
     }
+    out = intx::narrow_cast<uint64_t>((v - 35) / 2);
     return out;
 }
 

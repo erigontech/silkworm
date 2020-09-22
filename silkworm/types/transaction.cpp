@@ -68,15 +68,15 @@ void encode(Bytes& to, const Transaction& txn, bool for_signing,
   }
   encode(to, txn.value);
   encode(to, txn.data);
-  if (eip155_chain_id) {
-    encode(to, *eip155_chain_id);
-    encode(to, 0);
-    encode(to, 0);
-  } else if (!for_signing) {
-    encode(to, txn.v);
-    encode(to, txn.r);
-    encode(to, txn.s);
-  }
+  if (!for_signing) {
+      encode(to, txn.v);
+      encode(to, txn.r);
+      encode(to, txn.s);
+  } else if (eip155_chain_id) {
+      encode(to, *eip155_chain_id);
+      encode(to, 0);
+      encode(to, 0);
+  };
 }
 
 void encode(Bytes& to, const Transaction& txn) { encode(to, txn, /*for_signing=*/false, {}); }

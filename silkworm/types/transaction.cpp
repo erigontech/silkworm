@@ -109,8 +109,7 @@ void decode(ByteView& from, Transaction& to) {
 }  // namespace rlp
 
 bool Transaction::is_protected(void) const {
-    auto t = intx::narrow_cast<uint32_t>(v);
-    return (t != 27 && t != 28);
+    return (v != 27u && v != 28u);
 }
 
 void Transaction::recover_sender(bool homestead, std::optional<uint64_t> eip155_chain_id) {
@@ -122,12 +121,11 @@ void Transaction::recover_sender(bool homestead, std::optional<uint64_t> eip155_
       return;
   }
 
-  if (!is_protected()) {
-      if (eip155_chain_id && txchain_id != *eip155_chain_id) {
+  if (is_protected() && eip155_chain_id) {
+      if (txchain_id != *eip155_chain_id) {
           return;
       }
   } else {
-      // Eip-155 does not apply to protected transactions
       eip155_chain_id.reset();
   }
 
@@ -140,7 +138,7 @@ void Transaction::recover_sender(bool homestead, std::optional<uint64_t> eip155_
   intx::be::unsafe::store(signature + 32, s);
 
   std::optional<Bytes> recovered{
-      ecdsa::recover(full_view(hash.bytes), full_view(signature), intx::narrow_cast<uint8_t>(v))};
+      ecdsa::recover(full_view(hash.bytes), full_view(signature), recovery_id)};
   if (recovered) {
     hash = ethash::keccak256(recovered->data() + 1, recovered->length() - 1);
     from = evmc::address{};

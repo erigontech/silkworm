@@ -34,8 +34,8 @@ struct Transaction {
   intx::uint256 v, r, s;              // signature
   std::optional<evmc::address> from;  // sender recovered from the signature
 
-  // A transaction having v != 27 && != 28 is
-  // replay protected
+  // Any v not 27 nor 28 is considered
+  // protected
   bool is_protected(void) const;
 
   // Populates the from field with recovered sender.

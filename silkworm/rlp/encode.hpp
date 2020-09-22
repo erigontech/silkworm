@@ -25,6 +25,7 @@
 #include <intx/intx.hpp>
 #include <silkworm/common/base.hpp>
 #include <vector>
+#include <optional>
 
 namespace silkworm {
 
@@ -73,6 +74,7 @@ void encode(Bytes& to, const BlockHeader&);
 void encode(Bytes& to, const Log&);
 void encode(Bytes& to, const Receipt&);
 void encode(Bytes& to, const Transaction&);
+void encode(Bytes& to, const Transaction& txn, bool for_signing, std::optional<uint64_t> eip155_chain_id);
 
 size_t length_of_length(uint64_t payload_length);
 

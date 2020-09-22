@@ -224,76 +224,37 @@ class Recoverer : public silkworm::Worker {
     };
 };
 
-void encode_tx_for_signing(Bytes& to, const Transaction& txn, const intx::uint256& chainID) {
-    using namespace rlp;
-
-    Header h{true, 0};
-    h.payload_length += length(txn.nonce);
-    h.payload_length += length(txn.gas_price);
-    h.payload_length += length(txn.gas_limit);
-    h.payload_length += txn.to ? (kAddressLength + 1) : 1;
-    h.payload_length += length(txn.value);
-    h.payload_length += length(txn.data);
-    if (chainID) {
-        h.payload_length += length(chainID);
-        h.payload_length += length(uint256_zero);
-        h.payload_length += length(uint256_zero);
-    }
-
-    encode_header(to, h);
-    encode(to, txn.nonce);
-    encode(to, txn.gas_price);
-    encode(to, txn.gas_limit);
-    if (txn.to) {
-        encode(to, txn.to->bytes);
-    } else {
-        to.push_back(kEmptyStringCode);
-    }
-    encode(to, txn.value);
-    encode(to, txn.data);
-
-    if (chainID) {
-        encode(to, chainID);
-        encode(to, uint256_zero);
-        encode(to, uint256_zero);
-    }
-}
-
-bool is_protected_tx(const intx::uint256& v) {
-    auto t = intx::narrow_cast<uint32_t>(v);
-    return (t != 27 && t != 28);
-}
-
 void process_txs_for_signing(ChainConfig& config, uint64_t required_block_num, BlockBody& body,
                              std::vector<Recoverer::package>& packages) {
     for (const silkworm::Transaction& txn : body.transactions) {
+
+        Bytes rlp{};
         uint64_t chain_id{ecdsa::get_chainid_from_v(txn.v)};
         uint8_t recovery_id{0};
-        bool is_valid = silkworm::ecdsa::is_valid_signature(txn.v, txn.r, txn.s, chain_id,
-                                                            config.has_homestead(required_block_num), &recovery_id);
 
-        // Invalid sig
-        if (!is_valid) {
+        // Invalid signature
+        if (!silkworm::ecdsa::is_valid_signature(txn.v, txn.r, txn.s, chain_id,
+                                                 config.has_homestead(required_block_num), &recovery_id)) {
             throw std::runtime_error("Got invalid signature in tx for block number " +
                                      std::to_string(required_block_num));
         }
 
         // Apply EIP-155 only for non protected txns
-        if (!is_protected_tx(txn.v) && config.has_spurious_dragon(required_block_num) && chain_id) {
-            if (chain_id != config.chain_id) {
-                std::cout << "\n txChainID " << chain_id << "\n"
-                          << " config.chain_id " << config.chain_id << "\n"
-                          << " spurious_dragon " << (config.has_spurious_dragon(required_block_num) ? "ON\n" : "OFF\n")
-                          << " v " << intx::narrow_cast<uint64_t>(txn.v) << "\n"
-                          << " is_valid " << (is_valid ? "true\n\n" : "false\n\n") << std::endl;
-                throw std::runtime_error("Got invalid signature in tx for block number " +
-                                         std::to_string(required_block_num));
+        if (!txn.is_protected()) {
+            if (config.has_spurious_dragon(required_block_num)) {
+                if (chain_id != config.chain_id) {
+                    throw std::runtime_error("Got invalid EIP-155 signature in tx for block number " +
+                                             std::to_string(required_block_num));
+                }
+            rlp::encode(rlp, txn, true, {chain_id});
             }
+        }
+        else
+        {
+            rlp::encode(rlp, txn, true, {});
         }
 
         // Hash the Tx for signing
-        Bytes rlp{};
-        encode_tx_for_signing(rlp, txn, chain_id);
         ethash::hash256 txMessageHash{ethash::keccak256(rlp.data(), rlp.length())};
         Recoverer::package rp{required_block_num, txMessageHash, recovery_id, txn.r, txn.s};
         packages.push_back(rp);

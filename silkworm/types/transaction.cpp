@@ -25,7 +25,7 @@ namespace silkworm {
 
 bool operator==(const Transaction& a, const Transaction& b) {
   return a.nonce == b.nonce && a.gas_price == b.gas_price && a.gas_limit == b.gas_limit &&
-         a.to == b.to && a.value == b.value && a.data == b.data && a.w == b.w && a.r == b.r &&
+         a.to == b.to && a.value == b.value && a.data == b.data && a.v == b.v && a.r == b.r &&
          a.s == b.s;
 }
 
@@ -43,7 +43,7 @@ static Header rlp_header(const Transaction& txn, bool for_signing,
   if (eip155_chain_id) {
     h.payload_length += length(*eip155_chain_id) + 2;
   } else if (!for_signing) {
-    h.payload_length += length(txn.w);
+    h.payload_length += length(txn.v);
     h.payload_length += length(txn.r);
     h.payload_length += length(txn.s);
   }
@@ -55,7 +55,7 @@ size_t length(const Transaction& txn) {
   return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
 }
 
-static void encode(Bytes& to, const Transaction& txn, bool for_signing,
+void encode(Bytes& to, const Transaction& txn, bool for_signing,
                    std::optional<uint64_t> eip155_chain_id) {
   encode_header(to, rlp_header(txn, for_signing, eip155_chain_id));
   encode(to, txn.nonce);
@@ -73,7 +73,7 @@ static void encode(Bytes& to, const Transaction& txn, bool for_signing,
     encode(to, 0);
     encode(to, 0);
   } else if (!for_signing) {
-    encode(to, txn.w);
+    encode(to, txn.v);
     encode(to, txn.r);
     encode(to, txn.s);
   }
@@ -102,25 +102,33 @@ void decode(ByteView& from, Transaction& to) {
 
   decode(from, to.value);
   decode(from, to.data);
-  decode(from, to.w);
+  decode(from, to.v);
   decode(from, to.r);
   decode(from, to.s);
 }
 }  // namespace rlp
 
-// TODO(Andrew) unify with Andrea's work
+bool Transaction::is_protected(void) const {
+    auto t = intx::narrow_cast<uint32_t>(v);
+    return (t != 27 && t != 28);
+}
+
 void Transaction::recover_sender(bool homestead, std::optional<uint64_t> eip155_chain_id) {
   from.reset();
 
-  intx::uint256 v{w - 27};
-  if (v > 1 && eip155_chain_id) {
-    v = w - (*eip155_chain_id * 2 + 35);
-  } else {
-    eip155_chain_id.reset();
+  uint64_t txchain_id{ecdsa::get_chainid_from_v(v)};
+  uint8_t recovery_id{0};
+  if (!silkworm::ecdsa::is_valid_signature(v, r, s, txchain_id, homestead, &recovery_id)) {
+      return;
   }
 
-  if (!ecdsa::inputs_are_valid(v, r, s, homestead)) {
-    return;
+  if (!is_protected()) {
+      if (eip155_chain_id && txchain_id != *eip155_chain_id) {
+          return;
+      }
+  } else {
+      // Eip-155 does not apply to protected transactions
+      eip155_chain_id.reset();
   }
 
   Bytes rlp{};

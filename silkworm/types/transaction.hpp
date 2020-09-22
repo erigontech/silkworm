@@ -31,8 +31,12 @@ struct Transaction {
   std::optional<evmc::address> to;
   intx::uint256 value;
   Bytes data;
-  intx::uint256 w, r, s;              // signature
+  intx::uint256 v, r, s;              // signature
   std::optional<evmc::address> from;  // sender recovered from the signature
+
+  // A transaction having v != 27 && != 28 is
+  // replay protected
+  bool is_protected(void) const;
 
   // Populates the from field with recovered sender.
   // See Yellow Paper, Appendix F "Signing Transactions",

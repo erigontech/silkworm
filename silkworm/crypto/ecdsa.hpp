@@ -33,16 +33,16 @@ constexpr auto kSecp256k1Halfn{intx::from_string<intx::uint256>(
 // Verifies whether the signature values are valid with
 // the given chain rules.
 bool is_valid_signature(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
-                        const intx::uint256& chainID, bool homestead, uint8_t* recoveryId = nullptr);
+                        const uint64_t chainID, bool homestead, uint8_t* recoveryId = nullptr);
 
 // Computes recovery id from given v and chainID
-intx::uint256 get_signature_recovery_id(const intx::uint256& v, const intx::uint256& chainID);
+intx::uint256 get_signature_recovery_id(const intx::uint256& v, const uint64_t chainID);
 
 // Whether or not the recovery id is valid
 bool is_valid_signature_recovery_id(const uint8_t& recoveryId);
 
 // Computes the chain id from v value
-intx::uint256 get_chainid_from_v(const intx::uint256& v);
+uint64_t get_chainid_from_v(const intx::uint256& v);
 
 // Tries recover the public key used for message signing
 std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id);

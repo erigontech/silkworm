@@ -267,10 +267,10 @@ bool is_protected_tx(const intx::uint256& v) {
 void process_txs_for_signing(ChainConfig& config, uint64_t required_block_num, BlockBody& body,
                              std::vector<Recoverer::package>& packages) {
     for (const silkworm::Transaction& txn : body.transactions) {
-        intx::uint256 txChainID = ecdsa::get_chainid_from_v(txn.v);
-        uint8_t txSigRecoveryId{0};
-        bool is_valid = silkworm::ecdsa::is_valid_signature(txn.v, txn.r, txn.s, txChainID,
-                                                            config.has_homestead(required_block_num), &txSigRecoveryId);
+        uint64_t chain_id{ecdsa::get_chainid_from_v(txn.v)};
+        uint8_t recovery_id{0};
+        bool is_valid = silkworm::ecdsa::is_valid_signature(txn.v, txn.r, txn.s, chain_id,
+                                                            config.has_homestead(required_block_num), &recovery_id);
 
         // Invalid sig
         if (!is_valid) {
@@ -279,9 +279,9 @@ void process_txs_for_signing(ChainConfig& config, uint64_t required_block_num, B
         }
 
         // Apply EIP-155 only for non protected txns
-        if (!is_protected_tx(txn.v) && config.has_spurious_dragon(required_block_num) && txChainID) {
-            if (intx::narrow_cast<uint64_t>(txChainID) != config.chain_id) {
-                std::cout << "\n txChainID " << intx::narrow_cast<uint64_t>(txChainID) << "\n"
+        if (!is_protected_tx(txn.v) && config.has_spurious_dragon(required_block_num) && chain_id) {
+            if (chain_id != config.chain_id) {
+                std::cout << "\n txChainID " << chain_id << "\n"
                           << " config.chain_id " << config.chain_id << "\n"
                           << " spurious_dragon " << (config.has_spurious_dragon(required_block_num) ? "ON\n" : "OFF\n")
                           << " v " << intx::narrow_cast<uint64_t>(txn.v) << "\n"
@@ -293,9 +293,9 @@ void process_txs_for_signing(ChainConfig& config, uint64_t required_block_num, B
 
         // Hash the Tx for signing
         Bytes rlp{};
-        encode_tx_for_signing(rlp, txn, txChainID);
+        encode_tx_for_signing(rlp, txn, chain_id);
         ethash::hash256 txMessageHash{ethash::keccak256(rlp.data(), rlp.length())};
-        Recoverer::package rp{required_block_num, txMessageHash, txSigRecoveryId, txn.r, txn.s};
+        Recoverer::package rp{required_block_num, txMessageHash, recovery_id, txn.r, txn.s};
         packages.push_back(rp);
     }
 }

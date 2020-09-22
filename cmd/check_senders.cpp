@@ -239,18 +239,15 @@ void process_txs_for_signing(ChainConfig& config, uint64_t required_block_num, B
                                      std::to_string(required_block_num));
         }
 
-        // Apply EIP-155 only for non protected txns
-        if (!txn.is_protected()) {
-            if (config.has_spurious_dragon(required_block_num)) {
-                if (chain_id != config.chain_id) {
-                    throw std::runtime_error("Got invalid EIP-155 signature in tx for block number " +
-                                             std::to_string(required_block_num));
-                }
-            rlp::encode(rlp, txn, true, {chain_id});
+        // Apply EIP-155 only for protected txns
+        if (txn.is_protected() && config.has_spurious_dragon(required_block_num)) {
+            if (chain_id != config.chain_id) {
+                throw std::runtime_error("Got invalid EIP-155 signature in tx for block number " +
+                                         std::to_string(required_block_num) + " chain_id : expected " +
+                                         std::to_string(config.chain_id) + " got " + std::to_string(chain_id));
             }
-        }
-        else
-        {
+            rlp::encode(rlp, txn, true, {chain_id});
+        } else {
             rlp::encode(rlp, txn, true, {});
         }
 

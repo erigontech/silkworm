@@ -26,8 +26,7 @@ commands:
       - run:
           name: "Update submodules"
           command: |
-            git submodule deinit abseil-cpp
-            rm -rf abseil-cpp
+            git submodule sync
             git submodule update --init --recursive
       - run:
           name: "Install GMP"

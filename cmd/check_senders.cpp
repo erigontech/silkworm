@@ -684,7 +684,7 @@ int main(int argc, char* argv[]) {
 
     int rc{0};
     if (lmdb_txn) {
-        if (!main_thread_error_ && !po_dry) {
+        if (!main_thread_error_ && !po_dry && !should_stop_) {
             rc = lmdb_txn->commit();
             if (!rc) lmdb_env->sync(true);
         } else {

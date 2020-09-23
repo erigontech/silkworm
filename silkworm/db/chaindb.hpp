@@ -163,9 +163,14 @@ namespace silkworm::db {
             static MDB_txn* open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
             Txn(Env* parent, MDB_txn* txn, unsigned int flags);
 
+            friend class Bkt;
+
             Env* parent_env_;     // Pointer to env this transaction belongs to
             MDB_txn* handle_;     // This transaction lmdb handle
             unsigned int flags_;  // Flags this transaction has been opened with
+            bool dirty_{false};   // Whether or not this transaction is dirty
+
+            void set_dirty(void); // Called by dependant bucket to signal some data has been written
 
             /*
              * A dbi is an unsigned int handle to a table in database.
@@ -187,7 +192,8 @@ namespace silkworm::db {
 
             MDB_txn** handle() { return &handle_; }
 
-            bool is_ro(void);  // Whether this transaction is readonly
+            bool is_ro(void);     // Whether this transaction is readonly
+            bool is_dirty(void);  // Whether this transaction is dirty
 
             std::unique_ptr<Bkt> open(const char* name, unsigned int flags = 0);
 
@@ -196,8 +202,8 @@ namespace silkworm::db {
             Txn(Txn&& rhs) = delete;
             Txn& operator=(Txn&& rhs) = delete;
 
-            boost::signals2::signal<void(void)> on_before_abort_signal;
-            boost::signals2::signal<void(void)> on_before_commit_signal;
+            boost::signals2::signal<void(void)> signal_on_before_abort;
+            boost::signals2::signal<void(void)> signal_on_before_commit;
 
             void abort(void);
             int commit(void);

@@ -15,17 +15,16 @@
 */
 
 #include <CLI/CLI.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/endian/conversion.hpp>
-#include <silkworm/db/chaindb.hpp>
-#include <silkworm/chain/config.hpp>
-#include <silkworm/db/util.hpp>
-#include <silkworm/db/bucket.hpp>
-#include <silkworm/types/block.hpp>
-
-#include <string>
+#include <boost/filesystem.hpp>
 #include <csignal>
 #include <iostream>
+#include <silkworm/chain/config.hpp>
+#include <silkworm/db/bucket.hpp>
+#include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/util.hpp>
+#include <silkworm/types/block.hpp>
+#include <string>
 
 namespace bfs = boost::filesystem;
 using namespace silkworm;
@@ -74,12 +73,11 @@ int main(int argc, char* argv[]) {
     }
 
 
-    //ChainConfig config{kEtcMainnetChainConfig};  // Main net config flags
-    evmc::bytes32* canonical_headers{nullptr};   // Storage space for canonical headers
-    uint64_t canonical_headers_count{0};         // Overall number of canonical headers collected
+    // ChainConfig config{kEtcMainnetChainConfig};  // Main net config flags
+    evmc::bytes32* canonical_headers{nullptr};  // Storage space for canonical headers
+    uint64_t canonical_headers_count{0};        // Overall number of canonical headers collected
 
-    try
-    {
+    try {
         auto env = db::get_env(po_db_path.c_str());
         std::cout << "Database is " << (env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
         {
@@ -89,17 +87,17 @@ int main(int argc, char* argv[]) {
 
             // Uncomment the following block if you want a list
             // of named buckets stored into the database
-            //auto unnamed = txn_ro->open(0);
-            //unnamed->get_stat(&s);
-            //std::cout << "Database contains " << s.ms_entries << " named buckets" << std::endl;
-            //int rc{unnamed->get_first(&hkey, &hdata)};
-            //while (!shouldStop && rc == MDB_SUCCESS)
+            // auto unnamed = txn_ro->open(0);
+            // unnamed->get_stat(&s);
+            // std::cout << "Database contains " << s.ms_entries << " named buckets" << std::endl;
+            // int rc{unnamed->get_first(&hkey, &hdata)};
+            // while (!shouldStop && rc == MDB_SUCCESS)
             //{
             //    std::string_view svkey{ static_cast<char*>(hkey.mv_data), hkey.mv_size };
             //    std::cout << "Bucket " << svkey << "\n";
             //    rc = unnamed->get_next(&hkey, &hdata);
             //}
-            //std::cout << "\n" << std::endl;
+            // std::cout << "\n" << std::endl;
 
             auto headers = txn_ro->open(db::bucket::kBlockHeaders);
 
@@ -113,9 +111,8 @@ int main(int argc, char* argv[]) {
             // Dirty way to get last block number (from actually stored headers)
             uint64_t highest_block{0};
             rc = headers->get_last(&key, &data);
-            while (!shouldStop && rc == MDB_SUCCESS)
-            {
-                ByteView v{ static_cast<uint8_t*>(key.mv_data), key.mv_size };
+            while (!shouldStop && rc == MDB_SUCCESS) {
+                ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
                 if (v[8] != 'n') {
                     headers->get_prev(&key, &data);
                     continue;
@@ -139,8 +136,7 @@ int main(int argc, char* argv[]) {
 
             // Navigate all headers to load canonical hashes
             rc = headers->get_first(&key, &data);
-            while (!shouldStop && rc == MDB_SUCCESS)
-            {
+            while (!shouldStop && rc == MDB_SUCCESS) {
                 // Canonical header key is 9 bytes (8 blocknumber + 'n')
                 if (key.mv_size == 9) {
                     ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
@@ -155,7 +151,8 @@ int main(int argc, char* argv[]) {
                 if (!batch_size) {
                     batch_size = headers_records / 50;
                     percent += 2;
-                    std::cout << "Navigated " << percent << "% of headers bucket. Canonical records found " << canonical_headers_count << std::endl;
+                    std::cout << "Navigated " << percent << "% of headers bucket. Canonical records found "
+                              << canonical_headers_count << std::endl;
                 }
                 rc = headers->get_next(&key, &data);
             }
@@ -166,18 +163,19 @@ int main(int argc, char* argv[]) {
 
             // Open bodies bucket and iterate to load transactions (if any in the block)
             auto bodies = txn_ro->open(db::bucket::kBlockBodies);
-            uint64_t bodies_records{0};
+            size_t bodies_records{0};
             (void)bodies->get_rcount(&bodies_records);
 
-            batch_size = canonical_headers_count / 50 ;
+            batch_size = canonical_headers_count / 50;
             percent = 0;
             uint64_t total_transactions{0};
 
-            std::cout << "Bodies Table has " << bodies_records << " records. Canonical headers " << canonical_headers_count << std::endl;
+            std::cout << "Bodies Table has " << bodies_records << " records. Canonical headers "
+                      << canonical_headers_count << std::endl;
 
             rc = bodies->get_first(&key, &data);
-            for (uint64_t block_num = 0; !shouldStop && block_num < canonical_headers_count && rc == MDB_SUCCESS; block_num++)
-            {
+            for (uint64_t block_num = 0; !shouldStop && block_num < canonical_headers_count && rc == MDB_SUCCESS;
+                 block_num++) {
                 while (!shouldStop && rc == MDB_SUCCESS) {
                     ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
                     uint64_t body_block{boost::endian::load_big_u64(&v[0])};
@@ -201,8 +199,7 @@ int main(int argc, char* argv[]) {
 
                     // We have a block with same canonical header in key
                     // If data contains something process it
-                    if (data.mv_size > 3)
-                    {
+                    if (data.mv_size > 3) {
                         ByteView bv{static_cast<uint8_t*>(data.mv_data), data.mv_size};
 
                         // Actually rlp-decoding the whole block adds a
@@ -223,9 +220,9 @@ int main(int argc, char* argv[]) {
                 if (!batch_size) {
                     batch_size = canonical_headers_count / 50;
                     percent += 2;
-                    std::cout << "Navigated " << percent << "% of block canonical headers. Processed transactions " << total_transactions << std::endl;
+                    std::cout << "Navigated " << percent << "% of block canonical headers. Processed transactions "
+                              << total_transactions << std::endl;
                 }
-
             }
 
             bodies->close();
@@ -233,14 +230,10 @@ int main(int argc, char* argv[]) {
         }
         env->close();
         std::cout << "Database is " << (env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
-    }
-    catch (db::lmdb::exception& ex)
-    {
+    } catch (db::lmdb::exception& ex) {
         // This handles specific lmdb errors
         std::cout << ex.what() << " " << ex.err() << std::endl;
-    }
-    catch (std::runtime_error& ex)
-    {
+    } catch (std::runtime_error& ex) {
         // This handles runtime ligic errors
         // eg. trying to open two rw txns
         std::cout << ex.what() << std::endl;

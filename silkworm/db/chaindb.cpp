@@ -109,6 +109,8 @@ namespace silkworm::db {
 
         Txn::Txn(Env* parent, MDB_txn* txn, unsigned int flags) : parent_env_{parent}, handle_{txn}, flags_{flags} {}
 
+        void Txn::set_dirty(void) { dirty_ = true; }
+
         MDB_txn* Txn::open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags) {
             if (!parent_env->is_opened()) {
                 throw std::runtime_error("Can't open a transaction on a closed db");
@@ -212,6 +214,8 @@ namespace silkworm::db {
 
         bool Txn::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
+        bool Txn::is_dirty(void) { return is_ro() ? false : dirty_; }
+
         std::unique_ptr<Bkt> Txn::open(const char* name, unsigned int flags) {
             std::optional<std::pair<std::string, MDB_dbi>> dbi{open_dbi(name, flags)};
             if (!dbi) {
@@ -222,7 +226,7 @@ namespace silkworm::db {
 
         void Txn::abort(void) {
             if (!handle_) return;
-            on_before_abort_signal();
+            signal_on_before_abort();
             mdb_txn_abort(handle_);
             if (is_ro()) {
                 parent_env_->touch_ro_txns(-1);
@@ -230,11 +234,12 @@ namespace silkworm::db {
                 parent_env_->touch_rw_txns(-1);
             }
             handle_ = nullptr;
+            dirty_ = false;
         }
 
         int Txn::commit(void) {
             if (!handle_) return 0;
-            on_before_commit_signal();
+            signal_on_before_commit();
             int rc{err_handler(mdb_txn_commit(handle_))};
             if (rc == MDB_SUCCESS) {
                 if (is_ro()) {
@@ -243,6 +248,7 @@ namespace silkworm::db {
                     parent_env_->touch_rw_txns(-1);
                 }
                 handle_ = nullptr;
+                dirty_ = false;
             }
             return rc;
         }
@@ -267,8 +273,8 @@ namespace silkworm::db {
 
         Bkt::Bkt(Txn* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor)
             : parent_txn_{parent}, dbi_{dbi}, dbi_name_{std::move(dbi_name)}, cursor_{cursor} {
-            parent->on_before_abort_signal.connect(boost::bind(&Bkt::close, this));
-            parent->on_before_commit_signal.connect(boost::bind(&Bkt::close, this));
+            parent->signal_on_before_abort.connect(boost::bind(&Bkt::close, this));
+            parent->signal_on_before_commit.connect(boost::bind(&Bkt::close, this));
         }
 
         int Bkt::get_flags(unsigned int* flags) {
@@ -293,10 +299,16 @@ namespace silkworm::db {
         }
 
         int Bkt::put(MDB_val* key, MDB_val* data, unsigned int flag) {
+            if (parent_txn_->is_ro()) {
+                throw std::runtime_error("Can't put within a ro Transaction");
+            }
             if (!cursor_) {
                 throw exception(EINVAL, mdb_strerror(EINVAL));
             }
             int rc{err_handler(mdb_cursor_put(cursor_, key, data, flag))};
+            if (!rc) {
+                parent_txn_->set_dirty();
+            }
             return rc;
         }
 

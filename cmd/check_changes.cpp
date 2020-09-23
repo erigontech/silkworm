@@ -19,7 +19,8 @@
 #include <absl/flags/usage.h>
 #include <absl/time/time.h>
 
-#include <filesystem>
+#include <boost/filesystem.hpp>
+
 #include <iostream>
 #include <silkworm/db/lmdb.hpp>
 #include <silkworm/db/util.hpp>
@@ -38,10 +39,11 @@ int main(int argc, char* argv[]) {
       "Executes Ethereum blocks and compares resulting change sets against DB.");
   absl::ParseCommandLine(argc, argv);
 
-  if (!std::filesystem::exists(absl::GetFlag(FLAGS_db))) {
-    std::cerr << absl::GetFlag(FLAGS_db) << " does not exist.\n";
-    std::cerr << "Use --db flag to point to a Turbo-Geth populated chaindata.\n";
-    return -1;
+  boost::filesystem::path db_path(absl::GetFlag(FLAGS_db));
+  if (!boost::filesystem::exists(db_path) || !boost::filesystem::is_directory(db_path) || db_path.empty()) {
+      std::cerr << absl::GetFlag(FLAGS_db) << " does not exist.\n";
+      std::cerr << "Use --db flag to point to a Turbo-Geth populated chaindata.\n";
+      return -1;
   }
 
   absl::Time t1{absl::Now()};

@@ -28,12 +28,16 @@ namespace silkworm::ecdsa {
     RecoveryId get_signature_recovery_id(const intx::uint256& v) {
         RecoveryId res{};
         if (v == 27 || v == 28) {
+            // pre EIP-155
             res.recovery_id = intx::narrow_cast<uint8_t>(v - 27);
             res.eip155_chain_id = {};
         } else {
+            // https://eips.ethereum.org/EIPS/eip-155
+            // Find chain_id and recovery_id ∈ {0, 1} such that
+            // v = chain_id * 2 + 35 + recovery_id
             intx::uint256 w{v - 35};
-            intx::uint256 chain_id{w >> 1};
-            res.recovery_id = intx::narrow_cast<uint8_t>(w - (chain_id << 1));
+            intx::uint256 chain_id{w >> 1};                                     // w / 2
+            res.recovery_id = intx::narrow_cast<uint8_t>(w - (chain_id << 1));  // w - chain_id * 2
             res.eip155_chain_id = chain_id;
         }
         return res;

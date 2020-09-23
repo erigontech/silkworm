@@ -323,7 +323,7 @@ uint64_t load_canonical_headers(std::unique_ptr<db::lmdb::Bkt>& headers, uint64_
 int main(int argc, char* argv[]) {
     CLI::App app("Walks Ethereum blocks and recovers senders.");
 
-    std::string po_db_path{silkworm::db::default_path()};  // Default database path
+    std::string po_data_dir{silkworm::db::default_path()};  // Default database path
     uint32_t po_num_threads{get_host_cpus() - 1};          // Number of recovery threads to start
     uint32_t po_from_block{1u};                            // Initial block number to start from
     uint32_t po_to_block{UINT32_MAX};                      // Final block number to process
@@ -335,9 +335,9 @@ int main(int argc, char* argv[]) {
 
     // Check whether or not default db_path exists and
     // has some files in it
-    bfs::path db_path(po_db_path);
+    bfs::path db_path(po_data_dir);
     CLI::Option* db_path_set =
-        app.add_option("--db", po_db_path, "Path to chain db", true)->check(CLI::ExistingDirectory);
+        app.add_option("--datadir", po_data_dir, "Path to chain db", true)->check(CLI::ExistingDirectory);
     if (!bfs::exists(db_path) || !bfs::is_directory(db_path) || db_path.empty()) {
         db_path_set->required();
     }
@@ -348,7 +348,7 @@ int main(int argc, char* argv[]) {
     app.add_option("--rthreads", po_num_threads, "Number of recovering threads", true)
         ->check(CLI::Range(1u, get_host_cpus() - 1));
     app.add_option("--from,-f", po_from_block, "Initial block number to process (inclusive)", true)->check(range32);
-    app.add_option("--to,-t", po_to_block, "Final block number to process (exclusive)", true)->check(range32);
+    app.add_option("--to,-t", po_to_block, "Final block number to process (inclusive)", true)->check(range32);
     app.add_option("--batch", po_batch_size, "Number of transactions to process per batch", true)
         ->check(CLI::Range((size_t)1'000, (size_t)1'000'000));
 
@@ -361,9 +361,9 @@ int main(int argc, char* argv[]) {
 
     // If database path is provided (and has passed CLI::ExistingDirectory validator
     // check whether it is empty
-    db_path = bfs::path(po_db_path);
+    db_path = bfs::path(po_data_dir);
     if (db_path.empty()) {
-        std::cerr << "Provided --db [" << po_db_path << "] is an empty directory" << std::endl
+        std::cerr << "Provided --datadir [" << po_data_dir << "] is an empty directory" << std::endl
                   << "Try --help for help" << std::endl;
         return -1;
     }
@@ -458,7 +458,7 @@ int main(int argc, char* argv[]) {
 
     try {
         // Open db and start transaction
-        lmdb_env = db::get_env(po_db_path.c_str());
+        lmdb_env = db::get_env(po_data_dir.c_str());
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_senders = lmdb_txn->open(db::bucket::kSenders, MDB_CREATE);  // Throws on error
         auto headers = lmdb_txn->open(db::bucket::kBlockHeaders);         // Throws on error

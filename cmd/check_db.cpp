@@ -42,16 +42,16 @@ void sig_handler(int signum) {
 int main(int argc, char* argv[]) {
     CLI::App app("Tests db interfaces.");
 
-    std::string po_db_path{silkworm::db::default_path()};
+    std::string po_data_dir{silkworm::db::default_path()};
     bool po_debug{false};
     CLI::Range range32(1u, UINT32_MAX);
 
     // Check whether or not default db_path exists and
     // has some files in it
 
-    bfs::path db_path(po_db_path);
+    bfs::path db_path(po_data_dir);
     CLI::Option* db_path_set =
-        app.add_option("--db", po_db_path, "Path to chain db", true)->check(CLI::ExistingDirectory);
+        app.add_option("--datadir", po_data_dir, "Path to chain db", true)->check(CLI::ExistingDirectory);
     if (!bfs::exists(db_path) || !bfs::is_directory(db_path) || db_path.empty()) {
         db_path_set->required();
     }
@@ -65,9 +65,9 @@ int main(int argc, char* argv[]) {
 
     // If database path is provided (and has passed CLI::ExistingDirectory validator
     // check whether it is empty
-    db_path = bfs::path(po_db_path);
+    db_path = bfs::path(po_data_dir);
     if (db_path.empty()) {
-        std::cerr << "Provided --db [" << po_db_path << "] is an empty directory" << std::endl
+        std::cerr << "Provided --datadir [" << po_data_dir << "] is an empty directory" << std::endl
                   << "Try --help for help" << std::endl;
         return -1;
     }
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
     uint64_t canonical_headers_count{0};        // Overall number of canonical headers collected
 
     try {
-        auto env = db::get_env(po_db_path.c_str());
+        auto env = db::get_env(po_data_dir.c_str());
         std::cout << "Database is " << (env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
         {
             auto txn_ro = env->begin_ro_transaction();

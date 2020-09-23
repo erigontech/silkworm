@@ -22,65 +22,58 @@
 
 namespace silkworm::ecdsa {
 
-static secp256k1_context* kDefaultContext{
-    secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)};
+    static secp256k1_context* kDefaultContext{
+        secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)};
 
-bool is_valid_signature(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
-                        const uint64_t chainID, bool homestead, uint8_t* recoveryId) {
-    if (r == 0 || s == 0) {
-        return false;
+    RecoveryId get_signature_recovery_id(const intx::uint256& v) {
+        RecoveryId res{};
+        if (v == 27 || v == 28) {
+            res.eip155_chain_id = {};
+            res.recovery_id = intx::narrow_cast<uint8_t>(v - 27);
+        } else {
+            intx::uint256 w{v - 35};
+            intx::uint256 chain_id{w >> 1};
+            res.eip155_chain_id = chain_id;
+            res.recovery_id = intx::narrow_cast<uint8_t>(w - (chain_id << 1));
+        }
+        return res;
     }
-    uint8_t recovery{intx::narrow_cast<uint8_t>(get_signature_recovery_id(v, chainID))};
-    if (!is_valid_signature_recovery_id(recovery)) {
-        return false;
-    }
-    if (recoveryId) {
-        *recoveryId = recovery;
-    }
-    if (r >= kSecp256k1n && s >= kSecp256k1n) {
-        return false;
-    }
-    // reject upper range of s values (ECDSA malleability)
-    // see discussion in secp256k1/libsecp256k1/include/secp256k1.h
-    if (homestead && s > kSecp256k1Halfn) {
-        return false;
-    }
-    return true;
-}
 
-intx::uint256 get_signature_recovery_id(const intx::uint256& v, const uint64_t chainID) {
-    return chainID ? v - (2 * chainID + 35) : v - 27;
-}
+    bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead, uint8_t recovery_id) {
+        if (r == 0 || s == 0) {
+            return false;
+        }
+        if (recovery_id > 1) {
+            return false;
+        }
+        if (r >= kSecp256k1n && s >= kSecp256k1n) {
+            return false;
+        }
+        // https://eips.ethereum.org/EIPS/eip-2
+        if (homestead && s > kSecp256k1Halfn) {
+            return false;
+        }
+        return true;
+    }
 
-bool is_valid_signature_recovery_id(const uint8_t& recoveryId) { return recoveryId == 0u || recoveryId == 1u; }
+    std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id) {
+        if (message.length() != 32 || signature.length() != 64) {
+            return {};
+        }
 
-uint64_t get_chainid_from_v(const intx::uint256& v) {
-    uint64_t out{0};
-    if (v == 27u || v == 28u) {
+        secp256k1_ecdsa_recoverable_signature sig;
+        if (!secp256k1_ecdsa_recoverable_signature_parse_compact(kDefaultContext, &sig, &signature[0], recovery_id)) {
+            return {};
+        }
+
+        secp256k1_pubkey pub_key;
+        if (!secp256k1_ecdsa_recover(kDefaultContext, &pub_key, &sig, &message[0])) {
+            return {};
+        }
+
+        size_t kOutLen{65};
+        Bytes out(kOutLen, '\0');
+        secp256k1_ec_pubkey_serialize(kDefaultContext, &out[0], &kOutLen, &pub_key, SECP256K1_EC_UNCOMPRESSED);
         return out;
     }
-    out = intx::narrow_cast<uint64_t>((v - 35) / 2);
-    return out;
-}
-
-std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id) {
-    if (message.length() != 32 || signature.length() != 64) {
-        return {};
-    }
-
-    secp256k1_ecdsa_recoverable_signature sig;
-    if (!secp256k1_ecdsa_recoverable_signature_parse_compact(kDefaultContext, &sig, &signature[0], recovery_id)) {
-        return {};
-    }
-
-    secp256k1_pubkey pub_key;
-    if (!secp256k1_ecdsa_recover(kDefaultContext, &pub_key, &sig, &message[0])) {
-        return {};
-    }
-
-    size_t kOutLen{65};
-    Bytes out(kOutLen, '\0');
-    secp256k1_ec_pubkey_serialize(kDefaultContext, &out[0], &kOutLen, &pub_key, SECP256K1_EC_UNCOMPRESSED);
-    return out;
-}
 }  // namespace silkworm::ecdsa

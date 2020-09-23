@@ -196,35 +196,33 @@ class Recoverer : public silkworm::Worker {
     };
 };
 
-void process_txs_for_signing(ChainConfig& config, uint64_t required_block_num, BlockBody& body,
+void process_txs_for_signing(ChainConfig& config, uint64_t block_num, BlockBody& body,
                              std::vector<Recoverer::package>& packages) {
     for (const silkworm::Transaction& txn : body.transactions) {
-        Bytes rlp{};
-        uint64_t chain_id{ecdsa::get_chainid_from_v(txn.v)};
-        uint8_t recovery_id{0};
+        ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(txn.v)};
 
-        // Invalid signature
-        if (!silkworm::ecdsa::is_valid_signature(txn.v, txn.r, txn.s, chain_id,
-                                                 config.has_homestead(required_block_num), &recovery_id)) {
-            throw std::runtime_error("Got invalid signature in tx for block number " +
-                                     std::to_string(required_block_num));
+        if (!silkworm::ecdsa::is_valid_signature(txn.r, txn.s, config.has_homestead(block_num), x.recovery_id)) {
+            throw std::runtime_error("Got invalid signature in tx for block number " + std::to_string(block_num));
         }
 
-        // Apply EIP-155 only for protected txns
-        if (txn.is_protected() && config.has_spurious_dragon(required_block_num)) {
-            if (chain_id != config.chain_id) {
+        Bytes rlp{};
+        if (x.eip155_chain_id) {
+            if (!config.has_spurious_dragon(block_num)) {
+                throw std::runtime_error("EIP-155 signature in tx before Spurious Dragon for block number " +
+                                         std::to_string(block_num));
+            } else if (x.eip155_chain_id != config.chain_id) {
                 throw std::runtime_error("Got invalid EIP-155 signature in tx for block number " +
-                                         std::to_string(required_block_num) + " chain_id : expected " +
-                                         std::to_string(config.chain_id) + " got " + std::to_string(chain_id));
+                                         std::to_string(block_num) + " chain_id : expected " +
+                                         std::to_string(config.chain_id) + " got " +
+                                         intx::to_string(*x.eip155_chain_id));
             }
-            rlp::encode(rlp, txn, true, {chain_id});
+            rlp::encode(rlp, txn, true, {config.chain_id});
         } else {
             rlp::encode(rlp, txn, true, {});
         }
 
-        // Hash the Tx for signing
-        ethash::hash256 txMessageHash{ethash::keccak256(rlp.data(), rlp.length())};
-        Recoverer::package rp{required_block_num, txMessageHash, recovery_id, txn.r, txn.s};
+        ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
+        Recoverer::package rp{block_num, hash, x.recovery_id, txn.r, txn.s};
         packages.push_back(rp);
     }
 }
@@ -506,7 +504,6 @@ int main(int argc, char* argv[]) {
         } else {
             po_from_block = 1u;
         }
-
 
         // Dirty way to get last block number (from actually stored headers)
         uint64_t highest_block{get_highest_canonical_block(headers)};

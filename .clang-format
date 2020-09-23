@@ -2,5 +2,4 @@ Language: Cpp
 BasedOnStyle: Google
 ColumnLimit: 120
 IndentWidth: 4
-MaxEmptyLinesToKeep: 2
 NamespaceIndentation: All

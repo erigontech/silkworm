@@ -199,11 +199,11 @@ class Recoverer : public silkworm::Worker {
 void process_txs_for_signing(ChainConfig& config, uint64_t block_num, BlockBody& body,
                              std::vector<Recoverer::package>& packages) {
     for (const silkworm::Transaction& txn : body.transactions) {
-        ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(txn.v)};
-
-        if (!silkworm::ecdsa::is_valid_signature(txn.r, txn.s, config.has_homestead(block_num), x.recovery_id)) {
+        if (!silkworm::ecdsa::is_valid_signature(txn.r, txn.s, config.has_homestead(block_num))) {
             throw std::runtime_error("Got invalid signature in tx for block number " + std::to_string(block_num));
         }
+
+        ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(txn.v)};
 
         Bytes rlp{};
         if (x.eip155_chain_id) {

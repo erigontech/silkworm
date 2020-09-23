@@ -28,22 +28,19 @@ namespace silkworm::ecdsa {
     RecoveryId get_signature_recovery_id(const intx::uint256& v) {
         RecoveryId res{};
         if (v == 27 || v == 28) {
-            res.eip155_chain_id = {};
             res.recovery_id = intx::narrow_cast<uint8_t>(v - 27);
+            res.eip155_chain_id = {};
         } else {
             intx::uint256 w{v - 35};
             intx::uint256 chain_id{w >> 1};
-            res.eip155_chain_id = chain_id;
             res.recovery_id = intx::narrow_cast<uint8_t>(w - (chain_id << 1));
+            res.eip155_chain_id = chain_id;
         }
         return res;
     }
 
-    bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead, uint8_t recovery_id) {
+    bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) {
         if (r == 0 || s == 0) {
-            return false;
-        }
-        if (recovery_id > 1) {
             return false;
         }
         if (r >= kSecp256k1n && s >= kSecp256k1n) {

@@ -108,12 +108,12 @@ namespace silkworm {
     void Transaction::recover_sender(bool homestead, std::optional<uint64_t> eip155_chain_id) {
         from.reset();
 
-        ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(v)};
-        if (x.eip155_chain_id && x.eip155_chain_id != eip155_chain_id) {
+        if (!silkworm::ecdsa::is_valid_signature(r, s, homestead)) {
             return;
         }
 
-        if (!silkworm::ecdsa::is_valid_signature(r, s, homestead, x.recovery_id)) {
+        ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(v)};
+        if (x.eip155_chain_id && x.eip155_chain_id != eip155_chain_id) {
             return;
         }
 

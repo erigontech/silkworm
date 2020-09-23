@@ -19,9 +19,8 @@
 
 #include <lmdb/lmdb.h>
 
-#include <boost/signals2/signal.hpp>
-
 #include <atomic>
+#include <boost/signals2/signal.hpp>
 #include <exception>
 #include <iostream>
 #include <map>
@@ -78,7 +77,7 @@ namespace silkworm::db {
         class exception : public std::exception {
            public:
             exception(int err, const char* errstr) : err_{err}, message_{std::move(errstr)} {};
-            virtual const char* what() noexcept { return message_; }
+            const char* what() const noexcept override { return message_; }
             int err() { return err_; }
 
            private:
@@ -317,10 +316,10 @@ namespace silkworm::db {
             int put(MDB_val* key, MDB_val* data,
                     unsigned int flag);  // Puts data by cursor on behalf of operation
 
-            Txn* parent_txn_;          // The transaction this bucket belongs to
-            MDB_dbi dbi_;              // The underlying MDB_dbi handle for this instance
-            std::string dbi_name_;     // The name of the dbi
-            MDB_cursor* cursor_;       // The underlying MDB_cursor for this instance
+            Txn* parent_txn_;       // The transaction this bucket belongs to
+            MDB_dbi dbi_;           // The underlying MDB_dbi handle for this instance
+            std::string dbi_name_;  // The name of the dbi
+            MDB_cursor* cursor_;    // The underlying MDB_cursor for this instance
         };
 
     }  // namespace lmdb

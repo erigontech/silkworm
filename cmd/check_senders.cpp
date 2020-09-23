@@ -31,31 +31,14 @@
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
 #include <string>
-
-#if defined(__APPLE__) || defined(__MACOSX)
-#error "MACOSX not supported yet"
-#elif defined(__linux__)
-#if !defined(_GNU_SOURCE)
-#define _GNU_SOURCE /* we need sched_setaffinity() */
-#endif
-#include <error.h>
-#include <sched.h>
-#include <unistd.h>
-
 #include <thread>
-#elif defined(_WINDOWS) || defined(_WIN32)
-#include <windows.h>
-#else
-#error "Unsupported OS configuration"
-#endif
 
 namespace bfs = boost::filesystem;
 using namespace silkworm;
 
-std::atomic_bool should_stop_{false};                    // Request for stop from user or OS
-std::atomic_bool main_thread_error_{false};              // Error detected in main thread
-std::atomic_bool workers_thread_error_{false};           // Error detected in one of workers threads
-constexpr intx::uint256 uint256_zero{intx::uint256(0)};  // An empty common hash
+std::atomic_bool should_stop_{false};           // Request for stop from user or OS
+std::atomic_bool main_thread_error_{false};     // Error detected in main thread
+std::atomic_bool workers_thread_error_{false};  // Error detected in one of workers threads
 
 void sig_handler(int signum) {
     (void)signum;
@@ -64,19 +47,8 @@ void sig_handler(int signum) {
 }
 
 unsigned get_host_cpus() {
-#if defined(__linux__)
-    long out{sysconf(_SC_NPROCESSORS_ONLN)};
-    if (out == -1L) {
-        std::cerr << "Error in func " << __FUNCTION__ << " at sysconf(_SC_NPROCESSORS_ONLN) \"" << strerror(errno)
-                  << "\"" << std::endl;
-        return 0;
-    }
-    return out;
-#else
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo(&sysinfo);
-    return sysinfo.dwNumberOfProcessors;
-#endif
+    unsigned n{std::thread::hardware_concurrency()};
+    return n ? n : 2;
 }
 
 std::string format_time(boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time()) {
@@ -227,7 +199,6 @@ class Recoverer : public silkworm::Worker {
 void process_txs_for_signing(ChainConfig& config, uint64_t required_block_num, BlockBody& body,
                              std::vector<Recoverer::package>& packages) {
     for (const silkworm::Transaction& txn : body.transactions) {
-
         Bytes rlp{};
         uint64_t chain_id{ecdsa::get_chainid_from_v(txn.v)};
         uint8_t recovery_id{0};
@@ -501,7 +472,7 @@ int main(int argc, char* argv[]) {
          * If po_replay flag is set then po_from_block can be anything
          * below that value
          */
-        uint64_t senders_count{0};
+        size_t senders_count{0};
         lmdb_senders->get_rcount(&senders_count);
         if (senders_count) {
             MDB_val key, data;
@@ -576,7 +547,7 @@ int main(int argc, char* argv[]) {
 
             // Open bodies bucket and iterate to load transactions (if any in the block)
             lmdb_bodies = lmdb_txn->open(db::bucket::kBlockBodies);  // Throws on error
-            uint64_t bodies_records{0};
+            size_t bodies_records{0};
             (void)lmdb_bodies->get_rcount(&bodies_records);
             if (!bodies_records) {
                 throw std::runtime_error("Bodies bucket is empty");

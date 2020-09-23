@@ -38,12 +38,13 @@ namespace silkworm {
             h.payload_length += txn.to ? (kAddressLength + 1) : 1;
             h.payload_length += length(txn.value);
             h.payload_length += length(txn.data);
-            if (eip155_chain_id) {
-                h.payload_length += length(*eip155_chain_id) + 2;
-            } else if (!for_signing) {
+            if (!for_signing) {
                 h.payload_length += length(txn.v);
                 h.payload_length += length(txn.r);
                 h.payload_length += length(txn.s);
+            }
+            else if (eip155_chain_id) {
+                h.payload_length += length(*eip155_chain_id) + 2;
             }
             return h;
         }

@@ -391,7 +391,7 @@ namespace silkworm::db {
         auto newitem = std::make_shared<lmdb::Env>();
         (void)newitem->set_mapsize(opts.map_size);
         (void)newitem->set_max_dbs(opts.max_buckets);
-        newitem->open(path, flags | (forwriting ? MDB_RDONLY : 0), opts.mode);  // Throws on error
+        newitem->open(path, flags | (forwriting ? 0 : MDB_RDONLY), opts.mode);  // Throws on error
 
         s_envs[envkey] = {newitem, flags};
         return newitem;

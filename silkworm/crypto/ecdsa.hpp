@@ -34,7 +34,10 @@ namespace silkworm::ecdsa {
         std::optional<intx::uint256> eip155_chain_id{};
     };
 
-    // https://eips.ethereum.org/EIPS/eip-155
+    // Calculates the recovery ID from signature's v.
+    // Returned recovery_id is always 0 or 1.
+    // Unless v ∈ {27, 28}, eip155_chain_id will be returned as well.
+    // See https://eips.ethereum.org/EIPS/eip-155.
     RecoveryId get_signature_recovery_id(const intx::uint256& v);
 
     // Verifies whether the signature values are valid with

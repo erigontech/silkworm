@@ -49,15 +49,13 @@ namespace silkworm::precompiled {
         auto r{intx::be::unsafe::load<intx::uint256>(&d[64])};
         auto s{intx::be::unsafe::load<intx::uint256>(&d[96])};
 
-        ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(v)};
-        if (x.eip155_chain_id) {
+        bool homestead{false};  // See EIP-2
+        if (!ecdsa::is_valid_signature(r, s, homestead)) {
             return Bytes{};
         }
 
-        // https://eips.ethereum.org/EIPS/eip-2
-        bool homestead{false};
-
-        if (!ecdsa::is_valid_signature(r, s, homestead, x.recovery_id)) {
+        ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(v)};
+        if (x.eip155_chain_id) {
             return Bytes{};
         }
 

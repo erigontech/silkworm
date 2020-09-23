@@ -39,7 +39,7 @@ namespace silkworm::ecdsa {
 
     // Verifies whether the signature values are valid with
     // the given chain rules.
-    bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead, uint8_t recovery_id);
+    bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead);
 
     // Tries recover the public key used for message signing
     std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id);

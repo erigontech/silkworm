@@ -76,13 +76,15 @@ namespace silkworm::db {
          */
         class exception : public std::exception {
            public:
-            exception(int err, const char* errstr) : err_{err}, message_{std::move(errstr)} {};
-            const char* what() const noexcept override { return message_; }
+            explicit exception(int err, const char* message) : err_{err}, message_{message} {};
+            explicit exception(int err, const std::string& message) : err_{err}, message_{message} {};
+            virtual ~exception() noexcept {};
+            virtual const char* what() const noexcept { return message_.c_str(); }
             int err() { return err_; }
 
-           private:
+           protected:
             int err_;
-            const char* message_;
+            std::string message_;
         };
 
         /**
@@ -104,9 +106,8 @@ namespace silkworm::db {
          */
         class Env {
            private:
-            MDB_env* handle_{nullptr};
-
-            bool opened_{false};
+            MDB_env* handle_{nullptr};  // Handle to MDB_env
+            bool opened_{false};        // Whether or not the handle has an underlying opened db
 
             friend class Txn;
 
@@ -129,6 +130,9 @@ namespace silkworm::db {
             void touch_ro_txns(int count);  // Ro transaction count incrementer/decrementer
             void touch_rw_txns(int count);  // Ro transaction count incrementer/decrementer
 
+            bool assert_handle(bool should_throw = true);  // Ensures handle_ is validly created
+            bool assert_opened(bool should_throw = true);  // Ensures database is validly opened
+
            public:
             Env(const unsigned flags = 0);
             ~Env() noexcept;
@@ -140,7 +144,9 @@ namespace silkworm::db {
             void open(const char* path, const unsigned int flags, const mdb_mode_t mode);
             void close() noexcept;
 
+            int get_info(MDB_envinfo* info);
             int get_flags(unsigned int* flags);
+            int get_mapsize(size_t* size);
             int get_max_keysize(void);
             int get_max_readers(unsigned int* count);
 
@@ -153,6 +159,9 @@ namespace silkworm::db {
             std::unique_ptr<Txn> begin_transaction(unsigned int flags = 0);
             std::unique_ptr<Txn> begin_ro_transaction(unsigned int flags = 0);
             std::unique_ptr<Txn> begin_rw_transaction(unsigned int flags = 0);
+
+            boost::signals2::signal<void(void)>
+                signal_on_before_close_;  // Signals connected transactions that this env is about to close
         };
 
         /**
@@ -168,9 +177,8 @@ namespace silkworm::db {
             Env* parent_env_;     // Pointer to env this transaction belongs to
             MDB_txn* handle_;     // This transaction lmdb handle
             unsigned int flags_;  // Flags this transaction has been opened with
-            bool dirty_{false};   // Whether or not this transaction is dirty
 
-            void set_dirty(void); // Called by dependant bucket to signal some data has been written
+            bool assert_handle(bool should_throw = true);  // Ensures handle_ is validly created
 
             /*
              * A dbi is an unsigned int handle to a table in database.
@@ -182,9 +190,11 @@ namespace silkworm::db {
              * Val -> the MDB_dbi handle
              */
 
-            std::map<std::string, MDB_dbi> dbis_;
+            //std::map<std::string, MDB_dbi> dbis_;
             std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const char* name, unsigned int flags = 0);
             std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const std::string name, unsigned int flags = 0);
+
+            boost::signals2::connection conn_on_env_close_;   // Holds the connection to env signal_on_before_close_
 
            public:
             explicit Txn(Env* parent, unsigned int flags = 0);
@@ -193,7 +203,6 @@ namespace silkworm::db {
             MDB_txn** handle() { return &handle_; }
 
             bool is_ro(void);     // Whether this transaction is readonly
-            bool is_dirty(void);  // Whether this transaction is dirty
 
             std::unique_ptr<Bkt> open(const char* name, unsigned int flags = 0);
 
@@ -202,8 +211,10 @@ namespace silkworm::db {
             Txn(Txn&& rhs) = delete;
             Txn& operator=(Txn&& rhs) = delete;
 
-            boost::signals2::signal<void(void)> signal_on_before_abort;
-            boost::signals2::signal<void(void)> signal_on_before_commit;
+            boost::signals2::signal<void(void)>
+                signal_on_before_abort_;  // Signals connected Bucktes transaction is about to abort
+            boost::signals2::signal<void(void)>
+                signal_on_before_commit_;  // Signals connected Bucktes transaction is about to commit
 
             void abort(void);
             int commit(void);
@@ -224,6 +235,10 @@ namespace silkworm::db {
             int get_flags(unsigned int* flags);  // Returns the flags used to open the bucket
             int get_stat(MDB_stat* stat);        // Returns stat info about the bucket
             int get_rcount(size_t* count);       // Returns the number of records held in bucket
+            std::string get_name(void);          // Returns the name of the bucket
+            MDB_dbi get_dbi(void);               // Returns the ordinal id of the bucket
+            int clear();                         // Removes all contents from the bucket (cursor is still valid)
+            int drop();                          // Deletes the bucket from environment and closes cursor
 
             /*
              * MDB_cursor interfaces
@@ -311,7 +326,7 @@ namespace silkworm::db {
             int put_multiple(MDB_val* key, MDB_val* data);
 
             void close(void);  // Close the cursor (not the dbi) and frees the handle
-            bool is_opened(void) { return cursor_ != nullptr; }
+            bool is_opened(void) { return handle_ != nullptr; }
 
            private:
             static MDB_cursor* open_cursor(Txn* parent, MDB_dbi dbi);
@@ -322,10 +337,16 @@ namespace silkworm::db {
             int put(MDB_val* key, MDB_val* data,
                     unsigned int flag);  // Puts data by cursor on behalf of operation
 
-            Txn* parent_txn_;       // The transaction this bucket belongs to
-            MDB_dbi dbi_;           // The underlying MDB_dbi handle for this instance
-            std::string dbi_name_;  // The name of the dbi
-            MDB_cursor* cursor_;    // The underlying MDB_cursor for this instance
+            Txn* parent_txn_;          // The transaction this bucket belongs to
+            MDB_dbi dbi_;              // The underlying MDB_dbi handle for this instance
+            std::string dbi_name_;     // The name of the dbi
+            bool dbi_dropped_{false};  // Whether or not this bucket has been dropped
+            MDB_cursor* handle_;       // The underlying MDB_cursor for this instance
+
+            bool assert_handle(bool should_throw = true);  // Ensures handle_ is validly created
+
+            boost::signals2::connection conn_on_txn_abort_;   // Holds the connection to txn signal_on_before_abort_
+            boost::signals2::connection conn_on_txn_commit_;  // Holds the connection to txn signal_on_before_commit_
         };
 
     }  // namespace lmdb

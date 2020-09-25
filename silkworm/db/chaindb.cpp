@@ -36,48 +36,101 @@ namespace silkworm::db {
         Env::~Env() noexcept { close(); }
 
         bool Env::is_ro(void) {
-            if (!handle_) return false;
             unsigned int env_flags{0};
-            get_flags(&env_flags);
-            return (env_flags & MDB_RDONLY) == MDB_RDONLY;
+            int rc{get_flags(&env_flags)};
+            if (!rc) {
+                return ((env_flags & MDB_RDONLY) == MDB_RDONLY);
+            }
+            throw exception(rc, mdb_strerror(rc));
         }
 
         void Env::open(const char* path, const unsigned int flags, const mdb_mode_t mode) {
-            if (opened_) return;
-            (void)err_handler(mdb_env_open(handle_, path, flags, mode), true);
-            opened_ = true;
+            assert_handle();
+            if (!path) {
+                throw std::invalid_argument("Invalid argument : path");
+            }
+            (void)err_handler(mdb_env_open(handle_, path, flags, mode), /*shouldthrow=*/ true);
+            opened_ = true;  // If we get here the above has not thrown so the open is succesful
         }
 
         void Env::close() noexcept {
-            if (handle_) {
+            if (assert_opened(false)) {
+                signal_on_before_close_();
                 mdb_env_close(handle_);
                 handle_ = nullptr;
                 opened_ = false;
             }
         }
 
-        int Env::get_flags(unsigned int* flags) { return err_handler(mdb_env_get_flags(handle_, flags)); }
+        int Env::get_info(MDB_envinfo* info) {
+            assert_opened();
+            if (!info) {
+                throw std::invalid_argument("Invalid argument : info");
+            }
+            return err_handler(mdb_env_info(handle_, info));
+        }
+
+        int Env::get_flags(unsigned int* flags) {
+            assert_handle();
+            if (!flags) {
+                throw std::invalid_argument("Invalid argument : flags");
+            }
+            return err_handler(mdb_env_get_flags(handle_, flags));
+        }
+
+        int Env::get_mapsize(size_t* size) {
+            MDB_envinfo info{};
+            int rc{get_info(&info)};
+            if (!rc) {
+                *size = info.me_mapsize;
+            }
+            return rc;
+        }
 
         int Env::get_max_keysize(void) {
-            if (!handle_) return 0;
+            assert_opened();
             return mdb_env_get_maxkeysize(handle_);
         }
 
-        int Env::get_max_readers(unsigned int* count) { return err_handler(mdb_env_get_maxreaders(handle_, count)); }
+        int Env::get_max_readers(unsigned int* count) {
+            assert_handle();
+            if (!count) {
+                throw std::invalid_argument("Invalid argument : count");
+            }
+            return err_handler(mdb_env_get_maxreaders(handle_, count));
+        }
 
         int Env::set_flags(const unsigned int flags, const bool onoff) {
+            assert_handle();
             return err_handler(mdb_env_set_flags(handle_, flags, onoff ? 1 : 0));
         }
 
-        int Env::set_mapsize(const size_t size) { return err_handler(mdb_env_set_mapsize(handle_, size)); }
+        int Env::set_mapsize(const size_t size) {
+            assert_handle();
+            return err_handler(mdb_env_set_mapsize(handle_, size));
+        }
 
-        int Env::set_max_dbs(const unsigned int count) { return err_handler(mdb_env_set_maxdbs(handle_, count)); }
+        int Env::set_max_dbs(const unsigned int count) {
+            /*
+            * May be invoked only after env create
+            * and BEFORE env open
+            */
+            assert_handle();
+            if (opened_) {
+                throw std::runtime_error("Can't change max_dbs for an opened database");
+            }
+            return err_handler(mdb_env_set_maxdbs(handle_, count));
+        }
 
         int Env::set_max_readers(const unsigned int count) {
+            assert_handle();
             return err_handler(mdb_env_set_maxreaders(handle_, count));
         }
 
-        int Env::sync(const bool force) { return err_handler(mdb_env_sync(handle_, force)); }
+        int Env::sync(const bool force) {
+            assert_opened();
+            return err_handler(mdb_env_sync(handle_, force));
+        }
 
         int Env::get_ro_txns(void) { return ro_txns_[std::this_thread::get_id()]; }
         int Env::get_rw_txns(void) { return rw_txns_[std::this_thread::get_id()]; }
@@ -86,19 +139,44 @@ namespace silkworm::db {
             std::lock_guard<std::mutex> l(count_mtx_);
             ro_txns_[std::this_thread::get_id()] += count;
         }
+
         void Env::touch_rw_txns(int count) {
             std::lock_guard<std::mutex> l(count_mtx_);
             rw_txns_[std::this_thread::get_id()] += count;
         }
 
-        std::unique_ptr<Txn> Env::begin_transaction(unsigned int flags) { return std::make_unique<Txn>(this, flags); }
+        bool Env::assert_handle(bool should_throw) {
+            bool retvar{handle_ != nullptr};
+            if (!retvar && should_throw) {
+                throw std::runtime_error("Invalid or closed lmdb environment");
+            }
+            return retvar;
+        }
+
+        bool Env::assert_opened(bool should_throw)
+        {
+            bool ret{assert_handle(should_throw)};
+            if (!ret) return ret;
+            if (!opened_ && should_throw) {
+                throw std::runtime_error("Closed lmdb environment");
+            }
+            return opened_;
+        }
+
+        std::unique_ptr<Txn> Env::begin_transaction(unsigned int flags) {
+            assert_opened();
+            if (is_ro()) {
+                flags |= MDB_RDONLY;
+            }
+            return std::make_unique<Txn>(this, flags);
+        }
         std::unique_ptr<Txn> Env::begin_ro_transaction(unsigned int flags) {
             // Simple overload to ensure MDB_RDONLY is set
             flags |= MDB_RDONLY;
             return begin_transaction(flags);
         }
         std::unique_ptr<Txn> Env::begin_rw_transaction(unsigned int flags) {
-            // Simple overload to ensure MDB_RDONLY is not set
+            // Simple overload to ensure MDB_RDONLY is NOT set
             flags &= ~MDB_RDONLY;
             return begin_transaction(flags);
         }
@@ -107,14 +185,21 @@ namespace silkworm::db {
          * Transactions
          */
 
-        Txn::Txn(Env* parent, MDB_txn* txn, unsigned int flags) : parent_env_{parent}, handle_{txn}, flags_{flags} {}
+        Txn::Txn(Env* parent, MDB_txn* txn, unsigned int flags)
+            : parent_env_{parent},
+              handle_{txn},
+              flags_{flags},
+              conn_on_env_close_{parent->signal_on_before_close_.connect(boost::bind(&Txn::abort, this))} {}
 
-        void Txn::set_dirty(void) { dirty_ = true; }
+        bool Txn::assert_handle(bool should_throw) {
+            bool retvar{handle_ != nullptr};
+            if (!retvar && should_throw) {
+                throw std::runtime_error("Commited/Aborted lmdb transaction");
+            }
+            return retvar;
+        }
 
         MDB_txn* Txn::open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags) {
-            if (!parent_env->is_opened()) {
-                throw std::runtime_error("Can't open a transaction on a closed db");
-            }
 
             /*
              * A transaction and its cursors must only be used by a single thread,
@@ -126,7 +211,7 @@ namespace silkworm::db {
                 throw std::runtime_error("Rw transaction already pending in this thread");
             }
 
-            // Verify we don't open a rw tx in a ro env
+            // Ensure we don't open a rw tx in a ro env
             unsigned int env_flags{0};
             (void)parent_env->get_flags(&env_flags);
 
@@ -134,13 +219,13 @@ namespace silkworm::db {
             bool txn_ro{(flags & MDB_RDONLY) == MDB_RDONLY};
 
             if (env_ro && !txn_ro) {
-                throw std::runtime_error("Can't open a rw transaction on a ro env");
+                throw std::runtime_error("Can't open a RW transaction on a RO environment");
             }
 
             bool env_notls{(env_flags & MDB_NOTLS) == MDB_NOTLS};
             if (txn_ro && !env_notls) {
                 if (parent_env->get_ro_txns()) {
-                    throw std::runtime_error("Ro transaction already pending in this thread");
+                    throw std::runtime_error("RO transaction already pending in this thread");
                 }
             }
 
@@ -181,40 +266,24 @@ namespace silkworm::db {
         }
 
         std::optional<std::pair<std::string, MDB_dbi>> Txn::open_dbi(const std::string name, unsigned int flags) {
-            // Lookup value in map
-            auto iter = dbis_.find(name);
-            if (iter != dbis_.end()) {
-                return {std::pair(iter->first, iter->second)};
-            }
+
+            assert_handle();
 
             // TODO(Andrea)
             // Every bucket has its own set of flags
             // Lookup somewhere how to configure a bucket
             MDB_dbi newdbi{0};
 
-            // Allow execption to throw when opening
+            // Don't allow execption to throw when opening - simply return an unvalued optional
             int rc{err_handler(mdb_dbi_open(handle_, (name.empty() ? 0 : name.c_str()), flags, &newdbi))};
             if (rc) return {};
-
-            dbis_[name] = newdbi;
             return {std::pair(name, newdbi)};
         }
 
         Txn::Txn(Env* parent, unsigned int flags) : Txn(parent, open_transaction(parent, nullptr, flags), flags) {}
-        Txn::~Txn() {
-            // TODO(Andrea)
-            /* Call to destructor if txn is pending may cause
-             * unpredictable results as it requires to access
-             * parent env and decrement the number of opened txns
-             * if parent_env has already been voided (eg. program termination)
-             * this causes a segfault
-             */
-            abort();
-        }
+        Txn::~Txn() { abort(); }
 
         bool Txn::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
-
-        bool Txn::is_dirty(void) { return is_ro() ? false : dirty_; }
 
         std::unique_ptr<Bkt> Txn::open(const char* name, unsigned int flags) {
             std::optional<std::pair<std::string, MDB_dbi>> dbi{open_dbi(name, flags)};
@@ -225,21 +294,21 @@ namespace silkworm::db {
         }
 
         void Txn::abort(void) {
-            if (!handle_) return;
-            signal_on_before_abort();
+            if (!assert_handle(false)) return;
+            signal_on_before_abort_();  // Signals connected buckets to close
             mdb_txn_abort(handle_);
             if (is_ro()) {
                 parent_env_->touch_ro_txns(-1);
             } else {
                 parent_env_->touch_rw_txns(-1);
             }
+            conn_on_env_close_.disconnect(); // Disconnects from parent env events
             handle_ = nullptr;
-            dirty_ = false;
         }
 
         int Txn::commit(void) {
-            if (!handle_) return 0;
-            signal_on_before_commit();
+            assert_handle();
+            signal_on_before_commit_();  // Signals connected buckets to close
             int rc{err_handler(mdb_txn_commit(handle_))};
             if (rc == MDB_SUCCESS) {
                 if (is_ro()) {
@@ -247,8 +316,8 @@ namespace silkworm::db {
                 } else {
                     parent_env_->touch_rw_txns(-1);
                 }
+                conn_on_env_close_.disconnect(); // Disconnects from parent env events
                 handle_ = nullptr;
-                dirty_ = false;
             }
             return rc;
         }
@@ -272,10 +341,12 @@ namespace silkworm::db {
         }
 
         Bkt::Bkt(Txn* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor)
-            : parent_txn_{parent}, dbi_{dbi}, dbi_name_{std::move(dbi_name)}, cursor_{cursor} {
-            parent->signal_on_before_abort.connect(boost::bind(&Bkt::close, this));
-            parent->signal_on_before_commit.connect(boost::bind(&Bkt::close, this));
-        }
+            : parent_txn_{parent},
+              dbi_{dbi},
+              dbi_name_{std::move(dbi_name)},
+              handle_{cursor},
+              conn_on_txn_abort_{parent->signal_on_before_abort_.connect(boost::bind(&Bkt::close, this))},
+              conn_on_txn_commit_{parent->signal_on_before_commit_.connect(boost::bind(&Bkt::close, this))} {}
 
         int Bkt::get_flags(unsigned int* flags) {
             return err_handler(mdb_dbi_flags(*parent_txn_->handle(), dbi_, flags));
@@ -290,39 +361,49 @@ namespace silkworm::db {
             return rc;
         }
 
+        std::string Bkt::get_name(void) { return dbi_name_; }
+
+        MDB_dbi Bkt::get_dbi(void) { return dbi_; }
+
+        int Bkt::clear() { return err_handler(mdb_drop(parent_txn_->handle_, dbi_, 0)); }
+
+        int Bkt::drop() {
+            close();  // Invalidates cursor
+            dbi_dropped_ = true;
+            return err_handler(mdb_drop(parent_txn_->handle_, dbi_, 1));
+        }
+
         int Bkt::get(MDB_val* key, MDB_val* data, MDB_cursor_op operation) {
-            if (!cursor_) {
-                throw exception(EINVAL, mdb_strerror(EINVAL));
-            }
-            int rc{err_handler(mdb_cursor_get(cursor_, key, data, operation))};
+            assert_handle();
+            int rc{err_handler(mdb_cursor_get(handle_, key, data, operation))};
             return rc;
         }
 
         int Bkt::put(MDB_val* key, MDB_val* data, unsigned int flag) {
-            if (parent_txn_->is_ro()) {
-                throw std::runtime_error("Can't put within a ro Transaction");
+            assert_handle();
+            return err_handler(mdb_cursor_put(handle_, key, data, flag));
+        }
+
+        bool Bkt::assert_handle(bool should_throw) {
+            bool retvar{handle_ != nullptr};
+            if (!retvar && should_throw) {
+                throw std::runtime_error("Invalid or closed cursor for bucket " +
+                                         (dbi_name_.empty() ? "[unnamed]" : dbi_name_));
             }
-            if (!cursor_) {
-                throw exception(EINVAL, mdb_strerror(EINVAL));
-            }
-            int rc{err_handler(mdb_cursor_put(cursor_, key, data, flag))};
-            if (!rc) {
-                parent_txn_->set_dirty();
-            }
-            return rc;
+            return retvar;
         }
 
         int Bkt::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }
         int Bkt::seek_exact(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
         int Bkt::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
         int Bkt::del_current(bool dupdata) {
-            return err_handler(mdb_cursor_del(cursor_, (dupdata ? MDB_NODUPDATA : 0u)));
+            return err_handler(mdb_cursor_del(handle_, (dupdata ? MDB_NODUPDATA : 0u)));
         }
         int Bkt::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
         int Bkt::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
         int Bkt::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
         int Bkt::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
-        int Bkt::get_dcount(size_t* count) { return err_handler(mdb_cursor_count(cursor_, count)); }
+        int Bkt::get_dcount(size_t* count) { return err_handler(mdb_cursor_count(handle_, count)); }
 
         int Bkt::put(MDB_val* key, MDB_val* data) { return put(key, data, 0u); }
         int Bkt::put_current(MDB_val* key, MDB_val* data) { return put(key, data, MDB_CURRENT); }
@@ -334,14 +415,15 @@ namespace silkworm::db {
         int Bkt::put_multiple(MDB_val* key, MDB_val* data) { return put(key, data, MDB_MULTIPLE); }
 
         void Bkt::close() {
-
             // Free the cursor handle
             // There is no need to close the dbi_ handle
-            if (!cursor_) return;
-            mdb_cursor_close(cursor_);
-            cursor_ = nullptr;
+            if (assert_handle(false)) {
+                conn_on_txn_abort_.disconnect();  // Disconnects from parent Txn events
+                conn_on_txn_commit_.disconnect();
+                mdb_cursor_close(handle_);
+                handle_ = nullptr;
+            }
         }
-
 
     }  // namespace lmdb
 

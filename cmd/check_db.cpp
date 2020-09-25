@@ -134,10 +134,11 @@ int main(int argc, char* argv[]) {
 
         std::cout << "Database page size : " << i.me_mapsize << std::endl;
 
-        // A list of named buckets stored into the database
+        // A list of tables stored into the database
         auto unnamed = lmdb_txn->open(0);
+
         unnamed->get_stat(&s);
-        std::cout << "Database contains " << s.ms_entries << " named buckets" << std::endl;
+        std::cout << "Database contains " << s.ms_entries << " named tables" << std::endl;
         int rc{unnamed->get_first(&key, &data)};
         while (!shouldStop && rc == MDB_SUCCESS) {
             std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};
@@ -152,7 +153,24 @@ int main(int argc, char* argv[]) {
             rc = unnamed->get_next(&key, &data);
         }
         std::cout << "\n" << std::endl;
+        std::cout << "Independent cursor navigation\n";
+
+        // Independent cursor navigation sample
+        rc = unnamed->get_first(&key, &data);
+        MDB_val key_rev, data_rev;
+        auto unnamed_rev = lmdb_txn->open(0);
+        rc = unnamed_rev->get_last(&key_rev, &data_rev);
+        while (!shouldStop && rc == MDB_SUCCESS) {
+            std::string_view v{ static_cast<char*>(key.mv_data), key.mv_size };
+            std::string_view v_rev{ static_cast<char*>(key_rev.mv_data), key_rev.mv_size };
+            std::cout << "Cursor 1 Key " << v << "  Cursor 2 Key " << v_rev << "\n";
+            rc = unnamed->get_next(&key, &data);
+            rc = unnamed_rev->get_prev(&key_rev, &data_rev);
+        }
+
+        std::cout << "\n" << std::endl;
         unnamed->close();
+        unnamed_rev->close();
 
     } catch (db::lmdb::exception& ex) {
         // This handles specific lmdb errors

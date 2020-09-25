@@ -99,7 +99,7 @@ namespace silkworm::db {
 
         class Env;
         class Txn;
-        class Bkt;
+        class Tbl;
 
         /**
          * MDB_env wrapper
@@ -172,7 +172,7 @@ namespace silkworm::db {
             static MDB_txn* open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
             Txn(Env* parent, MDB_txn* txn, unsigned int flags);
 
-            friend class Bkt;
+            friend class Tbl;
 
             Env* parent_env_;     // Pointer to env this transaction belongs to
             MDB_txn* handle_;     // This transaction lmdb handle
@@ -204,7 +204,7 @@ namespace silkworm::db {
 
             bool is_ro(void);     // Whether this transaction is readonly
 
-            std::unique_ptr<Bkt> open(const char* name, unsigned int flags = 0);
+            std::unique_ptr<Tbl> open(const char* name, unsigned int flags = 0);
 
             Txn(const Txn& src) = delete;
             Txn& operator=(const Txn& src) = delete;
@@ -221,13 +221,13 @@ namespace silkworm::db {
         };
 
         /**
-         * A bucket is an hybrid which wraps both an MDB_dbi
+         * A table is an hybrid which wraps both an MDB_dbi
          * and an MDB_cursor
          */
-        class Bkt {
+        class Tbl {
            public:
-            explicit Bkt(Txn* parent, MDB_dbi dbi, std::string dbi_name);
-            ~Bkt();
+            explicit Tbl(Txn* parent, MDB_dbi dbi, std::string dbi_name);
+            ~Tbl();
 
             /*
              * MDB_dbi interfaces
@@ -330,7 +330,7 @@ namespace silkworm::db {
 
            private:
             static MDB_cursor* open_cursor(Txn* parent, MDB_dbi dbi);
-            Bkt(Txn* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor);
+            Tbl(Txn* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor);
 
             int get(MDB_val* key, MDB_val* data,
                     MDB_cursor_op operation);  // Gets data by cursor on behalf of operation

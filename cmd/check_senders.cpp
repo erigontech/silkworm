@@ -285,7 +285,7 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
     }
 }
 
-uint64_t get_highest_canonical_header(std::unique_ptr<db::lmdb::Bkt>& headers) {
+uint64_t get_highest_canonical_header(std::unique_ptr<db::lmdb::Tbl>& headers) {
     MDB_val key, data;
     uint64_t retvar{0};
 
@@ -309,7 +309,7 @@ uint64_t get_highest_canonical_header(std::unique_ptr<db::lmdb::Bkt>& headers) {
     return retvar;
 }
 
-uint64_t load_canonical_headers(std::unique_ptr<db::lmdb::Bkt>& headers, uint64_t from, uint64_t to,
+uint64_t load_canonical_headers(std::unique_ptr<db::lmdb::Tbl>& headers, uint64_t from, uint64_t to,
                                 evmc::bytes32* out) {
     uint64_t retvar{0};
 
@@ -413,9 +413,9 @@ int main(int argc, char* argv[]) {
 
     std::shared_ptr<db::lmdb::Env> lmdb_env{nullptr};      // Main lmdb environment
     std::unique_ptr<db::lmdb::Txn> lmdb_txn{nullptr};      // Main lmdb transaction
-    std::unique_ptr<db::lmdb::Bkt> lmdb_headers{nullptr};  // Block headers bucket
-    std::unique_ptr<db::lmdb::Bkt> lmdb_bodies{nullptr};   // Block bodies bucket
-    std::unique_ptr<db::lmdb::Bkt> lmdb_senders{nullptr};  // Transaction senders bucket
+    std::unique_ptr<db::lmdb::Tbl> lmdb_headers{nullptr};  // Block headers table
+    std::unique_ptr<db::lmdb::Tbl> lmdb_bodies{nullptr};   // Block bodies table
+    std::unique_ptr<db::lmdb::Tbl> lmdb_senders{nullptr};  // Transaction senders table
     ChainConfig config{kEthMainnetConfig};                 // Main net config flags
     evmc::bytes32* canonical_headers{nullptr};             // Storage space for canonical headers
     uint64_t canonical_headers_count{0};                   // Overall number of canonical headers collected

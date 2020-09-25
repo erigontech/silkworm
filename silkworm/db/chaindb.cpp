@@ -49,7 +49,7 @@ namespace silkworm::db {
             if (!path) {
                 throw std::invalid_argument("Invalid argument : path");
             }
-            (void)err_handler(mdb_env_open(handle_, path, flags, mode), /*shouldthrow=*/ true);
+            (void)err_handler(mdb_env_open(handle_, path, flags, mode), /*shouldthrow=*/true);
             opened_ = true;  // If we get here the above has not thrown so the open is succesful
         }
 
@@ -112,9 +112,9 @@ namespace silkworm::db {
 
         int Env::set_max_dbs(const unsigned int count) {
             /*
-            * May be invoked only after env create
-            * and BEFORE env open
-            */
+             * May be invoked only after env create
+             * and BEFORE env open
+             */
             assert_handle();
             if (opened_) {
                 throw std::runtime_error("Can't change max_dbs for an opened database");
@@ -153,8 +153,7 @@ namespace silkworm::db {
             return retvar;
         }
 
-        bool Env::assert_opened(bool should_throw)
-        {
+        bool Env::assert_opened(bool should_throw) {
             bool ret{assert_handle(should_throw)};
             if (!ret) return ret;
             if (!opened_ && should_throw) {
@@ -200,7 +199,6 @@ namespace silkworm::db {
         }
 
         MDB_txn* Txn::open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags) {
-
             /*
              * A transaction and its cursors must only be used by a single thread,
              * and a thread may only have one transaction at a time.
@@ -266,7 +264,6 @@ namespace silkworm::db {
         }
 
         std::optional<std::pair<std::string, MDB_dbi>> Txn::open_dbi(const std::string name, unsigned int flags) {
-
             assert_handle();
 
             // TODO(Andrea)
@@ -285,12 +282,12 @@ namespace silkworm::db {
 
         bool Txn::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
-        std::unique_ptr<Bkt> Txn::open(const char* name, unsigned int flags) {
+        std::unique_ptr<Tbl> Txn::open(const char* name, unsigned int flags) {
             std::optional<std::pair<std::string, MDB_dbi>> dbi{open_dbi(name, flags)};
             if (!dbi) {
                 throw exception(MDB_NOTFOUND, mdb_strerror(MDB_NOTFOUND));
             }
-            return std::make_unique<Bkt>(this, dbi.value().second, dbi.value().first);
+            return std::make_unique<Tbl>(this, dbi.value().second, dbi.value().first);
         }
 
         void Txn::abort(void) {
@@ -302,7 +299,7 @@ namespace silkworm::db {
             } else {
                 parent_env_->touch_rw_txns(-1);
             }
-            conn_on_env_close_.disconnect(); // Disconnects from parent env events
+            conn_on_env_close_.disconnect();  // Disconnects from parent env events
             handle_ = nullptr;
         }
 
@@ -316,7 +313,7 @@ namespace silkworm::db {
                 } else {
                     parent_env_->touch_rw_txns(-1);
                 }
-                conn_on_env_close_.disconnect(); // Disconnects from parent env events
+                conn_on_env_close_.disconnect();  // Disconnects from parent env events
                 handle_ = nullptr;
             }
             return rc;
@@ -326,12 +323,12 @@ namespace silkworm::db {
          * Buckets
          */
 
-        Bkt::Bkt(Txn* parent, MDB_dbi dbi, std::string dbi_name)
-            : Bkt::Bkt(parent, dbi, dbi_name, open_cursor(parent, dbi)) {}
+        Tbl::Tbl(Txn* parent, MDB_dbi dbi, std::string dbi_name)
+            : Tbl::Tbl(parent, dbi, dbi_name, open_cursor(parent, dbi)) {}
 
-        Bkt::~Bkt() { close(); }
+        Tbl::~Tbl() { close(); }
 
-        MDB_cursor* Bkt::open_cursor(Txn* parent, MDB_dbi dbi) {
+        MDB_cursor* Tbl::open_cursor(Txn* parent, MDB_dbi dbi) {
             if (!*parent->handle()) {
                 throw std::runtime_error("Database or transaction closed");
             }
@@ -340,51 +337,51 @@ namespace silkworm::db {
             return retvar;
         }
 
-        Bkt::Bkt(Txn* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor)
+        Tbl::Tbl(Txn* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor)
             : parent_txn_{parent},
               dbi_{dbi},
               dbi_name_{std::move(dbi_name)},
               handle_{cursor},
-              conn_on_txn_abort_{parent->signal_on_before_abort_.connect(boost::bind(&Bkt::close, this))},
-              conn_on_txn_commit_{parent->signal_on_before_commit_.connect(boost::bind(&Bkt::close, this))} {}
+              conn_on_txn_abort_{parent->signal_on_before_abort_.connect(boost::bind(&Tbl::close, this))},
+              conn_on_txn_commit_{parent->signal_on_before_commit_.connect(boost::bind(&Tbl::close, this))} {}
 
-        int Bkt::get_flags(unsigned int* flags) {
+        int Tbl::get_flags(unsigned int* flags) {
             return err_handler(mdb_dbi_flags(*parent_txn_->handle(), dbi_, flags));
         }
 
-        int Bkt::get_stat(MDB_stat* stat) { return err_handler(mdb_stat(*parent_txn_->handle(), dbi_, stat)); }
+        int Tbl::get_stat(MDB_stat* stat) { return err_handler(mdb_stat(*parent_txn_->handle(), dbi_, stat)); }
 
-        int Bkt::get_rcount(size_t* count) {
+        int Tbl::get_rcount(size_t* count) {
             MDB_stat stat{};
             int rc{get_stat(&stat)};
             if (!rc) *count = stat.ms_entries;
             return rc;
         }
 
-        std::string Bkt::get_name(void) { return dbi_name_; }
+        std::string Tbl::get_name(void) { return dbi_name_; }
 
-        MDB_dbi Bkt::get_dbi(void) { return dbi_; }
+        MDB_dbi Tbl::get_dbi(void) { return dbi_; }
 
-        int Bkt::clear() { return err_handler(mdb_drop(parent_txn_->handle_, dbi_, 0)); }
+        int Tbl::clear() { return err_handler(mdb_drop(parent_txn_->handle_, dbi_, 0)); }
 
-        int Bkt::drop() {
+        int Tbl::drop() {
             close();  // Invalidates cursor
             dbi_dropped_ = true;
             return err_handler(mdb_drop(parent_txn_->handle_, dbi_, 1));
         }
 
-        int Bkt::get(MDB_val* key, MDB_val* data, MDB_cursor_op operation) {
+        int Tbl::get(MDB_val* key, MDB_val* data, MDB_cursor_op operation) {
             assert_handle();
             int rc{err_handler(mdb_cursor_get(handle_, key, data, operation))};
             return rc;
         }
 
-        int Bkt::put(MDB_val* key, MDB_val* data, unsigned int flag) {
+        int Tbl::put(MDB_val* key, MDB_val* data, unsigned int flag) {
             assert_handle();
             return err_handler(mdb_cursor_put(handle_, key, data, flag));
         }
 
-        bool Bkt::assert_handle(bool should_throw) {
+        bool Tbl::assert_handle(bool should_throw) {
             bool retvar{handle_ != nullptr};
             if (!retvar && should_throw) {
                 throw std::runtime_error("Invalid or closed cursor for bucket " +
@@ -393,28 +390,28 @@ namespace silkworm::db {
             return retvar;
         }
 
-        int Bkt::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }
-        int Bkt::seek_exact(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
-        int Bkt::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
-        int Bkt::del_current(bool dupdata) {
+        int Tbl::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }
+        int Tbl::seek_exact(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
+        int Tbl::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
+        int Tbl::del_current(bool dupdata) {
             return err_handler(mdb_cursor_del(handle_, (dupdata ? MDB_NODUPDATA : 0u)));
         }
-        int Bkt::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
-        int Bkt::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
-        int Bkt::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
-        int Bkt::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
-        int Bkt::get_dcount(size_t* count) { return err_handler(mdb_cursor_count(handle_, count)); }
+        int Tbl::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
+        int Tbl::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
+        int Tbl::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
+        int Tbl::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
+        int Tbl::get_dcount(size_t* count) { return err_handler(mdb_cursor_count(handle_, count)); }
 
-        int Bkt::put(MDB_val* key, MDB_val* data) { return put(key, data, 0u); }
-        int Bkt::put_current(MDB_val* key, MDB_val* data) { return put(key, data, MDB_CURRENT); }
-        int Bkt::put_nodup(MDB_val* key, MDB_val* data) { return put(key, data, MDB_NODUPDATA); }
-        int Bkt::put_noovrw(MDB_val* key, MDB_val* data) { return put(key, data, MDB_NOOVERWRITE); }
-        int Bkt::put_reserve(MDB_val* key, MDB_val* data) { return put(key, data, MDB_RESERVE); }
-        int Bkt::put_append(MDB_val* key, MDB_val* data) { return put(key, data, MDB_APPEND); }
-        int Bkt::put_append_dup(MDB_val* key, MDB_val* data) { return put(key, data, MDB_APPENDDUP); }
-        int Bkt::put_multiple(MDB_val* key, MDB_val* data) { return put(key, data, MDB_MULTIPLE); }
+        int Tbl::put(MDB_val* key, MDB_val* data) { return put(key, data, 0u); }
+        int Tbl::put_current(MDB_val* key, MDB_val* data) { return put(key, data, MDB_CURRENT); }
+        int Tbl::put_nodup(MDB_val* key, MDB_val* data) { return put(key, data, MDB_NODUPDATA); }
+        int Tbl::put_noovrw(MDB_val* key, MDB_val* data) { return put(key, data, MDB_NOOVERWRITE); }
+        int Tbl::put_reserve(MDB_val* key, MDB_val* data) { return put(key, data, MDB_RESERVE); }
+        int Tbl::put_append(MDB_val* key, MDB_val* data) { return put(key, data, MDB_APPEND); }
+        int Tbl::put_append_dup(MDB_val* key, MDB_val* data) { return put(key, data, MDB_APPENDDUP); }
+        int Tbl::put_multiple(MDB_val* key, MDB_val* data) { return put(key, data, MDB_MULTIPLE); }
 
-        void Bkt::close() {
+        void Tbl::close() {
             // Free the cursor handle
             // There is no need to close the dbi_ handle
             if (assert_handle(false)) {

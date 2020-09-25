@@ -190,7 +190,7 @@ namespace silkworm::db {
              * Val -> the MDB_dbi handle
              */
 
-            //std::map<std::string, MDB_dbi> dbis_;
+            std::map<std::string, MDB_dbi> dbis_; // Collection of opened MDB_dbi
             std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const char* name, unsigned int flags = 0);
             std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const std::string name, unsigned int flags = 0);
 

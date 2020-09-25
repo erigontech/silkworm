@@ -266,6 +266,12 @@ namespace silkworm::db {
         std::optional<std::pair<std::string, MDB_dbi>> Txn::open_dbi(const std::string name, unsigned int flags) {
             assert_handle();
 
+            // Lookup value in map
+            auto iter = dbis_.find(name);
+            if (iter != dbis_.end()) {
+                return { std::pair(iter->first, iter->second) };
+            }
+
             // TODO(Andrea)
             // Every bucket has its own set of flags
             // Lookup somewhere how to configure a bucket
@@ -274,6 +280,7 @@ namespace silkworm::db {
             // Don't allow execption to throw when opening - simply return an unvalued optional
             int rc{err_handler(mdb_dbi_open(handle_, (name.empty() ? 0 : name.c_str()), flags, &newdbi))};
             if (rc) return {};
+            dbis_[name] = newdbi;
             return {std::pair(name, newdbi)};
         }
 

@@ -285,7 +285,7 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
     }
 }
 
-uint64_t get_highest_canonical_header(std::unique_ptr<db::lmdb::Tbl>& headers) {
+uint64_t get_highest_canonical_header(std::unique_ptr<db::lmdb::Table>& headers) {
     MDB_val key, data;
     uint64_t retvar{0};
 
@@ -309,7 +309,7 @@ uint64_t get_highest_canonical_header(std::unique_ptr<db::lmdb::Tbl>& headers) {
     return retvar;
 }
 
-uint64_t load_canonical_headers(std::unique_ptr<db::lmdb::Tbl>& headers, uint64_t from, uint64_t to,
+uint64_t load_canonical_headers(std::unique_ptr<db::lmdb::Table>& headers, uint64_t from, uint64_t to,
                                 evmc::bytes32* out) {
     uint64_t retvar{0};
 
@@ -411,11 +411,11 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    std::shared_ptr<db::lmdb::Env> lmdb_env{nullptr};      // Main lmdb environment
-    std::unique_ptr<db::lmdb::Txn> lmdb_txn{nullptr};      // Main lmdb transaction
-    std::unique_ptr<db::lmdb::Tbl> lmdb_headers{nullptr};  // Block headers table
-    std::unique_ptr<db::lmdb::Tbl> lmdb_bodies{nullptr};   // Block bodies table
-    std::unique_ptr<db::lmdb::Tbl> lmdb_senders{nullptr};  // Transaction senders table
+    std::shared_ptr<db::lmdb::Environment> lmdb_env{nullptr};      // Main lmdb environment
+    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{nullptr};      // Main lmdb transaction
+    std::unique_ptr<db::lmdb::Table> lmdb_headers{nullptr};  // Block headers table
+    std::unique_ptr<db::lmdb::Table> lmdb_bodies{nullptr};   // Block bodies table
+    std::unique_ptr<db::lmdb::Table> lmdb_senders{nullptr};  // Transaction senders table
     ChainConfig config{kEthMainnetConfig};                 // Main net config flags
     evmc::bytes32* canonical_headers{nullptr};             // Storage space for canonical headers
     uint64_t canonical_headers_count{0};                   // Overall number of canonical headers collected
@@ -728,8 +728,6 @@ int main(int argc, char* argv[]) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
                 }
             }
-
-            lmdb_bodies->close();
         }
 
         std::cout << format_time() << " Bodies scan " << (should_stop_ ? "aborted. " : "completed.")

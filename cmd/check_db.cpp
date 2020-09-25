@@ -114,8 +114,8 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    std::shared_ptr<db::lmdb::Env> lmdb_env{nullptr};  // Main lmdb environment
-    std::unique_ptr<db::lmdb::Txn> lmdb_txn{nullptr};  // Main lmdb transaction
+    std::shared_ptr<db::lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
+    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
 
     try {
 

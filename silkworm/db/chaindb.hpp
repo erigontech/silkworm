@@ -97,19 +97,19 @@ namespace silkworm::db {
             return err;
         }
 
-        class Env;
-        class Txn;
-        class Tbl;
+        class Environment;
+        class Transaction;
+        class Table;
 
         /**
          * MDB_env wrapper
          */
-        class Env {
+        class Environment {
            private:
             MDB_env* handle_{nullptr};  // Handle to MDB_env
             bool opened_{false};        // Whether or not the handle has an underlying opened db
 
-            friend class Txn;
+            friend class Transaction;
 
             std::mutex count_mtx_;  // Lock to prevent concurrent access to transactions counters maps
             std::map<std::thread::id, int> ro_txns_{};  // A per thread maintaned count of opened ro transactions
@@ -134,8 +134,8 @@ namespace silkworm::db {
             bool assert_opened(bool should_throw = true);  // Ensures database is validly opened
 
            public:
-            Env(const unsigned flags = 0);
-            ~Env() noexcept;
+            Environment(const unsigned flags = 0);
+            ~Environment() noexcept;
 
             MDB_env** handle(void) { return &handle_; }
             bool is_opened(void) { return opened_; }
@@ -156,9 +156,9 @@ namespace silkworm::db {
             int set_max_readers(const unsigned int count);
             int sync(const bool force = true);
 
-            std::unique_ptr<Txn> begin_transaction(unsigned int flags = 0);
-            std::unique_ptr<Txn> begin_ro_transaction(unsigned int flags = 0);
-            std::unique_ptr<Txn> begin_rw_transaction(unsigned int flags = 0);
+            std::unique_ptr<Transaction> begin_transaction(unsigned int flags = 0);
+            std::unique_ptr<Transaction> begin_ro_transaction(unsigned int flags = 0);
+            std::unique_ptr<Transaction> begin_rw_transaction(unsigned int flags = 0);
 
             boost::signals2::signal<void(void)>
                 signal_on_before_close_;  // Signals connected transactions that this env is about to close
@@ -167,14 +167,14 @@ namespace silkworm::db {
         /**
          * MDB_txn wrapper
          */
-        class Txn {
+        class Transaction {
            private:
-            static MDB_txn* open_transaction(Env* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
-            Txn(Env* parent, MDB_txn* txn, unsigned int flags);
+            static MDB_txn* open_transaction(Environment* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
+            Transaction(Environment* parent, MDB_txn* txn, unsigned int flags);
 
-            friend class Tbl;
+            friend class Table;
 
-            Env* parent_env_;     // Pointer to env this transaction belongs to
+            Environment* parent_env_;     // Pointer to env this transaction belongs to
             MDB_txn* handle_;     // This transaction lmdb handle
             unsigned int flags_;  // Flags this transaction has been opened with
 
@@ -197,19 +197,19 @@ namespace silkworm::db {
             boost::signals2::connection conn_on_env_close_;   // Holds the connection to env signal_on_before_close_
 
            public:
-            explicit Txn(Env* parent, unsigned int flags = 0);
-            ~Txn();
+            explicit Transaction(Environment* parent, unsigned int flags = 0);
+            ~Transaction();
 
             MDB_txn** handle() { return &handle_; }
 
             bool is_ro(void);     // Whether this transaction is readonly
 
-            std::unique_ptr<Tbl> open(const char* name, unsigned int flags = 0);
+            std::unique_ptr<Table> open(const char* name, unsigned int flags = 0);
 
-            Txn(const Txn& src) = delete;
-            Txn& operator=(const Txn& src) = delete;
-            Txn(Txn&& rhs) = delete;
-            Txn& operator=(Txn&& rhs) = delete;
+            Transaction(const Transaction& src) = delete;
+            Transaction& operator=(const Transaction& src) = delete;
+            Transaction(Transaction&& rhs) = delete;
+            Transaction& operator=(Transaction&& rhs) = delete;
 
             boost::signals2::signal<void(void)>
                 signal_on_before_abort_;  // Signals connected Bucktes transaction is about to abort
@@ -224,10 +224,10 @@ namespace silkworm::db {
          * A table is an hybrid which wraps both an MDB_dbi
          * and an MDB_cursor
          */
-        class Tbl {
+        class Table {
            public:
-            explicit Tbl(Txn* parent, MDB_dbi dbi, std::string dbi_name);
-            ~Tbl();
+            explicit Table(Transaction* parent, MDB_dbi dbi, std::string dbi_name);
+            ~Table();
 
             /*
              * MDB_dbi interfaces
@@ -329,15 +329,15 @@ namespace silkworm::db {
             bool is_opened(void) { return handle_ != nullptr; }
 
            private:
-            static MDB_cursor* open_cursor(Txn* parent, MDB_dbi dbi);
-            Tbl(Txn* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor);
+            static MDB_cursor* open_cursor(Transaction* parent, MDB_dbi dbi);
+            Table(Transaction* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor);
 
             int get(MDB_val* key, MDB_val* data,
                     MDB_cursor_op operation);  // Gets data by cursor on behalf of operation
             int put(MDB_val* key, MDB_val* data,
                     unsigned int flag);  // Puts data by cursor on behalf of operation
 
-            Txn* parent_txn_;          // The transaction this bucket belongs to
+            Transaction* parent_txn_;          // The transaction this bucket belongs to
             MDB_dbi dbi_;              // The underlying MDB_dbi handle for this instance
             std::string dbi_name_;     // The name of the dbi
             bool dbi_dropped_{false};  // Whether or not this bucket has been dropped
@@ -352,7 +352,7 @@ namespace silkworm::db {
     }  // namespace lmdb
 
 
-    std::shared_ptr<lmdb::Env> get_env(const char* path, lmdb::options opts = {}, bool forwriting = false);
+    std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts = {}, bool forwriting = false);
 
 }  // namespace silkworm::db
 

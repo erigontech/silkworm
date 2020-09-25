@@ -620,14 +620,6 @@ int main(int argc, char* argv[]) {
             MDB_val key, data;
             int rc{0};
 
-            // Open bodies bucket and iterate to load transactions (if any in the block)
-            lmdb_bodies = lmdb_txn->open(db::bucket::kBlockBodies);  // Throws on error
-            size_t bodies_records{0};
-            (void)lmdb_bodies->get_rcount(&bodies_records);
-            if (!bodies_records) {
-                throw std::runtime_error("Bodies bucket is empty");
-            }
-
             // Set to first key which is initial block number
             // plus canonical hash
             Bytes block_key(40, '\0');

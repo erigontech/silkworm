@@ -24,6 +24,7 @@
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
+#include <regex>
 #include <string>
 
 namespace bfs = boost::filesystem;
@@ -38,17 +39,52 @@ void sig_handler(int signum) {
     shouldStop = true;
 }
 
+std::optional<uint64_t> parse_size(const std::string& strsize) {
+    std::regex pattern{ "^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$" };
+    std::smatch matches;
+    if (!std::regex_search(strsize, matches, pattern, std::regex_constants::match_default)) {
+        return {};
+    };
+
+    uint64_t number{ std::strtoull(matches[1].str().c_str(), nullptr, 10) };
+
+    if (matches[3].length() == 0) {
+        return { number };
+    }
+    std::string suffix = matches[3].str();
+    if (suffix == "B") {
+        return { number };
+    }
+    else if (suffix == "KB") {
+        return { number * (1ull << 10) };
+    }
+    else if (suffix == "MB") {
+        return { number * (1ull << 20) };
+    }
+    else if (suffix == "GB") {
+        return { number * (1ull << 30) };
+    }
+    else if (suffix == "TB") {
+        return { number * (1ull << 40) };
+    }
+    else if (suffix == "EB") {
+        return { number * (1ull << 50) };
+    }
+    else {
+        return {};
+    }
+}
 
 int main(int argc, char* argv[]) {
     CLI::App app("Tests db interfaces.");
 
-    std::string po_data_dir{silkworm::db::default_path()};
-    bool po_debug{false};
+    std::string po_data_dir{silkworm::db::default_path()};  // Default database path
+    std::string po_mapsize_str{"0"};                        // Default lmdb map size
+    bool po_debug{false};                                   // Might be ignored
     CLI::Range range32(1u, UINT32_MAX);
 
     // Check whether or not default db_path exists and
     // has some files in it
-
     bfs::path db_path(po_data_dir);
     CLI::Option* db_path_set =
         app.add_option("--datadir", po_data_dir, "Path to chain db", true)->check(CLI::ExistingDirectory);
@@ -57,8 +93,14 @@ int main(int argc, char* argv[]) {
     }
 
     app.add_flag("-d,--debug", po_debug, "May be ignored.");
+    app.add_option("--lmdb.mapSize", po_mapsize_str, "Lmdb map size", true);
 
     CLI11_PARSE(app, argc, argv);
+    std::optional<uint64_t>lmdb_mapSize = parse_size(po_mapsize_str);
+    if (!lmdb_mapSize) {
+        std::cout << "Invalid map size" << std::endl;
+        return -1;
+    }
 
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
@@ -72,171 +114,59 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-
-    // ChainConfig config{kEtcMainnetChainConfig};  // Main net config flags
-    evmc::bytes32* canonical_headers{nullptr};  // Storage space for canonical headers
-    uint64_t canonical_headers_count{0};        // Overall number of canonical headers collected
+    std::shared_ptr<db::lmdb::Env> lmdb_env{nullptr};  // Main lmdb environment
+    std::unique_ptr<db::lmdb::Txn> lmdb_txn{nullptr};  // Main lmdb transaction
 
     try {
-        auto env = db::get_env(po_data_dir.c_str());
-        std::cout << "Database is " << (env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
-        {
-            auto txn_ro = env->begin_ro_transaction();
-            MDB_val key, data;
-            int rc{0};
 
-            // Uncomment the following block if you want a list
-            // of named buckets stored into the database
-            // auto unnamed = txn_ro->open(0);
-            // unnamed->get_stat(&s);
-            // std::cout << "Database contains " << s.ms_entries << " named buckets" << std::endl;
-            // int rc{unnamed->get_first(&hkey, &hdata)};
-            // while (!shouldStop && rc == MDB_SUCCESS)
-            //{
-            //    std::string_view svkey{ static_cast<char*>(hkey.mv_data), hkey.mv_size };
-            //    std::cout << "Bucket " << svkey << "\n";
-            //    rc = unnamed->get_next(&hkey, &hdata);
-            //}
-            // std::cout << "\n" << std::endl;
+        // Open db and start transaction
+        db::lmdb::options opts{};
+        if (*lmdb_mapSize) opts.map_size = *lmdb_mapSize;
+        lmdb_env = db::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
+        std::cout << "Database is " << (lmdb_env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
+        lmdb_txn = lmdb_env->begin_rw_transaction();
 
-            auto headers = txn_ro->open(db::bucket::kBlockHeaders);
+        MDB_envinfo i;
+        MDB_stat s;
+        MDB_val key, data;
 
-            size_t headers_records{0};
-            (void)headers->get_rcount(&headers_records);
-            size_t batch_size{headers_records / 50};
-            uint32_t percent{0};
+        lmdb_env->get_info(&i);
 
-            std::cout << "Headers Table has " << headers_records << " records" << std::endl;
+        std::cout << "Database page size : " << i.me_mapsize << std::endl;
 
-            // Dirty way to get last block number (from actually stored headers)
-            uint64_t highest_block{0};
-            rc = headers->get_last(&key, &data);
-            while (!shouldStop && rc == MDB_SUCCESS) {
-                ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
-                if (v[8] != 'n') {
-                    headers->get_prev(&key, &data);
-                    continue;
-                }
-                highest_block = boost::endian::load_big_u64(&v[0]);
-                break;
-            }
-
-            std::cout << "Highest canonical block number " << highest_block << std::endl;
-
-            // Try allocate enough memory space to fit all cananonical header hashes
-            // which need to be processed
+        // A list of named buckets stored into the database
+        auto unnamed = lmdb_txn->open(0);
+        unnamed->get_stat(&s);
+        std::cout << "Database contains " << s.ms_entries << " named buckets" << std::endl;
+        int rc{unnamed->get_first(&key, &data)};
+        while (!shouldStop && rc == MDB_SUCCESS) {
+            std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};
+            std::cout << "Bucket " << v << " with ";
             {
-                void* mem{std::calloc((highest_block + 1), kHashLength)};
-                if (!mem) {
-                    // not enough space to store all
-                    throw std::runtime_error("Can't allocate space for canonical hashes");
-                }
-                canonical_headers = static_cast<evmc::bytes32*>(mem);
+                uint64_t rcount{0};
+                auto b = lmdb_txn->open(v.data());
+                b->get_rcount(&rcount);
+                std::cout << rcount << " record(s)\n";
+                b->close();
             }
-
-            // Navigate all headers to load canonical hashes
-            rc = headers->get_first(&key, &data);
-            while (!shouldStop && rc == MDB_SUCCESS) {
-                // Canonical header key is 9 bytes (8 blocknumber + 'n')
-                if (key.mv_size == 9) {
-                    ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
-                    if (v[8] == 'n') {
-                        uint64_t header_block = boost::endian::load_big_u64(&v[0]);
-                        memcpy((void*)&canonical_headers[header_block], data.mv_data, kHashLength);
-                        canonical_headers_count++;
-                    }
-                }
-
-                batch_size--;
-                if (!batch_size) {
-                    batch_size = headers_records / 50;
-                    percent += 2;
-                    std::cout << "Navigated " << percent << "% of headers bucket. Canonical records found "
-                              << canonical_headers_count << std::endl;
-                }
-                rc = headers->get_next(&key, &data);
-            }
-
-            // Can now close headers bucket
-            // It actually closes the cursor, not the bucket itself
-            headers->close();
-
-            // Open bodies bucket and iterate to load transactions (if any in the block)
-            auto bodies = txn_ro->open(db::bucket::kBlockBodies);
-            size_t bodies_records{0};
-            (void)bodies->get_rcount(&bodies_records);
-
-            batch_size = canonical_headers_count / 50;
-            percent = 0;
-            uint64_t total_transactions{0};
-
-            std::cout << "Bodies Table has " << bodies_records << " records. Canonical headers "
-                      << canonical_headers_count << std::endl;
-
-            rc = bodies->get_first(&key, &data);
-            for (uint64_t block_num = 0; !shouldStop && block_num < canonical_headers_count && rc == MDB_SUCCESS;
-                 block_num++) {
-                while (!shouldStop && rc == MDB_SUCCESS) {
-                    ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
-                    uint64_t body_block{boost::endian::load_big_u64(&v[0])};
-
-                    if (body_block < block_num) {
-                        // We're behind with bodies wrt headers
-                        rc = bodies->get_next(&key, &data);
-                        continue;
-                    } else if (body_block > block_num) {
-                        // We're ahead with bodies wrt headers
-                        // Should not happen.
-                        // TODO(Andrea) Raise an exception
-                        break;
-                    }
-
-                    // Check header hash is the same
-                    if (memcmp((void*)&v[8], (void*)&canonical_headers[block_num], 32) != 0) {
-                        rc = bodies->get_next(&key, &data);
-                        continue;
-                    }
-
-                    // We have a block with same canonical header in key
-                    // If data contains something process it
-                    if (data.mv_size > 3) {
-                        ByteView bv{static_cast<uint8_t*>(data.mv_data), data.mv_size};
-
-                        // Actually rlp-decoding the whole block adds a
-                        // little overhead as transactions are decoded as
-                        // well as ommers which actually are not needed
-                        // in this scope. Worth optimize it ?
-                        BlockBody body{};
-                        rlp::decode(bv, body);
-
-                        total_transactions += body.transactions.size();
-                    }
-
-                    // Eventually move to next block
-                    rc = bodies->get_next(&key, &data);
-                }
-
-                batch_size--;
-                if (!batch_size) {
-                    batch_size = canonical_headers_count / 50;
-                    percent += 2;
-                    std::cout << "Navigated " << percent << "% of block canonical headers. Processed transactions "
-                              << total_transactions << std::endl;
-                }
-            }
-
-            bodies->close();
-            txn_ro->commit();
+            rc = unnamed->get_next(&key, &data);
         }
-        env->close();
-        std::cout << "Database is " << (env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
+        std::cout << "\n" << std::endl;
+        unnamed->close();
+
     } catch (db::lmdb::exception& ex) {
         // This handles specific lmdb errors
-        std::cout << ex.what() << " " << ex.err() << std::endl;
+        std::cout << ex.err() << " " << ex.what() << std::endl;
     } catch (std::runtime_error& ex) {
         // This handles runtime ligic errors
         // eg. trying to open two rw txns
         std::cout << ex.what() << std::endl;
+    }
+
+    if (lmdb_txn) lmdb_txn->abort();
+    if (lmdb_env) {
+        lmdb_env->close();
+        std::cout << "Database is " << (lmdb_env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
     }
 
     return 0;

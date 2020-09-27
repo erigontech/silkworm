@@ -369,10 +369,13 @@ namespace silkworm::db {
 
         MDB_dbi Table::get_dbi(void) { return dbi_; }
 
-        int Table::clear() { return err_handler(mdb_drop(parent_txn_->handle_, dbi_, 0)); }
+        int Table::clear() {
+            close();
+            return err_handler(mdb_drop(parent_txn_->handle_, dbi_, 0));
+        }
 
         int Table::drop() {
-            close();  // Invalidates cursor
+            close();
             dbi_dropped_ = true;
             return err_handler(mdb_drop(parent_txn_->handle_, dbi_, 1));
         }

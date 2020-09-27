@@ -237,8 +237,10 @@ namespace silkworm::db {
             int get_rcount(size_t* count);       // Returns the number of records held in bucket
             std::string get_name(void);          // Returns the name of the bucket
             MDB_dbi get_dbi(void);               // Returns the ordinal id of the bucket
-            int clear();                         // Removes all contents from the bucket (cursor is still valid)
-            int drop();                          // Deletes the bucket from environment and closes cursor
+
+            // https://github.com/ledgerwatch/lmdb-go/blob/master/lmdb/mdb.c#L10004
+            int clear();                         // Removes all contents from the bucket (cursor is invalidated)
+            int drop();                          // Deletes the bucket from environment (cursor is invalidated)
 
             /*
              * MDB_cursor interfaces

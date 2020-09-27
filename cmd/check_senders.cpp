@@ -559,6 +559,8 @@ int main(int argc, char* argv[]) {
                         if (rc) {
                             throw std::runtime_error(mdb_strerror(rc));
                         }
+                        lmdb_senders.reset();
+                        lmdb_senders = lmdb_txn->open(db::bucket::kSenders, MDB_CREATE);
                     }
                     else {
                         // Delete all senders records with key >= po_from_block
@@ -614,7 +616,6 @@ int main(int argc, char* argv[]) {
             throw std::logic_error("No canonical headers collected.");
         }
         std::cout << format_time() << " Collected " << canonical_headers_count << " canonical headers" << std::endl;
-        std::cout << format_time() << " Opening block bodies bucket " << std::endl;
 
         {
             MDB_val key, data;
@@ -635,7 +636,7 @@ int main(int argc, char* argv[]) {
             }
             uint64_t required_block_num{po_from_block};
 
-            for (uint64_t i = 0; !should_stop_ && i <= canonical_headers_count && rc == MDB_SUCCESS;
+            for (uint64_t i = 0; !should_stop_ && i < canonical_headers_count && rc == MDB_SUCCESS;
                  i++, required_block_num++) {
                 while (!should_stop_ && rc == MDB_SUCCESS) {
                     ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
@@ -718,7 +719,7 @@ int main(int argc, char* argv[]) {
 
             // Should we have a partially filled work package deliver it now
             if (batchTxsCount) {
-                std::cout << format_time() << " Block number " << required_block_num << ". Fetched transactions "
+                std::cout << format_time() << " Block number " << --required_block_num << ". Fetched transactions "
                           << total_transactions << std::endl;
                 recoverers_.at(nextRecovererId)->set_work(process_batch_id, recoverPackages);
                 recoverers_.at(nextRecovererId)->kick();
@@ -756,6 +757,7 @@ int main(int argc, char* argv[]) {
     int rc{0};
     if (lmdb_txn) {
         if (!main_thread_error_ && !po_dry && !should_stop_) {
+            std::cout << format_time() << " Committing work ... " << std::endl;
             rc = lmdb_txn->commit();
             if (!rc) lmdb_env->sync(true);
         } else {
@@ -763,6 +765,8 @@ int main(int argc, char* argv[]) {
         }
         if (rc) {
             std::cout << format_time() << " Unable to commit work " << mdb_strerror(rc) << std::endl;
+        } else {
+            std::cout << format_time() << " All done ! " << std::endl;
         }
     }
     if (lmdb_env && lmdb_env->is_opened()) {

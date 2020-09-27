@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
             std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};
             std::cout << "Bucket " << v << " with ";
             {
-                uint64_t rcount{0};
+                size_t rcount{0};
                 auto b = lmdb_txn->open(v.data());
                 b->get_rcount(&rcount);
                 std::cout << rcount << " record(s)\n";

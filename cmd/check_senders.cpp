@@ -323,12 +323,12 @@ uint64_t load_canonical_headers(std::unique_ptr<db::lmdb::Table>& headers, uint6
 
     uint32_t percent{0};
     uint32_t percent_step{5};  // 5% increment among batches
-    size_t batch_size{(to - from) / (100 / percent_step)};
+    size_t batch_size{(to - from + 1) / (100 / percent_step)};
 
-    std::cout << format_time() << " Locating header at height " << from << std::endl;
+    std::cout << format_time() << " Locating canonical header at height " << from << std::endl;
     bool eof{false};
     int rc{headers->seek_exact(&key, &data)};
-    if (!rc) std::cout << format_time() << " Scanning headers ... " << std::endl;
+    if (!rc) std::cout << format_time() << " Scanning canonical headers ... " << std::endl;
     while (!should_stop_ && !eof && rc == MDB_SUCCESS) {
         // Canonical header key is 9 bytes (8 blocknumber + 'n')
         if (key.mv_size == 9) {
@@ -345,7 +345,7 @@ uint64_t load_canonical_headers(std::unique_ptr<db::lmdb::Table>& headers, uint6
             }
 
             if (!batch_size) {
-                batch_size = (to - from) / (100 / percent_step);
+                batch_size = (to - from + 1) / (100 / percent_step);
                 percent += percent_step;
                 std::cout << format_time() << " ... " << percent << "% " << std::endl;
             }
@@ -411,21 +411,21 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    std::shared_ptr<db::lmdb::Environment> lmdb_env{nullptr};      // Main lmdb environment
-    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{nullptr};      // Main lmdb transaction
-    std::unique_ptr<db::lmdb::Table> lmdb_headers{nullptr};  // Block headers table
-    std::unique_ptr<db::lmdb::Table> lmdb_bodies{nullptr};   // Block bodies table
-    std::unique_ptr<db::lmdb::Table> lmdb_senders{nullptr};  // Transaction senders table
-    ChainConfig config{kEthMainnetConfig};                 // Main net config flags
-    evmc::bytes32* canonical_headers{nullptr};             // Storage space for canonical headers
-    uint64_t canonical_headers_count{0};                   // Overall number of canonical headers collected
-    std::vector<Recoverer::package> recoverPackages{};     // Where to store work packages for recoverers
-    uint32_t process_batch_id{0};                          // Batch identifier sent to recoverer thread
-    std::atomic<uint32_t> workers_in_flight{0};            // Number of workers in flight
-    std::atomic<uint32_t> flush_batch_id{0};               // Holder of queue flushing order
-    uint64_t total_transactions{0};                        // Overall number of transactions processed
-    uint32_t nextRecovererId{0};                           // Used to serialize the dispatch of works to threads
-    size_t batchTxsCount{0};                               // Progressive number of delivered work
+    std::shared_ptr<db::lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
+    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
+    std::unique_ptr<db::lmdb::Table> lmdb_headers{nullptr};    // Block headers table
+    std::unique_ptr<db::lmdb::Table> lmdb_bodies{nullptr};     // Block bodies table
+    std::unique_ptr<db::lmdb::Table> lmdb_senders{nullptr};    // Transaction senders table
+    ChainConfig config{kEthMainnetConfig};                     // Main net config flags
+    evmc::bytes32* canonical_headers{nullptr};                 // Storage space for canonical headers
+    uint64_t canonical_headers_count{0};                       // Overall number of canonical headers collected
+    std::vector<Recoverer::package> recoverPackages{};         // Where to store work packages for recoverers
+    uint32_t process_batch_id{0};                              // Batch identifier sent to recoverer thread
+    std::atomic<uint32_t> workers_in_flight{0};                // Number of workers in flight
+    std::atomic<uint32_t> flush_batch_id{0};                   // Holder of queue flushing order
+    uint64_t total_transactions{0};                            // Overall number of transactions processed
+    uint32_t nextRecovererId{0};                               // Used to serialize the dispatch of works to threads
+    size_t batchTxsCount{0};                                   // Progressive number of delivered work
 
     std::condition_variable ready_for_write_cv{};
     std::atomic_bool ready_for_write{false};
@@ -554,7 +554,7 @@ int main(int argc, char* argv[]) {
             {
                 if (po_replay) {
                     if (po_from_block == 1u) {
-                        std::cout << format_time() << " Clearing senders bucket ... " << std::endl;
+                        std::cout << format_time() << " Clearing senders table ... " << std::endl;
                         rc = lmdb_senders->clear();
                         if (rc) {
                             throw std::runtime_error(mdb_strerror(rc));
@@ -564,7 +564,7 @@ int main(int argc, char* argv[]) {
                     }
                     else {
                         // Delete all senders records with key >= po_from_block
-                        std::cout << format_time() << " Deleting senders bucket from block " << po_from_block << " ..."  << std::endl;
+                        std::cout << format_time() << " Deleting senders table from block " << po_from_block << " ..."  << std::endl;
                         Bytes senders_key(40, '\0');
                         boost::endian::store_big_u64(&senders_key[0], po_from_block);
                         key.mv_data = (void*)&senders_key[0];
@@ -601,7 +601,7 @@ int main(int argc, char* argv[]) {
         // Try allocate enough memory space to fit all cananonical header hashes
         // which need to be processed
         {
-            void* mem{std::calloc((po_to_block - po_from_block), kHashLength)};
+            void* mem{std::calloc((po_to_block - po_from_block + 1), kHashLength)};
             if (!mem) {
                 // not enough space to store all
                 throw std::runtime_error("Can't allocate enough memory for headers");
@@ -619,107 +619,126 @@ int main(int argc, char* argv[]) {
 
         {
             MDB_val key, data;
-            int rc{0};
 
             // Set to first key which is initial block number
             // plus canonical hash
+
+            uint64_t current_block{po_from_block};
+            uint64_t detected_block{0};
+            size_t header_index{0};
+
             Bytes block_key(40, '\0');
-            boost::endian::store_big_u64(&block_key[0], po_from_block);
+            boost::endian::store_big_u64(&block_key[0], current_block);
             memcpy((void*)&block_key[8], (void*)&canonical_headers[0], kHashLength);
             key.mv_data = (void*)&block_key[0];
             key.mv_size = 40;
 
             std::cout << format_time() << " Scanning bodies ... " << std::endl;
-            rc = lmdb_bodies->seek_exact(&key, &data);
+            int rc{lmdb_bodies->seek_exact(&key, &data)};
             if (rc) {
                 throw std::runtime_error("Can't locate initial block: " + std::string(mdb_strerror(rc)));
             }
-            uint64_t required_block_num{po_from_block};
 
-            for (uint64_t i = 0; !should_stop_ && i < canonical_headers_count && rc == MDB_SUCCESS;
-                 i++, required_block_num++) {
-                while (!should_stop_ && rc == MDB_SUCCESS) {
-                    ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
-                    uint64_t detected_block_num{boost::endian::load_big_u64(&v[0])};
-
-                    if (detected_block_num < required_block_num) {
-                        // We're behind with bodies wrt headers
-                        rc = lmdb_bodies->get_next(&key, &data);
-                        continue;
-                    } else if (detected_block_num > required_block_num) {
-                        // We're ahead with bodies wrt headers
+            while (!should_stop_)
+            {
+                ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
+                detected_block = boost::endian::load_big_u64(&v[0]);
+                if (detected_block > current_block) {
+                    // We assume keys in block bodies are properly sorted
+                    throw std::runtime_error("Bad block body sequence. Expected " + std::to_string(current_block) + " got " + std::to_string(detected_block));
+                }
+                if (memcmp((void*)&v[8], (void*)&canonical_headers[header_index], 32) != 0) {
+                    // We stumbled into a non canonical block (not matching header)
+                    // move next and repeat
+                    rc = lmdb_bodies->get_next(&key, &data);
+                    if (rc == MDB_NOTFOUND) {
+                        // Reached the end of records for bodies table
                         break;
+                    } else if (rc != MDB_SUCCESS) {
+                        // Something bad happend while crawling bodies
+                        throw std::runtime_error(mdb_strerror(rc));
                     }
+                }
 
-                    // Check header hash is the same
-                    if (memcmp((void*)&v[8], (void*)&canonical_headers[i], 32) == 0) {
-                        // We have a block with same canonical header in key
-                        // If data contains something process it
-                        if (data.mv_size > 3) {
-                            ByteView bv{static_cast<uint8_t*>(data.mv_data), data.mv_size};
+                // We get here with a matching block number + header
+                // Process it if not empty (ie 0 transactions and 0 ommers)
+                if (data.mv_size > 3) {
 
-                            // Actually rlp-decoding the whole block adds a
-                            // little overhead as transactions are decoded as
-                            // well as ommers which actually are not needed
-                            // in this scope. Worth optimize it ?
-                            BlockBody body{};
-                            rlp::decode(bv, body);
+                    // Actually rlp-decoding the whole block adds a
+                    // little overhead as transactions are decoded as
+                    // well as ommers which actually are not needed
+                    // in this scope. Worth optimize it ?
+                    ByteView bv{static_cast<uint8_t*>(data.mv_data), data.mv_size};
+                    BlockBody body{};
+                    rlp::decode(bv, body);
 
-                            // Should we overflow the batch queue dispatch the work
-                            // accumulated so far to the recoverer thread
-                            if ((batchTxsCount + body.transactions.size()) > po_batch_size) {
-                                // Do any of workers threads returned an error ?
-                                if (workers_thread_error_) {
-                                    throw std::runtime_error("Error occurred in child worker thread");
-                                }
+                    // Should we overflow the batch queue dispatch the work
+                    // accumulated so far to the recoverer thread
+                    if ((batchTxsCount + body.transactions.size()) > po_batch_size) {
+                        // Do any of workers threads returned an error ?
+                        if (workers_thread_error_) {
+                            throw std::runtime_error("Error occurred in child worker thread");
+                        }
 
-                                if (po_debug) {
-                                    std::cout << format_time() << " DBG : dispatching " << batchTxsCount
-                                              << " work packages to recoverer #" << nextRecovererId << std::endl;
-                                }
+                        if (po_debug) {
+                            std::cout << format_time() << " DBG : dispatching " << batchTxsCount
+                                << " work packages to recoverer #" << nextRecovererId << std::endl;
+                        }
 
-                                recoverers_.at(nextRecovererId)->set_work(process_batch_id++, recoverPackages);
-                                recoverers_.at(nextRecovererId)->kick();
-                                workers_in_flight++;
-                                batchTxsCount = 0;
-                                if (++nextRecovererId == (uint32_t)recoverers_.size()) {
-                                    std::cout << format_time() << " Block number " << required_block_num
-                                              << ". Fetched transactions "
-                                              << (total_transactions + body.transactions.size()) << std::endl;
-                                    /*
-                                     * All threads in the pool have been fed and are in flight
-                                     * Here we have to wait for all of them to complete
-                                     * their flushing to avoid overlapping for db reads
-                                     * and writes
-                                     */
-                                    ready_for_write.store(true, std::memory_order_relaxed);
-                                    ready_for_write_cv.notify_all();
-                                    while (workers_in_flight != 0) {
-                                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                                    }
-                                    ready_for_write.store(false, std::memory_order_relaxed);
-                                    nextRecovererId = 0;
-                                }
+                        recoverers_.at(nextRecovererId)->set_work(process_batch_id++, recoverPackages);
+                        recoverers_.at(nextRecovererId)->kick();
+                        workers_in_flight++;
+                        batchTxsCount = 0;
+                        if (++nextRecovererId == (uint32_t)recoverers_.size()) {
+                            std::cout << format_time() << " Block number " << current_block
+                                << ". Fetched transactions "
+                                << (total_transactions + body.transactions.size()) << std::endl;
+                            /*
+                             * All threads in the pool have been fed and are in flight
+                             * Here we have to wait for all of them to complete
+                             * their flushing to avoid overlapping for db reads
+                             * and writes
+                             */
+                            ready_for_write.store(true, std::memory_order_relaxed);
+                            ready_for_write_cv.notify_all();
+                            while (workers_in_flight != 0) {
+                                std::this_thread::sleep_for(std::chrono::milliseconds(5));
                             }
-
-                            // Enqueue Txs
-                            process_txs_for_signing(config, required_block_num, body, recoverPackages);
-
-                            // Increment number of accumulated transactions
-                            total_transactions += body.transactions.size();
-                            batchTxsCount += body.transactions.size();
+                            ready_for_write.store(false, std::memory_order_relaxed);
+                            nextRecovererId = 0;
                         }
                     }
 
-                    // Eventually move to next block
-                    rc = lmdb_bodies->get_next(&key, &data);
+                    // Enqueue Txs
+                    process_txs_for_signing(config, current_block, body, recoverPackages);
+
+                    // Increment number of accumulated transactions
+                    total_transactions += body.transactions.size();
+                    batchTxsCount += body.transactions.size();
+
+                }
+
+                // After processing move to next block number and header
+                if (++header_index == canonical_headers_count) {
+                    // We'd go beyond collected canonical headers
+                    break;
+                }
+                ++current_block;
+                rc = lmdb_bodies->get_next(&key, &data);
+                if (rc == MDB_NOTFOUND) {
+                    // Reached the end of records for bodies table
+                    break;
+                }
+                else if (rc != MDB_SUCCESS) {
+                    // Something bad happend while crawling bodies
+                    throw std::runtime_error(mdb_strerror(rc));
                 }
 
             }
 
             // Should we have a partially filled work package deliver it now
             if (batchTxsCount) {
-                std::cout << format_time() << " Block number " << --required_block_num << ". Fetched transactions "
+                std::cout << format_time() << " Block number " << current_block << ". Fetched transactions "
                           << total_transactions << std::endl;
                 recoverers_.at(nextRecovererId)->set_work(process_batch_id, recoverPackages);
                 recoverers_.at(nextRecovererId)->kick();

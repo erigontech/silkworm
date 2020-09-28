@@ -21,6 +21,8 @@
 
 #include <boost/filesystem.hpp>
 #include <iostream>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/lmdb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/execution/processor.hpp>
@@ -49,26 +51,31 @@ int main(int argc, char* argv[]) {
 
     using namespace silkworm;
 
-    db::LmdbDatabase db{absl::GetFlag(FLAGS_datadir).c_str()};
-    BlockChain chain{&db};
+    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str())};
+    db::LmdbDatabase legacy_db{*env->handle()};
+    BlockChain chain{&legacy_db};
 
     const uint64_t from{absl::GetFlag(FLAGS_from)};
     const uint64_t to{absl::GetFlag(FLAGS_to)};
 
     uint64_t block_num{from};
     for (; block_num < to; ++block_num) {
-        std::optional<BlockWithHash> bh = db.get_block(block_num);
+        std::optional<BlockWithHash> bh{};
+        {
+            std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
+            bh = dal::get_block(*txn, block_num);
+        }
         if (!bh) {
             break;
         }
 
-        std::vector<evmc::address> senders{db.get_senders(block_num, bh->hash)};
+        std::vector<evmc::address> senders{legacy_db.get_senders(block_num, bh->hash)};
         assert(senders.size() == bh->block.transactions.size());
         for (size_t i{0}; i < senders.size(); ++i) {
             bh->block.transactions[i].from = senders[i];
         }
 
-        state::Reader reader{db, block_num};
+        state::Reader reader{legacy_db, block_num};
         IntraBlockState state{&reader};
         ExecutionProcessor processor{chain, bh->block, state};
 
@@ -99,7 +106,7 @@ int main(int argc, char* argv[]) {
         state::Writer writer;
         state.write_block(writer);
 
-        std::optional<db::AccountChanges> db_account_changes{db.get_account_changes(block_num)};
+        std::optional<db::AccountChanges> db_account_changes{legacy_db.get_account_changes(block_num)};
         if (writer.account_changes() != db_account_changes) {
             std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
             if (db_account_changes) {
@@ -123,7 +130,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        Bytes db_storage_changes{db.get_storage_changes(block_num)};
+        Bytes db_storage_changes{legacy_db.get_storage_changes(block_num)};
         Bytes calculated_storage_changes{};
         if (!writer.storage_changes().empty()) {
             calculated_storage_changes = writer.storage_changes().encode();
@@ -142,6 +149,8 @@ int main(int argc, char* argv[]) {
             t1 = t2;
         }
     }
+
+    legacy_db.env_ = nullptr;
 
     t1 = absl::Now();
     std::cout << t1 << " Blocks [" << from << "; " << block_num << ") have been checked\n";

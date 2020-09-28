@@ -22,6 +22,8 @@ Part of the compatibility layer with the Turbo-Geth DB format;
 see its package dbutils.
 */
 
+#include <lmdb/lmdb.h>
+
 #include <silkworm/common/base.hpp>
 #include <string>
 
@@ -48,6 +50,18 @@ Bytes encode_timestamp(uint64_t block_number);
 
 // Default database path
 std::string default_path();
+
+inline MDB_val to_mdb_val(ByteView view) {
+    MDB_val val;
+    val.mv_data = const_cast<uint8_t*>(view.data());
+    val.mv_size = view.size();
+    return val;
+}
+
+inline ByteView from_mdb_val(const MDB_val val) {
+    auto* ptr{static_cast<uint8_t*>(val.mv_data)};
+    return {ptr, val.mv_size};
+}
 }  // namespace silkworm::db
 
 #endif  // SILKWORM_DB_UTIL_H_

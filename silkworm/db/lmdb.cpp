@@ -21,19 +21,9 @@
 #include <cstdio>
 #include <memory>
 
+#include "util.hpp"
+
 namespace silkworm::db {
-
-static MDB_val to_mdb_val(ByteView view) {
-    MDB_val val;
-    val.mv_data = const_cast<uint8_t*>(view.data());
-    val.mv_size = view.size();
-    return val;
-}
-
-static ByteView from_mdb_val(const MDB_val val) {
-    auto* ptr{static_cast<uint8_t*>(val.mv_data)};
-    return {ptr, val.mv_size};
-}
 
 LmdbCursor::~LmdbCursor() {
     if (cursor_) {
@@ -47,7 +37,9 @@ std::optional<Entry> LmdbCursor::seek(ByteView prefix) {
     MDB_val value;
     MDB_cursor_op op{prefix.empty() ? MDB_FIRST : MDB_SET_RANGE};
     bool found = lmdb::cursor_get(cursor_, &key, &value, op);
-    if (!found) return {};
+    if (!found) {
+        return {};
+    }
 
     return Entry{from_mdb_val(key), from_mdb_val(value)};
 }

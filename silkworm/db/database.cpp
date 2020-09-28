@@ -38,39 +38,6 @@ std::optional<BlockHeader> Database::get_header(uint64_t block_number, const evm
     return header;
 }
 
-std::optional<BlockWithHash> Database::get_block(uint64_t block_number) {
-    BlockWithHash bh{};
-    auto txn{begin_ro_transaction()};
-
-    auto header_bucket{txn->get_bucket(bucket::kBlockHeaders)};
-    std::optional<ByteView> hash_val{header_bucket->get(header_hash_key(block_number))};
-    if (!hash_val) {
-        return {};
-    }
-
-    std::memcpy(bh.hash.bytes, hash_val->data(), kHashLength);
-    Bytes key{block_key(block_number, bh.hash)};
-
-    std::optional<ByteView> header_rlp{header_bucket->get(key)};
-    if (!header_rlp) {
-        return {};
-    }
-
-    ByteView header_view{*header_rlp};
-    rlp::decode(header_view, bh.block.header);
-
-    auto body_bucket{txn->get_bucket(bucket::kBlockBodies)};
-    std::optional<ByteView> body_rlp{body_bucket->get(key)};
-    if (!body_rlp) {
-        return {};
-    }
-
-    ByteView body_view{*body_rlp};
-    rlp::decode<BlockBody>(body_view, bh.block);
-
-    return bh;
-}
-
 std::vector<evmc::address> Database::get_senders(uint64_t block_number, const evmc::bytes32& block_hash) {
     auto txn{begin_ro_transaction()};
     auto bucket{txn->get_bucket(bucket::kSenders)};

@@ -26,42 +26,30 @@ namespace silkworm::dal {
 
 std::optional<BlockWithHash> get_block(lmdb::Transaction& txn, uint64_t block_number) {
     auto header_table{txn.open(db::bucket::kBlockHeaders)};
-    Bytes hash_key_bytes{db::header_hash_key(block_number)};
-    MDB_val hash_key_val{db::to_mdb_val(hash_key_bytes)};
-    MDB_val hash_val;
-    int res{header_table->seek_exact(&hash_key_val, &hash_val)};
-    if (res != MDB_SUCCESS) {
-        assert(res == MDB_NOTFOUND);
+    std::optional<ByteView> hash{header_table->get(db::header_hash_key(block_number))};
+    if (!hash) {
         return {};
     }
 
     BlockWithHash bh{};
-    assert(hash_val.mv_size == kHashLength);
-    std::memcpy(bh.hash.bytes, hash_val.mv_data, kHashLength);
+    assert(hash->size() == kHashLength);
+    std::memcpy(bh.hash.bytes, hash->data(), kHashLength);
 
-    Bytes key_bytes{db::block_key(block_number, bh.hash)};
-    MDB_val key_val{db::to_mdb_val(key_bytes)};
-    MDB_val header_rlp;
-    res = header_table->seek_exact(&key_val, &header_rlp);
-    if (res != MDB_SUCCESS) {
-        assert(res == MDB_NOTFOUND);
+    Bytes key{db::block_key(block_number, bh.hash)};
+    std::optional<ByteView> header_rlp{header_table->get(key)};
+    if (!header_rlp) {
         return {};
     }
 
-    ByteView header_view{db::from_mdb_val(header_rlp)};
-    rlp::decode(header_view, bh.block.header);
+    rlp::decode(*header_rlp, bh.block.header);
 
     auto body_table{txn.open(db::bucket::kBlockBodies)};
-    MDB_val body_rlp;
-    res = body_table->seek_exact(&key_val, &body_rlp);
-    if (res != MDB_SUCCESS) {
-        assert(res == MDB_NOTFOUND);
+    std::optional<ByteView> body_rlp{body_table->get(key)};
+    if (!body_rlp) {
         return {};
     }
 
-    ByteView body_view{db::from_mdb_val(body_rlp)};
-    rlp::decode<BlockBody>(body_view, bh.block);
-
+    rlp::decode<BlockBody>(*body_rlp, bh.block);
     return bh;
 }
 }  // namespace silkworm::dal

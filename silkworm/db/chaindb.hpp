@@ -26,6 +26,7 @@
 #include <map>
 #include <mutex>
 #include <optional>
+#include <silkworm/common/base.hpp>
 #include <string>
 #include <thread>
 #include <vector>
@@ -217,8 +218,18 @@ class Table {
     MDB_dbi get_dbi(void);               // Returns the ordinal id of the bucket
 
     // https://github.com/ledgerwatch/lmdb-go/blob/master/lmdb/mdb.c#L10004
-    int clear();  // Removes all contents from the bucket (cursor is invalidated)
-    int drop();   // Deletes the bucket from environment (cursor is invalidated)
+    int clear();  // Removes all contents from the table (cursor is invalidated)
+    int drop();   // Deletes the table from the environment (cursor is invalidated)
+
+    /* @brief Gets the value by key. A nil optional is returned if the key is not found.
+     *
+     * The memory pointed to by the returned values is owned by the database.
+     * The caller may not modify it in any way.
+     *
+     * Values returned from the database are valid only until a subsequent update operation,
+     * or the end of the transaction.
+     */
+    std::optional<ByteView> get(ByteView key);
 
     /*
      * MDB_cursor interfaces

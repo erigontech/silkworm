@@ -16,6 +16,8 @@
 
 #include "chaindb.hpp"
 
+#include "util.hpp"
+
 namespace silkworm::lmdb {
 
 Environment::Environment(const unsigned flags) {
@@ -295,7 +297,9 @@ std::unique_ptr<Table> Transaction::open(const char* name, unsigned int flags) {
 }
 
 void Transaction::abort(void) {
-    if (!assert_handle(false)) return;
+    if (!assert_handle(false)) {
+        return;
+    }
     signal_on_before_abort_();  // Signals connected buckets to close
     mdb_txn_abort(handle_);
     if (is_ro()) {
@@ -392,6 +396,17 @@ bool Table::assert_handle(bool should_throw) {
                                  (dbi_name_.empty() ? "[unnamed]" : dbi_name_));
     }
     return retvar;
+}
+
+std::optional<ByteView> Table::get(ByteView key) {
+    MDB_val key_val{db::to_mdb_val(key)};
+    MDB_val data;
+    int rc{get(&key_val, &data, MDB_SET)};
+    if (rc == MDB_NOTFOUND) {
+        return {};
+    }
+    (void)err_handler(rc);
+    return db::from_mdb_val(data);
 }
 
 int Table::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }

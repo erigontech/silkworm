@@ -23,28 +23,27 @@ namespace silkworm::state {
 
 void Writer::write_account(const evmc::address& address, std::optional<Account> initial,
                            std::optional<Account> current) {
-  bool account_deleted{!current};
+    bool account_deleted{!current};
 
-  if (!account_deleted && current == initial && changed_storage_.count(address) == 0) {
-    return;
-  }
+    if (!account_deleted && current == initial && changed_storage_.count(address) == 0) {
+        return;
+    }
 
-  if (initial) {
-    bool omit_code_hash{!account_deleted};
-    account_changes_[address] = initial->encode_for_storage(omit_code_hash);
-  } else {
-    account_changes_[address] = {};
-  }
+    if (initial) {
+        bool omit_code_hash{!account_deleted};
+        account_changes_[address] = initial->encode_for_storage(omit_code_hash);
+    } else {
+        account_changes_[address] = {};
+    }
 }
 
-void Writer::write_storage(const evmc::address& address, uint64_t incarnation,
-                           const evmc::bytes32& key, const evmc::bytes32& initial,
-                           const evmc::bytes32& current) {
-  if (current == initial) {
-    return;
-  }
-  changed_storage_.insert(address);
-  Bytes storage_key{db::storage_key(address, incarnation, key)};
-  storage_changes_[storage_key] = zeroless_view(initial);
+void Writer::write_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
+                           const evmc::bytes32& initial, const evmc::bytes32& current) {
+    if (current == initial) {
+        return;
+    }
+    changed_storage_.insert(address);
+    Bytes storage_key{db::storage_key(address, incarnation, key)};
+    storage_changes_[storage_key] = zeroless_view(initial);
 }
 }  // namespace silkworm::state

@@ -21,8 +21,8 @@
 
 namespace silkworm::db {
 TEST_CASE("DB encode timestamp") {
-  CHECK(to_hex(encode_timestamp(1)) == "21");
-  CHECK(to_hex(encode_timestamp(8)) == "28");
-  CHECK(to_hex(encode_timestamp(0x9f101c)) == "809f101c");
+    CHECK(to_hex(encode_timestamp(1)) == "21");
+    CHECK(to_hex(encode_timestamp(8)) == "28");
+    CHECK(to_hex(encode_timestamp(0x9f101c)) == "809f101c");
 }
 }  // namespace silkworm::db

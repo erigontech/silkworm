@@ -17,9 +17,8 @@
 #ifndef SILKWORM_WORKER_H_
 #define SILKWORM_WORKER_H_
 
-#include <boost/signals2.hpp>
-
 #include <atomic>
+#include <boost/signals2.hpp>
 #include <condition_variable>
 #include <iostream>
 #include <thread>
@@ -57,8 +56,7 @@ class Worker {
 
    private:
     virtual void work() = 0;
-
 };
+}  // namespace silkworm
 
-} // namespace silkworm
-#endif // SILKWORM_WORKER_H_
+#endif  // SILKWORM_WORKER_H_

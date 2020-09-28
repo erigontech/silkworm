@@ -19,9 +19,9 @@
 namespace silkworm::dao {
 
 void transfer_balances(IntraBlockState& state) {
-  for (const evmc::address& address : kChildren) {
-    state.add_to_balance(kWithdraw, state.get_balance(address));
-    state.set_balance(address, 0);
-  }
+    for (const evmc::address& address : kChildren) {
+        state.add_to_balance(kWithdraw, state.get_balance(address));
+        state.set_balance(address, 0);
+    }
 }
 }  // namespace silkworm::dao

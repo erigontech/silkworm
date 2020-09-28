@@ -29,32 +29,32 @@
 namespace silkworm {
 
 class ValidationError : public std::runtime_error {
- public:
-  using std::runtime_error::runtime_error;
+   public:
+    using std::runtime_error::runtime_error;
 };
 
 class ExecutionProcessor {
- public:
-  ExecutionProcessor(const ExecutionProcessor&) = delete;
-  ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
+   public:
+    ExecutionProcessor(const ExecutionProcessor&) = delete;
+    ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-  ExecutionProcessor(const BlockChain& chain, const Block& block, IntraBlockState& state);
+    ExecutionProcessor(const BlockChain& chain, const Block& block, IntraBlockState& state);
 
-  // precondition: txn.from must be recovered
-  Receipt execute_transaction(const Transaction& txn);
+    // precondition: txn.from must be recovered
+    Receipt execute_transaction(const Transaction& txn);
 
-  std::vector<Receipt> execute_block();
+    std::vector<Receipt> execute_block();
 
-  uint64_t cumulative_gas_used() const { return cumulative_gas_used_; }
+    uint64_t cumulative_gas_used() const { return cumulative_gas_used_; }
 
- private:
-  uint64_t available_gas() const;
-  uint64_t refund_gas(const Transaction& txn, uint64_t gas_left);
+   private:
+    uint64_t available_gas() const;
+    uint64_t refund_gas(const Transaction& txn, uint64_t gas_left);
 
-  void apply_rewards();
+    void apply_rewards();
 
-  uint64_t cumulative_gas_used_{0};
-  EVM evm_;
+    uint64_t cumulative_gas_used_{0};
+    EVM evm_;
 };
 
 // Returns the intrinsic gas of a transaction.

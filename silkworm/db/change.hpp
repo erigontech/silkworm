@@ -30,21 +30,21 @@ see its package changeset.
 namespace silkworm::db {
 
 class AccountChanges : public std::map<evmc::address, Bytes> {
- public:
-  // Turbo-Geth decodeAccountsWithKeyLen
-  static AccountChanges decode(ByteView encoded);
+   public:
+    // Turbo-Geth decodeAccountsWithKeyLen
+    static AccountChanges decode(ByteView encoded);
 
-  // Turbo-Geth (AccountChangeSetPlainBytes)Find
-  static std::optional<ByteView> find(ByteView encoded, ByteView key);
+    // Turbo-Geth (AccountChangeSetPlainBytes)Find
+    static std::optional<ByteView> find(ByteView encoded, ByteView key);
 };
 
 class StorageChanges : public std::map<Bytes, Bytes> {
- public:
-  // Turbo-Geth EncodeStoragePlain
-  Bytes encode() const;
+   public:
+    // Turbo-Geth EncodeStoragePlain
+    Bytes encode() const;
 
-  // Turbo-Geth (StorageChangeSetPlainBytes)FindWithIncarnation
-  static std::optional<ByteView> find(ByteView encoded, ByteView key);
+    // Turbo-Geth (StorageChangeSetPlainBytes)FindWithIncarnation
+    static std::optional<ByteView> find(ByteView encoded, ByteView key);
 };
 }  // namespace silkworm::db
 

@@ -34,18 +34,18 @@ TemporaryLmdbDatabase::TemporaryLmdbDatabase()
                    }} {}
 
 TemporaryLmdbDatabase::~TemporaryLmdbDatabase() {
-  if (!env_) {
-    return;
-  }
+    if (!env_) {
+        return;
+    }
 
-  const char* tmp_file{nullptr};
-  mdb_env_get_path(env_, &tmp_file);
+    const char* tmp_file{nullptr};
+    mdb_env_get_path(env_, &tmp_file);
 
-  mdb_env_close(env_);
-  env_ = nullptr;
+    mdb_env_close(env_);
+    env_ = nullptr;
 
-  if (tmp_file) {
-    std::remove(tmp_file);
-  }
+    if (tmp_file) {
+        std::remove(tmp_file);
+    }
 }
 }  // namespace silkworm::db

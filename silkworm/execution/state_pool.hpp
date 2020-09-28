@@ -27,26 +27,26 @@ struct execution_state;
 namespace silkworm {
 
 class ExecutionStatePool {
- public:
-  static ExecutionStatePool& instance() noexcept;
+   public:
+    static ExecutionStatePool& instance() noexcept;
 
-  ExecutionStatePool(const ExecutionStatePool&) = delete;
-  ExecutionStatePool& operator=(const ExecutionStatePool&) = delete;
+    ExecutionStatePool(const ExecutionStatePool&) = delete;
+    ExecutionStatePool& operator=(const ExecutionStatePool&) = delete;
 
-  void add(std::unique_ptr<evmone::execution_state> new_object) noexcept;
+    void add(std::unique_ptr<evmone::execution_state> new_object) noexcept;
 
-  bool spare_objects() const noexcept;
+    bool spare_objects() const noexcept;
 
-  // may only be called if spare_objects
-  evmone::execution_state* grab() noexcept;
+    // may only be called if spare_objects
+    evmone::execution_state* grab() noexcept;
 
-  void release() noexcept;
+    void release() noexcept;
 
- private:
-  ExecutionStatePool() {}
+   private:
+    ExecutionStatePool() {}
 
-  std::vector<std::unique_ptr<evmone::execution_state>> objects_{};
-  size_t in_use_{0};
+    std::vector<std::unique_ptr<evmone::execution_state>> objects_{};
+    size_t in_use_{0};
 };
 }  // namespace silkworm
 

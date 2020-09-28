@@ -26,25 +26,24 @@
 
 namespace silkworm::state {
 class Writer {
- public:
-  Writer(const Writer&) = delete;
-  Writer& operator=(const Writer&) = delete;
+   public:
+    Writer(const Writer&) = delete;
+    Writer& operator=(const Writer&) = delete;
 
-  Writer() = default;
+    Writer() = default;
 
-  void write_account(const evmc::address& address, std::optional<Account> initial,
-                     std::optional<Account> current);
+    void write_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
 
-  void write_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
-                     const evmc::bytes32& initial, const evmc::bytes32& current);
+    void write_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
+                       const evmc::bytes32& initial, const evmc::bytes32& current);
 
-  const db::AccountChanges& account_changes() const { return account_changes_; }
-  const db::StorageChanges& storage_changes() const { return storage_changes_; }
+    const db::AccountChanges& account_changes() const { return account_changes_; }
+    const db::StorageChanges& storage_changes() const { return storage_changes_; }
 
- private:
-  db::AccountChanges account_changes_;
-  db::StorageChanges storage_changes_;
-  std::set<evmc::address> changed_storage_;
+   private:
+    db::AccountChanges account_changes_;
+    db::StorageChanges storage_changes_;
+    std::set<evmc::address> changed_storage_;
 };
 }  // namespace silkworm::state
 

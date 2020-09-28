@@ -19,12 +19,12 @@
 #include <boost/filesystem.hpp>
 #include <csignal>
 #include <iostream>
+#include <regex>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/bucket.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
-#include <regex>
 #include <string>
 
 namespace bfs = boost::filesystem;
@@ -40,37 +40,31 @@ void sig_handler(int signum) {
 }
 
 std::optional<uint64_t> parse_size(const std::string& strsize) {
-    std::regex pattern{ "^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$" };
+    std::regex pattern{"^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$"};
     std::smatch matches;
     if (!std::regex_search(strsize, matches, pattern, std::regex_constants::match_default)) {
         return {};
     };
 
-    uint64_t number{ std::strtoull(matches[1].str().c_str(), nullptr, 10) };
+    uint64_t number{std::strtoull(matches[1].str().c_str(), nullptr, 10)};
 
     if (matches[3].length() == 0) {
-        return { number };
+        return {number};
     }
     std::string suffix = matches[3].str();
     if (suffix == "B") {
-        return { number };
-    }
-    else if (suffix == "KB") {
-        return { number * (1ull << 10) };
-    }
-    else if (suffix == "MB") {
-        return { number * (1ull << 20) };
-    }
-    else if (suffix == "GB") {
-        return { number * (1ull << 30) };
-    }
-    else if (suffix == "TB") {
-        return { number * (1ull << 40) };
-    }
-    else if (suffix == "EB") {
-        return { number * (1ull << 50) };
-    }
-    else {
+        return {number};
+    } else if (suffix == "KB") {
+        return {number * (1ull << 10)};
+    } else if (suffix == "MB") {
+        return {number * (1ull << 20)};
+    } else if (suffix == "GB") {
+        return {number * (1ull << 30)};
+    } else if (suffix == "TB") {
+        return {number * (1ull << 40)};
+    } else if (suffix == "EB") {
+        return {number * (1ull << 50)};
+    } else {
         return {};
     }
 }
@@ -96,7 +90,7 @@ int main(int argc, char* argv[]) {
     app.add_option("--lmdb.mapSize", po_mapsize_str, "Lmdb map size", true);
 
     CLI11_PARSE(app, argc, argv);
-    std::optional<uint64_t>lmdb_mapSize = parse_size(po_mapsize_str);
+    std::optional<uint64_t> lmdb_mapSize = parse_size(po_mapsize_str);
     if (!lmdb_mapSize) {
         std::cout << "Invalid map size" << std::endl;
         return -1;
@@ -118,7 +112,6 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<db::lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
 
     try {
-
         // Open db and start transaction
         db::lmdb::options opts{};
         if (*lmdb_mapSize) opts.map_size = *lmdb_mapSize;
@@ -161,8 +154,8 @@ int main(int argc, char* argv[]) {
         auto unnamed_rev = lmdb_txn->open(0);
         rc = unnamed_rev->get_last(&key_rev, &data_rev);
         while (!shouldStop && rc == MDB_SUCCESS) {
-            std::string_view v{ static_cast<char*>(key.mv_data), key.mv_size };
-            std::string_view v_rev{ static_cast<char*>(key_rev.mv_data), key_rev.mv_size };
+            std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};
+            std::string_view v_rev{static_cast<char*>(key_rev.mv_data), key_rev.mv_size};
             std::cout << "Cursor 1 Key " << v << "  Cursor 2 Key " << v_rev << "\n";
             rc = unnamed->get_next(&key, &data);
             rc = unnamed_rev->get_prev(&key_rev, &data_rev);

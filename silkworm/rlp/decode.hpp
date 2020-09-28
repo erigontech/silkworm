@@ -48,46 +48,46 @@ void decode(ByteView& from, intx::uint256& to);
 
 template <size_t N>
 void decode(ByteView& from, gsl::span<uint8_t, N> to) {
-  static_assert(N <= 55, "Complex RLP length encoding not supported");
+    static_assert(N <= 55, "Complex RLP length encoding not supported");
 
-  if (from.length() < N + 1) {
-    throw DecodingError("input too short");
-  }
+    if (from.length() < N + 1) {
+        throw DecodingError("input too short");
+    }
 
-  if (from[0] != kEmptyStringCode + N) {
-    throw DecodingError("unexpected length");
-  }
+    if (from[0] != kEmptyStringCode + N) {
+        throw DecodingError("unexpected length");
+    }
 
-  std::memcpy(to.data(), &from[1], N);
-  from.remove_prefix(N + 1);
+    std::memcpy(to.data(), &from[1], N);
+    from.remove_prefix(N + 1);
 }
 
 template <size_t N>
 void decode(ByteView& from, uint8_t (&to)[N]) {
-  decode<N>(from, gsl::span<uint8_t, N>{to});
+    decode<N>(from, gsl::span<uint8_t, N>{to});
 }
 
 template <size_t N>
 void decode(ByteView& from, std::array<uint8_t, N>& to) {
-  decode<N>(from, gsl::span<uint8_t, N>{to});
+    decode<N>(from, gsl::span<uint8_t, N>{to});
 }
 
 template <class T>
 void decode_vector(ByteView& from, std::vector<T>& to) {
-  Header h{decode_header(from)};
-  if (!h.list) {
-    throw DecodingError("unexpected string");
-  }
+    Header h{decode_header(from)};
+    if (!h.list) {
+        throw DecodingError("unexpected string");
+    }
 
-  to.clear();
+    to.clear();
 
-  ByteView payload_view{from.substr(0, h.payload_length)};
-  while (!payload_view.empty()) {
-    to.emplace_back();
-    decode(payload_view, to.back());
-  }
+    ByteView payload_view{from.substr(0, h.payload_length)};
+    while (!payload_view.empty()) {
+        to.emplace_back();
+        decode(payload_view, to.back());
+    }
 
-  from.remove_prefix(h.payload_length);
+    from.remove_prefix(h.payload_length);
 }
 
 uint64_t read_uint64(ByteView big_endian, bool allow_leading_zeros = false);

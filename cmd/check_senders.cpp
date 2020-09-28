@@ -23,6 +23,7 @@
 #include <csignal>
 #include <ethash/keccak.hpp>
 #include <iostream>
+#include <regex>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
@@ -30,7 +31,6 @@
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
-#include <regex>
 #include <string>
 #include <thread>
 
@@ -69,37 +69,31 @@ std::string format_time(boost::posix_time::ptime now = boost::posix_time::micros
 }
 
 std::optional<uint64_t> parse_size(const std::string& strsize) {
-    std::regex pattern{ "^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$" };
+    std::regex pattern{"^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$"};
     std::smatch matches;
     if (!std::regex_search(strsize, matches, pattern, std::regex_constants::match_default)) {
         return {};
     };
 
-    uint64_t number{ std::strtoull(matches[1].str().c_str(), nullptr, 10) };
+    uint64_t number{std::strtoull(matches[1].str().c_str(), nullptr, 10)};
 
     if (matches[3].length() == 0) {
-        return { number };
+        return {number};
     }
     std::string suffix = matches[3].str();
     if (suffix == "B") {
-        return { number };
-    }
-    else if (suffix == "KB") {
-        return { number * (1ull << 10) };
-    }
-    else if (suffix == "MB") {
-        return { number * (1ull << 20) };
-    }
-    else if (suffix == "GB") {
-        return { number * (1ull << 30) };
-    }
-    else if (suffix == "TB") {
-        return { number * (1ull << 40) };
-    }
-    else if (suffix == "EB") {
-        return { number * (1ull << 50) };
-    }
-    else {
+        return {number};
+    } else if (suffix == "KB") {
+        return {number * (1ull << 10)};
+    } else if (suffix == "MB") {
+        return {number * (1ull << 20)};
+    } else if (suffix == "GB") {
+        return {number * (1ull << 30)};
+    } else if (suffix == "TB") {
+        return {number * (1ull << 40)};
+    } else if (suffix == "EB") {
+        return {number * (1ull << 50)};
+    } else {
         return {};
     }
 }
@@ -391,7 +385,7 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    std::optional<uint64_t>lmdb_mapSize = parse_size(po_mapsize_str);
+    std::optional<uint64_t> lmdb_mapSize = parse_size(po_mapsize_str);
     if (!lmdb_mapSize) {
         std::cout << "Invalid map size" << std::endl;
         return -1;
@@ -501,7 +495,6 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-
         // Open db and start transaction
         db::lmdb::options opts{};
         if (*lmdb_mapSize) opts.map_size = *lmdb_mapSize;
@@ -550,8 +543,7 @@ int main(int argc, char* argv[]) {
             }
             ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
             mostrecent_sender = boost::endian::load_big_u64(&v[0]);
-            if (po_from_block <= mostrecent_sender)
-            {
+            if (po_from_block <= mostrecent_sender) {
                 if (po_replay) {
                     if (po_from_block == 1u) {
                         std::cout << format_time() << " Clearing senders table ... " << std::endl;
@@ -561,10 +553,10 @@ int main(int argc, char* argv[]) {
                         }
                         lmdb_senders.reset();
                         lmdb_senders = lmdb_txn->open(db::bucket::kSenders, MDB_CREATE);
-                    }
-                    else {
+                    } else {
                         // Delete all senders records with key >= po_from_block
-                        std::cout << format_time() << " Deleting senders table from block " << po_from_block << " ..."  << std::endl;
+                        std::cout << format_time() << " Deleting senders table from block " << po_from_block << " ..."
+                                  << std::endl;
                         Bytes senders_key(40, '\0');
                         boost::endian::store_big_u64(&senders_key[0], po_from_block);
                         key.mv_data = (void*)&senders_key[0];
@@ -581,18 +573,21 @@ int main(int argc, char* argv[]) {
                     po_from_block = mostrecent_sender + 1;
                 }
             } else {
-                std::cout << format_time() << " Overriding requested initial block " << po_from_block << " with " << (mostrecent_sender + 1) << std::endl;
+                std::cout << format_time() << " Overriding requested initial block " << po_from_block << " with "
+                          << (mostrecent_sender + 1) << std::endl;
                 po_from_block = mostrecent_sender + 1;
             }
 
         } else {
             if (po_from_block > 1u) {
-                std::cout << format_time() << " Overriding selected initial block " << po_from_block << " with 1" << std::endl;
+                std::cout << format_time() << " Overriding selected initial block " << po_from_block << " with 1"
+                          << std::endl;
                 po_from_block = 1u;
             }
         }
 
-        std::cout << format_time() << " Processing transactions from block " << po_from_block << " to block " << po_to_block << std::endl;
+        std::cout << format_time() << " Processing transactions from block " << po_from_block << " to block "
+                  << po_to_block << std::endl;
         if (po_from_block > po_to_block) {
             // There are no blocks to process
             throw std::logic_error("No valid block range selected. Aborting");
@@ -639,13 +634,13 @@ int main(int argc, char* argv[]) {
                 throw std::runtime_error("Can't locate initial block: " + std::string(mdb_strerror(rc)));
             }
 
-            while (!should_stop_)
-            {
+            while (!should_stop_) {
                 ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
                 detected_block = boost::endian::load_big_u64(&v[0]);
                 if (detected_block > current_block) {
                     // We assume keys in block bodies are properly sorted
-                    throw std::runtime_error("Bad block body sequence. Expected " + std::to_string(current_block) + " got " + std::to_string(detected_block));
+                    throw std::runtime_error("Bad block body sequence. Expected " + std::to_string(current_block) +
+                                             " got " + std::to_string(detected_block));
                 }
                 if (memcmp((void*)&v[8], (void*)&canonical_headers[header_index], 32) != 0) {
                     // We stumbled into a non canonical block (not matching header)
@@ -663,7 +658,6 @@ int main(int argc, char* argv[]) {
                 // We get here with a matching block number + header
                 // Process it if not empty (ie 0 transactions and 0 ommers)
                 if (data.mv_size > 3) {
-
                     // Actually rlp-decoding the whole block adds a
                     // little overhead as transactions are decoded as
                     // well as ommers which actually are not needed
@@ -682,7 +676,7 @@ int main(int argc, char* argv[]) {
 
                         if (po_debug) {
                             std::cout << format_time() << " DBG : dispatching " << batchTxsCount
-                                << " work packages to recoverer #" << nextRecovererId << std::endl;
+                                      << " work packages to recoverer #" << nextRecovererId << std::endl;
                         }
 
                         recoverers_.at(nextRecovererId)->set_work(process_batch_id++, recoverPackages);
@@ -690,9 +684,8 @@ int main(int argc, char* argv[]) {
                         workers_in_flight++;
                         batchTxsCount = 0;
                         if (++nextRecovererId == (uint32_t)recoverers_.size()) {
-                            std::cout << format_time() << " Block number " << current_block
-                                << ". Fetched transactions "
-                                << (total_transactions + body.transactions.size()) << std::endl;
+                            std::cout << format_time() << " Block number " << current_block << ". Fetched transactions "
+                                      << (total_transactions + body.transactions.size()) << std::endl;
                             /*
                              * All threads in the pool have been fed and are in flight
                              * Here we have to wait for all of them to complete
@@ -715,7 +708,6 @@ int main(int argc, char* argv[]) {
                     // Increment number of accumulated transactions
                     total_transactions += body.transactions.size();
                     batchTxsCount += body.transactions.size();
-
                 }
 
                 // After processing move to next block number and header
@@ -728,12 +720,10 @@ int main(int argc, char* argv[]) {
                 if (rc == MDB_NOTFOUND) {
                     // Reached the end of records for bodies table
                     break;
-                }
-                else if (rc != MDB_SUCCESS) {
+                } else if (rc != MDB_SUCCESS) {
                     // Something bad happend while crawling bodies
                     throw std::runtime_error(mdb_strerror(rc));
                 }
-
             }
 
             // Should we have a partially filled work package deliver it now

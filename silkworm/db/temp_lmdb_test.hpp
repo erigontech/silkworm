@@ -24,9 +24,9 @@ namespace silkworm::db {
 // TemporaryLmdbDatabase creates an LMDB instance in a temporary file
 // and deletes the file on destruction. Useful in testing.
 class TemporaryLmdbDatabase : public LmdbDatabase {
- public:
-  TemporaryLmdbDatabase();
-  ~TemporaryLmdbDatabase() override;
+   public:
+    TemporaryLmdbDatabase();
+    ~TemporaryLmdbDatabase() override;
 };
 }  // namespace silkworm::db
 

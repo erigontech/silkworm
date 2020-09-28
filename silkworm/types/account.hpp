@@ -24,14 +24,14 @@
 namespace silkworm {
 
 struct Account {
-  // Turbo-Geth (*Account)EncodeForStorage
-  Bytes encode_for_storage(bool omit_code_hash) const;
+    // Turbo-Geth (*Account)EncodeForStorage
+    Bytes encode_for_storage(bool omit_code_hash) const;
 
-  uint64_t nonce{0};
-  intx::uint256 balance;
-  evmc::bytes32 storage_root{kEmptyRoot};
-  evmc::bytes32 code_hash{kEmptyHash};
-  uint64_t incarnation{0};
+    uint64_t nonce{0};
+    intx::uint256 balance;
+    evmc::bytes32 storage_root{kEmptyRoot};
+    evmc::bytes32 code_hash{kEmptyHash};
+    uint64_t incarnation{0};
 };
 
 bool operator==(const Account& a, const Account& b);
@@ -40,10 +40,10 @@ bool operator==(const Account& a, const Account& b);
 Account decode_account_from_storage(ByteView encoded);
 
 namespace rlp {
-void encode(Bytes& to, const Account& account);
+    void encode(Bytes& to, const Account& account);
 
-template <>
-void decode(ByteView& from, Account& to);
+    template <>
+    void decode(ByteView& from, Account& to);
 }  // namespace rlp
 }  // namespace silkworm
 

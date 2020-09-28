@@ -28,8 +28,8 @@ see its common/dbutils/history_index.go.
 namespace silkworm::db::history_index {
 
 struct SearchResult {
-  uint64_t change_block{0};
-  bool new_record{false};
+    uint64_t change_block{0};
+    bool new_record{false};
 };
 
 // Finds the smallest element equal or greater than v.

@@ -22,35 +22,35 @@
 namespace silkworm {
 
 evmc::address create_address(const evmc::address& caller, uint64_t nonce) noexcept {
-  rlp::Header h{true, 1 + kAddressLength};
-  h.payload_length += rlp::length(nonce);
+    rlp::Header h{true, 1 + kAddressLength};
+    h.payload_length += rlp::length(nonce);
 
-  Bytes rlp{};
-  rlp::encode_header(rlp, h);
-  rlp::encode(rlp, caller.bytes);
-  rlp::encode(rlp, nonce);
+    Bytes rlp{};
+    rlp::encode_header(rlp, h);
+    rlp::encode(rlp, caller.bytes);
+    rlp::encode(rlp, nonce);
 
-  ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.size())};
+    ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.size())};
 
-  evmc::address address{};
-  std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);
-  return address;
+    evmc::address address{};
+    std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);
+    return address;
 }
 
 evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& salt,
                               uint8_t (&code_hash)[32]) noexcept {
-  static constexpr size_t kN{1 + kAddressLength + 2 * kHashLength};
-  uint8_t buf[kN];
+    static constexpr size_t kN{1 + kAddressLength + 2 * kHashLength};
+    uint8_t buf[kN];
 
-  buf[0] = 0xff;
-  std::memcpy(buf + 1, caller.bytes, kAddressLength);
-  std::memcpy(buf + 1 + kAddressLength, salt.bytes, kHashLength);
-  std::memcpy(buf + 1 + kAddressLength + kHashLength, code_hash, kHashLength);
+    buf[0] = 0xff;
+    std::memcpy(buf + 1, caller.bytes, kAddressLength);
+    std::memcpy(buf + 1 + kAddressLength, salt.bytes, kHashLength);
+    std::memcpy(buf + 1 + kAddressLength + kHashLength, code_hash, kHashLength);
 
-  ethash::hash256 hash{ethash::keccak256(buf, kN)};
+    ethash::hash256 hash{ethash::keccak256(buf, kN)};
 
-  evmc::address address{};
-  std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);
-  return address;
+    evmc::address address{};
+    std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);
+    return address;
 }
 }  // namespace silkworm

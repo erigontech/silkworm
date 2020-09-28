@@ -26,32 +26,32 @@ namespace silkworm::trie {
 // See Appendix D "Modified Merkle Patricia Trie" of the Yellow Paper
 // and https://eth.wiki/fundamentals/patricia-tree
 class HashBuilder {
- public:
-  HashBuilder(const HashBuilder&) = delete;
-  HashBuilder& operator=(const HashBuilder&) = delete;
+   public:
+    HashBuilder(const HashBuilder&) = delete;
+    HashBuilder& operator=(const HashBuilder&) = delete;
 
-  // Must be constructed with the very first (lexicographically) key/value pair.
-  HashBuilder(ByteView key0, ByteView value0);
+    // Must be constructed with the very first (lexicographically) key/value pair.
+    HashBuilder(ByteView key0, ByteView value0);
 
-  // Entries must be added in the strictly increasing lexicographic order (by key).
-  // Consequently, duplicate keys are not allowed.
-  // In addition, a key may not be a prefix of another key
-  // (e.g. keys "ab" & "ab05" are mutually exclusive).
-  void add(ByteView key, ByteView value);
+    // Entries must be added in the strictly increasing lexicographic order (by key).
+    // Consequently, duplicate keys are not allowed.
+    // In addition, a key may not be a prefix of another key
+    // (e.g. keys "ab" & "ab05" are mutually exclusive).
+    void add(ByteView key, ByteView value);
 
-  // May only be called after all entries have been added.
-  evmc::bytes32 root_hash();
+    // May only be called after all entries have been added.
+    evmc::bytes32 root_hash();
 
- private:
-  void gen_struct_step(ByteView curr, ByteView succ, ByteView value);
+   private:
+    void gen_struct_step(ByteView curr, ByteView succ, ByteView value);
 
-  void branch_ref(uint16_t mask);
+    void branch_ref(uint16_t mask);
 
-  Bytes key_;  // unpacked – one nibble per byte
-  Bytes value_;
+    Bytes key_;  // unpacked – one nibble per byte
+    Bytes value_;
 
-  std::vector<uint16_t> groups_;
-  std::vector<Bytes> stack_;  // node references: hashes or embedded RLPs
+    std::vector<uint16_t> groups_;
+    std::vector<Bytes> stack_;  // node references: hashes or embedded RLPs
 };
 }  // namespace silkworm::trie
 

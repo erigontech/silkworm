@@ -26,10 +26,10 @@
 namespace silkworm {
 
 struct Receipt {
-  std::variant<evmc::bytes32, bool> post_state_or_status{false};  // failure = false, success = true
-  uint64_t cumulative_gas_used{0};
-  Bloom bloom;
-  std::vector<Log> logs;
+    std::variant<evmc::bytes32, bool> post_state_or_status{false};  // failure = false, success = true
+    uint64_t cumulative_gas_used{0};
+    Bloom bloom;
+    std::vector<Log> logs;
 };
 }  // namespace silkworm
 

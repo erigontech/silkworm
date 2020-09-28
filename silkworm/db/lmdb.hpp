@@ -27,68 +27,68 @@
 namespace silkworm::db {
 
 struct LmdbOptions {
-  uint64_t map_size = 2ull << 40;  // 2TiB by default
-  bool no_sync = true;             // MDB_NOSYNC
-  bool no_meta_sync = false;       // MDB_NOMETASYNC
-  bool write_map = false;          // MDB_WRITEMAP
-  bool no_sub_dir = false;         // MDB_NOSUBDIR
-  unsigned max_buckets = 100;
+    uint64_t map_size = 2ull << 40;  // 2TiB by default
+    bool no_sync = true;             // MDB_NOSYNC
+    bool no_meta_sync = false;       // MDB_NOMETASYNC
+    bool write_map = false;          // MDB_WRITEMAP
+    bool no_sub_dir = false;         // MDB_NOSUBDIR
+    unsigned max_buckets = 100;
 };
 
 class LmdbCursor : public Cursor {
- public:
-  explicit LmdbCursor(MDB_cursor* cursor) : cursor_{cursor} {}
+   public:
+    explicit LmdbCursor(MDB_cursor* cursor) : cursor_{cursor} {}
 
-  ~LmdbCursor() override;
+    ~LmdbCursor() override;
 
-  std::optional<Entry> seek(ByteView prefix) override;
-  std::optional<Entry> next() override;
+    std::optional<Entry> seek(ByteView prefix) override;
+    std::optional<Entry> next() override;
 
- private:
-  MDB_cursor* cursor_{nullptr};
+   private:
+    MDB_cursor* cursor_{nullptr};
 };
 
 class LmdbBucket : public Bucket {
- public:
-  LmdbBucket(MDB_dbi dbi, MDB_txn* txn);
+   public:
+    LmdbBucket(MDB_dbi dbi, MDB_txn* txn);
 
-  void put(ByteView key, ByteView value) override;
+    void put(ByteView key, ByteView value) override;
 
-  std::optional<ByteView> get(ByteView key) const override;
+    std::optional<ByteView> get(ByteView key) const override;
 
-  std::unique_ptr<Cursor> cursor() override;
+    std::unique_ptr<Cursor> cursor() override;
 
- private:
-  MDB_dbi dbi_{0};
-  MDB_txn* txn_{nullptr};
+   private:
+    MDB_dbi dbi_{0};
+    MDB_txn* txn_{nullptr};
 };
 
 class LmdbTransaction : public Transaction {
- public:
-  explicit LmdbTransaction(MDB_txn* txn);
+   public:
+    explicit LmdbTransaction(MDB_txn* txn);
 
-  ~LmdbTransaction() override;
+    ~LmdbTransaction() override;
 
-  std::unique_ptr<Bucket> create_bucket(const char* name) override;
-  std::unique_ptr<Bucket> get_bucket(const char* name) override;
+    std::unique_ptr<Bucket> create_bucket(const char* name) override;
+    std::unique_ptr<Bucket> get_bucket(const char* name) override;
 
-  void commit() override;
-  void rollback() override;
+    void commit() override;
+    void rollback() override;
 
- private:
-  MDB_txn* txn_{nullptr};
+   private:
+    MDB_txn* txn_{nullptr};
 };
 
 // Must not create several instances of the same database.
 class LmdbDatabase : public Database {
- public:
-  explicit LmdbDatabase(const char* path, const LmdbOptions& options = {});
-  ~LmdbDatabase() override;
+   public:
+    explicit LmdbDatabase(const char* path, const LmdbOptions& options = {});
+    ~LmdbDatabase() override;
 
-  std::unique_ptr<Transaction> begin_transaction(bool read_only) override;
+    std::unique_ptr<Transaction> begin_transaction(bool read_only) override;
 
- protected:
-  MDB_env* env_{nullptr};
+   protected:
+    MDB_env* env_{nullptr};
 };
 }  // namespace silkworm::db
 

@@ -23,57 +23,57 @@ namespace silkworm {
 
 template <typename T>
 static Bytes encoded(T x) {
-  Bytes s{};
-  silkworm::rlp::encode(s, x);
-  return s;
+    Bytes s{};
+    silkworm::rlp::encode(s, x);
+    return s;
 }
 
 TEST_CASE("RLP encoding") {
-  SECTION("strings") {
-    CHECK(to_hex(encoded(ByteView{})) == "80");
-    CHECK(to_hex(encoded(from_hex("7B"))) == "7b");
-    CHECK(to_hex(encoded(from_hex("80"))) == "8180");
-    CHECK(to_hex(encoded(from_hex("ABBA"))) == "82abba");
-  }
+    SECTION("strings") {
+        CHECK(to_hex(encoded(ByteView{})) == "80");
+        CHECK(to_hex(encoded(from_hex("7B"))) == "7b");
+        CHECK(to_hex(encoded(from_hex("80"))) == "8180");
+        CHECK(to_hex(encoded(from_hex("ABBA"))) == "82abba");
+    }
 
-  SECTION("uint64") {
-    CHECK(to_hex(encoded(0)) == "80");
-    CHECK(to_hex(encoded(1)) == "01");
-    CHECK(to_hex(encoded(0x7F)) == "7f");
-    CHECK(to_hex(encoded(0x80)) == "8180");
-    CHECK(to_hex(encoded(0x400)) == "820400");
-    CHECK(to_hex(encoded(0xFFCCB5)) == "83ffccb5");
-    CHECK(to_hex(encoded(0xFFCCB5DD)) == "84ffccb5dd");
-    CHECK(to_hex(encoded(0xFFCCB5DDFF)) == "85ffccb5ddff");
-    CHECK(to_hex(encoded(0xFFCCB5DDFFEE)) == "86ffccb5ddffee");
-    CHECK(to_hex(encoded(0xFFCCB5DDFFEE14)) == "87ffccb5ddffee14");
-    CHECK(to_hex(encoded(0xFFCCB5DDFFEE1483)) == "88ffccb5ddffee1483");
-  }
+    SECTION("uint64") {
+        CHECK(to_hex(encoded(0)) == "80");
+        CHECK(to_hex(encoded(1)) == "01");
+        CHECK(to_hex(encoded(0x7F)) == "7f");
+        CHECK(to_hex(encoded(0x80)) == "8180");
+        CHECK(to_hex(encoded(0x400)) == "820400");
+        CHECK(to_hex(encoded(0xFFCCB5)) == "83ffccb5");
+        CHECK(to_hex(encoded(0xFFCCB5DD)) == "84ffccb5dd");
+        CHECK(to_hex(encoded(0xFFCCB5DDFF)) == "85ffccb5ddff");
+        CHECK(to_hex(encoded(0xFFCCB5DDFFEE)) == "86ffccb5ddffee");
+        CHECK(to_hex(encoded(0xFFCCB5DDFFEE14)) == "87ffccb5ddffee14");
+        CHECK(to_hex(encoded(0xFFCCB5DDFFEE1483)) == "88ffccb5ddffee1483");
+    }
 
-  SECTION("uint256") {
-    CHECK(to_hex(encoded(intx::uint256{})) == "80");
-    CHECK(to_hex(encoded(intx::uint256{1})) == "01");
-    CHECK(to_hex(encoded(intx::uint256{0x7F})) == "7f");
-    CHECK(to_hex(encoded(intx::uint256{0x80})) == "8180");
-    CHECK(to_hex(encoded(intx::uint256{0x400})) == "820400");
-    CHECK(to_hex(encoded(intx::uint256{0xFFCCB5})) == "83ffccb5");
-    CHECK(to_hex(encoded(intx::uint256{0xFFCCB5DD})) == "84ffccb5dd");
-    CHECK(to_hex(encoded(intx::uint256{0xFFCCB5DDFF})) == "85ffccb5ddff");
-    CHECK(to_hex(encoded(intx::uint256{0xFFCCB5DDFFEE})) == "86ffccb5ddffee");
-    CHECK(to_hex(encoded(intx::uint256{0xFFCCB5DDFFEE14})) == "87ffccb5ddffee14");
-    CHECK(to_hex(encoded(intx::uint256{0xFFCCB5DDFFEE1483})) == "88ffccb5ddffee1483");
+    SECTION("uint256") {
+        CHECK(to_hex(encoded(intx::uint256{})) == "80");
+        CHECK(to_hex(encoded(intx::uint256{1})) == "01");
+        CHECK(to_hex(encoded(intx::uint256{0x7F})) == "7f");
+        CHECK(to_hex(encoded(intx::uint256{0x80})) == "8180");
+        CHECK(to_hex(encoded(intx::uint256{0x400})) == "820400");
+        CHECK(to_hex(encoded(intx::uint256{0xFFCCB5})) == "83ffccb5");
+        CHECK(to_hex(encoded(intx::uint256{0xFFCCB5DD})) == "84ffccb5dd");
+        CHECK(to_hex(encoded(intx::uint256{0xFFCCB5DDFF})) == "85ffccb5ddff");
+        CHECK(to_hex(encoded(intx::uint256{0xFFCCB5DDFFEE})) == "86ffccb5ddffee");
+        CHECK(to_hex(encoded(intx::uint256{0xFFCCB5DDFFEE14})) == "87ffccb5ddffee14");
+        CHECK(to_hex(encoded(intx::uint256{0xFFCCB5DDFFEE1483})) == "88ffccb5ddffee1483");
 
-    CHECK(to_hex(encoded(intx::from_string<intx::uint256>("0x10203E405060708090A0B0C0D0E0F2"))) ==
-          "8f10203e405060708090a0b0c0d0e0f2");
+        CHECK(to_hex(encoded(intx::from_string<intx::uint256>("0x10203E405060708090A0B0C0D0E0F2"))) ==
+              "8f10203e405060708090a0b0c0d0e0f2");
 
-    CHECK(to_hex(encoded(intx::from_string<intx::uint256>(
-              "0x0100020003000400050006000700080009000A0B4B000C000D000E01"))) ==
-          "9c0100020003000400050006000700080009000a0b4b000c000d000e01");
-  }
+        CHECK(to_hex(encoded(
+                  intx::from_string<intx::uint256>("0x0100020003000400050006000700080009000A0B4B000C000D000E01"))) ==
+              "9c0100020003000400050006000700080009000a0b4b000c000d000e01");
+    }
 
-  SECTION("vectors") {
-    CHECK(to_hex(encoded(std::vector<uint64_t>{})) == "c0");
-    CHECK(to_hex(encoded(std::vector<uint64_t>{0xFFCCB5, 0xFFC0B5})) == "c883ffccb583ffc0b5");
-  }
+    SECTION("vectors") {
+        CHECK(to_hex(encoded(std::vector<uint64_t>{})) == "c0");
+        CHECK(to_hex(encoded(std::vector<uint64_t>{0xFFCCB5, 0xFFC0B5})) == "c883ffccb583ffc0b5");
+    }
 }
 }  // namespace silkworm

@@ -130,7 +130,7 @@ class Recoverer : public silkworm::Worker {
     std::atomic_bool busy_{false};                           // Whether the thread is busy processing
     mutable std::mutex mywork_;                              // Work mutex
     std::vector<package> packages_{};                        // Work packages to process
-    uint32_t current_batch_id_;                              // Identifier of the batch being processed
+    uint32_t current_batch_id_{0};                           // Identifier of the batch being processed
     size_t mysize_;                                          // Size of the recovery data
     uint8_t* mydata_{nullptr};                               // Pointer to data where rsults are stored
     std::vector<std::pair<uint64_t, MDB_val>> myresults_{};  // Results per block pointing to data area
@@ -444,7 +444,7 @@ int main(int argc, char* argv[]) {
                 }
 
                 // This prevents waiting threads to be stuck forever
-                if (should_stop_ || recovery_error) {
+                if (should_stop_ || workers_thread_error_ || recovery_error) {
                     if (recovery_error) {
                         workers_thread_error_.store(true);
                     }
@@ -457,8 +457,15 @@ int main(int argc, char* argv[]) {
                         boost::endian::store_big_u64(&senders_key[0], result.first);
                         memcpy((void*)&senders_key[8], (void*)&canonical_headers[result.first - po_from_block],
                                kHashLength);
+                        retry:
                         rc = lmdb_senders->put_append(&key, &result.second);
+                        //if (rc == MDB_MAP_FULL) {
+                        //    lmdb_env->set_mapsize(*lmdb_mapSize * 1.05);
+                        //    goto retry;
+                        //}
                         if (rc != MDB_SUCCESS) {
+                            std::cout << format_time() << " Unexpected error in recovery thread : " << mdb_strerror(rc)
+                                      << std::endl;
                             workers_thread_error_.store(true);
                             break;
                         }
@@ -466,7 +473,7 @@ int main(int argc, char* argv[]) {
                 };
 
                 // Ready to serve next thread
-                flush_batch_id.store(++batch_id, std::memory_order_relaxed);
+                flush_batch_id++;
                 workers_in_flight--;
             };
 
@@ -669,20 +676,17 @@ int main(int argc, char* argv[]) {
                     // Should we overflow the batch queue dispatch the work
                     // accumulated so far to the recoverer thread
                     if ((batchTxsCount + body.transactions.size()) > po_batch_size) {
-                        // Do any of workers threads returned an error ?
-                        if (workers_thread_error_) {
-                            throw std::runtime_error("Error occurred in child worker thread");
-                        }
-
-                        if (po_debug) {
-                            std::cout << format_time() << " DBG : dispatching " << batchTxsCount
-                                      << " work packages to recoverer #" << nextRecovererId << std::endl;
-                        }
 
                         recoverers_.at(nextRecovererId)->set_work(process_batch_id++, recoverPackages);
                         recoverers_.at(nextRecovererId)->kick();
                         workers_in_flight++;
+                        if (po_debug) {
+                            std::cout << format_time() << " DBG : dispatched " << batchTxsCount
+                                      << " work packages to recoverer #" << nextRecovererId
+                                      << " Workers in flight : " << workers_in_flight << std::endl;
+                        }
                         batchTxsCount = 0;
+
                         if (++nextRecovererId == (uint32_t)recoverers_.size()) {
                             std::cout << format_time() << " Block number " << current_block << ". Fetched transactions "
                                       << (total_transactions + body.transactions.size()) << std::endl;
@@ -699,6 +703,11 @@ int main(int argc, char* argv[]) {
                             }
                             ready_for_write.store(false, std::memory_order_relaxed);
                             nextRecovererId = 0;
+                        }
+
+                        // Do any of workers threads returned an error ?
+                        if (workers_thread_error_) {
+                            throw std::runtime_error("Error occurred in child worker thread");
                         }
                     }
 
@@ -733,11 +742,21 @@ int main(int argc, char* argv[]) {
                 recoverers_.at(nextRecovererId)->set_work(process_batch_id, recoverPackages);
                 recoverers_.at(nextRecovererId)->kick();
                 workers_in_flight++;
+                if (po_debug) {
+                    std::cout << format_time() << " DBG : dispatched " << batchTxsCount
+                        << " work packages to recoverer #" << nextRecovererId
+                        << " Workers in flight : " << workers_in_flight << std::endl;
+                }
                 ready_for_write.store(true, std::memory_order_relaxed);
                 while (workers_in_flight != 0) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
                 }
             }
+
+            if (workers_thread_error_) {
+                throw std::runtime_error("Error occurred in child worker thread");
+            }
+
         }
 
         std::cout << format_time() << " Bodies scan " << (should_stop_ ? "aborted. " : "completed.")
@@ -765,7 +784,7 @@ int main(int argc, char* argv[]) {
 
     int rc{0};
     if (lmdb_txn) {
-        if (!main_thread_error_ && !po_dry && !should_stop_) {
+        if (!main_thread_error_ && !workers_thread_error_ && !po_dry && !should_stop_) {
             std::cout << format_time() << " Committing work ... " << std::endl;
             rc = lmdb_txn->commit();
             if (!rc) lmdb_env->sync(true);

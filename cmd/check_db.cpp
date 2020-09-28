@@ -69,35 +69,198 @@ std::optional<uint64_t> parse_size(const std::string& strsize) {
     }
 }
 
+int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string tablename, bool del) {
+
+    int retvar{0};
+    bool should_commit{false};
+    std::shared_ptr<db::lmdb::Environment> lmdb_env{ nullptr };  // Main lmdb environment
+    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{ nullptr };  // Main lmdb transaction
+    std::unique_ptr<db::lmdb::Table> lmdb_tbl{nullptr};          // Table name to be cleared
+
+    try {
+        // Open db and start a rw transaction
+        db::lmdb::options opts{};
+        if (mapsize.has_value()) opts.map_size = *mapsize;
+        lmdb_env = db::get_env(datadir.c_str(), opts, /* forwriting=*/true);
+        lmdb_txn = lmdb_env->begin_rw_transaction();
+        lmdb_tbl = lmdb_txn->open(tablename.c_str());
+
+        size_t rcount{0};
+        lmdb_tbl->get_rcount(&rcount);
+        if (!del && !rcount) {
+            std::cout << "\nTable " << tablename << " is already empty." << std::endl;
+        }
+        else {
+            int rc{0};
+            if (!del) {
+                std::cout << "\nEmptying table " << tablename << " (" << rcount << " records)" << std::endl;
+                rc = lmdb_tbl->clear();
+
+            } else {
+                std::cout << "\nDeleting table " << tablename << " (" << rcount << " records)" << std::endl;
+                rc = lmdb_tbl->drop();
+            }
+            if (!rc) {
+                should_commit = true;
+            }
+            else
+            {
+                throw std::runtime_error(mdb_strerror(rc));
+            }
+        }
+        lmdb_tbl->close();
+
+    }
+    catch (db::lmdb::exception& ex) {
+        // This handles specific lmdb errors
+        std::cout << ex.err() << " " << ex.what() << std::endl;
+        retvar = -1;
+    }
+    catch (std::runtime_error& ex) {
+        // This handles runtime logic errors
+        // eg. trying to open two rw txns
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    int rc{0};
+
+
+    if (lmdb_txn) {
+        if (!retvar && should_commit) {
+            std::cout << "Committing ... " << std::endl;
+            rc = lmdb_txn->commit();
+            if (rc) {
+                std::cerr << "Unable to commit : " << mdb_strerror(rc) << std::endl;
+                lmdb_txn->abort();
+                retvar = -1;
+            } else {
+                std::cout << "Success !" << std::endl;
+            }
+        } else {
+            lmdb_txn->abort();
+        }
+    }
+    if (lmdb_env) {
+        lmdb_env->close();
+    }
+
+    return retvar;
+
+}
+
+int list_tables(std::string datadir, std::optional<uint64_t> mapsize) {
+
+    int retvar{0};
+    std::shared_ptr<db::lmdb::Environment> lmdb_env{ nullptr };  // Main lmdb environment
+    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{ nullptr };  // Main lmdb transaction
+
+    try {
+        // Open db and start transaction
+        db::lmdb::options opts{};
+        if (mapsize.has_value()) opts.map_size = *mapsize;
+        lmdb_env = db::get_env(datadir.c_str(), opts, /* forwriting=*/false);
+        lmdb_txn = lmdb_env->begin_ro_transaction();
+
+        unsigned int id{0};
+        MDB_envinfo i;
+        MDB_stat s;
+        MDB_val key, data;
+
+        lmdb_env->get_info(&i);
+
+        // A list of tables stored into the database
+        auto unnamed = lmdb_txn->open(0);
+
+        unnamed->get_stat(&s);
+        std::cout << "\nDatabase contains " << s.ms_entries << " named tables\n" << std::endl;
+
+        std::cout << std::right << std::setw(4) << std::setfill(' ') << "Dbi"
+                  << " " << std::left << std::setw(30) << std::setfill(' ') << "Table name"
+                  << " " << std::right << std::setw(10) << std::setfill(' ') << "Records" << std::endl;
+        std::cout << std::right << std::setw(4) << std::setfill('-') << ""
+                  << " " << std::left << std::setw(30) << std::setfill('-') << ""
+                  << " " << std::right << std::setw(10) << std::setfill('-') << "" << std::endl;
+
+        int rc{unnamed->get_first(&key, &data)};
+        while (!shouldStop && rc == MDB_SUCCESS) {
+            id++;
+            std::string_view v{ static_cast<char*>(key.mv_data), key.mv_size };
+            size_t rcount{0};
+            auto b = lmdb_txn->open(v.data());
+            b->get_rcount(&rcount);
+            b->close();
+
+            std::cout << std::right << std::setw(4) << std::setfill(' ') << id
+                << " " << std::left << std::setw(30) << std::setfill(' ') << v
+                << " " << std::right << std::setw(10) << std::setfill(' ') << rcount << std::endl;
+
+            rc = unnamed->get_next(&key, &data);
+        }
+        std::cout << std::endl;
+        unnamed->close();
+    }
+    catch (db::lmdb::exception& ex) {
+        // This handles specific lmdb errors
+        std::cout << ex.err() << " " << ex.what() << std::endl;
+        retvar = -1;
+    }
+    catch (std::runtime_error& ex) {
+        // This handles runtime logic errors
+        // eg. trying to open two rw txns
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    if (lmdb_txn) {
+        lmdb_txn->abort();
+    }
+    if (lmdb_env) {
+        lmdb_env->close();
+    }
+
+    return retvar;
+
+}
+
 int main(int argc, char* argv[]) {
+
+    signal(SIGINT, sig_handler);
+    signal(SIGTERM, sig_handler);
+
     CLI::App app("Tests db interfaces.");
+
 
     std::string po_data_dir{silkworm::db::default_path()};  // Default database path
     std::string po_mapsize_str{"0"};                        // Default lmdb map size
+    std::string po_table_name{""};                          // Default table name
     bool po_debug{false};                                   // Might be ignored
     CLI::Range range32(1u, UINT32_MAX);
 
-    // Check whether or not default db_path exists and
-    // has some files in it
+    // Check whether or not default db_path exists and has some files in it
     bfs::path db_path(po_data_dir);
     CLI::Option* db_path_set =
         app.add_option("--datadir", po_data_dir, "Path to chain db", true)->check(CLI::ExistingDirectory);
     if (!bfs::exists(db_path) || !bfs::is_directory(db_path) || db_path.empty()) {
         db_path_set->required();
     }
-
-    app.add_flag("-d,--debug", po_debug, "May be ignored.");
     app.add_option("--lmdb.mapSize", po_mapsize_str, "Lmdb map size", true);
 
+    auto& app_tables = *app.add_subcommand("tables", "List contained tables");
+
+    auto& app_clear = *app.add_subcommand("clear", "Empties a named table");
+    app_clear.add_flag("--name", po_table_name, "Name of table")->required();
+
+    auto& app_drop = *app.add_subcommand("drop", "Drops a named table");
+    app_drop.add_flag("--name", po_table_name, "Name of table")->required();
+
     CLI11_PARSE(app, argc, argv);
+
     std::optional<uint64_t> lmdb_mapSize = parse_size(po_mapsize_str);
     if (!lmdb_mapSize) {
         std::cout << "Invalid map size" << std::endl;
         return -1;
     }
-
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
 
     // If database path is provided (and has passed CLI::ExistingDirectory validator
     // check whether it is empty
@@ -108,77 +271,15 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    std::shared_ptr<db::lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
-    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
-
-    try {
-        // Open db and start transaction
-        db::lmdb::options opts{};
-        if (*lmdb_mapSize) opts.map_size = *lmdb_mapSize;
-        lmdb_env = db::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
-        std::cout << "Database is " << (lmdb_env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
-        lmdb_txn = lmdb_env->begin_rw_transaction();
-
-        MDB_envinfo i;
-        MDB_stat s;
-        MDB_val key, data;
-
-        lmdb_env->get_info(&i);
-
-        std::cout << "Database page size : " << i.me_mapsize << std::endl;
-
-        // A list of tables stored into the database
-        auto unnamed = lmdb_txn->open(0);
-
-        unnamed->get_stat(&s);
-        std::cout << "Database contains " << s.ms_entries << " named tables" << std::endl;
-        int rc{unnamed->get_first(&key, &data)};
-        while (!shouldStop && rc == MDB_SUCCESS) {
-            std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};
-            std::cout << "Bucket " << v << " with ";
-            {
-                size_t rcount{0};
-                auto b = lmdb_txn->open(v.data());
-                b->get_rcount(&rcount);
-                std::cout << rcount << " record(s)\n";
-                b->close();
-            }
-            rc = unnamed->get_next(&key, &data);
-        }
-        std::cout << "\n" << std::endl;
-        std::cout << "Independent cursor navigation\n";
-
-        // Independent cursor navigation sample
-        rc = unnamed->get_first(&key, &data);
-        MDB_val key_rev, data_rev;
-        auto unnamed_rev = lmdb_txn->open(0);
-        rc = unnamed_rev->get_last(&key_rev, &data_rev);
-        while (!shouldStop && rc == MDB_SUCCESS) {
-            std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};
-            std::string_view v_rev{static_cast<char*>(key_rev.mv_data), key_rev.mv_size};
-            std::cout << "Cursor 1 Key " << v << "  Cursor 2 Key " << v_rev << "\n";
-            rc = unnamed->get_next(&key, &data);
-            rc = unnamed_rev->get_prev(&key_rev, &data_rev);
-        }
-
-        std::cout << "\n" << std::endl;
-        unnamed->close();
-        unnamed_rev->close();
-
-    } catch (db::lmdb::exception& ex) {
-        // This handles specific lmdb errors
-        std::cout << ex.err() << " " << ex.what() << std::endl;
-    } catch (std::runtime_error& ex) {
-        // This handles runtime ligic errors
-        // eg. trying to open two rw txns
-        std::cout << ex.what() << std::endl;
+    if (app_tables) {
+        return list_tables(po_data_dir, lmdb_mapSize);
+    } else if (app_clear) {
+        return drop_table(po_data_dir, lmdb_mapSize, po_table_name, false);
+    } else if (app_drop) {
+        return drop_table(po_data_dir, lmdb_mapSize, po_table_name, true);
+    } else {
+        std::cerr << "No command specified" << std::endl;
     }
 
-    if (lmdb_txn) lmdb_txn->abort();
-    if (lmdb_env) {
-        lmdb_env->close();
-        std::cout << "Database is " << (lmdb_env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
-    }
-
-    return 0;
+    return -1;
 }

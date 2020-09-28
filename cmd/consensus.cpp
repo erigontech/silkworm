@@ -15,7 +15,7 @@
 */
 
 #include <exception>
-#include <filesystem>
+#include <boost/filesystem.hpp>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -34,7 +34,7 @@
 
 using namespace silkworm;
 
-namespace fs = std::filesystem;
+namespace fs = boost::filesystem;
 
 static const fs::path kRootDir{SILKWORM_CONSENSUS_TEST_DIR};
 
@@ -412,7 +412,7 @@ struct RunResults {
                                        Status (*runner)(const nlohmann::json&,
                                                         std::optional<ChainConfig>),
                                        std::optional<ChainConfig> config = {}) {
-  std::ifstream in{file_path};
+  std::ifstream in{file_path.string()};
   nlohmann::json json;
   in >> json;
 
@@ -543,7 +543,7 @@ int main() {
        i != fs::recursive_directory_iterator{}; ++i) {
     if (kSlowTests.count(*i) || kFailingTests.count(*i)) {
       i.disable_recursion_pending();
-    } else if (i->is_regular_file()) {
+    } else if (boost::filesystem::is_regular_file(i->path())) {
       res += run_test_file(*i, blockchain_test);
     }
   }
@@ -552,7 +552,7 @@ int main() {
        i != fs::recursive_directory_iterator{}; ++i) {
     if (kFailingTests.count(*i)) {
       i.disable_recursion_pending();
-    } else if (i->is_regular_file()) {
+    } else if (boost::filesystem::is_regular_file(i->path())) {
       res += run_test_file(*i, transaction_test);
     }
   }

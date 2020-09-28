@@ -25,18 +25,27 @@
 
 namespace silkworm::ecdsa {
 
-constexpr intx::uint256 kSecp256k1n{intx::from_string<intx::uint256>(
-    "115792089237316195423570985008687907852837564279074904382605163141518161494337")};
+    constexpr auto kSecp256k1n{
+        intx::from_string<intx::uint256>("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141")};
+    constexpr auto kSecp256k1Halfn{kSecp256k1n >> 1};
 
-constexpr intx::uint256 kSecp256k1nDiv2{kSecp256k1n >> 1};  // kSecp256k1n / 2
+    struct RecoveryId {
+        uint8_t recovery_id{0};
+        std::optional<intx::uint256> eip155_chain_id{};
+    };
 
-// Checks whether ECDSA signature input is valid.
-// Only 0 and 1 are valid values of v.
-// See also https://eips.ethereum.org/EIPS/eip-2.
-bool inputs_are_valid(const intx::uint256& v, const intx::uint256& r, const intx::uint256& s,
-                      bool homestead);
+    // Calculates the recovery ID from signature's v.
+    // Returned recovery_id is always 0 or 1.
+    // Unless v ∈ {27, 28}, eip155_chain_id will be returned as well.
+    // See https://eips.ethereum.org/EIPS/eip-155.
+    RecoveryId get_signature_recovery_id(const intx::uint256& v);
 
-std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id);
+    // Verifies whether the signature values are valid with
+    // the given chain rules.
+    bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead);
+
+    // Tries recover the public key used for message signing
+    std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id);
 }  // namespace silkworm::ecdsa
 
 #endif  // SILKWORM_CRYPTO_ECDSA_H_

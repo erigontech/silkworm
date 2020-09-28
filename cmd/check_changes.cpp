@@ -19,7 +19,8 @@
 #include <absl/flags/usage.h>
 #include <absl/time/time.h>
 
-#include <filesystem>
+#include <boost/filesystem.hpp>
+
 #include <iostream>
 #include <silkworm/db/lmdb.hpp>
 #include <silkworm/db/util.hpp>
@@ -29,7 +30,7 @@
 #include <silkworm/trie/vector_root.hpp>
 #include <string>
 
-ABSL_FLAG(std::string, db, silkworm::db::default_path(), "chain DB path");
+ABSL_FLAG(std::string, datadir, silkworm::db::default_path(), "chain DB path");
 ABSL_FLAG(uint64_t, from, 1, "start from block number (inclusive)");
 ABSL_FLAG(uint64_t, to, UINT64_MAX, "check up to block number (exclusive)");
 
@@ -38,18 +39,19 @@ int main(int argc, char* argv[]) {
       "Executes Ethereum blocks and compares resulting change sets against DB.");
   absl::ParseCommandLine(argc, argv);
 
-  if (!std::filesystem::exists(absl::GetFlag(FLAGS_db))) {
-    std::cerr << absl::GetFlag(FLAGS_db) << " does not exist.\n";
-    std::cerr << "Use --db flag to point to a Turbo-Geth populated chaindata.\n";
-    return -1;
+  boost::filesystem::path db_path(absl::GetFlag(FLAGS_datadir));
+  if (!boost::filesystem::exists(db_path) || !boost::filesystem::is_directory(db_path) || db_path.empty()) {
+      std::cerr << absl::GetFlag(FLAGS_datadir) << " does not exist.\n";
+      std::cerr << "Use --db flag to point to a Turbo-Geth populated chaindata.\n";
+      return -1;
   }
 
   absl::Time t1{absl::Now()};
-  std::cout << t1 << " Checking change sets in " << absl::GetFlag(FLAGS_db) << "\n";
+  std::cout << t1 << " Checking change sets in " << absl::GetFlag(FLAGS_datadir) << "\n";
 
   using namespace silkworm;
 
-  db::LmdbDatabase db{absl::GetFlag(FLAGS_db).c_str()};
+  db::LmdbDatabase db{absl::GetFlag(FLAGS_datadir).c_str()};
   BlockChain chain{&db};
 
   const uint64_t from{absl::GetFlag(FLAGS_from)};

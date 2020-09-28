@@ -40,6 +40,7 @@ class Cursor {
   virtual ~Cursor() = default;
 
   virtual std::optional<Entry> seek(ByteView prefix) = 0;
+  virtual std::optional<Entry> next() = 0;
 
  protected:
   Cursor() = default;

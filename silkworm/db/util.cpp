@@ -55,6 +55,14 @@ Bytes block_key(uint64_t block_number, const evmc::bytes32& hash) {
   return key;
 }
 
+Bytes block_key(uint64_t block_number, const ByteView& hash) {
+    assert(hash.length() == kHashLength);
+    Bytes key(8 + kHashLength, '\0');
+    boost::endian::store_big_u64(&key[0], block_number);
+    std::memcpy(&key[8], hash.data(), kHashLength);
+    return key;
+}
+
 Bytes history_index_key(ByteView key, uint64_t block_number) {
   Bytes res{};
   if (key.length() == kAddressLength) {  // accounts
@@ -93,21 +101,26 @@ std::string default_path() {
   if (env) {
     base_dir = env;
   } else {
-    env = std::getenv("LOCALAPPDATA");
+    env = std::getenv("APPDATA");
     if (env) {
       base_dir = env;
     }
   }
 
   if (base_dir.empty()) {
+#if defined(_WIN32)
+    /* Should not happen */
+    return base_dir;
+#else
     env = std::getenv("HOME");
     if (!env) {
-      return {};
+      return base_dir;
     }
+#endif
     std::string home_dir{env};
 
 #ifdef _WIN32
-    base_dir = home_dir + "/AppData/Roaming";
+    base_dir = home_dir;
 #elif __APPLE__
     base_dir = home_dir + "/Library";
 #else

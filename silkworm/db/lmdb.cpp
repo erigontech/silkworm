@@ -52,6 +52,16 @@ std::optional<Entry> LmdbCursor::seek(ByteView prefix) {
   return Entry{from_mdb_val(key), from_mdb_val(value)};
 }
 
+std::optional<Entry> LmdbCursor::next() {
+    MDB_val key;
+    MDB_val value;
+    MDB_cursor_op op{MDB_NEXT};
+    bool found = lmdb::cursor_get(cursor_, &key, &value, op);
+    if (!found) return {};
+
+    return Entry{ from_mdb_val(key), from_mdb_val(value) };
+}
+
 LmdbBucket::LmdbBucket(MDB_dbi dbi, MDB_txn* txn) : dbi_{dbi}, txn_{txn} {}
 
 void LmdbBucket::put(ByteView key, ByteView value) {

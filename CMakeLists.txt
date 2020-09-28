@@ -122,9 +122,20 @@ target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
 
 # Silkworm itself
 add_subdirectory(silkworm)
+hunter_add_package(Boost COMPONENTS system filesystem chrono)
 
 add_executable(check_changes cmd/check_changes.cpp)
-target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time)
+target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time Boost::filesystem)
+
+find_package(Boost CONFIG REQUIRED COMPONENTS system filesystem chrono)
+hunter_add_package(CLI11)
+find_package(CLI11 CONFIG REQUIRED)
+
+add_executable(check_senders cmd/check_senders.cpp)
+target_link_libraries(check_senders PRIVATE silkworm Boost::boost Boost::filesystem Boost::chrono CLI11::CLI11)
+
+add_executable(check_db cmd/check_db.cpp)
+target_link_libraries(check_db PRIVATE silkworm Boost::boost Boost::filesystem Boost::chrono CLI11::CLI11)
 
 # Ethereum Consensus Tests
 hunter_add_package(nlohmann_json)
@@ -133,7 +144,7 @@ find_package(nlohmann_json CONFIG REQUIRED)
 add_compile_definitions(SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
 
 add_executable(consensus cmd/consensus.cpp)
-target_link_libraries(consensus PRIVATE silkworm nlohmann_json::nlohmann_json)
+target_link_libraries(consensus PRIVATE silkworm nlohmann_json::nlohmann_json Boost::filesystem)
 
 # Unit tests
 enable_testing()

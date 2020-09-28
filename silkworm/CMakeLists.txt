@@ -14,8 +14,8 @@
    limitations under the License.
 ]]
 
-hunter_add_package(Boost)
-find_package(Boost CONFIG REQUIRED)
+hunter_add_package(Boost COMPONENTS atomic thread)
+find_package(Boost CONFIG REQUIRED COMPONENTS atomic thread)
 
 hunter_add_package(lmdb)
 find_package(liblmdb CONFIG REQUIRED)

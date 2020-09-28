@@ -42,6 +42,7 @@ class LmdbCursor : public Cursor {
   ~LmdbCursor() override;
 
   std::optional<Entry> seek(ByteView prefix) override;
+  std::optional<Entry> next() override;
 
  private:
   MDB_cursor* cursor_{nullptr};

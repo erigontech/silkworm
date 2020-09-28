@@ -1,2 +1,5 @@
+Language: Cpp
 BasedOnStyle: Google
-ColumnLimit: 100
+ColumnLimit: 120
+IndentWidth: 4
+NamespaceIndentation: All

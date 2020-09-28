@@ -52,4 +52,18 @@ std::optional<BlockWithHash> get_block(lmdb::Transaction& txn, uint64_t block_nu
     rlp::decode<BlockBody>(*body_rlp, bh.block);
     return bh;
 }
+
+std::vector<evmc::address> get_senders(lmdb::Transaction& txn, int64_t block_number, const evmc::bytes32& block_hash) {
+    std::vector<evmc::address> senders{};
+    auto table{txn.open(db::bucket::kSenders)};
+    std::optional<ByteView> data{table->get(db::block_key(block_number, block_hash))};
+    if (!data) {
+        return senders;
+    }
+
+    assert(data->length() % kAddressLength == 0);
+    senders.resize(data->length() / kAddressLength);
+    std::memcpy(senders.data(), data->data(), data->size());
+    return senders;
+}
 }  // namespace silkworm::dal

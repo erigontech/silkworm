@@ -38,20 +38,6 @@ std::optional<BlockHeader> Database::get_header(uint64_t block_number, const evm
     return header;
 }
 
-std::vector<evmc::address> Database::get_senders(uint64_t block_number, const evmc::bytes32& block_hash) {
-    auto txn{begin_ro_transaction()};
-    auto bucket{txn->get_bucket(bucket::kSenders)};
-    std::vector<evmc::address> senders{};
-    std::optional<ByteView> data{bucket->get(block_key(block_number, block_hash))};
-    if (!data) {
-        return senders;
-    }
-    assert(data->length() % kAddressLength == 0);
-    senders.resize(data->length() / kAddressLength);
-    std::memcpy(senders.data(), data->data(), data->size());
-    return senders;
-}
-
 std::optional<Account> Database::get_account(const evmc::address& address, uint64_t block_num) {
     auto key{full_view(address)};
     auto txn{begin_ro_transaction()};

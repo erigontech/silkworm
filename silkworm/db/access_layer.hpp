@@ -20,11 +20,15 @@
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/types/block.hpp>
+#include <vector>
 
 // Database Access Layer
 namespace silkworm::dal {
 
 std::optional<BlockWithHash> get_block(lmdb::Transaction& txn, uint64_t block_number);
-}
+
+std::vector<evmc::address> get_senders(lmdb::Transaction& txn, int64_t block_number, const evmc::bytes32& block_hash);
+
+}  // namespace silkworm::dal
 
 #endif  // SILKWORM_DB_ACCESS_LAYER_H_

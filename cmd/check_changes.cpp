@@ -63,16 +63,17 @@ int main(int argc, char* argv[]) {
         std::optional<BlockWithHash> bh{};
         {
             std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
-            bh = dal::get_block(*txn, block_num);
-        }
-        if (!bh) {
-            break;
-        }
 
-        std::vector<evmc::address> senders{legacy_db.get_senders(block_num, bh->hash)};
-        assert(senders.size() == bh->block.transactions.size());
-        for (size_t i{0}; i < senders.size(); ++i) {
-            bh->block.transactions[i].from = senders[i];
+            bh = dal::get_block(*txn, block_num);
+            if (!bh) {
+                break;
+            }
+
+            std::vector<evmc::address> senders{dal::get_senders(*txn, block_num, bh->hash)};
+            assert(senders.size() == bh->block.transactions.size());
+            for (size_t i{0}; i < senders.size(); ++i) {
+                bh->block.transactions[i].from = senders[i];
+            }
         }
 
         state::Reader reader{legacy_db, block_num};

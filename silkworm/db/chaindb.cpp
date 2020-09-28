@@ -19,10 +19,10 @@
 namespace silkworm::lmdb {
 
 Environment::Environment(const unsigned flags) {
-    int ret{err_handler(mdb_env_create(&handle_), true)};
+    int ret{err_handler(mdb_env_create(&handle_))};
     if (flags) {
-        ret = err_handler(mdb_env_set_flags(handle_, flags, 1));
-        if (ret) {
+        ret = mdb_env_set_flags(handle_, flags, 1);
+        if (ret != MDB_SUCCESS) {
             close();
             throw exception(ret, mdb_strerror(ret));
         }
@@ -44,7 +44,7 @@ void Environment::open(const char* path, const unsigned int flags, const mdb_mod
     if (!path) {
         throw std::invalid_argument("Invalid argument : path");
     }
-    (void)err_handler(mdb_env_open(handle_, path, flags, mode), /*shouldthrow=*/true);
+    (void)err_handler(mdb_env_open(handle_, path, flags, mode));
     opened_ = true;  // If we get here the above has not thrown so the open is successful
 }
 
@@ -62,7 +62,7 @@ int Environment::get_info(MDB_envinfo* info) {
     if (!info) {
         throw std::invalid_argument("Invalid argument : info");
     }
-    return err_handler(mdb_env_info(handle_, info));
+    return mdb_env_info(handle_, info);
 }
 
 int Environment::get_flags(unsigned int* flags) {
@@ -70,7 +70,7 @@ int Environment::get_flags(unsigned int* flags) {
     if (!flags) {
         throw std::invalid_argument("Invalid argument : flags");
     }
-    return err_handler(mdb_env_get_flags(handle_, flags));
+    return mdb_env_get_flags(handle_, flags);
 }
 
 int Environment::get_mapsize(size_t* size) {
@@ -92,17 +92,17 @@ int Environment::get_max_readers(unsigned int* count) {
     if (!count) {
         throw std::invalid_argument("Invalid argument : count");
     }
-    return err_handler(mdb_env_get_maxreaders(handle_, count));
+    return mdb_env_get_maxreaders(handle_, count);
 }
 
 int Environment::set_flags(const unsigned int flags, const bool onoff) {
     assert_handle();
-    return err_handler(mdb_env_set_flags(handle_, flags, onoff ? 1 : 0));
+    return mdb_env_set_flags(handle_, flags, onoff ? 1 : 0);
 }
 
 int Environment::set_mapsize(const size_t size) {
     assert_handle();
-    return err_handler(mdb_env_set_mapsize(handle_, size));
+    return mdb_env_set_mapsize(handle_, size);
 }
 
 int Environment::set_max_dbs(const unsigned int count) {
@@ -114,17 +114,17 @@ int Environment::set_max_dbs(const unsigned int count) {
     if (opened_) {
         throw std::runtime_error("Can't change max_dbs for an opened database");
     }
-    return err_handler(mdb_env_set_maxdbs(handle_, count));
+    return mdb_env_set_maxdbs(handle_, count);
 }
 
 int Environment::set_max_readers(const unsigned int count) {
     assert_handle();
-    return err_handler(mdb_env_set_maxreaders(handle_, count));
+    return mdb_env_set_maxreaders(handle_, count);
 }
 
 int Environment::sync(const bool force) {
     assert_opened();
-    return err_handler(mdb_env_sync(handle_, force));
+    return mdb_env_sync(handle_, force);
 }
 
 int Environment::get_ro_txns(void) { return ro_txns_[std::this_thread::get_id()]; }
@@ -227,7 +227,7 @@ MDB_txn* Transaction::open_transaction(Environment* parent_env, MDB_txn* parent_
     int rc{0};
 
     do {
-        rc = err_handler(mdb_txn_begin(*(parent_env->handle()), parent_txn, flags, &retvar));
+        rc = mdb_txn_begin(*(parent_env->handle()), parent_txn, flags, &retvar);
         if (rc == MDB_MAP_RESIZED) {
             /*
              * If mapsize is resized by another process call mdb_env_set_mapsize
@@ -272,9 +272,10 @@ std::optional<std::pair<std::string, MDB_dbi>> Transaction::open_dbi(const std::
     // Lookup somewhere how to configure a bucket
     MDB_dbi newdbi{0};
 
-    // Don't allow execption to throw when opening - simply return an unvalued optional
-    int rc{err_handler(mdb_dbi_open(handle_, (name.empty() ? 0 : name.c_str()), flags, &newdbi))};
-    if (rc) return {};
+    int rc{mdb_dbi_open(handle_, (name.empty() ? 0 : name.c_str()), flags, &newdbi)};
+    if (rc != MDB_SUCCESS) {
+        return {};
+    }
     dbis_[name] = newdbi;
     return {std::pair(name, newdbi)};
 }
@@ -309,7 +310,7 @@ void Transaction::abort(void) {
 int Transaction::commit(void) {
     assert_handle();
     signal_on_before_commit_();  // Signals connected buckets to close
-    int rc{err_handler(mdb_txn_commit(handle_))};
+    int rc{mdb_txn_commit(handle_)};
     if (rc == MDB_SUCCESS) {
         if (is_ro()) {
             parent_env_->touch_ro_txns(-1);
@@ -336,7 +337,7 @@ MDB_cursor* Table::open_cursor(Transaction* parent, MDB_dbi dbi) {
         throw std::runtime_error("Database or transaction closed");
     }
     MDB_cursor* retvar{nullptr};
-    (void)err_handler(mdb_cursor_open(*parent->handle(), dbi, &retvar), true);
+    (void)err_handler(mdb_cursor_open(*parent->handle(), dbi, &retvar));
     return retvar;
 }
 
@@ -348,9 +349,9 @@ Table::Table(Transaction* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor*
       conn_on_txn_abort_{parent->signal_on_before_abort_.connect(boost::bind(&Table::close, this))},
       conn_on_txn_commit_{parent->signal_on_before_commit_.connect(boost::bind(&Table::close, this))} {}
 
-int Table::get_flags(unsigned int* flags) { return err_handler(mdb_dbi_flags(*parent_txn_->handle(), dbi_, flags)); }
+int Table::get_flags(unsigned int* flags) { return mdb_dbi_flags(*parent_txn_->handle(), dbi_, flags); }
 
-int Table::get_stat(MDB_stat* stat) { return err_handler(mdb_stat(*parent_txn_->handle(), dbi_, stat)); }
+int Table::get_stat(MDB_stat* stat) { return mdb_stat(*parent_txn_->handle(), dbi_, stat); }
 
 int Table::get_rcount(size_t* count) {
     MDB_stat stat{};
@@ -365,24 +366,23 @@ MDB_dbi Table::get_dbi(void) { return dbi_; }
 
 int Table::clear() {
     close();
-    return err_handler(mdb_drop(parent_txn_->handle_, dbi_, 0));
+    return mdb_drop(parent_txn_->handle_, dbi_, 0);
 }
 
 int Table::drop() {
     close();
     dbi_dropped_ = true;
-    return err_handler(mdb_drop(parent_txn_->handle_, dbi_, 1));
+    return mdb_drop(parent_txn_->handle_, dbi_, 1);
 }
 
 int Table::get(MDB_val* key, MDB_val* data, MDB_cursor_op operation) {
     assert_handle();
-    int rc{err_handler(mdb_cursor_get(handle_, key, data, operation))};
-    return rc;
+    return mdb_cursor_get(handle_, key, data, operation);
 }
 
 int Table::put(MDB_val* key, MDB_val* data, unsigned int flag) {
     assert_handle();
-    return err_handler(mdb_cursor_put(handle_, key, data, flag));
+    return mdb_cursor_put(handle_, key, data, flag);
 }
 
 bool Table::assert_handle(bool should_throw) {
@@ -397,12 +397,12 @@ bool Table::assert_handle(bool should_throw) {
 int Table::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }
 int Table::seek_exact(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
 int Table::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
-int Table::del_current(bool dupdata) { return err_handler(mdb_cursor_del(handle_, (dupdata ? MDB_NODUPDATA : 0u))); }
+int Table::del_current(bool dupdata) { return mdb_cursor_del(handle_, (dupdata ? MDB_NODUPDATA : 0u)); }
 int Table::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
 int Table::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
 int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
 int Table::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
-int Table::get_dcount(size_t* count) { return err_handler(mdb_cursor_count(handle_, count)); }
+int Table::get_dcount(size_t* count) { return mdb_cursor_count(handle_, count); }
 
 int Table::put(MDB_val* key, MDB_val* data) { return put(key, data, 0u); }
 int Table::put_current(MDB_val* key, MDB_val* data) { return put(key, data, MDB_CURRENT); }

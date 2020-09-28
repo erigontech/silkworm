@@ -66,10 +66,10 @@ class exception : public std::exception {
 };
 
 /**
- * Handles return codes from API calls and optionally throws
+ * Handles return codes from API calls and throws if not MDB_SUCCESS
  */
-static inline int err_handler(int err, bool shouldthrow = false) {
-    if (err != MDB_SUCCESS && shouldthrow) {
+inline int err_handler(int err) {
+    if (err != MDB_SUCCESS) {
         throw exception(err, mdb_strerror(err));
     }
     return err;
@@ -90,8 +90,8 @@ class Environment {
     friend class Transaction;
 
     std::mutex count_mtx_;                      // Lock to prevent concurrent access to transactions counters maps
-    std::map<std::thread::id, int> ro_txns_{};  // A per thread maintaned count of opened ro transactions
-    std::map<std::thread::id, int> rw_txns_{};  // A per thread maintaned count of opened rw transactions
+    std::map<std::thread::id, int> ro_txns_{};  // A per thread maintained count of opened ro transactions
+    std::map<std::thread::id, int> rw_txns_{};  // A per thread maintained count of opened rw transactions
 
     /*
      * A transaction and its cursors must only be used by a single thread,

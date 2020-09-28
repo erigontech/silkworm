@@ -45,6 +45,8 @@ struct Transaction {
 bool operator==(const Transaction& a, const Transaction& b);
 
 namespace rlp {
+    void encode(Bytes& to, const Transaction& txn, bool for_signing, std::optional<uint64_t> eip155_chain_id);
+
     template <>
     void decode(ByteView& from, Transaction& to);
 }  // namespace rlp

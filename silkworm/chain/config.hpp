@@ -24,81 +24,81 @@
 namespace silkworm {
 
 struct ChainConfig {
-  // https://eips.ethereum.org/EIPS/eip-155
-  uint64_t chain_id{0};
+    // https://eips.ethereum.org/EIPS/eip-155
+    uint64_t chain_id{0};
 
-  // https://eips.ethereum.org/EIPS/eip-606
-  std::optional<uint64_t> homestead_block;
+    // https://eips.ethereum.org/EIPS/eip-606
+    std::optional<uint64_t> homestead_block;
 
-  // https://eips.ethereum.org/EIPS/eip-608
-  // https://ecips.ethereumclassic.org/ECIPs/ecip-1015
-  std::optional<uint64_t> tangerine_whistle_block;
+    // https://eips.ethereum.org/EIPS/eip-608
+    // https://ecips.ethereumclassic.org/ECIPs/ecip-1015
+    std::optional<uint64_t> tangerine_whistle_block;
 
-  // TODO[ETC] EIP-160 was applied to ETC before the rest of Spurious Dragon; see
-  // https://ecips.ethereumclassic.org/ECIPs/ecip-1066
+    // TODO[ETC] EIP-160 was applied to ETC before the rest of Spurious Dragon; see
+    // https://ecips.ethereumclassic.org/ECIPs/ecip-1066
 
-  // https://eips.ethereum.org/EIPS/eip-607
-  // https://ecips.ethereumclassic.org/ECIPs/ecip-1054
-  std::optional<uint64_t> spurious_dragon_block;
+    // https://eips.ethereum.org/EIPS/eip-607
+    // https://ecips.ethereumclassic.org/ECIPs/ecip-1054
+    std::optional<uint64_t> spurious_dragon_block;
 
-  // https://eips.ethereum.org/EIPS/eip-609
-  // https://ecips.ethereumclassic.org/ECIPs/ecip-1054
-  std::optional<uint64_t> byzantium_block;
+    // https://eips.ethereum.org/EIPS/eip-609
+    // https://ecips.ethereumclassic.org/ECIPs/ecip-1054
+    std::optional<uint64_t> byzantium_block;
 
-  // https://eips.ethereum.org/EIPS/eip-1013
-  // https://ecips.ethereumclassic.org/ECIPs/ecip-1056
-  std::optional<uint64_t> constantinople_block;
+    // https://eips.ethereum.org/EIPS/eip-1013
+    // https://ecips.ethereumclassic.org/ECIPs/ecip-1056
+    std::optional<uint64_t> constantinople_block;
 
-  // https://eips.ethereum.org/EIPS/eip-1716
-  // https://ecips.ethereumclassic.org/ECIPs/ecip-1056
-  std::optional<uint64_t> petersburg_block;
+    // https://eips.ethereum.org/EIPS/eip-1716
+    // https://ecips.ethereumclassic.org/ECIPs/ecip-1056
+    std::optional<uint64_t> petersburg_block;
 
-  // https://eips.ethereum.org/EIPS/eip-1679
-  // https://ecips.ethereumclassic.org/ECIPs/ecip-1088
-  std::optional<uint64_t> istanbul_block;
+    // https://eips.ethereum.org/EIPS/eip-1679
+    // https://ecips.ethereumclassic.org/ECIPs/ecip-1088
+    std::optional<uint64_t> istanbul_block;
 
-  // https://eips.ethereum.org/EIPS/eip-2387
-  std::optional<uint64_t> muir_glacier_block;
+    // https://eips.ethereum.org/EIPS/eip-2387
+    std::optional<uint64_t> muir_glacier_block;
 
-  // https://eips.ethereum.org/EIPS/eip-779
-  std::optional<uint64_t> dao_block;
+    // https://eips.ethereum.org/EIPS/eip-779
+    std::optional<uint64_t> dao_block;
 
-  // Yellow Paper, Appendix K "Anomalies on the Main Network"
-  std::optional<uint64_t> ripemd_deletion_block;
+    // Yellow Paper, Appendix K "Anomalies on the Main Network"
+    std::optional<uint64_t> ripemd_deletion_block;
 
-  // TODO[ETC] ECIP-1017
+    // TODO[ETC] ECIP-1017
 
-  bool has_homestead(uint64_t block_num) const noexcept {
-    return homestead_block.has_value() && homestead_block <= block_num;
-  }
+    bool has_homestead(uint64_t block_num) const noexcept {
+        return homestead_block.has_value() && homestead_block <= block_num;
+    }
 
-  bool has_tangerine_whistle(uint64_t block_num) const noexcept {
-    return tangerine_whistle_block.has_value() && tangerine_whistle_block <= block_num;
-  }
+    bool has_tangerine_whistle(uint64_t block_num) const noexcept {
+        return tangerine_whistle_block.has_value() && tangerine_whistle_block <= block_num;
+    }
 
-  bool has_spurious_dragon(uint64_t block_num) const noexcept {
-    return spurious_dragon_block.has_value() && spurious_dragon_block <= block_num;
-  }
+    bool has_spurious_dragon(uint64_t block_num) const noexcept {
+        return spurious_dragon_block.has_value() && spurious_dragon_block <= block_num;
+    }
 
-  bool has_byzantium(uint64_t block_num) const noexcept {
-    return byzantium_block.has_value() && byzantium_block <= block_num;
-  }
+    bool has_byzantium(uint64_t block_num) const noexcept {
+        return byzantium_block.has_value() && byzantium_block <= block_num;
+    }
 
-  bool has_constantinople(uint64_t block_num) const noexcept {
-    return constantinople_block.has_value() && constantinople_block <= block_num;
-  }
+    bool has_constantinople(uint64_t block_num) const noexcept {
+        return constantinople_block.has_value() && constantinople_block <= block_num;
+    }
 
-  bool has_petersburg(uint64_t block_num) const noexcept {
-    return petersburg_block.has_value() && petersburg_block <= block_num;
-  }
+    bool has_petersburg(uint64_t block_num) const noexcept {
+        return petersburg_block.has_value() && petersburg_block <= block_num;
+    }
 
-  bool has_istanbul(uint64_t block_num) const noexcept {
-    return istanbul_block.has_value() && istanbul_block <= block_num;
-  }
+    bool has_istanbul(uint64_t block_num) const noexcept {
+        return istanbul_block.has_value() && istanbul_block <= block_num;
+    }
 
-  bool has_muir_glacier(uint64_t block_num) const noexcept {
-    return muir_glacier_block.has_value() && muir_glacier_block <= block_num;
-  }
+    bool has_muir_glacier(uint64_t block_num) const noexcept {
+        return muir_glacier_block.has_value() && muir_glacier_block <= block_num;
+    }
 };
 
 constexpr ChainConfig kEthMainnetConfig{

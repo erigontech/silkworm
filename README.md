@@ -69,4 +69,4 @@ We follow [Google's C++ Style Guide](https://google.github.io/styleguide/cppguid
 * .cpp & .hpp file extensions for C++; .c & .h are reserved for C.
 * Exceptions are allowed.
 * User-defined literals are allowed.
-* Max line length is 100.
+* Maximum line length is 120, indentation is 4 spaces – see `.clang-format`.

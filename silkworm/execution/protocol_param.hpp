@@ -26,33 +26,33 @@ namespace silkworm {
 // Fee schedule—see Appendix G of the Yellow Paper
 // https://ethereum.github.io/yellowpaper/paper.pdf
 namespace fee {
-constexpr uint64_t kGSLoadTangerineWhistle{200};
-constexpr uint64_t kGSLoadIstanbul{800};
+    constexpr uint64_t kGSLoadTangerineWhistle{200};
+    constexpr uint64_t kGSLoadIstanbul{800};
 
-constexpr uint64_t kGSSet{20'000};
-constexpr uint64_t kGSReset{5'000};
+    constexpr uint64_t kGSSet{20'000};
+    constexpr uint64_t kGSReset{5'000};
 
-constexpr uint64_t kRSClear{15'000};
-constexpr uint64_t kRSelfDestruct{24'000};
+    constexpr uint64_t kRSClear{15'000};
+    constexpr uint64_t kRSelfDestruct{24'000};
 
-constexpr uint64_t kGCodeDeposit{200};
+    constexpr uint64_t kGCodeDeposit{200};
 
-constexpr uint64_t kGTxCreate{32'000};
-constexpr uint64_t kGTxDataZero{4};
-constexpr uint64_t kGTxDataNonZeroFrontier{68};
-constexpr uint64_t kGTxDataNonZeroIstanbul{16};
-constexpr uint64_t kGTransaction{21'000};
+    constexpr uint64_t kGTxCreate{32'000};
+    constexpr uint64_t kGTxDataZero{4};
+    constexpr uint64_t kGTxDataNonZeroFrontier{68};
+    constexpr uint64_t kGTxDataNonZeroIstanbul{16};
+    constexpr uint64_t kGTransaction{21'000};
 
-constexpr uint64_t kGQuadDivisor{20};
+    constexpr uint64_t kGQuadDivisor{20};
 }  // namespace fee
 
 namespace param {
-// https://eips.ethereum.org/EIPS/eip-170
-constexpr size_t kMaxCodeSize{0x6000};
+    // https://eips.ethereum.org/EIPS/eip-170
+    constexpr size_t kMaxCodeSize{0x6000};
 
-constexpr uint64_t kFrontierBlockReward{5 * kEther};
-constexpr uint64_t kByzantiumBlockReward{3 * kEther};
-constexpr uint64_t kConstantinopleBlockReward{2 * kEther};
+    constexpr uint64_t kFrontierBlockReward{5 * kEther};
+    constexpr uint64_t kByzantiumBlockReward{3 * kEther};
+    constexpr uint64_t kConstantinopleBlockReward{2 * kEther};
 }  // namespace param
 }  // namespace silkworm
 

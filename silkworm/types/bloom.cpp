@@ -23,21 +23,21 @@ namespace silkworm {
 
 // See Section 4.3.1 "Transaction Receipt" of the Yellow Paper
 static void m3_2048(Bloom& bloom, ByteView x) {
-  ethash::hash256 hash{ethash::keccak256(x.data(), x.size())};
-  for (unsigned i{0}; i < 6; i += 2) {
-    unsigned bit{(hash.bytes[i + 1] + (hash.bytes[i] << 8)) & 0x7FFu};
-    bloom[kBloomByteLength - 1 - bit / 8] |= 1 << (bit % 8);
-  }
+    ethash::hash256 hash{ethash::keccak256(x.data(), x.size())};
+    for (unsigned i{0}; i < 6; i += 2) {
+        unsigned bit{(hash.bytes[i + 1] + (hash.bytes[i] << 8)) & 0x7FFu};
+        bloom[kBloomByteLength - 1 - bit / 8] |= 1 << (bit % 8);
+    }
 }
 
 Bloom logs_bloom(const std::vector<Log>& logs) {
-  Bloom bloom{};  // zero initialization
-  for (const Log& log : logs) {
-    m3_2048(bloom, full_view(log.address));
-    for (const auto& topic : log.topics) {
-      m3_2048(bloom, full_view(topic));
+    Bloom bloom{};  // zero initialization
+    for (const Log& log : logs) {
+        m3_2048(bloom, full_view(log.address));
+        for (const auto& topic : log.topics) {
+            m3_2048(bloom, full_view(topic));
+        }
     }
-  }
-  return bloom;
+    return bloom;
 }
 }  // namespace silkworm

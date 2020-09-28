@@ -52,7 +52,7 @@ evmc::bytes32 to_bytes32(ByteView bytes);
 
 template <unsigned N>
 ByteView full_view(const uint8_t (&bytes)[N]) {
-  return {bytes, N};
+    return {bytes, N};
 }
 
 inline ByteView full_view(const evmc::address& address) { return {address.bytes, kAddressLength}; }
@@ -76,9 +76,9 @@ size_t prefix_length(ByteView a, ByteView b);
 // TODO[C++20] replace by std::popcount
 inline int popcount(unsigned x) {
 #ifdef _MSC_VER
-  return __popcnt(x);
+    return __popcnt(x);
 #else
-  return __builtin_popcount(x);
+    return __builtin_popcount(x);
 #endif
 }
 }  // namespace silkworm

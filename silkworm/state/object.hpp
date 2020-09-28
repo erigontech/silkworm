@@ -26,15 +26,15 @@
 namespace silkworm::state {
 
 struct Object {
-  std::optional<Account> initial;
-  std::optional<Account> current;
-  std::optional<Bytes> code;
+    std::optional<Account> initial;
+    std::optional<Account> current;
+    std::optional<Bytes> code;
 };
 
 struct StorageValue {
-  evmc::bytes32 initial{};   // value at the begining of the block
-  evmc::bytes32 original{};  // value at the begining of the transaction; see EIP-2200
-  evmc::bytes32 current{};   // current value
+    evmc::bytes32 initial{};   // value at the begining of the block
+    evmc::bytes32 original{};  // value at the begining of the transaction; see EIP-2200
+    evmc::bytes32 current{};   // current value
 };
 
 using Storage = absl::flat_hash_map<evmc::bytes32, StorageValue>;

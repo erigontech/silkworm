@@ -29,29 +29,27 @@ struct code_analysis;
 namespace silkworm {
 
 class AnalysisCache {
- public:
-  static constexpr size_t kMaxSize{50'000};
+   public:
+    static constexpr size_t kMaxSize{50'000};
 
-  static AnalysisCache& instance() noexcept;
+    static AnalysisCache& instance() noexcept;
 
-  AnalysisCache(const AnalysisCache&) = delete;
-  AnalysisCache& operator=(const AnalysisCache&) = delete;
+    AnalysisCache(const AnalysisCache&) = delete;
+    AnalysisCache& operator=(const AnalysisCache&) = delete;
 
-  void update_revision(evmc_revision revision) noexcept;
+    void update_revision(evmc_revision revision) noexcept;
 
-  bool exists(const evmc::bytes32& key) const noexcept { return cache_.exists(key); }
+    bool exists(const evmc::bytes32& key) const noexcept { return cache_.exists(key); }
 
-  std::shared_ptr<evmone::code_analysis> get(const evmc::bytes32& key) noexcept {
-    return cache_.get(key);
-  }
+    std::shared_ptr<evmone::code_analysis> get(const evmc::bytes32& key) noexcept { return cache_.get(key); }
 
-  void put(const evmc::bytes32& key, evmone::code_analysis&& value) noexcept;
+    void put(const evmc::bytes32& key, evmone::code_analysis&& value) noexcept;
 
- private:
-  AnalysisCache() : cache_{kMaxSize} {}
+   private:
+    AnalysisCache() : cache_{kMaxSize} {}
 
-  cache::lru_cache<evmc::bytes32, std::shared_ptr<evmone::code_analysis>> cache_;
-  evmc_revision revision_{EVMC_MAX_REVISION};
+    cache::lru_cache<evmc::bytes32, std::shared_ptr<evmone::code_analysis>> cache_;
+    evmc_revision revision_{EVMC_MAX_REVISION};
 };
 }  // namespace silkworm
 

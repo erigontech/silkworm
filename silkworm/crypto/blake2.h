@@ -25,9 +25,9 @@ extern "C" {
 enum blake2b_constant { BLAKE2B_BLOCKBYTES = 128 };
 
 typedef struct blake2b_state__ {
-  uint64_t h[8];
-  uint64_t t[2];
-  uint64_t f[2];
+    uint64_t h[8];
+    uint64_t t[2];
+    uint64_t f[2];
 } blake2b_state;
 
 // https://tools.ietf.org/html/rfc7693#section-3.2

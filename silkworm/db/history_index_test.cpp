@@ -22,22 +22,22 @@
 namespace silkworm::db::history_index {
 
 TEST_CASE("History index search") {
-  Bytes index{from_hex("0000000000000003000000000002000005")};
+    Bytes index{from_hex("0000000000000003000000000002000005")};
 
-  CHECK(find(index, 1)->change_block == 3);
-  CHECK(find(index, 3)->change_block == 3);
-  CHECK(find(index, 4)->change_block == 5);
-  CHECK(find(index, 5)->change_block == 5);
-  CHECK(find(index, 7)->change_block == 8);
-  CHECK(find(index, 8)->change_block == 8);
-  CHECK(!find(index, 9));
+    CHECK(find(index, 1)->change_block == 3);
+    CHECK(find(index, 3)->change_block == 3);
+    CHECK(find(index, 4)->change_block == 5);
+    CHECK(find(index, 5)->change_block == 5);
+    CHECK(find(index, 7)->change_block == 8);
+    CHECK(find(index, 8)->change_block == 8);
+    CHECK(!find(index, 9));
 
-  CHECK(!find_previous(index, 1));
-  CHECK(!find_previous(index, 3));
-  CHECK(find_previous(index, 4)->change_block == 3);
-  CHECK(find_previous(index, 5)->change_block == 3);
-  CHECK(find_previous(index, 7)->change_block == 5);
-  CHECK(find_previous(index, 8)->change_block == 5);
-  CHECK(find_previous(index, 9)->change_block == 8);
+    CHECK(!find_previous(index, 1));
+    CHECK(!find_previous(index, 3));
+    CHECK(find_previous(index, 4)->change_block == 3);
+    CHECK(find_previous(index, 5)->change_block == 3);
+    CHECK(find_previous(index, 7)->change_block == 5);
+    CHECK(find_previous(index, 8)->change_block == 5);
+    CHECK(find_previous(index, 9)->change_block == 8);
 }
 }  // namespace silkworm::db::history_index

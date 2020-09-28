@@ -37,11 +37,9 @@ constexpr const char* kBlockHeaders{"h"};
 constexpr const char* kBlockBodies{"b"};
 constexpr const char* kSenders{"txSenders"};
 
-constexpr const char* kBuckets[]{
-    kPlainState, kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory,
-    kCode,       kCodeHash,       kLastBlock,      kLastFast,       kLastHeader,
-    kBlockHeaders,   kBlockBodies,    kSenders
-};
+constexpr const char* kBuckets[]{kPlainState,   kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory,
+                                 kCode,         kCodeHash,       kLastBlock,      kLastFast,       kLastHeader,
+                                 kBlockHeaders, kBlockBodies,    kSenders};
 }  // namespace silkworm::db::bucket
 
 #endif  // SILKWORM_DB_BUCKET_H_

@@ -29,8 +29,8 @@ using GasFunction = uint64_t (*)(ByteView input, evmc_revision) noexcept;
 using RunFunction = std::optional<Bytes> (*)(ByteView input) noexcept;
 
 struct Contract {
-  GasFunction gas;
-  RunFunction run;
+    GasFunction gas;
+    RunFunction run;
 };
 
 uint64_t ecrec_gas(ByteView input, evmc_revision) noexcept;

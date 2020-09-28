@@ -24,31 +24,30 @@
 
 namespace silkworm {
 
-    struct Transaction {
-        uint64_t nonce{0};
-        intx::uint256 gas_price;
-        uint64_t gas_limit{0};
-        std::optional<evmc::address> to;
-        intx::uint256 value;
-        Bytes data;
-        intx::uint256 v, r, s;              // signature
-        std::optional<evmc::address> from;  // sender recovered from the signature
+struct Transaction {
+    uint64_t nonce{0};
+    intx::uint256 gas_price;
+    uint64_t gas_limit{0};
+    std::optional<evmc::address> to;
+    intx::uint256 value;
+    Bytes data;
+    intx::uint256 v, r, s;              // signature
+    std::optional<evmc::address> from;  // sender recovered from the signature
 
-        // Populates the from field with recovered sender.
-        // See Yellow Paper, Appendix F "Signing Transactions",
-        // https://eips.ethereum.org/EIPS/eip-2 and
-        // https://eips.ethereum.org/EIPS/eip-155.
-        // If recovery fails the from field is set to null.
-        void recover_sender(bool homestead, std::optional<uint64_t> eip155_chain_id);
-    };
+    // Populates the from field with recovered sender.
+    // See Yellow Paper, Appendix F "Signing Transactions",
+    // https://eips.ethereum.org/EIPS/eip-2 and
+    // https://eips.ethereum.org/EIPS/eip-155.
+    // If recovery fails the from field is set to null.
+    void recover_sender(bool homestead, std::optional<uint64_t> eip155_chain_id);
+};
 
-    bool operator==(const Transaction& a, const Transaction& b);
+bool operator==(const Transaction& a, const Transaction& b);
 
-    namespace rlp {
-
-        template <>
-        void decode(ByteView& from, Transaction& to);
-    }  // namespace rlp
+namespace rlp {
+    template <>
+    void decode(ByteView& from, Transaction& to);
+}  // namespace rlp
 }  // namespace silkworm
 
 #endif  // SILKWORM_TYPES_TRANSACTION_H_

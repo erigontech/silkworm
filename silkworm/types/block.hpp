@@ -31,59 +31,58 @@
 namespace silkworm {
 
 struct BlockHeader {
-  evmc::bytes32 parent_hash{};
-  evmc::bytes32 ommers_hash{};
-  evmc::address beneficiary{};
-  evmc::bytes32 state_root{};
-  evmc::bytes32 transactions_root{};
-  evmc::bytes32 receipts_root{};
-  Bloom logs_bloom{};
-  intx::uint256 difficulty{};
-  uint64_t number{0};
-  uint64_t gas_limit{0};
-  uint64_t gas_used{0};
-  uint64_t timestamp{0};
+    evmc::bytes32 parent_hash{};
+    evmc::bytes32 ommers_hash{};
+    evmc::address beneficiary{};
+    evmc::bytes32 state_root{};
+    evmc::bytes32 transactions_root{};
+    evmc::bytes32 receipts_root{};
+    Bloom logs_bloom{};
+    intx::uint256 difficulty{};
+    uint64_t number{0};
+    uint64_t gas_limit{0};
+    uint64_t gas_used{0};
+    uint64_t timestamp{0};
 
-  ByteView extra_data() const { return {extra_data_.bytes, extra_data_size_}; }
+    ByteView extra_data() const { return {extra_data_.bytes, extra_data_size_}; }
 
-  evmc::bytes32 mix_hash{};
-  std::array<uint8_t, 8> nonce{};
+    evmc::bytes32 mix_hash{};
+    std::array<uint8_t, 8> nonce{};
 
- private:
-  friend void rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to);
+   private:
+    friend void rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to);
 
-  evmc::bytes32 extra_data_{};
-  uint32_t extra_data_size_{0};
+    evmc::bytes32 extra_data_{};
+    uint32_t extra_data_size_{0};
 };
 
 bool operator==(const BlockHeader& a, const BlockHeader& b);
 
 struct BlockBody {
-  std::vector<Transaction> transactions;
-  std::vector<BlockHeader> ommers;
+    std::vector<Transaction> transactions;
+    std::vector<BlockHeader> ommers;
 };
 
 bool operator==(const BlockBody& a, const BlockBody& b);
 
 struct Block : public BlockBody {
-  BlockHeader header;
+    BlockHeader header;
 };
 
 struct BlockWithHash {
-  Block block;
-  evmc::bytes32 hash;
+    Block block;
+    evmc::bytes32 hash;
 };
 
 namespace rlp {
+    template <>
+    void decode(ByteView& from, BlockBody& to);
 
-template <>
-void decode(ByteView& from, BlockBody& to);
+    template <>
+    void decode(ByteView& from, BlockHeader& to);
 
-template <>
-void decode(ByteView& from, BlockHeader& to);
-
-template <>
-void decode(ByteView& from, Block& to);
+    template <>
+    void decode(ByteView& from, Block& to);
 }  // namespace rlp
 }  // namespace silkworm
 

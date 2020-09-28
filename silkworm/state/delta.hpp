@@ -26,88 +26,88 @@ class IntraBlockState;
 
 namespace state {
 
-// Delta is a revertable change made to IntraBlockState.
-class Delta {
- public:
-  Delta(const Delta&) = delete;
-  Delta& operator=(const Delta&) = delete;
+    // Delta is a revertable change made to IntraBlockState.
+    class Delta {
+       public:
+        Delta(const Delta&) = delete;
+        Delta& operator=(const Delta&) = delete;
 
-  virtual ~Delta() = default;
+        virtual ~Delta() = default;
 
-  virtual void revert(IntraBlockState& state) noexcept = 0;
+        virtual void revert(IntraBlockState& state) noexcept = 0;
 
- protected:
-  Delta() = default;
-};
+       protected:
+        Delta() = default;
+    };
 
-// Account created.
-class CreateDelta : public Delta {
- public:
-  CreateDelta(evmc::address address) noexcept;
+    // Account created.
+    class CreateDelta : public Delta {
+       public:
+        CreateDelta(evmc::address address) noexcept;
 
-  void revert(IntraBlockState& state) noexcept override;
+        void revert(IntraBlockState& state) noexcept override;
 
- private:
-  evmc::address address_;
-};
+       private:
+        evmc::address address_;
+    };
 
-// Account updated.
-class UpdateDelta : public Delta {
- public:
-  UpdateDelta(evmc::address address, state::Object previous) noexcept;
+    // Account updated.
+    class UpdateDelta : public Delta {
+       public:
+        UpdateDelta(evmc::address address, state::Object previous) noexcept;
 
-  void revert(IntraBlockState& state) noexcept override;
+        void revert(IntraBlockState& state) noexcept override;
 
- private:
-  evmc::address address_;
-  state::Object previous_;
-};
+       private:
+        evmc::address address_;
+        state::Object previous_;
+    };
 
-// Account recorded for self-destruction.
-class SuicideDelta : public Delta {
- public:
-  SuicideDelta(evmc::address address) noexcept;
+    // Account recorded for self-destruction.
+    class SuicideDelta : public Delta {
+       public:
+        SuicideDelta(evmc::address address) noexcept;
 
-  void revert(IntraBlockState& state) noexcept override;
+        void revert(IntraBlockState& state) noexcept override;
 
- private:
-  evmc::address address_;
-};
+       private:
+        evmc::address address_;
+    };
 
-// Account touched.
-class TouchDelta : public Delta {
- public:
-  TouchDelta(evmc::address address) noexcept;
+    // Account touched.
+    class TouchDelta : public Delta {
+       public:
+        TouchDelta(evmc::address address) noexcept;
 
-  void revert(IntraBlockState& state) noexcept override;
+        void revert(IntraBlockState& state) noexcept override;
 
- private:
-  evmc::address address_;
-};
+       private:
+        evmc::address address_;
+    };
 
-// Storage updated.
-class StorageChangeDelta : public Delta {
- public:
-  StorageChangeDelta(evmc::address address, evmc::bytes32 key, evmc::bytes32 previous) noexcept;
+    // Storage updated.
+    class StorageChangeDelta : public Delta {
+       public:
+        StorageChangeDelta(evmc::address address, evmc::bytes32 key, evmc::bytes32 previous) noexcept;
 
-  void revert(IntraBlockState& state) noexcept override;
+        void revert(IntraBlockState& state) noexcept override;
 
- private:
-  evmc::address address_;
-  evmc::bytes32 key_;
-  evmc::bytes32 previous_;
-};
+       private:
+        evmc::address address_;
+        evmc::bytes32 key_;
+        evmc::bytes32 previous_;
+    };
 
-class StorageWipeDelta : public Delta {
- public:
-  StorageWipeDelta(evmc::address address, state::Storage storage) noexcept;
+    class StorageWipeDelta : public Delta {
+       public:
+        StorageWipeDelta(evmc::address address, state::Storage storage) noexcept;
 
-  void revert(IntraBlockState& state) noexcept override;
+        void revert(IntraBlockState& state) noexcept override;
 
- private:
-  evmc::address address_;
-  state::Storage storage_;
-};
+       private:
+        evmc::address address_;
+        state::Storage storage_;
+    };
 }  // namespace state
 }  // namespace silkworm
 

@@ -55,14 +55,6 @@ Bytes block_key(uint64_t block_number, const evmc::bytes32& hash) {
     return key;
 }
 
-Bytes block_key(uint64_t block_number, const ByteView& hash) {
-    assert(hash.length() == kHashLength);
-    Bytes key(8 + kHashLength, '\0');
-    boost::endian::store_big_u64(&key[0], block_number);
-    std::memcpy(&key[8], hash.data(), kHashLength);
-    return key;
-}
-
 Bytes history_index_key(ByteView key, uint64_t block_number) {
     Bytes res{};
     if (key.length() == kAddressLength) {  // accounts

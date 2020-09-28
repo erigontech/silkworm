@@ -39,7 +39,6 @@ Bytes header_hash_key(uint64_t block_number);
 
 // Turbo-Geth HeaderKey & BlockBodyKey
 Bytes block_key(uint64_t block_number, const evmc::bytes32& hash);
-Bytes block_key(uint64_t block_number, const ByteView& hash);
 
 // Turbo-Geth IndexChunkKey
 Bytes history_index_key(ByteView key, uint64_t block_number);

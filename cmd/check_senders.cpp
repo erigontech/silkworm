@@ -457,12 +457,7 @@ int main(int argc, char* argv[]) {
                         boost::endian::store_big_u64(&senders_key[0], result.first);
                         memcpy((void*)&senders_key[8], (void*)&canonical_headers[result.first - po_from_block],
                                kHashLength);
-                        retry:
                         rc = lmdb_senders->put_append(&key, &result.second);
-                        //if (rc == MDB_MAP_FULL) {
-                        //    lmdb_env->set_mapsize(*lmdb_mapSize * 1.05);
-                        //    goto retry;
-                        //}
                         if (rc != MDB_SUCCESS) {
                             std::cout << format_time() << " Unexpected error in recovery thread : " << mdb_strerror(rc)
                                       << std::endl;

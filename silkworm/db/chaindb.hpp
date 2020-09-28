@@ -30,27 +30,7 @@
 #include <thread>
 #include <vector>
 
-// Check windows
-#if _WIN32 || _WIN64
-#if _WIN64
-#define ENVIRONMENT64
-#else
-#define ENVIRONMENT32
-#endif
-#endif
-
-// Check GCC
-#if __GNUC__
-#if __x86_64__ || __ppc64__
-#define ENVIRONMENT64
-#else
-#define ENVIRONMENT32
-#endif
-#endif
-
-#ifndef ENVIRONMENT64
-#error "32 bit environment limits LMDB size"
-#endif  // !ENVIRONMENT64
+static_assert(sizeof(size_t) == 8, "32 bit environment limits LMDB size");
 
 namespace silkworm::db {
 

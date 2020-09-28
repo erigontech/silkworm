@@ -279,7 +279,7 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
     }
 }
 
-uint64_t get_highest_canonical_header(std::unique_ptr<db::lmdb::Table>& headers) {
+uint64_t get_highest_canonical_header(std::unique_ptr<lmdb::Table>& headers) {
     MDB_val key, data;
     uint64_t retvar{0};
 
@@ -303,8 +303,7 @@ uint64_t get_highest_canonical_header(std::unique_ptr<db::lmdb::Table>& headers)
     return retvar;
 }
 
-uint64_t load_canonical_headers(std::unique_ptr<db::lmdb::Table>& headers, uint64_t from, uint64_t to,
-                                evmc::bytes32* out) {
+uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t from, uint64_t to, evmc::bytes32* out) {
     uint64_t retvar{0};
 
     // Locate starting canonical block selected
@@ -405,21 +404,21 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    std::shared_ptr<db::lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
-    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
-    std::unique_ptr<db::lmdb::Table> lmdb_headers{nullptr};    // Block headers table
-    std::unique_ptr<db::lmdb::Table> lmdb_bodies{nullptr};     // Block bodies table
-    std::unique_ptr<db::lmdb::Table> lmdb_senders{nullptr};    // Transaction senders table
-    ChainConfig config{kEthMainnetConfig};                     // Main net config flags
-    evmc::bytes32* canonical_headers{nullptr};                 // Storage space for canonical headers
-    uint64_t canonical_headers_count{0};                       // Overall number of canonical headers collected
-    std::vector<Recoverer::package> recoverPackages{};         // Where to store work packages for recoverers
-    uint32_t process_batch_id{0};                              // Batch identifier sent to recoverer thread
-    std::atomic<uint32_t> workers_in_flight{0};                // Number of workers in flight
-    std::atomic<uint32_t> flush_batch_id{0};                   // Holder of queue flushing order
-    uint64_t total_transactions{0};                            // Overall number of transactions processed
-    uint32_t nextRecovererId{0};                               // Used to serialize the dispatch of works to threads
-    size_t batchTxsCount{0};                                   // Progressive number of delivered work
+    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
+    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
+    std::unique_ptr<lmdb::Table> lmdb_headers{nullptr};    // Block headers table
+    std::unique_ptr<lmdb::Table> lmdb_bodies{nullptr};     // Block bodies table
+    std::unique_ptr<lmdb::Table> lmdb_senders{nullptr};    // Transaction senders table
+    ChainConfig config{kEthMainnetConfig};                 // Main net config flags
+    evmc::bytes32* canonical_headers{nullptr};             // Storage space for canonical headers
+    uint64_t canonical_headers_count{0};                   // Overall number of canonical headers collected
+    std::vector<Recoverer::package> recoverPackages{};     // Where to store work packages for recoverers
+    uint32_t process_batch_id{0};                          // Batch identifier sent to recoverer thread
+    std::atomic<uint32_t> workers_in_flight{0};            // Number of workers in flight
+    std::atomic<uint32_t> flush_batch_id{0};               // Holder of queue flushing order
+    uint64_t total_transactions{0};                        // Overall number of transactions processed
+    uint32_t nextRecovererId{0};                           // Used to serialize the dispatch of works to threads
+    size_t batchTxsCount{0};                               // Progressive number of delivered work
 
     std::condition_variable ready_for_write_cv{};
     std::atomic_bool ready_for_write{false};
@@ -496,10 +495,12 @@ int main(int argc, char* argv[]) {
 
     try {
         // Open db and start transaction
-        db::lmdb::options opts{};
-        if (*lmdb_mapSize) opts.map_size = *lmdb_mapSize;
+        lmdb::options opts{};
+        if (*lmdb_mapSize) {
+            opts.map_size = *lmdb_mapSize;
+        }
 
-        lmdb_env = db::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
+        lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_senders = lmdb_txn->open(db::bucket::kSenders, MDB_CREATE);  // Throws on error
         lmdb_headers = lmdb_txn->open(db::bucket::kBlockHeaders);         // Throws on error
@@ -743,7 +744,7 @@ int main(int argc, char* argv[]) {
         std::cout << format_time() << " Bodies scan " << (should_stop_ ? "aborted. " : "completed.")
                   << " Processed transactions " << total_transactions << std::endl;
 
-    } catch (db::lmdb::exception& ex) {
+    } catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
         std::cout << format_time() << " Unexpected error : " << ex.err() << " " << ex.what() << std::endl;
         main_thread_error_ = true;

@@ -108,14 +108,16 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    std::shared_ptr<db::lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
-    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
+    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
+    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
 
     try {
         // Open db and start transaction
-        db::lmdb::options opts{};
-        if (*lmdb_mapSize) opts.map_size = *lmdb_mapSize;
-        lmdb_env = db::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
+        lmdb::options opts{};
+        if (*lmdb_mapSize) {
+            opts.map_size = *lmdb_mapSize;
+        }
+        lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
         std::cout << "Database is " << (lmdb_env->is_opened() ? "" : "NOT ") << "opened" << std::endl;
         lmdb_txn = lmdb_env->begin_rw_transaction();
 
@@ -165,7 +167,7 @@ int main(int argc, char* argv[]) {
         unnamed->close();
         unnamed_rev->close();
 
-    } catch (db::lmdb::exception& ex) {
+    } catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
         std::cout << ex.err() << " " << ex.what() << std::endl;
     } catch (std::runtime_error& ex) {

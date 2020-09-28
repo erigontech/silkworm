@@ -40,7 +40,7 @@ namespace lmdb {
      * Options to pass to env when opening file
      */
     struct options {
-        uint64_t map_size = 2ull << 40;  // 2TiB by default
+        uint64_t map_size = 1ull << 40;  // 1 TiB by default
         bool no_tls = true;              // MDB_NOTLS
         bool no_rdahead = true;          // MDB_NORDAHEAD
         bool no_sync = true;             // MDB_NOSYNC

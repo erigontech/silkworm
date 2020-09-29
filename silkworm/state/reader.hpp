@@ -18,7 +18,7 @@
 #define SILKWORM_STATE_READER_H_
 
 #include <optional>
-#include <silkworm/db/database.hpp>
+#include <silkworm/db/chaindb.hpp>
 #include <silkworm/types/account.hpp>
 
 namespace silkworm::state {
@@ -27,7 +27,7 @@ class Reader {
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
 
-    Reader(db::Database& db, uint64_t block_number) noexcept : db_{db}, block_number_{block_number} {}
+    Reader(lmdb::Transaction& txn, uint64_t block_number) noexcept : txn_{txn}, block_number_{block_number} {}
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept;
     Bytes read_code(const evmc::bytes32& code_hash) const noexcept;
@@ -38,7 +38,7 @@ class Reader {
     uint64_t previous_incarnation(const evmc::address& address) const noexcept;
 
    private:
-    db::Database& db_;
+    lmdb::Transaction& txn_;
     uint64_t block_number_{0};
 };
 }  // namespace silkworm::state

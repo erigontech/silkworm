@@ -27,6 +27,7 @@
 #include <mutex>
 #include <optional>
 #include <silkworm/common/base.hpp>
+#include <silkworm/db/util.hpp>
 #include <string>
 #include <thread>
 #include <vector>
@@ -233,15 +234,16 @@ class Table {
      * MDB_cursor interfaces
      */
 
-    int seek(MDB_val* key, MDB_val* data);         // Position cursor to first key >= of given key
-    int seek_exact(MDB_val* key, MDB_val* data);   // Position cursor to key == of given key
-    int get_current(MDB_val* key, MDB_val* data);  // Gets data from current cursor position
-    int del_current(bool dupdata = false);         // Delete key/data pair at current cursor position
-    int get_first(MDB_val* key, MDB_val* data);    // Move cursor at first item in bucket
-    int get_prev(MDB_val* key, MDB_val* data);     // Move cursor at previous item in bucket
-    int get_next(MDB_val* key, MDB_val* data);     // Move cursor at next item in bucket
-    int get_last(MDB_val* key, MDB_val* data);     // Move cursor at last item in bucket
-    int get_dcount(size_t* count);                 // Returns the count of duplicates at current position
+    std::optional<db::Entry> seek(ByteView prefix);  // Position cursor to first key >= of given prefix
+    int seek(MDB_val* key, MDB_val* data);           // Position cursor to first key >= of given key
+    int seek_exact(MDB_val* key, MDB_val* data);     // Position cursor to key == of given key
+    int get_current(MDB_val* key, MDB_val* data);    // Gets data from current cursor position
+    int del_current(bool dupdata = false);           // Delete key/data pair at current cursor position
+    int get_first(MDB_val* key, MDB_val* data);      // Move cursor at first item in bucket
+    int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in bucket
+    int get_next(MDB_val* key, MDB_val* data);       // Move cursor at next item in bucket
+    int get_last(MDB_val* key, MDB_val* data);       // Move cursor at last item in bucket
+    int get_dcount(size_t* count);                   // Returns the count of duplicates at current position
 
     /* @brief Stores key/data pairs into the database using cursor.
      *

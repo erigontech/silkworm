@@ -21,16 +21,12 @@
 #include <optional>
 #include <silkworm/common/base.hpp>
 #include <silkworm/db/change.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 #include <vector>
 
 namespace silkworm::db {
-
-struct Entry {
-    ByteView key;
-    ByteView value;
-};
 
 class Cursor {
    public:
@@ -93,23 +89,9 @@ class Database {
     std::unique_ptr<Transaction> begin_rw_transaction() { return begin_transaction(false); }
 
     std::optional<BlockHeader> get_header(uint64_t block_number, const evmc::bytes32& block_hash);
-    std::optional<Bytes> get_code(const evmc::bytes32& code_hash);
-    std::optional<Account> get_account(const evmc::address& address, uint64_t block_number);
-
-    // Finds the latest non-zero incarnation of an account,
-    // disregarding future changes (happening after block_number).
-    std::optional<uint64_t> previous_incarnation(const evmc::address& address, uint64_t block_number);
-
-    evmc::bytes32 get_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
-                              uint64_t block_number);
 
    protected:
     Database() = default;
-
-   private:
-    // Tries to find historical (non-current) value as of a given block.
-    // See also Turbo-Geth FindByHistory.
-    std::optional<ByteView> find_in_history(Transaction& txn, bool storage, ByteView key, uint64_t block_number);
 };
 }  // namespace silkworm::db
 

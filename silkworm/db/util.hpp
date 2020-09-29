@@ -28,6 +28,12 @@ see its package dbutils.
 #include <string>
 
 namespace silkworm::db {
+
+struct Entry {
+    ByteView key;
+    ByteView value;
+};
+
 // Turbo-Geth PlainGenerateStoragePrefix
 Bytes storage_prefix(const evmc::address& address, uint64_t incarnation);
 

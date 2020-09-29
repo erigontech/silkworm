@@ -16,8 +16,6 @@
 
 #include "chaindb.hpp"
 
-#include "util.hpp"
-
 namespace silkworm::lmdb {
 
 Environment::Environment(const unsigned flags) {
@@ -410,6 +408,22 @@ std::optional<ByteView> Table::get(ByteView key) {
     }
     err_handler(rc);
     return db::from_mdb_val(data);
+}
+
+std::optional<db::Entry> Table::seek(ByteView prefix) {
+    MDB_val key_val{db::to_mdb_val(prefix)};
+    MDB_val data;
+    MDB_cursor_op op{prefix.empty() ? MDB_FIRST : MDB_SET_RANGE};
+    int rc{get(&key_val, &data, op)};
+    if (rc == MDB_NOTFOUND) {
+        return {};
+    }
+    err_handler(rc);
+
+    db::Entry entry;
+    entry.key = db::from_mdb_val(key_val);
+    entry.value = db::from_mdb_val(data);
+    return entry;
 }
 
 int Table::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }

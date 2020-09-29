@@ -39,8 +39,10 @@ int main(int argc, char* argv[]) {
     absl::SetProgramUsageMessage("Executes Ethereum blocks and compares resulting change sets against DB.");
     absl::ParseCommandLine(argc, argv);
 
-    boost::filesystem::path db_path(absl::GetFlag(FLAGS_datadir));
-    if (!boost::filesystem::exists(db_path) || !boost::filesystem::is_directory(db_path) || db_path.empty()) {
+    namespace fs = boost::filesystem;
+
+    fs::path db_path(absl::GetFlag(FLAGS_datadir));
+    if (!fs::exists(db_path) || !fs::is_directory(db_path) || db_path.empty()) {
         std::cerr << absl::GetFlag(FLAGS_datadir) << " does not exist.\n";
         std::cerr << "Use --db flag to point to a Turbo-Geth populated chaindata.\n";
         return -1;
@@ -60,23 +62,20 @@ int main(int argc, char* argv[]) {
 
     uint64_t block_num{from};
     for (; block_num < to; ++block_num) {
-        std::optional<BlockWithHash> bh{};
-        {
-            std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
+        std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-            bh = db::get_block(*txn, block_num);
-            if (!bh) {
-                break;
-            }
-
-            std::vector<evmc::address> senders{db::get_senders(*txn, block_num, bh->hash)};
-            assert(senders.size() == bh->block.transactions.size());
-            for (size_t i{0}; i < senders.size(); ++i) {
-                bh->block.transactions[i].from = senders[i];
-            }
+        std::optional<BlockWithHash> bh{db::read_block(*txn, block_num)};
+        if (!bh) {
+            break;
         }
 
-        state::Reader reader{legacy_db, block_num};
+        std::vector<evmc::address> senders{db::read_senders(*txn, block_num, bh->hash)};
+        assert(senders.size() == bh->block.transactions.size());
+        for (size_t i{0}; i < senders.size(); ++i) {
+            bh->block.transactions[i].from = senders[i];
+        }
+
+        state::Reader reader{*txn, block_num};
         IntraBlockState state{&reader};
         ExecutionProcessor processor{chain, bh->block, state};
 
@@ -107,44 +106,40 @@ int main(int argc, char* argv[]) {
         state::Writer writer;
         state.write_block(writer);
 
-        {
-            std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
-
-            std::optional<db::AccountChanges> db_account_changes{db::get_account_changes(*txn, block_num)};
-            if (writer.account_changes() != db_account_changes) {
-                std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
-                if (db_account_changes) {
-                    for (const auto& e : *db_account_changes) {
-                        if (writer.account_changes().count(e.first) == 0) {
-                            std::cerr << to_hex(e.first) << " is missing\n";
-                        } else if (Bytes val{writer.account_changes().at(e.first)}; val != e.second) {
-                            std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
-                            std::cerr << to_hex(val) << "\n";
-                            std::cerr << "vs DB\n";
-                            std::cerr << to_hex(e.second) << "\n";
-                        }
+        std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
+        if (writer.account_changes() != db_account_changes) {
+            std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
+            if (db_account_changes) {
+                for (const auto& e : *db_account_changes) {
+                    if (writer.account_changes().count(e.first) == 0) {
+                        std::cerr << to_hex(e.first) << " is missing\n";
+                    } else if (Bytes val{writer.account_changes().at(e.first)}; val != e.second) {
+                        std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
+                        std::cerr << to_hex(val) << "\n";
+                        std::cerr << "vs DB\n";
+                        std::cerr << to_hex(e.second) << "\n";
                     }
-                    for (const auto& e : writer.account_changes()) {
-                        if (db_account_changes->count(e.first) == 0) {
-                            std::cerr << to_hex(e.first) << " is not in DB\n";
-                        }
-                    }
-                } else {
-                    std::cerr << "Nil DB account changes\n";
                 }
+                for (const auto& e : writer.account_changes()) {
+                    if (db_account_changes->count(e.first) == 0) {
+                        std::cerr << to_hex(e.first) << " is not in DB\n";
+                    }
+                }
+            } else {
+                std::cerr << "Nil DB account changes\n";
             }
+        }
 
-            Bytes db_storage_changes{db::get_storage_changes(*txn, block_num)};
-            Bytes calculated_storage_changes{};
-            if (!writer.storage_changes().empty()) {
-                calculated_storage_changes = writer.storage_changes().encode();
-            }
-            if (calculated_storage_changes != db_storage_changes) {
-                std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";
-                std::cerr << to_hex(calculated_storage_changes) << "\n";
-                std::cerr << "vs DB\n";
-                std::cerr << to_hex(db_storage_changes) << "\n";
-            }
+        Bytes db_storage_changes{db::read_storage_changes(*txn, block_num)};
+        Bytes calculated_storage_changes{};
+        if (!writer.storage_changes().empty()) {
+            calculated_storage_changes = writer.storage_changes().encode();
+        }
+        if (calculated_storage_changes != db_storage_changes) {
+            std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";
+            std::cerr << to_hex(calculated_storage_changes) << "\n";
+            std::cerr << "vs DB\n";
+            std::cerr << to_hex(db_storage_changes) << "\n";
         }
 
         if (block_num % 1000 == 0) {

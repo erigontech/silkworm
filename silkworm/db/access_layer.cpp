@@ -22,11 +22,11 @@
 #include "lmdb.hpp"
 #include "util.hpp"
 
-namespace silkworm::dal {
+namespace silkworm::db {
 
 std::optional<BlockWithHash> get_block(lmdb::Transaction& txn, uint64_t block_number) {
-    auto header_table{txn.open(db::bucket::kBlockHeaders)};
-    std::optional<ByteView> hash{header_table->get(db::header_hash_key(block_number))};
+    auto header_table{txn.open(bucket::kBlockHeaders)};
+    std::optional<ByteView> hash{header_table->get(header_hash_key(block_number))};
     if (!hash) {
         return {};
     }
@@ -35,7 +35,7 @@ std::optional<BlockWithHash> get_block(lmdb::Transaction& txn, uint64_t block_nu
     assert(hash->size() == kHashLength);
     std::memcpy(bh.hash.bytes, hash->data(), kHashLength);
 
-    Bytes key{db::block_key(block_number, bh.hash)};
+    Bytes key{block_key(block_number, bh.hash)};
     std::optional<ByteView> header_rlp{header_table->get(key)};
     if (!header_rlp) {
         return {};
@@ -43,7 +43,7 @@ std::optional<BlockWithHash> get_block(lmdb::Transaction& txn, uint64_t block_nu
 
     rlp::decode(*header_rlp, bh.block.header);
 
-    auto body_table{txn.open(db::bucket::kBlockBodies)};
+    auto body_table{txn.open(bucket::kBlockBodies)};
     std::optional<ByteView> body_rlp{body_table->get(key)};
     if (!body_rlp) {
         return {};
@@ -55,8 +55,8 @@ std::optional<BlockWithHash> get_block(lmdb::Transaction& txn, uint64_t block_nu
 
 std::vector<evmc::address> get_senders(lmdb::Transaction& txn, int64_t block_number, const evmc::bytes32& block_hash) {
     std::vector<evmc::address> senders{};
-    auto table{txn.open(db::bucket::kSenders)};
-    std::optional<ByteView> data{table->get(db::block_key(block_number, block_hash))};
+    auto table{txn.open(bucket::kSenders)};
+    std::optional<ByteView> data{table->get(block_key(block_number, block_hash))};
     if (!data) {
         return senders;
     }
@@ -66,4 +66,23 @@ std::vector<evmc::address> get_senders(lmdb::Transaction& txn, int64_t block_num
     std::memcpy(senders.data(), data->data(), data->size());
     return senders;
 }
-}  // namespace silkworm::dal
+
+std::optional<AccountChanges> get_account_changes(lmdb::Transaction& txn, uint64_t block_number) {
+    auto table{txn.open(bucket::kAccountChanges)};
+    std::optional<ByteView> val{table->get(encode_timestamp(block_number))};
+    if (!val) {
+        return {};
+    }
+    return AccountChanges::decode(*val);
+}
+
+Bytes get_storage_changes(lmdb::Transaction& txn, uint64_t block_number) {
+    auto table{txn.open(bucket::kStorageChanges)};
+    std::optional<ByteView> val{table->get(encode_timestamp(block_number))};
+    if (!val) {
+        return {};
+    }
+    return Bytes{*val};
+}
+
+}  // namespace silkworm::db

@@ -100,8 +100,6 @@ class Database {
     // disregarding future changes (happening after block_number).
     std::optional<uint64_t> previous_incarnation(const evmc::address& address, uint64_t block_number);
 
-    std::optional<AccountChanges> get_account_changes(uint64_t block_number);
-    Bytes get_storage_changes(uint64_t block_number);
     evmc::bytes32 get_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
                               uint64_t block_number);
 

@@ -64,12 +64,12 @@ int main(int argc, char* argv[]) {
         {
             std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-            bh = dal::get_block(*txn, block_num);
+            bh = db::get_block(*txn, block_num);
             if (!bh) {
                 break;
             }
 
-            std::vector<evmc::address> senders{dal::get_senders(*txn, block_num, bh->hash)};
+            std::vector<evmc::address> senders{db::get_senders(*txn, block_num, bh->hash)};
             assert(senders.size() == bh->block.transactions.size());
             for (size_t i{0}; i < senders.size(); ++i) {
                 bh->block.transactions[i].from = senders[i];
@@ -107,40 +107,44 @@ int main(int argc, char* argv[]) {
         state::Writer writer;
         state.write_block(writer);
 
-        std::optional<db::AccountChanges> db_account_changes{legacy_db.get_account_changes(block_num)};
-        if (writer.account_changes() != db_account_changes) {
-            std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
-            if (db_account_changes) {
-                for (const auto& e : *db_account_changes) {
-                    if (writer.account_changes().count(e.first) == 0) {
-                        std::cerr << to_hex(e.first) << " is missing\n";
-                    } else if (Bytes val{writer.account_changes().at(e.first)}; val != e.second) {
-                        std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
-                        std::cerr << to_hex(val) << "\n";
-                        std::cerr << "vs DB\n";
-                        std::cerr << to_hex(e.second) << "\n";
-                    }
-                }
-                for (const auto& e : writer.account_changes()) {
-                    if (db_account_changes->count(e.first) == 0) {
-                        std::cerr << to_hex(e.first) << " is not in DB\n";
-                    }
-                }
-            } else {
-                std::cerr << "Nil DB account changes\n";
-            }
-        }
+        {
+            std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-        Bytes db_storage_changes{legacy_db.get_storage_changes(block_num)};
-        Bytes calculated_storage_changes{};
-        if (!writer.storage_changes().empty()) {
-            calculated_storage_changes = writer.storage_changes().encode();
-        }
-        if (calculated_storage_changes != db_storage_changes) {
-            std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";
-            std::cerr << to_hex(calculated_storage_changes) << "\n";
-            std::cerr << "vs DB\n";
-            std::cerr << to_hex(db_storage_changes) << "\n";
+            std::optional<db::AccountChanges> db_account_changes{db::get_account_changes(*txn, block_num)};
+            if (writer.account_changes() != db_account_changes) {
+                std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
+                if (db_account_changes) {
+                    for (const auto& e : *db_account_changes) {
+                        if (writer.account_changes().count(e.first) == 0) {
+                            std::cerr << to_hex(e.first) << " is missing\n";
+                        } else if (Bytes val{writer.account_changes().at(e.first)}; val != e.second) {
+                            std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
+                            std::cerr << to_hex(val) << "\n";
+                            std::cerr << "vs DB\n";
+                            std::cerr << to_hex(e.second) << "\n";
+                        }
+                    }
+                    for (const auto& e : writer.account_changes()) {
+                        if (db_account_changes->count(e.first) == 0) {
+                            std::cerr << to_hex(e.first) << " is not in DB\n";
+                        }
+                    }
+                } else {
+                    std::cerr << "Nil DB account changes\n";
+                }
+            }
+
+            Bytes db_storage_changes{db::get_storage_changes(*txn, block_num)};
+            Bytes calculated_storage_changes{};
+            if (!writer.storage_changes().empty()) {
+                calculated_storage_changes = writer.storage_changes().encode();
+            }
+            if (calculated_storage_changes != db_storage_changes) {
+                std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";
+                std::cerr << to_hex(calculated_storage_changes) << "\n";
+                std::cerr << "vs DB\n";
+                std::cerr << to_hex(db_storage_changes) << "\n";
+            }
         }
 
         if (block_num % 1000 == 0) {

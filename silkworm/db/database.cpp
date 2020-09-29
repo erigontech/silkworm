@@ -75,26 +75,6 @@ std::optional<Bytes> Database::get_code(const evmc::bytes32& code_hash) {
     return Bytes{*val};
 }
 
-std::optional<AccountChanges> Database::get_account_changes(uint64_t block_number) {
-    auto txn{begin_ro_transaction()};
-    auto bucket{txn->get_bucket(bucket::kAccountChanges)};
-    std::optional<ByteView> val{bucket->get(encode_timestamp(block_number))};
-    if (!val) {
-        return {};
-    }
-    return AccountChanges::decode(*val);
-}
-
-Bytes Database::get_storage_changes(uint64_t block_number) {
-    auto txn{begin_ro_transaction()};
-    auto bucket{txn->get_bucket(bucket::kStorageChanges)};
-    std::optional<ByteView> val{bucket->get(encode_timestamp(block_number))};
-    if (!val) {
-        return {};
-    }
-    return Bytes{*val};
-}
-
 evmc::bytes32 Database::get_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
                                     uint64_t block_number) {
     auto composite_key{storage_key(address, incarnation, key)};

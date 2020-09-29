@@ -17,18 +17,24 @@
 #ifndef SILKWORM_DB_ACCESS_LAYER_H_
 #define SILKWORM_DB_ACCESS_LAYER_H_
 
+// Database Access Layer
+
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/change.hpp>
 #include <silkworm/types/block.hpp>
 #include <vector>
 
-// Database Access Layer
-namespace silkworm::dal {
+namespace silkworm::db {
 
 std::optional<BlockWithHash> get_block(lmdb::Transaction& txn, uint64_t block_number);
 
 std::vector<evmc::address> get_senders(lmdb::Transaction& txn, int64_t block_number, const evmc::bytes32& block_hash);
 
-}  // namespace silkworm::dal
+std::optional<AccountChanges> get_account_changes(lmdb::Transaction& txn, uint64_t block_number);
+
+Bytes get_storage_changes(lmdb::Transaction& txn, uint64_t block_number);
+
+}  // namespace silkworm::db
 
 #endif  // SILKWORM_DB_ACCESS_LAYER_H_

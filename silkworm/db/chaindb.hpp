@@ -69,14 +69,12 @@ class exception : public std::exception {
 /**
  * Handles return codes from API calls and throws if not MDB_SUCCESS
  */
-inline int err_handler(int err) {
+inline void err_handler(int err) {
     if (err != MDB_SUCCESS) {
         throw exception(err, mdb_strerror(err));
     }
-    return err;
 }
 
-class Environment;
 class Transaction;
 class Table;
 
@@ -113,7 +111,7 @@ class Environment {
     bool assert_opened(bool should_throw = true);  // Ensures database is validly opened
 
    public:
-    Environment(const unsigned flags = 0);
+    explicit Environment(const unsigned flags = 0);
     ~Environment() noexcept;
 
     MDB_env** handle(void) { return &handle_; }
@@ -191,9 +189,9 @@ class Transaction {
     Transaction& operator=(Transaction&& rhs) = delete;
 
     boost::signals2::signal<void(void)>
-        signal_on_before_abort_;  // Signals connected Bucktes transaction is about to abort
+        signal_on_before_abort_;  // Signals to connected Tables that the transaction is about to abort
     boost::signals2::signal<void(void)>
-        signal_on_before_commit_;  // Signals connected Bucktes transaction is about to commit
+        signal_on_before_commit_;  // Signals to connected Tables that the transaction is about to commit
 
     void abort(void);
     int commit(void);
@@ -223,10 +221,10 @@ class Table {
 
     /* @brief Gets the value by key. A nil optional is returned if the key is not found.
      *
-     * The memory pointed to by the returned values is owned by the database.
+     * The memory pointed to by the returned view is owned by the database.
      * The caller may not modify it in any way.
      *
-     * Values returned from the database are valid only until a subsequent update operation,
+     * Views returned from the database are valid only until a subsequent update operation,
      * or the end of the transaction.
      */
     std::optional<ByteView> get(ByteView key);

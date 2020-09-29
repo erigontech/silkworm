@@ -21,15 +21,16 @@
 namespace silkworm::lmdb {
 
 Environment::Environment(const unsigned flags) {
-    int ret{err_handler(mdb_env_create(&handle_))};
+    err_handler(mdb_env_create(&handle_));
     if (flags) {
-        ret = mdb_env_set_flags(handle_, flags, 1);
+        int ret{mdb_env_set_flags(handle_, flags, 1)};
         if (ret != MDB_SUCCESS) {
             close();
             throw exception(ret, mdb_strerror(ret));
         }
     }
 }
+
 Environment::~Environment() noexcept { close(); }
 
 bool Environment::is_ro(void) {
@@ -46,7 +47,7 @@ void Environment::open(const char* path, const unsigned int flags, const mdb_mod
     if (!path) {
         throw std::invalid_argument("Invalid argument : path");
     }
-    (void)err_handler(mdb_env_open(handle_, path, flags, mode));
+    err_handler(mdb_env_open(handle_, path, flags, mode));
     opened_ = true;  // If we get here the above has not thrown so the open is successful
 }
 
@@ -328,7 +329,7 @@ int Transaction::commit(void) {
 }
 
 /*
- * Buckets
+ * Tables
  */
 
 Table::Table(Transaction* parent, MDB_dbi dbi, std::string dbi_name)
@@ -341,7 +342,7 @@ MDB_cursor* Table::open_cursor(Transaction* parent, MDB_dbi dbi) {
         throw std::runtime_error("Database or transaction closed");
     }
     MDB_cursor* retvar{nullptr};
-    (void)err_handler(mdb_cursor_open(*parent->handle(), dbi, &retvar));
+    err_handler(mdb_cursor_open(*parent->handle(), dbi, &retvar));
     return retvar;
 }
 
@@ -360,7 +361,9 @@ int Table::get_stat(MDB_stat* stat) { return mdb_stat(*parent_txn_->handle(), db
 int Table::get_rcount(size_t* count) {
     MDB_stat stat{};
     int rc{get_stat(&stat)};
-    if (!rc) *count = stat.ms_entries;
+    if (rc == MDB_SUCCESS) {
+        *count = stat.ms_entries;
+    }
     return rc;
 }
 
@@ -405,7 +408,7 @@ std::optional<ByteView> Table::get(ByteView key) {
     if (rc == MDB_NOTFOUND) {
         return {};
     }
-    (void)err_handler(rc);
+    err_handler(rc);
     return db::from_mdb_val(data);
 }
 

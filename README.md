@@ -13,7 +13,14 @@ as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth
 
 # Clone the repository
 
-`git clone --recurse-submodules https://github.com/torquem-ch/silkworm.git`
+```
+git clone --recurse-submodules https://github.com/torquem-ch/silkworm.git
+```
+
+To update the submodules later on run 
+```
+git submodule update --init --recursive
+```
 
 ## Linux & macOS
 Building silkworm requires:

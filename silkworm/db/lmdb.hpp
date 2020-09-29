@@ -82,12 +82,12 @@ class LmdbTransaction : public Transaction {
 // Must not create several instances of the same database.
 class LmdbDatabase : public Database {
    public:
+    explicit LmdbDatabase(MDB_env* env) : env_{env} {}
     explicit LmdbDatabase(const char* path, const LmdbOptions& options = {});
     ~LmdbDatabase() override;
 
     std::unique_ptr<Transaction> begin_transaction(bool read_only) override;
 
-   protected:
     MDB_env* env_{nullptr};
 };
 }  // namespace silkworm::db

@@ -19,8 +19,8 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 #include <silkworm/common/temp_dir.hpp>
-#include <silkworm/db/bucket.hpp>
 #include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/tables.hpp>
 
 #include "address.hpp"
 #include "protocol_param.hpp"
@@ -284,7 +284,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     bool read_write{true};
     std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(tmp_dir.path(), {}, read_write)};
     std::unique_ptr<lmdb::Transaction> db_txn{db_env->begin_rw_transaction()};
-    db::bucket::create_all(*db_txn);
+    db::table::create_all(*db_txn);
 
     // Some funds were previously transferred to the address:
     // https://etherscan.io/address/0x78c65b078353a8c4ce58fb4b5acaac6042d591d5
@@ -292,7 +292,7 @@ TEST_CASE("Out of Gas during account re-creation") {
         Account account{};
         account.balance = 66'252'368 * kGiga;
 
-        auto table{db_txn->open(db::bucket::kPlainState)};
+        auto table{db_txn->open(db::table::kPlainState)};
         table->put(full_view(address), account.encode_for_storage(false));
     }
 

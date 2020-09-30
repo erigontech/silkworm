@@ -21,7 +21,6 @@
 #include <iostream>
 #include <regex>
 #include <silkworm/chain/config.hpp>
-#include <silkworm/db/bucket.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
@@ -137,7 +136,7 @@ int main(int argc, char* argv[]) {
         int rc{unnamed->get_first(&key, &data)};
         while (!shouldStop && rc == MDB_SUCCESS) {
             std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};
-            std::cout << "Bucket " << v << " with ";
+            std::cout << "Table " << v << " with ";
             {
                 size_t rcount{0};
                 auto b = lmdb_txn->open(v.data());

@@ -269,8 +269,8 @@ MDB_dbi Transaction::open_dbi(const std::string name, unsigned int flags) {
     }
 
     // TODO(Andrea)
-    // Every bucket has its own set of flags
-    // Lookup somewhere how to configure a bucket
+    // Every table has its own set of flags
+    // Lookup somewhere how to configure a table
     MDB_dbi newdbi{0};
 
     int rc{mdb_dbi_open(handle_, (name.empty() ? nullptr : name.c_str()), flags, &newdbi)};
@@ -294,7 +294,7 @@ void Transaction::abort(void) {
     if (!assert_handle(false)) {
         return;
     }
-    signal_on_before_abort_();  // Signals connected buckets to close
+    signal_on_before_abort_();  // Signals connected tables to close
     mdb_txn_abort(handle_);
     if (is_ro()) {
         parent_env_->touch_ro_txns(-1);
@@ -307,7 +307,7 @@ void Transaction::abort(void) {
 
 int Transaction::commit(void) {
     assert_handle();
-    signal_on_before_commit_();  // Signals connected buckets to close
+    signal_on_before_commit_();  // Signals connected tables to close
     int rc{mdb_txn_commit(handle_)};
     if (rc == MDB_SUCCESS) {
         if (is_ro()) {
@@ -388,8 +388,7 @@ int Table::put(MDB_val* key, MDB_val* data, unsigned int flag) {
 bool Table::assert_handle(bool should_throw) {
     bool retvar{handle_ != nullptr};
     if (!retvar && should_throw) {
-        throw std::runtime_error("Invalid or closed cursor for bucket " +
-                                 (dbi_name_.empty() ? "[unnamed]" : dbi_name_));
+        throw std::runtime_error("Invalid or closed cursor for table " + (dbi_name_.empty() ? "[unnamed]" : dbi_name_));
     }
     return retvar;
 }
@@ -500,8 +499,8 @@ std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts,
 
     // Create new instance and open db file(s)
     auto newitem = std::make_shared<lmdb::Environment>();
-    (void)newitem->set_mapsize(opts.map_size);
-    (void)newitem->set_max_dbs(opts.max_buckets);
+    err_handler(newitem->set_mapsize(opts.map_size));
+    err_handler(newitem->set_max_dbs(opts.max_tables));
     newitem->open(path, flags | (forwriting ? 0 : MDB_RDONLY), opts.mode);  // Throws on error
 
     s_envs[envkey] = {newitem, flags};

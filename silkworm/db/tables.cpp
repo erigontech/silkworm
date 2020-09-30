@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-#include "bucket.hpp"
+#include "tables.hpp"
 
-namespace silkworm::db::bucket {
+namespace silkworm::db::table {
 
 void create_all(lmdb::Transaction& txn) {
-    for (const char* table : db::bucket::kBuckets) {
+    for (const char* table : kTables) {
         txn.open(table, MDB_CREATE);
     }
 }
 
-}  // namespace silkworm::db::bucket
+}  // namespace silkworm::db::table

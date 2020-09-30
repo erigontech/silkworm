@@ -21,7 +21,7 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-#include <silkworm/chain/block_chain.hpp>
+#include <silkworm/chain/config.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
 #include <stack>
@@ -44,11 +44,13 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const BlockChain& chain, const Block& block, IntraBlockState& state) noexcept;
+    EVM(const Block& block, IntraBlockState& state, state::Reader* header_reader,
+        const ChainConfig& config = kEtcMainnetConfig)
+    noexcept;
 
     const Block& block() const noexcept { return block_; }
 
-    const ChainConfig& config() const noexcept { return chain_.config; }
+    const ChainConfig& config() const noexcept { return config_; }
 
     IntraBlockState& state() noexcept { return state_; }
 
@@ -68,9 +70,10 @@ class EVM {
     uint8_t number_of_precompiles() const noexcept;
     bool is_precompiled(const evmc::address& contract) const noexcept;
 
-    const BlockChain& chain_;
     const Block& block_;
     IntraBlockState& state_;
+    state::Reader* header_reader_{nullptr};
+    const ChainConfig& config_;
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};
     std::stack<evmc::address> address_stack_{};

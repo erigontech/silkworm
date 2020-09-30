@@ -23,7 +23,6 @@
 #include <iostream>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/chaindb.hpp>
-#include <silkworm/db/lmdb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/state/intra_block_state.hpp>
@@ -54,8 +53,6 @@ int main(int argc, char* argv[]) {
     using namespace silkworm;
 
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str())};
-    db::LmdbDatabase legacy_db{*env->handle()};
-    BlockChain chain{&legacy_db};
 
     const uint64_t from{absl::GetFlag(FLAGS_from)};
     const uint64_t to{absl::GetFlag(FLAGS_to)};
@@ -77,7 +74,7 @@ int main(int argc, char* argv[]) {
 
         state::Reader reader{*txn, block_num};
         IntraBlockState state{&reader};
-        ExecutionProcessor processor{chain, bh->block, state};
+        ExecutionProcessor processor{bh->block, state, &reader};
 
         std::vector<Receipt> receipts;
         try {
@@ -95,7 +92,7 @@ int main(int argc, char* argv[]) {
             return -2;
         }
 
-        if (chain.config.has_byzantium(block_num)) {
+        if (kEtcMainnetConfig.has_byzantium(block_num)) {
             evmc::bytes32 receipt_root{trie::root_hash(receipts)};
             if (receipt_root != bh->block.header.receipts_root) {
                 std::cerr << "Receipt root mismatch for block " << block_num << " 😖\n";
@@ -149,8 +146,6 @@ int main(int argc, char* argv[]) {
             t1 = t2;
         }
     }
-
-    legacy_db.env_ = nullptr;
 
     t1 = absl::Now();
     std::cout << t1 << " Blocks [" << from << "; " << block_num << ") have been checked\n";

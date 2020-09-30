@@ -48,8 +48,9 @@ intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbu
     return gas;
 }
 
-ExecutionProcessor::ExecutionProcessor(const BlockChain& chain, const Block& block, IntraBlockState& state)
-    : evm_{chain, block, state} {}
+ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, state::Reader* header_reader,
+                                       const ChainConfig& config)
+    : evm_{block, state, header_reader, config} {}
 
 [[maybe_unused]] static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
     Bytes rlp{};

@@ -22,11 +22,13 @@
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/change.hpp>
-#include <silkworm/types/block.hpp>
 #include <silkworm/types/account.hpp>
+#include <silkworm/types/block.hpp>
 #include <vector>
 
 namespace silkworm::db {
+
+std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number, const evmc::bytes32& block_hash);
 
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number);
 

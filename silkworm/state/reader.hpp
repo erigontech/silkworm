@@ -20,8 +20,10 @@
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/types/account.hpp>
+#include <silkworm/types/block.hpp>
 
 namespace silkworm::state {
+
 class Reader {
    public:
     Reader(const Reader&) = delete;
@@ -29,8 +31,12 @@ class Reader {
 
     Reader(lmdb::Transaction& txn, uint64_t block_number) noexcept : txn_{txn}, block_number_{block_number} {}
 
+    std::optional<BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept;
+
     std::optional<Account> read_account(const evmc::address& address) const noexcept;
+
     Bytes read_code(const evmc::bytes32& code_hash) const noexcept;
+
     evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
                                const evmc::bytes32& key) const noexcept;
 
@@ -41,6 +47,7 @@ class Reader {
     lmdb::Transaction& txn_;
     uint64_t block_number_{0};
 };
+
 }  // namespace silkworm::state
 
 #endif  // SILKWORM_STATE_READER_H_

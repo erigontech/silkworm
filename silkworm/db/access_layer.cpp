@@ -20,10 +20,22 @@
 
 #include "bucket.hpp"
 #include "history_index.hpp"
-#include "lmdb.hpp"
 #include "util.hpp"
 
 namespace silkworm::db {
+
+std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number, const evmc::bytes32& block_hash) {
+    auto table{txn.open(bucket::kBlockHeaders)};
+    Bytes key{block_key(block_number, block_hash)};
+    std::optional<ByteView> header_rlp{table->get(key)};
+    if (!header_rlp) {
+        return {};
+    }
+
+    BlockHeader header;
+    rlp::decode(*header_rlp, header);
+    return header;
+}
 
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number) {
     auto header_table{txn.open(bucket::kBlockHeaders)};

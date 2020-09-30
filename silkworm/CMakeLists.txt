@@ -32,8 +32,6 @@ find_package(Microsoft.GSL CONFIG REQUIRED)
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
-add_compile_definitions(NATIVE_LITTLE_ENDIAN)
-
 if(MSVC)
   add_compile_options(/W4)
 endif()

@@ -44,7 +44,7 @@ class EVM {
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
-    EVM(const Block& block, IntraBlockState& state, state::Reader* header_reader,
+    EVM(const Block& block, IntraBlockState& state, state::HeaderReader* header_reader,
         const ChainConfig& config = kMainnetConfig)
     noexcept;
 
@@ -72,7 +72,7 @@ class EVM {
 
     const Block& block_;
     IntraBlockState& state_;
-    state::Reader* header_reader_{nullptr};
+    state::HeaderReader* header_reader_{nullptr};
     const ChainConfig& config_;
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};

@@ -409,7 +409,7 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<lmdb::Table> lmdb_headers{nullptr};    // Block headers table
     std::unique_ptr<lmdb::Table> lmdb_bodies{nullptr};     // Block bodies table
     std::unique_ptr<lmdb::Table> lmdb_senders{nullptr};    // Transaction senders table
-    ChainConfig config{kEthMainnetConfig};                 // Main net config flags
+    ChainConfig config{kMainnetConfig};                    // Main net config flags
     evmc::bytes32* canonical_headers{nullptr};             // Storage space for canonical headers
     uint64_t canonical_headers_count{0};                   // Overall number of canonical headers collected
     std::vector<Recoverer::package> recoverPackages{};     // Where to store work packages for recoverers

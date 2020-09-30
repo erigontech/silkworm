@@ -45,7 +45,7 @@ class EVM {
     EVM& operator=(const EVM&) = delete;
 
     EVM(const Block& block, IntraBlockState& state, state::Reader* header_reader,
-        const ChainConfig& config = kEtcMainnetConfig)
+        const ChainConfig& config = kMainnetConfig)
     noexcept;
 
     const Block& block() const noexcept { return block_; }

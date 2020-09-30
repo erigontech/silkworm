@@ -182,16 +182,16 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
 };
 
 static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
-    {"difficulty.json", kEthMainnetConfig},
+    {"difficulty.json", kMainnetConfig},
     {"difficultyByzantium.json", kNetworkConfig.at("Byzantium")},
     {"difficultyConstantinople.json", kNetworkConfig.at("Constantinople")},
-    {"difficultyCustomMainNetwork.json", kEthMainnetConfig},
+    {"difficultyCustomMainNetwork.json", kMainnetConfig},
     {"difficultyEIP2384_random_to20M.json", kNetworkConfig.at("EIP2384")},
     {"difficultyEIP2384_random.json", kNetworkConfig.at("EIP2384")},
     {"difficultyEIP2384.json", kNetworkConfig.at("EIP2384")},
     {"difficultyFrontier.json", kNetworkConfig.at("Frontier")},
     {"difficultyHomestead.json", kNetworkConfig.at("Homestead")},
-    {"difficultyMainNetwork.json", kEthMainnetConfig},
+    {"difficultyMainNetwork.json", kMainnetConfig},
     {"difficultyRopsten.json", kRopstenConfig},
 };
 

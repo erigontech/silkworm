@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
             return -2;
         }
 
-        if (kEtcMainnetConfig.has_byzantium(block_num)) {
+        if (kMainnetConfig.has_byzantium(block_num)) {
             evmc::bytes32 receipt_root{trie::root_hash(receipts)};
             if (receipt_root != bh->block.header.receipts_root) {
                 std::cerr << "Receipt root mismatch for block " << block_num << " 😖\n";

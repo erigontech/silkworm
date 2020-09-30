@@ -101,7 +101,7 @@ struct ChainConfig {
     }
 };
 
-constexpr ChainConfig kEthMainnetConfig{
+constexpr ChainConfig kMainnetConfig{
     1,  // chain_id
 
     1'150'000,  // homestead_block
@@ -131,7 +131,7 @@ constexpr ChainConfig kRopstenConfig{
 };
 
 // https://ecips.ethereumclassic.org/ECIPs/ecip-1066
-constexpr ChainConfig kEtcMainnetConfig{
+constexpr ChainConfig kClassicMainnetConfig{
     61,  // chain_id
 
     1'150'000,   // homestead_block

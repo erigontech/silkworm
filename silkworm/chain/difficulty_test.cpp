@@ -28,7 +28,7 @@ TEST_CASE("DifficultyTest34") {
     bool parent_has_uncles{false};
 
     intx::uint256 difficulty{canonical_difficulty(block_number, block_timestamp, parent_difficulty, parent_timestamp,
-                                                  parent_has_uncles, kEthMainnetConfig)};
+                                                  parent_has_uncles, kMainnetConfig)};
     CHECK(difficulty == 0x72772897b619876a);
 }
 }  // namespace silkworm

@@ -39,7 +39,7 @@ class ExecutionProcessor {
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
     ExecutionProcessor(const Block& block, IntraBlockState& state, state::Reader* header_reader,
-                       const ChainConfig& config = kEtcMainnetConfig);
+                       const ChainConfig& config = kMainnetConfig);
 
     // precondition: txn.from must be recovered
     Receipt execute_transaction(const Transaction& txn);

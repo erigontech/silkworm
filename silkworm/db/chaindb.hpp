@@ -169,8 +169,8 @@ class Transaction {
      */
 
     std::map<std::string, MDB_dbi> dbis_;  // Collection of opened MDB_dbi
-    std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const char* name, unsigned int flags = 0);
-    std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const std::string name, unsigned int flags = 0);
+    MDB_dbi open_dbi(const char* name, unsigned int flags = 0);
+    MDB_dbi open_dbi(const std::string name, unsigned int flags = 0);
 
     boost::signals2::connection conn_on_env_close_;  // Holds the connection to env signal_on_before_close_
 
@@ -251,7 +251,7 @@ class Table {
      * For more fine grained options see #put_current(), #put_nodup, #put_noovrw,
      * #put_reserve(), #put_append(), #put_append_dup() and #put_multiple()
      */
-    int put(MDB_val* key, MDB_val* data);
+    void put(ByteView key, ByteView data);
 
     /* @brief Replace the k/d pair at current cursor position
      *

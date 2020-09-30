@@ -251,7 +251,7 @@ MDB_txn* Transaction::open_transaction(Environment* parent_env, MDB_txn* parent_
     return retvar;
 }
 
-std::optional<std::pair<std::string, MDB_dbi>> Transaction::open_dbi(const char* name, unsigned int flags) {
+MDB_dbi Transaction::open_dbi(const char* name, unsigned int flags) {
     std::string namestr{};
     if (name) {
         namestr.assign(name);
@@ -259,13 +259,13 @@ std::optional<std::pair<std::string, MDB_dbi>> Transaction::open_dbi(const char*
     return open_dbi(namestr, flags);
 }
 
-std::optional<std::pair<std::string, MDB_dbi>> Transaction::open_dbi(const std::string name, unsigned int flags) {
+MDB_dbi Transaction::open_dbi(const std::string name, unsigned int flags) {
     assert_handle();
 
     // Lookup value in map
     auto iter = dbis_.find(name);
     if (iter != dbis_.end()) {
-        return {std::pair(iter->first, iter->second)};
+        return iter->second;
     }
 
     // TODO(Andrea)
@@ -273,12 +273,10 @@ std::optional<std::pair<std::string, MDB_dbi>> Transaction::open_dbi(const std::
     // Lookup somewhere how to configure a bucket
     MDB_dbi newdbi{0};
 
-    int rc{mdb_dbi_open(handle_, (name.empty() ? 0 : name.c_str()), flags, &newdbi)};
-    if (rc != MDB_SUCCESS) {
-        return {};
-    }
+    int rc{mdb_dbi_open(handle_, (name.empty() ? nullptr : name.c_str()), flags, &newdbi)};
+    err_handler(rc);
     dbis_[name] = newdbi;
-    return {std::pair(name, newdbi)};
+    return newdbi;
 }
 
 Transaction::Transaction(Environment* parent, unsigned int flags)
@@ -288,11 +286,8 @@ Transaction::~Transaction() { abort(); }
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
 std::unique_ptr<Table> Transaction::open(const char* name, unsigned int flags) {
-    std::optional<std::pair<std::string, MDB_dbi>> dbi{open_dbi(name, flags)};
-    if (!dbi) {
-        throw exception(MDB_NOTFOUND, mdb_strerror(MDB_NOTFOUND));
-    }
-    return std::make_unique<Table>(this, dbi.value().second, dbi.value().first);
+    MDB_dbi dbi{open_dbi(name, flags)};
+    return std::make_unique<Table>(this, dbi, name);
 }
 
 void Transaction::abort(void) {
@@ -436,7 +431,12 @@ int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEX
 int Table::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
 int Table::get_dcount(size_t* count) { return mdb_cursor_count(handle_, count); }
 
-int Table::put(MDB_val* key, MDB_val* data) { return put(key, data, 0u); }
+void Table::put(ByteView key, ByteView data) {
+    MDB_val key_val{db::to_mdb_val(key)};
+    MDB_val data_val{db::to_mdb_val(data)};
+    err_handler(put(&key_val, &data_val, 0));
+}
+
 int Table::put_current(MDB_val* key, MDB_val* data) { return put(key, data, MDB_CURRENT); }
 int Table::put_nodup(MDB_val* key, MDB_val* data) { return put(key, data, MDB_NODUPDATA); }
 int Table::put_noovrw(MDB_val* key, MDB_val* data) { return put(key, data, MDB_NOOVERWRITE); }

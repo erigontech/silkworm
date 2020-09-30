@@ -17,6 +17,8 @@
 #ifndef SILKWORM_DB_BUCKET_H_
 #define SILKWORM_DB_BUCKET_H_
 
+#include <silkworm/db/chaindb.hpp>
+
 /*
 Part of the compatibility layer with the Turbo-Geth DB format;
 see its common/dbutils/bucket.go.
@@ -40,6 +42,10 @@ constexpr const char* kSenders{"txSenders"};
 constexpr const char* kBuckets[]{kPlainState,   kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory,
                                  kCode,         kCodeHash,       kLastBlock,      kLastFast,       kLastHeader,
                                  kBlockHeaders, kBlockBodies,    kSenders};
+
+// Creates all tables that do not yet exist.
+void create_all(lmdb::Transaction& txn);
+
 }  // namespace silkworm::db::bucket
 
 #endif  // SILKWORM_DB_BUCKET_H_

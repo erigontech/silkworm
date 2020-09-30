@@ -37,6 +37,7 @@ int errorCode{0};
 struct dbTableEntry {
     unsigned int id{ 0 };
     std::string name{};
+    std::size_t freelist{};
     MDB_stat stat{};
 };
 
@@ -170,9 +171,19 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<db::lmdb::Transaction>& tx)
         int rc{unnamed->get_first(&key, &data)};
         while (!shouldStop && rc == MDB_SUCCESS) {
             std::string_view v{ static_cast<char*>(key.mv_data), key.mv_size };
-            auto named = tx->open(v.data());
+
             dbTableEntry item{id++};
             item.name.assign(v.data());
+
+            if (data.mv_size < sizeof(size_t)) {
+                throw silkworm::db::lmdb::exception(MDB_INVALID, mdb_strerror(MDB_INVALID));
+            }
+
+            ByteView vdata{static_cast<uint8_t*>(data.mv_data), sizeof(size_t)};
+            item.freelist =
+                (sizeof(size_t) == 8 ? boost::endian::load_big_u64(&vdata[0]) : boost::endian::load_big_u32(&vdata[0]));
+
+            auto named = tx->open(v.data());
             rc = named->get_stat(&item.stat);
             if (!rc) {
                 ret.push_back(item);
@@ -200,6 +211,7 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
 
         std::vector<dbTableEntry> entries{get_tables(lmdb_txn)};
         size_t items_size{0};
+        size_t items_free{0};
         std::cout << "\n Database contains " << entries.size() << " tables\n" << std::endl;
         if (entries.size()) {
 
@@ -207,28 +219,35 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
                       << " " << std::left << std::setw(30) << std::setfill(' ') << "Table name"
                       << " " << std::right << std::setw(10) << std::setfill(' ') << "Records"
                       << " " << std::right << std::setw(6) << std::setfill(' ') << "Depth"
-                      << " " << std::right << std::setw(12) << std::setfill(' ') << "Size" << std::endl;
+                      << " " << std::right << std::setw(12) << std::setfill(' ') << "Size"
+                      << " " << std::right << std::setw(12) << std::setfill(' ') << "Free" << std::endl;
 
             std::cout << std::right << std::setw(4) << std::setfill('-') << ""
                       << " " << std::left << std::setw(30) << std::setfill('-') << ""
                       << " " << std::right << std::setw(10) << std::setfill('-') << ""
                       << " " << std::right << std::setw(6) << std::setfill('-') << ""
+                      << " " << std::right << std::setw(12) << std::setfill('-') << ""
                       << " " << std::right << std::setw(12) << std::setfill('-') << "" << std::endl;
 
             for (dbTableEntry item : entries) {
                 size_t item_size{item.stat.ms_psize *
                                  (item.stat.ms_leaf_pages + item.stat.ms_branch_pages + item.stat.ms_overflow_pages)};
                 items_size += item_size;
+                items_free += item.freelist;
+
                 std::cout << std::right << std::setw(4) << std::setfill(' ') << item.id << " " << std::left
                           << std::setw(30) << std::setfill(' ') << item.name << " " << std::right << std::setw(10)
                           << std::setfill(' ') << item.stat.ms_entries << " " << std::right << std::setw(6)
                           << std::setfill(' ') << item.stat.ms_depth << " " << std::right << std::setw(12)
-                          << std::setfill(' ') << item_size << std::endl;
+                          << std::setfill(' ') << item_size << " " << std::right << std::setw(12)
+                          << std::setfill(' ') << item.freelist << std::endl;
             }
+
         }
 
         std::cout << "\n Size of file on disk : " << std::right << std::setw(12) << std::setfill(' ') << file_size << std::endl;
         std::cout << " Size of data in file : " << std::right << std::setw(12) << std::setfill(' ') << items_size << std::endl;
+        std::cout << " Total free list      : " << std::right << std::setw(12) << std::setfill(' ') << items_free << std::endl;
         std::cout << " Free space available : " << std::right << std::setw(12) << std::setfill(' ')
                   << (file_size - items_size) << std::endl;
 
@@ -256,6 +275,75 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
 
 }
 
+int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string workdir, bool keep) {
+
+    int retvar{ 0 };
+    std::shared_ptr<db::lmdb::Environment> lmdb_env{ nullptr };  // Main lmdb environment
+    try
+    {
+        bfs::path source{ bfs::path{datadir} / bfs::path{"data.mdb"} };
+        size_t source_size{bfs::file_size(source)};
+        bfs::path target{ bfs::path{workdir} / bfs::path{"data.mdb"} };
+
+        // Do not overwrite target
+        if (bfs::exists(target)) {
+            throw std::runtime_error("File data.mdb already existing in working directory");
+        }
+
+        // Ensure target working directory has enough free space
+        // at least the size of source
+        auto target_space = bfs::space(target.parent_path());
+        if (target_space.free <= source_size) {
+            throw std::runtime_error("Insufficient disk space on working directory");
+        }
+
+        // Open db and start transaction
+        db::lmdb::options opts{};
+        if (mapsize.has_value()) opts.map_size = *mapsize;
+        lmdb_env = db::get_env(datadir.c_str(), opts, /* forwriting=*/false);
+        std::cout << " Compacting " << source.string() << "\n into " << target.string() << "\n Please be patient ..."
+                  << std::endl;
+        int rc{mdb_env_copy2(*(lmdb_env->handle()), workdir.c_str(), MDB_CP_COMPACT)};
+        if (rc) {
+            retvar = -1;
+        }
+        else
+        {
+            // Do we have a valid compacted file on disk ?
+            // replace source with target
+            if (!bfs::exists(target)) {
+                throw std::runtime_error("Can't locate compacted data.mdb");
+            }
+
+            // Create a bak copy of source file
+            if (keep) {
+                bfs::path source_bak{ bfs::path{datadir} / bfs::path{"data_mdb.bak"} };
+                if (bfs::exists(source_bak)) {
+                    bfs::remove(source_bak);
+                }
+                bfs::rename(source, source_bak);
+            }
+
+            // Eventually replace original file
+            bfs::remove(source);
+            bfs::rename(target, source);
+        }
+    }
+    catch (const std::exception& ex)
+    {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    if (lmdb_env) {
+        lmdb_env->close();
+    }
+
+    return retvar;
+
+}
+
+
 int main(int argc, char* argv[]) {
 
     signal(SIGINT, sig_handler);
@@ -264,8 +352,10 @@ int main(int argc, char* argv[]) {
     CLI::App app_main("Tests db interfaces.");
 
     std::string po_data_dir{""};     // Provided database path
+    std::string po_work_dir{""};     // Provided work path
     std::string po_mapsize_str{""};  // Provided lmdb map size
     std::string po_table_name{""};   // Provided table name
+    bool po_keep{ false };
     CLI::Range range32(1u, UINT32_MAX);
 
     app_main.add_option("--datadir", po_data_dir, "Path to directory for data.mdb", false);
@@ -274,10 +364,16 @@ int main(int argc, char* argv[]) {
     auto& app_tables = *app_main.add_subcommand("tables", "List contained tables");
 
     auto& app_clear = *app_main.add_subcommand("clear", "Empties a named table");
-    app_clear.add_flag("--name", po_table_name, "Name of table to clear")->required();
+    app_clear.add_option("--name", po_table_name, "Name of table to clear")->required();
 
     auto& app_drop = *app_main.add_subcommand("drop", "Drops a named table");
-    app_drop.add_flag("--name", po_table_name, "Name of table to drop")->required();
+    app_drop.add_option("--name", po_table_name, "Name of table to drop")->required();
+
+    auto& app_compact = *app_main.add_subcommand("compact", "Compacts an lmdb database");
+    app_compact.add_option("--workdir", po_work_dir, "Working directory (must exist)", false)
+        ->required()
+        ->check(CLI::ExistingDirectory);
+    app_compact.add_flag("--keep", po_work_dir, "Keep old file");
 
     CLI11_PARSE(app_main, argc, argv);
 
@@ -316,6 +412,8 @@ int main(int argc, char* argv[]) {
         return drop_table(po_data_dir, lmdb_mapSize, po_table_name, false);
     } else if (app_drop) {
         return drop_table(po_data_dir, lmdb_mapSize, po_table_name, true);
+    } else if (app_compact) {
+        return compact_db(po_data_dir, lmdb_mapSize, po_work_dir, po_keep);
     } else {
         std::cerr << "No command specified" << std::endl;
     }

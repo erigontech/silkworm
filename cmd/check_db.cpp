@@ -278,7 +278,7 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
 int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string workdir, bool keep) {
 
     int retvar{ 0 };
-    std::shared_ptr<db::lmdb::Environment> lmdb_env{ nullptr };  // Main lmdb environment
+    std::shared_ptr<db::lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
     try
     {
         bfs::path source{ bfs::path{datadir} / bfs::path{"data.mdb"} };
@@ -309,14 +309,22 @@ int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string
         }
         else
         {
+
+            std::cout << "Database compact completed ..." << std::endl;
             // Do we have a valid compacted file on disk ?
             // replace source with target
             if (!bfs::exists(target)) {
                 throw std::runtime_error("Can't locate compacted data.mdb");
             }
 
+            // Close environment to release source file
+            std::cout << "Closing origin db ..." << std::endl;
+            lmdb_env->close();
+            lmdb_env.reset();
+
             // Create a bak copy of source file
             if (keep) {
+                std::cout << "Creating backup copy of origin db ..." << std::endl;
                 bfs::path source_bak{ bfs::path{datadir} / bfs::path{"data_mdb.bak"} };
                 if (bfs::exists(source_bak)) {
                     bfs::remove(source_bak);
@@ -325,8 +333,15 @@ int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string
             }
 
             // Eventually replace original file
-            bfs::remove(source);
+            if (bfs::exists(source)) {
+                std::cout << "Deleting origin db ..." << std::endl;
+                bfs::remove(source);
+            }
+
+            std::cout << "Replacing origin db with compacted ..." << std::endl;
             bfs::rename(target, source);
+
+            std::cout << "All done !" << std::endl;
         }
     }
     catch (const std::exception& ex)

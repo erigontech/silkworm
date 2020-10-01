@@ -223,6 +223,9 @@ class Recoverer : public silkworm::Worker {
                 std::cout << format_time() << " Recoverer #" << id_ << " completed task" << std::endl;
             }
         }
+
+        std::free(mydata_);
+
     };
 };
 
@@ -777,6 +780,11 @@ int main(int argc, char* argv[]) {
     if (lmdb_senders) lmdb_senders->close();
     if (lmdb_headers) lmdb_headers->close();
     if (lmdb_bodies) lmdb_bodies->close();
+
+    // free memory
+    if (canonical_headers) {
+        std::free(canonical_headers);
+    }
 
     int rc{0};
     if (lmdb_txn) {

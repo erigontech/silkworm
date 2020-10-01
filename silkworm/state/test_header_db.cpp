@@ -14,29 +14,30 @@
    limitations under the License.
 */
 
-#include "block_chain.hpp"
+#include "test_header_db.hpp"
 
-#include <stdexcept>
+#include <cstring>
+#include <ethash/keccak.hpp>
+#include <utility>
 
 namespace silkworm {
 
-BlockChain::BlockChain(db::Database* db) : db_{db} {}
-
-std::optional<BlockHeader> BlockChain::get_header(uint64_t block_number,
-                                                  const evmc::bytes32& block_hash) const noexcept {
-    if (block_number < headers_.size()) {
-        return headers_[block_number];
-    } else if (db_) {
-        return db_->get_header(block_number, block_hash);
-    } else {
+std::optional<BlockHeader> TestHeaderDB::read_header(uint64_t, const evmc::bytes32& block_hash) const noexcept {
+    auto it{headers_.find(block_hash)};
+    if (it == headers_.end()) {
         return {};
+    } else {
+        return it->second;
     }
 }
 
-void BlockChain::insert_block(const Block& block) {
-    if (block.header.number != headers_.size()) {
-        throw std::logic_error{"reorgs are not supported yet"};
-    }
-    headers_.push_back(block.header);
+void TestHeaderDB::write_header(BlockHeader block_header) {
+    Bytes rlp{};
+    rlp::encode(rlp, block_header);
+    ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.size())};
+    evmc::bytes32 key;
+    std::memcpy(key.bytes, hash.bytes, kHashLength);
+    headers_[key] = std::move(block_header);
 }
+
 }  // namespace silkworm

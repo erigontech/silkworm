@@ -22,7 +22,6 @@
 #include <iostream>
 #include <regex>
 #include <silkworm/chain/config.hpp>
-#include <silkworm/db/bucket.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>

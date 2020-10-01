@@ -20,12 +20,12 @@
 #include <iostream>
 #include <map>
 #include <nlohmann/json.hpp>
-#include <silkworm/chain/block_chain.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/intra_block_state.hpp>
+#include <silkworm/state/test_header_db.hpp>
 #include <silkworm/types/block.hpp>
 #include <string>
 #include <string_view>
@@ -51,6 +51,16 @@ static const std::set<fs::path> kSlowTests{
 // TODO[Issue #23] make the failing tests work
 static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "InvalidBlocks",
+
+    // Reorgs are not supported yet
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
+        "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
+        "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
+    kBlockchainDir / "ValidBlocks" / "bcForkStressTest",
+    kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
+    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
 
     // Expected: "UnknownParent"
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
@@ -182,16 +192,16 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
 };
 
 static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
-    {"difficulty.json", kEthMainnetConfig},
+    {"difficulty.json", kMainnetConfig},
     {"difficultyByzantium.json", kNetworkConfig.at("Byzantium")},
     {"difficultyConstantinople.json", kNetworkConfig.at("Constantinople")},
-    {"difficultyCustomMainNetwork.json", kEthMainnetConfig},
+    {"difficultyCustomMainNetwork.json", kMainnetConfig},
     {"difficultyEIP2384_random_to20M.json", kNetworkConfig.at("EIP2384")},
     {"difficultyEIP2384_random.json", kNetworkConfig.at("EIP2384")},
     {"difficultyEIP2384.json", kNetworkConfig.at("EIP2384")},
     {"difficultyFrontier.json", kNetworkConfig.at("Frontier")},
     {"difficultyHomestead.json", kNetworkConfig.at("Homestead")},
-    {"difficultyMainNetwork.json", kEthMainnetConfig},
+    {"difficultyMainNetwork.json", kMainnetConfig},
     {"difficultyRopsten.json", kRopstenConfig},
 };
 
@@ -220,7 +230,7 @@ IntraBlockState pre_state(const nlohmann::json& pre) {
 
 enum Status { kPassed, kFailed, kSkipped };
 
-Status run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& state) {
+Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockState& state, TestHeaderDB& header_db) {
     bool invalid{b.contains("expectException")};
 
     Block block;
@@ -246,26 +256,19 @@ Status run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& st
         return kFailed;
     }
 
-    try {
-        chain.insert_block(block);
-    } catch (const std::exception& e) {
-        std::cout << e.what() << "\n";
-        return kSkipped;
-    }
-
     uint64_t block_number{block.header.number};
-    bool homestead{chain.config.has_homestead(block_number)};
-    bool spurious_dragon{chain.config.has_spurious_dragon(block_number)};
+    bool homestead{config.has_homestead(block_number)};
+    bool spurious_dragon{config.has_spurious_dragon(block_number)};
 
     for (Transaction& txn : block.transactions) {
         if (spurious_dragon) {
-            txn.recover_sender(homestead, chain.config.chain_id);
+            txn.recover_sender(homestead, config.chain_id);
         } else {
             txn.recover_sender(homestead, {});
         }
     }
 
-    ExecutionProcessor processor{chain, block, state};
+    ExecutionProcessor processor{block, state, &header_db, config};
     try {
         processor.execute_block();
     } catch (const ValidationError& e) {
@@ -281,6 +284,8 @@ Status run_block(const nlohmann::json& b, BlockChain& chain, IntraBlockState& st
         std::cout << "Expected: " << b["expectException"] << "\n";
         return kFailed;
     }
+
+    header_db.write_header(block.header);
 
     return kPassed;
 }
@@ -342,15 +347,15 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     Block genesis_block;
     rlp::decode(genesis_view, genesis_block);
 
-    BlockChain chain{nullptr};
-    std::string network{j["network"].get<std::string>()};
-    chain.config = kNetworkConfig.at(network);
-    chain.insert_block(genesis_block);
+    TestHeaderDB header_db{};
+    header_db.write_header(genesis_block.header);
 
+    std::string network{j["network"].get<std::string>()};
+    const ChainConfig& config{kNetworkConfig.at(network)};
     IntraBlockState state{pre_state(j["pre"])};
 
     for (const auto& b : j["blocks"]) {
-        Status status{run_block(b, chain, state)};
+        Status status{run_block(b, config, state, header_db)};
         if (status != kPassed) {
             return status;
         }

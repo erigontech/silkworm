@@ -27,8 +27,8 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
-#include <silkworm/db/bucket.hpp>
 #include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
 #include <string>
@@ -279,7 +279,7 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
     }
 }
 
-uint64_t get_highest_canonical_header(std::unique_ptr<db::lmdb::Table>& headers) {
+uint64_t get_highest_canonical_header(std::unique_ptr<lmdb::Table>& headers) {
     MDB_val key, data;
     uint64_t retvar{0};
 
@@ -303,8 +303,7 @@ uint64_t get_highest_canonical_header(std::unique_ptr<db::lmdb::Table>& headers)
     return retvar;
 }
 
-uint64_t load_canonical_headers(std::unique_ptr<db::lmdb::Table>& headers, uint64_t from, uint64_t to,
-                                evmc::bytes32* out) {
+uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t from, uint64_t to, evmc::bytes32* out) {
     uint64_t retvar{0};
 
     // Locate starting canonical block selected
@@ -405,21 +404,21 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    std::shared_ptr<db::lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
-    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
-    std::unique_ptr<db::lmdb::Table> lmdb_headers{nullptr};    // Block headers table
-    std::unique_ptr<db::lmdb::Table> lmdb_bodies{nullptr};     // Block bodies table
-    std::unique_ptr<db::lmdb::Table> lmdb_senders{nullptr};    // Transaction senders table
-    ChainConfig config{kEthMainnetConfig};                     // Main net config flags
-    evmc::bytes32* canonical_headers{nullptr};                 // Storage space for canonical headers
-    uint64_t canonical_headers_count{0};                       // Overall number of canonical headers collected
-    std::vector<Recoverer::package> recoverPackages{};         // Where to store work packages for recoverers
-    uint32_t process_batch_id{0};                              // Batch identifier sent to recoverer thread
-    std::atomic<uint32_t> workers_in_flight{0};                // Number of workers in flight
-    std::atomic<uint32_t> flush_batch_id{0};                   // Holder of queue flushing order
-    uint64_t total_transactions{0};                            // Overall number of transactions processed
-    uint32_t nextRecovererId{0};                               // Used to serialize the dispatch of works to threads
-    size_t batchTxsCount{0};                                   // Progressive number of delivered work
+    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
+    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
+    std::unique_ptr<lmdb::Table> lmdb_headers{nullptr};    // Block headers table
+    std::unique_ptr<lmdb::Table> lmdb_bodies{nullptr};     // Block bodies table
+    std::unique_ptr<lmdb::Table> lmdb_senders{nullptr};    // Transaction senders table
+    ChainConfig config{kMainnetConfig};                    // Main net config flags
+    evmc::bytes32* canonical_headers{nullptr};             // Storage space for canonical headers
+    uint64_t canonical_headers_count{0};                   // Overall number of canonical headers collected
+    std::vector<Recoverer::package> recoverPackages{};     // Where to store work packages for recoverers
+    uint32_t process_batch_id{0};                          // Batch identifier sent to recoverer thread
+    std::atomic<uint32_t> workers_in_flight{0};            // Number of workers in flight
+    std::atomic<uint32_t> flush_batch_id{0};               // Holder of queue flushing order
+    uint64_t total_transactions{0};                        // Overall number of transactions processed
+    uint32_t nextRecovererId{0};                           // Used to serialize the dispatch of works to threads
+    size_t batchTxsCount{0};                               // Progressive number of delivered work
 
     std::condition_variable ready_for_write_cv{};
     std::atomic_bool ready_for_write{false};
@@ -449,7 +448,7 @@ int main(int argc, char* argv[]) {
                         workers_thread_error_.store(true);
                     }
                 } else {
-                    // Append results to senders bucket
+                    // Append results to senders table
                     int rc{0};
                     Bytes senders_key(40, '\0');
                     MDB_val key{40, (void*)&senders_key[0]};
@@ -498,14 +497,16 @@ int main(int argc, char* argv[]) {
 
     try {
         // Open db and start transaction
-        db::lmdb::options opts{};
-        if (*lmdb_mapSize) opts.map_size = *lmdb_mapSize;
+        lmdb::options opts{};
+        if (*lmdb_mapSize) {
+            opts.map_size = *lmdb_mapSize;
+        }
 
-        lmdb_env = db::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
+        lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
         lmdb_txn = lmdb_env->begin_rw_transaction();
-        lmdb_senders = lmdb_txn->open(db::bucket::kSenders, MDB_CREATE);  // Throws on error
-        lmdb_headers = lmdb_txn->open(db::bucket::kBlockHeaders);         // Throws on error
-        lmdb_bodies = lmdb_txn->open(db::bucket::kBlockBodies);           // Throws on error
+        lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);  // Throws on error
+        lmdb_headers = lmdb_txn->open(db::table::kBlockHeaders);         // Throws on error
+        lmdb_bodies = lmdb_txn->open(db::table::kBlockBodies);           // Throws on error
 
         size_t record_count{0};
         uint64_t mostrecent_header{0};
@@ -514,7 +515,7 @@ int main(int argc, char* argv[]) {
         // Ensure Headers are populated
         lmdb_headers->get_rcount(&record_count);
         if (!record_count) {
-            throw std::logic_error("Headers bucket empty. Aborting");
+            throw std::logic_error("Headers table empty. Aborting");
         } else {
             // Locate most recent canonical header
             mostrecent_header = get_highest_canonical_header(lmdb_headers);
@@ -525,11 +526,11 @@ int main(int argc, char* argv[]) {
         // Ensure Bodies are populated
         lmdb_bodies->get_rcount(&record_count);
         if (!record_count) {
-            throw std::logic_error("Bodies bucket empty. Aborting");
+            throw std::logic_error("Bodies table empty. Aborting");
         }
 
         /*
-         * Senders bucket has only sorted keys from canonical headers
+         * Senders table has only sorted keys from canonical headers
          * By consequence po_from_block is the last block
          * stored in senders + 1.
          * If po_replay flag is set then po_from_block can be anything
@@ -554,7 +555,7 @@ int main(int argc, char* argv[]) {
                             throw std::runtime_error(mdb_strerror(rc));
                         }
                         lmdb_senders.reset();
-                        lmdb_senders = lmdb_txn->open(db::bucket::kSenders, MDB_CREATE);
+                        lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);
                     } else {
                         // Delete all senders records with key >= po_from_block
                         std::cout << format_time() << " Deleting senders table from block " << po_from_block << " ..."
@@ -606,7 +607,7 @@ int main(int argc, char* argv[]) {
             canonical_headers = static_cast<evmc::bytes32*>(mem);
         }
 
-        // Scan headers buckets to collect all canonical headers
+        // Scan headers table to collect all canonical headers
         canonical_headers_count = load_canonical_headers(lmdb_headers, po_from_block, po_to_block, canonical_headers);
         if (!canonical_headers_count) {
             // Nothing to process
@@ -757,7 +758,7 @@ int main(int argc, char* argv[]) {
         std::cout << format_time() << " Bodies scan " << (should_stop_ ? "aborted. " : "completed.")
                   << " Processed transactions " << total_transactions << std::endl;
 
-    } catch (db::lmdb::exception& ex) {
+    } catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
         std::cout << format_time() << " Unexpected error : " << ex.err() << " " << ex.what() << std::endl;
         main_thread_error_ = true;
@@ -771,7 +772,7 @@ int main(int argc, char* argv[]) {
         main_thread_error_ = true;
     }
 
-    // Stop all recoverers and buckets
+    // Stop all recoverers and close all tables
     stop_workers(recoverers_);
     if (lmdb_senders) lmdb_senders->close();
     if (lmdb_headers) lmdb_headers->close();

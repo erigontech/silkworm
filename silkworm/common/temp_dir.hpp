@@ -14,21 +14,25 @@
    limitations under the License.
 */
 
-#include "difficulty.hpp"
+#ifndef SILKWORM_COMMON_TEMP_DIR_H_
+#define SILKWORM_COMMON_TEMP_DIR_H_
 
-#include <catch2/catch.hpp>
+#include <string>
 
 namespace silkworm {
 
-TEST_CASE("DifficultyTest34") {
-    uint64_t block_number{0x33e140};
-    uint64_t block_timestamp{0x04bdbdaf};
-    uint64_t parent_difficulty{0x7268db7b46b0b154};
-    uint64_t parent_timestamp{0x04bdbdaf};
-    bool parent_has_uncles{false};
+// Creates a temporary directory on construction and removes it on destruction.
+class TemporaryDirectory {
+   public:
+    TemporaryDirectory();
+    ~TemporaryDirectory();
 
-    intx::uint256 difficulty{canonical_difficulty(block_number, block_timestamp, parent_difficulty, parent_timestamp,
-                                                  parent_has_uncles, kMainnetConfig)};
-    CHECK(difficulty == 0x72772897b619876a);
-}
+    const char* path() const noexcept { return path_.c_str(); }
+
+   private:
+    std::string path_;
+};
+
 }  // namespace silkworm
+
+#endif  // SILKWORM_COMMON_TEMP_DIR_H_

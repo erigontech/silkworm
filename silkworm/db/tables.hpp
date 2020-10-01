@@ -14,14 +14,16 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_BUCKET_H_
-#define SILKWORM_DB_BUCKET_H_
+#ifndef SILKWORM_DB_TABLES_H_
+#define SILKWORM_DB_TABLES_H_
+
+#include <silkworm/db/chaindb.hpp>
 
 /*
 Part of the compatibility layer with the Turbo-Geth DB format;
 see its common/dbutils/bucket.go.
 */
-namespace silkworm::db::bucket {
+namespace silkworm::db::table {
 
 constexpr const char* kPlainState{"PLAIN-CST"};
 constexpr const char* kAccountChanges{"PLAIN-ACS"};
@@ -37,9 +39,13 @@ constexpr const char* kBlockHeaders{"h"};
 constexpr const char* kBlockBodies{"b"};
 constexpr const char* kSenders{"txSenders"};
 
-constexpr const char* kBuckets[]{kPlainState,   kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory,
-                                 kCode,         kCodeHash,       kLastBlock,      kLastFast,       kLastHeader,
-                                 kBlockHeaders, kBlockBodies,    kSenders};
-}  // namespace silkworm::db::bucket
+constexpr const char* kTables[]{kPlainState,   kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory,
+                                kCode,         kCodeHash,       kLastBlock,      kLastFast,       kLastHeader,
+                                kBlockHeaders, kBlockBodies,    kSenders};
 
-#endif  // SILKWORM_DB_BUCKET_H_
+// Create all tables that do not yet exist.
+void create_all(lmdb::Transaction& txn);
+
+}  // namespace silkworm::db::table
+
+#endif  // SILKWORM_DB_TABLES_H_

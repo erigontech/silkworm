@@ -14,14 +14,11 @@
    limitations under the License.
 ]]
 
-hunter_add_package(Boost COMPONENTS atomic thread)
-find_package(Boost CONFIG REQUIRED COMPONENTS atomic thread)
+hunter_add_package(Boost COMPONENTS filesystem)
+find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
 
 hunter_add_package(lmdb)
 find_package(liblmdb CONFIG REQUIRED)
-
-hunter_add_package(lmdbxx)
-find_package(lmdbxx CONFIG REQUIRED)
 
 hunter_add_package(cryptopp)
 find_package(cryptopp CONFIG REQUIRED)
@@ -32,8 +29,6 @@ find_package(Microsoft.GSL CONFIG REQUIRED)
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
-add_compile_definitions(NATIVE_LITTLE_ENDIAN)
-
 if(MSVC)
   add_compile_options(/W4)
 endif()
@@ -42,10 +37,9 @@ add_library(silkworm ${SILKWORM_SRC})
 target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 
 set(SILKWORM_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set
-                         liblmdb::lmdb evmc intx::intx ff Microsoft.GSL::GSL
-                         lmdbxx::lmdbxx) # PUBLIC lmdbxx since we use its exceptions
+                         liblmdb::lmdb evmc intx::intx ff Microsoft.GSL::GSL)
 
-set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::boost)
+set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::filesystem)
 
 if(MSVC)
   list(APPEND SILKWORM_PRIVATE_LIBS ntdll.lib)

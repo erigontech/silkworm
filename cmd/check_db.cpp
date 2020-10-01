@@ -34,7 +34,7 @@ bool shouldStop{false};
 int errorCode{0};
 
 struct dbTableEntry {
-    unsigned int id{ 0 };
+    unsigned int id{0};
     std::string name{};
     std::size_t freelist{};
     MDB_stat stat{};
@@ -77,12 +77,11 @@ std::optional<uint64_t> parse_size(const std::string& strsize) {
 }
 
 int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string tablename, bool del) {
-
     int retvar{0};
     bool should_commit{false};
-    std::shared_ptr<lmdb::Environment> lmdb_env{ nullptr };  // Main lmdb environment
-    std::unique_ptr<lmdb::Transaction> lmdb_txn{ nullptr };  // Main lmdb transaction
-    std::unique_ptr<lmdb::Table> lmdb_tbl{nullptr};          // Table name to be cleared
+    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
+    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
+    std::unique_ptr<lmdb::Table> lmdb_tbl{nullptr};        // Table name to be cleared
 
     try {
         // Open db and start a rw transaction
@@ -90,14 +89,13 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
         if (mapsize.has_value()) opts.map_size = *mapsize;
         lmdb_env = lmdb::get_env(datadir.c_str(), opts, /* forwriting=*/true);
         lmdb_txn = lmdb_env->begin_rw_transaction();
-        lmdb_tbl = lmdb_txn->open(tablename.c_str());
+        lmdb_tbl = lmdb_txn->open({tablename.c_str()});
 
         size_t rcount{0};
         lmdb_tbl->get_rcount(&rcount);
         if (!del && !rcount) {
             std::cout << "\nTable " << tablename << " is already empty." << std::endl;
-        }
-        else {
+        } else {
             int rc{0};
             if (!del) {
                 std::cout << "\nEmptying table " << tablename << " (" << rcount << " records)" << std::endl;
@@ -109,21 +107,17 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
             }
             if (!rc) {
                 should_commit = true;
-            }
-            else
-            {
+            } else {
                 throw std::runtime_error(mdb_strerror(rc));
             }
         }
         lmdb_tbl->close();
 
-    }
-    catch (lmdb::exception& ex) {
+    } catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
         std::cout << ex.err() << " " << ex.what() << std::endl;
         retvar = -1;
-    }
-    catch (std::runtime_error& ex) {
+    } catch (std::runtime_error& ex) {
         // This handles runtime logic errors
         // eg. trying to open two rw txns
         std::cout << ex.what() << std::endl;
@@ -131,7 +125,6 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
     }
 
     int rc{0};
-
 
     if (lmdb_txn) {
         if (!retvar && should_commit) {
@@ -153,14 +146,12 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
     }
 
     return retvar;
-
 }
 
 std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
-
     std::vector<dbTableEntry> ret{};
 
-    auto unnamed = tx->open(0); // Opens unnamed table (every lmdb has one)
+    auto unnamed = tx->open({});  // Opens unnamed table (every lmdb has one)
     ret.emplace_back();
     ret.back().name = "[unnamed]";
     (void)unnamed->get_stat(&ret.back().stat);
@@ -169,7 +160,7 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
         MDB_val key, data;
         int rc{unnamed->get_first(&key, &data)};
         while (!shouldStop && rc == MDB_SUCCESS) {
-            std::string_view v{ static_cast<char*>(key.mv_data), key.mv_size };
+            std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};
 
             dbTableEntry item{id++};
             item.name.assign(v.data());
@@ -182,7 +173,7 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
             item.freelist =
                 (sizeof(size_t) == 8 ? boost::endian::load_big_u64(&vdata[0]) : boost::endian::load_big_u32(&vdata[0]));
 
-            auto named = tx->open(v.data());
+            auto named = tx->open({v.data()});
             rc = named->get_stat(&item.stat);
             if (!rc) {
                 ret.push_back(item);
@@ -196,10 +187,9 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
 }
 
 int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> mapsize) {
-
     int retvar{0};
-    std::shared_ptr<lmdb::Environment> lmdb_env{ nullptr };  // Main lmdb environment
-    std::unique_ptr<lmdb::Transaction> lmdb_txn{ nullptr };  // Main lmdb transaction
+    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
+    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
 
     try {
         // Open db and start transaction
@@ -213,7 +203,6 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
         size_t items_free{0};
         std::cout << "\n Database contains " << entries.size() << " tables\n" << std::endl;
         if (entries.size()) {
-
             std::cout << std::right << std::setw(4) << std::setfill(' ') << "Dbi"
                       << " " << std::left << std::setw(30) << std::setfill(' ') << "Table name"
                       << " " << std::right << std::setw(10) << std::setfill(' ') << "Records"
@@ -238,25 +227,25 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
                           << std::setw(30) << std::setfill(' ') << item.name << " " << std::right << std::setw(10)
                           << std::setfill(' ') << item.stat.ms_entries << " " << std::right << std::setw(6)
                           << std::setfill(' ') << item.stat.ms_depth << " " << std::right << std::setw(12)
-                          << std::setfill(' ') << item_size << " " << std::right << std::setw(12)
-                          << std::setfill(' ') << item.freelist << std::endl;
+                          << std::setfill(' ') << item_size << " " << std::right << std::setw(12) << std::setfill(' ')
+                          << item.freelist << std::endl;
             }
-
         }
 
-        std::cout << "\n Size of file on disk : " << std::right << std::setw(12) << std::setfill(' ') << file_size << std::endl;
-        std::cout << " Size of data in file : " << std::right << std::setw(12) << std::setfill(' ') << items_size << std::endl;
-        std::cout << " Total free list      : " << std::right << std::setw(12) << std::setfill(' ') << items_free << std::endl;
+        std::cout << "\n Size of file on disk : " << std::right << std::setw(12) << std::setfill(' ') << file_size
+                  << std::endl;
+        std::cout << " Size of data in file : " << std::right << std::setw(12) << std::setfill(' ') << items_size
+                  << std::endl;
+        std::cout << " Total free list      : " << std::right << std::setw(12) << std::setfill(' ') << items_free
+                  << std::endl;
         std::cout << " Free space available : " << std::right << std::setw(12) << std::setfill(' ')
                   << (file_size - items_size) << std::endl;
 
-    }
-    catch (lmdb::exception& ex) {
+    } catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
         std::cout << ex.err() << " " << ex.what() << std::endl;
         retvar = -1;
-    }
-    catch (std::runtime_error& ex) {
+    } catch (std::runtime_error& ex) {
         // This handles runtime logic errors
         // eg. trying to open two rw txns
         std::cout << ex.what() << std::endl;
@@ -271,18 +260,15 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
     }
 
     return retvar;
-
 }
 
 int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string workdir, bool keep) {
-
-    int retvar{ 0 };
+    int retvar{0};
     std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
-    try
-    {
-        bfs::path source{ bfs::path{datadir} / bfs::path{"data.mdb"} };
+    try {
+        bfs::path source{bfs::path{datadir} / bfs::path{"data.mdb"}};
         size_t source_size{bfs::file_size(source)};
-        bfs::path target{ bfs::path{workdir} / bfs::path{"data.mdb"} };
+        bfs::path target{bfs::path{workdir} / bfs::path{"data.mdb"}};
 
         // Do not overwrite target
         if (bfs::exists(target)) {
@@ -305,10 +291,7 @@ int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string
         int rc{mdb_env_copy2(*(lmdb_env->handle()), workdir.c_str(), MDB_CP_COMPACT)};
         if (rc) {
             retvar = -1;
-        }
-        else
-        {
-
+        } else {
             std::cout << "Database compact completed ..." << std::endl;
             // Do we have a valid compacted file on disk ?
             // replace source with target
@@ -324,7 +307,7 @@ int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string
             // Create a bak copy of source file
             if (keep) {
                 std::cout << "Creating backup copy of origin db ..." << std::endl;
-                bfs::path source_bak{ bfs::path{datadir} / bfs::path{"data_mdb.bak"} };
+                bfs::path source_bak{bfs::path{datadir} / bfs::path{"data_mdb.bak"}};
                 if (bfs::exists(source_bak)) {
                     bfs::remove(source_bak);
                 }
@@ -342,9 +325,7 @@ int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string
 
             std::cout << "All done !" << std::endl;
         }
-    }
-    catch (const std::exception& ex)
-    {
+    } catch (const std::exception& ex) {
         std::cout << ex.what() << std::endl;
         retvar = -1;
     }
@@ -354,12 +335,9 @@ int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string
     }
 
     return retvar;
-
 }
 
-
 int main(int argc, char* argv[]) {
-
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
@@ -369,7 +347,7 @@ int main(int argc, char* argv[]) {
     std::string po_work_dir{""};     // Provided work path
     std::string po_mapsize_str{""};  // Provided lmdb map size
     std::string po_table_name{""};   // Provided table name
-    bool po_keep{ false };
+    bool po_keep{false};
     CLI::Range range32(1u, UINT32_MAX);
 
     app_main.add_option("--datadir", po_data_dir, "Path to directory for data.mdb", false);
@@ -390,7 +368,6 @@ int main(int argc, char* argv[]) {
     app_compact.add_flag("--keep", po_work_dir, "Keep old file");
 
     CLI11_PARSE(app_main, argc, argv);
-
 
     // If database path is provided check whether it is empty
     if (po_data_dir.empty()) {

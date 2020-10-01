@@ -80,15 +80,15 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
 
     int retvar{0};
     bool should_commit{false};
-    std::shared_ptr<db::lmdb::Environment> lmdb_env{ nullptr };  // Main lmdb environment
-    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{ nullptr };  // Main lmdb transaction
-    std::unique_ptr<db::lmdb::Table> lmdb_tbl{nullptr};          // Table name to be cleared
+    std::shared_ptr<lmdb::Environment> lmdb_env{ nullptr };  // Main lmdb environment
+    std::unique_ptr<lmdb::Transaction> lmdb_txn{ nullptr };  // Main lmdb transaction
+    std::unique_ptr<lmdb::Table> lmdb_tbl{nullptr};          // Table name to be cleared
 
     try {
         // Open db and start a rw transaction
-        db::lmdb::options opts{};
+        lmdb::options opts{};
         if (mapsize.has_value()) opts.map_size = *mapsize;
-        lmdb_env = db::get_env(datadir.c_str(), opts, /* forwriting=*/true);
+        lmdb_env = lmdb::get_env(datadir.c_str(), opts, /* forwriting=*/true);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_tbl = lmdb_txn->open(tablename.c_str());
 
@@ -118,7 +118,7 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
         lmdb_tbl->close();
 
     }
-    catch (db::lmdb::exception& ex) {
+    catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
         std::cout << ex.err() << " " << ex.what() << std::endl;
         retvar = -1;
@@ -156,7 +156,7 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
 
 }
 
-std::vector<dbTableEntry> get_tables(std::unique_ptr<db::lmdb::Transaction>& tx) {
+std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
 
     std::vector<dbTableEntry> ret{};
 
@@ -175,7 +175,7 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<db::lmdb::Transaction>& tx)
             item.name.assign(v.data());
 
             if (data.mv_size < sizeof(size_t)) {
-                throw silkworm::db::lmdb::exception(MDB_INVALID, mdb_strerror(MDB_INVALID));
+                throw silkworm::lmdb::exception(MDB_INVALID, mdb_strerror(MDB_INVALID));
             }
 
             ByteView vdata{static_cast<uint8_t*>(data.mv_data), sizeof(size_t)};
@@ -187,7 +187,7 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<db::lmdb::Transaction>& tx)
             if (!rc) {
                 ret.push_back(item);
             } else {
-                throw silkworm::db::lmdb::exception(rc, mdb_strerror(rc));
+                throw silkworm::lmdb::exception(rc, mdb_strerror(rc));
             }
             rc = unnamed->get_next(&key, &data);
         }
@@ -198,14 +198,14 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<db::lmdb::Transaction>& tx)
 int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> mapsize) {
 
     int retvar{0};
-    std::shared_ptr<db::lmdb::Environment> lmdb_env{ nullptr };  // Main lmdb environment
-    std::unique_ptr<db::lmdb::Transaction> lmdb_txn{ nullptr };  // Main lmdb transaction
+    std::shared_ptr<lmdb::Environment> lmdb_env{ nullptr };  // Main lmdb environment
+    std::unique_ptr<lmdb::Transaction> lmdb_txn{ nullptr };  // Main lmdb transaction
 
     try {
         // Open db and start transaction
-        db::lmdb::options opts{};
+        lmdb::options opts{};
         if (mapsize.has_value()) opts.map_size = *mapsize;
-        lmdb_env = db::get_env(datadir.c_str(), opts, /* forwriting=*/false);
+        lmdb_env = lmdb::get_env(datadir.c_str(), opts, /* forwriting=*/false);
         lmdb_txn = lmdb_env->begin_ro_transaction();
 
         std::vector<dbTableEntry> entries{get_tables(lmdb_txn)};
@@ -251,7 +251,7 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
                   << (file_size - items_size) << std::endl;
 
     }
-    catch (db::lmdb::exception& ex) {
+    catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
         std::cout << ex.err() << " " << ex.what() << std::endl;
         retvar = -1;
@@ -277,7 +277,7 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
 int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string workdir, bool keep) {
 
     int retvar{ 0 };
-    std::shared_ptr<db::lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
+    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
     try
     {
         bfs::path source{ bfs::path{datadir} / bfs::path{"data.mdb"} };
@@ -297,9 +297,9 @@ int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string
         }
 
         // Open db and start transaction
-        db::lmdb::options opts{};
+        lmdb::options opts{};
         if (mapsize.has_value()) opts.map_size = *mapsize;
-        lmdb_env = db::get_env(datadir.c_str(), opts, /* forwriting=*/false);
+        lmdb_env = lmdb::get_env(datadir.c_str(), opts, /* forwriting=*/false);
         std::cout << " Compacting " << source.string() << "\n into " << target.string() << "\n Please be patient ..."
                   << std::endl;
         int rc{mdb_env_copy2(*(lmdb_env->handle()), workdir.c_str(), MDB_CP_COMPACT)};

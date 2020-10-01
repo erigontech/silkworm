@@ -16,8 +16,6 @@
 
 #include "chaindb.hpp"
 
-#include "util.hpp"
-
 namespace silkworm::lmdb {
 
 Environment::Environment(const unsigned flags) {
@@ -253,7 +251,7 @@ MDB_txn* Transaction::open_transaction(Environment* parent_env, MDB_txn* parent_
     return retvar;
 }
 
-std::optional<std::pair<std::string, MDB_dbi>> Transaction::open_dbi(const char* name, unsigned int flags) {
+MDB_dbi Transaction::open_dbi(const char* name, unsigned int flags) {
     std::string namestr{};
     if (name) {
         namestr.assign(name);
@@ -261,26 +259,24 @@ std::optional<std::pair<std::string, MDB_dbi>> Transaction::open_dbi(const char*
     return open_dbi(namestr, flags);
 }
 
-std::optional<std::pair<std::string, MDB_dbi>> Transaction::open_dbi(const std::string name, unsigned int flags) {
+MDB_dbi Transaction::open_dbi(const std::string name, unsigned int flags) {
     assert_handle();
 
     // Lookup value in map
     auto iter = dbis_.find(name);
     if (iter != dbis_.end()) {
-        return {std::pair(iter->first, iter->second)};
+        return iter->second;
     }
 
     // TODO(Andrea)
-    // Every bucket has its own set of flags
-    // Lookup somewhere how to configure a bucket
+    // Every table has its own set of flags
+    // Lookup somewhere how to configure a table
     MDB_dbi newdbi{0};
 
-    int rc{mdb_dbi_open(handle_, (name.empty() ? 0 : name.c_str()), flags, &newdbi)};
-    if (rc != MDB_SUCCESS) {
-        return {};
-    }
+    int rc{mdb_dbi_open(handle_, (name.empty() ? nullptr : name.c_str()), flags, &newdbi)};
+    err_handler(rc);
     dbis_[name] = newdbi;
-    return {std::pair(name, newdbi)};
+    return newdbi;
 }
 
 Transaction::Transaction(Environment* parent, unsigned int flags)
@@ -290,18 +286,15 @@ Transaction::~Transaction() { abort(); }
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
 std::unique_ptr<Table> Transaction::open(const char* name, unsigned int flags) {
-    std::optional<std::pair<std::string, MDB_dbi>> dbi{open_dbi(name, flags)};
-    if (!dbi) {
-        throw exception(MDB_NOTFOUND, mdb_strerror(MDB_NOTFOUND));
-    }
-    return std::make_unique<Table>(this, dbi.value().second, dbi.value().first);
+    MDB_dbi dbi{open_dbi(name, flags)};
+    return std::make_unique<Table>(this, dbi, name);
 }
 
 void Transaction::abort(void) {
     if (!assert_handle(false)) {
         return;
     }
-    signal_on_before_abort_();  // Signals connected buckets to close
+    signal_on_before_abort_();  // Signals connected tables to close
     mdb_txn_abort(handle_);
     if (is_ro()) {
         parent_env_->touch_ro_txns(-1);
@@ -314,7 +307,7 @@ void Transaction::abort(void) {
 
 int Transaction::commit(void) {
     assert_handle();
-    signal_on_before_commit_();  // Signals connected buckets to close
+    signal_on_before_commit_();  // Signals connected tables to close
     int rc{mdb_txn_commit(handle_)};
     if (rc == MDB_SUCCESS) {
         if (is_ro()) {
@@ -395,8 +388,7 @@ int Table::put(MDB_val* key, MDB_val* data, unsigned int flag) {
 bool Table::assert_handle(bool should_throw) {
     bool retvar{handle_ != nullptr};
     if (!retvar && should_throw) {
-        throw std::runtime_error("Invalid or closed cursor for bucket " +
-                                 (dbi_name_.empty() ? "[unnamed]" : dbi_name_));
+        throw std::runtime_error("Invalid or closed cursor for table " + (dbi_name_.empty() ? "[unnamed]" : dbi_name_));
     }
     return retvar;
 }
@@ -412,6 +404,22 @@ std::optional<ByteView> Table::get(ByteView key) {
     return db::from_mdb_val(data);
 }
 
+std::optional<db::Entry> Table::seek(ByteView prefix) {
+    MDB_val key_val{db::to_mdb_val(prefix)};
+    MDB_val data;
+    MDB_cursor_op op{prefix.empty() ? MDB_FIRST : MDB_SET_RANGE};
+    int rc{get(&key_val, &data, op)};
+    if (rc == MDB_NOTFOUND) {
+        return {};
+    }
+    err_handler(rc);
+
+    db::Entry entry;
+    entry.key = db::from_mdb_val(key_val);
+    entry.value = db::from_mdb_val(data);
+    return entry;
+}
+
 int Table::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }
 int Table::seek_exact(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
 int Table::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
@@ -422,7 +430,12 @@ int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEX
 int Table::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
 int Table::get_dcount(size_t* count) { return mdb_cursor_count(handle_, count); }
 
-int Table::put(MDB_val* key, MDB_val* data) { return put(key, data, 0u); }
+void Table::put(ByteView key, ByteView data) {
+    MDB_val key_val{db::to_mdb_val(key)};
+    MDB_val data_val{db::to_mdb_val(data)};
+    err_handler(put(&key_val, &data_val, 0));
+}
+
 int Table::put_current(MDB_val* key, MDB_val* data) { return put(key, data, MDB_CURRENT); }
 int Table::put_nodup(MDB_val* key, MDB_val* data) { return put(key, data, MDB_NODUPDATA); }
 int Table::put_noovrw(MDB_val* key, MDB_val* data) { return put(key, data, MDB_NOOVERWRITE); }
@@ -486,8 +499,8 @@ std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts,
 
     // Create new instance and open db file(s)
     auto newitem = std::make_shared<lmdb::Environment>();
-    (void)newitem->set_mapsize(opts.map_size);
-    (void)newitem->set_max_dbs(opts.max_buckets);
+    err_handler(newitem->set_mapsize(opts.map_size));
+    err_handler(newitem->set_max_dbs(opts.max_tables));
     newitem->open(path, flags | (forwriting ? 0 : MDB_RDONLY), opts.mode);  // Throws on error
 
     s_envs[envkey] = {newitem, flags};

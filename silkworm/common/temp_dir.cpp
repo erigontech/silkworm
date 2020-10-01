@@ -14,20 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_TEMP_LMDB_TEST_H_
-#define SILKWORM_DB_TEMP_LMDB_TEST_H_
+#include "temp_dir.hpp"
 
-#include <silkworm/db/lmdb.hpp>
+#include <boost/filesystem.hpp>
 
-namespace silkworm::db {
+namespace fs = boost::filesystem;
 
-// TemporaryLmdbDatabase creates an LMDB instance in a temporary file
-// and deletes the file on destruction. Useful in testing.
-class TemporaryLmdbDatabase : public LmdbDatabase {
-   public:
-    TemporaryLmdbDatabase();
-    ~TemporaryLmdbDatabase() override;
-};
-}  // namespace silkworm::db
+namespace silkworm {
 
-#endif  // SILKWORM_DB_TEMP_LMDB_TEST_H_
+TemporaryDirectory::TemporaryDirectory() {
+    fs::path p{fs::temp_directory_path() / fs::unique_path()};
+    fs::create_directories(p);
+    path_ = p.string();
+}
+
+TemporaryDirectory::~TemporaryDirectory() { fs::remove_all(path_); }
+
+}  // namespace silkworm

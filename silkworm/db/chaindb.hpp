@@ -27,6 +27,7 @@
 #include <mutex>
 #include <optional>
 #include <silkworm/common/base.hpp>
+#include <silkworm/db/util.hpp>
 #include <string>
 #include <thread>
 #include <vector>
@@ -46,7 +47,7 @@ struct options {
     bool no_meta_sync = false;       // MDB_NOMETASYNC
     bool write_map = false;          // MDB_WRITEMAP
     bool no_sub_dir = false;         // MDB_NOSUBDIR
-    unsigned max_buckets = 128;      // Max open buckets/dbi
+    unsigned max_tables = 128;       // Max open tables/dbi
     mdb_mode_t mode = 0644;          // Filesystem mode
 };
 
@@ -168,8 +169,8 @@ class Transaction {
      */
 
     std::map<std::string, MDB_dbi> dbis_;  // Collection of opened MDB_dbi
-    std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const char* name, unsigned int flags = 0);
-    std::optional<std::pair<std::string, MDB_dbi>> open_dbi(const std::string name, unsigned int flags = 0);
+    MDB_dbi open_dbi(const char* name, unsigned int flags = 0);
+    MDB_dbi open_dbi(const std::string name, unsigned int flags = 0);
 
     boost::signals2::connection conn_on_env_close_;  // Holds the connection to env signal_on_before_close_
 
@@ -209,11 +210,11 @@ class Table {
     /*
      * MDB_dbi interfaces
      */
-    int get_flags(unsigned int* flags);  // Returns the flags used to open the bucket
-    int get_stat(MDB_stat* stat);        // Returns stat info about the bucket
-    int get_rcount(size_t* count);       // Returns the number of records held in bucket
-    std::string get_name(void);          // Returns the name of the bucket
-    MDB_dbi get_dbi(void);               // Returns the ordinal id of the bucket
+    int get_flags(unsigned int* flags);  // Returns the flags used to open the table
+    int get_stat(MDB_stat* stat);        // Returns stat info about the table
+    int get_rcount(size_t* count);       // Returns the number of records held in table
+    std::string get_name(void);          // Returns the name of the table
+    MDB_dbi get_dbi(void);               // Returns the ordinal id of the table
 
     // https://github.com/ledgerwatch/lmdb-go/blob/master/lmdb/mdb.c#L10004
     int clear();  // Removes all contents from the table (cursor is invalidated)
@@ -233,15 +234,16 @@ class Table {
      * MDB_cursor interfaces
      */
 
-    int seek(MDB_val* key, MDB_val* data);         // Position cursor to first key >= of given key
-    int seek_exact(MDB_val* key, MDB_val* data);   // Position cursor to key == of given key
-    int get_current(MDB_val* key, MDB_val* data);  // Gets data from current cursor position
-    int del_current(bool dupdata = false);         // Delete key/data pair at current cursor position
-    int get_first(MDB_val* key, MDB_val* data);    // Move cursor at first item in bucket
-    int get_prev(MDB_val* key, MDB_val* data);     // Move cursor at previous item in bucket
-    int get_next(MDB_val* key, MDB_val* data);     // Move cursor at next item in bucket
-    int get_last(MDB_val* key, MDB_val* data);     // Move cursor at last item in bucket
-    int get_dcount(size_t* count);                 // Returns the count of duplicates at current position
+    std::optional<db::Entry> seek(ByteView prefix);  // Position cursor to first key >= of given prefix
+    int seek(MDB_val* key, MDB_val* data);           // Position cursor to first key >= of given key
+    int seek_exact(MDB_val* key, MDB_val* data);     // Position cursor to key == of given key
+    int get_current(MDB_val* key, MDB_val* data);    // Gets data from current cursor position
+    int del_current(bool dupdata = false);           // Delete key/data pair at current cursor position
+    int get_first(MDB_val* key, MDB_val* data);      // Move cursor at first item in table
+    int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in table
+    int get_next(MDB_val* key, MDB_val* data);       // Move cursor at next item in table
+    int get_last(MDB_val* key, MDB_val* data);       // Move cursor at last item in table
+    int get_dcount(size_t* count);                   // Returns the count of duplicates at current position
 
     /* @brief Stores key/data pairs into the database using cursor.
      *
@@ -249,7 +251,7 @@ class Table {
      * For more fine grained options see #put_current(), #put_nodup, #put_noovrw,
      * #put_reserve(), #put_append(), #put_append_dup() and #put_multiple()
      */
-    int put(MDB_val* key, MDB_val* data);
+    void put(ByteView key, ByteView data);
 
     /* @brief Replace the k/d pair at current cursor position
      *
@@ -326,10 +328,10 @@ class Table {
     int put(MDB_val* key, MDB_val* data,
             unsigned int flag);  // Puts data by cursor on behalf of operation
 
-    Transaction* parent_txn_;  // The transaction this bucket belongs to
+    Transaction* parent_txn_;  // The transaction this table belongs to
     MDB_dbi dbi_;              // The underlying MDB_dbi handle for this instance
     std::string dbi_name_;     // The name of the dbi
-    bool dbi_dropped_{false};  // Whether or not this bucket has been dropped
+    bool dbi_dropped_{false};  // Whether or not this table has been dropped
     MDB_cursor* handle_;       // The underlying MDB_cursor for this instance
 
     bool assert_handle(bool should_throw = true);  // Ensures handle_ is validly created

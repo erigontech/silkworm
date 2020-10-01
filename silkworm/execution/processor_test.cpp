@@ -18,8 +18,9 @@
 
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
-#include <silkworm/db/bucket.hpp>
-#include <silkworm/db/temp_lmdb_test.hpp>
+#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/tables.hpp>
 
 #include "address.hpp"
 #include "protocol_param.hpp"
@@ -29,7 +30,6 @@ namespace silkworm {
 TEST_CASE("Zero gas price") {
     using Catch::Message;
 
-    BlockChain chain{nullptr};
     Block block{};
     block.header.number = 2'687'232;
     block.header.gas_limit = 3'303'221;
@@ -101,7 +101,8 @@ TEST_CASE("Zero gas price") {
     };
 
     IntraBlockState state{nullptr};
-    ExecutionProcessor processor{chain, block, state};
+    state::Reader* header_reader{nullptr};
+    ExecutionProcessor processor{block, state, header_reader};
 
     CHECK_THROWS_MATCHES(processor.execute_transaction(txn), ValidationError, Message("missing sender"));
 
@@ -111,7 +112,6 @@ TEST_CASE("Zero gas price") {
 }
 
 TEST_CASE("No refund on error") {
-    BlockChain chain{nullptr};
     Block block{};
     block.header.number = 10'050'107;
     block.header.gas_limit = 328'646;
@@ -143,7 +143,8 @@ TEST_CASE("No refund on error") {
     */
 
     IntraBlockState state{nullptr};
-    ExecutionProcessor processor{chain, block, state};
+    state::Reader* header_reader{nullptr};
+    ExecutionProcessor processor{block, state, header_reader};
 
     Transaction txn{
         nonce,       // nonce
@@ -177,7 +178,6 @@ TEST_CASE("No refund on error") {
 }
 
 TEST_CASE("Self-destruct") {
-    BlockChain chain{nullptr};
     Block block{};
     block.header.number = 1'487'375;
     block.header.gas_limit = 4'712'388;
@@ -232,7 +232,8 @@ TEST_CASE("Self-destruct") {
     */
 
     IntraBlockState state{nullptr};
-    ExecutionProcessor processor{chain, block, state};
+    state::Reader* header_reader{nullptr};
+    ExecutionProcessor processor{block, state, header_reader};
 
     state.add_to_balance(caller_address, kEther);
     state.set_code(caller_address, caller_code);
@@ -276,10 +277,17 @@ TEST_CASE("Out of Gas during account re-creation") {
     block.header.beneficiary = 0xa42af2c70d316684e57aefcc6e393fecb1c7e84e_address;
     evmc::address caller{0xc789e5aba05051b1468ac980e30068e19fad8587_address};
 
-    db::TemporaryLmdbDatabase db{};
-
     uint64_t nonce{0};
     evmc::address address{create_address(caller, nonce)};
+
+    TemporaryDirectory tmp_dir{};
+    lmdb::options db_opts{};
+    db_opts.map_size = 32 << 20;  //  32MiB
+    bool read_write{true};
+    std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(tmp_dir.path(), db_opts, read_write)};
+
+    std::unique_ptr<lmdb::Transaction> db_txn{db_env->begin_rw_transaction()};
+    db::table::create_all(*db_txn);
 
     // Some funds were previously transferred to the address:
     // https://etherscan.io/address/0x78c65b078353a8c4ce58fb4b5acaac6042d591d5
@@ -287,17 +295,8 @@ TEST_CASE("Out of Gas during account re-creation") {
         Account account{};
         account.balance = 66'252'368 * kGiga;
 
-        auto txn{db.begin_rw_transaction()};
-
-        // TODO(Andrew) extract a method
-        for (const char* bucket : db::bucket::kBuckets) {
-            txn->create_bucket(bucket);
-        }
-
-        auto bucket{txn->get_bucket(db::bucket::kPlainState)};
-        bucket->put(full_view(address), account.encode_for_storage(false));
-
-        txn->commit();
+        auto table{db_txn->open(db::table::kPlainState)};
+        table->put(full_view(address), account.encode_for_storage(false));
     }
 
     Transaction txn{
@@ -386,12 +385,11 @@ TEST_CASE("Out of Gas during account re-creation") {
     };
     txn.from = caller;
 
-    state::Reader reader{db, block.header.number};
+    state::Reader reader{*db_txn, block.header.number};
     IntraBlockState state{&reader};
     state.add_to_balance(caller, kEther);
 
-    BlockChain chain{&db};
-    ExecutionProcessor processor{chain, block, state};
+    ExecutionProcessor processor{block, state, &reader};
 
     Receipt receipt{processor.execute_transaction(txn)};
     // out of gas
@@ -431,8 +429,8 @@ TEST_CASE("Empty suicide beneficiary") {
     IntraBlockState state{nullptr};
     state.add_to_balance(caller, kEther);
 
-    BlockChain chain{nullptr};
-    ExecutionProcessor processor{chain, block, state};
+    state::Reader* header_reader{nullptr};
+    ExecutionProcessor processor{block, state, header_reader};
 
     Receipt receipt{processor.execute_transaction(txn)};
     CHECK(std::get<bool>(receipt.post_state_or_status));

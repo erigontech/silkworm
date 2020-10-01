@@ -6,8 +6,8 @@ It's conceived as an evolution of the [Turbo-Geth](https://github.com/ledgerwatc
 as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth_release.html#Licence-and-language-migration-plan-out-of-scope-for-the-release).
 
 [![CircleCI](https://circleci.com/gh/torquem-ch/silkworm.svg?style=svg)](https://circleci.com/gh/torquem-ch/silkworm)
-[![AppVeyor](https://ci.appveyor.com/api/projects/status/8npida1piyqw1844?svg=true)](https://ci.appveyor.com/project/torquem/silkworm)
-[![codecov](https://codecov.io/gh/torquem-ch/silkworm/branch/master/graph/badge.svg)](https://codecov.io/gh/torquem-ch/silkworm)
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/8npida1piyqw1844/branch/master?svg=true)](https://ci.appveyor.com/project/torquem/silkworm)
+[![CodeCov](https://codecov.io/gh/torquem-ch/silkworm/branch/master/graph/badge.svg)](https://codecov.io/gh/torquem-ch/silkworm)
 
 # Building the source
 

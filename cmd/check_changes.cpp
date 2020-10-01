@@ -23,7 +23,6 @@
 #include <iostream>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/chaindb.hpp>
-#include <silkworm/db/lmdb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/state/intra_block_state.hpp>
@@ -39,8 +38,10 @@ int main(int argc, char* argv[]) {
     absl::SetProgramUsageMessage("Executes Ethereum blocks and compares resulting change sets against DB.");
     absl::ParseCommandLine(argc, argv);
 
-    boost::filesystem::path db_path(absl::GetFlag(FLAGS_datadir));
-    if (!boost::filesystem::exists(db_path) || !boost::filesystem::is_directory(db_path) || db_path.empty()) {
+    namespace fs = boost::filesystem;
+
+    fs::path db_path(absl::GetFlag(FLAGS_datadir));
+    if (!fs::exists(db_path) || !fs::is_directory(db_path) || db_path.empty()) {
         std::cerr << absl::GetFlag(FLAGS_datadir) << " does not exist.\n";
         std::cerr << "Use --db flag to point to a Turbo-Geth populated chaindata.\n";
         return -1;
@@ -52,33 +53,28 @@ int main(int argc, char* argv[]) {
     using namespace silkworm;
 
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str())};
-    db::LmdbDatabase legacy_db{*env->handle()};
-    BlockChain chain{&legacy_db};
 
     const uint64_t from{absl::GetFlag(FLAGS_from)};
     const uint64_t to{absl::GetFlag(FLAGS_to)};
 
     uint64_t block_num{from};
     for (; block_num < to; ++block_num) {
-        std::optional<BlockWithHash> bh{};
-        {
-            std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
+        std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-            bh = dal::get_block(*txn, block_num);
-            if (!bh) {
-                break;
-            }
-
-            std::vector<evmc::address> senders{dal::get_senders(*txn, block_num, bh->hash)};
-            assert(senders.size() == bh->block.transactions.size());
-            for (size_t i{0}; i < senders.size(); ++i) {
-                bh->block.transactions[i].from = senders[i];
-            }
+        std::optional<BlockWithHash> bh{db::read_block(*txn, block_num)};
+        if (!bh) {
+            break;
         }
 
-        state::Reader reader{legacy_db, block_num};
+        std::vector<evmc::address> senders{db::read_senders(*txn, block_num, bh->hash)};
+        assert(senders.size() == bh->block.transactions.size());
+        for (size_t i{0}; i < senders.size(); ++i) {
+            bh->block.transactions[i].from = senders[i];
+        }
+
+        state::Reader reader{*txn, block_num};
         IntraBlockState state{&reader};
-        ExecutionProcessor processor{chain, bh->block, state};
+        ExecutionProcessor processor{bh->block, state, &reader};
 
         std::vector<Receipt> receipts;
         try {
@@ -96,7 +92,7 @@ int main(int argc, char* argv[]) {
             return -2;
         }
 
-        if (chain.config.has_byzantium(block_num)) {
+        if (kMainnetConfig.has_byzantium(block_num)) {
             evmc::bytes32 receipt_root{trie::root_hash(receipts)};
             if (receipt_root != bh->block.header.receipts_root) {
                 std::cerr << "Receipt root mismatch for block " << block_num << " 😖\n";
@@ -107,7 +103,7 @@ int main(int argc, char* argv[]) {
         state::Writer writer;
         state.write_block(writer);
 
-        std::optional<db::AccountChanges> db_account_changes{legacy_db.get_account_changes(block_num)};
+        std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
         if (writer.account_changes() != db_account_changes) {
             std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
             if (db_account_changes) {
@@ -131,7 +127,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        Bytes db_storage_changes{legacy_db.get_storage_changes(block_num)};
+        Bytes db_storage_changes{db::read_storage_changes(*txn, block_num)};
         Bytes calculated_storage_changes{};
         if (!writer.storage_changes().empty()) {
             calculated_storage_changes = writer.storage_changes().encode();
@@ -150,8 +146,6 @@ int main(int argc, char* argv[]) {
             t1 = t2;
         }
     }
-
-    legacy_db.env_ = nullptr;
 
     t1 = absl::Now();
     std::cout << t1 << " Blocks [" << from << "; " << block_num << ") have been checked\n";

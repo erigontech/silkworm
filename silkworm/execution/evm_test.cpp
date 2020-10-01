@@ -31,9 +31,9 @@ TEST_CASE("Value transfer") {
     evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};
     intx::uint256 value{10'200'000'000'000'000};
 
-    BlockChain chain{nullptr};
     IntraBlockState state{nullptr};
-    EVM evm{chain, block, state};
+    state::Reader* header_reader{nullptr};
+    EVM evm{block, state, header_reader};
 
     CHECK(state.get_balance(from) == 0);
     CHECK(state.get_balance(to) == 0);
@@ -83,9 +83,9 @@ TEST_CASE("Smart contract with storage") {
     // 25     PUSH1  => 00
     // 27     SSTORE         // storage[0] = input[0]
 
-    BlockChain chain{nullptr};
     IntraBlockState state{nullptr};
-    EVM evm{chain, block, state};
+    state::Reader* header_reader{nullptr};
+    EVM evm{block, state, header_reader};
 
     Transaction txn{};
     txn.from = caller;
@@ -153,8 +153,8 @@ TEST_CASE("Maximum call depth") {
     IntraBlockState state{nullptr};
     state.set_code(contract, code);
 
-    BlockChain chain{nullptr};
-    EVM evm{chain, block, state};
+    state::Reader* header_reader{nullptr};
+    EVM evm{block, state, header_reader};
 
     Transaction txn{};
     txn.from = caller;
@@ -206,8 +206,8 @@ TEST_CASE("DELEGATECALL") {
     state.set_code(caller_address, caller_code);
     state.set_code(callee_address, callee_code);
 
-    BlockChain chain{nullptr};
-    EVM evm{chain, block, state};
+    state::Reader* header_reader{nullptr};
+    EVM evm{block, state, header_reader};
 
     Transaction txn{};
     txn.from = caller_address;
@@ -265,9 +265,9 @@ TEST_CASE("CREATE should only return on failure") {
     51     RETURN
     */
 
-    BlockChain chain{nullptr};
     IntraBlockState state{nullptr};
-    EVM evm{chain, block, state};
+    state::Reader* header_reader{nullptr};
+    EVM evm{block, state, header_reader};
 
     Transaction txn{};
     txn.from = caller;
@@ -297,8 +297,8 @@ TEST_CASE("Contract overwrite") {
     IntraBlockState state{nullptr};
     state.set_code(contract_address, old_code);
 
-    BlockChain chain{nullptr};
-    EVM evm{chain, block, state};
+    state::Reader* header_reader{nullptr};
+    EVM evm{block, state, header_reader};
 
     Transaction txn{};
     txn.from = caller;

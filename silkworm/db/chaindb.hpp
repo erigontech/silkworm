@@ -51,6 +51,11 @@ struct options {
     mdb_mode_t mode = 0644;          // Filesystem mode
 };
 
+struct TableConfig {
+    const char* name{nullptr};
+    bool dupsort{false};  // MDB_DUPSORT
+};
+
 /**
  * Exception thrown by lmdb
  */
@@ -182,7 +187,7 @@ class Transaction {
 
     bool is_ro(void);  // Whether this transaction is readonly
 
-    std::unique_ptr<Table> open(const char* name, unsigned int flags = 0);
+    std::unique_ptr<Table> open(const TableConfig& config, unsigned flags = 0);
 
     Transaction(const Transaction& src) = delete;
     Transaction& operator=(const Transaction& src) = delete;
@@ -222,13 +227,19 @@ class Table {
 
     /* @brief Gets the value by key. A nil optional is returned if the key is not found.
      *
-     * The memory pointed to by the returned view is owned by the database.
+     * Warning: The memory pointed to by the returned view is owned by the database.
      * The caller may not modify it in any way.
-     *
      * Views returned from the database are valid only until a subsequent update operation,
      * or the end of the transaction.
      */
     std::optional<ByteView> get(ByteView key);
+
+    /* Same as the above, but for MDB_DUPSORT data items starting with a given sub_key.
+     * Returned values are stripped of the sub_key prefix.
+     *
+     * See the memory warning above.
+     */
+    std::optional<ByteView> get(ByteView key, ByteView sub_key);
 
     /*
      * MDB_cursor interfaces

@@ -135,8 +135,8 @@ find_package(CLI11 CONFIG REQUIRED)
 add_executable(check_senders cmd/check_senders.cpp)
 target_link_libraries(check_senders PRIVATE silkworm Boost::filesystem CLI11::CLI11)
 
-add_executable(dbtool cmd/dbtool.cpp)
-target_link_libraries(dbtool PRIVATE silkworm Boost::filesystem CLI11::CLI11)
+add_executable(check_db cmd/check_db.cpp)
+target_link_libraries(check_db PRIVATE silkworm Boost::filesystem CLI11::CLI11)
 
 # Ethereum Consensus Tests
 hunter_add_package(nlohmann_json)

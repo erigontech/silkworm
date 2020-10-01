@@ -289,7 +289,11 @@ std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned fla
         flags |= MDB_DUPSORT;
     }
     MDB_dbi dbi{open_dbi(config.name, flags)};
-    return std::make_unique<Table>(this, dbi, config.name);
+    std::string name{};
+    if (config.name) {
+        name = config.name;
+    }
+    return std::make_unique<Table>(this, dbi, name);
 }
 
 void Transaction::abort(void) {

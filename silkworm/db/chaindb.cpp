@@ -16,6 +16,8 @@
 
 #include "chaindb.hpp"
 
+#include <silkworm/common/util.hpp>
+
 namespace silkworm::lmdb {
 
 Environment::Environment(const unsigned flags) {
@@ -268,9 +270,6 @@ MDB_dbi Transaction::open_dbi(const std::string name, unsigned int flags) {
         return iter->second;
     }
 
-    // TODO(Andrea)
-    // Every table has its own set of flags
-    // Lookup somewhere how to configure a table
     MDB_dbi newdbi{0};
 
     int rc{mdb_dbi_open(handle_, (name.empty() ? nullptr : name.c_str()), flags, &newdbi)};
@@ -285,8 +284,15 @@ Transaction::~Transaction() { abort(); }
 
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
-std::unique_ptr<Table> Transaction::open(const char* name, unsigned int flags) {
-    MDB_dbi dbi{open_dbi(name, flags)};
+std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned flags) {
+    if (config.dupsort) {
+        flags |= MDB_DUPSORT;
+    }
+    MDB_dbi dbi{open_dbi(config.name, flags)};
+    std::string name{};
+    if (config.name) {
+        name = config.name;
+    }
     return std::make_unique<Table>(this, dbi, name);
 }
 
@@ -402,6 +408,24 @@ std::optional<ByteView> Table::get(ByteView key) {
     }
     err_handler(rc);
     return db::from_mdb_val(data);
+}
+
+std::optional<ByteView> Table::get(ByteView key, ByteView sub_key) {
+    MDB_val key_val{db::to_mdb_val(key)};
+    MDB_val data{db::to_mdb_val(sub_key)};
+    int rc{get(&key_val, &data, MDB_GET_BOTH_RANGE)};
+    if (rc == MDB_NOTFOUND) {
+        return {};
+    }
+    err_handler(rc);
+
+    ByteView x{db::from_mdb_val(data)};
+    if (!has_prefix(x, sub_key)) {
+        return {};
+    } else {
+        x.remove_prefix(sub_key.length());
+        return x;
+    }
 }
 
 std::optional<db::Entry> Table::seek(ByteView prefix) {

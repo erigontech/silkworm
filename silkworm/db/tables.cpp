@@ -19,7 +19,7 @@
 namespace silkworm::db::table {
 
 void create_all(lmdb::Transaction& txn) {
-    for (const char* table : kTables) {
+    for (const auto& table : kTables) {
         txn.open(table, MDB_CREATE);
     }
 }

@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Database page size : " << i.me_mapsize << std::endl;
 
         // A list of tables stored into the database
-        auto unnamed = lmdb_txn->open(0);
+        auto unnamed = lmdb_txn->open({});
 
         unnamed->get_stat(&s);
         std::cout << "Database contains " << s.ms_entries << " named tables" << std::endl;
@@ -139,7 +139,9 @@ int main(int argc, char* argv[]) {
             std::cout << "Table " << v << " with ";
             {
                 size_t rcount{0};
-                auto b = lmdb_txn->open(v.data());
+                lmdb::TableConfig config{};
+                config.name = v.data();
+                auto b = lmdb_txn->open(config);
                 b->get_rcount(&rcount);
                 std::cout << rcount << " record(s)\n";
                 b->close();
@@ -152,7 +154,7 @@ int main(int argc, char* argv[]) {
         // Independent cursor navigation sample
         rc = unnamed->get_first(&key, &data);
         MDB_val key_rev, data_rev;
-        auto unnamed_rev = lmdb_txn->open(0);
+        auto unnamed_rev = lmdb_txn->open({});
         rc = unnamed_rev->get_last(&key_rev, &data_rev);
         while (!shouldStop && rc == MDB_SUCCESS) {
             std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};

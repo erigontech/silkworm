@@ -164,7 +164,8 @@ evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address,
     auto composite_key{storage_key(address, incarnation, key)};
     std::optional<ByteView> val{find_in_history(txn, /*storage=*/true, composite_key, block_number)};
     if (!val) {
-        val = txn.open(table::kPlainState)->get(composite_key);
+        auto table{txn.open(table::kPlainState)};
+        val = table->get(storage_prefix(address, incarnation), full_view(key));
     }
     if (!val) {
         return {};

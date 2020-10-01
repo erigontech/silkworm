@@ -25,23 +25,19 @@ see its common/dbutils/bucket.go.
 */
 namespace silkworm::db::table {
 
-constexpr const char* kPlainState{"PLAIN-CST"};
-constexpr const char* kAccountChanges{"PLAIN-ACS"};
-constexpr const char* kStorageChanges{"PLAIN-SCS"};
-constexpr const char* kAccountHistory{"hAT"};
-constexpr const char* kStorageHistory{"hST"};
-constexpr const char* kCode{"CODE"};
-constexpr const char* kCodeHash{"PLAIN-contractCode"};
-constexpr const char* kLastBlock{"LastBlock"};
-constexpr const char* kLastFast{"LastFast"};
-constexpr const char* kLastHeader{"LastHeader"};
-constexpr const char* kBlockHeaders{"h"};
-constexpr const char* kBlockBodies{"b"};
-constexpr const char* kSenders{"txSenders"};
+constexpr lmdb::TableConfig kPlainState{"PLAIN-CST2", /*dupsort=*/true};
+constexpr lmdb::TableConfig kAccountChanges{"PLAIN-ACS"};
+constexpr lmdb::TableConfig kStorageChanges{"PLAIN-SCS"};
+constexpr lmdb::TableConfig kAccountHistory{"hAT"};
+constexpr lmdb::TableConfig kStorageHistory{"hST"};
+constexpr lmdb::TableConfig kCode{"CODE"};
+constexpr lmdb::TableConfig kCodeHash{"PLAIN-contractCode"};
+constexpr lmdb::TableConfig kBlockHeaders{"h"};
+constexpr lmdb::TableConfig kBlockBodies{"b"};
+constexpr lmdb::TableConfig kSenders{"txSenders"};
 
-constexpr const char* kTables[]{kPlainState,   kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory,
-                                kCode,         kCodeHash,       kLastBlock,      kLastFast,       kLastHeader,
-                                kBlockHeaders, kBlockBodies,    kSenders};
+constexpr lmdb::TableConfig kTables[]{kPlainState, kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory,
+                                      kCode,       kCodeHash,       kBlockHeaders,   kBlockBodies,    kSenders};
 
 // Create all tables that do not yet exist.
 void create_all(lmdb::Transaction& txn);

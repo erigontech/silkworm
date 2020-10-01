@@ -498,7 +498,7 @@ int main(int argc, char* argv[]) {
     try {
         // Open db and start transaction
         lmdb::options opts{};
-        if (*lmdb_mapSize) {
+        if (lmdb_mapSize.has_value()) {
             opts.map_size = *lmdb_mapSize;
         }
 

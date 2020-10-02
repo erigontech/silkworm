@@ -17,6 +17,11 @@
 #ifndef SILKWORM_DB_CHAINDB_H_
 #define SILKWORM_DB_CHAINDB_H_
 
+/**
+ * Wrappers for the LMDB database library.
+ * See http://www.lmdb.tech/doc/index.html
+ */
+
 #include <lmdb/lmdb.h>
 
 #include <atomic>

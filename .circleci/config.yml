@@ -56,11 +56,11 @@ commands:
         command: ./consensus
 
 jobs:
-  linux-gcc-debug:
+  linux-gcc-7:
     environment:
       BUILD_TYPE: Debug
     docker:
-      - image: ethereum/cpp-build-env:14-gcc-10
+      - image: ethereum/cpp-build-env:12-gcc-7
     steps:
       - build
       - test
@@ -106,5 +106,5 @@ workflows:
   version: 2
   silkworm:
     jobs:
-      - linux-gcc-debug
+      - linux-gcc-7
       - linux-clang-coverage

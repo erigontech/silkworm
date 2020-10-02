@@ -10,6 +10,7 @@
       "cmakeCommandArgs": "-Wno-dev",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
+      "addressSanitizerEnabled": true,
       "variables": [
         {
           "name": "GMP_LIBRARY",

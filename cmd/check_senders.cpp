@@ -23,6 +23,7 @@
 #include <csignal>
 #include <ethash/keccak.hpp>
 #include <iostream>
+#include <queue>
 #include <regex>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/worker.hpp>
@@ -43,7 +44,7 @@ std::atomic_bool workers_thread_error_{false};  // Error detected in one of work
 
 void sig_handler(int signum) {
     (void)signum;
-    std::cout << std::endl << "Request for termination intercepted. Stopping ..." << std::endl << std::endl;
+    std::cout << std::endl << " Request for termination intercepted. Stopping ..." << std::endl << std::endl;
     should_stop_.store(true);
 }
 
@@ -120,9 +121,11 @@ class Recoverer : public silkworm::Worker {
     // Returns whether or not this worker is busy
     bool is_busy() { return busy_.load(); }
 
-    boost::signals2::signal<void(uint32_t senderId, std::vector<std::pair<uint64_t, MDB_val>>& results,
-                                 bool recovery_error)>
-        signal_finished;
+    // Pulls results from worker
+    std::vector<std::pair<uint64_t, MDB_val>>& get_results(void) { return myresults_; };
+
+    // Signal to connected handlers the task has completed
+    boost::signals2::signal<void(uint32_t sender_id, uint32_t batch_id, bool has_error)> signal_completed;
 
    private:
     uint32_t id_;                                            // Current worker identifier
@@ -133,6 +136,7 @@ class Recoverer : public silkworm::Worker {
     uint32_t current_batch_id_{0};                           // Identifier of the batch being processed
     size_t mysize_;                                          // Size of the recovery data
     uint8_t* mydata_{nullptr};                               // Pointer to data where rsults are stored
+    bool mydata_locked_{false};                              // Whether or not mydata has been locked
     std::vector<std::pair<uint64_t, MDB_val>> myresults_{};  // Results per block pointing to data area
 
     // Basic work loop (overrides Worker::work())
@@ -155,18 +159,15 @@ class Recoverer : public silkworm::Worker {
             }
 
             busy_.store(true);
-            if (debug_) {
-                std::cout << format_time() << " Recoverer #" << id_ << " starting task with " << packages_.size()
-                          << " items " << std::endl;
-            }
-
             {
                 // Lock mutex so no other jobs may be set
                 std::unique_lock l{mywork_};
+                myresults_.clear();
+
                 Bytes signature(64, '\0');
                 uint64_t current_block{packages_.at(0).blockNum};
-                size_t data_offset{0};
-                size_t data_length{0};
+                size_t block_result_offset{ 0 };
+                size_t block_result_length{ 0 };
 
                 // Loop
                 for (size_t x{0}; x < packages_.size() && !recovery_error_; x++) {
@@ -174,10 +175,12 @@ class Recoverer : public silkworm::Worker {
 
                     // On block switching store the results
                     if (current_block != rp.blockNum) {
-                        MDB_val result{data_length, (void*)&mydata_[data_offset]};
+                        MDB_val result{block_result_length, (void*)&mydata_[block_result_offset]};
                         myresults_.push_back({current_block, result});
-                        data_length = 0;
+                        block_result_offset = block_result_length;
+                        block_result_length = 0;
                         current_block = rp.blockNum;
+                        if (should_stop_) break;
                     }
 
                     // Endianess swap for r and s
@@ -194,9 +197,8 @@ class Recoverer : public silkworm::Worker {
 
                     if (key.has_value() && (int)key->at(0) == 4) {
                         ethash::hash256 keyHash{ethash::keccak256(key->data() + 1, key->length() - 1)};
-                        std::memcpy(&mydata_[data_offset], &keyHash.bytes[12], kAddressLength);
-                        data_offset += kAddressLength;
-                        data_length += kAddressLength;
+                        std::memcpy(&mydata_[block_result_offset + block_result_length], &keyHash.bytes[12], kAddressLength);
+                        block_result_length += kAddressLength;
                     } else {
                         std::cout << format_time() << " Recoverer #" << id_ << " "
                                   << "Public key recovery failed at block #" << rp.blockNum << std::endl;
@@ -206,22 +208,18 @@ class Recoverer : public silkworm::Worker {
                 }
 
                 // Store results for last block
-                if (data_length) {
-                    MDB_val result{data_length, (void*)&mydata_[data_offset]};
+                if (block_result_length && !recovery_error_) {
+                    MDB_val result{block_result_length, (void*)&mydata_[block_result_offset]};
                     myresults_.push_back({current_block, result});
                 }
 
                 // Raise finished event
-                signal_finished(current_batch_id_, myresults_, recovery_error_);
-                packages_.clear();
-                myresults_.clear();
+                signal_completed(id_, current_batch_id_, recovery_error_);
+                packages_.clear();  // Clear here. Next set_work will swap the cleaned container to master thread
+
             }
 
             busy_.store(false);
-
-            if (debug_) {
-                std::cout << format_time() << " Recoverer #" << id_ << " completed task" << std::endl;
-            }
         }
 
         std::free(mydata_);
@@ -261,6 +259,7 @@ void process_txs_for_signing(ChainConfig& config, uint64_t block_num, BlockBody&
 }
 
 bool start_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
+
     for (size_t r = 0; r < workers.size(); r++) {
         std::cout << format_time() << " Starting worker thread #" << r << std::endl;
         workers.at(r)->start();
@@ -273,11 +272,11 @@ bool start_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
     return true;
 }
 
-void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
+void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
     for (size_t r = 0; r < workers.size(); r++) {
         if (workers.at(r)->get_state() == Worker::WorkerState::kStarted) {
             std::cout << format_time() << " Stopping worker thread #" << r << std::endl;
-            workers.at(r)->stop(true);
+            workers.at(r)->stop(wait);
         }
     }
 }
@@ -343,13 +342,53 @@ uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t 
             if (!batch_size) {
                 batch_size = (to - from + 1) / (100 / percent_step);
                 percent += percent_step;
-                std::cout << format_time() << " ... " << percent << "% " << std::endl;
+                std::cout << format_time() << " ... " << std::right << std::setw(3) << std::setfill(' ') << percent << " %" << std::endl;
             }
         }
         if (!eof) rc = headers->get_next(&key, &data);
     }
 
     return (should_stop_ ? 0 : retvar);
+}
+
+// Writes batch results to db
+size_t write_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std::mutex& batches_mtx,
+                   std::vector<std::unique_ptr<Recoverer>>& workers, evmc::bytes32* headers,
+                   std::unique_ptr<lmdb::Table>& senders, uint64_t initial_block) {
+    size_t ret{0};
+    std::vector<std::pair<uint64_t, MDB_val>> results{};
+
+    do {
+        // Loop all completed batches until queue
+        // empty. Other batches may complete while
+        // writing of batch is in progress
+        std::unique_lock l{batches_mtx};
+        if (batches.empty()) break;
+        std::pair<uint32_t, uint32_t> item{batches.front().first, batches.front().second};
+        batches.pop();
+        l.unlock();
+
+        // Pull result from proper worker
+        std::swap(results, workers.at(item.first)->get_results());
+
+        // Append results to senders table
+        int rc{0};
+        Bytes senders_key(40, '\0');
+        MDB_val key{40, (void*)&senders_key[0]};
+        for (auto& result : results) {
+            boost::endian::store_big_u64(&senders_key[0], result.first);
+            memcpy((void*)&senders_key[8], (void*)&headers[result.first - initial_block], kHashLength);
+            rc = senders->put_append(&key, &result.second);
+            if (rc) {
+                throw lmdb::exception(rc, mdb_strerror(rc));
+            }
+            ret += (key.mv_size + result.second.mv_size);
+        }
+        results.clear();
+
+    } while (true);
+
+    return ret;
 }
 
 int main(int argc, char* argv[]) {
@@ -361,6 +400,7 @@ int main(int argc, char* argv[]) {
     uint32_t po_from_block{1u};                             // Initial block number to start from
     uint32_t po_to_block{UINT32_MAX};                       // Final block number to process
     size_t po_batch_size{10'000};                           // Number of work packages to serve e worker
+
     bool po_debug{false};                                   // Whether to display some debug info
     bool po_dry{false};                                     // Runs in dry mode (no data is persisted on disk)
     bool po_replay{false};                                  // Replays senders extraction if already present
@@ -416,63 +456,44 @@ int main(int argc, char* argv[]) {
     evmc::bytes32* canonical_headers{nullptr};             // Storage space for canonical headers
     uint64_t canonical_headers_count{0};                   // Overall number of canonical headers collected
     std::vector<Recoverer::package> recoverPackages{};     // Where to store work packages for recoverers
-    uint32_t process_batch_id{0};                          // Batch identifier sent to recoverer thread
-    std::atomic<uint32_t> workers_in_flight{0};            // Number of workers in flight
-    std::atomic<uint32_t> flush_batch_id{0};               // Holder of queue flushing order
-    uint64_t total_transactions{0};                        // Overall number of transactions processed
-    uint32_t nextRecovererId{0};                           // Used to serialize the dispatch of works to threads
-    size_t batchTxsCount{0};                               // Progressive number of delivered work
 
-    std::condition_variable ready_for_write_cv{};
-    std::atomic_bool ready_for_write{false};
-    std::mutex write_mtx;
+    uint32_t next_batch_id{0};                   // Batch identifier sent to recoverer thread
+    size_t batch_size{0};                        // Progressive number of delivered work
+    std::atomic<uint32_t> expected_batch_id{0};  // Holder of queue flushing order
+    std::queue<std::pair<uint32_t, uint32_t>>
+        batches_completed{};           // Queue of batches completed waiting to be written on disk
+    std::mutex batches_completed_mtx;  // Guards the queue
+    size_t bytes_written{0};           // Total bytes written
+
+    uint32_t next_worker_id{0};                            // Used to serialize the dispatch of works to threads
+    std::atomic<uint32_t> workers_in_flight{0};            // Number of workers in flight
+    uint64_t total_transactions{0};                        // Overall number of transactions processed
+
 
     // Recoverer's signal handlers
-    boost::function<void(uint32_t batch_id, std::vector<std::pair<uint64_t, MDB_val>> & results, bool recovery_error)>
-        finishedHandler =
-            [&](uint32_t batch_id, std::vector<std::pair<uint64_t, MDB_val>>& results, bool recovery_error) {
-                // Ensure threads flush in the right order to preserve key sorting
-                // Threads waits for its ticket before flushing
-                while (flush_batch_id.load(std::memory_order_relaxed) != batch_id) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                }
+    boost::function<void(uint32_t, uint32_t, bool)> finishedHandler =
+        [&expected_batch_id, &batches_completed, &batches_completed_mtx, &workers_in_flight](
+            uint32_t sender_id, uint32_t batch_id, bool has_error) {
 
-                // Prevent threads from flushing their results while
-                // main thread is still fetching blocks
-                while (!should_stop_ && !ready_for_write.load(std::memory_order_relaxed)) {
-                    std::unique_lock l(write_mtx);
-                    ready_for_write_cv.wait_for(l, std::chrono::milliseconds(5));
-                    continue;
-                }
+            // Ensure threads flush in the right order to preserve key sorting
+            // Threads waits for its ticket before flushing
+            while (expected_batch_id.load(std::memory_order_relaxed) != batch_id) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
 
-                // This prevents waiting threads to be stuck forever
-                if (should_stop_ || workers_thread_error_ || recovery_error) {
-                    if (recovery_error) {
-                        workers_thread_error_.store(true);
-                    }
-                } else {
-                    // Append results to senders table
-                    int rc{0};
-                    Bytes senders_key(40, '\0');
-                    MDB_val key{40, (void*)&senders_key[0]};
-                    for (auto& result : results) {
-                        boost::endian::store_big_u64(&senders_key[0], result.first);
-                        memcpy((void*)&senders_key[8], (void*)&canonical_headers[result.first - po_from_block],
-                               kHashLength);
-                        rc = lmdb_senders->put_append(&key, &result.second);
-                        if (rc != MDB_SUCCESS) {
-                            std::cout << format_time() << " Unexpected error in recovery thread : " << mdb_strerror(rc)
-                                      << std::endl;
-                            workers_thread_error_.store(true);
-                            break;
-                        }
-                    }
-                };
+            // Store error condition if applicabile
+            if (has_error) workers_thread_error_.store(true);
 
-                // Ready to serve next thread
-                flush_batch_id++;
-                workers_in_flight--;
-            };
+            // Save my ids in the queue of results to
+            // store in db
+            std::unique_lock l{batches_completed_mtx};
+            std::pair<uint32_t, uint32_t> item{sender_id, batch_id};
+            batches_completed.push(item);
+
+            // Ready to serve next thread
+            expected_batch_id++;
+            workers_in_flight--;
+        };
 
     // Each recoverer will allocate enough
     // storage space to hold results for
@@ -480,21 +501,16 @@ int main(int argc, char* argv[]) {
     // thus the need of a unique_ptr.
     std::vector<std::unique_ptr<Recoverer>> recoverers_{};
     for (uint32_t i = 0; i < po_num_threads; i++) {
-        try {
-            auto r = std::make_unique<Recoverer>(i, (po_batch_size * kAddressLength), po_debug);
-            r->signal_finished.connect(boost::bind(finishedHandler, _1, _2, _3));
-            recoverers_.push_back(std::move(r));
-        } catch (...) {
-            std::cerr << "Could not allocate enough memory for Recoverer #" << i << "\n"
-                      << "Try lower batch size value or use less rthread" << std::endl;
-            return -1;
-        }
+        auto worker = std::make_unique<Recoverer>(i, (po_batch_size * kAddressLength), po_debug);
+        worker->signal_completed.connect(boost::bind(finishedHandler, _1, _2, _3));
+        recoverers_.push_back(std::move(worker));
     }
 
-    // Start recoverers
+    // Start recoverers (here occurs allocation)
     if (!start_workers(recoverers_)) {
         std::cout << format_time() << " Unable to start required recoverers" << std::endl;
-        stop_workers(recoverers_);
+        stop_workers(recoverers_, true);
+        recoverers_.clear();
         return -1;
     }
 
@@ -674,48 +690,42 @@ int main(int argc, char* argv[]) {
 
                     // Should we overflow the batch queue dispatch the work
                     // accumulated so far to the recoverer thread
-                    if ((batchTxsCount + body.transactions.size()) > po_batch_size) {
+                    if ((batch_size + body.transactions.size()) > po_batch_size) {
 
-                        recoverers_.at(nextRecovererId)->set_work(process_batch_id++, recoverPackages);
-                        recoverers_.at(nextRecovererId)->kick();
+                        // If all workers busy no other option than to wait for
+                        // at least one free slot
+                        while (workers_in_flight == po_num_threads) {
+                            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                        }
+
+                        // Throw if any error from workers
+                        if (workers_thread_error_) throw std::runtime_error("Error from worker thread");
+
+                        // Write results to db (if any)
+                        bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, lmdb_senders, po_from_block);
+
+                        // Dispatch new task to worker
+                        total_transactions += recoverPackages.size();
+                        recoverers_.at(next_worker_id)->set_work(next_batch_id++, recoverPackages);
+                        recoverers_.at(next_worker_id)->kick();
                         workers_in_flight++;
-                        if (po_debug) {
-                            std::cout << format_time() << " DBG : dispatched " << batchTxsCount
-                                      << " work packages to recoverer #" << nextRecovererId
-                                      << " Workers in flight : " << workers_in_flight << std::endl;
-                        }
-                        batchTxsCount = 0;
+                        batch_size = 0;
 
-                        if (++nextRecovererId == (uint32_t)recoverers_.size()) {
-                            std::cout << format_time() << " Block number " << current_block << ". Fetched transactions "
-                                      << (total_transactions + body.transactions.size()) << std::endl;
-                            /*
-                             * All threads in the pool have been fed and are in flight
-                             * Here we have to wait for all of them to complete
-                             * their flushing to avoid overlapping for db reads
-                             * and writes
-                             */
-                            ready_for_write.store(true, std::memory_order_relaxed);
-                            ready_for_write_cv.notify_all();
-                            while (workers_in_flight != 0) {
-                                std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                            }
-                            ready_for_write.store(false, std::memory_order_relaxed);
-                            nextRecovererId = 0;
-                        }
+                        std::cout << format_time() << " Block " << std::right << std::setw(9) << std::setfill(' ')
+                            << current_block << " Transactions " << std::right << std::setw(12)
+                            << std::setfill(' ') << total_transactions << " Workers " << workers_in_flight << "/" << po_num_threads
+                            << " " << std::right << std::setw(16) << std::setfill(' ') << bytes_written << " B" << std::endl;
 
-                        // Do any of workers threads returned an error ?
-                        if (workers_thread_error_) {
-                            throw std::runtime_error("Error occurred in child worker thread");
+                        if (++next_worker_id == po_num_threads) {
+                            next_worker_id = 0;
                         }
                     }
 
                     // Enqueue Txs
                     process_txs_for_signing(config, current_block, body, recoverPackages);
 
-                    // Increment number of accumulated transactions
-                    total_transactions += body.transactions.size();
-                    batchTxsCount += body.transactions.size();
+                    // Increment number of accumulated transactions in this batch
+                    batch_size += body.transactions.size();
                 }
 
                 // After processing move to next block number and header
@@ -735,31 +745,44 @@ int main(int argc, char* argv[]) {
             }
 
             // Should we have a partially filled work package deliver it now
-            if (batchTxsCount) {
-                std::cout << format_time() << " Block number " << current_block << ". Fetched transactions "
-                          << total_transactions << std::endl;
-                recoverers_.at(nextRecovererId)->set_work(process_batch_id, recoverPackages);
-                recoverers_.at(nextRecovererId)->kick();
+            if (batch_size && !should_stop_) {
+
+                // If all workers busy no other option than to wait for
+                // at least one free slot
+                while (workers_in_flight == po_num_threads) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                }
+
+                // Throw if any error from workers
+                if (workers_thread_error_) throw std::runtime_error("Error from worker thread");
+
+                // Write results to db (if any)
+                bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, lmdb_senders,
+                              po_from_block);
+
+                total_transactions += recoverPackages.size();
+                recoverers_.at(next_worker_id)->set_work(next_batch_id, recoverPackages);
+                recoverers_.at(next_worker_id)->kick();
                 workers_in_flight++;
-                if (po_debug) {
-                    std::cout << format_time() << " DBG : dispatched " << batchTxsCount
-                        << " work packages to recoverer #" << nextRecovererId
-                        << " Workers in flight : " << workers_in_flight << std::endl;
-                }
-                ready_for_write.store(true, std::memory_order_relaxed);
-                while (workers_in_flight != 0) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                }
+                batch_size = 0;
+
+                std::cout << format_time() << " Block " << std::right << std::setw(9) << std::setfill(' ')
+                    << current_block << " Transactions " << std::right << std::setw(12)
+                    << std::setfill(' ') << total_transactions << " Workers " << workers_in_flight << "/" << po_num_threads
+                    << " " << std::right << std::setw(16) << std::setfill(' ') << bytes_written << " B" << std::endl;
             }
 
-            if (workers_thread_error_) {
-                throw std::runtime_error("Error occurred in child worker thread");
+            // Wait for all workers to complete and write their results
+            while (workers_in_flight != 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }
-
+            if (!should_stop_) {
+                write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, lmdb_senders,
+                              po_from_block);
+            }
         }
 
-        std::cout << format_time() << " Bodies scan " << (should_stop_ ? "aborted. " : "completed.")
-                  << " Processed transactions " << total_transactions << std::endl;
+        std::cout << format_time() << " Bodies scan " << (should_stop_ ? "aborted! " : "completed!") << std::endl;
 
     } catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
@@ -776,7 +799,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Stop all recoverers and close all tables
-    stop_workers(recoverers_);
+    stop_workers(recoverers_, true);
     if (lmdb_senders) lmdb_senders->close();
     if (lmdb_headers) lmdb_headers->close();
     if (lmdb_bodies) lmdb_bodies->close();
@@ -789,7 +812,7 @@ int main(int argc, char* argv[]) {
     int rc{0};
     if (lmdb_txn) {
         if (!main_thread_error_ && !workers_thread_error_ && !po_dry && !should_stop_) {
-            std::cout << format_time() << " Committing work ... " << std::endl;
+            std::cout << format_time() << " Committing work ( " << bytes_written << " bytes )" << std::endl;
             rc = lmdb_txn->commit();
             if (!rc) lmdb_env->sync(true);
         } else {

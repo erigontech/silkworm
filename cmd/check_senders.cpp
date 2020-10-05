@@ -502,7 +502,7 @@ int main(int argc, char* argv[]) {
             opts.map_size = *lmdb_mapSize;
         }
 
-        lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
+        lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);  // Throws on error
         lmdb_headers = lmdb_txn->open(db::table::kBlockHeaders);         // Throws on error
@@ -672,7 +672,6 @@ int main(int argc, char* argv[]) {
                     // Should we overflow the batch queue dispatch the work
                     // accumulated so far to the recoverer thread
                     if ((batchTxsCount + body.transactions.size()) > po_batch_size) {
-
                         recoverers_.at(nextRecovererId)->set_work(process_batch_id++, recoverPackages);
                         recoverers_.at(nextRecovererId)->kick();
                         workers_in_flight++;
@@ -740,8 +739,8 @@ int main(int argc, char* argv[]) {
                 workers_in_flight++;
                 if (po_debug) {
                     std::cout << format_time() << " DBG : dispatched " << batchTxsCount
-                        << " work packages to recoverer #" << nextRecovererId
-                        << " Workers in flight : " << workers_in_flight << std::endl;
+                              << " work packages to recoverer #" << nextRecovererId
+                              << " Workers in flight : " << workers_in_flight << std::endl;
                 }
                 ready_for_write.store(true, std::memory_order_relaxed);
                 while (workers_in_flight != 0) {
@@ -752,7 +751,6 @@ int main(int argc, char* argv[]) {
             if (workers_thread_error_) {
                 throw std::runtime_error("Error occurred in child worker thread");
             }
-
         }
 
         std::cout << format_time() << " Bodies scan " << (should_stop_ ? "aborted. " : "completed.")

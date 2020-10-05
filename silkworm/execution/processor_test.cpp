@@ -283,8 +283,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     TemporaryDirectory tmp_dir{};
     lmdb::options db_opts{};
     db_opts.map_size = 32 << 20;  //  32MiB
-    bool read_write{true};
-    std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(tmp_dir.path(), db_opts, read_write)};
+    std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(tmp_dir.path(), db_opts)};
 
     std::unique_ptr<lmdb::Transaction> db_txn{db_env->begin_rw_transaction()};
     db::table::create_all(*db_txn);

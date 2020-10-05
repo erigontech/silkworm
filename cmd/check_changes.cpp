@@ -52,7 +52,9 @@ int main(int argc, char* argv[]) {
 
     using namespace silkworm;
 
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str())};
+    lmdb::options db_opts{};
+    db_opts.read_only = true;
+    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_path.c_str(), db_opts)};
 
     const uint64_t from{absl::GetFlag(FLAGS_from)};
     const uint64_t to{absl::GetFlag(FLAGS_to)};

@@ -479,9 +479,9 @@ void Table::close() {
     }
 }
 
-std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts, bool forwriting) {
+std::shared_ptr<Environment> get_env(const char* path, options opts) {
     struct Value {
-        std::weak_ptr<lmdb::Environment> wp;
+        std::weak_ptr<Environment> wp;
         unsigned int flags;
     };
 
@@ -497,6 +497,7 @@ std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts,
     if (opts.no_meta_sync) flags |= MDB_NOMETASYNC;
     if (opts.write_map) flags |= MDB_WRITEMAP;
     if (opts.no_sub_dir) flags |= MDB_NOSUBDIR;
+    if (opts.read_only) flags |= MDB_RDONLY;
 
     // There's a 1:1 relation among env and the opened
     // database file. Build a hash of the path
@@ -522,10 +523,10 @@ std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts,
     }
 
     // Create new instance and open db file(s)
-    auto newitem = std::make_shared<lmdb::Environment>();
+    auto newitem = std::make_shared<Environment>();
     err_handler(newitem->set_mapsize(opts.map_size));
     err_handler(newitem->set_max_dbs(opts.max_tables));
-    newitem->open(path, flags | (forwriting ? 0 : MDB_RDONLY), opts.mode);  // Throws on error
+    newitem->open(path, flags, opts.mode);  // Throws on error
 
     s_envs[envkey] = {newitem, flags};
     return newitem;

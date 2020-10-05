@@ -24,10 +24,8 @@
 
 #include <lmdb/lmdb.h>
 
-#include <atomic>
 #include <boost/signals2/signal.hpp>
 #include <exception>
-#include <iostream>
 #include <map>
 #include <mutex>
 #include <optional>
@@ -52,6 +50,7 @@ struct options {
     bool no_meta_sync = false;       // MDB_NOMETASYNC
     bool write_map = false;          // MDB_WRITEMAP
     bool no_sub_dir = false;         // MDB_NOSUBDIR
+    bool read_only = false;          // MDB_RDONLY
     unsigned max_tables = 128;       // Max open tables/dbi
     mdb_mode_t mode = 0644;          // Filesystem mode
 };
@@ -356,7 +355,7 @@ class Table {
     boost::signals2::connection conn_on_txn_commit_;  // Holds the connection to txn signal_on_before_commit_
 };
 
-std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts = {}, bool forwriting = false);
+std::shared_ptr<Environment> get_env(const char* path, options opts = {});
 
 }  // namespace silkworm::lmdb
 

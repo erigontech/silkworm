@@ -288,28 +288,25 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
     }
 }
 
-uint64_t get_highest_canonical_header(std::unique_ptr<lmdb::Table>& headers) {
-    MDB_val key, data;
-    uint64_t retvar{0};
+std::optional<uint64_t> get_highest_canonical_header(std::unique_ptr<lmdb::Table>& headers) {
 
-    try {
-        int rc{headers->get_last(&key, &data)};
-        while (rc == MDB_SUCCESS) {
-            ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
-            if (v[8] != 'n') {
-                headers->get_prev(&key, &data);
-                continue;
-            }
-            retvar = boost::endian::load_big_u64(&v[0]);
-            break;
-        }
-    } catch (const std::exception& ex) {
-        std::cout << format_time() << "Unexpected error " << ex.what()
-                  << " while tryng to locate highest canonical block" << std::endl;
-        should_stop_.store(true);
+    size_t count{0};
+    lmdb::err_handler(headers->get_rcount(&count));
+    if (!count) {
+        return {};
     }
 
-    return retvar;
+    MDB_val key, data;
+    int rc{headers->get_last(&key, &data)};
+    while (!should_stop_ && rc == MDB_SUCCESS) {
+        ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
+        if (v[8] != 'n') {
+            headers->get_prev(&key, &data);
+            continue;
+        }
+        return {boost::endian::load_big_u64(&v[0])};
+    }
+    return {};
 }
 
 uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t from, uint64_t to, evmc::bytes32* out) {
@@ -534,25 +531,22 @@ int main(int argc, char* argv[]) {
         lmdb_headers = lmdb_txn->open(db::table::kBlockHeaders);         // Throws on error
         lmdb_bodies = lmdb_txn->open(db::table::kBlockBodies);           // Throws on error
 
-        size_t record_count{0};
-        uint64_t mostrecent_header{0};
-        uint64_t mostrecent_sender{0};
+        size_t rcount{0};
 
-        // Ensure Headers are populated
-        lmdb_headers->get_rcount(&record_count);
-        if (!record_count) {
-            throw std::logic_error("Headers table empty. Aborting");
-        } else {
-            // Locate most recent canonical header
-            mostrecent_header = get_highest_canonical_header(lmdb_headers);
-            std::cout << format_time() << " Most recent header number " << mostrecent_header << std::endl;
-            po_to_block = (po_to_block > mostrecent_header ? mostrecent_header : po_to_block);
+        // Have canonical block headers ?
+        std::cout << format_time() << " Checking canonical headers ..." << std::endl;
+        auto mostrecent_header = get_highest_canonical_header(lmdb_headers);
+        if (!mostrecent_header.has_value()) {
+            throw std::logic_error("Can't locate most recent canonical header. Aborting");
         }
+        std::cout << format_time() << " Most recent header number " << *mostrecent_header << std::endl;
+        po_to_block = (po_to_block > *mostrecent_header ? *mostrecent_header : po_to_block);
 
-        // Ensure Bodies are populated
-        lmdb_bodies->get_rcount(&record_count);
-        if (!record_count) {
-            throw std::logic_error("Bodies table empty. Aborting");
+        // Have block bodies ?
+        std::cout << format_time() << " Checking block bodies ..." << std::endl;
+        lmdb::err_handler(lmdb_bodies->get_rcount(&rcount));
+        if (!rcount) {
+            throw std::logic_error("Block bodies table empty. Aborting");
         }
 
         /*
@@ -562,24 +556,18 @@ int main(int argc, char* argv[]) {
          * If po_replay flag is set then po_from_block can be anything
          * below that value
          */
-        lmdb_senders->get_rcount(&record_count);
-
-        if (record_count) {
+        std::cout << format_time() << " Checking transaction senders ..." << std::endl;
+        lmdb::err_handler(lmdb_senders->get_rcount(&rcount));
+        if (rcount) {
             MDB_val key, data;
-            int rc{lmdb_senders->get_last(&key, &data)};
-            if (rc) {
-                throw std::runtime_error("Unable to locate highest senders block key");
-            }
+            lmdb::err_handler(lmdb_senders->get_last(&key, &data));
             ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
-            mostrecent_sender = boost::endian::load_big_u64(&v[0]);
+            auto mostrecent_sender = boost::endian::load_big_u64(&v[0]);
             if (po_from_block <= mostrecent_sender) {
                 if (po_replay) {
                     if (po_from_block == 1u) {
                         std::cout << format_time() << " Clearing senders table ... " << std::endl;
-                        rc = lmdb_senders->clear();
-                        if (rc) {
-                            throw std::runtime_error(mdb_strerror(rc));
-                        }
+                        lmdb::err_handler(lmdb_senders->clear());
                         lmdb_senders.reset();
                         lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);
                     } else {
@@ -590,10 +578,14 @@ int main(int argc, char* argv[]) {
                         boost::endian::store_big_u64(&senders_key[0], po_from_block);
                         key.mv_data = (void*)&senders_key[0];
                         key.mv_size = 40;
-                        rc = lmdb_senders->seek(&key, &data);
+                        int rc{lmdb_senders->seek(&key, &data)};
+                        lmdb::err_handler(rc);
                         while (!should_stop_ && rc == MDB_SUCCESS) {
-                            rc = lmdb_senders->del_current(false);
+                            lmdb::err_handler(lmdb_senders->del_current(false));
                             rc = lmdb_senders->get_next(&key, &data);
+                            if (rc && rc != MDB_NOTFOUND) {
+                                lmdb::err_handler(rc);
+                            }
                         }
                     }
                 } else {
@@ -659,9 +651,7 @@ int main(int argc, char* argv[]) {
 
             std::cout << format_time() << " Scanning bodies ... " << std::endl;
             int rc{lmdb_bodies->seek_exact(&key, &data)};
-            if (rc) {
-                throw std::runtime_error("Can't locate initial block: " + std::string(mdb_strerror(rc)));
-            }
+            lmdb::err_handler(rc);
 
             while (!should_stop_) {
                 ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
@@ -675,12 +665,9 @@ int main(int argc, char* argv[]) {
                     // We stumbled into a non canonical block (not matching header)
                     // move next and repeat
                     rc = lmdb_bodies->get_next(&key, &data);
-                    if (rc == MDB_NOTFOUND) {
-                        // Reached the end of records for bodies table
-                        break;
-                    } else if (rc != MDB_SUCCESS) {
-                        // Something bad happend while crawling bodies
-                        throw std::runtime_error(mdb_strerror(rc));
+                    if (rc) {
+                        if (rc == MDB_NOTFOUND) break;  // Reached the end of records for bodies table
+                        lmdb::err_handler(rc);          // Something bad happened
                     }
                 }
 
@@ -721,17 +708,15 @@ int main(int argc, char* argv[]) {
                         std::cout << format_time() << " Block " << std::right << std::setw(9) << std::setfill(' ')
                             << current_block << " Transactions " << std::right << std::setw(12)
                             << std::setfill(' ') << total_transactions << " Workers " << workers_in_flight << "/" << po_num_threads
-                            << " " << std::right << std::setw(16) << std::setfill(' ') << bytes_written << " B" << std::endl;
+                            << std::endl;
 
                         if (++next_worker_id == po_num_threads) {
                             next_worker_id = 0;
                         }
                     }
 
-                    // Enqueue Txs
+                    // Enqueue Txs in current batch
                     process_txs_for_signing(config, current_block, body, recoverPackages);
-
-                    // Increment number of accumulated transactions in this batch
                     batch_size += body.transactions.size();
                 }
 
@@ -740,15 +725,12 @@ int main(int argc, char* argv[]) {
                     // We'd go beyond collected canonical headers
                     break;
                 }
-                ++current_block;
                 rc = lmdb_bodies->get_next(&key, &data);
-                if (rc == MDB_NOTFOUND) {
-                    // Reached the end of records for bodies table
-                    break;
-                } else if (rc != MDB_SUCCESS) {
-                    // Something bad happend while crawling bodies
-                    throw std::runtime_error(mdb_strerror(rc));
+                if (rc) {
+                    if (rc == MDB_NOTFOUND) break;  // Reached the end of records for bodies table
+                    lmdb::err_handler(rc);          // Something bad happened
                 }
+                ++current_block;
             }
 
             // Should we have a partially filled work package deliver it now
@@ -776,15 +758,15 @@ int main(int argc, char* argv[]) {
                 std::cout << format_time() << " Block " << std::right << std::setw(9) << std::setfill(' ')
                     << current_block << " Transactions " << std::right << std::setw(12)
                     << std::setfill(' ') << total_transactions << " Workers " << workers_in_flight << "/" << po_num_threads
-                    << " " << std::right << std::setw(16) << std::setfill(' ') << bytes_written << " B" << std::endl;
+                    << std::endl;
             }
 
             // Wait for all workers to complete and write their results
             while (workers_in_flight != 0) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
             }
             if (!should_stop_) {
-                write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, lmdb_senders,
+                bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, lmdb_senders,
                               po_from_block);
             }
         }
@@ -807,33 +789,34 @@ int main(int argc, char* argv[]) {
 
     // Stop all recoverers and close all tables
     stop_workers(recoverers_, true);
-    if (lmdb_senders) lmdb_senders->close();
-    if (lmdb_headers) lmdb_headers->close();
-    if (lmdb_bodies) lmdb_bodies->close();
+
+    lmdb_senders.reset();
+    lmdb_headers.reset();
+    lmdb_bodies.reset();
 
     // free memory
     if (canonical_headers) {
         std::free(canonical_headers);
     }
 
-    int rc{0};
-    if (lmdb_txn) {
-        if (!main_thread_error_ && !workers_thread_error_ && !po_dry && !should_stop_) {
-            std::cout << format_time() << " Committing work ( " << bytes_written << " bytes )" << std::endl;
-            rc = lmdb_txn->commit();
-            if (!rc) lmdb_env->sync(true);
-        } else {
-            lmdb_txn->abort();
+    // Should we commit ?
+    if (!main_thread_error_ && !workers_thread_error_ && !po_dry && !should_stop_) {
+
+        std::cout << format_time() << " Committing work ( " << bytes_written << " bytes )" << std::endl;
+        try
+        {
+            lmdb::err_handler(lmdb_txn->commit());
+            lmdb::err_handler(lmdb_env->sync());
         }
-        if (rc) {
-            std::cout << format_time() << " Unable to commit work " << mdb_strerror(rc) << std::endl;
-        } else {
-            std::cout << format_time() << " All done ! " << std::endl;
+        catch (const std::exception& ex)
+        {
+            std::cout << format_time() << " Unexpected error : " << ex.what() << std::endl;
+            main_thread_error_ = true;
         }
-    }
-    if (lmdb_env && lmdb_env->is_opened()) {
-        lmdb_env->close();
     }
 
+    lmdb_txn.reset();
+    lmdb_env.reset();
+    std::cout << format_time() << " All done ! " << std::endl;
     return (main_thread_error_ ? -1 : 0);
 }

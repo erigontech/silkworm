@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
         std::vector<Receipt> receipts;
         try {
             receipts = processor.execute_block();
-        } catch (ValidationError& err) {
+        } catch (const ValidationError& err) {
             std::cerr << "ValidationError in block " << block_num << " 🤬\n";
             throw err;
         }

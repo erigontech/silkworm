@@ -136,7 +136,6 @@ class Recoverer : public silkworm::Worker {
     uint32_t current_batch_id_{0};                           // Identifier of the batch being processed
     size_t mysize_;                                          // Size of the recovery data
     uint8_t* mydata_{nullptr};                               // Pointer to data where rsults are stored
-    bool mydata_locked_{false};                              // Whether or not mydata has been locked
     std::vector<std::pair<uint64_t, MDB_val>> myresults_{};  // Results per block pointing to data area
 
     // Basic work loop (overrides Worker::work())
@@ -157,6 +156,11 @@ class Recoverer : public silkworm::Worker {
                 kicked_signal_.wait_for(l, std::chrono::seconds(1));
                 continue;
             }
+
+            if (debug_) {
+                std::cout << format_time() << " DBG : worker #" << id_ << " started batch #" << current_batch_id_
+                    << std::endl;
+            };
 
             busy_.store(true);
             {
@@ -215,8 +219,11 @@ class Recoverer : public silkworm::Worker {
 
                 // Raise finished event
                 signal_completed(id_, current_batch_id_, recovery_error_);
+                if (debug_) {
+                    std::cout << format_time() << " DBG : worker #" << id_ << " completed batch #" << current_batch_id_
+                              << std::endl;
+                };
                 packages_.clear();  // Clear here. Next set_work will swap the cleaned container to master thread
-
             }
 
             busy_.store(false);

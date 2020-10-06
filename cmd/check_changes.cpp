@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <absl/container/flat_hash_set.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
@@ -29,6 +30,14 @@
 #include <silkworm/state/reader.hpp>
 #include <silkworm/trie/vector_root.hpp>
 #include <string>
+
+using namespace evmc::literals;
+
+// Non-existing accounts only touched by zero-value internal transactions:
+// e.g. https://etherscan.io/address/0x000000000000000000636f6e736f6c652e6c6f67
+static const absl::flat_hash_set<evmc::address> kPhantomAccounts{
+    0x000000000000000000636f6e736f6c652e6c6f67_address,
+};
 
 ABSL_FLAG(std::string, datadir, silkworm::db::default_path(), "chain DB path");
 ABSL_FLAG(uint64_t, from, 1, "start from block number (inclusive)");
@@ -105,25 +114,34 @@ int main(int argc, char* argv[]) {
 
         std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
         if (writer.account_changes() != db_account_changes) {
-            std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
+            bool mismatch{false};
             if (db_account_changes) {
                 for (const auto& e : *db_account_changes) {
                     if (writer.account_changes().count(e.first) == 0) {
-                        std::cerr << to_hex(e.first) << " is missing\n";
+                        if (!kPhantomAccounts.contains(e.first)) {
+                            std::cerr << to_hex(e.first) << " is missing\n";
+                            mismatch = true;
+                        }
                     } else if (Bytes val{writer.account_changes().at(e.first)}; val != e.second) {
                         std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
                         std::cerr << to_hex(val) << "\n";
                         std::cerr << "vs DB\n";
                         std::cerr << to_hex(e.second) << "\n";
+                        mismatch = true;
                     }
                 }
                 for (const auto& e : writer.account_changes()) {
                     if (db_account_changes->count(e.first) == 0) {
                         std::cerr << to_hex(e.first) << " is not in DB\n";
+                        mismatch = true;
                     }
                 }
             } else {
                 std::cerr << "Nil DB account changes\n";
+                mismatch = true;
+            }
+            if (mismatch) {
+                std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
             }
         }
 
@@ -141,7 +159,7 @@ int main(int argc, char* argv[]) {
 
         if (block_num % 1000 == 0) {
             absl::Time t2{absl::Now()};
-            std::cout << "Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s"
+            std::cout << t2 << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s"
                       << std::endl;
             t1 = t2;
         }

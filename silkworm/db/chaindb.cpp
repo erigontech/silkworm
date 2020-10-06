@@ -183,10 +183,11 @@ std::unique_ptr<Transaction> Environment::begin_rw_transaction(unsigned int flag
  */
 
 Transaction::Transaction(Environment* parent, MDB_txn* txn, unsigned int flags)
-    : parent_env_{parent},
-      handle_{txn},
-      flags_{flags},
-      conn_on_env_close_{parent->signal_on_before_close_.connect(boost::bind(&Transaction::abort, this))} {}
+    : parent_env_{parent}, handle_{txn}, flags_{flags} {
+    if (parent) {
+        conn_on_env_close_ = parent->signal_on_before_close_.connect(boost::bind(&Transaction::abort, this));
+    }
+}
 
 bool Transaction::assert_handle(bool should_throw) {
     bool retvar{handle_ != nullptr};

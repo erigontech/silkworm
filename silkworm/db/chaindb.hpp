@@ -68,8 +68,8 @@ class exception : public std::exception {
     explicit exception(int err, const char* message) : err_{err}, message_{message} {};
     explicit exception(int err, const std::string& message) : err_{err}, message_{message} {};
     virtual ~exception() noexcept {};
-    virtual const char* what() const noexcept { return message_.c_str(); }
-    int err() { return err_; }
+    const char* what() const noexcept override { return message_.c_str(); }
+    int err() const noexcept { return err_; }
 
    protected:
     int err_;
@@ -157,7 +157,6 @@ class Environment {
 class Transaction {
    private:
     static MDB_txn* open_transaction(Environment* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
-    Transaction(Environment* parent, MDB_txn* txn, unsigned int flags);
 
     friend class Table;
 
@@ -185,6 +184,7 @@ class Transaction {
 
    public:
     explicit Transaction(Environment* parent, unsigned int flags = 0);
+    Transaction(Environment* parent, MDB_txn* txn, unsigned int flags);
     ~Transaction();
 
     MDB_txn** handle() { return &handle_; }

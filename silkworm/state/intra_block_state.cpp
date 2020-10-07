@@ -214,7 +214,7 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) noex
     auto& obj{get_or_create_object(address)};
     journal_.push_back(std::make_unique<state::UpdateDelta>(address, obj));
     obj.code = code;
-    ethash::hash256 hash{ethash::keccak256(code.data(), code.size())};
+    ethash::hash256 hash{keccak256(code)};
     std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
 }
 

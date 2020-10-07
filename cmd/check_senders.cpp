@@ -251,7 +251,7 @@ void process_txs_for_signing(ChainConfig& config, uint64_t block_num, BlockBody&
             rlp::encode(rlp, txn, true, {});
         }
 
-        ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
+        ethash::hash256 hash{keccak256(rlp)};
         Recoverer::package rp{block_num, hash, x.recovery_id, txn.r, txn.s};
         packages.push_back(rp);
     }

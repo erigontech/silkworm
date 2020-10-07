@@ -85,7 +85,7 @@ TEST_CASE("Execution API") {
 
     Bytes header_rlp{};
     rlp::encode(header_rlp, block.header);
-    ethash::hash256 block_hash{ethash::keccak256(header_rlp.data(), header_rlp.size())};
+    ethash::hash256 block_hash{keccak256(header_rlp)};
 
     auto header_table{txn->open(db::table::kBlockHeaders)};
     header_table->put(db::header_hash_key(block_number), full_view(block_hash.bytes));
@@ -122,7 +122,7 @@ TEST_CASE("Execution API") {
     std::optional<Account> contract_account{db::read_account(*txn, contract_address, block_number)};
     REQUIRE(contract_account);
 
-    ethash::hash256 code_hash{ethash::keccak256(contract_code.data(), contract_code.size())};
+    ethash::hash256 code_hash{keccak256(contract_code)};
     CHECK(to_hex(contract_account->code_hash) == to_hex(full_view(code_hash.bytes)));
 
     //    evmc::bytes32 storage_key{};

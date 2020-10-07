@@ -29,6 +29,11 @@ see its package dbutils.
 
 namespace silkworm::db {
 
+constexpr size_t kIncarnationLength{8};
+static_assert(kIncarnationLength == sizeof(uint64_t));
+
+constexpr size_t kStoragePrefixSize{kAddressLength + kIncarnationLength};
+
 struct Entry {
     ByteView key;
     ByteView value;

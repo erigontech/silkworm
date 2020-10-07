@@ -68,7 +68,19 @@ void Writer::write_to_db(lmdb::Transaction& txn) {
     for (const auto& entry : account_forward_changes_) {
         state_table->put(full_view(entry.first), entry.second);
     }
-    // TODO(Andrew) storage state
+
+    for (const auto& entry : storage_forward_changes_) {
+        Bytes key{entry.first.substr(0, db::kStoragePrefixSize)};
+        Bytes x{entry.first.substr(db::kStoragePrefixSize)};
+        if (entry.second.empty()) {
+            state_table->del(key, x);
+        } else {
+            x += entry.second;
+            state_table->put(key, x);
+        }
+    }
+
+    // TODO(Andrew) proper DeleteAccount
     // TODO(Andrew) kAccountChanges, kStorageChanges, incarnationMap and the rest
 }
 

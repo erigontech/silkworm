@@ -101,7 +101,7 @@ static std::optional<ByteView> find_in_history(lmdb::Transaction& txn, bool stor
     ByteView k{entry->key};
     if (storage) {
         if (k.substr(0, kAddressLength) != key.substr(0, kAddressLength) ||
-            k.substr(kAddressLength, kHashLength) != key.substr(kAddressLength + kIncarnationLength)) {
+            k.substr(kAddressLength, kHashLength) != key.substr(kStoragePrefixSize)) {
             return {};
         }
     } else if (!has_prefix(k, key)) {

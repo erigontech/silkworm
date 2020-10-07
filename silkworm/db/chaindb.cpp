@@ -429,6 +429,12 @@ std::optional<ByteView> Table::get(ByteView key, ByteView sub_key) {
     }
 }
 
+void Table::del(ByteView key, ByteView sub_key) {
+    if (get(key, sub_key)) {
+        err_handler(del_current());
+    }
+}
+
 std::optional<db::Entry> Table::seek(ByteView prefix) {
     MDB_val key_val{db::to_mdb_val(prefix)};
     MDB_val data;
@@ -448,7 +454,7 @@ std::optional<db::Entry> Table::seek(ByteView prefix) {
 int Table::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }
 int Table::seek_exact(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
 int Table::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
-int Table::del_current(bool dupdata) { return mdb_cursor_del(handle_, (dupdata ? MDB_NODUPDATA : 0u)); }
+int Table::del_current() { return mdb_cursor_del(handle_, 0); }
 int Table::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
 int Table::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
 int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }

@@ -125,11 +125,11 @@ TEST_CASE("Execution API") {
     ethash::hash256 code_hash{keccak256(contract_code)};
     CHECK(to_hex(contract_account->code_hash) == to_hex(full_view(code_hash.bytes)));
 
-    //    evmc::bytes32 storage_key{};
-    //    evmc::bytes32 storage0{db::read_storage(*txn, contract_address, /*incarnation=*/1, storage_key,
-    //    block_number)}; CHECK(to_hex(storage0) == "0000000000000000000000000000000000000000000000000000000000000042");
+    evmc::bytes32 storage_key{};
+    evmc::bytes32 storage0{db::read_storage(*txn, contract_address, /*incarnation=*/1, storage_key, block_number)};
+    CHECK(to_hex(storage0) == "000000000000000000000000000000000000000000000000000000000000002a");
 
-    //    storage_key = to_bytes32(from_hex("01"));
-    //    evmc::bytes32 storage1{db::read_storage(*txn, contract_address, /*incarnation=*/1, storage_key,
-    //    block_number)}; CHECK(to_hex(storage1) == "00000000000000000000000000000000000000000000000000000000000001c9");
+    storage_key = to_bytes32(from_hex("01"));
+    evmc::bytes32 storage1{db::read_storage(*txn, contract_address, /*incarnation=*/1, storage_key, block_number)};
+    CHECK(to_hex(storage1) == "00000000000000000000000000000000000000000000000000000000000001c9");
 }

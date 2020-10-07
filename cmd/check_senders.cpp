@@ -566,7 +566,7 @@ int main(int argc, char* argv[]) {
                         key.mv_size = 40;
                         rc = lmdb_senders->seek(&key, &data);
                         while (!should_stop_ && rc == MDB_SUCCESS) {
-                            rc = lmdb_senders->del_current(false);
+                            rc = lmdb_senders->del_current();
                             rc = lmdb_senders->get_next(&key, &data);
                         }
                     }

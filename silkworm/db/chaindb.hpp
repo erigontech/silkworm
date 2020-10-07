@@ -229,7 +229,7 @@ class Table {
     int clear();  // Removes all contents from the table (cursor is invalidated)
     int drop();   // Deletes the table from the environment (cursor is invalidated)
 
-    /* @brief Gets the value by key. A nil optional is returned if the key is not found.
+    /** @brief Gets the value by key. A nil optional is returned if the key is not found.
      *
      * Warning: The memory pointed to by the returned view is owned by the database.
      * The caller may not modify it in any way.
@@ -245,6 +245,12 @@ class Table {
      */
     std::optional<ByteView> get(ByteView key, ByteView sub_key);
 
+    /** @brief Deletes the MDB_DUPSORT data item that starts with a given sub_key.
+     *
+     * Doesn't do anything if the item is not present.
+     */
+    void del(ByteView key, ByteView sub_key);
+
     /*
      * MDB_cursor interfaces
      */
@@ -253,14 +259,14 @@ class Table {
     int seek(MDB_val* key, MDB_val* data);           // Position cursor to first key >= of given key
     int seek_exact(MDB_val* key, MDB_val* data);     // Position cursor to key == of given key
     int get_current(MDB_val* key, MDB_val* data);    // Gets data from current cursor position
-    int del_current(bool dupdata = false);           // Delete key/data pair at current cursor position
+    int del_current();                               // Delete key/data pair at current cursor position
     int get_first(MDB_val* key, MDB_val* data);      // Move cursor at first item in table
     int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in table
     int get_next(MDB_val* key, MDB_val* data);       // Move cursor at next item in table
     int get_last(MDB_val* key, MDB_val* data);       // Move cursor at last item in table
     int get_dcount(size_t* count);                   // Returns the count of duplicates at current position
 
-    /* @brief Stores key/data pairs into the database using cursor.
+    /** @brief Stores key/data pairs into the database using cursor.
      *
      * The cursor is positioned at the new item, or on failure usually near it.
      * For more fine grained options see #put_current(), #put_nodup, #put_noovrw,
@@ -268,7 +274,7 @@ class Table {
      */
     void put(ByteView key, ByteView data);
 
-    /* @brief Replace the k/d pair at current cursor position
+    /** @brief Replace the k/d pair at current cursor position
      *
      * The key parameter must be provided and must match the one at current cursor position
      * If env has MDB_DUPSORT the data item must still sort into the same place.
@@ -277,7 +283,7 @@ class Table {
      */
     int put_current(MDB_val* key, MDB_val* data);
 
-    /* @brief Inserts the new k/d pair only if it does not already appear in database
+    /** @brief Inserts the new k/d pair only if it does not already appear in database
      *
      * This operation may only be invoked if the database was opened with MDB_DUPSORT
      * Function will return MDB_KEYEXISTS if the k/v data pair already appears in the
@@ -285,20 +291,20 @@ class Table {
      */
     int put_nodup(MDB_val* key, MDB_val* data);
 
-    /* @brief Inserts the new k/v pair only if it does not already appear in database
+    /** @brief Inserts the new k/v pair only if it does not already appear in database
      *
      * Function will return MDB_KEYEXISTS if the k/d data pair already appears in the
      * database even if the database supports duplicates (MDB_DUPSORT)
      */
     int put_noovrw(MDB_val* key, MDB_val* data);
 
-    /* @brief Reserves space for data of giben size but doesn't copy data.
+    /** @brief Reserves space for data of giben size but doesn't copy data.
      *
      * Function must NOT be used if the database was opened with MDB_DUPSORT
      */
     int put_reserve(MDB_val* key, MDB_val* data);
 
-    /* @brief Append the given k/d pair to the end of the database.
+    /** @brief Append the given k/d pair to the end of the database.
      *
      * No key comparisons are performed. This function allows fast bulk loading
      * when keys are already known to be in the correct order. Loading unsorted
@@ -306,7 +312,7 @@ class Table {
      */
     int put_append(MDB_val* key, MDB_val* data);
 
-    /* @brief Append the given k/d pair to the end of the database.
+    /** @brief Append the given k/d pair to the end of the database.
      *
      * No key comparisons are performed. This function allows fast bulk loading
      * when keys are already known to be in the correct order. Loading unsorted
@@ -315,7 +321,7 @@ class Table {
      */
     int put_append_dup(MDB_val* key, MDB_val* data);
 
-    /* @brief Stores multiple contiguous data elements in a single request
+    /** @brief Stores multiple contiguous data elements in a single request
      *
      * This function may only be used if the database was opened with MDB_DUPFIXED
      * The data argument MUST be an array of TWO MDB_val.

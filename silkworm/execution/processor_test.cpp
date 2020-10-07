@@ -398,7 +398,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     state.write_block(writer);
 
     // only the caller and the miner should be changed
-    CHECK(writer.account_changes().size() == 2);
+    CHECK(writer.account_back_changes().size() == 2);
 }
 
 TEST_CASE("Empty suicide beneficiary") {
@@ -438,6 +438,6 @@ TEST_CASE("Empty suicide beneficiary") {
     state.write_block(writer);
 
     // suicide_beneficiary should've been touched and deleted
-    CHECK(writer.account_changes().count(suicide_beneficiary) == 1);
+    CHECK(writer.account_back_changes().count(suicide_beneficiary) == 1);
 }
 }  // namespace silkworm

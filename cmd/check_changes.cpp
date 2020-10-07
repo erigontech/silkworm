@@ -106,20 +106,20 @@ int main(int argc, char* argv[]) {
         state.write_block(writer);
 
         std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
-        if (writer.account_changes() != db_account_changes) {
+        if (writer.account_back_changes() != db_account_changes) {
             std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
             if (db_account_changes) {
                 for (const auto& e : *db_account_changes) {
-                    if (writer.account_changes().count(e.first) == 0) {
+                    if (writer.account_back_changes().count(e.first) == 0) {
                         std::cerr << to_hex(e.first) << " is missing\n";
-                    } else if (Bytes val{writer.account_changes().at(e.first)}; val != e.second) {
+                    } else if (Bytes val{writer.account_back_changes().at(e.first)}; val != e.second) {
                         std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
                         std::cerr << to_hex(val) << "\n";
                         std::cerr << "vs DB\n";
                         std::cerr << to_hex(e.second) << "\n";
                     }
                 }
-                for (const auto& e : writer.account_changes()) {
+                for (const auto& e : writer.account_back_changes()) {
                     if (db_account_changes->count(e.first) == 0) {
                         std::cerr << to_hex(e.first) << " is not in DB\n";
                     }
@@ -131,8 +131,8 @@ int main(int argc, char* argv[]) {
 
         Bytes db_storage_changes{db::read_storage_changes(*txn, block_num)};
         Bytes calculated_storage_changes{};
-        if (!writer.storage_changes().empty()) {
-            calculated_storage_changes = writer.storage_changes().encode();
+        if (!writer.storage_back_changes().empty()) {
+            calculated_storage_changes = writer.storage_back_changes().encode();
         }
         if (calculated_storage_changes != db_storage_changes) {
             std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";

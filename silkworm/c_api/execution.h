@@ -39,7 +39,6 @@ enum SilkwormStatusCode {
 /** @brief Executes a given block and writes resulting changes into the database.
  *
  * The function assumes that the state in the database is the one that should be at the begining of the block.
- * Only PLAIN-CST2, PLAIN-ACS and PLAIN-SCS tables are written to.
  * @param[in] txn Valid read-write LMDB transaction. May not be NULL.
  * This function does not commit nor abort the transaction.
  * @param[in] chain_id EIP-155 chain ID. kSilkwormUnknownChainId is returned in case of an unknown or unsupported chain.

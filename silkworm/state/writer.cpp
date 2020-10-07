@@ -17,33 +17,59 @@
 #include "writer.hpp"
 
 #include <silkworm/common/util.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 
 namespace silkworm::state {
 
-void Writer::write_account(const evmc::address& address, std::optional<Account> initial,
-                           std::optional<Account> current) {
+void Writer::change_account(const evmc::address& address, std::optional<Account> initial,
+                            std::optional<Account> current) {
+    bool equal{current == initial};
     bool account_deleted{!current};
 
-    if (!account_deleted && current == initial && changed_storage_.count(address) == 0) {
+    if (equal && !account_deleted && !changed_storage_.contains(address)) {
+        // Follow Turbo-Geth logic when to populate account_back_changes
+        // See (ChangeSetWriter)UpdateAccountData & DeleteAccount
         return;
     }
 
     if (initial) {
         bool omit_code_hash{!account_deleted};
-        account_changes_[address] = initial->encode_for_storage(omit_code_hash);
+        account_back_changes_[address] = initial->encode_for_storage(omit_code_hash);
     } else {
-        account_changes_[address] = {};
+        account_back_changes_[address] = {};
+    }
+
+    if (equal) {
+        return;
+    }
+
+    if (current) {
+        bool omit_code_hash{false};
+        account_forward_changes_[address] = current->encode_for_storage(omit_code_hash);
+    } else {
+        account_forward_changes_[address] = {};
     }
 }
 
-void Writer::write_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
-                           const evmc::bytes32& initial, const evmc::bytes32& current) {
+void Writer::change_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
+                            const evmc::bytes32& initial, const evmc::bytes32& current) {
     if (current == initial) {
         return;
     }
     changed_storage_.insert(address);
     Bytes storage_key{db::storage_key(address, incarnation, key)};
-    storage_changes_[storage_key] = zeroless_view(initial);
+    storage_back_changes_[storage_key] = zeroless_view(initial);
+    storage_forward_changes_[storage_key] = zeroless_view(current);
 }
+
+void Writer::write_to_db(lmdb::Transaction& txn) {
+    auto state_table{txn.open(db::table::kPlainState)};
+    for (const auto& entry : account_forward_changes_) {
+        state_table->put(full_view(entry.first), entry.second);
+    }
+    // TODO(Andrew) storage state
+    // TODO(Andrew) kAccountChanges, kStorageChanges, incarnationMap and the rest
+}
+
 }  // namespace silkworm::state

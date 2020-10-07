@@ -17,10 +17,12 @@
 #ifndef SILKWORM_STATE_WRITER_H_
 #define SILKWORM_STATE_WRITER_H_
 
+#include <absl/container/flat_hash_set.h>
+
 #include <evmc/evmc.hpp>
 #include <map>
 #include <optional>
-#include <set>
+#include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/change.hpp>
 #include <silkworm/types/account.hpp>
 
@@ -32,18 +34,22 @@ class Writer {
 
     Writer() = default;
 
-    void write_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
+    void change_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
 
-    void write_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
-                       const evmc::bytes32& initial, const evmc::bytes32& current);
+    void change_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
+                        const evmc::bytes32& initial, const evmc::bytes32& current);
 
-    const db::AccountChanges& account_changes() const { return account_changes_; }
-    const db::StorageChanges& storage_changes() const { return storage_changes_; }
+    void write_to_db(lmdb::Transaction& txn);
+
+    const db::AccountChanges& account_back_changes() const { return account_back_changes_; }
+    const db::StorageChanges& storage_back_changes() const { return storage_back_changes_; }
 
    private:
-    db::AccountChanges account_changes_;
-    db::StorageChanges storage_changes_;
-    std::set<evmc::address> changed_storage_;
+    db::AccountChanges account_back_changes_;
+    db::StorageChanges storage_back_changes_;
+    db::AccountChanges account_forward_changes_;
+    db::StorageChanges storage_forward_changes_;
+    absl::flat_hash_set<evmc::address> changed_storage_;
 };
 }  // namespace silkworm::state
 

@@ -295,7 +295,7 @@ TEST_CASE("Out of Gas during account re-creation") {
         account.balance = 66'252'368 * kGiga;
 
         auto table{db_txn->open(db::table::kPlainState)};
-        table->put(full_view(address), account.encode_for_storage(false));
+        table->put(full_view(address), account.encode_for_storage(/*omit_code_hash=*/false));
     }
 
     Transaction txn{

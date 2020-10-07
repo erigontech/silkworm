@@ -26,7 +26,7 @@ namespace silkworm::db {
 
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number, const evmc::bytes32& block_hash) {
     auto table{txn.open(table::kBlockHeaders)};
-    Bytes key{block_key(block_number, block_hash)};
+    Bytes key{block_key(block_number, block_hash.bytes)};
     std::optional<ByteView> header_rlp{table->get(key)};
     if (!header_rlp) {
         return {};
@@ -48,7 +48,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     assert(hash->size() == kHashLength);
     std::memcpy(bh.hash.bytes, hash->data(), kHashLength);
 
-    Bytes key{block_key(block_number, bh.hash)};
+    Bytes key{block_key(block_number, bh.hash.bytes)};
     std::optional<ByteView> header_rlp{header_table->get(key)};
     if (!header_rlp) {
         return {};
@@ -69,7 +69,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
 std::vector<evmc::address> read_senders(lmdb::Transaction& txn, int64_t block_number, const evmc::bytes32& block_hash) {
     std::vector<evmc::address> senders{};
     auto table{txn.open(table::kSenders)};
-    std::optional<ByteView> data{table->get(block_key(block_number, block_hash))};
+    std::optional<ByteView> data{table->get(block_key(block_number, block_hash.bytes))};
     if (!data) {
         return senders;
     }

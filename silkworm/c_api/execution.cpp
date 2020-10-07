@@ -20,8 +20,8 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/execution/processor.hpp>
 
-SilkwormStatusCode silkworm_execute(MDB_txn* mdb_txn, uint64_t chain_id, uint64_t from, uint64_t to,
-                                    int* lmdb_error_code) EVMC_NOEXCEPT {
+SilkwormStatusCode silkworm_execute_block(MDB_txn* mdb_txn, uint64_t chain_id, uint64_t block_num,
+                                          int* lmdb_error_code) EVMC_NOEXCEPT {
     using namespace silkworm;
 
     const ChainConfig* config{lookup_chain_config(chain_id)};
@@ -32,33 +32,31 @@ SilkwormStatusCode silkworm_execute(MDB_txn* mdb_txn, uint64_t chain_id, uint64_
     lmdb::Transaction txn{/*parent=*/nullptr, mdb_txn, /*flags=*/0};
 
     try {
-        for (uint64_t block_num{from}; block_num <= to; ++block_num) {
-            std::optional<BlockWithHash> bh{db::read_block(txn, block_num)};
-            if (!bh) {
-                *txn.handle() = nullptr;  // avoid aborting mdb_txn
-                return kSilkwormBlockNotFound;
-            }
-
-            std::vector<evmc::address> senders{db::read_senders(txn, block_num, bh->hash)};
-            if (senders.size() != bh->block.transactions.size()) {
-                *txn.handle() = nullptr;  // avoid aborting mdb_txn
-                return kSilkwormMissingSenders;
-            }
-            for (size_t i{0}; i < senders.size(); ++i) {
-                bh->block.transactions[i].from = senders[i];
-            }
-
-            // TODO(Andrew) non-historical reader
-            state::Reader reader{txn, block_num};
-            IntraBlockState state{&reader};
-            ExecutionProcessor processor{bh->block, state, &reader};
-
-            std::vector<Receipt> receipts{processor.execute_block()};
-
-            state::Writer writer{};
-            state.write_block(writer);
-            // TODO(Andrew) actual writer
+        std::optional<BlockWithHash> bh{db::read_block(txn, block_num)};
+        if (!bh) {
+            *txn.handle() = nullptr;  // avoid aborting mdb_txn
+            return kSilkwormBlockNotFound;
         }
+
+        std::vector<evmc::address> senders{db::read_senders(txn, block_num, bh->hash)};
+        if (senders.size() != bh->block.transactions.size()) {
+            *txn.handle() = nullptr;  // avoid aborting mdb_txn
+            return kSilkwormMissingSenders;
+        }
+        for (size_t i{0}; i < senders.size(); ++i) {
+            bh->block.transactions[i].from = senders[i];
+        }
+
+        // TODO(Andrew) non-historical reader
+        state::Reader reader{txn, block_num};
+        IntraBlockState state{&reader};
+        ExecutionProcessor processor{bh->block, state, &reader};
+
+        std::vector<Receipt> receipts{processor.execute_block()};
+
+        state::Writer writer{};
+        state.write_block(writer);
+        // TODO(Andrew) actual writer
     } catch (const lmdb::exception& e) {
         if (lmdb_error_code) {
             *lmdb_error_code = e.err();
@@ -68,6 +66,9 @@ SilkwormStatusCode silkworm_execute(MDB_txn* mdb_txn, uint64_t chain_id, uint64_
     } catch (const ValidationError& err) {
         *txn.handle() = nullptr;  // avoid aborting mdb_txn
         return kSilkwormInvalidBlock;
+    } catch (const DecodingError& err) {
+        *txn.handle() = nullptr;  // avoid aborting mdb_txn
+        return kSilkwormDecodingError;
     } catch (...) {
         *txn.handle() = nullptr;  // avoid aborting mdb_txn
         return kSilkwormUnknownError;

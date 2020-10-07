@@ -35,7 +35,8 @@ class Reader : public HeaderReader {
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
 
-    Reader(lmdb::Transaction& txn, uint64_t block_number) noexcept : txn_{txn}, block_number_{block_number} {}
+    explicit Reader(lmdb::Transaction& txn, std::optional<uint64_t> block_number = {}) noexcept
+        : txn_{txn}, block_number_{block_number} {}
 
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
@@ -52,7 +53,7 @@ class Reader : public HeaderReader {
 
    private:
     lmdb::Transaction& txn_;
-    uint64_t block_number_{0};
+    std::optional<uint64_t> block_number_{};
 };
 
 }  // namespace silkworm::state

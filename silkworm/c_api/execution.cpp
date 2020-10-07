@@ -47,8 +47,7 @@ SilkwormStatusCode silkworm_execute_block(MDB_txn* mdb_txn, uint64_t chain_id, u
             bh->block.transactions[i].from = senders[i];
         }
 
-        // TODO(Andrew) non-historical reader
-        state::Reader reader{txn, block_num};
+        state::Reader reader{txn};
         IntraBlockState state{&reader};
         ExecutionProcessor processor{bh->block, state, &reader};
 

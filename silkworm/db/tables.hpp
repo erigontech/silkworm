@@ -35,9 +35,12 @@ constexpr lmdb::TableConfig kCodeHash{"PLAIN-contractCode"};
 constexpr lmdb::TableConfig kBlockHeaders{"h"};
 constexpr lmdb::TableConfig kBlockBodies{"b"};
 constexpr lmdb::TableConfig kSenders{"txSenders"};
+constexpr lmdb::TableConfig kIncarnations{"incarnationMap"};
 
-constexpr lmdb::TableConfig kTables[]{kPlainState, kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory,
-                                      kCode,       kCodeHash,       kBlockHeaders,   kBlockBodies,    kSenders};
+constexpr lmdb::TableConfig kTables[]{
+    kPlainState, kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory, kCode,
+    kCodeHash,   kBlockHeaders,   kBlockBodies,    kSenders,        kIncarnations,
+};
 
 // Create all tables that do not yet exist.
 void create_all(lmdb::Transaction& txn);

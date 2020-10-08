@@ -42,7 +42,7 @@ class Writer {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
                         const evmc::bytes32& initial, const evmc::bytes32& current);
 
-    void write_to_db(lmdb::Transaction& txn);
+    void write_to_db(lmdb::Transaction& txn, uint64_t block_number);
 
     const db::AccountChanges& account_back_changes() const { return account_back_changes_; }
     const db::StorageChanges& storage_back_changes() const { return storage_back_changes_; }

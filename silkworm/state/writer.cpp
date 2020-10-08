@@ -73,7 +73,7 @@ void Writer::update_storage(const evmc::address& address, uint64_t incarnation, 
     storage_forward_changes_[storage_key] = zeroless_view(current);
 }
 
-void Writer::write_to_db(lmdb::Transaction& txn) {
+void Writer::write_to_db(lmdb::Transaction& txn, uint64_t block_number) {
     auto state_table{txn.open(db::table::kPlainState)};
     for (const auto& entry : account_forward_changes_) {
         if (entry.second.empty()) {
@@ -109,7 +109,9 @@ void Writer::write_to_db(lmdb::Transaction& txn) {
         code_hash_table->put(entry.first, full_view(entry.second));
     }
 
-    // TODO(Andrew) kAccountChanges, kStorageChanges
+    Bytes block_key{db::encode_timestamp(block_number)};
+    auto storage_change_table{txn.open(db::table::kStorageChanges)};
+    storage_change_table->put(block_key, storage_back_changes_.encode());
 }
 
 }  // namespace silkworm::state

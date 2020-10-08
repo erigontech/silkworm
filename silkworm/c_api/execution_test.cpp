@@ -55,33 +55,18 @@ TEST_CASE("Execution API") {
     // First block
     // ---------------------------------------
 
+    auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+
     Block block{};
     block.header.number = block_number;
+    block.header.beneficiary = miner;
     block.header.gas_limit = 100'000;
 
     // This contract initially sets its 0th storage to 0x2a
     // and its 1st storage to 0x01c9.
-    // When called, it updates the 0th storage to the input provided.
+    // When called, it updates its 0th storage to the input provided.
     Bytes contract_code{from_hex("600035600055")};
     Bytes deployment_code{from_hex("602a6000556101c960015560068060166000396000f3") + contract_code};
-    // https://github.com/CoinCulture/evm-tools
-    // 0      PUSH1  => 2a
-    // 2      PUSH1  => 00
-    // 4      SSTORE         // storage[0] = 0x2a
-    // 5      PUSH2  => 01c9
-    // 8      PUSH1  => 01
-    // 10     SSTORE         // storage[1] = 0x01c9
-    // 11     PUSH1  => 06   // deploy begin
-    // 13     DUP1
-    // 14     PUSH1  => 16
-    // 16     PUSH1  => 00
-    // 18     CODECOPY
-    // 19     PUSH1  => 00
-    // 21     RETURN         // deploy end
-    // 22     PUSH1  => 00   // contract code
-    // 24     CALLDATALOAD
-    // 25     PUSH1  => 00
-    // 27     SSTORE         // storage[0] = input[0]
 
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
@@ -169,4 +154,33 @@ TEST_CASE("Execution API") {
 
     storage0 = db::read_storage(*txn, contract_address, incarnation, storage_key0, block_number);
     CHECK(to_hex(storage0) == new_val);
+
+    // ---------------------------------------
+    // Check change sets
+    // ---------------------------------------
+
+    // TODO(Andrew) account changes
+    /*
+    std::optional<db::AccountChanges> account_changes{db::read_account_changes(*txn, 1)};
+    REQUIRE(account_changes);
+    CHECK(account_changes->size() == 3);
+
+    // sender existed at genesis
+    CHECK(!account_changes->at(sender).empty());
+
+    // miner & contract were created in block 1
+    CHECK(account_changes->at(miner).empty());
+    CHECK(account_changes->at(contract_address).empty());
+    */
+
+    Bytes storage_changes_encoded{db::read_storage_changes(*txn, 1)};
+    db::StorageChanges storage_changes_expected{};
+    storage_changes_expected[db::storage_key(contract_address, incarnation, storage_key0)] = {};
+    storage_changes_expected[db::storage_key(contract_address, incarnation, storage_key1)] = {};
+    CHECK(storage_changes_encoded == storage_changes_expected.encode());
+
+    storage_changes_encoded = db::read_storage_changes(*txn, 2);
+    storage_changes_expected.clear();
+    storage_changes_expected[db::storage_key(contract_address, incarnation, storage_key0)] = from_hex("2a");
+    CHECK(storage_changes_encoded == storage_changes_expected.encode());
 }

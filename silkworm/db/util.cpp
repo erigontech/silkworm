@@ -27,17 +27,17 @@
 namespace silkworm::db {
 
 Bytes storage_prefix(const evmc::address& address, uint64_t incarnation) {
-    Bytes res(kStoragePrefixSize, '\0');
+    Bytes res(kStoragePrefixLength, '\0');
     std::memcpy(&res[0], address.bytes, kAddressLength);
     boost::endian::store_big_u64(&res[kAddressLength], incarnation);
     return res;
 }
 
 Bytes storage_key(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key) {
-    Bytes res(kStoragePrefixSize + kHashLength, '\0');
+    Bytes res(kStoragePrefixLength + kHashLength, '\0');
     std::memcpy(&res[0], address.bytes, kAddressLength);
     boost::endian::store_big_u64(&res[kAddressLength], incarnation);
-    std::memcpy(&res[kStoragePrefixSize], key.bytes, kHashLength);
+    std::memcpy(&res[kStoragePrefixLength], key.bytes, kHashLength);
     return res;
 }
 
@@ -61,11 +61,11 @@ Bytes history_index_key(ByteView key, uint64_t block_number) {
         res = key;
         res.resize(kAddressLength + 8);
         boost::endian::store_big_u64(&res[kAddressLength], block_number);
-    } else if (key.length() == kStoragePrefixSize + kHashLength) {  // storage
+    } else if (key.length() == kStoragePrefixLength + kHashLength) {  // storage
         // remove incarnation and add block number
-        res.resize(kStoragePrefixSize + kHashLength);
+        res.resize(kStoragePrefixLength + kHashLength);
         std::memcpy(&res[0], &key[0], kAddressLength);
-        std::memcpy(&res[kAddressLength], &key[kStoragePrefixSize], kHashLength);
+        std::memcpy(&res[kAddressLength], &key[kStoragePrefixLength], kHashLength);
         boost::endian::store_big_u64(&res[kAddressLength + kHashLength], block_number);
     } else {
         throw std::invalid_argument{"unexpected key length"};

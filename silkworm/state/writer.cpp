@@ -83,8 +83,8 @@ void Writer::write_to_db(lmdb::Transaction& txn, uint64_t block_number) {
         }
     }
     for (const auto& entry : storage_forward_changes_) {
-        Bytes key{entry.first.substr(0, db::kStoragePrefixSize)};
-        Bytes x{entry.first.substr(db::kStoragePrefixSize)};
+        Bytes key{entry.first.substr(0, db::kStoragePrefixLength)};
+        Bytes x{entry.first.substr(db::kStoragePrefixLength)};
         state_table->del(key, x);
         if (!entry.second.empty()) {
             x += entry.second;

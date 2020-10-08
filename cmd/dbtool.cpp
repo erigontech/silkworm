@@ -89,6 +89,7 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
         if (mapsize.has_value()) {
             opts.map_size = *mapsize;
         }
+        opts.read_only = false;
         lmdb_env = lmdb::get_env(datadir.c_str(), opts);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_tbl = lmdb_txn->open({tablename.c_str()});
@@ -292,7 +293,7 @@ int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string
         if (mapsize.has_value()) {
             opts.map_size = *mapsize;
         }
-        opts.read_only = true;
+        opts.read_only = false;
         lmdb_env = lmdb::get_env(datadir.c_str(), opts);
         std::cout << " Compacting " << source.string() << "\n into " << target.string() << "\n Please be patient ..."
                   << std::endl;

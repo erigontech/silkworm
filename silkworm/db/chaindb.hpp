@@ -50,7 +50,7 @@ struct options {
     bool no_meta_sync = false;       // MDB_NOMETASYNC
     bool write_map = false;          // MDB_WRITEMAP
     bool no_sub_dir = false;         // MDB_NOSUBDIR
-    bool read_only = false;          // MDB_RDONLY
+    bool read_only = true;           // MDB_RDONLY
     unsigned max_tables = 128;       // Max open tables/dbi
     mdb_mode_t mode = 0644;          // Filesystem mode
 };

@@ -34,6 +34,7 @@ TEST_CASE("Execution API") {
     TemporaryDirectory tmp_dir{};
     lmdb::options db_opts{};
     db_opts.map_size = 32 << 20;  //  32MiB
+    db_opts.read_only = false;
     std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(tmp_dir.path(), db_opts)};
     std::unique_ptr<lmdb::Transaction> txn{db_env->begin_rw_transaction()};
 

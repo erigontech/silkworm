@@ -501,7 +501,7 @@ int main(int argc, char* argv[]) {
         if (*lmdb_mapSize) {
             opts.map_size = *lmdb_mapSize;
         }
-
+        opts.read_only = false;
         lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);  // Throws on error

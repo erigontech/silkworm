@@ -159,8 +159,6 @@ TEST_CASE("Execution API") {
     // Check change sets
     // ---------------------------------------
 
-    // TODO(Andrew) account changes
-    /*
     std::optional<db::AccountChanges> account_changes{db::read_account_changes(*txn, 1)};
     REQUIRE(account_changes);
     CHECK(account_changes->size() == 3);
@@ -171,7 +169,6 @@ TEST_CASE("Execution API") {
     // miner & contract were created in block 1
     CHECK(account_changes->at(miner).empty());
     CHECK(account_changes->at(contract_address).empty());
-    */
 
     Bytes storage_changes_encoded{db::read_storage_changes(*txn, 1)};
     db::StorageChanges storage_changes_expected{};

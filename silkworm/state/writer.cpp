@@ -109,7 +109,10 @@ void Writer::write_to_db(lmdb::Transaction& txn, uint64_t block_number) {
         code_hash_table->put(entry.first, full_view(entry.second));
     }
 
+    auto account_change_table{txn.open(db::table::kAccountChanges)};
     Bytes block_key{db::encode_timestamp(block_number)};
+    account_change_table->put(block_key, account_back_changes_.encode());
+
     auto storage_change_table{txn.open(db::table::kStorageChanges)};
     storage_change_table->put(block_key, storage_back_changes_.encode());
 }

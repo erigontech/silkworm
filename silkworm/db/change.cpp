@@ -131,6 +131,35 @@ struct Contract {
 
 namespace silkworm::db {
 
+Bytes AccountChanges::encode() const {
+    size_t n{size()};
+    Bytes out(4 + kAddressLen * n + 4 * n, '\0');
+    boost::endian::store_big_u32(&out[0], n);
+    size_t pos{4};
+
+    for (const auto& e : *this) {
+        std::memcpy(&out[pos], e.first.bytes, kAddressLen);
+        pos += kAddressLen;
+    }
+
+    uint32_t len_of_vals{0};
+    for (const auto& e : *this) {
+        len_of_vals += e.second.size();
+        boost::endian::store_big_u32(&out[pos], len_of_vals);
+        pos += 4;
+    }
+
+    assert(pos == out.size());
+    out.resize(pos + len_of_vals);
+
+    for (const auto& e : *this) {
+        std::memcpy(&out[pos], e.second.data(), e.second.size());
+        pos += e.second.size();
+    }
+
+    return out;
+}
+
 AccountChanges AccountChanges::decode(ByteView b) {
     if (b.empty()) {
         return {};

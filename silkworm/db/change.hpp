@@ -31,6 +31,9 @@ namespace silkworm::db {
 
 class AccountChanges : public std::map<evmc::address, Bytes> {
    public:
+    // Turbo-Geth EncodeAccountsPlain
+    Bytes encode() const;
+
     // Turbo-Geth decodeAccountsWithKeyLen
     static AccountChanges decode(ByteView encoded);
 
@@ -46,6 +49,7 @@ class StorageChanges : public std::map<Bytes, Bytes> {
     // Turbo-Geth (StorageChangeSetPlainBytes)FindWithIncarnation
     static std::optional<ByteView> find(ByteView encoded, ByteView key);
 };
+
 }  // namespace silkworm::db
 
 #endif  // SILKWORM_DB_CHANGE_H_

@@ -25,6 +25,8 @@
 #include <tuple>
 #include <vector>
 
+#include "util.hpp"
+
 namespace {
 using namespace silkworm;
 
@@ -129,6 +131,35 @@ struct Contract {
 
 namespace silkworm::db {
 
+Bytes AccountChanges::encode() const {
+    size_t n{size()};
+    Bytes out(4 + kAddressLen * n + 4 * n, '\0');
+    boost::endian::store_big_u32(&out[0], n);
+    size_t pos{4};
+
+    for (const auto& e : *this) {
+        std::memcpy(&out[pos], e.first.bytes, kAddressLen);
+        pos += kAddressLen;
+    }
+
+    uint32_t len_of_vals{0};
+    for (const auto& e : *this) {
+        len_of_vals += e.second.size();
+        boost::endian::store_big_u32(&out[pos], len_of_vals);
+        pos += 4;
+    }
+
+    assert(pos == out.size());
+    out.resize(pos + len_of_vals);
+
+    for (const auto& e : *this) {
+        std::memcpy(&out[pos], e.second.data(), e.second.size());
+        pos += e.second.size();
+    }
+
+    return out;
+}
+
 AccountChanges AccountChanges::decode(ByteView b) {
     if (b.empty()) {
         return {};
@@ -210,7 +241,7 @@ Bytes StorageChanges::encode() const {
 
     ByteView prev{};
     for (const auto& entry : *this) {
-        ByteView contract_key{entry.first.data(), kAddressLen + kIncarnationLength};
+        ByteView contract_key{entry.first.data(), kStoragePrefixLength};
         if (contract_key != prev) {
             uint64_t incarnation{load_big_u64(&contract_key[kAddressLen])};
             if (incarnation != kDefaultIncarnation) {
@@ -223,7 +254,7 @@ Bytes StorageChanges::encode() const {
             contracts.push_back({contract_key.substr(0, kAddressLen), incarnation, {}, {}});
             prev = contract_key;
         }
-        contracts.back().keys.emplace_back(&entry.first[kAddressLen + kIncarnationLength], kHashLen);
+        contracts.back().keys.emplace_back(&entry.first[kStoragePrefixLength], kHashLen);
         contracts.back().vals.emplace_back(entry.second);
 
         len_of_vals += static_cast<uint32_t>(entry.second.length());
@@ -300,7 +331,7 @@ std::optional<ByteView> StorageChanges::find(ByteView b, ByteView composite_key)
     using boost::endian::load_big_u32;
     using boost::endian::load_big_u64;
 
-    assert(composite_key.length() == kAddressLen + kIncarnationLength + kHashLen);
+    assert(composite_key.length() == kStoragePrefixLength + kHashLen);
 
     if (b.empty()) {
         return {};
@@ -308,7 +339,7 @@ std::optional<ByteView> StorageChanges::find(ByteView b, ByteView composite_key)
 
     ByteView address{composite_key.substr(0, kAddressLen)};
     uint64_t incarnation{load_big_u64(&composite_key[kAddressLen])};
-    ByteView key{composite_key.substr(kAddressLen + kIncarnationLength)};
+    ByteView key{composite_key.substr(kStoragePrefixLength)};
 
     auto [num_of_contracts, num_of_non_default_incarnations, incarnation_pos, key_pos, val_pos]{decode_storage_meta(b)};
 

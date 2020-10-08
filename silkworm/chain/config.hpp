@@ -142,6 +142,20 @@ constexpr ChainConfig kClassicMainnetConfig{
     9'573'000,   // petersburg_block
     10'500'839,  // istanbul_block
 };
+
+inline const ChainConfig* lookup_chain_config(uint64_t chain_id) {
+    switch (chain_id) {
+        case kMainnetConfig.chain_id:
+            return &kMainnetConfig;
+        case kRopstenConfig.chain_id:
+            return &kRopstenConfig;
+        case kClassicMainnetConfig.chain_id:
+            return &kClassicMainnetConfig;
+        default:
+            return nullptr;
+    }
+}
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_CHAIN_CONFIG_H_

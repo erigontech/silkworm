@@ -94,7 +94,7 @@ uint64_t id_gas(ByteView input, evmc_revision) noexcept { return 15 + 3 * ((inpu
 
 std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
 
-static intx::uint256 mult_complexity(const intx::uint256& x) {
+static intx::uint256 mult_complexity(const intx::uint256& x) noexcept {
     if (x <= 64) {
         return sqr(x);
     } else if (x <= 1024) {

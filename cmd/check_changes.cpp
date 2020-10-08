@@ -61,7 +61,9 @@ int main(int argc, char* argv[]) {
 
     using namespace silkworm;
 
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str())};
+    lmdb::options db_opts{};
+    db_opts.read_only = true;
+    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str(), db_opts)};
 
     const uint64_t from{absl::GetFlag(FLAGS_from)};
     const uint64_t to{absl::GetFlag(FLAGS_to)};
@@ -88,7 +90,7 @@ int main(int argc, char* argv[]) {
         std::vector<Receipt> receipts;
         try {
             receipts = processor.execute_block();
-        } catch (ValidationError& err) {
+        } catch (const ValidationError& err) {
             std::cerr << "ValidationError in block " << block_num << " 🤬\n";
             throw err;
         }
@@ -113,16 +115,16 @@ int main(int argc, char* argv[]) {
         state.write_block(writer);
 
         std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
-        if (writer.account_changes() != db_account_changes) {
-            bool mismatch{false};
+        if (writer.account_back_changes() != db_account_changes) {
+            bool mismatch{true};
             if (db_account_changes) {
                 for (const auto& e : *db_account_changes) {
-                    if (writer.account_changes().count(e.first) == 0) {
+                    if (writer.account_back_changes().count(e.first) == 0) {
                         if (!kPhantomAccounts.contains(e.first)) {
                             std::cerr << to_hex(e.first) << " is missing\n";
                             mismatch = true;
                         }
-                    } else if (Bytes val{writer.account_changes().at(e.first)}; val != e.second) {
+                    } else if (Bytes val{writer.account_back_changes().at(e.first)}; val != e.second) {
                         std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
                         std::cerr << to_hex(val) << "\n";
                         std::cerr << "vs DB\n";
@@ -130,7 +132,7 @@ int main(int argc, char* argv[]) {
                         mismatch = true;
                     }
                 }
-                for (const auto& e : writer.account_changes()) {
+                for (const auto& e : writer.account_back_changes()) {
                     if (db_account_changes->count(e.first) == 0) {
                         std::cerr << to_hex(e.first) << " is not in DB\n";
                         mismatch = true;
@@ -147,8 +149,8 @@ int main(int argc, char* argv[]) {
 
         Bytes db_storage_changes{db::read_storage_changes(*txn, block_num)};
         Bytes calculated_storage_changes{};
-        if (!writer.storage_changes().empty()) {
-            calculated_storage_changes = writer.storage_changes().encode();
+        if (!writer.storage_back_changes().empty()) {
+            calculated_storage_changes = writer.storage_back_changes().encode();
         }
         if (calculated_storage_changes != db_storage_changes) {
             std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";

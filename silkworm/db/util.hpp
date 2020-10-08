@@ -29,6 +29,11 @@ see its package dbutils.
 
 namespace silkworm::db {
 
+constexpr size_t kIncarnationLength{8};
+static_assert(kIncarnationLength == sizeof(uint64_t));
+
+constexpr size_t kStoragePrefixLength{kAddressLength + kIncarnationLength};
+
 struct Entry {
     ByteView key;
     ByteView value;
@@ -44,7 +49,7 @@ Bytes storage_key(const evmc::address& address, uint64_t incarnation, const evmc
 Bytes header_hash_key(uint64_t block_number);
 
 // Turbo-Geth HeaderKey & BlockBodyKey
-Bytes block_key(uint64_t block_number, const evmc::bytes32& hash);
+Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 
 // Turbo-Geth IndexChunkKey
 Bytes history_index_key(ByteView key, uint64_t block_number);

@@ -31,7 +31,7 @@ TEST_CASE("HashBuilder") {
 
     // leaf node
     Bytes rlp0{from_hex("c98320") + key0 + from_hex("84") + val0};
-    ethash::hash256 hash0{ethash::keccak256(rlp0.data(), rlp0.size())};
+    ethash::hash256 hash0{keccak256(rlp0)};
 
     HashBuilder hb0{key0, val0};
     CHECK(to_hex(hb0.root_hash()) == to_hex(full_view(hash0.bytes)));
@@ -53,12 +53,12 @@ TEST_CASE("HashBuilder") {
     Bytes rlp1_2{from_hex("e68080808089") + rlp1_0 + from_hex("80808c") + rlp1_1 + from_hex("808080808080808080")};
     REQUIRE(rlp1_2.length() >= 32);
 
-    ethash::hash256 hash1_2{ethash::keccak256(rlp1_2.data(), rlp1_2.size())};
+    ethash::hash256 hash1_2{keccak256(rlp1_2)};
 
     // extension node
     Bytes rlp1{from_hex("e216a0")};
     std::copy_n(hash1_2.bytes, kHashLength, std::back_inserter(rlp1));
-    ethash::hash256 hash1{ethash::keccak256(rlp1.data(), rlp1.size())};
+    ethash::hash256 hash1{keccak256(rlp1)};
 
     HashBuilder hb1{key0, val0};
     hb1.add(key1, val1);

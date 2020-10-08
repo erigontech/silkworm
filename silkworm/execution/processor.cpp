@@ -52,12 +52,14 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& stat
                                        const ChainConfig& config)
     : evm_{block, state, header_reader, config} {}
 
-[[maybe_unused]] static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
+/*
+static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
     Bytes rlp{};
     rlp::encode(rlp, txn);
-    ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.size())};
+    ethash::hash256 hash{keccak256(rlp)};
     std::cout << "0x" << to_hex(full_view(hash.bytes)) << " " << gas_used << "\n";
 }
+*/
 
 Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
     IntraBlockState& state{evm_.state()};

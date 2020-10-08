@@ -34,9 +34,12 @@ class Writer {
 
     Writer() = default;
 
-    void change_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
+    void update_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
 
-    void change_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
+    void update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
+                             ByteView code);
+
+    void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
                         const evmc::bytes32& initial, const evmc::bytes32& current);
 
     void write_to_db(lmdb::Transaction& txn);
@@ -50,6 +53,9 @@ class Writer {
     db::AccountChanges account_forward_changes_;
     db::StorageChanges storage_forward_changes_;
     absl::flat_hash_set<evmc::address> changed_storage_;
+    std::map<evmc::address, uint64_t> incarnations_of_deleted_contracts_;
+    std::map<evmc::bytes32, Bytes> hash_to_code_;
+    std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
 };
 }  // namespace silkworm::state
 

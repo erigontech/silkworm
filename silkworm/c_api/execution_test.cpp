@@ -50,6 +50,10 @@ TEST_CASE("Execution API") {
     db::table::create_all(*txn);
     CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormBlockNotFound);
 
+    // ---------------------------------------
+    // First block
+    // ---------------------------------------
+
     Block block{};
     block.header.number = block_number;
     block.header.gas_limit = 100'000;
@@ -125,11 +129,43 @@ TEST_CASE("Execution API") {
     ethash::hash256 code_hash{keccak256(contract_code)};
     CHECK(to_hex(contract_account->code_hash) == to_hex(full_view(code_hash.bytes)));
 
-    evmc::bytes32 storage_key{};
-    evmc::bytes32 storage0{db::read_storage(*txn, contract_address, /*incarnation=*/1, storage_key, block_number)};
+    uint64_t incarnation{1};
+
+    evmc::bytes32 storage_key0{};
+    evmc::bytes32 storage0{db::read_storage(*txn, contract_address, incarnation, storage_key0, block_number)};
     CHECK(to_hex(storage0) == "000000000000000000000000000000000000000000000000000000000000002a");
 
-    storage_key = to_bytes32(from_hex("01"));
-    evmc::bytes32 storage1{db::read_storage(*txn, contract_address, /*incarnation=*/1, storage_key, block_number)};
+    evmc::bytes32 storage_key1{to_bytes32(from_hex("01"))};
+    evmc::bytes32 storage1{db::read_storage(*txn, contract_address, incarnation, storage_key1, block_number)};
     CHECK(to_hex(storage1) == "00000000000000000000000000000000000000000000000000000000000001c9");
+
+    // ---------------------------------------
+    // Second block
+    // ---------------------------------------
+
+    std::string new_val{"000000000000000000000000000000000000000000000000000000000000003e"};
+
+    block_number = 2;
+    block.header.number = block_number;
+    block.transactions[0].to = contract_address;
+    block.transactions[0].data = from_hex(new_val);
+
+    header_rlp.clear();
+    rlp::encode(header_rlp, block.header);
+    block_hash = keccak256(header_rlp);
+    header_table->put(db::header_hash_key(block_number), full_view(block_hash.bytes));
+
+    block_key = db::block_key(block_number, block_hash.bytes);
+    header_table->put(block_key, header_rlp);
+
+    body_rlp.clear();
+    const BlockBody& block_body2{block};
+    rlp::encode(body_rlp, block_body2);
+    body_table->put(block_key, body_rlp);
+    sender_table->put(block_key, full_view(sender));
+
+    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormSuccess);
+
+    storage0 = db::read_storage(*txn, contract_address, incarnation, storage_key0, block_number);
+    CHECK(to_hex(storage0) == new_val);
 }

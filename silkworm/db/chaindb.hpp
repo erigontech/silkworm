@@ -245,8 +245,12 @@ class Table {
      */
     std::optional<ByteView> get(ByteView key, ByteView sub_key);
 
-    /** @brief Deletes the MDB_DUPSORT data item that starts with a given sub_key.
-     *
+    /** @brief Deletes an entry.
+     * Doesn't do anything if the item is not present.
+     */
+    void del(ByteView key);
+
+    /* Same as the above, but for MDB_DUPSORT data item that starts with a given sub_key.
      * Doesn't do anything if the item is not present.
      */
     void del(ByteView key, ByteView sub_key);

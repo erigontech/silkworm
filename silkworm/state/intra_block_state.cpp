@@ -291,14 +291,17 @@ void IntraBlockState::write_block(state::Writer& writer) {
             const evmc::bytes32& key{entry.first};
             const state::StorageValue& val{entry.second};
             uint64_t incarnation{obj.current->incarnation};
-            writer.change_storage(address, incarnation, key, val.initial, val.current);
+            writer.update_storage(address, incarnation, key, val.initial, val.current);
         }
     }
 
     for (const auto& entry : objects_) {
         const evmc::address& address{entry.first};
         const state::Object& obj{entry.second};
-        writer.change_account(address, obj.initial, obj.current);
+        writer.update_account(address, obj.initial, obj.current);
+        if (obj.current && obj.code && (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
+            writer.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
+        }
     }
 }
 

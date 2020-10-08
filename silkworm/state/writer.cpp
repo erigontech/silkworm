@@ -16,13 +16,14 @@
 
 #include "writer.hpp"
 
+#include <boost/endian/conversion.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 
 namespace silkworm::state {
 
-void Writer::change_account(const evmc::address& address, std::optional<Account> initial,
+void Writer::update_account(const evmc::address& address, std::optional<Account> initial,
                             std::optional<Account> current) {
     bool equal{current == initial};
     bool account_deleted{!current};
@@ -49,10 +50,19 @@ void Writer::change_account(const evmc::address& address, std::optional<Account>
         account_forward_changes_[address] = current->encode_for_storage(omit_code_hash);
     } else {
         account_forward_changes_[address] = {};
+        if (initial->incarnation) {
+            incarnations_of_deleted_contracts_[address] = initial->incarnation;
+        }
     }
 }
 
-void Writer::change_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
+void Writer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
+                                 ByteView code) {
+    hash_to_code_[code_hash] = code;
+    storage_prefix_to_code_hash_[db::storage_prefix(address, incarnation)] = code_hash;
+}
+
+void Writer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
                             const evmc::bytes32& initial, const evmc::bytes32& current) {
     if (current == initial) {
         return;
@@ -66,22 +76,40 @@ void Writer::change_storage(const evmc::address& address, uint64_t incarnation, 
 void Writer::write_to_db(lmdb::Transaction& txn) {
     auto state_table{txn.open(db::table::kPlainState)};
     for (const auto& entry : account_forward_changes_) {
-        state_table->put(full_view(entry.first), entry.second);
+        if (entry.second.empty()) {
+            state_table->del(full_view(entry.first));
+        } else {
+            state_table->put(full_view(entry.first), entry.second);
+        }
     }
-
     for (const auto& entry : storage_forward_changes_) {
         Bytes key{entry.first.substr(0, db::kStoragePrefixSize)};
         Bytes x{entry.first.substr(db::kStoragePrefixSize)};
-        if (entry.second.empty()) {
-            state_table->del(key, x);
-        } else {
+        state_table->del(key, x);
+        if (!entry.second.empty()) {
             x += entry.second;
             state_table->put(key, x);
         }
     }
 
-    // TODO(Andrew) proper DeleteAccount
-    // TODO(Andrew) kAccountChanges, kStorageChanges, incarnationMap and the rest
+    auto incarnation_table{txn.open(db::table::kIncarnations)};
+    for (const auto& entry : incarnations_of_deleted_contracts_) {
+        Bytes buf(db::kIncarnationLength, '\0');
+        boost::endian::store_big_u64(&buf[0], entry.second);
+        incarnation_table->put(full_view(entry.first), buf);
+    }
+
+    auto code_table{txn.open(db::table::kCode)};
+    for (const auto& entry : hash_to_code_) {
+        code_table->put(full_view(entry.first), entry.second);
+    }
+
+    auto code_hash_table{txn.open(db::table::kCodeHash)};
+    for (const auto& entry : storage_prefix_to_code_hash_) {
+        code_hash_table->put(entry.first, full_view(entry.second));
+    }
+
+    // TODO(Andrew) kAccountChanges, kStorageChanges
 }
 
 }  // namespace silkworm::state

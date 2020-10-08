@@ -429,6 +429,12 @@ std::optional<ByteView> Table::get(ByteView key, ByteView sub_key) {
     }
 }
 
+void Table::del(ByteView key) {
+    if (get(key)) {
+        err_handler(del_current());
+    }
+}
+
 void Table::del(ByteView key, ByteView sub_key) {
     if (get(key, sub_key)) {
         err_handler(del_current());

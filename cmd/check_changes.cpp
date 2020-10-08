@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
 
         std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
         if (writer.account_back_changes() != db_account_changes) {
-            bool mismatch{true};
+            bool mismatch{false};
             if (db_account_changes) {
                 for (const auto& e : *db_account_changes) {
                     if (writer.account_back_changes().count(e.first) == 0) {

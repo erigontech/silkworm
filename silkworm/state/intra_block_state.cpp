@@ -214,7 +214,7 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) noex
     auto& obj{get_or_create_object(address)};
     journal_.push_back(std::make_unique<state::UpdateDelta>(address, obj));
     obj.code = code;
-    ethash::hash256 hash{ethash::keccak256(code.data(), code.size())};
+    ethash::hash256 hash{keccak256(code)};
     std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
 }
 
@@ -273,7 +273,7 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     journal_.push_back(std::make_unique<state::StorageChangeDelta>(address, key, prev));
 }
 
-void IntraBlockState::write_block(state::Writer& state_writer) {
+void IntraBlockState::write_block(state::Writer& writer) {
     for (const auto& x : storage_) {
         const evmc::address& address{x.first};
         const state::Storage& storage{x.second};
@@ -291,14 +291,17 @@ void IntraBlockState::write_block(state::Writer& state_writer) {
             const evmc::bytes32& key{entry.first};
             const state::StorageValue& val{entry.second};
             uint64_t incarnation{obj.current->incarnation};
-            state_writer.write_storage(address, incarnation, key, val.initial, val.current);
+            writer.update_storage(address, incarnation, key, val.initial, val.current);
         }
     }
 
     for (const auto& entry : objects_) {
         const evmc::address& address{entry.first};
         const state::Object& obj{entry.second};
-        state_writer.write_account(address, obj.initial, obj.current);
+        writer.update_account(address, obj.initial, obj.current);
+        if (obj.current && obj.code && (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
+            writer.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
+        }
     }
 }
 

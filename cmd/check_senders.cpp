@@ -251,7 +251,7 @@ void process_txs_for_signing(ChainConfig& config, uint64_t block_num, BlockBody&
             rlp::encode(rlp, txn, true, {});
         }
 
-        ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
+        ethash::hash256 hash{keccak256(rlp)};
         Recoverer::package rp{block_num, hash, x.recovery_id, txn.r, txn.s};
         packages.push_back(rp);
     }
@@ -501,8 +501,8 @@ int main(int argc, char* argv[]) {
         if (*lmdb_mapSize) {
             opts.map_size = *lmdb_mapSize;
         }
-
-        lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
+        opts.read_only = false;
+        lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);  // Throws on error
         lmdb_headers = lmdb_txn->open(db::table::kBlockHeaders);         // Throws on error
@@ -566,7 +566,7 @@ int main(int argc, char* argv[]) {
                         key.mv_size = 40;
                         rc = lmdb_senders->seek(&key, &data);
                         while (!should_stop_ && rc == MDB_SUCCESS) {
-                            rc = lmdb_senders->del_current(false);
+                            rc = lmdb_senders->del_current();
                             rc = lmdb_senders->get_next(&key, &data);
                         }
                     }
@@ -672,7 +672,6 @@ int main(int argc, char* argv[]) {
                     // Should we overflow the batch queue dispatch the work
                     // accumulated so far to the recoverer thread
                     if ((batchTxsCount + body.transactions.size()) > po_batch_size) {
-
                         recoverers_.at(nextRecovererId)->set_work(process_batch_id++, recoverPackages);
                         recoverers_.at(nextRecovererId)->kick();
                         workers_in_flight++;
@@ -740,8 +739,8 @@ int main(int argc, char* argv[]) {
                 workers_in_flight++;
                 if (po_debug) {
                     std::cout << format_time() << " DBG : dispatched " << batchTxsCount
-                        << " work packages to recoverer #" << nextRecovererId
-                        << " Workers in flight : " << workers_in_flight << std::endl;
+                              << " work packages to recoverer #" << nextRecovererId
+                              << " Workers in flight : " << workers_in_flight << std::endl;
                 }
                 ready_for_write.store(true, std::memory_order_relaxed);
                 while (workers_in_flight != 0) {
@@ -752,7 +751,6 @@ int main(int argc, char* argv[]) {
             if (workers_thread_error_) {
                 throw std::runtime_error("Error occurred in child worker thread");
             }
-
         }
 
         std::cout << format_time() << " Bodies scan " << (should_stop_ ? "aborted. " : "completed.")

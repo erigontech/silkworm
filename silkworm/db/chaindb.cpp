@@ -183,10 +183,11 @@ std::unique_ptr<Transaction> Environment::begin_rw_transaction(unsigned int flag
  */
 
 Transaction::Transaction(Environment* parent, MDB_txn* txn, unsigned int flags)
-    : parent_env_{parent},
-      handle_{txn},
-      flags_{flags},
-      conn_on_env_close_{parent->signal_on_before_close_.connect(boost::bind(&Transaction::abort, this))} {}
+    : parent_env_{parent}, handle_{txn}, flags_{flags} {
+    if (parent) {
+        conn_on_env_close_ = parent->signal_on_before_close_.connect(boost::bind(&Transaction::abort, this));
+    }
+}
 
 bool Transaction::assert_handle(bool should_throw) {
     bool retvar{handle_ != nullptr};
@@ -428,6 +429,18 @@ std::optional<ByteView> Table::get(ByteView key, ByteView sub_key) {
     }
 }
 
+void Table::del(ByteView key) {
+    if (get(key)) {
+        err_handler(del_current());
+    }
+}
+
+void Table::del(ByteView key, ByteView sub_key) {
+    if (get(key, sub_key)) {
+        err_handler(del_current());
+    }
+}
+
 std::optional<db::Entry> Table::seek(ByteView prefix) {
     MDB_val key_val{db::to_mdb_val(prefix)};
     MDB_val data;
@@ -447,7 +460,7 @@ std::optional<db::Entry> Table::seek(ByteView prefix) {
 int Table::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }
 int Table::seek_exact(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
 int Table::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
-int Table::del_current(bool dupdata) { return mdb_cursor_del(handle_, (dupdata ? MDB_NODUPDATA : 0u)); }
+int Table::del_current() { return mdb_cursor_del(handle_, 0); }
 int Table::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
 int Table::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
 int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
@@ -479,9 +492,9 @@ void Table::close() {
     }
 }
 
-std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts, bool forwriting) {
+std::shared_ptr<Environment> get_env(const char* path, options opts) {
     struct Value {
-        std::weak_ptr<lmdb::Environment> wp;
+        std::weak_ptr<Environment> wp;
         unsigned int flags;
     };
 
@@ -497,6 +510,7 @@ std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts,
     if (opts.no_meta_sync) flags |= MDB_NOMETASYNC;
     if (opts.write_map) flags |= MDB_WRITEMAP;
     if (opts.no_sub_dir) flags |= MDB_NOSUBDIR;
+    if (opts.read_only) flags |= MDB_RDONLY;
 
     // There's a 1:1 relation among env and the opened
     // database file. Build a hash of the path
@@ -522,10 +536,10 @@ std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts,
     }
 
     // Create new instance and open db file(s)
-    auto newitem = std::make_shared<lmdb::Environment>();
+    auto newitem = std::make_shared<Environment>();
     err_handler(newitem->set_mapsize(opts.map_size));
     err_handler(newitem->set_max_dbs(opts.max_tables));
-    newitem->open(path, flags | (forwriting ? 0 : MDB_RDONLY), opts.mode);  // Throws on error
+    newitem->open(path, flags, opts.mode);  // Throws on error
 
     s_envs[envkey] = {newitem, flags};
     return newitem;

@@ -17,10 +17,12 @@
 #ifndef SILKWORM_COMMON_UTIL_H_
 #define SILKWORM_COMMON_UTIL_H_
 
-#include <silkworm/common/base.hpp>
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
+
+#include <ethash/keccak.hpp>
+#include <silkworm/common/base.hpp>
 
 namespace silkworm {
 
@@ -81,6 +83,9 @@ inline int popcount(unsigned x) {
     return __builtin_popcount(x);
 #endif
 }
+
+inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_COMMON_UTIL_H_

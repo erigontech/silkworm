@@ -86,8 +86,11 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
     try {
         // Open db and start a rw transaction
         lmdb::options opts{};
-        if (mapsize.has_value()) opts.map_size = *mapsize;
-        lmdb_env = lmdb::get_env(datadir.c_str(), opts, /* forwriting=*/true);
+        if (mapsize.has_value()) {
+            opts.map_size = *mapsize;
+        }
+        opts.read_only = false;
+        lmdb_env = lmdb::get_env(datadir.c_str(), opts);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_tbl = lmdb_txn->open({tablename.c_str()});
 
@@ -194,8 +197,11 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
     try {
         // Open db and start transaction
         lmdb::options opts{};
-        if (mapsize.has_value()) opts.map_size = *mapsize;
-        lmdb_env = lmdb::get_env(datadir.c_str(), opts, /* forwriting=*/false);
+        if (mapsize.has_value()) {
+            opts.map_size = *mapsize;
+        }
+        opts.read_only = true;
+        lmdb_env = lmdb::get_env(datadir.c_str(), opts);
         lmdb_txn = lmdb_env->begin_ro_transaction();
 
         std::vector<dbTableEntry> entries{get_tables(lmdb_txn)};
@@ -284,8 +290,11 @@ int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string
 
         // Open db and start transaction
         lmdb::options opts{};
-        if (mapsize.has_value()) opts.map_size = *mapsize;
-        lmdb_env = lmdb::get_env(datadir.c_str(), opts, /* forwriting=*/false);
+        if (mapsize.has_value()) {
+            opts.map_size = *mapsize;
+        }
+        opts.read_only = true;
+        lmdb_env = lmdb::get_env(datadir.c_str(), opts);
         std::cout << " Compacting " << source.string() << "\n into " << target.string() << "\n Please be patient ..."
                   << std::endl;
         int rc{mdb_env_copy2(*(lmdb_env->handle()), workdir.c_str(), MDB_CP_COMPACT)};

@@ -34,7 +34,7 @@ std::optional<BlockHeader> TestHeaderDB::read_header(uint64_t, const evmc::bytes
 void TestHeaderDB::write_header(BlockHeader block_header) {
     Bytes rlp{};
     rlp::encode(rlp, block_header);
-    ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.size())};
+    ethash::hash256 hash{keccak256(rlp)};
     evmc::bytes32 key;
     std::memcpy(key.bytes, hash.bytes, kHashLength);
     headers_[key] = std::move(block_header);

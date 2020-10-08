@@ -17,6 +17,7 @@
 #include "address.hpp"
 
 #include <ethash/keccak.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm {
@@ -30,7 +31,7 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce) noexce
     rlp::encode(rlp, caller.bytes);
     rlp::encode(rlp, nonce);
 
-    ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.size())};
+    ethash::hash256 hash{keccak256(rlp)};
 
     evmc::address address{};
     std::memcpy(address.bytes, hash.bytes + 12, kAddressLength);

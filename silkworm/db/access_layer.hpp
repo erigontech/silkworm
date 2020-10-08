@@ -36,15 +36,17 @@ std::vector<evmc::address> read_senders(lmdb::Transaction& txn, int64_t block_nu
 
 std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code_hash);
 
-std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address& address, uint64_t block_number);
+// Reads current or historical (if block_number is specified) account.
+std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address& address,
+                                    std::optional<uint64_t> block_number);
 
+// Reads current or historical (if block_number is specified) storage.
 evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address, uint64_t incarnation,
-                           const evmc::bytes32& key, uint64_t block_number);
+                           const evmc::bytes32& key, std::optional<uint64_t> block_number);
 
-// Finds the latest non-zero incarnation of an account,
-// disregarding future changes (happening after block_number).
+// Reads current or historical (if block_number is specified) previous incarnation.
 std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const evmc::address& address,
-                                                  uint64_t block_number);
+                                                  std::optional<uint64_t> block_number);
 
 std::optional<AccountChanges> read_account_changes(lmdb::Transaction& txn, uint64_t block_number);
 

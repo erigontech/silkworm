@@ -28,6 +28,7 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -41,6 +42,18 @@ using namespace silkworm;
 std::atomic_bool should_stop_{false};           // Request for stop from user or OS
 std::atomic_bool main_thread_error_{false};     // Error detected in main thread
 std::atomic_bool workers_thread_error_{false};  // Error detected in one of workers threads
+
+struct app_options_t {
+    std::string datadir{};          // Provided database path
+    uint64_t mapsize{0};            // Provided lmdb map size
+    uint32_t numthreads{1};         // Number of recovery threads to start
+    size_t batch_size{10'000};      // Number of work packages to serve e worker
+    uint32_t block_from{1u};        // Initial block number to start from
+    uint32_t block_to{UINT32_MAX};  // Final block number to process
+    bool replay{false};             // Whether to replay already extracted senders
+    bool debug{false};              // Whether to display some debug info
+    bool rundry{false};             // Runs in dry mode (no data is persisted on disk)
+};
 
 void sig_handler(int signum) {
     (void)signum;
@@ -159,7 +172,7 @@ class Recoverer : public silkworm::Worker {
 
             if (debug_) {
                 std::cout << format_time() << " DBG : worker #" << id_ << " started batch #" << current_batch_id_
-                    << std::endl;
+                          << std::endl;
             };
 
             busy_.store(true);
@@ -170,8 +183,8 @@ class Recoverer : public silkworm::Worker {
 
                 Bytes signature(64, '\0');
                 uint64_t current_block{packages_.at(0).blockNum};
-                size_t block_result_offset{ 0 };
-                size_t block_result_length{ 0 };
+                size_t block_result_offset{0};
+                size_t block_result_length{0};
 
                 // Loop
                 for (size_t x{0}; x < packages_.size() && !recovery_error_; x++) {
@@ -181,7 +194,7 @@ class Recoverer : public silkworm::Worker {
                     if (current_block != rp.blockNum) {
                         MDB_val result{block_result_length, (void*)&mydata_[block_result_offset]};
                         myresults_.push_back({current_block, result});
-                        block_result_offset = block_result_length;
+                        block_result_offset += block_result_length;
                         block_result_length = 0;
                         current_block = rp.blockNum;
                         if (should_stop_) break;
@@ -201,7 +214,8 @@ class Recoverer : public silkworm::Worker {
 
                     if (key.has_value() && (int)key->at(0) == 4) {
                         ethash::hash256 keyHash{ethash::keccak256(key->data() + 1, key->length() - 1)};
-                        std::memcpy(&mydata_[block_result_offset + block_result_length], &keyHash.bytes[12], kAddressLength);
+                        std::memcpy(&mydata_[block_result_offset + block_result_length],
+                                    &keyHash.bytes[sizeof(keyHash) - kAddressLength], kAddressLength);
                         block_result_length += kAddressLength;
                     } else {
                         std::cout << format_time() << " Recoverer #" << id_ << " "
@@ -230,7 +244,6 @@ class Recoverer : public silkworm::Worker {
         }
 
         std::free(mydata_);
-
     };
 };
 
@@ -266,7 +279,6 @@ void process_txs_for_signing(ChainConfig& config, uint64_t block_num, BlockBody&
 }
 
 bool start_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
-
     for (size_t r = 0; r < workers.size(); r++) {
         std::cout << format_time() << " Starting worker thread #" << r << std::endl;
         workers.at(r)->start();
@@ -289,7 +301,6 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
 }
 
 std::optional<uint64_t> get_highest_canonical_header(std::unique_ptr<lmdb::Table>& headers) {
-
     size_t count{0};
     lmdb::err_handler(headers->get_rcount(&count));
     if (!count) {
@@ -346,7 +357,8 @@ uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t 
             if (!batch_size) {
                 batch_size = (to - from + 1) / (100 / percent_step);
                 percent += percent_step;
-                std::cout << format_time() << " ... " << std::right << std::setw(3) << std::setfill(' ') << percent << " %" << std::endl;
+                std::cout << format_time() << " ... " << std::right << std::setw(3) << std::setfill(' ') << percent
+                          << " %" << std::endl;
             }
         }
         if (!eof) rc = headers->get_next(&key, &data);
@@ -357,8 +369,8 @@ uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t 
 
 // Writes batch results to db
 size_t write_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std::mutex& batches_mtx,
-                   std::vector<std::unique_ptr<Recoverer>>& workers, evmc::bytes32* headers,
-                   std::unique_ptr<lmdb::Table>& senders, uint64_t initial_block) {
+                     std::vector<std::unique_ptr<Recoverer>>& workers, evmc::bytes32* headers,
+                     std::unique_ptr<lmdb::Table>& senders, uint64_t initial_block) {
     size_t ret{0};
     std::vector<std::pair<uint64_t, MDB_val>> results{};
 
@@ -395,62 +407,8 @@ size_t write_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std::mu
     return ret;
 }
 
-int main(int argc, char* argv[]) {
-    CLI::App app("Walks Ethereum blocks and recovers senders.");
-
-    std::string po_data_dir{silkworm::db::default_path()};  // Default database path
-    std::string po_mapsize_str{"0"};                        // Default lmdb map size
-    uint32_t po_num_threads{get_host_cpus() - 1};           // Number of recovery threads to start
-    uint32_t po_from_block{1u};                             // Initial block number to start from
-    uint32_t po_to_block{UINT32_MAX};                       // Final block number to process
-    size_t po_batch_size{10'000};                           // Number of work packages to serve e worker
-
-    bool po_debug{false};                                   // Whether to display some debug info
-    bool po_dry{false};                                     // Runs in dry mode (no data is persisted on disk)
-    bool po_replay{false};                                  // Replays senders extraction if already present
-    CLI::Range range32(1u, UINT32_MAX);
-
-    // Check whether or not default db_path exists and
-    // has some files in it
-    bfs::path db_path(po_data_dir);
-    CLI::Option* db_path_set =
-        app.add_option("--datadir", po_data_dir, "Path to chain db", true)->check(CLI::ExistingDirectory);
-    if (!bfs::exists(db_path) || !bfs::is_directory(db_path) || db_path.empty()) {
-        db_path_set->required();
-    }
-    app.add_option("--lmdb.mapSize", po_mapsize_str, "Lmdb map size", true);
-    app.add_flag("-d,--debug", po_debug, "May be ignored.");
-    app.add_flag("--dry", po_dry, "Runs the full cycle but nothing is persisted");
-    app.add_flag("--replay", po_replay, "Replays senders extraction if data already present");
-    app.add_option("--rthreads", po_num_threads, "Number of recovering threads", true)
-        ->check(CLI::Range(1u, get_host_cpus() - 1));
-    app.add_option("--from,-f", po_from_block, "Initial block number to process (inclusive)", true)->check(range32);
-    app.add_option("--to,-t", po_to_block, "Final block number to process (inclusive)", true)->check(range32);
-    app.add_option("--batch", po_batch_size, "Number of transactions to process per batch", true)
-        ->check(CLI::Range((size_t)1'000, (size_t)1'000'000));
-
-    CLI11_PARSE(app, argc, argv);
-
-    std::optional<uint64_t> lmdb_mapSize = parse_size(po_mapsize_str);
-    if (!lmdb_mapSize) {
-        std::cout << "Invalid map size" << std::endl;
-        return -1;
-    }
-
-    if (!po_from_block) po_from_block = 1u;  // Block 0 (genesis) has no transactions
-
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
-
-    // If database path is provided (and has passed CLI::ExistingDirectory validator
-    // check whether it is empty
-    db_path = bfs::path(po_data_dir);
-    if (db_path.empty()) {
-        std::cerr << "Provided --datadir [" << po_data_dir << "] is an empty directory" << std::endl
-                  << "Try --help for help" << std::endl;
-        return -1;
-    }
-
+// Executes the recovery stage
+int do_recover(app_options_t& options) {
     std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
     std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
     std::unique_ptr<lmdb::Table> lmdb_headers{nullptr};    // Block headers table
@@ -469,16 +427,14 @@ int main(int argc, char* argv[]) {
     std::mutex batches_completed_mtx;  // Guards the queue
     size_t bytes_written{0};           // Total bytes written
 
-    uint32_t next_worker_id{0};                            // Used to serialize the dispatch of works to threads
-    std::atomic<uint32_t> workers_in_flight{0};            // Number of workers in flight
-    uint64_t total_transactions{0};                        // Overall number of transactions processed
-
+    uint32_t next_worker_id{0};                  // Used to serialize the dispatch of works to threads
+    std::atomic<uint32_t> workers_in_flight{0};  // Number of workers in flight
+    uint64_t total_transactions{0};              // Overall number of transactions processed
 
     // Recoverer's signal handlers
     boost::function<void(uint32_t, uint32_t, bool)> finishedHandler =
         [&expected_batch_id, &batches_completed, &batches_completed_mtx, &workers_in_flight](
             uint32_t sender_id, uint32_t batch_id, bool has_error) {
-
             // Ensure threads flush in the right order to preserve key sorting
             // Threads waits for its ticket before flushing
             while (expected_batch_id.load(std::memory_order_relaxed) != batch_id) {
@@ -504,8 +460,8 @@ int main(int argc, char* argv[]) {
     // a full batch. Worker object is not copyable
     // thus the need of a unique_ptr.
     std::vector<std::unique_ptr<Recoverer>> recoverers_{};
-    for (uint32_t i = 0; i < po_num_threads; i++) {
-        auto worker = std::make_unique<Recoverer>(i, (po_batch_size * kAddressLength), po_debug);
+    for (uint32_t i = 0; i < options.numthreads; i++) {
+        auto worker = std::make_unique<Recoverer>(i, (options.batch_size * kAddressLength), options.debug);
         worker->signal_completed.connect(boost::bind(finishedHandler, _1, _2, _3));
         recoverers_.push_back(std::move(worker));
     }
@@ -521,11 +477,9 @@ int main(int argc, char* argv[]) {
     try {
         // Open db and start transaction
         lmdb::options opts{};
-        if (lmdb_mapSize.has_value()) {
-            opts.map_size = *lmdb_mapSize;
-        }
+        opts.map_size = options.mapsize;
 
-        lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts, /* forwriting=*/true);
+        lmdb_env = lmdb::get_env(options.datadir.c_str(), opts, /* forwriting=*/true);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);  // Throws on error
         lmdb_headers = lmdb_txn->open(db::table::kBlockHeaders);         // Throws on error
@@ -540,7 +494,8 @@ int main(int argc, char* argv[]) {
             throw std::logic_error("Can't locate most recent canonical header. Aborting");
         }
         std::cout << format_time() << " Most recent header number " << *mostrecent_header << std::endl;
-        po_to_block = (po_to_block > *mostrecent_header ? *mostrecent_header : po_to_block);
+        options.block_to =
+            (options.block_to > (uint32_t)(*mostrecent_header) ? (uint32_t)(*mostrecent_header) : options.block_to);
 
         // Have block bodies ?
         std::cout << format_time() << " Checking block bodies ..." << std::endl;
@@ -563,19 +518,19 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(lmdb_senders->get_last(&key, &data));
             ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
             auto mostrecent_sender = boost::endian::load_big_u64(&v[0]);
-            if (po_from_block <= mostrecent_sender) {
-                if (po_replay) {
-                    if (po_from_block == 1u) {
+            if (options.block_from <= mostrecent_sender) {
+                if (options.replay) {
+                    if (options.block_from == 1u) {
                         std::cout << format_time() << " Clearing senders table ... " << std::endl;
                         lmdb::err_handler(lmdb_senders->clear());
                         lmdb_senders.reset();
                         lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);
                     } else {
                         // Delete all senders records with key >= po_from_block
-                        std::cout << format_time() << " Deleting senders table from block " << po_from_block << " ..."
-                                  << std::endl;
+                        std::cout << format_time() << " Deleting senders table from block " << options.block_from
+                                  << " ..." << std::endl;
                         Bytes senders_key(40, '\0');
-                        boost::endian::store_big_u64(&senders_key[0], po_from_block);
+                        boost::endian::store_big_u64(&senders_key[0], options.block_from);
                         key.mv_data = (void*)&senders_key[0];
                         key.mv_size = 40;
                         int rc{lmdb_senders->seek(&key, &data)};
@@ -589,27 +544,27 @@ int main(int argc, char* argv[]) {
                         }
                     }
                 } else {
-                    std::cout << format_time() << " Overriding requested initial block " << po_from_block << " with "
-                              << (mostrecent_sender + 1) << std::endl;
-                    po_from_block = mostrecent_sender + 1;
+                    std::cout << format_time() << " Overriding requested initial block " << options.block_from
+                              << " with " << (mostrecent_sender + 1) << std::endl;
+                    options.block_from = (uint32_t)(mostrecent_sender + 1);
                 }
             } else {
-                std::cout << format_time() << " Overriding requested initial block " << po_from_block << " with "
+                std::cout << format_time() << " Overriding requested initial block " << options.block_from << " with "
                           << (mostrecent_sender + 1) << std::endl;
-                po_from_block = mostrecent_sender + 1;
+                options.block_from = (uint32_t)(mostrecent_sender + 1);
             }
 
         } else {
-            if (po_from_block > 1u) {
-                std::cout << format_time() << " Overriding selected initial block " << po_from_block << " with 1"
+            if (options.block_from > 1u) {
+                std::cout << format_time() << " Overriding selected initial block " << options.block_from << " with 1"
                           << std::endl;
-                po_from_block = 1u;
+                options.block_from = 1u;
             }
         }
 
-        std::cout << format_time() << " Processing transactions from block " << po_from_block << " to block "
-                  << po_to_block << std::endl;
-        if (po_from_block > po_to_block) {
+        std::cout << format_time() << " Processing transactions from block " << options.block_from << " to block "
+                  << options.block_to << std::endl;
+        if (options.block_from > options.block_to) {
             // There are no blocks to process
             throw std::logic_error("No valid block range selected. Aborting");
         }
@@ -617,7 +572,7 @@ int main(int argc, char* argv[]) {
         // Try allocate enough memory space to fit all cananonical header hashes
         // which need to be processed
         {
-            void* mem{std::calloc((po_to_block - po_from_block + 1), kHashLength)};
+            void* mem{std::calloc((size_t)(options.block_to - options.block_from) + 1, kHashLength)};
             if (!mem) {
                 // not enough space to store all
                 throw std::runtime_error("Can't allocate enough memory for headers");
@@ -626,7 +581,8 @@ int main(int argc, char* argv[]) {
         }
 
         // Scan headers table to collect all canonical headers
-        canonical_headers_count = load_canonical_headers(lmdb_headers, po_from_block, po_to_block, canonical_headers);
+        canonical_headers_count =
+            load_canonical_headers(lmdb_headers, options.block_from, options.block_to, canonical_headers);
         if (!canonical_headers_count) {
             // Nothing to process
             throw std::logic_error("No canonical headers collected.");
@@ -639,7 +595,7 @@ int main(int argc, char* argv[]) {
             // Set to first key which is initial block number
             // plus canonical hash
 
-            uint64_t current_block{po_from_block};
+            uint64_t current_block{options.block_from};
             uint64_t detected_block{0};
             size_t header_index{0};
 
@@ -684,11 +640,10 @@ int main(int argc, char* argv[]) {
 
                     // Should we overflow the batch queue dispatch the work
                     // accumulated so far to the recoverer thread
-                    if ((batch_size + body.transactions.size()) > po_batch_size) {
-
+                    if ((batch_size + body.transactions.size()) > options.batch_size) {
                         // If all workers busy no other option than to wait for
                         // at least one free slot
-                        while (workers_in_flight == po_num_threads) {
+                        while (workers_in_flight == options.numthreads) {
                             std::this_thread::sleep_for(std::chrono::milliseconds(500));
                         }
 
@@ -696,7 +651,8 @@ int main(int argc, char* argv[]) {
                         if (workers_thread_error_) throw std::runtime_error("Error from worker thread");
 
                         // Write results to db (if any)
-                        bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, lmdb_senders, po_from_block);
+                        bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_,
+                                                       canonical_headers, lmdb_senders, options.block_from);
 
                         // Dispatch new task to worker
                         total_transactions += recoverPackages.size();
@@ -706,11 +662,11 @@ int main(int argc, char* argv[]) {
                         batch_size = 0;
 
                         std::cout << format_time() << " Block " << std::right << std::setw(9) << std::setfill(' ')
-                            << current_block << " Transactions " << std::right << std::setw(12)
-                            << std::setfill(' ') << total_transactions << " Workers " << workers_in_flight << "/" << po_num_threads
-                            << std::endl;
+                                  << current_block << " Transactions " << std::right << std::setw(12)
+                                  << std::setfill(' ') << total_transactions << " Workers " << workers_in_flight << "/"
+                                  << options.numthreads << std::endl;
 
-                        if (++next_worker_id == po_num_threads) {
+                        if (++next_worker_id == options.numthreads) {
                             next_worker_id = 0;
                         }
                     }
@@ -735,10 +691,9 @@ int main(int argc, char* argv[]) {
 
             // Should we have a partially filled work package deliver it now
             if (batch_size && !should_stop_) {
-
                 // If all workers busy no other option than to wait for
                 // at least one free slot
-                while (workers_in_flight == po_num_threads) {
+                while (workers_in_flight == options.numthreads) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 }
 
@@ -746,8 +701,8 @@ int main(int argc, char* argv[]) {
                 if (workers_thread_error_) throw std::runtime_error("Error from worker thread");
 
                 // Write results to db (if any)
-                bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, lmdb_senders,
-                              po_from_block);
+                bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers,
+                                               lmdb_senders, options.block_from);
 
                 total_transactions += recoverPackages.size();
                 recoverers_.at(next_worker_id)->set_work(next_batch_id, recoverPackages);
@@ -756,9 +711,9 @@ int main(int argc, char* argv[]) {
                 batch_size = 0;
 
                 std::cout << format_time() << " Block " << std::right << std::setw(9) << std::setfill(' ')
-                    << current_block << " Transactions " << std::right << std::setw(12)
-                    << std::setfill(' ') << total_transactions << " Workers " << workers_in_flight << "/" << po_num_threads
-                    << std::endl;
+                          << current_block << " Transactions " << std::right << std::setw(12) << std::setfill(' ')
+                          << total_transactions << " Workers " << workers_in_flight << "/" << options.numthreads
+                          << std::endl;
             }
 
             // Wait for all workers to complete and write their results
@@ -766,8 +721,8 @@ int main(int argc, char* argv[]) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
             }
             if (!should_stop_) {
-                bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, lmdb_senders,
-                              po_from_block);
+                bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers,
+                                               lmdb_senders, options.block_from);
             }
         }
 
@@ -800,16 +755,12 @@ int main(int argc, char* argv[]) {
     }
 
     // Should we commit ?
-    if (!main_thread_error_ && !workers_thread_error_ && !po_dry && !should_stop_) {
-
+    if (!main_thread_error_ && !workers_thread_error_ && !options.rundry && !should_stop_) {
         std::cout << format_time() << " Committing work ( " << bytes_written << " bytes )" << std::endl;
-        try
-        {
+        try {
             lmdb::err_handler(lmdb_txn->commit());
             lmdb::err_handler(lmdb_env->sync());
-        }
-        catch (const std::exception& ex)
-        {
+        } catch (const std::exception& ex) {
             std::cout << format_time() << " Unexpected error : " << ex.what() << std::endl;
             main_thread_error_ = true;
         }
@@ -819,4 +770,162 @@ int main(int argc, char* argv[]) {
     lmdb_env.reset();
     std::cout << format_time() << " All done ! " << std::endl;
     return (main_thread_error_ ? -1 : 0);
+}
+
+// Prints out info of block's transactions with senders
+int do_verify(app_options_t& options) {
+
+    // Adjust params
+    if (options.block_to == UINT32_MAX) options.block_to = options.block_from;
+
+    try
+    {
+        // Open db and start transaction
+        lmdb::options lmdb_opts{};
+        lmdb_opts.map_size = options.mapsize;
+        std::shared_ptr<lmdb::Environment> lmdb_env{lmdb::get_env(options.datadir.c_str(), lmdb_opts)};
+        std::unique_ptr<lmdb::Transaction> lmdb_txn{lmdb_env->begin_ro_transaction()};
+        std::unique_ptr<lmdb::Table> lmdb_headers{lmdb_txn->open(db::table::kBlockHeaders)};
+        std::unique_ptr<lmdb::Table> lmdb_bodies{lmdb_txn->open(db::table::kBlockBodies)};
+        std::unique_ptr<lmdb::Table> lmdb_senders{lmdb_txn->open(db::table::kSenders)};
+
+        // Verify requested block is not beyond what we already have in chaindb
+        size_t count{0};
+        lmdb::err_handler(lmdb_senders->get_rcount(&count));
+        if (!count) throw std::logic_error("Senders table is empty. Is the sync completed ?");
+        lmdb::err_handler(lmdb_bodies->get_rcount(&count));
+        if (!count) throw std::logic_error("Block bodies table is empty. Is the sync completed ?");
+        lmdb::err_handler(lmdb_headers->get_rcount(&count));
+        if (!count) throw std::logic_error("Headers table is empty. Is the sync completed ?");
+
+        MDB_val key, data;
+        lmdb::err_handler(lmdb_senders->get_last(&key, &data));
+        ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
+        uint64_t most_recent_sender{boost::endian::load_big_u64(&v[0])};
+        if (options.block_from > most_recent_sender) {
+            throw std::logic_error("Selected block beyond collected senders");
+        }
+
+        for (uint32_t block_num = options.block_from; block_num <= options.block_to; block_num++)
+        {
+            std::cout << "Reading block #" << block_num << std::endl;
+            std::optional<BlockWithHash> bh{db::read_block(*lmdb_txn, block_num)};
+            if (!bh) {
+                throw std::logic_error("Could not locate block #" + std::to_string(block_num));
+            }
+
+            if (!bh->block.transactions.size()) {
+                std::cout << "Block has 0 transactions" << std::endl;
+                continue;
+            }
+
+            std::vector<evmc::address> senders{db::read_senders(*lmdb_txn, block_num, bh->hash)};
+            if (senders.size() != bh->block.transactions.size()) {
+                throw std::runtime_error("Senders count does not match transactions count");
+            }
+
+            std::cout << std::right << std::setw(4) << std::setfill(' ') << "Tx"
+                      << " " << std::left << std::setw(66) << std::setfill(' ') << "Hash"
+                      << " " << std::left << std::setw(42) << std::setfill(' ') << "From"
+                      << " " << std::left << std::setw(42) << std::setfill(' ') << "To" << std::endl;
+            std::cout << std::right << std::setw(4) << std::setfill('-') << ""
+                      << " " << std::left << std::setw(66) << std::setfill('-') << ""
+                      << " " << std::left << std::setw(42) << std::setfill('-') << ""
+                      << " " << std::left << std::setw(42) << std::setfill('-') << "" << std::endl;
+
+            for (size_t i = 0; i < bh->block.transactions.size(); i++)
+            {
+                Bytes rlp{};
+                rlp::encode(rlp, bh->block.transactions.at(i), /*forsigning*/ false, {});
+                ethash::hash256 hash{ ethash::keccak256(rlp.data(), rlp.length()) };
+                ByteView bv{ hash.bytes,32 };
+                std::cout << std::right << std::setw(4) << std::setfill(' ') << i << " 0x" << to_hex(bv) << " 0x"
+                          << to_hex(senders.at(i)) << " 0x" << to_hex(*(bh->block.transactions.at(i).to)) << std::endl;
+            }
+
+            std::cout << std::endl;
+        }
+
+    }
+    catch (const std::logic_error& ex) {
+        std::cout << ex.what() << std::endl;
+        return -1;
+    }
+    catch (const std::exception& ex)
+    {
+        std::cout << "Unexpected error : " << ex.what() << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
+int main(int argc, char* argv[]) {
+    // Init command line parser
+    CLI::App app("Senders recovery tool.");
+    app_options_t options{};
+    options.datadir = silkworm::db::default_path();  // Default chain data db path
+    options.numthreads = get_host_cpus() - 1;        // 1 thread per core leaving one slot for main thread
+
+    // Command line arguments
+    app.add_option("--datadir", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
+
+    std::string mapSizeStr{"0"};
+    app.add_option("--lmdb.mapSize", mapSizeStr, "Lmdb map size", true);
+    app.add_option("--threads", options.numthreads, "Number of recovering threads", true)
+        ->check(CLI::Range(1u, get_host_cpus() - 1));
+    app.add_option("--batch", options.batch_size, "Number of transactions to process per batch", true)
+        ->check(CLI::Range((size_t)1'000, (size_t)10'000'000));
+    app.add_option("--from", options.block_from, "Initial block number to process (inclusive)", true)
+        ->check(CLI::Range(1u, UINT32_MAX));
+    app.add_option("--to", options.block_to, "Final block number to process (inclusive)", true)
+        ->check(CLI::Range(1u, UINT32_MAX));
+    app.add_flag("--debug", options.debug, "May print some debug/trace info.");
+    app.add_flag("--replay", options.replay, "Replay transactions.");
+    app.add_flag("--dry", options.rundry, "Runs the full cycle but nothing is persisted");
+
+    app.require_subcommand(1);  // One of the following subcommands is required
+    auto& app_recover = *app.add_subcommand("recover", "Recovers senders' addresses");
+    auto& app_verify = *app.add_subcommand("verify", "Verifies senders' addresses for given block");
+
+    CLI11_PARSE(app, argc, argv);
+
+    std::optional<uint64_t> lmdb_mapSize = parse_size(mapSizeStr);
+    if (!lmdb_mapSize) {
+        std::cerr << "Provided --lmdb.mapSize \"" << mapSizeStr << "\" is invalid" << std::endl;
+        return -1;
+    }
+    options.mapsize = *lmdb_mapSize;
+    if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions
+
+    signal(SIGINT, sig_handler);
+    signal(SIGTERM, sig_handler);
+
+    // If database path is provided (and has passed CLI::ExistingDirectory validator
+    // check whether it is empty
+    bfs::path db_path = bfs::path(options.datadir);
+    if (!bfs::exists(db_path) || !bfs::is_directory(db_path) || bfs::is_empty(db_path)) {
+        std::cerr << "Invalid or empty --datadir \"" << options.datadir << "\"" << std::endl
+                  << "Try --help for help" << std::endl;
+        return -1;
+    } else {
+        bfs::path db_file = bfs::path(db_path / bfs::path("data.mdb"));
+        if (!bfs::exists(db_file) || !bfs::file_size(db_file)) {
+            std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
+                      << "Try --help for help" << std::endl;
+            return -1;
+        }
+    }
+
+    // Invoke proper action
+    int rc{-1};
+    if (app_recover) {
+        rc = do_recover(options);
+    } else if (app_verify) {
+        rc = do_verify(options);
+    } else {
+        std::cerr << "No command specified" << std::endl;
+    }
+
+    return rc;
 }

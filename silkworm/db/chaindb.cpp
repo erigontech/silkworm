@@ -463,7 +463,8 @@ int Table::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_
 int Table::del_current(bool alldupkeys) {
     if (alldupkeys) {
         unsigned int flags{0};
-        err_handler(get_flags(&flags));
+        unsigned int rc{get_flags(&flags)};
+        if (rc) return rc;
         if ((flags & MDB_DUPSORT) != MDB_DUPSORT) {
             alldupkeys = false;
         }

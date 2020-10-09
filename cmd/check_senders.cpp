@@ -389,16 +389,12 @@ size_t write_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std::mu
         std::swap(results, workers.at(item.first)->get_results());
 
         // Append results to senders table
-        int rc{0};
         Bytes senders_key(40, '\0');
         MDB_val key{40, (void*)&senders_key[0]};
         for (auto& result : results) {
             boost::endian::store_big_u64(&senders_key[0], result.first);
             memcpy((void*)&senders_key[8], (void*)&headers[result.first - initial_block], kHashLength);
-            rc = senders->put_append(&key, &result.second);
-            if (rc) {
-                throw lmdb::exception(rc, mdb_strerror(rc));
-            }
+            lmdb::err_handler(senders->put_append(&key, &result.second));
             ret += (key.mv_size + result.second.mv_size);
         }
         results.clear();
@@ -478,11 +474,9 @@ int do_recover(app_options_t& options) {
     try {
         // Open db and start transaction
         lmdb::options opts{};
-        if (*lmdb_mapSize) {
-            opts.map_size = *lmdb_mapSize;
-        }
         opts.read_only = false;
-        lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts);
+        opts.map_size = options.mapsize;
+        lmdb_env = lmdb::get_env(options.datadir.c_str(), opts);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);  // Throws on error
         lmdb_headers = lmdb_txn->open(db::table::kBlockHeaders);         // Throws on error
@@ -539,7 +533,7 @@ int do_recover(app_options_t& options) {
                         int rc{lmdb_senders->seek(&key, &data)};
                         lmdb::err_handler(rc);
                         while (!should_stop_ && rc == MDB_SUCCESS) {
-                            lmdb::err_handler(lmdb_senders->del_current(false));
+                            lmdb::err_handler(lmdb_senders->del_current());
                             rc = lmdb_senders->get_next(&key, &data);
                             if (rc && rc != MDB_NOTFOUND) {
                                 lmdb::err_handler(rc);

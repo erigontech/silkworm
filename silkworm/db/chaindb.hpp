@@ -263,12 +263,14 @@ class Table {
     int seek(MDB_val* key, MDB_val* data);           // Position cursor to first key >= of given key
     int seek_exact(MDB_val* key, MDB_val* data);     // Position cursor to key == of given key
     int get_current(MDB_val* key, MDB_val* data);    // Gets data from current cursor position
-    int del_current();                               // Delete key/data pair at current cursor position
-    int get_first(MDB_val* key, MDB_val* data);      // Move cursor at first item in table
-    int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in table
-    int get_next(MDB_val* key, MDB_val* data);       // Move cursor at next item in table
-    int get_last(MDB_val* key, MDB_val* data);       // Move cursor at last item in table
-    int get_dcount(size_t* count);                   // Returns the count of duplicates at current position
+    int del_current(bool alldupkeys = false);  // Delete key/data pair at current cursor position. alldupkeys may be set
+                                               // true only for tables opened MDB_DUPSORT flag and in that case all
+                                               // records with same key are deleted too
+    int get_first(MDB_val* key, MDB_val* data);  // Move cursor at first item in table
+    int get_prev(MDB_val* key, MDB_val* data);   // Move cursor at previous item in table
+    int get_next(MDB_val* key, MDB_val* data);   // Move cursor at next item in table
+    int get_last(MDB_val* key, MDB_val* data);   // Move cursor at last item in table
+    int get_dcount(size_t* count);               // Returns the count of duplicates at current position
 
     /** @brief Stores key/data pairs into the database using cursor.
      *

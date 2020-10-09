@@ -460,7 +460,16 @@ std::optional<db::Entry> Table::seek(ByteView prefix) {
 int Table::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }
 int Table::seek_exact(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
 int Table::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
-int Table::del_current() { return mdb_cursor_del(handle_, 0); }
+int Table::del_current(bool alldupkeys) {
+    if (alldupkeys) {
+        unsigned int flags{0};
+        err_handler(get_flags(&flags));
+        if ((flags & MDB_DUPSORT) != MDB_DUPSORT) {
+            alldupkeys = false;
+        }
+    }
+    return mdb_cursor_del(handle_, alldupkeys ? 1 : 0);
+}
 int Table::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
 int Table::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
 int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }

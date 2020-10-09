@@ -283,8 +283,8 @@ TEST_CASE("Out of Gas during account re-creation") {
     TemporaryDirectory tmp_dir{};
     lmdb::options db_opts{};
     db_opts.map_size = 32 << 20;  //  32MiB
-    bool read_write{true};
-    std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(tmp_dir.path(), db_opts, read_write)};
+    db_opts.read_only = false;
+    std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(tmp_dir.path(), db_opts)};
 
     std::unique_ptr<lmdb::Transaction> db_txn{db_env->begin_rw_transaction()};
     db::table::create_all(*db_txn);
@@ -296,7 +296,7 @@ TEST_CASE("Out of Gas during account re-creation") {
         account.balance = 66'252'368 * kGiga;
 
         auto table{db_txn->open(db::table::kPlainState)};
-        table->put(full_view(address), account.encode_for_storage(false));
+        table->put(full_view(address), account.encode_for_storage(/*omit_code_hash=*/false));
     }
 
     Transaction txn{
@@ -399,7 +399,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     state.write_block(writer);
 
     // only the caller and the miner should be changed
-    CHECK(writer.account_changes().size() == 2);
+    CHECK(writer.account_back_changes().size() == 2);
 }
 
 TEST_CASE("Empty suicide beneficiary") {
@@ -439,6 +439,6 @@ TEST_CASE("Empty suicide beneficiary") {
     state.write_block(writer);
 
     // suicide_beneficiary should've been touched and deleted
-    CHECK(writer.account_changes().count(suicide_beneficiary) == 1);
+    CHECK(writer.account_back_changes().count(suicide_beneficiary) == 1);
 }
 }  // namespace silkworm

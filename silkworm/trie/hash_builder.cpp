@@ -88,7 +88,7 @@ static ByteView node_ref(ByteView rlp) {
     }
 
     thread_local ethash::hash256 hash;
-    hash = ethash::keccak256(rlp.data(), rlp.length());
+    hash = keccak256(rlp);
     return {hash.bytes, kHashLength};
 }
 HashBuilder::HashBuilder(ByteView key0, ByteView value0) : key_{unpack_nibbles(key0)}, value_{value0} {}
@@ -111,7 +111,7 @@ evmc::bytes32 HashBuilder::root_hash() {
     if (node_ref.length() == kHashLength) {
         std::memcpy(res.bytes, node_ref.data(), kHashLength);
     } else {
-        ethash::hash256 hash{ethash::keccak256(node_ref.data(), node_ref.length())};
+        ethash::hash256 hash{keccak256(node_ref)};
         std::memcpy(res.bytes, hash.bytes, kHashLength);
     }
     return res;

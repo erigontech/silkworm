@@ -21,8 +21,8 @@
 namespace silkworm {
 
 bool operator==(const Account& a, const Account& b) {
-    return a.nonce == b.nonce && a.balance == b.balance && a.storage_root == b.storage_root &&
-           a.code_hash == b.code_hash && a.incarnation == b.incarnation;
+    // Intentionally omit storage_root
+    return a.nonce == b.nonce && a.balance == b.balance && a.code_hash == b.code_hash && a.incarnation == b.incarnation;
 }
 
 Bytes Account::encode_for_storage(bool omit_code_hash) const {

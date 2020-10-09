@@ -124,7 +124,7 @@ void Transaction::recover_sender(bool homestead, std::optional<uint64_t> eip155_
     } else {
         rlp::encode(rlp, *this, for_signing, {});
     }
-    ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.size())};
+    ethash::hash256 hash{keccak256(rlp)};
 
     uint8_t signature[32 * 2];
     intx::be::unsafe::store(signature, r);

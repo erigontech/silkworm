@@ -17,12 +17,15 @@
 #ifndef SILKWORM_DB_CHAINDB_H_
 #define SILKWORM_DB_CHAINDB_H_
 
+/**
+ * Wrappers for the LMDB database library.
+ * See http://www.lmdb.tech/doc/index.html
+ */
+
 #include <lmdb/lmdb.h>
 
-#include <atomic>
 #include <boost/signals2/signal.hpp>
 #include <exception>
-#include <iostream>
 #include <map>
 #include <mutex>
 #include <optional>
@@ -47,6 +50,7 @@ struct options {
     bool no_meta_sync = false;       // MDB_NOMETASYNC
     bool write_map = false;          // MDB_WRITEMAP
     bool no_sub_dir = false;         // MDB_NOSUBDIR
+    bool read_only = true;           // MDB_RDONLY
     unsigned max_tables = 128;       // Max open tables/dbi
     mdb_mode_t mode = 0644;          // Filesystem mode
 };
@@ -64,8 +68,8 @@ class exception : public std::exception {
     explicit exception(int err, const char* message) : err_{err}, message_{message} {};
     explicit exception(int err, const std::string& message) : err_{err}, message_{message} {};
     virtual ~exception() noexcept {};
-    virtual const char* what() const noexcept { return message_.c_str(); }
-    int err() { return err_; }
+    const char* what() const noexcept override { return message_.c_str(); }
+    int err() const noexcept { return err_; }
 
    protected:
     int err_;
@@ -153,7 +157,6 @@ class Environment {
 class Transaction {
    private:
     static MDB_txn* open_transaction(Environment* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
-    Transaction(Environment* parent, MDB_txn* txn, unsigned int flags);
 
     friend class Table;
 
@@ -181,6 +184,7 @@ class Transaction {
 
    public:
     explicit Transaction(Environment* parent, unsigned int flags = 0);
+    Transaction(Environment* parent, MDB_txn* txn, unsigned int flags);
     ~Transaction();
 
     MDB_txn** handle() { return &handle_; }
@@ -225,7 +229,7 @@ class Table {
     int clear();  // Removes all contents from the table (cursor is invalidated)
     int drop();   // Deletes the table from the environment (cursor is invalidated)
 
-    /* @brief Gets the value by key. A nil optional is returned if the key is not found.
+    /** @brief Gets the value by key. A nil optional is returned if the key is not found.
      *
      * Warning: The memory pointed to by the returned view is owned by the database.
      * The caller may not modify it in any way.
@@ -241,6 +245,16 @@ class Table {
      */
     std::optional<ByteView> get(ByteView key, ByteView sub_key);
 
+    /** @brief Deletes an entry.
+     * Doesn't do anything if the item is not present.
+     */
+    void del(ByteView key);
+
+    /* Same as the above, but for MDB_DUPSORT data item that starts with a given sub_key.
+     * Doesn't do anything if the item is not present.
+     */
+    void del(ByteView key, ByteView sub_key);
+
     /*
      * MDB_cursor interfaces
      */
@@ -249,14 +263,14 @@ class Table {
     int seek(MDB_val* key, MDB_val* data);           // Position cursor to first key >= of given key
     int seek_exact(MDB_val* key, MDB_val* data);     // Position cursor to key == of given key
     int get_current(MDB_val* key, MDB_val* data);    // Gets data from current cursor position
-    int del_current(bool dupdata = false);           // Delete key/data pair at current cursor position
+    int del_current();                               // Delete key/data pair at current cursor position
     int get_first(MDB_val* key, MDB_val* data);      // Move cursor at first item in table
     int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in table
     int get_next(MDB_val* key, MDB_val* data);       // Move cursor at next item in table
     int get_last(MDB_val* key, MDB_val* data);       // Move cursor at last item in table
     int get_dcount(size_t* count);                   // Returns the count of duplicates at current position
 
-    /* @brief Stores key/data pairs into the database using cursor.
+    /** @brief Stores key/data pairs into the database using cursor.
      *
      * The cursor is positioned at the new item, or on failure usually near it.
      * For more fine grained options see #put_current(), #put_nodup, #put_noovrw,
@@ -264,7 +278,7 @@ class Table {
      */
     void put(ByteView key, ByteView data);
 
-    /* @brief Replace the k/d pair at current cursor position
+    /** @brief Replace the k/d pair at current cursor position
      *
      * The key parameter must be provided and must match the one at current cursor position
      * If env has MDB_DUPSORT the data item must still sort into the same place.
@@ -273,7 +287,7 @@ class Table {
      */
     int put_current(MDB_val* key, MDB_val* data);
 
-    /* @brief Inserts the new k/d pair only if it does not already appear in database
+    /** @brief Inserts the new k/d pair only if it does not already appear in database
      *
      * This operation may only be invoked if the database was opened with MDB_DUPSORT
      * Function will return MDB_KEYEXISTS if the k/v data pair already appears in the
@@ -281,20 +295,20 @@ class Table {
      */
     int put_nodup(MDB_val* key, MDB_val* data);
 
-    /* @brief Inserts the new k/v pair only if it does not already appear in database
+    /** @brief Inserts the new k/v pair only if it does not already appear in database
      *
      * Function will return MDB_KEYEXISTS if the k/d data pair already appears in the
      * database even if the database supports duplicates (MDB_DUPSORT)
      */
     int put_noovrw(MDB_val* key, MDB_val* data);
 
-    /* @brief Reserves space for data of giben size but doesn't copy data.
+    /** @brief Reserves space for data of giben size but doesn't copy data.
      *
      * Function must NOT be used if the database was opened with MDB_DUPSORT
      */
     int put_reserve(MDB_val* key, MDB_val* data);
 
-    /* @brief Append the given k/d pair to the end of the database.
+    /** @brief Append the given k/d pair to the end of the database.
      *
      * No key comparisons are performed. This function allows fast bulk loading
      * when keys are already known to be in the correct order. Loading unsorted
@@ -302,7 +316,7 @@ class Table {
      */
     int put_append(MDB_val* key, MDB_val* data);
 
-    /* @brief Append the given k/d pair to the end of the database.
+    /** @brief Append the given k/d pair to the end of the database.
      *
      * No key comparisons are performed. This function allows fast bulk loading
      * when keys are already known to be in the correct order. Loading unsorted
@@ -311,7 +325,7 @@ class Table {
      */
     int put_append_dup(MDB_val* key, MDB_val* data);
 
-    /* @brief Stores multiple contiguous data elements in a single request
+    /** @brief Stores multiple contiguous data elements in a single request
      *
      * This function may only be used if the database was opened with MDB_DUPFIXED
      * The data argument MUST be an array of TWO MDB_val.
@@ -351,7 +365,7 @@ class Table {
     boost::signals2::connection conn_on_txn_commit_;  // Holds the connection to txn signal_on_before_commit_
 };
 
-std::shared_ptr<lmdb::Environment> get_env(const char* path, lmdb::options opts = {}, bool forwriting = false);
+std::shared_ptr<Environment> get_env(const char* path, options opts = {});
 
 }  // namespace silkworm::lmdb
 

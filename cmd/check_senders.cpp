@@ -273,7 +273,7 @@ void process_txs_for_signing(ChainConfig& config, uint64_t block_num, BlockBody&
             rlp::encode(rlp, txn, true, {});
         }
 
-        ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
+        ethash::hash256 hash{keccak256(rlp)};
         Recoverer::package rp{block_num, hash, x.recovery_id, txn.r, txn.s};
         packages.push_back(rp);
     }
@@ -478,9 +478,11 @@ int do_recover(app_options_t& options) {
     try {
         // Open db and start transaction
         lmdb::options opts{};
-        opts.map_size = options.mapsize;
-
-        lmdb_env = lmdb::get_env(options.datadir.c_str(), opts, /* forwriting=*/true);
+        if (*lmdb_mapSize) {
+            opts.map_size = *lmdb_mapSize;
+        }
+        opts.read_only = false;
+        lmdb_env = lmdb::get_env(po_data_dir.c_str(), opts);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);  // Throws on error
         lmdb_headers = lmdb_txn->open(db::table::kBlockHeaders);         // Throws on error

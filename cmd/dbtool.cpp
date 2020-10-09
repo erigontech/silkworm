@@ -34,7 +34,7 @@ bool shouldStop{false};
 int errorCode{0};
 
 struct dbTableEntry {
-    unsigned int id{0};
+    MDB_dbi id{0};
     std::string name{};
     std::size_t freelist{};
     MDB_stat stat{};
@@ -152,17 +152,16 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
     std::vector<dbTableEntry> ret{};
 
     auto unnamed = tx->open({});  // Opens unnamed table (every lmdb has one)
-    ret.emplace_back();
+    ret.emplace_back(unnamed->get_dbi(), "[unnamed]");
     ret.back().name = "[unnamed]";
     (void)unnamed->get_stat(&ret.back().stat);
     if (ret.back().stat.ms_entries) {
-        unsigned int id{1};
         MDB_val key, data;
         int rc{unnamed->get_first(&key, &data)};
         while (!shouldStop && rc == MDB_SUCCESS) {
             std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};
 
-            dbTableEntry item{id++};
+            dbTableEntry item{};
             item.name.assign(v.data());
 
             if (data.mv_size < sizeof(size_t)) {
@@ -174,6 +173,7 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
                 (sizeof(size_t) == 8 ? boost::endian::load_big_u64(&vdata[0]) : boost::endian::load_big_u32(&vdata[0]));
 
             auto named = tx->open({v.data()});
+            item.id = named->get_dbi();
             rc = named->get_stat(&item.stat);
             if (!rc) {
                 ret.push_back(item);

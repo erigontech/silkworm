@@ -160,3 +160,11 @@ target_link_libraries(unit_test silkworm Catch2::Catch2)
 include(CTest)
 include(Catch)
 catch_discover_tests(unit_test)
+
+# Benchmarks
+
+hunter_add_package(benchmark)
+find_package(benchmark CONFIG REQUIRED)
+
+add_executable(benchmark_precompile cmd/benchmark_precompile.cpp)
+target_link_libraries(benchmark_precompile silkworm benchmark::benchmark)

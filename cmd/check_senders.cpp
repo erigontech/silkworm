@@ -329,7 +329,7 @@ uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t 
     Bytes header_key(9, 'n');
     boost::endian::store_big_u64(&header_key[0], from);
     key.mv_data = (void*)&header_key[0];
-    key.mv_size = 9;
+    key.mv_size = header_key.length();
 
     uint32_t percent{0};
     uint32_t percent_step{5};  // 5% increment among batches
@@ -341,7 +341,7 @@ uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t 
     if (!rc) std::cout << format_time() << " Scanning canonical headers ... " << std::endl;
     while (!should_stop_ && !eof && rc == MDB_SUCCESS) {
         // Canonical header key is 9 bytes (8 blocknumber + 'n')
-        if (key.mv_size == 9) {
+        if (key.mv_size == header_key.length()) {
             ByteView v{static_cast<uint8_t*>(key.mv_data), key.mv_size};
             if (v[8] == 'n') {
                 uint64_t header_block = boost::endian::load_big_u64(&v[0]);
@@ -532,7 +532,7 @@ int do_recover(app_options_t& options) {
                         Bytes senders_key(40, '\0');
                         boost::endian::store_big_u64(&senders_key[0], options.block_from);
                         key.mv_data = (void*)&senders_key[0];
-                        key.mv_size = 40;
+                        key.mv_size = senders_key.length();
                         int rc{lmdb_senders->seek(&key, &data)};
                         lmdb::err_handler(rc);
                         while (!should_stop_ && rc == MDB_SUCCESS) {
@@ -603,7 +603,7 @@ int do_recover(app_options_t& options) {
             boost::endian::store_big_u64(&block_key[0], current_block);
             memcpy((void*)&block_key[8], (void*)&canonical_headers[0], kHashLength);
             key.mv_data = (void*)&block_key[0];
-            key.mv_size = 40;
+            key.mv_size = block_key.length();
 
             std::cout << format_time() << " Scanning bodies ... " << std::endl;
             int rc{lmdb_bodies->seek_exact(&key, &data)};

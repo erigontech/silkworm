@@ -78,7 +78,6 @@ std::optional<uint64_t> parse_size(const std::string& strsize) {
 
 int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string tablename, bool del) {
     int retvar{0};
-    bool should_commit{false};
     std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
     std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
     std::unique_ptr<lmdb::Table> lmdb_tbl{nullptr};        // Table name to be cleared
@@ -92,58 +91,36 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
         lmdb_tbl = lmdb_txn->open({tablename.c_str()});
 
         size_t rcount{0};
-        lmdb_tbl->get_rcount(&rcount);
+        lmdb::err_handler(lmdb_tbl->get_rcount(&rcount));
         if (!del && !rcount) {
-            std::cout << "\nTable " << tablename << " is already empty." << std::endl;
-        } else {
-            int rc{0};
-            if (!del) {
-                std::cout << "\nEmptying table " << tablename << " (" << rcount << " records)" << std::endl;
-                rc = lmdb_tbl->clear();
-
-            } else {
-                std::cout << "\nDeleting table " << tablename << " (" << rcount << " records)" << std::endl;
-                rc = lmdb_tbl->drop();
-            }
-            if (!rc) {
-                should_commit = true;
-            } else {
-                throw std::runtime_error(mdb_strerror(rc));
-            }
+            throw std::logic_error("Table " + tablename + " is already empty.");
         }
+
+        std::cout << "\n"
+                  << (del ? "Deleting" : "Emptying") << " table " << tablename << " (" << rcount << " records)"
+                  << std::endl;
+        lmdb::err_handler(del ? lmdb_tbl->drop() : lmdb_tbl->clear());
         lmdb_tbl->close();
 
+        std::cout << "Committing ... " << std::endl;
+        lmdb::err_handler(lmdb_txn->commit());
+        std::cout << "Success !" << std::endl;
+
+    } catch (std::logic_error& ex) {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
     } catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
         std::cout << ex.err() << " " << ex.what() << std::endl;
         retvar = -1;
     } catch (std::runtime_error& ex) {
-        // This handles runtime logic errors
-        // eg. trying to open two rw txns
         std::cout << ex.what() << std::endl;
         retvar = -1;
     }
 
-    int rc{0};
-
-    if (lmdb_txn) {
-        if (!retvar && should_commit) {
-            std::cout << "Committing ... " << std::endl;
-            rc = lmdb_txn->commit();
-            if (rc) {
-                std::cerr << "Unable to commit : " << mdb_strerror(rc) << std::endl;
-                lmdb_txn->abort();
-                retvar = -1;
-            } else {
-                std::cout << "Success !" << std::endl;
-            }
-        } else {
-            lmdb_txn->abort();
-        }
-    }
-    if (lmdb_env) {
-        lmdb_env->close();
-    }
+    lmdb_tbl.reset();
+    lmdb_txn.reset();
+    lmdb_env.reset();
 
     return retvar;
 }
@@ -152,33 +129,34 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
     std::vector<dbTableEntry> ret{};
 
     auto unnamed = tx->open({});  // Opens unnamed table (every lmdb has one)
-    ret.emplace_back(unnamed->get_dbi(), "[unnamed]");
+    ret.emplace_back();
     ret.back().name = "[unnamed]";
+    ret.back().id = unnamed->get_dbi();
     (void)unnamed->get_stat(&ret.back().stat);
     if (ret.back().stat.ms_entries) {
         MDB_val key, data;
         int rc{unnamed->get_first(&key, &data)};
         while (!shouldStop && rc == MDB_SUCCESS) {
-            std::string_view v{static_cast<char*>(key.mv_data), key.mv_size};
-
-            dbTableEntry item{};
-            item.name.assign(v.data());
 
             if (data.mv_size < sizeof(size_t)) {
-                throw silkworm::lmdb::exception(MDB_INVALID, mdb_strerror(MDB_INVALID));
+                lmdb::err_handler(MDB_INVALID);
             }
 
+            std::string_view vkey{static_cast<char*>(key.mv_data), key.mv_size};
             ByteView vdata{static_cast<uint8_t*>(data.mv_data), sizeof(size_t)};
+
+            dbTableEntry item{};
+            item.name.assign(vkey.data());
             item.freelist =
                 (sizeof(size_t) == 8 ? boost::endian::load_big_u64(&vdata[0]) : boost::endian::load_big_u32(&vdata[0]));
 
-            auto named = tx->open({v.data()});
+            auto named = tx->open({vkey.data()});
             item.id = named->get_dbi();
             rc = named->get_stat(&item.stat);
             if (!rc) {
                 ret.push_back(item);
             } else {
-                throw silkworm::lmdb::exception(rc, mdb_strerror(rc));
+                lmdb::err_handler(rc);
             }
             rc = unnamed->get_next(&key, &data);
         }
@@ -252,13 +230,8 @@ int list_tables(std::string datadir, size_t file_size, std::optional<uint64_t> m
         retvar = -1;
     }
 
-    if (lmdb_txn) {
-        lmdb_txn->abort();
-    }
-    if (lmdb_env) {
-        lmdb_env->close();
-    }
-
+    lmdb_txn.reset();
+    lmdb_env.reset();
     return retvar;
 }
 
@@ -330,10 +303,7 @@ int compact_db(std::string datadir, std::optional<uint64_t> mapsize, std::string
         retvar = -1;
     }
 
-    if (lmdb_env) {
-        lmdb_env->close();
-    }
-
+    lmdb_env.reset();
     return retvar;
 }
 

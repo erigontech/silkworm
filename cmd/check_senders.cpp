@@ -19,6 +19,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/interprocess/mapped_region.hpp>
 #include <condition_variable>
 #include <csignal>
 #include <ethash/keccak.hpp>
@@ -895,7 +896,11 @@ int main(int argc, char* argv[]) {
         std::cerr << "Provided --lmdb.mapSize \"" << mapSizeStr << "\" is invalid" << std::endl;
         return -1;
     }
-    options.mapsize = *lmdb_mapSize;
+    if (*lmdb_mapSize) {
+        // Adjust mapSize to a multiple of page_size
+        size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
+        options.mapsize = ((*lmdb_mapSize + host_page_size - 1) / host_page_size) * host_page_size;
+    }
     if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions
 
     signal(SIGINT, sig_handler);

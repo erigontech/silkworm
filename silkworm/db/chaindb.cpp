@@ -469,7 +469,7 @@ int Table::del_current(bool alldupkeys) {
             alldupkeys = false;
         }
     }
-    return mdb_cursor_del(handle_, alldupkeys ? 1 : 0);
+    return mdb_cursor_del(handle_, alldupkeys ? MDB_NODUPDATA : 0);
 }
 int Table::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
 int Table::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }

@@ -131,37 +131,32 @@ int drop_table(std::string datadir, std::optional<uint64_t> mapsize, std::string
 std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
     std::vector<dbTableEntry> ret{};
 
-    auto unnamed = tx->open({});  // Opens unnamed table (every lmdb has one)
-    ret.emplace_back();
-    ret.back().name = unnamed->get_name();
-    ret.back().id = unnamed->get_dbi();
-    (void)unnamed->get_stat(&ret.back().stat);
+    auto unnamed = tx->open(lmdb::FREE_DBI);
+    ret.push_back({unnamed->get_dbi(), unnamed->get_name()});
+    lmdb::err_handler(unnamed->get_stat(&ret.back().stat));
+
+    unnamed.reset();
+    unnamed = tx->open(lmdb::MAIN_DBI);  // Opens unnamed table (every lmdb has one)
+    ret.push_back({ unnamed->get_dbi(), unnamed->get_name() });
+    lmdb::err_handler(unnamed->get_stat(&ret.back().stat));
     if (ret.back().stat.ms_entries) {
         MDB_val key, data;
-        int rc{unnamed->get_first(&key, &data)};
-        while (!shouldStop && rc == MDB_SUCCESS) {
+        lmdb::err_handler(unnamed->get_first(&key, &data));
+        while (!shouldStop) {
 
             if (data.mv_size < sizeof(size_t)) {
                 lmdb::err_handler(MDB_INVALID);
             }
 
-            std::string_view vkey{static_cast<char*>(key.mv_data), key.mv_size};
-            ByteView vdata{static_cast<uint8_t*>(data.mv_data), sizeof(size_t)};
-
-            dbTableEntry item{};
-            item.name.assign(vkey.data());
-            item.freelist =
-                (sizeof(size_t) == 8 ? boost::endian::load_big_u64(&vdata[0]) : boost::endian::load_big_u32(&vdata[0]));
-
-            auto named = tx->open({vkey.data()});
-            item.id = named->get_dbi();
-            rc = named->get_stat(&item.stat);
-            if (!rc) {
-                ret.push_back(item);
-            } else {
-                lmdb::err_handler(rc);
-            }
-            rc = unnamed->get_next(&key, &data);
+            auto p_data = static_cast<uint8_t*>(data.mv_data);
+            auto named = tx->open({(const char*)key.mv_data});
+            ret.push_back(
+                {named->get_dbi(), named->get_name(),
+                 (sizeof(size_t) == 8 ? boost::endian::load_big_u64(p_data) : boost::endian::load_big_u32(p_data))});
+            lmdb::err_handler(named->get_stat(&ret.back().stat));
+            int rc{unnamed->get_next(&key, &data)};
+            if (rc == MDB_NOTFOUND) break;
+            lmdb::err_handler(rc);
         }
     }
     return ret;

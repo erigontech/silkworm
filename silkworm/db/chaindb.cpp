@@ -264,18 +264,8 @@ MDB_dbi Transaction::open_dbi(const char* name, unsigned int flags) {
 
 MDB_dbi Transaction::open_dbi(const std::string name, unsigned int flags) {
     assert_handle();
-
-    // Lookup value in map
-    auto iter = dbis_.find(name);
-    if (iter != dbis_.end()) {
-        return iter->second;
-    }
-
     MDB_dbi newdbi{0};
-
-    int rc{mdb_dbi_open(handle_, (name.empty() ? nullptr : name.c_str()), flags, &newdbi)};
-    err_handler(rc);
-    dbis_[name] = newdbi;
+    err_handler(mdb_dbi_open(handle_, (name.empty() ? nullptr : name.c_str()), flags, &newdbi));
     return newdbi;
 }
 

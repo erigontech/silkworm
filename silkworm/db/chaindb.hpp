@@ -176,7 +176,19 @@ class Transaction {
      * Val -> the MDB_dbi handle
      */
 
-    std::map<std::string, MDB_dbi> dbis_;  // Collection of opened MDB_dbi
+    /*
+    * Andrea Lanfranchi
+    * I originally created a map of opened dbi(s) to persist the binding
+    * of a table name with its handle_. This however is incorrect as the
+    * handle_ is not an ordinal position rather an opened "slot" within
+    * the transaction. LMDB already takes care to keep a list of free
+    * slots to use for opening so this additional map is totally
+    * redundant. See for reference
+    * https://github.com/torquem-ch/lmdb/blob/mdb.master/libraries/liblmdb/mdb.c#L10797-L10810
+    * Keep the following line commented for reference
+    */
+    //std::map<std::string, MDB_dbi> dbis_;  // Collection of opened MDB_dbi
+
     MDB_dbi open_dbi(const char* name, unsigned int flags = 0);
     MDB_dbi open_dbi(const std::string name, unsigned int flags = 0);
 

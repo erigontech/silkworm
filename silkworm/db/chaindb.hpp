@@ -190,7 +190,7 @@ class Transaction {
     //std::map<std::string, MDB_dbi> dbis_;  // Collection of opened MDB_dbi
 
     MDB_dbi open_dbi(const char* name, unsigned int flags = 0);
-    MDB_dbi open_dbi(const std::string name, unsigned int flags = 0);
+    //MDB_dbi open_dbi(const std::string name, unsigned int flags = 0);
 
     boost::signals2::connection conn_on_env_close_;  // Holds the connection to env signal_on_before_close_
 
@@ -225,7 +225,7 @@ class Transaction {
  */
 class Table {
    public:
-    explicit Table(Transaction* parent, MDB_dbi dbi, std::string dbi_name);
+    explicit Table(Transaction* parent, MDB_dbi dbi, const char * name);
     ~Table();
 
     /*
@@ -360,7 +360,7 @@ class Table {
 
    private:
     static MDB_cursor* open_cursor(Transaction* parent, MDB_dbi dbi);
-    Table(Transaction* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor);
+    Table(Transaction* parent, MDB_dbi dbi, const char * name, MDB_cursor* cursor);
 
     int get(MDB_val* key, MDB_val* data,
             MDB_cursor_op operation);  // Gets data by cursor on behalf of operation

@@ -275,6 +275,13 @@ std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned fla
     return std::make_unique<Table>(this, dbi, config.name);
 }
 
+std::unique_ptr<Table> Transaction::open(MDB_dbi dbi) {
+    if (dbi > 1) {
+        throw std::invalid_argument("dbi can only be 0 or 1");
+    }
+    return std::make_unique<Table>(this, dbi, nullptr);
+}
+
 void Transaction::abort(void) {
     if (!assert_handle(false)) {
         return;
@@ -347,9 +354,9 @@ int Table::get_rcount(size_t* count) {
 
 std::string Table::get_name(void) {
     switch (dbi_) {
-        case 0:
+        case FREE_DBI:
             return {"[FREE_DBI]"};
-        case 1:
+        case MAIN_DBI:
             return {"[MAIN_DBI]"};
         default:
             break;

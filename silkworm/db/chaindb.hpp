@@ -52,8 +52,11 @@ struct options {
     bool no_sub_dir = false;         // MDB_NOSUBDIR
     bool read_only = true;           // MDB_RDONLY
     unsigned max_tables = 128;       // Max open tables/dbi
-    mdb_mode_t mode = 0644;          // Filesystem mode
+    mdb_mode_t mode = 0644;          // Filesystem mode (works only for Linux)
 };
+
+static const MDB_dbi FREE_DBI = 0;  // Reserved for tracking free pages
+static const MDB_dbi MAIN_DBI = 1;  // Reserved for tracking named tables
 
 struct TableConfig {
     const char* name{nullptr};
@@ -203,7 +206,13 @@ class Transaction {
 
     bool is_ro(void);  // Whether this transaction is readonly
 
+    // Opens a "named" table or eventually - if name is null - main dbi with handle_ == 1
     std::unique_ptr<Table> open(const TableConfig& config, unsigned flags = 0);
+
+    // This override allows opening of dbi 0 or 1 only which are reserved
+    // dbi 0 : FREE_DBI
+    // dbi 1 : MAIN_DBI
+    std::unique_ptr<Table> open(MDB_dbi dbi);
 
     Transaction(const Transaction& src) = delete;
     Transaction& operator=(const Transaction& src) = delete;

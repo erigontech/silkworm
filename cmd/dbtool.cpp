@@ -133,7 +133,7 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
 
     auto unnamed = tx->open({});  // Opens unnamed table (every lmdb has one)
     ret.emplace_back();
-    ret.back().name = "[unnamed]";
+    ret.back().name = unnamed->get_name();
     ret.back().id = unnamed->get_dbi();
     (void)unnamed->get_stat(&ret.back().stat);
     if (ret.back().stat.ms_entries) {

@@ -327,7 +327,7 @@ MDB_cursor* Table::open_cursor(Transaction* parent, MDB_dbi dbi) {
 Table::Table(Transaction* parent, MDB_dbi dbi, const char * name, MDB_cursor* cursor)
     : parent_txn_{parent},
       dbi_{dbi},
-      dbi_name_{name ? name : ""},
+      name_{name ? name : ""},
       handle_{cursor},
       conn_on_txn_abort_{parent->signal_on_before_abort_.connect(boost::bind(&Table::close, this))},
       conn_on_txn_commit_{parent->signal_on_before_commit_.connect(boost::bind(&Table::close, this))} {}
@@ -345,7 +345,17 @@ int Table::get_rcount(size_t* count) {
     return rc;
 }
 
-std::string Table::get_name(void) { return dbi_name_; }
+std::string Table::get_name(void) {
+    switch (dbi_) {
+        case 0:
+            return {"[FREE_DBI]"};
+        case 1:
+            return {"[MAIN_DBI]"};
+        default:
+            break;
+    }
+    return name_;
+}
 
 MDB_dbi Table::get_dbi(void) { return dbi_; }
 
@@ -373,7 +383,7 @@ int Table::put(MDB_val* key, MDB_val* data, unsigned int flag) {
 bool Table::assert_handle(bool should_throw) {
     bool retvar{handle_ != nullptr};
     if (!retvar && should_throw) {
-        throw std::runtime_error("Invalid or closed cursor for table " + (dbi_name_.empty() ? "[unnamed]" : dbi_name_));
+        throw std::runtime_error("Invalid or closed cursor");
     }
     return retvar;
 }

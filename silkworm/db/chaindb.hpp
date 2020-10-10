@@ -369,7 +369,7 @@ class Table {
 
     Transaction* parent_txn_;  // The transaction this table belongs to
     MDB_dbi dbi_;              // The underlying MDB_dbi handle for this instance
-    std::string dbi_name_;     // The name of the dbi
+    std::string name_;         // The name of the dbi
     bool dbi_dropped_{false};  // Whether or not this table has been dropped
     MDB_cursor* handle_;       // The underlying MDB_cursor for this instance
 

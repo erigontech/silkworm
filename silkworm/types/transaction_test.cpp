@@ -44,8 +44,9 @@ TEST_CASE("Transaction RLP") {
     CHECK(decoded == txn);
 }
 
-TEST_CASE("Recover sender") {
+TEST_CASE("Recover sender 1") {
     // https://etherscan.io/tx/0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
+    // Block 46147
     Transaction txn{
         0,                                                   // nonce
         50'000 * kGiga,                                      // gas_price
@@ -58,7 +59,25 @@ TEST_CASE("Recover sender") {
         intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
     };
 
-    txn.recover_sender(/*homestead=*/true, {});
+    txn.recover_sender(/*homestead=*/false, {});
+    CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
+}
+TEST_CASE("Recover sender 2") {
+    // https://etherscan.io/tx/0xe17d4d0c4596ea7d5166ad5da600a6fdc49e26e0680135a2f7300eedfd0d8314
+    // Block 46214
+    Transaction txn{
+        1,                                                   // nonce
+        50'000 * kGiga,                                      // gas_price
+        21'750,                                              // gas_limit
+        0xc9d4035f4a9226d50f79b73aafb5d874a1b6537e_address,  // to
+        31337,                                               // value
+        silkworm::from_hex("0x74796d3474406469676978"),      // data
+        28,                                                  // v
+        intx::from_string<intx::uint256>("0x1c48defe76d367bb92b4fc0628aca42a4d8037062865635d955673e57eddfbfa"),  // r
+        intx::from_string<intx::uint256>("0x65f766849f97b15f01d0877636fbed0fa4e39f8834896c0354f56ac44dcb50a6"),  // s
+    };
+
+    txn.recover_sender(/*homestead=*/false, {});
     CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
 }
 }  // namespace silkworm

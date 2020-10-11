@@ -255,27 +255,9 @@ MDB_txn* Transaction::open_transaction(Environment* parent_env, MDB_txn* parent_
 }
 
 MDB_dbi Transaction::open_dbi(const char* name, unsigned int flags) {
-    std::string namestr{};
-    if (name) {
-        namestr.assign(name);
-    }
-    return open_dbi(namestr, flags);
-}
-
-MDB_dbi Transaction::open_dbi(const std::string name, unsigned int flags) {
     assert_handle();
-
-    // Lookup value in map
-    auto iter = dbis_.find(name);
-    if (iter != dbis_.end()) {
-        return iter->second;
-    }
-
     MDB_dbi newdbi{0};
-
-    int rc{mdb_dbi_open(handle_, (name.empty() ? nullptr : name.c_str()), flags, &newdbi)};
-    err_handler(rc);
-    dbis_[name] = newdbi;
+    err_handler(mdb_dbi_open(handle_, name, flags, &newdbi));
     return newdbi;
 }
 
@@ -290,11 +272,14 @@ std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned fla
         flags |= MDB_DUPSORT;
     }
     MDB_dbi dbi{open_dbi(config.name, flags)};
-    std::string name{};
-    if (config.name) {
-        name = config.name;
+    return std::make_unique<Table>(this, dbi, config.name);
+}
+
+std::unique_ptr<Table> Transaction::open(MDB_dbi dbi) {
+    if (dbi > 1) {
+        throw std::invalid_argument("dbi can only be 0 or 1");
     }
-    return std::make_unique<Table>(this, dbi, name);
+    return std::make_unique<Table>(this, dbi, nullptr);
 }
 
 void Transaction::abort(void) {
@@ -332,8 +317,8 @@ int Transaction::commit(void) {
  * Tables
  */
 
-Table::Table(Transaction* parent, MDB_dbi dbi, std::string dbi_name)
-    : Table::Table(parent, dbi, dbi_name, open_cursor(parent, dbi)) {}
+Table::Table(Transaction* parent, MDB_dbi dbi, const char * name)
+    : Table::Table(parent, dbi, name, open_cursor(parent, dbi)) {}
 
 Table::~Table() { close(); }
 
@@ -346,10 +331,10 @@ MDB_cursor* Table::open_cursor(Transaction* parent, MDB_dbi dbi) {
     return retvar;
 }
 
-Table::Table(Transaction* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor)
+Table::Table(Transaction* parent, MDB_dbi dbi, const char * name, MDB_cursor* cursor)
     : parent_txn_{parent},
       dbi_{dbi},
-      dbi_name_{std::move(dbi_name)},
+      name_{name ? name : ""},
       handle_{cursor},
       conn_on_txn_abort_{parent->signal_on_before_abort_.connect(boost::bind(&Table::close, this))},
       conn_on_txn_commit_{parent->signal_on_before_commit_.connect(boost::bind(&Table::close, this))} {}
@@ -367,7 +352,17 @@ int Table::get_rcount(size_t* count) {
     return rc;
 }
 
-std::string Table::get_name(void) { return dbi_name_; }
+std::string Table::get_name(void) {
+    switch (dbi_) {
+        case FREE_DBI:
+            return {"[FREE_DBI]"};
+        case MAIN_DBI:
+            return {"[MAIN_DBI]"};
+        default:
+            break;
+    }
+    return name_;
+}
 
 MDB_dbi Table::get_dbi(void) { return dbi_; }
 
@@ -395,7 +390,7 @@ int Table::put(MDB_val* key, MDB_val* data, unsigned int flag) {
 bool Table::assert_handle(bool should_throw) {
     bool retvar{handle_ != nullptr};
     if (!retvar && should_throw) {
-        throw std::runtime_error("Invalid or closed cursor for table " + (dbi_name_.empty() ? "[unnamed]" : dbi_name_));
+        throw std::runtime_error("Invalid or closed cursor");
     }
     return retvar;
 }
@@ -460,7 +455,17 @@ std::optional<db::Entry> Table::seek(ByteView prefix) {
 int Table::seek(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET_RANGE); }
 int Table::seek_exact(MDB_val* key, MDB_val* data) { return get(key, data, MDB_SET); }
 int Table::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_GET_CURRENT); }
-int Table::del_current() { return mdb_cursor_del(handle_, 0); }
+int Table::del_current(bool alldupkeys) {
+    if (alldupkeys) {
+        unsigned int flags{0};
+        int rc{ get_flags(&flags) };
+        if (rc) return rc;
+        if ((flags & MDB_DUPSORT) != MDB_DUPSORT) {
+            alldupkeys = false;
+        }
+    }
+    return mdb_cursor_del(handle_, alldupkeys ? MDB_NODUPDATA : 0);
+}
 int Table::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
 int Table::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
 int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }

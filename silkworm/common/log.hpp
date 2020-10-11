@@ -1,0 +1,48 @@
+/*
+   Copyright 2020 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#ifndef SILKWORM_COMMON_LOG_H_
+#define SILKWORM_COMMON_LOG_H_
+
+#include "tee.hpp"
+
+namespace silkworm {
+
+// Log to two output streams - typically the console and a log file.
+class logger {
+public:
+   logger(std::ostream& o1, std::ostream& o2, int level=0) : stream(o1, o2), verbosity(level) {}
+   void set_verbosity(int level) { verbosity = level; }
+   int get_verbosity() { return verbosity; }
+
+   std::ostream& log(const char* file, int line){
+      std::time_t t = std::time(nullptr);
+      return stream << std::put_time(std::gmtime(&t), "%Y-%m-%d_%H:%M:%S_%Z|") \
+                    << file << ":" << line << "| ";
+   }
+private:
+   teestream stream;
+   int verbosity;
+};
+
+// log to whatever logger is in scope
+#define LOG(level_) \
+   if (logger.get_verbosity() < (level_)) {} \
+   else logger.log(__FILE__, __LINE__)
+
+}
+
+#endif

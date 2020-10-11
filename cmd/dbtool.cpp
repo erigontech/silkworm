@@ -296,24 +296,21 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
             std::unique_ptr<lmdb::Transaction> tgt_txn{ lmdb_tgt_env->begin_rw_transaction() };
 
             MDB_val key, data;
-            int rc{ 0 };
             // Loop source tables
             for (dbTableEntry table : tables) {
-                if (table.id < 2) continue;            // Skip reserved databases
-                if (!table.stat.ms_entries) continue;  // Skip empty tables
+                if (table.id < 2 || !table.stat.ms_entries) continue;  // Skip reserved databases and empty tables
 
                 // Create table on destination
                 std::cout << " Copying table " << table.name << std::endl;
-                auto src_table = src_txn->open({ table.name.c_str() });
-                auto tgt_table = tgt_txn->open({ table.name.c_str() }, MDB_CREATE);
+                auto src_table = src_txn->open({table.name.c_str()});
+                auto tgt_table = tgt_txn->open({table.name.c_str()}, MDB_CREATE);
 
                 // Loop source and write into target
-                rc = src_table->get_first(&key, &data);
-                while (rc == MDB_SUCCESS)
+                lmdb::err_handler(src_table->get_first(&key, &data));
+                do
                 {
                     lmdb::err_handler(tgt_table->put_append(&key, &data));
-                    rc = src_table->get_next(&key, &data);
-                }
+                } while (!src_table->get_next(&key, &data));
 
                 // Close source and target
                 src_table.reset();
@@ -326,7 +323,7 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
             lmdb_tgt_env.reset();
         }
 
-        std::cout << "Database compact completed ..." << std::endl;
+        std::cout << "Database compaction completed ..." << std::endl;
         // Do we have a valid compacted file on disk ?
         // replace source with target
         if (!bfs::exists(target)) {

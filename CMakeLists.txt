@@ -77,6 +77,7 @@ if(MSVC)
   add_compile_options(/wd5030) # Silence warnings about GNU attributes
   add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
   add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
+  add_compile_options(/W4)
 
   add_link_options(/ignore:4099)
   add_link_options(/STACK:10000000)

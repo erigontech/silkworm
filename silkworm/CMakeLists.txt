@@ -29,10 +29,6 @@ find_package(Microsoft.GSL CONFIG REQUIRED)
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
-if(MSVC)
-  add_compile_options(/W4)
-endif()
-
 add_library(silkworm ${SILKWORM_SRC})
 target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 

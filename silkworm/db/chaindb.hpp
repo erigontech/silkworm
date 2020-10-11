@@ -52,8 +52,11 @@ struct options {
     bool no_sub_dir = false;         // MDB_NOSUBDIR
     bool read_only = true;           // MDB_RDONLY
     unsigned max_tables = 128;       // Max open tables/dbi
-    mdb_mode_t mode = 0644;          // Filesystem mode
+    mdb_mode_t mode = 0644;          // Filesystem mode (works only for Linux)
 };
+
+static const MDB_dbi FREE_DBI = 0;  // Reserved for tracking free pages
+static const MDB_dbi MAIN_DBI = 1;  // Reserved for tracking named tables
 
 struct TableConfig {
     const char* name{nullptr};
@@ -176,9 +179,21 @@ class Transaction {
      * Val -> the MDB_dbi handle
      */
 
-    std::map<std::string, MDB_dbi> dbis_;  // Collection of opened MDB_dbi
+    /*
+    * Andrea Lanfranchi
+    * I originally created a map of opened dbi(s) to persist the binding
+    * of a table name with its handle_. This however is incorrect as the
+    * handle_ is not an ordinal position rather an opened "slot" within
+    * the transaction. LMDB already takes care to keep a list of free
+    * slots to use for opening so this additional map is totally
+    * redundant. See for reference
+    * https://github.com/torquem-ch/lmdb/blob/mdb.master/libraries/liblmdb/mdb.c#L10797-L10810
+    * Keep the following line commented for reference
+    */
+    //std::map<std::string, MDB_dbi> dbis_;  // Collection of opened MDB_dbi
+
     MDB_dbi open_dbi(const char* name, unsigned int flags = 0);
-    MDB_dbi open_dbi(const std::string name, unsigned int flags = 0);
+    //MDB_dbi open_dbi(const std::string name, unsigned int flags = 0);
 
     boost::signals2::connection conn_on_env_close_;  // Holds the connection to env signal_on_before_close_
 
@@ -191,7 +206,13 @@ class Transaction {
 
     bool is_ro(void);  // Whether this transaction is readonly
 
+    // Opens a "named" table or eventually - if name is null - main dbi with handle_ == 1
     std::unique_ptr<Table> open(const TableConfig& config, unsigned flags = 0);
+
+    // This override allows opening of dbi 0 or 1 only which are reserved
+    // dbi 0 : FREE_DBI
+    // dbi 1 : MAIN_DBI
+    std::unique_ptr<Table> open(MDB_dbi dbi);
 
     Transaction(const Transaction& src) = delete;
     Transaction& operator=(const Transaction& src) = delete;
@@ -213,7 +234,7 @@ class Transaction {
  */
 class Table {
    public:
-    explicit Table(Transaction* parent, MDB_dbi dbi, std::string dbi_name);
+    explicit Table(Transaction* parent, MDB_dbi dbi, const char * name);
     ~Table();
 
     /*
@@ -263,12 +284,14 @@ class Table {
     int seek(MDB_val* key, MDB_val* data);           // Position cursor to first key >= of given key
     int seek_exact(MDB_val* key, MDB_val* data);     // Position cursor to key == of given key
     int get_current(MDB_val* key, MDB_val* data);    // Gets data from current cursor position
-    int del_current();                               // Delete key/data pair at current cursor position
-    int get_first(MDB_val* key, MDB_val* data);      // Move cursor at first item in table
-    int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in table
-    int get_next(MDB_val* key, MDB_val* data);       // Move cursor at next item in table
-    int get_last(MDB_val* key, MDB_val* data);       // Move cursor at last item in table
-    int get_dcount(size_t* count);                   // Returns the count of duplicates at current position
+    int del_current(bool alldupkeys = false);  // Delete key/data pair at current cursor position. alldupkeys may be set
+                                               // true only for tables opened MDB_DUPSORT flag and in that case all
+                                               // records with same key are deleted too
+    int get_first(MDB_val* key, MDB_val* data);  // Move cursor at first item in table
+    int get_prev(MDB_val* key, MDB_val* data);   // Move cursor at previous item in table
+    int get_next(MDB_val* key, MDB_val* data);   // Move cursor at next item in table
+    int get_last(MDB_val* key, MDB_val* data);   // Move cursor at last item in table
+    int get_dcount(size_t* count);               // Returns the count of duplicates at current position
 
     /** @brief Stores key/data pairs into the database using cursor.
      *
@@ -346,7 +369,7 @@ class Table {
 
    private:
     static MDB_cursor* open_cursor(Transaction* parent, MDB_dbi dbi);
-    Table(Transaction* parent, MDB_dbi dbi, std::string dbi_name, MDB_cursor* cursor);
+    Table(Transaction* parent, MDB_dbi dbi, const char * name, MDB_cursor* cursor);
 
     int get(MDB_val* key, MDB_val* data,
             MDB_cursor_op operation);  // Gets data by cursor on behalf of operation
@@ -355,7 +378,7 @@ class Table {
 
     Transaction* parent_txn_;  // The transaction this table belongs to
     MDB_dbi dbi_;              // The underlying MDB_dbi handle for this instance
-    std::string dbi_name_;     // The name of the dbi
+    std::string name_;         // The name of the dbi
     bool dbi_dropped_{false};  // Whether or not this table has been dropped
     MDB_cursor* handle_;       // The underlying MDB_cursor for this instance
 

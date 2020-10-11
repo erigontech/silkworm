@@ -265,6 +265,11 @@ Transaction::Transaction(Environment* parent, unsigned int flags)
     : Transaction(parent, open_transaction(parent, nullptr, flags), flags) {}
 Transaction::~Transaction() { abort(); }
 
+size_t Transaction::get_id(void) {
+    (void)assert_handle(true);
+    return mdb_txn_id(handle_);
+}
+
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
 std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned flags) {

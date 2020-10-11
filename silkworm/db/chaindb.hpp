@@ -193,7 +193,6 @@ class Transaction {
     //std::map<std::string, MDB_dbi> dbis_;  // Collection of opened MDB_dbi
 
     MDB_dbi open_dbi(const char* name, unsigned int flags = 0);
-    //MDB_dbi open_dbi(const std::string name, unsigned int flags = 0);
 
     boost::signals2::connection conn_on_env_close_;  // Holds the connection to env signal_on_before_close_
 
@@ -203,6 +202,7 @@ class Transaction {
     ~Transaction();
 
     MDB_txn** handle() { return &handle_; }
+    size_t get_id(void);
 
     bool is_ro(void);  // Whether this transaction is readonly
 

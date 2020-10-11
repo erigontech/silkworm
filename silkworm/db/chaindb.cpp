@@ -535,7 +535,7 @@ std::shared_ptr<Environment> get_env(const char* path, options opts) {
     auto iter = s_envs.find(envkey);
     if (iter != s_envs.end()) {
         if (iter->second.flags != flags) {
-            throw lmdb::exception(MDB_INCOMPATIBLE, mdb_strerror(MDB_INCOMPATIBLE));
+            err_handler(MDB_INCOMPATIBLE);
         }
         auto item = iter->second.wp.lock();
         if (item && item->is_opened()) {

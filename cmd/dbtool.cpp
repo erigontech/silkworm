@@ -238,9 +238,11 @@ int do_tables(std::string datadir, size_t file_size, std::optional<uint64_t> map
     return retvar;
 }
 
-int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string workdir, bool keep) {
+int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string workdir, bool keep, bool copy) {
     int retvar{0};
-    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
+    std::shared_ptr<lmdb::Environment> lmdb_src_env{nullptr};  // Source lmdb environment
+    std::shared_ptr<lmdb::Environment> lmdb_tgt_env{nullptr};  // Target lmdb environment
+
     try {
         bfs::path source{bfs::path{datadir} / bfs::path{"data.mdb"}};
         size_t source_size{bfs::file_size(source)};
@@ -259,15 +261,70 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
         }
 
         // Open db and start transaction
-        lmdb::options opts{};
+        lmdb::options src_opts{};
+        src_opts.read_only = true;
         if (mapsize.has_value()) {
-            opts.map_size = *mapsize;
+            src_opts.map_size = *mapsize;
         }
-        opts.read_only = true;
-        lmdb_env = lmdb::get_env(datadir.c_str(), opts);
+        lmdb_src_env = lmdb::get_env(datadir.c_str(), src_opts);
         std::cout << " Compacting " << source.string() << "\n into " << target.string() << "\n Please be patient ..."
                   << std::endl;
-        lmdb::err_handler(mdb_env_copy2(*(lmdb_env->handle()), workdir.c_str(), MDB_CP_COMPACT));
+        if (!copy) {
+            lmdb::err_handler(mdb_env_copy2(*(lmdb_src_env->handle()), workdir.c_str(), MDB_CP_COMPACT));
+        } else {
+
+            // We traverse all populated tables and copy only their data
+            std::unique_ptr<lmdb::Transaction> src_txn{ lmdb_src_env->begin_ro_transaction() };
+            auto tables = get_tables(src_txn);
+            size_t data_size{ 0 };
+
+            // Compute size of data we need to copy
+            for (dbTableEntry table : tables) {
+                if (table.id < 2) continue;  // Dont account data from reserved databases
+                data_size += table.stat.ms_psize *
+                             (table.stat.ms_leaf_pages + table.stat.ms_branch_pages + table.stat.ms_overflow_pages);
+            }
+
+            // Round up data size to 1MB (1ull << 20)
+            data_size = ((data_size + (1ull << 20) - 1) / (1ull << 20)) * (1ull << 20);
+            lmdb::options tgt_opts{};
+            tgt_opts.read_only = false;
+            tgt_opts.map_size = data_size;
+
+            // Create target environment and open a rw transaction
+            lmdb_tgt_env = lmdb::get_env(workdir.c_str(), tgt_opts);
+            std::unique_ptr<lmdb::Transaction> tgt_txn{ lmdb_tgt_env->begin_rw_transaction() };
+
+            MDB_val key, data;
+            int rc{ 0 };
+            // Loop source tables
+            for (dbTableEntry table : tables) {
+                if (table.id < 2) continue;            // Skip reserved databases
+                if (!table.stat.ms_entries) continue;  // Skip empty tables
+
+                // Create table on destination
+                std::cout << " Copying table " << table.name << std::endl;
+                auto src_table = src_txn->open({ table.name.c_str() });
+                auto tgt_table = tgt_txn->open({ table.name.c_str() }, MDB_CREATE);
+
+                // Loop source and write into target
+                rc = src_table->get_first(&key, &data);
+                while (rc == MDB_SUCCESS)
+                {
+                    lmdb::err_handler(tgt_table->put_append(&key, &data));
+                    rc = src_table->get_next(&key, &data);
+                }
+
+                // Close source and target
+                src_table.reset();
+                tgt_table.reset();
+            }
+
+            // Commit target transaction
+            lmdb::err_handler(tgt_txn->commit());
+            tgt_txn.reset();
+            lmdb_tgt_env.reset();
+        }
 
         std::cout << "Database compact completed ..." << std::endl;
         // Do we have a valid compacted file on disk ?
@@ -278,7 +335,7 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
 
         // Close environment to release source file
         std::cout << "Closing origin db ..." << std::endl;
-        lmdb_env->close();
+        lmdb_src_env->close();
 
         // Create a bak copy of source file
         if (keep) {
@@ -306,7 +363,8 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
         retvar = -1;
     }
 
-    lmdb_env.reset();
+    lmdb_src_env.reset();
+    lmdb_tgt_env.reset();
     return retvar;
 }
 
@@ -320,7 +378,8 @@ int main(int argc, char* argv[]) {
     std::string po_work_dir{""};     // Provided work path
     std::string po_mapsize_str{""};  // Provided lmdb map size
     std::string po_table_name{""};   // Provided table name
-    bool po_keep{false};
+    bool po_keep{false};             // Keep a copy of origin db (before compaction)
+    bool po_copy{false};             // Enforce compaction by table copyying
     CLI::Range range32(1u, UINT32_MAX);
 
     app_main.add_option("--datadir", po_data_dir, "Path to directory for data.mdb", false);
@@ -338,7 +397,8 @@ int main(int argc, char* argv[]) {
     app_compact.add_option("--workdir", po_work_dir, "Working directory (must exist)", false)
         ->required()
         ->check(CLI::ExistingDirectory);
-    app_compact.add_flag("--keep", po_work_dir, "Keep old file");
+    app_compact.add_flag("--keep", po_keep, "Keep old file");
+    app_compact.add_flag("--copy", po_copy, "Compact by copy");
 
     CLI11_PARSE(app_main, argc, argv);
 
@@ -377,7 +437,7 @@ int main(int argc, char* argv[]) {
     } else if (app_drop) {
         return do_drop(po_data_dir, lmdb_mapSize, po_table_name, true);
     } else if (app_compact) {
-        return do_compact(po_data_dir, lmdb_mapSize, po_work_dir, po_keep);
+        return do_compact(po_data_dir, lmdb_mapSize, po_work_dir, po_keep, po_copy);
     } else {
         std::cerr << "No command specified" << std::endl;
     }

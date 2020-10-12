@@ -37,6 +37,8 @@ using namespace evmc::literals;
 // e.g. https://etherscan.io/address/0x000000000000000000636f6e736f6c652e6c6f67
 static const absl::flat_hash_set<evmc::address> kPhantomAccounts{
     0x000000000000000000636f6e736f6c652e6c6f67_address,
+    0x2386f26fc10000b4e16d0168e52d35cacd2c6185_address,
+    0x5a719cf3e02c17c876f6d294adb5cb7c6eb47e2f_address,
 };
 
 ABSL_FLAG(std::string, datadir, silkworm::db::default_path(), "chain DB path");

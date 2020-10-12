@@ -265,6 +265,11 @@ Transaction::Transaction(Environment* parent, unsigned int flags)
     : Transaction(parent, open_transaction(parent, nullptr, flags), flags) {}
 Transaction::~Transaction() { abort(); }
 
+size_t Transaction::get_id(void) {
+    (void)assert_handle(true);
+    return mdb_txn_id(handle_);
+}
+
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
 std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned flags) {
@@ -530,7 +535,7 @@ std::shared_ptr<Environment> get_env(const char* path, options opts) {
     auto iter = s_envs.find(envkey);
     if (iter != s_envs.end()) {
         if (iter->second.flags != flags) {
-            throw lmdb::exception(MDB_INCOMPATIBLE, mdb_strerror(MDB_INCOMPATIBLE));
+            err_handler(MDB_INCOMPATIBLE);
         }
         auto item = iter->second.wp.lock();
         if (item && item->is_opened()) {

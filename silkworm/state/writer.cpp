@@ -92,7 +92,7 @@ void Writer::write_to_db(lmdb::Transaction& txn, uint64_t block_number) {
         }
     }
 
-    auto incarnation_table{txn.open(db::table::kIncarnations)};
+    auto incarnation_table{txn.open(db::table::kIncarnationMap)};
     for (const auto& entry : incarnations_of_deleted_contracts_) {
         Bytes buf(db::kIncarnationLength, '\0');
         boost::endian::store_big_u64(&buf[0], entry.second);
@@ -104,16 +104,16 @@ void Writer::write_to_db(lmdb::Transaction& txn, uint64_t block_number) {
         code_table->put(full_view(entry.first), entry.second);
     }
 
-    auto code_hash_table{txn.open(db::table::kCodeHash)};
+    auto code_hash_table{txn.open(db::table::kPlainContractCode)};
     for (const auto& entry : storage_prefix_to_code_hash_) {
         code_hash_table->put(entry.first, full_view(entry.second));
     }
 
-    auto account_change_table{txn.open(db::table::kAccountChanges)};
+    auto account_change_table{txn.open(db::table::kPlainAccountChangeSet)};
     Bytes block_key{db::encode_timestamp(block_number)};
     account_change_table->put(block_key, account_back_changes_.encode());
 
-    auto storage_change_table{txn.open(db::table::kStorageChanges)};
+    auto storage_change_table{txn.open(db::table::kPlainStorageChangeSet)};
     storage_change_table->put(block_key, storage_back_changes_.encode());
 }
 

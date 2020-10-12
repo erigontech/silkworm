@@ -273,9 +273,7 @@ size_t Transaction::get_id(void) {
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
 std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned flags) {
-    if (config.dupsort) {
-        flags |= MDB_DUPSORT;
-    }
+    flags |= config.flags;
     MDB_dbi dbi{open_dbi(config.name, flags)};
     return std::make_unique<Table>(this, dbi, config.name);
 }

@@ -60,7 +60,8 @@ static const MDB_dbi MAIN_DBI = 1;  // Reserved for tracking named tables
 
 struct TableConfig {
     const char* name{nullptr};
-    bool dupsort{false};  // MDB_DUPSORT
+    const unsigned int flags{0};
+    //bool dupsort{false};  // MDB_DUPSORT
 };
 
 /**

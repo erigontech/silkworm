@@ -306,12 +306,14 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
                 auto tgt_table = tgt_txn->open({table.name.c_str()}, MDB_CREATE);
 
                 // Loop source and write into target
-                lmdb::err_handler(src_table->get_first(&key, &data));
-                do
-                {
+                int rc{src_table->get_first(&key, &data)};
+                while (rc == MDB_SUCCESS) {
                     lmdb::err_handler(tgt_table->put_append(&key, &data));
-                } while (!src_table->get_next(&key, &data));
-
+                    rc = src_table->get_next(&key, &data);
+                }
+                if (rc != MDB_NOTFOUND) {
+                    lmdb::err_handler(rc);
+                }
                 // Close source and target
                 src_table.reset();
                 tgt_table.reset();

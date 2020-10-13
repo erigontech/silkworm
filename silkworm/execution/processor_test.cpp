@@ -101,8 +101,8 @@ TEST_CASE("Zero gas price") {
     };
 
     IntraBlockState state{nullptr};
-    state::Reader* header_reader{nullptr};
-    ExecutionProcessor processor{block, state, header_reader};
+    DbBuffer buffer{nullptr};
+    ExecutionProcessor processor{block, state, buffer};
 
     CHECK_THROWS_MATCHES(processor.execute_transaction(txn), ValidationError, Message("missing sender"));
 
@@ -143,8 +143,8 @@ TEST_CASE("No refund on error") {
     */
 
     IntraBlockState state{nullptr};
-    state::Reader* header_reader{nullptr};
-    ExecutionProcessor processor{block, state, header_reader};
+    DbBuffer buffer{nullptr};
+    ExecutionProcessor processor{block, state, buffer};
 
     Transaction txn{
         nonce,       // nonce
@@ -232,8 +232,8 @@ TEST_CASE("Self-destruct") {
     */
 
     IntraBlockState state{nullptr};
-    state::Reader* header_reader{nullptr};
-    ExecutionProcessor processor{block, state, header_reader};
+    DbBuffer buffer{nullptr};
+    ExecutionProcessor processor{block, state, buffer};
 
     state.add_to_balance(caller_address, kEther);
     state.set_code(caller_address, caller_code);
@@ -386,16 +386,16 @@ TEST_CASE("Out of Gas during account re-creation") {
     txn.from = caller;
 
     state::Reader reader{*db_txn, block.header.number};
+    DbBuffer buffer{db_txn.get()};
     IntraBlockState state{&reader};
     state.add_to_balance(caller, kEther);
 
-    ExecutionProcessor processor{block, state, &reader};
+    ExecutionProcessor processor{block, state, buffer};
 
     Receipt receipt{processor.execute_transaction(txn)};
     // out of gas
     CHECK(!std::get<bool>(receipt.post_state_or_status));
 
-    DbBuffer buffer{};
     state.write_block(buffer);
 
     // only the caller and the miner should be changed
@@ -426,16 +426,15 @@ TEST_CASE("Empty suicide beneficiary") {
     };
     txn.from = caller;
 
+    DbBuffer buffer{nullptr};
     IntraBlockState state{nullptr};
     state.add_to_balance(caller, kEther);
 
-    state::Reader* header_reader{nullptr};
-    ExecutionProcessor processor{block, state, header_reader};
+    ExecutionProcessor processor{block, state, buffer};
 
     Receipt receipt{processor.execute_transaction(txn)};
     CHECK(std::get<bool>(receipt.post_state_or_status));
 
-    DbBuffer buffer{};
     state.write_block(buffer);
 
     // suicide_beneficiary should've been touched and deleted

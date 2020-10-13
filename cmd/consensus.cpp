@@ -24,8 +24,8 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
+#include <silkworm/state/db_buffer.hpp>
 #include <silkworm/state/intra_block_state.hpp>
-#include <silkworm/state/test_header_db.hpp>
 #include <silkworm/types/block.hpp>
 #include <string>
 #include <string_view>
@@ -230,7 +230,7 @@ IntraBlockState pre_state(const nlohmann::json& pre) {
 
 enum Status { kPassed, kFailed, kSkipped };
 
-Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockState& state, TestHeaderDB& header_db) {
+Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockState& state, DbBuffer& db) {
     bool invalid{b.contains("expectException")};
 
     Block block;
@@ -268,7 +268,7 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
         }
     }
 
-    ExecutionProcessor processor{block, state, &header_db, config};
+    ExecutionProcessor processor{block, state, db, config};
     try {
         processor.execute_block();
     } catch (const ValidationError& e) {
@@ -285,7 +285,7 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
         return kFailed;
     }
 
-    header_db.write_header(block.header);
+    db.insert_header(block.header);
 
     return kPassed;
 }
@@ -347,15 +347,15 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     Block genesis_block;
     rlp::decode(genesis_view, genesis_block);
 
-    TestHeaderDB header_db{};
-    header_db.write_header(genesis_block.header);
+    DbBuffer db{nullptr};
+    db.insert_header(genesis_block.header);
 
     std::string network{j["network"].get<std::string>()};
     const ChainConfig& config{kNetworkConfig.at(network)};
     IntraBlockState state{pre_state(j["pre"])};
 
     for (const auto& b : j["blocks"]) {
-        Status status{run_block(b, config, state, header_db)};
+        Status status{run_block(b, config, state, db)};
         if (status != kPassed) {
             return status;
         }

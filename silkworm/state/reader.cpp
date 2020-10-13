@@ -20,10 +20,6 @@
 
 namespace silkworm::state {
 
-std::optional<BlockHeader> Reader::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
-    return db::read_header(txn_, block_number, block_hash);
-}
-
 std::optional<Account> Reader::read_account(const evmc::address& address) const noexcept {
     return db::read_account(txn_, address, block_number_);
 }

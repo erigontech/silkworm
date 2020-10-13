@@ -25,6 +25,7 @@
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/change.hpp>
 #include <silkworm/types/account.hpp>
+#include <silkworm/types/block.hpp>
 
 namespace silkworm {
 
@@ -33,7 +34,11 @@ class DbBuffer {
     DbBuffer(const DbBuffer&) = delete;
     DbBuffer& operator=(const DbBuffer&) = delete;
 
-    DbBuffer() = default;
+    explicit DbBuffer(lmdb::Transaction* txn) : txn_{txn} {};
+
+    void insert_header(BlockHeader block_header);
+
+    std::optional<BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept;
 
     void update_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
 
@@ -43,18 +48,23 @@ class DbBuffer {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
                         const evmc::bytes32& initial, const evmc::bytes32& current);
 
-    void write_to_db(lmdb::Transaction& txn, uint64_t block_number);
+    void write_to_db(uint64_t block_number);
 
     const db::AccountChanges& account_back_changes() const { return account_back_changes_; }
     const db::StorageChanges& storage_back_changes() const { return storage_back_changes_; }
 
    private:
+    lmdb::Transaction* txn_{nullptr};
+
+    std::map<Bytes, BlockHeader> headers_{};
+
     db::AccountChanges account_back_changes_;
     db::StorageChanges storage_back_changes_;
+    absl::flat_hash_set<evmc::address> changed_storage_;
+
     db::AccountChanges account_forward_changes_;
     db::StorageChanges storage_forward_changes_;
-    absl::flat_hash_set<evmc::address> changed_storage_;
-    std::map<evmc::address, uint64_t> incarnations_of_deleted_contracts_;
+    std::map<evmc::address, uint64_t> incarnations_;
     std::map<evmc::bytes32, Bytes> hash_to_code_;
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
 };

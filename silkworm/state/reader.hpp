@@ -24,22 +24,13 @@
 
 namespace silkworm::state {
 
-class HeaderReader {
-   public:
-    virtual std::optional<BlockHeader> read_header(uint64_t block_number,
-                                                   const evmc::bytes32& block_hash) const noexcept = 0;
-};
-
-class Reader : public HeaderReader {
+class Reader {
    public:
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
 
     explicit Reader(lmdb::Transaction& txn, std::optional<uint64_t> block_number = {}) noexcept
         : txn_{txn}, block_number_{block_number} {}
-
-    std::optional<BlockHeader> read_header(uint64_t block_number,
-                                           const evmc::bytes32& block_hash) const noexcept override;
 
     std::optional<Account> read_account(const evmc::address& address) const noexcept;
 

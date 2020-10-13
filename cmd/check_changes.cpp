@@ -86,8 +86,9 @@ int main(int argc, char* argv[]) {
         }
 
         state::Reader reader{*txn, block_num};
+        DbBuffer buffer{txn.get()};
         IntraBlockState state{&reader};
-        ExecutionProcessor processor{bh->block, state, &reader};
+        ExecutionProcessor processor{bh->block, state, buffer};
 
         std::vector<Receipt> receipts;
         try {
@@ -113,7 +114,6 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        DbBuffer buffer{};
         state.write_block(buffer);
 
         std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};

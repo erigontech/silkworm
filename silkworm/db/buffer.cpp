@@ -47,14 +47,10 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         return;
     }
 
-    if (current) {
-        bool omit_code_hash{false};
-        account_forward_changes_[address] = current->encode_for_storage(omit_code_hash);
-    } else {
-        account_forward_changes_[address] = {};
-        if (initial->incarnation) {
-            incarnations_[address] = initial->incarnation;
-        }
+    accounts_[address] = current;
+
+    if (account_deleted && initial->incarnation) {
+        incarnations_[address] = initial->incarnation;
     }
 }
 
@@ -72,7 +68,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     changed_storage_.insert(address);
     Bytes full_key{storage_key(address, incarnation, key)};
     storage_back_changes_[full_key] = zeroless_view(initial);
-    storage_forward_changes_[full_key] = zeroless_view(current);
+    storage_[storage_prefix(address, incarnation)][key] = current;
 }
 
 void Buffer::write_to_db(uint64_t block_number) {
@@ -81,19 +77,22 @@ void Buffer::write_to_db(uint64_t block_number) {
     }
 
     auto state_table{txn_->open(table::kPlainState)};
-    for (const auto& entry : account_forward_changes_) {
+    for (const auto& entry : accounts_) {
         state_table->del(full_view(entry.first));
-        if (!entry.second.empty()) {
-            state_table->put(full_view(entry.first), entry.second);
+        if (entry.second) {
+            bool omit_code_hash{false};
+            Bytes encoded{entry.second->encode_for_storage(omit_code_hash)};
+            state_table->put(full_view(entry.first), encoded);
         }
     }
-    for (const auto& entry : storage_forward_changes_) {
-        Bytes key{entry.first.substr(0, kStoragePrefixLength)};
-        Bytes x{entry.first.substr(kStoragePrefixLength)};
-        state_table->del(key, x);
-        if (!entry.second.empty()) {
-            x += entry.second;
-            state_table->put(key, x);
+    for (const auto& contract : storage_) {
+        for (const auto& x : contract.second) {
+            state_table->del(contract.first, full_view(x.first));
+            if (!is_zero(x.second)) {
+                Bytes data{full_view(x.first)};
+                data.append(zeroless_view(x.second));
+                state_table->put(contract.first, data);
+            }
         }
     }
 
@@ -132,20 +131,19 @@ void Buffer::insert_header(BlockHeader block_header) {
 
 std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
     Bytes key{block_key(block_number, block_hash.bytes)};
-    auto it{headers_.find(key)};
-    if (it != headers_.end()) {
+    if (auto it{headers_.find(key)}; it != headers_.end()) {
         return it->second;
     }
-
     if (!txn_) {
         return std::nullopt;
     }
-
     return db::read_header(*txn_, block_number, block_hash);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {
-    // TODO(Andrew) try in-memory first
+    if (auto it{accounts_.find(address)}; it != accounts_.end()) {
+        return it->second;
+    }
     if (!txn_) {
         return std::nullopt;
     }
@@ -153,7 +151,9 @@ std::optional<Account> Buffer::read_account(const evmc::address& address) const 
 }
 
 Bytes Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
-    // TODO(Andrew) try in-memory first
+    if (auto it{hash_to_code_.find(code_hash)}; it != hash_to_code_.end()) {
+        return it->second;
+    }
     if (!txn_) {
         return {};
     }
@@ -167,7 +167,11 @@ Bytes Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
 
 evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarnation,
                                    const evmc::bytes32& key) const noexcept {
-    // TODO(Andrew) try in-memory first
+    if (auto it{storage_.find(storage_prefix(address, incarnation))}; it != storage_.end()) {
+        if (auto it2{it->second.find(key)}; it2 != it->second.end()) {
+            return it2->second;
+        }
+    }
     if (!txn_) {
         return {};
     }
@@ -175,7 +179,9 @@ evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarn
 }
 
 uint64_t Buffer::previous_incarnation(const evmc::address& address) const noexcept {
-    // TODO(Andrew) try in-memory first
+    if (auto it{incarnations_.find(address)}; it != incarnations_.end()) {
+        return it->second;
+    }
     if (!txn_) {
         return 0;
     }

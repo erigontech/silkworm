@@ -75,8 +75,8 @@ class Buffer {
     StorageChanges storage_back_changes_;
     absl::flat_hash_set<evmc::address> changed_storage_;
 
-    AccountChanges account_forward_changes_;
-    StorageChanges storage_forward_changes_;
+    std::map<evmc::address, std::optional<Account>> accounts_;
+    std::map<Bytes, std::map<evmc::bytes32, evmc::bytes32>> storage_;
     std::map<evmc::address, uint64_t> incarnations_;
     std::map<evmc::bytes32, Bytes> hash_to_code_;
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;

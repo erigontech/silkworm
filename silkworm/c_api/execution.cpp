@@ -53,9 +53,9 @@ SilkwormStatusCode silkworm_execute_block(MDB_txn* mdb_txn, uint64_t chain_id, u
 
         std::vector<Receipt> receipts{processor.execute_block()};
 
-        state::Writer writer{};
-        state.write_block(writer);
-        writer.write_to_db(txn, block_num);
+        DbBuffer buffer{};
+        state.write_block(buffer);
+        buffer.write_to_db(txn, block_num);
     } catch (const lmdb::exception& e) {
         if (lmdb_error_code) {
             *lmdb_error_code = e.err();

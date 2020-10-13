@@ -395,11 +395,11 @@ TEST_CASE("Out of Gas during account re-creation") {
     // out of gas
     CHECK(!std::get<bool>(receipt.post_state_or_status));
 
-    state::Writer writer{};
-    state.write_block(writer);
+    DbBuffer buffer{};
+    state.write_block(buffer);
 
     // only the caller and the miner should be changed
-    CHECK(writer.account_back_changes().size() == 2);
+    CHECK(buffer.account_back_changes().size() == 2);
 }
 
 TEST_CASE("Empty suicide beneficiary") {
@@ -435,10 +435,11 @@ TEST_CASE("Empty suicide beneficiary") {
     Receipt receipt{processor.execute_transaction(txn)};
     CHECK(std::get<bool>(receipt.post_state_or_status));
 
-    state::Writer writer{};
-    state.write_block(writer);
+    DbBuffer buffer{};
+    state.write_block(buffer);
 
     // suicide_beneficiary should've been touched and deleted
-    CHECK(writer.account_back_changes().count(suicide_beneficiary) == 1);
+    CHECK(buffer.account_back_changes().count(suicide_beneficiary) == 1);
 }
+
 }  // namespace silkworm

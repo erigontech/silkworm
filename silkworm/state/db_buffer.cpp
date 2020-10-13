@@ -14,17 +14,17 @@
    limitations under the License.
 */
 
-#include "writer.hpp"
+#include "db_buffer.hpp"
 
 #include <boost/endian/conversion.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 
-namespace silkworm::state {
+namespace silkworm {
 
-void Writer::update_account(const evmc::address& address, std::optional<Account> initial,
-                            std::optional<Account> current) {
+void DbBuffer::update_account(const evmc::address& address, std::optional<Account> initial,
+                              std::optional<Account> current) {
     bool equal{current == initial};
     bool account_deleted{!current};
 
@@ -56,14 +56,14 @@ void Writer::update_account(const evmc::address& address, std::optional<Account>
     }
 }
 
-void Writer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
-                                 ByteView code) {
+void DbBuffer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
+                                   ByteView code) {
     hash_to_code_[code_hash] = code;
     storage_prefix_to_code_hash_[db::storage_prefix(address, incarnation)] = code_hash;
 }
 
-void Writer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
-                            const evmc::bytes32& initial, const evmc::bytes32& current) {
+void DbBuffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
+                              const evmc::bytes32& initial, const evmc::bytes32& current) {
     if (current == initial) {
         return;
     }
@@ -73,7 +73,7 @@ void Writer::update_storage(const evmc::address& address, uint64_t incarnation, 
     storage_forward_changes_[storage_key] = zeroless_view(current);
 }
 
-void Writer::write_to_db(lmdb::Transaction& txn, uint64_t block_number) {
+void DbBuffer::write_to_db(lmdb::Transaction& txn, uint64_t block_number) {
     auto state_table{txn.open(db::table::kPlainState)};
     for (const auto& entry : account_forward_changes_) {
         state_table->del(full_view(entry.first));
@@ -116,4 +116,4 @@ void Writer::write_to_db(lmdb::Transaction& txn, uint64_t block_number) {
     storage_change_table->put(block_key, storage_back_changes_.encode());
 }
 
-}  // namespace silkworm::state
+}  // namespace silkworm

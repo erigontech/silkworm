@@ -113,20 +113,20 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        state::Writer writer;
-        state.write_block(writer);
+        DbBuffer buffer{};
+        state.write_block(buffer);
 
         std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
-        if (writer.account_back_changes() != db_account_changes) {
+        if (buffer.account_back_changes() != db_account_changes) {
             bool mismatch{false};
             if (db_account_changes) {
                 for (const auto& e : *db_account_changes) {
-                    if (writer.account_back_changes().count(e.first) == 0) {
+                    if (buffer.account_back_changes().count(e.first) == 0) {
                         if (!kPhantomAccounts.contains(e.first)) {
                             std::cerr << to_hex(e.first) << " is missing\n";
                             mismatch = true;
                         }
-                    } else if (Bytes val{writer.account_back_changes().at(e.first)}; val != e.second) {
+                    } else if (Bytes val{buffer.account_back_changes().at(e.first)}; val != e.second) {
                         std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
                         std::cerr << to_hex(val) << "\n";
                         std::cerr << "vs DB\n";
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
                         mismatch = true;
                     }
                 }
-                for (const auto& e : writer.account_back_changes()) {
+                for (const auto& e : buffer.account_back_changes()) {
                     if (db_account_changes->count(e.first) == 0) {
                         std::cerr << to_hex(e.first) << " is not in DB\n";
                         mismatch = true;
@@ -151,8 +151,8 @@ int main(int argc, char* argv[]) {
 
         Bytes db_storage_changes{db::read_storage_changes(*txn, block_num)};
         Bytes calculated_storage_changes{};
-        if (!writer.storage_back_changes().empty()) {
-            calculated_storage_changes = writer.storage_back_changes().encode();
+        if (!buffer.storage_back_changes().empty()) {
+            calculated_storage_changes = buffer.storage_back_changes().encode();
         }
         if (calculated_storage_changes != db_storage_changes) {
             std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";

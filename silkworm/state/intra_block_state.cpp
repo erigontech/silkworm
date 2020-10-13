@@ -273,7 +273,7 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     journal_.push_back(std::make_unique<state::StorageChangeDelta>(address, key, prev));
 }
 
-void IntraBlockState::write_block(state::Writer& writer) {
+void IntraBlockState::write_block(DbBuffer& db) {
     for (const auto& x : storage_) {
         const evmc::address& address{x.first};
         const state::Storage& storage{x.second};
@@ -291,16 +291,16 @@ void IntraBlockState::write_block(state::Writer& writer) {
             const evmc::bytes32& key{entry.first};
             const state::StorageValue& val{entry.second};
             uint64_t incarnation{obj.current->incarnation};
-            writer.update_storage(address, incarnation, key, val.initial, val.current);
+            db.update_storage(address, incarnation, key, val.initial, val.current);
         }
     }
 
     for (const auto& entry : objects_) {
         const evmc::address& address{entry.first};
         const state::Object& obj{entry.second};
-        writer.update_account(address, obj.initial, obj.current);
+        db.update_account(address, obj.initial, obj.current);
         if (obj.current && obj.code && (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
-            writer.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
+            db.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
         }
     }
 }

@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_WRITER_H_
-#define SILKWORM_STATE_WRITER_H_
+#ifndef SILKWORM_STATE_DB_BUFFER_H_
+#define SILKWORM_STATE_DB_BUFFER_H_
 
 #include <absl/container/flat_hash_set.h>
 
@@ -26,13 +26,14 @@
 #include <silkworm/db/change.hpp>
 #include <silkworm/types/account.hpp>
 
-namespace silkworm::state {
-class Writer {
-   public:
-    Writer(const Writer&) = delete;
-    Writer& operator=(const Writer&) = delete;
+namespace silkworm {
 
-    Writer() = default;
+class DbBuffer {
+   public:
+    DbBuffer(const DbBuffer&) = delete;
+    DbBuffer& operator=(const DbBuffer&) = delete;
+
+    DbBuffer() = default;
 
     void update_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
 
@@ -57,6 +58,7 @@ class Writer {
     std::map<evmc::bytes32, Bytes> hash_to_code_;
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
 };
-}  // namespace silkworm::state
 
-#endif  // SILKWORM_STATE_WRITER_H_
+}  // namespace silkworm
+
+#endif  // SILKWORM_STATE_DB_BUFFER_H_

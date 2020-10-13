@@ -137,11 +137,50 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
         return it->second;
     }
 
-    if (txn_) {
-        return db::read_header(*txn_, block_number, block_hash);
-    } else {
+    if (!txn_) {
         return std::nullopt;
     }
+
+    return db::read_header(*txn_, block_number, block_hash);
+}
+
+std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {
+    // TODO(Andrew) try in-memory first
+    if (!txn_) {
+        return std::nullopt;
+    }
+    return db::read_account(*txn_, address, historical_block_);
+}
+
+Bytes Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
+    // TODO(Andrew) try in-memory first
+    if (!txn_) {
+        return {};
+    }
+    std::optional<Bytes> code{db::read_code(*txn_, code_hash)};
+    if (code) {
+        return *code;
+    } else {
+        return {};
+    }
+}
+
+evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarnation,
+                                   const evmc::bytes32& key) const noexcept {
+    // TODO(Andrew) try in-memory first
+    if (!txn_) {
+        return {};
+    }
+    return db::read_storage(*txn_, address, incarnation, key, historical_block_);
+}
+
+uint64_t Buffer::previous_incarnation(const evmc::address& address) const noexcept {
+    // TODO(Andrew) try in-memory first
+    if (!txn_) {
+        return 0;
+    }
+    std::optional<uint64_t> incarnation{db::read_previous_incarnation(*txn_, address, historical_block_)};
+    return incarnation ? *incarnation : 0;
 }
 
 }  // namespace silkworm::db

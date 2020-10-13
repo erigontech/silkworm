@@ -34,11 +34,22 @@ class Buffer {
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
-    explicit Buffer(lmdb::Transaction* txn) : txn_{txn} {};
+    explicit Buffer(lmdb::Transaction* txn, std::optional<uint64_t> historical_block = std::nullopt)
+        : txn_{txn}, historical_block_{historical_block} {}
 
     void insert_header(BlockHeader block_header);
 
     std::optional<BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept;
+
+    std::optional<Account> read_account(const evmc::address& address) const noexcept;
+
+    Bytes read_code(const evmc::bytes32& code_hash) const noexcept;
+
+    evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
+                               const evmc::bytes32& key) const noexcept;
+
+    // Previous non-zero incarnation of an account; 0 if none exists
+    uint64_t previous_incarnation(const evmc::address& address) const noexcept;
 
     void update_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
 
@@ -55,6 +66,8 @@ class Buffer {
 
    private:
     lmdb::Transaction* txn_{nullptr};
+
+    std::optional<uint64_t> historical_block_{};
 
     std::map<Bytes, BlockHeader> headers_{};
 

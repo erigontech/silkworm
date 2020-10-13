@@ -47,14 +47,13 @@ SilkwormStatusCode silkworm_execute_block(MDB_txn* mdb_txn, uint64_t chain_id, u
             bh->block.transactions[i].from = senders[i];
         }
 
-        state::Reader reader{txn};
         db::Buffer buffer{&txn};
-        IntraBlockState state{&reader};
-        ExecutionProcessor processor{bh->block, state, buffer};
+        IntraBlockState state{buffer};
+        ExecutionProcessor processor{bh->block, state};
 
         std::vector<Receipt> receipts{processor.execute_block()};
 
-        state.write_block(buffer);
+        state.write_block();
         buffer.write_to_db(block_num);
     } catch (const lmdb::exception& e) {
         if (lmdb_error_code) {

@@ -100,9 +100,9 @@ TEST_CASE("Zero gas price") {
                  "815060009055506001016108fd565b5090565b50505b505056"),
     };
 
-    IntraBlockState state{nullptr};
-    db::Buffer buffer{nullptr};
-    ExecutionProcessor processor{block, state, buffer};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
+    ExecutionProcessor processor{block, state};
 
     CHECK_THROWS_MATCHES(processor.execute_transaction(txn), ValidationError, Message("missing sender"));
 
@@ -142,9 +142,9 @@ TEST_CASE("No refund on error") {
     23     BALANCE
     */
 
-    IntraBlockState state{nullptr};
-    db::Buffer buffer{nullptr};
-    ExecutionProcessor processor{block, state, buffer};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
+    ExecutionProcessor processor{block, state};
 
     Transaction txn{
         nonce,       // nonce
@@ -231,9 +231,9 @@ TEST_CASE("Self-destruct") {
     38     CALL
     */
 
-    IntraBlockState state{nullptr};
-    db::Buffer buffer{nullptr};
-    ExecutionProcessor processor{block, state, buffer};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
+    ExecutionProcessor processor{block, state};
 
     state.add_to_balance(caller_address, kEther);
     state.set_code(caller_address, caller_code);
@@ -385,18 +385,17 @@ TEST_CASE("Out of Gas during account re-creation") {
     };
     txn.from = caller;
 
-    state::Reader reader{*db_txn, block.header.number};
-    db::Buffer buffer{db_txn.get()};
-    IntraBlockState state{&reader};
+    db::Buffer buffer{db_txn.get(), block.header.number};
+    IntraBlockState state{buffer};
     state.add_to_balance(caller, kEther);
 
-    ExecutionProcessor processor{block, state, buffer};
+    ExecutionProcessor processor{block, state};
 
     Receipt receipt{processor.execute_transaction(txn)};
     // out of gas
     CHECK(!std::get<bool>(receipt.post_state_or_status));
 
-    state.write_block(buffer);
+    state.write_block();
 
     // only the caller and the miner should be changed
     CHECK(buffer.account_back_changes().size() == 2);
@@ -426,19 +425,19 @@ TEST_CASE("Empty suicide beneficiary") {
     };
     txn.from = caller;
 
-    db::Buffer buffer{nullptr};
-    IntraBlockState state{nullptr};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
     state.add_to_balance(caller, kEther);
 
-    ExecutionProcessor processor{block, state, buffer};
+    ExecutionProcessor processor{block, state};
 
     Receipt receipt{processor.execute_transaction(txn)};
     CHECK(std::get<bool>(receipt.post_state_or_status));
 
-    state.write_block(buffer);
+    state.write_block();
 
     // suicide_beneficiary should've been touched and deleted
-    CHECK(buffer.account_back_changes().count(suicide_beneficiary) == 1);
+    CHECK(db.account_back_changes().count(suicide_beneficiary) == 1);
 }
 
 }  // namespace silkworm

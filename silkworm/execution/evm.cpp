@@ -32,8 +32,8 @@
 
 namespace silkworm {
 
-EVM::EVM(const Block& block, IntraBlockState& state, db::Buffer& db, const ChainConfig& config) noexcept
-    : block_{block}, state_{state}, db_{db}, config_{config} {}
+EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
+    : block_{block}, state_{state}, config_{config} {}
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     txn_ = &txn;
@@ -442,7 +442,7 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
     }
 
     for (uint64_t i{old_size}; i < new_size; ++i) {
-        std::optional<BlockHeader> header{evm_.db_.read_header(base_number - i, hashes[i - 1])};
+        std::optional<BlockHeader> header{evm_.state().db().read_header(base_number - i, hashes[i - 1])};
         if (!header) {
             break;
         }

@@ -26,7 +26,6 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/state/delta.hpp>
 #include <silkworm/state/object.hpp>
-#include <silkworm/state/reader.hpp>
 #include <silkworm/types/log.hpp>
 #include <vector>
 
@@ -49,10 +48,12 @@ class IntraBlockState {
         uint64_t refund_{0};
     };
 
-    IntraBlockState(IntraBlockState&& other) = default;
-    IntraBlockState& operator=(IntraBlockState&& other) = default;
+    IntraBlockState(const IntraBlockState&) = delete;
+    IntraBlockState& operator=(const IntraBlockState&) = delete;
 
-    explicit IntraBlockState(state::Reader* state_reader) noexcept : db_{state_reader} {}
+    explicit IntraBlockState(db::Buffer& db) noexcept : db_{db} {}
+
+    db::Buffer& db() { return db_; }
 
     bool exists(const evmc::address& address) const noexcept;
 
@@ -86,7 +87,7 @@ class IntraBlockState {
 
     void set_storage(const evmc::address& address, const evmc::bytes32& key, const evmc::bytes32& value) noexcept;
 
-    void write_block(db::Buffer& db);
+    void write_block();
 
     Snapshot take_snapshot() const noexcept;
     void revert_to_snapshot(const Snapshot& snapshot) noexcept;
@@ -120,7 +121,7 @@ class IntraBlockState {
 
     void touch(const evmc::address& address) noexcept;
 
-    state::Reader* db_{nullptr};
+    db::Buffer& db_;
 
     mutable absl::flat_hash_map<evmc::address, state::Object> objects_;
     mutable absl::flat_hash_map<evmc::address, state::Storage> storage_;

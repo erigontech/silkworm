@@ -205,9 +205,7 @@ static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
 };
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
-IntraBlockState pre_state(const nlohmann::json& pre) {
-    IntraBlockState state{nullptr};
-
+void init_pre_state(const nlohmann::json& pre, IntraBlockState& state) {
     for (const auto& entry : pre.items()) {
         evmc::address address{to_address(from_hex(entry.key()))};
         const nlohmann::json& account{entry.value()};
@@ -224,12 +222,11 @@ IntraBlockState pre_state(const nlohmann::json& pre) {
     }
 
     state.finalize_transaction();
-    return state;
 }
 
 enum Status { kPassed, kFailed, kSkipped };
 
-Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockState& state, db::Buffer& db) {
+Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockState& state) {
     bool invalid{b.contains("expectException")};
 
     Block block;
@@ -267,7 +264,7 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
         }
     }
 
-    ExecutionProcessor processor{block, state, db, config};
+    ExecutionProcessor processor{block, state, config};
     try {
         processor.execute_block();
     } catch (const ValidationError& e) {
@@ -284,7 +281,7 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
         return kFailed;
     }
 
-    db.insert_header(block.header);
+    state.db().insert_header(block.header);
 
     return kPassed;
 }
@@ -351,10 +348,11 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 
     std::string network{j["network"].get<std::string>()};
     const ChainConfig& config{kNetworkConfig.at(network)};
-    IntraBlockState state{pre_state(j["pre"])};
+    IntraBlockState state{db};
+    init_pre_state(j["pre"], state);
 
     for (const auto& b : j["blocks"]) {
-        Status status{run_block(b, config, state, db)};
+        Status status{run_block(b, config, state)};
         if (status != kPassed) {
             return status;
         }

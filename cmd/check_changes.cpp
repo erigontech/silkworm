@@ -27,7 +27,6 @@
 #include <silkworm/db/util.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/state/intra_block_state.hpp>
-#include <silkworm/state/reader.hpp>
 #include <silkworm/trie/vector_root.hpp>
 #include <string>
 
@@ -85,10 +84,9 @@ int main(int argc, char* argv[]) {
             bh->block.transactions[i].from = senders[i];
         }
 
-        state::Reader reader{*txn, block_num};
-        db::Buffer buffer{txn.get()};
-        IntraBlockState state{&reader};
-        ExecutionProcessor processor{bh->block, state, buffer};
+        db::Buffer buffer{txn.get(), block_num};
+        IntraBlockState state{buffer};
+        ExecutionProcessor processor{bh->block, state};
 
         std::vector<Receipt> receipts;
         try {
@@ -114,7 +112,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        state.write_block(buffer);
+        state.write_block();
 
         std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
         if (buffer.account_back_changes() != db_account_changes) {

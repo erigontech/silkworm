@@ -31,9 +31,9 @@ TEST_CASE("Value transfer") {
     evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};
     intx::uint256 value{10'200'000'000'000'000};
 
-    IntraBlockState state{nullptr};
-    db::Buffer buffer{nullptr};
-    EVM evm{block, state, buffer};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
+    EVM evm{block, state};
 
     CHECK(state.get_balance(from) == 0);
     CHECK(state.get_balance(to) == 0);
@@ -83,9 +83,9 @@ TEST_CASE("Smart contract with storage") {
     // 25     PUSH1  => 00
     // 27     SSTORE         // storage[0] = input[0]
 
-    IntraBlockState state{nullptr};
-    db::Buffer buffer{nullptr};
-    EVM evm{block, state, buffer};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
+    EVM evm{block, state};
 
     Transaction txn{};
     txn.from = caller;
@@ -150,11 +150,11 @@ TEST_CASE("Maximum call depth") {
     35     JUMPDEST
     */
 
-    IntraBlockState state{nullptr};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
     state.set_code(contract, code);
 
-    db::Buffer buffer{nullptr};
-    EVM evm{block, state, buffer};
+    EVM evm{block, state};
 
     Transaction txn{};
     txn.from = caller;
@@ -202,12 +202,12 @@ TEST_CASE("DELEGATECALL") {
     10     DELEGATECALL
     */
 
-    IntraBlockState state{nullptr};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
     state.set_code(caller_address, caller_code);
     state.set_code(callee_address, callee_code);
 
-    db::Buffer buffer{nullptr};
-    EVM evm{block, state, buffer};
+    EVM evm{block, state};
 
     Transaction txn{};
     txn.from = caller_address;
@@ -265,9 +265,9 @@ TEST_CASE("CREATE should only return on failure") {
     51     RETURN
     */
 
-    IntraBlockState state{nullptr};
-    db::Buffer buffer{nullptr};
-    EVM evm{block, state, buffer};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
+    EVM evm{block, state};
 
     Transaction txn{};
     txn.from = caller;
@@ -294,11 +294,11 @@ TEST_CASE("Contract overwrite") {
 
     evmc::address contract_address{create_address(caller, /*nonce=*/0)};
 
-    IntraBlockState state{nullptr};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
     state.set_code(contract_address, old_code);
 
-    db::Buffer buffer{nullptr};
-    EVM evm{block, state, buffer};
+    EVM evm{block, state};
 
     Transaction txn{};
     txn.from = caller;

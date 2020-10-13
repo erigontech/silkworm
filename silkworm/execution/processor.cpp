@@ -48,9 +48,8 @@ intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbu
     return gas;
 }
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, db::Buffer& db,
-                                       const ChainConfig& config)
-    : evm_{block, state, db, config} {}
+ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config)
+    : evm_{block, state, config} {}
 
 /*
 static void print_gas_used(const Transaction& txn, uint64_t gas_used) {

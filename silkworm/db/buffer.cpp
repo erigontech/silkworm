@@ -14,18 +14,19 @@
    limitations under the License.
 */
 
-#include "db_buffer.hpp"
+#include "buffer.hpp"
 
 #include <boost/endian/conversion.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
 
-namespace silkworm {
+#include "access_layer.hpp"
+#include "tables.hpp"
+#include "util.hpp"
 
-void DbBuffer::update_account(const evmc::address& address, std::optional<Account> initial,
-                              std::optional<Account> current) {
+namespace silkworm::db {
+
+void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
+                            std::optional<Account> current) {
     bool equal{current == initial};
     bool account_deleted{!current};
 
@@ -57,29 +58,29 @@ void DbBuffer::update_account(const evmc::address& address, std::optional<Accoun
     }
 }
 
-void DbBuffer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
-                                   ByteView code) {
+void Buffer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
+                                 ByteView code) {
     hash_to_code_[code_hash] = code;
-    storage_prefix_to_code_hash_[db::storage_prefix(address, incarnation)] = code_hash;
+    storage_prefix_to_code_hash_[storage_prefix(address, incarnation)] = code_hash;
 }
 
-void DbBuffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
-                              const evmc::bytes32& initial, const evmc::bytes32& current) {
+void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
+                            const evmc::bytes32& initial, const evmc::bytes32& current) {
     if (current == initial) {
         return;
     }
     changed_storage_.insert(address);
-    Bytes storage_key{db::storage_key(address, incarnation, key)};
-    storage_back_changes_[storage_key] = zeroless_view(initial);
-    storage_forward_changes_[storage_key] = zeroless_view(current);
+    Bytes full_key{storage_key(address, incarnation, key)};
+    storage_back_changes_[full_key] = zeroless_view(initial);
+    storage_forward_changes_[full_key] = zeroless_view(current);
 }
 
-void DbBuffer::write_to_db(uint64_t block_number) {
+void Buffer::write_to_db(uint64_t block_number) {
     if (!txn_) {
         return;
     }
 
-    auto state_table{txn_->open(db::table::kPlainState)};
+    auto state_table{txn_->open(table::kPlainState)};
     for (const auto& entry : account_forward_changes_) {
         state_table->del(full_view(entry.first));
         if (!entry.second.empty()) {
@@ -87,8 +88,8 @@ void DbBuffer::write_to_db(uint64_t block_number) {
         }
     }
     for (const auto& entry : storage_forward_changes_) {
-        Bytes key{entry.first.substr(0, db::kStoragePrefixLength)};
-        Bytes x{entry.first.substr(db::kStoragePrefixLength)};
+        Bytes key{entry.first.substr(0, kStoragePrefixLength)};
+        Bytes x{entry.first.substr(kStoragePrefixLength)};
         state_table->del(key, x);
         if (!entry.second.empty()) {
             x += entry.second;
@@ -96,42 +97,41 @@ void DbBuffer::write_to_db(uint64_t block_number) {
         }
     }
 
-    auto incarnation_table{txn_->open(db::table::kIncarnations)};
+    auto incarnation_table{txn_->open(table::kIncarnations)};
     for (const auto& entry : incarnations_) {
-        Bytes buf(db::kIncarnationLength, '\0');
+        Bytes buf(kIncarnationLength, '\0');
         boost::endian::store_big_u64(&buf[0], entry.second);
         incarnation_table->put(full_view(entry.first), buf);
     }
 
-    auto code_table{txn_->open(db::table::kCode)};
+    auto code_table{txn_->open(table::kCode)};
     for (const auto& entry : hash_to_code_) {
         code_table->put(full_view(entry.first), entry.second);
     }
 
-    auto code_hash_table{txn_->open(db::table::kCodeHash)};
+    auto code_hash_table{txn_->open(table::kCodeHash)};
     for (const auto& entry : storage_prefix_to_code_hash_) {
         code_hash_table->put(entry.first, full_view(entry.second));
     }
 
-    auto account_change_table{txn_->open(db::table::kAccountChanges)};
-    Bytes block_key{db::encode_timestamp(block_number)};
+    auto account_change_table{txn_->open(table::kAccountChanges)};
+    Bytes block_key{encode_timestamp(block_number)};
     account_change_table->put(block_key, account_back_changes_.encode());
 
-    auto storage_change_table{txn_->open(db::table::kStorageChanges)};
+    auto storage_change_table{txn_->open(table::kStorageChanges)};
     storage_change_table->put(block_key, storage_back_changes_.encode());
 }
 
-void DbBuffer::insert_header(BlockHeader block_header) {
+void Buffer::insert_header(BlockHeader block_header) {
     Bytes rlp{};
     rlp::encode(rlp, block_header);
     ethash::hash256 hash{keccak256(rlp)};
-    Bytes key{db::block_key(block_header.number, hash.bytes)};
+    Bytes key{block_key(block_header.number, hash.bytes)};
     headers_[key] = std::move(block_header);
 }
 
-std::optional<BlockHeader> DbBuffer::read_header(uint64_t block_number,
-                                                 const evmc::bytes32& block_hash) const noexcept {
-    Bytes key{db::block_key(block_number, block_hash.bytes)};
+std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+    Bytes key{block_key(block_number, block_hash.bytes)};
     auto it{headers_.find(key)};
     if (it != headers_.end()) {
         return it->second;
@@ -144,4 +144,4 @@ std::optional<BlockHeader> DbBuffer::read_header(uint64_t block_number,
     }
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::db

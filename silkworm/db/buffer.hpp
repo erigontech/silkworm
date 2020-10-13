@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_DB_BUFFER_H_
-#define SILKWORM_STATE_DB_BUFFER_H_
+#ifndef SILKWORM_DB_BUFFER_H_
+#define SILKWORM_DB_BUFFER_H_
 
 #include <absl/container/flat_hash_set.h>
 
@@ -27,14 +27,14 @@
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
-namespace silkworm {
+namespace silkworm::db {
 
-class DbBuffer {
+class Buffer {
    public:
-    DbBuffer(const DbBuffer&) = delete;
-    DbBuffer& operator=(const DbBuffer&) = delete;
+    Buffer(const Buffer&) = delete;
+    Buffer& operator=(const Buffer&) = delete;
 
-    explicit DbBuffer(lmdb::Transaction* txn) : txn_{txn} {};
+    explicit Buffer(lmdb::Transaction* txn) : txn_{txn} {};
 
     void insert_header(BlockHeader block_header);
 
@@ -50,25 +50,25 @@ class DbBuffer {
 
     void write_to_db(uint64_t block_number);
 
-    const db::AccountChanges& account_back_changes() const { return account_back_changes_; }
-    const db::StorageChanges& storage_back_changes() const { return storage_back_changes_; }
+    const AccountChanges& account_back_changes() const { return account_back_changes_; }
+    const StorageChanges& storage_back_changes() const { return storage_back_changes_; }
 
    private:
     lmdb::Transaction* txn_{nullptr};
 
     std::map<Bytes, BlockHeader> headers_{};
 
-    db::AccountChanges account_back_changes_;
-    db::StorageChanges storage_back_changes_;
+    AccountChanges account_back_changes_;
+    StorageChanges storage_back_changes_;
     absl::flat_hash_set<evmc::address> changed_storage_;
 
-    db::AccountChanges account_forward_changes_;
-    db::StorageChanges storage_forward_changes_;
+    AccountChanges account_forward_changes_;
+    StorageChanges storage_forward_changes_;
     std::map<evmc::address, uint64_t> incarnations_;
     std::map<evmc::bytes32, Bytes> hash_to_code_;
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::db
 
-#endif  // SILKWORM_STATE_DB_BUFFER_H_
+#endif  // SILKWORM_DB_BUFFER_H_

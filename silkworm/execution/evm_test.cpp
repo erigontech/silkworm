@@ -32,7 +32,7 @@ TEST_CASE("Value transfer") {
     intx::uint256 value{10'200'000'000'000'000};
 
     IntraBlockState state{nullptr};
-    DbBuffer buffer{nullptr};
+    db::Buffer buffer{nullptr};
     EVM evm{block, state, buffer};
 
     CHECK(state.get_balance(from) == 0);
@@ -84,7 +84,7 @@ TEST_CASE("Smart contract with storage") {
     // 27     SSTORE         // storage[0] = input[0]
 
     IntraBlockState state{nullptr};
-    DbBuffer buffer{nullptr};
+    db::Buffer buffer{nullptr};
     EVM evm{block, state, buffer};
 
     Transaction txn{};
@@ -153,7 +153,7 @@ TEST_CASE("Maximum call depth") {
     IntraBlockState state{nullptr};
     state.set_code(contract, code);
 
-    DbBuffer buffer{nullptr};
+    db::Buffer buffer{nullptr};
     EVM evm{block, state, buffer};
 
     Transaction txn{};
@@ -206,7 +206,7 @@ TEST_CASE("DELEGATECALL") {
     state.set_code(caller_address, caller_code);
     state.set_code(callee_address, callee_code);
 
-    DbBuffer buffer{nullptr};
+    db::Buffer buffer{nullptr};
     EVM evm{block, state, buffer};
 
     Transaction txn{};
@@ -266,7 +266,7 @@ TEST_CASE("CREATE should only return on failure") {
     */
 
     IntraBlockState state{nullptr};
-    DbBuffer buffer{nullptr};
+    db::Buffer buffer{nullptr};
     EVM evm{block, state, buffer};
 
     Transaction txn{};
@@ -297,7 +297,7 @@ TEST_CASE("Contract overwrite") {
     IntraBlockState state{nullptr};
     state.set_code(contract_address, old_code);
 
-    DbBuffer buffer{nullptr};
+    db::Buffer buffer{nullptr};
     EVM evm{block, state, buffer};
 
     Transaction txn{};

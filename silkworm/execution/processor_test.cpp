@@ -101,7 +101,7 @@ TEST_CASE("Zero gas price") {
     };
 
     IntraBlockState state{nullptr};
-    DbBuffer buffer{nullptr};
+    db::Buffer buffer{nullptr};
     ExecutionProcessor processor{block, state, buffer};
 
     CHECK_THROWS_MATCHES(processor.execute_transaction(txn), ValidationError, Message("missing sender"));
@@ -143,7 +143,7 @@ TEST_CASE("No refund on error") {
     */
 
     IntraBlockState state{nullptr};
-    DbBuffer buffer{nullptr};
+    db::Buffer buffer{nullptr};
     ExecutionProcessor processor{block, state, buffer};
 
     Transaction txn{
@@ -232,7 +232,7 @@ TEST_CASE("Self-destruct") {
     */
 
     IntraBlockState state{nullptr};
-    DbBuffer buffer{nullptr};
+    db::Buffer buffer{nullptr};
     ExecutionProcessor processor{block, state, buffer};
 
     state.add_to_balance(caller_address, kEther);
@@ -386,7 +386,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     txn.from = caller;
 
     state::Reader reader{*db_txn, block.header.number};
-    DbBuffer buffer{db_txn.get()};
+    db::Buffer buffer{db_txn.get()};
     IntraBlockState state{&reader};
     state.add_to_balance(caller, kEther);
 
@@ -426,7 +426,7 @@ TEST_CASE("Empty suicide beneficiary") {
     };
     txn.from = caller;
 
-    DbBuffer buffer{nullptr};
+    db::Buffer buffer{nullptr};
     IntraBlockState state{nullptr};
     state.add_to_balance(caller, kEther);
 

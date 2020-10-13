@@ -38,7 +38,7 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, IntraBlockState& state, DbBuffer& db,
+    ExecutionProcessor(const Block& block, IntraBlockState& state, db::Buffer& db,
                        const ChainConfig& config = kMainnetConfig);
 
     // precondition: txn.from must be recovered

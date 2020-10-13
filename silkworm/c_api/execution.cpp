@@ -48,7 +48,7 @@ SilkwormStatusCode silkworm_execute_block(MDB_txn* mdb_txn, uint64_t chain_id, u
         }
 
         state::Reader reader{txn};
-        DbBuffer buffer{&txn};
+        db::Buffer buffer{&txn};
         IntraBlockState state{&reader};
         ExecutionProcessor processor{bh->block, state, buffer};
 

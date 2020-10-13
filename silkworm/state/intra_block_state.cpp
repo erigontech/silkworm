@@ -273,7 +273,7 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     journal_.push_back(std::make_unique<state::StorageChangeDelta>(address, key, prev));
 }
 
-void IntraBlockState::write_block(DbBuffer& db) {
+void IntraBlockState::write_block(db::Buffer& db) {
     for (const auto& x : storage_) {
         const evmc::address& address{x.first};
         const state::Storage& storage{x.second};

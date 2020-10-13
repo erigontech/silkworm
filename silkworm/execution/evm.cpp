@@ -32,7 +32,7 @@
 
 namespace silkworm {
 
-EVM::EVM(const Block& block, IntraBlockState& state, DbBuffer& db, const ChainConfig& config) noexcept
+EVM::EVM(const Block& block, IntraBlockState& state, db::Buffer& db, const ChainConfig& config) noexcept
     : block_{block}, state_{state}, db_{db}, config_{config} {}
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {

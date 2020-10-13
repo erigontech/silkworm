@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
         }
 
         state::Reader reader{*txn, block_num};
-        DbBuffer buffer{txn.get()};
+        db::Buffer buffer{txn.get()};
         IntraBlockState state{&reader};
         ExecutionProcessor processor{bh->block, state, buffer};
 

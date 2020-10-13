@@ -24,7 +24,6 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
-#include <silkworm/state/db_buffer.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
 #include <string>
@@ -230,7 +229,7 @@ IntraBlockState pre_state(const nlohmann::json& pre) {
 
 enum Status { kPassed, kFailed, kSkipped };
 
-Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockState& state, DbBuffer& db) {
+Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockState& state, db::Buffer& db) {
     bool invalid{b.contains("expectException")};
 
     Block block;
@@ -347,7 +346,7 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     Block genesis_block;
     rlp::decode(genesis_view, genesis_block);
 
-    DbBuffer db{nullptr};
+    db::Buffer db{nullptr};
     db.insert_header(genesis_block.header);
 
     std::string network{j["network"].get<std::string>()};

@@ -23,7 +23,7 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <memory>
-#include <silkworm/state/db_buffer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/state/delta.hpp>
 #include <silkworm/state/object.hpp>
 #include <silkworm/state/reader.hpp>
@@ -86,7 +86,7 @@ class IntraBlockState {
 
     void set_storage(const evmc::address& address, const evmc::bytes32& key, const evmc::bytes32& value) noexcept;
 
-    void write_block(DbBuffer& db);
+    void write_block(db::Buffer& db);
 
     Snapshot take_snapshot() const noexcept;
     void revert_to_snapshot(const Snapshot& snapshot) noexcept;

@@ -48,7 +48,7 @@ intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbu
     return gas;
 }
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, DbBuffer& db,
+ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, db::Buffer& db,
                                        const ChainConfig& config)
     : evm_{block, state, db, config} {}
 

@@ -24,6 +24,7 @@
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/address.hpp>
+#include <silkworm/execution/protocol_param.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
@@ -106,7 +107,7 @@ TEST_CASE("Execution API") {
     auto state_table{txn->open(db::table::kPlainState)};
     state_table->put(full_view(sender), sender_account.encode_for_storage(/*omit_code_hash=*/false));
 
-    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormSuccess);
+    REQUIRE(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormSuccess);
 
     auto contract_address{create_address(sender, /*nonce=*/0)};
     std::optional<Account> contract_account{db::read_account(*txn, contract_address, block_number)};
@@ -125,6 +126,11 @@ TEST_CASE("Execution API") {
     evmc::bytes32 storage1{db::read_storage(*txn, contract_address, incarnation, storage_key1, block_number)};
     CHECK(to_hex(storage1) == "00000000000000000000000000000000000000000000000000000000000001c9");
 
+    std::optional<Account> miner_account{db::read_account(*txn, miner)};
+    REQUIRE(miner_account);
+    CHECK(miner_account->balance > 1 * param::kFrontierBlockReward);
+    CHECK(miner_account->balance < 2 * param::kFrontierBlockReward);
+
     // ---------------------------------------
     // Second block
     // ---------------------------------------
@@ -133,6 +139,7 @@ TEST_CASE("Execution API") {
 
     block_number = 2;
     block.header.number = block_number;
+    block.transactions[0].nonce = 1;
     block.transactions[0].to = contract_address;
     block.transactions[0].data = from_hex(new_val);
 
@@ -150,10 +157,15 @@ TEST_CASE("Execution API") {
     body_table->put(block_key, body_rlp);
     sender_table->put(block_key, full_view(sender));
 
-    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormSuccess);
+    REQUIRE(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormSuccess);
 
     storage0 = db::read_storage(*txn, contract_address, incarnation, storage_key0, block_number);
     CHECK(to_hex(storage0) == new_val);
+
+    miner_account = db::read_account(*txn, miner);
+    REQUIRE(miner_account);
+    CHECK(miner_account->balance > 2 * param::kFrontierBlockReward);
+    CHECK(miner_account->balance < 3 * param::kFrontierBlockReward);
 
     // ---------------------------------------
     // Check change sets

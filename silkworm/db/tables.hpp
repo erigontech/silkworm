@@ -36,10 +36,11 @@ constexpr lmdb::TableConfig kBlockHeaders{"h"};
 constexpr lmdb::TableConfig kBlockBodies{"b"};
 constexpr lmdb::TableConfig kSenders{"txSenders"};
 constexpr lmdb::TableConfig kIncarnations{"incarnationMap"};
+constexpr lmdb::TableConfig kSyncStageProgress{"SSP2"};
 
 constexpr lmdb::TableConfig kTables[]{
     kPlainState, kAccountChanges, kStorageChanges, kAccountHistory, kStorageHistory, kCode,
-    kCodeHash,   kBlockHeaders,   kBlockBodies,    kSenders,        kIncarnations,
+    kCodeHash,   kBlockHeaders,   kBlockBodies,    kSenders,        kIncarnations,   kSyncStageProgress,
 };
 
 // Create all tables that do not yet exist.

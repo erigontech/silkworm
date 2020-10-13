@@ -16,6 +16,7 @@
 
 #include "execution.h"
 
+#include <gsl/gsl_util>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/execution/processor.hpp>
@@ -30,17 +31,16 @@ SilkwormStatusCode silkworm_execute_block(MDB_txn* mdb_txn, uint64_t chain_id, u
     }
 
     lmdb::Transaction txn{/*parent=*/nullptr, mdb_txn, /*flags=*/0};
+    auto _ = gsl::finally([&txn] { *txn.handle() = nullptr; });  // avoid aborting mdb_txn
 
     try {
         std::optional<BlockWithHash> bh{db::read_block(txn, block_num)};
         if (!bh) {
-            *txn.handle() = nullptr;  // avoid aborting mdb_txn
             return kSilkwormBlockNotFound;
         }
 
         std::vector<evmc::address> senders{db::read_senders(txn, block_num, bh->hash)};
         if (senders.size() != bh->block.transactions.size()) {
-            *txn.handle() = nullptr;  // avoid aborting mdb_txn
             return kSilkwormMissingSenders;
         }
         for (size_t i{0}; i < senders.size(); ++i) {
@@ -60,19 +60,14 @@ SilkwormStatusCode silkworm_execute_block(MDB_txn* mdb_txn, uint64_t chain_id, u
         if (lmdb_error_code) {
             *lmdb_error_code = e.err();
         }
-        *txn.handle() = nullptr;  // avoid aborting mdb_txn
         return kSilkwormLmdbError;
     } catch (const ValidationError& err) {
-        *txn.handle() = nullptr;  // avoid aborting mdb_txn
         return kSilkwormInvalidBlock;
     } catch (const DecodingError& err) {
-        *txn.handle() = nullptr;  // avoid aborting mdb_txn
         return kSilkwormDecodingError;
     } catch (...) {
-        *txn.handle() = nullptr;  // avoid aborting mdb_txn
         return kSilkwormUnknownError;
     }
 
-    *txn.handle() = nullptr;  // avoid aborting mdb_txn
     return kSilkwormSuccess;
 }

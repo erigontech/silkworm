@@ -51,8 +51,13 @@ static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
+
     std::string db_path{db::default_path()};
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth");
+
+    uint64_t to_block{100'000};
+    app.add_option("--to", to_block, "Block execute up to");
+
     CLI11_PARSE(app, argc, argv);
 
     lmdb::options opts{};
@@ -60,23 +65,40 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_path.c_str(), opts)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
-    uint64_t block_number{already_executed_block(*txn) + 1};
+    uint64_t previous_progress{already_executed_block(*txn)};
+    uint64_t current_progress{0};
 
-    int lmdb_error_code{MDB_SUCCESS};
-    SilkwormStatusCode status{
-        silkworm_execute_block(*txn->handle(), kMainnetConfig.chain_id, block_number, &lmdb_error_code)};
+    for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
+        int lmdb_error_code{MDB_SUCCESS};
+        SilkwormStatusCode status{
+            silkworm_execute_block(*txn->handle(), kMainnetConfig.chain_id, block_number, &lmdb_error_code)};
 
-    save_progress(*txn, block_number);
+        if (status == kSilkwormBlockNotFound) {
+            break;
+        } else if (status == kSilkwormLmdbError) {
+            std::cout << "LMDB error " << lmdb_error_code << "\n";
+            return status;
+        } else if (status != kSilkwormSuccess) {
+            std::cout << "Failure " << status << "\n";
+            return status;
+        }
 
-    lmdb::err_handler(txn->commit());
-
-    if (status == kSilkwormSuccess) {
-        std::cout << "Success 🥳\n";
-    } else if (status == kSilkwormLmdbError) {
-        std::cout << "LMDB error " << lmdb_error_code << "\n";
-    } else {
-        std::cout << "Failure " << status << "\n";
+        current_progress = block_number;
+        if (current_progress % 100 == 0) {
+            save_progress(*txn, current_progress);
+            lmdb::err_handler(txn->commit());
+            txn = env->begin_rw_transaction();
+            std::cout << "Blocks <= " << current_progress << " have been executed\n";
+        }
     }
 
-    return status;
+    if (current_progress) {
+        save_progress(*txn, current_progress);
+        lmdb::err_handler(txn->commit());
+        std::cout << "All blocks <= " << current_progress << " have been executed\n";
+    } else {
+        std::cout << "No blocks have been executed\n";
+    }
+
+    return 0;
 }

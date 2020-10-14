@@ -16,6 +16,7 @@
 
 #include "buffer.hpp"
 
+#include <algorithm>
 #include <boost/endian/conversion.hpp>
 #include <silkworm/common/util.hpp>
 
@@ -80,22 +81,41 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
 }
 
-bool Buffer::full_enough() const { return number_of_entries >= 100'000; }
+bool Buffer::full_enough() const { return number_of_entries >= 500'000; }
+
+void Buffer::write_accounts_to_db() {
+    auto state_table{txn_->open(table::kPlainState)};
+
+    std::vector<evmc::address> keys;
+    keys.reserve(accounts_.size());
+    for (auto& it : accounts_) {
+        keys.push_back(it.first);
+    }
+
+    // Sort before inserting into the DB
+    std::sort(keys.begin(), keys.end());
+
+    for (const auto& key : keys) {
+        state_table->del(full_view(key));
+        const std::optional<Account>& account{accounts_.at(key)};
+        if (account) {
+            bool omit_code_hash{false};
+            Bytes encoded{account->encode_for_storage(omit_code_hash)};
+            state_table->put(full_view(key), encoded);
+        }
+    }
+
+    return;
+}
 
 void Buffer::write_to_db() {
     if (!txn_) {
         return;
     }
 
+    write_accounts_to_db();
+
     auto state_table{txn_->open(table::kPlainState)};
-    for (const auto& entry : accounts_) {
-        state_table->del(full_view(entry.first));
-        if (entry.second) {
-            bool omit_code_hash{false};
-            Bytes encoded{entry.second->encode_for_storage(omit_code_hash)};
-            state_table->put(full_view(entry.first), encoded);
-        }
-    }
     for (const auto& contract : storage_) {
         for (const auto& x : contract.second) {
             state_table->del(contract.first, full_view(x.first));

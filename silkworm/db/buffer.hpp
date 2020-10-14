@@ -80,6 +80,9 @@ class Buffer {
     const std::map<uint64_t, StorageChanges>& storage_changes() const { return storage_changes_; }
     ///@}
 
+    /** Whether there's enough pending data in the buffer to be written into the database. */
+    bool full_enough() const;
+
     void write_to_db();
 
    private:
@@ -92,6 +95,8 @@ class Buffer {
     std::map<evmc::address, uint64_t> incarnations_;
     std::map<evmc::bytes32, Bytes> hash_to_code_;
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
+
+    uint64_t number_of_entries{0};
 
     // Stuff related to change sets
     uint64_t current_block_number_{0};

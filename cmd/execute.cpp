@@ -17,7 +17,9 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <cstring>
+#include <ctime>  // TODO(Andrew) replace with the logger
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
@@ -26,6 +28,8 @@
 using namespace silkworm;
 
 static constexpr const char* kExecutionStage{"Execution"};
+
+static constexpr const char* kTimeFormat{"%Y-%m-%d_%H:%M:%S_%Z"};
 
 static uint64_t already_executed_block(lmdb::Transaction& txn) {
     std::unique_ptr<lmdb::Table> progress_table{txn.open(db::table::kSyncStageProgress)};
@@ -61,29 +65,44 @@ int main(int argc, char* argv[]) {
     opts.read_only = false;
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_path.c_str(), opts)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+    auto buffer{std::make_unique<db::Buffer>(txn.get())};
 
     uint64_t previous_progress{already_executed_block(*txn)};
     uint64_t current_progress{0};
 
     for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-        db::Buffer buffer{txn.get()};
-        if (!execute_block(buffer, block_number)) {
+        if (!execute_block(*buffer, block_number)) {
             break;
         }
 
         current_progress = block_number;
-        if (current_progress % 100 == 0) {
+        if (current_progress % 1000 == 0) {
+            std::time_t t = std::time(nullptr);
+            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
+                      << " have been executed\n";
+        }
+
+        if (buffer->full_enough()) {
+            buffer->write_to_db();
             save_progress(*txn, current_progress);
             lmdb::err_handler(txn->commit());
+
+            std::time_t t = std::time(nullptr);
+            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
+                      << " have been committed\n";
+
             txn = env->begin_rw_transaction();
-            std::cout << "Blocks <= " << current_progress << " have been executed\n";
+            buffer = std::make_unique<db::Buffer>(txn.get());
         }
     }
 
     if (current_progress) {
+        buffer->write_to_db();
         save_progress(*txn, current_progress);
         lmdb::err_handler(txn->commit());
-        std::cout << "All blocks <= " << current_progress << " have been executed\n";
+        std::time_t t = std::time(nullptr);
+        std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " All blocks <= " << current_progress
+                  << " have been executed and committed\n";
     } else {
         std::cout << "No blocks have been executed\n";
     }

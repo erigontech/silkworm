@@ -52,7 +52,9 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         return;
     }
 
-    accounts_[address] = current;
+    if (accounts_.insert_or_assign(address, current).second) {
+        ++number_of_entries;
+    };
 
     if (account_deleted && initial->incarnation) {
         incarnations_[address] = initial->incarnation;
@@ -73,8 +75,12 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     changed_storage_.insert(address);
     Bytes full_key{storage_key(address, incarnation, key)};
     storage_changes_[current_block_number_][full_key] = zeroless_view(initial);
-    storage_[storage_prefix(address, incarnation)][key] = current;
+    if (storage_[storage_prefix(address, incarnation)].insert_or_assign(key, current).second) {
+        ++number_of_entries;
+    }
 }
+
+bool Buffer::full_enough() const { return number_of_entries >= 100'000; }
 
 void Buffer::write_to_db() {
     if (!txn_) {

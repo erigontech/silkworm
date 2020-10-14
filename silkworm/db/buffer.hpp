@@ -37,10 +37,10 @@ class Buffer {
     explicit Buffer(lmdb::Transaction* txn, std::optional<uint64_t> historical_block = std::nullopt)
         : txn_{txn}, historical_block_{historical_block} {}
 
-    void insert_header(BlockHeader block_header);
+    lmdb::Transaction* transaction() { return txn_; }
 
-    std::optional<BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept;
-
+    /** @name Readers */
+    ///@{
     std::optional<Account> read_account(const evmc::address& address) const noexcept;
 
     Bytes read_code(const evmc::bytes32& code_hash) const noexcept;
@@ -48,8 +48,22 @@ class Buffer {
     evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
                                const evmc::bytes32& key) const noexcept;
 
-    // Previous non-zero incarnation of an account; 0 if none exists
+    /** Previous non-zero incarnation of an account; 0 if none exists. */
     uint64_t previous_incarnation(const evmc::address& address) const noexcept;
+
+    std::optional<BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept;
+    ///@}
+
+    void insert_header(BlockHeader block_header);
+
+    /** @name State changes
+     *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
+     */
+    ///@{
+    /** Mark the beggining of a new block.
+     * Must be called prior to calling update_account/update_account_code/update_storage.
+     */
+    void begin_new_block(uint64_t block_number);
 
     void update_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
 
@@ -59,27 +73,31 @@ class Buffer {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
                         const evmc::bytes32& initial, const evmc::bytes32& current);
 
-    void write_to_db(uint64_t block_number);
+    /** Account (backward) changes per block.*/
+    const std::map<uint64_t, AccountChanges>& account_changes() const { return account_changes_; }
 
-    const AccountChanges& account_back_changes() const { return account_back_changes_; }
-    const StorageChanges& storage_back_changes() const { return storage_back_changes_; }
+    /** Storage (backward) changes per block.*/
+    const std::map<uint64_t, StorageChanges>& storage_changes() const { return storage_changes_; }
+    ///@}
+
+    void write_to_db();
 
    private:
     lmdb::Transaction* txn_{nullptr};
-
     std::optional<uint64_t> historical_block_{};
 
     std::map<Bytes, BlockHeader> headers_{};
-
-    AccountChanges account_back_changes_;
-    StorageChanges storage_back_changes_;
-    absl::flat_hash_set<evmc::address> changed_storage_;
-
     std::map<evmc::address, std::optional<Account>> accounts_;
     std::map<Bytes, std::map<evmc::bytes32, evmc::bytes32>> storage_;
     std::map<evmc::address, uint64_t> incarnations_;
     std::map<evmc::bytes32, Bytes> hash_to_code_;
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
+
+    // Stuff related to change sets
+    uint64_t current_block_number_{0};
+    absl::flat_hash_set<evmc::address> changed_storage_;
+    std::map<uint64_t, AccountChanges> account_changes_;
+    std::map<uint64_t, StorageChanges> storage_changes_;
 };
 
 }  // namespace silkworm::db

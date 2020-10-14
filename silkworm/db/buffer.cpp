@@ -25,22 +25,27 @@
 
 namespace silkworm::db {
 
+void Buffer::begin_new_block(uint64_t block_number) {
+    current_block_number_ = block_number;
+    changed_storage_.clear();
+}
+
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
                             std::optional<Account> current) {
     bool equal{current == initial};
     bool account_deleted{!current};
 
     if (equal && !account_deleted && !changed_storage_.contains(address)) {
-        // Follow Turbo-Geth logic when to populate account_back_changes
-        // See (ChangeSetWriter)UpdateAccountData & DeleteAccount
+        // Follows the Turbo-Geth logic when to populate account changes.
+        // See (ChangeSetWriter)UpdateAccountData & DeleteAccount.
         return;
     }
 
     if (initial) {
         bool omit_code_hash{!account_deleted};
-        account_back_changes_[address] = initial->encode_for_storage(omit_code_hash);
+        account_changes_[current_block_number_][address] = initial->encode_for_storage(omit_code_hash);
     } else {
-        account_back_changes_[address] = {};
+        account_changes_[current_block_number_][address] = {};
     }
 
     if (equal) {
@@ -67,11 +72,11 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
     changed_storage_.insert(address);
     Bytes full_key{storage_key(address, incarnation, key)};
-    storage_back_changes_[full_key] = zeroless_view(initial);
+    storage_changes_[current_block_number_][full_key] = zeroless_view(initial);
     storage_[storage_prefix(address, incarnation)][key] = current;
 }
 
-void Buffer::write_to_db(uint64_t block_number) {
+void Buffer::write_to_db() {
     if (!txn_) {
         return;
     }
@@ -114,11 +119,16 @@ void Buffer::write_to_db(uint64_t block_number) {
     }
 
     auto account_change_table{txn_->open(table::kAccountChanges)};
-    Bytes block_key{encode_timestamp(block_number)};
-    account_change_table->put(block_key, account_back_changes_.encode());
+    for (const auto& entry : account_changes_) {
+        Bytes block_key{encode_timestamp(entry.first)};
+        account_change_table->put(block_key, entry.second.encode());
+    }
 
     auto storage_change_table{txn_->open(table::kStorageChanges)};
-    storage_change_table->put(block_key, storage_back_changes_.encode());
+    for (const auto& entry : storage_changes_) {
+        Bytes block_key{encode_timestamp(entry.first)};
+        storage_change_table->put(block_key, entry.second.encode());
+    }
 }
 
 void Buffer::insert_header(BlockHeader block_header) {

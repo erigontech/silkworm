@@ -14,17 +14,14 @@
    limitations under the License.
 */
 
-#include <silkworm/c_api/execution.h>
-
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <cstring>
 #include <iostream>
 #include <optional>
-#include <silkworm/chain/config.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
+#include <silkworm/execution/execution.hpp>
 
 using namespace silkworm;
 
@@ -69,18 +66,9 @@ int main(int argc, char* argv[]) {
     uint64_t current_progress{0};
 
     for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-        int lmdb_error_code{MDB_SUCCESS};
-        SilkwormStatusCode status{
-            silkworm_execute_block(*txn->handle(), kMainnetConfig.chain_id, block_number, &lmdb_error_code)};
-
-        if (status == kSilkwormBlockNotFound) {
+        db::Buffer buffer{txn.get()};
+        if (!execute_block(buffer, block_number)) {
             break;
-        } else if (status == kSilkwormLmdbError) {
-            std::cout << "LMDB error " << lmdb_error_code << "\n";
-            return status;
-        } else if (status != kSilkwormSuccess) {
-            std::cout << "Failure " << status << "\n";
-            return status;
         }
 
         current_progress = block_number;

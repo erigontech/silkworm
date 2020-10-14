@@ -271,8 +271,9 @@ TEST_CASE("Self-destruct") {
 }
 
 TEST_CASE("Out of Gas during account re-creation") {
+    uint64_t block_number{2'081'788};
     Block block{};
-    block.header.number = 2'081'788;
+    block.header.number = block_number;
     block.header.gas_limit = 4'712'388;
     block.header.beneficiary = 0xa42af2c70d316684e57aefcc6e393fecb1c7e84e_address;
     evmc::address caller{0xc789e5aba05051b1468ac980e30068e19fad8587_address};
@@ -385,7 +386,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     };
     txn.from = caller;
 
-    db::Buffer buffer{db_txn.get(), block.header.number};
+    db::Buffer buffer{db_txn.get(), block_number};
     IntraBlockState state{buffer};
     state.add_to_balance(caller, kEther);
 
@@ -395,15 +396,16 @@ TEST_CASE("Out of Gas during account re-creation") {
     // out of gas
     CHECK(!std::get<bool>(receipt.post_state_or_status));
 
-    state.write_block();
+    state.write_to_db(block_number);
 
     // only the caller and the miner should be changed
-    CHECK(buffer.account_back_changes().size() == 2);
+    CHECK(buffer.account_changes().at(block_number).size() == 2);
 }
 
 TEST_CASE("Empty suicide beneficiary") {
+    uint64_t block_number{2'687'389};
     Block block{};
-    block.header.number = 2'687'389;
+    block.header.number = block_number;
     block.header.gas_limit = 4'712'388;
     block.header.beneficiary = 0x2a65aca4d5fc5b5c859090a6c34d164135398226_address;
     evmc::address caller{0x5ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f_address};
@@ -434,10 +436,10 @@ TEST_CASE("Empty suicide beneficiary") {
     Receipt receipt{processor.execute_transaction(txn)};
     CHECK(std::get<bool>(receipt.post_state_or_status));
 
-    state.write_block();
+    state.write_to_db(block_number);
 
     // suicide_beneficiary should've been touched and deleted
-    CHECK(db.account_back_changes().count(suicide_beneficiary) == 1);
+    CHECK(db.account_changes().at(block_number).count(suicide_beneficiary) == 1);
 }
 
 }  // namespace silkworm

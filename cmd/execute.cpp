@@ -19,6 +19,7 @@
 #include <cstring>
 #include <ctime>  // TODO(Andrew) replace with the logger
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
@@ -56,7 +57,7 @@ int main(int argc, char* argv[]) {
     std::string db_path{db::default_path()};
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth");
 
-    uint64_t to_block{100'000};
+    uint64_t to_block{std::numeric_limits<uint64_t>::max()};
     app.add_option("--to", to_block, "Block execute up to");
 
     CLI11_PARSE(app, argc, argv);

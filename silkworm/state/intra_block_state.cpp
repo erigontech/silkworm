@@ -29,11 +29,7 @@ state::Object* IntraBlockState::get_object(const evmc::address& address) const n
         return &it->second;
     }
 
-    if (!db_) {
-        return nullptr;
-    }
-
-    std::optional<Account> account{db_->read_account(address)};
+    std::optional<Account> account{db_.read_account(address)};
     if (!account) {
         return nullptr;
     }
@@ -92,11 +88,7 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
     }
 
     if (!prev_incarnation || prev_incarnation == 0) {
-        if (db_) {
-            prev_incarnation = db_->previous_incarnation(address);
-        } else {
-            prev_incarnation = 0;
-        }
+        prev_incarnation = db_.previous_incarnation(address);
     }
 
     created.current->incarnation = *prev_incarnation + 1;
@@ -197,10 +189,7 @@ ByteView IntraBlockState::get_code(const evmc::address& address) const noexcept 
         return *obj->code;
     }
 
-    if (!db_) {
-        return {};
-    }
-    obj->code = db_->read_code(obj->current->code_hash);
+    obj->code = db_.read_code(obj->current->code_hash);
 
     return *obj->code;
 }
@@ -249,10 +238,7 @@ const state::StorageValue* IntraBlockState::get_storage(const evmc::address& add
         return nullptr;
     }
 
-    evmc::bytes32 val{};
-    if (db_) {
-        val = db_->read_storage(address, incarnation, key);
-    }
+    evmc::bytes32 val{db_.read_storage(address, incarnation, key)};
 
     state::StorageValue& entry{storage_[address][key]};
 
@@ -273,7 +259,9 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     journal_.push_back(std::make_unique<state::StorageChangeDelta>(address, key, prev));
 }
 
-void IntraBlockState::write_block(state::Writer& writer) {
+void IntraBlockState::write_to_db(uint64_t block_number) {
+    db_.begin_new_block(block_number);
+
     for (const auto& x : storage_) {
         const evmc::address& address{x.first};
         const state::Storage& storage{x.second};
@@ -291,16 +279,16 @@ void IntraBlockState::write_block(state::Writer& writer) {
             const evmc::bytes32& key{entry.first};
             const state::StorageValue& val{entry.second};
             uint64_t incarnation{obj.current->incarnation};
-            writer.update_storage(address, incarnation, key, val.initial, val.current);
+            db_.update_storage(address, incarnation, key, val.initial, val.current);
         }
     }
 
     for (const auto& entry : objects_) {
         const evmc::address& address{entry.first};
         const state::Object& obj{entry.second};
-        writer.update_account(address, obj.initial, obj.current);
+        db_.update_account(address, obj.initial, obj.current);
         if (obj.current && obj.code && (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
-            writer.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
+            db_.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
         }
     }
 }

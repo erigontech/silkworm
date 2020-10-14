@@ -14,21 +14,23 @@
    limitations under the License.
 */
 
-#include <silkworm/c_api/execution.h>
-
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <cstring>
+#include <ctime>  // TODO(Andrew) replace with the logger
 #include <iostream>
+#include <limits>
+#include <memory>
 #include <optional>
-#include <silkworm/chain/config.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
+#include <silkworm/execution/execution.hpp>
 
 using namespace silkworm;
 
 static constexpr const char* kExecutionStage{"Execution"};
+
+static constexpr const char* kTimeFormat{"%Y-%m-%d_%H:%M:%S_%Z"};
 
 static uint64_t already_executed_block(lmdb::Transaction& txn) {
     std::unique_ptr<lmdb::Table> progress_table{txn.open(db::table::kSyncStageProgress)};
@@ -55,7 +57,7 @@ int main(int argc, char* argv[]) {
     std::string db_path{db::default_path()};
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth");
 
-    uint64_t to_block{100'000};
+    uint64_t to_block{std::numeric_limits<uint64_t>::max()};
     app.add_option("--to", to_block, "Block execute up to");
 
     CLI11_PARSE(app, argc, argv);
@@ -64,38 +66,44 @@ int main(int argc, char* argv[]) {
     opts.read_only = false;
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_path.c_str(), opts)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+    auto buffer{std::make_unique<db::Buffer>(txn.get())};
 
     uint64_t previous_progress{already_executed_block(*txn)};
     uint64_t current_progress{0};
 
     for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-        int lmdb_error_code{MDB_SUCCESS};
-        SilkwormStatusCode status{
-            silkworm_execute_block(*txn->handle(), kMainnetConfig.chain_id, block_number, &lmdb_error_code)};
-
-        if (status == kSilkwormBlockNotFound) {
+        if (!execute_block(*buffer, block_number)) {
             break;
-        } else if (status == kSilkwormLmdbError) {
-            std::cout << "LMDB error " << lmdb_error_code << "\n";
-            return status;
-        } else if (status != kSilkwormSuccess) {
-            std::cout << "Failure " << status << "\n";
-            return status;
         }
 
         current_progress = block_number;
-        if (current_progress % 100 == 0) {
+        if (current_progress % 1000 == 0) {
+            std::time_t t = std::time(nullptr);
+            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
+                      << " have been executed\n";
+        }
+
+        if (buffer->full_enough()) {
+            buffer->write_to_db();
             save_progress(*txn, current_progress);
             lmdb::err_handler(txn->commit());
+
+            std::time_t t = std::time(nullptr);
+            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
+                      << " have been committed\n";
+
             txn = env->begin_rw_transaction();
-            std::cout << "Blocks <= " << current_progress << " have been executed\n";
+            buffer = std::make_unique<db::Buffer>(txn.get());
         }
     }
 
     if (current_progress) {
+        buffer->write_to_db();
         save_progress(*txn, current_progress);
         lmdb::err_handler(txn->commit());
-        std::cout << "All blocks <= " << current_progress << " have been executed\n";
+        std::time_t t = std::time(nullptr);
+        std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " All blocks <= " << current_progress
+                  << " have been executed and committed\n";
     } else {
         std::cout << "No blocks have been executed\n";
     }

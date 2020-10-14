@@ -48,9 +48,8 @@ intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbu
     return gas;
 }
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, state::HeaderReader* header_reader,
-                                       const ChainConfig& config)
-    : evm_{block, state, header_reader, config} {}
+ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config)
+    : evm_{block, state, config} {}
 
 /*
 static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
@@ -138,7 +137,8 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
 std::vector<Receipt> ExecutionProcessor::execute_block() {
     std::vector<Receipt> receipts{};
 
-    if (evm_.block().header.number == evm_.config().dao_block) {
+    uint64_t block_num{evm_.block().header.number};
+    if (block_num == evm_.config().dao_block) {
         dao::transfer_balances(evm_.state());
     }
 
@@ -150,10 +150,12 @@ std::vector<Receipt> ExecutionProcessor::execute_block() {
     apply_rewards();
 
     // See Yellow Paper, Appendix K "Anomalies on the Main Network"
-    if (evm_.block().header.number == evm_.config().ripemd_deletion_block) {
+    if (block_num == evm_.config().ripemd_deletion_block) {
         static constexpr evmc::address kRipemdAddress{0x0000000000000000000000000000000000000003_address};
         evm_.state().destruct(kRipemdAddress);
     }
+
+    evm_.state().write_to_db(block_num);
 
     return receipts;
 }

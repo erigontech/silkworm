@@ -275,9 +275,9 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
         } else {
 
             // We traverse all populated tables and copy only their data
-            std::unique_ptr<lmdb::Transaction> src_txn{ lmdb_src_env->begin_ro_transaction() };
+            std::unique_ptr<lmdb::Transaction> src_txn{lmdb_src_env->begin_ro_transaction()};
             auto tables = get_tables(src_txn);
-            size_t data_size{ 0 };
+            size_t data_size{0};
 
             // Compute size of data we need to copy
             for (dbTableEntry table : tables) {
@@ -286,10 +286,16 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
                              (table.stat.ms_leaf_pages + table.stat.ms_branch_pages + table.stat.ms_overflow_pages);
             }
 
-            // Round up data size to 1MB (1ull << 20)
-            data_size = ((data_size + (1ull << 20) - 1) / (1ull << 20)) * (1ull << 20);
+            // Add extra 50 Mb to fit
+            // Should actually compute the real reclaimable space traversing free_dbi
+            // But this is an experiment
+            data_size += (500ull << 20);
+            size_t host_page_size{ boost::interprocess::mapped_region::get_page_size() };
+            data_size = ((data_size + host_page_size - 1) / host_page_size) * host_page_size;
+
             lmdb::options tgt_opts{};
             tgt_opts.read_only = false;
+            tgt_opts.no_tls = false;
             tgt_opts.map_size = data_size;
 
             // Create target environment and open a rw transaction
@@ -306,8 +312,7 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
 
                 // Lookup TableConfig in known (canonical/deprecated) tables collection
                 // If not found we have no way to determine which are the proper flags
-                // required to open the table so we must rely on simple put_append
-                // hoping no error due to duplicate key occurs
+                // required to open the table.
                 bool found{false};
                 unsigned int flags{0};
                 for (const auto& item : silkworm::db::table::kTables ) {
@@ -318,16 +323,9 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
                         break;
                     }
                 }
-                if (!found) {
-                    for (const auto& item : silkworm::db::table::kDeprecatedTables) {
-                        if (std::strcmp(item.name, table.name.c_str()) == 0)
-                        {
-                            flags = item.flags;
-                            found = true;
-                            break;
-                        }
-                    }
-                }
+
+                // Not a table we know of. Skip it
+                if (!found) continue;
 
                 auto src_table = src_txn->open({table.name.c_str(), flags});
                 auto tgt_table = tgt_txn->open({table.name.c_str(), flags}, MDB_CREATE);
@@ -453,16 +451,14 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    std::optional<uint64_t> lmdb_mapSize;
+    std::optional<uint64_t> lmdb_mapSize{parse_size(po_mapsize_str)};
     std::size_t lmdb_fileSize{bfs::file_size(data_file)};
-    if (po_mapsize_str.empty()) {
+
+    // Do not accept mapSize below filesize
+    if (!lmdb_mapSize.has_value()) {
         lmdb_mapSize = lmdb_fileSize;
     } else {
-        lmdb_mapSize = parse_size(po_mapsize_str);
-    }
-    if (!lmdb_mapSize.has_value()) {
-        std::cout << "Invalid map size" << std::endl;
-        return -1;
+        *lmdb_mapSize = std::max(*lmdb_mapSize, lmdb_fileSize);
     }
 
     // Adjust mapSize to a multiple of page_size

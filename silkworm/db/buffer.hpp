@@ -17,6 +17,7 @@
 #ifndef SILKWORM_DB_BUFFER_H_
 #define SILKWORM_DB_BUFFER_H_
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
 #include <evmc/evmc.hpp>
@@ -86,11 +87,13 @@ class Buffer {
     void write_to_db();
 
    private:
+    void write_accounts_to_db();
+
     lmdb::Transaction* txn_{nullptr};
     std::optional<uint64_t> historical_block_{};
 
     std::map<Bytes, BlockHeader> headers_{};
-    std::map<evmc::address, std::optional<Account>> accounts_;
+    absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
     std::map<Bytes, std::map<evmc::bytes32, evmc::bytes32>> storage_;
     std::map<evmc::address, uint64_t> incarnations_;
     std::map<evmc::bytes32, Bytes> hash_to_code_;

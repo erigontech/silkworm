@@ -40,7 +40,7 @@ project(silkworm)
 include(cmake/Hunter/packages.cmake)
 
 # secp256k1
-add_compile_definitions(USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
+add_compile_definitions(USE_NUM_GMP USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
 if(MSVC)
   add_compile_definitions(USE_FIELD_10X26 USE_SCALAR_8X32)
 else()

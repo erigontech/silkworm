@@ -118,7 +118,7 @@ static std::optional<ByteView> find_in_history(lmdb::Transaction& txn, bool stor
         return ByteView{};
     }
 
-    auto change_name{storage ? table::kStorageChanges : table::kAccountChanges};
+    auto change_name{storage ? table::kPlainStorageChangeSet : table::kPlainAccountChangeSet};
     auto change_table{txn.open(change_name)};
 
     uint64_t change_block{res->change_block};
@@ -154,7 +154,7 @@ std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address&
 
     if (acc && acc->incarnation > 0 && acc->code_hash == kEmptyHash) {
         // restore code hash
-        auto code_hash_table{txn.open(table::kCodeHash)};
+        auto code_hash_table{txn.open(table::kPlainContractCode)};
         std::optional<ByteView> hash{code_hash_table->get(storage_prefix(address, acc->incarnation))};
         if (hash && hash->length() == kHashLength) {
             std::memcpy(acc->code_hash.bytes, hash->data(), kHashLength);
@@ -190,7 +190,7 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
 
     if (!block_num) {
         // Current incarnation
-        auto incarnation_table{txn.open(table::kIncarnations)};
+        auto incarnation_table{txn.open(table::kIncarnationMap)};
         std::optional<ByteView> val{incarnation_table->get(key)};
         if (!val) {
             return {};
@@ -200,7 +200,7 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
     }
 
     auto history_table{txn.open(table::kAccountHistory)};
-    auto change_table{txn.open(table::kAccountChanges)};
+    auto change_table{txn.open(table::kPlainAccountChangeSet)};
 
     // Search through history and find the latest non-zero incarnation of the account,
     // disregarding future changes (happening after the block_number).
@@ -241,7 +241,7 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
 }
 
 std::optional<AccountChanges> read_account_changes(lmdb::Transaction& txn, uint64_t block_number) {
-    auto table{txn.open(table::kAccountChanges)};
+    auto table{txn.open(table::kPlainAccountChangeSet)};
     std::optional<ByteView> val{table->get(encode_timestamp(block_number))};
     if (!val) {
         return {};
@@ -250,7 +250,7 @@ std::optional<AccountChanges> read_account_changes(lmdb::Transaction& txn, uint6
 }
 
 Bytes read_storage_changes(lmdb::Transaction& txn, uint64_t block_number) {
-    auto table{txn.open(table::kStorageChanges)};
+    auto table{txn.open(table::kPlainStorageChangeSet)};
     std::optional<ByteView> val{table->get(encode_timestamp(block_number))};
     if (!val) {
         return {};

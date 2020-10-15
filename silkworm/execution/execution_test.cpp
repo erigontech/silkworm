@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "execution.h"
+#include "execution.hpp"
 
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
@@ -24,12 +24,17 @@
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/address.hpp>
+#include <silkworm/execution/protocol_param.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
 TEST_CASE("Execution API") {
     using namespace silkworm;
+
+    // ---------------------------------------
+    // Prepare
+    // ---------------------------------------
 
     TemporaryDirectory tmp_dir{};
     lmdb::options db_opts{};
@@ -38,22 +43,11 @@ TEST_CASE("Execution API") {
     std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(tmp_dir.path(), db_opts)};
     std::unique_ptr<lmdb::Transaction> txn{db_env->begin_rw_transaction()};
 
-    uint64_t block_number{1};
-
-    uint64_t chain_id{404};
-    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, nullptr) == kSilkwormUnknownChainId);
-
-    chain_id = kMainnetConfig.chain_id;
-    int lmdb_error_code{MDB_SUCCESS};
-    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormLmdbError);
-    CHECK(lmdb_error_code == MDB_NOTFOUND);
-
     db::table::create_all(*txn);
-    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormBlockNotFound);
 
-    // ---------------------------------------
-    // First block
-    // ---------------------------------------
+    db::Buffer buffer{txn.get()};
+    uint64_t block_number{1};
+    CHECK(!execute_block(buffer, block_number));
 
     auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 
@@ -82,34 +76,32 @@ TEST_CASE("Execution API") {
     Bytes block_key{db::block_key(block_number, block_hash.bytes)};
     header_table->put(block_key, header_rlp);
 
-    Bytes rubbish{from_hex("86438ddee4412f")};
-    auto body_table{txn->open(db::table::kBlockBodies)};
-    body_table->put(block_key, rubbish);
-
-    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormDecodingError);
-
     const BlockBody& block_body{block};
     Bytes body_rlp{};
     rlp::encode(body_rlp, block_body);
+    auto body_table{txn->open(db::table::kBlockBodies)};
     body_table->put(block_key, body_rlp);
 
-    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormMissingSenders);
+    CHECK_THROWS_MATCHES(execute_block(buffer, block_number), std::runtime_error,
+                         Catch::Message("missing or incorrect senders"));
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     auto sender_table{txn->open(db::table::kSenders)};
     sender_table->put(block_key, full_view(sender));
-
-    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormInvalidBlock);
 
     Account sender_account{};
     sender_account.balance = kEther;
     auto state_table{txn->open(db::table::kPlainState)};
     state_table->put(full_view(sender), sender_account.encode_for_storage(/*omit_code_hash=*/false));
 
-    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormSuccess);
+    // ---------------------------------------
+    // Execute first block
+    // ---------------------------------------
+
+    REQUIRE(execute_block(buffer, block_number));
 
     auto contract_address{create_address(sender, /*nonce=*/0)};
-    std::optional<Account> contract_account{db::read_account(*txn, contract_address, block_number)};
+    std::optional<Account> contract_account{buffer.read_account(contract_address)};
     REQUIRE(contract_account);
 
     ethash::hash256 code_hash{keccak256(contract_code)};
@@ -118,21 +110,27 @@ TEST_CASE("Execution API") {
     uint64_t incarnation{1};
 
     evmc::bytes32 storage_key0{};
-    evmc::bytes32 storage0{db::read_storage(*txn, contract_address, incarnation, storage_key0, block_number)};
+    evmc::bytes32 storage0{buffer.read_storage(contract_address, incarnation, storage_key0)};
     CHECK(to_hex(storage0) == "000000000000000000000000000000000000000000000000000000000000002a");
 
     evmc::bytes32 storage_key1{to_bytes32(from_hex("01"))};
-    evmc::bytes32 storage1{db::read_storage(*txn, contract_address, incarnation, storage_key1, block_number)};
+    evmc::bytes32 storage1{buffer.read_storage(contract_address, incarnation, storage_key1)};
     CHECK(to_hex(storage1) == "00000000000000000000000000000000000000000000000000000000000001c9");
 
+    std::optional<Account> miner_account{buffer.read_account(miner)};
+    REQUIRE(miner_account);
+    CHECK(miner_account->balance > 1 * param::kFrontierBlockReward);
+    CHECK(miner_account->balance < 2 * param::kFrontierBlockReward);
+
     // ---------------------------------------
-    // Second block
+    // Execute second block
     // ---------------------------------------
 
     std::string new_val{"000000000000000000000000000000000000000000000000000000000000003e"};
 
     block_number = 2;
     block.header.number = block_number;
+    block.transactions[0].nonce = 1;
     block.transactions[0].to = contract_address;
     block.transactions[0].data = from_hex(new_val);
 
@@ -150,25 +148,31 @@ TEST_CASE("Execution API") {
     body_table->put(block_key, body_rlp);
     sender_table->put(block_key, full_view(sender));
 
-    CHECK(silkworm_execute_block(*txn->handle(), chain_id, block_number, &lmdb_error_code) == kSilkwormSuccess);
+    REQUIRE(execute_block(buffer, block_number));
 
-    storage0 = db::read_storage(*txn, contract_address, incarnation, storage_key0, block_number);
+    storage0 = buffer.read_storage(contract_address, incarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);
+
+    miner_account = buffer.read_account(miner);
+    REQUIRE(miner_account);
+    CHECK(miner_account->balance > 2 * param::kFrontierBlockReward);
+    CHECK(miner_account->balance < 3 * param::kFrontierBlockReward);
 
     // ---------------------------------------
     // Check change sets
     // ---------------------------------------
 
-    std::optional<db::AccountChanges> account_changes{db::read_account_changes(*txn, 1)};
-    REQUIRE(account_changes);
-    CHECK(account_changes->size() == 3);
+    buffer.write_to_db();
+
+    const db::AccountChanges& account_changes{buffer.account_changes().at(1)};
+    CHECK(account_changes.size() == 3);
 
     // sender existed at genesis
-    CHECK(!account_changes->at(sender).empty());
+    CHECK(!account_changes.at(sender).empty());
 
     // miner & contract were created in block 1
-    CHECK(account_changes->at(miner).empty());
-    CHECK(account_changes->at(contract_address).empty());
+    CHECK(account_changes.at(miner).empty());
+    CHECK(account_changes.at(contract_address).empty());
 
     Bytes storage_changes_encoded{db::read_storage_changes(*txn, 1)};
     db::StorageChanges storage_changes_expected{};

@@ -251,7 +251,7 @@ class Table {
     int clear();  // Removes all contents from the table (cursor is invalidated)
     int drop();   // Deletes the table from the environment (cursor is invalidated)
 
-    /** @brief Gets the value by key. A nil optional is returned if the key is not found.
+    /** @brief Gets the value by key. std::nullopt is returned if the key is not found.
      *
      * Warning: The memory pointed to by the returned view is owned by the database.
      * The caller may not modify it in any way.

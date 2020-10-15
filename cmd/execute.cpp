@@ -16,7 +16,6 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <cstring>
 #include <ctime>  // TODO(Andrew) replace with the logger
 #include <iostream>
 #include <limits>
@@ -34,7 +33,7 @@ static constexpr const char* kTimeFormat{"%Y-%m-%d_%H:%M:%S_%Z"};
 
 static uint64_t already_executed_block(lmdb::Transaction& txn) {
     std::unique_ptr<lmdb::Table> progress_table{txn.open(db::table::kSyncStageProgress)};
-    ByteView stage_key{reinterpret_cast<const uint8_t*>(kExecutionStage), std::strlen(kExecutionStage)};
+    ByteView stage_key{byte_view_of_c_str(kExecutionStage)};
     std::optional<ByteView> already_executed{progress_table->get(stage_key)};
     if (already_executed) {
         return boost::endian::load_big_u64(already_executed->data());
@@ -45,7 +44,7 @@ static uint64_t already_executed_block(lmdb::Transaction& txn) {
 
 static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
     std::unique_ptr<lmdb::Table> progress_table{txn.open(db::table::kSyncStageProgress)};
-    ByteView stage_key{reinterpret_cast<const uint8_t*>(kExecutionStage), std::strlen(kExecutionStage)};
+    ByteView stage_key{byte_view_of_c_str(kExecutionStage)};
     Bytes val(8, '\0');
     boost::endian::store_big_u64(&val[0], block_number);
     progress_table->put(stage_key, val);

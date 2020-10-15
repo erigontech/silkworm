@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <cstring>
 #include <evmc/evmc.hpp>
 #include <stdexcept>
 #include <string>
@@ -54,6 +55,10 @@ constexpr evmc::bytes32 kEmptyRoot{0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996
 
 constexpr uint64_t kGiga{1'000'000'000};   // = 10^9
 constexpr uint64_t kEther{kGiga * kGiga};  // = 10^18
+
+inline ByteView byte_view_of_c_str(const char* str) {
+    return {reinterpret_cast<const uint8_t*>(str), std::strlen(str)};
+}
 
 }  // namespace silkworm
 

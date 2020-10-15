@@ -305,7 +305,7 @@ std::optional<uint64_t> get_highest_canonical_header(std::unique_ptr<lmdb::Table
     size_t count{0};
     lmdb::err_handler(headers->get_rcount(&count));
     if (!count) {
-        return {};
+        return std::nullopt;
     }
 
     MDB_val key, data;
@@ -318,7 +318,7 @@ std::optional<uint64_t> get_highest_canonical_header(std::unique_ptr<lmdb::Table
         }
         return {boost::endian::load_big_u64(&v[0])};
     }
-    return {};
+    return std::nullopt;
 }
 
 uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t from, uint64_t to, evmc::bytes32* out) {
@@ -771,12 +771,10 @@ int do_recover(app_options_t& options) {
 
 // Prints out info of block's transactions with senders
 int do_verify(app_options_t& options) {
-
     // Adjust params
     if (options.block_to == UINT32_MAX) options.block_to = options.block_from;
 
-    try
-    {
+    try {
         // Open db and start transaction
         lmdb::options lmdb_opts{};
         lmdb_opts.map_size = options.mapsize;
@@ -803,8 +801,7 @@ int do_verify(app_options_t& options) {
             throw std::logic_error("Selected block beyond collected senders");
         }
 
-        for (uint32_t block_num = options.block_from; block_num <= options.block_to; block_num++)
-        {
+        for (uint32_t block_num = options.block_from; block_num <= options.block_to; block_num++) {
             std::cout << "Reading block #" << block_num << std::endl;
             std::optional<BlockWithHash> bh{db::read_block(*lmdb_txn, block_num)};
             if (!bh) {
@@ -830,12 +827,11 @@ int do_verify(app_options_t& options) {
                       << " " << std::left << std::setw(42) << std::setfill('-') << ""
                       << " " << std::left << std::setw(42) << std::setfill('-') << "" << std::endl;
 
-            for (size_t i = 0; i < bh->block.transactions.size(); i++)
-            {
+            for (size_t i = 0; i < bh->block.transactions.size(); i++) {
                 Bytes rlp{};
                 rlp::encode(rlp, bh->block.transactions.at(i), /*forsigning*/ false, {});
-                ethash::hash256 hash{ ethash::keccak256(rlp.data(), rlp.length()) };
-                ByteView bv{ hash.bytes,32 };
+                ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
+                ByteView bv{hash.bytes, 32};
                 std::cout << std::right << std::setw(4) << std::setfill(' ') << i << " 0x" << to_hex(bv) << " 0x"
                           << to_hex(senders.at(i)) << " 0x" << to_hex(*(bh->block.transactions.at(i).to)) << std::endl;
             }
@@ -843,13 +839,10 @@ int do_verify(app_options_t& options) {
             std::cout << std::endl;
         }
 
-    }
-    catch (const std::logic_error& ex) {
+    } catch (const std::logic_error& ex) {
         std::cout << ex.what() << std::endl;
         return -1;
-    }
-    catch (const std::exception& ex)
-    {
+    } catch (const std::exception& ex) {
         std::cout << "Unexpected error : " << ex.what() << std::endl;
         return -1;
     }

@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
         if (current_progress % 1000 == 0) {
             std::time_t t = std::time(nullptr);
             std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
-                      << " have been executed\n";
+                      << " have been executed" << std::endl;
         }
 
         if (buffer->full_enough()) {
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
 
             std::time_t t = std::time(nullptr);
             std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
-                      << " have been committed\n";
+                      << " have been committed" << std::endl;
 
             txn = env->begin_rw_transaction();
             buffer = std::make_unique<db::Buffer>(txn.get());
@@ -103,9 +103,9 @@ int main(int argc, char* argv[]) {
         lmdb::err_handler(txn->commit());
         std::time_t t = std::time(nullptr);
         std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " All blocks <= " << current_progress
-                  << " have been executed and committed\n";
+                  << " have been executed and committed" << std::endl;
     } else {
-        std::cout << "No blocks have been executed\n";
+        std::cout << "No blocks have been executed" << std::endl;
     }
 
     return 0;

@@ -14,16 +14,10 @@
    limitations under the License.
 ]]
 
-hunter_add_package(Boost COMPONENTS filesystem)
+find_package(absl CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
-
-hunter_add_package(lmdb)
 find_package(liblmdb CONFIG REQUIRED)
-
-hunter_add_package(cryptopp)
 find_package(cryptopp CONFIG REQUIRED)
-
-hunter_add_package(Microsoft.GSL)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")

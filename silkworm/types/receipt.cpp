@@ -24,9 +24,6 @@ static Header header(const Receipt& r) {
     Header h;
     h.list = true;
     h.payload_length = 1;
-    if (std::holds_alternative<evmc::bytes32>(r.post_state_or_status)) {
-        h.payload_length += kHashLength;
-    }
     h.payload_length += length(r.cumulative_gas_used);
     h.payload_length += length(full_view(r.bloom));
     h.payload_length += length(r.logs);
@@ -35,11 +32,7 @@ static Header header(const Receipt& r) {
 
 void encode(Bytes& to, const Receipt& r) {
     encode_header(to, header(r));
-    if (std::holds_alternative<evmc::bytes32>(r.post_state_or_status)) {
-        encode(to, std::get<evmc::bytes32>(r.post_state_or_status));
-    } else {
-        encode(to, std::get<bool>(r.post_state_or_status));
-    }
+    encode(to, r.success);
     encode(to, r.cumulative_gas_used);
     encode(to, full_view(r.bloom));
     encode(to, r.logs);

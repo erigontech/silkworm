@@ -139,13 +139,11 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
 
     unnamed.reset();
     unnamed = tx->open(lmdb::MAIN_DBI);  // Opens unnamed table (every lmdb has one)
-    ret.push_back({ unnamed->get_dbi(), unnamed->get_name() });
+    ret.push_back({unnamed->get_dbi(), unnamed->get_name()});
     lmdb::err_handler(unnamed->get_stat(&ret.back().stat));
     if (ret.back().stat.ms_entries) {
-
         lmdb::err_handler(unnamed->get_first(&key, &data));
         while (!shouldStop) {
-
             if (data.mv_size < sizeof(size_t)) {
                 lmdb::err_handler(MDB_INVALID);
             }
@@ -273,7 +271,6 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
         if (!copy) {
             lmdb::err_handler(mdb_env_copy2(*(lmdb_src_env->handle()), workdir.c_str(), MDB_CP_COMPACT));
         } else {
-
             // We traverse all populated tables and copy only their data
             std::unique_ptr<lmdb::Transaction> src_txn{lmdb_src_env->begin_ro_transaction()};
             auto tables = get_tables(src_txn);
@@ -290,7 +287,7 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
             // Should actually compute the real reclaimable space traversing free_dbi
             // But this is an experiment
             data_size += (500ull << 20);
-            size_t host_page_size{ boost::interprocess::mapped_region::get_page_size() };
+            size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
             data_size = ((data_size + host_page_size - 1) / host_page_size) * host_page_size;
 
             lmdb::options tgt_opts{};
@@ -300,7 +297,7 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
 
             // Create target environment and open a rw transaction
             lmdb_tgt_env = lmdb::get_env(workdir.c_str(), tgt_opts);
-            std::unique_ptr<lmdb::Transaction> tgt_txn{ lmdb_tgt_env->begin_rw_transaction() };
+            std::unique_ptr<lmdb::Transaction> tgt_txn{lmdb_tgt_env->begin_rw_transaction()};
 
             MDB_val key, data;
             // Loop source tables
@@ -315,9 +312,8 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
                 // required to open the table.
                 bool found{false};
                 unsigned int flags{0};
-                for (const auto& item : silkworm::db::table::kTables ) {
-                    if (std::strcmp(item.name, table.name.c_str()) == 0)
-                    {
+                for (const auto& item : silkworm::db::table::kTables) {
+                    if (std::strcmp(item.name, table.name.c_str()) == 0) {
                         flags = item.flags;
                         found = true;
                         break;
@@ -336,15 +332,13 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
                     if ((flags & MDB_DUPSORT) == MDB_DUPSORT) {
                         size_t dups{0};
                         lmdb::err_handler(src_table->get_dcount(&dups));
-                        //Put all duplicated data items for this key
+                        // Put all duplicated data items for this key
                         lmdb::err_handler(tgt_table->put_append_dup(&key, &data));
-                        while (--dups)
-                        {
+                        while (--dups) {
                             lmdb::err_handler(src_table->get_next_dup(&key, &data));
                             lmdb::err_handler(tgt_table->put_append_dup(&key, &data));
                         }
-                    }
-                    else {
+                    } else {
                         lmdb::err_handler(tgt_table->put_append(&key, &data));
                     }
                     rc = src_table->get_next(&key, &data);
@@ -452,7 +446,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::optional<uint64_t> lmdb_mapSize{parse_size(po_mapsize_str)};
-    std::size_t lmdb_fileSize{bfs::file_size(data_file)};
+    uint64_t lmdb_fileSize{bfs::file_size(data_file)};
 
     // Do not accept mapSize below filesize
     if (!lmdb_mapSize.has_value()) {

@@ -139,18 +139,18 @@ void Buffer::write_to_db() {
         code_table->put(full_view(entry.first), entry.second);
     }
 
-    auto code_hash_table{txn_->open(table::kCode)};
+    auto code_hash_table{txn_->open(table::kPlainContractCode)};
     for (const auto& entry : storage_prefix_to_code_hash_) {
         code_hash_table->put(entry.first, full_view(entry.second));
     }
 
-    auto account_change_table{txn_->open(table::kAccountChangeSet)};
+    auto account_change_table{txn_->open(table::kPlainAccountChangeSet)};
     for (const auto& entry : account_changes_) {
         Bytes block_key{encode_timestamp(entry.first)};
         account_change_table->put(block_key, entry.second.encode());
     }
 
-    auto storage_change_table{txn_->open(table::kStorageChangeSet)};
+    auto storage_change_table{txn_->open(table::kPlainStorageChangeSet)};
     for (const auto& entry : storage_changes_) {
         Bytes block_key{encode_timestamp(entry.first)};
         storage_change_table->put(block_key, entry.second.encode());

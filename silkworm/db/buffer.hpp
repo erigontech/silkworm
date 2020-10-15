@@ -86,6 +86,9 @@ class Buffer {
 
     void write_to_db();
 
+    /** Optimal number of entries to keep in memory before commiting to the database. */
+    size_t optimal_batch_size{500'000};
+
    private:
     void write_accounts_to_db();
 
@@ -99,7 +102,7 @@ class Buffer {
     std::map<evmc::bytes32, Bytes> hash_to_code_;
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
 
-    uint64_t number_of_entries{0};
+    size_t number_of_entries{0};
 
     // Stuff related to change sets
     uint64_t current_block_number_{0};

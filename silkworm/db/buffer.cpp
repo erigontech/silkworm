@@ -81,7 +81,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
 }
 
-bool Buffer::full_enough() const { return number_of_entries >= 500'000; }
+bool Buffer::full_enough() const { return number_of_entries >= optimal_batch_size; }
 
 void Buffer::write_accounts_to_db() {
     auto state_table{txn_->open(table::kPlainState)};

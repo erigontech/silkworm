@@ -60,7 +60,8 @@ static const MDB_dbi MAIN_DBI = 1;  // Reserved for tracking named tables
 
 struct TableConfig {
     const char* name{nullptr};
-    bool dupsort{false};  // MDB_DUPSORT
+    const unsigned int flags{0};
+    //bool dupsort{false};  // MDB_DUPSORT
 };
 
 /**
@@ -288,8 +289,11 @@ class Table {
                                                // true only for tables opened MDB_DUPSORT flag and in that case all
                                                // records with same key are deleted too
     int get_first(MDB_val* key, MDB_val* data);  // Move cursor at first item in table
-    int get_prev(MDB_val* key, MDB_val* data);   // Move cursor at previous item in table
+    int get_first_dup(MDB_val* key, MDB_val* data);  // Move cursor at first item of current key (only MDB_DUPSORT)
+    int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in table
+    int get_prev_dup(MDB_val* key,MDB_val* data);    // Move cursor at previous data item in current key (only MDB_DUPSORT)
     int get_next(MDB_val* key, MDB_val* data);   // Move cursor at next item in table
+    int get_next_dup(MDB_val* key,MDB_val* data);    // Move cursor at next data item in current key (only MDB_DUPSORT)
     int get_last(MDB_val* key, MDB_val* data);   // Move cursor at last item in table
     int get_dcount(size_t* count);               // Returns the count of duplicates at current position
 

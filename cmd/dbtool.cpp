@@ -23,6 +23,7 @@
 #include <regex>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
 #include <string>
@@ -138,13 +139,11 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
 
     unnamed.reset();
     unnamed = tx->open(lmdb::MAIN_DBI);  // Opens unnamed table (every lmdb has one)
-    ret.push_back({ unnamed->get_dbi(), unnamed->get_name() });
+    ret.push_back({unnamed->get_dbi(), unnamed->get_name()});
     lmdb::err_handler(unnamed->get_stat(&ret.back().stat));
     if (ret.back().stat.ms_entries) {
-
         lmdb::err_handler(unnamed->get_first(&key, &data));
         while (!shouldStop) {
-
             if (data.mv_size < sizeof(size_t)) {
                 lmdb::err_handler(MDB_INVALID);
             }
@@ -272,11 +271,10 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
         if (!copy) {
             lmdb::err_handler(mdb_env_copy2(*(lmdb_src_env->handle()), workdir.c_str(), MDB_CP_COMPACT));
         } else {
-
             // We traverse all populated tables and copy only their data
-            std::unique_ptr<lmdb::Transaction> src_txn{ lmdb_src_env->begin_ro_transaction() };
+            std::unique_ptr<lmdb::Transaction> src_txn{lmdb_src_env->begin_ro_transaction()};
             auto tables = get_tables(src_txn);
-            size_t data_size{ 0 };
+            size_t data_size{0};
 
             // Compute size of data we need to copy
             for (dbTableEntry table : tables) {
@@ -285,30 +283,64 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
                              (table.stat.ms_leaf_pages + table.stat.ms_branch_pages + table.stat.ms_overflow_pages);
             }
 
-            // Round up data size to 1MB (1ull << 20)
-            data_size = ((data_size + (1ull << 20) - 1) / (1ull << 20)) * (1ull << 20);
+            // Add extra 50 Mb to fit
+            // Should actually compute the real reclaimable space traversing free_dbi
+            // But this is an experiment
+            data_size += (500ull << 20);
+            size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
+            data_size = ((data_size + host_page_size - 1) / host_page_size) * host_page_size;
+
             lmdb::options tgt_opts{};
             tgt_opts.read_only = false;
+            tgt_opts.no_tls = false;
             tgt_opts.map_size = data_size;
 
             // Create target environment and open a rw transaction
             lmdb_tgt_env = lmdb::get_env(workdir.c_str(), tgt_opts);
-            std::unique_ptr<lmdb::Transaction> tgt_txn{ lmdb_tgt_env->begin_rw_transaction() };
+            std::unique_ptr<lmdb::Transaction> tgt_txn{lmdb_tgt_env->begin_rw_transaction()};
 
             MDB_val key, data;
             // Loop source tables
             for (dbTableEntry table : tables) {
                 if (table.id < 2 || !table.stat.ms_entries) continue;  // Skip reserved databases and empty tables
 
-                // Create table on destination
+                // Create table on destination with same flags as origin
                 std::cout << " Copying table " << table.name << std::endl;
-                auto src_table = src_txn->open({table.name.c_str()});
-                auto tgt_table = tgt_txn->open({table.name.c_str()}, MDB_CREATE);
+
+                // Lookup TableConfig in known (canonical/deprecated) tables collection
+                // If not found we have no way to determine which are the proper flags
+                // required to open the table.
+                bool found{false};
+                unsigned int flags{0};
+                for (const auto& item : silkworm::db::table::kTables) {
+                    if (std::strcmp(item.name, table.name.c_str()) == 0) {
+                        flags = item.flags;
+                        found = true;
+                        break;
+                    }
+                }
+
+                // Not a table we know of. Skip it
+                if (!found) continue;
+
+                auto src_table = src_txn->open({table.name.c_str(), flags});
+                auto tgt_table = tgt_txn->open({table.name.c_str(), flags}, MDB_CREATE);
 
                 // Loop source and write into target
                 int rc{src_table->get_first(&key, &data)};
                 while (rc == MDB_SUCCESS) {
-                    lmdb::err_handler(tgt_table->put_append(&key, &data));
+                    if ((flags & MDB_DUPSORT) == MDB_DUPSORT) {
+                        size_t dups{0};
+                        lmdb::err_handler(src_table->get_dcount(&dups));
+                        // Put all duplicated data items for this key
+                        lmdb::err_handler(tgt_table->put_append_dup(&key, &data));
+                        while (--dups) {
+                            lmdb::err_handler(src_table->get_next_dup(&key, &data));
+                            lmdb::err_handler(tgt_table->put_append_dup(&key, &data));
+                        }
+                    } else {
+                        lmdb::err_handler(tgt_table->put_append(&key, &data));
+                    }
                     rc = src_table->get_next(&key, &data);
                 }
                 if (rc != MDB_NOTFOUND) {
@@ -413,16 +445,14 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    std::optional<uint64_t> lmdb_mapSize;
-    std::size_t lmdb_fileSize{bfs::file_size(data_file)};
-    if (po_mapsize_str.empty()) {
+    std::optional<uint64_t> lmdb_mapSize{parse_size(po_mapsize_str)};
+    uint64_t lmdb_fileSize{bfs::file_size(data_file)};
+
+    // Do not accept mapSize below filesize
+    if (!lmdb_mapSize.has_value()) {
         lmdb_mapSize = lmdb_fileSize;
     } else {
-        lmdb_mapSize = parse_size(po_mapsize_str);
-    }
-    if (!lmdb_mapSize.has_value()) {
-        std::cout << "Invalid map size" << std::endl;
-        return -1;
+        *lmdb_mapSize = std::max(*lmdb_mapSize, lmdb_fileSize);
     }
 
     // Adjust mapSize to a multiple of page_size

@@ -273,9 +273,7 @@ size_t Transaction::get_id(void) {
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
 std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned flags) {
-    if (config.dupsort) {
-        flags |= MDB_DUPSORT;
-    }
+    flags |= config.flags;
     MDB_dbi dbi{open_dbi(config.name, flags)};
     return std::make_unique<Table>(this, dbi, config.name);
 }
@@ -472,8 +470,11 @@ int Table::del_current(bool alldupkeys) {
     return mdb_cursor_del(handle_, alldupkeys ? MDB_NODUPDATA : 0);
 }
 int Table::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
+int Table::get_first_dup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST_DUP); }
 int Table::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
+int Table::get_prev_dup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV_DUP); }
 int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
+int Table::get_next_dup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT_DUP); }
 int Table::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
 int Table::get_dcount(size_t* count) { return mdb_cursor_count(handle_, count); }
 

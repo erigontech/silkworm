@@ -20,21 +20,41 @@
 
 namespace silkworm::rlp {
 
-static Header header(const Receipt& r) {
+static Header header(const Receipt& r, bool for_storage) {
     Header h;
     h.list = true;
     h.payload_length = 1;
     h.payload_length += length(r.cumulative_gas_used);
-    h.payload_length += length(full_view(r.bloom));
+    if (!for_storage) {
+        h.payload_length += length(full_view(r.bloom));
+    }
     h.payload_length += length(r.logs);
     return h;
 }
 
-void encode(Bytes& to, const Receipt& r) {
-    encode_header(to, header(r));
+void encode(Bytes& to, const Receipt& r, bool for_storage) {
+    encode_header(to, header(r, for_storage));
     encode(to, r.success);
     encode(to, r.cumulative_gas_used);
-    encode(to, full_view(r.bloom));
+    if (!for_storage) {
+        encode(to, full_view(r.bloom));
+    }
     encode(to, r.logs);
 }
+
+Bytes encode_for_storage(const std::vector<Receipt>& v) {
+    bool for_storage{true};
+    Bytes to{};
+    Header h1{/*list=*/true, 0};
+    for (const Receipt& x : v) {
+        Header h2{header(x, for_storage)};
+        h1.payload_length += length_of_length(h2.payload_length) + h2.payload_length;
+    }
+    encode_header(to, h1);
+    for (const Receipt& x : v) {
+        encode(to, x, for_storage);
+    }
+    return to;
+}
+
 }  // namespace silkworm::rlp

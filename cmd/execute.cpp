@@ -21,7 +21,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
-#include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
 
@@ -50,6 +50,12 @@ static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
     progress_table->put(stage_key, val);
 }
 
+static bool receipt_serialized_as_rlp(lmdb::Transaction& txn) {
+    std::unique_ptr<lmdb::Table> migration_table{txn.open(db::table::kMigrations)};
+    bool migration_happened{migration_table->get(byte_view_of_c_str("receipts_cbor_encode")).has_value()};
+    return !migration_happened;
+}
+
 int main(int argc, char* argv[]) {
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
@@ -65,6 +71,13 @@ int main(int argc, char* argv[]) {
     opts.read_only = false;
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_path.c_str(), opts)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+
+    bool write_receipts{db::read_storage_mode_receipts(*txn)};
+    if (write_receipts && !receipt_serialized_as_rlp(*txn)) {
+        std::cerr << "CBOR receipts are not supported yet\n";
+        return -1;
+    }
+
     auto buffer{std::make_unique<db::Buffer>(txn.get())};
 
     uint64_t previous_progress{already_executed_block(*txn)};

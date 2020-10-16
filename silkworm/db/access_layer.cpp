@@ -258,4 +258,10 @@ Bytes read_storage_changes(lmdb::Transaction& txn, uint64_t block_number) {
     return Bytes{*val};
 }
 
+bool read_storage_mode_receipts(lmdb::Transaction& txn) {
+    auto table{txn.open(table::kDatabaseInfo)};
+    std::optional<ByteView> val{table->get(byte_view_of_c_str(kStorageModeReceipts))};
+    return val && val->length() == 1 && (*val)[0] == 1;
+}
+
 }  // namespace silkworm::db

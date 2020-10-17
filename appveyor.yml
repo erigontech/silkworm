@@ -33,7 +33,7 @@ before_build:
   - git submodule update --init --recursive
   - SET INCLUDE=C:\Tools\vcpkg\installed\x64-windows\include;%INCLUDE%
   - SET PATH=C:\Tools\vcpkg\installed\x64-windows\bin;%PATH%
-  - cmake -H. -Bbuild
+  - cmake -H. -Bbuild -Wno-dev
 
 build:
   project: build\silkworm.sln

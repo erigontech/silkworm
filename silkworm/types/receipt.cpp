@@ -64,7 +64,7 @@ std::vector<uint8_t> cbor_encode(const std::vector<Receipt>& v) {
         for (const Log& l : r.logs) {
             BytesJson log{};
             log.push_back(BytesJson::binary(Bytes{full_view(l.address)}));
-            BytesJson topics{BytesJson::array()};
+            BytesJson topics = BytesJson::array();
             for (const evmc::bytes32& t : l.topics) {
                 topics.push_back(BytesJson::binary(Bytes{full_view(t)}));
             }

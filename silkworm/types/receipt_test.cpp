@@ -33,12 +33,12 @@ TEST_CASE("CBOR encoding of receipts") {
     v[0].logs = {
         Log{
             0xea674fdde714fd979de3edf0f56aa9716b898ec8_address,
-            std::vector<evmc::bytes32>{},
+            {},
             from_hex("0x010043"),
         },
         Log{
             0x44fd3ab8381cc3d14afa7c4af7fd13cdc65026e1_address,
-            std::vector<evmc::bytes32>{to_bytes32(from_hex("dead")), to_bytes32(from_hex("abba"))},
+            {to_bytes32(from_hex("dead")), to_bytes32(from_hex("abba"))},
             from_hex("0xaabbff780043"),
         },
     };

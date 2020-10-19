@@ -23,6 +23,7 @@
 
 #include <ethash/keccak.hpp>
 #include <silkworm/common/base.hpp>
+#include <vector>
 
 namespace silkworm {
 
@@ -57,7 +58,10 @@ ByteView full_view(const uint8_t (&bytes)[N]) {
     return {bytes, N};
 }
 
+inline ByteView full_view(const std::vector<uint8_t>& v) { return {v.data(), v.size()}; }
+
 inline ByteView full_view(const evmc::address& address) { return {address.bytes, kAddressLength}; }
+
 inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHashLength}; }
 
 // Leading zero bytes are stripped

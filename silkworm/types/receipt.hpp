@@ -30,6 +30,10 @@ struct Receipt {
     std::vector<Log> logs;
 };
 
+// TG-compatible CBOR encoding for storage.
+// See core/types/receipt.go
+std::vector<uint8_t> cbor_encode(const std::vector<Receipt>& v);
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_TYPES_RECEIPT_H_

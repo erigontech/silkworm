@@ -50,7 +50,7 @@ static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
     progress_table->put(stage_key, val);
 }
 
-static bool receipt_serialized_as_rlp(lmdb::Transaction& txn) {
+static bool receipt_stored_as_rlp(lmdb::Transaction& txn) {
     std::unique_ptr<lmdb::Table> migration_table{txn.open(db::table::kMigrations)};
     bool migration_happened{migration_table->get(byte_view_of_c_str("receipts_cbor_encode")).has_value()};
     return !migration_happened;
@@ -73,8 +73,8 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
     bool write_receipts{db::read_storage_mode_receipts(*txn)};
-    if (write_receipts && !receipt_serialized_as_rlp(*txn)) {
-        std::cerr << "CBOR receipts are not supported yet\n";
+    if (write_receipts && receipt_stored_as_rlp(*txn)) {
+        std::cerr << "Receipts stored as RLP are not supported\n";
         return -1;
     }
 

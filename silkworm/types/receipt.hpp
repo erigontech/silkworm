@@ -30,10 +30,6 @@ struct Receipt {
     std::vector<Log> logs;
 };
 
-namespace rlp {
-    Bytes encode_for_storage(const std::vector<Receipt>& v);
-}
-
 }  // namespace silkworm
 
 #endif  // SILKWORM_TYPES_RECEIPT_H_

@@ -72,7 +72,7 @@ namespace rlp {
     void encode(Bytes& to, const BlockBody&);
     void encode(Bytes& to, const BlockHeader&);
     void encode(Bytes& to, const Log&);
-    void encode(Bytes& to, const Receipt&, bool for_storage = false);
+    void encode(Bytes& to, const Receipt&);
     void encode(Bytes& to, const Transaction&);
 
     size_t length_of_length(uint64_t payload_length);

@@ -24,9 +24,6 @@
 #include <iostream>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/execution/processor.hpp>
-#include <silkworm/trie/vector_root.hpp>
-#include <string>
 
 using namespace evmc::literals;
 
@@ -78,28 +75,7 @@ int main(int argc, char* argv[]) {
 
         db::Buffer buffer{txn.get(), block_num};
 
-        std::vector<Receipt> receipts{execute_block(*bh, buffer)};
-
-        uint64_t gas_used{0};
-        if (!receipts.empty()) {
-            gas_used = receipts.back().cumulative_gas_used;
-        }
-
-        if (gas_used != bh->block.header.gas_used) {
-            std::cerr << "gasUsed mismatch for block " << block_num << " 😠\n";
-            std::cerr << gas_used << '\n';
-            std::cerr << "vs expected\n";
-            std::cerr << bh->block.header.gas_used << '\n';
-            return -2;
-        }
-
-        if (kMainnetConfig.has_byzantium(block_num)) {
-            evmc::bytes32 receipt_root{trie::root_hash(receipts)};
-            if (receipt_root != bh->block.header.receipts_root) {
-                std::cerr << "Receipt root mismatch for block " << block_num << " 😖\n";
-                return -3;
-            }
-        }
+        execute_block(*bh, buffer);
 
         std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
         if (buffer.account_changes().at(block_num) != db_account_changes) {

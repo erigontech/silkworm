@@ -57,6 +57,7 @@ TEST_CASE("Execution API") {
     block.header.number = block_number;
     block.header.beneficiary = miner;
     block.header.gas_limit = 100'000;
+    block.header.gas_used = 63'820;
 
     // This contract initially sets its 0th storage to 0x2a
     // and its 1st storage to 0x01c9.
@@ -132,6 +133,8 @@ TEST_CASE("Execution API") {
 
     block_number = 2;
     block.header.number = block_number;
+    block.header.gas_used = 26'201;
+
     block.transactions[0].nonce = 1;
     block.transactions[0].to = contract_address;
     block.transactions[0].data = from_hex(new_val);

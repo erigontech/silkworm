@@ -20,6 +20,7 @@
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/mapped_region.hpp>
+#include <boost/signals2.hpp>
 #include <condition_variable>
 #include <csignal>
 #include <ethash/keccak.hpp>

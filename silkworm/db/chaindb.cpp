@@ -53,7 +53,6 @@ void Environment::open(const char* path, const unsigned int flags, const mdb_mod
 
 void Environment::close() noexcept {
     if (assert_opened(false)) {
-        signal_on_before_close_();
         mdb_env_close(handle_);
         handle_ = nullptr;
         opened_ = false;
@@ -183,11 +182,7 @@ std::unique_ptr<Transaction> Environment::begin_rw_transaction(unsigned int flag
  */
 
 Transaction::Transaction(Environment* parent, MDB_txn* txn, unsigned int flags)
-    : parent_env_{parent}, handle_{txn}, flags_{flags} {
-    if (parent) {
-        conn_on_env_close_ = parent->signal_on_before_close_.connect(boost::bind(&Transaction::abort, this));
-    }
-}
+    : parent_env_{parent}, handle_{txn}, flags_{flags} {}
 
 bool Transaction::assert_handle(bool should_throw) {
     bool retvar{handle_ != nullptr};
@@ -289,20 +284,17 @@ void Transaction::abort(void) {
     if (!assert_handle(false)) {
         return;
     }
-    signal_on_before_abort_();  // Signals connected tables to close
     mdb_txn_abort(handle_);
     if (is_ro()) {
         parent_env_->touch_ro_txns(-1);
     } else {
         parent_env_->touch_rw_txns(-1);
     }
-    conn_on_env_close_.disconnect();  // Disconnects from parent env events
     handle_ = nullptr;
 }
 
 int Transaction::commit(void) {
     assert_handle();
-    signal_on_before_commit_();  // Signals connected tables to close
     int rc{mdb_txn_commit(handle_)};
     if (rc == MDB_SUCCESS) {
         if (is_ro()) {
@@ -310,7 +302,6 @@ int Transaction::commit(void) {
         } else {
             parent_env_->touch_rw_txns(-1);
         }
-        conn_on_env_close_.disconnect();  // Disconnects from parent env events
         handle_ = nullptr;
     }
     return rc;
@@ -320,7 +311,7 @@ int Transaction::commit(void) {
  * Tables
  */
 
-Table::Table(Transaction* parent, MDB_dbi dbi, const char * name)
+Table::Table(Transaction* parent, MDB_dbi dbi, const char* name)
     : Table::Table(parent, dbi, name, open_cursor(parent, dbi)) {}
 
 Table::~Table() { close(); }
@@ -334,13 +325,8 @@ MDB_cursor* Table::open_cursor(Transaction* parent, MDB_dbi dbi) {
     return retvar;
 }
 
-Table::Table(Transaction* parent, MDB_dbi dbi, const char * name, MDB_cursor* cursor)
-    : parent_txn_{parent},
-      dbi_{dbi},
-      name_{name ? name : ""},
-      handle_{cursor},
-      conn_on_txn_abort_{parent->signal_on_before_abort_.connect(boost::bind(&Table::close, this))},
-      conn_on_txn_commit_{parent->signal_on_before_commit_.connect(boost::bind(&Table::close, this))} {}
+Table::Table(Transaction* parent, MDB_dbi dbi, const char* name, MDB_cursor* cursor)
+    : parent_txn_{parent}, dbi_{dbi}, name_{name ? name : ""}, handle_{cursor} {}
 
 int Table::get_flags(unsigned int* flags) { return mdb_dbi_flags(*parent_txn_->handle(), dbi_, flags); }
 
@@ -461,8 +447,10 @@ int Table::get_current(MDB_val* key, MDB_val* data) { return get(key, data, MDB_
 int Table::del_current(bool alldupkeys) {
     if (alldupkeys) {
         unsigned int flags{0};
-        int rc{ get_flags(&flags) };
-        if (rc) return rc;
+        int rc{get_flags(&flags)};
+        if (rc) {
+            return rc;
+        }
         if ((flags & MDB_DUPSORT) != MDB_DUPSORT) {
             alldupkeys = false;
         }
@@ -496,8 +484,6 @@ void Table::close() {
     // Free the cursor handle
     // There is no need to close the dbi_ handle
     if (assert_handle(false)) {
-        conn_on_txn_abort_.disconnect();  // Disconnects from parent Transaction events
-        conn_on_txn_commit_.disconnect();
         mdb_cursor_close(handle_);
         handle_ = nullptr;
     }

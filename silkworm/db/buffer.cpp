@@ -16,7 +16,6 @@
 
 #include "buffer.hpp"
 
-#include <algorithm>
 #include <boost/endian/conversion.hpp>
 #include <silkworm/common/util.hpp>
 
@@ -79,36 +78,71 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     changed_storage_.insert(address);
     Bytes full_key{storage_key(address, incarnation, key)};
     storage_changes_[current_block_number_][full_key] = zeroless_view(initial);
-    if (storage_[storage_prefix(address, incarnation)].insert_or_assign(key, current).second) {
-        ++number_of_entries;
+
+    if (incarnation == kDefaultIncarnation) {
+        if (default_incarnation_storage_[address].insert_or_assign(key, current).second) {
+            ++number_of_entries;
+        }
+    } else {
+        if (custom_incarnation_storage_[address][incarnation].insert_or_assign(key, current).second) {
+            ++number_of_entries;
+        }
     }
 }
 
 bool Buffer::full_enough() const { return number_of_entries >= optimal_batch_size; }
 
-void Buffer::write_accounts_to_db() {
+static void update_storage_value(lmdb::Table& state_table, ByteView storage_prefix, const evmc::bytes32& key,
+                                 const evmc::bytes32& value) {
+    state_table.del(storage_prefix, full_view(key));
+    if (!is_zero(value)) {
+        Bytes data{full_view(key)};
+        data.append(zeroless_view(value));
+        state_table.put(storage_prefix, data);
+    }
+}
+
+void Buffer::write_to_state_table() {
     auto state_table{txn_->open(table::kPlainState)};
 
-    std::vector<evmc::address> keys;
-    keys.reserve(accounts_.size());
-    for (auto& it : accounts_) {
-        keys.push_back(it.first);
+    std::set<evmc::address> keys;
+    for (auto& x : accounts_) {
+        keys.insert(x.first);
     }
-
-    // Sort before inserting into the DB
-    std::sort(keys.begin(), keys.end());
+    for (auto& x : default_incarnation_storage_) {
+        keys.insert(x.first);
+    }
+    for (auto& x : custom_incarnation_storage_) {
+        keys.insert(x.first);
+    }
 
     for (const auto& key : keys) {
-        state_table->del(full_view(key));
-        const std::optional<Account>& account{accounts_.at(key)};
-        if (account) {
-            bool omit_code_hash{false};
-            Bytes encoded{account->encode_for_storage(omit_code_hash)};
-            state_table->put(full_view(key), encoded);
+        if (auto it{accounts_.find(key)}; it != accounts_.end()) {
+            state_table->del(full_view(key));
+            if (it->second.has_value()) {
+                bool omit_code_hash{false};
+                Bytes encoded{it->second->encode_for_storage(omit_code_hash)};
+                state_table->put(full_view(key), encoded);
+            }
+        }
+
+        if (auto it{default_incarnation_storage_.find(key)}; it != default_incarnation_storage_.end()) {
+            Bytes prefix{storage_prefix(it->first, kDefaultIncarnation)};
+            for (const auto& x : it->second) {
+                update_storage_value(*state_table, prefix, x.first, x.second);
+            }
+        }
+
+        if (auto it{custom_incarnation_storage_.find(key)}; it != custom_incarnation_storage_.end()) {
+            for (const auto& contract : it->second) {
+                uint64_t incarnation{contract.first};
+                Bytes prefix{storage_prefix(it->first, incarnation)};
+                for (const auto& x : contract.second) {
+                    update_storage_value(*state_table, prefix, x.first, x.second);
+                }
+            }
         }
     }
-
-    return;
 }
 
 void Buffer::write_to_db() {
@@ -116,19 +150,7 @@ void Buffer::write_to_db() {
         return;
     }
 
-    write_accounts_to_db();
-
-    auto state_table{txn_->open(table::kPlainState)};
-    for (const auto& contract : storage_) {
-        for (const auto& x : contract.second) {
-            state_table->del(contract.first, full_view(x.first));
-            if (!is_zero(x.second)) {
-                Bytes data{full_view(x.first)};
-                data.append(zeroless_view(x.second));
-                state_table->put(contract.first, data);
-            }
-        }
-    }
+    write_to_state_table();
 
     auto incarnation_table{txn_->open(table::kIncarnationMap)};
     for (const auto& entry : incarnations_) {
@@ -216,11 +238,20 @@ Bytes Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
 
 evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarnation,
                                    const evmc::bytes32& key) const noexcept {
-    if (auto it{storage_.find(storage_prefix(address, incarnation))}; it != storage_.end()) {
-        if (auto it2{it->second.find(key)}; it2 != it->second.end()) {
-            return it2->second;
+    if (incarnation == kDefaultIncarnation) {
+        if (auto it1{default_incarnation_storage_.find(address)}; it1 != default_incarnation_storage_.end()) {
+            if (auto it{it1->second.find(key)}; it != it1->second.end()) {
+                return it->second;
+            }
+        }
+    } else if (auto it2{custom_incarnation_storage_.find(address)}; it2 != custom_incarnation_storage_.end()) {
+        if (auto it1{it2->second.find(incarnation)}; it1 != it2->second.end()) {
+            if (auto it{it1->second.find(key)}; it != it1->second.end()) {
+                return it->second;
+            }
         }
     }
+
     if (!txn_) {
         return {};
     }

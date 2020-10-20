@@ -34,6 +34,8 @@ static_assert(kIncarnationLength == sizeof(uint64_t));
 
 constexpr size_t kStoragePrefixLength{kAddressLength + kIncarnationLength};
 
+constexpr uint64_t kDefaultIncarnation{1};
+
 struct Entry {
     ByteView key;
     ByteView value;

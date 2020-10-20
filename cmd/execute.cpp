@@ -84,12 +84,12 @@ int main(int argc, char* argv[]) {
     uint64_t current_progress{0};
 
     for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-        std::optional<BlockWithHash> bh{db::read_block(*txn, block_number)};
+        std::optional<BlockWithHash> bh{db::read_block(*txn, block_number, /*read_senders=*/true)};
         if (!bh) {
             break;
         }
 
-        std::vector<Receipt> receipts{execute_block(*bh, *buffer)};
+        std::vector<Receipt> receipts{execute_block(bh->block, *buffer)};
 
         if (write_receipts) {
             Bytes key{db::block_key(block_number, bh->hash.bytes)};

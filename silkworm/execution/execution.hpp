@@ -17,7 +17,6 @@
 #ifndef SILKWORM_EXECUTION_EXECUTION_H_
 #define SILKWORM_EXECUTION_EXECUTION_H_
 
-#include <optional>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/types/receipt.hpp>
@@ -26,11 +25,10 @@ namespace silkworm {
 
 /** @brief Executes a given block and writes resulting changes into the database.
  *
- * The function assumes that the state in the database is the one that should be at the begining of the block.
- * @return Receipts if the block was executed successfully and std::nullopt if it wasn't found in the database.
+ * This function also populates transaction senders from the database.
+ * The DB table kCurrentState should match the Ethereum state at the begining of the block.
  */
-std::optional<std::vector<Receipt>> execute_block(db::Buffer& buffer, uint64_t block_number,
-                                                  const ChainConfig& config = kMainnetConfig);
+std::vector<Receipt> execute_block(BlockWithHash& bh, db::Buffer& buffer, const ChainConfig& config = kMainnetConfig);
 
 }  // namespace silkworm
 

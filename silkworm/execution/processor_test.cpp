@@ -108,7 +108,7 @@ TEST_CASE("Zero gas price") {
 
     txn.from = sender;
     Receipt receipt{processor.execute_transaction(txn)};
-    CHECK(std::get<bool>(receipt.post_state_or_status));
+    CHECK(receipt.success);
 }
 
 TEST_CASE("No refund on error") {
@@ -160,7 +160,7 @@ TEST_CASE("No refund on error") {
     txn.from = caller;
 
     Receipt receipt1{processor.execute_transaction(txn)};
-    CHECK(std::get<bool>(receipt1.post_state_or_status));
+    CHECK(receipt1.success);
 
     // Call the newly created contract
     txn.nonce = nonce + 1;
@@ -173,7 +173,7 @@ TEST_CASE("No refund on error") {
     txn.gas_limit = fee::kGTransaction + 5'020;
 
     Receipt receipt2{processor.execute_transaction(txn)};
-    CHECK(!std::get<bool>(receipt2.post_state_or_status));
+    CHECK(!receipt2.success);
     CHECK(receipt2.cumulative_gas_used - receipt1.cumulative_gas_used == txn.gas_limit);
 }
 
@@ -252,7 +252,7 @@ TEST_CASE("Self-destruct") {
     txn.data = full_view(address_as_hash);
 
     Receipt receipt1{processor.execute_transaction(txn)};
-    CHECK(std::get<bool>(receipt1.post_state_or_status));
+    CHECK(receipt1.success);
 
     CHECK(!state.exists(suicidal_address));
 
@@ -262,7 +262,7 @@ TEST_CASE("Self-destruct") {
     txn.data.clear();
 
     Receipt receipt2{processor.execute_transaction(txn)};
-    CHECK(std::get<bool>(receipt2.post_state_or_status));
+    CHECK(receipt2.success);
 
     CHECK(state.exists(suicidal_address));
     CHECK(state.get_balance(suicidal_address) == 0);
@@ -394,7 +394,7 @@ TEST_CASE("Out of Gas during account re-creation") {
 
     Receipt receipt{processor.execute_transaction(txn)};
     // out of gas
-    CHECK(!std::get<bool>(receipt.post_state_or_status));
+    CHECK(!receipt.success);
 
     state.write_to_db(block_number);
 
@@ -434,7 +434,7 @@ TEST_CASE("Empty suicide beneficiary") {
     ExecutionProcessor processor{block, state};
 
     Receipt receipt{processor.execute_transaction(txn)};
-    CHECK(std::get<bool>(receipt.post_state_or_status));
+    CHECK(receipt.success);
 
     state.write_to_db(block_number);
 

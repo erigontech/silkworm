@@ -57,6 +57,8 @@ class Buffer {
 
     void insert_header(BlockHeader block_header);
 
+    void insert_receipts(Bytes block_key, Bytes receipts);
+
     /** @name State changes
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
      */
@@ -101,6 +103,7 @@ class Buffer {
     std::map<evmc::address, uint64_t> incarnations_;
     std::map<evmc::bytes32, Bytes> hash_to_code_;
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
+    std::map<Bytes, Bytes> receipts_;
 
     size_t number_of_entries{0};
 

@@ -29,6 +29,7 @@ namespace silkworm::db {
 void Buffer::begin_new_block(uint64_t block_number) {
     current_block_number_ = block_number;
     changed_storage_.clear();
+    number_of_entries += 2;  // account & storage changes
 }
 
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
@@ -59,6 +60,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
 
     if (account_deleted && initial->incarnation) {
         incarnations_[address] = initial->incarnation;
+        ++number_of_entries;
     }
 }
 
@@ -66,6 +68,7 @@ void Buffer::update_account_code(const evmc::address& address, uint64_t incarnat
                                  ByteView code) {
     hash_to_code_[code_hash] = code;
     storage_prefix_to_code_hash_[storage_prefix(address, incarnation)] = code_hash;
+    number_of_entries += 2;
 }
 
 void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
@@ -155,6 +158,16 @@ void Buffer::write_to_db() {
         Bytes block_key{encode_timestamp(entry.first)};
         storage_change_table->put(block_key, entry.second.encode());
     }
+
+    auto receipt_table{txn_->open(table::kBlockReceipts)};
+    for (const auto& entry : receipts_) {
+        receipt_table->put(entry.first, entry.second);
+    }
+}
+
+void Buffer::insert_receipts(Bytes key, Bytes value) {
+    receipts_[std::move(key)] = std::move(value);
+    ++number_of_entries;
 }
 
 void Buffer::insert_header(BlockHeader block_header) {

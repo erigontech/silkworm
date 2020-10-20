@@ -16,32 +16,68 @@
 
 #include "receipt.hpp"
 
+#include <nlohmann/json.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 
-namespace silkworm::rlp {
+namespace silkworm {
 
-static Header header(const Receipt& r) {
-    Header h;
-    h.list = true;
-    h.payload_length = 1;
-    if (std::holds_alternative<evmc::bytes32>(r.post_state_or_status)) {
-        h.payload_length += kHashLength;
+namespace rlp {
+
+    static Header header(const Receipt& r) {
+        Header h;
+        h.list = true;
+        h.payload_length = 1;
+        h.payload_length += length(r.cumulative_gas_used);
+        h.payload_length += length(full_view(r.bloom));
+        h.payload_length += length(r.logs);
+        return h;
     }
-    h.payload_length += length(r.cumulative_gas_used);
-    h.payload_length += length(full_view(r.bloom));
-    h.payload_length += length(r.logs);
-    return h;
+
+    void encode(Bytes& to, const Receipt& r) {
+        encode_header(to, header(r));
+        encode(to, r.success);
+        encode(to, r.cumulative_gas_used);
+        encode(to, full_view(r.bloom));
+        encode(to, r.logs);
+    }
+
+}  // namespace rlp
+
+std::vector<uint8_t> cbor_encode(const std::vector<Receipt>& v) {
+    using namespace nlohmann;
+
+    // BinaryType = Bytes
+    using BytesJson = basic_json<std::map, std::vector, std::string, bool, std::int64_t, std::uint64_t, double,
+                                 std::allocator, adl_serializer, Bytes>;
+
+    BytesJson json{};
+
+    for (const Receipt& r : v) {
+        BytesJson receipt{};
+
+        receipt.push_back(nullptr);  // no PostState
+        receipt.push_back(r.success ? 1u : 0u);
+        receipt.push_back(r.cumulative_gas_used);
+
+        BytesJson logs{};
+        for (const Log& l : r.logs) {
+            BytesJson log{};
+            log.push_back(BytesJson::binary(Bytes{full_view(l.address)}));
+            BytesJson topics = BytesJson::array();
+            for (const evmc::bytes32& t : l.topics) {
+                topics.push_back(BytesJson::binary(Bytes{full_view(t)}));
+            }
+            log.push_back(topics);
+            log.push_back(BytesJson::binary(l.data));
+            logs.push_back(log);
+        }
+        receipt.push_back(logs);
+
+        json.push_back(receipt);
+    }
+
+    return BytesJson::to_cbor(json);
 }
 
-void encode(Bytes& to, const Receipt& r) {
-    encode_header(to, header(r));
-    if (std::holds_alternative<evmc::bytes32>(r.post_state_or_status)) {
-        encode(to, std::get<evmc::bytes32>(r.post_state_or_status));
-    } else {
-        encode(to, std::get<bool>(r.post_state_or_status));
-    }
-    encode(to, r.cumulative_gas_used);
-    encode(to, full_view(r.bloom));
-    encode(to, r.logs);
-}
-}  // namespace silkworm::rlp
+}  // namespace silkworm

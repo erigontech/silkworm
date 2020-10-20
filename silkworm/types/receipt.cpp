@@ -60,9 +60,8 @@ Bytes cbor_encode(const std::vector<Receipt>& v) {
         encoder.write_array(4);
 
         encoder.write_null();  // no PostState
-        encoder.write_int(r.success ? 1u : 0u);
-        uint64_t gas{r.cumulative_gas_used};
-        encoder.write_int(gas);
+        encoder.write_uint(r.success ? 1u : 0u);
+        encoder.write_uint(r.cumulative_gas_used);
 
         if (r.logs.empty()) {
             encoder.write_null();

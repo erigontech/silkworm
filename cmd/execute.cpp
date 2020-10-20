@@ -93,8 +93,7 @@ int main(int argc, char* argv[]) {
 
         if (write_receipts) {
             Bytes key{db::block_key(block_number, bh->hash.bytes)};
-            std::vector<uint8_t> encoded{cbor_encode(receipts)};
-            buffer->insert_receipts(key, Bytes{full_view(encoded)});
+            buffer->insert_receipts(key, cbor_encode(receipts));
         }
 
         current_progress = block_number;

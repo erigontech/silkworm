@@ -16,9 +16,11 @@
 
 #include "receipt.hpp"
 
-#include <nlohmann/json.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
+
+#include "cbor-cpp/src/encoder.h"
+#include "cbor-cpp/src/output_dynamic.h"
 
 namespace silkworm {
 
@@ -44,40 +46,41 @@ namespace rlp {
 
 }  // namespace rlp
 
-std::vector<uint8_t> cbor_encode(const std::vector<Receipt>& v) {
-    using namespace nlohmann;
+Bytes cbor_encode(const std::vector<Receipt>& v) {
+    cbor::output_dynamic output{};
+    cbor::encoder encoder{output};
 
-    // BinaryType = Bytes
-    using BytesJson = basic_json<std::map, std::vector, std::string, bool, std::int64_t, std::uint64_t, double,
-                                 std::allocator, adl_serializer, Bytes>;
-
-    BytesJson json{};
-
-    for (const Receipt& r : v) {
-        BytesJson receipt{};
-
-        receipt.push_back(nullptr);  // no PostState
-        receipt.push_back(r.success ? 1u : 0u);
-        receipt.push_back(r.cumulative_gas_used);
-
-        BytesJson logs{};
-        for (const Log& l : r.logs) {
-            BytesJson log{};
-            log.push_back(BytesJson::binary(Bytes{full_view(l.address)}));
-            BytesJson topics = BytesJson::array();
-            for (const evmc::bytes32& t : l.topics) {
-                topics.push_back(BytesJson::binary(Bytes{full_view(t)}));
-            }
-            log.push_back(topics);
-            log.push_back(BytesJson::binary(l.data));
-            logs.push_back(log);
-        }
-        receipt.push_back(logs);
-
-        json.push_back(receipt);
+    if (v.empty()) {
+        encoder.write_null();
+    } else {
+        encoder.write_array(v.size());
     }
 
-    return BytesJson::to_cbor(json);
+    for (const Receipt& r : v) {
+        encoder.write_array(4);
+
+        encoder.write_null();  // no PostState
+        encoder.write_int(r.success ? 1u : 0u);
+        encoder.write_int(static_cast<unsigned long long>(r.cumulative_gas_used));
+
+        if (r.logs.empty()) {
+            encoder.write_null();
+        } else {
+            encoder.write_array(r.logs.size());
+        }
+
+        for (const Log& l : r.logs) {
+            encoder.write_array(3);
+            encoder.write_bytes(l.address.bytes, kAddressLength);
+            encoder.write_array(l.topics.size());
+            for (const evmc::bytes32& t : l.topics) {
+                encoder.write_bytes(t.bytes, kHashLength);
+            }
+            encoder.write_bytes(l.data.data(), l.data.size());
+        }
+    }
+
+    return Bytes{output.data(), output.size()};
 }
 
 }  // namespace silkworm

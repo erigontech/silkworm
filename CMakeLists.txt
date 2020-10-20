@@ -67,6 +67,9 @@ if(MSVC)
 endif()
 add_subdirectory(libff)
 
+# CBOR
+add_subdirectory(cbor-cpp)
+
 # Compiler and linker options
 if(MSVC)
   add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)

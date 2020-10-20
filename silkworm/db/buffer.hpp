@@ -38,8 +38,6 @@ class Buffer {
     explicit Buffer(lmdb::Transaction* txn, std::optional<uint64_t> historical_block = std::nullopt)
         : txn_{txn}, historical_block_{historical_block} {}
 
-    lmdb::Transaction* transaction() { return txn_; }
-
     /** @name Readers */
     ///@{
     std::optional<Account> read_account(const evmc::address& address) const noexcept;

@@ -25,10 +25,10 @@ namespace silkworm {
 
 /** @brief Executes a given block and writes resulting changes into the database.
  *
- * This function also populates transaction senders from the database.
+ * Transaction senders must be already populated.
  * The DB table kCurrentState should match the Ethereum state at the begining of the block.
  */
-std::vector<Receipt> execute_block(BlockWithHash& bh, db::Buffer& buffer, const ChainConfig& config = kMainnetConfig);
+std::vector<Receipt> execute_block(const Block& block, db::Buffer& buffer, const ChainConfig& config = kMainnetConfig);
 
 }  // namespace silkworm
 

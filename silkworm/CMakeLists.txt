@@ -19,7 +19,6 @@ find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
 find_package(cryptopp CONFIG REQUIRED)
 find_package(liblmdb CONFIG REQUIRED)
 find_package(Microsoft.GSL CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
@@ -30,8 +29,7 @@ target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 set(SILKWORM_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set
                          liblmdb::lmdb evmc intx::intx ff Microsoft.GSL::GSL)
 
-set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::filesystem
-                          nlohmann_json::nlohmann_json)
+set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::filesystem cborcpp)
 
 if(MSVC)
   list(APPEND SILKWORM_PRIVATE_LIBS ntdll.lib)

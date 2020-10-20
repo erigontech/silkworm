@@ -19,7 +19,6 @@
 
 #include <silkworm/types/bloom.hpp>
 #include <silkworm/types/log.hpp>
-#include <vector>
 
 namespace silkworm {
 
@@ -32,7 +31,7 @@ struct Receipt {
 
 // TG-compatible CBOR encoding for storage.
 // See core/types/receipt.go
-std::vector<uint8_t> cbor_encode(const std::vector<Receipt>& v);
+Bytes cbor_encode(const std::vector<Receipt>& v);
 
 }  // namespace silkworm
 

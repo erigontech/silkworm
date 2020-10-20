@@ -23,8 +23,8 @@ namespace silkworm {
 
 TEST_CASE("CBOR encoding of receipts") {
     std::vector<Receipt> v{};
-    std::vector<uint8_t> encoded{cbor_encode(v)};
-    CHECK(to_hex(full_view(encoded)) == "f6");
+    Bytes encoded{cbor_encode(v)};
+    CHECK(to_hex(encoded) == "f6");
 
     v.resize(2);
 
@@ -49,7 +49,7 @@ TEST_CASE("CBOR encoding of receipts") {
 
     encoded = cbor_encode(v);
 
-    CHECK(to_hex(full_view(encoded)) ==
+    CHECK(to_hex(encoded) ==
           "8284f6001a0032f05d828354ea674fdde714fd979de3edf0f56aa9716b898ec88043010043835444fd3ab8381cc3d14afa7c4af7fd13"
           "cdc65026e1825820000000000000000000000000000000000000000000000000000000000000dead5820000000000000000000000000"
           "000000000000000000000000000000000000abba46aabbff78004384f6011a00beadd0f6");

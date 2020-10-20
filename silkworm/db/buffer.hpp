@@ -90,14 +90,21 @@ class Buffer {
     size_t optimal_batch_size{500'000};
 
    private:
-    void write_accounts_to_db();
+    void write_to_state_table();
 
     lmdb::Transaction* txn_{nullptr};
     std::optional<uint64_t> historical_block_{};
 
     std::map<Bytes, BlockHeader> headers_{};
     absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
-    std::map<Bytes, std::map<evmc::bytes32, evmc::bytes32>> storage_;
+
+    // address -> key -> value
+    absl::flat_hash_map<evmc::address, std::map<evmc::bytes32, evmc::bytes32>> default_incarnation_storage_;
+
+    // address -> incarnation -> key -> value
+    absl::flat_hash_map<evmc::address, std::map<uint64_t, std::map<evmc::bytes32, evmc::bytes32>>>
+        custom_incarnation_storage_;
+
     std::map<evmc::address, uint64_t> incarnations_;
     std::map<evmc::bytes32, Bytes> hash_to_code_;
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;

@@ -19,10 +19,8 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#include "cbor-cpp/src/cbor.h"
-#pragma GCC diagnostic pop
+#include "cbor-cpp/src/encoder.h"
+#include "cbor-cpp/src/output_dynamic.h"
 
 namespace silkworm {
 

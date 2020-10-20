@@ -24,25 +24,20 @@
 
 namespace silkworm {
 
-std::optional<std::vector<Receipt>> execute_block(db::Buffer& buffer, uint64_t block_num, const ChainConfig& config) {
+std::vector<Receipt> execute_block(BlockWithHash& bh, db::Buffer& buffer, const ChainConfig& config) {
     assert(buffer.transaction());
     lmdb::Transaction& txn{*buffer.transaction()};
 
-    std::optional<BlockWithHash> bh{db::read_block(txn, block_num)};
-    if (!bh) {
-        return std::nullopt;
-    }
-
-    std::vector<evmc::address> senders{db::read_senders(txn, block_num, bh->hash)};
-    if (senders.size() != bh->block.transactions.size()) {
+    std::vector<evmc::address> senders{db::read_senders(txn, bh.block.header.number, bh.hash)};
+    if (senders.size() != bh.block.transactions.size()) {
         throw std::runtime_error("missing or incorrect senders");
     }
     for (size_t i{0}; i < senders.size(); ++i) {
-        bh->block.transactions[i].from = senders[i];
+        bh.block.transactions[i].from = senders[i];
     }
 
     IntraBlockState state{buffer};
-    ExecutionProcessor processor{bh->block, state, config};
+    ExecutionProcessor processor{bh.block, state, config};
 
     return processor.execute_block();
 }

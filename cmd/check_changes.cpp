@@ -78,17 +78,11 @@ int main(int argc, char* argv[]) {
 
         db::Buffer buffer{txn.get(), block_num};
 
-        std::optional<std::vector<Receipt>> receipts;
-        try {
-            receipts = execute_block(buffer, block_num);
-        } catch (const ValidationError& err) {
-            std::cerr << "ValidationError in block " << block_num << " 🤬\n";
-            throw err;
-        }
+        std::vector<Receipt> receipts{execute_block(*bh, buffer)};
 
         uint64_t gas_used{0};
-        if (!receipts->empty()) {
-            gas_used = receipts->back().cumulative_gas_used;
+        if (!receipts.empty()) {
+            gas_used = receipts.back().cumulative_gas_used;
         }
 
         if (gas_used != bh->block.header.gas_used) {
@@ -100,7 +94,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (kMainnetConfig.has_byzantium(block_num)) {
-            evmc::bytes32 receipt_root{trie::root_hash(*receipts)};
+            evmc::bytes32 receipt_root{trie::root_hash(receipts)};
             if (receipt_root != bh->block.header.receipts_root) {
                 std::cerr << "Receipt root mismatch for block " << block_num << " 😖\n";
                 return -3;

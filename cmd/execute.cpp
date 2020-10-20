@@ -84,8 +84,17 @@ int main(int argc, char* argv[]) {
     uint64_t current_progress{0};
 
     for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-        if (!execute_block(*buffer, block_number)) {
+        std::optional<BlockWithHash> bh{db::read_block(*txn, block_number)};
+        if (!bh) {
             break;
+        }
+
+        std::vector<Receipt> receipts{execute_block(*bh, *buffer)};
+
+        if (write_receipts) {
+            Bytes key{db::block_key(block_number, bh->hash.bytes)};
+            std::vector<uint8_t> encoded{cbor_encode(receipts)};
+            buffer->insert_receipts(key, Bytes{full_view(encoded)});
         }
 
         current_progress = block_number;

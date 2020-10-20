@@ -17,6 +17,7 @@
 #include "execution.hpp"
 
 #include <catch2/catch.hpp>
+#include <cstring>
 #include <ethash/keccak.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/temp_dir.hpp>
@@ -47,11 +48,12 @@ TEST_CASE("Execution API") {
 
     db::Buffer buffer{txn.get()};
     uint64_t block_number{1};
-    CHECK(!execute_block(buffer, block_number));
 
     auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 
-    Block block{};
+    BlockWithHash bh{};
+    Block& block{bh.block};
+
     block.header.number = block_number;
     block.header.beneficiary = miner;
     block.header.gas_limit = 100'000;
@@ -70,6 +72,7 @@ TEST_CASE("Execution API") {
     Bytes header_rlp{};
     rlp::encode(header_rlp, block.header);
     ethash::hash256 block_hash{keccak256(header_rlp)};
+    std::memcpy(bh.hash.bytes, block_hash.bytes, kHashLength);
 
     auto header_table{txn->open(db::table::kBlockHeaders)};
     header_table->put(db::header_hash_key(block_number), full_view(block_hash.bytes));
@@ -82,8 +85,7 @@ TEST_CASE("Execution API") {
     auto body_table{txn->open(db::table::kBlockBodies)};
     body_table->put(block_key, body_rlp);
 
-    CHECK_THROWS_MATCHES(execute_block(buffer, block_number), std::runtime_error,
-                         Catch::Message("missing or incorrect senders"));
+    CHECK_THROWS_MATCHES(execute_block(bh, buffer), std::runtime_error, Catch::Message("missing or incorrect senders"));
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     auto sender_table{txn->open(db::table::kSenders)};
@@ -98,7 +100,7 @@ TEST_CASE("Execution API") {
     // Execute first block
     // ---------------------------------------
 
-    REQUIRE(execute_block(buffer, block_number));
+    execute_block(bh, buffer);
 
     auto contract_address{create_address(sender, /*nonce=*/0)};
     std::optional<Account> contract_account{buffer.read_account(contract_address)};
@@ -137,6 +139,7 @@ TEST_CASE("Execution API") {
     header_rlp.clear();
     rlp::encode(header_rlp, block.header);
     block_hash = keccak256(header_rlp);
+    std::memcpy(bh.hash.bytes, block_hash.bytes, kHashLength);
     header_table->put(db::header_hash_key(block_number), full_view(block_hash.bytes));
 
     block_key = db::block_key(block_number, block_hash.bytes);
@@ -148,7 +151,7 @@ TEST_CASE("Execution API") {
     body_table->put(block_key, body_rlp);
     sender_table->put(block_key, full_view(sender));
 
-    REQUIRE(execute_block(buffer, block_number));
+    execute_block(bh, buffer);
 
     storage0 = buffer.read_storage(contract_address, incarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);

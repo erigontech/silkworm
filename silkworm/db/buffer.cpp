@@ -155,7 +155,14 @@ void Buffer::write_to_db() {
         Bytes block_key{encode_timestamp(entry.first)};
         storage_change_table->put(block_key, entry.second.encode());
     }
+
+    auto receipt_table{txn_->open(table::kBlockReceipts)};
+    for (const auto& entry : receipts_) {
+        receipt_table->put(entry.first, entry.second);
+    }
 }
+
+void Buffer::insert_receipts(Bytes key, Bytes value) { receipts_[std::move(key)] = std::move(value); }
 
 void Buffer::insert_header(BlockHeader block_header) {
     Bytes rlp{};

@@ -16,32 +16,19 @@
 
 #include "execution.hpp"
 
-#include <cassert>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/trie/vector_root.hpp>
-#include <stdexcept>
 
 #include "processor.hpp"
 
 namespace silkworm {
 
-std::vector<Receipt> execute_block(BlockWithHash& bh, db::Buffer& buffer, const ChainConfig& config) {
-    assert(buffer.transaction());
-    lmdb::Transaction& txn{*buffer.transaction()};
-
-    const BlockHeader& header{bh.block.header};
+std::vector<Receipt> execute_block(const Block& block, db::Buffer& buffer, const ChainConfig& config) {
+    const BlockHeader& header{block.header};
     uint64_t block_num{header.number};
 
-    std::vector<evmc::address> senders{db::read_senders(txn, block_num, bh.hash)};
-    if (senders.size() != bh.block.transactions.size()) {
-        throw std::runtime_error("missing or incorrect senders");
-    }
-    for (size_t i{0}; i < senders.size(); ++i) {
-        bh.block.transactions[i].from = senders[i];
-    }
-
     IntraBlockState state{buffer};
-    ExecutionProcessor processor{bh.block, state, config};
+    ExecutionProcessor processor{block, state, config};
 
     std::vector<Receipt> receipts{processor.execute_block()};
 

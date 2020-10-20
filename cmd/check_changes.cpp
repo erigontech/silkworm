@@ -68,14 +68,14 @@ int main(int argc, char* argv[]) {
     for (; block_num < to; ++block_num) {
         std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-        std::optional<BlockWithHash> bh{db::read_block(*txn, block_num)};
+        std::optional<BlockWithHash> bh{db::read_block(*txn, block_num, /*read_senders=*/true)};
         if (!bh) {
             break;
         }
 
         db::Buffer buffer{txn.get(), block_num};
 
-        execute_block(*bh, buffer);
+        execute_block(bh->block, buffer);
 
         std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
         if (buffer.account_changes().at(block_num) != db_account_changes) {

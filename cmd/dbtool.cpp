@@ -393,44 +393,42 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
             for (dbTableEntry table : tables) {
                 if (table.id < 2 || !table.stat.ms_entries) continue;  // Skip reserved databases and empty tables
 
-                // Create table on destination with same flags as origin
-                std::cout << " Copying table " << table.name << std::endl;
+                if (table.name != "iTh2") continue;
 
-                // Lookup TableConfig in known (canonical/deprecated) tables collection
+                // Lookup TableConfig in known tables collection
                 // If not found we have no way to determine which are the proper flags
                 // required to open the table.
-                bool found{false};
-                unsigned int flags{0};
-                for (const auto& item : silkworm::db::table::kTables) {
-                    if (std::strcmp(item.name, table.name.c_str()) == 0) {
-                        flags = item.flags;
-                        found = true;
-                        break;
-                    }
-                }
+                std::optional<lmdb::TableConfig> config{db::table::get_config(table.name)};
+                if (!config.has_value()) continue;
 
-                // Not a table we know of. Skip it
-                if (!found) continue;
+                std::cout << " Copying table " << table.name << std::endl;
 
-                auto src_table = src_txn->open({table.name.c_str(), flags});
-                auto tgt_table = tgt_txn->open({table.name.c_str(), flags}, MDB_CREATE);
+                // Create table on destination with same configuration as origin
+                bool src_is_dupsort{(config->flags & MDB_DUPSORT) == MDB_DUPSORT};
+                auto src_table = src_txn->open(*config);
+                auto tgt_table = tgt_txn->open(*config, MDB_CREATE);
 
                 // Loop source and write into target
                 int rc{src_table->get_first(&key, &data)};
                 while (rc == MDB_SUCCESS) {
-                    if ((flags & MDB_DUPSORT) == MDB_DUPSORT) {
+                    if (src_is_dupsort) {
                         size_t dups{0};
                         lmdb::err_handler(src_table->get_dcount(&dups));
-                        // Put all duplicated data items for this key
-                        lmdb::err_handler(tgt_table->put_append_dup(&key, &data));
-                        while (--dups) {
+                        do
+                        {
+                            //ByteView bv_key{ static_cast<uint8_t*>(key.mv_data), key.mv_size };
+                            //ByteView bv_data{ static_cast<uint8_t*>(data.mv_data), data.mv_size };
+                            //std::cout << to_hex(bv_key) << " " << to_hex(bv_data) << std::endl;
+                            lmdb::err_handler(tgt_table->put_append(&key, &data));
+                            if (!--dups) break;
                             lmdb::err_handler(src_table->get_next_dup(&key, &data));
-                            lmdb::err_handler(tgt_table->put_append_dup(&key, &data));
-                        }
+                        } while (true);
+                        rc = src_table->get_next_nodup(&key, &data);
+
                     } else {
                         lmdb::err_handler(tgt_table->put_append(&key, &data));
+                        rc = src_table->get_next(&key, &data);
                     }
-                    rc = src_table->get_next(&key, &data);
                 }
                 if (rc != MDB_NOTFOUND) {
                     lmdb::err_handler(rc);

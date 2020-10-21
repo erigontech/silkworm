@@ -49,7 +49,7 @@ commands:
     - run:
         name: "Unit Tests"
         working_directory: ~/build
-        command: ctest --output-on-failure
+        command: cmd/unit_test
     - run:
         name: "Ethereum Consensus Tests"
         working_directory: ~/build

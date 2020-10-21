@@ -40,5 +40,5 @@ build:
 
 test_script:
   - cd Build
-  - ctest --output-on-failure
+  - cmd\Release\unit_test.exe
   - cmd\Release\consensus.exe

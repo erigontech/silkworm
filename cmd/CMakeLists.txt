@@ -17,6 +17,12 @@
 find_package(absl CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
 
+if(MSVC)
+  add_link_options(/STACK:10000000)
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  add_link_options(-Wl,-stack_size -Wl,0x1000000)
+endif()
+
 add_executable(check_changes check_changes.cpp)
 target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time Boost::filesystem)
 

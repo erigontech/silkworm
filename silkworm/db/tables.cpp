@@ -19,9 +19,18 @@
 namespace silkworm::db::table {
 
 void create_all(lmdb::Transaction& txn) {
-    for (const auto& table : kTables) {
-        txn.open(table, MDB_CREATE);
+    for (const auto& config : kTables) {
+        txn.open(config, MDB_CREATE);
     }
+}
+
+std::optional<lmdb::TableConfig> get_config(std::string name) {
+    for (auto config : kTables) {
+        if (std::strcmp(config.name, name.c_str()) == 0) {
+            return {config};
+        }
+    }
+    return std::nullopt;
 }
 
 }  // namespace silkworm::db::table

@@ -58,10 +58,15 @@ struct options {
 static const MDB_dbi FREE_DBI = 0;  // Reserved for tracking free pages
 static const MDB_dbi MAIN_DBI = 1;  // Reserved for tracking named tables
 
+enum class TableCustomDupComparator {
+    None,
+    ExcludeSuffix32
+};
+
 struct TableConfig {
     const char* name{nullptr};
     const unsigned int flags{0};
-    //bool dupsort{false};  // MDB_DUPSORT
+    TableCustomDupComparator dup_comparator{ TableCustomDupComparator::None };
 };
 
 /**
@@ -294,6 +299,7 @@ class Table {
     int get_prev_dup(MDB_val* key,MDB_val* data);    // Move cursor at previous data item in current key (only MDB_DUPSORT)
     int get_next(MDB_val* key, MDB_val* data);   // Move cursor at next item in table
     int get_next_dup(MDB_val* key,MDB_val* data);    // Move cursor at next data item in current key (only MDB_DUPSORT)
+    int get_next_nodup(MDB_val* key,MDB_val* data);    // Move cursor at next data item in next key (only MDB_DUPSORT)
     int get_last(MDB_val* key, MDB_val* data);   // Move cursor at last item in table
     int get_dcount(size_t* count);               // Returns the count of duplicates at current position
 
@@ -393,6 +399,9 @@ class Table {
 };
 
 std::shared_ptr<Environment> get_env(const char* path, options opts = {});
+
+// Custom compartor(s)
+int dup_cmp_exclude_suffix32(const MDB_val* a, const MDB_val* b);
 
 }  // namespace silkworm::lmdb
 

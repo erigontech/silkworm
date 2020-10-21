@@ -17,6 +17,7 @@
 #include "chaindb.hpp"
 
 #include <silkworm/common/util.hpp>
+#include <iostream>
 
 namespace silkworm::lmdb {
 
@@ -275,6 +276,13 @@ bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned flags) {
     flags |= config.flags;
     MDB_dbi dbi{open_dbi(config.name, flags)};
+
+    // Apply custom comparators (if any)
+    if (config.dup_comparator == TableCustomDupComparator::ExcludeSuffix32) {
+        std::cout << "Setting custom comparator" << std::endl;
+        err_handler(mdb_set_compare(handle_, dbi, dup_cmp_exclude_suffix32));
+    }
+
     return std::make_unique<Table>(this, dbi, config.name);
 }
 
@@ -475,6 +483,7 @@ int Table::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PRE
 int Table::get_prev_dup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV_DUP); }
 int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
 int Table::get_next_dup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT_DUP); }
+int Table::get_next_nodup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT_NODUP); }
 int Table::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
 int Table::get_dcount(size_t* count) { return mdb_cursor_count(handle_, count); }
 
@@ -556,4 +565,28 @@ std::shared_ptr<Environment> get_env(const char* path, options opts) {
     return newitem;
 }
 
+int dup_cmp_exclude_suffix32(const MDB_val* a, const MDB_val* b) {
+
+    std::cout << "Invoked" << std::endl;
+
+    ByteView bv_keyA{ static_cast<uint8_t*>(a->mv_data), a->mv_size };
+    ByteView bv_keyB{ static_cast<uint8_t*>(b->mv_data), b->mv_size };
+    std::cout << "Key A " << to_hex(bv_keyA) << "\nKey B " << to_hex(bv_keyB) << std::endl;
+
+    size_t lenA{(a->mv_size >= 32) ? a->mv_size - 32 : a->mv_size};
+    size_t lenB{(b->mv_size >= 32) ? b->mv_size - 32 : b->mv_size};
+    size_t len{lenA};
+    int64_t len_diff{(int64_t)lenA - (int64_t)(lenB)};
+
+    if (len_diff > 0) {
+        len = lenB;
+        len_diff = 1;
+    }
+    int diff{memcmp(a->mv_data, b->mv_data, len)};
+    int retvar{ diff ? diff : (len_diff < 0 ? -1 : (int)len_diff) };
+    std::cout << "Result " << retvar << std::endl;
+    //return diff ? diff : (len_diff < 0 ? -1 : len_diff);
+    return retvar;
+
+}
 }  // namespace silkworm::lmdb

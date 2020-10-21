@@ -38,7 +38,7 @@ constexpr lmdb::TableConfig kContractCode{"contractCode"};
 constexpr lmdb::TableConfig kIncarnationMap{"incarnationMap"};
 constexpr lmdb::TableConfig kAccountChangeSet{"ACS"};
 constexpr lmdb::TableConfig kStorageChangeSet{"SCS"};
-constexpr lmdb::TableConfig kIntermediateTrieHash{"iTh2", MDB_DUPSORT};
+constexpr lmdb::TableConfig kIntermediateTrieHash{"iTh2", MDB_DUPSORT, lmdb::TableCustomDupComparator::ExcludeSuffix32};
 constexpr lmdb::TableConfig kDatabaseInfo{"DBINFO"};
 constexpr lmdb::TableConfig kDatabaseVersion{"DatabaseVersion"};
 constexpr lmdb::TableConfig kBlockHeaders{"h"};
@@ -107,6 +107,9 @@ constexpr lmdb::TableConfig kDeprecatedTables[]{kPlainStateOld1, kCurrentStateOl
 
 // Create all tables that do not yet exist.
 void create_all(lmdb::Transaction& txn);
+
+// Gets table config given its name
+std::optional<lmdb::TableConfig> get_config(std::string name);
 
 }  // namespace silkworm::db::table
 

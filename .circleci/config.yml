@@ -53,7 +53,7 @@ commands:
     - run:
         name: "Ethereum Consensus Tests"
         working_directory: ~/build
-        command: ./consensus
+        command: cmd/consensus
 
 jobs:
   linux-gcc-7:
@@ -76,20 +76,20 @@ jobs:
           name: "Unit Tests"
           working_directory: ~/build
           command: |
-            ./unit_test
+            cmd/unit_test
             mv default.profraw unit_test.profraw
       - run:
           name: "Ethereum Consensus Tests"
           working_directory: ~/build
           command: |
-            ./consensus
+            cmd/consensus
             mv default.profraw consensus.profraw
       - run:
           name: "Coverage"
           working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata -format=lcov ./unit_test -object ./consensus > silkworm.lcov
+            llvm-cov export -instr-profile profdata -format=lcov cmd/unit_test -object cmd/consensus > silkworm.lcov
       - run:
           name: "Upload to Codecov"
           command: |

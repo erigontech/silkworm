@@ -121,44 +121,4 @@ target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
 
 # Silkworm itself
 add_subdirectory(silkworm)
-
-find_package(absl CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
-
-add_executable(check_changes cmd/check_changes.cpp)
-target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time Boost::filesystem)
-
-find_package(CLI11 CONFIG REQUIRED)
-
-add_executable(check_senders cmd/check_senders.cpp)
-target_link_libraries(check_senders PRIVATE silkworm Boost::filesystem CLI11::CLI11)
-
-add_executable(dbtool cmd/dbtool.cpp)
-target_link_libraries(dbtool PRIVATE silkworm Boost::filesystem CLI11::CLI11)
-
-add_executable(execute cmd/execute.cpp)
-target_link_libraries(execute PRIVATE silkworm CLI11::CLI11)
-
-# Ethereum Consensus Tests
-find_package(nlohmann_json CONFIG REQUIRED)
-add_compile_definitions(SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
-add_executable(consensus cmd/consensus.cpp)
-target_link_libraries(consensus PRIVATE silkworm nlohmann_json::nlohmann_json Boost::filesystem)
-
-# Unit tests
-enable_testing()
-
-find_package(Catch2 CONFIG REQUIRED)
-
-file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "silkworm/*_test.cpp")
-add_executable(unit_test cmd/unit_test.cpp ${SILKWORM_TESTS})
-target_link_libraries(unit_test silkworm Catch2::Catch2)
-
-include(CTest)
-include(Catch)
-catch_discover_tests(unit_test)
-
-# Benchmarks
-find_package(benchmark CONFIG REQUIRED)
-add_executable(benchmark_precompile cmd/benchmark_precompile.cpp)
-target_link_libraries(benchmark_precompile silkworm benchmark::benchmark)
+add_subdirectory(cmd)

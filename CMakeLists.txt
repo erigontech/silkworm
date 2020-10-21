@@ -20,11 +20,10 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmone/evmc/.git)
   message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
 endif()
 
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchain.cmake CACHE FILEPATH "" FORCE)
+
 include(evmone/cmake/cable/bootstrap.cmake)
 include(CableBuildType)
-include(CableToolchains)
-
-cable_configure_toolchain(DEFAULT cxx17)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
 include(evmone/cmake/cable/HunterGate.cmake)

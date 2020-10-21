@@ -35,9 +35,10 @@ public:
 private:
     // This tee buffer has no buffer. So every character "overflows"
     // and can be put directly into the teed buffers.
-    virtual int overflow(int c) {
-        if (c == EOF) return !EOF;
-        else {
+    int overflow(int c) override {
+        if (c == EOF) {
+            return !EOF;
+        } else {
             int const r1 = sb1->sputc(c);
             int const r2 = sb2->sputc(c);
             return r1 == EOF || r2 == EOF ? EOF : c;
@@ -45,7 +46,7 @@ private:
     }
 
     // Sync both teed buffers.
-    virtual int sync() {
+    int sync() override {
         int const r1 = sb1->pubsync();
         int const r2 = sb2->pubsync();
         return r1 == 0 && r2 == 0 ? 0 : -1;

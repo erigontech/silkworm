@@ -17,6 +17,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <csignal>
 #include <iostream>
@@ -37,8 +38,19 @@ int errorCode{0};
 struct dbTableEntry {
     MDB_dbi id{0};
     std::string name{};
-    std::size_t freelist{};
     MDB_stat stat{};
+};
+
+struct dbFreeEntry {
+    size_t transactionId{0};
+    size_t freePagesCount{0};
+    size_t freePagesSize{0};
+};
+
+struct dbFreeInfo {
+    size_t totalFreePagesCount{ 0 };
+    size_t totalFreePagesSize{ 0 };
+    std::vector<dbFreeEntry> freePagesDetail{};
 };
 
 void sig_handler(int signum) {
@@ -51,7 +63,7 @@ std::optional<uint64_t> parse_size(const std::string& strsize) {
     std::regex pattern{"^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$"};
     std::smatch matches;
     if (!std::regex_search(strsize, matches, pattern, std::regex_constants::match_default)) {
-        return {};
+        return std::nullopt;
     };
 
     uint64_t number{std::strtoull(matches[1].str().c_str(), nullptr, 10)};
@@ -73,7 +85,7 @@ std::optional<uint64_t> parse_size(const std::string& strsize) {
     } else if (suffix == "EB") {
         return {number * (1ull << 50)};
     } else {
-        return {};
+        return std::nullopt;
     }
 }
 
@@ -129,6 +141,39 @@ int do_drop(std::string datadir, std::optional<uint64_t> mapsize, std::string ta
     return retvar;
 }
 
+std::optional<dbFreeInfo> get_freeInfo(std::unique_ptr<lmdb::Transaction>& tx) {
+
+    dbFreeInfo ret{};
+    try
+    {
+        MDB_stat stat;
+        auto lmdb_free = tx->open(0);
+        lmdb::err_handler(lmdb_free->get_stat(&stat));
+
+        MDB_val key, data;
+        int rc{ MDB_SUCCESS };
+        lmdb::err_handler(lmdb_free->get_first(&key, &data));
+        while (rc == MDB_SUCCESS)
+        {
+            size_t txid = *(static_cast<size_t*>(key.mv_data));
+            size_t pagesCount = *(static_cast<size_t*>(data.mv_data));
+            size_t pagesSize = pagesCount * stat.ms_psize;
+            ret.totalFreePagesCount += pagesCount;
+            ret.totalFreePagesSize += pagesSize;
+            ret.freePagesDetail.push_back({ txid, pagesCount, pagesSize });
+            rc = lmdb_free->get_next(&key, &data);
+        }
+        if (rc != MDB_NOTFOUND) {
+            lmdb::err_handler(rc);
+        }
+    } catch (const std::exception&)
+    {
+        return std::nullopt;
+    }
+
+    return {ret};
+}
+
 std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
     std::vector<dbTableEntry> ret{};
     MDB_val key, data;
@@ -147,12 +192,9 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
             if (data.mv_size < sizeof(size_t)) {
                 lmdb::err_handler(MDB_INVALID);
             }
-
-            auto p_data = static_cast<uint8_t*>(data.mv_data);
             auto named = tx->open({(const char*)key.mv_data});
             ret.push_back(
-                {named->get_dbi(), named->get_name(),
-                 (sizeof(size_t) == 8 ? boost::endian::load_big_u64(p_data) : boost::endian::load_big_u32(p_data))});
+                {named->get_dbi(), named->get_name()});
             lmdb::err_handler(named->get_stat(&ret.back().stat));
             int rc{unnamed->get_next(&key, &data)};
             if (rc == MDB_NOTFOUND) break;
@@ -163,6 +205,11 @@ std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
 }
 
 int do_tables(std::string datadir, size_t file_size, std::optional<uint64_t> mapsize) {
+
+
+    static std::string fmt_hdr{ " %3s %-24s %10s %2s %10s %10s %10s %12s" };
+    static std::string fmt_row{ " %3i %-24s %10u %2u %10u %10u %10u %12u" };
+
     int retvar{0};
     std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
     std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
@@ -176,58 +223,49 @@ int do_tables(std::string datadir, size_t file_size, std::optional<uint64_t> map
         opts.read_only = true;
         lmdb_env = lmdb::get_env(datadir.c_str(), opts);
         lmdb_txn = lmdb_env->begin_ro_transaction();
-        std::cout << "\n Transaction id " << lmdb_txn->get_id() << std::endl;
+
+        auto freeInfo = get_freeInfo(lmdb_txn);
+        if (!freeInfo.has_value()) {
+            throw std::runtime_error("Could not retrieve freeinfo");
+        }
 
         std::vector<dbTableEntry> entries{get_tables(lmdb_txn)};
         size_t items_size{0};
-        size_t items_free{0};
-        std::cout << "\n Database contains " << entries.size() << " tables\n" << std::endl;
-        if (entries.size()) {
-            std::cout << std::right << std::setw(4) << std::setfill(' ') << "Dbi"
-                      << " " << std::left << std::setw(30) << std::setfill(' ') << "Table name"
-                      << " " << std::right << std::setw(10) << std::setfill(' ') << "Records"
-                      << " " << std::right << std::setw(6) << std::setfill(' ') << "Depth"
-                      << " " << std::right << std::setw(12) << std::setfill(' ') << "Size"
-                      << " " << std::right << std::setw(12) << std::setfill(' ') << "Free" << std::endl;
+        std::cout << "\n Database tables    : " << entries.size() << std::endl;
 
-            std::cout << std::right << std::setw(4) << std::setfill('-') << ""
-                      << " " << std::left << std::setw(30) << std::setfill('-') << ""
-                      << " " << std::right << std::setw(10) << std::setfill('-') << ""
-                      << " " << std::right << std::setw(6) << std::setfill('-') << ""
-                      << " " << std::right << std::setw(12) << std::setfill('-') << ""
-                      << " " << std::right << std::setw(12) << std::setfill('-') << "" << std::endl;
+        if (entries.size()) {
+
+            std::cout << " Database page size : " << entries.begin()->stat.ms_psize << " \n" << std::endl;
+
+            std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" %
+                          "Overflow" % "Size")
+                      << std::endl;
+            std::cout << (boost::format(fmt_hdr) % std::string(3, '-') % std::string(24, '-') % std::string(10, '-') %
+                          std::string(2, '-') % std::string(10, '-') % std::string(10, '-') % std::string(10, '-') %
+                          std::string(12, '-'))
+                      << std::endl;
 
             for (dbTableEntry item : entries) {
                 size_t item_size{item.stat.ms_psize *
                                  (item.stat.ms_leaf_pages + item.stat.ms_branch_pages + item.stat.ms_overflow_pages)};
                 items_size += item_size;
-                items_free += item.freelist;
-
-                std::cout << std::right << std::setw(4) << std::setfill(' ') << item.id << " " << std::left
-                          << std::setw(30) << std::setfill(' ') << item.name << " " << std::right << std::setw(10)
-                          << std::setfill(' ') << item.stat.ms_entries << " " << std::right << std::setw(6)
-                          << std::setfill(' ') << item.stat.ms_depth << " " << std::right << std::setw(12)
-                          << std::setfill(' ') << item_size << " " << std::right << std::setw(12) << std::setfill(' ')
-                          << item.freelist << std::endl;
+                std::cout << (boost::format(fmt_row) % item.id % item.name % item.stat.ms_entries % item.stat.ms_depth %
+                              item.stat.ms_branch_pages % item.stat.ms_leaf_pages % item.stat.ms_overflow_pages % item_size)
+                          << std::endl;
             }
         }
 
-        std::cout << "\n Size of file on disk : " << std::right << std::setw(12) << std::setfill(' ') << file_size
-                  << std::endl;
-        std::cout << " Size of data in file : " << std::right << std::setw(12) << std::setfill(' ') << items_size
-                  << std::endl;
-        std::cout << " Total free list      : " << std::right << std::setw(12) << std::setfill(' ') << items_free
-                  << std::endl;
-        std::cout << " Free space available : " << std::right << std::setw(12) << std::setfill(' ')
-                  << (file_size - items_size) << std::endl;
+        std::cout << "\n Database map size    : " << (boost::format("%13u") % opts.map_size) << std::endl;
+        std::cout << " Size of file on disk : " << (boost::format("%13u") % file_size) << std::endl;
+        std::cout << " Size of data in file : " << (boost::format("%13u") % items_size) << std::endl;
+        std::cout << " Reclaimable pages    : " << (boost::format("%13u") % freeInfo->totalFreePagesCount) << std::endl;
+        std::cout << " Reclaimable size     : " << (boost::format("%13u") % freeInfo->totalFreePagesSize) << std::endl;
+        std::cout << " Free space available : " << (boost::format("%13u") % (opts.map_size - items_size + freeInfo->totalFreePagesSize)) << std::endl;
 
     } catch (lmdb::exception& ex) {
-        // This handles specific lmdb errors
         std::cout << ex.err() << " " << ex.what() << std::endl;
         retvar = -1;
     } catch (std::runtime_error& ex) {
-        // This handles runtime logic errors
-        // eg. trying to open two rw txns
         std::cout << ex.what() << std::endl;
         retvar = -1;
     }
@@ -235,6 +273,57 @@ int do_tables(std::string datadir, size_t file_size, std::optional<uint64_t> map
     lmdb_txn.reset();
     lmdb_env.reset();
     return retvar;
+}
+
+int do_freelist(std::string datadir, std::optional<uint64_t> mapsize, bool txids) {
+
+    static std::string fmt_hdr{ "%9s %9s %12s" };
+    static std::string fmt_row{ "%9u %9u %12u" };
+
+    int retvar{0};
+    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
+    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
+    std::unique_ptr<lmdb::Table> lmdb_free{nullptr};       // Free dbi
+
+    try
+    {
+        // Open db and start transaction
+        lmdb::options opts{};
+        if (mapsize.has_value()) {
+            opts.map_size = *mapsize;
+        }
+        opts.read_only = true;
+        lmdb_env = lmdb::get_env(datadir.c_str(), opts);
+        lmdb_txn = lmdb_env->begin_ro_transaction();
+
+        auto freeInfo = get_freeInfo(lmdb_txn);
+        if (!freeInfo.has_value()) {
+            throw std::runtime_error("Could not get Free info");
+        }
+        if (freeInfo->freePagesDetail.size() && txids) {
+            std::cout << (boost::format(fmt_hdr) % "TxId" % "Free pages" % "Free Size") << std::endl;
+            std::cout << (boost::format(fmt_hdr) % std::string(9, '-') % std::string(9, '-') % std::string(12, '-')) << std::endl;
+            for (auto item : freeInfo->freePagesDetail) {
+                std::cout << (boost::format(fmt_row) % item.transactionId % item.freePagesCount % item.freePagesSize) << std::endl;
+            }
+        }
+
+        std::cout << "\n Total free pages : " << freeInfo->totalFreePagesCount << std::endl;
+        std::cout << " Total free size  : " << freeInfo->totalFreePagesSize << std::endl;
+
+    } catch (lmdb::exception& ex) {
+        std::cout << ex.err() << " " << ex.what() << std::endl;
+        retvar = -1;
+    } catch (std::runtime_error& ex) {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    lmdb_free.reset();
+    lmdb_txn.reset();
+    lmdb_env.reset();
+    return retvar;
+
 }
 
 int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string workdir, bool keep, bool copy) {
@@ -411,12 +500,16 @@ int main(int argc, char* argv[]) {
     std::string po_table_name{""};   // Provided table name
     bool po_keep{false};             // Keep a copy of origin db (before compaction)
     bool po_copy{false};             // Enforce compaction by table copyying
+    bool po_txids{false};            // For free list prints detail by transaction
     CLI::Range range32(1u, UINT32_MAX);
 
     app_main.add_option("--datadir", po_data_dir, "Path to directory for data.mdb", false);
     app_main.add_option("--lmdb.mapSize", po_mapsize_str, "Lmdb map size", true);
 
     auto& app_tables = *app_main.add_subcommand("tables", "List contained tables");
+
+    auto& app_freelist = *app_main.add_subcommand("freelist", "List free pages");
+    app_freelist.add_flag("--txids", po_txids, "List all transaction ids");
 
     auto& app_clear = *app_main.add_subcommand("clear", "Empties a named table");
     app_clear.add_option("--name", po_table_name, "Name of table to clear")->required();
@@ -461,6 +554,8 @@ int main(int argc, char* argv[]) {
 
     if (app_tables) {
         return do_tables(po_data_dir, lmdb_fileSize, lmdb_mapSize);
+    } else if (app_freelist) {
+        return do_freelist(po_data_dir, lmdb_mapSize, po_txids);
     } else if (app_clear) {
         return do_drop(po_data_dir, lmdb_mapSize, po_table_name, false);
     } else if (app_drop) {

@@ -20,11 +20,10 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmone/evmc/.git)
   message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
 endif()
 
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchain.cmake CACHE FILEPATH "" FORCE)
+
 include(evmone/cmake/cable/bootstrap.cmake)
 include(CableBuildType)
-include(CableToolchains)
-
-cable_configure_toolchain(DEFAULT cxx17)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
 include(evmone/cmake/cable/HunterGate.cmake)
@@ -52,14 +51,7 @@ add_library(secp256k1 secp256k1/src/secp256k1.c)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
 
 # libff
-set(
-  CURVE
-  "ALT_BN128"
-  CACHE
-  STRING
-  "Default curve: one of ALT_BN128, BN128, EDWARDS, MNT4, MNT6"
-  FORCE
-)
+set(CURVE "ALT_BN128" CACHE STRING "" FORCE)
 option(WITH_PROCPS "" OFF)
 option(IS_LIBFF_PARENT "" OFF)
 if(MSVC)
@@ -80,7 +72,6 @@ if(MSVC)
   add_compile_options(/W4)
 
   add_link_options(/ignore:4099)
-  add_link_options(/STACK:10000000)
 else()
   add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers)
 endif()
@@ -96,10 +87,6 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
     # profiling
     add_compile_options(-gline-tables-only)
   endif()
-endif()
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  add_link_options(-Wl,-stack_size -Wl,0x1000000)
 endif()
 
 # evmone
@@ -121,4 +108,5 @@ target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
 
 # Silkworm itself
 add_subdirectory(silkworm)
+add_subdirectory(tg_api)
 add_subdirectory(cmd)

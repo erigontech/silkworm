@@ -143,7 +143,7 @@ constexpr ChainConfig kClassicMainnetConfig{
     10'500'839,  // istanbul_block
 };
 
-inline const ChainConfig* lookup_chain_config(uint64_t chain_id) {
+inline const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept {
     switch (chain_id) {
         case kMainnetConfig.chain_id:
             return &kMainnetConfig;

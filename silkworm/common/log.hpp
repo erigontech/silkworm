@@ -19,39 +19,35 @@
 
 #include "tee.hpp"
 
-
 namespace silkworm {
 
 enum LogLevels {
     LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCrit
 };
-const char* LogTags[] = {
-    "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT "
-};
-
 // Log to two output streams - typically the console and a log file.
 class Logger {
 public:
-    Logger(std::ostream& o1, std::ostream& o2, LogLevels level)
+    Logger(std::ostream& o1, std::ostream& o2, LogLevels level=LogCrit)
     : stream(o1, o2), verbosity(level) {}
 
-   void set_verbosity(LogLevels level) { verbosity = level; }
-   int get_verbosity() { return verbosity; }
+    int level(LogLevels level) { return verbosity = level; }
+    int level() { return verbosity; }
 
-   std::ostream& log(LogLevels level, const char* file, int line){
-      std::time_t time = std::time(nullptr);
-      return stream << LogTags[level] \
-                    << std::put_time(std::gmtime(&time), " %Y-%m-%d_%H:%M:%S_%Z|") \
-                    << file << ":" << line << "| ";
-   }
+    std::ostream& log(LogLevels level, const char* file, int line){
+    std::time_t time = std::time(nullptr);
+    return stream << LogTags[level] \
+                  << std::put_time(std::gmtime(&time), " %Y-%m-%d %H:%M:%S %Z ") \
+                  << file << ":" << line << "| ";
+    }
 private:
-   teestream stream;
-   LogLevels verbosity;
+    teestream stream;
+    LogLevels verbosity;
+    const char* LogTags[6] = { "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT " };
 };
 
 // log to whatever logger is in scope
 #define SILKWORM_LOG(level_) \
-    if (logger.get_verbosity() < (level_)) {} \
+    if (logger.level() < (level_)) {} \
     else logger.log(level_, __FILE__, __LINE__)
 
 }

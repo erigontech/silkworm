@@ -15,22 +15,70 @@
 */
 
 #include "log.hpp"
+#include "util.hpp"
 
-using namespace silkworm;
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <regex>
 
-void test_logging()
-{
-    std::ofstream log_file("test.log");
-    Logger logger(std::cerr, log_file, LogCrit);
+#include <catch2/catch.hpp>
 
+namespace silkworm {
+
+namespace {
+    std::ostringstream stream1, stream2;
+    Logger logger(stream1, stream2);
+    const std::string infix(
+        "\\w.\\w.\\w.\\w.-\\w.-\\w.\\w. \\w.\\w.:\\w.\\w.:\\w.\\w._UTC|"
+        "log_test.cpp:\\d.\\d.| ");
+
+    bool test_log(std::string prefix,std::string infix, std::string suffix)
+    {
+        std::string string1(stream1.str()), string2(stream2.str());
+        stream1.clear();
+        stream1.str("");
+        stream2.clear();
+        stream2.str("");
+        if (string1 != string2) return false;
+
+        const std::regex ix(prefix + infix + suffix);
+        if (!std::regex_match(string1, ix)) return false;
+
+        return true;
+    }
+}
+
+bool test_logging() {
+
+    logger.level(LogCrit);
     SILKWORM_LOG(LogCrit)  << "LogCrit"  << std::endl;
+    test_log("CRIT ", infix, "LogCrit");
     SILKWORM_LOG(LogError) << "LogError" << std::endl;
+    test_log("ERROR", infix, "LogError");
     SILKWORM_LOG(LogWarn)  << "LogWarn"  << std::endl;
+    test_log("WARN ", infix, "LogWarn");
     SILKWORM_LOG(LogInfo)  << "LogInfo"  << std::endl;
+    test_log("INFO ", infix, "LogInfo");
     SILKWORM_LOG(LogDebug) << "LogDebug" << std::endl;
+    test_log("DEBUG", infix, "LogDebug");
     SILKWORM_LOG(LogTrace) << "LogTrace" << std::endl;
+    test_log("TRACE", infix, "LogTrace");
+
+    logger.level(LogTrace);
+    SILKWORM_LOG(LogDebug) << "LogDebug" << std::endl;
+    test_log("", "infix", "");
+
+    return true;
 }
 
-int main() {
-    test_logging();
+TEST_CASE("Logging") {
+    CHECK(test_logging() == true);
 }
+
+}
+/*
+int main() {
+    silkworm::test_logging();
+}
+*/

@@ -24,12 +24,12 @@
 namespace silkworm {
 
 enum LogLevels {
-    LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCrit
+    LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCrit, LogNone
 };
 // Log to two output streams - typically the console and a log file.
 class Logger {
 public:
-    Logger(std::ostream& o1, std::ostream& o2, LogLevels level=LogCrit)
+    Logger(std::ostream& o1, std::ostream& o2, LogLevels level=LogNone)
     : stream(o1, o2), verbosity(level) {}
 
     int level(LogLevels level) { return verbosity = level; }

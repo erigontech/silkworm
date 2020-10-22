@@ -16,13 +16,16 @@ image: Visual Studio 2019
 platform: x64
 configuration: Release
 
+environment:
+  APPVEYOR_SAVE_CACHE_ON_ERROR: true
+
 install:
   - cd c:\Tools\vcpkg
   - vcpkg install mpir:x64-windows
 
 cache:
   - C:\Tools\vcpkg\installed -> .appveyor.yml
-  - C:\.hunter -> .appveyor.yml, CMakeLists.txt, silkworm\CMakeLists.txt, cmake\Hunter\config.cmake
+  - C:\.hunter -> .appveyor.yml, cmake\Hunter\config.cmake, cmake\Hunter\packages.cmake
 
 before_build:
   - cd "%APPVEYOR_BUILD_FOLDER%"
@@ -37,5 +40,5 @@ build:
 
 test_script:
   - cd Build
-  - ctest --output-on-failure
-  - Release\consensus.exe
+  - cmd\Release\unit_test.exe
+  - cmd\Release\consensus.exe

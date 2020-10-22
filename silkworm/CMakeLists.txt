@@ -14,16 +14,10 @@
    limitations under the License.
 ]]
 
-hunter_add_package(Boost COMPONENTS filesystem)
+find_package(absl CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
-
-hunter_add_package(lmdb)
-find_package(liblmdb CONFIG REQUIRED)
-
-hunter_add_package(cryptopp)
 find_package(cryptopp CONFIG REQUIRED)
-
-hunter_add_package(Microsoft.GSL)
+find_package(liblmdb CONFIG REQUIRED)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
@@ -35,7 +29,7 @@ target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 set(SILKWORM_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set
                          liblmdb::lmdb evmc intx::intx ff Microsoft.GSL::GSL)
 
-set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::filesystem)
+set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::filesystem cborcpp)
 
 if(MSVC)
   list(APPEND SILKWORM_PRIVATE_LIBS ntdll.lib)

@@ -14,30 +14,22 @@
    limitations under the License.
 */
 
-#include "test_header_db.hpp"
+#ifndef SILKWORM_EXECUTION_EXECUTION_H_
+#define SILKWORM_EXECUTION_EXECUTION_H_
 
-#include <cstring>
-#include <ethash/keccak.hpp>
-#include <utility>
+#include <silkworm/chain/config.hpp>
+#include <silkworm/db/buffer.hpp>
+#include <silkworm/types/receipt.hpp>
 
 namespace silkworm {
 
-std::optional<BlockHeader> TestHeaderDB::read_header(uint64_t, const evmc::bytes32& block_hash) const noexcept {
-    auto it{headers_.find(block_hash)};
-    if (it == headers_.end()) {
-        return {};
-    } else {
-        return it->second;
-    }
-}
-
-void TestHeaderDB::write_header(BlockHeader block_header) {
-    Bytes rlp{};
-    rlp::encode(rlp, block_header);
-    ethash::hash256 hash{keccak256(rlp)};
-    evmc::bytes32 key;
-    std::memcpy(key.bytes, hash.bytes, kHashLength);
-    headers_[key] = std::move(block_header);
-}
+/** @brief Executes a given block and writes resulting changes into the database.
+ *
+ * Transaction senders must be already populated.
+ * The DB table kCurrentState should match the Ethereum state at the begining of the block.
+ */
+std::vector<Receipt> execute_block(const Block& block, db::Buffer& buffer, const ChainConfig& config = kMainnetConfig);
 
 }  // namespace silkworm
+
+#endif  // SILKWORM_EXECUTION_EXECUTION_H_

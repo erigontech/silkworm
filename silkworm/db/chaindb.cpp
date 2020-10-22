@@ -265,12 +265,15 @@ Transaction::Transaction(Environment* parent, unsigned int flags)
     : Transaction(parent, open_transaction(parent, nullptr, flags), flags) {}
 Transaction::~Transaction() { abort(); }
 
+size_t Transaction::get_id(void) {
+    (void)assert_handle(true);
+    return mdb_txn_id(handle_);
+}
+
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
 std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned flags) {
-    if (config.dupsort) {
-        flags |= MDB_DUPSORT;
-    }
+    flags |= config.flags;
     MDB_dbi dbi{open_dbi(config.name, flags)};
     return std::make_unique<Table>(this, dbi, config.name);
 }
@@ -467,8 +470,11 @@ int Table::del_current(bool alldupkeys) {
     return mdb_cursor_del(handle_, alldupkeys ? MDB_NODUPDATA : 0);
 }
 int Table::get_first(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST); }
+int Table::get_first_dup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_FIRST_DUP); }
 int Table::get_prev(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV); }
+int Table::get_prev_dup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_PREV_DUP); }
 int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
+int Table::get_next_dup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT_DUP); }
 int Table::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
 int Table::get_dcount(size_t* count) { return mdb_cursor_count(handle_, count); }
 
@@ -530,7 +536,7 @@ std::shared_ptr<Environment> get_env(const char* path, options opts) {
     auto iter = s_envs.find(envkey);
     if (iter != s_envs.end()) {
         if (iter->second.flags != flags) {
-            throw lmdb::exception(MDB_INCOMPATIBLE, mdb_strerror(MDB_INCOMPATIBLE));
+            err_handler(MDB_INCOMPATIBLE);
         }
         auto item = iter->second.wp.lock();
         if (item && item->is_opened()) {

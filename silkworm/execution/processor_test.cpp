@@ -100,15 +100,15 @@ TEST_CASE("Zero gas price") {
                  "815060009055506001016108fd565b5090565b50505b505056"),
     };
 
-    IntraBlockState state{nullptr};
-    state::Reader* header_reader{nullptr};
-    ExecutionProcessor processor{block, state, header_reader};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
+    ExecutionProcessor processor{block, state};
 
     CHECK_THROWS_MATCHES(processor.execute_transaction(txn), ValidationError, Message("missing sender"));
 
     txn.from = sender;
     Receipt receipt{processor.execute_transaction(txn)};
-    CHECK(std::get<bool>(receipt.post_state_or_status));
+    CHECK(receipt.success);
 }
 
 TEST_CASE("No refund on error") {
@@ -142,9 +142,9 @@ TEST_CASE("No refund on error") {
     23     BALANCE
     */
 
-    IntraBlockState state{nullptr};
-    state::Reader* header_reader{nullptr};
-    ExecutionProcessor processor{block, state, header_reader};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
+    ExecutionProcessor processor{block, state};
 
     Transaction txn{
         nonce,       // nonce
@@ -160,7 +160,7 @@ TEST_CASE("No refund on error") {
     txn.from = caller;
 
     Receipt receipt1{processor.execute_transaction(txn)};
-    CHECK(std::get<bool>(receipt1.post_state_or_status));
+    CHECK(receipt1.success);
 
     // Call the newly created contract
     txn.nonce = nonce + 1;
@@ -173,7 +173,7 @@ TEST_CASE("No refund on error") {
     txn.gas_limit = fee::kGTransaction + 5'020;
 
     Receipt receipt2{processor.execute_transaction(txn)};
-    CHECK(!std::get<bool>(receipt2.post_state_or_status));
+    CHECK(!receipt2.success);
     CHECK(receipt2.cumulative_gas_used - receipt1.cumulative_gas_used == txn.gas_limit);
 }
 
@@ -231,9 +231,9 @@ TEST_CASE("Self-destruct") {
     38     CALL
     */
 
-    IntraBlockState state{nullptr};
-    state::Reader* header_reader{nullptr};
-    ExecutionProcessor processor{block, state, header_reader};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
+    ExecutionProcessor processor{block, state};
 
     state.add_to_balance(caller_address, kEther);
     state.set_code(caller_address, caller_code);
@@ -252,7 +252,7 @@ TEST_CASE("Self-destruct") {
     txn.data = full_view(address_as_hash);
 
     Receipt receipt1{processor.execute_transaction(txn)};
-    CHECK(std::get<bool>(receipt1.post_state_or_status));
+    CHECK(receipt1.success);
 
     CHECK(!state.exists(suicidal_address));
 
@@ -262,7 +262,7 @@ TEST_CASE("Self-destruct") {
     txn.data.clear();
 
     Receipt receipt2{processor.execute_transaction(txn)};
-    CHECK(std::get<bool>(receipt2.post_state_or_status));
+    CHECK(receipt2.success);
 
     CHECK(state.exists(suicidal_address));
     CHECK(state.get_balance(suicidal_address) == 0);
@@ -271,8 +271,9 @@ TEST_CASE("Self-destruct") {
 }
 
 TEST_CASE("Out of Gas during account re-creation") {
+    uint64_t block_number{2'081'788};
     Block block{};
-    block.header.number = 2'081'788;
+    block.header.number = block_number;
     block.header.gas_limit = 4'712'388;
     block.header.beneficiary = 0xa42af2c70d316684e57aefcc6e393fecb1c7e84e_address;
     evmc::address caller{0xc789e5aba05051b1468ac980e30068e19fad8587_address};
@@ -385,26 +386,26 @@ TEST_CASE("Out of Gas during account re-creation") {
     };
     txn.from = caller;
 
-    state::Reader reader{*db_txn, block.header.number};
-    IntraBlockState state{&reader};
+    db::Buffer buffer{db_txn.get(), block_number};
+    IntraBlockState state{buffer};
     state.add_to_balance(caller, kEther);
 
-    ExecutionProcessor processor{block, state, &reader};
+    ExecutionProcessor processor{block, state};
 
     Receipt receipt{processor.execute_transaction(txn)};
     // out of gas
-    CHECK(!std::get<bool>(receipt.post_state_or_status));
+    CHECK(!receipt.success);
 
-    state::Writer writer{};
-    state.write_block(writer);
+    state.write_to_db(block_number);
 
     // only the caller and the miner should be changed
-    CHECK(writer.account_back_changes().size() == 2);
+    CHECK(buffer.account_changes().at(block_number).size() == 2);
 }
 
 TEST_CASE("Empty suicide beneficiary") {
+    uint64_t block_number{2'687'389};
     Block block{};
-    block.header.number = 2'687'389;
+    block.header.number = block_number;
     block.header.gas_limit = 4'712'388;
     block.header.beneficiary = 0x2a65aca4d5fc5b5c859090a6c34d164135398226_address;
     evmc::address caller{0x5ed8cee6b63b1c6afce3ad7c92f4fd7e1b8fad9f_address};
@@ -426,19 +427,19 @@ TEST_CASE("Empty suicide beneficiary") {
     };
     txn.from = caller;
 
-    IntraBlockState state{nullptr};
+    db::Buffer db{nullptr};
+    IntraBlockState state{db};
     state.add_to_balance(caller, kEther);
 
-    state::Reader* header_reader{nullptr};
-    ExecutionProcessor processor{block, state, header_reader};
+    ExecutionProcessor processor{block, state};
 
     Receipt receipt{processor.execute_transaction(txn)};
-    CHECK(std::get<bool>(receipt.post_state_or_status));
+    CHECK(receipt.success);
 
-    state::Writer writer{};
-    state.write_block(writer);
+    state.write_to_db(block_number);
 
     // suicide_beneficiary should've been touched and deleted
-    CHECK(writer.account_back_changes().count(suicide_beneficiary) == 1);
+    CHECK(db.account_changes().at(block_number).count(suicide_beneficiary) == 1);
 }
+
 }  // namespace silkworm

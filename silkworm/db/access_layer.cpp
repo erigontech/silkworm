@@ -38,7 +38,7 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
     return header;
 }
 
-std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number) {
+std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders) {
     auto header_table{txn.open(table::kBlockHeaders)};
     std::optional<ByteView> hash{header_table->get(header_hash_key(block_number))};
     if (!hash) {
@@ -64,6 +64,17 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     }
 
     rlp::decode<BlockBody>(*body_rlp, bh.block);
+
+    if (read_senders) {
+        std::vector<evmc::address> senders{db::read_senders(txn, block_number, bh.hash)};
+        if (senders.size() != bh.block.transactions.size()) {
+            throw std::runtime_error("senders count does not match transactions count");
+        }
+        for (size_t i{0}; i < senders.size(); ++i) {
+            bh.block.transactions[i].from = senders[i];
+        }
+    }
+
     return bh;
 }
 
@@ -118,7 +129,7 @@ static std::optional<ByteView> find_in_history(lmdb::Transaction& txn, bool stor
         return ByteView{};
     }
 
-    auto change_name{storage ? table::kStorageChanges : table::kAccountChanges};
+    auto change_name{storage ? table::kPlainStorageChangeSet : table::kPlainAccountChangeSet};
     auto change_table{txn.open(change_name)};
 
     uint64_t change_block{res->change_block};
@@ -154,7 +165,7 @@ std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address&
 
     if (acc && acc->incarnation > 0 && acc->code_hash == kEmptyHash) {
         // restore code hash
-        auto code_hash_table{txn.open(table::kCodeHash)};
+        auto code_hash_table{txn.open(table::kPlainContractCode)};
         std::optional<ByteView> hash{code_hash_table->get(storage_prefix(address, acc->incarnation))};
         if (hash && hash->length() == kHashLength) {
             std::memcpy(acc->code_hash.bytes, hash->data(), kHashLength);
@@ -190,7 +201,7 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
 
     if (!block_num) {
         // Current incarnation
-        auto incarnation_table{txn.open(table::kIncarnations)};
+        auto incarnation_table{txn.open(table::kIncarnationMap)};
         std::optional<ByteView> val{incarnation_table->get(key)};
         if (!val) {
             return {};
@@ -200,7 +211,7 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
     }
 
     auto history_table{txn.open(table::kAccountHistory)};
-    auto change_table{txn.open(table::kAccountChanges)};
+    auto change_table{txn.open(table::kPlainAccountChangeSet)};
 
     // Search through history and find the latest non-zero incarnation of the account,
     // disregarding future changes (happening after the block_number).
@@ -241,7 +252,7 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
 }
 
 std::optional<AccountChanges> read_account_changes(lmdb::Transaction& txn, uint64_t block_number) {
-    auto table{txn.open(table::kAccountChanges)};
+    auto table{txn.open(table::kPlainAccountChangeSet)};
     std::optional<ByteView> val{table->get(encode_timestamp(block_number))};
     if (!val) {
         return {};
@@ -250,12 +261,18 @@ std::optional<AccountChanges> read_account_changes(lmdb::Transaction& txn, uint6
 }
 
 Bytes read_storage_changes(lmdb::Transaction& txn, uint64_t block_number) {
-    auto table{txn.open(table::kStorageChanges)};
+    auto table{txn.open(table::kPlainStorageChangeSet)};
     std::optional<ByteView> val{table->get(encode_timestamp(block_number))};
     if (!val) {
         return {};
     }
     return Bytes{*val};
+}
+
+bool read_storage_mode_receipts(lmdb::Transaction& txn) {
+    auto table{txn.open(table::kDatabaseInfo)};
+    std::optional<ByteView> val{table->get(byte_view_of_c_str(kStorageModeReceipts))};
+    return val && val->length() == 1 && (*val)[0] == 1;
 }
 
 }  // namespace silkworm::db

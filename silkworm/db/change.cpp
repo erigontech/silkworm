@@ -30,8 +30,6 @@
 namespace {
 using namespace silkworm;
 
-constexpr uint64_t kDefaultIncarnation{1};
-
 // size_t -> uint32_t
 constexpr uint32_t kAddressLen{kAddressLength};
 constexpr uint32_t kHashLen{kHashLength};

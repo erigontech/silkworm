@@ -16,3 +16,6 @@
 	path = cpp-lru-cache
 	url = https://github.com/torquem-ch/cpp-lru-cache.git
 	branch = clear
+[submodule "cbor-cpp"]
+	path = cbor-cpp
+	url = https://github.com/torquem-ch/cbor-cpp.git

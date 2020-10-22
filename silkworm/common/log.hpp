@@ -19,6 +19,8 @@
 
 #include "tee.hpp"
 
+#include <iomanip>
+
 namespace silkworm {
 
 enum LogLevels {

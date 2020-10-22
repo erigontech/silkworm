@@ -90,7 +90,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
 }
 
-bool Buffer::full_enough() const { return number_of_entries >= optimal_batch_size; }
+bool Buffer::full_enough() const noexcept { return number_of_entries >= optimal_batch_size; }
 
 static void update_storage_value(lmdb::Table& state_table, ByteView storage_prefix, const evmc::bytes32& key,
                                  const evmc::bytes32& value) {

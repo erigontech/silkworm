@@ -22,6 +22,7 @@
 #include <nlohmann/json.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/execution/execution.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/intra_block_state.hpp>

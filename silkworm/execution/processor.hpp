@@ -23,15 +23,9 @@
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
 #include <silkworm/types/transaction.hpp>
-#include <stdexcept>
 #include <vector>
 
 namespace silkworm {
-
-class ValidationError : public std::runtime_error {
-   public:
-    using std::runtime_error::runtime_error;
-};
 
 class ExecutionProcessor {
    public:

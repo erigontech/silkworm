@@ -53,21 +53,21 @@ bool test_logging() {
 
     logger.level(LogCrit);
     SILKWORM_LOG(LogCrit)  << "LogCrit"  << std::endl;
-    test_log("CRIT ", infix, "LogCrit");
+    if (test_log("CRIT ", infix, "LogCrit") return false;
     SILKWORM_LOG(LogError) << "LogError" << std::endl;
-    test_log("ERROR", infix, "LogError");
+    if (test_log("ERROR", infix, "LogError") return false;
     SILKWORM_LOG(LogWarn)  << "LogWarn"  << std::endl;
-    test_log("WARN ", infix, "LogWarn");
+    if (test_log("WARN ", infix, "LogWarn") return false;
     SILKWORM_LOG(LogInfo)  << "LogInfo"  << std::endl;
-    test_log("INFO ", infix, "LogInfo");
+    if (test_log("INFO ", infix, "LogInfo") return false;
     SILKWORM_LOG(LogDebug) << "LogDebug" << std::endl;
-    test_log("DEBUG", infix, "LogDebug");
+    if (test_log("DEBUG", infix, "LogDebug") return false;
     SILKWORM_LOG(LogTrace) << "LogTrace" << std::endl;
-    test_log("TRACE", infix, "LogTrace");
+    if (test_log("TRACE", infix, "LogTrace") return false;
 
     logger.level(LogTrace);
     SILKWORM_LOG(LogDebug) << "LogDebug" << std::endl;
-    test_log("", "infix", "");
+    if (test_log("", "", "");
 
     return true;
 }
@@ -77,8 +77,3 @@ TEST_CASE("Logging") {
 }
 
 }
-/*
-int main() {
-    silkworm::test_logging();
-}
-*/

@@ -26,6 +26,7 @@ namespace silkworm {
 enum LogLevels {
     LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCrit, LogNone
 };
+
 // Log to two output streams - typically the console and a log file.
 class Logger {
 public:
@@ -44,7 +45,7 @@ public:
 private:
     teestream stream;
     LogLevels verbosity;
-    const char* LogTags[6] = { "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT " };
+    const char* LogTags[7] = { "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE" };
 };
 
 // log to whatever logger is in scope

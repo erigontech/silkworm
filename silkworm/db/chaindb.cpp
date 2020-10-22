@@ -367,22 +367,10 @@ int Table::drop() {
 }
 
 int Table::get(MDB_val* key, MDB_val* data, MDB_cursor_op operation) {
-    assert_handle();
     return mdb_cursor_get(handle_, key, data, operation);
 }
 
-int Table::put(MDB_val* key, MDB_val* data, unsigned int flag) {
-    assert_handle();
-    return mdb_cursor_put(handle_, key, data, flag);
-}
-
-bool Table::assert_handle(bool should_throw) {
-    bool retvar{handle_ != nullptr};
-    if (!retvar && should_throw) {
-        throw std::runtime_error("Invalid or closed cursor");
-    }
-    return retvar;
-}
+int Table::put(MDB_val* key, MDB_val* data, unsigned int flag) { return mdb_cursor_put(handle_, key, data, flag); }
 
 std::optional<ByteView> Table::get(ByteView key) {
     MDB_val key_val{db::to_mdb_val(key)};
@@ -483,7 +471,7 @@ int Table::put_multiple(MDB_val* key, MDB_val* data) { return put(key, data, MDB
 void Table::close() {
     // Free the cursor handle
     // There is no need to close the dbi_ handle
-    if (assert_handle(false)) {
+    if (handle_) {
         mdb_cursor_close(handle_);
         handle_ = nullptr;
     }

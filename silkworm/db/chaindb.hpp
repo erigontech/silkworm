@@ -374,8 +374,6 @@ class Table {
     std::string name_;         // The name of the dbi
     bool dbi_dropped_{false};  // Whether or not this table has been dropped
     MDB_cursor* handle_;       // The underlying MDB_cursor for this instance
-
-    bool assert_handle(bool should_throw = true);  // Ensures handle_ is validly created
 };
 
 std::shared_ptr<Environment> get_env(const char* path, options opts = {});

@@ -17,7 +17,6 @@
 #include "chaindb.hpp"
 
 #include <silkworm/common/util.hpp>
-#include <iostream>
 
 namespace silkworm::lmdb {
 
@@ -278,9 +277,19 @@ std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned fla
     MDB_dbi dbi{open_dbi(config.name, flags)};
 
     // Apply custom comparators (if any)
-    if (config.dup_comparator == TableCustomDupComparator::ExcludeSuffix32) {
-        std::cout << "Setting custom comparator" << std::endl;
-        err_handler(mdb_set_compare(handle_, dbi, dup_cmp_exclude_suffix32));
+    switch (config.key_comparator) // use mdb_set_compare
+    {
+    default:
+        break;
+    }
+
+    switch (config.dup_comparator) // use mdb_set_dupsort
+    {
+    case TableCustomDupComparator::ExcludeSuffix32:
+        err_handler(mdb_set_dupsort(handle_, dbi, dup_cmp_exclude_suffix32));
+        break;
+    default:
+        break;
     }
 
     return std::make_unique<Table>(this, dbi, config.name);
@@ -567,12 +576,6 @@ std::shared_ptr<Environment> get_env(const char* path, options opts) {
 
 int dup_cmp_exclude_suffix32(const MDB_val* a, const MDB_val* b) {
 
-    std::cout << "Invoked" << std::endl;
-
-    ByteView bv_keyA{ static_cast<uint8_t*>(a->mv_data), a->mv_size };
-    ByteView bv_keyB{ static_cast<uint8_t*>(b->mv_data), b->mv_size };
-    std::cout << "Key A " << to_hex(bv_keyA) << "\nKey B " << to_hex(bv_keyB) << std::endl;
-
     size_t lenA{(a->mv_size >= 32) ? a->mv_size - 32 : a->mv_size};
     size_t lenB{(b->mv_size >= 32) ? b->mv_size - 32 : b->mv_size};
     size_t len{lenA};
@@ -583,10 +586,7 @@ int dup_cmp_exclude_suffix32(const MDB_val* a, const MDB_val* b) {
         len_diff = 1;
     }
     int diff{memcmp(a->mv_data, b->mv_data, len)};
-    int retvar{ diff ? diff : (len_diff < 0 ? -1 : (int)len_diff) };
-    std::cout << "Result " << retvar << std::endl;
-    //return diff ? diff : (len_diff < 0 ? -1 : len_diff);
-    return retvar;
+    return diff ? diff : (len_diff < 0 ? -1 : len_diff);
 
 }
 }  // namespace silkworm::lmdb

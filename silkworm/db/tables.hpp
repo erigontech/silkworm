@@ -38,7 +38,8 @@ constexpr lmdb::TableConfig kContractCode{"contractCode"};
 constexpr lmdb::TableConfig kIncarnationMap{"incarnationMap"};
 constexpr lmdb::TableConfig kAccountChangeSet{"ACS"};
 constexpr lmdb::TableConfig kStorageChangeSet{"SCS"};
-constexpr lmdb::TableConfig kIntermediateTrieHash{"iTh2", MDB_DUPSORT, lmdb::TableCustomDupComparator::ExcludeSuffix32};
+constexpr lmdb::TableConfig kIntermediateTrieHash{"iTh2", MDB_DUPSORT, lmdb::TableCustomKeyComparator::None,
+                                                  lmdb::TableCustomDupComparator::ExcludeSuffix32};
 constexpr lmdb::TableConfig kDatabaseInfo{"DBINFO"};
 constexpr lmdb::TableConfig kDatabaseVersion{"DatabaseVersion"};
 constexpr lmdb::TableConfig kBlockHeaders{"h"};

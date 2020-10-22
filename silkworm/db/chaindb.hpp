@@ -63,9 +63,14 @@ enum class TableCustomDupComparator {
     ExcludeSuffix32
 };
 
+enum class TableCustomKeyComparator {
+    None,
+};
+
 struct TableConfig {
     const char* name{nullptr};
     const unsigned int flags{0};
+    TableCustomKeyComparator key_comparator{ TableCustomKeyComparator::None };
     TableCustomDupComparator dup_comparator{ TableCustomDupComparator::None };
 };
 
@@ -309,6 +314,7 @@ class Table {
      * For more fine grained options see #put_current(), #put_nodup, #put_noovrw,
      * #put_reserve(), #put_append(), #put_append_dup() and #put_multiple()
      */
+    int put(MDB_val* key, MDB_val* data, unsigned int flag);
     void put(ByteView key, ByteView data);
 
     /** @brief Replace the k/d pair at current cursor position
@@ -383,8 +389,6 @@ class Table {
 
     int get(MDB_val* key, MDB_val* data,
             MDB_cursor_op operation);  // Gets data by cursor on behalf of operation
-    int put(MDB_val* key, MDB_val* data,
-            unsigned int flag);  // Puts data by cursor on behalf of operation
 
     Transaction* parent_txn_;  // The transaction this table belongs to
     MDB_dbi dbi_;              // The underlying MDB_dbi handle for this instance

@@ -45,7 +45,7 @@ public:
 private:
     teestream stream;
     LogLevels verbosity;
-    const char* LogTags[7] = { "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE" };
+    static constexpr char const LogTags[7][6] = { "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE" };
 };
 
 // log to whatever logger is in scope

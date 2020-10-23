@@ -26,7 +26,7 @@ list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 add_library(silkworm ${SILKWORM_SRC})
 target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 
-set(SILKWORM_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set
+set(SILKWORM_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set absl::btree
                          liblmdb::lmdb evmc intx::intx ff Microsoft.GSL::GSL)
 
 set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::filesystem cborcpp)

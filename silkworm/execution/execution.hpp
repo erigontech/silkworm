@@ -20,8 +20,14 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/types/receipt.hpp>
+#include <stdexcept>
 
 namespace silkworm {
+
+class ValidationError : public std::runtime_error {
+   public:
+    using std::runtime_error::runtime_error;
+};
 
 /** @brief Executes a given block and writes resulting changes into the database.
  *

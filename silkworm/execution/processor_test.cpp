@@ -23,6 +23,7 @@
 #include <silkworm/db/tables.hpp>
 
 #include "address.hpp"
+#include "execution.hpp"
 #include "protocol_param.hpp"
 
 namespace silkworm {

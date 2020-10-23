@@ -42,7 +42,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     auto header_table{txn.open(table::kBlockHeaders)};
     std::optional<ByteView> hash{header_table->get(header_hash_key(block_number))};
     if (!hash) {
-        return {};
+        return std::nullopt;
     }
 
     BlockWithHash bh{};
@@ -52,7 +52,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     Bytes key{block_key(block_number, bh.hash.bytes)};
     std::optional<ByteView> header_rlp{header_table->get(key)};
     if (!header_rlp) {
-        return {};
+        return std::nullopt;
     }
 
     rlp::decode(*header_rlp, bh.block.header);
@@ -60,7 +60,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     auto body_table{txn.open(table::kBlockBodies)};
     std::optional<ByteView> body_rlp{body_table->get(key)};
     if (!body_rlp) {
-        return {};
+        return std::nullopt;
     }
 
     rlp::decode<BlockBody>(*body_rlp, bh.block);
@@ -68,7 +68,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     if (read_senders) {
         std::vector<evmc::address> senders{db::read_senders(txn, block_number, bh.hash)};
         if (senders.size() != bh.block.transactions.size()) {
-            throw std::runtime_error("senders count does not match transactions count");
+            throw MissingSenders("senders count does not match transactions count");
         }
         for (size_t i{0}; i < senders.size(); ++i) {
             bh.block.transactions[i].from = senders[i];

@@ -82,7 +82,7 @@ class Buffer {
     ///@}
 
     /** Whether there's enough pending data in the buffer to be written into the database. */
-    bool full_enough() const;
+    bool full_enough() const noexcept;
 
     void write_to_db();
 

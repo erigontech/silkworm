@@ -40,7 +40,6 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
         auto cleanup{gsl::finally([&txn] { *txn.handle() = nullptr; })};  // avoid aborting mdb_txn
 
         db::Buffer buffer{&txn};
-        buffer.optimal_batch_size = batch_size;
 
         for (uint64_t block_num{start_block};; ++block_num) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
@@ -58,7 +57,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
                 *last_executed_block = block_num;
             }
 
-            if (buffer.full_enough()) {
+            if (buffer.current_batch_size() >= batch_size) {
                 buffer.write_to_db();
                 return kSilkwormSuccess;
             }

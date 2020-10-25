@@ -25,10 +25,16 @@
 
 namespace silkworm::db {
 
+// See TG mutation_puts.go
+static constexpr size_t kKeyOverhead{16};
+static constexpr size_t kValueOverhead{16};
+static constexpr size_t kEntryOverhead{kKeyOverhead + kValueOverhead};
+
 void Buffer::begin_new_block(uint64_t block_number) {
     current_block_number_ = block_number;
     changed_storage_.clear();
-    number_of_entries += 2;  // account & storage changes
+    static constexpr size_t kBlockKeySize{4};
+    batch_size_ += 2 * (kBlockKeySize + kEntryOverhead);  // account & storage changes
 }
 
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
@@ -42,11 +48,13 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         return;
     }
 
+    Bytes encoded_initial{};
     if (initial) {
         bool omit_code_hash{!account_deleted};
-        account_changes_[current_block_number_][address] = initial->encode_for_storage(omit_code_hash);
-    } else {
-        account_changes_[current_block_number_][address] = {};
+        encoded_initial = initial->encode_for_storage(omit_code_hash);
+    }
+    if (account_changes_[current_block_number_].insert_or_assign(address, encoded_initial).second) {
+        batch_size_ += kAddressLength + encoded_initial.length();
     }
 
     if (equal) {
@@ -54,20 +62,27 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
     }
 
     if (accounts_.insert_or_assign(address, current).second) {
-        ++number_of_entries;
+        batch_size_ += kAddressLength + kEntryOverhead;
+        if (current) {
+            batch_size_ += current->encoding_length_for_storage();
+        };
     };
 
     if (account_deleted && initial->incarnation) {
-        incarnations_[address] = initial->incarnation;
-        ++number_of_entries;
+        if (incarnations_.insert_or_assign(address, initial->incarnation).second) {
+            batch_size_ += kStoragePrefixLength + kEntryOverhead;
+        }
     }
 }
 
 void Buffer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
                                  ByteView code) {
-    hash_to_code_[code_hash] = code;
-    storage_prefix_to_code_hash_[storage_prefix(address, incarnation)] = code_hash;
-    number_of_entries += 2;
+    if (hash_to_code_.insert_or_assign(code_hash, code).second) {
+        batch_size_ += kHashLength + kEntryOverhead + code.length();
+    }
+    if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(address, incarnation), code_hash).second) {
+        batch_size_ += kStoragePrefixLength + kEntryOverhead + kHashLength;
+    }
 }
 
 void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
@@ -77,22 +92,22 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
     changed_storage_.insert(address);
     Bytes full_key{storage_key(address, incarnation, key)};
-    storage_changes_[current_block_number_][full_key] = zeroless_view(initial);
+    ByteView compact_initial{zeroless_view(initial)};
+    if (storage_changes_[current_block_number_].insert_or_assign(full_key, compact_initial).second) {
+        batch_size_ += kHashLength + compact_initial.length();
+    }
 
-    if (incarnation == kDefaultIncarnation) {
-        if (default_incarnation_storage_[address].insert_or_assign(key, current).second) {
-            ++number_of_entries;
-        }
-    } else {
-        if (custom_incarnation_storage_[address][incarnation].insert_or_assign(key, current).second) {
-            ++number_of_entries;
-        }
+    auto& storage_map{incarnation == kDefaultIncarnation ? default_incarnation_storage_[address]
+                                                         : custom_incarnation_storage_[address][incarnation]};
+    if (storage_map.empty()) {
+        batch_size_ += kStoragePrefixLength + kKeyOverhead;
+    }
+    if (storage_map.insert_or_assign(key, current).second) {
+        batch_size_ += kValueOverhead + kHashLength + zeroless_view(current).size();
     }
 }
 
-bool Buffer::full_enough() const noexcept { return number_of_entries >= optimal_batch_size; }
-
-static void update_storage_value(lmdb::Table& state_table, ByteView storage_prefix, const evmc::bytes32& key,
+static void upsert_storage_value(lmdb::Table& state_table, ByteView storage_prefix, const evmc::bytes32& key,
                                  const evmc::bytes32& value) {
     state_table.del(storage_prefix, full_view(key));
     if (!is_zero(value)) {
@@ -129,7 +144,7 @@ void Buffer::write_to_state_table() {
         if (auto it{default_incarnation_storage_.find(key)}; it != default_incarnation_storage_.end()) {
             Bytes prefix{storage_prefix(it->first, kDefaultIncarnation)};
             for (const auto& x : it->second) {
-                update_storage_value(*state_table, prefix, x.first, x.second);
+                upsert_storage_value(*state_table, prefix, x.first, x.second);
             }
         }
 
@@ -138,7 +153,7 @@ void Buffer::write_to_state_table() {
                 uint64_t incarnation{contract.first};
                 Bytes prefix{storage_prefix(it->first, incarnation)};
                 for (const auto& x : contract.second) {
-                    update_storage_value(*state_table, prefix, x.first, x.second);
+                    upsert_storage_value(*state_table, prefix, x.first, x.second);
                 }
             }
         }
@@ -187,9 +202,10 @@ void Buffer::write_to_db() {
     }
 }
 
-void Buffer::insert_receipts(Bytes key, Bytes value) {
-    receipts_[std::move(key)] = std::move(value);
-    ++number_of_entries;
+void Buffer::insert_receipts(const Bytes& key, const Bytes& value) {
+    if (receipts_.insert_or_assign(key, value).second) {
+        batch_size_ += key.size() + value.size() + kEntryOverhead;
+    }
 }
 
 void Buffer::insert_header(BlockHeader block_header) {

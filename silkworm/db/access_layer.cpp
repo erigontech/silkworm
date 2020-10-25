@@ -177,9 +177,9 @@ std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address&
 
 evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address, uint64_t incarnation,
                            const evmc::bytes32& key, std::optional<uint64_t> block_num) {
-    auto composite_key{storage_key(address, incarnation, key)};
     std::optional<ByteView> val{};
     if (block_num) {
+        auto composite_key{storage_key(address, incarnation, key)};
         val = find_in_history(txn, /*storage=*/true, composite_key, *block_num);
     }
     if (!val) {

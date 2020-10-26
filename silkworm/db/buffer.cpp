@@ -96,8 +96,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
         batch_size_ += kStoragePrefixLength + kHashLength + compact_initial.length();
     }
 
-    auto& storage_map{incarnation == kDefaultIncarnation ? default_incarnation_storage_[address]
-                                                         : custom_incarnation_storage_[address][incarnation]};
+    auto& storage_map{storage_[address][incarnation]};
     if (storage_map.empty()) {
         batch_size_ += kStoragePrefixLength;
     }
@@ -123,10 +122,7 @@ void Buffer::write_to_state_table() {
     for (auto& x : accounts_) {
         keys.insert(x.first);
     }
-    for (auto& x : default_incarnation_storage_) {
-        keys.insert(x.first);
-    }
-    for (auto& x : custom_incarnation_storage_) {
+    for (auto& x : storage_) {
         keys.insert(x.first);
     }
 
@@ -140,14 +136,7 @@ void Buffer::write_to_state_table() {
             }
         }
 
-        if (auto it{default_incarnation_storage_.find(key)}; it != default_incarnation_storage_.end()) {
-            Bytes prefix{storage_prefix(it->first, kDefaultIncarnation)};
-            for (const auto& x : it->second) {
-                upsert_storage_value(*state_table, prefix, x.first, x.second);
-            }
-        }
-
-        if (auto it{custom_incarnation_storage_.find(key)}; it != custom_incarnation_storage_.end()) {
+        if (auto it{storage_.find(key)}; it != storage_.end()) {
             for (const auto& contract : it->second) {
                 uint64_t incarnation{contract.first};
                 Bytes prefix{storage_prefix(it->first, incarnation)};
@@ -253,16 +242,10 @@ Bytes Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
 
 evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarnation,
                                    const evmc::bytes32& key) const noexcept {
-    if (incarnation == kDefaultIncarnation) {
-        if (auto it1{default_incarnation_storage_.find(address)}; it1 != default_incarnation_storage_.end()) {
-            if (auto it{it1->second.find(key)}; it != it1->second.end()) {
-                return it->second;
-            }
-        }
-    } else if (auto it2{custom_incarnation_storage_.find(address)}; it2 != custom_incarnation_storage_.end()) {
-        if (auto it1{it2->second.find(incarnation)}; it1 != it2->second.end()) {
-            if (auto it{it1->second.find(key)}; it != it1->second.end()) {
-                return it->second;
+    if (auto it1{storage_.find(address)}; it1 != storage_.end()) {
+        if (auto it2{it1->second.find(incarnation)}; it2 != it1->second.end()) {
+            if (auto it3{it2->second.find(key)}; it3 != it2->second.end()) {
+                return it3->second;
             }
         }
     }

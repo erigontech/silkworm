@@ -41,12 +41,15 @@ TEST_CASE("Account RLP") {
 TEST_CASE("Decode account from storage") {
     Bytes encoded{from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
 
-    Account decoded = decode_account_from_storage(encoded);
+    Account decoded{decode_account_from_storage(encoded)};
 
     CHECK(decoded.nonce == 2);
     CHECK(decoded.balance == 1000);
     CHECK(decoded.storage_root == kEmptyRoot);
     CHECK(decoded.code_hash == 0xf1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239_bytes32);
     CHECK(decoded.incarnation == 5);
+
+    CHECK(decoded.encoding_length_for_storage() == encoded.length());
+    CHECK(decoded.encode_for_storage(/*omit_code_hash=*/false) == encoded);
 }
 }  // namespace silkworm

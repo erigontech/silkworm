@@ -56,8 +56,7 @@ enum SilkwormStatusCode {
  * This function does not commit nor abort the transaction.
  * @param[in] chain_id EIP-155 chain ID. kSilkwormUnknownChainId is returned in case of an unknown or unsupported chain.
  * @param[in] start_block The block height to start the execution from.
- * @param[in] batch_size The number of DB entries to accumulate before returning from this method.
- * 1,000,000 is a recommended value for good batch performance on SSD.
+ * @param[in] batch_size The size of DB changes to accumulate before returning from this method.
  * Pass 0 if you want to execute just 1 block.
  * @param[in] write_receipts Whether to write CBOR-encoded receipts into the DB.
  *

@@ -17,6 +17,7 @@
 #ifndef SILKWORM_DB_BUFFER_H_
 #define SILKWORM_DB_BUFFER_H_
 
+#include <absl/container/btree_map.h>
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
@@ -55,7 +56,7 @@ class Buffer {
 
     void insert_header(BlockHeader block_header);
 
-    void insert_receipts(Bytes block_key, Bytes receipts);
+    void insert_receipts(const Bytes& block_key, const Bytes& receipts);
 
     /** @name State changes
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
@@ -81,13 +82,10 @@ class Buffer {
     const std::map<uint64_t, StorageChanges>& storage_changes() const { return storage_changes_; }
     ///@}
 
-    /** Whether there's enough pending data in the buffer to be written into the database. */
-    bool full_enough() const noexcept;
+    /** Approximate size of accumulated DB changes in bytes.*/
+    size_t current_batch_size() const noexcept { return batch_size_; }
 
     void write_to_db();
-
-    /** Optimal number of entries to keep in memory before commiting to the database. */
-    size_t optimal_batch_size{500'000};
 
    private:
     void write_to_state_table();
@@ -99,10 +97,10 @@ class Buffer {
     absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
 
     // address -> key -> value
-    absl::flat_hash_map<evmc::address, std::map<evmc::bytes32, evmc::bytes32>> default_incarnation_storage_;
+    absl::flat_hash_map<evmc::address, absl::btree_map<evmc::bytes32, evmc::bytes32>> default_incarnation_storage_;
 
     // address -> incarnation -> key -> value
-    absl::flat_hash_map<evmc::address, std::map<uint64_t, std::map<evmc::bytes32, evmc::bytes32>>>
+    absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::btree_map<evmc::bytes32, evmc::bytes32>>>
         custom_incarnation_storage_;
 
     std::map<evmc::address, uint64_t> incarnations_;
@@ -110,7 +108,7 @@ class Buffer {
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
     std::map<Bytes, Bytes> receipts_;
 
-    size_t number_of_entries{0};
+    size_t batch_size_{0};
 
     // Stuff related to change sets
     uint64_t current_block_number_{0};

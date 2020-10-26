@@ -17,7 +17,7 @@
 #ifndef SILKWORM_COMMON_LOG_H_
 #define SILKWORM_COMMON_LOG_H_
 
-#include "tee.hpp"
+#include <silkworm/common/tee.hpp>
 
 #include <iomanip>
 

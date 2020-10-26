@@ -26,15 +26,14 @@
 namespace silkworm::db {
 
 // See TG mutation_puts.go
-static constexpr size_t kKeyOverhead{16};
-static constexpr size_t kValueOverhead{16};
-static constexpr size_t kEntryOverhead{kKeyOverhead + kValueOverhead};
+static constexpr size_t kEntryOverhead{32};
 
 void Buffer::begin_new_block(uint64_t block_number) {
     current_block_number_ = block_number;
     changed_storage_.clear();
-    static constexpr size_t kBlockKeySize{4};
-    batch_size_ += 2 * (kBlockKeySize + kEntryOverhead);  // account & storage changes
+
+    // some rather arbitrary fixed overhead of account & storage changes
+    batch_size_ += 4 * kEntryOverhead;
 }
 
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
@@ -94,16 +93,16 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     Bytes full_key{storage_key(address, incarnation, key)};
     ByteView compact_initial{zeroless_view(initial)};
     if (storage_changes_[current_block_number_].insert_or_assign(full_key, compact_initial).second) {
-        batch_size_ += kHashLength + compact_initial.length();
+        batch_size_ += kStoragePrefixLength + kHashLength + compact_initial.length();
     }
 
     auto& storage_map{incarnation == kDefaultIncarnation ? default_incarnation_storage_[address]
                                                          : custom_incarnation_storage_[address][incarnation]};
     if (storage_map.empty()) {
-        batch_size_ += kStoragePrefixLength + kKeyOverhead;
+        batch_size_ += kStoragePrefixLength;
     }
     if (storage_map.insert_or_assign(key, current).second) {
-        batch_size_ += kValueOverhead + kHashLength + zeroless_view(current).size();
+        batch_size_ += kEntryOverhead + kHashLength + zeroless_view(current).size();
     }
 }
 
@@ -204,7 +203,7 @@ void Buffer::write_to_db() {
 
 void Buffer::insert_receipts(const Bytes& key, const Bytes& value) {
     if (receipts_.insert_or_assign(key, value).second) {
-        batch_size_ += key.size() + value.size() + kEntryOverhead;
+        batch_size_ += key.size() + kEntryOverhead + value.size();
     }
 }
 

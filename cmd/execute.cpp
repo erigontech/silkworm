@@ -65,6 +65,9 @@ int main(int argc, char* argv[]) {
     uint64_t to_block{std::numeric_limits<uint64_t>::max()};
     app.add_option("--to", to_block, "Block execute up to");
 
+    size_t batch_mib{512};
+    app.add_option("--batch_mib", batch_mib, "Batch size in mebibytes of DB changes to accumulate before committing");
+
     CLI11_PARSE(app, argc, argv);
 
     lmdb::options opts{};
@@ -99,18 +102,18 @@ int main(int argc, char* argv[]) {
         current_progress = block_number;
         if (current_progress % 1000 == 0) {
             std::time_t t = std::time(nullptr);
-            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
-                      << " have been executed" << std::endl;
+            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress << " executed"
+                      << std::endl;
         }
 
-        if (buffer->full_enough()) {
+        if (buffer->current_batch_size() >= batch_mib * kMiB) {
             buffer->write_to_db();
             save_progress(*txn, current_progress);
             lmdb::err_handler(txn->commit());
 
             std::time_t t = std::time(nullptr);
             std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
-                      << " have been committed" << std::endl;
+                      << " committed" << std::endl;
 
             txn = env->begin_rw_transaction();
             buffer = std::make_unique<db::Buffer>(txn.get());
@@ -123,9 +126,9 @@ int main(int argc, char* argv[]) {
         lmdb::err_handler(txn->commit());
         std::time_t t = std::time(nullptr);
         std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " All blocks <= " << current_progress
-                  << " have been executed and committed" << std::endl;
+                  << " executed and committed" << std::endl;
     } else {
-        std::cout << "No blocks have been executed" << std::endl;
+        std::cout << "Nothing to execute" << std::endl;
     }
 
     return 0;

@@ -28,6 +28,8 @@
 #include <silkworm/db/change.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
+#include <silkworm/types/receipt.hpp>
+#include <vector>
 
 namespace silkworm::db {
 
@@ -56,7 +58,7 @@ class Buffer {
 
     void insert_header(BlockHeader block_header);
 
-    void insert_receipts(const Bytes& block_key, const Bytes& receipts);
+    void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts);
 
     /** @name State changes
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
@@ -107,6 +109,7 @@ class Buffer {
     std::map<evmc::bytes32, Bytes> hash_to_code_;
     std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
     std::map<Bytes, Bytes> receipts_;
+    std::map<Bytes, Bytes> logs_;
 
     size_t batch_size_{0};
 

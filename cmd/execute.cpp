@@ -14,10 +14,9 @@
    limitations under the License.
 */
 
-#include <spdlog/spdlog.h>
-
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
+#include <boost/log/trivial.hpp>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -67,7 +66,7 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    spdlog::info("Starting block execution. DB: {}", db_path);
+    BOOST_LOG_TRIVIAL(info) << "Starting block execution. DB: " << db_path;
 
     lmdb::options opts{};
     opts.read_only = false;
@@ -77,7 +76,7 @@ int main(int argc, char* argv[]) {
     bool write_receipts{db::read_storage_mode_receipts(*txn)};
     if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
                            !migration_happened(*txn, "receipts_store_logs_separately"))) {
-        spdlog::error("Legacy stored receipts are not supported");
+        BOOST_LOG_TRIVIAL(error) << "Legacy stored receipts are not supported";
         return -1;
     }
 
@@ -100,7 +99,7 @@ int main(int argc, char* argv[]) {
 
         current_progress = block_number;
         if (current_progress % 1000 == 0) {
-            spdlog::info("Blocks <= {} executed", current_progress);
+            BOOST_LOG_TRIVIAL(info) << "Blocks <= " << current_progress << " executed";
         }
 
         if (buffer->current_batch_size() >= batch_mib * kMiB) {
@@ -108,7 +107,7 @@ int main(int argc, char* argv[]) {
             save_progress(*txn, current_progress);
             lmdb::err_handler(txn->commit());
 
-            spdlog::info("Blocks <= {} committed", current_progress);
+            BOOST_LOG_TRIVIAL(info) << "Blocks <= " << current_progress << " committed";
 
             txn = env->begin_rw_transaction();
             buffer = std::make_unique<db::Buffer>(txn.get());
@@ -119,9 +118,9 @@ int main(int argc, char* argv[]) {
         buffer->write_to_db();
         save_progress(*txn, current_progress);
         lmdb::err_handler(txn->commit());
-        spdlog::info("All blocks <= {} executed and committed", current_progress);
+        BOOST_LOG_TRIVIAL(info) << "All blocks <= " << current_progress << " executed and committed";
     } else {
-        spdlog::warn("Nothing to execute");
+        BOOST_LOG_TRIVIAL(warning) << "Nothing to execute";
     }
 
     return 0;

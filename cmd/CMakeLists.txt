@@ -15,8 +15,7 @@
 ]]
 
 find_package(absl CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
-find_package(spdlog CONFIG REQUIRED)
+find_package(Boost CONFIG REQUIRED COMPONENTS filesystem log thread)
 
 if(MSVC)
   add_link_options(/STACK:10000000)
@@ -36,7 +35,7 @@ add_executable(dbtool dbtool.cpp)
 target_link_libraries(dbtool PRIVATE silkworm Boost::filesystem CLI11::CLI11)
 
 add_executable(execute execute.cpp)
-target_link_libraries(execute PRIVATE silkworm CLI11::CLI11 spdlog::spdlog)
+target_link_libraries(execute PRIVATE silkworm CLI11::CLI11 Boost::log Boost::thread)
 
 # Ethereum Consensus Tests
 find_package(nlohmann_json CONFIG REQUIRED)

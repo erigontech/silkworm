@@ -16,7 +16,7 @@
 
 hunter_add_package(abseil)
 hunter_add_package(benchmark)
-hunter_add_package(Boost COMPONENTS filesystem)
+hunter_add_package(Boost COMPONENTS filesystem log thread)
 hunter_add_package(Catch)
 hunter_add_package(CLI11)
 hunter_add_package(cryptopp)
@@ -25,4 +25,3 @@ hunter_add_package(intx)
 hunter_add_package(lmdb)
 hunter_add_package(Microsoft.GSL)
 hunter_add_package(nlohmann_json)
-hunter_add_package(spdlog)

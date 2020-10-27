@@ -40,12 +40,17 @@ constexpr lmdb::TableConfig kAccountChangeSet{"ACS"};
 constexpr lmdb::TableConfig kStorageChangeSet{"SCS"};
 constexpr lmdb::TableConfig kIntermediateTrieHash{"iTh2", MDB_DUPSORT};
 constexpr lmdb::TableConfig kDatabaseInfo{"DBINFO"};
+constexpr lmdb::TableConfig kSnapshotInfo{"SNINFO"};
 constexpr lmdb::TableConfig kDatabaseVersion{"DatabaseVersion"};
 constexpr lmdb::TableConfig kBlockHeaders{"h"};
+constexpr lmdb::TableConfig kHeaderNumbers{"H"};
 constexpr lmdb::TableConfig kBlockBodies{"b"};
 constexpr lmdb::TableConfig kBlockReceipts{"r"};
+constexpr lmdb::TableConfig kLogs{"log"};
 constexpr lmdb::TableConfig kLogTopicIndex{"log_topic_index"};
 constexpr lmdb::TableConfig kLogAddressIndex{"log_address_index"};
+constexpr lmdb::TableConfig kCallFromIndex{"call_from_index"};
+constexpr lmdb::TableConfig kCallToIndex{"call_to_index"};
 constexpr lmdb::TableConfig kTxLookup{"l"};
 constexpr lmdb::TableConfig kBloomBits{"B"};
 constexpr lmdb::TableConfig kBloomBitsIndex{"iB"};
@@ -55,55 +60,53 @@ constexpr lmdb::TableConfig kSyncStageProgress{"SSP2"};
 constexpr lmdb::TableConfig kSyncStageUnwind{"SSU2"};
 constexpr lmdb::TableConfig kClique{"clique-"};
 constexpr lmdb::TableConfig kSenders{"txSenders"};
-constexpr lmdb::TableConfig kMigrations{"migrations"};
 constexpr lmdb::TableConfig kFastTrieProgress{"TrieSync"};
 constexpr lmdb::TableConfig kHeadBlock{"LastBlock"};
 constexpr lmdb::TableConfig kHeadFastBlock{"LastFast"};
 constexpr lmdb::TableConfig kHeadHeader{"LastHeader"};
+constexpr lmdb::TableConfig kMigrations{"migrations"};
 
-/* Deprecated Tables */
-constexpr lmdb::TableConfig kPlainStateOld1{"PLAIN-CST", MDB_DUPSORT};
-constexpr lmdb::TableConfig kCurrentStateOld1{"CST"};
-constexpr lmdb::TableConfig kSyncStageProgressOld1{"SSP"};
-constexpr lmdb::TableConfig kSyncStageUnwindOld1{"SSU"};
-constexpr lmdb::TableConfig kIntermediateTrieHashOld1{"iTh"};
-
-constexpr lmdb::TableConfig kTables[]{kPlainState,
-                                      kPlainContractCode,
-                                      kPlainAccountChangeSet,
-                                      kPlainStorageChangeSet,
-                                      kCurrentState,
-                                      kAccountHistory,
-                                      kStorageHistory,
-                                      kCode,
-                                      kBlockHeaders,
-                                      kBlockBodies,
-                                      kBlockReceipts,
-                                      kSenders,
-                                      kIncarnationMap,
-                                      kAccountChangeSet,
-                                      kStorageChangeSet,
-                                      kIntermediateTrieHash,
-                                      kDatabaseInfo,
-                                      kDatabaseVersion,
-                                      kLogTopicIndex,
-                                      kLogAddressIndex,
-                                      kTxLookup,
-                                      kBloomBits,
-                                      kBloomBitsIndex,
-                                      kPreimage,
-                                      kConfig,
-                                      kSyncStageProgress,
-                                      kSyncStageUnwind,
-                                      kClique,
-                                      kMigrations,
-                                      kFastTrieProgress,
-                                      kHeadBlock,
-                                      kHeadFastBlock,
-                                      kHeadHeader};
-
-constexpr lmdb::TableConfig kDeprecatedTables[]{kPlainStateOld1, kCurrentStateOld1, kSyncStageProgressOld1,
-                                                kSyncStageUnwindOld1, kIntermediateTrieHashOld1};
+constexpr lmdb::TableConfig kTables[]{
+    kPlainState,
+    kPlainContractCode,
+    kPlainAccountChangeSet,
+    kPlainStorageChangeSet,
+    kCurrentState,
+    kAccountHistory,
+    kStorageHistory,
+    kCode,
+    kContractCode,
+    kIncarnationMap,
+    kAccountChangeSet,
+    kStorageChangeSet,
+    kIntermediateTrieHash,
+    kDatabaseInfo,
+    kSnapshotInfo,
+    kDatabaseVersion,
+    kBlockHeaders,
+    kHeaderNumbers,
+    kBlockBodies,
+    kBlockReceipts,
+    kLogs,
+    kLogTopicIndex,
+    kLogAddressIndex,
+    kCallFromIndex,
+    kCallToIndex,
+    kTxLookup,
+    kBloomBits,
+    kBloomBitsIndex,
+    kPreimage,
+    kConfig,
+    kSyncStageProgress,
+    kSyncStageUnwind,
+    kClique,
+    kSenders,
+    kFastTrieProgress,
+    kHeadBlock,
+    kHeadFastBlock,
+    kHeadHeader,
+    kMigrations,
+};
 
 // Create all tables that do not yet exist.
 void create_all(lmdb::Transaction& txn);

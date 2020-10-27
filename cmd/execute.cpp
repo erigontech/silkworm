@@ -14,10 +14,10 @@
    limitations under the License.
 */
 
+#include <spdlog/spdlog.h>
+
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <ctime>  // TODO(Andrew) replace with the logger
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -28,8 +28,6 @@
 using namespace silkworm;
 
 static constexpr const char* kExecutionStage{"Execution"};
-
-static constexpr const char* kTimeFormat{"%Y-%m-%d_%H:%M:%S_%Z"};
 
 static uint64_t already_executed_block(lmdb::Transaction& txn) {
     std::unique_ptr<lmdb::Table> progress_table{txn.open(db::table::kSyncStageProgress)};
@@ -69,6 +67,8 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
+    spdlog::info("Starting block execution. DB: {}", db_path);
+
     lmdb::options opts{};
     opts.read_only = false;
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_path.c_str(), opts)};
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
     bool write_receipts{db::read_storage_mode_receipts(*txn)};
     if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
                            !migration_happened(*txn, "receipts_store_logs_separately"))) {
-        std::cerr << "Legacy stored receipts are not supported\n";
+        spdlog::error("Legacy stored receipts are not supported");
         return -1;
     }
 
@@ -100,9 +100,7 @@ int main(int argc, char* argv[]) {
 
         current_progress = block_number;
         if (current_progress % 1000 == 0) {
-            std::time_t t = std::time(nullptr);
-            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress << " executed"
-                      << std::endl;
+            spdlog::info("Blocks <= {} executed", current_progress);
         }
 
         if (buffer->current_batch_size() >= batch_mib * kMiB) {
@@ -110,9 +108,7 @@ int main(int argc, char* argv[]) {
             save_progress(*txn, current_progress);
             lmdb::err_handler(txn->commit());
 
-            std::time_t t = std::time(nullptr);
-            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
-                      << " committed" << std::endl;
+            spdlog::info("Blocks <= {} committed", current_progress);
 
             txn = env->begin_rw_transaction();
             buffer = std::make_unique<db::Buffer>(txn.get());
@@ -123,11 +119,9 @@ int main(int argc, char* argv[]) {
         buffer->write_to_db();
         save_progress(*txn, current_progress);
         lmdb::err_handler(txn->commit());
-        std::time_t t = std::time(nullptr);
-        std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " All blocks <= " << current_progress
-                  << " executed and committed" << std::endl;
+        spdlog::info("All blocks <= {} executed and committed", current_progress);
     } else {
-        std::cout << "Nothing to execute" << std::endl;
+        spdlog::warn("Nothing to execute");
     }
 
     return 0;

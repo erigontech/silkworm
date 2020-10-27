@@ -85,6 +85,19 @@ Bytes encode_timestamp(uint64_t block_number) {
     return encoded;
 }
 
+Bytes receipt_key(uint64_t block_number) {
+    Bytes key(8, '\0');
+    boost::endian::store_big_u64(&key[0], block_number);
+    return key;
+}
+
+Bytes log_key(uint64_t block_number, uint32_t transaction_id) {
+    Bytes key(8 + 4, '\0');
+    boost::endian::store_big_u64(&key[0], block_number);
+    boost::endian::store_big_u32(&key[8], transaction_id);
+    return key;
+}
+
 // See Turbo-Geth DefaultDataDir
 std::string default_path() {
     std::string base_dir{};

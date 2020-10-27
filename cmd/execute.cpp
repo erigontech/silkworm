@@ -50,10 +50,9 @@ static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
     progress_table->put(stage_key, val);
 }
 
-static bool receipt_stored_as_rlp(lmdb::Transaction& txn) {
+static bool migration_happened(lmdb::Transaction& txn, const char* name) {
     std::unique_ptr<lmdb::Table> migration_table{txn.open(db::table::kMigrations)};
-    bool migration_happened{migration_table->get(byte_view_of_c_str("receipts_cbor_encode")).has_value()};
-    return !migration_happened;
+    return migration_table->get(byte_view_of_c_str(name)).has_value();
 }
 
 int main(int argc, char* argv[]) {
@@ -76,8 +75,9 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
     bool write_receipts{db::read_storage_mode_receipts(*txn)};
-    if (write_receipts && receipt_stored_as_rlp(*txn)) {
-        std::cerr << "Receipts stored as RLP are not supported\n";
+    if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
+                           !migration_happened(*txn, "receipts_store_logs_separately"))) {
+        std::cerr << "Legacy stored receipts are not supported\n";
         return -1;
     }
 
@@ -95,8 +95,7 @@ int main(int argc, char* argv[]) {
         std::vector<Receipt> receipts{execute_block(bh->block, *buffer)};
 
         if (write_receipts) {
-            Bytes key{db::block_key(block_number, bh->hash.bytes)};
-            buffer->insert_receipts(key, cbor_encode(receipts));
+            buffer->insert_receipts(block_number, receipts);
         }
 
         current_progress = block_number;

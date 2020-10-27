@@ -16,7 +16,7 @@
 
 hunter_add_package(abseil)
 hunter_add_package(benchmark)
-hunter_add_package(Boost COMPONENTS filesystem log thread)
+hunter_add_package(Boost COMPONENTS filesystem thread log)
 hunter_add_package(Catch)
 hunter_add_package(CLI11)
 hunter_add_package(cryptopp)

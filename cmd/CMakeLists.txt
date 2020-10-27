@@ -15,7 +15,7 @@
 ]]
 
 find_package(absl CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem log thread)
+find_package(Boost CONFIG REQUIRED COMPONENTS filesystem thread log)
 
 if(MSVC)
   add_link_options(/STACK:10000000)

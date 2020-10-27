@@ -16,6 +16,8 @@
 
 #include "buffer.hpp"
 
+#include <absl/container/btree_set.h>
+
 #include <boost/endian/conversion.hpp>
 #include <silkworm/common/util.hpp>
 
@@ -118,7 +120,7 @@ static void upsert_storage_value(lmdb::Table& state_table, ByteView storage_pref
 void Buffer::write_to_state_table() {
     auto state_table{txn_->open(table::kPlainState)};
 
-    std::set<evmc::address> keys;
+    absl::btree_set<evmc::address> keys;
     for (auto& x : accounts_) {
         keys.insert(x.first);
     }

@@ -25,7 +25,7 @@
 namespace silkworm {
 
 enum LogLevels {
-    LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCrit, LogNone
+    LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCritical
 };
 
 // Log to one or two output streams - typically the console and optional log file.

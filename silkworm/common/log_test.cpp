@@ -55,13 +55,13 @@ TEST_CASE("Logging") {
 
     // test true branch of macro
     SILKWORM_LOG_TO_LEVEL(logger, LogCrit);
-    SILKWORM_LOG_TO(logger, LogCrit)  << "LogCrit"  << std::endl;
+    SILKWORM_LOG_TO(logger, LogCrit)  << "LogCritical" << std::endl;
     CHECK(test_log("CRIT ", infix, "LogCrit"));
     SILKWORM_LOG_TO(logger, LogError) << "LogError" << std::endl;
     CHECK(test_log("ERROR", infix, "LogError"));
-    SILKWORM_LOG_TO(logger, LogWarn)  << "LogWarn"  << std::endl;
+    SILKWORM_LOG_TO(logger, LogWarn)  << "LogWarn" << std::endl;
     CHECK(test_log("WARN ", infix, "LogWarn"));
-    SILKWORM_LOG_TO(logger, LogInfo)  << "LogInfo"  << std::endl;
+    SILKWORM_LOG_TO(logger, LogInfo)  << "LogInfo" << std::endl;
     CHECK(test_log("INFO ", infix, "LogInfo"));
     SILKWORM_LOG_TO(logger, LogDebug) << "LogDebug" << std::endl;
     CHECK(test_log("DEBUG", infix, "LogDebug"));

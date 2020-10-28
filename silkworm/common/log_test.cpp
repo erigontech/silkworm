@@ -15,14 +15,14 @@
 */
 
 #include "log.hpp"
-//#include "util.hpp"
+#include "util.hpp"
 
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <regex>
 
-//#include <catch2/catch.hpp>
+#include <catch2/catch.hpp>
 
 namespace silkworm {
 
@@ -51,29 +51,27 @@ namespace {
     }
 }
 
-bool test_logging()
-{
+TEST_CASE("Logging") {
+
     // test true branch of macro
     SILKWORM_LOG_TO_LEVEL(logger, LogCrit);
     SILKWORM_LOG_TO(logger, LogCrit)  << "LogCrit"  << std::endl;
-    if (!test_log("CRIT ", infix, "LogCrit"))  return false;
+    CHECK(test_log("CRIT ", infix, "LogCrit"));
     SILKWORM_LOG_TO(logger, LogError) << "LogError" << std::endl;
-    if (!test_log("ERROR", infix, "LogError")) return false;
+    CHECK(test_log("ERROR", infix, "LogError"));
     SILKWORM_LOG_TO(logger, LogWarn)  << "LogWarn"  << std::endl;
-    if (!test_log("WARN ", infix, "LogWarn"))  return false;
+    CHECK(test_log("WARN ", infix, "LogWarn"));
     SILKWORM_LOG_TO(logger, LogInfo)  << "LogInfo"  << std::endl;
-    if (!test_log("INFO ", infix, "LogInfo"))  return false;
+    CHECK(test_log("INFO ", infix, "LogInfo"));
     SILKWORM_LOG_TO(logger, LogDebug) << "LogDebug" << std::endl;
-    if (!test_log("DEBUG", infix, "LogDebug")) return false;
+    CHECK(test_log("DEBUG", infix, "LogDebug"));
     SILKWORM_LOG_TO(logger, LogTrace) << "LogTrace" << std::endl;
-    if (!test_log("TRACE", infix, "LogTrace")) return false;
+    CHECK(test_log("TRACE", infix, "LogTrace"));
 
     // test false branch of macro
     SILKWORM_LOG_TO_LEVEL(logger, LogTrace);
     SILKWORM_LOG_TO(logger, LogDebug) << "LogDebug" << std::endl;
-    if (!test_log("", "", "")) return false;
-
-    return true;
+    CHECK(test_log("", "", ""));
 }
 
 }

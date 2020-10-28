@@ -35,22 +35,131 @@ using namespace silkworm;
 bool shouldStop{false};
 int errorCode{0};
 
+class Progress {
+   public:
+    Progress(uint32_t width) : bar_width_{width}, percent_step_{100u / width} {};
+    ~Progress() = default;
+
+    // Return current percentage
+    uint32_t percent(void) {
+        if (!max_counter_) return 100;
+        if (!current_counter_) return 0;
+        return (uint32_t)(current_counter_ * 100 / max_counter_);
+    }
+
+    void step(void) { current_counter_++; }
+    void set_current(size_t count) { current_counter_ = std::max(count, current_counter_); }
+    size_t get_current(void) { return current_counter_; }
+
+    size_t get_increment_count(void) { return (max_counter_ / bar_width_); }
+
+    // Resets everything to zero
+    void reset() {
+        current_counter_ = 0;
+        printed_bar_len_ = 0;
+    }
+    void set_task_count(size_t iterations) {
+        reset();
+        max_counter_ = iterations;
+    }
+
+    // Prints progress ticks
+    std::string print_interval(char c = '.') {
+        uint32_t percentage{std::min(percent(), 100u)};
+        uint32_t numChars{percentage / percent_step_};
+        if (!numChars) return "";
+        uint32_t intChars{numChars - printed_bar_len_};
+        if (!intChars) return "";
+        std::string ret(intChars, c);
+        printed_bar_len_ += intChars;
+        return ret;
+    }
+
+    std::string print_progress(char c = '.') {
+        uint32_t percentage{(uint32_t)percent()};
+        uint32_t numChars{percentage / percent_step_};
+        if (!numChars) return "";
+        std::string ret(numChars, c);
+        return ret;
+    }
+
+   private:
+    uint32_t bar_width_;
+    uint32_t percent_step_;
+    size_t max_counter_{0};
+    size_t current_counter_{0};
+
+    uint32_t printed_bar_len_{0};
+};
+
 struct dbTableEntry {
     MDB_dbi id{0};
     std::string name{};
     MDB_stat stat{};
+    size_t pages(void) { return stat.ms_branch_pages + stat.ms_leaf_pages + stat.ms_overflow_pages; }
+    size_t size(void) { return pages() * stat.ms_psize; }
+};
+
+struct dbTablesInfo {
+    size_t pageSize{0};
+    size_t pages{0};
+    size_t size{0};
+    std::vector<dbTableEntry> tables{};
 };
 
 struct dbFreeEntry {
-    size_t transactionId{0};
-    size_t freePagesCount{0};
-    size_t freePagesSize{0};
+    size_t id{0};
+    size_t pages{0};
+    size_t size{0};
 };
 
 struct dbFreeInfo {
-    size_t totalFreePagesCount{ 0 };
-    size_t totalFreePagesSize{ 0 };
-    std::vector<dbFreeEntry> freePagesDetail{};
+    size_t pages{ 0 };
+    size_t size{0};
+    std::vector<dbFreeEntry> entries{};
+};
+
+struct db_options_t {
+    std::string datadir{silkworm::db::default_path()};  // Where data file is located
+    std::string mapsize_str{};                          // Provided map_size literal
+    uint64_t mapsize{0};                                // Computed map size
+    bool exclusive{false};                              // Wheter or not try to gain exclusive access to db
+    uint64_t filesize{0};                               // Size of data.mdb (not an option - only for convenience)
+    bfs::path dir{};                                    // Path to data directory
+    bfs::path file{};                                   // Path to data file
+};
+
+struct freelist_options_t {
+    bool details{false};  // Wheter or not print detailed list
+};
+
+struct clear_options_t {
+    std::vector<std::string> names{};  // Name of table(s) to clear
+    bool drop{false};                  // Whether or not to drop table instead of clearing
+};
+
+struct compact_options_t {
+    std::string workdir{};              // Where compacted file should be located
+    bool replace{false};                // Wheter or not compacted file shoudl replace original one
+    bool nobak{false};                  // Whether or not the original file should be renamed to bak
+    bfs::path dir{};                    // Path to target data directory (i.e. workdir)
+    bfs::path file{};                   // Path to target data file
+};
+
+struct copy_options_t
+{
+    std::string targetdir{};            // Target directory of database
+    bool create{false};                 // Whether or not new data.mdb have to be created
+    bool noempty{false};                // Omit copying a table when empty
+    bool upsert{false};                 // Copy using upsert instead of append (reuses free pages if any)
+    std::string newmapsize_str{};       // Size of target file (as input literal)
+    uint64_t newmapsize{0};             // Computed map size
+    std::vector<std::string> tables{};  // A limited set of table names
+    std::string commitsize_str{"5GB"};  // Provided commit size literal default 5GB
+    uint64_t commitsize{0};             // Computed commit size
+    bfs::path dir{};                    // Path to target data directory (i.e. workdir)
+    bfs::path file{};                   // Path to target data file
+    size_t filesize{0};                 // Size of target file if exists
 };
 
 void sig_handler(int signum) {
@@ -60,6 +169,8 @@ void sig_handler(int signum) {
 }
 
 std::optional<uint64_t> parse_size(const std::string& strsize) {
+    if (strsize.empty()) return {0};
+
     std::regex pattern{"^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$"};
     std::smatch matches;
     if (!std::regex_search(strsize, matches, pattern, std::regex_constants::match_default)) {
@@ -89,34 +200,46 @@ std::optional<uint64_t> parse_size(const std::string& strsize) {
     }
 }
 
-int do_drop(std::string datadir, std::optional<uint64_t> mapsize, std::string tablename, bool del) {
+std::shared_ptr<lmdb::Environment> open_db(db_options_t& db_opts, bool readonly) {
+    try {
+        lmdb::options opts{};
+        if (db_opts.mapsize) opts.map_size = db_opts.mapsize;
+        opts.read_only = readonly;
+        return lmdb::get_env(db_opts.datadir.c_str(), opts);
+
+    } catch (const std::exception& ex) {
+        std::cout << ex.what() << std::endl;
+        return nullptr;
+    }
+}
+
+int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
     int retvar{0};
-    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
-    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
-    std::unique_ptr<lmdb::Table> lmdb_tbl{nullptr};        // Table name to be cleared
+    std::shared_ptr<lmdb::Environment> lmdb_env{open_db(db_opts, false)};  // Main lmdb environment
+    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};                             // Main lmdb transaction
+    std::unique_ptr<lmdb::Table> lmdb_tbl{nullptr};                                   // Table name to be cleared
 
     try {
-        // Open db and start a rw transaction
-        lmdb::options opts{};
-        if (mapsize.has_value()) {
-            opts.map_size = *mapsize;
+        if (!lmdb_env) {
+            throw std::runtime_error("Could not open LMDB environment");
         }
-        opts.read_only = false;
-        lmdb_env = lmdb::get_env(datadir.c_str(), opts);
         lmdb_txn = lmdb_env->begin_rw_transaction();
-        lmdb_tbl = lmdb_txn->open({tablename.c_str()});
 
-        size_t rcount{0};
-        lmdb::err_handler(lmdb_tbl->get_rcount(&rcount));
-        if (!del && !rcount) {
-            throw std::logic_error("Table " + tablename + " is already empty.");
+        for (const auto& tablename : app_opts.names) {
+            lmdb_tbl = lmdb_txn->open({tablename.c_str()});
+            size_t rcount{0};
+            lmdb::err_handler(lmdb_tbl->get_rcount(&rcount));
+            if (!app_opts.drop && !rcount) {
+                std::cout << " Table " << tablename << " is already empty. Skipping" << std::endl;
+            } else {
+                std::cout << "\n"
+                          << (app_opts.drop ? "Dropping" : "Emptying") << " table " << tablename << " (" << rcount
+                          << " records)" << std::endl;
+                lmdb::err_handler(app_opts.drop ? lmdb_tbl->drop() : lmdb_tbl->clear());
+                lmdb_tbl->close();
+            }
+            lmdb_tbl.reset();
         }
-
-        std::cout << "\n"
-                  << (del ? "Deleting" : "Emptying") << " table " << tablename << " (" << rcount << " records)"
-                  << std::endl;
-        lmdb::err_handler(del ? lmdb_tbl->drop() : lmdb_tbl->clear());
-        lmdb_tbl->close();
 
         std::cout << "Committing ... " << std::endl;
         lmdb::err_handler(lmdb_txn->commit());
@@ -141,102 +264,98 @@ int do_drop(std::string datadir, std::optional<uint64_t> mapsize, std::string ta
     return retvar;
 }
 
-std::optional<dbFreeInfo> get_freeInfo(std::unique_ptr<lmdb::Transaction>& tx) {
+dbFreeInfo get_freeInfo(std::shared_ptr<lmdb::Environment>& env) {
+
+    std::unique_ptr<lmdb::Transaction> tx{env->begin_ro_transaction()};
+    std::unique_ptr<lmdb::Table> free_db{tx->open(lmdb::FREE_DBI)};
 
     dbFreeInfo ret{};
-    try
-    {
-        MDB_stat stat;
-        auto lmdb_free = tx->open(0);
-        lmdb::err_handler(lmdb_free->get_stat(&stat));
-
-        MDB_val key, data;
-        int rc{ MDB_SUCCESS };
-        lmdb::err_handler(lmdb_free->get_first(&key, &data));
-        while (rc == MDB_SUCCESS)
-        {
-            size_t txid = *(static_cast<size_t*>(key.mv_data));
-            size_t pagesCount = *(static_cast<size_t*>(data.mv_data));
-            size_t pagesSize = pagesCount * stat.ms_psize;
-            ret.totalFreePagesCount += pagesCount;
-            ret.totalFreePagesSize += pagesSize;
-            ret.freePagesDetail.push_back({ txid, pagesCount, pagesSize });
-            rc = lmdb_free->get_next(&key, &data);
-        }
-        if (rc != MDB_NOTFOUND) {
-            lmdb::err_handler(rc);
-        }
-    } catch (const std::exception&)
-    {
-        return std::nullopt;
-    }
-
-    return {ret};
-}
-
-std::vector<dbTableEntry> get_tables(std::unique_ptr<lmdb::Transaction>& tx) {
-    std::vector<dbTableEntry> ret{};
+    MDB_stat stat{};
     MDB_val key, data;
-
-    auto unnamed = tx->open(lmdb::FREE_DBI);
-    ret.push_back({unnamed->get_dbi(), unnamed->get_name()});
-    lmdb::err_handler(unnamed->get_stat(&ret.back().stat));
-
-    unnamed.reset();
-    unnamed = tx->open(lmdb::MAIN_DBI);  // Opens unnamed table (every lmdb has one)
-    ret.push_back({unnamed->get_dbi(), unnamed->get_name()});
-    lmdb::err_handler(unnamed->get_stat(&ret.back().stat));
-    if (ret.back().stat.ms_entries) {
-        lmdb::err_handler(unnamed->get_first(&key, &data));
-        while (!shouldStop) {
-            if (data.mv_size < sizeof(size_t)) {
-                lmdb::err_handler(MDB_INVALID);
-            }
-            auto named = tx->open({(const char*)key.mv_data});
-            ret.push_back(
-                {named->get_dbi(), named->get_name()});
-            lmdb::err_handler(named->get_stat(&ret.back().stat));
-            int rc{unnamed->get_next(&key, &data)};
-            if (rc == MDB_NOTFOUND) break;
-            lmdb::err_handler(rc);
-        }
+    lmdb::err_handler(free_db->get_stat(&stat));
+    int rc{free_db->get_first(&key, &data)};
+    while (rc == MDB_SUCCESS) {
+        size_t txid = *(static_cast<size_t*>(key.mv_data));
+        size_t pagesCount = *(static_cast<size_t*>(data.mv_data));
+        size_t pagesSize = pagesCount * stat.ms_psize;
+        ret.pages += pagesCount;
+        ret.size += pagesSize;
+        ret.entries.push_back({txid, pagesCount, pagesSize});
+        rc = free_db->get_next(&key, &data);
     }
+    if (rc != MDB_NOTFOUND) {
+        lmdb::err_handler(rc);
+    }
+
     return ret;
 }
 
-int do_tables(std::string datadir, size_t file_size, std::optional<uint64_t> mapsize) {
+dbTablesInfo get_tablesInfo(std::shared_ptr<lmdb::Environment>& env) {
 
+    std::unique_ptr<lmdb::Transaction> tx{env->begin_ro_transaction()};
 
-    static std::string fmt_hdr{ " %3s %-24s %10s %2s %10s %10s %10s %12s" };
-    static std::string fmt_row{ " %3i %-24s %10u %2u %10u %10u %10u %12u" };
+    dbTablesInfo ret{};
+    MDB_val key, data;
+
+    std::unique_ptr<lmdb::Table> unnamed{tx->open(lmdb::FREE_DBI)};
+    dbTableEntry* table;
+
+    unnamed = tx->open(lmdb::FREE_DBI);
+    table = new dbTableEntry{unnamed->get_dbi(), unnamed->get_name()};
+    lmdb::err_handler(unnamed->get_stat(&table->stat));
+    ret.pageSize = table->stat.ms_psize;
+    ret.pages += table->pages();
+    ret.size += table->size();
+    ret.tables.push_back(*table);
+
+    unnamed.reset();
+    unnamed = tx->open(lmdb::MAIN_DBI);
+    table = new dbTableEntry{unnamed->get_dbi(), unnamed->get_name()};
+    lmdb::err_handler(unnamed->get_stat(&table->stat));
+    ret.pages += table->pages();
+    ret.size += table->size();
+    ret.tables.push_back(*table);
+
+    int rc{unnamed->get_first(&key, &data)};
+    while (rc == MDB_SUCCESS) {
+        // if (data.mv_size < sizeof(size_t)) {
+        //    lmdb::err_handler(MDB_INVALID);
+        //}
+
+        auto named = tx->open({(const char*)key.mv_data});
+        table = new dbTableEntry{named->get_dbi(), named->get_name()};
+        lmdb::err_handler(named->get_stat(&table->stat));
+        ret.pages += table->pages();
+        ret.size += table->size();
+        ret.tables.push_back(*table);
+        rc = unnamed->get_next(&key, &data);
+    }
+    if (rc != MDB_NOTFOUND) {
+        lmdb::err_handler(rc);
+    }
+
+    return ret;
+}
+
+int do_tables(db_options_t& db_opts) {
+    static std::string fmt_hdr{" %3s %-24s %10s %2s %10s %10s %10s %12s"};
+    static std::string fmt_row{" %3i %-24s %10u %2u %10u %10u %10u %12u"};
 
     int retvar{0};
-    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
-    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
+    std::shared_ptr<lmdb::Environment> lmdb_env{open_db(db_opts, true)};  // Main lmdb environment
 
     try {
-        // Open db and start transaction
-        lmdb::options opts{};
-        if (mapsize.has_value()) {
-            opts.map_size = *mapsize;
-        }
-        opts.read_only = true;
-        lmdb_env = lmdb::get_env(datadir.c_str(), opts);
-        lmdb_txn = lmdb_env->begin_ro_transaction();
 
-        auto freeInfo = get_freeInfo(lmdb_txn);
-        if (!freeInfo.has_value()) {
-            throw std::runtime_error("Could not retrieve freeinfo");
-        }
+        if (!lmdb_env) throw std::runtime_error("Could not open LMDB environment");
 
-        std::vector<dbTableEntry> entries{get_tables(lmdb_txn)};
-        size_t items_size{0};
-        std::cout << "\n Database tables    : " << entries.size() << std::endl;
+        //lmdb_txn = lmdb_env->begin_ro_transaction();
 
-        if (entries.size()) {
+        auto freeInfo{get_freeInfo(lmdb_env)};
+        auto tablesInfo{get_tablesInfo(lmdb_env)};
+        std::cout << "\n Database tables    : " << tablesInfo.tables.size() << std::endl;
+        std::cout << " Database page size : " << tablesInfo.pageSize << " \n" << std::endl;
 
-            std::cout << " Database page size : " << entries.begin()->stat.ms_psize << " \n" << std::endl;
-
+        if (tablesInfo.tables.size()) {
             std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" %
                           "Overflow" % "Size")
                       << std::endl;
@@ -245,22 +364,22 @@ int do_tables(std::string datadir, size_t file_size, std::optional<uint64_t> map
                           std::string(12, '-'))
                       << std::endl;
 
-            for (dbTableEntry item : entries) {
-                size_t item_size{item.stat.ms_psize *
-                                 (item.stat.ms_leaf_pages + item.stat.ms_branch_pages + item.stat.ms_overflow_pages)};
-                items_size += item_size;
+            for (dbTableEntry item : tablesInfo.tables) {
                 std::cout << (boost::format(fmt_row) % item.id % item.name % item.stat.ms_entries % item.stat.ms_depth %
-                              item.stat.ms_branch_pages % item.stat.ms_leaf_pages % item.stat.ms_overflow_pages % item_size)
+                              item.stat.ms_branch_pages % item.stat.ms_leaf_pages % item.stat.ms_overflow_pages %
+                              item.size())
                           << std::endl;
             }
         }
 
-        std::cout << "\n Database map size    : " << (boost::format("%13u") % opts.map_size) << std::endl;
-        std::cout << " Size of file on disk : " << (boost::format("%13u") % file_size) << std::endl;
-        std::cout << " Size of data in file : " << (boost::format("%13u") % items_size) << std::endl;
-        std::cout << " Reclaimable pages    : " << (boost::format("%13u") % freeInfo->totalFreePagesCount) << std::endl;
-        std::cout << " Reclaimable size     : " << (boost::format("%13u") % freeInfo->totalFreePagesSize) << std::endl;
-        std::cout << " Free space available : " << (boost::format("%13u") % (opts.map_size - items_size + freeInfo->totalFreePagesSize)) << std::endl;
+        std::cout << "\n Database map size    : " << (boost::format("%13u") % db_opts.mapsize) << std::endl;
+        std::cout << " Size of file on disk : " << (boost::format("%13u") % db_opts.filesize) << std::endl;
+        std::cout << " Data pages count     : " << (boost::format("%13u") % tablesInfo.pages) << std::endl;
+        std::cout << " Data pages size      : " << (boost::format("%13u") % tablesInfo.size) << std::endl;
+        std::cout << " Reclaimable pages    : " << (boost::format("%13u") % freeInfo.pages) << std::endl;
+        std::cout << " Reclaimable size     : " << (boost::format("%13u") % freeInfo.size) << std::endl;
+        std::cout << " Free space available : "
+                  << (boost::format("%13u") % (db_opts.mapsize - tablesInfo.size + freeInfo.size)) << std::endl;
 
     } catch (lmdb::exception& ex) {
         std::cout << ex.err() << " " << ex.what() << std::endl;
@@ -270,211 +389,94 @@ int do_tables(std::string datadir, size_t file_size, std::optional<uint64_t> map
         retvar = -1;
     }
 
-    lmdb_txn.reset();
     lmdb_env.reset();
     return retvar;
 }
 
-int do_freelist(std::string datadir, std::optional<uint64_t> mapsize, bool txids) {
-
-    static std::string fmt_hdr{ "%9s %9s %12s" };
-    static std::string fmt_row{ "%9u %9u %12u" };
+int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
+    static std::string fmt_hdr{"%9s %9s %12s"};
+    static std::string fmt_row{"%9u %9u %12u"};
 
     int retvar{0};
-    std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
-    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
-    std::unique_ptr<lmdb::Table> lmdb_free{nullptr};       // Free dbi
-
-    try
-    {
-        // Open db and start transaction
-        lmdb::options opts{};
-        if (mapsize.has_value()) {
-            opts.map_size = *mapsize;
-        }
-        opts.read_only = true;
-        lmdb_env = lmdb::get_env(datadir.c_str(), opts);
-        lmdb_txn = lmdb_env->begin_ro_transaction();
-
-        auto freeInfo = get_freeInfo(lmdb_txn);
-        if (!freeInfo.has_value()) {
-            throw std::runtime_error("Could not get Free info");
-        }
-        if (freeInfo->freePagesDetail.size() && txids) {
-            std::cout << (boost::format(fmt_hdr) % "TxId" % "Free pages" % "Free Size") << std::endl;
-            std::cout << (boost::format(fmt_hdr) % std::string(9, '-') % std::string(9, '-') % std::string(12, '-')) << std::endl;
-            for (auto item : freeInfo->freePagesDetail) {
-                std::cout << (boost::format(fmt_row) % item.transactionId % item.freePagesCount % item.freePagesSize) << std::endl;
-            }
-        }
-
-        std::cout << "\n Total free pages : " << freeInfo->totalFreePagesCount << std::endl;
-        std::cout << " Total free size  : " << freeInfo->totalFreePagesSize << std::endl;
-
-    } catch (lmdb::exception& ex) {
-        std::cout << ex.err() << " " << ex.what() << std::endl;
-        retvar = -1;
-    } catch (std::runtime_error& ex) {
-        std::cout << ex.what() << std::endl;
-        retvar = -1;
-    }
-
-    lmdb_free.reset();
-    lmdb_txn.reset();
-    lmdb_env.reset();
-    return retvar;
-
-}
-
-int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string workdir, bool keep, bool copy) {
-    int retvar{0};
-    std::shared_ptr<lmdb::Environment> lmdb_src_env{nullptr};  // Source lmdb environment
-    std::shared_ptr<lmdb::Environment> lmdb_tgt_env{nullptr};  // Target lmdb environment
+    std::shared_ptr<lmdb::Environment> lmdb_env{open_db(db_opts, true)};  // Main lmdb environment
 
     try {
-        bfs::path source{bfs::path{datadir} / bfs::path{"data.mdb"}};
-        size_t source_size{bfs::file_size(source)};
-        bfs::path target{bfs::path{workdir} / bfs::path{"data.mdb"}};
 
-        // Do not overwrite target
-        if (bfs::exists(target)) {
-            throw std::runtime_error("File data.mdb already existing in working directory");
+        if (!lmdb_env) throw std::runtime_error("Could not open LMDB environment");
+        auto freeInfo{get_freeInfo(lmdb_env)};
+        if (freeInfo.entries.size() && app_opts.details) {
+
+            std::cout << std::endl;
+            std::cout << (boost::format(fmt_hdr) % "TxId" % "Pages" % "Size") << std::endl;
+            std::cout << (boost::format(fmt_hdr) % std::string(9, '-') % std::string(9, '-') % std::string(12, '-'))
+                      << std::endl;
+            for (auto& item : freeInfo.entries) {
+                std::cout << (boost::format(fmt_row) % item.id % item.pages % item.size)
+                          << std::endl;
+            }
         }
+        std::cout << "\n Total free pages     : " << boost::format("%13u") % freeInfo.pages << "\n"
+                  << " Total free size      : " << boost::format("%13u") % freeInfo.size << std::endl;
+
+    } catch (lmdb::exception& ex) {
+        std::cout << ex.err() << " " << ex.what() << std::endl;
+        retvar = -1;
+    } catch (std::runtime_error& ex) {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    lmdb_env.reset();
+    return retvar;
+}
+
+int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
+    int retvar{0};
+    std::shared_ptr<lmdb::Environment> lmdb_src_env{open_db(db_opts, false)};  // Main lmdb environment
+    std::shared_ptr<lmdb::Environment> lmdb_tgt_env{nullptr};                  // Target lmdb environment
+
+    try {
+
+        if (!lmdb_src_env) throw std::runtime_error("Could not open LMDB environment");
 
         // Ensure target working directory has enough free space
-        // at least the size of source
-        auto target_space = bfs::space(target.parent_path());
-        if (target_space.free <= source_size) {
+        // at least the size of origin db
+        auto target_path = bfs::path{app_opts.workdir};
+        auto target_file = bfs::path{target_path / bfs::path{"data.mdb"}};
+        auto target_space = bfs::space(target_path);
+        if (target_space.free <= db_opts.filesize) {
             throw std::runtime_error("Insufficient disk space on working directory");
         }
 
-        // Open db and start transaction
-        lmdb::options src_opts{};
-        src_opts.read_only = true;
-        if (mapsize.has_value()) {
-            src_opts.map_size = *mapsize;
-        }
-        lmdb_src_env = lmdb::get_env(datadir.c_str(), src_opts);
-        std::cout << " Compacting " << source.string() << "\n into " << target.string() << "\n Please be patient ..."
+        std::cout << " Compacting " << db_opts.file << "\n into " << target_path << "\n Please be patient as there is no progress report ..."
                   << std::endl;
-        if (!copy) {
-            lmdb::err_handler(mdb_env_copy2(*(lmdb_src_env->handle()), workdir.c_str(), MDB_CP_COMPACT));
-        } else {
-            // We traverse all populated tables and copy only their data
-            std::unique_ptr<lmdb::Transaction> src_txn{lmdb_src_env->begin_ro_transaction()};
-            auto tables = get_tables(src_txn);
-            size_t data_size{0};
+        lmdb::err_handler(mdb_env_copy2(*(lmdb_src_env->handle()), target_path.string().c_str(), MDB_CP_COMPACT));
+        std::cout << "\n Database compaction " << (shouldStop ? "aborted !" : "completed ...") << std::endl;
 
-            // Compute size of data we need to copy
-            for (dbTableEntry table : tables) {
-                if (table.id < 2) continue;  // Dont account data from reserved databases
-                data_size += table.stat.ms_psize *
-                             (table.stat.ms_leaf_pages + table.stat.ms_branch_pages + table.stat.ms_overflow_pages);
+        if (!shouldStop) {
+            // Do we have a valid compacted file on disk ?
+            // replace source with target
+            if (!bfs::exists(target_file)) {
+                throw std::runtime_error("Can't locate compacted data.mdb");
             }
 
-            // Add extra 50 Mb to fit
-            // Should actually compute the real reclaimable space traversing free_dbi
-            // But this is an experiment
-            data_size += (500ull << 20);
-            size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
-            data_size = ((data_size + host_page_size - 1) / host_page_size) * host_page_size;
-
-            lmdb::options tgt_opts{};
-            tgt_opts.read_only = false;
-            tgt_opts.no_tls = false;
-            tgt_opts.map_size = data_size;
-
-            // Create target environment and open a rw transaction
-            lmdb_tgt_env = lmdb::get_env(workdir.c_str(), tgt_opts);
-            std::unique_ptr<lmdb::Transaction> tgt_txn{lmdb_tgt_env->begin_rw_transaction()};
-
-            MDB_val key, data;
-            // Loop source tables
-            for (dbTableEntry table : tables) {
-                if (table.id < 2 || !table.stat.ms_entries) continue;  // Skip reserved databases and empty tables
-
-                if (table.name != "iTh2") continue;
-
-                // Lookup TableConfig in known tables collection
-                // If not found we have no way to determine which are the proper flags
-                // required to open the table.
-                std::optional<lmdb::TableConfig> config{db::table::get_config(table.name)};
-                if (!config.has_value()) continue;
-
-                std::cout << " Copying table " << table.name << std::endl;
-
-                // Create table on destination with same configuration as origin
-                bool src_is_dupsort{(config->flags & MDB_DUPSORT) == MDB_DUPSORT};
-                auto src_table = src_txn->open(*config);
-                auto tgt_table = tgt_txn->open(*config, MDB_CREATE);
-
-                // Loop source and write into target
-                int rc{src_table->get_first(&key, &data)};
-                while (rc == MDB_SUCCESS) {
-                    if (src_is_dupsort) {
-                        size_t dups{0};
-                        lmdb::err_handler(src_table->get_dcount(&dups));
-                        do
-                        {
-                            //ByteView bv_key{ static_cast<uint8_t*>(key.mv_data), key.mv_size };
-                            //ByteView bv_data{ static_cast<uint8_t*>(data.mv_data), data.mv_size };
-                            //std::cout << to_hex(bv_key) << " " << to_hex(bv_data) << std::endl;
-                            lmdb::err_handler(tgt_table->put_append(&key, &data));
-                            if (!--dups) break;
-                            lmdb::err_handler(src_table->get_next_dup(&key, &data));
-                        } while (true);
-                        rc = src_table->get_next_nodup(&key, &data);
-
-                    } else {
-                        lmdb::err_handler(tgt_table->put_append(&key, &data));
-                        rc = src_table->get_next(&key, &data);
-                    }
+            // Do we have to replace original file ?
+            if (app_opts.replace) {
+                // Create a backup copy before replacing ?
+                if (!app_opts.nobak) {
+                    std::cout << " Creating backup copy of origin db ..." << std::endl;
+                    bfs::path source_bak{db_opts.file.parent_path() / bfs::path{"data.mdb.bak"}};
+                    if (bfs::exists(source_bak)) bfs::remove(source_bak);
+                    bfs::rename(db_opts.file, source_bak);
                 }
-                if (rc != MDB_NOTFOUND) {
-                    lmdb::err_handler(rc);
-                }
-                // Close source and target
-                src_table.reset();
-                tgt_table.reset();
+
+                std::cout << " Replacing origin db with compacted ..." << std::endl;
+                if (bfs::exists(db_opts.file)) bfs::remove(db_opts.file);
+                bfs::rename(target_file, db_opts.file);
             }
-
-            // Commit target transaction
-            lmdb::err_handler(tgt_txn->commit());
-            tgt_txn.reset();
-            lmdb_tgt_env.reset();
         }
 
-        std::cout << "Database compaction completed ..." << std::endl;
-        // Do we have a valid compacted file on disk ?
-        // replace source with target
-        if (!bfs::exists(target)) {
-            throw std::runtime_error("Can't locate compacted data.mdb");
-        }
-
-        // Close environment to release source file
-        std::cout << "Closing origin db ..." << std::endl;
-        lmdb_src_env->close();
-
-        // Create a bak copy of source file
-        if (keep) {
-            std::cout << "Creating backup copy of origin db ..." << std::endl;
-            bfs::path source_bak{bfs::path{datadir} / bfs::path{"data_mdb.bak"}};
-            if (bfs::exists(source_bak)) {
-                bfs::remove(source_bak);
-            }
-            bfs::rename(source, source_bak);
-        }
-
-        // Eventually replace original file
-        if (bfs::exists(source)) {
-            std::cout << "Deleting origin db ..." << std::endl;
-            bfs::remove(source);
-        }
-
-        std::cout << "Replacing origin db with compacted ..." << std::endl;
-        bfs::rename(target, source);
-
-        std::cout << "All done !" << std::endl;
+        std::cout << " All done !" << std::endl;
 
     } catch (const std::exception& ex) {
         std::cout << ex.what() << std::endl;
@@ -486,80 +488,314 @@ int do_compact(std::string datadir, std::optional<uint64_t> mapsize, std::string
     return retvar;
 }
 
+int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
+
+    int retvar{ 0 };
+    std::shared_ptr<lmdb::Environment> lmdb_src_env{ open_db(db_opts, true) };  // Main lmdb environment
+
+    try
+    {
+        if (!lmdb_src_env) throw std::runtime_error("Could not open source LMDB environment");
+        db_options_t tgt_opts{};
+        tgt_opts.mapsize = app_opts.newmapsize;
+        tgt_opts.datadir = app_opts.targetdir;
+        tgt_opts.file = app_opts.file;
+        tgt_opts.dir = app_opts.dir;
+        std::shared_ptr<lmdb::Environment> lmdb_tgt_env{open_db(tgt_opts, false)};
+        if (!lmdb_tgt_env) throw std::runtime_error("Could not open target LMDB environment");
+
+        // Get free info and tables from both source and target environment
+        auto src_freeInfo = get_freeInfo(lmdb_src_env);
+        auto src_tableInfo = get_tablesInfo(lmdb_src_env);
+        auto tgt_freeInfo = get_freeInfo(lmdb_tgt_env);
+        auto tgt_tableInfo = get_tablesInfo(lmdb_tgt_env);
+
+        // Check source db has tables to copy besides the two system tables
+        if (src_tableInfo.tables.size() < 3) {
+            throw std::runtime_error("Source db has no tables to copy.");
+        }
+
+        size_t bytesWritten{ 0 };
+        std::cout << boost::format(" %-24s %=50s") % "Table" % "Progress" << std::endl;
+        std::cout << boost::format(" %-24s %=50s") % std::string(24, '-') % std::string(50, '-') << std::flush;
+
+        // Loop source tables
+        for (auto& src_table : src_tableInfo.tables) {
+            if (shouldStop) break;
+            std::cout << "\n " << boost::format("%-24s ") % src_table.name << std::flush;
+
+            // Is this a system table ?
+            if (src_table.id < 2) {
+                std::cout << "Skipped (SYSTEM TABLE)" << std::flush;
+                continue;
+            }
+
+            // Is this a known table ?
+            std::optional<lmdb::TableConfig> src_config{db::table::get_config(src_table.name)};
+            if (!src_config.has_value()) {
+                std::cout << "Skipped (unknown table)" << std::flush;
+                continue;
+            }
+
+            // Is this table present in the list user has provided ?
+            if (app_opts.tables.size()) {
+                auto it = std::find(app_opts.tables.begin(), app_opts.tables.end(), src_table.name);
+                if (it == app_opts.tables.end()) {
+                    std::cout << "Skipped (no match --tables)" << std::flush;
+                    continue;
+                }
+            }
+
+            // Is table empty ?
+            if (!src_table.stat.ms_entries && app_opts.noempty) {
+                std::cout << "Skipped (--noempty)" << std::flush;
+                continue;
+            }
+
+            // Is source table already present in target db ?
+            bool exists_on_target{false};
+            if(tgt_tableInfo.tables.size())
+            {
+                auto it = std::find_if(tgt_tableInfo.tables.begin(), tgt_tableInfo.tables.end(), boost::bind(&dbTableEntry::name, _1) == src_table.name);
+                if (it != tgt_tableInfo.tables.end()) exists_on_target = true;
+            }
+
+
+            // Ensure there is enough free space on target
+            // In case the user have opted for Upsert mode we need to
+            // compute all reclaimable space + the difference amongst data size and map_size
+            // In case we go for append then data is appended to the end of file
+            size_t available_space =
+                (app_opts.upsert ? tgt_freeInfo.size : 0) + (tgt_opts.mapsize - tgt_tableInfo.size);
+            if (available_space < src_table.size()) {
+                tgt_opts.mapsize += (src_table.size() - available_space);
+                // Round map size to nearest multiple of commit size
+                tgt_opts.mapsize =
+                    ((tgt_opts.mapsize + app_opts.commitsize - 1) / app_opts.commitsize) * app_opts.commitsize;
+                lmdb_tgt_env->set_mapsize(tgt_opts.mapsize);
+            }
+
+            // Ready to copy
+            std::unique_ptr<lmdb::Transaction> lmdb_src_txn{ lmdb_src_env->begin_ro_transaction() };
+            std::unique_ptr<lmdb::Table> lmdb_src_tbl{lmdb_src_txn->open(*src_config)};
+            std::unique_ptr<lmdb::Transaction> lmdb_tgt_txn{ lmdb_tgt_env->begin_rw_transaction() };
+            std::unique_ptr<lmdb::Table> lmdb_tgt_tbl{lmdb_tgt_txn->open(*src_config, (exists_on_target ? 0u : (unsigned int)MDB_CREATE))};
+
+            // If table exists on target and is populated and NOT --upsert then
+            // skip with error
+            if (exists_on_target) {
+                MDB_stat stat{};
+                lmdb::err_handler(lmdb_tgt_tbl->get_stat(&stat));
+                if (stat.ms_entries && !app_opts.upsert) {
+                    std::cout << "Skipped (already populated on target and --upsert was not set)" << std::flush;
+                    continue;
+                }
+            }
+
+            // Copy Stuff
+            unsigned int flags{0};
+            if (!app_opts.upsert) {
+                flags |= (((src_config->flags & MDB_DUPSORT) == MDB_DUPSORT) ? MDB_APPENDDUP : MDB_APPEND);
+            }
+
+            // Loop source and write into target
+            Progress progress{50};
+            progress.set_task_count(src_table.stat.ms_entries);
+            size_t batch_size{progress.get_increment_count()};
+            bool batch_committed{false};
+            MDB_val key, data;
+            int rc{lmdb_src_tbl->get_first(&key, &data)};
+            while (rc == MDB_SUCCESS) {
+                lmdb::err_handler(lmdb_tgt_tbl->put(&key, &data, flags));
+                bytesWritten += key.mv_size + data.mv_size;
+                if (bytesWritten > app_opts.commitsize) {
+                    lmdb_tgt_tbl.reset();
+                    lmdb::err_handler(lmdb_tgt_txn->commit());
+                    lmdb_tgt_txn.reset();
+                    lmdb_tgt_txn = lmdb_tgt_env->begin_rw_transaction();
+                    lmdb_tgt_tbl = lmdb_tgt_txn->open(*src_config);
+                    batch_committed = true;
+                    bytesWritten = 0;
+                }
+
+                if (!--batch_size) {
+                    progress.set_current(progress.get_current() + progress.get_increment_count());
+                    std::cout << progress.print_interval(batch_committed ? 'W' : '.') << std::flush;
+                    batch_committed = false;
+                    batch_size = progress.get_increment_count();
+                    if (shouldStop) break;
+                }
+
+                rc = lmdb_src_tbl->get_next(&key, &data);
+            }
+            if (rc != MDB_NOTFOUND) lmdb::err_handler(rc);
+            progress.set_current(src_table.stat.ms_entries);
+            std::cout << progress.print_interval(batch_committed ? 'W' : '.') << std::flush;
+
+            // Close all
+            lmdb_src_tbl.reset();
+            lmdb_tgt_tbl.reset();
+            lmdb_src_txn.reset();
+            if (!shouldStop && bytesWritten) {
+                lmdb::err_handler(lmdb_tgt_txn->commit());
+            }
+            lmdb_tgt_txn.reset();
+
+            // Recompute target data
+            if (!shouldStop) {
+                tgt_freeInfo = get_freeInfo(lmdb_tgt_env);
+                tgt_tableInfo = get_tablesInfo(lmdb_tgt_env);
+            }
+        }
+
+        std::cout << "\n All done!" << std::endl;
+
+    } catch (const std::exception& ex) {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    return retvar;
+
+}
+
 int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-    CLI::App app_main("Tests db interfaces.");
+    db_options_t db_opts{};              // Common options for all actions
+    freelist_options_t freelist_opts{};  // Options for freelist action
+    clear_options_t clear_opts{};        // Options for clear action
+    compact_options_t compact_opts{};    // Options for compact action
+    copy_options_t copy_opts{};          // Options for copy action
 
-    std::string po_data_dir{""};     // Provided database path
-    std::string po_work_dir{""};     // Provided work path
-    std::string po_mapsize_str{""};  // Provided lmdb map size
-    std::string po_table_name{""};   // Provided table name
-    bool po_keep{false};             // Keep a copy of origin db (before compaction)
-    bool po_copy{false};             // Enforce compaction by table copyying
-    bool po_txids{false};            // For free list prints detail by transaction
+    CLI::App app_main("Turbo-Geth db tool");
+
     CLI::Range range32(1u, UINT32_MAX);
 
-    app_main.add_option("--datadir", po_data_dir, "Path to directory for data.mdb", false);
-    app_main.add_option("--lmdb.mapSize", po_mapsize_str, "Lmdb map size", true);
+    // Common CLI options
+    app_main.add_option("--datadir", db_opts.datadir, "Path to directory for data.mdb", false);
+    app_main.add_option("--lmdb.mapSize", db_opts.mapsize_str, "Lmdb map size", true);
+    //app_main.add_flag("--exclusive", db_opts.exclusive, "Exclusive access to db");
 
-    auto& app_tables = *app_main.add_subcommand("tables", "List contained tables");
+    // List tables and gives info about storage
+    auto& app_tables = *app_main.add_subcommand("tables", "List tables info and db info");
 
+    // Provides detail of all free pages
     auto& app_freelist = *app_main.add_subcommand("freelist", "List free pages");
-    app_freelist.add_flag("--txids", po_txids, "List all transaction ids");
+    app_freelist.add_flag("--detail", freelist_opts.details, "Gives detail for each FREE_DBI record");
 
+    // Clear table tool
     auto& app_clear = *app_main.add_subcommand("clear", "Empties a named table");
-    app_clear.add_option("--name", po_table_name, "Name of table to clear")->required();
+    app_clear.add_option("--names", clear_opts.names, "Name of table to clear")->required();
+    app_clear.add_flag("--drop", clear_opts.drop, "Drop table instead of emptying it");
 
-    auto& app_drop = *app_main.add_subcommand("drop", "Drops a named table");
-    app_drop.add_option("--name", po_table_name, "Name of table to drop")->required();
-
+    // Compact
     auto& app_compact = *app_main.add_subcommand("compact", "Compacts an lmdb database");
-    app_compact.add_option("--workdir", po_work_dir, "Working directory (must exist)", false)
+    app_compact.add_option("--workdir", compact_opts.workdir, "Working directory (must exist)", false)
         ->required()
         ->check(CLI::ExistingDirectory);
-    app_compact.add_flag("--keep", po_keep, "Keep old file");
-    app_compact.add_flag("--copy", po_copy, "Compact by copy");
+    app_compact.add_flag("--replace", compact_opts.replace, "Replace original file with compacted");
+    app_compact.add_flag("--nobak", compact_opts.nobak, "Don't create a bak copy of original when replacing");
+
+    // Copy
+    auto& app_copy = *app_main.add_subcommand("copy", "Copies an entire TG database or subset of tables");
+    app_copy.add_option("--targetdir", copy_opts.targetdir, "Working directory (must exist)", false)
+        ->required()
+        ->check(CLI::ExistingDirectory);
+    app_copy.add_flag("--create", copy_opts.create, "Create target database");
+    app_copy.add_flag("--noempty", copy_opts.noempty, "Omit copying empty tables");
+    app_copy.add_flag("--upsert", copy_opts.upsert, "Use upsert instead of append");
+    app_copy.add_option("--new.mapSize", copy_opts.newmapsize_str, "Created db file should have this map size", true);
+    app_copy.add_option("--tables", copy_opts.tables, "Copy only tables matching this list of names", true);
+    app_copy.add_option("--commit", copy_opts.commitsize_str, "Commit every this size bytes", true);
+
 
     CLI11_PARSE(app_main, argc, argv);
 
-    // If database path is provided check whether it is empty
-    if (po_data_dir.empty()) {
-        po_data_dir = silkworm::db::default_path();
-    }
-    bfs::path data_dir{po_data_dir};
-    bfs::path data_file{po_data_dir / bfs::path{"data.mdb"}};
-    if (!bfs::exists(data_file) || !bfs::is_regular_file(data_file)) {
-        std::cerr << "\nNot found : " << data_file.string() << "\n"
-                  << "Try --help for help" << std::endl;
+    // Check provided data file exists
+    db_opts.dir = bfs::path(db_opts.datadir);
+    db_opts.file = (db_opts.dir / bfs::path("data.mdb"));
+    if (!bfs::exists(db_opts.file) || !bfs::is_regular_file(db_opts.file)) {
+        std::cout << " " << db_opts.file.string() << " not found" << std::endl;
         return -1;
     }
+    db_opts.filesize = bfs::file_size(db_opts.file);
 
-    std::optional<uint64_t> lmdb_mapSize{parse_size(po_mapsize_str)};
-    uint64_t lmdb_fileSize{bfs::file_size(data_file)};
-
-    // Do not accept mapSize below filesize
-    if (!lmdb_mapSize.has_value()) {
-        lmdb_mapSize = lmdb_fileSize;
-    } else {
-        *lmdb_mapSize = std::max(*lmdb_mapSize, lmdb_fileSize);
+    std::optional<uint64_t> tmpsize{parse_size(db_opts.mapsize_str)};
+    if (!tmpsize.has_value()) {
+        std::cout << " Provided --lmdb.mapSize is invalid" << std::endl;
+        return -1;
     }
+    db_opts.mapsize = std::max(*tmpsize, db_opts.filesize);  // Do not accept mapSize below filesize
+    tmpsize.reset();
 
     // Adjust mapSize to a multiple of page_size
     size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
-    *lmdb_mapSize = ((*lmdb_mapSize + host_page_size - 1) / host_page_size) * host_page_size;
+    db_opts.mapsize = ((db_opts.mapsize + host_page_size - 1) / host_page_size) * host_page_size;
+
+    // Cli args sanification for compact
+    if (app_compact) {
+        compact_opts.dir = bfs::path(compact_opts.workdir);
+        compact_opts.file = (compact_opts.dir / bfs::path("data.mdb"));
+        if (bfs::exists(compact_opts.file)) {
+            std::cout << " An data.mdb file already present in workdir" << std::endl;
+            return -1;
+        }
+    }
+
+    // Cli args sanification for copy
+    if (app_copy) {
+
+        copy_opts.dir = bfs::path(copy_opts.targetdir);
+        copy_opts.file = (copy_opts.dir / bfs::path("data.mdb"));
+        if (bfs::exists(copy_opts.file)) {
+            copy_opts.filesize = bfs::file_size(copy_opts.file);
+            if (copy_opts.create) {
+                std::cout << " Data.mdb file already present in target directory but you have set --create"
+                          << std::endl;
+                return -1;
+            }
+        } else if (!copy_opts.create) {
+            std::cout << " Data.mdb not found target directory. You may want to specify --create" << std::endl;
+            return -1;
+        }
+
+        tmpsize = parse_size(copy_opts.newmapsize_str);
+        if (!tmpsize.has_value()) {
+            std::cout << " Provided --new.mapSize is invalid" << std::endl;
+            return -1;
+        }
+        copy_opts.newmapsize = *tmpsize;
+        if (copy_opts.filesize) {
+            copy_opts.newmapsize = std::max((size_t)*tmpsize, copy_opts.filesize);  // Do not accept mapSize below filesize
+        }
+        tmpsize.reset();
+
+        if (copy_opts.create && !copy_opts.newmapsize) {
+            std::cout << " --create has been set. Need to provide --new.mapSize too" << std::endl;
+            return -1;
+        }
+
+        tmpsize = parse_size(copy_opts.commitsize_str);
+        if (!tmpsize.has_value()) {
+            std::cout << " Provided --commit size is invalid" << std::endl;
+            return -1;
+        }
+        copy_opts.commitsize = std::max(*tmpsize, 1ull << 20);
+        tmpsize.reset();
+    }
 
     if (app_tables) {
-        return do_tables(po_data_dir, lmdb_fileSize, lmdb_mapSize);
+        return do_tables(db_opts);
     } else if (app_freelist) {
-        return do_freelist(po_data_dir, lmdb_mapSize, po_txids);
+        return do_freelist(db_opts, freelist_opts);
     } else if (app_clear) {
-        return do_drop(po_data_dir, lmdb_mapSize, po_table_name, false);
-    } else if (app_drop) {
-        return do_drop(po_data_dir, lmdb_mapSize, po_table_name, true);
+        return do_clear(db_opts, clear_opts);
     } else if (app_compact) {
-        return do_compact(po_data_dir, lmdb_mapSize, po_work_dir, po_keep, po_copy);
+        return do_compact(db_opts, compact_opts);
+    } else if (app_copy) {
+        return do_copy(db_opts, copy_opts);
     } else {
         std::cerr << "No command specified" << std::endl;
     }

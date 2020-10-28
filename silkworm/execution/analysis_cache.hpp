@@ -17,9 +17,12 @@
 #ifndef SILKWORM_EXECUTION_ANALYSIS_CACHE_H_
 #define SILKWORM_EXECUTION_ANALYSIS_CACHE_H_
 
+#include <absl/base/thread_annotations.h>
+
 #include <cpp-lru-cache/include/lrucache.hpp>
 #include <evmc/evmc.hpp>
 #include <memory>
+#include <mutex>
 #include <silkworm/common/base.hpp>
 
 namespace evmone {
@@ -28,6 +31,12 @@ struct code_analysis;
 
 namespace silkworm {
 
+/** @brief Cache of EVM analyses.
+ *
+ * Safe to use in a multi-threaded environment.
+ * Analyses performed for different EVM revisions do not coexist in the cache
+ * and all other revisions are evicted on revision update.
+ */
 class AnalysisCache {
    public:
     static constexpr size_t kMaxSize{50'000};
@@ -37,20 +46,26 @@ class AnalysisCache {
     AnalysisCache(const AnalysisCache&) = delete;
     AnalysisCache& operator=(const AnalysisCache&) = delete;
 
-    void update_revision(evmc_revision revision) noexcept;
+    /** @brief Gets an EVM analysis from the cache.
+     * A nullptr is returned if there's nothing in the cache for this key & revision.
+     */
+    std::shared_ptr<evmone::code_analysis> get(const evmc::bytes32& key, evmc_revision revision) noexcept;
 
-    bool exists(const evmc::bytes32& key) const noexcept { return cache_.exists(key); }
-
-    std::shared_ptr<evmone::code_analysis> get(const evmc::bytes32& key) noexcept { return cache_.get(key); }
-
-    void put(const evmc::bytes32& key, evmone::code_analysis&& value) noexcept;
+    /** @brief Puts an EVM analysis into the cache.
+     * All cache entries for other EVM revisions are evicted.
+     */
+    void put(const evmc::bytes32& key, const std::shared_ptr<evmone::code_analysis>& analysis,
+             evmc_revision revision) noexcept;
 
    private:
     AnalysisCache() : cache_{kMaxSize} {}
 
-    cache::lru_cache<evmc::bytes32, std::shared_ptr<evmone::code_analysis>> cache_;
-    evmc_revision revision_{EVMC_MAX_REVISION};
+    std::mutex mutex_;
+
+    GUARDED_BY(mutex_) cache::lru_cache<evmc::bytes32, std::shared_ptr<evmone::code_analysis>> cache_;
+    GUARDED_BY(mutex_) evmc_revision revision_{EVMC_MAX_REVISION};
 };
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_EXECUTION_ANALYSIS_CACHE_H_

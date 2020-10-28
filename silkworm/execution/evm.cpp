@@ -110,7 +110,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
         message.value,   // value
     };
 
-    res = execute(deploy_message, ByteView{message.input_data, message.input_size}, {});
+    res = execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/std::nullopt);
 
     if (res.status_code == EVMC_SUCCESS) {
         size_t code_len{res.output_size};
@@ -214,12 +214,14 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
 
     std::shared_ptr<evmone::code_analysis> analysis;
     if (code_hash) {
-        AnalysisCache::instance().update_revision(rev);
-        if (!AnalysisCache::instance().exists(*code_hash)) {
-            AnalysisCache::instance().put(*code_hash, evmone::analyze(rev, code.data(), code.size()));
+        // cache contract code
+        analysis = AnalysisCache::instance().get(*code_hash, rev);
+        if (!analysis) {
+            analysis = std::make_shared<evmone::code_analysis>(evmone::analyze(rev, code.data(), code.size()));
+            AnalysisCache::instance().put(*code_hash, analysis, rev);
         }
-        analysis = AnalysisCache::instance().get(*code_hash);
     } else {
+        // don't cache deployment code
         analysis = std::make_shared<evmone::code_analysis>(evmone::analyze(rev, code.data(), code.size()));
     }
 
@@ -239,7 +241,7 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     state->analysis = analysis.get();
 
     const auto* instruction{&state->analysis->instrs[0]};
-    while (instruction != nullptr) {
+    while (instruction) {
         instruction = instruction->fn(instruction, *state);
     }
 

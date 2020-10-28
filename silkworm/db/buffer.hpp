@@ -17,7 +17,6 @@
 #ifndef SILKWORM_DB_BUFFER_H_
 #define SILKWORM_DB_BUFFER_H_
 
-#include <absl/container/btree_map.h>
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
@@ -98,12 +97,8 @@ class Buffer {
     std::map<Bytes, BlockHeader> headers_{};
     absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
 
-    // address -> key -> value
-    absl::flat_hash_map<evmc::address, absl::btree_map<evmc::bytes32, evmc::bytes32>> default_incarnation_storage_;
-
     // address -> incarnation -> key -> value
-    absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::btree_map<evmc::bytes32, evmc::bytes32>>>
-        custom_incarnation_storage_;
+    absl::flat_hash_map<evmc::address, std::map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>> storage_;
 
     std::map<evmc::address, uint64_t> incarnations_;
     std::map<evmc::bytes32, Bytes> hash_to_code_;

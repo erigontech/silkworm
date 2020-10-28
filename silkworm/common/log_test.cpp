@@ -54,9 +54,9 @@ namespace {
 TEST_CASE("Logging") {
 
     // test true branch of macro
-    SILKWORM_LOG_TO_LEVEL(logger, LogCrit);
-    SILKWORM_LOG_TO(logger, LogCrit)  << "LogCritical" << std::endl;
-    CHECK(test_log("CRIT ", infix, "LogCrit"));
+    SILKWORM_LOG_TO_LEVEL(logger, LogCritical);
+    SILKWORM_LOG_TO(logger, LogCritical)  << "LogCritical" << std::endl;
+    CHECK(test_log("CRIT ", infix, "LogCritical"));
     SILKWORM_LOG_TO(logger, LogError) << "LogError" << std::endl;
     CHECK(test_log("ERROR", infix, "LogError"));
     SILKWORM_LOG_TO(logger, LogWarn)  << "LogWarn" << std::endl;

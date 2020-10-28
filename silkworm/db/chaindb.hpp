@@ -70,8 +70,8 @@ enum class TableCustomKeyComparator {
 struct TableConfig {
     const char* name{nullptr};
     const unsigned int flags{0};
-    TableCustomKeyComparator key_comparator{ TableCustomKeyComparator::None };
-    TableCustomDupComparator dup_comparator{ TableCustomDupComparator::None };
+    TableCustomKeyComparator key_comparator{TableCustomKeyComparator::None};
+    TableCustomDupComparator dup_comparator{TableCustomDupComparator::None};
 };
 
 /**

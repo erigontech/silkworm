@@ -782,7 +782,7 @@ int main(int argc, char* argv[]) {
             std::cout << " Provided --commit size is invalid" << std::endl;
             return -1;
         }
-        copy_opts.commitsize = std::max(*tmpsize, 1ull << 20);
+        copy_opts.commitsize = std::max((uint64_t)*tmpsize, (uint64_t)(1ull << 20));
         tmpsize.reset();
     }
 

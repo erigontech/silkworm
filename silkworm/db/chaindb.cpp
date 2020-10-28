@@ -277,11 +277,12 @@ std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned fla
     MDB_dbi dbi{open_dbi(config.name, flags)};
 
     // Apply custom comparators (if any)
-    switch (config.key_comparator) // use mdb_set_compare
-    {
-    default:
-        break;
-    }
+    // Uncomment the following when necessary
+    //switch (config.key_comparator) // use mdb_set_compare
+    //{
+    //default:
+    //    break;
+    //}
 
     switch (config.dup_comparator) // use mdb_set_dupsort
     {
@@ -524,7 +525,7 @@ void Table::close() {
 std::shared_ptr<Environment> get_env(const char* path, options opts) {
     struct Value {
         std::weak_ptr<Environment> wp;
-        unsigned int flags;
+        unsigned int flags{0};
     };
 
     static std::map<size_t, Value> s_envs;

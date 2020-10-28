@@ -30,7 +30,7 @@ namespace silkworm {
 
 class AnalysisCache {
    public:
-    static constexpr size_t kMaxSize{50'000};
+    static constexpr size_t kMaxSize{10'000};
 
     static AnalysisCache& instance() noexcept;
 

@@ -225,12 +225,7 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
         analysis = std::make_shared<evmone::code_analysis>(evmone::analyze(rev, code.data(), code.size()));
     }
 
-    while (!ExecutionStatePool::instance().spare_objects()) {
-        ExecutionStatePool::instance().add(std::make_unique<evmone::execution_state>(
-            msg, rev, host.get_interface(), host.to_context(), code.data(), code.size()));
-    }
-
-    evmone::execution_state* state{ExecutionStatePool::instance().grab()};
+    auto state{ExecutionStatePool::instance().acquire()};
     state->clear();
 
     state->gas_left = msg.gas;
@@ -248,7 +243,8 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     const uint8_t* output_data{state->output_size ? &state->memory[state->output_offset] : nullptr};
     evmc::result res{evmc::make_result(state->status, state->gas_left, output_data, state->output_size)};
 
-    ExecutionStatePool::instance().release();
+    ExecutionStatePool::instance().release(std::move(state));
+
     address_stack_.pop();
 
     return res;

@@ -16,7 +16,6 @@
 
 #include "state_pool.hpp"
 
-#include <cassert>
 #include <utility>
 
 #include "analysis.hpp"
@@ -24,21 +23,23 @@
 namespace silkworm {
 
 ExecutionStatePool& ExecutionStatePool::instance() noexcept {
-    thread_local ExecutionStatePool x{};
+    static ExecutionStatePool x;
     return x;
 }
 
-void ExecutionStatePool::add(std::unique_ptr<evmone::execution_state> new_object) noexcept {
-    objects_.push_back(std::move(new_object));
+std::unique_ptr<evmone::execution_state> ExecutionStatePool::acquire() noexcept {
+    std::lock_guard lock{mutex_};
+    if (pool_.empty()) {
+        return std::make_unique<evmone::execution_state>();
+    }
+    std::unique_ptr<evmone::execution_state> obj{pool_.top().release()};
+    pool_.pop();
+    return obj;
 }
 
-bool ExecutionStatePool::spare_objects() const noexcept { return in_use_ < objects_.size(); }
-
-evmone::execution_state* ExecutionStatePool::grab() noexcept {
-    assert(in_use_ < objects_.size());
-    return objects_[in_use_++].get();
+void ExecutionStatePool::release(std::unique_ptr<evmone::execution_state> obj) noexcept {
+    std::lock_guard lock{mutex_};
+    pool_.push(std::move(obj));
 }
-
-void ExecutionStatePool::release() noexcept { --in_use_; }
 
 }  // namespace silkworm

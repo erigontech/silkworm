@@ -44,9 +44,11 @@ void Buffer::end_block() {
     account_changes_[current_block_number_] = encoded;
     batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
 
-    encoded = current_storage_changes_.encode();
-    storage_changes_[current_block_number_] = encoded;
-    batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
+    if (!current_storage_changes_.empty()) {
+        encoded = current_storage_changes_.encode();
+        storage_changes_[current_block_number_] = encoded;
+        batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
+    }
 }
 
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,

@@ -217,8 +217,8 @@ std::shared_ptr<lmdb::Environment> open_db(db_options_t& db_opts, bool readonly)
 int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
     int retvar{0};
     std::shared_ptr<lmdb::Environment> lmdb_env{open_db(db_opts, false)};  // Main lmdb environment
-    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};                             // Main lmdb transaction
-    std::unique_ptr<lmdb::Table> lmdb_tbl{nullptr};                                   // Table name to be cleared
+    std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};                  // Main lmdb transaction
+    std::unique_ptr<lmdb::Table> lmdb_tbl{nullptr};                        // Table name to be cleared
 
     try {
         if (!lmdb_env) {

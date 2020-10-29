@@ -104,6 +104,16 @@ TEST_CASE("Execution API") {
     CHECK(miner_account->balance > 1 * param::kFrontierBlockReward);
     CHECK(miner_account->balance < 2 * param::kFrontierBlockReward);
 
+    const db::AccountChanges& account_changes{buffer.account_changes()};
+    CHECK(account_changes.size() == 3);
+
+    // sender existed at genesis
+    CHECK(!account_changes.at(sender).empty());
+
+    // miner & contract were created in block 1
+    CHECK(account_changes.at(miner).empty());
+    CHECK(account_changes.at(contract_address).empty());
+
     // ---------------------------------------
     // Execute second block
     // ---------------------------------------
@@ -133,16 +143,6 @@ TEST_CASE("Execution API") {
     // ---------------------------------------
 
     buffer.write_to_db();
-
-    const db::AccountChanges& account_changes{buffer.account_changes().at(1)};
-    CHECK(account_changes.size() == 3);
-
-    // sender existed at genesis
-    CHECK(!account_changes.at(sender).empty());
-
-    // miner & contract were created in block 1
-    CHECK(account_changes.at(miner).empty());
-    CHECK(account_changes.at(contract_address).empty());
 
     Bytes storage_changes_encoded{db::read_storage_changes(*txn, 1)};
     db::StorageChanges storage_changes_expected{};

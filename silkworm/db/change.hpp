@@ -22,14 +22,15 @@ Part of the compatibility layer with the Turbo-Geth DB format;
 see its package changeset.
 */
 
+#include <absl/container/btree_map.h>
+
 #include <evmc/evmc.hpp>
-#include <map>
 #include <optional>
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::db {
 
-class AccountChanges : public std::map<evmc::address, Bytes> {
+class AccountChanges : public absl::btree_map<evmc::address, Bytes> {
    public:
     // Turbo-Geth EncodeAccountsPlain
     Bytes encode() const;
@@ -41,7 +42,7 @@ class AccountChanges : public std::map<evmc::address, Bytes> {
     static std::optional<ByteView> find(ByteView encoded, ByteView key);
 };
 
-class StorageChanges : public std::map<Bytes, Bytes> {
+class StorageChanges : public absl::btree_map<Bytes, Bytes> {
    public:
     // Turbo-Geth EncodeStoragePlain
     Bytes encode() const;

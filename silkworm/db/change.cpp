@@ -130,7 +130,7 @@ struct Contract {
 namespace silkworm::db {
 
 Bytes AccountChanges::encode() const {
-    size_t n{size()};
+    auto n{size()};
     Bytes out(4 + kAddressLen * n + 4 * n, '\0');
     boost::endian::store_big_u32(&out[0], n);
     size_t pos{4};

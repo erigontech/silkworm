@@ -30,12 +30,25 @@ namespace silkworm::db {
 // See TG mutation_puts.go
 static constexpr size_t kEntryOverhead{32};
 
-void Buffer::begin_new_block(uint64_t block_number) {
+void Buffer::begin_block(uint64_t block_number) {
     current_block_number_ = block_number;
     changed_storage_.clear();
+    current_account_changes_.clear();
+    current_storage_changes_.clear();
+}
 
-    // some rather arbitrary fixed overhead of account & storage changes
-    batch_size_ += 4 * kEntryOverhead;
+void Buffer::end_block() {
+    static constexpr size_t kBlockTimestampLength{4};
+
+    Bytes encoded{current_account_changes_.encode()};
+    account_changes_[current_block_number_] = encoded;
+    batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
+
+    if (!current_storage_changes_.empty()) {
+        encoded = current_storage_changes_.encode();
+        storage_changes_[current_block_number_] = encoded;
+        batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
+    }
 }
 
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
@@ -54,9 +67,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         bool omit_code_hash{!account_deleted};
         encoded_initial = initial->encode_for_storage(omit_code_hash);
     }
-    if (account_changes_[current_block_number_].insert_or_assign(address, encoded_initial).second) {
-        batch_size_ += kAddressLength + encoded_initial.length();
-    }
+    current_account_changes_[address] = encoded_initial;
 
     if (equal) {
         return;
@@ -93,14 +104,11 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
     changed_storage_.insert(address);
     Bytes full_key{storage_key(address, incarnation, key)};
-    ByteView compact_initial{zeroless_view(initial)};
-    if (storage_changes_[current_block_number_].insert_or_assign(full_key, compact_initial).second) {
-        batch_size_ += kStoragePrefixLength + kHashLength + compact_initial.length();
-    }
+    current_storage_changes_[full_key] = zeroless_view(initial);
 
     auto& storage_map{storage_[address][incarnation]};
     if (storage_map.empty()) {
-        batch_size_ += kStoragePrefixLength;
+        batch_size_ += kStoragePrefixLength + kEntryOverhead;
     }
     if (storage_map.insert_or_assign(key, current).second) {
         batch_size_ += kEntryOverhead + kHashLength + zeroless_view(current).size();
@@ -177,13 +185,13 @@ void Buffer::write_to_db() {
     auto account_change_table{txn_->open(table::kPlainAccountChangeSet)};
     for (const auto& entry : account_changes_) {
         Bytes block_key{encode_timestamp(entry.first)};
-        account_change_table->put(block_key, entry.second.encode());
+        account_change_table->put(block_key, entry.second);
     }
 
     auto storage_change_table{txn_->open(table::kPlainStorageChangeSet)};
     for (const auto& entry : storage_changes_) {
         Bytes block_key{encode_timestamp(entry.first)};
-        storage_change_table->put(block_key, entry.second.encode());
+        storage_change_table->put(block_key, entry.second);
     }
 
     auto receipt_table{txn_->open(table::kBlockReceipts)};

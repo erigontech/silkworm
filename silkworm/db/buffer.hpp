@@ -17,16 +17,18 @@
 #ifndef SILKWORM_DB_BUFFER_H_
 #define SILKWORM_DB_BUFFER_H_
 
+#include <absl/container/btree_map.h>
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
 #include <evmc/evmc.hpp>
-#include <map>
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/change.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
+#include <silkworm/types/receipt.hpp>
+#include <vector>
 
 namespace silkworm::db {
 
@@ -37,8 +39,6 @@ class Buffer {
 
     explicit Buffer(lmdb::Transaction* txn, std::optional<uint64_t> historical_block = std::nullopt)
         : txn_{txn}, historical_block_{historical_block} {}
-
-    lmdb::Transaction* transaction() { return txn_; }
 
     /** @name Readers */
     ///@{
@@ -57,6 +57,8 @@ class Buffer {
 
     void insert_header(BlockHeader block_header);
 
+    void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts);
+
     /** @name State changes
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
      */
@@ -64,7 +66,7 @@ class Buffer {
     /** Mark the beggining of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
      */
-    void begin_new_block(uint64_t block_number);
+    void begin_block(uint64_t block_number);
 
     void update_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
 
@@ -74,41 +76,52 @@ class Buffer {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
                         const evmc::bytes32& initial, const evmc::bytes32& current);
 
-    /** Account (backward) changes per block.*/
-    const std::map<uint64_t, AccountChanges>& account_changes() const { return account_changes_; }
+    /** Mark the end of a block.
+     * Must be called after all invocations of update_account/update_account_code/update_storage.
+     */
+    void end_block();
 
-    /** Storage (backward) changes per block.*/
-    const std::map<uint64_t, StorageChanges>& storage_changes() const { return storage_changes_; }
+    /** Account (backward) changes for the current block.*/
+    const AccountChanges& account_changes() const { return current_account_changes_; }
+
+    /** Storage (backward) changes for the current block.*/
+    const StorageChanges& storage_changes() const { return current_storage_changes_; }
     ///@}
 
-    /** Whether there's enough pending data in the buffer to be written into the database. */
-    bool full_enough() const;
+    /** Approximate size of accumulated DB changes in bytes.*/
+    size_t current_batch_size() const noexcept { return batch_size_; }
 
     void write_to_db();
 
-    /** Optimal number of entries to keep in memory before commiting to the database. */
-    size_t optimal_batch_size{500'000};
-
    private:
-    void write_accounts_to_db();
+    void write_to_state_table();
 
     lmdb::Transaction* txn_{nullptr};
     std::optional<uint64_t> historical_block_{};
 
-    std::map<Bytes, BlockHeader> headers_{};
+    absl::btree_map<Bytes, BlockHeader> headers_{};
     absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
-    std::map<Bytes, std::map<evmc::bytes32, evmc::bytes32>> storage_;
-    std::map<evmc::address, uint64_t> incarnations_;
-    std::map<evmc::bytes32, Bytes> hash_to_code_;
-    std::map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
 
-    size_t number_of_entries{0};
+    // address -> incarnation -> key -> value
+    absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
+        storage_;
 
-    // Stuff related to change sets
+    absl::btree_map<uint64_t, Bytes> account_changes_;
+    absl::btree_map<uint64_t, Bytes> storage_changes_;
+
+    absl::btree_map<evmc::address, uint64_t> incarnations_;
+    absl::btree_map<evmc::bytes32, Bytes> hash_to_code_;
+    absl::btree_map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
+    absl::btree_map<Bytes, Bytes> receipts_;
+    absl::btree_map<Bytes, Bytes> logs_;
+
+    size_t batch_size_{0};
+
+    // Current block stuff
     uint64_t current_block_number_{0};
     absl::flat_hash_set<evmc::address> changed_storage_;
-    std::map<uint64_t, AccountChanges> account_changes_;
-    std::map<uint64_t, StorageChanges> storage_changes_;
+    AccountChanges current_account_changes_;
+    StorageChanges current_storage_changes_;
 };
 
 }  // namespace silkworm::db

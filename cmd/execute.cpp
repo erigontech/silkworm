@@ -16,13 +16,12 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <cstring>
 #include <ctime>  // TODO(Andrew) replace with the logger
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
-#include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
 
@@ -34,7 +33,7 @@ static constexpr const char* kTimeFormat{"%Y-%m-%d_%H:%M:%S_%Z"};
 
 static uint64_t already_executed_block(lmdb::Transaction& txn) {
     std::unique_ptr<lmdb::Table> progress_table{txn.open(db::table::kSyncStageProgress)};
-    ByteView stage_key{reinterpret_cast<const uint8_t*>(kExecutionStage), std::strlen(kExecutionStage)};
+    ByteView stage_key{byte_view_of_c_str(kExecutionStage)};
     std::optional<ByteView> already_executed{progress_table->get(stage_key)};
     if (already_executed) {
         return boost::endian::load_big_u64(already_executed->data());
@@ -45,10 +44,15 @@ static uint64_t already_executed_block(lmdb::Transaction& txn) {
 
 static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
     std::unique_ptr<lmdb::Table> progress_table{txn.open(db::table::kSyncStageProgress)};
-    ByteView stage_key{reinterpret_cast<const uint8_t*>(kExecutionStage), std::strlen(kExecutionStage)};
+    ByteView stage_key{byte_view_of_c_str(kExecutionStage)};
     Bytes val(8, '\0');
     boost::endian::store_big_u64(&val[0], block_number);
     progress_table->put(stage_key, val);
+}
+
+static bool migration_happened(lmdb::Transaction& txn, const char* name) {
+    std::unique_ptr<lmdb::Table> migration_table{txn.open(db::table::kMigrations)};
+    return migration_table->get(byte_view_of_c_str(name)).has_value();
 }
 
 int main(int argc, char* argv[]) {
@@ -60,37 +64,55 @@ int main(int argc, char* argv[]) {
     uint64_t to_block{std::numeric_limits<uint64_t>::max()};
     app.add_option("--to", to_block, "Block execute up to");
 
+    size_t batch_mib{512};
+    app.add_option("--batch_mib", batch_mib, "Batch size in mebibytes of DB changes to accumulate before committing");
+
     CLI11_PARSE(app, argc, argv);
 
     lmdb::options opts{};
     opts.read_only = false;
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_path.c_str(), opts)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+
+    bool write_receipts{db::read_storage_mode_receipts(*txn)};
+    if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
+                           !migration_happened(*txn, "receipts_store_logs_separately"))) {
+        std::cerr << "Legacy stored receipts are not supported\n";
+        return -1;
+    }
+
     auto buffer{std::make_unique<db::Buffer>(txn.get())};
 
     uint64_t previous_progress{already_executed_block(*txn)};
     uint64_t current_progress{0};
 
     for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-        if (!execute_block(*buffer, block_number)) {
+        std::optional<BlockWithHash> bh{db::read_block(*txn, block_number, /*read_senders=*/true)};
+        if (!bh) {
             break;
+        }
+
+        std::vector<Receipt> receipts{execute_block(bh->block, *buffer)};
+
+        if (write_receipts) {
+            buffer->insert_receipts(block_number, receipts);
         }
 
         current_progress = block_number;
         if (current_progress % 1000 == 0) {
             std::time_t t = std::time(nullptr);
-            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
-                      << " have been executed" << std::endl;
+            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress << " executed"
+                      << std::endl;
         }
 
-        if (buffer->full_enough()) {
+        if (buffer->current_batch_size() >= batch_mib * kMiB) {
             buffer->write_to_db();
             save_progress(*txn, current_progress);
             lmdb::err_handler(txn->commit());
 
             std::time_t t = std::time(nullptr);
             std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
-                      << " have been committed" << std::endl;
+                      << " committed" << std::endl;
 
             txn = env->begin_rw_transaction();
             buffer = std::make_unique<db::Buffer>(txn.get());
@@ -103,9 +125,9 @@ int main(int argc, char* argv[]) {
         lmdb::err_handler(txn->commit());
         std::time_t t = std::time(nullptr);
         std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " All blocks <= " << current_progress
-                  << " have been executed and committed" << std::endl;
+                  << " executed and committed" << std::endl;
     } else {
-        std::cout << "No blocks have been executed" << std::endl;
+        std::cout << "Nothing to execute" << std::endl;
     }
 
     return 0;

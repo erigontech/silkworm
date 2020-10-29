@@ -1,4 +1,4 @@
-/*
+#[[
    Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,27 +12,16 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#ifndef SILKWORM_TYPES_LOG_H_
-#define SILKWORM_TYPES_LOG_H_
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_EXTENSIONS NO)
 
-#include <evmc/evmc.hpp>
-#include <silkworm/common/base.hpp>
-#include <vector>
+set(CMAKE_POSITION_INDEPENDENT_CODE YES)
 
-namespace silkworm {
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 
-struct Log {
-    evmc::address address;
-    std::vector<evmc::bytes32> topics;
-    Bytes data;
-};
-
-// TG-compatible CBOR encoding for storage.
-// See core/types/log.go
-Bytes cbor_encode(const std::vector<Log>& v);
-
-}  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_LOG_H_
+cmake_policy(SET CMP0063 NEW)

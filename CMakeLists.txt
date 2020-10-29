@@ -20,11 +20,10 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmone/evmc/.git)
   message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
 endif()
 
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchain.cmake CACHE FILEPATH "" FORCE)
+
 include(evmone/cmake/cable/bootstrap.cmake)
 include(CableBuildType)
-include(CableToolchains)
-
-cable_configure_toolchain(DEFAULT cxx17)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 include(evmone/cmake/cable/HunterGate.cmake)
 #include(D:/GitHub/vcpkg/scripts/buildsystems/vcpkg.cmake)
@@ -62,20 +61,16 @@ target_include_directories(secp256k1 PRIVATE ${GMP_INCLUDE_DIR})
 endif()
 
 # libff
-set(
-  CURVE
-  "ALT_BN128"
-  CACHE
-  STRING
-  "Default curve: one of ALT_BN128, BN128, EDWARDS, MNT4, MNT6"
-  FORCE
-)
+set(CURVE "ALT_BN128" CACHE STRING "" FORCE)
 option(WITH_PROCPS "" OFF)
 option(IS_LIBFF_PARENT "" OFF)
 if(MSVC)
   option(MPIR_INSTEAD_OF_GMP "" ON)
 endif()
 add_subdirectory(libff)
+
+# CBOR
+add_subdirectory(cbor-cpp)
 
 # Compiler and linker options
 if(MSVC)
@@ -87,7 +82,6 @@ if(MSVC)
   add_compile_options(/W4)
 
   add_link_options(/ignore:4099)
-  add_link_options(/STACK:10000000)
 else()
   add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers)
 endif()
@@ -103,10 +97,6 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
     # profiling
     add_compile_options(-gline-tables-only)
   endif()
-endif()
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  add_link_options(-Wl,-stack_size -Wl,0x1000000)
 endif()
 
 # evmone
@@ -128,44 +118,5 @@ target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
 
 # Silkworm itself
 add_subdirectory(silkworm)
-
-find_package(absl CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
-
-add_executable(check_changes cmd/check_changes.cpp)
-target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time Boost::filesystem)
-
-find_package(CLI11 CONFIG REQUIRED)
-
-add_executable(check_senders cmd/check_senders.cpp)
-target_link_libraries(check_senders PRIVATE silkworm Boost::filesystem CLI11::CLI11)
-
-add_executable(dbtool cmd/dbtool.cpp)
-target_link_libraries(dbtool PRIVATE silkworm Boost::filesystem CLI11::CLI11)
-
-add_executable(execute cmd/execute.cpp)
-target_link_libraries(execute PRIVATE silkworm CLI11::CLI11)
-
-# Ethereum Consensus Tests
-find_package(nlohmann_json CONFIG REQUIRED)
-add_compile_definitions(SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
-add_executable(consensus cmd/consensus.cpp)
-target_link_libraries(consensus PRIVATE silkworm nlohmann_json::nlohmann_json Boost::filesystem)
-
-# Unit tests
-enable_testing()
-
-find_package(Catch2 CONFIG REQUIRED)
-
-file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "silkworm/*_test.cpp")
-add_executable(unit_test cmd/unit_test.cpp ${SILKWORM_TESTS})
-target_link_libraries(unit_test silkworm Catch2::Catch2)
-
-include(CTest)
-include(Catch)
-catch_discover_tests(unit_test)
-
-# Benchmarks
-find_package(benchmark CONFIG REQUIRED)
-add_executable(benchmark_precompile cmd/benchmark_precompile.cpp)
-target_link_libraries(benchmark_precompile silkworm benchmark::benchmark)
+add_subdirectory(tg_api)
+add_subdirectory(cmd)

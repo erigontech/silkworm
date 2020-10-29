@@ -38,11 +38,11 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
     return header;
 }
 
-std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number) {
+std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders) {
     auto header_table{txn.open(table::kBlockHeaders)};
     std::optional<ByteView> hash{header_table->get(header_hash_key(block_number))};
     if (!hash) {
-        return {};
+        return std::nullopt;
     }
 
     BlockWithHash bh{};
@@ -52,7 +52,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     Bytes key{block_key(block_number, bh.hash.bytes)};
     std::optional<ByteView> header_rlp{header_table->get(key)};
     if (!header_rlp) {
-        return {};
+        return std::nullopt;
     }
 
     rlp::decode(*header_rlp, bh.block.header);
@@ -60,10 +60,21 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     auto body_table{txn.open(table::kBlockBodies)};
     std::optional<ByteView> body_rlp{body_table->get(key)};
     if (!body_rlp) {
-        return {};
+        return std::nullopt;
     }
 
     rlp::decode<BlockBody>(*body_rlp, bh.block);
+
+    if (read_senders) {
+        std::vector<evmc::address> senders{db::read_senders(txn, block_number, bh.hash)};
+        if (senders.size() != bh.block.transactions.size()) {
+            throw MissingSenders("senders count does not match transactions count");
+        }
+        for (size_t i{0}; i < senders.size(); ++i) {
+            bh.block.transactions[i].from = senders[i];
+        }
+    }
+
     return bh;
 }
 
@@ -166,9 +177,9 @@ std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address&
 
 evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address, uint64_t incarnation,
                            const evmc::bytes32& key, std::optional<uint64_t> block_num) {
-    auto composite_key{storage_key(address, incarnation, key)};
     std::optional<ByteView> val{};
     if (block_num) {
+        auto composite_key{storage_key(address, incarnation, key)};
         val = find_in_history(txn, /*storage=*/true, composite_key, *block_num);
     }
     if (!val) {
@@ -256,6 +267,12 @@ Bytes read_storage_changes(lmdb::Transaction& txn, uint64_t block_number) {
         return {};
     }
     return Bytes{*val};
+}
+
+bool read_storage_mode_receipts(lmdb::Transaction& txn) {
+    auto table{txn.open(table::kDatabaseInfo)};
+    std::optional<ByteView> val{table->get(byte_view_of_c_str(kStorageModeReceipts))};
+    return val && val->length() == 1 && (*val)[0] == 1;
 }
 
 }  // namespace silkworm::db

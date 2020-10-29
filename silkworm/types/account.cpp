@@ -60,6 +60,31 @@ Bytes Account::encode_for_storage(bool omit_code_hash) const {
     return res;
 }
 
+size_t Account::encoding_length_for_storage() const {
+    size_t len{1};
+
+    if (nonce != 0) {
+        ByteView be{rlp::big_endian(nonce)};
+        len += 1 + be.length();
+    }
+
+    if (balance != 0) {
+        ByteView be{rlp::big_endian(balance)};
+        len += 1 + be.length();
+    }
+
+    if (incarnation != 0) {
+        ByteView be{rlp::big_endian(incarnation)};
+        len += 1 + be.length();
+    }
+
+    if (code_hash != kEmptyHash) {
+        len += 1 + kHashLength;
+    }
+
+    return len;
+}
+
 Account decode_account_from_storage(ByteView encoded) {
     Account a{};
     if (encoded.empty()) {

@@ -17,6 +17,7 @@
 #include "execution.hpp"
 
 #include <catch2/catch.hpp>
+#include <cstring>
 #include <ethash/keccak.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/temp_dir.hpp>
@@ -47,7 +48,6 @@ TEST_CASE("Execution API") {
 
     db::Buffer buffer{txn.get()};
     uint64_t block_number{1};
-    CHECK(!execute_block(buffer, block_number));
 
     auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 
@@ -55,6 +55,7 @@ TEST_CASE("Execution API") {
     block.header.number = block_number;
     block.header.beneficiary = miner;
     block.header.gas_limit = 100'000;
+    block.header.gas_used = 63'820;
 
     // This contract initially sets its 0th storage to 0x2a
     // and its 1st storage to 0x01c9.
@@ -67,27 +68,8 @@ TEST_CASE("Execution API") {
     block.transactions[0].gas_limit = block.header.gas_limit;
     block.transactions[0].gas_price = 20 * kGiga;
 
-    Bytes header_rlp{};
-    rlp::encode(header_rlp, block.header);
-    ethash::hash256 block_hash{keccak256(header_rlp)};
-
-    auto header_table{txn->open(db::table::kBlockHeaders)};
-    header_table->put(db::header_hash_key(block_number), full_view(block_hash.bytes));
-    Bytes block_key{db::block_key(block_number, block_hash.bytes)};
-    header_table->put(block_key, header_rlp);
-
-    const BlockBody& block_body{block};
-    Bytes body_rlp{};
-    rlp::encode(body_rlp, block_body);
-    auto body_table{txn->open(db::table::kBlockBodies)};
-    body_table->put(block_key, body_rlp);
-
-    CHECK_THROWS_MATCHES(execute_block(buffer, block_number), std::runtime_error,
-                         Catch::Message("missing or incorrect senders"));
-
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
-    auto sender_table{txn->open(db::table::kSenders)};
-    sender_table->put(block_key, full_view(sender));
+    block.transactions[0].from = sender;
 
     Account sender_account{};
     sender_account.balance = kEther;
@@ -98,7 +80,7 @@ TEST_CASE("Execution API") {
     // Execute first block
     // ---------------------------------------
 
-    REQUIRE(execute_block(buffer, block_number));
+    execute_block(block, buffer);
 
     auto contract_address{create_address(sender, /*nonce=*/0)};
     std::optional<Account> contract_account{buffer.read_account(contract_address)};
@@ -122,6 +104,16 @@ TEST_CASE("Execution API") {
     CHECK(miner_account->balance > 1 * param::kFrontierBlockReward);
     CHECK(miner_account->balance < 2 * param::kFrontierBlockReward);
 
+    const db::AccountChanges& account_changes{buffer.account_changes()};
+    CHECK(account_changes.size() == 3);
+
+    // sender existed at genesis
+    CHECK(!account_changes.at(sender).empty());
+
+    // miner & contract were created in block 1
+    CHECK(account_changes.at(miner).empty());
+    CHECK(account_changes.at(contract_address).empty());
+
     // ---------------------------------------
     // Execute second block
     // ---------------------------------------
@@ -130,25 +122,13 @@ TEST_CASE("Execution API") {
 
     block_number = 2;
     block.header.number = block_number;
+    block.header.gas_used = 26'201;
+
     block.transactions[0].nonce = 1;
     block.transactions[0].to = contract_address;
     block.transactions[0].data = from_hex(new_val);
 
-    header_rlp.clear();
-    rlp::encode(header_rlp, block.header);
-    block_hash = keccak256(header_rlp);
-    header_table->put(db::header_hash_key(block_number), full_view(block_hash.bytes));
-
-    block_key = db::block_key(block_number, block_hash.bytes);
-    header_table->put(block_key, header_rlp);
-
-    body_rlp.clear();
-    const BlockBody& block_body2{block};
-    rlp::encode(body_rlp, block_body2);
-    body_table->put(block_key, body_rlp);
-    sender_table->put(block_key, full_view(sender));
-
-    REQUIRE(execute_block(buffer, block_number));
+    execute_block(block, buffer);
 
     storage0 = buffer.read_storage(contract_address, incarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);
@@ -163,16 +143,6 @@ TEST_CASE("Execution API") {
     // ---------------------------------------
 
     buffer.write_to_db();
-
-    const db::AccountChanges& account_changes{buffer.account_changes().at(1)};
-    CHECK(account_changes.size() == 3);
-
-    // sender existed at genesis
-    CHECK(!account_changes.at(sender).empty());
-
-    // miner & contract were created in block 1
-    CHECK(account_changes.at(miner).empty());
-    CHECK(account_changes.at(contract_address).empty());
 
     Bytes storage_changes_encoded{db::read_storage_changes(*txn, 1)};
     db::StorageChanges storage_changes_expected{};

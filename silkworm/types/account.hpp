@@ -24,14 +24,17 @@
 namespace silkworm {
 
 struct Account {
-    // Turbo-Geth (*Account)EncodeForStorage
-    Bytes encode_for_storage(bool omit_code_hash) const;
-
     uint64_t nonce{0};
     intx::uint256 balance;
     evmc::bytes32 storage_root{kEmptyRoot};
     evmc::bytes32 code_hash{kEmptyHash};
     uint64_t incarnation{0};
+
+    // Turbo-Geth (*Account)EncodeForStorage
+    Bytes encode_for_storage(bool omit_code_hash) const;
+
+    // Turbo-Geth (*Account)EncodingLengthForStorage
+    size_t encoding_length_for_storage() const;
 };
 
 bool operator==(const Account& a, const Account& b);

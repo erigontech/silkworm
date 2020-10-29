@@ -18,7 +18,6 @@
 #define SILKWORM_WORKER_H_
 
 #include <atomic>
-#include <boost/signals2.hpp>
 #include <condition_variable>
 #include <iostream>
 #include <thread>

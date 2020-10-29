@@ -20,6 +20,7 @@
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/mapped_region.hpp>
+#include <boost/signals2.hpp>
 #include <condition_variable>
 #include <csignal>
 #include <ethash/keccak.hpp>
@@ -803,7 +804,7 @@ int do_verify(app_options_t& options) {
 
         for (uint32_t block_num = options.block_from; block_num <= options.block_to; block_num++) {
             std::cout << "Reading block #" << block_num << std::endl;
-            std::optional<BlockWithHash> bh{db::read_block(*lmdb_txn, block_num)};
+            std::optional<BlockWithHash> bh{db::read_block(*lmdb_txn, block_num, /*read_senders=*/true)};
             if (!bh) {
                 throw std::logic_error("Could not locate block #" + std::to_string(block_num));
             }
@@ -811,11 +812,6 @@ int do_verify(app_options_t& options) {
             if (!bh->block.transactions.size()) {
                 std::cout << "Block has 0 transactions" << std::endl;
                 continue;
-            }
-
-            std::vector<evmc::address> senders{db::read_senders(*lmdb_txn, block_num, bh->hash)};
-            if (senders.size() != bh->block.transactions.size()) {
-                throw std::runtime_error("Senders count does not match transactions count");
             }
 
             std::cout << std::right << std::setw(4) << std::setfill(' ') << "Tx"
@@ -833,7 +829,8 @@ int do_verify(app_options_t& options) {
                 ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
                 ByteView bv{hash.bytes, 32};
                 std::cout << std::right << std::setw(4) << std::setfill(' ') << i << " 0x" << to_hex(bv) << " 0x"
-                          << to_hex(senders.at(i)) << " 0x" << to_hex(*(bh->block.transactions.at(i).to)) << std::endl;
+                          << to_hex(*(bh->block.transactions.at(i).from)) << " 0x"
+                          << to_hex(*(bh->block.transactions.at(i).to)) << std::endl;
             }
 
             std::cout << std::endl;

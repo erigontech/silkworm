@@ -40,18 +40,24 @@ Then run the build itself
 ```
 make -j
 ```
-Now you can check database changes (produced by [Turbo-Geth](https://github.com/ledgerwatch/turbo-geth)) with silkworm
+
+Now you can run the unit tests
 ```
-./check_changes
-```
-and also run either the unit tests
-```
-./unit_test
+cmd/unit_test
 ```
 or [Ethereum Consensus Tests](https://github.com/ethereum/tests)
 ```
-./consensus
+cmd/consensus
 ```
+
+You can also execute Ethereum blocks with Silkworm.
+For that you need an LMDB instance populated with Ethereum blocks,
+which can be produced by running [the first 4 stages](https://ledgerwatch.github.io/turbo_geth_release.html#Currently-envisaged-stages) of [Turbo-Geth](https://github.com/ledgerwatch/turbo-geth) sync, prior to the transaction replay stage.
+Then run
+```
+cmd/execute -d <path-to-chaindata>
+```
+
 
 ## Windows
 * Install [Visual Studio](https://www.visualstudio.com/downloads) 2019. Community edition is fine.

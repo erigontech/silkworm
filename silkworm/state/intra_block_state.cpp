@@ -260,7 +260,7 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
 }
 
 void IntraBlockState::write_to_db(uint64_t block_number) {
-    db_.begin_new_block(block_number);
+    db_.begin_block(block_number);
 
     for (const auto& x : storage_) {
         const evmc::address& address{x.first};
@@ -291,6 +291,8 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
             db_.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
         }
     }
+
+    db_.end_block();
 }
 
 IntraBlockState::Snapshot IntraBlockState::take_snapshot() const noexcept {

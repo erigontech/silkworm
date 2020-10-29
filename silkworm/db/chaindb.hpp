@@ -24,7 +24,6 @@
 
 #include <lmdb/lmdb.h>
 
-#include <boost/signals2/signal.hpp>
 #include <exception>
 #include <map>
 #include <mutex>
@@ -160,9 +159,6 @@ class Environment {
     std::unique_ptr<Transaction> begin_transaction(unsigned int flags = 0);
     std::unique_ptr<Transaction> begin_ro_transaction(unsigned int flags = 0);
     std::unique_ptr<Transaction> begin_rw_transaction(unsigned int flags = 0);
-
-    boost::signals2::signal<void(void)>
-        signal_on_before_close_;  // Signals connected transactions that this env is about to close
 };
 
 /**
@@ -191,21 +187,19 @@ class Transaction {
      */
 
     /*
-    * Andrea Lanfranchi
-    * I originally created a map of opened dbi(s) to persist the binding
-    * of a table name with its handle_. This however is incorrect as the
-    * handle_ is not an ordinal position rather an opened "slot" within
-    * the transaction. LMDB already takes care to keep a list of free
-    * slots to use for opening so this additional map is totally
-    * redundant. See for reference
-    * https://github.com/torquem-ch/lmdb/blob/mdb.master/libraries/liblmdb/mdb.c#L10797-L10810
-    * Keep the following line commented for reference
-    */
-    //std::map<std::string, MDB_dbi> dbis_;  // Collection of opened MDB_dbi
+     * Andrea Lanfranchi
+     * I originally created a map of opened dbi(s) to persist the binding
+     * of a table name with its handle_. This however is incorrect as the
+     * handle_ is not an ordinal position rather an opened "slot" within
+     * the transaction. LMDB already takes care to keep a list of free
+     * slots to use for opening so this additional map is totally
+     * redundant. See for reference
+     * https://github.com/torquem-ch/lmdb/blob/mdb.master/libraries/liblmdb/mdb.c#L10797-L10810
+     * Keep the following line commented for reference
+     */
+    // std::map<std::string, MDB_dbi> dbis_;  // Collection of opened MDB_dbi
 
     MDB_dbi open_dbi(const char* name, unsigned int flags = 0);
-
-    boost::signals2::connection conn_on_env_close_;  // Holds the connection to env signal_on_before_close_
 
    public:
     explicit Transaction(Environment* parent, unsigned int flags = 0);
@@ -230,11 +224,6 @@ class Transaction {
     Transaction(Transaction&& rhs) = delete;
     Transaction& operator=(Transaction&& rhs) = delete;
 
-    boost::signals2::signal<void(void)>
-        signal_on_before_abort_;  // Signals to connected Tables that the transaction is about to abort
-    boost::signals2::signal<void(void)>
-        signal_on_before_commit_;  // Signals to connected Tables that the transaction is about to commit
-
     void abort(void);
     int commit(void);
 };
@@ -245,7 +234,7 @@ class Transaction {
  */
 class Table {
    public:
-    explicit Table(Transaction* parent, MDB_dbi dbi, const char * name);
+    explicit Table(Transaction* parent, MDB_dbi dbi, const char* name);
     ~Table();
 
     /*
@@ -298,7 +287,7 @@ class Table {
     int del_current(bool alldupkeys = false);  // Delete key/data pair at current cursor position. alldupkeys may be set
                                                // true only for tables opened MDB_DUPSORT flag and in that case all
                                                // records with same key are deleted too
-    int get_first(MDB_val* key, MDB_val* data);  // Move cursor at first item in table
+    int get_first(MDB_val* key, MDB_val* data);      // Move cursor at first item in table
     int get_first_dup(MDB_val* key, MDB_val* data);  // Move cursor at first item of current key (only MDB_DUPSORT)
     int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in table
     int get_prev_dup(MDB_val* key,MDB_val* data);    // Move cursor at previous data item in current key (only MDB_DUPSORT)
@@ -385,7 +374,7 @@ class Table {
 
    private:
     static MDB_cursor* open_cursor(Transaction* parent, MDB_dbi dbi);
-    Table(Transaction* parent, MDB_dbi dbi, const char * name, MDB_cursor* cursor);
+    Table(Transaction* parent, MDB_dbi dbi, const char* name, MDB_cursor* cursor);
 
     int get(MDB_val* key, MDB_val* data,
             MDB_cursor_op operation);  // Gets data by cursor on behalf of operation
@@ -395,11 +384,6 @@ class Table {
     std::string name_;         // The name of the dbi
     bool dbi_dropped_{false};  // Whether or not this table has been dropped
     MDB_cursor* handle_;       // The underlying MDB_cursor for this instance
-
-    bool assert_handle(bool should_throw = true);  // Ensures handle_ is validly created
-
-    boost::signals2::connection conn_on_txn_abort_;   // Holds the connection to txn signal_on_before_abort_
-    boost::signals2::connection conn_on_txn_commit_;  // Holds the connection to txn signal_on_before_commit_
 };
 
 std::shared_ptr<Environment> get_env(const char* path, options opts = {});

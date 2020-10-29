@@ -30,7 +30,7 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/packages.cmake"}}
+          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/toolchain.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/packages.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
@@ -49,11 +49,11 @@ commands:
     - run:
         name: "Unit Tests"
         working_directory: ~/build
-        command: ctest --output-on-failure
+        command: cmd/unit_test
     - run:
         name: "Ethereum Consensus Tests"
         working_directory: ~/build
-        command: ./consensus
+        command: cmd/consensus
 
 jobs:
   linux-gcc-7:
@@ -76,20 +76,20 @@ jobs:
           name: "Unit Tests"
           working_directory: ~/build
           command: |
-            ./unit_test
+            cmd/unit_test
             mv default.profraw unit_test.profraw
       - run:
           name: "Ethereum Consensus Tests"
           working_directory: ~/build
           command: |
-            ./consensus
+            cmd/consensus
             mv default.profraw consensus.profraw
       - run:
           name: "Coverage"
           working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata -format=lcov ./unit_test -object ./consensus > silkworm.lcov
+            llvm-cov export -instr-profile profdata -format=lcov cmd/unit_test -object cmd/consensus > silkworm.lcov
       - run:
           name: "Upload to Codecov"
           command: |

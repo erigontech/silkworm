@@ -1,4 +1,4 @@
-/*
+#[[
    Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,27 +12,10 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#ifndef SILKWORM_TYPES_LOG_H_
-#define SILKWORM_TYPES_LOG_H_
+find_package(liblmdb CONFIG REQUIRED)
+find_package(Microsoft.GSL CONFIG REQUIRED)
 
-#include <evmc/evmc.hpp>
-#include <silkworm/common/base.hpp>
-#include <vector>
-
-namespace silkworm {
-
-struct Log {
-    evmc::address address;
-    std::vector<evmc::bytes32> topics;
-    Bytes data;
-};
-
-// TG-compatible CBOR encoding for storage.
-// See core/types/log.go
-Bytes cbor_encode(const std::vector<Log>& v);
-
-}  // namespace silkworm
-
-#endif  // SILKWORM_TYPES_LOG_H_
+add_library(silkworm_tg_api SHARED silkworm_tg_api.h silkworm_tg_api.cpp)
+target_link_libraries(silkworm_tg_api PUBLIC liblmdb::lmdb PRIVATE silkworm Microsoft.GSL::GSL)

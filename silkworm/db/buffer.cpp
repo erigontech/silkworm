@@ -16,7 +16,8 @@
 
 #include "buffer.hpp"
 
-#include <algorithm>
+#include <absl/container/btree_set.h>
+
 #include <boost/endian/conversion.hpp>
 #include <silkworm/common/util.hpp>
 
@@ -26,9 +27,28 @@
 
 namespace silkworm::db {
 
-void Buffer::begin_new_block(uint64_t block_number) {
+// See TG mutation_puts.go
+static constexpr size_t kEntryOverhead{32};
+
+void Buffer::begin_block(uint64_t block_number) {
     current_block_number_ = block_number;
     changed_storage_.clear();
+    current_account_changes_.clear();
+    current_storage_changes_.clear();
+}
+
+void Buffer::end_block() {
+    static constexpr size_t kBlockTimestampLength{4};
+
+    Bytes encoded{current_account_changes_.encode()};
+    account_changes_[current_block_number_] = encoded;
+    batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
+
+    if (!current_storage_changes_.empty()) {
+        encoded = current_storage_changes_.encode();
+        storage_changes_[current_block_number_] = encoded;
+        batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
+    }
 }
 
 void Buffer::update_account(const evmc::address& address, std::optional<Account> initial,
@@ -42,30 +62,39 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         return;
     }
 
+    Bytes encoded_initial{};
     if (initial) {
         bool omit_code_hash{!account_deleted};
-        account_changes_[current_block_number_][address] = initial->encode_for_storage(omit_code_hash);
-    } else {
-        account_changes_[current_block_number_][address] = {};
+        encoded_initial = initial->encode_for_storage(omit_code_hash);
     }
+    current_account_changes_[address] = encoded_initial;
 
     if (equal) {
         return;
     }
 
     if (accounts_.insert_or_assign(address, current).second) {
-        ++number_of_entries;
+        batch_size_ += kAddressLength + kEntryOverhead;
+        if (current) {
+            batch_size_ += current->encoding_length_for_storage();
+        };
     };
 
     if (account_deleted && initial->incarnation) {
-        incarnations_[address] = initial->incarnation;
+        if (incarnations_.insert_or_assign(address, initial->incarnation).second) {
+            batch_size_ += kStoragePrefixLength + kEntryOverhead;
+        }
     }
 }
 
 void Buffer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
                                  ByteView code) {
-    hash_to_code_[code_hash] = code;
-    storage_prefix_to_code_hash_[storage_prefix(address, incarnation)] = code_hash;
+    if (hash_to_code_.insert_or_assign(code_hash, code).second) {
+        batch_size_ += kHashLength + kEntryOverhead + code.length();
+    }
+    if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(address, incarnation), code_hash).second) {
+        batch_size_ += kStoragePrefixLength + kEntryOverhead + kHashLength;
+    }
 }
 
 void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
@@ -75,37 +104,58 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
     changed_storage_.insert(address);
     Bytes full_key{storage_key(address, incarnation, key)};
-    storage_changes_[current_block_number_][full_key] = zeroless_view(initial);
-    if (storage_[storage_prefix(address, incarnation)].insert_or_assign(key, current).second) {
-        ++number_of_entries;
+    current_storage_changes_[full_key] = zeroless_view(initial);
+
+    auto& storage_map{storage_[address][incarnation]};
+    if (storage_map.empty()) {
+        batch_size_ += kStoragePrefixLength + kEntryOverhead;
+    }
+    if (storage_map.insert_or_assign(key, current).second) {
+        batch_size_ += kEntryOverhead + kHashLength + zeroless_view(current).size();
     }
 }
 
-bool Buffer::full_enough() const { return number_of_entries >= optimal_batch_size; }
+static void upsert_storage_value(lmdb::Table& state_table, ByteView storage_prefix, const evmc::bytes32& key,
+                                 const evmc::bytes32& value) {
+    state_table.del(storage_prefix, full_view(key));
+    if (!is_zero(value)) {
+        Bytes data{full_view(key)};
+        data.append(zeroless_view(value));
+        state_table.put(storage_prefix, data);
+    }
+}
 
-void Buffer::write_accounts_to_db() {
+void Buffer::write_to_state_table() {
     auto state_table{txn_->open(table::kPlainState)};
 
-    std::vector<evmc::address> keys;
-    keys.reserve(accounts_.size());
-    for (auto& it : accounts_) {
-        keys.push_back(it.first);
+    absl::btree_set<evmc::address> keys;
+    for (auto& x : accounts_) {
+        keys.insert(x.first);
     }
-
-    // Sort before inserting into the DB
-    std::sort(keys.begin(), keys.end());
+    for (auto& x : storage_) {
+        keys.insert(x.first);
+    }
 
     for (const auto& key : keys) {
-        state_table->del(full_view(key));
-        const std::optional<Account>& account{accounts_.at(key)};
-        if (account) {
-            bool omit_code_hash{false};
-            Bytes encoded{account->encode_for_storage(omit_code_hash)};
-            state_table->put(full_view(key), encoded);
+        if (auto it{accounts_.find(key)}; it != accounts_.end()) {
+            state_table->del(full_view(key));
+            if (it->second.has_value()) {
+                bool omit_code_hash{false};
+                Bytes encoded{it->second->encode_for_storage(omit_code_hash)};
+                state_table->put(full_view(key), encoded);
+            }
+        }
+
+        if (auto it{storage_.find(key)}; it != storage_.end()) {
+            for (const auto& contract : it->second) {
+                uint64_t incarnation{contract.first};
+                Bytes prefix{storage_prefix(it->first, incarnation)};
+                for (const auto& x : contract.second) {
+                    upsert_storage_value(*state_table, prefix, x.first, x.second);
+                }
+            }
         }
     }
-
-    return;
 }
 
 void Buffer::write_to_db() {
@@ -113,19 +163,7 @@ void Buffer::write_to_db() {
         return;
     }
 
-    write_accounts_to_db();
-
-    auto state_table{txn_->open(table::kPlainState)};
-    for (const auto& contract : storage_) {
-        for (const auto& x : contract.second) {
-            state_table->del(contract.first, full_view(x.first));
-            if (!is_zero(x.second)) {
-                Bytes data{full_view(x.first)};
-                data.append(zeroless_view(x.second));
-                state_table->put(contract.first, data);
-            }
-        }
-    }
+    write_to_state_table();
 
     auto incarnation_table{txn_->open(table::kIncarnationMap)};
     for (const auto& entry : incarnations_) {
@@ -147,13 +185,46 @@ void Buffer::write_to_db() {
     auto account_change_table{txn_->open(table::kPlainAccountChangeSet)};
     for (const auto& entry : account_changes_) {
         Bytes block_key{encode_timestamp(entry.first)};
-        account_change_table->put(block_key, entry.second.encode());
+        account_change_table->put(block_key, entry.second);
     }
 
     auto storage_change_table{txn_->open(table::kPlainStorageChangeSet)};
     for (const auto& entry : storage_changes_) {
         Bytes block_key{encode_timestamp(entry.first)};
-        storage_change_table->put(block_key, entry.second.encode());
+        storage_change_table->put(block_key, entry.second);
+    }
+
+    auto receipt_table{txn_->open(table::kBlockReceipts)};
+    for (const auto& entry : receipts_) {
+        receipt_table->put(entry.first, entry.second);
+    }
+
+    auto log_table{txn_->open(table::kLogs)};
+    for (const auto& entry : logs_) {
+        log_table->put(entry.first, entry.second);
+    }
+}
+
+// TG WriteReceipts in core/rawdb/accessors_chain.go
+void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) {
+    for (uint32_t i{0}; i < receipts.size(); ++i) {
+        if (receipts[i].logs.empty()) {
+            continue;
+        }
+
+        Bytes key{log_key(block_number, i)};
+        Bytes value{cbor_encode(receipts[i].logs)};
+
+        if (logs_.insert_or_assign(key, value).second) {
+            batch_size_ += key.size() + kEntryOverhead + value.size();
+        }
+    }
+
+    Bytes key{receipt_key(block_number)};
+    Bytes value{cbor_encode(receipts)};
+
+    if (receipts_.insert_or_assign(key, value).second) {
+        batch_size_ += key.size() + kEntryOverhead + value.size();
     }
 }
 
@@ -203,11 +274,14 @@ Bytes Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
 
 evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarnation,
                                    const evmc::bytes32& key) const noexcept {
-    if (auto it{storage_.find(storage_prefix(address, incarnation))}; it != storage_.end()) {
-        if (auto it2{it->second.find(key)}; it2 != it->second.end()) {
-            return it2->second;
+    if (auto it1{storage_.find(address)}; it1 != storage_.end()) {
+        if (auto it2{it1->second.find(incarnation)}; it2 != it1->second.end()) {
+            if (auto it3{it2->second.find(key)}; it3 != it2->second.end()) {
+                return it3->second;
+            }
         }
     }
+
     if (!txn_) {
         return {};
     }

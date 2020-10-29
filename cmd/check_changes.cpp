@@ -24,9 +24,6 @@
 #include <iostream>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/execution/processor.hpp>
-#include <silkworm/trie/vector_root.hpp>
-#include <string>
 
 using namespace evmc::literals;
 
@@ -71,53 +68,26 @@ int main(int argc, char* argv[]) {
     for (; block_num < to; ++block_num) {
         std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-        std::optional<BlockWithHash> bh{db::read_block(*txn, block_num)};
+        std::optional<BlockWithHash> bh{db::read_block(*txn, block_num, /*read_senders=*/true)};
         if (!bh) {
             break;
         }
 
         db::Buffer buffer{txn.get(), block_num};
 
-        std::optional<std::vector<Receipt>> receipts;
-        try {
-            receipts = execute_block(buffer, block_num);
-        } catch (const ValidationError& err) {
-            std::cerr << "ValidationError in block " << block_num << " 🤬\n";
-            throw err;
-        }
-
-        uint64_t gas_used{0};
-        if (!receipts->empty()) {
-            gas_used = receipts->back().cumulative_gas_used;
-        }
-
-        if (gas_used != bh->block.header.gas_used) {
-            std::cerr << "gasUsed mismatch for block " << block_num << " 😠\n";
-            std::cerr << gas_used << '\n';
-            std::cerr << "vs expected\n";
-            std::cerr << bh->block.header.gas_used << '\n';
-            return -2;
-        }
-
-        if (kMainnetConfig.has_byzantium(block_num)) {
-            evmc::bytes32 receipt_root{trie::root_hash(*receipts)};
-            if (receipt_root != bh->block.header.receipts_root) {
-                std::cerr << "Receipt root mismatch for block " << block_num << " 😖\n";
-                return -3;
-            }
-        }
+        execute_block(bh->block, buffer);
 
         std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
-        if (buffer.account_changes().at(block_num) != db_account_changes) {
+        if (buffer.account_changes() != db_account_changes) {
             bool mismatch{false};
             if (db_account_changes) {
                 for (const auto& e : *db_account_changes) {
-                    if (buffer.account_changes().at(block_num).count(e.first) == 0) {
+                    if (buffer.account_changes().count(e.first) == 0) {
                         if (!kPhantomAccounts.contains(e.first)) {
                             std::cerr << to_hex(e.first) << " is missing\n";
                             mismatch = true;
                         }
-                    } else if (Bytes val{buffer.account_changes().at(block_num).at(e.first)}; val != e.second) {
+                    } else if (Bytes val{buffer.account_changes().at(e.first)}; val != e.second) {
                         std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
                         std::cerr << to_hex(val) << "\n";
                         std::cerr << "vs DB\n";
@@ -125,7 +95,7 @@ int main(int argc, char* argv[]) {
                         mismatch = true;
                     }
                 }
-                for (const auto& e : buffer.account_changes().at(block_num)) {
+                for (const auto& e : buffer.account_changes()) {
                     if (db_account_changes->count(e.first) == 0) {
                         std::cerr << to_hex(e.first) << " is not in DB\n";
                         mismatch = true;
@@ -142,8 +112,8 @@ int main(int argc, char* argv[]) {
 
         Bytes db_storage_changes{db::read_storage_changes(*txn, block_num)};
         Bytes calculated_storage_changes{};
-        if (buffer.storage_changes().count(block_num)) {
-            calculated_storage_changes = buffer.storage_changes().at(block_num).encode();
+        if (!buffer.storage_changes().empty()) {
+            calculated_storage_changes = buffer.storage_changes().encode();
         }
         if (calculated_storage_changes != db_storage_changes) {
             std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";

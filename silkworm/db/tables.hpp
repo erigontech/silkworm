@@ -41,12 +41,17 @@ constexpr lmdb::TableConfig kStorageChangeSet{"SCS"};
 constexpr lmdb::TableConfig kIntermediateTrieHash{"iTh2", MDB_DUPSORT, lmdb::TableCustomKeyComparator::None,
                                                   lmdb::TableCustomDupComparator::ExcludeSuffix32};
 constexpr lmdb::TableConfig kDatabaseInfo{"DBINFO"};
+constexpr lmdb::TableConfig kSnapshotInfo{"SNINFO"};
 constexpr lmdb::TableConfig kDatabaseVersion{"DatabaseVersion"};
 constexpr lmdb::TableConfig kBlockHeaders{"h"};
+constexpr lmdb::TableConfig kHeaderNumbers{"H"};
 constexpr lmdb::TableConfig kBlockBodies{"b"};
 constexpr lmdb::TableConfig kBlockReceipts{"r"};
+constexpr lmdb::TableConfig kLogs{"log"};
 constexpr lmdb::TableConfig kLogTopicIndex{"log_topic_index"};
 constexpr lmdb::TableConfig kLogAddressIndex{"log_address_index"};
+constexpr lmdb::TableConfig kCallFromIndex{"call_from_index"};
+constexpr lmdb::TableConfig kCallToIndex{"call_to_index"};
 constexpr lmdb::TableConfig kTxLookup{"l"};
 constexpr lmdb::TableConfig kBloomBits{"B"};
 constexpr lmdb::TableConfig kBloomBitsIndex{"iB"};
@@ -56,11 +61,11 @@ constexpr lmdb::TableConfig kSyncStageProgress{"SSP2"};
 constexpr lmdb::TableConfig kSyncStageUnwind{"SSU2"};
 constexpr lmdb::TableConfig kClique{"clique-"};
 constexpr lmdb::TableConfig kSenders{"txSenders"};
-constexpr lmdb::TableConfig kMigrations{"migrations"};
 constexpr lmdb::TableConfig kFastTrieProgress{"TrieSync"};
 constexpr lmdb::TableConfig kHeadBlock{"LastBlock"};
 constexpr lmdb::TableConfig kHeadFastBlock{"LastFast"};
 constexpr lmdb::TableConfig kHeadHeader{"LastHeader"};
+constexpr lmdb::TableConfig kMigrations{"migrations"};
 
 /* Deprecated Tables */
 constexpr lmdb::TableConfig kPlainStateOld1{"PLAIN-CST", MDB_DUPSORT};

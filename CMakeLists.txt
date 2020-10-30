@@ -26,7 +26,7 @@ include(evmone/cmake/cable/bootstrap.cmake)
 include(CableBuildType)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 include(evmone/cmake/cable/HunterGate.cmake)
-include(D:/GitHub/vcpkg/scripts/buildsystems/vcpkg.cmake)
+
 
 set(HUNTER_USE_CACHE_SERVERS NO)
 HunterGate(

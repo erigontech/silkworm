@@ -137,6 +137,7 @@ struct freelist_options_t {
 struct clear_options_t {
     std::vector<std::string> names{};  // Name of table(s) to clear
     bool drop{false};                  // Whether or not to drop table instead of clearing
+    bool yes{false};                   // Assume yes to all requests of confirmation
 };
 
 struct compact_options_t {
@@ -230,15 +231,39 @@ int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
             lmdb_tbl = lmdb_txn->open({tablename.c_str()});
             size_t rcount{0};
             lmdb::err_handler(lmdb_tbl->get_rcount(&rcount));
-            if (!app_opts.drop && !rcount) {
+            if (!rcount && !app_opts.drop) {
                 std::cout << " Table " << tablename << " is already empty. Skipping" << std::endl;
-            } else {
-                std::cout << "\n"
-                          << (app_opts.drop ? "Dropping" : "Emptying") << " table " << tablename << " (" << rcount
-                          << " records)" << std::endl;
-                lmdb::err_handler(app_opts.drop ? lmdb_tbl->drop() : lmdb_tbl->clear());
-                lmdb_tbl->close();
+                lmdb_tbl.reset();
+                continue;
             }
+
+            std::cout << "\n"
+                      << (app_opts.drop ? "Dropping" : "Emptying") << " table " << tablename << " (" << rcount
+                      << " records) " << std::flush;
+
+            if (!app_opts.yes) {
+
+                std::regex pattern{ "^([yY])?([nN])?$" };
+                std::smatch matches;
+
+                std::string user_input;
+                std::cout << "Confirm ? [y/N] ";
+                do
+                {
+                    std::cin >> user_input;
+                    std::cin.clear();
+                    if (std::regex_search(user_input, matches, pattern, std::regex_constants::match_default)) {
+                        break;
+                    };
+                } while (true);
+
+                if (matches[2].length()) {
+                    std::cout << "  Skipped." << std::endl;
+                    continue;
+                }
+            }
+
+            lmdb::err_handler(app_opts.drop ? lmdb_tbl->drop() : lmdb_tbl->clear());
             lmdb_tbl.reset();
         }
 
@@ -338,7 +363,83 @@ dbTablesInfo get_tablesInfo(std::shared_ptr<lmdb::Environment>& env) {
     return ret;
 }
 
+int do_scan(db_options_t& db_opts) {
+
+    static std::string fmt_hdr{ " %3s %-24s %=50s %13s %13s %13s" };
+
+    int retvar{0};
+    std::shared_ptr<lmdb::Environment> lmdb_env{ open_db(db_opts, true) };  // Main lmdb environment
+    try
+    {
+        if (!lmdb_env) throw std::runtime_error("Could not open LMDB environment");
+        auto tablesInfo{ get_tablesInfo(lmdb_env) };
+        auto lmdb_txn = lmdb_env->begin_ro_transaction();
+        if (tablesInfo.tables.size()) {
+            std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Progress" % "Keys" % "Data" % "Size") << std::endl;
+            std::cout << (boost::format(fmt_hdr) % std::string(3, '-') % std::string(24, '-') % std::string(50, '-') %
+                          std::string(13, '-') % std::string(13, '-') % std::string(13, '-'))
+                      << std::flush;
+            for (dbTableEntry item : tablesInfo.tables) {
+
+                std::unique_ptr<lmdb::Table> lmdb_tbl;
+
+                std::cout << "\n" << (boost::format(" %3u %-24s ") % item.id % item.name) << std::flush;
+                if (item.id < 2) {
+                    lmdb_tbl = lmdb_txn->open(item.id);
+                } else {
+                    std::optional<lmdb::TableConfig> tbl_config{ db::table::get_config(item.name) };
+                    if (!tbl_config.has_value()) {
+                        lmdb_tbl = lmdb_txn->open({item.name.c_str()});
+                    } else
+                    {
+                        lmdb_tbl = lmdb_txn->open(*tbl_config);
+                    }
+                };
+
+                MDB_val key, data;
+                size_t key_size{ 0 };
+                size_t data_size{ 0 };
+                Progress progress{50};
+                progress.set_task_count(item.stat.ms_entries);
+                size_t batch_size{progress.get_increment_count()};
+
+                int rc{lmdb_tbl->get_first(&key, &data)};
+                while (rc == MDB_SUCCESS)
+                {
+                    key_size += key.mv_size;
+                    data_size += data.mv_size;
+                    if (!--batch_size) {
+                        progress.set_current(progress.get_current() + progress.get_increment_count());
+                        std::cout << progress.print_interval('.') << std::flush;
+                        batch_size = progress.get_increment_count();
+                        if (shouldStop) break;
+                    }
+
+                    rc = lmdb_tbl->get_next(&key, &data);
+                }
+                if (rc != MDB_NOTFOUND) lmdb::err_handler(rc);
+                progress.set_current(item.stat.ms_entries);
+                std::cout << progress.print_interval('.') << std::flush;
+                std::cout << (boost::format(" %13u %13u %13u") % key_size % data_size % (key_size + data_size)) << std::flush;
+            }
+        }
+
+        std::cout << "\n\nDone !" << std::endl;
+
+    } catch (lmdb::exception& ex) {
+        std::cout << ex.err() << " " << ex.what() << std::endl;
+        retvar = -1;
+    } catch (std::runtime_error& ex) {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    lmdb_env.reset();
+    return retvar;
+}
+
 int do_tables(db_options_t& db_opts) {
+
     static std::string fmt_hdr{" %3s %-24s %10s %2s %10s %10s %10s %12s"};
     static std::string fmt_row{" %3i %-24s %10u %2u %10u %10u %10u %12u"};
 
@@ -348,8 +449,6 @@ int do_tables(db_options_t& db_opts) {
     try {
 
         if (!lmdb_env) throw std::runtime_error("Could not open LMDB environment");
-
-        //lmdb_txn = lmdb_env->begin_ro_transaction();
 
         auto freeInfo{get_freeInfo(lmdb_env)};
         auto tablesInfo{get_tablesInfo(lmdb_env)};
@@ -677,10 +776,10 @@ int main(int argc, char* argv[]) {
     // Common CLI options
     app_main.add_option("--datadir", db_opts.datadir, "Path to directory for data.mdb", false);
     app_main.add_option("--lmdb.mapSize", db_opts.mapsize_str, "Lmdb map size", true);
-    //app_main.add_flag("--exclusive", db_opts.exclusive, "Exclusive access to db");
 
     // List tables and gives info about storage
     auto& app_tables = *app_main.add_subcommand("tables", "List tables info and db info");
+    auto& app_scan = *app_main.add_subcommand("scan", "Scans tables for real sizes");
 
     // Provides detail of all free pages
     auto& app_freelist = *app_main.add_subcommand("freelist", "List free pages");
@@ -690,6 +789,7 @@ int main(int argc, char* argv[]) {
     auto& app_clear = *app_main.add_subcommand("clear", "Empties a named table");
     app_clear.add_option("--names", clear_opts.names, "Name of table to clear")->required();
     app_clear.add_flag("--drop", clear_opts.drop, "Drop table instead of emptying it");
+    app_clear.add_flag("-Y,--yes", clear_opts.yes, "Assume yes to all requests of confirmation");
 
     // Compact
     auto& app_compact = *app_main.add_subcommand("compact", "Compacts an lmdb database");
@@ -789,6 +889,8 @@ int main(int argc, char* argv[]) {
 
     if (app_tables) {
         return do_tables(db_opts);
+    } else if (app_scan) {
+        return do_scan(db_opts);
     } else if (app_freelist) {
         return do_freelist(db_opts, freelist_opts);
     } else if (app_clear) {

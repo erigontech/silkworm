@@ -91,6 +91,7 @@ static ByteView node_ref(ByteView rlp) {
     hash = keccak256(rlp);
     return {hash.bytes, kHashLength};
 }
+
 HashBuilder::HashBuilder(ByteView key0, ByteView value0) : key_{unpack_nibbles(key0)}, value_{value0} {}
 
 void HashBuilder::add(ByteView packed, ByteView value) {

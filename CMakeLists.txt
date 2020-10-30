@@ -90,6 +90,11 @@ endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
+  if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+    add_compile_options(-Wthread-safety)
+  endif()
+
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     # coverage
     add_compile_options(-fprofile-instr-generate -fcoverage-mapping)

@@ -26,6 +26,9 @@ endif()
 add_executable(check_changes check_changes.cpp)
 target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time Boost::filesystem)
 
+add_executable(scan_txs scan_txs.cpp)
+target_link_libraries(scan_txs PRIVATE silkworm absl::flags_parse absl::time Boost::filesystem)
+
 find_package(CLI11 CONFIG REQUIRED)
 
 add_executable(check_senders check_senders.cpp)

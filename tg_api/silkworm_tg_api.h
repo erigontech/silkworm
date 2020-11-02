@@ -61,6 +61,7 @@ enum SilkwormStatusCode {
  * @param[in] write_receipts Whether to write CBOR-encoded receipts into the DB.
  *
  * @param[out] last_executed_block The height of the last successfully executed block.
+ * Not written to if no blocks were executed.
  * @param[out] lmdb_error_code If an LMDB error occurs (this function returns kSilkwormLmdbError)
  * and lmdb_error_code isn't NULL, it's populated with the relevant LMDB error code.
  *

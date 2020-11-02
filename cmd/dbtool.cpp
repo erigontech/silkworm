@@ -201,10 +201,10 @@ std::optional<uint64_t> parse_size(const std::string& strsize) {
 
 std::shared_ptr<lmdb::Environment> open_db(db_options_t& db_opts, bool readonly) {
     try {
-        lmdb::options opts{};
-        if (db_opts.mapsize) opts.map_size = db_opts.mapsize;
-        opts.read_only = readonly;
-        return lmdb::get_env(db_opts.datadir.c_str(), opts);
+
+        lmdb::DatabaseConfig db_config{db_opts.datadir, db_opts.mapsize};
+        db_config.set_readonly(readonly);
+        return lmdb::get_env(db_config);
 
     } catch (const std::exception& ex) {
         std::cout << ex.what() << std::endl;

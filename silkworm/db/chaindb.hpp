@@ -24,6 +24,7 @@
 
 #include <lmdb/lmdb.h>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <exception>
@@ -41,6 +42,15 @@ static_assert(sizeof(size_t) == 8, "32 bit environment limits LMDB size");
 
 namespace silkworm::lmdb {
 
+struct DatabaseConfig {
+    std::string path{};                                                   // Default path
+    size_t map_size = 1ull << 40;                                         // 1 TiB by default
+    uint32_t flags{MDB_NOTLS | MDB_NORDAHEAD | MDB_NOSYNC | MDB_RDONLY};  // Default flags
+    uint32_t max_tables{128};                                             // Default max number of named tables
+    mdb_mode_t mode{0644};                                                // Filesystem mode (works only for Linux)
+    void set_readonly(bool value);                                        // Sets/unsets readonly flag
+};
+
 /**
  * Options to pass to env when opening file
  */
@@ -54,7 +64,7 @@ struct options {
     bool no_sub_dir = false;       // MDB_NOSUBDIR
     bool read_only = true;         // MDB_RDONLY
     unsigned max_tables = 128;     // Max open tables/dbi
-    mdb_mode_t mode = 0644;        // Filesystem mode (works only for Linux)
+    mdb_mode_t mode{0644};         // Filesystem mode (works only for Linux)
 };
 
 static const MDB_dbi FREE_DBI = 0;  // Reserved for tracking free pages
@@ -109,38 +119,38 @@ class Table;
  */
 class Environment {
    private:
-    MDB_env* handle_{nullptr};  // Handle to MDB_env
+     MDB_env* handle_{nullptr};  // Handle to MDB_env
+     std::string path_{""};      // Path to data
 
-    friend class Transaction;
+     friend class Transaction;
 
-    std::mutex count_mtx_;                      // Lock to prevent concurrent access to transactions counters maps
-    std::map<std::thread::id, int> ro_txns_{};  // A per thread maintained count of opened ro transactions
-    std::map<std::thread::id, int> rw_txns_{};  // A per thread maintained count of opened rw transactions
+     std::mutex count_mtx_;                      // Lock to prevent concurrent access to transactions counters maps
+     std::map<std::thread::id, int> ro_txns_{};  // A per thread maintained count of opened ro transactions
+     std::map<std::thread::id, int> rw_txns_{};  // A per thread maintained count of opened rw transactions
 
-    /*
-     * A transaction and its cursors must only be used by a single thread,
-     * and a thread may only have one transaction at a time.
-     * Only exception is when parent environment is opened with MDB_NOTLS flag
-     * which causes the allowance of unlimited ro transactions.
-     * So when a thread begins a new transaction (see begin_transaction)
-     * env is checked for corresponding slot and eventually allows or
-     * prohibits the transaction opening
-     */
+     /*
+      * A transaction and its cursors must only be used by a single thread,
+      * and a thread may only have one transaction at a time.
+      * Only exception is when parent environment is opened with MDB_NOTLS flag
+      * which causes the allowance of unlimited ro transactions.
+      * So when a thread begins a new transaction (see begin_transaction)
+      * env is checked for corresponding slot and eventually allows or
+      * prohibits the transaction opening
+      */
 
-    int get_ro_txns(void);          // Returns number of opened ro transactions for calling thread
-    int get_rw_txns(void);          // Returns number of opened rw transactions for calling thread
-    void touch_ro_txns(int count);  // Ro transaction count incrementer/decrementer
-    void touch_rw_txns(int count);  // Ro transaction count incrementer/decrementer
+     int get_ro_txns(void) noexcept;          // Returns number of opened ro transactions for calling thread
+     int get_rw_txns(void) noexcept;          // Returns number of opened rw transactions for calling thread
+     void touch_ro_txns(int count) noexcept;  // Ro transaction count incrementer/decrementer
+     void touch_rw_txns(int count) noexcept;  // Ro transaction count incrementer/decrementer
 
    public:
-    explicit Environment(const unsigned flags = 0);
+    explicit Environment(const DatabaseConfig& config);
     ~Environment() noexcept;
 
     MDB_env** handle(void) { return &handle_; }
     bool is_opened(void) { return handle_ != nullptr; }
     bool is_ro(void);
 
-    void open(const char* path, const unsigned int flags, const mdb_mode_t mode);
     void close() noexcept;
 
     int get_info(MDB_envinfo* info);
@@ -150,7 +160,7 @@ class Environment {
     int get_max_readers(unsigned int* count);
 
     int set_flags(const unsigned int flags, const bool onoff = true);
-    int set_mapsize(const size_t size);
+    int set_mapsize(size_t size);
     int set_max_dbs(const unsigned int count);
     int set_max_readers(const unsigned int count);
     int sync(const bool force = true);
@@ -383,7 +393,7 @@ class Table {
     MDB_cursor* handle_;       // The underlying MDB_cursor for this instance
 };
 
-std::shared_ptr<Environment> get_env(const char* path, options opts = {});
+std::shared_ptr<Environment> get_env(DatabaseConfig config);
 
 // Custom compartor(s)
 int dup_cmp_exclude_suffix32(const MDB_val* a, const MDB_val* b);

@@ -15,18 +15,58 @@
 */
 
 #include "chaindb.hpp"
+#include <iostream>
 
 namespace silkworm::lmdb {
 
-Environment::Environment(const unsigned flags) {
-    err_handler(mdb_env_create(&handle_));
-    if (flags) {
-        int ret{mdb_env_set_flags(handle_, flags, 1)};
-        if (ret != MDB_SUCCESS) {
-            close();
-            err_handler(ret);
-        }
+void DatabaseConfig::set_readonly(bool value) {
+    if (value) {
+        flags |= MDB_RDONLY;
+    } else {
+        flags &= ~MDB_RDONLY;
     }
+}
+
+Environment::Environment(const DatabaseConfig& config) {
+
+    if (config.path.empty()) {
+        throw std::invalid_argument("Invalid argument : config.path");
+    }
+
+    // Check data file exists and get its size
+    // If it exists then map_size can only be either:
+    // 0 - map_size is adjusted by LMDB to effective data size
+    // any value >= data file size
+    // *WARNING* setting a map_size != 0 && < data_size causes
+    // LMDB to truncate data file thus losing data
+    size_t data_file_size{0};
+    size_t data_map_size{0};
+    boost::filesystem::path data_path{config.path};
+    bool nosubdir{ (config.flags & MDB_NOSUBDIR) == MDB_NOSUBDIR };
+    if (!nosubdir) {
+        data_path /= boost::filesystem::path{"data.mdb"};
+    }
+    if (boost::filesystem::exists(data_path)) {
+        if (!boost::filesystem::is_regular_file(data_path)) {
+            throw std::runtime_error(data_path.string() + " is not a regular file");
+        }
+        data_file_size = boost::filesystem::file_size(data_path);
+    }
+    data_map_size = std::max(data_file_size, config.map_size);
+
+    // Ensure map_size is multiple of host page_size
+    if (data_map_size) {
+        size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
+        data_map_size = ((data_map_size + host_page_size - 1) / host_page_size) * host_page_size;
+    }
+
+    err_handler(mdb_env_create(&handle_));
+    err_handler(mdb_env_set_mapsize(handle_, data_map_size));
+    err_handler(mdb_env_set_maxdbs(handle_, config.max_tables));
+
+    // Eventually open data file (this may throw)
+    path_ = (nosubdir ? data_path.string() : data_path.parent_path().string());
+    err_handler(mdb_env_open(handle_, path_.c_str(), config.flags, config.mode));
 }
 
 Environment::~Environment() noexcept { close(); }
@@ -35,13 +75,6 @@ bool Environment::is_ro(void) {
     unsigned int env_flags{0};
     err_handler(get_flags(&env_flags));
     return ((env_flags & MDB_RDONLY) == MDB_RDONLY);
-}
-
-void Environment::open(const char* path, const unsigned int flags, const mdb_mode_t mode) {
-    if (!path) {
-        throw std::invalid_argument("Invalid argument : path");
-    }
-    err_handler(mdb_env_open(handle_, path, flags, mode));
 }
 
 void Environment::close() noexcept {
@@ -87,7 +120,26 @@ int Environment::set_flags(const unsigned int flags, const bool onoff) {
     return mdb_env_set_flags(handle_, flags, onoff ? 1 : 0);
 }
 
-int Environment::set_mapsize(const size_t size) { return mdb_env_set_mapsize(handle_, size); }
+int Environment::set_mapsize(size_t size) {
+
+    /*
+    * A size == 0 means LMDB will auto adjust to
+    * actual data file size.
+    * In all other cases prevent setting map_size
+    * to a lower value as it may truncate data file
+    * (observed on Windows)
+    */
+    if (size) {
+        size_t actual_map_size{0};
+        err_handler(get_mapsize(&actual_map_size));
+        if (size < actual_map_size) {
+            throw std::runtime_error("Can't set a map_size lower than data file size.");
+        }
+        size_t host_page_size{ boost::interprocess::mapped_region::get_page_size() };
+        size = ((size + host_page_size - 1) / host_page_size) * host_page_size;
+    }
+    return mdb_env_set_mapsize(handle_, size);
+}
 
 int Environment::set_max_dbs(const unsigned int count) { return mdb_env_set_maxdbs(handle_, count); }
 
@@ -95,21 +147,21 @@ int Environment::set_max_readers(const unsigned int count) { return mdb_env_set_
 
 int Environment::sync(const bool force) { return mdb_env_sync(handle_, force); }
 
-int Environment::get_ro_txns(void) { return ro_txns_[std::this_thread::get_id()]; }
-int Environment::get_rw_txns(void) { return rw_txns_[std::this_thread::get_id()]; }
+int Environment::get_ro_txns(void) noexcept { return ro_txns_[std::this_thread::get_id()]; }
+int Environment::get_rw_txns(void) noexcept { return rw_txns_[std::this_thread::get_id()]; }
 
-void Environment::touch_ro_txns(int count) {
+void Environment::touch_ro_txns(int count) noexcept {
     std::lock_guard<std::mutex> l(count_mtx_);
     ro_txns_[std::this_thread::get_id()] += count;
 }
 
-void Environment::touch_rw_txns(int count) {
+void Environment::touch_rw_txns(int count) noexcept {
     std::lock_guard<std::mutex> l(count_mtx_);
     rw_txns_[std::this_thread::get_id()] += count;
 }
 
 std::unique_ptr<Transaction> Environment::begin_transaction(unsigned int flags) {
-    if (is_ro()) {
+    if (this->is_ro()) {
         flags |= MDB_RDONLY;
     }
     return std::make_unique<Transaction>(this, flags);
@@ -428,28 +480,23 @@ void Table::close() {
     }
 }
 
-std::shared_ptr<Environment> get_env(const char* path, options opts) {
+std::shared_ptr<Environment> get_env(DatabaseConfig config) {
     struct Value {
         std::weak_ptr<Environment> wp;
-        unsigned int flags{0};
+        uint32_t flags{0};
     };
 
     static std::map<size_t, Value> s_envs;
     static std::mutex s_mtx;
 
     // Compute flags for required instance
-    unsigned int flags{0};
-    if (opts.no_tls) flags |= MDB_NOTLS;
-    if (opts.no_rdahead) flags |= MDB_NORDAHEAD;
-    if (opts.no_sync) flags |= MDB_NOSYNC;
-    if (opts.no_meta_sync) flags |= MDB_NOMETASYNC;
-    if (opts.write_map) flags |= MDB_WRITEMAP;
-    if (opts.no_sub_dir) flags |= MDB_NOSUBDIR;
-    if (opts.read_only) flags |= MDB_RDONLY;
+    // We actually don't care for MDB_RDONLY
+    uint32_t compare_flags{config.flags ? (config.flags &= ~MDB_RDONLY) : 0};
 
     // There's a 1:1 relation among env and the opened
-    // database file. Build a hash of the path
-    std::string pathstr{path};
+    // database file. Build a hash of the path.
+    // Note that windows is case insensitive
+    std::string pathstr{boost::algorithm::to_lower_copy(config.path)};
     std::hash<std::string> pathhash;
     size_t envkey{pathhash(pathstr)};
 
@@ -459,7 +506,7 @@ std::shared_ptr<Environment> get_env(const char* path, options opts) {
     // Locate env if already exists
     auto iter = s_envs.find(envkey);
     if (iter != s_envs.end()) {
-        if (iter->second.flags != flags) {
+        if (iter->second.flags != compare_flags) {
             err_handler(MDB_INCOMPATIBLE);
         }
         auto item = iter->second.wp.lock();
@@ -470,44 +517,11 @@ std::shared_ptr<Environment> get_env(const char* path, options opts) {
         }
     }
 
-    // Check data file exists and get its size
-    // If it exists then map_size can only be either:
-    // 0 - map_size is adjusted by LMDB to effective data size
-    // any value >= data file size
-    // *WARNING* setting a map_size != 0 && < data_size causes
-    // LMDB to truncate data file thus losing data
-    size_t data_file_size{0};
-    boost::filesystem::path data_path{path};
-    if (opts.no_sub_dir) {
-        if (boost::filesystem::exists(data_path)) {
-            if (!boost::filesystem::is_regular_file(data_path)) {
-                throw std::runtime_error(data_path.string() + " is not a regular file");
-            }
-            data_file_size = boost::filesystem::file_size(data_path);
-        }
-    } else {
-        boost::filesystem::path data_file{data_path / boost::filesystem::path{"data.mdb"}};
-        if (boost::filesystem::exists(data_file)) {
-            if (!boost::filesystem::is_regular_file(data_file)) {
-                throw std::runtime_error(data_file.string() + " is not a regular file");
-            }
-        }
-    }
-    opts.map_size = std::max(data_file_size, opts.map_size);
-
-    // Ensure map_size is multiple of host page_size
-    if (opts.map_size) {
-        size_t host_page_size{ boost::interprocess::mapped_region::get_page_size() };
-        opts.map_size = ((opts.map_size + host_page_size - 1) / host_page_size) * host_page_size;
-    }
-
     // Create new instance and open db file(s)
-    auto newitem = std::make_shared<Environment>();
-    err_handler(newitem->set_mapsize(opts.map_size));
-    err_handler(newitem->set_max_dbs(opts.max_tables));
-    newitem->open(path, flags, opts.mode);  // Throws on error
+    // Data file is opened/created on constructor
+    auto newitem = std::make_shared<Environment>(config);
 
-    s_envs[envkey] = {newitem, flags};
+    s_envs[envkey] = {newitem, compare_flags};
     return newitem;
 }
 
@@ -522,6 +536,6 @@ int dup_cmp_exclude_suffix32(const MDB_val* a, const MDB_val* b) {
         len_diff = 1;
     }
     int diff{memcmp(a->mv_data, b->mv_data, len)};
-    return diff ? diff : (len_diff < 0 ? -1 : len_diff);
+    return diff ? diff : (len_diff < 0 ? -1 : (int)len_diff);
 }
 }  // namespace silkworm::lmdb

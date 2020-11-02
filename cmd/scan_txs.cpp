@@ -25,16 +25,6 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/execution/execution.hpp>
 
-using namespace evmc::literals;
-
-// Non-existing accounts only touched by zero-value internal transactions:
-// e.g. https://etherscan.io/address/0x000000000000000000636f6e736f6c652e6c6f67
-static const absl::flat_hash_set<evmc::address> kPhantomAccounts{
-    0x000000000000000000636f6e736f6c652e6c6f67_address,
-    0x2386f26fc10000b4e16d0168e52d35cacd2c6185_address,
-    0x5a719cf3e02c17c876f6d294adb5cb7c6eb47e2f_address,
-};
-
 ABSL_FLAG(std::string, datadir, silkworm::db::default_path(), "chain DB path");
 ABSL_FLAG(uint64_t, from, 1, "start from block number (inclusive)");
 ABSL_FLAG(uint64_t, to, UINT64_MAX, "check up to block number (exclusive)");
@@ -52,14 +42,14 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    absl::Time t1{absl::Now()};
-    std::cout << t1 << " Checking change sets in " << absl::GetFlag(FLAGS_datadir) << "\n";
-
     using namespace silkworm;
 
     lmdb::options db_opts{};
     db_opts.read_only = true;
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str(), db_opts)};
+
+    // counters
+    uint64_t nTxs{0}, nErrors{0};
 
     const uint64_t from{absl::GetFlag(FLAGS_from)};
     const uint64_t to{absl::GetFlag(FLAGS_to)};
@@ -68,6 +58,7 @@ int main(int argc, char* argv[]) {
     for (; block_num < to; ++block_num) {
         std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
+        // Read the block
         std::optional<BlockWithHash> bh{db::read_block(*txn, block_num, /*read_senders=*/true)};
         if (!bh) {
             break;
@@ -75,62 +66,29 @@ int main(int argc, char* argv[]) {
 
         db::Buffer buffer{txn.get(), block_num};
 
-        execute_block(bh->block, buffer);
+        // Execute the block and retreive the receipts
+        std::vector<Receipt> receipts = execute_block(bh->block, buffer);
 
-        std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
-        if (buffer.account_changes() != db_account_changes) {
-            bool mismatch{false};
-            if (db_account_changes) {
-                for (const auto& e : *db_account_changes) {
-                    if (buffer.account_changes().count(e.first) == 0) {
-                        if (!kPhantomAccounts.contains(e.first)) {
-                            std::cerr << to_hex(e.first) << " is missing\n";
-                            mismatch = true;
-                        }
-                    } else if (Bytes val{buffer.account_changes().at(e.first)}; val != e.second) {
-                        std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
-                        std::cerr << to_hex(val) << "\n";
-                        std::cerr << "vs DB\n";
-                        std::cerr << to_hex(e.second) << "\n";
-                        mismatch = true;
-                    }
-                }
-                for (const auto& e : buffer.account_changes()) {
-                    if (db_account_changes->count(e.first) == 0) {
-                        std::cerr << to_hex(e.first) << " is not in DB\n";
-                        mismatch = true;
-                    }
-                }
-            } else {
-                std::cerr << "Nil DB account changes\n";
-                mismatch = true;
-            }
-            if (mismatch) {
-                std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
-            }
+        // There is one receipt per transaction
+        assert(bh->block.transactions.size() == receipts.size());
+
+        // TG returns success in the receipt even for pre-Byzantium txs.
+        for (auto receipt : receipts) {
+            nTxs++;
+            nErrors += (!receipt.success);
         }
 
-        Bytes db_storage_changes{db::read_storage_changes(*txn, block_num)};
-        Bytes calculated_storage_changes{};
-        if (!buffer.storage_changes().empty()) {
-            calculated_storage_changes = buffer.storage_changes().encode();
-        }
-        if (calculated_storage_changes != db_storage_changes) {
-            std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";
-            std::cerr << to_hex(calculated_storage_changes) << "\n";
-            std::cerr << "vs DB\n";
-            std::cerr << to_hex(db_storage_changes) << "\n";
-        }
+        // Report and reset counters
+        if (!(block_num % 50000)) {
+            std::cout << block_num << "," << nTxs << "," << nErrors << std::endl;
+            nTxs = nErrors = 0;
 
-        if (block_num % 1000 == 0) {
-            absl::Time t2{absl::Now()};
-            std::cout << t2 << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s"
-                      << std::endl;
-            t1 = t2;
+        } else if (!(block_num % 100)) {
+            // report progress
+            std::cerr << block_num << "\r";
+            std::cerr.flush();
         }
     }
 
-    t1 = absl::Now();
-    std::cout << t1 << " Blocks [" << from << "; " << block_num << ") have been checked\n";
     return 0;
 }

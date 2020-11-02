@@ -34,7 +34,6 @@ namespace bfs = boost::filesystem;
 using namespace silkworm;
 
 bool shouldStop{false};
-int errorCode{0};
 
 class Progress {
    public:

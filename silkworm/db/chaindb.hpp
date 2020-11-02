@@ -24,6 +24,8 @@
 
 #include <lmdb/lmdb.h>
 
+#include <boost/filesystem.hpp>
+#include <boost/interprocess/mapped_region.hpp>
 #include <exception>
 #include <map>
 #include <mutex>
@@ -43,16 +45,16 @@ namespace silkworm::lmdb {
  * Options to pass to env when opening file
  */
 struct options {
-    uint64_t map_size = 1ull << 40;  // 1 TiB by default
-    bool no_tls = true;              // MDB_NOTLS
-    bool no_rdahead = true;          // MDB_NORDAHEAD
-    bool no_sync = true;             // MDB_NOSYNC
-    bool no_meta_sync = false;       // MDB_NOMETASYNC
-    bool write_map = false;          // MDB_WRITEMAP
-    bool no_sub_dir = false;         // MDB_NOSUBDIR
-    bool read_only = true;           // MDB_RDONLY
-    unsigned max_tables = 128;       // Max open tables/dbi
-    mdb_mode_t mode = 0644;          // Filesystem mode (works only for Linux)
+    size_t map_size = 1ull << 40;  // 1 TiB by default
+    bool no_tls = true;            // MDB_NOTLS
+    bool no_rdahead = true;        // MDB_NORDAHEAD
+    bool no_sync = true;           // MDB_NOSYNC
+    bool no_meta_sync = false;     // MDB_NOMETASYNC
+    bool write_map = false;        // MDB_WRITEMAP
+    bool no_sub_dir = false;       // MDB_NOSUBDIR
+    bool read_only = true;         // MDB_RDONLY
+    unsigned max_tables = 128;     // Max open tables/dbi
+    mdb_mode_t mode = 0644;        // Filesystem mode (works only for Linux)
 };
 
 static const MDB_dbi FREE_DBI = 0;  // Reserved for tracking free pages
@@ -144,6 +146,7 @@ class Environment {
     int get_info(MDB_envinfo* info);
     int get_flags(unsigned int* flags);
     int get_mapsize(size_t* size);
+    int get_filesize(size_t* size);
     int get_max_keysize(void);
     int get_max_readers(unsigned int* count);
 

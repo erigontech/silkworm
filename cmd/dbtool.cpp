@@ -17,9 +17,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/bind.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/format.hpp>
-#include <boost/interprocess/mapped_region.hpp>
 #include <csignal>
 #include <iostream>
 #include <regex>
@@ -829,10 +827,6 @@ int main(int argc, char* argv[]) {
     }
     db_opts.mapsize = std::max(*tmpsize, db_opts.filesize);  // Do not accept mapSize below filesize
     tmpsize.reset();
-
-    // Adjust mapSize to a multiple of page_size
-    size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
-    db_opts.mapsize = ((db_opts.mapsize + host_page_size - 1) / host_page_size) * host_page_size;
 
     // Cli args sanification for compact
     if (app_compact) {

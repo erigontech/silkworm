@@ -20,7 +20,6 @@
 #include <absl/flags/usage.h>
 #include <absl/time/time.h>
 
-#include <boost/filesystem.hpp>
 #include <iostream>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/execution/execution.hpp>

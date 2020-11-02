@@ -74,6 +74,15 @@ int Environment::get_mapsize(size_t* size) {
     return rc;
 }
 
+int Environment::get_filesize(size_t* size)
+{
+    if (!handle_) {
+        *size = 0;
+        return MDB_SUCCESS;
+    }
+
+}
+
 int Environment::get_max_keysize(void) { return mdb_env_get_maxkeysize(handle_); }
 
 int Environment::get_max_readers(unsigned int* count) {
@@ -468,6 +477,37 @@ std::shared_ptr<Environment> get_env(const char* path, options opts) {
         } else {
             s_envs.erase(iter);
         }
+    }
+
+    // Check data file exists and get its size
+    // If it exists then map_size can only be either:
+    // 0 - map_size is adjusted by LMDB to effective data size
+    // any value >= data file size
+    // *WARNING* setting a map_size != 0 && < data_size causes
+    // LMDB to truncate data file thus losing data
+    size_t data_file_size{0};
+    boost::filesystem::path data_path{path};
+    if (opts.no_sub_dir) {
+        if (boost::filesystem::exists(data_path)) {
+            if (!boost::filesystem::is_regular_file(data_path)) {
+                throw std::runtime_error(data_path.string() + " is not a regular file");
+            }
+            data_file_size = boost::filesystem::file_size(data_path);
+        }
+    } else {
+        boost::filesystem::path data_file{data_path / boost::filesystem::path{"data.mdb"}};
+        if (boost::filesystem::exists(data_file)) {
+            if (!boost::filesystem::is_regular_file(data_file)) {
+                throw std::runtime_error(data_file.string() + " is not a regular file");
+            }
+        }
+    }
+    opts.map_size = std::max(data_file_size, opts.map_size);
+
+    // Ensure map_size is multiple of host page_size
+    if (opts.map_size) {
+        size_t host_page_size{ boost::interprocess::mapped_region::get_page_size() };
+        opts.map_size = ((opts.map_size + host_page_size - 1) / host_page_size) * host_page_size;
     }
 
     // Create new instance and open db file(s)

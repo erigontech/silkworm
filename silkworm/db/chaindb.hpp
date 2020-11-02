@@ -107,7 +107,6 @@ class Table;
 class Environment {
    private:
     MDB_env* handle_{nullptr};  // Handle to MDB_env
-    bool opened_{false};        // Whether or not the handle has an underlying opened db
 
     friend class Transaction;
 
@@ -130,15 +129,12 @@ class Environment {
     void touch_ro_txns(int count);  // Ro transaction count incrementer/decrementer
     void touch_rw_txns(int count);  // Ro transaction count incrementer/decrementer
 
-    bool assert_handle(bool should_throw = true);  // Ensures handle_ is validly created
-    bool assert_opened(bool should_throw = true);  // Ensures database is validly opened
-
    public:
     explicit Environment(const unsigned flags = 0);
     ~Environment() noexcept;
 
     MDB_env** handle(void) { return &handle_; }
-    bool is_opened(void) { return opened_; }
+    bool is_opened(void) { return handle_ != nullptr; }
     bool is_ro(void);
 
     void open(const char* path, const unsigned int flags, const mdb_mode_t mode);
@@ -173,8 +169,6 @@ class Transaction {
     Environment* parent_env_;  // Pointer to env this transaction belongs to
     MDB_txn* handle_;          // This transaction lmdb handle
     unsigned int flags_;       // Flags this transaction has been opened with
-
-    bool assert_handle(bool should_throw = true);  // Ensures handle_ is validly created
 
     /*
      * A dbi is an unsigned int handle to a table in database.

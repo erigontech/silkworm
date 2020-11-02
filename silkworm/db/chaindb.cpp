@@ -444,7 +444,6 @@ std::shared_ptr<Environment> get_env(const char* path, options opts) {
     if (opts.no_tls) flags |= MDB_NOTLS;
     if (opts.no_rdahead) flags |= MDB_NORDAHEAD;
     if (opts.no_sync) flags |= MDB_NOSYNC;
-    if (opts.no_sync) flags |= MDB_NOSYNC;
     if (opts.no_meta_sync) flags |= MDB_NOMETASYNC;
     if (opts.write_map) flags |= MDB_WRITEMAP;
     if (opts.no_sub_dir) flags |= MDB_NOSUBDIR;

@@ -16,8 +16,6 @@
 
 #include "chaindb.hpp"
 
-#include <silkworm/common/util.hpp>
-
 namespace silkworm::lmdb {
 
 Environment::Environment(const unsigned flags) {

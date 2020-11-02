@@ -29,6 +29,7 @@
 #include <mutex>
 #include <optional>
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/db/util.hpp>
 #include <string>
 #include <thread>

@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     fs::path db_path(absl::GetFlag(FLAGS_datadir));
     if (!fs::exists(db_path) || !fs::is_directory(db_path) || db_path.empty()) {
         std::cerr << absl::GetFlag(FLAGS_datadir) << " does not exist.\n";
-        std::cerr << "Use --db flag to point to a Turbo-Geth populated chaindata.\n";
+        std::cerr << "Use --datadir flag to point to a Turbo-Geth populated chaindata folder.\n";
         return -1;
     }
 

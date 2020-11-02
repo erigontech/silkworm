@@ -146,7 +146,6 @@ class Environment {
     int get_info(MDB_envinfo* info);
     int get_flags(unsigned int* flags);
     int get_mapsize(size_t* size);
-    int get_filesize(size_t* size);
     int get_max_keysize(void);
     int get_max_readers(unsigned int* count);
 

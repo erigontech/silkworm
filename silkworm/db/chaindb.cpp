@@ -74,15 +74,6 @@ int Environment::get_mapsize(size_t* size) {
     return rc;
 }
 
-int Environment::get_filesize(size_t* size)
-{
-    if (!handle_) {
-        *size = 0;
-        return MDB_SUCCESS;
-    }
-
-}
-
 int Environment::get_max_keysize(void) { return mdb_env_get_maxkeysize(handle_); }
 
 int Environment::get_max_readers(unsigned int* count) {

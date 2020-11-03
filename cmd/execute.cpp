@@ -16,11 +16,10 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <ctime>  // TODO(Andrew) replace with the logger
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
@@ -28,8 +27,6 @@
 using namespace silkworm;
 
 static constexpr const char* kExecutionStage{"Execution"};
-
-static constexpr const char* kTimeFormat{"%Y-%m-%d_%H:%M:%S_%Z"};
 
 static uint64_t already_executed_block(lmdb::Transaction& txn) {
     std::unique_ptr<lmdb::Table> progress_table{txn.open(db::table::kSyncStageProgress)};
@@ -69,6 +66,8 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
+    SILKWORM_LOG(LogInfo) << "Starting block execution. DB: " << db_path << std::endl;
+
     lmdb::DatabaseConfig db_config{db_path};
     db_config.set_readonly(false);
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
@@ -77,7 +76,7 @@ int main(int argc, char* argv[]) {
     bool write_receipts{db::read_storage_mode_receipts(*txn)};
     if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
                            !migration_happened(*txn, "receipts_store_logs_separately"))) {
-        std::cerr << "Legacy stored receipts are not supported\n";
+        SILKWORM_LOG(LogError) << "Legacy stored receipts are not supported\n";
         return -1;
     }
 
@@ -100,9 +99,7 @@ int main(int argc, char* argv[]) {
 
         current_progress = block_number;
         if (current_progress % 1000 == 0) {
-            std::time_t t = std::time(nullptr);
-            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress << " executed"
-                      << std::endl;
+            SILKWORM_LOG(LogInfo) << "Blocks <= " << current_progress << " executed" << std::endl;
         }
 
         if (buffer->current_batch_size() >= batch_mib * kMiB) {
@@ -110,9 +107,7 @@ int main(int argc, char* argv[]) {
             save_progress(*txn, current_progress);
             lmdb::err_handler(txn->commit());
 
-            std::time_t t = std::time(nullptr);
-            std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " Blocks <= " << current_progress
-                      << " committed" << std::endl;
+            SILKWORM_LOG(LogInfo) << "Blocks <= " << current_progress << " committed" << std::endl;
 
             txn = env->begin_rw_transaction();
             buffer = std::make_unique<db::Buffer>(txn.get());
@@ -123,11 +118,9 @@ int main(int argc, char* argv[]) {
         buffer->write_to_db();
         save_progress(*txn, current_progress);
         lmdb::err_handler(txn->commit());
-        std::time_t t = std::time(nullptr);
-        std::cout << std::put_time(std::gmtime(&t), kTimeFormat) << " All blocks <= " << current_progress
-                  << " executed and committed" << std::endl;
+        SILKWORM_LOG(LogInfo) << "All blocks <= " << current_progress << " executed and committed" << std::endl;
     } else {
-        std::cout << "Nothing to execute" << std::endl;
+        SILKWORM_LOG(LogWarn) << "Nothing to execute" << std::endl;
     }
 
     return 0;

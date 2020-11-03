@@ -28,7 +28,7 @@ namespace silkworm {
 
 namespace {
     std::ostringstream stream1, stream2;
-    Logger logger(stream1, stream2);
+    Logger logger(LogNone, stream1, stream2);
     const std::string infix(
         "[A-Z ].\\d.\\d.\\d-\\d.-\\d.-\\d.\\d. \\d.\\d.:\\d.\\d.:\\d.\\d._UTC| "
         "log_test.cpp:\\d*| ");
@@ -51,33 +51,28 @@ namespace {
     }
 }
 
-bool test_logging()
-{
+TEST_CASE("Logging") {
+
     // test true branch of macro
-    logger.level(LogCrit);
-    SILKWORM_LOG(LogCrit)  << "LogCrit"  << std::endl;
-    if (!test_log("CRIT ", infix, "LogCrit"))  return false;
-    SILKWORM_LOG(LogError) << "LogError" << std::endl;
-    if (!test_log("ERROR", infix, "LogError")) return false;
-    SILKWORM_LOG(LogWarn)  << "LogWarn"  << std::endl;
-    if (!test_log("WARN ", infix, "LogWarn"))  return false;
-    SILKWORM_LOG(LogInfo)  << "LogInfo"  << std::endl;
-    if (!test_log("INFO ", infix, "LogInfo"))  return false;
-    SILKWORM_LOG(LogDebug) << "LogDebug" << std::endl;
-    if (!test_log("DEBUG", infix, "LogDebug")) return false;
-    SILKWORM_LOG(LogTrace) << "LogTrace" << std::endl;
-    if (!test_log("TRACE", infix, "LogTrace")) return false;
+    SILKWORM_LOG_TO_LEVEL(logger, LogTrace);
+    SILKWORM_LOG_TO(logger, LogCritical)  << "LogCritical" << std::endl;
+    CHECK(test_log("CRIT ", infix, "LogCritical"));
+    SILKWORM_LOG_TO(logger, LogError) << "LogError" << std::endl;
+    CHECK(test_log("ERROR", infix, "LogError"));
+    SILKWORM_LOG_TO(logger, LogWarn)  << "LogWarn" << std::endl;
+    CHECK(test_log("WARN ", infix, "LogWarn"));
+    SILKWORM_LOG_TO(logger, LogInfo)  << "LogInfo" << std::endl;
+    CHECK(test_log("INFO ", infix, "LogInfo"));
+    SILKWORM_LOG_TO(logger, LogDebug) << "LogDebug" << std::endl;
+    CHECK(test_log("DEBUG", infix, "LogDebug"));
+    SILKWORM_LOG_TO(logger, LogTrace) << "LogTrace" << std::endl;
+    CHECK(test_log("TRACE", infix, "LogTrace"));
 
     // test false branch of macro
-    logger.level(LogTrace);
-    SILKWORM_LOG(LogDebug) << "LogDebug" << std::endl;
-    if (!test_log("", "", "")) return false;
-
-    return true;
-}
-
-TEST_CASE("Logging") {
-    CHECK(test_logging() == true);
+    SILKWORM_LOG_TO_LEVEL(logger, LogDebug);
+    SILKWORM_LOG_TO(logger, LogTrace) << "LogTrace" << std::endl;
+    CHECK(test_log("", "", ""));
 }
 
 }
+

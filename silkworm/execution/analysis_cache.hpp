@@ -38,8 +38,8 @@ namespace silkworm {
  * and all other revisions are evicted on revision update.
  */
 class AnalysisCache {
-   public:
-    static constexpr size_t kMaxSize{10'000};
+  public:
+    static constexpr size_t kMaxSize{1000};
 
     static AnalysisCache& instance() noexcept;
 
@@ -57,7 +57,7 @@ class AnalysisCache {
     void put(const evmc::bytes32& key, const std::shared_ptr<evmone::code_analysis>& analysis,
              evmc_revision revision) noexcept;
 
-   private:
+  private:
     AnalysisCache() : cache_{kMaxSize} {}
 
     std::mutex mutex_;

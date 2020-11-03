@@ -24,9 +24,7 @@
 
 #include <lmdb/lmdb.h>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/interprocess/mapped_region.hpp>
 #include <exception>
 #include <map>
 #include <mutex>

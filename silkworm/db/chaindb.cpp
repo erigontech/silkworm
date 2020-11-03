@@ -16,6 +16,9 @@
 
 #include "chaindb.hpp"
 
+#include <boost/algorithm/string.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+
 namespace silkworm::lmdb {
 
 void DatabaseConfig::set_readonly(bool value) {

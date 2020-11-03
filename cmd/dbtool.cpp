@@ -99,6 +99,8 @@ struct dbTableEntry {
 };
 
 struct dbTablesInfo {
+    size_t mapsize{0};
+    size_t filesize{0};
     size_t pageSize{0};
     size_t pages{0};
     size_t size{0};
@@ -121,10 +123,6 @@ struct db_options_t {
     std::string datadir{silkworm::db::default_path()};  // Where data file is located
     std::string mapsize_str{};                          // Provided map_size literal
     uint64_t mapsize{0};                                // Computed map size
-    bool exclusive{false};                              // Wheter or not try to gain exclusive access to db
-    uint64_t filesize{0};                               // Size of data.mdb (not an option - only for convenience)
-    bfs::path dir{};                                    // Path to data directory
-    bfs::path file{};                                   // Path to data file
 };
 
 struct freelist_options_t {
@@ -318,6 +316,8 @@ dbTablesInfo get_tablesInfo(std::shared_ptr<lmdb::Environment>& env) {
     std::unique_ptr<lmdb::Transaction> tx{env->begin_ro_transaction()};
 
     dbTablesInfo ret{};
+    lmdb::err_handler(env->get_filesize(&ret.filesize));
+    lmdb::err_handler(env->get_mapsize(&ret.mapsize));
     MDB_val key, data;
 
     std::unique_ptr<lmdb::Table> unnamed{tx->open(lmdb::FREE_DBI)};
@@ -469,14 +469,14 @@ int do_tables(db_options_t& db_opts) {
             }
         }
 
-        std::cout << "\n Database map size    : " << (boost::format("%13u") % db_opts.mapsize) << std::endl;
-        std::cout << " Size of file on disk : " << (boost::format("%13u") % db_opts.filesize) << std::endl;
+        std::cout << "\n Database map size    : " << (boost::format("%13u") % tablesInfo.mapsize) << std::endl;
+        std::cout << " Size of file on disk : " << (boost::format("%13u") % tablesInfo.filesize) << std::endl;
         std::cout << " Data pages count     : " << (boost::format("%13u") % tablesInfo.pages) << std::endl;
         std::cout << " Data pages size      : " << (boost::format("%13u") % tablesInfo.size) << std::endl;
         std::cout << " Reclaimable pages    : " << (boost::format("%13u") % freeInfo.pages) << std::endl;
         std::cout << " Reclaimable size     : " << (boost::format("%13u") % freeInfo.size) << std::endl;
         std::cout << " Free space available : "
-                  << (boost::format("%13u") % (db_opts.mapsize - tablesInfo.size + freeInfo.size)) << std::endl;
+                  << (boost::format("%13u") % (tablesInfo.mapsize - tablesInfo.size + freeInfo.size)) << std::endl;
 
     } catch (lmdb::exception& ex) {
         std::cout << ex.err() << " " << ex.what() << std::endl;
@@ -535,41 +535,50 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
     try {
 
         if (!lmdb_src_env) throw std::runtime_error("Could not open LMDB environment");
+        size_t src_filesize{0};
+        uint32_t src_flags{0};
+        bool src_nosubdir{false};
+        boost::filesystem::path src_path{db_opts.datadir};
+
+        lmdb::err_handler(lmdb_src_env->get_filesize(&src_filesize));
+        lmdb::err_handler(lmdb_src_env->get_flags(&src_flags));
+        src_nosubdir = ((src_flags & MDB_NOSUBDIR) == MDB_NOSUBDIR);
+        if (!src_nosubdir) src_path /= boost::filesystem::path{"data.mdb"};
 
         // Ensure target working directory has enough free space
         // at least the size of origin db
-        auto target_path = bfs::path{app_opts.workdir};
-        auto target_file = bfs::path{target_path / bfs::path{"data.mdb"}};
-        auto target_space = bfs::space(target_path);
-        if (target_space.free <= db_opts.filesize) {
+        auto tgt_path = bfs::path{app_opts.workdir};
+        if (!src_nosubdir) tgt_path /= boost::filesystem::path{"data.mdb"};
+        auto target_space = bfs::space(tgt_path.parent_path());
+        if (target_space.free <= src_filesize) {
             throw std::runtime_error("Insufficient disk space on working directory");
         }
 
-        std::cout << " Compacting " << db_opts.file << "\n into " << target_path << "\n Please be patient as there is no progress report ..."
+        std::cout << " Compacting " << src_path << "\n into " << tgt_path << "\n Please be patient as there is no progress report ..."
                   << std::endl;
-        lmdb::err_handler(mdb_env_copy2(*(lmdb_src_env->handle()), target_path.string().c_str(), MDB_CP_COMPACT));
+        lmdb::err_handler(mdb_env_copy2(*(lmdb_src_env->handle()), tgt_path.string().c_str(), MDB_CP_COMPACT));
         std::cout << "\n Database compaction " << (shouldStop ? "aborted !" : "completed ...") << std::endl;
 
         if (!shouldStop) {
             // Do we have a valid compacted file on disk ?
             // replace source with target
-            if (!bfs::exists(target_file)) {
-                throw std::runtime_error("Can't locate compacted data.mdb");
+            if (!bfs::exists(tgt_path)) {
+                throw std::runtime_error("Can't locate compacted database");
             }
 
             // Do we have to replace original file ?
-            if (app_opts.replace) {
+            if (app_opts.replace && !src_nosubdir) {
                 // Create a backup copy before replacing ?
                 if (!app_opts.nobak) {
-                    std::cout << " Creating backup copy of origin db ..." << std::endl;
-                    bfs::path source_bak{db_opts.file.parent_path() / bfs::path{"data.mdb.bak"}};
-                    if (bfs::exists(source_bak)) bfs::remove(source_bak);
-                    bfs::rename(db_opts.file, source_bak);
+                    std::cout << " Creating backup copy of origin database ..." << std::endl;
+                    bfs::path src_path_bak{src_path.parent_path() / bfs::path{"data.mdb.bak"}};
+                    if (bfs::exists(src_path_bak)) bfs::remove(src_path_bak);
+                    bfs::rename(src_path, src_path_bak);
                 }
 
-                std::cout << " Replacing origin db with compacted ..." << std::endl;
-                if (bfs::exists(db_opts.file)) bfs::remove(db_opts.file);
-                bfs::rename(target_file, db_opts.file);
+                std::cout << " Replacing origin database with compacted ..." << std::endl;
+                if (bfs::exists(src_path)) bfs::remove(src_path);
+                bfs::rename(src_path, tgt_path);
             }
         }
 
@@ -593,11 +602,10 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
     try
     {
         if (!lmdb_src_env) throw std::runtime_error("Could not open source LMDB environment");
+
         db_options_t tgt_opts{};
         tgt_opts.mapsize = app_opts.newmapsize;
         tgt_opts.datadir = app_opts.targetdir;
-        tgt_opts.file = app_opts.file;
-        tgt_opts.dir = app_opts.dir;
         std::shared_ptr<lmdb::Environment> lmdb_tgt_env{open_db(tgt_opts, false)};
         if (!lmdb_tgt_env) throw std::runtime_error("Could not open target LMDB environment");
 
@@ -662,14 +670,15 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
             // In case the user have opted for Upsert mode we need to
             // compute all reclaimable space + the difference amongst data size and map_size
             // In case we go for append then data is appended to the end of file
-            size_t available_space =
-                (app_opts.upsert ? tgt_freeInfo.size : 0) + (tgt_opts.mapsize - tgt_tableInfo.size);
-            if (available_space < src_table.size()) {
-                tgt_opts.mapsize += (src_table.size() - available_space);
+            size_t tgt_free_space{ tgt_tableInfo.mapsize - tgt_tableInfo.size };
+            if (app_opts.upsert) tgt_free_space += tgt_freeInfo.size;
+            if (tgt_free_space < src_table.size()) {
+                tgt_opts.mapsize += (src_table.size() - tgt_free_space);
                 // Round map size to nearest multiple of commit size
                 tgt_opts.mapsize =
                     ((tgt_opts.mapsize + app_opts.commitsize - 1) / app_opts.commitsize) * app_opts.commitsize;
-                lmdb_tgt_env->set_mapsize(tgt_opts.mapsize);
+                lmdb::err_handler(lmdb_tgt_env->set_mapsize(tgt_opts.mapsize));
+                lmdb::err_handler(lmdb_tgt_env->get_mapsize(&tgt_opts.mapsize));
             }
 
             // Ready to copy
@@ -812,20 +821,12 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app_main, argc, argv);
 
     // Check provided data file exists
-    db_opts.dir = bfs::path(db_opts.datadir);
-    db_opts.file = (db_opts.dir / bfs::path("data.mdb"));
-    if (!bfs::exists(db_opts.file) || !bfs::is_regular_file(db_opts.file)) {
-        std::cout << " " << db_opts.file.string() << " not found" << std::endl;
-        return -1;
-    }
-    db_opts.filesize = bfs::file_size(db_opts.file);
-
     std::optional<uint64_t> tmpsize{parse_size(db_opts.mapsize_str)};
     if (!tmpsize.has_value()) {
         std::cout << " Provided --lmdb.mapSize is invalid" << std::endl;
         return -1;
     }
-    db_opts.mapsize = std::max(*tmpsize, db_opts.filesize);  // Do not accept mapSize below filesize
+    db_opts.mapsize = *tmpsize;
     tmpsize.reset();
 
     // Cli args sanification for compact

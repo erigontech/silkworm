@@ -56,7 +56,7 @@ private:
 };
 
 #define SILKWORM_LOG_TO(logger_, level_) \
-    if ((level_) < (logger_).level()) {} \
+    if ((logger_).level() < (level_)) {} \
     else (logger_).log((level_), __FILE__, __LINE__)
 #define SILKWORM_LOG_TO_LEVEL(logger_, level_) ((logger_).level(level_))
 

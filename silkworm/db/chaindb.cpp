@@ -15,7 +15,6 @@
 */
 
 #include "chaindb.hpp"
-#include <iostream>
 
 namespace silkworm::lmdb {
 
@@ -107,6 +106,23 @@ int Environment::get_mapsize(size_t* size) {
     return rc;
 }
 
+int Environment::get_filesize(size_t* size)
+{
+    if (!path_.size()) return ENOENT;
+
+    uint32_t flags{0};
+    int rc{get_flags(&flags)};
+    if (rc) return rc;
+    boost::filesystem::path data_path{path_};
+    bool nosubdir{(flags & MDB_NOSUBDIR) == MDB_NOSUBDIR};
+    if (!nosubdir) data_path /= boost::filesystem::path{"data.mdb"};
+    if (boost::filesystem::exists(data_path) && boost::filesystem::is_regular_file(data_path)) {
+        *size = boost::filesystem::file_size(data_path);
+        return MDB_SUCCESS;
+    }
+    return ENOENT;
+}
+
 int Environment::get_max_keysize(void) { return mdb_env_get_maxkeysize(handle_); }
 
 int Environment::get_max_readers(unsigned int* count) {
@@ -131,7 +147,8 @@ int Environment::set_mapsize(size_t size) {
     */
     if (size) {
         size_t actual_map_size{0};
-        err_handler(get_mapsize(&actual_map_size));
+        int rc{get_mapsize(&actual_map_size)};
+        if (rc) return rc;
         if (size < actual_map_size) {
             throw std::runtime_error("Can't set a map_size lower than data file size.");
         }
@@ -264,6 +281,7 @@ std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned fla
     //    break;
     //}
 
+    // Apply custom dup comparators (if any)
     switch (config.dup_comparator)  // use mdb_set_dupsort
     {
         case TableCustomDupComparator::ExcludeSuffix32:

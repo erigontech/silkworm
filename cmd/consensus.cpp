@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <boost/filesystem.hpp>
 #include <exception>
 #include <fstream>
 #include <iostream>

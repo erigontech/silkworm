@@ -11,18 +11,7 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "addressSanitizerEnabled": true,
-      "variables": [
-        {
-          "name": "GMP_LIBRARY",
-          "value": "${env.GMP_LIBRARY}",
-          "type": "FILEPATH"
-        },
-        {
-          "name": "GMP_INCLUDE_DIR",
-          "value": "${env.GMP_INCLUDE_DIR}",
-          "type": "PATH"
-        }
-      ]
+      "variables": []
     }
   ]
 }

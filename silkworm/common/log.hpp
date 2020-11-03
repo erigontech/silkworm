@@ -33,10 +33,9 @@ class Logger {
     int level(LogLevels level) { return verbosity = level; }
     int level() { return verbosity; }
 
-    std::ostream& log(LogLevels level, const char* file, int line) {
+    std::ostream& log(LogLevels level) {
         std::time_t time = std::time(nullptr);
-        return stream << LogTags[level] << std::put_time(std::gmtime(&time), " %Y-%m-%d %H:%M:%S %Z ") << file << ":"
-                      << line << "| ";
+        return stream << LogTags[level] << "[" << std::put_time(std::gmtime(&time), "%m-%d|%H:%M:%S") << "] ";
     }
 
     static Logger& default_logger();
@@ -53,7 +52,7 @@ class Logger {
 #define SILKWORM_LOG_TO(logger_, level_) \
     if ((level_) < (logger_).level()) {  \
     } else                               \
-        (logger_).log((level_), __FILE__, __LINE__)
+        (logger_).log((level_))
 #define SILKWORM_LOG_TO_LEVEL(logger_, level_) ((logger_).level(level_))
 
 #define SILKWORM_LOG(level_) SILKWORM_LOG_TO(Logger::default_logger(), (level_))

@@ -69,9 +69,9 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    lmdb::options opts{};
-    opts.read_only = false;
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_path.c_str(), opts)};
+    lmdb::DatabaseConfig db_config{db_path};
+    db_config.set_readonly(false);
+    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
     bool write_receipts{db::read_storage_mode_receipts(*txn)};

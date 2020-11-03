@@ -24,11 +24,13 @@
 
 #include <lmdb/lmdb.h>
 
+#include <boost/filesystem.hpp>
 #include <exception>
 #include <map>
 #include <mutex>
 #include <optional>
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/db/util.hpp>
 #include <string>
 #include <thread>
@@ -41,25 +43,32 @@ namespace silkworm::lmdb {
 /**
  * Options to pass to env when opening file
  */
-struct options {
-    uint64_t map_size = 1ull << 40;  // 1 TiB by default
-    bool no_tls = true;              // MDB_NOTLS
-    bool no_rdahead = true;          // MDB_NORDAHEAD
-    bool no_sync = true;             // MDB_NOSYNC
-    bool no_meta_sync = false;       // MDB_NOMETASYNC
-    bool write_map = false;          // MDB_WRITEMAP
-    bool no_sub_dir = false;         // MDB_NOSUBDIR
-    bool read_only = true;           // MDB_RDONLY
-    unsigned max_tables = 128;       // Max open tables/dbi
-    mdb_mode_t mode = 0644;          // Filesystem mode (works only for Linux)
+struct DatabaseConfig {
+    std::string path{};                                                   // Default path
+    size_t map_size = 1ull << 40;                                         // 1 TiB by default
+    uint32_t flags{MDB_NOTLS | MDB_NORDAHEAD | MDB_NOSYNC | MDB_RDONLY};  // Default flags
+    uint32_t max_tables{128};                                             // Default max number of named tables
+    mdb_mode_t mode{0644};                                                // Filesystem mode (works only for Linux)
+    void set_readonly(bool value);                                        // Sets/unsets readonly flag
 };
 
 static const MDB_dbi FREE_DBI = 0;  // Reserved for tracking free pages
 static const MDB_dbi MAIN_DBI = 1;  // Reserved for tracking named tables
 
+enum class TableCustomDupComparator {
+    None,
+    ExcludeSuffix32
+};
+
+enum class TableCustomKeyComparator {
+    None,
+};
+
 struct TableConfig {
     const char* name{nullptr};
     const unsigned int flags{0};
+    TableCustomKeyComparator key_comparator{TableCustomKeyComparator::None};
+    TableCustomDupComparator dup_comparator{TableCustomDupComparator::None};
 };
 
 /**
@@ -95,52 +104,49 @@ class Table;
  */
 class Environment {
    private:
-    MDB_env* handle_{nullptr};  // Handle to MDB_env
-    bool opened_{false};        // Whether or not the handle has an underlying opened db
+     MDB_env* handle_{nullptr};  // Handle to MDB_env
+     std::string path_{""};      // Path to data
 
-    friend class Transaction;
+     friend class Transaction;
 
-    std::mutex count_mtx_;                      // Lock to prevent concurrent access to transactions counters maps
-    std::map<std::thread::id, int> ro_txns_{};  // A per thread maintained count of opened ro transactions
-    std::map<std::thread::id, int> rw_txns_{};  // A per thread maintained count of opened rw transactions
+     std::mutex count_mtx_;                      // Lock to prevent concurrent access to transactions counters maps
+     std::map<std::thread::id, int> ro_txns_{};  // A per thread maintained count of opened ro transactions
+     std::map<std::thread::id, int> rw_txns_{};  // A per thread maintained count of opened rw transactions
 
-    /*
-     * A transaction and its cursors must only be used by a single thread,
-     * and a thread may only have one transaction at a time.
-     * Only exception is when parent environment is opened with MDB_NOTLS flag
-     * which causes the allowance of unlimited ro transactions.
-     * So when a thread begins a new transaction (see begin_transaction)
-     * env is checked for corresponding slot and eventually allows or
-     * prohibits the transaction opening
-     */
+     /*
+      * A transaction and its cursors must only be used by a single thread,
+      * and a thread may only have one transaction at a time.
+      * Only exception is when parent environment is opened with MDB_NOTLS flag
+      * which causes the allowance of unlimited ro transactions.
+      * So when a thread begins a new transaction (see begin_transaction)
+      * env is checked for corresponding slot and eventually allows or
+      * prohibits the transaction opening
+      */
 
-    int get_ro_txns(void);          // Returns number of opened ro transactions for calling thread
-    int get_rw_txns(void);          // Returns number of opened rw transactions for calling thread
-    void touch_ro_txns(int count);  // Ro transaction count incrementer/decrementer
-    void touch_rw_txns(int count);  // Ro transaction count incrementer/decrementer
-
-    bool assert_handle(bool should_throw = true);  // Ensures handle_ is validly created
-    bool assert_opened(bool should_throw = true);  // Ensures database is validly opened
+     int get_ro_txns(void) noexcept;          // Returns number of opened ro transactions for calling thread
+     int get_rw_txns(void) noexcept;          // Returns number of opened rw transactions for calling thread
+     void touch_ro_txns(int count) noexcept;  // Ro transaction count incrementer/decrementer
+     void touch_rw_txns(int count) noexcept;  // Ro transaction count incrementer/decrementer
 
    public:
-    explicit Environment(const unsigned flags = 0);
+    explicit Environment(const DatabaseConfig& config);
     ~Environment() noexcept;
 
     MDB_env** handle(void) { return &handle_; }
-    bool is_opened(void) { return opened_; }
+    bool is_opened(void) { return handle_ != nullptr; }
     bool is_ro(void);
 
-    void open(const char* path, const unsigned int flags, const mdb_mode_t mode);
     void close() noexcept;
 
     int get_info(MDB_envinfo* info);
     int get_flags(unsigned int* flags);
     int get_mapsize(size_t* size);
+    int get_filesize(size_t* size);
     int get_max_keysize(void);
     int get_max_readers(unsigned int* count);
 
     int set_flags(const unsigned int flags, const bool onoff = true);
-    int set_mapsize(const size_t size);
+    int set_mapsize(size_t size);
     int set_max_dbs(const unsigned int count);
     int set_max_readers(const unsigned int count);
     int sync(const bool force = true);
@@ -162,8 +168,6 @@ class Transaction {
     Environment* parent_env_;  // Pointer to env this transaction belongs to
     MDB_txn* handle_;          // This transaction lmdb handle
     unsigned int flags_;       // Flags this transaction has been opened with
-
-    bool assert_handle(bool should_throw = true);  // Ensures handle_ is validly created
 
     /*
      * A dbi is an unsigned int handle to a table in database.
@@ -279,12 +283,12 @@ class Table {
     int get_first(MDB_val* key, MDB_val* data);      // Move cursor at first item in table
     int get_first_dup(MDB_val* key, MDB_val* data);  // Move cursor at first item of current key (only MDB_DUPSORT)
     int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in table
-    int get_prev_dup(MDB_val* key,
-                     MDB_val* data);            // Move cursor at previous data item in current key (only MDB_DUPSORT)
-    int get_next(MDB_val* key, MDB_val* data);  // Move cursor at next item in table
-    int get_next_dup(MDB_val* key, MDB_val* data);  // Move cursor at next data item in current key (only MDB_DUPSORT)
-    int get_last(MDB_val* key, MDB_val* data);      // Move cursor at last item in table
-    int get_dcount(size_t* count);                  // Returns the count of duplicates at current position
+    int get_prev_dup(MDB_val* key,MDB_val* data);    // Move cursor at previous data item in current key (only MDB_DUPSORT)
+    int get_next(MDB_val* key, MDB_val* data);   // Move cursor at next item in table
+    int get_next_dup(MDB_val* key,MDB_val* data);    // Move cursor at next data item in current key (only MDB_DUPSORT)
+    int get_next_nodup(MDB_val* key,MDB_val* data);    // Move cursor at next data item in next key (only MDB_DUPSORT)
+    int get_last(MDB_val* key, MDB_val* data);   // Move cursor at last item in table
+    int get_dcount(size_t* count);               // Returns the count of duplicates at current position
 
     /** @brief Stores key/data pairs into the database using cursor.
      *
@@ -292,6 +296,7 @@ class Table {
      * For more fine grained options see #put_current(), #put_nodup, #put_noovrw,
      * #put_reserve(), #put_append(), #put_append_dup() and #put_multiple()
      */
+    int put(MDB_val* key, MDB_val* data, unsigned int flag);
     void put(ByteView key, ByteView data);
 
     /** @brief Replace the k/d pair at current cursor position
@@ -366,8 +371,6 @@ class Table {
 
     int get(MDB_val* key, MDB_val* data,
             MDB_cursor_op operation);  // Gets data by cursor on behalf of operation
-    int put(MDB_val* key, MDB_val* data,
-            unsigned int flag);  // Puts data by cursor on behalf of operation
 
     Transaction* parent_txn_;  // The transaction this table belongs to
     MDB_dbi dbi_;              // The underlying MDB_dbi handle for this instance
@@ -376,7 +379,10 @@ class Table {
     MDB_cursor* handle_;       // The underlying MDB_cursor for this instance
 };
 
-std::shared_ptr<Environment> get_env(const char* path, options opts = {});
+std::shared_ptr<Environment> get_env(DatabaseConfig config);
+
+// Custom compartor(s)
+int dup_cmp_exclude_suffix32(const MDB_val* a, const MDB_val* b);
 
 }  // namespace silkworm::lmdb
 

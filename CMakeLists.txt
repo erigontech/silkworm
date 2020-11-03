@@ -25,8 +25,9 @@ set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchain.cmake CACHE FILEPAT
 include(evmone/cmake/cable/bootstrap.cmake)
 include(CableBuildType)
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
-
 include(evmone/cmake/cable/HunterGate.cmake)
+
+
 set(HUNTER_USE_CACHE_SERVERS NO)
 HunterGate(
   URL "https://github.com/cpp-pm/hunter/archive/v0.23.267.tar.gz"
@@ -39,16 +40,26 @@ project(silkworm)
 include(cmake/Hunter/packages.cmake)
 
 # secp256k1
-add_compile_definitions(USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
 if(MSVC)
+  find_path(GMP_INCLUDE_DIR NAMES gmp.h)
+  if(GMP_INCLUDE_DIR)
+    message(STATUS "secp256k1 using GMP")
+    add_compile_definitions(USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
+  else()
+    add_compile_definitions(USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
+  endif()
   add_compile_definitions(USE_FIELD_10X26 USE_SCALAR_8X32)
-else()
-  add_compile_definitions(USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
+ else()
+  add_compile_definitions(USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
+  add_compile_definitions(USE_NUM_NONE USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
 endif()
 add_compile_definitions(ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
 add_compile_definitions(ENABLE_MODULE_RECOVERY)
 add_library(secp256k1 secp256k1/src/secp256k1.c)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
+if(GMP_INCLUDE_DIR)
+target_include_directories(secp256k1 PRIVATE ${GMP_INCLUDE_DIR})
+endif()
 
 # libff
 set(CURVE "ALT_BN128" CACHE STRING "" FORCE)

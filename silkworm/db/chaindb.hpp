@@ -42,6 +42,9 @@ static_assert(sizeof(size_t) == 8, "32 bit environment limits LMDB size");
 
 namespace silkworm::lmdb {
 
+/**
+ * Options to pass to env when opening file
+ */
 struct DatabaseConfig {
     std::string path{};                                                   // Default path
     size_t map_size = 1ull << 40;                                         // 1 TiB by default
@@ -49,22 +52,6 @@ struct DatabaseConfig {
     uint32_t max_tables{128};                                             // Default max number of named tables
     mdb_mode_t mode{0644};                                                // Filesystem mode (works only for Linux)
     void set_readonly(bool value);                                        // Sets/unsets readonly flag
-};
-
-/**
- * Options to pass to env when opening file
- */
-struct options {
-    size_t map_size = 1ull << 40;  // 1 TiB by default
-    bool no_tls = true;            // MDB_NOTLS
-    bool no_rdahead = true;        // MDB_NORDAHEAD
-    bool no_sync = true;           // MDB_NOSYNC
-    bool no_meta_sync = false;     // MDB_NOMETASYNC
-    bool write_map = false;        // MDB_WRITEMAP
-    bool no_sub_dir = false;       // MDB_NOSUBDIR
-    bool read_only = true;         // MDB_RDONLY
-    unsigned max_tables = 128;     // Max open tables/dbi
-    mdb_mode_t mode{0644};         // Filesystem mode (works only for Linux)
 };
 
 static const MDB_dbi FREE_DBI = 0;  // Reserved for tracking free pages

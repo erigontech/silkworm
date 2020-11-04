@@ -122,7 +122,7 @@ struct dbFreeInfo {
 struct db_options_t {
     std::string datadir{silkworm::db::default_path()};  // Where data file is located
     std::string mapsize_str{};                          // Provided map_size literal
-    uint64_t mapsize{0};                                // Computed map size
+    size_t mapsize{0};                                  // Computed map size
 };
 
 struct freelist_options_t {

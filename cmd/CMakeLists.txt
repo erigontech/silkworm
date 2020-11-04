@@ -15,7 +15,7 @@
 ]]
 
 find_package(absl CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+#find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
 
 if(MSVC)
   add_link_options(/STACK:10000000)
@@ -24,15 +24,15 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 add_executable(check_changes check_changes.cpp)
-target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time Boost::filesystem)
+target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time)
 
 find_package(CLI11 CONFIG REQUIRED)
 
 add_executable(check_senders check_senders.cpp)
-target_link_libraries(check_senders PRIVATE silkworm Boost::filesystem CLI11::CLI11)
+target_link_libraries(check_senders PRIVATE silkworm CLI11::CLI11)
 
 add_executable(dbtool dbtool.cpp)
-target_link_libraries(dbtool PRIVATE silkworm Boost::filesystem CLI11::CLI11)
+target_link_libraries(dbtool PRIVATE silkworm CLI11::CLI11)
 
 add_executable(execute execute.cpp)
 target_link_libraries(execute PRIVATE silkworm CLI11::CLI11)
@@ -41,7 +41,7 @@ target_link_libraries(execute PRIVATE silkworm CLI11::CLI11)
 find_package(nlohmann_json CONFIG REQUIRED)
 add_compile_definitions(SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
 add_executable(consensus consensus.cpp)
-target_link_libraries(consensus PRIVATE silkworm nlohmann_json::nlohmann_json Boost::filesystem)
+target_link_libraries(consensus PRIVATE silkworm nlohmann_json::nlohmann_json)
 
 # Unit tests
 enable_testing()

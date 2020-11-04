@@ -20,7 +20,6 @@
 #include <absl/flags/usage.h>
 #include <absl/time/time.h>
 
-#include <boost/filesystem.hpp>
 #include <iostream>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/execution/execution.hpp>
@@ -57,9 +56,8 @@ int main(int argc, char* argv[]) {
 
     using namespace silkworm;
 
-    lmdb::options db_opts{};
-    db_opts.read_only = true;
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str(), db_opts)};
+    lmdb::DatabaseConfig db_config{absl::GetFlag(FLAGS_datadir)};
+    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
 
     const uint64_t from{absl::GetFlag(FLAGS_from)};
     const uint64_t to{absl::GetFlag(FLAGS_to)};

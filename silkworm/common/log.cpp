@@ -14,23 +14,22 @@
    limitations under the License.
 */
 
-#include "tables.hpp"
+#include <silkworm/common/log.hpp>
 
-namespace silkworm::db::table {
+namespace silkworm {
 
-void create_all(lmdb::Transaction& txn) {
-    for (const auto& config : kTables) {
-        txn.open(config, MDB_CREATE);
+    std::ostream& Logger::null_stream() {
+        static struct NullBuffer : public std::streambuf {
+            int overflow(int c) override { return c; }
+        } null_buffer;
+        static struct NullStream : public std::ostream {
+            NullStream() : std::ostream(&null_buffer) {}
+        } null_stream;
+        return null_stream;
+    }
+
+    Logger& Logger::default_logger() {
+        static Logger logger;
+        return logger;
     }
 }
-
-std::optional<lmdb::TableConfig> get_config(std::string name) {
-    for (auto config : kTables) {
-        if (strcmp(config.name, name.c_str()) == 0) {
-            return {config};
-        }
-    }
-    return std::nullopt;
-}
-
-}  // namespace silkworm::db::table

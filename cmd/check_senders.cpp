@@ -474,10 +474,10 @@ int do_recover(app_options_t& options) {
 
     try {
         // Open db and start transaction
-        lmdb::options opts{};
-        opts.read_only = false;
-        opts.map_size = options.mapsize;
-        lmdb_env = lmdb::get_env(options.datadir.c_str(), opts);
+        lmdb::DatabaseConfig db_config{options.datadir};
+        db_config.set_readonly(false);
+        db_config.map_size = options.mapsize;
+        lmdb_env = lmdb::get_env(db_config);
         lmdb_txn = lmdb_env->begin_rw_transaction();
         lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);  // Throws on error
         lmdb_headers = lmdb_txn->open(db::table::kBlockHeaders);         // Throws on error
@@ -777,9 +777,9 @@ int do_verify(app_options_t& options) {
 
     try {
         // Open db and start transaction
-        lmdb::options lmdb_opts{};
-        lmdb_opts.map_size = options.mapsize;
-        std::shared_ptr<lmdb::Environment> lmdb_env{lmdb::get_env(options.datadir.c_str(), lmdb_opts)};
+        lmdb::DatabaseConfig db_config{options.datadir};
+        db_config.map_size = options.mapsize;
+        std::shared_ptr<lmdb::Environment> lmdb_env{lmdb::get_env(db_config)};
         std::unique_ptr<lmdb::Transaction> lmdb_txn{lmdb_env->begin_ro_transaction()};
         std::unique_ptr<lmdb::Table> lmdb_headers{lmdb_txn->open(db::table::kBlockHeaders)};
         std::unique_ptr<lmdb::Table> lmdb_bodies{lmdb_txn->open(db::table::kBlockBodies)};

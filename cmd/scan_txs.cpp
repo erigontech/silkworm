@@ -30,19 +30,25 @@ ABSL_FLAG(uint64_t, from, 1, "start from block number (inclusive)");
 ABSL_FLAG(uint64_t, to, UINT64_MAX, "check up to block number (exclusive)");
 
 int main(int argc, char* argv[]) {
-    absl::SetProgramUsageMessage("Executes Ethereum blocks and compares resulting change sets against DB.");
+    absl::SetProgramUsageMessage("Executes Ethereum blocks and scans txs for errored txs.");
     absl::ParseCommandLine(argc, argv);
 
     namespace fs = boost::filesystem;
+    using namespace silkworm;
 
     fs::path db_path(absl::GetFlag(FLAGS_datadir));
     if (!fs::exists(db_path) || !fs::is_directory(db_path) || db_path.empty()) {
-        std::cerr << absl::GetFlag(FLAGS_datadir) << " does not exist.\n";
-        std::cerr << "Use --db flag to point to a Turbo-Geth populated chaindata.\n";
+        std::cerr << db_path << " does not exist.\n";
+        std::cerr << "Use --datadir flag to point to a Turbo-Geth chaindata folder.\n";
         return -1;
     }
 
-    using namespace silkworm;
+    const uint64_t from{absl::GetFlag(FLAGS_from)};
+    const uint64_t to{absl::GetFlag(FLAGS_to)};
+    if (from > to) {
+        std::cerr << "--from (" << from << ") must be less than or equal to --to (" << to << ").\n";
+        return -1;
+    }
 
     lmdb::options db_opts{};
     db_opts.read_only = true;
@@ -50,9 +56,6 @@ int main(int argc, char* argv[]) {
 
     // counters
     uint64_t nTxs{0}, nErrors{0};
-
-    const uint64_t from{absl::GetFlag(FLAGS_from)};
-    const uint64_t to{absl::GetFlag(FLAGS_to)};
 
     uint64_t block_num{from};
     for (; block_num < to; ++block_num) {

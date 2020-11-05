@@ -56,11 +56,14 @@ enum SilkwormStatusCode {
  * This function does not commit nor abort the transaction.
  * @param[in] chain_id EIP-155 chain ID. kSilkwormUnknownChainId is returned in case of an unknown or unsupported chain.
  * @param[in] start_block The block height to start the execution from.
+ * @param[in] max_block Do not execute after this block.
+ * max_block may be executed, or the execution may stop earlier if the batch is full.
  * @param[in] batch_size The size of DB changes to accumulate before returning from this method.
  * Pass 0 if you want to execute just 1 block.
  * @param[in] write_receipts Whether to write CBOR-encoded receipts into the DB.
  *
  * @param[out] last_executed_block The height of the last successfully executed block.
+ * Not written to if no blocks were executed, otherwise *last_executed_block ≤ max_block.
  * @param[out] lmdb_error_code If an LMDB error occurs (this function returns kSilkwormLmdbError)
  * and lmdb_error_code isn't NULL, it's populated with the relevant LMDB error code.
  *
@@ -69,7 +72,7 @@ enum SilkwormStatusCode {
  * (blocks up to and incl. last_executed_block were still executed).
  */
 SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* txn, uint64_t chain_id, uint64_t start_block,
-                                                           size_t batch_size, bool write_receipts,
+                                                           uint64_t max_block, uint64_t batch_size, bool write_receipts,
                                                            uint64_t* last_executed_block,
                                                            int* lmdb_error_code) SILKWORM_NOEXCEPT;
 

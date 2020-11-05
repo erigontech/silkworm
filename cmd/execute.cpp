@@ -16,111 +16,154 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
+#include <gsl/gsl_util>
+#include <iostream>
 #include <limits>
-#include <memory>
-#include <optional>
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/execution/execution.hpp>
+#include <stdexcept>
 
-using namespace silkworm;
+#include "tg_api/silkworm_tg_api.h"
 
+static constexpr const char* kMigrationsTable{"migrations"};
+static constexpr const char* kDatabaseInfoTable{"DBINFO"};
+static constexpr const char* kSyncStageProgressTable{"SSP2"};
 static constexpr const char* kExecutionStage{"Execution"};
+static constexpr const char* kStorageModeReceipts{"smReceipts"};
 
-static uint64_t already_executed_block(lmdb::Transaction& txn) {
-    std::unique_ptr<lmdb::Table> progress_table{txn.open(db::table::kSyncStageProgress)};
-    ByteView stage_key{byte_view_of_c_str(kExecutionStage)};
-    std::optional<ByteView> already_executed{progress_table->get(stage_key)};
-    if (already_executed) {
-        return boost::endian::load_big_u64(already_executed->data());
-    } else {
-        return 0;
+static inline void check_lmdb_err(int err) {
+    if (err != MDB_SUCCESS) {
+        throw std::runtime_error(mdb_strerror(err));
     }
 }
 
-static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
-    std::unique_ptr<lmdb::Table> progress_table{txn.open(db::table::kSyncStageProgress)};
-    ByteView stage_key{byte_view_of_c_str(kExecutionStage)};
-    Bytes val(8, '\0');
-    boost::endian::store_big_u64(&val[0], block_number);
-    progress_table->put(stage_key, val);
+static uint64_t already_executed_block(MDB_txn* txn) {
+    MDB_dbi dbi;
+    check_lmdb_err(mdb_dbi_open(txn, kSyncStageProgressTable, /*flags=*/0, &dbi));
+    MDB_val key;
+    key.mv_size = std::strlen(kExecutionStage);
+    key.mv_data = const_cast<char*>(kExecutionStage);
+    MDB_val data;
+    int status{mdb_get(txn, dbi, &key, &data)};
+    if (status == MDB_NOTFOUND) {
+        return 0;
+    }
+    check_lmdb_err(status);
+    return boost::endian::load_big_u64(static_cast<uint8_t*>(data.mv_data));
 }
 
-static bool migration_happened(lmdb::Transaction& txn, const char* name) {
-    std::unique_ptr<lmdb::Table> migration_table{txn.open(db::table::kMigrations)};
-    return migration_table->get(byte_view_of_c_str(name)).has_value();
+static void save_progress(MDB_txn* txn, uint64_t block_number) {
+    MDB_dbi dbi;
+    check_lmdb_err(mdb_dbi_open(txn, kSyncStageProgressTable, /*flags=*/0, &dbi));
+    MDB_val key;
+    key.mv_size = std::strlen(kExecutionStage);
+    key.mv_data = const_cast<char*>(kExecutionStage);
+    MDB_val data;
+    uint8_t val[8];
+    boost::endian::store_big_u64(&val[0], block_number);
+    data.mv_size = 8;
+    data.mv_data = &val[0];
+    check_lmdb_err(mdb_put(txn, dbi, &key, &data, /*flags=*/0));
+}
+
+static bool migration_happened(MDB_txn* txn, const char* name) {
+    MDB_dbi dbi;
+    check_lmdb_err(mdb_dbi_open(txn, kMigrationsTable, /*flags=*/0, &dbi));
+    MDB_val key;
+    key.mv_size = std::strlen(name);
+    key.mv_data = const_cast<char*>(name);
+    MDB_val data;
+    int status{mdb_get(txn, dbi, &key, &data)};
+    if (status == MDB_NOTFOUND) {
+        return false;
+    }
+    check_lmdb_err(status);
+    return true;
+}
+
+static bool storage_mode_has_write_receipts(MDB_txn* txn) {
+    MDB_dbi dbi;
+    check_lmdb_err(mdb_dbi_open(txn, kDatabaseInfoTable, /*flags=*/0, &dbi));
+    MDB_val key;
+    key.mv_size = std::strlen(kStorageModeReceipts);
+    key.mv_data = const_cast<char*>(kStorageModeReceipts);
+    MDB_val data;
+    int status{mdb_get(txn, dbi, &key, &data)};
+    if (status == MDB_NOTFOUND) {
+        return false;
+    }
+    check_lmdb_err(status);
+    if (data.mv_size != 1) {
+        return false;
+    }
+    const auto ptr{static_cast<uint8_t*>(data.mv_data)};
+    return *ptr == 1;
 }
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
-    std::string db_path{db::default_path()};
+    std::string db_path{};
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth");
 
     uint64_t to_block{std::numeric_limits<uint64_t>::max()};
     app.add_option("--to", to_block, "Block execute up to");
 
-    size_t batch_mib{512};
+    uint64_t batch_mib{512};
     app.add_option("--batch_mib", batch_mib, "Batch size in mebibytes of DB changes to accumulate before committing");
 
     CLI11_PARSE(app, argc, argv);
 
-    SILKWORM_LOG(LogInfo) << "Starting block execution. DB: " << db_path << std::endl;
+    uint64_t batch_size{batch_mib * 1024 * 1024};
 
-    lmdb::DatabaseConfig db_config{db_path};
-    db_config.set_readonly(false);
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+    std::clog << "Starting block execution. DB: " << db_path << std::endl;
 
-    bool write_receipts{db::read_storage_mode_receipts(*txn)};
-    if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
-                           !migration_happened(*txn, "receipts_store_logs_separately"))) {
-        SILKWORM_LOG(LogError) << "Legacy stored receipts are not supported\n";
+    MDB_env* env{nullptr};
+    check_lmdb_err(mdb_env_create(&env));
+    auto cleanup{gsl::finally([env] { mdb_env_close(env); })};
+
+    check_lmdb_err(mdb_env_set_mapsize(env, 1ull << 40));
+    check_lmdb_err(mdb_env_set_maxdbs(env, 128));
+    check_lmdb_err(mdb_env_open(env, db_path.c_str(), MDB_NOTLS | MDB_NORDAHEAD | MDB_NOSYNC, 0644));
+
+    MDB_txn* txn{nullptr};
+    check_lmdb_err(mdb_txn_begin(env, /*parent=*/nullptr, /*flags=*/0, &txn));
+
+    bool write_receipts{storage_mode_has_write_receipts(txn)};
+    if (write_receipts && (!migration_happened(txn, "receipts_cbor_encode") ||
+                           !migration_happened(txn, "receipts_store_logs_separately"))) {
+        std::clog << "Legacy stored receipts are not supported\n";
         return -1;
     }
 
-    auto buffer{std::make_unique<db::Buffer>(txn.get())};
-
-    uint64_t previous_progress{already_executed_block(*txn)};
-    uint64_t current_progress{0};
+    uint64_t previous_progress{already_executed_block(txn)};
+    uint64_t current_progress{previous_progress};
 
     for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-        std::optional<BlockWithHash> bh{db::read_block(*txn, block_number, /*read_senders=*/true)};
-        if (!bh) {
+        int lmdb_error_code{MDB_SUCCESS};
+        SilkwormStatusCode status{silkworm_execute_blocks(txn, /*chain_id=*/1, block_number, to_block, batch_size,
+                                                          write_receipts, &current_progress, &lmdb_error_code)};
+        if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
+            std::clog << "Error in silkworm_execute_blocks: " << status << ", LMDB: " << lmdb_error_code << std::endl;
+            return status;
+        }
+
+        block_number = current_progress;
+
+        save_progress(txn, current_progress);
+        check_lmdb_err(mdb_txn_commit(txn));
+
+        if (status == kSilkwormBlockNotFound) {
             break;
         }
 
-        std::vector<Receipt> receipts{execute_block(bh->block, *buffer)};
+        std::clog << "Blocks <= " << current_progress << " committed" << std::endl;
 
-        if (write_receipts) {
-            buffer->insert_receipts(block_number, receipts);
-        }
-
-        current_progress = block_number;
-        if (current_progress % 1000 == 0) {
-            SILKWORM_LOG(LogInfo) << "Blocks <= " << current_progress << " executed" << std::endl;
-        }
-
-        if (buffer->current_batch_size() >= batch_mib * kMiB) {
-            buffer->write_to_db();
-            save_progress(*txn, current_progress);
-            lmdb::err_handler(txn->commit());
-
-            SILKWORM_LOG(LogInfo) << "Blocks <= " << current_progress << " committed" << std::endl;
-
-            txn = env->begin_rw_transaction();
-            buffer = std::make_unique<db::Buffer>(txn.get());
-        }
+        check_lmdb_err(mdb_txn_begin(env, /*parent=*/nullptr, /*flags=*/0, &txn));
     }
 
-    if (current_progress) {
-        buffer->write_to_db();
-        save_progress(*txn, current_progress);
-        lmdb::err_handler(txn->commit());
-        SILKWORM_LOG(LogInfo) << "All blocks <= " << current_progress << " executed and committed" << std::endl;
+    if (current_progress > previous_progress) {
+        std::clog << "All blocks <= " << current_progress << " executed and committed" << std::endl;
     } else {
-        SILKWORM_LOG(LogWarn) << "Nothing to execute" << std::endl;
+        std::clog << "Nothing to execute" << std::endl;
     }
 
     return 0;

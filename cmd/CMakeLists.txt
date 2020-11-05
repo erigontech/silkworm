@@ -38,7 +38,8 @@ add_executable(dbtool dbtool.cpp)
 target_link_libraries(dbtool PRIVATE silkworm CLI11::CLI11)
 
 add_executable(execute execute.cpp)
-target_link_libraries(execute PRIVATE silkworm CLI11::CLI11)
+target_link_libraries(execute PRIVATE silkworm_tg_api CLI11::CLI11)
+target_include_directories(execute PRIVATE ${CMAKE_SOURCE_DIR})
 
 # Ethereum Consensus Tests
 find_package(nlohmann_json CONFIG REQUIRED)

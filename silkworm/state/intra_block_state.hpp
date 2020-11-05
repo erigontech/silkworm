@@ -23,7 +23,7 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <memory>
-#include <silkworm/db/buffer.hpp>
+#include <silkworm/db/state_buffer.hpp>
 #include <silkworm/state/delta.hpp>
 #include <silkworm/state/object.hpp>
 #include <silkworm/types/log.hpp>
@@ -51,9 +51,9 @@ class IntraBlockState {
     IntraBlockState(const IntraBlockState&) = delete;
     IntraBlockState& operator=(const IntraBlockState&) = delete;
 
-    explicit IntraBlockState(db::Buffer& db) noexcept : db_{db} {}
+    explicit IntraBlockState(db::StateBuffer& db) noexcept : db_{db} {}
 
-    db::Buffer& db() { return db_; }
+    db::StateBuffer& db() { return db_; }
 
     bool exists(const evmc::address& address) const noexcept;
 
@@ -121,7 +121,7 @@ class IntraBlockState {
 
     void touch(const evmc::address& address) noexcept;
 
-    db::Buffer& db_;
+    db::StateBuffer& db_;
 
     mutable absl::flat_hash_map<evmc::address, state::Object> objects_;
     mutable absl::flat_hash_map<evmc::address, state::Storage> storage_;

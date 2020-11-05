@@ -25,6 +25,7 @@
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/change.hpp>
+#include <silkworm/db/state_buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
@@ -32,7 +33,7 @@
 
 namespace silkworm::db {
 
-class Buffer {
+class Buffer : public StateBuffer {
    public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
@@ -42,22 +43,22 @@ class Buffer {
 
     /** @name Readers */
     ///@{
-    std::optional<Account> read_account(const evmc::address& address) const noexcept;
+    std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
-    Bytes read_code(const evmc::bytes32& code_hash) const noexcept;
+    Bytes read_code(const evmc::bytes32& code_hash) const noexcept override;
 
     evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
-                               const evmc::bytes32& key) const noexcept;
+                               const evmc::bytes32& key) const noexcept override;
 
     /** Previous non-zero incarnation of an account; 0 if none exists. */
-    uint64_t previous_incarnation(const evmc::address& address) const noexcept;
+    uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
-    std::optional<BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept;
+    std::optional<BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
     ///@}
 
-    void insert_header(BlockHeader block_header);
+    void insert_header(const BlockHeader& block_header) override;
 
-    void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts);
+    void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
 
     /** @name State changes
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
@@ -66,20 +67,20 @@ class Buffer {
     /** Mark the beggining of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
      */
-    void begin_block(uint64_t block_number);
+    void begin_block(uint64_t block_number) override;
 
-    void update_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current);
+    void update_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current) override;
 
     void update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
-                             ByteView code);
+                             ByteView code) override;
 
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
-                        const evmc::bytes32& initial, const evmc::bytes32& current);
+                        const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
     /** Mark the end of a block.
      * Must be called after all invocations of update_account/update_account_code/update_storage.
      */
-    void end_block();
+    void end_block() override;
 
     /** Account (backward) changes for the current block.*/
     const AccountChanges& account_changes() const { return current_account_changes_; }

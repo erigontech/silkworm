@@ -17,6 +17,7 @@
 #include "evm.hpp"
 
 #include <catch2/catch.hpp>
+#include <silkworm/db/buffer.hpp>
 
 #include "address.hpp"
 #include "protocol_param.hpp"

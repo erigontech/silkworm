@@ -51,9 +51,8 @@ int main(int argc, char* argv[]) {
     }
 
     int retvar{0};
-    lmdb::options db_opts{};
-    db_opts.read_only = true;
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str(), db_opts)};
+    lmdb::DatabaseConfig db_config{absl::GetFlag(FLAGS_datadir)};
+    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
     // Note: If TurboGeth is actively syncing its database (syncing), it is important not to create
     // long-running datbase reads transactions even though that may make your processing faster.
     // Uncomment the following line (and comment the line below) only if you're certain TG is not

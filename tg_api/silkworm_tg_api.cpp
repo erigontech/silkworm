@@ -19,6 +19,7 @@
 #include <cassert>
 #include <gsl/gsl_util>
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/execution/execution.hpp>
 
@@ -55,6 +56,10 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
 
             if (last_executed_block) {
                 *last_executed_block = block_num;
+            }
+
+            if (block_num % 1000 == 0) {
+                SILKWORM_LOG(LogInfo) << "Blocks <= " << block_num << " executed" << std::endl;
             }
 
             if (buffer.current_batch_size() >= batch_size) {

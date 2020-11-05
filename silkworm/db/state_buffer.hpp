@@ -42,7 +42,7 @@ class StateBuffer {
     virtual std::optional<BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept = 0;
     ///@}
 
-    virtual void insert_header(BlockHeader& block_header) = 0;
+    virtual void insert_header(const BlockHeader& block_header) = 0;
 
     virtual void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) = 0;
 

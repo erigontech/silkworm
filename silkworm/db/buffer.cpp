@@ -228,12 +228,12 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     }
 }
 
-void Buffer::insert_header(BlockHeader& block_header) {
+void Buffer::insert_header(const BlockHeader& block_header) {
     Bytes rlp{};
     rlp::encode(rlp, block_header);
     ethash::hash256 hash{keccak256(rlp)};
     Bytes key{block_key(block_header.number, hash.bytes)};
-    headers_[key] = std::move(block_header);
+    headers_[key] = block_header;
 }
 
 std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {

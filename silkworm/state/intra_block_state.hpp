@@ -53,7 +53,7 @@ class IntraBlockState {
 
     explicit IntraBlockState(db::StateBuffer& db) noexcept : db_{db} {}
 
-    db::StateBuffer& db() const { return db_; }
+    db::StateBuffer& db() { return db_; }
 
     bool exists(const evmc::address& address) const noexcept;
 

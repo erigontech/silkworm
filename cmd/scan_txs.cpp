@@ -54,6 +54,11 @@ int main(int argc, char* argv[]) {
     lmdb::options db_opts{};
     db_opts.read_only = true;
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str(), db_opts)};
+    // Note: If TurboGeth is actively syncing its database (syncing), it is important not to create
+    // long-running datbase reads transactions even though that may make your processing faster.
+    // Uncomment the following line (and comment the line below) only if you're certain TG is not
+    // running on the same machine.
+    // std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
     try {
         // counters
@@ -61,6 +66,9 @@ int main(int argc, char* argv[]) {
 
         uint64_t block_num{from};
         for (; block_num < to; ++block_num) {
+            // Note: See the comment above. You may uncomment that line and comment the next line if you're certain
+            // that TG is not syncing on the same machine. If you use a long-running transaction by doing this, and
+            // you're mistaken (TG is syncing), the database file may 'grow quickly' as per the LMDB docs.
             std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
             // Read the block
@@ -93,6 +101,9 @@ int main(int argc, char* argv[]) {
                 std::cerr << block_num << "\r";
                 std::cerr.flush();
             }
+
+            // Note: If per-block database transaction (txn) is being used, it will go out of scope here
+            // and will be reset. No need to explicitly clean up here.
         }
 
     } catch (lmdb::exception& ex) {
@@ -107,6 +118,9 @@ int main(int argc, char* argv[]) {
         retvar = -1;
     }
 
+    // Note: See notes above. Even though this will go out of scope and automatically clean up, you may
+    // uncomment this if you're using the long-lived database transaction noted above.
+    // txn.reset();
     env.reset();
 
     return retvar;

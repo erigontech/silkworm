@@ -19,13 +19,14 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/execution/analysis_cache.hpp>
 #include <silkworm/types/receipt.hpp>
 #include <stdexcept>
 
 namespace silkworm {
 
 class ValidationError : public std::runtime_error {
-   public:
+  public:
     using std::runtime_error::runtime_error;
 };
 
@@ -34,7 +35,8 @@ class ValidationError : public std::runtime_error {
  * Transaction senders must be already populated.
  * The DB table kCurrentState should match the Ethereum state at the begining of the block.
  */
-std::vector<Receipt> execute_block(const Block& block, db::Buffer& buffer, const ChainConfig& config = kMainnetConfig);
+std::vector<Receipt> execute_block(const Block& block, db::Buffer& buffer, const ChainConfig& config = kMainnetConfig,
+                                   AnalysisCache* analysis_cache = nullptr);
 
 }  // namespace silkworm
 

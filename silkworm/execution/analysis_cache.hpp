@@ -17,8 +17,6 @@
 #ifndef SILKWORM_EXECUTION_ANALYSIS_CACHE_H_
 #define SILKWORM_EXECUTION_ANALYSIS_CACHE_H_
 
-#include <absl/base/thread_annotations.h>
-
 #include <cpp-lru-cache/include/lrucache.hpp>
 #include <evmc/evmc.hpp>
 #include <memory>
@@ -33,15 +31,12 @@ namespace silkworm {
 
 /** @brief Cache of EVM analyses.
  *
- * Safe to use in a multi-threaded environment.
  * Analyses performed for different EVM revisions do not coexist in the cache
  * and all other revisions are evicted on revision update.
  */
 class AnalysisCache {
   public:
-    static constexpr size_t kMaxSize{1000};
-
-    static AnalysisCache& instance() noexcept;
+    explicit AnalysisCache(size_t maxSize = 1000) : cache_{maxSize} {}
 
     AnalysisCache(const AnalysisCache&) = delete;
     AnalysisCache& operator=(const AnalysisCache&) = delete;
@@ -58,12 +53,8 @@ class AnalysisCache {
              evmc_revision revision) noexcept;
 
   private:
-    AnalysisCache() : cache_{kMaxSize} {}
-
-    std::mutex mutex_;
-
-    GUARDED_BY(mutex_) cache::lru_cache<evmc::bytes32, std::shared_ptr<evmone::code_analysis>> cache_;
-    GUARDED_BY(mutex_) evmc_revision revision_{EVMC_MAX_REVISION};
+    cache::lru_cache<evmc::bytes32, std::shared_ptr<evmone::code_analysis>> cache_;
+    evmc_revision revision_{EVMC_MAX_REVISION};
 };
 
 }  // namespace silkworm

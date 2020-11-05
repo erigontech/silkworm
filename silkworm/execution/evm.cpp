@@ -24,7 +24,6 @@
 
 #include "address.hpp"
 #include "analysis.hpp"
-#include "analysis_cache.hpp"
 #include "execution.hpp"
 #include "precompiled.hpp"
 #include "protocol_param.hpp"
@@ -213,12 +212,12 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     evmc_revision rev{revision()};
 
     std::shared_ptr<evmone::code_analysis> analysis;
-    if (code_hash) {
+    if (code_hash && analysis_cache) {
         // cache contract code
-        analysis = AnalysisCache::instance().get(*code_hash, rev);
+        analysis = analysis_cache->get(*code_hash, rev);
         if (!analysis) {
             analysis = std::make_shared<evmone::code_analysis>(evmone::analyze(rev, code.data(), code.size()));
-            AnalysisCache::instance().put(*code_hash, analysis, rev);
+            analysis_cache->put(*code_hash, analysis, rev);
         }
     } else {
         // don't cache deployment code

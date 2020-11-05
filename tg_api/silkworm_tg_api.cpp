@@ -24,7 +24,7 @@
 #include <silkworm/execution/execution.hpp>
 
 SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uint64_t chain_id, uint64_t start_block,
-                                                           uint64_t batch_size, bool write_receipts,
+                                                           uint64_t max_block, uint64_t batch_size, bool write_receipts,
                                                            uint64_t* last_executed_block,
                                                            int* lmdb_error_code) SILKWORM_NOEXCEPT {
     assert(mdb_txn);
@@ -42,7 +42,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
 
         db::Buffer buffer{&txn};
 
-        for (uint64_t block_num{start_block};; ++block_num) {
+        for (uint64_t block_num{start_block}; block_num <= max_block; ++block_num) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
             if (!bh) {
                 return kSilkwormBlockNotFound;
@@ -67,6 +67,10 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
                 return kSilkwormSuccess;
             }
         };
+
+        buffer.write_to_db();
+        return kSilkwormSuccess;
+
     } catch (const lmdb::exception& e) {
         if (lmdb_error_code) {
             *lmdb_error_code = e.err();

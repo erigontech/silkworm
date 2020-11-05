@@ -50,48 +50,64 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    int retvar{0};
     lmdb::options db_opts{};
     db_opts.read_only = true;
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(absl::GetFlag(FLAGS_datadir).c_str(), db_opts)};
 
-    // counters
-    uint64_t nTxs{0}, nErrors{0};
+    try {
+        // counters
+        uint64_t nTxs{0}, nErrors{0};
 
-    uint64_t block_num{from};
-    for (; block_num < to; ++block_num) {
-        std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
+        uint64_t block_num{from};
+        for (; block_num < to; ++block_num) {
+            std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-        // Read the block
-        std::optional<BlockWithHash> bh{db::read_block(*txn, block_num, /*read_senders=*/true)};
-        if (!bh) {
-            break;
+            // Read the block
+            std::optional<BlockWithHash> bh{db::read_block(*txn, block_num, /*read_senders=*/true)};
+            if (!bh) {
+                break;
+            }
+
+            db::Buffer buffer{txn.get(), block_num};
+
+            // Execute the block and retreive the receipts
+            std::vector<Receipt> receipts = execute_block(bh->block, buffer);
+
+            // There is one receipt per transaction
+            assert(bh->block.transactions.size() == receipts.size());
+
+            // TG returns success in the receipt even for pre-Byzantium txs.
+            for (auto receipt : receipts) {
+                nTxs++;
+                nErrors += (!receipt.success);
+            }
+
+            // Report and reset counters
+            if (!(block_num % 50000)) {
+                std::cout << block_num << "," << nTxs << "," << nErrors << std::endl;
+                nTxs = nErrors = 0;
+
+            } else if (!(block_num % 100)) {
+                // report progress
+                std::cerr << block_num << "\r";
+                std::cerr.flush();
+            }
         }
 
-        db::Buffer buffer{txn.get(), block_num};
+    } catch (lmdb::exception& ex) {
+        // This handles specific lmdb errors
+        std::cout << ex.err() << " " << ex.what() << std::endl;
+        retvar = -1;
 
-        // Execute the block and retreive the receipts
-        std::vector<Receipt> receipts = execute_block(bh->block, buffer);
-
-        // There is one receipt per transaction
-        assert(bh->block.transactions.size() == receipts.size());
-
-        // TG returns success in the receipt even for pre-Byzantium txs.
-        for (auto receipt : receipts) {
-            nTxs++;
-            nErrors += (!receipt.success);
-        }
-
-        // Report and reset counters
-        if (!(block_num % 50000)) {
-            std::cout << block_num << "," << nTxs << "," << nErrors << std::endl;
-            nTxs = nErrors = 0;
-
-        } else if (!(block_num % 100)) {
-            // report progress
-            std::cerr << block_num << "\r";
-            std::cerr.flush();
-        }
+    } catch (std::runtime_error& ex) {
+        // This handles runtime logic errors
+        // eg. trying to open two rw txns
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
     }
 
-    return 0;
+    env.reset();
+
+    return retvar;
 }

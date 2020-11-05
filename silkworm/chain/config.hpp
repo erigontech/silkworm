@@ -130,6 +130,18 @@ constexpr ChainConfig kRopstenConfig{
     7'117'117,  // muir_glacier_block
 };
 
+constexpr ChainConfig kGoerliConfig{
+    5,  // chain_id
+
+    0,          // homestead_block
+    0,          // tangerine_whistle_block
+    0,          // spurious_dragon_block
+    0,          // byzantium_block
+    0,          // constantinople_block
+    0,          // petersburg_block
+    1'561'651,  // istanbul_block
+};
+
 // https://ecips.ethereumclassic.org/ECIPs/ecip-1066
 constexpr ChainConfig kClassicMainnetConfig{
     61,  // chain_id
@@ -149,6 +161,8 @@ inline const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept {
             return &kMainnetConfig;
         case kRopstenConfig.chain_id:
             return &kRopstenConfig;
+        case kGoerliConfig.chain_id:
+            return &kGoerliConfig;
         case kClassicMainnetConfig.chain_id:
             return &kClassicMainnetConfig;
         default:

@@ -228,7 +228,7 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     }
 }
 
-void Buffer::insert_header(BlockHeader block_header) {
+void Buffer::insert_header(BlockHeader& block_header) {
     Bytes rlp{};
     rlp::encode(rlp, block_header);
     ethash::hash256 hash{keccak256(rlp)};

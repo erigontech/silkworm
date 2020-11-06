@@ -151,8 +151,9 @@ struct copy_options_t
     bool upsert{false};                 // Copy using upsert instead of append (reuses free pages if any)
     std::string newmapsize_str{};       // Size of target file (as input literal)
     uint64_t newmapsize{0};             // Computed map size
-    std::vector<std::string> tables{};  // A limited set of table names
-    std::string commitsize_str{"5GB"};  // Provided commit size literal default 5GB
+    std::vector<std::string> tables{};  // A limited set of table names to copy
+    std::vector<std::string> xtables{}; // A limited set of table names to NOT copy
+    std::string commitsize_str{"1GB"};  // Provided commit size literal default 5GB
     uint64_t commitsize{0};             // Computed commit size
     bfs::path dir{};                    // Path to target data directory (i.e. workdir)
     bfs::path file{};                   // Path to target data file
@@ -651,6 +652,15 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
                 }
             }
 
+            // Is this table present in the list user has excluded ?
+            if (app_opts.xtables.size()) {
+                auto it = std::find(app_opts.xtables.begin(), app_opts.xtables.end(), src_table.name);
+                if (it != app_opts.xtables.end()) {
+                    std::cout << "Skipped (match --xtables)" << std::flush;
+                    continue;
+                }
+            }
+
             // Is table empty ?
             if (!src_table.stat.ms_entries && app_opts.noempty) {
                 std::cout << "Skipped (--noempty)" << std::flush;
@@ -815,6 +825,7 @@ int main(int argc, char* argv[]) {
     app_copy.add_flag("--upsert", copy_opts.upsert, "Use upsert instead of append");
     app_copy.add_option("--new.mapSize", copy_opts.newmapsize_str, "Created db file should have this map size", true);
     app_copy.add_option("--tables", copy_opts.tables, "Copy only tables matching this list of names", true);
+    app_copy.add_option("--xtables", copy_opts.xtables, "Don't copy tables matching this list of names", true);
     app_copy.add_option("--commit", copy_opts.commitsize_str, "Commit every this size bytes", true);
 
 

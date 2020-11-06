@@ -17,7 +17,8 @@
 #ifndef SILKWORM_COMMON_LOG_H_
 #define SILKWORM_COMMON_LOG_H_
 
-#include <iomanip>
+#include <absl/time/clock.h>
+
 #include <silkworm/common/tee.hpp>
 
 namespace silkworm {
@@ -34,8 +35,8 @@ class Logger {
     int level() { return verbosity; }
 
     std::ostream& log(LogLevels level) {
-        std::time_t time = std::time(nullptr);
-        return stream << LogTags[level] << "[" << std::put_time(std::gmtime(&time), "%m-%d|%H:%M:%S") << "] ";
+        return stream << LogTags[level] << "["
+                      << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "] ";
     }
 
     static Logger& default_logger();

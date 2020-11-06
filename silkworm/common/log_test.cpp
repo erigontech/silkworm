@@ -29,7 +29,7 @@ namespace silkworm {
 namespace {
     std::ostringstream stream1, stream2;
     Logger logger(LogNone, stream1, stream2);
-    const std::string infix(R"(\[\d\d-\d\d|\d\d:\d\d:\d\d\] )");
+    const std::string infix(R"(\[\d\d-\d\d|\d\d:\d\d:\d\d\.\d{3}\] )");
 
     bool test_log(std::string prefix, std::string infix, std::string suffix) {
         std::string string1(stream1.str());

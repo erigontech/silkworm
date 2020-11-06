@@ -20,7 +20,6 @@
 #include <cpp-lru-cache/include/lrucache.hpp>
 #include <evmc/evmc.hpp>
 #include <memory>
-#include <mutex>
 #include <silkworm/common/base.hpp>
 
 namespace evmone {

@@ -122,7 +122,7 @@ struct dbFreeInfo {
 struct db_options_t {
     std::string datadir{silkworm::db::default_path()};  // Where data file is located
     std::string mapsize_str{};                          // Provided map_size literal
-    size_t mapsize{0};                                  // Computed map size
+    uint64_t mapsize{0};                                // Computed map size
 };
 
 struct freelist_options_t {
@@ -469,14 +469,14 @@ int do_tables(db_options_t& db_opts) {
             }
         }
 
-        std::cout << "\n Database map size    : " << (boost::format("%13u") % tablesInfo.mapsize) << std::endl;
+        std::cout << "\n Database map size (A): " << (boost::format("%13u") % tablesInfo.mapsize) << std::endl;
         std::cout << " Size of file on disk : " << (boost::format("%13u") % tablesInfo.filesize) << std::endl;
         std::cout << " Data pages count     : " << (boost::format("%13u") % tablesInfo.pages) << std::endl;
-        std::cout << " Data pages size      : " << (boost::format("%13u") % tablesInfo.size) << std::endl;
-        std::cout << " Reclaimable pages    : " << (boost::format("%13u") % freeInfo.pages) << std::endl;
-        std::cout << " Reclaimable size     : " << (boost::format("%13u") % freeInfo.size) << std::endl;
-        std::cout << " Free space available : "
-                  << (boost::format("%13u") % (tablesInfo.mapsize - tablesInfo.size + freeInfo.size)) << std::endl;
+        std::cout << " Data pages size   (B): " << (boost::format("%13u") % tablesInfo.size) << std::endl;
+        std::cout << " Free pages count     : " << (boost::format("%13u") % freeInfo.pages) << std::endl;
+        std::cout << " Free pages size   (C): " << (boost::format("%13u") % freeInfo.size) << std::endl;
+        std::cout << " Available space      : "
+                  << (boost::format("%13u") % (tablesInfo.mapsize - tablesInfo.size + freeInfo.size)) << " == A - B + C " << std::endl;
 
     } catch (lmdb::exception& ex) {
         std::cout << ex.err() << " " << ex.what() << std::endl;
@@ -512,8 +512,8 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
                           << std::endl;
             }
         }
-        std::cout << "\n Total free pages     : " << boost::format("%13u") % freeInfo.pages << "\n"
-                  << " Total free size      : " << boost::format("%13u") % freeInfo.size << std::endl;
+        std::cout << "\n Free pages count     : " << boost::format("%13u") % freeInfo.pages << "\n"
+                  << " Free pages size      : " << boost::format("%13u") % freeInfo.size << std::endl;
 
     } catch (lmdb::exception& ex) {
         std::cout << ex.err() << " " << ex.what() << std::endl;

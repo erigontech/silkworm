@@ -28,7 +28,7 @@
 namespace silkworm {
 
 class ExecutionProcessor {
-   public:
+  public:
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
@@ -41,7 +41,9 @@ class ExecutionProcessor {
 
     uint64_t cumulative_gas_used() const { return cumulative_gas_used_; }
 
-   private:
+    EVM& evm() { return evm_; }
+
+  private:
     uint64_t available_gas() const;
     uint64_t refund_gas(const Transaction& txn, uint64_t gas_left);
 

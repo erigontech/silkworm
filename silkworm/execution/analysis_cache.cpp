@@ -23,14 +23,7 @@
 
 namespace silkworm {
 
-AnalysisCache& AnalysisCache::instance() noexcept {
-    static AnalysisCache x{};
-    return x;
-}
-
 std::shared_ptr<evmone::code_analysis> AnalysisCache::get(const evmc::bytes32& key, evmc_revision revision) noexcept {
-    std::lock_guard lock(mutex_);
-
     if (revision_ == revision && cache_.exists(key)) {
         return cache_.get(key);
     } else {
@@ -40,8 +33,6 @@ std::shared_ptr<evmone::code_analysis> AnalysisCache::get(const evmc::bytes32& k
 
 void AnalysisCache::put(const evmc::bytes32& key, const std::shared_ptr<evmone::code_analysis>& analysis,
                         evmc_revision revision) noexcept {
-    std::lock_guard lock(mutex_);
-
     if (revision_ != revision) {
         // multiple revisions are not supported
         cache_.clear();

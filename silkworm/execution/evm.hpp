@@ -22,6 +22,7 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <silkworm/chain/config.hpp>
+#include <silkworm/execution/analysis_cache.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
 #include <stack>
@@ -40,7 +41,7 @@ struct CallResult {
 };
 
 class EVM {
-   public:
+  public:
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
@@ -54,7 +55,9 @@ class EVM {
 
     CallResult execute(const Transaction& txn, uint64_t gas) noexcept;
 
-   private:
+    AnalysisCache* analysis_cache{nullptr};  // use for better performance
+
+  private:
     friend class EvmHost;
 
     evmc::result create(const evmc_message& message) noexcept;
@@ -77,7 +80,7 @@ class EVM {
 };
 
 class EvmHost : public evmc::Host {
-   public:
+  public:
     explicit EvmHost(EVM& evm) noexcept : evm_{evm} {}
 
     bool account_exists(const evmc::address& address) const noexcept override;
@@ -107,7 +110,7 @@ class EvmHost : public evmc::Host {
     void emit_log(const evmc::address& address, const uint8_t* data, size_t data_size, const evmc::bytes32 topics[],
                   size_t num_topics) noexcept override;
 
-   private:
+  private:
     EVM& evm_;
 };
 }  // namespace silkworm

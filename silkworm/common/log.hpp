@@ -29,14 +29,14 @@ enum LogLevels { LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCritical, Lo
 class Logger {
   public:
     Logger(LogLevels level = LogInfo, std::ostream& o1 = std::cerr, std::ostream& o2 = Logger::null_stream())
-        : stream(o1, o2), verbosity(level) {}
+        : stream(o1, o2), verbosity(level), timezone(absl::LocalTimeZone()) {}
 
     int level(LogLevels level) { return verbosity = level; }
     int level() { return verbosity; }
 
     std::ostream& log(LogLevels level) {
         return stream << LogTags[level] << "["
-                      << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "] ";
+                      << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), timezone) << "] ";
     }
 
     static Logger& default_logger();
@@ -45,6 +45,7 @@ class Logger {
   private:
     teestream stream;
     LogLevels verbosity;
+    absl::TimeZone timezone;
     static constexpr char const LogTags[7][6] = {
         "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE",
     };

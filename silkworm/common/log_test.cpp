@@ -29,7 +29,7 @@ namespace silkworm {
 namespace {
     std::ostringstream stream1, stream2;
     Logger logger(LogNone, stream1, stream2);
-    const std::string infix(R"(\[\d\d-\d\d|\d\d:\d\d:\d\d\.\d{3}\] )");
+    const std::string Kinfix(R"(\[\d\d-\d\d|\d\d:\d\d:\d\d\.\d{3}\] )");
 
     bool test_log(std::string prefix, std::string infix, std::string suffix) {
         std::string string1(stream1.str());
@@ -50,17 +50,17 @@ TEST_CASE("Logging") {
     // test true branch of macro
     SILKWORM_LOG_TO_LEVEL(logger, LogTrace);
     SILKWORM_LOG_TO(logger, LogCritical) << "LogCritical" << std::endl;
-    CHECK(test_log("CRIT ", infix, "LogCritical"));
+    CHECK(test_log("CRIT ", Kinfix, "LogCritical"));
     SILKWORM_LOG_TO(logger, LogError) << "LogError" << std::endl;
-    CHECK(test_log("ERROR", infix, "LogError"));
+    CHECK(test_log("ERROR", Kinfix, "LogError"));
     SILKWORM_LOG_TO(logger, LogWarn) << "LogWarn" << std::endl;
-    CHECK(test_log("WARN ", infix, "LogWarn"));
+    CHECK(test_log("WARN ", Kinfix, "LogWarn"));
     SILKWORM_LOG_TO(logger, LogInfo) << "LogInfo" << std::endl;
-    CHECK(test_log("INFO ", infix, "LogInfo"));
+    CHECK(test_log("INFO ", Kinfix, "LogInfo"));
     SILKWORM_LOG_TO(logger, LogDebug) << "LogDebug" << std::endl;
-    CHECK(test_log("DEBUG", infix, "LogDebug"));
+    CHECK(test_log("DEBUG", Kinfix, "LogDebug"));
     SILKWORM_LOG_TO(logger, LogTrace) << "LogTrace" << std::endl;
-    CHECK(test_log("TRACE", infix, "LogTrace"));
+    CHECK(test_log("TRACE", Kinfix, "LogTrace"));
 
     // test false branch of macro
     SILKWORM_LOG_TO_LEVEL(logger, LogDebug);

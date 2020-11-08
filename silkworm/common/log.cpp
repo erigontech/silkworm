@@ -18,18 +18,19 @@
 
 namespace silkworm {
 
-    std::ostream& Logger::null_stream() {
-        static struct NullBuffer : public std::streambuf {
-            int overflow(int c) override { return c; }
-        } null_buffer;
-        static struct NullStream : public std::ostream {
-            NullStream() : std::ostream(&null_buffer) {}
-        } null_stream;
-        return null_stream;
-    }
-
-    Logger& Logger::default_logger() {
-        static Logger logger;
-        return logger;
-    }
+std::ostream& Logger::null_stream() {
+    static struct NullBuffer : public std::streambuf {
+        int overflow(int c) override { return c; }
+    } null_buffer;
+    static struct NullStream : public std::ostream {
+        NullStream() : std::ostream(&null_buffer) {}
+    } null_stream;
+    return null_stream;
 }
+
+Logger& Logger::default_logger() noexcept {
+    static Logger logger;
+    return logger;
+}
+
+}  // namespace silkworm

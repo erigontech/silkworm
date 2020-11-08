@@ -28,37 +28,36 @@ enum LogLevels { LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCritical, Lo
 // Log to one or two output streams - typically the console and optional log file.
 class Logger {
   public:
-    Logger(LogLevels level = LogInfo, std::ostream& o1 = std::cerr, std::ostream& o2 = Logger::null_stream())
-        : stream(o1, o2), verbosity(level), timezone(absl::LocalTimeZone()) {}
+    explicit Logger(std::ostream& o1 = std::cerr, std::ostream& o2 = Logger::null_stream()) : stream_(o1, o2) {}
 
-    int level(LogLevels level) { return verbosity = level; }
-    int level() { return verbosity; }
+    LogLevels verbosity{LogInfo};
+
+    void set_local_timezone(bool local) noexcept { timezone_ = local ? absl::LocalTimeZone() : absl::UTCTimeZone(); }
 
     std::ostream& log(LogLevels level) {
-        return stream << LogTags[level] << "["
-                      << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), timezone) << "] ";
+        return stream_ << kLogTags[level] << "[" << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), timezone_)
+                       << "] ";
     }
 
-    static Logger& default_logger();
+    static Logger& default_logger() noexcept;
     static std::ostream& null_stream();
 
   private:
-    teestream stream;
-    LogLevels verbosity;
-    absl::TimeZone timezone;
-    static constexpr char const LogTags[7][6] = {
+    teestream stream_;
+    absl::TimeZone timezone_{absl::UTCTimeZone()};
+    static constexpr char const kLogTags[7][6] = {
         "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE",
     };
 };
 
-#define SILKWORM_LOG_TO(logger_, level_) \
-    if ((level_) < (logger_).level()) {  \
-    } else                               \
+#define SILKWORM_LOG_TO(logger_, level_)  \
+    if ((level_) < (logger_).verbosity) { \
+    } else                                \
         (logger_).log((level_))
-#define SILKWORM_LOG_TO_LEVEL(logger_, level_) ((logger_).level(level_))
 
+// Example usage:
+// SILKWORM_LOG(LogInfo) << "All your " << num_bases << " base are belong to us\n";
 #define SILKWORM_LOG(level_) SILKWORM_LOG_TO(Logger::default_logger(), (level_))
-#define SILKWORM_LOG_LEVEL(level_) SILKWORM_LOG_TO_LEVEL(Logger::default_logger(), (level_))
 
 }  // namespace silkworm
 

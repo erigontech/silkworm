@@ -193,39 +193,6 @@ void Buffer::write_to_db() {
         Bytes block_key{encode_timestamp(entry.first)};
         storage_change_table->put(block_key, entry.second);
     }
-
-    auto receipt_table{txn_->open(table::kBlockReceipts)};
-    for (const auto& entry : receipts_) {
-        receipt_table->put(entry.first, entry.second);
-    }
-
-    auto log_table{txn_->open(table::kLogs)};
-    for (const auto& entry : logs_) {
-        log_table->put(entry.first, entry.second);
-    }
-}
-
-// TG WriteReceipts in core/rawdb/accessors_chain.go
-void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) {
-    for (uint32_t i{0}; i < receipts.size(); ++i) {
-        if (receipts[i].logs.empty()) {
-            continue;
-        }
-
-        Bytes key{log_key(block_number, i)};
-        Bytes value{cbor_encode(receipts[i].logs)};
-
-        if (logs_.insert_or_assign(key, value).second) {
-            batch_size_ += key.size() + kEntryOverhead + value.size();
-        }
-    }
-
-    Bytes key{receipt_key(block_number)};
-    Bytes value{cbor_encode(receipts)};
-
-    if (receipts_.insert_or_assign(key, value).second) {
-        batch_size_ += key.size() + kEntryOverhead + value.size();
-    }
 }
 
 void Buffer::insert_header(const BlockHeader& block_header) {

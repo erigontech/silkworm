@@ -28,13 +28,12 @@
 #include <silkworm/db/state_buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
-#include <silkworm/types/receipt.hpp>
 #include <vector>
 
 namespace silkworm::db {
 
 class Buffer : public StateBuffer {
-   public:
+  public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
@@ -53,12 +52,11 @@ class Buffer : public StateBuffer {
     /** Previous non-zero incarnation of an account; 0 if none exists. */
     uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
 
-    std::optional<BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<BlockHeader> read_header(uint64_t block_number,
+                                           const evmc::bytes32& block_hash) const noexcept override;
     ///@}
 
     void insert_header(const BlockHeader& block_header) override;
-
-    void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
 
     /** @name State changes
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
@@ -69,7 +67,8 @@ class Buffer : public StateBuffer {
      */
     void begin_block(uint64_t block_number) override;
 
-    void update_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current) override;
+    void update_account(const evmc::address& address, std::optional<Account> initial,
+                        std::optional<Account> current) override;
 
     void update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
                              ByteView code) override;
@@ -94,7 +93,7 @@ class Buffer : public StateBuffer {
 
     void write_to_db();
 
-   private:
+  private:
     void write_to_state_table();
 
     lmdb::Transaction* txn_{nullptr};
@@ -113,8 +112,6 @@ class Buffer : public StateBuffer {
     absl::btree_map<evmc::address, uint64_t> incarnations_;
     absl::btree_map<evmc::bytes32, Bytes> hash_to_code_;
     absl::btree_map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
-    absl::btree_map<Bytes, Bytes> receipts_;
-    absl::btree_map<Bytes, Bytes> logs_;
 
     size_t batch_size_{0};
 

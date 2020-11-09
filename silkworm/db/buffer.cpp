@@ -33,21 +33,23 @@ static constexpr size_t kEntryOverhead{32};
 void Buffer::begin_block(uint64_t block_number) {
     current_block_number_ = block_number;
     changed_storage_.clear();
-    current_account_changes_.clear();
-    current_storage_changes_.clear();
+    account_changes_.clear();
+    storage_changes_.clear();
 }
 
 void Buffer::end_block() {
-    static constexpr size_t kBlockTimestampLength{4};
+    if (!txn_) {
+        return;
+    }
 
-    Bytes encoded{current_account_changes_.encode()};
-    account_changes_[current_block_number_] = encoded;
-    batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
+    Bytes block_key{encode_timestamp(current_block_number_)};
 
-    if (!current_storage_changes_.empty()) {
-        encoded = current_storage_changes_.encode();
-        storage_changes_[current_block_number_] = encoded;
-        batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
+    auto account_change_table{txn_->open(table::kPlainAccountChangeSet)};
+    account_change_table->put(block_key, account_changes_.encode());
+
+    if (!storage_changes_.empty()) {
+        auto storage_change_table{txn_->open(table::kPlainStorageChangeSet)};
+        storage_change_table->put(block_key, storage_changes_.encode());
     }
 }
 
@@ -67,7 +69,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         bool omit_code_hash{!account_deleted};
         encoded_initial = initial->encode_for_storage(omit_code_hash);
     }
-    current_account_changes_[address] = encoded_initial;
+    account_changes_[address] = encoded_initial;
 
     if (equal) {
         return;
@@ -104,7 +106,7 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
     changed_storage_.insert(address);
     Bytes full_key{storage_key(address, incarnation, key)};
-    current_storage_changes_[full_key] = zeroless_view(initial);
+    storage_changes_[full_key] = zeroless_view(initial);
 
     auto& storage_map{storage_[address][incarnation]};
     if (storage_map.empty()) {
@@ -180,51 +182,6 @@ void Buffer::write_to_db() {
     auto code_hash_table{txn_->open(table::kPlainContractCode)};
     for (const auto& entry : storage_prefix_to_code_hash_) {
         code_hash_table->put(entry.first, full_view(entry.second));
-    }
-
-    auto account_change_table{txn_->open(table::kPlainAccountChangeSet)};
-    for (const auto& entry : account_changes_) {
-        Bytes block_key{encode_timestamp(entry.first)};
-        account_change_table->put(block_key, entry.second);
-    }
-
-    auto storage_change_table{txn_->open(table::kPlainStorageChangeSet)};
-    for (const auto& entry : storage_changes_) {
-        Bytes block_key{encode_timestamp(entry.first)};
-        storage_change_table->put(block_key, entry.second);
-    }
-
-    auto receipt_table{txn_->open(table::kBlockReceipts)};
-    for (const auto& entry : receipts_) {
-        receipt_table->put(entry.first, entry.second);
-    }
-
-    auto log_table{txn_->open(table::kLogs)};
-    for (const auto& entry : logs_) {
-        log_table->put(entry.first, entry.second);
-    }
-}
-
-// TG WriteReceipts in core/rawdb/accessors_chain.go
-void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) {
-    for (uint32_t i{0}; i < receipts.size(); ++i) {
-        if (receipts[i].logs.empty()) {
-            continue;
-        }
-
-        Bytes key{log_key(block_number, i)};
-        Bytes value{cbor_encode(receipts[i].logs)};
-
-        if (logs_.insert_or_assign(key, value).second) {
-            batch_size_ += key.size() + kEntryOverhead + value.size();
-        }
-    }
-
-    Bytes key{receipt_key(block_number)};
-    Bytes value{cbor_encode(receipts)};
-
-    if (receipts_.insert_or_assign(key, value).second) {
-        batch_size_ += key.size() + kEntryOverhead + value.size();
     }
 }
 

@@ -24,12 +24,13 @@
 #include <silkworm/db/change.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
+#include <silkworm/types/receipt.hpp>
 #include <vector>
 
 namespace silkworm::db {
 
 class MissingSenders : public std::runtime_error {
-   public:
+  public:
     using std::runtime_error::runtime_error;
 };
 
@@ -63,6 +64,9 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
 std::optional<AccountChanges> read_account_changes(lmdb::Transaction& txn, uint64_t block_number);
 
 Bytes read_storage_changes(lmdb::Transaction& txn, uint64_t block_number);
+
+// See TG AppendReceipts in core/rawdb/accessors_chain.go
+void append_receipts(lmdb::Transaction& txn, uint64_t block_number, const std::vector<Receipt>& receipts);
 
 }  // namespace silkworm::db
 

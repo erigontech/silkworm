@@ -30,6 +30,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
     assert(mdb_txn);
 
     using namespace silkworm;
+    Logger::default_logger().set_local_timezone(true);  // for compatibility with TG logging
 
     const ChainConfig* config{lookup_chain_config(chain_id)};
     if (!config) {
@@ -41,6 +42,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
         auto cleanup{gsl::finally([&txn] { *txn.handle() = nullptr; })};  // avoid aborting mdb_txn
 
         db::Buffer buffer{&txn};
+        AnalysisCache analysis_cache;
 
         for (uint64_t block_num{start_block}; block_num <= max_block; ++block_num) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
@@ -48,10 +50,10 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
                 return kSilkwormBlockNotFound;
             }
 
-            std::vector<Receipt> receipts{execute_block(bh->block, buffer)};
+            std::vector<Receipt> receipts{execute_block(bh->block, buffer, *config, &analysis_cache)};
 
             if (write_receipts) {
-                buffer.insert_receipts(block_num, receipts);
+                db::append_receipts(txn, block_num, receipts);
             }
 
             if (last_executed_block) {

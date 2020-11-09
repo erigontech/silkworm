@@ -102,17 +102,17 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
     std::string db_path{};
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth");
+    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth")
+        ->required()
+        ->check(CLI::ExistingDirectory);
 
     uint64_t to_block{std::numeric_limits<uint64_t>::max()};
-    app.add_option("--to", to_block, "Block execute up to");
+    app.add_option("--to", to_block, "Block execute up to", true);
 
     uint64_t batch_mib{512};
-    app.add_option("--batch_mib", batch_mib, "Batch size in mebibytes of DB changes to accumulate before committing");
+    app.add_option("--batch_mib", batch_mib, "Batch size in mebibytes of DB changes to accumulate before committing", true);
 
     CLI11_PARSE(app, argc, argv);
-
-    uint64_t batch_size{batch_mib * 1024 * 1024};
 
     std::clog << "Starting block execution. DB: " << db_path << std::endl;
 
@@ -131,8 +131,10 @@ int main(int argc, char* argv[]) {
     if (write_receipts && (!migration_happened(txn, "receipts_cbor_encode") ||
                            !migration_happened(txn, "receipts_store_logs_separately"))) {
         std::clog << "Legacy stored receipts are not supported\n";
-        return -1;
+        return -2;
     }
+
+    uint64_t batch_size{batch_mib * 1024 * 1024};
 
     uint64_t previous_progress{already_executed_block(txn)};
     uint64_t current_progress{previous_progress};

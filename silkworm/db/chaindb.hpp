@@ -57,7 +57,7 @@ static const MDB_dbi MAIN_DBI = 1;  // Reserved for tracking named tables
 
 enum class TableCustomDupComparator {
     None,
-    ExcludeSuffix32
+    ExcludeSuffix32,
 };
 
 enum class TableCustomKeyComparator {
@@ -75,14 +75,14 @@ struct TableConfig {
  * Exception thrown by lmdb
  */
 class exception : public std::exception {
-   public:
+  public:
     explicit exception(int err, const char* message) : err_{err}, message_{message} {};
     explicit exception(int err, const std::string& message) : err_{err}, message_{message} {};
     virtual ~exception() noexcept {};
     const char* what() const noexcept override { return message_.c_str(); }
     int err() const noexcept { return err_; }
 
-   protected:
+  protected:
     int err_;
     std::string message_;
 };
@@ -103,32 +103,32 @@ class Table;
  * MDB_env wrapper
  */
 class Environment {
-   private:
-     MDB_env* handle_{nullptr};  // Handle to MDB_env
-     std::string path_{""};      // Path to data
+  private:
+    MDB_env* handle_{nullptr};  // Handle to MDB_env
+    std::string path_{""};      // Path to data
 
-     friend class Transaction;
+    friend class Transaction;
 
-     std::mutex count_mtx_;                      // Lock to prevent concurrent access to transactions counters maps
-     std::map<std::thread::id, int> ro_txns_{};  // A per thread maintained count of opened ro transactions
-     std::map<std::thread::id, int> rw_txns_{};  // A per thread maintained count of opened rw transactions
+    std::mutex count_mtx_;                      // Lock to prevent concurrent access to transactions counters maps
+    std::map<std::thread::id, int> ro_txns_{};  // A per thread maintained count of opened ro transactions
+    std::map<std::thread::id, int> rw_txns_{};  // A per thread maintained count of opened rw transactions
 
-     /*
-      * A transaction and its cursors must only be used by a single thread,
-      * and a thread may only have one transaction at a time.
-      * Only exception is when parent environment is opened with MDB_NOTLS flag
-      * which causes the allowance of unlimited ro transactions.
-      * So when a thread begins a new transaction (see begin_transaction)
-      * env is checked for corresponding slot and eventually allows or
-      * prohibits the transaction opening
-      */
+    /*
+     * A transaction and its cursors must only be used by a single thread,
+     * and a thread may only have one transaction at a time.
+     * Only exception is when parent environment is opened with MDB_NOTLS flag
+     * which causes the allowance of unlimited ro transactions.
+     * So when a thread begins a new transaction (see begin_transaction)
+     * env is checked for corresponding slot and eventually allows or
+     * prohibits the transaction opening
+     */
 
-     int get_ro_txns(void) noexcept;          // Returns number of opened ro transactions for calling thread
-     int get_rw_txns(void) noexcept;          // Returns number of opened rw transactions for calling thread
-     void touch_ro_txns(int count) noexcept;  // Ro transaction count incrementer/decrementer
-     void touch_rw_txns(int count) noexcept;  // Ro transaction count incrementer/decrementer
+    int get_ro_txns(void) noexcept;          // Returns number of opened ro transactions for calling thread
+    int get_rw_txns(void) noexcept;          // Returns number of opened rw transactions for calling thread
+    void touch_ro_txns(int count) noexcept;  // Ro transaction count incrementer/decrementer
+    void touch_rw_txns(int count) noexcept;  // Ro transaction count incrementer/decrementer
 
-   public:
+  public:
     explicit Environment(const DatabaseConfig& config);
     ~Environment() noexcept;
 
@@ -160,7 +160,7 @@ class Environment {
  * MDB_txn wrapper
  */
 class Transaction {
-   private:
+  private:
     static MDB_txn* open_transaction(Environment* parent_env, MDB_txn* parent_txn, unsigned int flags = 0);
 
     friend class Table;
@@ -194,7 +194,7 @@ class Transaction {
 
     MDB_dbi open_dbi(const char* name, unsigned int flags = 0);
 
-   public:
+  public:
     explicit Transaction(Environment* parent, unsigned int flags = 0);
     Transaction(Environment* parent, MDB_txn* txn, unsigned int flags);
     ~Transaction();
@@ -226,7 +226,7 @@ class Transaction {
  * and an MDB_cursor
  */
 class Table {
-   public:
+  public:
     explicit Table(Transaction* parent, MDB_dbi dbi, const char* name);
     ~Table();
 
@@ -283,12 +283,13 @@ class Table {
     int get_first(MDB_val* key, MDB_val* data);      // Move cursor at first item in table
     int get_first_dup(MDB_val* key, MDB_val* data);  // Move cursor at first item of current key (only MDB_DUPSORT)
     int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in table
-    int get_prev_dup(MDB_val* key,MDB_val* data);    // Move cursor at previous data item in current key (only MDB_DUPSORT)
-    int get_next(MDB_val* key, MDB_val* data);   // Move cursor at next item in table
-    int get_next_dup(MDB_val* key,MDB_val* data);    // Move cursor at next data item in current key (only MDB_DUPSORT)
-    int get_next_nodup(MDB_val* key,MDB_val* data);    // Move cursor at next data item in next key (only MDB_DUPSORT)
-    int get_last(MDB_val* key, MDB_val* data);   // Move cursor at last item in table
-    int get_dcount(size_t* count);               // Returns the count of duplicates at current position
+    int get_prev_dup(MDB_val* key,
+                     MDB_val* data);            // Move cursor at previous data item in current key (only MDB_DUPSORT)
+    int get_next(MDB_val* key, MDB_val* data);  // Move cursor at next item in table
+    int get_next_dup(MDB_val* key, MDB_val* data);    // Move cursor at next data item in current key (only MDB_DUPSORT)
+    int get_next_nodup(MDB_val* key, MDB_val* data);  // Move cursor at next data item in next key (only MDB_DUPSORT)
+    int get_last(MDB_val* key, MDB_val* data);        // Move cursor at last item in table
+    int get_dcount(size_t* count);                    // Returns the count of duplicates at current position
 
     /** @brief Stores key/data pairs into the database using cursor.
      *
@@ -297,7 +298,7 @@ class Table {
      * #put_reserve(), #put_append(), #put_append_dup() and #put_multiple()
      */
     int put(MDB_val* key, MDB_val* data, unsigned int flag);
-    void put(ByteView key, ByteView data);
+    void put(ByteView key, ByteView data, unsigned flags = 0);
 
     /** @brief Replace the k/d pair at current cursor position
      *
@@ -365,7 +366,7 @@ class Table {
     void close(void);  // Close the cursor (not the dbi) and frees the handle
     bool is_opened(void) { return handle_ != nullptr; }
 
-   private:
+  private:
     static MDB_cursor* open_cursor(Transaction* parent, MDB_dbi dbi);
     Table(Transaction* parent, MDB_dbi dbi, const char* name, MDB_cursor* cursor);
 

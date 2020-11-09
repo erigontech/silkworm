@@ -342,9 +342,9 @@ dbTablesInfo get_tablesInfo(std::shared_ptr<lmdb::Environment>& env) {
 
     int rc{unnamed->get_first(&key, &data)};
     while (rc == MDB_SUCCESS) {
-        // if (data.mv_size < sizeof(size_t)) {
-        //    lmdb::err_handler(MDB_INVALID);
-        //}
+
+        //auto dataview{ db::from_mdb_val(data) };
+        //std::cout << std::setw(24) << std::left << (const char*)key.mv_data << to_hex(dataview) << std::endl;
 
         auto named = tx->open({(const char*)key.mv_data});
         table = new dbTableEntry{named->get_dbi(), named->get_name()};

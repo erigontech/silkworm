@@ -82,10 +82,10 @@ class Buffer : public StateBuffer {
     void end_block() override;
 
     /** Account (backward) changes for the current block.*/
-    const AccountChanges& account_changes() const { return current_account_changes_; }
+    const AccountChanges& account_changes() const { return account_changes_; }
 
     /** Storage (backward) changes for the current block.*/
-    const StorageChanges& storage_changes() const { return current_storage_changes_; }
+    const StorageChanges& storage_changes() const { return storage_changes_; }
     ///@}
 
     /** Approximate size of accumulated DB changes in bytes.*/
@@ -106,9 +106,6 @@ class Buffer : public StateBuffer {
     absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
         storage_;
 
-    absl::btree_map<uint64_t, Bytes> account_changes_;
-    absl::btree_map<uint64_t, Bytes> storage_changes_;
-
     absl::btree_map<evmc::address, uint64_t> incarnations_;
     absl::btree_map<evmc::bytes32, Bytes> hash_to_code_;
     absl::btree_map<Bytes, evmc::bytes32> storage_prefix_to_code_hash_;
@@ -118,8 +115,8 @@ class Buffer : public StateBuffer {
     // Current block stuff
     uint64_t current_block_number_{0};
     absl::flat_hash_set<evmc::address> changed_storage_;
-    AccountChanges current_account_changes_;
-    StorageChanges current_storage_changes_;
+    AccountChanges account_changes_;
+    StorageChanges storage_changes_;
 };
 
 }  // namespace silkworm::db

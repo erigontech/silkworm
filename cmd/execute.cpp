@@ -112,7 +112,10 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    uint64_t batch_size{batch_mib * 1024 * 1024};
+    if (db_path.empty()) {
+        std::clog << "Use -d option to provide DB path\n";
+        return -1;
+    }
 
     std::clog << "Starting block execution. DB: " << db_path << std::endl;
 
@@ -131,8 +134,10 @@ int main(int argc, char* argv[]) {
     if (write_receipts && (!migration_happened(txn, "receipts_cbor_encode") ||
                            !migration_happened(txn, "receipts_store_logs_separately"))) {
         std::clog << "Legacy stored receipts are not supported\n";
-        return -1;
+        return -2;
     }
+
+    uint64_t batch_size{batch_mib * 1024 * 1024};
 
     uint64_t previous_progress{already_executed_block(txn)};
     uint64_t current_progress{previous_progress};

@@ -102,7 +102,9 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
     std::string db_path{};
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth");
+    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth")
+        ->required()
+        ->check(CLI::ExistingDirectory);
 
     uint64_t to_block{std::numeric_limits<uint64_t>::max()};
     app.add_option("--to", to_block, "Block execute up to");
@@ -111,11 +113,6 @@ int main(int argc, char* argv[]) {
     app.add_option("--batch_mib", batch_mib, "Batch size in mebibytes of DB changes to accumulate before committing");
 
     CLI11_PARSE(app, argc, argv);
-
-    if (db_path.empty()) {
-        std::clog << "Use -d option to provide DB path\n";
-        return -1;
-    }
 
     std::clog << "Starting block execution. DB: " << db_path << std::endl;
 

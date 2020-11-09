@@ -53,7 +53,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
             std::vector<Receipt> receipts{execute_block(bh->block, buffer, *config, &analysis_cache)};
 
             if (write_receipts) {
-                db::write_receipts(txn, block_num, receipts);
+                db::append_receipts(txn, block_num, receipts);
             }
 
             if (last_executed_block) {

@@ -65,8 +65,8 @@ std::optional<AccountChanges> read_account_changes(lmdb::Transaction& txn, uint6
 
 Bytes read_storage_changes(lmdb::Transaction& txn, uint64_t block_number);
 
-// See TG WriteReceipts in core/rawdb/accessors_chain.go
-void write_receipts(lmdb::Transaction& txn, uint64_t block_number, const std::vector<Receipt>& receipts);
+// See TG AppendReceipts in core/rawdb/accessors_chain.go
+void append_receipts(lmdb::Transaction& txn, uint64_t block_number, const std::vector<Receipt>& receipts);
 
 }  // namespace silkworm::db
 

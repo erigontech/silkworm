@@ -318,15 +318,19 @@ void Transaction::abort(void) {
 
 int Transaction::commit(void) {
     if (!handle_) return MDB_BAD_TXN;
+
+    /* In case commit fails the transaction
+    * is automatically aborted so always void handle_
+    * see
+     * https://github.com/LMDB/lmdb/blob/mdb.master/libraries/liblmdb/mdb.c#L4125-L4131
+    */
     int rc{mdb_txn_commit(handle_)};
-    if (rc == MDB_SUCCESS) {
-        if (is_ro()) {
-            parent_env_->touch_ro_txns(-1);
-        } else {
-            parent_env_->touch_rw_txns(-1);
-        }
-        handle_ = nullptr;
+    if (is_ro()) {
+        parent_env_->touch_ro_txns(-1);
+    } else {
+        parent_env_->touch_rw_txns(-1);
     }
+    handle_ = nullptr;
     return rc;
 }
 

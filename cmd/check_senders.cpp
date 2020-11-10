@@ -26,7 +26,6 @@
 #include <ethash/keccak.hpp>
 #include <iostream>
 #include <queue>
-#include <regex>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
@@ -82,36 +81,6 @@ std::string format_time(boost::posix_time::ptime now = boost::posix_time::micros
         ((static_cast<int64_t>(hours) * 3600 + static_cast<int64_t>(minutes) * 60 + seconds) * 1000));
     sprintf(buf, "[%02d-%02d %02d:%02d:%02d.%03d]", month, day, hours, minutes, seconds, milliseconds);
     return std::string{buf};
-}
-
-std::optional<uint64_t> parse_size(const std::string& strsize) {
-    std::regex pattern{"^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$"};
-    std::smatch matches;
-    if (!std::regex_search(strsize, matches, pattern, std::regex_constants::match_default)) {
-        return {};
-    };
-
-    uint64_t number{std::strtoull(matches[1].str().c_str(), nullptr, 10)};
-
-    if (matches[3].length() == 0) {
-        return {number};
-    }
-    std::string suffix = matches[3].str();
-    if (suffix == "B") {
-        return {number};
-    } else if (suffix == "KB") {
-        return {number * (1ull << 10)};
-    } else if (suffix == "MB") {
-        return {number * (1ull << 20)};
-    } else if (suffix == "GB") {
-        return {number * (1ull << 30)};
-    } else if (suffix == "TB") {
-        return {number * (1ull << 40)};
-    } else if (suffix == "EB") {
-        return {number * (1ull << 50)};
-    } else {
-        return {};
-    }
 }
 
 class Recoverer : public silkworm::Worker {
@@ -877,7 +846,7 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    std::optional<uint64_t> lmdb_mapSize = parse_size(mapSizeStr);
+    auto lmdb_mapSize{parse_size(mapSizeStr)};
     if (!lmdb_mapSize) {
         std::cerr << "Provided --lmdb.mapSize \"" << mapSizeStr << "\" is invalid" << std::endl;
         return -1;

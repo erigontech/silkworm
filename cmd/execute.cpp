@@ -30,39 +30,6 @@
 static constexpr const char* KExecutionStage_key{"Execution"};
 static constexpr const char* KStorageModeReceipts_key{"smReceipts"};
 
-std::optional<uint64_t> parse_size(const std::string& strsize) {
-    if (strsize.empty()) return { 0 };
-
-    std::regex pattern{ "^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$" };
-    std::smatch matches;
-    if (!std::regex_search(strsize, matches, pattern, std::regex_constants::match_default)) {
-        return std::nullopt;
-    };
-
-    uint64_t number{ std::strtoull(matches[1].str().c_str(), nullptr, 10) };
-
-    if (matches[3].length() == 0) {
-        return { number };
-    }
-    std::string suffix = matches[3].str();
-    if (suffix == "B") {
-        return { number };
-    } else if (suffix == "KB") {
-        return { number * (1ull << 10) };
-    } else if (suffix == "MB") {
-        return { number * (1ull << 20) };
-    } else if (suffix == "GB") {
-        return { number * (1ull << 30) };
-    } else if (suffix == "TB") {
-        return { number * (1ull << 40) };
-    } else if (suffix == "EB") {
-        return { number * (1ull << 50) };
-    } else {
-        return std::nullopt;
-    }
-}
-
-
 static uint64_t already_executed_block(std::unique_ptr<silkworm::lmdb::Transaction>& txn) {
 
     auto tbl = txn->open(silkworm::db::table::kSyncStageProgress);
@@ -169,7 +136,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Check provided map size is valid
-    auto map_size{parse_size(map_size_str)};
+    auto map_size{silkworm::parse_size(map_size_str)};
     if (!map_size.has_value()) {
         std::clog << "Invalid --lmdb.mapSize value provided : " << map_size_str << std::endl;
         return -2;

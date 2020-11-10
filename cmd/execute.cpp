@@ -34,7 +34,7 @@ static uint64_t already_executed_block(std::unique_ptr<silkworm::lmdb::Transacti
     MDB_val key;
     key.mv_size = std::strlen(KExecutionStage_key);
     key.mv_data = (void*)KExecutionStage_key;
-    auto data{txn->dlookup(silkworm::db::table::kSyncStageProgress, &key)};
+    auto data{txn->d_lookup(silkworm::db::table::kSyncStageProgress, &key)};
     if (!data.has_value()) return 0;
     return boost::endian::load_big_u64(data->c_str());
 
@@ -42,18 +42,10 @@ static uint64_t already_executed_block(std::unique_ptr<silkworm::lmdb::Transacti
 
 static void save_progress(std::unique_ptr<silkworm::lmdb::Transaction>& txn, uint64_t block_number) {
 
-    auto tbl = txn->open(silkworm::db::table::kSyncStageProgress);
-    MDB_val key, data;
-    key.mv_size = std::strlen(KExecutionStage_key);
-    key.mv_data = (void*)KExecutionStage_key;
-
-    uint8_t val[8];
-    boost::endian::store_big_u64(&val[0], block_number);
-    data.mv_size = 8;
-    data.mv_data = &val[0];
-
-    silkworm::lmdb::err_handler(tbl->put(&key, &data, /*flags=*/0));
-
+    silkworm::Bytes value{ '\0', sizeof(uint64_t) };
+    boost::endian::store_big_u64(&value[0], block_number);
+    silkworm::db::Entry entry{ {(uint8_t*)(KExecutionStage_key), std::strlen(KExecutionStage_key)}, {value} };
+    silkworm::lmdb::err_handler(txn->d_upsert(silkworm::db::table::kSyncStageProgress, entry));
 }
 
 static bool migration_happened(std::unique_ptr<silkworm::lmdb::Transaction>& txn, const char* migration_name) {
@@ -61,7 +53,7 @@ static bool migration_happened(std::unique_ptr<silkworm::lmdb::Transaction>& txn
     MDB_val key;
     key.mv_size = std::strlen(migration_name);
     key.mv_data = (void*)migration_name;
-    auto data{txn->dlookup(silkworm::db::table::kMigrations, &key)};
+    auto data{txn->d_lookup(silkworm::db::table::kMigrations, &key)};
     if (!data.has_value()) return false;
     return true;
 
@@ -72,7 +64,7 @@ static bool storage_mode_has_write_receipts(std::unique_ptr<silkworm::lmdb::Tran
     MDB_val key;
     key.mv_size = std::strlen(KStorageModeReceipts_key);
     key.mv_data = (void*)KStorageModeReceipts_key;
-    auto data{ txn->dlookup(silkworm::db::table::kDatabaseInfo, &key) };
+    auto data{ txn->d_lookup(silkworm::db::table::kDatabaseInfo, &key) };
     if (data.has_value() && data->length() == 1 && data->at(0) == 1) return true;
     return false;
 }

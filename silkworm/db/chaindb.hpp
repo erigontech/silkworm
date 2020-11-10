@@ -205,7 +205,10 @@ class Transaction {
     bool is_ro(void);  // Whether this transaction is readonly
 
     // Looks up for a db value in a given domain
-    std::optional<Bytes> dlookup(const TableConfig& domain, MDB_val* key);
+    std::optional<Bytes> d_lookup(const TableConfig& domain, MDB_val* key);
+
+    // Quick insert of single data into domain table
+    int d_upsert(const TableConfig& domain, db::Entry& data);
 
     // Opens a "named" table or eventually - if name is null - main dbi with handle_ == 1
     std::unique_ptr<Table> open(const TableConfig& config, unsigned flags = 0);

@@ -70,16 +70,16 @@ static uint64_t already_executed_block(std::unique_ptr<silkworm::lmdb::Transacti
     key.mv_size = std::strlen(KExecutionStage_key);
     key.mv_data = (void*)KExecutionStage_key;
     int rc{tbl->seek_exact(&key, &data)};
-    switch (rc)
-    {
-    case MDB_NOTFOUND:
-        return 0;
-    case MDB_SUCCESS:
-        return boost::endian::load_big_u64(static_cast<uint8_t*>(data.mv_data));
-    default:
-        silkworm::lmdb::err_handler(rc);
+    switch (rc) {
+        case MDB_NOTFOUND:
+            return 0;
+        case MDB_SUCCESS:
+            break;
+        default:
+            silkworm::lmdb::err_handler(rc);
     }
 
+    return boost::endian::load_big_u64(static_cast<uint8_t*>(data.mv_data));
 }
 
 static void save_progress(std::unique_ptr<silkworm::lmdb::Transaction>& txn, uint64_t block_number) {
@@ -110,10 +110,11 @@ static bool migration_happened(std::unique_ptr<silkworm::lmdb::Transaction>& txn
     case MDB_NOTFOUND:
         return false;
     case MDB_SUCCESS:
-        return true;
+        break;
     default:
         silkworm::lmdb::err_handler(rc);
     }
+    return true;
 
 }
 

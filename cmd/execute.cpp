@@ -156,7 +156,8 @@ int main(int argc, char* argv[]) {
         bool write_receipts{storage_mode_has_write_receipts(txn)};
         if (write_receipts && (!migration_happened(txn, "receipts_cbor_encode") ||
                                !migration_happened(txn, "receipts_store_logs_separately"))) {
-            throw std::logic_error("Legacy stored receipts are not supported");
+            std::clog << "Legacy stored receipts are not supported" << std::endl;
+            return -1;
         }
 
         uint64_t batch_size{batch_mib * 1024 * 1024};
@@ -204,8 +205,5 @@ int main(int argc, char* argv[]) {
     }
 
     return 0;
-
-
-
 
 }

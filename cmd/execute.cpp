@@ -18,7 +18,6 @@
 #include <boost/endian/conversion.hpp>
 #include <iostream>
 #include <limits>
-#include <regex>
 #include <stdexcept>
 
 #include <silkworm/db/chaindb.hpp>

@@ -75,11 +75,10 @@ static uint64_t already_executed_block(std::unique_ptr<silkworm::lmdb::Transacti
     case MDB_NOTFOUND:
         return 0;
     case MDB_SUCCESS:
-        break;
+        return boost::endian::load_big_u64(static_cast<uint8_t*>(data.mv_data));
     default:
         silkworm::lmdb::err_handler(rc);
     }
-    return boost::endian::load_big_u64(static_cast<uint8_t*>(data.mv_data));
 
 }
 
@@ -111,11 +110,11 @@ static bool migration_happened(std::unique_ptr<silkworm::lmdb::Transaction>& txn
     case MDB_NOTFOUND:
         return false;
     case MDB_SUCCESS:
-        break;
+        return true;
     default:
         silkworm::lmdb::err_handler(rc);
     }
-    return true;
+
 }
 
 static bool storage_mode_has_write_receipts(std::unique_ptr<silkworm::lmdb::Transaction>& txn) {

@@ -152,10 +152,11 @@ int main(int argc, char* argv[]) {
     app.add_option("--lmdb.mapSize", map_size_str, "Lmdb map size", false);
 
     uint64_t to_block{std::numeric_limits<uint64_t>::max()};
-    app.add_option("--to", to_block, "Block execute up to", true);
+    app.add_option("--to", to_block, "Block execute up to");
 
     uint64_t batch_mib{512};
-    app.add_option("--batch_mib", batch_mib, "Batch size in mebibytes of DB changes to accumulate before committing", true);
+    app.add_option("--batch_mib", batch_mib, "Batch size in mebibytes of DB changes to accumulate before committing",
+                   true);
 
     CLI11_PARSE(app, argc, argv);
 

@@ -275,16 +275,4 @@ bool read_storage_mode_receipts(lmdb::Transaction& txn) {
     return val && val->length() == 1 && (*val)[0] == 1;
 }
 
-void append_receipts(lmdb::Transaction& txn, uint64_t block_number, const std::vector<Receipt>& receipts) {
-    auto log_table{txn.open(table::kLogs)};
-    for (uint32_t i{0}; i < receipts.size(); ++i) {
-        if (!receipts[i].logs.empty()) {
-            log_table->put(log_key(block_number, i), cbor_encode(receipts[i].logs), MDB_APPEND);
-        }
-    }
-
-    auto receipt_table{txn.open(table::kBlockReceipts)};
-    receipt_table->put(receipt_key(block_number), cbor_encode(receipts), MDB_APPEND);
-}
-
 }  // namespace silkworm::db

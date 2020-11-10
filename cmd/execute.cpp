@@ -32,21 +32,13 @@ static constexpr const char* KStorageModeReceipts_key{"smReceipts"};
 
 static uint64_t already_executed_block(std::unique_ptr<silkworm::lmdb::Transaction>& txn) {
 
-    auto tbl = txn->open(silkworm::db::table::kSyncStageProgress);
-    MDB_val key, data;
+    MDB_val key;
     key.mv_size = std::strlen(KExecutionStage_key);
     key.mv_data = (void*)KExecutionStage_key;
-    int rc{tbl->seek_exact(&key, &data)};
-    switch (rc) {
-        case MDB_NOTFOUND:
-            return 0;
-        case MDB_SUCCESS:
-            break;
-        default:
-            silkworm::lmdb::err_handler(rc);
-    }
+    auto data{txn->dlookup(silkworm::db::table::kSyncStageProgress, &key)};
+    if (!data.has_value()) return 0;
+    return boost::endian::load_big_u64(data->c_str());
 
-    return boost::endian::load_big_u64(static_cast<uint8_t*>(data.mv_data));
 }
 
 static void save_progress(std::unique_ptr<silkworm::lmdb::Transaction>& txn, uint64_t block_number) {
@@ -67,44 +59,22 @@ static void save_progress(std::unique_ptr<silkworm::lmdb::Transaction>& txn, uin
 
 static bool migration_happened(std::unique_ptr<silkworm::lmdb::Transaction>& txn, const char* migration_name) {
 
-    auto tbl = txn->open(silkworm::db::table::kMigrations);
-    MDB_val key, data;
+    MDB_val key;
     key.mv_size = std::strlen(migration_name);
     key.mv_data = (void*)migration_name;
-    int rc{tbl->seek_exact(&key, &data)};
-    switch (rc)
-    {
-    case MDB_NOTFOUND:
-        return false;
-    case MDB_SUCCESS:
-        break;
-    default:
-        silkworm::lmdb::err_handler(rc);
-    }
+    auto data{txn->dlookup(silkworm::db::table::kMigrations, &key)};
+    if (!data.has_value()) return false;
     return true;
 
 }
 
 static bool storage_mode_has_write_receipts(std::unique_ptr<silkworm::lmdb::Transaction>& txn) {
 
-    auto tbl = txn->open(silkworm::db::table::kDatabaseInfo);
-    MDB_val key, data;
+    MDB_val key;
     key.mv_size = std::strlen(KStorageModeReceipts_key);
     key.mv_data = (void*)KStorageModeReceipts_key;
-    int rc{tbl->seek_exact(&key,&data)};
-    switch (rc)
-    {
-    case MDB_NOTFOUND:
-        return false;
-    case MDB_SUCCESS:
-        break;
-    default:
-        silkworm::lmdb::err_handler(rc);
-    }
-
-    if (data.mv_size == 1 && *(static_cast<uint8_t*>(data.mv_data)) == 1) {
-        return true;
-    }
+    auto data{ txn->dlookup(silkworm::db::table::kDatabaseInfo, &key) };
+    if (data.has_value() && data->length() == 1 && data->at(0) == 1) return true;
     return false;
 }
 

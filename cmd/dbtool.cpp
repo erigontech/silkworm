@@ -151,8 +151,9 @@ struct copy_options_t
     bool upsert{false};                 // Copy using upsert instead of append (reuses free pages if any)
     std::string newmapsize_str{};       // Size of target file (as input literal)
     uint64_t newmapsize{0};             // Computed map size
-    std::vector<std::string> tables{};  // A limited set of table names
-    std::string commitsize_str{"5GB"};  // Provided commit size literal default 5GB
+    std::vector<std::string> tables{};  // A limited set of table names to copy
+    std::vector<std::string> xtables{}; // A limited set of table names to NOT copy
+    std::string commitsize_str{"1GB"};  // Provided commit size literal default 5GB
     uint64_t commitsize{0};             // Computed commit size
     bfs::path dir{};                    // Path to target data directory (i.e. workdir)
     bfs::path file{};                   // Path to target data file
@@ -163,38 +164,6 @@ void sig_handler(int signum) {
     (void)signum;
     std::cout << std::endl << "Request for termination intercepted. Stopping ..." << std::endl << std::endl;
     shouldStop = true;
-}
-
-std::optional<uint64_t> parse_size(const std::string& strsize) {
-    if (strsize.empty()) return {0};
-
-    std::regex pattern{"^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$"};
-    std::smatch matches;
-    if (!std::regex_search(strsize, matches, pattern, std::regex_constants::match_default)) {
-        return std::nullopt;
-    };
-
-    uint64_t number{std::strtoull(matches[1].str().c_str(), nullptr, 10)};
-
-    if (matches[3].length() == 0) {
-        return {number};
-    }
-    std::string suffix = matches[3].str();
-    if (suffix == "B") {
-        return {number};
-    } else if (suffix == "KB") {
-        return {number * (1ull << 10)};
-    } else if (suffix == "MB") {
-        return {number * (1ull << 20)};
-    } else if (suffix == "GB") {
-        return {number * (1ull << 30)};
-    } else if (suffix == "TB") {
-        return {number * (1ull << 40)};
-    } else if (suffix == "EB") {
-        return {number * (1ull << 50)};
-    } else {
-        return std::nullopt;
-    }
 }
 
 std::shared_ptr<lmdb::Environment> open_db(db_options_t& db_opts, bool readonly) {
@@ -341,9 +310,9 @@ dbTablesInfo get_tablesInfo(std::shared_ptr<lmdb::Environment>& env) {
 
     int rc{unnamed->get_first(&key, &data)};
     while (rc == MDB_SUCCESS) {
-        // if (data.mv_size < sizeof(size_t)) {
-        //    lmdb::err_handler(MDB_INVALID);
-        //}
+
+        //auto dataview{ db::from_mdb_val(data) };
+        //std::cout << std::setw(24) << std::left << (const char*)key.mv_data << to_hex(dataview) << std::endl;
 
         auto named = tx->open({(const char*)key.mv_data});
         table = new dbTableEntry{named->get_dbi(), named->get_name()};
@@ -469,14 +438,14 @@ int do_tables(db_options_t& db_opts) {
             }
         }
 
-        std::cout << "\n Database map size    : " << (boost::format("%13u") % tablesInfo.mapsize) << std::endl;
+        std::cout << "\n Database map size (A): " << (boost::format("%13u") % tablesInfo.mapsize) << std::endl;
         std::cout << " Size of file on disk : " << (boost::format("%13u") % tablesInfo.filesize) << std::endl;
         std::cout << " Data pages count     : " << (boost::format("%13u") % tablesInfo.pages) << std::endl;
-        std::cout << " Data pages size      : " << (boost::format("%13u") % tablesInfo.size) << std::endl;
-        std::cout << " Reclaimable pages    : " << (boost::format("%13u") % freeInfo.pages) << std::endl;
-        std::cout << " Reclaimable size     : " << (boost::format("%13u") % freeInfo.size) << std::endl;
-        std::cout << " Free space available : "
-                  << (boost::format("%13u") % (tablesInfo.mapsize - tablesInfo.size + freeInfo.size)) << std::endl;
+        std::cout << " Data pages size   (B): " << (boost::format("%13u") % tablesInfo.size) << std::endl;
+        std::cout << " Free pages count     : " << (boost::format("%13u") % freeInfo.pages) << std::endl;
+        std::cout << " Free pages size   (C): " << (boost::format("%13u") % freeInfo.size) << std::endl;
+        std::cout << " Available space      : "
+                  << (boost::format("%13u") % (tablesInfo.mapsize - tablesInfo.size + freeInfo.size)) << " == A - B + C " << std::endl;
 
     } catch (lmdb::exception& ex) {
         std::cout << ex.err() << " " << ex.what() << std::endl;
@@ -512,8 +481,8 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
                           << std::endl;
             }
         }
-        std::cout << "\n Total free pages     : " << boost::format("%13u") % freeInfo.pages << "\n"
-                  << " Total free size      : " << boost::format("%13u") % freeInfo.size << std::endl;
+        std::cout << "\n Free pages count     : " << boost::format("%13u") % freeInfo.pages << "\n"
+                  << " Free pages size      : " << boost::format("%13u") % freeInfo.size << std::endl;
 
     } catch (lmdb::exception& ex) {
         std::cout << ex.err() << " " << ex.what() << std::endl;
@@ -647,6 +616,15 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
                 auto it = std::find(app_opts.tables.begin(), app_opts.tables.end(), src_table.name);
                 if (it == app_opts.tables.end()) {
                     std::cout << "Skipped (no match --tables)" << std::flush;
+                    continue;
+                }
+            }
+
+            // Is this table present in the list user has excluded ?
+            if (app_opts.xtables.size()) {
+                auto it = std::find(app_opts.xtables.begin(), app_opts.xtables.end(), src_table.name);
+                if (it != app_opts.xtables.end()) {
+                    std::cout << "Skipped (match --xtables)" << std::flush;
                     continue;
                 }
             }
@@ -815,13 +793,14 @@ int main(int argc, char* argv[]) {
     app_copy.add_flag("--upsert", copy_opts.upsert, "Use upsert instead of append");
     app_copy.add_option("--new.mapSize", copy_opts.newmapsize_str, "Created db file should have this map size", true);
     app_copy.add_option("--tables", copy_opts.tables, "Copy only tables matching this list of names", true);
+    app_copy.add_option("--xtables", copy_opts.xtables, "Don't copy tables matching this list of names", true);
     app_copy.add_option("--commit", copy_opts.commitsize_str, "Commit every this size bytes", true);
 
 
     CLI11_PARSE(app_main, argc, argv);
 
     // Check provided data file exists
-    std::optional<uint64_t> tmpsize{parse_size(db_opts.mapsize_str)};
+    auto tmpsize{parse_size(db_opts.mapsize_str)};
     if (!tmpsize.has_value()) {
         std::cout << " Provided --lmdb.mapSize is invalid" << std::endl;
         return -1;

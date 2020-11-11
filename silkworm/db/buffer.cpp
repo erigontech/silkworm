@@ -18,6 +18,7 @@
 
 #include <absl/container/btree_set.h>
 
+#include <algorithm>
 #include <boost/endian/conversion.hpp>
 #include <silkworm/common/util.hpp>
 
@@ -128,15 +129,18 @@ static void upsert_storage_value(lmdb::Table& state_table, ByteView storage_pref
 void Buffer::write_to_state_table() {
     auto state_table{txn_->open(table::kPlainState)};
 
-    absl::btree_set<evmc::address> keys;
+    // sort before inserting into the DB
+    absl::btree_set<evmc::address> account_keys;
     for (auto& x : accounts_) {
-        keys.insert(x.first);
+        account_keys.insert(x.first);
     }
     for (auto& x : storage_) {
-        keys.insert(x.first);
+        account_keys.insert(x.first);
     }
 
-    for (const auto& key : keys) {
+    std::vector<evmc::bytes32> storage_keys;
+
+    for (const auto& key : account_keys) {
         if (auto it{accounts_.find(key)}; it != accounts_.end()) {
             state_table->del(full_view(key));
             if (it->second.has_value()) {
@@ -150,8 +154,18 @@ void Buffer::write_to_state_table() {
             for (const auto& contract : it->second) {
                 uint64_t incarnation{contract.first};
                 Bytes prefix{storage_prefix(it->first, incarnation)};
-                for (const auto& x : contract.second) {
-                    upsert_storage_value(*state_table, prefix, x.first, x.second);
+
+                const auto& contract_storage{contract.second};
+
+                // sort before inserting into the DB
+                storage_keys.clear();
+                for (const auto& x : contract_storage) {
+                    storage_keys.push_back(x.first);
+                }
+                std::sort(storage_keys.begin(), storage_keys.end());
+
+                for (const auto& k : storage_keys) {
+                    upsert_storage_value(*state_table, prefix, k, contract_storage.at(k));
                 }
             }
         }

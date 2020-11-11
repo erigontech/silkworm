@@ -282,7 +282,7 @@ std::optional<Bytes> Transaction::d_lookup(const TableConfig& domain, MDB_val* k
             tbl = this->open(MAIN_DBI);
         } else {
             // Should we create if not existent ?
-            tbl = this->open(domain, MDB_CREATE);
+            tbl = this->open(domain, (this->is_ro() ? 0 : MDB_CREATE));
         }
     } catch (...) {
         // Container could not be opened
@@ -308,14 +308,14 @@ std::optional<Bytes> Transaction::d_lookup(const TableConfig& domain, MDB_val* k
 
 int Transaction::d_upsert(const TableConfig& domain, db::Entry& data)
 {
-    std::unique_ptr<Table> tbl{nullptr};
 
+    std::unique_ptr<Table> tbl{nullptr};
     try {
         if (!domain.name) {
             tbl = this->open(MAIN_DBI);
         } else {
             // Should we create if not existent ?
-            tbl = this->open(domain, MDB_CREATE);
+            tbl = this->open(domain, (this->is_ro() ? 0 : MDB_CREATE));
         }
         tbl->put(data.key, data.value);
         return MDB_SUCCESS;

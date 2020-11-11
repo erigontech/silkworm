@@ -26,7 +26,6 @@
 // This executable should only use the TG API of Silkworm, not the rest of its C++ API.
 #include "tg_api/silkworm_tg_api.h"
 
-static constexpr const char* kMigrationsTable{"migrations"};
 static constexpr const char* kDatabaseInfoTable{"DBINFO"};
 static constexpr const char* kSyncStageProgressTable{"SSP2"};
 static constexpr const char* kExecutionStageKey{"Execution"};
@@ -65,21 +64,6 @@ static void save_progress(MDB_txn* txn, uint64_t block_number) {
     data.mv_size = 8;
     data.mv_data = &val[0];
     check_lmdb_err(mdb_put(txn, dbi, &key, &data, /*flags=*/0));
-}
-
-static bool migration_happened(MDB_txn* txn, const char* name) {
-    MDB_dbi dbi;
-    check_lmdb_err(mdb_dbi_open(txn, kMigrationsTable, /*flags=*/0, &dbi));
-    MDB_val key;
-    key.mv_size = std::strlen(name);
-    key.mv_data = const_cast<char*>(name);
-    MDB_val data;
-    int status{mdb_get(txn, dbi, &key, &data)};
-    if (status == MDB_NOTFOUND) {
-        return false;
-    }
-    check_lmdb_err(status);
-    return true;
 }
 
 static bool storage_mode_has_write_receipts(MDB_txn* txn) {
@@ -179,12 +163,6 @@ int main(int argc, char* argv[]) {
     check_lmdb_err(mdb_txn_begin(env, /*parent=*/nullptr, /*flags=*/0, &txn));
 
     bool write_receipts{storage_mode_has_write_receipts(txn)};
-    if (write_receipts && (!migration_happened(txn, "receipts_cbor_encode") ||
-                           !migration_happened(txn, "receipts_store_logs_separately"))) {
-        std::clog << "Legacy stored receipts are not supported" << std::endl;
-        return -3;
-    }
-
     uint64_t batch_size{batch_mib * 1024 * 1024};
     uint64_t previous_progress{already_executed_block(txn)};
     uint64_t current_progress{previous_progress};

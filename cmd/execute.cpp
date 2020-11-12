@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
     if (!boost::filesystem::exists(db_file)) {
         std::clog << "Can't find a valid TG data file in " << db_path << std::endl;
-        return -2;
+        return -1;
     }
 
     // Check provided map size is valid
@@ -89,60 +89,48 @@ int main(int argc, char* argv[]) {
 
     lmdb::DatabaseConfig db_config{db_path, *map_size};
     db_config.set_readonly(false);
-    std::shared_ptr<lmdb::Environment> env{nullptr};
-    std::unique_ptr<lmdb::Transaction> txn{nullptr};
+    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
+    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
-    try {
-        env = lmdb::get_env(db_config);
+    bool write_receipts{db::read_storage_mode_receipts(*txn)};
+    if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
+                           !migration_happened(*txn, "receipts_store_logs_separately"))) {
+        std::clog << "Legacy stored receipts are not supported" << std::endl;
+        return -3;
+    }
+
+    uint64_t batch_size{batch_mib * 1024 * 1024};
+    uint64_t previous_progress{already_executed_block(*txn)};
+    uint64_t current_progress{previous_progress};
+
+    for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
+        int lmdb_error_code{MDB_SUCCESS};
+        SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), /*chain_id=*/1, block_number, to_block,
+                                                          batch_size, write_receipts, &current_progress,
+                                                          &lmdb_error_code)};
+        if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
+            std::clog << "Error in silkworm_execute_blocks: " << status << ", LMDB: " << lmdb_error_code << std::endl;
+            return status;
+        }
+
+        block_number = current_progress;
+
+        save_progress(*txn, current_progress);
+        lmdb::err_handler(txn->commit());
+        txn.reset();
+
+        if (status == kSilkwormBlockNotFound) {
+            break;
+        }
+
+        std::clog << "Blocks <= " << current_progress << " committed" << std::endl;
         txn = env->begin_rw_transaction();
-        bool write_receipts{db::read_storage_mode_receipts(*txn)};
-        if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
-                               !migration_happened(*txn, "receipts_store_logs_separately"))) {
-            std::clog << "Legacy stored receipts are not supported" << std::endl;
-            return -1;
-        }
+    }
 
-        uint64_t batch_size{batch_mib * 1024 * 1024};
-        uint64_t previous_progress{already_executed_block(*txn)};
-        uint64_t current_progress{previous_progress};
-
-        for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-            int lmdb_error_code{MDB_SUCCESS};
-            SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), /*chain_id=*/1, block_number, to_block,
-                                                              batch_size, write_receipts, &current_progress,
-                                                              &lmdb_error_code)};
-            if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
-                std::clog << "Error in silkworm_execute_blocks: " << status << ", LMDB: " << lmdb_error_code
-                          << std::endl;
-                return status;
-            }
-
-            block_number = current_progress;
-
-            save_progress(*txn, current_progress);
-            lmdb::err_handler(txn->commit());
-            txn.reset();
-
-            if (status == kSilkwormBlockNotFound) {
-                break;
-            }
-
-            std::clog << "Blocks <= " << current_progress << " committed" << std::endl;
-            txn = env->begin_rw_transaction();
-        }
-
-        if (current_progress > previous_progress) {
-            std::clog << "All blocks <= " << current_progress << " executed and committed" << std::endl;
-        } else {
-            std::clog << "Nothing to execute" << std::endl;
-        }
-
-    } catch (const std::logic_error& ex) {
-        std::clog << "Error : " << ex.what() << std::endl;
-        return -2;
-    } catch (const std::exception& ex) {
-        std::clog << "Unexpected error : " << ex.what() << std::endl;
-        return -2;
+    if (current_progress > previous_progress) {
+        std::clog << "All blocks <= " << current_progress << " executed and committed" << std::endl;
+    } else {
+        std::clog << "Nothing to execute" << std::endl;
     }
 
     return 0;

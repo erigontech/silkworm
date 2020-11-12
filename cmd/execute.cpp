@@ -18,92 +18,45 @@
 #include <boost/endian/conversion.hpp>
 #include <iostream>
 #include <limits>
-#include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
-#include <stdexcept>
+#include <silkworm/execution/execution.hpp>
 
 #include "tg_api/silkworm_tg_api.h"
 
 static constexpr const char* kExecutionStageKey{"Execution"};
-static constexpr const char* kStorageModeReceiptsKey{"smReceipts"};
 
-static uint64_t already_executed_block(std::unique_ptr<silkworm::lmdb::Transaction>& txn) {
-    auto tbl = txn->open(silkworm::db::table::kSyncStageProgress);
-    MDB_val key, data;
-    key.mv_size = std::strlen(kExecutionStageKey);
-    key.mv_data = (void*)kExecutionStageKey;
-    int rc{tbl->seek_exact(&key, &data)};
-    switch (rc) {
-        case MDB_NOTFOUND:
-            return 0;
-        case MDB_SUCCESS:
-            break;
-        default:
-            silkworm::lmdb::err_handler(rc);
+using namespace silkworm;
+
+static uint64_t already_executed_block(lmdb::Transaction& txn) {
+    auto tbl{txn.open(db::table::kSyncStageProgress)};
+    ByteView stage_key{byte_view_of_c_str(kExecutionStageKey)};
+    std::optional<ByteView> already_executed{tbl->get(stage_key)};
+    if (already_executed) {
+        return boost::endian::load_big_u64(already_executed->data());
+    } else {
+        return 0;
     }
-
-    return boost::endian::load_big_u64(static_cast<uint8_t*>(data.mv_data));
 }
 
-static void save_progress(std::unique_ptr<silkworm::lmdb::Transaction>& txn, uint64_t block_number) {
-    auto tbl = txn->open(silkworm::db::table::kSyncStageProgress);
-    MDB_val key, data;
-    key.mv_size = std::strlen(kExecutionStageKey);
-    key.mv_data = (void*)kExecutionStageKey;
-
-    uint8_t val[8];
+static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
+    auto tbl{txn.open(db::table::kSyncStageProgress)};
+    ByteView stage_key{byte_view_of_c_str(kExecutionStageKey)};
+    Bytes val(8, '\0');
     boost::endian::store_big_u64(&val[0], block_number);
-    data.mv_size = 8;
-    data.mv_data = &val[0];
-
-    silkworm::lmdb::err_handler(tbl->put(&key, &data, /*flags=*/0));
+    tbl->put(stage_key, val);
 }
 
-static bool migration_happened(std::unique_ptr<silkworm::lmdb::Transaction>& txn, const char* migration_name) {
-    auto tbl = txn->open(silkworm::db::table::kMigrations);
-    MDB_val key, data;
-    key.mv_size = std::strlen(migration_name);
-    key.mv_data = (void*)migration_name;
-    int rc{tbl->seek_exact(&key, &data)};
-    switch (rc) {
-        case MDB_NOTFOUND:
-            return false;
-        case MDB_SUCCESS:
-            break;
-        default:
-            silkworm::lmdb::err_handler(rc);
-    }
-    return true;
-}
-
-static bool storage_mode_has_write_receipts(std::unique_ptr<silkworm::lmdb::Transaction>& txn) {
-    auto tbl = txn->open(silkworm::db::table::kDatabaseInfo);
-    MDB_val key, data;
-    key.mv_size = std::strlen(kStorageModeReceiptsKey);
-    key.mv_data = (void*)kStorageModeReceiptsKey;
-    int rc{tbl->seek_exact(&key, &data)};
-    switch (rc) {
-        case MDB_NOTFOUND:
-            return false;
-        case MDB_SUCCESS:
-            break;
-        default:
-            silkworm::lmdb::err_handler(rc);
-    }
-
-    if (data.mv_size == 1 && *(static_cast<uint8_t*>(data.mv_data)) == 1) {
-        return true;
-    }
-    return false;
+static bool migration_happened(lmdb::Transaction& txn, const char* name) {
+    auto tbl{txn.open(db::table::kMigrations)};
+    return tbl->get(byte_view_of_c_str(name)).has_value();
 }
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
-    std::string db_path{silkworm::db::default_path()};
+    std::string db_path{db::default_path()};
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
-        ->required()
         ->check(CLI::ExistingDirectory);
 
     std::string map_size_str{"1TB"};
@@ -126,7 +79,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Check provided map size is valid
-    auto map_size{silkworm::parse_size(map_size_str)};
+    auto map_size{parse_size(map_size_str)};
     if (!map_size.has_value()) {
         std::clog << "Invalid --lmdb.mapSize value provided : " << map_size_str << std::endl;
         return -2;
@@ -134,23 +87,23 @@ int main(int argc, char* argv[]) {
 
     std::clog << "Starting block execution. DB: " << db_file << std::endl;
 
-    silkworm::lmdb::DatabaseConfig db_config{db_path, *map_size};
+    lmdb::DatabaseConfig db_config{db_path, *map_size};
     db_config.set_readonly(false);
-    std::shared_ptr<silkworm::lmdb::Environment> env{nullptr};
-    std::unique_ptr<silkworm::lmdb::Transaction> txn{nullptr};
+    std::shared_ptr<lmdb::Environment> env{nullptr};
+    std::unique_ptr<lmdb::Transaction> txn{nullptr};
 
     try {
-        env = silkworm::lmdb::get_env(db_config);
+        env = lmdb::get_env(db_config);
         txn = env->begin_rw_transaction();
-        bool write_receipts{storage_mode_has_write_receipts(txn)};
-        if (write_receipts && (!migration_happened(txn, "receipts_cbor_encode") ||
-                               !migration_happened(txn, "receipts_store_logs_separately"))) {
+        bool write_receipts{db::read_storage_mode_receipts(*txn)};
+        if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
+                               !migration_happened(*txn, "receipts_store_logs_separately"))) {
             std::clog << "Legacy stored receipts are not supported" << std::endl;
             return -1;
         }
 
         uint64_t batch_size{batch_mib * 1024 * 1024};
-        uint64_t previous_progress{already_executed_block(txn)};
+        uint64_t previous_progress{already_executed_block(*txn)};
         uint64_t current_progress{previous_progress};
 
         for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
@@ -166,8 +119,8 @@ int main(int argc, char* argv[]) {
 
             block_number = current_progress;
 
-            save_progress(txn, current_progress);
-            silkworm::lmdb::err_handler(txn->commit());
+            save_progress(*txn, current_progress);
+            lmdb::err_handler(txn->commit());
             txn.reset();
 
             if (status == kSilkwormBlockNotFound) {

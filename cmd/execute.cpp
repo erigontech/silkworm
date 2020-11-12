@@ -58,10 +58,7 @@ int main(int argc, char* argv[]) {
         ->check(CLI::ExistingDirectory);
 
     std::string map_size_str{};
-#ifndef _WIN32
-    map_size_str = "1TB";
-#endif
-    app.add_option("--lmdb.mapSize", map_size_str, "Lmdb map size");
+    CLI::Option* map_size_option{app.add_option("--lmdb.mapSize", map_size_str, "Lmdb map size")};
 
     uint64_t to_block{std::numeric_limits<uint64_t>::max()};
     app.add_option("--to", to_block, "Block execute up to");
@@ -96,7 +93,10 @@ int main(int argc, char* argv[]) {
     SILKWORM_LOG(LogInfo) << "Starting block execution. DB: " << db_file << std::endl;
 
     try {
-        lmdb::DatabaseConfig db_config{db_path, *map_size};
+        lmdb::DatabaseConfig db_config{db_path};
+        if (map_size_option) {
+            db_config.map_size = *map_size;
+        }
         db_config.set_readonly(false);
         std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
         std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};

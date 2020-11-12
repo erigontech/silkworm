@@ -35,7 +35,9 @@ namespace silkworm {
  */
 class AnalysisCache {
   public:
-    explicit AnalysisCache(size_t maxSize = 1000) : cache_{maxSize} {}
+    static constexpr size_t kDefaultMaxSize{5'000};
+
+    explicit AnalysisCache(size_t maxSize = kDefaultMaxSize) : cache_{maxSize} {}
 
     AnalysisCache(const AnalysisCache&) = delete;
     AnalysisCache& operator=(const AnalysisCache&) = delete;

@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
 
     try {
         lmdb::DatabaseConfig db_config{db_path};
-        if (map_size_option) {
+        if (*map_size_option) {
             db_config.map_size = *map_size;
         }
         db_config.set_readonly(false);

@@ -110,38 +110,36 @@ Bytes from_hex(std::string_view hex) {
     return out;
 }
 
-std::optional<size_t> parse_size(const std::string& sizestr)
-{
-    if (sizestr.empty()) return { 0 };
+std::optional<size_t> parse_size(const std::string& sizestr) {
+    if (sizestr.empty()) {
+        return 0;
+    }
 
-    std::regex pattern{ "^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$" };
+    static const std::regex pattern{"^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$"};
     std::smatch matches;
     if (!std::regex_search(sizestr, matches, pattern, std::regex_constants::match_default)) {
         return std::nullopt;
     };
 
-    uint64_t number{ std::strtoull(matches[1].str().c_str(), nullptr, 10) };
+    uint64_t number{std::strtoull(matches[1].str().c_str(), nullptr, 10)};
 
     if (matches[3].length() == 0) {
-        return { number };
+        return number;
     }
     std::string suffix = matches[3].str();
     if (suffix == "B") {
-        return { number };
+        return number;
     } else if (suffix == "KB") {
-        return { number * (1ull << 10) };
+        return number * kKibi;
     } else if (suffix == "MB") {
-        return { number * (1ull << 20) };
+        return number * kMebi;
     } else if (suffix == "GB") {
-        return { number * (1ull << 30) };
+        return number * kGibi;
     } else if (suffix == "TB") {
-        return { number * (1ull << 40) };
-    } else if (suffix == "EB") {
-        return { number * (1ull << 50) };
+        return number * kTebi;
     } else {
         return std::nullopt;
     }
-
 }
 
 size_t prefix_length(ByteView a, ByteView b) {

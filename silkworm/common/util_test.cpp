@@ -63,4 +63,30 @@ TEST_CASE("to_bytes32") {
                                      "8236423964bbb009874e"))) ==
           "7576351873263824fff23784264823469344629364396429864239864938264a");
 }
+
+TEST_CASE("parse_size") {
+    std::optional<size_t> size{parse_size("")};
+    CHECK((size && *size == 0));
+
+    static_assert(kKibi == 1024ull);
+    static_assert(kMebi == 1024ull * 1024ull);
+    static_assert(kGibi == 1024ull * 1024ull * 1024ull);
+    static_assert(kTebi == 1024ull * 1024ull * 1024ull * 1024ull);
+
+    size = parse_size("128");
+    CHECK((size && *size == 128));
+    size = parse_size("256B");
+    CHECK((size && *size == 256));
+    size = parse_size("640KB");
+    CHECK((size && *size == 640 * kKibi));
+    size = parse_size("75MB");
+    CHECK((size && *size == 75 * kMebi));
+    size = parse_size("400GB");
+    CHECK((size && *size == 400 * kGibi));
+    size = parse_size("2TB");
+    CHECK((size && *size == 2 * kTebi));
+
+    CHECK(!parse_size("ABBA"));
+}
+
 }  // namespace silkworm

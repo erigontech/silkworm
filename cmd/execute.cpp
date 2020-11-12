@@ -63,9 +63,8 @@ int main(int argc, char* argv[]) {
     uint64_t to_block{std::numeric_limits<uint64_t>::max()};
     app.add_option("--to", to_block, "Block execute up to");
 
-    uint64_t batch_mib{512};
-    app.add_option("--batch_mib", batch_mib, "Batch size in mebibytes of DB changes to accumulate before committing",
-                   true);
+    std::string batch_size_str{"512MB"};
+    app.add_option("--batch", batch_size_str, "Batch size of DB changes to accumulate before committing", true);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -85,6 +84,12 @@ int main(int argc, char* argv[]) {
         return -2;
     }
 
+    auto batch_size{parse_size(batch_size_str)};
+    if (!batch_size.has_value()) {
+        SILKWORM_LOG(LogError) << "Invalid --batch value provided : " << batch_size_str << std::endl;
+        return -3;
+    }
+
     SILKWORM_LOG(LogInfo) << "Starting block execution. DB: " << db_file << std::endl;
 
     lmdb::DatabaseConfig db_config{db_path, *map_size};
@@ -96,17 +101,16 @@ int main(int argc, char* argv[]) {
     if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
                            !migration_happened(*txn, "receipts_store_logs_separately"))) {
         SILKWORM_LOG(LogError) << "Legacy stored receipts are not supported" << std::endl;
-        return -3;
+        return -4;
     }
 
-    uint64_t batch_size{batch_mib * 1024 * 1024};
     uint64_t previous_progress{already_executed_block(*txn)};
     uint64_t current_progress{previous_progress};
 
     for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
         int lmdb_error_code{MDB_SUCCESS};
         SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), /*chain_id=*/1, block_number, to_block,
-                                                          batch_size, write_receipts, &current_progress,
+                                                          *batch_size, write_receipts, &current_progress,
                                                           &lmdb_error_code)};
         if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
             SILKWORM_LOG(LogError) << "Error in silkworm_execute_blocks: " << status << ", LMDB: " << lmdb_error_code

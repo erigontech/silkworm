@@ -95,53 +95,59 @@ int main(int argc, char* argv[]) {
 
     SILKWORM_LOG(LogInfo) << "Starting block execution. DB: " << db_file << std::endl;
 
-    lmdb::DatabaseConfig db_config{db_path};
-    if (map_size) {
-        db_config.map_size = *map_size;
-    }
-    db_config.set_readonly(false);
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+    try {
+        lmdb::DatabaseConfig db_config{db_path};
+        if (map_size) {
+            db_config.map_size = *map_size;
+        }
+        db_config.set_readonly(false);
+        std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
+        std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
-    bool write_receipts{db::read_storage_mode_receipts(*txn)};
-    if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
-                           !migration_happened(*txn, "receipts_store_logs_separately"))) {
-        SILKWORM_LOG(LogError) << "Legacy stored receipts are not supported" << std::endl;
-        return -4;
-    }
-
-    uint64_t previous_progress{already_executed_block(*txn)};
-    uint64_t current_progress{previous_progress};
-
-    for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-        int lmdb_error_code{MDB_SUCCESS};
-        SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), /*chain_id=*/1, block_number, to_block,
-                                                          *batch_size, write_receipts, &current_progress,
-                                                          &lmdb_error_code)};
-        if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
-            SILKWORM_LOG(LogError) << "Error in silkworm_execute_blocks: " << status << ", LMDB: " << lmdb_error_code
-                                   << std::endl;
-            return status;
+        bool write_receipts{db::read_storage_mode_receipts(*txn)};
+        if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
+                               !migration_happened(*txn, "receipts_store_logs_separately"))) {
+            SILKWORM_LOG(LogError) << "Legacy stored receipts are not supported" << std::endl;
+            return -4;
         }
 
-        block_number = current_progress;
+        uint64_t previous_progress{already_executed_block(*txn)};
+        uint64_t current_progress{previous_progress};
 
-        save_progress(*txn, current_progress);
-        lmdb::err_handler(txn->commit());
-        txn.reset();
+        for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
+            int lmdb_error_code{MDB_SUCCESS};
+            SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), /*chain_id=*/1, block_number, to_block,
+                                                              *batch_size, write_receipts, &current_progress,
+                                                              &lmdb_error_code)};
+            if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
+                SILKWORM_LOG(LogError) << "Error in silkworm_execute_blocks: " << status
+                                       << ", LMDB: " << lmdb_error_code << std::endl;
+                return status;
+            }
 
-        if (status == kSilkwormBlockNotFound) {
-            break;
+            block_number = current_progress;
+
+            save_progress(*txn, current_progress);
+            lmdb::err_handler(txn->commit());
+            txn.reset();
+
+            if (status == kSilkwormBlockNotFound) {
+                break;
+            }
+
+            SILKWORM_LOG(LogInfo) << "Blocks <= " << current_progress << " committed" << std::endl;
+            txn = env->begin_rw_transaction();
         }
 
-        SILKWORM_LOG(LogInfo) << "Blocks <= " << current_progress << " committed" << std::endl;
-        txn = env->begin_rw_transaction();
-    }
+        if (current_progress > previous_progress) {
+            SILKWORM_LOG(LogInfo) << "All blocks <= " << current_progress << " executed and committed" << std::endl;
+        } else {
+            SILKWORM_LOG(LogWarn) << "Nothing to execute" << std::endl;
+        }
 
-    if (current_progress > previous_progress) {
-        SILKWORM_LOG(LogInfo) << "All blocks <= " << current_progress << " executed and committed" << std::endl;
-    } else {
-        SILKWORM_LOG(LogWarn) << "Nothing to execute" << std::endl;
+    } catch (const std::exception& ex) {
+        SILKWORM_LOG(LogError) << ex.what() << std::endl;
+        return -5;
     }
 
     return 0;

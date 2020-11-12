@@ -16,8 +16,8 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <iostream>
 #include <limits>
+#include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
@@ -30,10 +30,9 @@ using namespace silkworm;
 
 static uint64_t already_executed_block(lmdb::Transaction& txn) {
     auto tbl{txn.open(db::table::kSyncStageProgress)};
-    ByteView stage_key{byte_view_of_c_str(kExecutionStageKey)};
-    std::optional<ByteView> already_executed{tbl->get(stage_key)};
-    if (already_executed) {
-        return boost::endian::load_big_u64(already_executed->data());
+    std::optional<ByteView> data{tbl->get(byte_view_of_c_str(kExecutionStageKey))};
+    if (data) {
+        return boost::endian::load_big_u64(data->data());
     } else {
         return 0;
     }
@@ -41,10 +40,9 @@ static uint64_t already_executed_block(lmdb::Transaction& txn) {
 
 static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
     auto tbl{txn.open(db::table::kSyncStageProgress)};
-    ByteView stage_key{byte_view_of_c_str(kExecutionStageKey)};
     Bytes val(8, '\0');
     boost::endian::store_big_u64(&val[0], block_number);
-    tbl->put(stage_key, val);
+    tbl->put(byte_view_of_c_str(kExecutionStageKey), val);
 }
 
 static bool migration_happened(lmdb::Transaction& txn, const char* name) {
@@ -71,21 +69,23 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
+    Logger::default_logger().set_local_timezone(true);  // for compatibility with TG logging
+
     // Check data.mdb exists in provided directory
     boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
     if (!boost::filesystem::exists(db_file)) {
-        std::clog << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
 
     // Check provided map size is valid
     auto map_size{parse_size(map_size_str)};
     if (!map_size.has_value()) {
-        std::clog << "Invalid --lmdb.mapSize value provided : " << map_size_str << std::endl;
+        SILKWORM_LOG(LogError) << "Invalid --lmdb.mapSize value provided : " << map_size_str << std::endl;
         return -2;
     }
 
-    std::clog << "Starting block execution. DB: " << db_file << std::endl;
+    SILKWORM_LOG(LogInfo) << "Starting block execution. DB: " << db_file << std::endl;
 
     lmdb::DatabaseConfig db_config{db_path, *map_size};
     db_config.set_readonly(false);
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
     bool write_receipts{db::read_storage_mode_receipts(*txn)};
     if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
                            !migration_happened(*txn, "receipts_store_logs_separately"))) {
-        std::clog << "Legacy stored receipts are not supported" << std::endl;
+        SILKWORM_LOG(LogError) << "Legacy stored receipts are not supported" << std::endl;
         return -3;
     }
 
@@ -109,7 +109,8 @@ int main(int argc, char* argv[]) {
                                                           batch_size, write_receipts, &current_progress,
                                                           &lmdb_error_code)};
         if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
-            std::clog << "Error in silkworm_execute_blocks: " << status << ", LMDB: " << lmdb_error_code << std::endl;
+            SILKWORM_LOG(LogError) << "Error in silkworm_execute_blocks: " << status << ", LMDB: " << lmdb_error_code
+                                   << std::endl;
             return status;
         }
 
@@ -123,14 +124,14 @@ int main(int argc, char* argv[]) {
             break;
         }
 
-        std::clog << "Blocks <= " << current_progress << " committed" << std::endl;
+        SILKWORM_LOG(LogInfo) << "Blocks <= " << current_progress << " committed" << std::endl;
         txn = env->begin_rw_transaction();
     }
 
     if (current_progress > previous_progress) {
-        std::clog << "All blocks <= " << current_progress << " executed and committed" << std::endl;
+        SILKWORM_LOG(LogInfo) << "All blocks <= " << current_progress << " executed and committed" << std::endl;
     } else {
-        std::clog << "Nothing to execute" << std::endl;
+        SILKWORM_LOG(LogWarn) << "Nothing to execute" << std::endl;
     }
 
     return 0;

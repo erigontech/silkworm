@@ -407,6 +407,9 @@ int do_scan(db_options_t& db_opts) {
 
 int do_stages(db_options_t& db_opts) {
 
+    static std::string fmt_hdr{ " %-24s %10s " };
+    static std::string fmt_row{ " %-24s %10u " };
+
     int retvar{ 0 };
     std::shared_ptr<lmdb::Environment> lmdb_env{open_db(db_opts, true)};  // Main lmdb environment
 
@@ -414,14 +417,17 @@ int do_stages(db_options_t& db_opts) {
 
         if (!lmdb_env) throw std::runtime_error("Could not open LMDB environment");
         auto lmdb_txn{ lmdb_env->begin_ro_transaction() };
-        auto stages{ lmdb_txn->open(db::table::kSyncStageProgress) };
+        auto stages{lmdb_txn->open(db::table::kSyncStageProgress)};
+
+        std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
+        std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(10, '-')) << std::endl;
 
         MDB_val key, data;
         int rc{stages->get_first(&key, &data)};
         while (rc == MDB_SUCCESS)
         {
             size_t height{boost::endian::load_big_u64(db::from_mdb_val(data).data())};
-            std::cout << (const char*)key.mv_data << "  " << height << std::endl;
+            std::cout << (boost::format(fmt_row) % (const char*)key.mv_data % height) << std::endl;
             rc = stages->get_next(&key, &data);
         }
         if (rc != MDB_NOTFOUND) lmdb::err_handler(rc);

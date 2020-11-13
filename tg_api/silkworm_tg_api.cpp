@@ -34,8 +34,11 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
 
     const ChainConfig* config{lookup_chain_config(chain_id)};
     if (!config) {
+        SILKWORM_LOG(LogError) << "Unsupported chain ID " << chain_id << std::endl;
         return kSilkwormUnknownChainId;
     }
+
+    uint64_t block_num{start_block};
 
     try {
         lmdb::Transaction txn{/*parent=*/nullptr, mdb_txn, /*flags=*/0};
@@ -44,7 +47,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
         db::Buffer buffer{&txn};
         AnalysisCache analysis_cache;
 
-        for (uint64_t block_num{start_block}; block_num <= max_block; ++block_num) {
+        for (; block_num <= max_block; ++block_num) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
             if (!bh) {
                 return kSilkwormBlockNotFound;
@@ -77,12 +80,16 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
         if (lmdb_error_code) {
             *lmdb_error_code = e.err();
         }
+        SILKWORM_LOG(LogError) << "LMDB error " << e.what() << std::endl;
         return kSilkwormLmdbError;
     } catch (const db::MissingSenders&) {
+        SILKWORM_LOG(LogError) << "Missing or incorrect senders at block " << block_num << std::endl;
         return kSilkwormMissingSenders;
-    } catch (const ValidationError&) {
+    } catch (const ValidationError& e) {
+        SILKWORM_LOG(LogError) << "Validation error " << e.what() << " at block " << block_num << std::endl;
         return kSilkwormInvalidBlock;
-    } catch (const DecodingError&) {
+    } catch (const DecodingError& e) {
+        SILKWORM_LOG(LogError) << "Decoding error " << e.what() << " at block " << block_num << std::endl;
         return kSilkwormDecodingError;
     } catch (...) {
         return kSilkwormUnknownError;

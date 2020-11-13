@@ -97,11 +97,6 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
         bool write_receipts{db::read_storage_mode_receipts(*txn)};
-        if (write_receipts && (!db::migration_happened(*txn, "receipts_cbor_encode") ||
-                               !db::migration_happened(*txn, "receipts_store_logs_separately"))) {
-            SILKWORM_LOG(LogError) << "Legacy stored receipts are not supported" << std::endl;
-            return -4;
-        }
 
         uint64_t previous_progress{already_executed_block(*txn)};
         uint64_t current_progress{previous_progress};

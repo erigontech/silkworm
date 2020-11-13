@@ -44,6 +44,12 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
         lmdb::Transaction txn{/*parent=*/nullptr, mdb_txn, /*flags=*/0};
         auto cleanup{gsl::finally([&txn] { *txn.handle() = nullptr; })};  // avoid aborting mdb_txn
 
+        if (write_receipts && (!db::migration_happened(txn, "receipts_cbor_encode") ||
+                               !db::migration_happened(txn, "receipts_store_logs_separately"))) {
+            SILKWORM_LOG(LogError) << "Legacy stored receipts are not supported" << std::endl;
+            return kIncompatibleDbFormat;
+        }
+
         db::Buffer buffer{&txn};
         AnalysisCache analysis_cache;
 

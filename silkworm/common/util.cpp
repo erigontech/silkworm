@@ -115,7 +115,7 @@ std::optional<size_t> parse_size(const std::string& sizestr) {
         return 0;
     }
 
-    static const std::regex pattern{"^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB|EB)?$"};
+    static const std::regex pattern{"^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB)?$"};
     std::smatch matches;
     if (!std::regex_search(sizestr, matches, pattern, std::regex_constants::match_default)) {
         return std::nullopt;

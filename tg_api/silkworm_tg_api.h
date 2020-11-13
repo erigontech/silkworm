@@ -47,7 +47,7 @@ enum SilkwormStatusCode {
     kSilkwormMissingSenders = 4,
     kSilkwormInvalidBlock = 5,
     kSilkwormDecodingError = 6,
-    kIncompatibleDbFormat = 7,
+    kSilkwormIncompatibleDbFormat = 7,
     kSilkwormUnknownError = -1
 };
 

@@ -45,11 +45,6 @@ static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
     tbl->put(byte_view_of_c_str(kExecutionStageKey), val);
 }
 
-static bool migration_happened(lmdb::Transaction& txn, const char* name) {
-    auto tbl{txn.open(db::table::kMigrations)};
-    return tbl->get(byte_view_of_c_str(name)).has_value();
-}
-
 int main(int argc, char* argv[]) {
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
@@ -102,8 +97,8 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
         bool write_receipts{db::read_storage_mode_receipts(*txn)};
-        if (write_receipts && (!migration_happened(*txn, "receipts_cbor_encode") ||
-                               !migration_happened(*txn, "receipts_store_logs_separately"))) {
+        if (write_receipts && (!db::migration_happened(*txn, "receipts_cbor_encode") ||
+                               !db::migration_happened(*txn, "receipts_store_logs_separately"))) {
             SILKWORM_LOG(LogError) << "Legacy stored receipts are not supported" << std::endl;
             return -4;
         }

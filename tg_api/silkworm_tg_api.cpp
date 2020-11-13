@@ -34,17 +34,33 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
 
     const ChainConfig* config{lookup_chain_config(chain_id)};
     if (!config) {
+        SILKWORM_LOG(LogError) << "Unsupported chain ID " << chain_id << std::endl;
         return kSilkwormUnknownChainId;
     }
+
+    uint64_t block_num{start_block};
 
     try {
         lmdb::Transaction txn{/*parent=*/nullptr, mdb_txn, /*flags=*/0};
         auto cleanup{gsl::finally([&txn] { *txn.handle() = nullptr; })};  // avoid aborting mdb_txn
 
+        if (write_receipts && (!db::migration_happened(txn, "receipts_cbor_encode") ||
+                               !db::migration_happened(txn, "receipts_store_logs_separately"))) {
+            SILKWORM_LOG(LogError) << "Legacy stored receipts are not supported" << std::endl;
+            return kSilkwormIncompatibleDbFormat;
+        }
+
+        // https://github.com/ledgerwatch/turbo-geth/pull/1342
+        if (db::migration_happened(txn, "acc_change_set_dup_sort_18") ||
+            db::migration_happened(txn, "storage_change_set_dup_sort_22")) {
+            SILKWORM_LOG(LogError) << "DupSort change sets are not supported yet" << std::endl;
+            return kSilkwormIncompatibleDbFormat;
+        }
+
         db::Buffer buffer{&txn};
         AnalysisCache analysis_cache;
 
-        for (uint64_t block_num{start_block}; block_num <= max_block; ++block_num) {
+        for (; block_num <= max_block; ++block_num) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
             if (!bh) {
                 return kSilkwormBlockNotFound;
@@ -77,12 +93,16 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
         if (lmdb_error_code) {
             *lmdb_error_code = e.err();
         }
+        SILKWORM_LOG(LogError) << "LMDB error " << e.what() << std::endl;
         return kSilkwormLmdbError;
     } catch (const db::MissingSenders&) {
+        SILKWORM_LOG(LogError) << "Missing or incorrect senders at block " << block_num << std::endl;
         return kSilkwormMissingSenders;
-    } catch (const ValidationError&) {
+    } catch (const ValidationError& e) {
+        SILKWORM_LOG(LogError) << "Validation error " << e.what() << " at block " << block_num << std::endl;
         return kSilkwormInvalidBlock;
-    } catch (const DecodingError&) {
+    } catch (const DecodingError& e) {
+        SILKWORM_LOG(LogError) << "Decoding error " << e.what() << " at block " << block_num << std::endl;
         return kSilkwormDecodingError;
     } catch (...) {
         return kSilkwormUnknownError;

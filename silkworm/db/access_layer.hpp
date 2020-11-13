@@ -29,7 +29,7 @@
 namespace silkworm::db {
 
 class MissingSenders : public std::runtime_error {
-   public:
+  public:
     using std::runtime_error::runtime_error;
 };
 
@@ -63,6 +63,8 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
 std::optional<AccountChanges> read_account_changes(lmdb::Transaction& txn, uint64_t block_number);
 
 Bytes read_storage_changes(lmdb::Transaction& txn, uint64_t block_number);
+
+bool migration_happened(lmdb::Transaction& txn, const char* name);
 
 }  // namespace silkworm::db
 

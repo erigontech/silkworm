@@ -275,4 +275,9 @@ bool read_storage_mode_receipts(lmdb::Transaction& txn) {
     return val && val->length() == 1 && (*val)[0] == 1;
 }
 
+bool migration_happened(lmdb::Transaction& txn, const char* name) {
+    auto tbl{txn.open(table::kMigrations)};
+    return tbl->get(byte_view_of_c_str(name)).has_value();
+}
+
 }  // namespace silkworm::db

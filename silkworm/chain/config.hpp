@@ -60,6 +60,9 @@ struct ChainConfig {
     // https://eips.ethereum.org/EIPS/eip-2387
     std::optional<uint64_t> muir_glacier_block;
 
+    // https://eips.ethereum.org/EIPS/eip-2070
+    std::optional<uint64_t> berlin_block;
+
     // https://eips.ethereum.org/EIPS/eip-779
     std::optional<uint64_t> dao_block;
 
@@ -99,6 +102,8 @@ struct ChainConfig {
     bool has_muir_glacier(uint64_t block_num) const noexcept {
         return muir_glacier_block.has_value() && muir_glacier_block <= block_num;
     }
+
+    bool has_berlin(uint64_t block_num) const noexcept { return berlin_block.has_value() && berlin_block <= block_num; }
 };
 
 constexpr ChainConfig kMainnetConfig{
@@ -112,6 +117,8 @@ constexpr ChainConfig kMainnetConfig{
     7'280'000,  // petersburg_block
     9'069'000,  // istanbul_block
     9'200'000,  // muir_glacier_block
+
+    std::nullopt,  // berlin_block
 
     1'920'000,  // dao_block
     2'675'119,  // ripemd_deletion_block

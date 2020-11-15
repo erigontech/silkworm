@@ -258,7 +258,7 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     if (!txn_) {
         return std::nullopt;
     }
-    return db::read_header(*txn_, block_number, block_hash);
+    return db::read_header(*txn_, block_number, block_hash.bytes);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

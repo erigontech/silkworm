@@ -25,9 +25,10 @@
 
 namespace silkworm::db {
 
-std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number, const evmc::bytes32& block_hash) {
+std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
+                                       const uint8_t (&hash)[kHashLength]) {
     auto table{txn.open(table::kBlockHeaders)};
-    Bytes key{block_key(block_number, block_hash.bytes)};
+    Bytes key{block_key(block_number, hash)};
     std::optional<ByteView> header_rlp{table->get(key)};
     if (!header_rlp) {
         return {};

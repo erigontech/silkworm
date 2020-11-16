@@ -60,6 +60,7 @@ constexpr lmdb::TableConfig kPlainState{"PLAIN-CST2", MDB_DUPSORT};
 constexpr lmdb::TableConfig kPlainStorageChangeSet{"PLAIN-SCS"};
 constexpr lmdb::TableConfig kPreimage{"secure-key-"};
 constexpr lmdb::TableConfig kSenders{"txSenders"};
+constexpr lmdb::TableConfig kSequence{"sequence"};
 constexpr lmdb::TableConfig kSnapshotInfo{"SNINFO"};
 constexpr lmdb::TableConfig kStorageChangeSet{"SCS"};
 constexpr lmdb::TableConfig kStorageHistory{"hST"};
@@ -108,6 +109,7 @@ constexpr lmdb::TableConfig kTables[]{
     kPlainStorageChangeSet,
     kPreimage,
     kSenders,
+    kSequence,
     kSnapshotInfo,
     kStorageChangeSet,
     kStorageHistory,

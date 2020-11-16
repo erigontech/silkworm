@@ -68,13 +68,6 @@ constexpr lmdb::TableConfig kSyncStageProgress{"SSP2"};
 constexpr lmdb::TableConfig kSyncStageUnwind{"SSU2"};
 constexpr lmdb::TableConfig kTxLookup{"l"};
 
-/* Deprecated Tables */
-constexpr lmdb::TableConfig kCurrentStateOld1{"CST"};
-constexpr lmdb::TableConfig kIntermediateTrieHashOld1{"iTh"};
-constexpr lmdb::TableConfig kPlainStateOld1{"PLAIN-CST", MDB_DUPSORT};
-constexpr lmdb::TableConfig kSyncStageProgressOld1{"SSP"};
-constexpr lmdb::TableConfig kSyncStageUnwindOld1{"SSU"};
-
 constexpr lmdb::TableConfig kTables[]{
     kAccountChangeSet,
     kAccountHistory,
@@ -116,10 +109,6 @@ constexpr lmdb::TableConfig kTables[]{
     kSyncStageProgress,
     kSyncStageUnwind,
     kTxLookup,
-};
-
-constexpr lmdb::TableConfig kDeprecatedTables[]{
-    kCurrentStateOld1, kIntermediateTrieHashOld1, kPlainStateOld1, kSyncStageProgressOld1, kSyncStageUnwindOld1,
 };
 
 // Create all tables that do not yet exist.

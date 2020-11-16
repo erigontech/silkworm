@@ -51,9 +51,9 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
         }
 
         // https://github.com/ledgerwatch/turbo-geth/pull/1342
-        if (db::migration_happened(txn, "acc_change_set_dup_sort_18") ||
-            db::migration_happened(txn, "storage_change_set_dup_sort_22")) {
-            SILKWORM_LOG(LogError) << "DupSort change sets are not supported yet" << std::endl;
+        if (!db::migration_happened(txn, "acc_change_set_dup_sort_18") ||
+            !db::migration_happened(txn, "storage_change_set_dup_sort_22")) {
+            SILKWORM_LOG(LogError) << "Legacy change sets are not supported" << std::endl;
             return kSilkwormIncompatibleDbFormat;
         }
 

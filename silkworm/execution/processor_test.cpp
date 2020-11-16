@@ -283,7 +283,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     evmc::address address{create_address(caller, nonce)};
 
     TemporaryDirectory tmp_dir{};
-    lmdb::DatabaseConfig db_config{tmp_dir.path(), (32ull << 20 /* 32MiB */)};
+    lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
     db_config.set_readonly(false);
 
     std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(db_config)};

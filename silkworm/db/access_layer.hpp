@@ -39,7 +39,8 @@ constexpr const char* kStorageModeReceipts{"smReceipts"};
 // See TG GetStorageModeFromDB
 bool read_storage_mode_receipts(lmdb::Transaction& txn);
 
-std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number, const evmc::bytes32& block_hash);
+std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
+                                       const uint8_t (&hash)[kHashLength]);
 
 // might throw MissingSenders
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders);

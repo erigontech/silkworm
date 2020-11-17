@@ -39,6 +39,18 @@ project(silkworm)
 
 include(cmake/Hunter/packages.cmake)
 
+# Profing and coverage options
+if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # coverage
+    add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+    add_link_options(-fprofile-instr-generate -fcoverage-mapping)
+  else()
+    # profiling
+    add_compile_options(-gline-tables-only)
+  endif()
+endif()
+
 # secp256k1
 if(MSVC)
   find_path(GMP_INCLUDE_DIR NAMES gmp.h)
@@ -73,7 +85,13 @@ add_subdirectory(libff)
 # CBOR
 add_subdirectory(cbor-cpp)
 
-# Compiler and linker options
+# LMDB
+add_library(lmdb lmdb-go/lmdb/lmdb.h
+                 lmdb-go/lmdb/mdb.c
+                 lmdb-go/lmdb/midl.c
+                 lmdb-go/lmdb/midl.h)
+
+# Warnings options
 if(MSVC)
   add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
 
@@ -89,20 +107,11 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-attributes)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
-  if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
-    add_compile_options(-Wthread-safety)
-  endif()
+endif()
 
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    # coverage
-    add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
-    add_link_options(-fprofile-instr-generate -fcoverage-mapping)
-  else()
-    # profiling
-    add_compile_options(-gline-tables-only)
-  endif()
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+  add_compile_options(-Wthread-safety)
 endif()
 
 # evmone

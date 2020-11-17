@@ -50,6 +50,9 @@ Bytes storage_key(const evmc::address& address, uint64_t incarnation, const evmc
 // Turbo-Geth HeaderHashKey
 Bytes header_hash_key(uint64_t block_number);
 
+// Turbo-Geth ReceiptsKey
+Bytes block_key(uint64_t block_number);
+
 // Turbo-Geth HeaderKey & BlockBodyKey
 Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 
@@ -59,9 +62,6 @@ Bytes history_index_key(ByteView key, uint64_t block_number);
 // Turbo-Geth EncodeTimestamp
 // If a < b, then Encoding(a) < Encoding(b) lexicographically
 Bytes encode_timestamp(uint64_t block_number);
-
-// Turbo-Geth ReceiptsKey
-Bytes receipt_key(uint64_t block_number);
 
 // Turbo-Geth LogKey
 Bytes log_key(uint64_t block_number, uint32_t transaction_id);

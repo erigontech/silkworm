@@ -151,5 +151,63 @@ namespace db {
             CHECK(bh->block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
         }
     }
+
+    TEST_CASE("read_account_changes") {
+        TemporaryDirectory tmp_dir;
+
+        lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
+        db_config.set_readonly(false);
+        auto env{lmdb::get_env(db_config)};
+        auto txn{env->begin_rw_transaction()};
+        table::create_all(*txn);
+
+        uint64_t block_num1{42};
+        uint64_t block_num2{49};
+        // uint64_t block_num3{50};
+
+        // absl::btree_map<evmc::address, Bytes> changes{read_account_changes(*txn, block_num1)};
+        // CHECK(changes.empty());
+        // changes = read_account_changes(*txn, block_num2);
+        // CHECK(changes.empty());
+        // changes = read_account_changes(*txn, block_num3);
+        // CHECK(changes.empty());
+
+        auto addr1{0x63c696931d3d3fd7cd83472febd193488266660d_address};
+        auto addr2{0xe439698beccd2acfba60eaa7f7b0b073bcebbdf9_address};
+        auto addr3{0x33564393ab248457df0e265107a86bdaf7b1470b_address};
+        auto addr4{0xaff7767097705df2dd0cc1c8b69071f6ff044aaa_address};
+
+        Bytes val1{from_hex("c9b131a4")};
+        Bytes val2{from_hex("076ebaf477f0")};
+        Bytes val3{};
+        Bytes val4{from_hex("9a31634956ec64b6865a")};
+
+        auto table{txn->open(table::kPlainStorageChangeSet)};
+
+        Bytes data1;
+        data1.append(full_view(addr1));
+        data1.append(val1);
+        table->put(block_key(block_num1), data1);
+
+        Bytes data2;
+        data2.append(full_view(addr2));
+        data2.append(val2);
+        table->put(block_key(block_num1), data2);
+
+        Bytes data3;
+        data3.append(full_view(addr3));
+        data3.append(val3);
+        table->put(block_key(block_num1), data3);
+
+        Bytes data4;
+        data4.append(full_view(addr4));
+        data4.append(val4);
+        table->put(block_key(block_num2), data4);
+
+        absl::btree_map<evmc::address, Bytes> changes{read_account_changes(*txn, block_num1)};
+        REQUIRE(changes.size() == 3);
+
+        // TODO(Andrew) implement the rest of the test
+    }
 }  // namespace db
 }  // namespace silkworm

@@ -61,7 +61,7 @@ evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address,
 std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const evmc::address& address,
                                                   std::optional<uint64_t> block_number = {});
 
-std::optional<AccountChanges> read_account_changes(lmdb::Transaction& txn, uint64_t block_number);
+absl::btree_map<evmc::address, Bytes> read_account_changes(lmdb::Transaction& txn, uint64_t block_number);
 
 Bytes read_storage_changes(lmdb::Transaction& txn, uint64_t block_number);
 

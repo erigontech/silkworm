@@ -34,28 +34,6 @@ using namespace silkworm;
 constexpr uint32_t kAddressLen{kAddressLength};
 constexpr uint32_t kHashLen{kHashLength};
 
-std::tuple<uint32_t, uint32_t> decode_account_meta(ByteView b) {
-    using boost::endian::load_big_u32;
-
-    if (b.length() < 4) {
-        throw DecodingError("input too short");
-    }
-
-    uint32_t n{load_big_u32(&b[0])};
-
-    uint32_t val_pos{4 + n * kAddressLen + 4 * n};
-    if (b.length() < val_pos) {
-        throw DecodingError("input too short");
-    }
-
-    uint32_t total_val_len{load_big_u32(&b[val_pos - 4])};
-    if (b.length() < val_pos + total_val_len) {
-        throw DecodingError("input too short");
-    }
-
-    return {n, val_pos};
-}
-
 std::tuple<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t> decode_storage_meta(ByteView b) {
     using boost::endian::load_big_u32;
 
@@ -75,21 +53,7 @@ std::tuple<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t> decode_storage_meta
     return {num_of_contracts, num_of_non_default_incarnations, incarnation_pos, key_pos, val_pos};
 }
 
-ByteView account_address(ByteView b, uint32_t i) { return b.substr(4 + i * kAddressLen, kAddressLen); };
-
 ByteView storage_address(ByteView b, uint32_t i) { return b.substr(4 + i * (4 + kAddressLen), kAddressLen); };
-
-std::pair<uint32_t, uint32_t> account_indices(ByteView lengths, uint32_t i) {
-    using boost::endian::load_big_u32;
-
-    uint32_t idx0{0};
-    if (i > 0) {
-        idx0 = load_big_u32(&lengths[4 * (i - 1)]);
-    }
-    uint32_t idx1 = load_big_u32(&lengths[4 * i]);
-
-    return {idx0, idx1};
-}
 
 ByteView find_value(ByteView b, uint32_t i) {
     using boost::endian::load_big_u16;
@@ -128,76 +92,6 @@ struct Contract {
 }  // namespace
 
 namespace silkworm::db {
-
-Bytes AccountChanges::encode() const {
-    auto n{size()};
-    Bytes out(4 + kAddressLen * n + 4 * n, '\0');
-    boost::endian::store_big_u32(&out[0], n);
-    size_t pos{4};
-
-    for (const auto& e : *this) {
-        std::memcpy(&out[pos], e.first.bytes, kAddressLen);
-        pos += kAddressLen;
-    }
-
-    uint32_t len_of_vals{0};
-    for (const auto& e : *this) {
-        len_of_vals += e.second.size();
-        boost::endian::store_big_u32(&out[pos], len_of_vals);
-        pos += 4;
-    }
-
-    assert(pos == out.size());
-    out.resize(pos + len_of_vals);
-
-    for (const auto& e : *this) {
-        std::memcpy(&out[pos], e.second.data(), e.second.size());
-        pos += e.second.size();
-    }
-
-    return out;
-}
-
-AccountChanges AccountChanges::decode(ByteView b) {
-    if (b.empty()) {
-        return {};
-    }
-
-    auto [n, val_pos]{decode_account_meta(b)};
-    ByteView lengths{b.substr(4 + n * kAddressLen)};
-
-    AccountChanges changes;
-    for (uint32_t i{0}; i < n; ++i) {
-        evmc::address key;
-        std::memcpy(key.bytes, &b[4 + i * kAddressLen], kAddressLen);
-        auto [idx0, idx1]{account_indices(lengths, i)};
-        changes[key] = b.substr(val_pos + idx0, idx1 - idx0);
-    }
-    return changes;
-}
-
-std::optional<ByteView> AccountChanges::find(ByteView b, ByteView key) {
-    using CI = boost::counting_iterator<uint32_t>;
-
-    assert(key.length() == kAddressLen);
-
-    if (b.empty()) {
-        return {};
-    }
-
-    auto [n, val_pos]{decode_account_meta(b)};
-
-    uint32_t i{*std::lower_bound(CI(0), CI(n), key,
-                                 [b](uint32_t i, ByteView address) { return account_address(b, i) < address; })};
-
-    if (i >= n || account_address(b, i) != key) {
-        return {};
-    }
-
-    auto [idx0, idx1]{account_indices(b.substr(4 + n * kAddressLen), i)};
-
-    return b.substr(val_pos + idx0, idx1 - idx0);
-}
 
 /*
 StorageChanges are encoded in the following format:

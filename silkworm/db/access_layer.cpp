@@ -102,6 +102,7 @@ std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code
     return Bytes{*val};
 }
 
+// TG FindByHistory
 static std::optional<ByteView> find_in_history(lmdb::Transaction& txn, bool storage, ByteView key,
                                                uint64_t block_number) {
     auto history_name{storage ? table::kStorageHistory : table::kAccountHistory};
@@ -134,15 +135,15 @@ static std::optional<ByteView> find_in_history(lmdb::Transaction& txn, bool stor
     auto change_table{txn.open(change_name)};
 
     uint64_t change_block{res->change_block};
-    std::optional<ByteView> changes{change_table->get(encode_timestamp(change_block))};
-    if (!changes) {
-        return {};
-    }
 
     if (storage) {
+        std::optional<ByteView> changes{change_table->get(encode_timestamp(change_block))};
+        if (!changes) {
+            return {};
+        }
         return StorageChanges::find(*changes, key);
     } else {
-        return AccountChanges::find(*changes, key);
+        return change_table->get(block_key(change_block), key);
     }
 }
 
@@ -229,12 +230,8 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
         }
 
         uint64_t change_block{changed_at->change_block};
-        std::optional<ByteView> changes{change_table->get(encode_timestamp(change_block))};
-        if (!changes) {
-            return {};
-        }
 
-        std::optional<ByteView> encoded{AccountChanges::find(*changes, key)};
+        std::optional<ByteView> encoded{change_table->get(block_key(change_block), key)};
         if (encoded && !encoded->empty()) {
             std::optional<Account> acc{decode_account_from_storage(*encoded)};
             if (acc && acc->incarnation > 0) {
@@ -252,13 +249,24 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
     }
 }
 
-std::optional<AccountChanges> read_account_changes(lmdb::Transaction& txn, uint64_t block_number) {
+absl::btree_map<evmc::address, Bytes> read_account_changes(lmdb::Transaction& txn, uint64_t block_num) {
+    absl::btree_map<evmc::address, Bytes> changes;
     auto table{txn.open(table::kPlainAccountChangeSet)};
-    std::optional<ByteView> val{table->get(encode_timestamp(block_number))};
-    if (!val) {
-        return {};
+    Bytes blck_key{block_key(block_num)};
+    MDB_val key_mdb{to_mdb_val(blck_key)};
+    MDB_val data_mdb;
+    for (int rc{table->get_first_dup(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND;
+         rc = table->get_next_dup(&key_mdb, &data_mdb)) {
+        lmdb::err_handler(rc);
+        ByteView data_view{from_mdb_val(data_mdb)};
+        assert(data_view.length() >= kAddressLength);
+        evmc::address address;
+        std::memcpy(address.bytes, data_view.data(), kAddressLength);
+        Bytes value;
+        std::memcpy(value.data(), data_view.data() + kAddressLength, data_view.length() - kAddressLength);
+        changes[address] = value;
     }
-    return AccountChanges::decode(*val);
+    return changes;
 }
 
 Bytes read_storage_changes(lmdb::Transaction& txn, uint64_t block_number) {

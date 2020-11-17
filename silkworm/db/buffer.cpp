@@ -34,19 +34,14 @@ static constexpr size_t kEntryOverhead{32};
 void Buffer::begin_block(uint64_t block_number) {
     current_block_number_ = block_number;
     changed_storage_.clear();
-    current_account_changes_.clear();
     current_storage_changes_.clear();
 }
 
 void Buffer::end_block() {
     static constexpr size_t kBlockTimestampLength{4};
 
-    Bytes encoded{current_account_changes_.encode()};
-    account_changes_[current_block_number_] = encoded;
-    batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
-
     if (!current_storage_changes_.empty()) {
-        encoded = current_storage_changes_.encode();
+        Bytes encoded{current_storage_changes_.encode()};
         storage_changes_[current_block_number_] = encoded;
         batch_size_ += kBlockTimestampLength + kEntryOverhead + encoded.length();
     }
@@ -68,7 +63,9 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         bool omit_code_hash{!account_deleted};
         encoded_initial = initial->encode_for_storage(omit_code_hash);
     }
-    current_account_changes_[address] = encoded_initial;
+    if (account_changes_[current_block_number_].insert_or_assign(address, encoded_initial).second) {
+        batch_size_ += kAddressLength + kEntryOverhead + encoded_initial.length();
+    }
 
     if (equal) {
         return;
@@ -180,10 +177,10 @@ void Buffer::write_to_db() {
     write_to_state_table();
 
     auto incarnation_table{txn_->open(table::kIncarnationMap)};
+    Bytes data(kIncarnationLength, '\0');
     for (const auto& entry : incarnations_) {
-        Bytes buf(kIncarnationLength, '\0');
-        boost::endian::store_big_u64(&buf[0], entry.second);
-        incarnation_table->put(full_view(entry.first), buf);
+        boost::endian::store_big_u64(&data[0], entry.second);
+        incarnation_table->put(full_view(entry.first), data);
     }
 
     auto code_table{txn_->open(table::kCode)};
@@ -197,9 +194,14 @@ void Buffer::write_to_db() {
     }
 
     auto account_change_table{txn_->open(table::kPlainAccountChangeSet)};
-    for (const auto& entry : account_changes_) {
-        Bytes block_key{encode_timestamp(entry.first)};
-        account_change_table->put(block_key, entry.second);
+    for (const auto& block_entry : account_changes_) {
+        Bytes blck_key{block_key(block_entry.first)};
+        for (const auto& account_entry : block_entry.second) {
+            data.clear();
+            data.append(full_view(account_entry.first));
+            data.append(account_entry.second);
+            account_change_table->put(blck_key, data);
+        }
     }
 
     auto storage_change_table{txn_->open(table::kPlainStorageChangeSet)};
@@ -234,7 +236,7 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
         }
     }
 
-    Bytes key{receipt_key(block_number)};
+    Bytes key{block_key(block_number)};
     Bytes value{cbor_encode(receipts)};
 
     if (receipts_.insert_or_assign(key, value).second) {

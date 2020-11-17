@@ -48,6 +48,12 @@ Bytes header_hash_key(uint64_t block_number) {
     return key;
 }
 
+Bytes block_key(uint64_t block_number) {
+    Bytes key(8, '\0');
+    boost::endian::store_big_u64(&key[0], block_number);
+    return key;
+}
+
 Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     Bytes key(8 + kHashLength, '\0');
     boost::endian::store_big_u64(&key[0], block_number);
@@ -83,12 +89,6 @@ Bytes encode_timestamp(uint64_t block_number) {
     std::memcpy(&encoded[byte_count - be.length()], &be[0], be.length());
     encoded[0] |= byte_count << (8 - kByteCountBits);
     return encoded;
-}
-
-Bytes receipt_key(uint64_t block_number) {
-    Bytes key(8, '\0');
-    boost::endian::store_big_u64(&key[0], block_number);
-    return key;
 }
 
 Bytes log_key(uint64_t block_number, uint32_t transaction_id) {

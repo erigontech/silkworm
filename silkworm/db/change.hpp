@@ -30,20 +30,8 @@ see its package changeset.
 
 namespace silkworm::db {
 
-class AccountChanges : public absl::btree_map<evmc::address, Bytes> {
-   public:
-    // Turbo-Geth EncodeAccountsPlain
-    Bytes encode() const;
-
-    // Turbo-Geth decodeAccountsWithKeyLen
-    static AccountChanges decode(ByteView encoded);
-
-    // Turbo-Geth (AccountChangeSetPlainBytes)Find
-    static std::optional<ByteView> find(ByteView encoded, ByteView key);
-};
-
 class StorageChanges : public absl::btree_map<Bytes, Bytes> {
-   public:
+  public:
     // Turbo-Geth EncodeStoragePlain
     Bytes encode() const;
 

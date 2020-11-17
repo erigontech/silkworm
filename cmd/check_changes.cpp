@@ -75,34 +75,32 @@ int main(int argc, char* argv[]) {
 
         execute_block(bh->block, buffer);
 
-        std::optional<db::AccountChanges> db_account_changes{db::read_account_changes(*txn, block_num)};
-        if (buffer.account_changes() != db_account_changes) {
+        auto expected_account_changes{buffer.account_changes().at(block_num)};
+        auto db_account_changes{db::read_account_changes(*txn, block_num)};
+        if (expected_account_changes != db_account_changes) {
             bool mismatch{false};
-            if (db_account_changes) {
-                for (const auto& e : *db_account_changes) {
-                    if (buffer.account_changes().count(e.first) == 0) {
-                        if (!kPhantomAccounts.contains(e.first)) {
-                            std::cerr << to_hex(e.first) << " is missing\n";
-                            mismatch = true;
-                        }
-                    } else if (Bytes val{buffer.account_changes().at(e.first)}; val != e.second) {
-                        std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
-                        std::cerr << to_hex(val) << "\n";
-                        std::cerr << "vs DB\n";
-                        std::cerr << to_hex(e.second) << "\n";
+
+            for (const auto& e : db_account_changes) {
+                if (!expected_account_changes.contains(e.first)) {
+                    if (!kPhantomAccounts.contains(e.first)) {
+                        std::cerr << to_hex(e.first) << " is missing\n";
                         mismatch = true;
                     }
+                } else if (Bytes val{expected_account_changes.at(e.first)}; val != e.second) {
+                    std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
+                    std::cerr << to_hex(val) << "\n";
+                    std::cerr << "vs DB\n";
+                    std::cerr << to_hex(e.second) << "\n";
+                    mismatch = true;
                 }
-                for (const auto& e : buffer.account_changes()) {
-                    if (db_account_changes->count(e.first) == 0) {
-                        std::cerr << to_hex(e.first) << " is not in DB\n";
-                        mismatch = true;
-                    }
-                }
-            } else {
-                std::cerr << "Nil DB account changes\n";
-                mismatch = true;
             }
+            for (const auto& e : expected_account_changes) {
+                if (!db_account_changes.contains(e.first)) {
+                    std::cerr << to_hex(e.first) << " is not in DB\n";
+                    mismatch = true;
+                }
+            }
+
             if (mismatch) {
                 std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
             }

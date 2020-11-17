@@ -90,6 +90,7 @@ add_library(lmdb lmdb-go/lmdb/lmdb.h
                  lmdb-go/lmdb/mdb.c
                  lmdb-go/lmdb/midl.c
                  lmdb-go/lmdb/midl.h)
+target_include_directories(lmdb PUBLIC lmdb-go)
 
 # Warnings options
 if(MSVC)

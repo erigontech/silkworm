@@ -75,8 +75,8 @@ int main(int argc, char* argv[]) {
 
         execute_block(bh->block, buffer);
 
-        const db::AccountChanges& calculated_account_changes{buffer.account_changes().at(block_num)};
         db::AccountChanges db_account_changes{db::read_account_changes(*txn, block_num)};
+        const db::AccountChanges& calculated_account_changes{buffer.account_changes().at(block_num)};
         if (calculated_account_changes != db_account_changes) {
             bool mismatch{false};
 
@@ -106,8 +106,11 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        const db::StorageChanges& calculated_storage_changes{buffer.storage_changes().at(block_num)};
         db::StorageChanges db_storage_changes{db::read_storage_changes(*txn, block_num)};
+        db::StorageChanges calculated_storage_changes{};
+        if (buffer.storage_changes().contains(block_num)) {
+            calculated_storage_changes = buffer.storage_changes().at(block_num);
+        }
         if (calculated_storage_changes != db_storage_changes) {
             std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";
         }

@@ -75,18 +75,18 @@ int main(int argc, char* argv[]) {
 
         execute_block(bh->block, buffer);
 
-        auto expected_account_changes{buffer.account_changes().at(block_num)};
-        auto db_account_changes{db::read_account_changes(*txn, block_num)};
-        if (expected_account_changes != db_account_changes) {
+        const db::AccountChanges& calculated_account_changes{buffer.account_changes().at(block_num)};
+        db::AccountChanges db_account_changes{db::read_account_changes(*txn, block_num)};
+        if (calculated_account_changes != db_account_changes) {
             bool mismatch{false};
 
             for (const auto& e : db_account_changes) {
-                if (!expected_account_changes.contains(e.first)) {
+                if (!calculated_account_changes.contains(e.first)) {
                     if (!kPhantomAccounts.contains(e.first)) {
                         std::cerr << to_hex(e.first) << " is missing\n";
                         mismatch = true;
                     }
-                } else if (Bytes val{expected_account_changes.at(e.first)}; val != e.second) {
+                } else if (Bytes val{calculated_account_changes.at(e.first)}; val != e.second) {
                     std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
                     std::cerr << to_hex(val) << "\n";
                     std::cerr << "vs DB\n";
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
                     mismatch = true;
                 }
             }
-            for (const auto& e : expected_account_changes) {
+            for (const auto& e : calculated_account_changes) {
                 if (!db_account_changes.contains(e.first)) {
                     std::cerr << to_hex(e.first) << " is not in DB\n";
                     mismatch = true;
@@ -106,16 +106,10 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        Bytes db_storage_changes{db::read_storage_changes(*txn, block_num)};
-        Bytes calculated_storage_changes{};
-        if (!buffer.storage_changes().empty()) {
-            calculated_storage_changes = buffer.storage_changes().encode();
-        }
+        const db::StorageChanges& calculated_storage_changes{buffer.storage_changes().at(block_num)};
+        db::StorageChanges db_storage_changes{db::read_storage_changes(*txn, block_num)};
         if (calculated_storage_changes != db_storage_changes) {
             std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";
-            std::cerr << to_hex(calculated_storage_changes) << "\n";
-            std::cerr << "vs DB\n";
-            std::cerr << to_hex(db_storage_changes) << "\n";
         }
 
         if (block_num % 1000 == 0) {

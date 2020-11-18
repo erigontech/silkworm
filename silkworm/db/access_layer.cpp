@@ -21,15 +21,13 @@
 
 #include "history_index.hpp"
 #include "tables.hpp"
-#include "util.hpp"
 
 namespace silkworm::db {
 
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
                                        const uint8_t (&hash)[kHashLength]) {
     auto table{txn.open(table::kBlockHeaders)};
-    Bytes key{block_key(block_number, hash)};
-    std::optional<ByteView> header_rlp{table->get(key)};
+    std::optional<ByteView> header_rlp{table->get(block_key(block_number, hash))};
     if (!header_rlp) {
         return {};
     }
@@ -102,62 +100,69 @@ std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code
     return Bytes{*val};
 }
 
-// TG FindByHistory
-static std::optional<ByteView> find_in_history(lmdb::Transaction& txn, bool storage, ByteView key,
-                                               uint64_t block_number) {
-    auto history_name{storage ? table::kStorageHistory : table::kAccountHistory};
-    auto history_table{txn.open(history_name)};
-    std::optional<Entry> entry{history_table->seek(history_index_key(key, block_number))};
+// TG FindByHistory for account
+static std::optional<ByteView> find_account_in_history(lmdb::Transaction& txn, const evmc::address& address,
+                                                       uint64_t block_number) {
+    auto history_table{txn.open(table::kAccountHistory)};
+    std::optional<Entry> entry{history_table->seek(account_history_key(address, block_number))};
     if (!entry) {
-        return {};
+        return std::nullopt;
     }
 
     ByteView k{entry->key};
-    if (storage) {
-        if (k.substr(0, kAddressLength) != key.substr(0, kAddressLength) ||
-            k.substr(kAddressLength, kHashLength) != key.substr(kStoragePrefixLength)) {
-            return {};
-        }
-    } else if (!has_prefix(k, key)) {
-        return {};
+    if (!has_prefix(k, full_view(address))) {
+        return std::nullopt;
     }
 
     std::optional<history_index::SearchResult> res{history_index::find(entry->value, block_number)};
     if (!res) {
-        return {};
+        return std::nullopt;
     }
 
-    if (res->new_record && !storage) {
+    if (res->new_record) {
         return ByteView{};
     }
 
-    auto change_name{storage ? table::kPlainStorageChangeSet : table::kPlainAccountChangeSet};
-    auto change_table{txn.open(change_name)};
-
+    auto change_table{txn.open(table::kPlainAccountChangeSet)};
     uint64_t change_block{res->change_block};
+    return change_table->get(block_key(change_block), full_view(address));
+}
 
-    if (storage) {
-        std::optional<ByteView> changes{change_table->get(encode_timestamp(change_block))};
-        if (!changes) {
-            return {};
-        }
-        return StorageChanges::find(*changes, key);
-    } else {
-        return change_table->get(block_key(change_block), key);
+// TG FindByHistory for storage
+static std::optional<ByteView> find_storage_in_history(lmdb::Transaction& txn, const evmc::address& address,
+                                                       uint64_t incarnation, const evmc::bytes32& location,
+                                                       uint64_t block_number) {
+    auto history_table{txn.open(table::kStorageHistory)};
+    std::optional<Entry> entry{history_table->seek(storage_history_key(address, location, block_number))};
+    if (!entry) {
+        return std::nullopt;
     }
+
+    ByteView k{entry->key};
+    if (k.substr(0, kAddressLength) != full_view(address) ||
+        k.substr(kAddressLength, kHashLength) != full_view(location)) {
+        return std::nullopt;
+    }
+
+    std::optional<history_index::SearchResult> res{history_index::find(entry->value, block_number)};
+    if (!res) {
+        return std::nullopt;
+    }
+
+    auto change_table{txn.open(table::kPlainStorageChangeSet)};
+    uint64_t change_block{res->change_block};
+    return change_table->get(storage_change_key(change_block, address, incarnation), full_view(location));
 }
 
 std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address& address,
                                     std::optional<uint64_t> block_num) {
-    auto key{full_view(address)};
-
     std::optional<ByteView> encoded{};
     if (block_num) {
-        encoded = find_in_history(txn, /*storage=*/false, key, *block_num);
+        encoded = find_account_in_history(txn, address, *block_num);
     }
     if (!encoded) {
         auto state_table{txn.open(table::kPlainState)};
-        encoded = state_table->get(key);
+        encoded = state_table->get(full_view(address));
     }
     if (!encoded || encoded->empty()) {
         return {};
@@ -178,15 +183,14 @@ std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address&
 }
 
 evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address, uint64_t incarnation,
-                           const evmc::bytes32& key, std::optional<uint64_t> block_num) {
+                           const evmc::bytes32& location, std::optional<uint64_t> block_num) {
     std::optional<ByteView> val{};
     if (block_num) {
-        auto composite_key{storage_key(address, incarnation, key)};
-        val = find_in_history(txn, /*storage=*/true, composite_key, *block_num);
+        val = find_storage_in_history(txn, address, incarnation, location, *block_num);
     }
     if (!val) {
         auto table{txn.open(table::kPlainState)};
-        val = table->get(storage_prefix(address, incarnation), full_view(key));
+        val = table->get(storage_prefix(address, incarnation), full_view(location));
     }
     if (!val) {
         return {};
@@ -199,12 +203,10 @@ evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address,
 
 std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const evmc::address& address,
                                                   std::optional<uint64_t> block_num) {
-    auto key{full_view(address)};
-
     if (!block_num) {
         // Current incarnation
         auto incarnation_table{txn.open(table::kIncarnationMap)};
-        std::optional<ByteView> val{incarnation_table->get(key)};
+        std::optional<ByteView> val{incarnation_table->get(full_view(address))};
         if (!val) {
             return {};
         }
@@ -219,8 +221,8 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
     // disregarding future changes (happening after the block_number).
     uint64_t block_number{*block_num};
     while (true) {
-        std::optional<Entry> entry{history_table->seek(history_index_key(key, block_number))};
-        if (!entry || !has_prefix(entry->key, key)) {
+        std::optional<Entry> entry{history_table->seek(account_history_key(address, block_number))};
+        if (!entry || !has_prefix(entry->key, full_view(address))) {
             return {};
         }
 
@@ -231,7 +233,7 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
 
         uint64_t change_block{changed_at->change_block};
 
-        std::optional<ByteView> encoded{change_table->get(block_key(change_block), key)};
+        std::optional<ByteView> encoded{change_table->get(block_key(change_block), full_view(address))};
         if (encoded && !encoded->empty()) {
             std::optional<Account> acc{decode_account_from_storage(*encoded)};
             if (acc && acc->incarnation > 0) {
@@ -249,8 +251,8 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
     }
 }
 
-absl::btree_map<evmc::address, Bytes> read_account_changes(lmdb::Transaction& txn, uint64_t block_num) {
-    absl::btree_map<evmc::address, Bytes> changes;
+AccountChanges read_account_changes(lmdb::Transaction& txn, uint64_t block_num) {
+    AccountChanges changes;
     auto table{txn.open(table::kPlainAccountChangeSet)};
     Bytes blck_key{block_key(block_num)};
     MDB_val key_mdb{to_mdb_val(blck_key)};
@@ -268,13 +270,11 @@ absl::btree_map<evmc::address, Bytes> read_account_changes(lmdb::Transaction& tx
     return changes;
 }
 
-Bytes read_storage_changes(lmdb::Transaction& txn, uint64_t block_number) {
-    auto table{txn.open(table::kPlainStorageChangeSet)};
-    std::optional<ByteView> val{table->get(encode_timestamp(block_number))};
-    if (!val) {
-        return {};
-    }
-    return Bytes{*val};
+StorageChanges read_storage_changes(lmdb::Transaction&, uint64_t) {
+    StorageChanges changes;
+    // auto table{txn.open(table::kPlainStorageChangeSet)};
+    // TODO(Andrew) implement
+    return changes;
 }
 
 bool read_storage_mode_receipts(lmdb::Transaction& txn) {

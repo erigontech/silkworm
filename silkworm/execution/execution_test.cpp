@@ -131,9 +131,7 @@ TEST_CASE("Execution API") {
     // Check change sets
     // ---------------------------------------
 
-    buffer.write_to_db();
-
-    const auto& account_changes{buffer.account_changes().at(1)};
+    const db::AccountChanges& account_changes{buffer.account_changes().at(1)};
     CHECK(account_changes.size() == 3);
 
     // sender existed at genesis
@@ -143,14 +141,12 @@ TEST_CASE("Execution API") {
     CHECK(account_changes.at(miner).empty());
     CHECK(account_changes.at(contract_address).empty());
 
-    Bytes storage_changes_encoded{db::read_storage_changes(*txn, 1)};
     db::StorageChanges storage_changes_expected{};
-    storage_changes_expected[db::storage_key(contract_address, incarnation, storage_key0)] = {};
-    storage_changes_expected[db::storage_key(contract_address, incarnation, storage_key1)] = {};
-    CHECK(storage_changes_encoded == storage_changes_expected.encode());
+    storage_changes_expected[contract_address][incarnation][storage_key0] = {};
+    storage_changes_expected[contract_address][incarnation][storage_key1] = {};
+    CHECK(buffer.storage_changes().at(1) == storage_changes_expected);
 
-    storage_changes_encoded = db::read_storage_changes(*txn, 2);
     storage_changes_expected.clear();
-    storage_changes_expected[db::storage_key(contract_address, incarnation, storage_key0)] = from_hex("2a");
-    CHECK(storage_changes_encoded == storage_changes_expected.encode());
+    storage_changes_expected[contract_address][incarnation][storage_key0] = from_hex("2a");
+    CHECK(buffer.storage_changes().at(2) == storage_changes_expected);
 }

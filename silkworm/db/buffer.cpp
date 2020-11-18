@@ -27,8 +27,11 @@
 
 namespace silkworm::db {
 
-// See TG mutation_puts.go
-static constexpr size_t kEntryOverhead{32};
+void Buffer::bump_batch_size(size_t key_len, size_t value_len) {
+    // Approximately matches TG batch size logic in (m *mutation) Put
+    static constexpr size_t kEntryOverhead{8};
+    batch_size_ += kEntryOverhead + key_len + value_len;
+}
 
 void Buffer::begin_block(uint64_t block_number) {
     block_number_ = block_number;
@@ -52,7 +55,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         encoded_initial = initial->encode_for_storage(omit_code_hash);
     }
     if (account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
-        batch_size_ += kAddressLength + kEntryOverhead + encoded_initial.length();
+        bump_batch_size(8, kAddressLength + encoded_initial.length());
     }
 
     if (equal) {
@@ -60,15 +63,12 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
     }
 
     if (accounts_.insert_or_assign(address, current).second) {
-        batch_size_ += kAddressLength + kEntryOverhead;
-        if (current) {
-            batch_size_ += current->encoding_length_for_storage();
-        };
+        bump_batch_size(kAddressLength, current ? current->encoding_length_for_storage() : 0);
     };
 
     if (account_deleted && initial->incarnation) {
         if (incarnations_.insert_or_assign(address, initial->incarnation).second) {
-            batch_size_ += kStoragePrefixLength + kEntryOverhead;
+            bump_batch_size(kAddressLength, kIncarnationLength);
         }
     }
 }
@@ -76,10 +76,10 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
 void Buffer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
                                  ByteView code) {
     if (hash_to_code_.insert_or_assign(code_hash, code).second) {
-        batch_size_ += kHashLength + kEntryOverhead + code.length();
+        bump_batch_size(kHashLength, code.length());
     }
     if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(address, incarnation), code_hash).second) {
-        batch_size_ += kStoragePrefixLength + kEntryOverhead + kHashLength;
+        bump_batch_size(kStoragePrefixLength, kHashLength);
     }
 }
 
@@ -91,11 +91,11 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     changed_storage_.insert(address);
     ByteView change_val{zeroless_view(initial)};
     if (storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
-        batch_size_ += 8 + kStoragePrefixLength + kEntryOverhead + kHashLength + change_val.size();
+        bump_batch_size(8 + kStoragePrefixLength, kHashLength + change_val.size());
     }
 
     if (storage_[address][incarnation].insert_or_assign(location, current).second) {
-        batch_size_ += kStoragePrefixLength + kEntryOverhead + kHashLength + zeroless_view(current).size();
+        bump_batch_size(kStoragePrefixLength, kHashLength + zeroless_view(current).size());
     }
 }
 
@@ -113,30 +113,30 @@ void Buffer::write_to_state_table() {
     auto state_table{txn_->open(table::kPlainState)};
 
     // sort before inserting into the DB
-    absl::btree_set<evmc::address> account_keys;
+    absl::btree_set<evmc::address> addresses;
     for (auto& x : accounts_) {
-        account_keys.insert(x.first);
+        addresses.insert(x.first);
     }
     for (auto& x : storage_) {
-        account_keys.insert(x.first);
+        addresses.insert(x.first);
     }
 
     std::vector<evmc::bytes32> storage_keys;
 
-    for (const auto& key : account_keys) {
-        if (auto it{accounts_.find(key)}; it != accounts_.end()) {
-            state_table->del(full_view(key));
+    for (const auto& address : addresses) {
+        if (auto it{accounts_.find(address)}; it != accounts_.end()) {
+            state_table->del(full_view(address));
             if (it->second.has_value()) {
                 bool omit_code_hash{false};
                 Bytes encoded{it->second->encode_for_storage(omit_code_hash)};
-                state_table->put(full_view(key), encoded);
+                state_table->put(full_view(address), encoded);
             }
         }
 
-        if (auto it{storage_.find(key)}; it != storage_.end()) {
+        if (auto it{storage_.find(address)}; it != storage_.end()) {
             for (const auto& contract : it->second) {
                 uint64_t incarnation{contract.first};
-                Bytes prefix{storage_prefix(it->first, incarnation)};
+                Bytes prefix{storage_prefix(address, incarnation)};
 
                 const auto& contract_storage{contract.second};
 
@@ -232,7 +232,7 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
         Bytes value{cbor_encode(receipts[i].logs)};
 
         if (logs_.insert_or_assign(key, value).second) {
-            batch_size_ += key.size() + kEntryOverhead + value.size();
+            bump_batch_size(key.size(), value.size());
         }
     }
 
@@ -240,7 +240,7 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     Bytes value{cbor_encode(receipts)};
 
     if (receipts_.insert_or_assign(key, value).second) {
-        batch_size_ += key.size() + kEntryOverhead + value.size();
+        bump_batch_size(key.size(), value.size());
     }
 }
 

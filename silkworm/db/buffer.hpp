@@ -94,6 +94,8 @@ class Buffer : public StateBuffer {
   private:
     void write_to_state_table();
 
+    void bump_batch_size(size_t key_len, size_t value_len);
+
     lmdb::Transaction* txn_{nullptr};
     std::optional<uint64_t> historical_block_{};
 

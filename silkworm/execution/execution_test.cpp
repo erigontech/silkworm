@@ -131,6 +131,13 @@ TEST_CASE("Execution API") {
     // Check change sets
     // ---------------------------------------
 
+    buffer.write_to_db();
+
+    CHECK(buffer.account_changes().at(1) == db::read_account_changes(*txn, 1));
+    CHECK(buffer.account_changes().at(2) == db::read_account_changes(*txn, 2));
+    CHECK(buffer.storage_changes().at(1) == db::read_storage_changes(*txn, 1));
+    CHECK(buffer.storage_changes().at(2) == db::read_storage_changes(*txn, 2));
+
     const db::AccountChanges& account_changes{buffer.account_changes().at(1)};
     CHECK(account_changes.size() == 3);
 

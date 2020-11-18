@@ -260,20 +260,44 @@ AccountChanges read_account_changes(lmdb::Transaction& txn, uint64_t block_num) 
     for (int rc{table->seek_exact(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND;
          rc = table->get_next_dup(&key_mdb, &data_mdb)) {
         lmdb::err_handler(rc);
-        ByteView data_view{from_mdb_val(data_mdb)};
-        assert(data_view.length() >= kAddressLength);
+        ByteView data{from_mdb_val(data_mdb)};
+        assert(data.length() >= kAddressLength);
         evmc::address address;
-        std::memcpy(address.bytes, data_view.data(), kAddressLength);
-        data_view.remove_prefix(kAddressLength);
-        changes[address] = data_view;
+        std::memcpy(address.bytes, data.data(), kAddressLength);
+        data.remove_prefix(kAddressLength);
+        changes[address] = data;
     }
     return changes;
 }
 
-StorageChanges read_storage_changes(lmdb::Transaction&, uint64_t) {
+StorageChanges read_storage_changes(lmdb::Transaction& txn, uint64_t block_num) {
     StorageChanges changes;
-    // auto table{txn.open(table::kPlainStorageChangeSet)};
-    // TODO(Andrew) implement
+    auto table{txn.open(table::kPlainStorageChangeSet)};
+    Bytes prefix{block_key(block_num)};
+    MDB_val key_mdb{to_mdb_val(prefix)};
+    MDB_val data_mdb;
+    for (int rc{table->seek(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND; rc = table->get_next(&key_mdb, &data_mdb)) {
+        lmdb::err_handler(rc);
+
+        ByteView key{from_mdb_val(key_mdb)};
+        if (!has_prefix(key, prefix)) {
+            break;
+        }
+        key.remove_prefix(prefix.length());
+        assert(key.length() == kStoragePrefixLength);
+        evmc::address address;
+        std::memcpy(address.bytes, key.data(), kAddressLength);
+        key.remove_prefix(kAddressLength);
+        uint64_t incarnation{boost::endian::load_big_u64(key.data())};
+
+        ByteView data{from_mdb_val(data_mdb)};
+        assert(data.length() >= kHashLength);
+        evmc::bytes32 location;
+        std::memcpy(location.bytes, data.data(), kHashLength);
+        data.remove_prefix(kHashLength);
+
+        changes[address][incarnation][location] = data;
+    }
     return changes;
 }
 

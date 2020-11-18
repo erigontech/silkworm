@@ -23,7 +23,7 @@
 
 namespace silkworm {
 
-BlockBody sample_block_body() {
+static BlockBody sample_block_body() {
     BlockBody body;
     body.transactions.resize(2);
 
@@ -165,7 +165,7 @@ namespace db {
         uint64_t block_num2{49};
         uint64_t block_num3{50};
 
-        auto changes{read_account_changes(*txn, block_num1)};
+        AccountChanges changes{read_account_changes(*txn, block_num1)};
         CHECK(changes.empty());
         changes = read_account_changes(*txn, block_num2);
         CHECK(changes.empty());
@@ -184,23 +184,19 @@ namespace db {
 
         auto table{txn->open(table::kPlainAccountChangeSet)};
 
-        Bytes data1;
-        data1.append(full_view(addr1));
+        Bytes data1{full_view(addr1)};
         data1.append(from_hex(val1));
         table->put(block_key(block_num1), data1);
 
-        Bytes data2;
-        data2.append(full_view(addr2));
+        Bytes data2{full_view(addr2)};
         data2.append(from_hex(val2));
         table->put(block_key(block_num1), data2);
 
-        Bytes data3;
-        data3.append(full_view(addr3));
+        Bytes data3{full_view(addr3)};
         data3.append(from_hex(val3));
         table->put(block_key(block_num1), data3);
 
-        Bytes data4;
-        data4.append(full_view(addr4));
+        Bytes data4{full_view(addr4)};
         data4.append(from_hex(val4));
         table->put(block_key(block_num2), data4);
 
@@ -216,6 +212,82 @@ namespace db {
 
         changes = read_account_changes(*txn, block_num3);
         CHECK(changes.empty());
+    }
+
+    TEST_CASE("read_storage_changes") {
+        TemporaryDirectory tmp_dir;
+
+        lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
+        db_config.set_readonly(false);
+        auto env{lmdb::get_env(db_config)};
+        auto txn{env->begin_rw_transaction()};
+        table::create_all(*txn);
+
+        uint64_t block_num1{42};
+        uint64_t block_num2{49};
+        uint64_t block_num3{50};
+
+        StorageChanges db_changes{read_storage_changes(*txn, block_num1)};
+        CHECK(db_changes.empty());
+        db_changes = read_storage_changes(*txn, block_num2);
+        CHECK(db_changes.empty());
+        db_changes = read_storage_changes(*txn, block_num3);
+        CHECK(db_changes.empty());
+
+        auto addr1{0x63c696931d3d3fd7cd83472febd193488266660d_address};
+        auto addr2{addr1};
+        auto addr3{0x33564393ab248457df0e265107a86bdaf7b1470b_address};
+        auto addr4{0xaff7767097705df2dd0cc1c8b69071f6ff044aaa_address};
+
+        auto location1{0xb2559376a79a91a99e2a5b644fe9cafdce005b8ad5359c49645ce225e62e6ba5_bytes32};
+        auto location2{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
+        auto location3{0x23d623b732046203836a0ec6666856523b7b3ec4bf4290dd0b544aa6fa5e61ea_bytes32};
+        auto location4{0x0000000000000000000000000000000000000000000000000000000000000017_bytes32};
+
+        Bytes val1{from_hex("c9b131a4")};
+        Bytes val2{from_hex("068566685666856076ebaf477f07")};
+        Bytes val3{};
+        Bytes val4{from_hex("9a31634956ec64b6865a")};
+
+        uint64_t incarnation1{1};
+        uint64_t incarnation2{1};
+        uint64_t incarnation3{3};
+        uint64_t incarnation4{1};
+
+        auto table{txn->open(table::kPlainStorageChangeSet)};
+
+        Bytes data1{full_view(location1)};
+        data1.append(val1);
+        table->put(storage_change_key(block_num1, addr1, incarnation1), data1);
+
+        Bytes data2{full_view(location2)};
+        data2.append(val2);
+        table->put(storage_change_key(block_num1, addr2, incarnation2), data2);
+
+        Bytes data3{full_view(location3)};
+        data3.append(val3);
+        table->put(storage_change_key(block_num1, addr3, incarnation3), data3);
+
+        Bytes data4{full_view(location4)};
+        data4.append(val4);
+        table->put(storage_change_key(block_num3, addr4, incarnation4), data4);
+
+        StorageChanges expected_changes1;
+        expected_changes1[addr1][incarnation1][location1] = val1;
+        expected_changes1[addr2][incarnation2][location2] = val2;
+        expected_changes1[addr3][incarnation3][location3] = val3;
+
+        db_changes = read_storage_changes(*txn, block_num1);
+        CHECK(db_changes == expected_changes1);
+
+        db_changes = read_storage_changes(*txn, block_num2);
+        CHECK(db_changes.empty());
+
+        StorageChanges expected_changes3;
+        expected_changes3[addr4][incarnation4][location4] = val4;
+
+        db_changes = read_storage_changes(*txn, block_num3);
+        CHECK(db_changes == expected_changes3);
     }
 }  // namespace db
 }  // namespace silkworm

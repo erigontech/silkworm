@@ -156,6 +156,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
          {},  // petersburg_block
          {},  // istanbul_block
          {},  // muir_glacier_block
+         {},  // berlin_block
          5,   // dao_block
      }},
     {"EIP158ToByzantiumAt5",

@@ -252,6 +252,7 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
 evmc_revision EVM::revision() const noexcept {
     uint64_t block_number{block_.header.number};
 
+    if (config().has_berlin(block_number)) return EVMC_BERLIN;
     if (config().has_istanbul(block_number)) return EVMC_ISTANBUL;
     if (config().has_petersburg(block_number)) return EVMC_PETERSBURG;
     if (config().has_constantinople(block_number)) return EVMC_CONSTANTINOPLE;

@@ -36,6 +36,24 @@ if(NOT SILKWORM_HAS_PARENT)
   )
 endif()
 
+#[[
+If you want to include Silkworm into your CMake project,
+add the following lines before the project command of your root CMakeLists.txt:
+
+-----------------------------------------------------------------------------------------------------
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/silkworm/cmake/toolchain.cmake CACHE FILEPATH "" FORCE)
+
+include(silkworm/evmone/cmake/cable/HunterGate.cmake)
+HunterGate(
+  URL "https://github.com/cpp-pm/hunter/archive/v0.23.267.tar.gz"
+  SHA1 "9c5c7fa6e17c2ae15dd922184bc7c51235aaae70"
+  FILEPATH "${CMAKE_SOURCE_DIR}/silkworm/cmake/Hunter/config.cmake"
+)
+-----------------------------------------------------------------------------------------------------
+
+(You can update the Hunter version, but keep the FILEPATH option.)
+]]
+
 project(silkworm)
 
 include(cmake/Hunter/packages.cmake)

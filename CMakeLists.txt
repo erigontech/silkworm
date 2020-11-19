@@ -16,24 +16,25 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-if(NOT EXISTS ${CMAKE_SOURCE_DIR}/evmone/evmc/.git)
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/evmone/evmc/.git)
   message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
 endif()
 
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchain.cmake CACHE FILEPATH "" FORCE)
+get_directory_property(SILKWORM_HAS_PARENT PARENT_DIRECTORY)
+if(NOT SILKWORM_HAS_PARENT)
+  include(evmone/cmake/cable/bootstrap.cmake)
+  include(CableBuildType)
+  cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
-include(evmone/cmake/cable/bootstrap.cmake)
-include(CableBuildType)
-cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
-include(evmone/cmake/cable/HunterGate.cmake)
+  set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain.cmake CACHE FILEPATH "" FORCE)
 
-
-set(HUNTER_USE_CACHE_SERVERS NO)
-HunterGate(
-  URL "https://github.com/cpp-pm/hunter/archive/v0.23.267.tar.gz"
-  SHA1 "9c5c7fa6e17c2ae15dd922184bc7c51235aaae70"
-  FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake"
-)
+  include(evmone/cmake/cable/HunterGate.cmake)
+  HunterGate(
+    URL "https://github.com/cpp-pm/hunter/archive/v0.23.267.tar.gz"
+    SHA1 "9c5c7fa6e17c2ae15dd922184bc7c51235aaae70"
+    FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake"
+  )
+endif()
 
 project(silkworm)
 
@@ -70,7 +71,7 @@ add_compile_definitions(ENABLE_MODULE_RECOVERY)
 add_library(secp256k1 secp256k1/src/secp256k1.c)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
 if(GMP_INCLUDE_DIR)
-target_include_directories(secp256k1 PRIVATE ${GMP_INCLUDE_DIR})
+  target_include_directories(secp256k1 PRIVATE ${GMP_INCLUDE_DIR})
 endif()
 
 # libff
@@ -135,4 +136,6 @@ target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
 # Silkworm itself
 add_subdirectory(silkworm)
 add_subdirectory(tg_api)
-add_subdirectory(cmd)
+if(NOT SILKWORM_HAS_PARENT)
+  add_subdirectory(cmd)
+endif()

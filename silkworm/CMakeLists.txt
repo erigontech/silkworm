@@ -23,7 +23,8 @@ file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
 add_library(silkworm ${SILKWORM_SRC})
-target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
+get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
+target_include_directories(silkworm PUBLIC ${SILKWORM_MAIN_DIR})
 
 set(SILKWORM_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set absl::btree Boost::filesystem
                          lmdb evmc intx::intx ff Microsoft.GSL::GSL)

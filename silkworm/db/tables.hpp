@@ -26,7 +26,7 @@ see its common/dbutils/bucket.go.
 namespace silkworm::db::table {
 
 /* Canonical tables */
-constexpr lmdb::TableConfig kAccountChangeSet{"ACS"};
+constexpr lmdb::TableConfig kAccountChangeSet{"ACS", MDB_DUPSORT};
 constexpr lmdb::TableConfig kAccountHistory{"hAT"};
 constexpr lmdb::TableConfig kBlockBodies{"b"};
 constexpr lmdb::TableConfig kBlockHeaders{"h"};
@@ -54,25 +54,19 @@ constexpr lmdb::TableConfig kLogAddressIndex{"log_address_index"};
 constexpr lmdb::TableConfig kLogTopicIndex{"log_topic_index"};
 constexpr lmdb::TableConfig kLogs{"log"};
 constexpr lmdb::TableConfig kMigrations{"migrations"};
-constexpr lmdb::TableConfig kPlainAccountChangeSet{"PLAIN-ACS"};
+constexpr lmdb::TableConfig kPlainAccountChangeSet{"PLAIN-ACS", MDB_DUPSORT};
 constexpr lmdb::TableConfig kPlainContractCode{"PLAIN-contractCode"};
 constexpr lmdb::TableConfig kPlainState{"PLAIN-CST2", MDB_DUPSORT};
-constexpr lmdb::TableConfig kPlainStorageChangeSet{"PLAIN-SCS"};
+constexpr lmdb::TableConfig kPlainStorageChangeSet{"PLAIN-SCS", MDB_DUPSORT};
 constexpr lmdb::TableConfig kPreimage{"secure-key-"};
 constexpr lmdb::TableConfig kSenders{"txSenders"};
+constexpr lmdb::TableConfig kSequence{"sequence"};
 constexpr lmdb::TableConfig kSnapshotInfo{"SNINFO"};
-constexpr lmdb::TableConfig kStorageChangeSet{"SCS"};
+constexpr lmdb::TableConfig kStorageChangeSet{"SCS", MDB_DUPSORT};
 constexpr lmdb::TableConfig kStorageHistory{"hST"};
 constexpr lmdb::TableConfig kSyncStageProgress{"SSP2"};
 constexpr lmdb::TableConfig kSyncStageUnwind{"SSU2"};
 constexpr lmdb::TableConfig kTxLookup{"l"};
-
-/* Deprecated Tables */
-constexpr lmdb::TableConfig kCurrentStateOld1{"CST"};
-constexpr lmdb::TableConfig kIntermediateTrieHashOld1{"iTh"};
-constexpr lmdb::TableConfig kPlainStateOld1{"PLAIN-CST", MDB_DUPSORT};
-constexpr lmdb::TableConfig kSyncStageProgressOld1{"SSP"};
-constexpr lmdb::TableConfig kSyncStageUnwindOld1{"SSU"};
 
 constexpr lmdb::TableConfig kTables[]{
     kAccountChangeSet,
@@ -108,16 +102,13 @@ constexpr lmdb::TableConfig kTables[]{
     kPlainStorageChangeSet,
     kPreimage,
     kSenders,
+    kSequence,
     kSnapshotInfo,
     kStorageChangeSet,
     kStorageHistory,
     kSyncStageProgress,
     kSyncStageUnwind,
     kTxLookup,
-};
-
-constexpr lmdb::TableConfig kDeprecatedTables[]{
-    kCurrentStateOld1, kIntermediateTrieHashOld1, kPlainStateOld1, kSyncStageProgressOld1, kSyncStageUnwindOld1,
 };
 
 // Create all tables that do not yet exist.

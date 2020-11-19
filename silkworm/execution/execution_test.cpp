@@ -103,16 +103,6 @@ TEST_CASE("Execution API") {
     CHECK(miner_account->balance > 1 * param::kFrontierBlockReward);
     CHECK(miner_account->balance < 2 * param::kFrontierBlockReward);
 
-    const db::AccountChanges& account_changes{buffer.account_changes()};
-    CHECK(account_changes.size() == 3);
-
-    // sender existed at genesis
-    CHECK(!account_changes.at(sender).empty());
-
-    // miner & contract were created in block 1
-    CHECK(account_changes.at(miner).empty());
-    CHECK(account_changes.at(contract_address).empty());
-
     // ---------------------------------------
     // Execute second block
     // ---------------------------------------
@@ -143,14 +133,27 @@ TEST_CASE("Execution API") {
 
     buffer.write_to_db();
 
-    Bytes storage_changes_encoded{db::read_storage_changes(*txn, 1)};
-    db::StorageChanges storage_changes_expected{};
-    storage_changes_expected[db::storage_key(contract_address, incarnation, storage_key0)] = {};
-    storage_changes_expected[db::storage_key(contract_address, incarnation, storage_key1)] = {};
-    CHECK(storage_changes_encoded == storage_changes_expected.encode());
+    CHECK(buffer.account_changes().at(1) == db::read_account_changes(*txn, 1));
+    CHECK(buffer.account_changes().at(2) == db::read_account_changes(*txn, 2));
+    CHECK(buffer.storage_changes().at(1) == db::read_storage_changes(*txn, 1));
+    CHECK(buffer.storage_changes().at(2) == db::read_storage_changes(*txn, 2));
 
-    storage_changes_encoded = db::read_storage_changes(*txn, 2);
+    const db::AccountChanges& account_changes{buffer.account_changes().at(1)};
+    CHECK(account_changes.size() == 3);
+
+    // sender existed at genesis
+    CHECK(!account_changes.at(sender).empty());
+
+    // miner & contract were created in block 1
+    CHECK(account_changes.at(miner).empty());
+    CHECK(account_changes.at(contract_address).empty());
+
+    db::StorageChanges storage_changes_expected{};
+    storage_changes_expected[contract_address][incarnation][storage_key0] = {};
+    storage_changes_expected[contract_address][incarnation][storage_key1] = {};
+    CHECK(buffer.storage_changes().at(1) == storage_changes_expected);
+
     storage_changes_expected.clear();
-    storage_changes_expected[db::storage_key(contract_address, incarnation, storage_key0)] = from_hex("2a");
-    CHECK(storage_changes_encoded == storage_changes_expected.encode());
+    storage_changes_expected[contract_address][incarnation][storage_key0] = from_hex("2a");
+    CHECK(buffer.storage_changes().at(2) == storage_changes_expected);
 }

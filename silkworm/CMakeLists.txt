@@ -17,7 +17,6 @@
 find_package(absl CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
 find_package(cryptopp CONFIG REQUIRED)
-find_package(liblmdb CONFIG REQUIRED)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
@@ -27,7 +26,7 @@ add_library(silkworm ${SILKWORM_SRC})
 target_include_directories(silkworm PUBLIC ${CMAKE_SOURCE_DIR})
 
 set(SILKWORM_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set absl::btree Boost::filesystem
-                         liblmdb::lmdb evmc intx::intx ff Microsoft.GSL::GSL)
+                         lmdb evmc intx::intx ff Microsoft.GSL::GSL)
 
 set(SILKWORM_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak cborcpp)
 

@@ -24,7 +24,7 @@
 namespace silkworm::db {
 
 class StateBuffer {
-   public:
+  public:
     virtual ~StateBuffer() = default;
 
     /** @name Readers */
@@ -34,12 +34,13 @@ class StateBuffer {
     virtual Bytes read_code(const evmc::bytes32& code_hash) const noexcept = 0;
 
     virtual evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
-                               const evmc::bytes32& key) const noexcept = 0;
+                                       const evmc::bytes32& location) const noexcept = 0;
 
     /** Previous non-zero incarnation of an account; 0 if none exists. */
     virtual uint64_t previous_incarnation(const evmc::address& address) const noexcept = 0;
 
-    virtual std::optional<BlockHeader> read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept = 0;
+    virtual std::optional<BlockHeader> read_header(uint64_t block_number,
+                                                   const evmc::bytes32& block_hash) const noexcept = 0;
     ///@}
 
     virtual void insert_header(const BlockHeader& block_header) = 0;
@@ -55,15 +56,14 @@ class StateBuffer {
      */
     virtual void begin_block(uint64_t block_number) = 0;
 
-    virtual void update_account(const evmc::address& address, std::optional<Account> initial, std::optional<Account> current) = 0;
+    virtual void update_account(const evmc::address& address, std::optional<Account> initial,
+                                std::optional<Account> current) = 0;
 
     virtual void update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
-                             ByteView code) = 0;
+                                     ByteView code) = 0;
 
-    virtual void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key,
-                        const evmc::bytes32& initial, const evmc::bytes32& current) = 0;
-
-    virtual void end_block() = 0;
+    virtual void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
+                                const evmc::bytes32& initial, const evmc::bytes32& current) = 0;
     ///@}
 };
 

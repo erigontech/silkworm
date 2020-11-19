@@ -14,8 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(liblmdb CONFIG REQUIRED)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
 add_library(silkworm_tg_api SHARED silkworm_tg_api.h silkworm_tg_api.cpp)
-target_link_libraries(silkworm_tg_api PUBLIC liblmdb::lmdb PRIVATE silkworm Microsoft.GSL::GSL)
+target_link_libraries(silkworm_tg_api PUBLIC lmdb PRIVATE silkworm Microsoft.GSL::GSL)

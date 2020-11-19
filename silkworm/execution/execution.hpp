@@ -34,6 +34,8 @@ class ValidationError : public std::runtime_error {
  *
  * Transaction senders must be already populated.
  * The DB table kCurrentState should match the Ethereum state at the begining of the block.
+ *
+ * For better performance use AnalysisCache.
  */
 std::vector<Receipt> execute_block(const Block& block, db::Buffer& buffer, const ChainConfig& config = kMainnetConfig,
                                    AnalysisCache* analysis_cache = nullptr);

@@ -291,8 +291,6 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
             db_.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
         }
     }
-
-    db_.end_block();
 }
 
 IntraBlockState::Snapshot IntraBlockState::take_snapshot() const noexcept {

@@ -22,6 +22,7 @@ Part of the compatibility layer with the Turbo-Geth DB format;
 see its package dbutils.
 */
 
+#include <absl/container/btree_map.h>
 #include <lmdb/lmdb.h>
 
 #include <silkworm/common/base.hpp>
@@ -41,27 +42,31 @@ struct Entry {
     ByteView value;
 };
 
+// address -> storage-encoded initial value
+using AccountChanges = absl::btree_map<evmc::address, Bytes>;
+
+// address -> incarnation -> location -> zeroless initial value
+using StorageChanges = absl::btree_map<evmc::address, absl::btree_map<uint64_t, absl::btree_map<evmc::bytes32, Bytes>>>;
+
 // Turbo-Geth PlainGenerateStoragePrefix
 Bytes storage_prefix(const evmc::address& address, uint64_t incarnation);
-
-// Turbo-Geth PlainGenerateCompositeStorageKey
-Bytes storage_key(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& key);
 
 // Turbo-Geth HeaderHashKey
 Bytes header_hash_key(uint64_t block_number);
 
+// Turbo-Geth ReceiptsKey
+Bytes block_key(uint64_t block_number);
+
 // Turbo-Geth HeaderKey & BlockBodyKey
 Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 
-// Turbo-Geth IndexChunkKey
-Bytes history_index_key(ByteView key, uint64_t block_number);
+Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation);
 
-// Turbo-Geth EncodeTimestamp
-// If a < b, then Encoding(a) < Encoding(b) lexicographically
-Bytes encode_timestamp(uint64_t block_number);
+// Turbo-Geth IndexChunkKey for account
+Bytes account_history_key(const evmc::address& address, uint64_t block_number);
 
-// Turbo-Geth ReceiptsKey
-Bytes receipt_key(uint64_t block_number);
+// Turbo-Geth IndexChunkKey for storage
+Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, uint64_t block_number);
 
 // Turbo-Geth LogKey
 Bytes log_key(uint64_t block_number, uint32_t transaction_id);

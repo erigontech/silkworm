@@ -35,6 +35,7 @@ constexpr lmdb::TableConfig kBloomBitsIndex{"iB"};
 constexpr lmdb::TableConfig kBloomBits{"B"};
 constexpr lmdb::TableConfig kCallFromIndex{"call_from_index"};
 constexpr lmdb::TableConfig kCallToIndex{"call_to_index"};
+constexpr lmdb::TableConfig kCanonicalBlocks{"canonical_blocks"};
 constexpr lmdb::TableConfig kClique{"clique-"};
 constexpr lmdb::TableConfig kCode{"CODE"};
 constexpr lmdb::TableConfig kConfig{"ethereum-config-"};
@@ -42,6 +43,7 @@ constexpr lmdb::TableConfig kContractCode{"contractCode"};
 constexpr lmdb::TableConfig kCurrentState{"CST2", MDB_DUPSORT};
 constexpr lmdb::TableConfig kDatabaseInfo{"DBINFO"};
 constexpr lmdb::TableConfig kDatabaseVersion{"DatabaseVersion"};
+constexpr lmdb::TableConfig kEthTx{"eth_tx"};
 constexpr lmdb::TableConfig kFastTrieProgress{"TrieSync"};
 constexpr lmdb::TableConfig kHeadBlock{"LastBlock"};
 constexpr lmdb::TableConfig kHeadFastBlock{"LastFast"};
@@ -78,6 +80,7 @@ constexpr lmdb::TableConfig kTables[]{
     kBloomBitsIndex,
     kCallFromIndex,
     kCallToIndex,
+    kCanonicalBlocks,
     kClique,
     kCode,
     kConfig,
@@ -85,6 +88,7 @@ constexpr lmdb::TableConfig kTables[]{
     kCurrentState,
     kDatabaseInfo,
     kDatabaseVersion,
+    kEthTx,
     kFastTrieProgress,
     kHeadBlock,
     kHeadFastBlock,

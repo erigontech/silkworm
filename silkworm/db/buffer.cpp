@@ -185,8 +185,7 @@ void Buffer::write_to_db() {
         uint64_t block_num{block_entry.first};
         change_key = block_key(block_num);
         for (const auto& account_entry : block_entry.second) {
-            data.clear();
-            data.append(full_view(account_entry.first));
+            data = full_view(account_entry.first);
             data.append(account_entry.second);
             account_change_table->put(change_key, data);
         }
@@ -201,8 +200,7 @@ void Buffer::write_to_db() {
                 uint64_t incarnation{incarnation_entry.first};
                 change_key = storage_change_key(block_num, address, incarnation);
                 for (const auto& storage_entry : incarnation_entry.second) {
-                    data.clear();
-                    data.append(full_view(storage_entry.first));
+                    data = full_view(storage_entry.first);
                     data.append(storage_entry.second);
                     storage_change_table->put(change_key, data);
                 }

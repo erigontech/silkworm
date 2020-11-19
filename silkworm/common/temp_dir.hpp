@@ -23,13 +23,16 @@ namespace silkworm {
 
 // Creates a temporary directory on construction and removes it on destruction.
 class TemporaryDirectory {
-   public:
+  public:
     TemporaryDirectory();
     ~TemporaryDirectory();
 
+    TemporaryDirectory(TemporaryDirectory&& other) = default;
+    TemporaryDirectory& operator=(TemporaryDirectory&& other) = default;
+
     const char* path() const noexcept { return path_.c_str(); }
 
-   private:
+  private:
     std::string path_;
 };
 

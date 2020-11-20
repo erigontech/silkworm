@@ -18,6 +18,7 @@
 #define SILKWORM_DB_ACCESS_LAYER_H_
 
 // Database Access Layer
+// See TG core/rawdb/accessors_chain.go
 
 #include <optional>
 #include <silkworm/db/chaindb.hpp>

@@ -26,6 +26,7 @@ see its package dbutils.
 #include <lmdb/lmdb.h>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/types/block.hpp>
 #include <string>
 
 namespace silkworm::db {
@@ -85,6 +86,21 @@ inline ByteView from_mdb_val(const MDB_val val) {
     auto* ptr{static_cast<uint8_t*>(val.mv_data)};
     return {ptr, val.mv_size};
 }
+
+namespace detail {
+
+    // See TG BodyForStorage
+    struct BlockBodyForStorage {
+        uint64_t base_txn_id{0};
+        uint64_t txn_amount{0};
+        std::vector<BlockHeader> ommers;
+
+        Bytes encode() const;
+    };
+
+    BlockBodyForStorage decode_stored_block_body(ByteView& from);
+
+}  // namespace detail
 }  // namespace silkworm::db
 
 #endif  // SILKWORM_DB_UTIL_H_

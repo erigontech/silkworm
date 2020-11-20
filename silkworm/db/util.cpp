@@ -22,6 +22,7 @@
 #include <cstring>
 #include <intx/int128.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::db {
@@ -126,4 +127,33 @@ std::string default_path() {
 
     return base_dir + "/tg/chaindata";
 }
+
+namespace detail {
+    Bytes BlockBodyForStorage::encode() const {
+        rlp::Header header{/*list=*/true, /*payload_length=*/0};
+        header.payload_length += rlp::length(base_txn_id);
+        header.payload_length += rlp::length(txn_amount);
+        header.payload_length += rlp::length(ommers);
+
+        Bytes to;
+        rlp::encode_header(to, header);
+        rlp::encode(to, base_txn_id);
+        rlp::encode(to, txn_amount);
+        rlp::encode(to, ommers);
+        return to;
+    }
+
+    BlockBodyForStorage decode_stored_block_body(ByteView& from) {
+        rlp::Header header{rlp::decode_header(from)};
+        if (!header.list) {
+            throw DecodingError("unexpected string");
+        }
+
+        BlockBodyForStorage to;
+        rlp::decode(from, to.base_txn_id);
+        rlp::decode(from, to.txn_amount);
+        rlp::decode_vector(from, to.ommers);
+        return to;
+    }
+}  // namespace detail
 }  // namespace silkworm::db

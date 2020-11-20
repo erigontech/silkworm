@@ -22,13 +22,6 @@ hunter_config(
 )
 
 hunter_config(
-  lmdb
-  VERSION 0.9.26
-  URL https://github.com/torquem-ch/lmdb/archive/v0.9.26.tar.gz
-  SHA1 ed1f187022ae44d51816400343e219c8a1c7ccd6
-)
-
-hunter_config(
   cryptopp
   VERSION 8.2.0-p1
   URL "https://github.com/torquem-ch/cryptopp/archive/v8.2.0-p1.tar.gz"

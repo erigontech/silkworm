@@ -35,7 +35,6 @@ constexpr lmdb::TableConfig kBloomBitsIndex{"iB"};
 constexpr lmdb::TableConfig kBloomBits{"B"};
 constexpr lmdb::TableConfig kCallFromIndex{"call_from_index"};
 constexpr lmdb::TableConfig kCallToIndex{"call_to_index"};
-constexpr lmdb::TableConfig kCanonicalBlocks{"canonical_blocks"};
 constexpr lmdb::TableConfig kClique{"clique-"};
 constexpr lmdb::TableConfig kCode{"CODE"};
 constexpr lmdb::TableConfig kConfig{"ethereum-config-"};
@@ -80,7 +79,6 @@ constexpr lmdb::TableConfig kTables[]{
     kBloomBitsIndex,
     kCallFromIndex,
     kCallToIndex,
-    kCanonicalBlocks,
     kClique,
     kCode,
     kConfig,

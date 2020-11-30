@@ -92,7 +92,7 @@ namespace detail {
     // See TG BodyForStorage
     struct BlockBodyForStorage {
         uint64_t base_txn_id{0};
-        uint64_t txn_amount{0};
+        uint64_t txn_count{0};
         std::vector<BlockHeader> ommers;
 
         Bytes encode() const;

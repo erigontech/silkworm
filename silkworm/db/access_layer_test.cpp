@@ -114,7 +114,7 @@ namespace db {
 
             detail::BlockBodyForStorage storage_body;
             storage_body.base_txn_id = 1687896;
-            storage_body.txn_amount = body.transactions.size();
+            storage_body.txn_count = body.transactions.size();
             storage_body.ommers = body.ommers;
 
             auto body_table{txn->open(table::kBlockBodies)};

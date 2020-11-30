@@ -38,12 +38,12 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
 }
 
 // TG ReadTransactions
-static std::vector<Transaction> read_transactions(lmdb::Transaction& txn, uint64_t base_id, uint64_t amount) {
+static std::vector<Transaction> read_transactions(lmdb::Transaction& txn, uint64_t base_id, uint64_t count) {
     std::vector<Transaction> v;
-    if (amount == 0) {
+    if (count == 0) {
         return v;
     }
-    v.reserve(amount);
+    v.reserve(count);
 
     auto table{txn.open(table::kEthTx)};
 
@@ -53,7 +53,7 @@ static std::vector<Transaction> read_transactions(lmdb::Transaction& txn, uint64
     MDB_val data_mdb;
 
     uint64_t i{0};
-    for (int rc{table->seek_exact(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND && i < amount;
+    for (int rc{table->seek_exact(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND && i < count;
          rc = table->get_next(&key_mdb, &data_mdb), ++i) {
         lmdb::err_handler(rc);
         ByteView data{from_mdb_val(data_mdb)};
@@ -93,7 +93,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
 
     auto body{detail::decode_stored_block_body(*body_rlp)};
     bh.block.ommers = body.ommers;
-    bh.block.transactions = read_transactions(txn, body.base_txn_id, body.txn_amount);
+    bh.block.transactions = read_transactions(txn, body.base_txn_id, body.txn_count);
 
     if (read_senders) {
         std::vector<evmc::address> senders{db::read_senders(txn, block_number, bh.hash)};

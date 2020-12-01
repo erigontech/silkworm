@@ -58,8 +58,8 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
         }
 
         // https://github.com/ledgerwatch/turbo-geth/pull/1358
-        if (db::migration_happened(txn, "tx_table_4")) {
-            SILKWORM_LOG(LogError) << "Individually stored transactions are not supported yet\n";
+        if (!db::migration_happened(txn, "tx_table_4")) {
+            SILKWORM_LOG(LogError) << "Legacy stored transactions are not supported\n";
             return kSilkwormIncompatibleDbFormat;
         }
 

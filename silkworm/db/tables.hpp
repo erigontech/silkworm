@@ -42,6 +42,7 @@ constexpr lmdb::TableConfig kContractCode{"contractCode"};
 constexpr lmdb::TableConfig kCurrentState{"CST2", MDB_DUPSORT};
 constexpr lmdb::TableConfig kDatabaseInfo{"DBINFO"};
 constexpr lmdb::TableConfig kDatabaseVersion{"DatabaseVersion"};
+constexpr lmdb::TableConfig kEthTx{"eth_tx"};
 constexpr lmdb::TableConfig kFastTrieProgress{"TrieSync"};
 constexpr lmdb::TableConfig kHeadBlock{"LastBlock"};
 constexpr lmdb::TableConfig kHeadFastBlock{"LastFast"};
@@ -85,6 +86,7 @@ constexpr lmdb::TableConfig kTables[]{
     kCurrentState,
     kDatabaseInfo,
     kDatabaseVersion,
+    kEthTx,
     kFastTrieProgress,
     kHeadBlock,
     kHeadFastBlock,

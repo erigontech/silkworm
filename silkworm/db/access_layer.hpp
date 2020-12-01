@@ -18,6 +18,7 @@
 #define SILKWORM_DB_ACCESS_LAYER_H_
 
 // Database Access Layer
+// See TG core/rawdb/accessors_chain.go
 
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
@@ -42,9 +43,11 @@ bool read_storage_mode_receipts(lmdb::Transaction& txn);
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
                                        const uint8_t (&hash)[kHashLength]);
 
+// See TG ReadBlockByNumber
 // might throw MissingSenders
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders);
 
+// See TG ReadSenders
 std::vector<evmc::address> read_senders(lmdb::Transaction& txn, int64_t block_number, const evmc::bytes32& block_hash);
 
 std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code_hash);

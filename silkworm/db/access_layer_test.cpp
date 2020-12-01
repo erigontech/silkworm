@@ -16,6 +16,7 @@
 
 #include "access_layer.hpp"
 
+#include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 #include <silkworm/common/temp_dir.hpp>
 
@@ -110,11 +111,23 @@ namespace db {
             CHECK(!read_block(*txn, block_num, read_senders));
 
             BlockBody body{sample_block_body()};
-            rlp.clear();
-            rlp::encode(rlp, body);
+
+            detail::BlockBodyForStorage storage_body;
+            storage_body.base_txn_id = 1687896;
+            storage_body.txn_count = body.transactions.size();
+            storage_body.ommers = body.ommers;
 
             auto body_table{txn->open(table::kBlockBodies)};
-            body_table->put(key, rlp);
+            body_table->put(key, storage_body.encode());
+
+            auto txn_table{txn->open(table::kEthTx)};
+            Bytes txn_key(8, '\0');
+            for (size_t i{0}; i < body.transactions.size(); ++i) {
+                boost::endian::store_big_u64(txn_key.data(), storage_body.base_txn_id + i);
+                rlp.clear();
+                rlp::encode(rlp, body.transactions[i]);
+                txn_table->put(txn_key, rlp);
+            }
 
             std::optional<BlockWithHash> bh{read_block(*txn, block_num, read_senders)};
             REQUIRE(bh);

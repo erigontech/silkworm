@@ -37,6 +37,35 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
     return header;
 }
 
+// TG ReadTransactions
+static std::vector<Transaction> read_transactions(lmdb::Transaction& txn, uint64_t base_id, uint64_t count) {
+    std::vector<Transaction> v;
+    if (count == 0) {
+        return v;
+    }
+    v.reserve(count);
+
+    auto table{txn.open(table::kEthTx)};
+
+    Bytes txn_key(8, '\0');
+    boost::endian::store_big_u64(txn_key.data(), base_id);
+    MDB_val key_mdb{to_mdb_val(txn_key)};
+    MDB_val data_mdb;
+
+    uint64_t i{0};
+    for (int rc{table->seek_exact(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND && i < count;
+         rc = table->get_next(&key_mdb, &data_mdb), ++i) {
+        lmdb::err_handler(rc);
+        ByteView data{from_mdb_val(data_mdb)};
+
+        Transaction eth_txn;
+        rlp::decode(data, eth_txn);
+        v.push_back(eth_txn);
+    }
+
+    return v;
+}
+
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders) {
     auto header_table{txn.open(table::kBlockHeaders)};
     std::optional<ByteView> hash{header_table->get(header_hash_key(block_number))};
@@ -62,7 +91,9 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
         return std::nullopt;
     }
 
-    rlp::decode<BlockBody>(*body_rlp, bh.block);
+    auto body{detail::decode_stored_block_body(*body_rlp)};
+    bh.block.ommers = body.ommers;
+    bh.block.transactions = read_transactions(txn, body.base_txn_id, body.txn_count);
 
     if (read_senders) {
         std::vector<evmc::address> senders{db::read_senders(txn, block_number, bh.hash)};

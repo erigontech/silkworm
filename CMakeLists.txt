@@ -143,6 +143,7 @@ find_package(intx CONFIG REQUIRED)
 add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/analysis.hpp
                    evmone/lib/evmone/execution_state.hpp
+                   evmone/lib/evmone/instructions_calls.cpp
                    evmone/lib/evmone/instructions.cpp
                    evmone/lib/evmone/instructions.hpp
                    evmone/lib/evmone/limits.hpp

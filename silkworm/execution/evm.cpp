@@ -225,14 +225,7 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     }
 
     auto state{ExecutionStatePool::instance().acquire()};
-    state->clear();
-
-    state->gas_left = msg.gas;
-    state->msg = &msg;
-    state->host = evmc::HostContext{host.get_interface(), host.to_context()};
-    state->rev = rev;
-    state->code = code;
-    state->analysis = analysis.get();
+    state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size(), *analysis);
 
     const auto* instruction{&state->analysis->instrs[0]};
     while (instruction) {

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <boost/filesystem.hpp>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -21,6 +22,7 @@
 #include <nlohmann/json.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>

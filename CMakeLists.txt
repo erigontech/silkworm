@@ -154,6 +154,7 @@ target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE ethash::keccak)
 
 # Silkworm itself
 add_subdirectory(core)
+add_subdirectory(db)
 add_subdirectory(tg_api)
 if(NOT SILKWORM_HAS_PARENT)
   add_subdirectory(cmd)

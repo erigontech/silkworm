@@ -18,8 +18,9 @@
 #define SILKWORM_EXECUTION_EXECUTION_H_
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/db/buffer.hpp>
+#include <silkworm/db/state_buffer.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
+#include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
 #include <stdexcept>
 
@@ -37,8 +38,8 @@ class ValidationError : public std::runtime_error {
  *
  * For better performance use AnalysisCache.
  */
-std::vector<Receipt> execute_block(const Block& block, db::Buffer& buffer, const ChainConfig& config = kMainnetConfig,
-                                   AnalysisCache* analysis_cache = nullptr);
+std::vector<Receipt> execute_block(const Block& block, db::StateBuffer& buffer,
+                                   const ChainConfig& config = kMainnetConfig, AnalysisCache* analysis_cache = nullptr);
 
 }  // namespace silkworm
 

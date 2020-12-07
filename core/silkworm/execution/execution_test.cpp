@@ -22,6 +22,7 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/address.hpp>

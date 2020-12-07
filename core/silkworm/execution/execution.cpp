@@ -16,14 +16,13 @@
 
 #include "execution.hpp"
 
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/trie/vector_root.hpp>
 
 #include "processor.hpp"
 
 namespace silkworm {
 
-std::vector<Receipt> execute_block(const Block& block, db::Buffer& buffer, const ChainConfig& config,
+std::vector<Receipt> execute_block(const Block& block, db::StateBuffer& buffer, const ChainConfig& config,
                                    AnalysisCache* analysis_cache) {
     const BlockHeader& header{block.header};
     uint64_t block_num{header.number};

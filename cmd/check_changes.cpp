@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 
 using namespace evmc::literals;

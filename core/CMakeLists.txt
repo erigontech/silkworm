@@ -22,9 +22,9 @@ find_package(Microsoft.GSL CONFIG REQUIRED)
 file(GLOB_RECURSE SILKWORM_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_SRC EXCLUDE REGEX "_test\.cpp$")
 
-add_library(silkworm ${SILKWORM_SRC})
+add_library(silkworm_core ${SILKWORM_SRC})
 get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
-target_include_directories(silkworm PUBLIC ${SILKWORM_MAIN_DIR})
+target_include_directories(silkworm_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${SILKWORM_MAIN_DIR})
 
 set(SILKWORM_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set absl::btree Boost::filesystem
                          lmdb evmc intx::intx ff Microsoft.GSL::GSL)
@@ -35,4 +35,4 @@ if(MSVC)
   list(APPEND SILKWORM_PRIVATE_LIBS ntdll.lib)
 endif(MSVC)
 
-target_link_libraries(silkworm PUBLIC ${SILKWORM_PUBLIC_LIBS} PRIVATE ${SILKWORM_PRIVATE_LIBS})
+target_link_libraries(silkworm_core PUBLIC ${SILKWORM_PUBLIC_LIBS} PRIVATE ${SILKWORM_PRIVATE_LIBS})

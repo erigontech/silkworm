@@ -26,10 +26,8 @@ add_library(silkworm_db ${SILKWORM_DB_SRC})
 get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
 target_include_directories(silkworm_db PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${SILKWORM_MAIN_DIR})
 
-set(SILKWORM_DB_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set absl::btree Boost::filesystem
-                         lmdb evmc intx::intx ff Microsoft.GSL::GSL silkworm_core)
-
-set(SILKWORM_DB_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak cborcpp)
+set(SILKWORM_DB_PUBLIC_LIBS silkworm_core lmdb absl::flat_hash_map absl::flat_hash_set absl::btree)
+set(SILKWORM_DB_PRIVATE_LIBS Boost::filesystem)
 
 if(MSVC)
   list(APPEND SILKWORM_DB_PRIVATE_LIBS ntdll.lib)

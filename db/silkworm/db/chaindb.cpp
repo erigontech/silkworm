@@ -17,6 +17,7 @@
 #include "chaindb.hpp"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
 namespace silkworm::lmdb {
@@ -30,7 +31,6 @@ void DatabaseConfig::set_readonly(bool value) {
 }
 
 Environment::Environment(const DatabaseConfig& config) {
-
     if (config.path.empty()) {
         throw std::invalid_argument("Invalid argument : config.path");
     }
@@ -44,7 +44,7 @@ Environment::Environment(const DatabaseConfig& config) {
     size_t data_file_size{0};
     size_t data_map_size{0};
     boost::filesystem::path data_path{config.path};
-    bool nosubdir{ (config.flags & MDB_NOSUBDIR) == MDB_NOSUBDIR };
+    bool nosubdir{(config.flags & MDB_NOSUBDIR) == MDB_NOSUBDIR};
     if (!nosubdir) {
         data_path /= boost::filesystem::path{"data.mdb"};
     }
@@ -109,8 +109,7 @@ int Environment::get_mapsize(size_t* size) {
     return rc;
 }
 
-int Environment::get_filesize(size_t* size)
-{
+int Environment::get_filesize(size_t* size) {
     if (!path_.size()) return ENOENT;
 
     uint32_t flags{0};
@@ -140,14 +139,13 @@ int Environment::set_flags(const unsigned int flags, const bool onoff) {
 }
 
 int Environment::set_mapsize(size_t size) {
-
     /*
-    * A size == 0 means LMDB will auto adjust to
-    * actual data file size.
-    * In all other cases prevent setting map_size
-    * to a lower value as it may truncate data file
-    * (observed on Windows)
-    */
+     * A size == 0 means LMDB will auto adjust to
+     * actual data file size.
+     * In all other cases prevent setting map_size
+     * to a lower value as it may truncate data file
+     * (observed on Windows)
+     */
     if (size) {
         size_t actual_map_size{0};
         int rc{get_mapsize(&actual_map_size)};
@@ -155,7 +153,7 @@ int Environment::set_mapsize(size_t size) {
         if (size < actual_map_size) {
             throw std::runtime_error("Can't set a map_size lower than data file size.");
         }
-        size_t host_page_size{ boost::interprocess::mapped_region::get_page_size() };
+        size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
         size = ((size + host_page_size - 1) / host_page_size) * host_page_size;
     }
     return mdb_env_set_mapsize(handle_, size);
@@ -320,10 +318,10 @@ int Transaction::commit(void) {
     if (!handle_) return MDB_BAD_TXN;
 
     /* In case commit fails the transaction
-    * is automatically aborted so always void handle_
-    * see
+     * is automatically aborted so always void handle_
+     * see
      * https://github.com/LMDB/lmdb/blob/mdb.master/libraries/liblmdb/mdb.c#L4125-L4131
-    */
+     */
     int rc{mdb_txn_commit(handle_)};
     if (is_ro()) {
         parent_env_->touch_ro_txns(-1);

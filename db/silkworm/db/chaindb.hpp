@@ -24,7 +24,6 @@
 
 #include <lmdb/lmdb.h>
 
-#include <boost/filesystem.hpp>
 #include <exception>
 #include <map>
 #include <mutex>
@@ -291,12 +290,13 @@ class Table {
     int get_first(MDB_val* key, MDB_val* data);      // Move cursor at first item in table
     int get_first_dup(MDB_val* key, MDB_val* data);  // Move cursor at first item of current key (only MDB_DUPSORT)
     int get_prev(MDB_val* key, MDB_val* data);       // Move cursor at previous item in table
-    int get_prev_dup(MDB_val* key,MDB_val* data);    // Move cursor at previous data item in current key (only MDB_DUPSORT)
-    int get_next(MDB_val* key, MDB_val* data);   // Move cursor at next item in table
-    int get_next_dup(MDB_val* key,MDB_val* data);    // Move cursor at next data item in current key (only MDB_DUPSORT)
-    int get_next_nodup(MDB_val* key,MDB_val* data);    // Move cursor at next data item in next key (only MDB_DUPSORT)
-    int get_last(MDB_val* key, MDB_val* data);   // Move cursor at last item in table
-    int get_dcount(size_t* count);               // Returns the count of duplicates at current position
+    int get_prev_dup(MDB_val* key,
+                     MDB_val* data);            // Move cursor at previous data item in current key (only MDB_DUPSORT)
+    int get_next(MDB_val* key, MDB_val* data);  // Move cursor at next item in table
+    int get_next_dup(MDB_val* key, MDB_val* data);    // Move cursor at next data item in current key (only MDB_DUPSORT)
+    int get_next_nodup(MDB_val* key, MDB_val* data);  // Move cursor at next data item in next key (only MDB_DUPSORT)
+    int get_last(MDB_val* key, MDB_val* data);        // Move cursor at last item in table
+    int get_dcount(size_t* count);                    // Returns the count of duplicates at current position
 
     /** @brief Stores key/data pairs into the database using cursor.
      *

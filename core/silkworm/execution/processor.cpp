@@ -156,8 +156,6 @@ std::vector<Receipt> ExecutionProcessor::execute_block() {
         evm_.state().destruct(kRipemdAddress);
     }
 
-    evm_.state().write_to_db(block_num);
-
     return receipts;
 }
 

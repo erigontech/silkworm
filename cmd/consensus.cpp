@@ -278,6 +278,8 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
         return kFailed;
     }
 
+    processor.evm().state().write_to_db(block_number);
+
     if (invalid) {
         std::cout << "Invalid block executed successfully\n";
         std::cout << "Expected: " << b["expectException"] << "\n";
@@ -543,7 +545,7 @@ int main() {
     for (auto i = fs::recursive_directory_iterator(kBlockchainDir); i != fs::recursive_directory_iterator{}; ++i) {
         if (kSlowTests.count(*i) || kFailingTests.count(*i)) {
             i.disable_recursion_pending();
-        } else if (boost::filesystem::is_regular_file(i->path())) {
+        } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, blockchain_test);
         }
     }
@@ -551,7 +553,7 @@ int main() {
     for (auto i = fs::recursive_directory_iterator(kTransactionDir); i != fs::recursive_directory_iterator{}; ++i) {
         if (kFailingTests.count(*i)) {
             i.disable_recursion_pending();
-        } else if (boost::filesystem::is_regular_file(i->path())) {
+        } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, transaction_test);
         }
     }

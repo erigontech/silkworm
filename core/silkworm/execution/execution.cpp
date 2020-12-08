@@ -49,6 +49,8 @@ std::vector<Receipt> execute_block(const Block& block, StateBuffer& buffer, cons
         }
     }
 
+    processor.evm().state().write_to_db(block_num);
+
     return receipts;
 }
 

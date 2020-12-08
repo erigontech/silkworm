@@ -14,21 +14,17 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_LOG_H_
-#define SILKWORM_TYPES_LOG_H_
+#ifndef SILKWORM_TYPES_RECEIPT_CBOR_H_
+#define SILKWORM_TYPES_RECEIPT_CBOR_H_
 
-#include <evmc/evmc.hpp>
-#include <silkworm/common/base.hpp>
-#include <vector>
+#include <silkworm/types/receipt.hpp>
 
 namespace silkworm {
 
-struct Log {
-    evmc::address address;
-    std::vector<evmc::bytes32> topics;
-    Bytes data;
-};
+// TG-compatible CBOR encoding for storage.
+// See core/types/receipt.go
+Bytes cbor_encode(const std::vector<Receipt>& v);
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_LOG_H_
+#endif  // SILKWORM_TYPES_RECEIPT_CBOR_H_

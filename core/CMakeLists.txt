@@ -26,8 +26,8 @@ add_library(silkworm_core ${SILKWORM_CORE_SRC})
 get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
 target_include_directories(silkworm_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${SILKWORM_MAIN_DIR})
 
-set(SILKWORM_CORE_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set absl::btree
+set(SILKWORM_CORE_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set
                               evmc intx::intx ff Microsoft.GSL::GSL)
-set(SILKWORM_CORE_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak cborcpp Boost::boost)
+set(SILKWORM_CORE_PRIVATE_LIBS evmone secp256k1 cryptopp-static ethash::keccak Boost::boost)
 
 target_link_libraries(silkworm_core PUBLIC ${SILKWORM_CORE_PUBLIC_LIBS} PRIVATE ${SILKWORM_CORE_PRIVATE_LIBS})

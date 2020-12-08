@@ -19,52 +19,24 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 
-#include "cbor-cpp/src/encoder.h"
-#include "cbor-cpp/src/output_dynamic.h"
+namespace silkworm::rlp {
 
-namespace silkworm {
-
-namespace rlp {
-
-    static Header header(const Receipt& r) {
-        Header h;
-        h.list = true;
-        h.payload_length = 1;
-        h.payload_length += length(r.cumulative_gas_used);
-        h.payload_length += length(full_view(r.bloom));
-        h.payload_length += length(r.logs);
-        return h;
-    }
-
-    void encode(Bytes& to, const Receipt& r) {
-        encode_header(to, header(r));
-        encode(to, r.success);
-        encode(to, r.cumulative_gas_used);
-        encode(to, full_view(r.bloom));
-        encode(to, r.logs);
-    }
-
-}  // namespace rlp
-
-Bytes cbor_encode(const std::vector<Receipt>& v) {
-    cbor::output_dynamic output{};
-    cbor::encoder encoder{output};
-
-    if (v.empty()) {
-        encoder.write_null();
-    } else {
-        encoder.write_array(v.size());
-    }
-
-    for (const Receipt& r : v) {
-        encoder.write_array(3);
-
-        encoder.write_null();  // no PostState
-        encoder.write_int(r.success ? 1u : 0u);
-        encoder.write_int(static_cast<unsigned long long>(r.cumulative_gas_used));
-    }
-
-    return Bytes{output.data(), output.size()};
+static Header header(const Receipt& r) {
+    Header h;
+    h.list = true;
+    h.payload_length = 1;
+    h.payload_length += length(r.cumulative_gas_used);
+    h.payload_length += length(full_view(r.bloom));
+    h.payload_length += length(r.logs);
+    return h;
 }
 
-}  // namespace silkworm
+void encode(Bytes& to, const Receipt& r) {
+    encode_header(to, header(r));
+    encode(to, r.success);
+    encode(to, r.cumulative_gas_used);
+    encode(to, full_view(r.bloom));
+    encode(to, r.logs);
+}
+
+}  // namespace silkworm::rlp

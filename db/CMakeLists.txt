@@ -16,8 +16,6 @@
 
 find_package(absl CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
-find_package(cryptopp CONFIG REQUIRED)
-find_package(Microsoft.GSL CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_DB_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp$")
@@ -27,7 +25,7 @@ get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
 target_include_directories(silkworm_db PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${SILKWORM_MAIN_DIR})
 
 set(SILKWORM_DB_PUBLIC_LIBS silkworm_core lmdb absl::flat_hash_map absl::flat_hash_set absl::btree)
-set(SILKWORM_DB_PRIVATE_LIBS Boost::filesystem)
+set(SILKWORM_DB_PRIVATE_LIBS cborcpp Boost::filesystem)
 
 if(MSVC)
   list(APPEND SILKWORM_DB_PRIVATE_LIBS ntdll.lib)

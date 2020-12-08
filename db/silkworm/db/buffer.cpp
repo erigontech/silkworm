@@ -21,6 +21,8 @@
 #include <algorithm>
 #include <boost/endian/conversion.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/types/log_cbor.hpp>
+#include <silkworm/types/receipt_cbor.hpp>
 
 #include "access_layer.hpp"
 #include "tables.hpp"

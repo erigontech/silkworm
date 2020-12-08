@@ -81,7 +81,7 @@ void MemoryBuffer::insert_header(const BlockHeader& block_header) {
     rlp::encode(rlp, block_header);
     ethash::hash256 hash{keccak256(rlp)};
     evmc::bytes32 hash_key;
-    std::memcmp(hash_key.bytes, hash.bytes, kHashLength);
+    std::memcpy(hash_key.bytes, hash.bytes, kHashLength);
     headers_[block_header.number][hash_key] = block_header;
 }
 

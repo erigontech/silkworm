@@ -22,7 +22,7 @@
 #include <nlohmann/json.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/db/buffer.hpp>
+#include <silkworm/db/state_buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
@@ -207,6 +207,55 @@ static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
     {"difficultyRopsten.json", kRopstenConfig},
 };
 
+class HeaderBuffer : public db::StateBuffer {
+  public:
+    std::optional<Account> read_account(const evmc::address&) const noexcept override { return std::nullopt; }
+
+    Bytes read_code(const evmc::bytes32&) const noexcept override { return {}; }
+
+    evmc::bytes32 read_storage(const evmc::address&, uint64_t, const evmc::bytes32&) const noexcept override {
+        return {};
+    }
+
+    uint64_t previous_incarnation(const evmc::address&) const noexcept override { return 0; }
+
+    std::optional<BlockHeader> read_header(uint64_t block_number,
+                                           const evmc::bytes32& block_hash) const noexcept override {
+        auto it1{headers_.find(block_number)};
+        if (it1 == headers_.end()) {
+            return std::nullopt;
+        }
+        auto it2{it1->second.find(block_hash)};
+        if (it2 == it1->second.end()) {
+            return std::nullopt;
+        }
+        return it2->second;
+    }
+
+    void insert_header(const BlockHeader& block_header) override {
+        Bytes rlp{};
+        rlp::encode(rlp, block_header);
+        ethash::hash256 hash{keccak256(rlp)};
+        evmc::bytes32 key;
+        std::memcmp(key.bytes, hash.bytes, kHashLength);
+        headers_[block_header.number][key] = block_header;
+    }
+
+    void insert_receipts(uint64_t, const std::vector<Receipt>&) override {}
+
+    void begin_block(uint64_t) override {}
+
+    void update_account(const evmc::address&, std::optional<Account>, std::optional<Account>) override {}
+
+    void update_account_code(const evmc::address&, uint64_t, const evmc::bytes32&, ByteView) override {}
+
+    void update_storage(const evmc::address&, uint64_t, const evmc::bytes32&, const evmc::bytes32&,
+                        const evmc::bytes32&) override {}
+
+  private:
+    std::map<uint64_t, std::map<evmc::bytes32, BlockHeader>> headers_;
+};
+
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
 void init_pre_state(const nlohmann::json& pre, IntraBlockState& state) {
     for (const auto& entry : pre.items()) {
@@ -346,12 +395,12 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     Block genesis_block;
     rlp::decode(genesis_view, genesis_block);
 
-    db::Buffer db{nullptr};
-    db.insert_header(genesis_block.header);
+    HeaderBuffer buffer;
+    buffer.insert_header(genesis_block.header);
 
     std::string network{j["network"].get<std::string>()};
     const ChainConfig& config{kNetworkConfig.at(network)};
-    IntraBlockState state{db};
+    IntraBlockState state{buffer};
     init_pre_state(j["pre"], state);
 
     for (const auto& b : j["blocks"]) {

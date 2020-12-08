@@ -20,11 +20,17 @@
 #include <evmc/evmc.hpp>
 #include <optional>
 #include <silkworm/types/account.hpp>
+#include <silkworm/types/block.hpp>
 
 namespace silkworm {
 
 class StateBuffer {
   public:
+    StateBuffer() = default;
+
+    StateBuffer(const StateBuffer&) = delete;
+    StateBuffer& operator=(const StateBuffer&) = delete;
+
     virtual ~StateBuffer() = default;
 
     /** @name Readers */

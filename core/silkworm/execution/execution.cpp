@@ -22,7 +22,7 @@
 
 namespace silkworm {
 
-std::vector<Receipt> execute_block(const Block& block, db::StateBuffer& buffer, const ChainConfig& config,
+std::vector<Receipt> execute_block(const Block& block, StateBuffer& buffer, const ChainConfig& config,
                                    AnalysisCache* analysis_cache) {
     const BlockHeader& header{block.header};
     uint64_t block_num{header.number};

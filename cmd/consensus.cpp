@@ -22,10 +22,10 @@
 #include <nlohmann/json.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/db/state_buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
+#include <silkworm/state/buffer.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
 #include <string>
@@ -207,7 +207,7 @@ static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
     {"difficultyRopsten.json", kRopstenConfig},
 };
 
-class HeaderBuffer : public db::StateBuffer {
+class HeaderBuffer : public StateBuffer {
   public:
     std::optional<Account> read_account(const evmc::address&) const noexcept override { return std::nullopt; }
 

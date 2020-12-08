@@ -23,7 +23,7 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <memory>
-#include <silkworm/db/state_buffer.hpp>
+#include <silkworm/state/buffer.hpp>
 #include <silkworm/state/delta.hpp>
 #include <silkworm/state/object.hpp>
 #include <silkworm/types/log.hpp>
@@ -32,13 +32,13 @@
 namespace silkworm {
 
 class IntraBlockState {
-   public:
+  public:
     class Snapshot {
-       public:
+      public:
         Snapshot(Snapshot&&) = default;
         Snapshot& operator=(Snapshot&&) = default;
 
-       private:
+      private:
         friend class IntraBlockState;
 
         Snapshot() = default;
@@ -51,9 +51,9 @@ class IntraBlockState {
     IntraBlockState(const IntraBlockState&) = delete;
     IntraBlockState& operator=(const IntraBlockState&) = delete;
 
-    explicit IntraBlockState(db::StateBuffer& db) noexcept : db_{db} {}
+    explicit IntraBlockState(StateBuffer& db) noexcept : db_{db} {}
 
-    db::StateBuffer& db() { return db_; }
+    StateBuffer& db() { return db_; }
 
     bool exists(const evmc::address& address) const noexcept;
 
@@ -106,7 +106,7 @@ class IntraBlockState {
 
     uint64_t total_refund() const noexcept;
 
-   private:
+  private:
     friend class state::CreateDelta;
     friend class state::UpdateDelta;
     friend class state::SuicideDelta;
@@ -121,7 +121,7 @@ class IntraBlockState {
 
     void touch(const evmc::address& address) noexcept;
 
-    db::StateBuffer& db_;
+    StateBuffer& db_;
 
     mutable absl::flat_hash_map<evmc::address, state::Object> objects_;
     mutable absl::flat_hash_map<evmc::address, state::Storage> storage_;

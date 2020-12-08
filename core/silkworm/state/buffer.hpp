@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_STATE_BUFFER_H_
-#define SILKWORM_DB_STATE_BUFFER_H_
+#ifndef SILKWORM_STATE_BUFFER_H_
+#define SILKWORM_STATE_BUFFER_H_
 
 #include <evmc/evmc.hpp>
 #include <optional>
 #include <silkworm/types/account.hpp>
 
-namespace silkworm::db {
+namespace silkworm {
 
 class StateBuffer {
   public:
@@ -67,6 +67,6 @@ class StateBuffer {
     ///@}
 };
 
-}  // namespace silkworm::db
+}  // namespace silkworm
 
-#endif  // SILKWORM_DB_STATE_BUFFER_H_
+#endif  // SILKWORM_STATE_BUFFER_H_

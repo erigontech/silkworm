@@ -24,8 +24,8 @@
 #include <evmc/evmc.hpp>
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
-#include <silkworm/db/state_buffer.hpp>
 #include <silkworm/db/util.hpp>
+#include <silkworm/state/buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>

@@ -14,37 +14,12 @@
    limitations under the License.
 */
 
-#include "receipt.hpp"
-
-#include <silkworm/common/util.hpp>
-#include <silkworm/rlp/encode.hpp>
+#include "receipt_cbor.hpp"
 
 #include "cbor-cpp/src/encoder.h"
 #include "cbor-cpp/src/output_dynamic.h"
 
 namespace silkworm {
-
-namespace rlp {
-
-    static Header header(const Receipt& r) {
-        Header h;
-        h.list = true;
-        h.payload_length = 1;
-        h.payload_length += length(r.cumulative_gas_used);
-        h.payload_length += length(full_view(r.bloom));
-        h.payload_length += length(r.logs);
-        return h;
-    }
-
-    void encode(Bytes& to, const Receipt& r) {
-        encode_header(to, header(r));
-        encode(to, r.success);
-        encode(to, r.cumulative_gas_used);
-        encode(to, full_view(r.bloom));
-        encode(to, r.logs);
-    }
-
-}  // namespace rlp
 
 Bytes cbor_encode(const std::vector<Receipt>& v) {
     cbor::output_dynamic output{};

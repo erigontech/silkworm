@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,23 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-find_package(Microsoft.GSL CONFIG REQUIRED)
+#ifndef SILKWORM_TYPES_RECEIPT_H_
+#define SILKWORM_TYPES_RECEIPT_H_
 
-add_library(silkworm_tg_api SHARED silkworm_tg_api.h silkworm_tg_api.cpp)
-target_link_libraries(silkworm_tg_api PUBLIC lmdb PRIVATE silkworm_db Microsoft.GSL::GSL)
+#include <silkworm/types/bloom.hpp>
+#include <silkworm/types/log.hpp>
+
+namespace silkworm {
+
+struct Receipt {
+    bool success{false};
+    uint64_t cumulative_gas_used{0};
+    Bloom bloom;
+    std::vector<Log> logs;
+};
+
+}  // namespace silkworm
+
+#endif  // SILKWORM_TYPES_RECEIPT_H_

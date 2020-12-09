@@ -14,55 +14,27 @@
    limitations under the License.
 */
 
-#include "log.hpp"
-
-#include <silkworm/common/util.hpp>
-#include <silkworm/rlp/encode.hpp>
+#include "log_cbor.hpp"
 
 #include "cbor-cpp/src/encoder.h"
 #include "cbor-cpp/src/output_dynamic.h"
 
 namespace silkworm {
 
-namespace rlp {
-
-    static Header header(const Log& l) {
-        Header h;
-        h.list = true;
-        h.payload_length = kAddressLength + 1;
-        h.payload_length += length(l.topics);
-        h.payload_length += length(l.data);
-        return h;
-    }
-
-    size_t length(const Log& l) {
-        Header h{header(l)};
-        return length_of_length(h.payload_length) + h.payload_length;
-    }
-
-    void encode(Bytes& to, const Log& l) {
-        encode_header(to, header(l));
-        encode(to, full_view(l.address));
-        encode(to, l.topics);
-        encode(to, l.data);
-    }
-
-}  // namespace rlp
-
 Bytes cbor_encode(const std::vector<Log>& v) {
     cbor::output_dynamic output{};
     cbor::encoder encoder{output};
 
-    encoder.write_array(v.size());
+    encoder.write_array(static_cast<int>(v.size()));
 
     for (const Log& l : v) {
         encoder.write_array(3);
-        encoder.write_bytes(l.address.bytes, kAddressLength);
-        encoder.write_array(l.topics.size());
+        encoder.write_bytes(l.address.bytes, static_cast<int>(kAddressLength));
+        encoder.write_array(static_cast<int>(l.topics.size()));
         for (const evmc::bytes32& t : l.topics) {
-            encoder.write_bytes(t.bytes, kHashLength);
+            encoder.write_bytes(t.bytes, static_cast<int>(kHashLength));
         }
-        encoder.write_bytes(l.data.data(), l.data.size());
+        encoder.write_bytes(l.data.data(), static_cast<int>(l.data.size()));
     }
 
     return Bytes{output.data(), output.size()};

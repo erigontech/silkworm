@@ -14,20 +14,12 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_RECEIPT_H_
-#define SILKWORM_TYPES_RECEIPT_H_
+#ifndef SILKWORM_TYPES_RECEIPT_CBOR_H_
+#define SILKWORM_TYPES_RECEIPT_CBOR_H_
 
-#include <silkworm/types/bloom.hpp>
-#include <silkworm/types/log.hpp>
+#include <silkworm/types/receipt.hpp>
 
 namespace silkworm {
-
-struct Receipt {
-    bool success{false};
-    uint64_t cumulative_gas_used{0};
-    Bloom bloom;
-    std::vector<Log> logs;
-};
 
 // TG-compatible CBOR encoding for storage.
 // See core/types/receipt.go
@@ -35,4 +27,4 @@ Bytes cbor_encode(const std::vector<Receipt>& v);
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_RECEIPT_H_
+#endif  // SILKWORM_TYPES_RECEIPT_CBOR_H_

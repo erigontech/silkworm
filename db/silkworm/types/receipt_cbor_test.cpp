@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "receipt.hpp"
+#include "receipt_cbor.hpp"
 
 #include <catch2/catch.hpp>
 #include <silkworm/common/util.hpp>

@@ -37,6 +37,7 @@ class ExecutionProcessor {
     // precondition: txn.from must be recovered
     Receipt execute_transaction(const Transaction& txn);
 
+    /// Execute the block, but do not write to the DB yet
     std::vector<Receipt> execute_block();
 
     uint64_t cumulative_gas_used() const { return cumulative_gas_used_; }

@@ -24,8 +24,8 @@
 #include <evmc/evmc.hpp>
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
-#include <silkworm/db/state_buffer.hpp>
 #include <silkworm/db/util.hpp>
+#include <silkworm/state/buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
@@ -35,9 +35,6 @@ namespace silkworm::db {
 
 class Buffer : public StateBuffer {
   public:
-    Buffer(const Buffer&) = delete;
-    Buffer& operator=(const Buffer&) = delete;
-
     explicit Buffer(lmdb::Transaction* txn, std::optional<uint64_t> historical_block = std::nullopt)
         : txn_{txn}, historical_block_{historical_block} {}
 

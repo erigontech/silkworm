@@ -23,6 +23,7 @@
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 
 ABSL_FLAG(std::string, datadir, silkworm::db::default_path(), "chain DB path");

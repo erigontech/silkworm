@@ -15,7 +15,7 @@
 ]]
 
 find_package(absl CONFIG REQUIRED)
-#find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
 
 if(MSVC)
   add_link_options(/STACK:10000000)
@@ -24,37 +24,37 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 add_executable(check_changes check_changes.cpp)
-target_link_libraries(check_changes PRIVATE silkworm absl::flags_parse absl::time)
+target_link_libraries(check_changes PRIVATE silkworm_db absl::flags_parse absl::time Boost::filesystem)
 
 add_executable(scan_txs scan_txs.cpp)
-target_link_libraries(scan_txs PRIVATE silkworm absl::flags_parse absl::time)
+target_link_libraries(scan_txs PRIVATE silkworm_db absl::flags_parse absl::time Boost::filesystem)
 
 find_package(CLI11 CONFIG REQUIRED)
 
 add_executable(check_senders check_senders.cpp)
-target_link_libraries(check_senders PRIVATE silkworm CLI11::CLI11)
+target_link_libraries(check_senders PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
 
 add_executable(dbtool dbtool.cpp)
-target_link_libraries(dbtool PRIVATE silkworm CLI11::CLI11)
+target_link_libraries(dbtool PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
 
 add_executable(execute execute.cpp)
-target_link_libraries(execute PRIVATE silkworm silkworm_tg_api CLI11::CLI11)
+target_link_libraries(execute PRIVATE silkworm_db silkworm_tg_api CLI11::CLI11 Boost::filesystem)
 target_include_directories(execute PRIVATE ${CMAKE_SOURCE_DIR})
 
 # Ethereum Consensus Tests
 find_package(nlohmann_json CONFIG REQUIRED)
 add_compile_definitions(SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
 add_executable(consensus consensus.cpp)
-target_link_libraries(consensus PRIVATE silkworm nlohmann_json::nlohmann_json)
+target_link_libraries(consensus PRIVATE silkworm_core nlohmann_json::nlohmann_json Boost::filesystem)
 
 # Unit tests
 enable_testing()
 
 find_package(Catch2 CONFIG REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/silkworm/*_test.cpp")
+file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/*/silkworm/*_test.cpp")
 add_executable(unit_test unit_test.cpp ${SILKWORM_TESTS})
-target_link_libraries(unit_test silkworm Catch2::Catch2)
+target_link_libraries(unit_test silkworm_db Catch2::Catch2)
 
 include(CTest)
 include(Catch)
@@ -63,4 +63,4 @@ catch_discover_tests(unit_test)
 # Benchmarks
 find_package(benchmark CONFIG REQUIRED)
 add_executable(benchmark_precompile benchmark_precompile.cpp)
-target_link_libraries(benchmark_precompile silkworm benchmark::benchmark)
+target_link_libraries(benchmark_precompile silkworm_core benchmark::benchmark)

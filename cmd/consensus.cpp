@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <boost/filesystem.hpp>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -25,6 +26,7 @@
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/intra_block_state.hpp>
+#include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/block.hpp>
 #include <string>
 #include <string_view>
@@ -276,6 +278,8 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
         return kFailed;
     }
 
+    processor.evm().state().write_to_db(block_number);
+
     if (invalid) {
         std::cout << "Invalid block executed successfully\n";
         std::cout << "Expected: " << b["expectException"] << "\n";
@@ -344,12 +348,12 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     Block genesis_block;
     rlp::decode(genesis_view, genesis_block);
 
-    db::Buffer db{nullptr};
-    db.insert_header(genesis_block.header);
+    MemoryBuffer buffer;
+    buffer.insert_header(genesis_block.header);
 
     std::string network{j["network"].get<std::string>()};
     const ChainConfig& config{kNetworkConfig.at(network)};
-    IntraBlockState state{db};
+    IntraBlockState state{buffer};
     init_pre_state(j["pre"], state);
 
     for (const auto& b : j["blocks"]) {
@@ -541,7 +545,7 @@ int main() {
     for (auto i = fs::recursive_directory_iterator(kBlockchainDir); i != fs::recursive_directory_iterator{}; ++i) {
         if (kSlowTests.count(*i) || kFailingTests.count(*i)) {
             i.disable_recursion_pending();
-        } else if (boost::filesystem::is_regular_file(i->path())) {
+        } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, blockchain_test);
         }
     }
@@ -549,7 +553,7 @@ int main() {
     for (auto i = fs::recursive_directory_iterator(kTransactionDir); i != fs::recursive_directory_iterator{}; ++i) {
         if (kFailingTests.count(*i)) {
             i.disable_recursion_pending();
-        } else if (boost::filesystem::is_regular_file(i->path())) {
+        } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, transaction_test);
         }
     }
@@ -564,5 +568,5 @@ int main() {
     }
     std::cout << ", " << res.skipped << " skipped\n";
 
-    return res.failed;
+    return static_cast<int>(res.failed);
 }

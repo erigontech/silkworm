@@ -22,8 +22,6 @@
 #include <sstream>
 #include <string>
 
-#include "util.hpp"
-
 namespace silkworm {
 
 namespace {

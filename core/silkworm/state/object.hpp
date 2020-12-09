@@ -17,11 +17,10 @@
 #ifndef SILKWORM_STATE_OBJECT_H_
 #define SILKWORM_STATE_OBJECT_H_
 
-#include <absl/container/flat_hash_map.h>
-
 #include <optional>
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/account.hpp>
+#include <unordered_map>
 
 namespace silkworm::state {
 
@@ -37,7 +36,8 @@ struct StorageValue {
     evmc::bytes32 current{};   // current value
 };
 
-using Storage = absl::flat_hash_map<evmc::bytes32, StorageValue>;
+using Storage = std::unordered_map<evmc::bytes32, StorageValue>;
+
 }  // namespace silkworm::state
 
 #endif  // SILKWORM_STATE_OBJECT_H_

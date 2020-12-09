@@ -25,16 +25,16 @@ Bytes cbor_encode(const std::vector<Log>& v) {
     cbor::output_dynamic output{};
     cbor::encoder encoder{output};
 
-    encoder.write_array(v.size());
+    encoder.write_array(static_cast<int>(v.size()));
 
     for (const Log& l : v) {
         encoder.write_array(3);
-        encoder.write_bytes(l.address.bytes, kAddressLength);
-        encoder.write_array(l.topics.size());
+        encoder.write_bytes(l.address.bytes, static_cast<int>(kAddressLength));
+        encoder.write_array(static_cast<int>(l.topics.size()));
         for (const evmc::bytes32& t : l.topics) {
-            encoder.write_bytes(t.bytes, kHashLength);
+            encoder.write_bytes(t.bytes, static_cast<int>(kHashLength));
         }
-        encoder.write_bytes(l.data.data(), l.data.size());
+        encoder.write_bytes(l.data.data(), static_cast<int>(l.data.size()));
     }
 
     return Bytes{output.data(), output.size()};

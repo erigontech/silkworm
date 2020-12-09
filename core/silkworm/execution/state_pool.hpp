@@ -17,8 +17,6 @@
 #ifndef SILKWORM_EXECUTION_STATE_POOL_H_
 #define SILKWORM_EXECUTION_STATE_POOL_H_
 
-#include <absl/base/thread_annotations.h>
-
 #include <memory>
 #include <mutex>
 #include <stack>
@@ -46,7 +44,7 @@ class ExecutionStatePool {
     ExecutionStatePool() {}
 
     std::mutex mutex_;
-    GUARDED_BY(mutex_) std::stack<std::unique_ptr<evmone::execution_state>> pool_;
+    std::stack<std::unique_ptr<evmone::execution_state>> pool_;  // GUARDED_BY(mutex_)
 };
 
 }  // namespace silkworm

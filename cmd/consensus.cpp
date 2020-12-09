@@ -568,5 +568,5 @@ int main() {
     }
     std::cout << ", " << res.skipped << " skipped\n";
 
-    return res.failed;
+    return static_cast<int>(res.failed);
 }

@@ -33,16 +33,22 @@
  *
 \********************************************************************/
 
-#ifndef  RMD160H           /* make sure this file is read only once */
-#define  RMD160H
+#ifndef  SILKWORM_CRYPTO_RMD160_H_
+#define  SILKWORM_CRYPTO_RMD160_H_
+
+#include <stdint.h>
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 /********************************************************************/
 
 /* typedef 8 and 32 bit types, resp.  */
 /* adapt these, if necessary, 
    for your operating system and compiler */
-typedef    unsigned char        byte;
-typedef    unsigned long        dword;
+typedef    uint8_t        byte;
+typedef    uint32_t       dword;
 
 /* if this line causes a compiler error, 
    adapt the defintion of dword above */
@@ -126,18 +132,18 @@ typedef int the_correct_size_was_chosen [sizeof (dword) == 4? 1: -1];
 
 /* function prototypes */
 
-void MDinit(dword *MDbuf);
+void rmd160_init(dword *MDbuf);
 /*
  *  initializes MDbuffer to "magic constants"
  */
 
-void compress(dword *MDbuf, dword *X);
+void rmd160_compress(dword *MDbuf, dword *X);
 /*
  *  the compression function.
  *  transforms MDbuf using message bytes X[0] through X[15]
  */
 
-void MDfinish(dword *MDbuf, byte *strptr, dword lswlen, dword mswlen);
+void rmd160_finish(dword *MDbuf, byte const *strptr, dword lswlen, dword mswlen);
 /*
  *  puts bytes from strptr into X and pad out; appends length 
  *  and finally, compresses the last block(s)
@@ -145,7 +151,11 @@ void MDfinish(dword *MDbuf, byte *strptr, dword lswlen, dword mswlen);
  *  note: there are (lswlen mod 64) bytes left in strptr.
  */
 
-#endif  /* RMD160H */
+#if defined(__cplusplus)
+}
+#endif
+
+#endif  /* SILKWORM_CRYPTO_RMD160_H_ */
 
 /*********************** end of file rmd160.h ***********************/
 

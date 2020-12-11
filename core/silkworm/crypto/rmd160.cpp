@@ -20,7 +20,7 @@
 
 namespace silkworm::crypto {
 
-void calculate_rmd160_digest(gsl::span<uint8_t, 20> out, ByteView in) noexcept {
+void calculate_ripemd_160(gsl::span<uint8_t, 20> out, ByteView in) noexcept {
     uint32_t buf[160 / 32];
 
     rmd160_init(buf);

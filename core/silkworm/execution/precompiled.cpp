@@ -84,7 +84,7 @@ uint64_t rip160_gas(ByteView input, evmc_revision) noexcept { return 600 + 120 *
 
 std::optional<Bytes> rip160_run(ByteView input) noexcept {
     Bytes out(32, '\0');
-    crypto::calculate_rmd160_digest(gsl::span<uint8_t, 20>{&out[12], 20}, input);
+    crypto::calculate_ripemd_160(gsl::span<uint8_t, 20>{&out[12], 20}, input);
     return out;
 }
 

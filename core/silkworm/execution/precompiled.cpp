@@ -16,8 +16,8 @@
 
 #include "precompiled.hpp"
 
-#include <cryptopp/sha.h>
 #include <silkworm/crypto/blake2.h>
+#include <silkworm/crypto/sha-256.h>
 
 #include <algorithm>
 #include <boost/endian/conversion.hpp>
@@ -75,9 +75,8 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
 uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * ((input.length() + 31) / 32); }
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
-    Bytes out(CryptoPP::SHA256::DIGESTSIZE, '\0');
-    CryptoPP::SHA256 hash;
-    hash.CalculateDigest(&out[0], input.data(), input.length());
+    Bytes out(32, '\0');
+    calc_sha_256(out.data(), input.data(), input.length());
     return out;
 }
 

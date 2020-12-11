@@ -8,7 +8,8 @@
  *
  *      AUTHOR:   Antoon Bosselaers, ESAT-COSIC
  *      DATE:     1 March 1996
- *      VERSION:  1.0
+ *      MODIFIED: 11 December 2020 by Andrew Ashikhmin for Silkworm    
+ *      VERSION:  1.0 + Silkworm modifications
  *
  *      Copyright (c) 1996 Katholieke Universiteit Leuven
  *

@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +12,18 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-hunter_add_package(abseil)
-hunter_add_package(benchmark)
-hunter_add_package(Boost COMPONENTS filesystem)
-hunter_add_package(Catch)
-hunter_add_package(CLI11)
-hunter_add_package(ethash)
-hunter_add_package(intx)
-hunter_add_package(Microsoft.GSL)
-hunter_add_package(nlohmann_json)
+#ifndef SILKWORM_CRYPTO_RMD160_HPP_
+#define SILKWORM_CRYPTO_RMD160_HPP_
+
+#include <gsl/span>
+#include <silkworm/common/base.hpp>
+
+namespace silkworm::crypto {
+
+void calculate_ripemd_160(gsl::span<uint8_t, 20> out, ByteView in) noexcept;
+
+}
+
+#endif  // SILKWORM_CRYPTO_RMD160_HPP_

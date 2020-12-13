@@ -12,8 +12,9 @@
    More information about the BLAKE2 hash function can be found at
    https://blake2.net.
 */
-#ifndef BLAKE2_H
-#define BLAKE2_H
+
+#ifndef SILKWORM_CRYPTO_BLAKE2_H_
+#define SILKWORM_CRYPTO_BLAKE2_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -37,4 +38,4 @@ void blake2b_compress(blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES],
 }
 #endif
 
-#endif
+#endif  // SILKWORM_CRYPTO_BLAKE2_H_

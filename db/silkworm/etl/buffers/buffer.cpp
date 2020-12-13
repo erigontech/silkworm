@@ -1,6 +1,5 @@
 #include <silkworm/etl/buffers/buffer.hpp>
 #include <algorithm>
-#include <iostream>
 
 namespace silkworm::etl{
 

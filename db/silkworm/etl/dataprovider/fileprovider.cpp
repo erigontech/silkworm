@@ -5,7 +5,6 @@
 #include <cstdio>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <iostream>
 
 namespace silkworm::etl{
 

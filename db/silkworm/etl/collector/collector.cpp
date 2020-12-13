@@ -2,7 +2,6 @@
 #include <silkworm/etl/dataprovider/fileProvider.hpp>
 #include <silkworm/etl/heap/heap.hpp>
 #include <silkworm/db/chaindb.hpp>
-#include <iostream>
 
 namespace silkworm::etl{
 

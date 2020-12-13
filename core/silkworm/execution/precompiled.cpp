@@ -16,9 +16,8 @@
 
 #include "precompiled.hpp"
 
-#include <cryptopp/ripemd.h>
-#include <cryptopp/sha.h>
 #include <silkworm/crypto/blake2.h>
+#include <silkworm/crypto/sha-256.h>
 
 #include <algorithm>
 #include <boost/endian/conversion.hpp>
@@ -30,6 +29,7 @@
 #include <limits>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
+#include <silkworm/crypto/rmd160.hpp>
 #include <silkworm/crypto/snark.hpp>
 
 #include "protocol_param.hpp"
@@ -75,9 +75,8 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
 uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * ((input.length() + 31) / 32); }
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
-    Bytes out(CryptoPP::SHA256::DIGESTSIZE, '\0');
-    CryptoPP::SHA256 hash;
-    hash.CalculateDigest(&out[0], input.data(), input.length());
+    Bytes out(32, '\0');
+    calc_sha_256(out.data(), input.data(), input.length());
     return out;
 }
 
@@ -85,8 +84,7 @@ uint64_t rip160_gas(ByteView input, evmc_revision) noexcept { return 600 + 120 *
 
 std::optional<Bytes> rip160_run(ByteView input) noexcept {
     Bytes out(32, '\0');
-    CryptoPP::RIPEMD160 hash;
-    hash.CalculateDigest(&out[12], input.data(), input.length());
+    crypto::calculate_ripemd_160(gsl::span<uint8_t, 20>{&out[12], 20}, input);
     return out;
 }
 

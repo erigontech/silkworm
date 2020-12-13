@@ -20,10 +20,3 @@ hunter_config(
   URL https://github.com/chfast/ethash/archive/v0.5.2.tar.gz
   SHA1 8d2859a9d09721ed7007007bd59a77c0bd9b2bee
 )
-
-hunter_config(
-  cryptopp
-  VERSION 8.2.0-p1
-  URL "https://github.com/torquem-ch/cryptopp/archive/v8.2.0-p1.tar.gz"
-  SHA1 d66a1e35fec987aa6a65d8ba6c849cd54cc3d5c2
-)

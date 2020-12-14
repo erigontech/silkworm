@@ -14,9 +14,4 @@
    limitations under the License.
 ]]
 
-hunter_config(
-  ethash
-  VERSION 0.5.2
-  URL https://github.com/chfast/ethash/archive/v0.5.2.tar.gz
-  SHA1 8d2859a9d09721ed7007007bd59a77c0bd9b2bee
-)
+# No Hunter package customization currently.

@@ -17,7 +17,6 @@
 #include "util.hpp"
 
 #include <algorithm>
-#include <boost/algorithm/hex.hpp>
 #include <cassert>
 #include <cstring>
 #include <iterator>
@@ -94,19 +93,53 @@ std::string to_hex(const evmc::address& address) { return to_hex(full_view(addre
 std::string to_hex(const evmc::bytes32& hash) { return to_hex(full_view(hash)); }
 
 std::string to_hex(ByteView bytes) {
+    static const char* kHexDigits{"0123456789abcdef"};
+
     std::string out{};
     out.reserve(2 * bytes.length());
-    boost::algorithm::hex_lower(bytes.begin(), bytes.end(), std::back_inserter(out));
+
+    for (size_t i{0}; i < bytes.length(); ++i) {
+        uint8_t x{bytes[i]};
+        char lo{kHexDigits[x & 0x0f]};
+        char hi{kHexDigits[x >> 4]};
+        out.push_back(hi);
+        out.push_back(lo);
+    }
+
     return out;
+}
+
+static unsigned decode_hex_digit(char ch) {
+    if (ch >= '0' && ch <= '9') {
+        return ch - '0';
+    } else if (ch >= 'a' && ch <= 'f') {
+        return ch - 'a' + 10;
+    } else if (ch >= 'A' && ch <= 'F') {
+        return ch - 'A' + 10;
+    }
+    throw std::out_of_range{"not a hex digit"};
 }
 
 Bytes from_hex(std::string_view hex) {
     if (hex.length() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) {
         hex.remove_prefix(2);
     }
+
+    assert(hex.length() % 2 == 0);
+
     Bytes out{};
     out.reserve(hex.length() / 2);
-    boost::algorithm::unhex(hex.begin(), hex.end(), std::back_inserter(out));
+
+    unsigned carry{0};
+    for (size_t i{0}; i < hex.size(); ++i) {
+        unsigned v{decode_hex_digit(hex[i])};
+        if (i % 2 == 0) {
+            carry = v << 4;
+        } else {
+            out.push_back(static_cast<uint8_t>(carry | v));
+        }
+    }
+
     return out;
 }
 

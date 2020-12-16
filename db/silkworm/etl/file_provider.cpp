@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include <silkworm/etl/fileProvider.hpp>
+#include <silkworm/etl/file_provider.hpp>
 
 namespace silkworm::etl{
 

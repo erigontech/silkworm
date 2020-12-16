@@ -14,12 +14,12 @@
    limitations under the License.
 */
 
+#ifndef SILKWORM_ETL_COLLECTOR_H
+#define SILKWORM_ETL_COLLECTOR_H
+
 #include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/fileProvider.hpp>
 #include <silkworm/db/chaindb.hpp>
-
-#ifndef SILKWORM_ETL_COLLECTOR_H
-#define SILKWORM_ETL_COLLECTOR_H
 
 namespace silkworm::etl{
 

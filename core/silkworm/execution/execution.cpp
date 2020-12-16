@@ -23,13 +23,14 @@
 namespace silkworm {
 
 std::vector<Receipt> execute_block(const Block& block, StateBuffer& buffer, const ChainConfig& config,
-                                   AnalysisCache* analysis_cache) {
+                                   AnalysisCache* analysis_cache, ExecutionStatePool* state_pool) {
     const BlockHeader& header{block.header};
     uint64_t block_num{header.number};
 
     IntraBlockState state{buffer};
     ExecutionProcessor processor{block, state, config};
     processor.evm().analysis_cache = analysis_cache;
+    processor.evm().state_pool = state_pool;
 
     std::vector<Receipt> receipts{processor.execute_block()};
 

@@ -23,6 +23,7 @@
 #include <intx/intx.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
+#include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
 #include <stack>
@@ -56,6 +57,8 @@ class EVM {
     CallResult execute(const Transaction& txn, uint64_t gas) noexcept;
 
     AnalysisCache* analysis_cache{nullptr};  // use for better performance
+
+    ExecutionStatePool* state_pool{nullptr};  // use for better performance
 
   private:
     friend class EvmHost;

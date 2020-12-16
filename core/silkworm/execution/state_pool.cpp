@@ -22,13 +22,11 @@
 
 namespace silkworm {
 
-ExecutionStatePool& ExecutionStatePool::instance() noexcept {
-    static ExecutionStatePool x;
-    return x;
-}
+ExecutionStatePool::ExecutionStatePool() {}
+
+ExecutionStatePool::~ExecutionStatePool() {}
 
 std::unique_ptr<evmone::execution_state> ExecutionStatePool::acquire() noexcept {
-    std::lock_guard lock{mutex_};
     if (pool_.empty()) {
         return std::make_unique<evmone::execution_state>();
     }
@@ -37,9 +35,6 @@ std::unique_ptr<evmone::execution_state> ExecutionStatePool::acquire() noexcept 
     return obj;
 }
 
-void ExecutionStatePool::release(std::unique_ptr<evmone::execution_state> obj) noexcept {
-    std::lock_guard lock{mutex_};
-    pool_.push(std::move(obj));
-}
+void ExecutionStatePool::release(std::unique_ptr<evmone::execution_state> obj) noexcept { pool_.push(std::move(obj)); }
 
 }  // namespace silkworm

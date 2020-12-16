@@ -13,6 +13,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+#ifndef ETL_SILKWORM_FILE_PROVIDER_H
+#define ETL_SILKWORM_FILE_PROVIDER_H
 
 #include <vector>
 #include <string>
@@ -20,10 +22,6 @@
 #include <silkworm/etl/buffer.hpp>
 #include <fstream>
 #include <boost/endian/conversion.hpp>
-
-#ifndef ETL_SILKWORM_FILE_PROVIDER_H
-#define ETL_SILKWORM_FILE_PROVIDER_H
-
 
 namespace silkworm::etl{
 // FileProvider saves buffers to disk and reads from them

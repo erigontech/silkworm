@@ -13,51 +13,26 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-<<<<<<< HEAD
 #ifndef ETL_SILKWORM_FILE_PROVIDER_H
 #define ETL_SILKWORM_FILE_PROVIDER_H
 
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <silkworm/etl/buffer.hpp>
 #include <fstream>
-#include <boost/endian/conversion.hpp>
-=======
-
-#include <vector>
-#include <string>
-#include <map>
-#include <algorithm>
 #include <silkworm/etl/buffer.hpp>
-#include <fstream>
-
-#ifndef FILE_PROVIDER_H
-#define FILE_PROVIDER_H
-
->>>>>>> added comments
+#include <boost/filesystem/operations.hpp>
 
 namespace silkworm::etl{
 // FileProvider saves buffers to disk and reads from them
 class FileProvider {
     public:
 
-        FileProvider(Buffer *buffer, int id); // Sort and write buffer to file
-<<<<<<< HEAD
-        Entry next();                     // Read next element from file starting from position 0
-        void reset();                         // Remove the file when eof is met
+        FileProvider(int id);                       // Sort and write buffer to file
+        void write_buffer_to_disk(Buffer *buffer);  // Write buffer to disk
+        Entry next();                               // Read next element from file starting from position 0
+        void reset();                               // Remove the file when eof is met
 
     private:
         std::fstream file_;
         std::string filename_;
-=======
-        etl_entry next();                     // Read next element from file starting from position 0
-        void reset();                         // Remove the file when eof is met
-
-    private:
-        std::fstream file;
-        std::string filename;
->>>>>>> added comments
 };
 
 }

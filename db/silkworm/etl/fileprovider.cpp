@@ -14,93 +14,53 @@
    limitations under the License.
 */
 
-#include <silkworm/etl/fileProvider.hpp>
-<<<<<<< HEAD
-=======
-#include <boost/endian/conversion.hpp>
-#include <silkworm/common/util.hpp>
-#include <string.h>
-#include <cstdio>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <iostream>
->>>>>>> added comments
+#include <silkworm/etl/file_provider.hpp>
 
 namespace silkworm::etl{
 
-FileProvider::FileProvider(Buffer * buffer, int id) {
-<<<<<<< HEAD
+FileProvider::FileProvider(int id) {
     filename_ = "tmp" + std::to_string(id);
     file_.open(filename_, std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
-=======
-    filename = "tmp" + std::to_string(id);
-    file.open(filename, std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
->>>>>>> added comments
-    auto entries{buffer->get_entries()};
-    for(auto entry: entries) {
-        auto writes{std::string()};
-        unsigned char length_key[4];
-        unsigned char length_value[4];
-        boost::endian::store_big_u32(length_key, entry.key.size());
-        boost::endian::store_big_u32(length_value, entry.value.size());
-        writes.append(std::string((const char *) length_key, 4));
-        writes.append(std::string((const char *) length_value, 4));
-        writes.append(std::string((const char *) entry.key.data(), entry.key.size()));
-        writes.append(std::string((const char *) entry.value.data(), entry.value.size()));
-<<<<<<< HEAD
-        file_ << writes;
+}
+
+void FileProvider::write_buffer_to_disk(Buffer *buffer) {
+    union head_t {
+        uint32_t lengths[2];
+        uint8_t bytes[8];
+    };
+    head_t head{};
+    for(const auto& entry: buffer->get_entries()) {
+        head.lengths[0] = entry.key.size();
+        head.lengths[1] = entry.value.size();
+        file_.write((const char *) head.bytes, 8);
+        file_.write((const char *) entry.key.data(), entry.key.size());
+        file_.write((const char *) entry.value.data(), entry.value.size());
     }
-    file_.seekp(0);
+    file_.seekg(0);
 }
 
 Entry FileProvider::next() {
-    char buffer_key_length[4];
-    char buffer_value_length[4];
-
-    file_.read(buffer_key_length, 4);
-    file_.read(buffer_value_length, 4);
+    union head_t {
+        uint32_t lengths[2];
+        uint8_t bytes[8];
+    };
+    head_t head{};
+    file_.read((char *)head.bytes, 8);
 
     if (file_.eof()) {
-=======
-        file << writes;
-    }
-    file.seekp(0);
-}
-
-etl_entry FileProvider::next() {
-    char buffer_key_length[4];
-    char buffer_value_length[4];
-
-    file.read(buffer_key_length, 4);
-    file.read(buffer_value_length, 4);
-
-    if (file.eof()) {
->>>>>>> added comments
-        return {ByteView(), ByteView()};
+        return {silkworm::ByteView(), silkworm::ByteView()};
     }
 
-    auto key_length = boost::endian::load_big_u32((unsigned char *)buffer_key_length);
-    auto value_length = boost::endian::load_big_u32((unsigned char *)buffer_value_length);
-    auto key{new unsigned char[key_length]};
-    auto value{new unsigned char[value_length]};
-<<<<<<< HEAD
-    file_.read((char *)key, key_length);
-    file_.read((char *)value, value_length);
-=======
-
-    file.read((char *)key, key_length);
-    file.read((char *)value, value_length);
-
->>>>>>> added comments
-    return {ByteView(key, key_length), ByteView(value, value_length)};
+    auto key{new unsigned char[head.lengths[0]]};
+    auto value{new unsigned char[head.lengths[1]]};
+    file_.read((char *)key, head.lengths[0]);
+    file_.read((char *)value, head.lengths[1]);
+    return {silkworm::ByteView(key, head.lengths[0]), silkworm::ByteView(value, head.lengths[1])};
 }
 
 void FileProvider::reset() {
-<<<<<<< HEAD
-    std::remove(filename_.c_str());
-=======
-    std::remove(filename.c_str());
->>>>>>> added comments
+    file_.close();
+    boost::filesystem::remove(filename_.c_str());
 }
 
 }

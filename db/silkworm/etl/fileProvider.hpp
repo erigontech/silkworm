@@ -16,13 +16,13 @@
 
 #include <vector>
 #include <string>
-#include <map>
 #include <algorithm>
 #include <silkworm/etl/buffer.hpp>
 #include <fstream>
+#include <boost/endian/conversion.hpp>
 
-#ifndef FILE_PROVIDER_H
-#define FILE_PROVIDER_H
+#ifndef ETL_SILKWORM_FILE_PROVIDER_H
+#define ETL_SILKWORM_FILE_PROVIDER_H
 
 
 namespace silkworm::etl{
@@ -31,12 +31,12 @@ class FileProvider {
     public:
 
         FileProvider(Buffer *buffer, int id); // Sort and write buffer to file
-        etl_entry next();                     // Read next element from file starting from position 0
+        Entry next();                     // Read next element from file starting from position 0
         void reset();                         // Remove the file when eof is met
 
     private:
-        std::fstream file;
-        std::string filename;
+        std::fstream file_;
+        std::string filename_;
 };
 
 }

@@ -15,40 +15,38 @@
 */
 
 #include <vector>
-#include <string>
 #include <algorithm>
 #include <vector>
 #include <silkworm/common/base.hpp>
-#ifndef BUFFER_H
-#define BUFFER_H
+#ifndef SILKWORM_ETL_BUFFER_H
+#define SILKWORM_ETL_BUFFER_H
 
 namespace silkworm::etl{
 // Key-Value pairs used in ETL
-struct etl_entry {
+struct Entry {
     ByteView key;
     ByteView value;
     int i; // Used only for heap operations
 };
 // Compare entries by key comparison
-bool compareEntries(const etl_entry lhs, const etl_entry rhs);
+bool compareEntries(const Entry lhs, const Entry rhs);
 
-// In a ETL, a buffer must be used stores entries, sort them and write them to file
+// In ETL, a buffer must be used stores entries, sort them and write them to file
 class Buffer {
    public:
-    Buffer(size_t _optimal_size);
+    Buffer(size_t optimal_size): optimal_size_(optimal_size) {};
 
     void put(ByteView key, ByteView value); // Add a new entry to the buffer
     void reset();                                               // Free the buffer after writting to file
-    int length();                                               // Number of total entries
     bool check_flush_size();                                    // Check if buffer reached optimal size
     void sort();                                                // Sort buffer in crescent order by key comparison
-    std::vector<etl_entry> get_entries();
+    std::vector<Entry> &get_entries();
 
    private:
 
-    std::vector<etl_entry> entries;
-    size_t optimal_size;
-    size_t size;
+    std::vector<Entry> entries_;
+    size_t optimal_size_;
+    size_t size_ = 0;
 };
 }
 #endif

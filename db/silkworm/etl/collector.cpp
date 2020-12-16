@@ -19,22 +19,22 @@
 
 namespace silkworm::etl{
 void Collector::flush_buffer() {
-    data_providers_.push_back(FileProvider(buffer_, data_providers_.size()));
+    data_providers_.push_back(FileProvider(data_providers_.size()));
+    data_providers_.back().write_buffer_to_disk(buffer_);
     buffer_->reset();
 }
 
-void Collector::collect(ByteView key, ByteView value) {
+void Collector::collect(silkworm::ByteView key, silkworm::ByteView value) {
     buffer_->put(key, value);
     if (buffer_->check_flush_size()) {
         flush_buffer();
     }
 }
 
-void Collector::load(lmdb::Table *table, Load load) {
+void Collector::load(silkworm::lmdb::Table *table, Load load) {
     if (data_providers_.size() == 0) {
         buffer_->sort();
-        auto entries{buffer_->get_entries()};
-        for(auto entry: entries) {
+        for(const auto& entry: buffer_->get_entries()) {
             auto pairs = load(entry.key, entry.value);
             for (auto pair: pairs) table->put(pair.key, pair.value);
         }
@@ -72,7 +72,7 @@ void Collector::load(lmdb::Table *table, Load load) {
     }
 }
 
-std::vector<Entry> default_load(ByteView key, ByteView value) {
+std::vector<Entry> default_load(silkworm::ByteView key, silkworm::ByteView value) {
     return std::vector<Entry>({{key, value, 0}});
 }
 

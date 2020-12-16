@@ -15,45 +15,33 @@
 */
 
 #include <silkworm/etl/buffer.hpp>
-#include <algorithm>
-#include <iostream>
 
 namespace silkworm::etl{
-bool compareEntries(const etl_entry lhs, const etl_entry rhs) {
+bool compareEntries(const Entry lhs, const Entry rhs) {
     return lhs.key.compare(rhs.key) > 0;
 }
 
-Buffer::Buffer(size_t _optimal_size) {
-    optimal_size = _optimal_size;
-    entries = std::vector<etl_entry>();
-    size = 0;
-}
-
 void Buffer::put(ByteView key, ByteView value) {
-    size += value.size() + key.size();
-    entries.push_back({key, value});
+    size_ += value.size() + key.size();
+    entries_.push_back({key, value});
 }
 
 void Buffer::sort() {
-    std::sort(entries.begin(), entries.end(), compareEntries);
-    std::reverse(entries.begin(), entries.end());
+    std::sort(entries_.begin(), entries_.end(), compareEntries);
+    std::reverse(entries_.begin(), entries_.end());
 }
 
-std::vector<etl_entry> Buffer::get_entries() {
-    return entries;
-}
-
-int Buffer::length() {
-    return entries.size();
+std::vector<Entry> &Buffer::get_entries() {
+    return entries_;
 }
 
 void Buffer::reset() {
-    entries.clear();
-    entries.shrink_to_fit();
-    size = 0;
+    entries_.clear();
+    entries_.shrink_to_fit();
+    size_ = 0;
 }
 
 bool Buffer::check_flush_size() {
-    return size >= optimal_size;
+    return size_ >= optimal_size_;
 }
 }

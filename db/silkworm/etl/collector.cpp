@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include <silkworm/etl/collector.hpp>
+#include "collector.hpp"
 
 
 namespace silkworm::etl{

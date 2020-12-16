@@ -17,7 +17,7 @@
 #ifndef SILKWORM_ETL_COLLECTOR_H
 #define SILKWORM_ETL_COLLECTOR_H
 
-#include <silkworm/etl/file_provider.hpp>
+#include "file_provider.hpp"
 #include <silkworm/db/chaindb.hpp>
 
 namespace silkworm::etl{

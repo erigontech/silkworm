@@ -17,7 +17,7 @@
 #define ETL_SILKWORM_FILE_PROVIDER_H
 
 #include <fstream>
-#include <silkworm/etl/buffer.hpp>
+#include "buffer.hpp"
 #include <boost/filesystem/operations.hpp>
 
 namespace silkworm::etl{

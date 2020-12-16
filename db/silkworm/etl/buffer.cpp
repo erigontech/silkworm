@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include <silkworm/etl/buffer.hpp>
+#include "buffer.hpp"
 
 namespace silkworm::etl{
 bool compareEntries(const Entry lhs, const Entry rhs) {

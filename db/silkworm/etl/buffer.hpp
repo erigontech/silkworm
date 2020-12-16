@@ -14,12 +14,13 @@
    limitations under the License.
 */
 
+#ifndef SILKWORM_ETL_BUFFER_H
+#define SILKWORM_ETL_BUFFER_H
+
 #include <vector>
 #include <algorithm>
 #include <vector>
 #include <silkworm/common/base.hpp>
-#ifndef SILKWORM_ETL_BUFFER_H
-#define SILKWORM_ETL_BUFFER_H
 
 namespace silkworm::etl{
 // Key-Value pairs used in ETL

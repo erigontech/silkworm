@@ -60,6 +60,9 @@ int main(int argc, char* argv[]) {
     // running on the same machine.
     // std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
+    AnalysisCache analysis_cache;
+    ExecutionStatePool state_pool;
+
     try {
         // counters
         uint64_t nTxs{0}, nErrors{0};
@@ -80,7 +83,8 @@ int main(int argc, char* argv[]) {
             db::Buffer buffer{txn.get(), block_num};
 
             // Execute the block and retreive the receipts
-            std::vector<Receipt> receipts = execute_block(bh->block, buffer);
+            std::vector<Receipt> receipts{
+                execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool)};
 
             // There is one receipt per transaction
             assert(bh->block.transactions.size() == receipts.size());

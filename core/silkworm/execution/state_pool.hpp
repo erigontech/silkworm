@@ -18,7 +18,6 @@
 #define SILKWORM_EXECUTION_STATE_POOL_H_
 
 #include <memory>
-#include <mutex>
 #include <stack>
 
 namespace evmone {
@@ -28,10 +27,10 @@ struct execution_state;
 namespace silkworm {
 
 /// Object pool of EVM execution states.
-/// Safe to use in a multi-threaded environment.
 class ExecutionStatePool {
   public:
-    static ExecutionStatePool& instance() noexcept;
+    ExecutionStatePool();
+    ~ExecutionStatePool();
 
     ExecutionStatePool(const ExecutionStatePool&) = delete;
     ExecutionStatePool& operator=(const ExecutionStatePool&) = delete;
@@ -41,10 +40,7 @@ class ExecutionStatePool {
     void release(std::unique_ptr<evmone::execution_state> obj) noexcept;
 
   private:
-    ExecutionStatePool() {}
-
-    std::mutex mutex_;
-    std::stack<std::unique_ptr<evmone::execution_state>> pool_;  // GUARDED_BY(mutex_)
+    std::stack<std::unique_ptr<evmone::execution_state>> pool_;
 };
 
 }  // namespace silkworm

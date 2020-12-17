@@ -19,6 +19,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
+#include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/buffer.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
@@ -36,10 +37,10 @@ class ValidationError : public std::runtime_error {
  * Transaction senders must be already populated.
  * The DB table kCurrentState should match the Ethereum state at the begining of the block.
  *
- * For better performance use AnalysisCache.
+ * For better performance use AnalysisCache & ExecutionStatePool.
  */
 std::vector<Receipt> execute_block(const Block& block, StateBuffer& buffer, const ChainConfig& config = kMainnetConfig,
-                                   AnalysisCache* analysis_cache = nullptr);
+                                   AnalysisCache* analysis_cache = nullptr, ExecutionStatePool* state_pool = nullptr);
 
 }  // namespace silkworm
 

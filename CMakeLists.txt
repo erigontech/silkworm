@@ -117,7 +117,9 @@ if(MSVC)
   add_definitions(-DWIN32_LEAN_AND_MEAN) # ... and prevent winsock mismatch with Boost's
   add_definitions(-DNOMINMAX)            # Prevent MSVC to tamper with std::min/std::max
 
+  # Abseil triggeres some deprecation warnings
   add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+  add_compile_definitions(_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING)
 
   add_compile_options(/wd5030) # Silence warnings about GNU attributes
   add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier

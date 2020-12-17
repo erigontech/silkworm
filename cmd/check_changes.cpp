@@ -65,6 +65,7 @@ int main(int argc, char* argv[]) {
     const uint64_t to{absl::GetFlag(FLAGS_to)};
 
     AnalysisCache analysis_cache;
+    ExecutionStatePool state_pool;
 
     uint64_t block_num{from};
     for (; block_num < to; ++block_num) {
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]) {
 
         db::Buffer buffer{txn.get(), block_num};
 
-        execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache);
+        execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool);
 
         db::AccountChanges db_account_changes{db::read_account_changes(*txn, block_num)};
         const db::AccountChanges& calculated_account_changes{buffer.account_changes().at(block_num)};

@@ -66,6 +66,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
 
         db::Buffer buffer{&txn};
         AnalysisCache analysis_cache;
+        ExecutionStatePool state_pool;
 
         for (; block_num <= max_block; ++block_num) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
@@ -73,7 +74,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
                 return kSilkwormBlockNotFound;
             }
 
-            std::vector<Receipt> receipts{execute_block(bh->block, buffer, *config, &analysis_cache)};
+            std::vector<Receipt> receipts{execute_block(bh->block, buffer, *config, &analysis_cache, &state_pool)};
 
             if (write_receipts) {
                 buffer.insert_receipts(block_num, receipts);

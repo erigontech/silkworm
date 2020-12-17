@@ -111,6 +111,12 @@ target_include_directories(lmdb PUBLIC lmdb-go)
 
 # Warnings options
 if(MSVC)
+
+  add_definitions(-D_WIN32_WINNT=0x0602) # Min Windows 8
+  add_definitions(-DVC_EXTRALEAN)        # Process windows headers faster ...
+  add_definitions(-DWIN32_LEAN_AND_MEAN) # ... and prevent winsock mismatch with Boost's
+  add_definitions(-DNOMINMAX)            # Prevent MSVC to tamper with std::min/std::max
+
   add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
 
   add_compile_options(/wd5030) # Silence warnings about GNU attributes

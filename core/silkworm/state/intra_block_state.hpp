@@ -17,6 +17,8 @@
 #ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_H_
 #define SILKWORM_STATE_INTRA_BLOCK_STATE_H_
 
+#include <robin_hood.h>
+
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <memory>
@@ -24,8 +26,6 @@
 #include <silkworm/state/delta.hpp>
 #include <silkworm/state/object.hpp>
 #include <silkworm/types/log.hpp>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace silkworm {
@@ -122,15 +122,15 @@ class IntraBlockState {
 
     StateBuffer& db_;
 
-    mutable std::unordered_map<evmc::address, state::Object> objects_;
-    mutable std::unordered_map<evmc::address, state::Storage> storage_;
+    mutable robin_hood::unordered_flat_map<evmc::address, state::Object> objects_;
+    mutable robin_hood::unordered_flat_map<evmc::address, state::Storage> storage_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 
     // substate
-    std::unordered_set<evmc::address> self_destructs_;
+    robin_hood::unordered_flat_set<evmc::address> self_destructs_;
     std::vector<Log> logs_;
-    std::unordered_set<evmc::address> touched_;
+    robin_hood::unordered_flat_set<evmc::address> touched_;
     uint64_t refund_{0};
 };
 

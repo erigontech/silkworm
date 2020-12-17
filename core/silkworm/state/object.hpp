@@ -17,10 +17,11 @@
 #ifndef SILKWORM_STATE_OBJECT_H_
 #define SILKWORM_STATE_OBJECT_H_
 
+#include <robin_hood.h>
+
 #include <optional>
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/account.hpp>
-#include <unordered_map>
 
 namespace silkworm::state {
 
@@ -36,7 +37,7 @@ struct StorageValue {
     evmc::bytes32 current{};   // current value
 };
 
-using Storage = std::unordered_map<evmc::bytes32, StorageValue>;
+using Storage = robin_hood::unordered_flat_map<evmc::bytes32, StorageValue>;
 
 }  // namespace silkworm::state
 

@@ -307,8 +307,7 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
 }
 
 void IntraBlockState::finalize_transaction() {
-    for (auto& x : storage_) {
-        state::Storage& storage{x.second};
+    for ([[maybe_unused]] auto& [address, storage] : storage_) {
         for (const auto& [key, val] : storage.current) {
             storage.committed[key].original = val;
         }

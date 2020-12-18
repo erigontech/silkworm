@@ -265,10 +265,7 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
 void IntraBlockState::write_to_db(uint64_t block_number) {
     db_.begin_block(block_number);
 
-    for (const auto& x : storage_) {
-        const evmc::address& address{x.first};
-        const state::Storage& storage{x.second};
-
+    for (const auto& [address, storage] : storage_) {
         auto it1{objects_.find(address)};
         if (it1 == objects_.end()) {
             continue;
@@ -278,17 +275,13 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
             continue;
         }
 
-        for (const auto& entry : storage.committed) {
-            const evmc::bytes32& key{entry.first};
-            const state::CommittedValue& val{entry.second};
+        for (const auto& [key, val] : storage.committed) {
             uint64_t incarnation{obj.current->incarnation};
             db_.update_storage(address, incarnation, key, val.initial, val.original);
         }
     }
 
-    for (const auto& entry : objects_) {
-        const evmc::address& address{entry.first};
-        const state::Object& obj{entry.second};
+    for (const auto& [address, obj] : objects_) {
         db_.update_account(address, obj.initial, obj.current);
         if (obj.current && obj.code && (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
             db_.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
@@ -314,12 +307,11 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
 }
 
 void IntraBlockState::finalize_transaction() {
-    for (auto& x : storage_) {
-        state::Storage& s{x.second};
-        for (const auto& entry : s.current) {
-            s.committed[entry.first].original = entry.second;
+    for (auto& [_, storage] : storage_) {
+        for (const auto& [key, val] : storage.current) {
+            storage.committed[key].original = val;
         }
-        s.current.clear();
+        storage.current.clear();
     }
 }
 

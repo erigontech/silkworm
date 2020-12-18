@@ -17,8 +17,7 @@
 #ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_H_
 #define SILKWORM_STATE_INTRA_BLOCK_STATE_H_
 
-#include <absl/container/flat_hash_map.h>
-#include <absl/container/flat_hash_set.h>
+#include <robin_hood.h>
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
@@ -123,17 +122,18 @@ class IntraBlockState {
 
     StateBuffer& db_;
 
-    mutable absl::flat_hash_map<evmc::address, state::Object> objects_;
-    mutable absl::flat_hash_map<evmc::address, state::Storage> storage_;
+    mutable robin_hood::unordered_flat_map<evmc::address, state::Object> objects_;
+    mutable robin_hood::unordered_flat_map<evmc::address, state::Storage> storage_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 
     // substate
-    absl::flat_hash_set<evmc::address> self_destructs_;
+    robin_hood::unordered_flat_set<evmc::address> self_destructs_;
     std::vector<Log> logs_;
-    absl::flat_hash_set<evmc::address> touched_;
+    robin_hood::unordered_flat_set<evmc::address> touched_;
     uint64_t refund_{0};
 };
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_STATE_INTRA_BLOCK_STATE_H_

@@ -20,6 +20,7 @@
 #include <iostream>
 #include <map>
 #include <nlohmann/json.hpp>
+#include <set>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/execution/execution.hpp>

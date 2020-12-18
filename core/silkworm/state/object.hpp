@@ -31,13 +31,13 @@ struct Object {
     std::optional<Bytes> code;
 };
 
-struct CommitedValue {
+struct CommittedValue {
     evmc::bytes32 initial{};   // value at the begining of the block
     evmc::bytes32 original{};  // value at the begining of the transaction; see EIP-2200
 };
 
 struct Storage {
-    robin_hood::unordered_flat_map<evmc::bytes32, CommitedValue> commited;
+    robin_hood::unordered_flat_map<evmc::bytes32, CommittedValue> committed;
     robin_hood::unordered_flat_map<evmc::bytes32, evmc::bytes32> current;
 };
 

@@ -233,8 +233,8 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const e
         }
     }
 
-    auto it{storage.commited.find(key)};
-    if (it != storage.commited.end()) {
+    auto it{storage.committed.find(key)};
+    if (it != storage.committed.end()) {
         return it->second.original;
     }
 
@@ -245,7 +245,7 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const e
 
     evmc::bytes32 val{db_.read_storage(address, incarnation, key)};
 
-    state::CommitedValue& entry{storage_[address].commited[key]};
+    state::CommittedValue& entry{storage_[address].committed[key]};
     entry.initial = val;
     entry.original = val;
 
@@ -278,9 +278,9 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
             continue;
         }
 
-        for (const auto& entry : storage.commited) {
+        for (const auto& entry : storage.committed) {
             const evmc::bytes32& key{entry.first};
-            const state::CommitedValue& val{entry.second};
+            const state::CommittedValue& val{entry.second};
             uint64_t incarnation{obj.current->incarnation};
             db_.update_storage(address, incarnation, key, val.initial, val.original);
         }
@@ -317,7 +317,7 @@ void IntraBlockState::finalize_transaction() {
     for (auto& x : storage_) {
         state::Storage& s{x.second};
         for (const auto& entry : s.current) {
-            s.commited[entry.first].original = entry.second;
+            s.committed[entry.first].original = entry.second;
         }
         s.current.clear();
     }

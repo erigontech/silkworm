@@ -15,7 +15,6 @@
 */
 
 #include "buffer.hpp"
-#include <iostream>
 
 namespace silkworm::etl{
 bool compare_buffer_entries(const Entry& lhs, const Entry& rhs) {

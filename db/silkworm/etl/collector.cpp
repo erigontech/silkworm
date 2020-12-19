@@ -15,7 +15,6 @@
 */
 
 #include "collector.hpp"
-#include <iostream>
 
 namespace silkworm::etl{
 void Collector::flush_buffer() {

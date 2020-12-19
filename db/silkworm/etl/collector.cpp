@@ -44,21 +44,20 @@ void Collector::load(silkworm::lmdb::Table *table, Load load) {
     flush_buffer();
 
     auto heap = std::vector<Entry>();
-    std::make_heap(heap.begin(), heap.end(), compare_heap_entries);
+    std::make_heap(heap.begin(), heap.end(), std::greater<Entry>());
 
     for (unsigned int i = 0; i < data_providers_.size(); i++)
     {
         auto entry = data_providers_.at(i).read_entry();
         heap.push_back({entry.key, entry.value, (int)i});
-        std::push_heap(heap.begin(), heap.end(), compare_heap_entries);
+        std::push_heap(heap.begin(), heap.end(), std::greater<Entry>());
     }
 
     while (heap.size() != 0) {
 
-        std::pop_heap(heap.begin(), heap.end(), compare_heap_entries);
+        std::pop_heap(heap.begin(), heap.end(), std::greater<Entry>());
         auto entry{heap.back()};
         heap.pop_back();
-
         auto pairs{load(entry.key, entry.value)};
         for (auto pair: pairs) table->put(pair.key, pair.value);
 		auto next{data_providers_.at(entry.i).read_entry()};
@@ -68,7 +67,7 @@ void Collector::load(silkworm::lmdb::Table *table, Load load) {
             continue;
         }
         heap.push_back(next);
-        std::push_heap(heap.begin(), heap.end(), compare_heap_entries);
+        std::push_heap(heap.begin(), heap.end(), std::greater<Entry>());
     }
 }
 

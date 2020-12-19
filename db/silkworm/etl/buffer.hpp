@@ -29,15 +29,15 @@ struct Entry {
     ByteView value;
     int i; // Used only for heap operations
 };
-// Compare entries by key comparison
-bool compare_buffer_entries(const Entry& lhs, const Entry& rhs);
-bool compare_heap_entries(const Entry& lhs, const Entry& rhs);
+
+bool operator<(const Entry& lhs, const Entry& rhs);
+bool operator>(const Entry& lhs, const Entry& rhs);
 // In ETL, a buffer must be used stores entries, sort them and write them to file
 class Buffer {
    public:
     Buffer(size_t optimal_size): optimal_size_(optimal_size) {};
 
-    void put(ByteView& key, ByteView& value); // Add a new entry to the buffer
+    void put(ByteView& key, ByteView& value);                   // Add a new entry to the buffer
     void reset();                                               // Free the buffer after writting to file
     bool check_flush_size();                                    // Check if buffer reached optimal size
     void sort();                                                // Sort buffer in crescent order by key comparison

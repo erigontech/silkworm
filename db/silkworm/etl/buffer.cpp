@@ -17,6 +17,15 @@
 #include "buffer.hpp"
 
 namespace silkworm::etl{
+
+bool operator<(const Entry& lhs, const Entry& rhs) {
+    return lhs.key.compare(rhs.key) < 0;
+}
+
+bool operator>(const Entry& lhs, const Entry& rhs) {
+    return lhs.key.compare(rhs.key) > 0;
+}
+
 bool compare_buffer_entries(const Entry& lhs, const Entry& rhs) {
     return lhs.key.compare(rhs.key) > 0;
 }
@@ -31,7 +40,7 @@ void Buffer::put(ByteView& key, ByteView& value) {
 }
 
 void Buffer::sort() {
-    std::sort(entries_.begin(), entries_.end(), compare_buffer_entries);
+    std::sort(entries_.begin(), entries_.end());
 }
 
 std::vector<Entry> &Buffer::get_entries() {

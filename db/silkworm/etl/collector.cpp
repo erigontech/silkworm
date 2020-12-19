@@ -15,60 +15,61 @@
 */
 
 #include "collector.hpp"
-
+#include <iostream>
 
 namespace silkworm::etl{
 void Collector::flush_buffer() {
+    buffer_.sort();
     data_providers_.push_back(FileProvider(data_providers_.size()));
-    data_providers_.back().write_buffer_to_disk(buffer_);
-    buffer_->reset();
+    data_providers_.at(data_providers_.size()-1).write_buffer_to_disk(buffer_.get_entries());
+    buffer_.reset();
 }
 
 void Collector::collect(silkworm::ByteView key, silkworm::ByteView value) {
-    buffer_->put(key, value);
-    if (buffer_->check_flush_size()) {
+    buffer_.put(key, value);
+    if (buffer_.check_flush_size()) {
         flush_buffer();
     }
 }
 
 void Collector::load(silkworm::lmdb::Table *table, Load load) {
     if (data_providers_.size() == 0) {
-        buffer_->sort();
-        for(const auto& entry: buffer_->get_entries()) {
+        buffer_.sort();
+        for(const auto& entry: buffer_.get_entries()) {
             auto pairs = load(entry.key, entry.value);
             for (auto pair: pairs) table->put(pair.key, pair.value);
         }
-        buffer_->reset();
+        buffer_.reset();
         return;
     }
     flush_buffer();
 
     auto heap = std::vector<Entry>();
-    std::make_heap(heap.begin(), heap.end(), compareEntries);
+    std::make_heap(heap.begin(), heap.end(), compare_heap_entries);
 
     for (unsigned int i = 0; i < data_providers_.size(); i++)
     {
-        auto entry = data_providers_.at(i).next();
+        auto entry = data_providers_.at(i).read_entry();
         heap.push_back({entry.key, entry.value, (int)i});
-        std::push_heap(heap.begin(), heap.end(), compareEntries);
+        std::push_heap(heap.begin(), heap.end(), compare_heap_entries);
     }
 
     while (heap.size() != 0) {
 
-        std::pop_heap(heap.begin(), heap.end(), compareEntries);
+        std::pop_heap(heap.begin(), heap.end(), compare_heap_entries);
         auto entry{heap.back()};
         heap.pop_back();
 
         auto pairs{load(entry.key, entry.value)};
         for (auto pair: pairs) table->put(pair.key, pair.value);
-		auto next{data_providers_.at(entry.i).next()};
+		auto next{data_providers_.at(entry.i).read_entry()};
         next.i = entry.i;
         if (next.key.size() == 0) {
             data_providers_.at(entry.i).reset();
             continue;
         }
         heap.push_back(next);
-        std::push_heap(heap.begin(), heap.end(), compareEntries);
+        std::push_heap(heap.begin(), heap.end(), compare_heap_entries);
     }
 }
 

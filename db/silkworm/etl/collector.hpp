@@ -32,7 +32,7 @@ typedef std::vector<Entry> (*Load)(ByteView, ByteView);
 class Collector {
 
     public:
-        Collector(Buffer * buffer): buffer_(buffer) {};
+        Collector(size_t optimal_size): buffer_(Buffer(optimal_size)) {};
         // Write buffer to file
         void flush_buffer();
         // Store key-value pair in memory or on disk
@@ -42,7 +42,7 @@ class Collector {
 
     private:
 	    std::vector<FileProvider> data_providers_;
-        Buffer * buffer_;
+        Buffer buffer_;
 };
 // Load function for no processing
 std::vector<Entry> default_load(ByteView key, ByteView value);

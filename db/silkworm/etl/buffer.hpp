@@ -28,6 +28,7 @@ struct Entry {
     ByteView key;
     ByteView value;
     int i; // Used only for heap operations
+    Entry(ByteView key, ByteView value): key(key), value(value) {};
 };
 
 bool operator<(const Entry& lhs, const Entry& rhs);

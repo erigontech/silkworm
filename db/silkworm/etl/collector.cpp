@@ -67,7 +67,7 @@ void Collector::load(silkworm::lmdb::Table *table, Load load) {
 }
 
 std::vector<Entry> default_load(silkworm::ByteView key, silkworm::ByteView value) {
-    return std::vector<Entry>({{key, value, 0}});
+    return std::vector<Entry>({{key, value}});
 }
 
 }

@@ -36,7 +36,7 @@ bool compare_heap_entries(const Entry& lhs, const Entry& rhs) {
 
 void Buffer::put(ByteView& key, ByteView& value) {
     size_ += value.size() + key.size();
-    entries_.push_back({key, value});
+    entries_.emplace_back(key, value);
 }
 
 void Buffer::sort() {

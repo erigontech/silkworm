@@ -17,35 +17,32 @@
 #ifndef SILKWORM_ETL_COLLECTOR_H
 #define SILKWORM_ETL_COLLECTOR_H
 
+#include <silkworm/db/chaindb.hpp>
 #include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/file_provider.hpp>
-#include <silkworm/db/chaindb.hpp>
 
-namespace silkworm::etl{
+namespace silkworm::etl {
 
-constexpr size_t optimal_buffer_size = 268435456;
-constexpr size_t ideal_batch_size = 134217728; // TODO: Commit after ideal size is reached and open new transaction
+constexpr size_t optimal_buffer_size = 256 * kMebi;
+constexpr size_t ideal_batch_size = 128 * kMebi;  // TODO: Commit after ideal size is reached and open new transaction
 // After collection further processing can be made to key-value pairs.
 // Returned vector of entries will be inserted afterwards.
 typedef std::vector<Entry> (*Load)(ByteView, ByteView);
 // Collector collects entries that needs to be sorted and load them in the table in sorted order
 class Collector {
+  public:
+    Collector(size_t optimal_size) : buffer_(Buffer(optimal_size)){};
 
-    public:
-        Collector(size_t optimal_size): buffer_(Buffer(optimal_size)) {};
-        // Write buffer to file
-        void flush_buffer();
-        // Store key-value pair in memory or on disk
-        void collect(ByteView key, ByteView value);
-        // Load collected entries in destination table
-        void load(lmdb::Table * table, Load load);
+    void flush_buffer();                         // Write buffer to file
+    void collect(ByteView key, ByteView value);  // Store key-value pair in memory or on disk
+    void load(lmdb::Table* table, Load load);    // Load collected entries in destination table
 
-    private:
-	    std::vector<FileProvider> file_providers_;
-        Buffer buffer_;
+  private:
+    std::vector<FileProvider> file_providers_;
+    Buffer buffer_;
 };
 // Load function for no processing
 std::vector<Entry> default_load(ByteView key, ByteView value);
 
-}
+}  // namespace silkworm::etl
 #endif

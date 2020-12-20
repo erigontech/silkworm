@@ -47,7 +47,7 @@ void Buffer::reset() {
     size_ = 0;
 }
 
-bool Buffer::check_flush_size() {
+bool Buffer::overflows() {
     return size_ >= optimal_size_;
 }
 }

@@ -31,7 +31,7 @@ void Collector::flush_buffer() {
 
 void Collector::collect(silkworm::ByteView key, silkworm::ByteView value) {
     buffer_.put(key, value);
-    if (buffer_.check_flush_size()) {
+    if (buffer_.overflows()) {
         flush_buffer();
     }
 }

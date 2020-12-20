@@ -26,14 +26,6 @@ bool operator>(const Entry& lhs, const Entry& rhs) {
     return lhs.key.compare(rhs.key) > 0;
 }
 
-bool compare_buffer_entries(const Entry& lhs, const Entry& rhs) {
-    return lhs.key.compare(rhs.key) > 0;
-}
-
-bool compare_heap_entries(const Entry& lhs, const Entry& rhs) {
-    return lhs.key.compare(rhs.key) < 0;
-}
-
 void Buffer::put(ByteView& key, ByteView& value) {
     size_ += value.size() + key.size();
     entries_.push_back({key, value});

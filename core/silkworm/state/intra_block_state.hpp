@@ -113,7 +113,7 @@ class IntraBlockState {
     friend class state::StorageChangeDelta;
     friend class state::StorageWipeDelta;
 
-    const state::StorageValue* get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept;
+    evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key, bool original) const noexcept;
 
     state::Object* get_object(const evmc::address& address) const noexcept;
     state::Object& get_or_create_object(const evmc::address& address) noexcept;

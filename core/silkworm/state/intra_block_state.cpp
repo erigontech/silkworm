@@ -44,11 +44,11 @@ state::Object& IntraBlockState::get_or_create_object(const evmc::address& addres
     auto* obj{get_object(address)};
 
     if (!obj) {
-        journal_.push_back(std::make_unique<state::CreateDelta>(address));
+        journal_.emplace_back(new state::CreateDelta{address});
         obj = &objects_[address];
         obj->current = Account{};
     } else if (!obj->current) {
-        journal_.push_back(std::make_unique<state::UpdateDelta>(address, *obj));
+        journal_.emplace_back(new state::UpdateDelta{address, *obj});
         obj->current = Account{};
     }
 
@@ -82,9 +82,9 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
         } else if (prev->initial) {
             prev_incarnation = prev->initial->incarnation;
         }
-        journal_.push_back(std::make_unique<state::UpdateDelta>(address, *prev));
+        journal_.emplace_back(new state::UpdateDelta{address, *prev});
     } else {
-        journal_.push_back(std::make_unique<state::CreateDelta>(address));
+        journal_.emplace_back(new state::CreateDelta{address});
     }
 
     if (!prev_incarnation || prev_incarnation == 0) {
@@ -97,7 +97,7 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
 
     auto it{storage_.find(address)};
     if (it != storage_.end()) {
-        journal_.push_back(std::make_unique<state::StorageWipeDelta>(address, it->second));
+        journal_.emplace_back(new state::StorageWipeDelta{address, it->second});
         storage_.erase(address);
     }
 }
@@ -105,14 +105,14 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
 void IntraBlockState::touch(const evmc::address& address) noexcept {
     bool inserted{touched_.insert(address).second};
     if (inserted) {
-        journal_.push_back(std::make_unique<state::TouchDelta>(address));
+        journal_.emplace_back(new state::TouchDelta{address});
     }
 }
 
 void IntraBlockState::record_suicide(const evmc::address& address) noexcept {
     bool inserted{self_destructs_.insert(address).second};
     if (inserted) {
-        journal_.push_back(std::make_unique<state::SuicideDelta>(address));
+        journal_.emplace_back(new state::SuicideDelta{address});
     }
 }
 
@@ -149,21 +149,21 @@ intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const n
 
 void IntraBlockState::set_balance(const evmc::address& address, const intx::uint256& value) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.push_back(std::make_unique<state::UpdateDelta>(address, obj));
+    journal_.emplace_back(new state::UpdateDelta{address, obj});
     obj.current->balance = value;
     touch(address);
 }
 
 void IntraBlockState::add_to_balance(const evmc::address& address, const intx::uint256& addend) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.push_back(std::make_unique<state::UpdateDelta>(address, obj));
+    journal_.emplace_back(new state::UpdateDelta{address, obj});
     obj.current->balance += addend;
     touch(address);
 }
 
 void IntraBlockState::subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.push_back(std::make_unique<state::UpdateDelta>(address, obj));
+    journal_.emplace_back(new state::UpdateDelta{address, obj});
     obj.current->balance -= subtrahend;
     touch(address);
 }
@@ -175,7 +175,7 @@ uint64_t IntraBlockState::get_nonce(const evmc::address& address) const noexcept
 
 void IntraBlockState::set_nonce(const evmc::address& address, uint64_t nonce) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.push_back(std::make_unique<state::UpdateDelta>(address, obj));
+    journal_.emplace_back(new state::UpdateDelta{address, obj});
     obj.current->nonce = nonce;
 }
 
@@ -201,7 +201,7 @@ evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const
 
 void IntraBlockState::set_code(const evmc::address& address, ByteView code) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.push_back(std::make_unique<state::UpdateDelta>(address, obj));
+    journal_.emplace_back(new state::UpdateDelta{address, obj});
     obj.code = code;
     ethash::hash256 hash{keccak256(code)};
     std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
@@ -209,44 +209,47 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) noex
 
 evmc::bytes32 IntraBlockState::get_current_storage(const evmc::address& address,
                                                    const evmc::bytes32& key) const noexcept {
-    const state::StorageValue* val{get_storage(address, key)};
-    return val ? val->current : evmc::bytes32{};
+    return get_storage(address, key, /*original=*/false);
 }
 
 evmc::bytes32 IntraBlockState::get_original_storage(const evmc::address& address,
                                                     const evmc::bytes32& key) const noexcept {
-    const state::StorageValue* val{get_storage(address, key)};
-    return val ? val->original : evmc::bytes32{};
+    return get_storage(address, key, /*original=*/true);
 }
 
-const state::StorageValue* IntraBlockState::get_storage(const evmc::address& address,
-                                                        const evmc::bytes32& key) const noexcept {
+evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const evmc::bytes32& key,
+                                           bool original) const noexcept {
     auto* obj{get_object(address)};
     if (!obj || !obj->current) {
-        return nullptr;
+        return evmc::bytes32{};
     }
 
     state::Storage& storage{storage_[address]};
 
-    auto it{storage.find(key)};
-    if (it != storage.end()) {
-        return &it->second;
+    if (!original) {
+        auto it{storage.current.find(key)};
+        if (it != storage.current.end()) {
+            return it->second;
+        }
+    }
+
+    auto it{storage.committed.find(key)};
+    if (it != storage.committed.end()) {
+        return it->second.original;
     }
 
     uint64_t incarnation{obj->current->incarnation};
     if (!obj->initial || obj->initial->incarnation != incarnation) {
-        return nullptr;
+        return evmc::bytes32{};
     }
 
     evmc::bytes32 val{db_.read_storage(address, incarnation, key)};
 
-    state::StorageValue& entry{storage_[address][key]};
-
+    state::CommittedValue& entry{storage_[address].committed[key]};
     entry.initial = val;
     entry.original = val;
-    entry.current = val;
 
-    return &entry;
+    return val;
 }
 
 void IntraBlockState::set_storage(const evmc::address& address, const evmc::bytes32& key,
@@ -255,17 +258,14 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     if (prev == value) {
         return;
     }
-    storage_[address][key].current = value;
-    journal_.push_back(std::make_unique<state::StorageChangeDelta>(address, key, prev));
+    storage_[address].current[key] = value;
+    journal_.emplace_back(new state::StorageChangeDelta{address, key, prev});
 }
 
 void IntraBlockState::write_to_db(uint64_t block_number) {
     db_.begin_block(block_number);
 
-    for (const auto& x : storage_) {
-        const evmc::address& address{x.first};
-        const state::Storage& storage{x.second};
-
+    for (const auto& [address, storage] : storage_) {
         auto it1{objects_.find(address)};
         if (it1 == objects_.end()) {
             continue;
@@ -275,17 +275,13 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
             continue;
         }
 
-        for (const auto& entry : storage) {
-            const evmc::bytes32& key{entry.first};
-            const state::StorageValue& val{entry.second};
+        for (const auto& [key, val] : storage.committed) {
             uint64_t incarnation{obj.current->incarnation};
-            db_.update_storage(address, incarnation, key, val.initial, val.current);
+            db_.update_storage(address, incarnation, key, val.initial, val.original);
         }
     }
 
-    for (const auto& entry : objects_) {
-        const evmc::address& address{entry.first};
-        const state::Object& obj{entry.second};
+    for (const auto& [address, obj] : objects_) {
         db_.update_account(address, obj.initial, obj.current);
         if (obj.current && obj.code && (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
             db_.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
@@ -312,10 +308,11 @@ void IntraBlockState::revert_to_snapshot(const IntraBlockState::Snapshot& snapsh
 
 void IntraBlockState::finalize_transaction() {
     for (auto& x : storage_) {
-        for (auto& entry : x.second) {
-            state::StorageValue& val{entry.second};
-            val.original = val.current;
+        state::Storage& storage{x.second};
+        for (const auto& [key, val] : storage.current) {
+            storage.committed[key].original = val;
         }
+        storage.current.clear();
     }
 }
 

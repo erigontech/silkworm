@@ -26,7 +26,9 @@ if(NOT SILKWORM_HAS_PARENT)
   include(CableBuildType)
   cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
-  set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain.cmake CACHE FILEPATH "" FORCE)
+  if(NOT CMAKE_TOOLCHAIN_FILE)
+    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain.cmake CACHE FILEPATH "" FORCE)
+  endif()
 
   include(evmone/cmake/cable/HunterGate.cmake)
   HunterGate(

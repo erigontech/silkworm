@@ -37,13 +37,14 @@ class Buffer {
    public:
     Buffer(size_t optimal_size): optimal_size_(optimal_size) {};
 
-    void put(ByteView& key, ByteView& value);                   // Add a new entry to the buffer
-    void reset();                                               // Free the buffer after writting to file
-    bool check_flush_size();                                    // Check if buffer reached optimal size
-    void sort();                                                // Sort buffer in crescent order by key comparison
-    std::vector<Entry> &get_entries();
+    void put(ByteView& key, ByteView& value);  // Add a new entry to the buffer
+    void reset();                              // Free the buffer after writting to file
+    bool check_flush_size();                   // Check if buffer reached optimal size
+    void sort();                               // Sort buffer in crescent order by key comparison
+    const size_t size(void);                   // Actual size of accounted data
+    std::vector<Entry>& get_entries();
 
-   private:
+  private:
 
     std::vector<Entry> entries_;
     size_t optimal_size_;

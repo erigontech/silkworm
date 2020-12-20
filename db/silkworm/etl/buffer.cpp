@@ -43,6 +43,8 @@ void Buffer::sort() {
     std::sort(entries_.begin(), entries_.end());
 }
 
+const size_t Buffer::size(void) { return size_; }
+
 std::vector<Entry> &Buffer::get_entries() {
     return entries_;
 }

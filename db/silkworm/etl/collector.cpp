@@ -15,12 +15,13 @@
 */
 
 #include "collector.hpp"
+#include <queue>
 
 namespace silkworm::etl{
 void Collector::flush_buffer() {
     buffer_.sort();
-    data_providers_.push_back(FileProvider(data_providers_.size()));
-    data_providers_.at(data_providers_.size()-1).write_buffer_to_disk(buffer_.get_entries());
+    data_providers_.emplace_back(data_providers_.size());
+    data_providers_.back().write_buffer_to_disk(buffer_.get_entries());
     buffer_.reset();
 }
 
@@ -35,39 +36,33 @@ void Collector::load(silkworm::lmdb::Table *table, Load load) {
     if (data_providers_.size() == 0) {
         buffer_.sort();
         for(const auto& entry: buffer_.get_entries()) {
-            auto pairs = load(entry.key, entry.value);
-            for (auto pair: pairs) table->put(pair.key, pair.value);
+            auto pairs{load(entry.key, entry.value)};
+            for (const auto& pair: pairs) table->put(pair.key, pair.value);
         }
         buffer_.reset();
         return;
     }
     flush_buffer();
 
-    auto heap = std::vector<Entry>();
-    std::make_heap(heap.begin(), heap.end(), std::greater<Entry>());
+    auto queue{std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>>()};
 
-    for (unsigned int i = 0; i < data_providers_.size(); i++)
+    for (auto& data_provider: data_providers_)
     {
-        auto entry = data_providers_.at(i).read_entry();
-        heap.push_back({entry.key, entry.value, (int)i});
-        std::push_heap(heap.begin(), heap.end(), std::greater<Entry>());
+        queue.push(data_provider.read_entry());
     }
 
-    while (heap.size() != 0) {
-
-        std::pop_heap(heap.begin(), heap.end(), std::greater<Entry>());
-        auto entry{heap.back()};
-        heap.pop_back();
+    while (queue.size() != 0) {
+        auto entry{queue.top()};
+        queue.pop();
         auto pairs{load(entry.key, entry.value)};
-        for (auto pair: pairs) table->put(pair.key, pair.value);
+        for (const auto& pair: pairs) table->put(pair.key, pair.value);
 		auto next{data_providers_.at(entry.i).read_entry()};
         next.i = entry.i;
         if (next.key.size() == 0) {
             data_providers_.at(entry.i).reset();
             continue;
         }
-        heap.push_back(next);
-        std::push_heap(heap.begin(), heap.end(), std::greater<Entry>());
+        queue.push(next);
     }
 }
 

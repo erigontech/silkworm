@@ -54,8 +54,12 @@ HunterGate(
 
 project(silkworm)
 
+option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
+
 include(cmake/Hunter/core_packages.cmake)
-include(cmake/Hunter/extra_packages.cmake)
+if(NOT SILKWORM_CORE_ONLY)
+  include(cmake/Hunter/extra_packages.cmake)
+endif()
 
 # Profing and coverage options
 if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
@@ -100,15 +104,17 @@ if(MSVC)
 endif()
 add_subdirectory(libff)
 
-# CBOR
-add_subdirectory(cbor-cpp)
+if(NOT SILKWORM_CORE_ONLY)
+  # CBOR
+  add_subdirectory(cbor-cpp)
 
-# LMDB
-add_library(lmdb lmdb-go/lmdb/lmdb.h
-                 lmdb-go/lmdb/mdb.c
-                 lmdb-go/lmdb/midl.c
-                 lmdb-go/lmdb/midl.h)
-target_include_directories(lmdb PUBLIC lmdb-go)
+  # LMDB
+  add_library(lmdb lmdb-go/lmdb/lmdb.h
+                  lmdb-go/lmdb/mdb.c
+                  lmdb-go/lmdb/midl.c
+                  lmdb-go/lmdb/midl.h)
+  target_include_directories(lmdb PUBLIC lmdb-go)
+endif()
 
 # Warnings options
 if(MSVC)
@@ -161,8 +167,10 @@ target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE keccak)
 
 # Silkworm itself
 add_subdirectory(core)
-add_subdirectory(db)
-add_subdirectory(tg_api)
-if(NOT SILKWORM_HAS_PARENT)
-  add_subdirectory(cmd)
+if(NOT SILKWORM_CORE_ONLY)
+  add_subdirectory(db)
+  add_subdirectory(tg_api)
+  if(NOT SILKWORM_HAS_PARENT)
+    add_subdirectory(cmd)
+  endif()
 endif()

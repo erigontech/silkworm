@@ -15,6 +15,7 @@
 */
 
 #include "file_provider.hpp"
+
 #include <boost/filesystem/operations.hpp>
 #include <silkworm/etl/error.hpp>
 

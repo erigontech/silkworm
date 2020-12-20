@@ -21,7 +21,7 @@
 #include <optional>
 #include <silkworm/etl/buffer.hpp>
 
-namespace silkworm::etl{
+namespace silkworm::etl {
 
 union head_t {
     uint32_t lengths[2];

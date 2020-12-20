@@ -66,9 +66,8 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
 
     // Process the queue from smallest to largest key
     while (queue.size()) {
-
-        auto& current_item{queue.top()};  // Pick smallest key by reference
-        auto& current_file_provider{file_providers_.at(current_item.i)};
+        auto& current_item{queue.top()};                                  // Pick smallest key by reference
+        auto& current_file_provider{file_providers_.at(current_item.i)};  // and set current file provider
 
         // Process linked pairs
         for (const auto& pair : load(current_item.key, current_item.value)) {

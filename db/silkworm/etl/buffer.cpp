@@ -16,30 +16,22 @@
 
 #include "buffer.hpp"
 
-namespace silkworm::etl{
+namespace silkworm::etl {
 
-bool operator<(const Entry& lhs, const Entry& rhs) {
-    return lhs.key.compare(rhs.key) < 0;
-}
+bool operator<(const Entry& lhs, const Entry& rhs) { return lhs.key.compare(rhs.key) < 0; }
 
-bool operator>(const Entry& lhs, const Entry& rhs) {
-    return lhs.key.compare(rhs.key) > 0;
-}
+bool operator>(const Entry& lhs, const Entry& rhs) { return lhs.key.compare(rhs.key) > 0; }
 
 void Buffer::put(ByteView& key, ByteView& value) {
     size_ += value.size() + key.size();
     entries_.push_back({key, value});
 }
 
-void Buffer::sort() {
-    std::sort(entries_.begin(), entries_.end());
-}
+void Buffer::sort() { std::sort(entries_.begin(), entries_.end()); }
 
 const size_t Buffer::size(void) { return size_; }
 
-std::vector<Entry> &Buffer::get_entries() {
-    return entries_;
-}
+std::vector<Entry>& Buffer::get_entries() { return entries_; }
 
 void Buffer::reset() {
     entries_.clear();
@@ -47,7 +39,5 @@ void Buffer::reset() {
     size_ = 0;
 }
 
-bool Buffer::overflows() {
-    return size_ >= optimal_size_;
-}
-}
+bool Buffer::overflows() { return size_ >= optimal_size_; }
+}  // namespace silkworm::etl

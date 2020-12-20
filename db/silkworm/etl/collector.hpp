@@ -41,7 +41,7 @@ class Collector {
         void load(lmdb::Table * table, Load load);
 
     private:
-	    std::vector<FileProvider> data_providers_;
+	    std::vector<FileProvider> file_providers_;
         Buffer buffer_;
 };
 // Load function for no processing

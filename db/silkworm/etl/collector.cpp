@@ -23,8 +23,8 @@ namespace silkworm::etl {
 void Collector::flush_buffer() {
     if (buffer_.size()) {
         buffer_.sort();
-        data_providers_.emplace_back((int)data_providers_.size());
-        data_providers_.back().write_buffer_to_disk(buffer_.get_entries());
+        file_providers_.emplace_back((int)file_providers_.size());
+        file_providers_.back().write_buffer_to_disk(buffer_.get_entries());
         buffer_.reset();
     }
 }
@@ -37,7 +37,7 @@ void Collector::collect(silkworm::ByteView key, silkworm::ByteView value) {
 }
 
 void Collector::load(silkworm::lmdb::Table* table, Load load) {
-    if (!data_providers_.size()) {
+    if (!file_providers_.size()) {
         buffer_.sort();
         for (const auto& entry : buffer_.get_entries()) {
             auto pairs{load(entry.key, entry.value)};
@@ -57,7 +57,7 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
 
     // Read one "record" from each data_provider and let the queue
     // sort them. On top of the queue the smallest key
-    for (auto& data_provider : data_providers_) {
+    for (auto& data_provider : file_providers_) {
         auto item{data_provider.read_entry()};
         if (item.key.size()) {
             queue.push(item);
@@ -75,7 +75,7 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
 
         // From the provider which has served the current key
         // read next "record"
-        auto next{data_providers_.at(current.i).read_entry()};
+        auto next{file_providers_.at(current.i).read_entry()};
 
         // At this point `current` has been processed.
         // We can remove it from the queue
@@ -86,7 +86,7 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
         if (next.key.size()) {
             queue.push(next);
         } else {
-            data_providers_.at(next.i).reset();
+            file_providers_.at(next.i).reset();
         }
     }
 }

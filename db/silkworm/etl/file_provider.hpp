@@ -18,6 +18,7 @@
 
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <silkworm/etl/buffer.hpp>
 
 namespace silkworm::etl{
@@ -32,7 +33,7 @@ class FileProvider {
   public:
     FileProvider(int id);                                    // Sort and write buffer to file
     void write_buffer_to_disk(std::vector<Entry>& entries);  // Write buffer to disk
-    Entry read_entry();                                      // Read next element from file starting from position 0
+    std::optional<Entry> read_entry();                       // Read next element from file starting from position 0
     void reset();                                            // Remove the file when eof is met
 
   private:
@@ -40,5 +41,5 @@ class FileProvider {
     std::fstream file_;
     std::string filename_;
 };
-}
+}  // namespace silkworm::etl
 #endif

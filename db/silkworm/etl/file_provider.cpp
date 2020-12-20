@@ -41,11 +41,11 @@ void FileProvider::write_buffer_to_disk(std::vector<Entry> &entries) {
     file_.seekg(0);
 }
 
-Entry FileProvider::read_entry() {
+std::optional<Entry> FileProvider::read_entry() {
     head_t head{};
     file_.read((char *)head.bytes, 8);
     if (file_.eof()) {
-        return {ByteView(), ByteView()};
+        return std::nullopt;
     }
     if (file_.fail()) {
         throw ETLError(strerror(errno));
@@ -57,7 +57,7 @@ Entry FileProvider::read_entry() {
     if (file_.fail()) {
         throw ETLError(strerror(errno));
     }
-    return {ByteView(key, head.lengths[0]), ByteView(value, head.lengths[1]), id_};
+    return Entry{ByteView(key, head.lengths[0]), ByteView(value, head.lengths[1]), id_};
 }
 
 void FileProvider::reset() {

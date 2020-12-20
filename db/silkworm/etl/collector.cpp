@@ -59,23 +59,25 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
     // sort them. On top of the queue the smallest key
     for (auto& data_provider : file_providers_) {
         auto item{data_provider.read_entry()};
-        if (item.key.size()) {
-            queue.push(item);
+        if (item.has_value()) {
+            queue.push(*item);
         }
     }
 
     // Process the queue from smallest to largest key
     while (queue.size()) {
-        auto& current{queue.top()};  // Pick smallest key by reference
+
+        auto& current_item{queue.top()};  // Pick smallest key by reference
+        auto& current_file_provider{file_providers_.at(current_item.i)};
 
         // Process linked pairs
-        for (const auto& pair : load(current.key, current.value)) {
+        for (const auto& pair : load(current_item.key, current_item.value)) {
             table->put(pair.key, pair.value);
         }
 
         // From the provider which has served the current key
         // read next "record"
-        auto next{file_providers_.at(current.i).read_entry()};
+        auto next{current_file_provider.read_entry()};
 
         // At this point `current` has been processed.
         // We can remove it from the queue
@@ -83,10 +85,10 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
 
         // Add next item to the queue only if it has
         // meaningful data
-        if (next.key.size()) {
-            queue.push(next);
+        if (next.has_value()) {
+            queue.push(*next);
         } else {
-            file_providers_.at(next.i).reset();
+            current_file_provider.reset();
         }
     }
 }

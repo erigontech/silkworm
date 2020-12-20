@@ -26,19 +26,19 @@ union head_t {
     uint32_t lengths[2];
     uint8_t bytes[8];
 };
+
 // FileProvider saves buffers to disk and reads from them
 class FileProvider {
-    public:
+  public:
+    FileProvider(int id);                                    // Sort and write buffer to file
+    void write_buffer_to_disk(std::vector<Entry>& entries);  // Write buffer to disk
+    Entry read_entry();                                      // Read next element from file starting from position 0
+    void reset();                                            // Remove the file when eof is met
 
-        FileProvider(int id);                                       // Sort and write buffer to file
-        void write_buffer_to_disk(std::vector<Entry>& entries);  // Write buffer to disk
-        Entry read_entry();                                         // Read next element from file starting from position 0
-        void reset();                                               // Remove the file when eof is met
-
-    private:
-        std::fstream file_;
-        std::string filename_;
+  private:
+    int id_;
+    std::fstream file_;
+    std::string filename_;
 };
-
 }
 #endif

@@ -24,7 +24,7 @@ bool operator>(const Entry& lhs, const Entry& rhs) { return lhs.key.compare(rhs.
 
 void Buffer::put(ByteView& key, ByteView& value) {
     size_ += value.size() + key.size();
-    entries_.emplace_back(key, value);
+    entries_.push_back({ key, value });
 }
 
 void Buffer::sort() { std::sort(entries_.begin(), entries_.end()); }

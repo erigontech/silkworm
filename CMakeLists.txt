@@ -54,7 +54,8 @@ HunterGate(
 
 project(silkworm)
 
-include(cmake/Hunter/packages.cmake)
+include(cmake/Hunter/core_packages.cmake)
+include(cmake/Hunter/extra_packages.cmake)
 
 # Profing and coverage options
 if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")

@@ -14,11 +14,6 @@
    limitations under the License.
 ]]
 
-hunter_add_package(abseil)
-hunter_add_package(benchmark)
-hunter_add_package(Boost COMPONENTS filesystem)
-hunter_add_package(Catch)
-hunter_add_package(CLI11)
+hunter_add_package(Boost)
 hunter_add_package(intx)
 hunter_add_package(Microsoft.GSL)
-hunter_add_package(nlohmann_json)

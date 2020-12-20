@@ -141,6 +141,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 # evmone with dependencies
+add_compile_definitions(EVMC_LOADER_MOCK)
 add_subdirectory(evmone/evmc)
 add_subdirectory(ethash)
 find_package(intx CONFIG REQUIRED)

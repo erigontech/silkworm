@@ -15,14 +15,18 @@
 */
 
 #include "collector.hpp"
+
 #include <queue>
 
-namespace silkworm::etl{
+namespace silkworm::etl {
+
 void Collector::flush_buffer() {
-    buffer_.sort();
-    data_providers_.emplace_back(data_providers_.size());
-    data_providers_.back().write_buffer_to_disk(buffer_.get_entries());
-    buffer_.reset();
+    if (buffer_.size()) {
+        buffer_.sort();
+        data_providers_.emplace_back((int)data_providers_.size());
+        data_providers_.back().write_buffer_to_disk(buffer_.get_entries());
+        buffer_.reset();
+    }
 }
 
 void Collector::collect(silkworm::ByteView key, silkworm::ByteView value) {
@@ -32,37 +36,58 @@ void Collector::collect(silkworm::ByteView key, silkworm::ByteView value) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table *table, Load load) {
-    if (data_providers_.size() == 0) {
+void Collector::load(silkworm::lmdb::Table* table, Load load) {
+    if (!data_providers_.size()) {
         buffer_.sort();
-        for(const auto& entry: buffer_.get_entries()) {
+        for (const auto& entry : buffer_.get_entries()) {
             auto pairs{load(entry.key, entry.value)};
-            for (const auto& pair: pairs) table->put(pair.key, pair.value);
+            for (const auto& pair : pairs) {
+                table->put(pair.key, pair.value);
+            }
         }
         buffer_.reset();
         return;
     }
+
     flush_buffer();
 
-    auto queue{std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>>()};
+    // Define a priority queue based on smallest available key
+    auto key_comparer = [](Entry left, Entry right) { return left.key > right.key; };
+    std::priority_queue<Entry, std::vector<Entry>, decltype(key_comparer)> queue(key_comparer);
 
-    for (auto& data_provider: data_providers_)
-    {
-        queue.push(data_provider.read_entry());
+    // Read one "record" from each data_provider and let the queue
+    // sort them. On top of the queue the smallest key
+    for (auto& data_provider : data_providers_) {
+        auto item{data_provider.read_entry()};
+        if (item.key.size()) {
+            queue.push(item);
+        }
     }
 
-    while (queue.size() != 0) {
-        auto entry{queue.top()};
-        queue.pop();
-        auto pairs{load(entry.key, entry.value)};
-        for (const auto& pair: pairs) table->put(pair.key, pair.value);
-		auto next{data_providers_.at(entry.i).read_entry()};
-        next.i = entry.i;
-        if (next.key.size() == 0) {
-            data_providers_.at(entry.i).reset();
-            continue;
+    // Process the queue from smallest to largest key
+    while (queue.size()) {
+        auto& current{queue.top()};  // Pick smallest key by reference
+
+        // Process linked pairs
+        for (const auto& pair : load(current.key, current.value)) {
+            table->put(pair.key, pair.value);
         }
-        queue.push(next);
+
+        // From the provider which has served the current key
+        // read next "record"
+        auto next{data_providers_.at(current.i).read_entry()};
+
+        // At this point `current` has been processed.
+        // We can remove it from the queue
+        queue.pop();
+
+        // Add next item to the queue only if it has
+        // meaningful data
+        if (next.key.size()) {
+            queue.push(next);
+        } else {
+            data_providers_.at(next.i).reset();
+        }
     }
 }
 
@@ -70,4 +95,4 @@ std::vector<Entry> default_load(silkworm::ByteView key, silkworm::ByteView value
     return std::vector<Entry>({{key, value, 0}});
 }
 
-}
+}  // namespace silkworm::etl

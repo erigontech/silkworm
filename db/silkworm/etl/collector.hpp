@@ -53,7 +53,7 @@ class Collector {
 };
 
 // Default no transform function
-std::vector<db::Entry> no_transform(db::Entry entry);
+std::vector<db::Entry> identity_transform(db::Entry entry);
 
 }  // namespace silkworm::etl
 #endif

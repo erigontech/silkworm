@@ -132,7 +132,7 @@ std::string Collector::set_work_path(const char* provided_work_path)
     return p.string();
 }
 
-std::vector<Entry> no_transform(Entry entry) {
+std::vector<Entry> identity_transform(Entry entry) {
     return std::vector<Entry>({entry});
 }
 

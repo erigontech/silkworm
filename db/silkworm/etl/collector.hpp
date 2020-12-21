@@ -23,8 +23,8 @@
 
 namespace silkworm::etl {
 
-constexpr size_t optimal_buffer_size = 256 * kMebi;
-constexpr size_t ideal_batch_size = 128 * kMebi;  // TODO: Commit after ideal size is reached and open new transaction
+constexpr size_t kOptimalBufferSize = 256 * kMebi;
+constexpr size_t kIdealBatchSize = 128 * kMebi;  // TODO: Commit after ideal size is reached and open new transaction
 // After collection further processing can be made to key-value pairs.
 // Returned vector of entries will be inserted afterwards.
 typedef std::vector<Entry> (*Load)(ByteView, ByteView);

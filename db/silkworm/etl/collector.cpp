@@ -17,13 +17,29 @@
 #include "collector.hpp"
 
 #include <queue>
+#include <boost/filesystem.hpp>
 
 namespace silkworm::etl {
 
-void Collector::flush_buffer() {
+    namespace fs = boost::filesystem;
+
+    Collector::~Collector()
+    {
+        if (work_path_.empty()) {
+            return;
+        }
+
+        fs::path path(work_path_);
+        if (fs::exists(path)) {
+            fs::remove_all(path);
+        }
+    }
+
+
+    void Collector::flush_buffer() {
     if (buffer_.size()) {
         buffer_.sort();
-        file_providers_.emplace_back((int)file_providers_.size());
+        file_providers_.emplace_back(work_path_, (int)file_providers_.size());
         file_providers_.back().flush(buffer_);
         buffer_.clear();
     }
@@ -94,6 +110,25 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
             current_file_provider.reset();
         }
     }
+}
+
+std::string Collector::set_work_path(const char* provided_work_path)
+{
+    // If something provided ensure exists as a directory
+    if (provided_work_path) {
+        fs::path path(provided_work_path);
+        if (!fs::exists(path) || !fs::is_directory(path)) {
+            throw etl_error("Non existent working directory");
+        }
+        return path.string();
+    }
+
+    // No path provided so we need to get a unique temporary directory
+    // to prevent different instances of collector to clash each other
+    // with same filenames
+    fs::path p{fs::temp_directory_path() / fs::unique_path()};
+    fs::create_directories(p);
+    return p.string();
 }
 
 std::vector<db::Entry> default_load(db::Entry entry) {

@@ -21,8 +21,11 @@
 
 namespace silkworm::etl {
 
-FileProvider::FileProvider(int id) : id_{id} {
-    filename_ = "tmp" + std::to_string(id);
+    namespace fs = boost::filesystem;
+
+FileProvider::FileProvider(std::string& working_path, int id) : id_{id} {
+    fs::path path{fs::path(working_path) / fs::path("tmp-" + std::to_string(id))};
+    filename_ = path.string();
     file_.open(filename_, std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
     if (!file_.is_open()) throw etl_error(strerror(errno));
 }
@@ -65,7 +68,7 @@ std::optional<std::pair<db::Entry, int>> FileProvider::read_entry() {
 
 void FileProvider::reset() {
     file_.close();
-    boost::filesystem::remove(filename_.c_str());
+    fs::remove(filename_.c_str());
 }
 
 }  // namespace silkworm::etl

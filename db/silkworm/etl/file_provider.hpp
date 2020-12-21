@@ -31,7 +31,7 @@ union head_t {
 // FileProvider saves buffers to disk and reads from them
 class FileProvider {
   public:
-    FileProvider(int id);                                   // Sort and write buffer to file
+    FileProvider(std::string& working_path, int id);        // Sort and write buffer to file
     void flush(Buffer& buffer);                             // Write buffer to disk
     std::optional<std::pair<db::Entry, int>> read_entry();  // Read next data element from file starting from position 0
     void reset();                                           // Remove the file when eof is met

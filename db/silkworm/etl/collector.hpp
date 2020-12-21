@@ -18,6 +18,7 @@
 #define SILKWORM_ETL_COLLECTOR_H
 
 #include <silkworm/db/chaindb.hpp>
+#include <silkworm/etl/error.hpp>
 #include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/file_provider.hpp>
 
@@ -31,13 +32,18 @@ typedef std::vector<db::Entry> (*Load)(db::Entry);
 // Collector collects entries that needs to be sorted and load them in the table in sorted order
 class Collector {
   public:
-    Collector(size_t optimal_size) : buffer_(Buffer(optimal_size)){};
+    Collector(const char* work_path = nullptr, size_t optimal_size = kOptimalBufferSize)
+        : work_path_{set_work_path(work_path)}, buffer_(Buffer(optimal_size)){};
+    ~Collector();
 
     void flush_buffer();                       // Write buffer to file
     void collect(db::Entry entry);             // Store key-value pair in memory or on disk
     void load(lmdb::Table* table, Load load);  // Load collected entries in destination table
 
   private:
+    std::string set_work_path(const char* provided_work_path);
+
+    std::string work_path_;
     std::vector<FileProvider> file_providers_;
     Buffer buffer_;
 };

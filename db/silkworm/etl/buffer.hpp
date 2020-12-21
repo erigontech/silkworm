@@ -29,11 +29,11 @@ class Buffer {
   public:
     Buffer(size_t optimal_size) : optimal_size_(optimal_size){};
 
-    void put(Entry& entry);        // Add a new entry to the buffer
-    void clear();                  // Free buffer's contents
-    bool overflows();              // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
-    void sort();                   // Sort buffer in crescent order by key comparison
-    size_t size() const noexcept;  // Actual size of accounted data
+    void put(Entry& entry);           // Add a new entry to the buffer
+    void clear();                     // Free buffer's contents
+    bool overflows() const noexcept;  // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
+    void sort();                      // Sort buffer in crescent order by key comparison
+    size_t size() const noexcept;     // Actual size of accounted data
     std::vector<Entry>& get_entries();
 
   private:

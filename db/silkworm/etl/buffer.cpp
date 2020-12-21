@@ -37,5 +37,5 @@ void Buffer::clear() {
     size_ = 0;
 }
 
-bool Buffer::overflows() { return size_ >= optimal_size_; }
+bool Buffer::overflows() const noexcept { return size_ >= optimal_size_; }
 }  // namespace silkworm::etl

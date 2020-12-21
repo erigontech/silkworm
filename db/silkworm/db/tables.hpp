@@ -26,6 +26,7 @@ see its common/dbutils/bucket.go.
 namespace silkworm::db::table {
 
 /* Canonical tables */
+constexpr lmdb::TableConfig kMAIN_DBI{0};
 constexpr lmdb::TableConfig kAccountChangeSet{"ACS", MDB_DUPSORT};
 constexpr lmdb::TableConfig kAccountHistory{"hAT"};
 constexpr lmdb::TableConfig kBlockBodies{"b"};

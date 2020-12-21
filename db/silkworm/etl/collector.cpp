@@ -16,27 +16,25 @@
 
 #include "collector.hpp"
 
-#include <queue>
 #include <boost/filesystem.hpp>
+#include <queue>
 
 namespace silkworm::etl {
 
-    namespace fs = boost::filesystem;
+namespace fs = boost::filesystem;
 
-    Collector::~Collector()
-    {
-        if (work_path_.empty()) {
-            return;
-        }
-
-        fs::path path(work_path_);
-        if (fs::exists(path)) {
-            fs::remove_all(path);
-        }
+Collector::~Collector() {
+    if (work_path_.empty()) {
+        return;
     }
 
+    fs::path path(work_path_);
+    if (fs::exists(path)) {
+        fs::remove_all(path);
+    }
+}
 
-    void Collector::flush_buffer() {
+void Collector::flush_buffer() {
     if (buffer_.size()) {
         buffer_.sort();
         file_providers_.emplace_back(work_path_, file_providers_.size());
@@ -53,7 +51,6 @@ void Collector::collect(Entry& entry) {
 }
 
 void Collector::load(silkworm::lmdb::Table* table, Transform transform) {
-
     if (!file_providers_.size()) {
         buffer_.sort();
         for (const auto& entry : buffer_.get_entries()) {
@@ -72,9 +69,8 @@ void Collector::load(silkworm::lmdb::Table* table, Transform transform) {
     auto key_comparer = [](std::pair<Entry, int> left, std::pair<Entry, int> right) {
         return left.first.key.compare(right.first.key) > 0;
     };
-    std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>,
-                        decltype(key_comparer)>
-        queue(key_comparer);
+    std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>, decltype(key_comparer)> queue(
+        key_comparer);
 
     // Read one "record" from each data_provider and let the queue
     // sort them. On top of the queue the smallest key
@@ -113,8 +109,7 @@ void Collector::load(silkworm::lmdb::Table* table, Transform transform) {
     }
 }
 
-std::string Collector::set_work_path(const char* provided_work_path)
-{
+std::string Collector::set_work_path(const char* provided_work_path) {
     // If something provided ensure exists as a directory
     if (provided_work_path) {
         fs::path path(provided_work_path);
@@ -132,8 +127,6 @@ std::string Collector::set_work_path(const char* provided_work_path)
     return p.string();
 }
 
-std::vector<Entry> identity_transform(Entry entry) {
-    return std::vector<Entry>({entry});
-}
+std::vector<Entry> identity_transform(Entry entry) { return std::vector<Entry>({entry}); }
 
 }  // namespace silkworm::etl

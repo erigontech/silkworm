@@ -14,8 +14,9 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETL_BUFFER_H
-#define SILKWORM_ETL_BUFFER_H
+#pragma once
+#ifndef SILKWORM_ETL_BUFFER_H_
+#define SILKWORM_ETL_BUFFER_H_
 
 #include <algorithm>
 #include <silkworm/common/base.hpp>
@@ -42,4 +43,4 @@ class Buffer {
     size_t size_ = 0;
 };
 }  // namespace silkworm::etl
-#endif
+#endif  // !SILKWORM_ETL_BUFFER_H_

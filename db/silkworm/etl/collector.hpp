@@ -14,8 +14,9 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETL_COLLECTOR_H
-#define SILKWORM_ETL_COLLECTOR_H
+#pragma once
+#ifndef SILKWORM_ETL_COLLECTOR_H_
+#define SILKWORM_ETL_COLLECTOR_H_
 
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/etl/buffer.hpp>
@@ -56,4 +57,4 @@ class Collector {
 std::vector<db::Entry> identity_transform(db::Entry entry);
 
 }  // namespace silkworm::etl
-#endif
+#endif  // !SILKWORM_ETL_COLLECTOR_H_

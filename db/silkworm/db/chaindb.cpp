@@ -271,7 +271,7 @@ size_t Transaction::get_id(void) { return mdb_txn_id(handle_); }
 
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
-std::optional<Bytes> Transaction::dlookup(const TableConfig& domain, MDB_val* key) {
+std::optional<Bytes> Transaction::data_lookup(const TableConfig& domain, MDB_val* key) {
     std::unique_ptr<Table> tbl{nullptr};
 
     try {
@@ -300,6 +300,25 @@ std::optional<Bytes> Transaction::dlookup(const TableConfig& domain, MDB_val* ke
 
     Bytes ret(static_cast<uint8_t*>(data.mv_data), data.mv_size);
     return {ret};
+}
+
+int Transaction::data_upsert(const TableConfig& domain, db::Entry& data)
+{
+    std::unique_ptr<Table> tbl{nullptr};
+
+    try {
+        if (!domain.name) {
+            tbl = this->open(MAIN_DBI);
+        } else {
+            // Should we create if not existent ?
+            tbl = this->open(domain, MDB_CREATE);
+        }
+        tbl->put(data.key, data.value);
+        return MDB_SUCCESS;
+
+    } catch (const exception& ex) {
+        return ex.err();
+    }
 }
 
 std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned flags) {

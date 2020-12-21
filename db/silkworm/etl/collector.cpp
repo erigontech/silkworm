@@ -45,7 +45,7 @@ namespace silkworm::etl {
     }
 }
 
-void Collector::collect(db::Entry entry) {
+void Collector::collect(Entry& entry) {
     buffer_.put(entry);
     if (buffer_.overflows()) {
         flush_buffer();
@@ -69,10 +69,11 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
     flush_buffer();
 
     // Define a priority queue based on smallest available key
-    auto key_comparer = [](std::pair<db::Entry, int> left, std::pair<db::Entry, int> right) {
+    auto key_comparer = [](std::pair<Entry, int> left, std::pair<Entry, int> right) {
         return left.first.key.compare(right.first.key) > 0;
     };
-    std::priority_queue<std::pair<db::Entry, int>, std::vector<std::pair<db::Entry, int>>, decltype(key_comparer)>
+    std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>,
+                        decltype(key_comparer)>
         queue(key_comparer);
 
     // Read one "record" from each data_provider and let the queue
@@ -131,8 +132,8 @@ std::string Collector::set_work_path(const char* provided_work_path)
     return p.string();
 }
 
-std::vector<db::Entry> default_load(db::Entry entry) {
-    return std::vector<db::Entry>({entry});
+std::vector<Entry> default_load(Entry entry) {
+    return std::vector<Entry>({entry});
 }
 
 }  // namespace silkworm::etl

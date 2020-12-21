@@ -18,22 +18,22 @@
 
 namespace silkworm::etl {
 
-void Buffer::put(db::Entry& entry) {
+void Buffer::put(Entry& entry) {
     size_ += entry.size();
     entries_.push_back(std::move(entry));
 }
 
 void Buffer::sort() {
     std::sort(entries_.begin(), entries_.end(),
-              [](const db::Entry& a, const db::Entry& b) { return a.key.compare(b.key) > 0; });
+              [](const Entry& a, const Entry& b) { return a.key.compare(b.key) > 0; });
 }
 
 size_t Buffer::size() const noexcept { return size_; }
 
-std::vector<db::Entry>& Buffer::get_entries() { return entries_; }
+std::vector<Entry>& Buffer::get_entries() { return entries_; }
 
 void Buffer::clear() {
-    std::vector<db::Entry>().swap(entries_);
+    std::vector<Entry>().swap(entries_);
     size_ = 0;
 }
 

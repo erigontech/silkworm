@@ -19,7 +19,7 @@
 
 #include <algorithm>
 #include <silkworm/common/base.hpp>
-#include <silkworm/db/util.hpp>
+#include <silkworm/etl/util.hpp>
 #include <vector>
 
 namespace silkworm::etl {
@@ -29,15 +29,15 @@ class Buffer {
   public:
     Buffer(size_t optimal_size) : optimal_size_(optimal_size){};
 
-    void put(db::Entry& entry);    // Add a new entry to the buffer
+    void put(Entry& entry);        // Add a new entry to the buffer
     void clear();                  // Free buffer's contents
     bool overflows();              // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
     void sort();                   // Sort buffer in crescent order by key comparison
     size_t size() const noexcept;  // Actual size of accounted data
-    std::vector<db::Entry>& get_entries();
+    std::vector<Entry>& get_entries();
 
   private:
-    std::vector<db::Entry> entries_;
+    std::vector<Entry> entries_;
     size_t optimal_size_;
     size_t size_ = 0;
 };

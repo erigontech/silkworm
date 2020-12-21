@@ -14,17 +14,31 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETL_ERROR_H
-#define SILKWORM_ETL_ERROR_H
+#ifndef SILKWORM_ETL_UTIL_H_
+#define SILKWORM_ETL_UTIL_H_
 
 #include <stdexcept>
 
-namespace silkworm::etl{
+namespace silkworm::etl {
 
-class etl_error : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
-};
+    class etl_error : public std::runtime_error {
+    public:
+        using std::runtime_error::runtime_error;
+    };
 
-}
-#endif // !SILKWORM_ETL_ERROR_H
+    // Head of each data chunk on file
+    union head_t {
+        uint32_t lengths[2];
+        uint8_t bytes[8];
+    };
+
+    // A data chunk on file or buffer
+    struct Entry {
+        Bytes key;
+        Bytes value;
+        size_t size() const noexcept { return key.size() + value.size(); }
+    };
+
+} // namespace silkworm::etl
+
+#endif // !SILKWORM_ETL_UTIL_H_

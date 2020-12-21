@@ -17,7 +17,6 @@
 #include "file_provider.hpp"
 
 #include <boost/filesystem/operations.hpp>
-#include <silkworm/etl/error.hpp>
 
 namespace silkworm::etl {
 
@@ -54,7 +53,7 @@ void FileProvider::flush(Buffer &buffer) {
     file_.seekg(0);
 }
 
-std::optional<std::pair<db::Entry, int>> FileProvider::read_entry() {
+std::optional<std::pair<Entry, int>> FileProvider::read_entry() {
     head_t head{};
     file_.read((char *)head.bytes, 8);
     if (file_.eof()) {
@@ -63,15 +62,14 @@ std::optional<std::pair<db::Entry, int>> FileProvider::read_entry() {
     if (file_.fail()) {
         throw etl_error(strerror(errno));
     }
-    auto key{new unsigned char[head.lengths[0]]};
-    auto value{new unsigned char[head.lengths[1]]};
-    file_.read((char *)key, head.lengths[0]);
-    file_.read((char *)value, head.lengths[1]);
+
+    Entry entry{Bytes(head.lengths[0], '\0'), Bytes(head.lengths[1], '\0')};
+    file_.read((char *)entry.key.data(), head.lengths[0]);
+    file_.read((char *)entry.value.data(), head.lengths[1]);
     if (file_.fail()) {
         throw etl_error(strerror(errno));
     }
 
-    db::Entry entry{ByteView(key, head.lengths[0]), ByteView(value, head.lengths[1])};
     return std::make_pair(entry, id_);
 }
 

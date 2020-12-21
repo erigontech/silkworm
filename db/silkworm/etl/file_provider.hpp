@@ -20,13 +20,9 @@
 #include <memory>
 #include <optional>
 #include <silkworm/etl/buffer.hpp>
+#include <silkworm/etl/util.hpp>
 
 namespace silkworm::etl {
-
-union head_t {
-    uint32_t lengths[2];
-    uint8_t bytes[8];
-};
 
 /**
  * Provides an abstraction to flush data to disk
@@ -35,9 +31,9 @@ union head_t {
 class FileProvider {
   public:
     FileProvider(const std::string& working_path, int id);
-    void flush(Buffer& buffer);                             // Write buffer's contents to disk
-    std::optional<std::pair<db::Entry, int>> read_entry();  // Read next data element from file starting from position 0
-    void reset();                                           // Remove the file when eof is met
+    void flush(Buffer& buffer);                         // Write buffer's contents to disk
+    std::optional<std::pair<Entry, int>> read_entry();  // Read next data element from file starting from position 0
+    void reset();                                       // Remove the file when eof is met
 
   private:
     int id_;

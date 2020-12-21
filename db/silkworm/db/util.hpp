@@ -41,7 +41,6 @@ constexpr uint64_t kDefaultIncarnation{1};
 struct Entry {
     ByteView key;
     ByteView value;
-    size_t size() const noexcept { return key.size() + value.size(); }
 };
 
 // address -> storage-encoded initial value

@@ -21,7 +21,7 @@
 
 namespace silkworm::etl{
 
-class ETLError : public std::runtime_error {
+class etl_error : public std::runtime_error {
   public:
     using std::runtime_error::runtime_error;
 };

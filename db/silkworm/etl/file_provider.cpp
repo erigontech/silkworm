@@ -24,7 +24,7 @@ namespace silkworm::etl {
 FileProvider::FileProvider(int id) : id_{id} {
     filename_ = "tmp" + std::to_string(id);
     file_.open(filename_, std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
-    if (!file_.is_open()) throw ETLError(strerror(errno));
+    if (!file_.is_open()) throw etl_error(strerror(errno));
 }
 
 void FileProvider::flush(Buffer &buffer) {
@@ -36,7 +36,7 @@ void FileProvider::flush(Buffer &buffer) {
         file_.write((const char *)entry.key.data(), entry.key.size());
         file_.write((const char *)entry.value.data(), entry.value.size());
         if (file_.fail()) {
-            throw ETLError(strerror(errno));
+            throw etl_error(strerror(errno));
         }
     }
     file_.seekg(0);
@@ -49,14 +49,14 @@ std::optional<std::pair<db::Entry, int>> FileProvider::read_entry() {
         return std::nullopt;
     }
     if (file_.fail()) {
-        throw ETLError(strerror(errno));
+        throw etl_error(strerror(errno));
     }
     auto key{new unsigned char[head.lengths[0]]};
     auto value{new unsigned char[head.lengths[1]]};
     file_.read((char *)key, head.lengths[0]);
     file_.read((char *)value, head.lengths[1]);
     if (file_.fail()) {
-        throw ETLError(strerror(errno));
+        throw etl_error(strerror(errno));
     }
 
     db::Entry entry{ByteView(key, head.lengths[0]), ByteView(value, head.lengths[1])};

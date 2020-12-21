@@ -35,7 +35,7 @@ void FileProvider::flush(Buffer &buffer) {
 
     // Verify we have enough space to store all data
     auto &entries{buffer.get_entries()};
-    size_t data_size{buffer.size() + entries.size() * 8};
+    size_t data_size{buffer.size() + entries.size() * sizeof(head_t)};
     fs::path workdir(fs::path(filename_).parent_path());
     if (fs::space(workdir).available < data_size) {
         throw etl_error("Insufficient disk space");

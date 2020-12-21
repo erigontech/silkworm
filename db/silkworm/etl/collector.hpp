@@ -18,27 +18,31 @@
 #define SILKWORM_ETL_COLLECTOR_H
 
 #include <silkworm/db/chaindb.hpp>
-#include <silkworm/etl/util.hpp>
 #include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/file_provider.hpp>
+#include <silkworm/etl/util.hpp>
+
+// ETL : Extract, Transform, Load
+// https://en.wikipedia.org/wiki/Extract,_transform,_load
 
 namespace silkworm::etl {
 
 constexpr size_t kOptimalBufferSize = 256 * kMebi;
 constexpr size_t kIdealBatchSize = 128 * kMebi;  // TODO: Commit after ideal size is reached and open new transaction
-// After collection further processing can be made to key-value pairs.
-// Returned vector of entries will be inserted afterwards.
-typedef std::vector<db::Entry> (*Load)(Entry);
-// Collector collects entries that needs to be sorted and load them in the table in sorted order
+
+// Function pointer to process Transform on before Load data into tables
+typedef std::vector<db::Entry> (*Transform)(Entry);
+
+// Collects data Extracted from db
 class Collector {
   public:
     Collector(const char* work_path = nullptr, size_t optimal_size = kOptimalBufferSize)
         : work_path_{set_work_path(work_path)}, buffer_(Buffer(optimal_size)){};
     ~Collector();
 
-    void flush_buffer();                       // Write buffer to file
-    void collect(Entry& entry);                // Store key-value pair in memory or on disk
-    void load(lmdb::Table* table, Load load);  // Load collected entries in destination table
+    void flush_buffer();                                 // Write buffer to file
+    void collect(Entry& entry);                          // Store key-value pair in memory or on disk
+    void load(lmdb::Table* table, Transform transform);  // Load collected entries in destination table
 
   private:
     std::string set_work_path(const char* provided_work_path);
@@ -47,8 +51,9 @@ class Collector {
     std::vector<FileProvider> file_providers_;
     Buffer buffer_;
 };
-// Load function for no processing
-std::vector<db::Entry> default_load(db::Entry entry);
+
+// Default no transform function
+std::vector<db::Entry> no_transform(db::Entry entry);
 
 }  // namespace silkworm::etl
 #endif

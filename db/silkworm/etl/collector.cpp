@@ -52,12 +52,12 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, Load load) {
+void Collector::load(silkworm::lmdb::Table* table, Transform transform) {
 
     if (!file_providers_.size()) {
         buffer_.sort();
         for (const auto& entry : buffer_.get_entries()) {
-            auto entries{load(entry)};
+            auto entries{transform(entry)};
             for (const auto& entry2 : entries) {
                 table->put(entry2.key, entry2.value);
             }
@@ -91,7 +91,7 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
         auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
 
         // Process linked pairs
-        for (const auto& pair : load(current_item.first)) {
+        for (const auto& pair : transform(current_item.first)) {
             table->put(pair.key, pair.value);
         }
 
@@ -132,7 +132,7 @@ std::string Collector::set_work_path(const char* provided_work_path)
     return p.string();
 }
 
-std::vector<Entry> default_load(Entry entry) {
+std::vector<Entry> no_transform(Entry entry) {
     return std::vector<Entry>({entry});
 }
 

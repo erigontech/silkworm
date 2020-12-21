@@ -33,8 +33,7 @@ size_t Buffer::size() const noexcept { return size_; }
 std::vector<db::Entry>& Buffer::get_entries() { return entries_; }
 
 void Buffer::clear() {
-    entries_.clear();
-    entries_.shrink_to_fit();
+    std::vector<db::Entry>().swap(entries_);
     size_ = 0;
 }
 

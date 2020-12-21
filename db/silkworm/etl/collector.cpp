@@ -39,7 +39,7 @@ namespace silkworm::etl {
     void Collector::flush_buffer() {
     if (buffer_.size()) {
         buffer_.sort();
-        file_providers_.emplace_back(work_path_, (int)file_providers_.size());
+        file_providers_.emplace_back(work_path_, file_providers_.size());
         file_providers_.back().flush(buffer_);
         buffer_.clear();
     }

@@ -33,7 +33,7 @@ size_t Buffer::size(void) { return size_; }
 
 std::vector<Entry>& Buffer::get_entries() { return entries_; }
 
-void Buffer::reset() {
+void Buffer::clear() {
     entries_.clear();
     entries_.shrink_to_fit();
     size_ = 0;

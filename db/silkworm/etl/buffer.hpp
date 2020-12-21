@@ -37,7 +37,7 @@ class Buffer {
     Buffer(size_t optimal_size) : optimal_size_(optimal_size){};
 
     void put(ByteView& key, ByteView& value);  // Add a new entry to the buffer
-    void reset();                              // Free the buffer after writting to file
+    void clear();                              // Free the buffer after writting to file
     bool overflows();   // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
     void sort();        // Sort buffer in crescent order by key comparison
     size_t size(void);  // Actual size of accounted data

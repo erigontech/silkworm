@@ -25,7 +25,7 @@ void Collector::flush_buffer() {
         buffer_.sort();
         file_providers_.emplace_back((int)file_providers_.size());
         file_providers_.back().write_buffer_to_disk(buffer_.get_entries());
-        buffer_.reset();
+        buffer_.clear();
     }
 }
 
@@ -45,7 +45,7 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
                 table->put(pair.key, pair.value);
             }
         }
-        buffer_.reset();
+        buffer_.clear();
         return;
     }
 

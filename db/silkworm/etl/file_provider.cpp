@@ -27,9 +27,9 @@ FileProvider::FileProvider(int id) : id_{id} {
     if (!file_.is_open()) throw ETLError(strerror(errno));
 }
 
-void FileProvider::write_buffer_to_disk(std::vector<Entry> &entries) {
+void FileProvider::flush(Buffer &buffer) {
     head_t head{};
-    for (const auto &entry : entries) {
+    for (const auto &entry : buffer.get_entries()) {
         head.lengths[0] = entry.key.size();
         head.lengths[1] = entry.value.size();
         file_.write((const char *)head.bytes, 8);
@@ -42,7 +42,7 @@ void FileProvider::write_buffer_to_disk(std::vector<Entry> &entries) {
     file_.seekg(0);
 }
 
-std::optional<Entry> FileProvider::read_entry() {
+std::optional<std::pair<db::Entry, int>> FileProvider::read_entry() {
     head_t head{};
     file_.read((char *)head.bytes, 8);
     if (file_.eof()) {
@@ -58,7 +58,9 @@ std::optional<Entry> FileProvider::read_entry() {
     if (file_.fail()) {
         throw ETLError(strerror(errno));
     }
-    return Entry{ByteView(key, head.lengths[0]), ByteView(value, head.lengths[1]), id_};
+
+    db::Entry entry{ByteView(key, head.lengths[0]), ByteView(value, head.lengths[1])};
+    return std::make_pair(entry, id_);
 }
 
 void FileProvider::reset() {

@@ -19,32 +19,25 @@
 
 #include <algorithm>
 #include <silkworm/common/base.hpp>
+#include <silkworm/db/util.hpp>
 #include <vector>
 
 namespace silkworm::etl {
-// Key-Value pairs used in ETL
-struct Entry {
-    ByteView key;
-    ByteView value;
-    int i;  // Used only for heap operations
-};
 
-bool operator<(const Entry& lhs, const Entry& rhs);
-bool operator>(const Entry& lhs, const Entry& rhs);
 // In ETL, a buffer must be used stores entries, sort them and write them to file
 class Buffer {
   public:
     Buffer(size_t optimal_size) : optimal_size_(optimal_size){};
 
-    void put(ByteView& key, ByteView& value);  // Add a new entry to the buffer
-    void clear();                              // Free buffer's contents
+    void put(db::Entry& entry);    // Add a new entry to the buffer
+    void clear();                  // Free buffer's contents
     bool overflows();              // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
     void sort();                   // Sort buffer in crescent order by key comparison
     size_t size() const noexcept;  // Actual size of accounted data
-    std::vector<Entry>& get_entries();
+    std::vector<db::Entry>& get_entries();
 
   private:
-    std::vector<Entry> entries_;
+    std::vector<db::Entry> entries_;
     size_t optimal_size_;
     size_t size_ = 0;
 };

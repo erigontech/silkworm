@@ -27,22 +27,22 @@ constexpr size_t kOptimalBufferSize = 256 * kMebi;
 constexpr size_t kIdealBatchSize = 128 * kMebi;  // TODO: Commit after ideal size is reached and open new transaction
 // After collection further processing can be made to key-value pairs.
 // Returned vector of entries will be inserted afterwards.
-typedef std::vector<Entry> (*Load)(ByteView, ByteView);
+typedef std::vector<db::Entry> (*Load)(db::Entry);
 // Collector collects entries that needs to be sorted and load them in the table in sorted order
 class Collector {
   public:
     Collector(size_t optimal_size) : buffer_(Buffer(optimal_size)){};
 
-    void flush_buffer();                         // Write buffer to file
-    void collect(ByteView key, ByteView value);  // Store key-value pair in memory or on disk
-    void load(lmdb::Table* table, Load load);    // Load collected entries in destination table
+    void flush_buffer();                       // Write buffer to file
+    void collect(db::Entry entry);             // Store key-value pair in memory or on disk
+    void load(lmdb::Table* table, Load load);  // Load collected entries in destination table
 
   private:
     std::vector<FileProvider> file_providers_;
     Buffer buffer_;
 };
 // Load function for no processing
-std::vector<Entry> default_load(ByteView key, ByteView value);
+std::vector<db::Entry> default_load(db::Entry entry);
 
 }  // namespace silkworm::etl
 #endif

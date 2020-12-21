@@ -18,20 +18,19 @@
 
 namespace silkworm::etl {
 
-bool operator<(const Entry& lhs, const Entry& rhs) { return lhs.key.compare(rhs.key) < 0; }
-
-bool operator>(const Entry& lhs, const Entry& rhs) { return lhs.key.compare(rhs.key) > 0; }
-
-void Buffer::put(ByteView& key, ByteView& value) {
-    size_ += value.size() + key.size();
-    entries_.push_back({ key, value });
+void Buffer::put(db::Entry& entry) {
+    size_ += entry.size();
+    entries_.push_back(std::move(entry));
 }
 
-void Buffer::sort() { std::sort(entries_.begin(), entries_.end()); }
+void Buffer::sort() {
+    std::sort(entries_.begin(), entries_.end(),
+              [](const db::Entry& a, const db::Entry& b) { return a.key.compare(b.key) > 0; });
+}
 
 size_t Buffer::size() const noexcept { return size_; }
 
-std::vector<Entry>& Buffer::get_entries() { return entries_; }
+std::vector<db::Entry>& Buffer::get_entries() { return entries_; }
 
 void Buffer::clear() {
     entries_.clear();

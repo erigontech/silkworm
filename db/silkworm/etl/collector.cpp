@@ -24,25 +24,26 @@ void Collector::flush_buffer() {
     if (buffer_.size()) {
         buffer_.sort();
         file_providers_.emplace_back((int)file_providers_.size());
-        file_providers_.back().write_buffer_to_disk(buffer_.get_entries());
+        file_providers_.back().flush(buffer_);
         buffer_.clear();
     }
 }
 
-void Collector::collect(silkworm::ByteView key, silkworm::ByteView value) {
-    buffer_.put(key, value);
+void Collector::collect(db::Entry entry) {
+    buffer_.put(entry);
     if (buffer_.overflows()) {
         flush_buffer();
     }
 }
 
 void Collector::load(silkworm::lmdb::Table* table, Load load) {
+
     if (!file_providers_.size()) {
         buffer_.sort();
         for (const auto& entry : buffer_.get_entries()) {
-            auto pairs{load(entry.key, entry.value)};
-            for (const auto& pair : pairs) {
-                table->put(pair.key, pair.value);
+            auto entries{load(entry)};
+            for (const auto& entry2 : entries) {
+                table->put(entry2.key, entry2.value);
             }
         }
         buffer_.clear();
@@ -52,8 +53,11 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
     flush_buffer();
 
     // Define a priority queue based on smallest available key
-    auto key_comparer = [](Entry left, Entry right) { return left.key > right.key; };
-    std::priority_queue<Entry, std::vector<Entry>, decltype(key_comparer)> queue(key_comparer);
+    auto key_comparer = [](std::pair<db::Entry, int> left, std::pair<db::Entry, int> right) {
+        return left.first.key.compare(right.first.key) > 0;
+    };
+    std::priority_queue<std::pair<db::Entry, int>, std::vector<std::pair<db::Entry, int>>, decltype(key_comparer)>
+        queue(key_comparer);
 
     // Read one "record" from each data_provider and let the queue
     // sort them. On top of the queue the smallest key
@@ -66,11 +70,11 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
 
     // Process the queue from smallest to largest key
     while (queue.size()) {
-        auto& current_item{queue.top()};                                  // Pick smallest key by reference
-        auto& current_file_provider{file_providers_.at(current_item.i)};  // and set current file provider
+        auto& current_item{queue.top()};                                       // Pick smallest key by reference
+        auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
 
         // Process linked pairs
-        for (const auto& pair : load(current_item.key, current_item.value)) {
+        for (const auto& pair : load(current_item.first)) {
             table->put(pair.key, pair.value);
         }
 
@@ -92,8 +96,8 @@ void Collector::load(silkworm::lmdb::Table* table, Load load) {
     }
 }
 
-std::vector<Entry> default_load(silkworm::ByteView key, silkworm::ByteView value) {
-    return std::vector<Entry>({{key, value}});
+std::vector<db::Entry> default_load(db::Entry entry) {
+    return std::vector<db::Entry>({entry});
 }
 
 }  // namespace silkworm::etl

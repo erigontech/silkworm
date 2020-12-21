@@ -32,7 +32,16 @@ FileProvider::FileProvider(std::string& working_path, int id) : id_{id} {
 
 void FileProvider::flush(Buffer &buffer) {
     head_t head{};
-    for (const auto &entry : buffer.get_entries()) {
+
+    // Verify we have enough space to store all data
+    auto &entries{buffer.get_entries()};
+    size_t data_size{buffer.size() + entries.size() * 8};
+    fs::path workdir(fs::path(filename_).parent_path());
+    if (fs::space(workdir).available < data_size) {
+        throw etl_error("Insufficient disk space");
+    }
+
+    for (const auto &entry : entries) {
         head.lengths[0] = entry.key.size();
         head.lengths[1] = entry.value.size();
         file_.write((const char *)head.bytes, 8);

@@ -43,7 +43,7 @@ make -j
 
 Now you can run the unit tests
 ```
-cmd/unit_test
+cmd/core_test
 ```
 or [Ethereum Consensus Tests](https://github.com/ethereum/tests)
 ```

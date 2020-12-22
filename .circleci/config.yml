@@ -47,9 +47,13 @@ commands:
   test:
     steps:
     - run:
-        name: "Unit Tests"
+        name: "Core Unit Tests"
         working_directory: ~/build
-        command: cmd/unit_test
+        command: cmd/core_test
+    - run:
+        name: "DB Unit Tests"
+        working_directory: ~/build
+        command: cmd/db_test
     - run:
         name: "Ethereum Consensus Tests"
         working_directory: ~/build
@@ -73,11 +77,17 @@ jobs:
     steps:
       - build
       - run:
-          name: "Unit Tests"
+          name: "Core Unit Tests"
           working_directory: ~/build
           command: |
-            cmd/unit_test
-            mv default.profraw unit_test.profraw
+            cmd/core_test
+            mv default.profraw core_test.profraw
+      - run:
+          name: "DB Unit Tests"
+          working_directory: ~/build
+          command: |
+            cmd/db_test
+            mv default.profraw db_test.profraw
       - run:
           name: "Ethereum Consensus Tests"
           working_directory: ~/build
@@ -89,7 +99,7 @@ jobs:
           working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata -format=lcov cmd/unit_test -object cmd/consensus > silkworm.lcov
+            llvm-cov export -instr-profile profdata -format=lcov cmd/db_test -object cmd/consensus > silkworm.lcov
       - run:
           name: "Upload to Codecov"
           command: |

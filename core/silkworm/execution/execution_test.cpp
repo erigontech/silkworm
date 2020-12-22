@@ -20,35 +20,21 @@
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <silkworm/chain/config.hpp>
-#include <silkworm/common/temp_dir.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/buffer.hpp>
-#include <silkworm/db/chaindb.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/execution/address.hpp>
 #include <silkworm/execution/protocol_param.hpp>
 #include <silkworm/rlp/encode.hpp>
+#include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
-TEST_CASE("Execution API") {
+TEST_CASE("Execute two blocks") {
     using namespace silkworm;
 
     // ---------------------------------------
     // Prepare
     // ---------------------------------------
 
-    TemporaryDirectory tmp_dir{};
-    lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
-    db_config.set_readonly(false);
-    std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{db_env->begin_rw_transaction()};
-
-    db::table::create_all(*txn);
-
-    db::Buffer buffer{txn.get()};
     uint64_t block_number{1};
-
     auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 
     Block block{};
@@ -71,10 +57,10 @@ TEST_CASE("Execution API") {
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     block.transactions[0].from = sender;
 
+    MemoryBuffer buffer;
     Account sender_account{};
     sender_account.balance = kEther;
-    auto state_table{txn->open(db::table::kPlainState)};
-    state_table->put(full_view(sender), sender_account.encode_for_storage(/*omit_code_hash=*/false));
+    buffer.update_account(sender, std::nullopt, sender_account);
 
     // ---------------------------------------
     // Execute first block
@@ -127,34 +113,4 @@ TEST_CASE("Execution API") {
     REQUIRE(miner_account);
     CHECK(miner_account->balance > 2 * param::kFrontierBlockReward);
     CHECK(miner_account->balance < 3 * param::kFrontierBlockReward);
-
-    // ---------------------------------------
-    // Check change sets
-    // ---------------------------------------
-
-    buffer.write_to_db();
-
-    CHECK(buffer.account_changes().at(1) == db::read_account_changes(*txn, 1));
-    CHECK(buffer.account_changes().at(2) == db::read_account_changes(*txn, 2));
-    CHECK(buffer.storage_changes().at(1) == db::read_storage_changes(*txn, 1));
-    CHECK(buffer.storage_changes().at(2) == db::read_storage_changes(*txn, 2));
-
-    const db::AccountChanges& account_changes{buffer.account_changes().at(1)};
-    CHECK(account_changes.size() == 3);
-
-    // sender existed at genesis
-    CHECK(!account_changes.at(sender).empty());
-
-    // miner & contract were created in block 1
-    CHECK(account_changes.at(miner).empty());
-    CHECK(account_changes.at(contract_address).empty());
-
-    db::StorageChanges storage_changes_expected{};
-    storage_changes_expected[contract_address][incarnation][storage_key0] = {};
-    storage_changes_expected[contract_address][incarnation][storage_key1] = {};
-    CHECK(buffer.storage_changes().at(1) == storage_changes_expected);
-
-    storage_changes_expected.clear();
-    storage_changes_expected[contract_address][incarnation][storage_key0] = from_hex("2a");
-    CHECK(buffer.storage_changes().at(2) == storage_changes_expected);
 }

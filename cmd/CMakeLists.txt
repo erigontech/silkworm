@@ -52,13 +52,13 @@ enable_testing()
 
 find_package(Catch2 CONFIG REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/*/silkworm/*_test.cpp")
-add_executable(unit_test unit_test.cpp ${SILKWORM_TESTS})
-target_link_libraries(unit_test silkworm_db Catch2::Catch2)
+file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
+add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
+target_link_libraries(core_test silkworm_core Catch2::Catch2)
 
-include(CTest)
-include(Catch)
-catch_discover_tests(unit_test)
+file(GLOB_RECURSE SILKWORM_DB_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/db/silkworm/*_test.cpp")
+add_executable(db_test unit_test.cpp ${SILKWORM_DB_TESTS})
+target_link_libraries(db_test silkworm_db Catch2::Catch2)
 
 # Benchmarks
 find_package(benchmark CONFIG REQUIRED)

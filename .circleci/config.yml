@@ -128,6 +128,11 @@ jobs:
             wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-12/wasi-sdk-12.0-linux.tar.gz
             tar xvf wasi-sdk-12.0-linux.tar.gz
             sudo mv wasi-sdk-12.0 /opt/wasi-sdk
+      - run:
+          name: "Install texinfo"
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y texinfo
       - restore_cache:
           name: "Restore GMP cache"
           key: gmp-wasi

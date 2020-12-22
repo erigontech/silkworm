@@ -16,17 +16,16 @@
 
 #include <CLI/CLI.hpp>
 #include <atomic>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/signals2.hpp>
-#include <condition_variable>
 #include <csignal>
 #include <ethash/keccak.hpp>
 #include <iostream>
 #include <queue>
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -58,29 +57,13 @@ struct app_options_t {
 
 void sig_handler(int signum) {
     (void)signum;
-    std::cout << std::endl << " Request for termination intercepted. Stopping ..." << std::endl << std::endl;
+    std::cout << std::endl << " Got interrupt. Stopping ..." << std::endl << std::endl;
     should_stop_.store(true);
 }
 
 unsigned get_host_cpus() {
     unsigned n{std::thread::hardware_concurrency()};
     return n ? n : 2;
-}
-
-std::string format_time(boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time()) {
-    char buf[40];
-    // Get the time offset in current day
-    const boost::posix_time::time_duration td = now.time_of_day();
-    const int32_t month = static_cast<int32_t>(now.date().month());
-    const int32_t day = static_cast<int32_t>(now.date().day());
-    const int32_t hours = static_cast<int32_t>(td.hours());
-    const int32_t minutes = static_cast<int32_t>(td.minutes());
-    const int32_t seconds = static_cast<int32_t>(td.seconds());
-    const int32_t milliseconds = static_cast<int32_t>(
-        td.total_milliseconds() -
-        ((static_cast<int64_t>(hours) * 3600 + static_cast<int64_t>(minutes) * 60 + seconds) * 1000));
-    sprintf(buf, "[%02d-%02d %02d:%02d:%02d.%03d]", month, day, hours, minutes, seconds, milliseconds);
-    return std::string{buf};
 }
 
 class Recoverer : public silkworm::Worker {
@@ -142,8 +125,8 @@ class Recoverer : public silkworm::Worker {
             }
 
             if (debug_) {
-                std::cout << format_time() << " DBG : worker #" << id_ << " started batch #" << current_batch_id_
-                          << std::endl;
+                SILKWORM_LOG(LogLevels::LogDebug)
+                    << "Worker #" << id_ << " started batch #" << current_batch_id_ << std::endl;
             };
 
             busy_.store(true);
@@ -189,8 +172,9 @@ class Recoverer : public silkworm::Worker {
                                     &keyHash.bytes[sizeof(keyHash) - kAddressLength], kAddressLength);
                         block_result_length += kAddressLength;
                     } else {
-                        std::cout << format_time() << " Recoverer #" << id_ << " "
-                                  << "Public key recovery failed at block #" << rp.blockNum << std::endl;
+                        SILKWORM_LOG(LogLevels::LogWarn)
+                            << "Recoverer #" << id_ << " "
+                            << "Public key recovery failed at block #" << rp.blockNum << std::endl;
                         recovery_error_ = true;
                         break;  // No need to process other txns
                     }
@@ -205,8 +189,8 @@ class Recoverer : public silkworm::Worker {
                 // Raise finished event
                 signal_completed(id_, current_batch_id_, recovery_error_);
                 if (debug_) {
-                    std::cout << format_time() << " DBG : worker #" << id_ << " completed batch #" << current_batch_id_
-                              << std::endl;
+                    SILKWORM_LOG(LogLevels::LogDebug)
+                        << "Worker #" << id_ << " completed batch #" << current_batch_id_ << std::endl;
                 };
                 packages_.clear();  // Clear here. Next set_work will swap the cleaned container to master thread
             }
@@ -251,7 +235,7 @@ void process_txs_for_signing(ChainConfig& config, uint64_t block_num, BlockBody&
 
 bool start_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
     for (size_t r = 0; r < workers.size(); r++) {
-        std::cout << format_time() << " Starting worker thread #" << r << std::endl;
+        SILKWORM_LOG(LogLevels::LogInfo) << "Starting worker thread #" << r << std::endl;
         workers.at(r)->start();
         // Wait for thread to init properly
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -265,7 +249,7 @@ bool start_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
 void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
     for (size_t r = 0; r < workers.size(); r++) {
         if (workers.at(r)->get_state() == Worker::WorkerState::kStarted) {
-            std::cout << format_time() << " Stopping worker thread #" << r << std::endl;
+            SILKWORM_LOG(LogLevels::LogInfo) << "Stopping worker thread #" << r << std::endl;
             workers.at(r)->stop(wait);
         }
     }
@@ -306,10 +290,10 @@ uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t 
     uint32_t percent_step{5};  // 5% increment among batches
     size_t batch_size{(to - from + 1) / (100 / percent_step)};
 
-    std::cout << format_time() << " Locating canonical header at height " << from << std::endl;
+    SILKWORM_LOG(LogLevels::LogInfo) << "Locating canonical header at height " << from << std::endl;
     bool eof{false};
     int rc{headers->seek_exact(&key, &data)};
-    if (!rc) std::cout << format_time() << " Scanning canonical headers ... " << std::endl;
+    if (!rc) SILKWORM_LOG(LogLevels::LogInfo) << "Scanning canonical headers ... " << std::endl;
     while (!should_stop_ && !eof && rc == MDB_SUCCESS) {
         // Canonical header key is 9 bytes (8 blocknumber + 'n')
         if (key.mv_size == header_key.length()) {
@@ -328,8 +312,8 @@ uint64_t load_canonical_headers(std::unique_ptr<lmdb::Table>& headers, uint64_t 
             if (!batch_size) {
                 batch_size = (to - from + 1) / (100 / percent_step);
                 percent += percent_step;
-                std::cout << format_time() << " ... " << std::right << std::setw(3) << std::setfill(' ') << percent
-                          << " %" << std::endl;
+                SILKWORM_LOG(LogLevels::LogInfo)
+                    << "... " << std::right << std::setw(3) << std::setfill(' ') << percent << " %" << std::endl;
             }
         }
         if (!eof) rc = headers->get_next(&key, &data);
@@ -435,7 +419,7 @@ int do_recover(app_options_t& options) {
 
     // Start recoverers (here occurs allocation)
     if (!start_workers(recoverers_)) {
-        std::cout << format_time() << " Unable to start required recoverers" << std::endl;
+        SILKWORM_LOG(LogLevels::LogCritical) << "Unable to start required recoverers" << std::endl;
         stop_workers(recoverers_, true);
         recoverers_.clear();
         return -1;
@@ -455,17 +439,17 @@ int do_recover(app_options_t& options) {
         size_t rcount{0};
 
         // Have canonical block headers ?
-        std::cout << format_time() << " Checking canonical headers ..." << std::endl;
+        SILKWORM_LOG(LogLevels::LogInfo) << "Checking canonical headers ..." << std::endl;
         auto mostrecent_header = get_highest_canonical_header(lmdb_headers);
         if (!mostrecent_header.has_value()) {
             throw std::logic_error("Can't locate most recent canonical header. Aborting");
         }
-        std::cout << format_time() << " Most recent header number " << *mostrecent_header << std::endl;
+        SILKWORM_LOG(LogLevels::LogInfo) << "Most recent header number " << *mostrecent_header << std::endl;
         options.block_to =
             (options.block_to > (uint32_t)(*mostrecent_header) ? (uint32_t)(*mostrecent_header) : options.block_to);
 
         // Have block bodies ?
-        std::cout << format_time() << " Checking block bodies ..." << std::endl;
+        SILKWORM_LOG(LogLevels::LogInfo) << "Checking block bodies ..." << std::endl;
         lmdb::err_handler(lmdb_bodies->get_rcount(&rcount));
         if (!rcount) {
             throw std::logic_error("Block bodies table empty. Aborting");
@@ -478,7 +462,7 @@ int do_recover(app_options_t& options) {
          * If po_replay flag is set then po_from_block can be anything
          * below that value
          */
-        std::cout << format_time() << " Checking transaction senders ..." << std::endl;
+        SILKWORM_LOG(LogLevels::LogInfo) << "Checking transaction senders ..." << std::endl;
         lmdb::err_handler(lmdb_senders->get_rcount(&rcount));
         if (rcount) {
             MDB_val key, data;
@@ -488,14 +472,14 @@ int do_recover(app_options_t& options) {
             if (options.block_from <= mostrecent_sender) {
                 if (options.replay) {
                     if (options.block_from == 1u) {
-                        std::cout << format_time() << " Clearing senders table ... " << std::endl;
+                        SILKWORM_LOG(LogLevels::LogInfo) << "Clearing senders table ... " << std::endl;
                         lmdb::err_handler(lmdb_senders->clear());
                         lmdb_senders.reset();
                         lmdb_senders = lmdb_txn->open(db::table::kSenders, MDB_CREATE);
                     } else {
                         // Delete all senders records with key >= po_from_block
-                        std::cout << format_time() << " Deleting senders table from block " << options.block_from
-                                  << " ..." << std::endl;
+                        SILKWORM_LOG(LogLevels::LogInfo)
+                            << "Deleting senders table from block " << options.block_from << " ..." << std::endl;
                         Bytes senders_key(40, '\0');
                         boost::endian::store_big_u64(&senders_key[0], options.block_from);
                         key.mv_data = (void*)&senders_key[0];
@@ -511,26 +495,26 @@ int do_recover(app_options_t& options) {
                         }
                     }
                 } else {
-                    std::cout << format_time() << " Overriding requested initial block " << options.block_from
+                    SILKWORM_LOG(LogLevels::LogInfo) << "Overriding requested initial block " << options.block_from
                               << " with " << (mostrecent_sender + 1) << std::endl;
                     options.block_from = (uint32_t)(mostrecent_sender + 1);
                 }
             } else {
-                std::cout << format_time() << " Overriding requested initial block " << options.block_from << " with "
+                SILKWORM_LOG(LogLevels::LogInfo) << "Overriding requested initial block " << options.block_from << " with "
                           << (mostrecent_sender + 1) << std::endl;
                 options.block_from = (uint32_t)(mostrecent_sender + 1);
             }
 
         } else {
             if (options.block_from > 1u) {
-                std::cout << format_time() << " Overriding selected initial block " << options.block_from << " with 1"
-                          << std::endl;
+                SILKWORM_LOG(LogLevels::LogInfo)
+                    << "Overriding selected initial block " << options.block_from << " with 1" << std::endl;
                 options.block_from = 1u;
             }
         }
 
-        std::cout << format_time() << " Processing transactions from block " << options.block_from << " to block "
-                  << options.block_to << std::endl;
+        SILKWORM_LOG(LogLevels::LogInfo) << "Processing transactions from block " << options.block_from << " to block "
+                                         << options.block_to << std::endl;
         if (options.block_from > options.block_to) {
             // There are no blocks to process
             throw std::logic_error("No valid block range selected. Aborting");
@@ -554,7 +538,7 @@ int do_recover(app_options_t& options) {
             // Nothing to process
             throw std::logic_error("No canonical headers collected.");
         }
-        std::cout << format_time() << " Collected " << canonical_headers_count << " canonical headers" << std::endl;
+        SILKWORM_LOG(LogLevels::LogInfo) << "Collected " << canonical_headers_count << " canonical headers" << std::endl;
 
         {
             MDB_val key, data;
@@ -572,7 +556,7 @@ int do_recover(app_options_t& options) {
             key.mv_data = (void*)&block_key[0];
             key.mv_size = block_key.length();
 
-            std::cout << format_time() << " Scanning bodies ... " << std::endl;
+            SILKWORM_LOG(LogLevels::LogInfo) << " Scanning bodies ... " << std::endl;
             int rc{lmdb_bodies->seek_exact(&key, &data)};
             lmdb::err_handler(rc);
 
@@ -628,10 +612,11 @@ int do_recover(app_options_t& options) {
                         workers_in_flight++;
                         batch_size = 0;
 
-                        std::cout << format_time() << " Block " << std::right << std::setw(9) << std::setfill(' ')
-                                  << current_block << " Transactions " << std::right << std::setw(12)
-                                  << std::setfill(' ') << total_transactions << " Workers " << workers_in_flight << "/"
-                                  << options.numthreads << std::endl;
+                        SILKWORM_LOG(LogLevels::LogInfo)
+                            << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block
+                            << " Transactions " << std::right << std::setw(12) << std::setfill(' ')
+                            << total_transactions << " Workers " << workers_in_flight << "/" << options.numthreads
+                            << std::endl;
 
                         if (++next_worker_id == options.numthreads) {
                             next_worker_id = 0;
@@ -677,10 +662,10 @@ int do_recover(app_options_t& options) {
                 workers_in_flight++;
                 batch_size = 0;
 
-                std::cout << format_time() << " Block " << std::right << std::setw(9) << std::setfill(' ')
-                          << current_block << " Transactions " << std::right << std::setw(12) << std::setfill(' ')
-                          << total_transactions << " Workers " << workers_in_flight << "/" << options.numthreads
-                          << std::endl;
+                SILKWORM_LOG(LogLevels::LogInfo)
+                    << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block << " Transactions "
+                    << std::right << std::setw(12) << std::setfill(' ') << total_transactions << " Workers "
+                    << workers_in_flight << "/" << options.numthreads << std::endl;
             }
 
             // Wait for all workers to complete and write their results
@@ -693,19 +678,19 @@ int do_recover(app_options_t& options) {
             }
         }
 
-        std::cout << format_time() << " Bodies scan " << (should_stop_ ? "aborted! " : "completed!") << std::endl;
+        SILKWORM_LOG(LogLevels::LogInfo) << "Bodies scan " << (should_stop_ ? "aborted! " : "completed!") << std::endl;
 
     } catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
-        std::cout << format_time() << " Unexpected error : " << ex.err() << " " << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevels::LogCritical) << "Unexpected error : " << ex.err() << " " << ex.what() << std::endl;
         main_thread_error_ = true;
     } catch (std::logic_error& ex) {
-        std::cout << format_time() << " " << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevels::LogCritical) << ex.what() << std::endl;
         main_thread_error_ = true;
     } catch (std::runtime_error& ex) {
         // This handles runtime logic errors
         // eg. trying to open two rw txns
-        std::cout << format_time() << " Unexpected error : " << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevels::LogCritical) << "Unexpected error : " << ex.what() << std::endl;
         main_thread_error_ = true;
     }
 
@@ -723,19 +708,19 @@ int do_recover(app_options_t& options) {
 
     // Should we commit ?
     if (!main_thread_error_ && !workers_thread_error_ && !options.rundry && !should_stop_) {
-        std::cout << format_time() << " Committing work ( " << bytes_written << " bytes )" << std::endl;
+        SILKWORM_LOG(LogLevels::LogInfo) << "Committing work ( " << bytes_written << " bytes )" << std::endl;
         try {
             lmdb::err_handler(lmdb_txn->commit());
             lmdb::err_handler(lmdb_env->sync());
         } catch (const std::exception& ex) {
-            std::cout << format_time() << " Unexpected error : " << ex.what() << std::endl;
+            SILKWORM_LOG(LogLevels::LogCritical) << " Unexpected error : " << ex.what() << std::endl;
             main_thread_error_ = true;
         }
     }
 
     lmdb_txn.reset();
     lmdb_env.reset();
-    std::cout << format_time() << " All done ! " << std::endl;
+    SILKWORM_LOG(LogLevels::LogInfo) << "All done ! " << std::endl;
     return (main_thread_error_ ? -1 : 0);
 }
 

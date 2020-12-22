@@ -14,4 +14,9 @@
    limitations under the License.
 ]]
 
-# No Hunter package customization currently.
+hunter_config(
+  Boost
+  VERSION 1.75.0
+  URL https://dl.bintray.com/boostorg/release/1.75.0/source/boost_1_75_0.tar.bz2
+  SHA1 6109efd3bdd8b9220d7d85b5e125f7f28721b9a9
+)

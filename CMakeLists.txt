@@ -34,7 +34,6 @@ if(NOT SILKWORM_HAS_PARENT)
   HunterGate(
     URL "https://github.com/cpp-pm/hunter/archive/v0.23.267.tar.gz"
     SHA1 "9c5c7fa6e17c2ae15dd922184bc7c51235aaae70"
-    FILEPATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake"
   )
 endif()
 
@@ -49,11 +48,10 @@ include(silkworm/evmone/cmake/cable/HunterGate.cmake)
 HunterGate(
   URL "https://github.com/cpp-pm/hunter/archive/v0.23.267.tar.gz"
   SHA1 "9c5c7fa6e17c2ae15dd922184bc7c51235aaae70"
-  FILEPATH "${CMAKE_SOURCE_DIR}/silkworm/cmake/Hunter/config.cmake"
 )
 -----------------------------------------------------------------------------------------------------
 
-(You can update the Hunter version, but keep the FILEPATH option.)
+(You can update the Hunter version.)
 ]]
 
 project(silkworm)

@@ -132,10 +132,7 @@ jobs:
           name: "Install prerequisites"
           command: |
             sudo apt-get update
-            sudo apt-get install -y texinfo clang
-      - restore_cache:
-          name: "Restore GMP cache"
-          key: gmp-wasm
+            sudo apt-get install -y texinfo g++ clang
       - run:
           name: "Build GMP"
           command: |
@@ -144,11 +141,6 @@ jobs:
             ./configure --prefix $HOME/opt-wasm CC=/opt/wasi-sdk/bin/clang --host=none --enable-cxx CXX=/opt/wasi-sdk/bin/clang++ ABI=longlong
             make -j
             make install
-      - save_cache:
-          name: "Save GMP cache"
-          key: gmp-wasm
-          paths:
-            - ~/opt-wasm
       - restore_cache:
           name: "Restore Hunter cache"
           key: &hunter-cache-key hunter-wasm-{{checksum "cmake/wasi.cmake"}}-{{checksum "cmake/toolchain.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}
@@ -164,6 +156,7 @@ jobs:
       - run:
           name: "Build"
           command: cmake --build ~/build -j
+
 
 workflows:
   version: 2

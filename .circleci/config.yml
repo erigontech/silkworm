@@ -132,7 +132,7 @@ jobs:
           name: "Install prerequisites"
           command: |
             sudo apt-get update
-            sudo apt-get install -y texinfo g++ clang
+            sudo apt-get install -y texinfo libboost-dev
       - run:
           name: "Build GMP"
           command: |
@@ -147,7 +147,7 @@ jobs:
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a
+          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DSILKWORM_USE_SYSTEM_BOOST=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key

@@ -16,7 +16,9 @@
 
 hunter_add_package(abseil)
 hunter_add_package(benchmark)
-hunter_add_package(Boost COMPONENTS filesystem)
+if(NOT SILKWORM_USE_SYSTEM_BOOST)
+  hunter_add_package(Boost COMPONENTS filesystem)
+endif()
 hunter_add_package(Catch)
 hunter_add_package(CLI11)
 hunter_add_package(nlohmann_json)

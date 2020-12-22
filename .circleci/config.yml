@@ -132,7 +132,7 @@ jobs:
           name: "Install prerequisites"
           command: |
             sudo apt-get update
-            sudo apt-get install -y texinfo libboost-dev
+            sudo apt-get install -y texinfo libboost-dev gcc-multilib
       - run:
           name: "Build GMP"
           command: |

@@ -39,20 +39,19 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     return set;
 }
 
-TEST_CASE("collect_and_default_load") {
-    TemporaryDirectory tmp_dir;
+void run_collector_test(Transform transform) {
+    TemporaryDirectory db_tmp_dir;
+    TemporaryDirectory etl_tmp_dir;
     // Initialize random seed
     srand(time(NULL));
     // Initialize temporary Database
-    lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
+    lmdb::DatabaseConfig db_config{db_tmp_dir.path(), 32 * kMebi};
     db_config.set_readonly(false);
     auto env{lmdb::get_env(db_config)};
     auto txn{env->begin_rw_transaction()};
-    // Create temporary directory for ETL
-    boost::filesystem::create_directory("temp");
     // Generate Test Entries
-    auto set{generate_entry_set(1000)};         // 1000 entries in total
-    auto collector{Collector("temp", 1600)};    // 100 entries per file
+    auto set{generate_entry_set(1000)};                         // 1000 entries in total
+    auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};    // 100 entries per file
     db::table::create_all(*txn);
     // Collection
     for(auto entry: set) {
@@ -60,66 +59,34 @@ TEST_CASE("collect_and_default_load") {
     }
     // Check wheter temporary files were generated
     for (size_t i = 0; i < 10; i++) {
-        fs::path path{fs::path("temp") / fs::path("tmp-" + std::to_string(i))};
+        fs::path path{etl_tmp_dir.path() / fs::path("tmp-" + std::to_string(i))};
         CHECK(fs::exists(path));
     }
     // Load data
     auto to{txn->open(db::table::kHeaderNumbers)};
-    collector.load(to.get(), identity_transform);
+    collector.load(to.get(), transform);
     // Check wheter load was performed as intended
     for(const auto& entry: set) {
-        auto value{to->get(entry.key)};
-        CHECK(value->compare(entry.value) == 0);
+        for(const auto& transformed_entry: transform(entry)) {
+            auto value{to->get(transformed_entry.key)};
+            CHECK(value->compare(transformed_entry.value) == 0);
+        }
     }
     // Check wheter temporary files were cleaned
     for (size_t i = 0; i < 10; i++) {
-        fs::path path{fs::path("temp") / fs::path("tmp-" + std::to_string(i))};
+        fs::path path{etl_tmp_dir.path() / fs::path("tmp-" + std::to_string(i))};
         CHECK(!fs::exists(path));
     }
 }
 
+TEST_CASE("collect_and_default_load") {
+    run_collector_test(identity_transform);
+}
+
 TEST_CASE("collect_and_load") {
-    TemporaryDirectory tmp_dir;
-    // Initialize random seed
-    srand(time(NULL));
-    // Initialize temporary Database
-    lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
-    db_config.set_readonly(false);
-    auto env{lmdb::get_env(db_config)};
-    auto txn{env->begin_rw_transaction()};
-    // Create temporary directory for ETL
-    boost::filesystem::create_directory("temp");
-    // Generate Test Entries
-    auto set{generate_entry_set(1000)};         // 1000 entries in total
-    auto collector{Collector("temp", 1600)};    // 100 entries per file
-    db::table::create_all(*txn);
-    // Collection
-    for(auto entry: set) {
-        collector.collect(entry);
-    }
-    // Check wheter temporary files were generated
-    for (size_t i = 0; i < 10; i++) {
-        fs::path path{fs::path("temp") / fs::path("tmp-" + std::to_string(i))};
-        CHECK(fs::exists(path));
-    }
-    // Load data
-    auto to{txn->open(db::table::kHeaderNumbers)};
-    // Transform function will set first byte to value 1.
-    auto transform = [](Entry entry) {
+    run_collector_test([](Entry entry) {
         entry.key.at(0) = (unsigned char) 1;
         return std::vector<Entry>({entry});;
-    };
-    collector.load(to.get(), transform);
-    // Check wheter load was performed as intended
-    for(auto entry: set) {
-        entry.key.at(0) = (unsigned char) 1;
-        auto value{to->get(entry.key)};
-        CHECK(value->compare(entry.value) == 0);
-    }
-    // Check wheter temporary files were cleaned
-    for (size_t i = 0; i < 10; i++) {
-        fs::path path{fs::path("temp") / fs::path("tmp-" + std::to_string(i))};
-        CHECK(!fs::exists(path));
-    }
+    });
 }
 }

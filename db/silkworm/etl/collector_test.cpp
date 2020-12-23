@@ -51,7 +51,7 @@ void run_collector_test(Transform transform) {
     auto txn{env->begin_rw_transaction()};
     // Generate Test Entries
     auto set{generate_entry_set(1000)};                         // 1000 entries in total
-    auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};    // 100 entries per file
+    auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};    // 100 entries per file (16 bytes per entry)
     db::table::create_all(*txn);
     // Collection
     for(auto entry: set) {

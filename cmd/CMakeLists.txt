@@ -43,8 +43,8 @@ target_include_directories(execute PRIVATE ${CMAKE_SOURCE_DIR})
 
 # Ethereum Consensus Tests
 find_package(nlohmann_json CONFIG REQUIRED)
-add_compile_definitions(SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
 add_executable(consensus consensus.cpp)
+target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
 target_link_libraries(consensus PRIVATE silkworm_core nlohmann_json::nlohmann_json Boost::filesystem)
 
 # Unit tests

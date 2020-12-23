@@ -15,7 +15,7 @@
 version: 2.1
 
 commands:
-  build:
+  checkout_with_submodules:
     steps:
       - checkout
       - run:
@@ -23,6 +23,9 @@ commands:
           command: |
             git submodule sync
             git submodule update --init --recursive
+
+  build:
+    steps:
       - run:
           name: "Install GMP"
           command: |
@@ -30,7 +33,7 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/toolchain.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/packages.cmake"}}
+          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/toolchain.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}-{{checksum "cmake/Hunter/extra_packages.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
@@ -46,18 +49,18 @@ commands:
 
   test:
     steps:
-    - run:
-        name: "Core Unit Tests"
-        working_directory: ~/build
-        command: cmd/core_test
-    - run:
-        name: "DB Unit Tests"
-        working_directory: ~/build
-        command: cmd/db_test
-    - run:
-        name: "Ethereum Consensus Tests"
-        working_directory: ~/build
-        command: cmd/consensus
+      - run:
+          name: "Core unit tests"
+          working_directory: ~/build
+          command: cmd/core_test
+      - run:
+          name: "DB unit tests"
+          working_directory: ~/build
+          command: cmd/db_test
+      - run:
+          name: "Ethereum consensus tests"
+          working_directory: ~/build
+          command: cmd/consensus
 
 jobs:
   linux-gcc-7:
@@ -66,6 +69,7 @@ jobs:
     docker:
       - image: ethereum/cpp-build-env:12-gcc-7
     steps:
+      - checkout_with_submodules
       - build
       - test
 
@@ -75,21 +79,22 @@ jobs:
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
     steps:
+      - checkout_with_submodules
       - build
       - run:
-          name: "Core Unit Tests"
+          name: "Core unit tests"
           working_directory: ~/build
           command: |
             cmd/core_test
             mv default.profraw core_test.profraw
       - run:
-          name: "DB Unit Tests"
+          name: "DB unit tests"
           working_directory: ~/build
           command: |
             cmd/db_test
             mv default.profraw db_test.profraw
       - run:
-          name: "Ethereum Consensus Tests"
+          name: "Ethereum consensus tests"
           working_directory: ~/build
           command: |
             cmd/consensus
@@ -112,9 +117,43 @@ jobs:
               echo "Try #$counter..."
             done
 
+  linux-wasm-build:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - checkout_with_submodules
+      - run:
+          name: "Install WASI SDK"
+          command: |
+            wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-12/wasi-sdk-12.0-linux.tar.gz
+            tar xvf wasi-sdk-12.0-linux.tar.gz
+            sudo mv wasi-sdk-12.0 /opt/wasi-sdk
+      - run:
+          name: "Install prerequisites"
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y texinfo
+      - run:
+          name: "Build GMP"
+          command: |
+            git clone https://github.com/torquem-ch/gmp-wasm
+            cd gmp-wasm
+            ./configure --prefix $HOME/opt-wasm CC=/opt/wasi-sdk/bin/clang --host=none --enable-cxx CXX=/opt/wasi-sdk/bin/clang++ ABI=longlong
+            make -j
+            make install
+      - run:
+          name: "Cmake"
+          working_directory: ~/build
+          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a
+      - run:
+          name: "Build"
+          command: cmake --build ~/build -j
+
+
 workflows:
   version: 2
   silkworm:
     jobs:
       - linux-gcc-7
       - linux-clang-coverage
+      - linux-wasm-build

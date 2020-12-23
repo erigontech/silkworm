@@ -57,7 +57,6 @@ HunterGate(
 project(silkworm)
 
 option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
-option(SILKWORM_USE_SYSTEM_BOOST "Use system Boost rather than build it with Hunter" OFF)
 
 include(cmake/Hunter/core_packages.cmake)
 if(NOT SILKWORM_CORE_ONLY)

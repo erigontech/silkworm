@@ -14,8 +14,5 @@
    limitations under the License.
 ]]
 
-if(NOT SILKWORM_USE_SYSTEM_BOOST)
-  hunter_add_package(Boost)
-endif()
 hunter_add_package(intx)
 hunter_add_package(Microsoft.GSL)

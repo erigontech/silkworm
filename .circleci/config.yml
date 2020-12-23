@@ -141,18 +141,10 @@ jobs:
             ./configure --prefix $HOME/opt-wasm CC=/opt/wasi-sdk/bin/clang --host=none --enable-cxx CXX=/opt/wasi-sdk/bin/clang++ ABI=longlong
             make -j
             make install
-      - restore_cache:
-          name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-wasm-{{checksum "cmake/wasi.cmake"}}-{{checksum "cmake/toolchain.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
           command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a
-      - save_cache:
-          name: "Save Hunter cache"
-          key: *hunter-cache-key
-          paths:
-            - ~/.hunter
       - run:
           name: "Build"
           command: cmake --build ~/build -j

@@ -25,7 +25,7 @@ install:
 
 cache:
   - C:\Tools\vcpkg\installed -> .appveyor.yml
-  - C:\.hunter -> .appveyor.yml, cmake\toolchain.cmake, cmake\Hunter\config.cmake, cmake\Hunter\packages.cmake
+  - C:\.hunter -> .appveyor.yml, cmake\toolchain.cmake, cmake\Hunter\config.cmake, cmake\Hunter\core_packages.cmake, cmake\Hunter\extra_packages.cmake
 
 before_build:
   - cd "%APPVEYOR_BUILD_FOLDER%"
@@ -40,5 +40,6 @@ build:
 
 test_script:
   - cd Build
-  - cmd\Release\unit_test.exe
+  - cmd\Release\core_test.exe
+  - cmd\Release\db_test.exe
   - cmd\Release\consensus.exe

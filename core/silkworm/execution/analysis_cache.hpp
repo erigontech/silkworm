@@ -17,8 +17,8 @@
 #ifndef SILKWORM_EXECUTION_ANALYSIS_CACHE_H_
 #define SILKWORM_EXECUTION_ANALYSIS_CACHE_H_
 
-#include <cpp-lru-cache/include/lrucache.hpp>
 #include <evmc/evmc.hpp>
+#include <lrucache.hpp>
 #include <memory>
 #include <silkworm/common/base.hpp>
 

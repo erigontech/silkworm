@@ -17,7 +17,7 @@
 #include "evm.hpp"
 
 #include <catch2/catch.hpp>
-#include <silkworm/db/buffer.hpp>
+#include <silkworm/state/memory_buffer.hpp>
 
 #include "address.hpp"
 #include "protocol_param.hpp"
@@ -32,7 +32,7 @@ TEST_CASE("Value transfer") {
     evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};
     intx::uint256 value{10'200'000'000'000'000};
 
-    db::Buffer db{nullptr};
+    MemoryBuffer db;
     IntraBlockState state{db};
     EVM evm{block, state};
 
@@ -84,7 +84,7 @@ TEST_CASE("Smart contract with storage") {
     // 25     PUSH1  => 00
     // 27     SSTORE         // storage[0] = input[0]
 
-    db::Buffer db{nullptr};
+    MemoryBuffer db;
     IntraBlockState state{db};
     EVM evm{block, state};
 
@@ -151,7 +151,7 @@ TEST_CASE("Maximum call depth") {
     35     JUMPDEST
     */
 
-    db::Buffer db{nullptr};
+    MemoryBuffer db;
     IntraBlockState state{db};
     state.set_code(contract, code);
 
@@ -203,7 +203,7 @@ TEST_CASE("DELEGATECALL") {
     10     DELEGATECALL
     */
 
-    db::Buffer db{nullptr};
+    MemoryBuffer db;
     IntraBlockState state{db};
     state.set_code(caller_address, caller_code);
     state.set_code(callee_address, callee_code);
@@ -266,7 +266,7 @@ TEST_CASE("CREATE should only return on failure") {
     51     RETURN
     */
 
-    db::Buffer db{nullptr};
+    MemoryBuffer db;
     IntraBlockState state{db};
     EVM evm{block, state};
 
@@ -295,7 +295,7 @@ TEST_CASE("Contract overwrite") {
 
     evmc::address contract_address{create_address(caller, /*nonce=*/0)};
 
-    db::Buffer db{nullptr};
+    MemoryBuffer db;
     IntraBlockState state{db};
     state.set_code(contract_address, old_code);
 
@@ -311,4 +311,5 @@ TEST_CASE("Contract overwrite") {
     CHECK(res.status == EVMC_INVALID_INSTRUCTION);
     CHECK(res.gas_left == 0);
 }
+
 }  // namespace silkworm

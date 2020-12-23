@@ -43,8 +43,8 @@ target_include_directories(execute PRIVATE ${CMAKE_SOURCE_DIR})
 
 # Ethereum Consensus Tests
 find_package(nlohmann_json CONFIG REQUIRED)
-add_compile_definitions(SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
 add_executable(consensus consensus.cpp)
+target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
 target_link_libraries(consensus PRIVATE silkworm_core nlohmann_json::nlohmann_json Boost::filesystem)
 
 # Unit tests
@@ -52,13 +52,13 @@ enable_testing()
 
 find_package(Catch2 CONFIG REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/*/silkworm/*_test.cpp")
-add_executable(unit_test unit_test.cpp ${SILKWORM_TESTS})
-target_link_libraries(unit_test silkworm_db Catch2::Catch2)
+file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
+add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
+target_link_libraries(core_test silkworm_core Catch2::Catch2)
 
-include(CTest)
-include(Catch)
-catch_discover_tests(unit_test)
+file(GLOB_RECURSE SILKWORM_DB_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/db/silkworm/*_test.cpp")
+add_executable(db_test unit_test.cpp ${SILKWORM_DB_TESTS})
+target_link_libraries(db_test silkworm_db Catch2::Catch2)
 
 # Benchmarks
 find_package(benchmark CONFIG REQUIRED)

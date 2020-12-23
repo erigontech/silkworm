@@ -18,10 +18,7 @@
 
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
-#include <silkworm/common/temp_dir.hpp>
-#include <silkworm/db/buffer.hpp>
-#include <silkworm/db/chaindb.hpp>
-#include <silkworm/db/tables.hpp>
+#include <silkworm/state/memory_buffer.hpp>
 
 #include "address.hpp"
 #include "execution.hpp"
@@ -102,7 +99,7 @@ TEST_CASE("Zero gas price") {
                  "815060009055506001016108fd565b5090565b50505b505056"),
     };
 
-    db::Buffer db{nullptr};
+    MemoryBuffer db;
     IntraBlockState state{db};
     ExecutionProcessor processor{block, state};
 
@@ -144,7 +141,7 @@ TEST_CASE("No refund on error") {
     23     BALANCE
     */
 
-    db::Buffer db{nullptr};
+    MemoryBuffer db;
     IntraBlockState state{db};
     ExecutionProcessor processor{block, state};
 
@@ -233,7 +230,7 @@ TEST_CASE("Self-destruct") {
     38     CALL
     */
 
-    db::Buffer db{nullptr};
+    MemoryBuffer db;
     IntraBlockState state{db};
     ExecutionProcessor processor{block, state};
 
@@ -283,24 +280,13 @@ TEST_CASE("Out of Gas during account re-creation") {
     uint64_t nonce{0};
     evmc::address address{create_address(caller, nonce)};
 
-    TemporaryDirectory tmp_dir{};
-    lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
-    db_config.set_readonly(false);
-
-    std::shared_ptr<lmdb::Environment> db_env{lmdb::get_env(db_config)};
-
-    std::unique_ptr<lmdb::Transaction> db_txn{db_env->begin_rw_transaction()};
-    db::table::create_all(*db_txn);
+    MemoryBuffer buffer;
 
     // Some funds were previously transferred to the address:
     // https://etherscan.io/address/0x78c65b078353a8c4ce58fb4b5acaac6042d591d5
-    {
-        Account account{};
-        account.balance = 66'252'368 * kGiga;
-
-        auto table{db_txn->open(db::table::kPlainState)};
-        table->put(full_view(address), account.encode_for_storage(/*omit_code_hash=*/false));
-    }
+    Account account{};
+    account.balance = 66'252'368 * kGiga;
+    buffer.update_account(address, std::nullopt, account);
 
     Transaction txn{
         nonce,       // nonce
@@ -388,7 +374,6 @@ TEST_CASE("Out of Gas during account re-creation") {
     };
     txn.from = caller;
 
-    db::Buffer buffer{db_txn.get(), block_number};
     IntraBlockState state{buffer};
     state.add_to_balance(caller, kEther);
 
@@ -400,8 +385,8 @@ TEST_CASE("Out of Gas during account re-creation") {
 
     state.write_to_db(block_number);
 
-    // only the caller and the miner should be changed
-    CHECK(buffer.account_changes().at(block_number).size() == 2);
+    // only the caller and the miner should change
+    CHECK(buffer.read_account(address) == account);
 }
 
 TEST_CASE("Empty suicide beneficiary") {
@@ -429,7 +414,7 @@ TEST_CASE("Empty suicide beneficiary") {
     };
     txn.from = caller;
 
-    db::Buffer db{nullptr};
+    MemoryBuffer db;
     IntraBlockState state{db};
     state.add_to_balance(caller, kEther);
 
@@ -441,7 +426,7 @@ TEST_CASE("Empty suicide beneficiary") {
     state.write_to_db(block_number);
 
     // suicide_beneficiary should've been touched and deleted
-    CHECK(db.account_changes().at(block_number).count(suicide_beneficiary) == 1);
+    CHECK(!db.read_account(suicide_beneficiary).has_value());
 }
 
 }  // namespace silkworm

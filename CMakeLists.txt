@@ -26,7 +26,9 @@ if(NOT SILKWORM_HAS_PARENT)
   include(CableBuildType)
   cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
-  set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain.cmake CACHE FILEPATH "" FORCE)
+  if(NOT CMAKE_TOOLCHAIN_FILE)
+    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain.cmake CACHE FILEPATH "" FORCE)
+  endif()
 
   include(evmone/cmake/cable/HunterGate.cmake)
   HunterGate(
@@ -54,7 +56,12 @@ HunterGate(
 
 project(silkworm)
 
-include(cmake/Hunter/packages.cmake)
+option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
+
+include(cmake/Hunter/core_packages.cmake)
+if(NOT SILKWORM_CORE_ONLY)
+  include(cmake/Hunter/extra_packages.cmake)
+endif()
 
 # Profing and coverage options
 if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
@@ -69,22 +76,24 @@ if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
 endif()
 
 # secp256k1
+add_library(secp256k1 secp256k1/src/secp256k1.c)
+
 if(MSVC)
   find_path(GMP_INCLUDE_DIR NAMES gmp.h)
   if(GMP_INCLUDE_DIR)
     message(STATUS "secp256k1 using GMP")
-    add_compile_definitions(USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
+    target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
   else()
-    add_compile_definitions(USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
+    target_compile_definitions(secp256k1 PUBLIC USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
   endif()
-  add_compile_definitions(USE_FIELD_10X26 USE_SCALAR_8X32)
+  target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26 USE_SCALAR_8X32)
 else()
-  add_compile_definitions(USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
-  add_compile_definitions(USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
+  target_compile_definitions(secp256k1 PUBLIC USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
+  target_compile_definitions(secp256k1 PUBLIC USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
 endif()
-add_compile_definitions(ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
-add_compile_definitions(ENABLE_MODULE_RECOVERY)
-add_library(secp256k1 secp256k1/src/secp256k1.c)
+target_compile_definitions(secp256k1 PUBLIC ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
+target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_RECOVERY)
+
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
 if(GMP_INCLUDE_DIR)
   target_include_directories(secp256k1 PRIVATE ${GMP_INCLUDE_DIR})
@@ -99,15 +108,17 @@ if(MSVC)
 endif()
 add_subdirectory(libff)
 
-# CBOR
-add_subdirectory(cbor-cpp)
+if(NOT SILKWORM_CORE_ONLY)
+  # CBOR
+  add_subdirectory(cbor-cpp)
 
-# LMDB
-add_library(lmdb lmdb-go/lmdb/lmdb.h
-                 lmdb-go/lmdb/mdb.c
-                 lmdb-go/lmdb/midl.c
-                 lmdb-go/lmdb/midl.h)
-target_include_directories(lmdb PUBLIC lmdb-go)
+  # LMDB
+  add_library(lmdb lmdb-go/lmdb/lmdb.h
+                  lmdb-go/lmdb/mdb.c
+                  lmdb-go/lmdb/midl.c
+                  lmdb-go/lmdb/midl.h)
+  target_include_directories(lmdb PUBLIC lmdb-go)
+endif()
 
 # Warnings options
 if(MSVC)
@@ -141,8 +152,9 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 # evmone with dependencies
+add_compile_definitions(EVMC_LOADER_MOCK)
 add_subdirectory(evmone/evmc)
-add_subdirectory(ethash)
+add_subdirectory(keccak)
 find_package(intx CONFIG REQUIRED)
 
 add_library(evmone evmone/lib/evmone/analysis.cpp
@@ -159,8 +171,10 @@ target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE keccak)
 
 # Silkworm itself
 add_subdirectory(core)
-add_subdirectory(db)
-add_subdirectory(tg_api)
-if(NOT SILKWORM_HAS_PARENT)
-  add_subdirectory(cmd)
+if(NOT SILKWORM_CORE_ONLY)
+  add_subdirectory(db)
+  add_subdirectory(tg_api)
+  if(NOT SILKWORM_HAS_PARENT)
+    add_subdirectory(cmd)
+  endif()
 endif()

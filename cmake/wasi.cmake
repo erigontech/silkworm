@@ -14,15 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Microsoft.GSL CONFIG REQUIRED)
+set(CMAKE_C_COMPILER /opt/wasi-sdk/bin/clang)
+set(CMAKE_CXX_COMPILER /opt/wasi-sdk/bin/clang++)
 
-file(GLOB_RECURSE SILKWORM_CORE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
-list(FILTER SILKWORM_CORE_SRC EXCLUDE REGEX "_test\.cpp$")
-
-add_library(silkworm_core ${SILKWORM_CORE_SRC})
-target_include_directories(silkworm_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} PRIVATE ../boost-headers)
-
-set(SILKWORM_CORE_PUBLIC_LIBS evmc intx::intx keccak ff Microsoft.GSL::GSL)
-set(SILKWORM_CORE_PRIVATE_LIBS evmone secp256k1)
-
-target_link_libraries(silkworm_core PUBLIC ${SILKWORM_CORE_PUBLIC_LIBS} PRIVATE ${SILKWORM_CORE_PRIVATE_LIBS})
+include(${CMAKE_CURRENT_LIST_DIR}/toolchain.cmake)

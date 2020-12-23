@@ -12,13 +12,12 @@
 [submodule "tests"]
 	path = tests
 	url = https://github.com/ethereum/tests.git
-[submodule "cpp-lru-cache"]
-	path = cpp-lru-cache
-	url = https://github.com/torquem-ch/cpp-lru-cache.git
-	branch = clear
 [submodule "cbor-cpp"]
 	path = cbor-cpp
 	url = https://github.com/torquem-ch/cbor-cpp.git
 [submodule "lmdb-go"]
 	path = lmdb-go
 	url = https://github.com/ledgerwatch/lmdb-go.git
+[submodule "boost-headers/boost"]
+	path = boost-headers/boost
+	url = https://github.com/torquem-ch/boost-headers.git

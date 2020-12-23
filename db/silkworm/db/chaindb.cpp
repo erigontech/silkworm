@@ -302,18 +302,17 @@ std::optional<Bytes> Transaction::data_lookup(const TableConfig& domain, MDB_val
     return {ret};
 }
 
-int Transaction::data_upsert(const TableConfig& domain, db::Entry& data)
+int Transaction::data_upsert(const TableConfig& domain, MDB_val* key, MDB_val* value)
 {
-    std::unique_ptr<Table> tbl{nullptr};
-
     try {
+        std::unique_ptr<Table> tbl{nullptr};
         if (!domain.name) {
             tbl = this->open(MAIN_DBI);
         } else {
             // Should we create if not existent ?
             tbl = this->open(domain, (this->is_ro() ? 0 : MDB_CREATE));
         }
-        tbl->put(data.key, data.value);
+        tbl->put(key, value, 0);
         return MDB_SUCCESS;
 
     } catch (const exception& ex) {

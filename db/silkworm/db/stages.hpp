@@ -29,7 +29,7 @@ namespace silkworm::db::stages {
 
 constexpr const char* KAccountHistory_key{"AccountHistoryIndex"};
 constexpr const char* KBlockHashes_key{"BlockHashes"};
-constexpr const char* KBlockBodies_key{"BlockBodies"};
+constexpr const char* KBlockBodies_key{"Bodies"};
 constexpr const char* KExecution_key{"Execution"};
 constexpr const char* KFinish_key{"Finish"};
 constexpr const char* KHashState_key{"HashState"};

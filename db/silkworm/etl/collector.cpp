@@ -85,7 +85,6 @@ void Collector::load(silkworm::lmdb::Table* table, Transform transform) {
     while (queue.size()) {
         auto& current_item{queue.top()};                                       // Pick smallest key by reference
         auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
-
         // Process linked pairs
         for (const auto& pair : transform(current_item.first)) {
             table->put(pair.key, pair.value);

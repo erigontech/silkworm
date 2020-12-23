@@ -32,7 +32,7 @@ constexpr size_t kOptimalBufferSize = 256 * kMebi;
 constexpr size_t kIdealBatchSize = 128 * kMebi;  // TODO: Commit after ideal size is reached and open new transaction
 
 // Function pointer to process Transform on before Load data into tables
-typedef std::vector<db::Entry> (*Transform)(Entry);
+typedef std::vector<Entry> (*Transform)(Entry);
 
 // Collects data Extracted from db
 class Collector {
@@ -54,7 +54,7 @@ class Collector {
 };
 
 // Default no transform function
-std::vector<db::Entry> identity_transform(db::Entry entry);
+std::vector<Entry> identity_transform(Entry entry);
 
 }  // namespace silkworm::etl
 #endif  // !SILKWORM_ETL_COLLECTOR_H_

@@ -154,7 +154,7 @@ endif()
 # evmone with dependencies
 add_compile_definitions(EVMC_LOADER_MOCK)
 add_subdirectory(evmone/evmc)
-add_subdirectory(ethash)
+add_subdirectory(keccak)
 find_package(intx CONFIG REQUIRED)
 
 add_library(evmone evmone/lib/evmone/analysis.cpp

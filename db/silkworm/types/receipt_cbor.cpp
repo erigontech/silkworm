@@ -16,8 +16,8 @@
 
 #include "receipt_cbor.hpp"
 
-#include "cbor-cpp/src/encoder.h"
-#include "cbor-cpp/src/output_dynamic.h"
+#include <cbor/encoder.h>
+#include <cbor/output_dynamic.h>
 
 namespace silkworm {
 

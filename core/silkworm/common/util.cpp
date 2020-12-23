@@ -143,7 +143,7 @@ Bytes from_hex(std::string_view hex) {
     return out;
 }
 
-std::optional<size_t> parse_size(const std::string& sizestr) {
+std::optional<uint64_t> parse_size(const std::string& sizestr) {
     if (sizestr.empty()) {
         return 0;
     }

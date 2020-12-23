@@ -65,7 +65,7 @@ TEST_CASE("to_bytes32") {
 }
 
 TEST_CASE("parse_size") {
-    std::optional<size_t> size{parse_size("")};
+    std::optional<uint64_t> size{parse_size("")};
     CHECK((size && *size == 0));
 
     static_assert(kKibi == 1024ull);

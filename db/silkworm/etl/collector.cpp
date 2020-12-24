@@ -24,6 +24,11 @@ namespace silkworm::etl {
 namespace fs = boost::filesystem;
 
 Collector::~Collector() {
+
+    for (auto& fp : file_providers_) {
+        fp.reset();
+    }
+
     if (work_path_.empty()) {
         return;
     }

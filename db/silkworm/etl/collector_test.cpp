@@ -57,7 +57,7 @@ void run_collector_test(Transform transform) {
     for (auto& entry : set) {
         collector.collect(entry);
     }
-    // Check wheter temporary files were generated
+    // Check whether temporary files were generated
     for (size_t i = 0; i < 10; i++) {
         fs::path path{etl_tmp_dir.path() / fs::path("tmp-" + std::to_string(i))};
         CHECK(fs::exists(path));
@@ -72,15 +72,28 @@ void run_collector_test(Transform transform) {
             CHECK(value->compare(transformed_entry.value) == 0);
         }
     }
+
+    // Call destructor here
+    // otherwise files will remain on disk
+    // and subsequent test fails
+    collector.~Collector();
+
     // Check wheter temporary files were cleaned
     for (size_t i = 0; i < 10; i++) {
-        fs::path path{etl_tmp_dir.path() / fs::path("tmp-" + std::to_string(i))};
+        fs::path path{fs::path(etl_tmp_dir.path()) / fs::path("tmp-" + std::to_string(i))};
         CHECK(!fs::exists(path));
     }
+
+    // Cleanly close environment before tempdirectory gets raii destructed
+    env->close();
+
+    // Let destructors remove temporary files
+    etl_tmp_dir.~TemporaryDirectory();
+    db_tmp_dir.~TemporaryDirectory();
 }
 
 TEST_CASE("collect_and_default_load") {
-    run_collector_test(identity_transform);
+    run_collector_test(&identity_transform);
 }
 
 TEST_CASE("collect_and_load") {

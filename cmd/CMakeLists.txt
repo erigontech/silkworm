@@ -58,7 +58,7 @@ target_link_libraries(core_test silkworm_core Catch2::Catch2)
 
 file(GLOB_RECURSE SILKWORM_DB_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/db/silkworm/*_test.cpp")
 add_executable(db_test unit_test.cpp ${SILKWORM_DB_TESTS})
-target_link_libraries(db_test silkworm_db Catch2::Catch2 Boost::filesystem)
+target_link_libraries(db_test silkworm_db Catch2::Catch2)
 
 # Benchmarks
 find_package(benchmark CONFIG REQUIRED)

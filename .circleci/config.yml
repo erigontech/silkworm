@@ -138,7 +138,7 @@ jobs:
           command: |
             git clone https://github.com/torquem-ch/gmp-wasm
             cd gmp-wasm
-            ./configure --prefix $HOME/opt-wasm CC=/opt/wasi-sdk/bin/clang --host=none --enable-cxx CXX=/opt/wasi-sdk/bin/clang++ ABI=longlong
+            ./configure --prefix $HOME/opt-wasm CC=/opt/wasi-sdk/bin/clang --host=none AR=llvm-ar RANLIB=llvm-ranlib --enable-cxx CXX=/opt/wasi-sdk/bin/clang++ ABI=longlong
             make -j
             make install
       - run:

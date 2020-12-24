@@ -32,8 +32,8 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     {
         Bytes key(8, '\0');
         Bytes value(8, '\0');
-        boost::endian::store_big_u64(&key[0], rand() % 200000000);
-        boost::endian::store_big_u64(&value[0], rand() % 200000000);
+        boost::endian::store_big_u64(&key[0], rand() % 200000000u);
+        boost::endian::store_big_u64(&value[0], rand() % 200000000u);
         set.push_back({key, value});
     }
     return set;
@@ -54,7 +54,7 @@ void run_collector_test(Transform transform) {
     auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};    // 100 entries per file (16 bytes per entry)
     db::table::create_all(*txn);
     // Collection
-    for(auto entry: set) {
+    for (auto& entry : set) {
         collector.collect(entry);
     }
     // Check wheter temporary files were generated

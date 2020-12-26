@@ -24,11 +24,6 @@ namespace silkworm::etl {
 namespace fs = boost::filesystem;
 
 Collector::~Collector() {
-
-    for (auto& fp : file_providers_) {
-        fp.reset();
-    }
-
     if (work_path_.empty()) {
         return;
     }
@@ -55,11 +50,11 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, Transform transform) {
+void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
     if (!file_providers_.size()) {
         buffer_.sort();
         for (const auto& entry : buffer_.get_entries()) {
-            auto entries{transform(entry)};
+            auto entries{load_func(entry)};
             for (const auto& entry2 : entries) {
                 table->put(entry2.key, entry2.value);
             }
@@ -91,7 +86,7 @@ void Collector::load(silkworm::lmdb::Table* table, Transform transform) {
         auto& current_item{queue.top()};                                       // Pick smallest key by reference
         auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
         // Process linked pairs
-        for (const auto& pair : transform(current_item.first)) {
+        for (const auto& pair : load_func(current_item.first)) {
             table->put(pair.key, pair.value);
         }
 
@@ -131,6 +126,6 @@ std::string Collector::set_work_path(const char* provided_work_path) {
     return p.string();
 }
 
-std::vector<Entry> identity_transform(Entry entry) { return std::vector<Entry>({entry}); }
+std::vector<Entry> identity_load(Entry entry) { return std::vector<Entry>({entry}); }
 
 }  // namespace silkworm::etl

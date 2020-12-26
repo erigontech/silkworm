@@ -39,7 +39,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     return set;
 }
 
-void run_collector_test(Transform transform) {
+void run_collector_test(LoadFunc load_func) {
     TemporaryDirectory db_tmp_dir;
     TemporaryDirectory etl_tmp_dir;
     // Initialize random seed
@@ -54,7 +54,7 @@ void run_collector_test(Transform transform) {
     auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};    // 100 entries per file (16 bytes per entry)
     db::table::create_all(*txn);
     // Collection
-    for (auto& entry : set) {
+    for (auto entry: set) {
         collector.collect(entry);
     }
     // Check whether temporary files were generated
@@ -64,36 +64,23 @@ void run_collector_test(Transform transform) {
     }
     // Load data
     auto to{txn->open(db::table::kHeaderNumbers)};
-    collector.load(to.get(), transform);
+    collector.load(to.get(), load_func);
     // Check wheter load was performed as intended
-    for(const auto& entry: set) {
-        for(const auto& transformed_entry: transform(entry)) {
+    for(auto &entry: set) {
+        for(auto& transformed_entry: load_func(entry)) {
             auto value{to->get(transformed_entry.key)};
             CHECK(value->compare(transformed_entry.value) == 0);
         }
     }
-
-    // Call destructor here
-    // otherwise files will remain on disk
-    // and subsequent test fails
-    collector.~Collector();
-
     // Check wheter temporary files were cleaned
     for (size_t i = 0; i < 10; i++) {
         fs::path path{fs::path(etl_tmp_dir.path()) / fs::path("tmp-" + std::to_string(i))};
-        CHECK(!fs::exists(path));
+        CHECK(false == fs::exists(path));
     }
-
-    // Cleanly close environment before tempdirectory gets raii destructed
-    env->close();
-
-    // Let destructors remove temporary files
-    etl_tmp_dir.~TemporaryDirectory();
-    db_tmp_dir.~TemporaryDirectory();
 }
 
 TEST_CASE("collect_and_default_load") {
-    run_collector_test(&identity_transform);
+    run_collector_test(identity_load);
 }
 
 TEST_CASE("collect_and_load") {

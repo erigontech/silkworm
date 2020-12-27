@@ -84,7 +84,7 @@ std::string format_time(boost::posix_time::ptime now = boost::posix_time::micros
 }
 
 class Recoverer : public silkworm::Worker {
-   public:
+  public:
     Recoverer(uint32_t id, size_t size, bool debug) : id_(id), debug_{debug}, mysize_{size} {};
 
     struct package {
@@ -111,7 +111,7 @@ class Recoverer : public silkworm::Worker {
     // Signal to connected handlers the task has completed
     boost::signals2::signal<void(uint32_t sender_id, uint32_t batch_id, bool has_error)> signal_completed;
 
-   private:
+  private:
     uint32_t id_;                                            // Current worker identifier
     bool debug_;                                             // Whether or not display debug info
     std::atomic_bool busy_{false};                           // Whether the thread is busy processing
@@ -603,7 +603,9 @@ int do_recover(app_options_t& options) {
                     // in this scope. Worth optimize it ?
                     ByteView bv{static_cast<uint8_t*>(data.mv_data), data.mv_size};
                     BlockBody body{};
-                    rlp::decode(bv, body);
+                    if (rlp::decode(bv, body) != rlp::DecodingError::kOk) {
+                        throw std::runtime_error("Failure to decode block body");
+                    }
 
                     // Should we overflow the batch queue dispatch the work
                     // accumulated so far to the recoverer thread
@@ -615,7 +617,9 @@ int do_recover(app_options_t& options) {
                         }
 
                         // Throw if any error from workers
-                        if (workers_thread_error_) throw std::runtime_error("Error from worker thread");
+                        if (workers_thread_error_) {
+                            throw std::runtime_error("Error from worker thread");
+                        }
 
                         // Write results to db (if any)
                         bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_,

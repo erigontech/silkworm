@@ -109,8 +109,8 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
     } catch (const ValidationError& e) {
         SILKWORM_LOG(LogError) << "Validation error " << e.what() << " at block " << block_num << std::endl;
         return kSilkwormInvalidBlock;
-    } catch (const DecodingError& e) {
-        SILKWORM_LOG(LogError) << "Decoding error " << e.what() << " at block " << block_num << std::endl;
+    } catch (rlp::DecodingError e) {
+        SILKWORM_LOG(LogError) << "Decoding error " << static_cast<int>(e) << " at block " << block_num << std::endl;
         return kSilkwormDecodingError;
     } catch (...) {
         return kSilkwormUnknownError;

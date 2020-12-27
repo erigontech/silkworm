@@ -40,7 +40,7 @@ TEST_CASE("Transaction RLP") {
 
     Transaction decoded;
     ByteView view{encoded};
-    rlp::decode<Transaction>(view, decoded);
+    REQUIRE(rlp::decode<Transaction>(view, decoded) == rlp::DecodingError::kOk);
     CHECK(decoded == txn);
 }
 
@@ -62,6 +62,7 @@ TEST_CASE("Recover sender 1") {
     txn.recover_sender(/*homestead=*/false, {});
     CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
 }
+
 TEST_CASE("Recover sender 2") {
     // https://etherscan.io/tx/0xe17d4d0c4596ea7d5166ad5da600a6fdc49e26e0680135a2f7300eedfd0d8314
     // Block 46214
@@ -80,4 +81,5 @@ TEST_CASE("Recover sender 2") {
     txn.recover_sender(/*homestead=*/false, {});
     CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
 }
+
 }  // namespace silkworm

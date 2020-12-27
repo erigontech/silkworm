@@ -23,7 +23,6 @@
 #include <stdint.h>
 
 #include <evmc/evmc.hpp>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -32,12 +31,8 @@ namespace silkworm {
 using namespace evmc::literals;
 
 using Bytes = std::basic_string<uint8_t>;
-using ByteView = std::basic_string_view<uint8_t>;
 
-class DecodingError : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
-};
+using ByteView = std::basic_string_view<uint8_t>;
 
 constexpr size_t kAddressLength{20};
 

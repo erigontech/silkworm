@@ -208,16 +208,26 @@ static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
     {"difficultyRopsten.json", kRopstenConfig},
 };
 
+static void check_rlp_err(rlp::DecodingError err) {
+    if (err != rlp::DecodingError::kOk) {
+        throw err;
+    }
+}
+
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
 void init_pre_state(const nlohmann::json& pre, IntraBlockState& state) {
     for (const auto& entry : pre.items()) {
         evmc::address address{to_address(from_hex(entry.key()))};
         const nlohmann::json& account{entry.value()};
-        Bytes balance{from_hex(account["balance"].get<std::string>())};
-        state.set_balance(address, rlp::read_uint256(balance, /*allow_leading_zeros=*/true));
+        Bytes balance_str{from_hex(account["balance"].get<std::string>())};
+        auto [balance, err1]{rlp::read_uint256(balance_str, /*allow_leading_zeros=*/true)};
+        check_rlp_err(err1);
+        state.set_balance(address, balance);
         state.set_code(address, from_hex(account["code"].get<std::string>()));
-        Bytes nonce{from_hex(account["nonce"].get<std::string>())};
-        state.set_nonce(address, rlp::read_uint64(nonce, /*allow_leading_zeros=*/true));
+        Bytes nonce_str{from_hex(account["nonce"].get<std::string>())};
+        auto [nonce, err2]{rlp::read_uint64(nonce_str, /*allow_leading_zeros=*/true)};
+        check_rlp_err(err2);
+        state.set_nonce(address, nonce);
         for (const auto& storage : account["storage"].items()) {
             Bytes key{from_hex(storage.key())};
             Bytes value{from_hex(storage.value().get<std::string>())};
@@ -234,12 +244,10 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
     bool invalid{b.contains("expectException")};
 
     Block block;
-    ByteView view{};
+    Bytes rlp;
 
     try {
-        Bytes rlp{from_hex(b["rlp"].get<std::string>())};
-        view = rlp;
-        rlp::decode(view, block);
+        rlp = from_hex(b["rlp"].get<std::string>());
     } catch (const std::exception& e) {
         if (invalid) {
             return kPassed;
@@ -248,11 +256,12 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
         return kFailed;
     }
 
-    if (!view.empty()) {
+    ByteView view{rlp};
+    if (rlp::decode(view, block) != rlp::DecodingError::kOk || !view.empty()) {
         if (invalid) {
             return kPassed;
         }
-        std::cout << "Extra RLP input\n";
+        std::cout << "Failure to decode RLP\n";
         return kFailed;
     }
 
@@ -297,16 +306,19 @@ bool post_check(const IntraBlockState& state, const nlohmann::json& expected) {
         evmc::address address{to_address(from_hex(entry.key()))};
         const nlohmann::json& account{entry.value()};
 
-        Bytes expected_balance{from_hex(account["balance"].get<std::string>())};
+        Bytes balance_str{from_hex(account["balance"].get<std::string>())};
+        auto [expected_balance, err1]{rlp::read_uint256(balance_str, /*allow_leading_zeros=*/true)};
+        check_rlp_err(err1);
         intx::uint256 actual_balance{state.get_balance(address)};
-        if (actual_balance != rlp::read_uint256(expected_balance, /*allow_leading_zeros=*/true)) {
+        if (actual_balance != expected_balance) {
             std::cout << "Balance mismatch for " << entry.key() << ":\n";
             std::cout << to_string(actual_balance, 16) << " ≠ " << account["balance"] << "\n";
             return false;
         }
 
         Bytes nonce_str{from_hex(account["nonce"].get<std::string>())};
-        uint64_t expected_nonce{rlp::read_uint64(nonce_str, /*allow_leading_zeros=*/true)};
+        auto [expected_nonce, err2]{rlp::read_uint64(nonce_str, /*allow_leading_zeros=*/true)};
+        check_rlp_err(err2);
         uint64_t actual_nonce{state.get_nonce(address)};
         if (actual_nonce != expected_nonce) {
             std::cout << "Nonce mismatch for " << entry.key() << ":\n";
@@ -347,7 +359,7 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>())};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
-    rlp::decode(genesis_view, genesis_block);
+    check_rlp_err(rlp::decode(genesis_view, genesis_block));
 
     MemoryBuffer buffer;
     buffer.insert_header(genesis_block.header);
@@ -443,8 +455,11 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     try {
         Bytes rlp{from_hex(j["rlp"].get<std::string>())};
         ByteView view{rlp};
-        rlp::decode(view, txn);
-        decoded = view.empty();
+        if (rlp::decode(view, txn) == rlp::DecodingError::kOk) {
+            decoded = view.empty();
+        } else {
+            decoded = false;
+        }
     } catch (const std::exception&) {
     }
 

@@ -45,7 +45,7 @@ TEST_CASE("BlockBody RLP") {
     ByteView in{rlp_bytes};
     BlockBody bb{};
 
-    rlp::decode(in, bb);
+    REQUIRE(rlp::decode(in, bb) == rlp::DecodingError::kOk);
 
     CHECK(bb.transactions.size() == 0);
     REQUIRE(bb.ommers.size() == 1);
@@ -106,9 +106,10 @@ TEST_CASE("BlockBody RLP 2") {
 
     ByteView view{rlp};
     BlockBody decoded{};
-    rlp::decode(view, decoded);
+    REQUIRE(rlp::decode(view, decoded) == rlp::DecodingError::kOk);
 
     CHECK(view.empty());
     CHECK(decoded == body);
 }
+
 }  // namespace silkworm

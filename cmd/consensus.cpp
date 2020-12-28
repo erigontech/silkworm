@@ -243,20 +243,17 @@ enum Status { kPassed, kFailed, kSkipped };
 Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockState& state) {
     bool invalid{b.contains("expectException")};
 
-    Block block;
-    Bytes rlp;
-
-    try {
-        rlp = *from_hex(b["rlp"].get<std::string>());
-    } catch (const std::exception& e) {
+    std::optional<Bytes> rlp{from_hex(b["rlp"].get<std::string>())};
+    if (!rlp) {
         if (invalid) {
             return kPassed;
         }
-        std::cout << e.what() << "\n";
+        std::cout << "Failure to read hex\n";
         return kFailed;
     }
 
-    ByteView view{rlp};
+    Block block;
+    ByteView view{*rlp};
     if (rlp::decode(view, block) != rlp::DecodingError::kOk || !view.empty()) {
         if (invalid) {
             return kPassed;
@@ -452,15 +449,13 @@ struct RunResults {
 Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     Transaction txn;
     bool decoded{false};
-    try {
-        Bytes rlp{*from_hex(j["rlp"].get<std::string>())};
-        ByteView view{rlp};
+
+    std::optional<Bytes> rlp{from_hex(j["rlp"].get<std::string>())};
+    if (rlp) {
+        ByteView view{*rlp};
         if (rlp::decode(view, txn) == rlp::DecodingError::kOk) {
             decoded = view.empty();
-        } else {
-            decoded = false;
         }
-    } catch (const std::exception&) {
     }
 
     for (const auto& entry : j.items()) {

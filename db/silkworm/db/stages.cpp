@@ -21,23 +21,18 @@
 namespace silkworm::db::stages {
 
 uint64_t get_stage_progress(std::unique_ptr<lmdb::Transaction>& txn, const char* stage_name) {
-    MDB_val key{std::strlen(stage_name), (void*)stage_name};
-    auto data{txn->data_lookup(silkworm::db::table::kSyncStageProgress, &key)};
+    MDB_val mdb_key{std::strlen(stage_name), (void*)stage_name};
+    auto data{txn->data_lookup(silkworm::db::table::kSyncStageProgress, &mdb_key)};
     if (!data.has_value()) return 0;
     return boost::endian::load_big_u64(data->c_str());
 }
 
 void set_stage_progress(std::unique_ptr<lmdb::Transaction>& txn, const char* stage_name, uint64_t block_num) {
-    Bytes value{8, '\0'};
-    boost::endian::store_big_u64(&value[0], block_num);
-
-    MDB_val key{}, data{};
-    key.mv_size = std::strlen(stage_name);
-    key.mv_data = (void*)stage_name;
-    data.mv_size = 8;
-    data.mv_data = const_cast<uint8_t*>(value.data());
-
-    lmdb::err_handler(txn->data_upsert(silkworm::db::table::kSyncStageProgress, &key, &data));
+    Bytes stage_progress{8, '\0'};
+    boost::endian::store_big_u64(&stage_progress[0], block_num);
+    MDB_val mdb_key{std::strlen(stage_name), (void*)stage_name};
+    MDB_val mdb_data{db::to_mdb_val(stage_progress)};
+    lmdb::err_handler(txn->data_upsert(silkworm::db::table::kSyncStageProgress, &mdb_key, &mdb_data));
 }
 
 }  // namespace silkworm::db::stages

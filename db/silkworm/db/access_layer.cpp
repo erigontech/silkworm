@@ -39,22 +39,29 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
 
 // TG ReadTransactions
 static std::vector<Transaction> read_transactions(lmdb::Transaction& txn, uint64_t base_id, uint64_t count) {
+    if (!count) {
+        return {};
+    }
+
+    auto table{txn.open(table::kEthTx)};
+    return read_transactions(table, base_id, count);
+}
+
+std::vector<Transaction> read_transactions(std::unique_ptr<lmdb::Table>& txn_table, uint64_t base_id, uint64_t count) {
     std::vector<Transaction> v;
     if (count == 0) {
         return v;
     }
     v.reserve(count);
 
-    auto table{txn.open(table::kEthTx)};
-
     Bytes txn_key(8, '\0');
     boost::endian::store_big_u64(txn_key.data(), base_id);
     MDB_val key_mdb{to_mdb_val(txn_key)};
-    MDB_val data_mdb;
+    MDB_val data_mdb{};
 
     uint64_t i{0};
-    for (int rc{table->seek_exact(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND && i < count;
-         rc = table->get_next(&key_mdb, &data_mdb), ++i) {
+    for (int rc{txn_table->seek_exact(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND && i < count;
+         rc = txn_table->get_next(&key_mdb, &data_mdb), ++i) {
         lmdb::err_handler(rc);
         ByteView data{from_mdb_val(data_mdb)};
 

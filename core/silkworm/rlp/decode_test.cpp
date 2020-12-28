@@ -23,7 +23,7 @@ namespace silkworm::rlp {
 
 template <class T>
 static T decode_success(std::string_view hex) {
-    Bytes bytes{from_hex(hex)};
+    Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
     T res;
     REQUIRE(decode<T>(view, res) == DecodingError::kOk);
@@ -33,7 +33,7 @@ static T decode_success(std::string_view hex) {
 
 template <class T>
 static DecodingError decode_failure(std::string_view hex) {
-    Bytes bytes{from_hex(hex)};
+    Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
     T res;
     return decode<T>(view, res);
@@ -41,7 +41,7 @@ static DecodingError decode_failure(std::string_view hex) {
 
 template <class T>
 static std::vector<T> decode_vector_success(std::string_view hex) {
-    Bytes bytes{from_hex(hex)};
+    Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
     std::vector<T> res;
     REQUIRE(decode_vector<T>(view, res) == DecodingError::kOk);

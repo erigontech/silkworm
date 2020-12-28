@@ -28,8 +28,8 @@ TEST_CASE("Transaction RLP") {
         21000,                                               // gas_limit
         0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,  // to
         10 * kEther,                                         // value
-        from_hex("a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc9716000000000000000000"
-                 "00015af1d78b58c4000"),                                                                         // data
+        *from_hex("a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc9716000000000000000000"
+                  "00015af1d78b58c4000"),                                                                        // data
         intx::from_string<intx::uint256>("0x5a896eab396e6ff9d78e157224bc66aa4593114b1f87dadf73d035fa6c3930fc"),  // v
         intx::from_string<intx::uint256>("0xbe67e0a07db67da8d446f76add590e54b6e92cb6b8f9835aeb67540579a27717"),  // r
         intx::from_string<intx::uint256>("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718"),  // s
@@ -72,7 +72,7 @@ TEST_CASE("Recover sender 2") {
         21'750,                                              // gas_limit
         0xc9d4035f4a9226d50f79b73aafb5d874a1b6537e_address,  // to
         31337,                                               // value
-        silkworm::from_hex("0x74796d3474406469676978"),      // data
+        *from_hex("0x74796d3474406469676978"),               // data
         28,                                                  // v
         intx::from_string<intx::uint256>("0x1c48defe76d367bb92b4fc0628aca42a4d8037062865635d955673e57eddfbfa"),  // r
         intx::from_string<intx::uint256>("0x65f766849f97b15f01d0877636fbed0fa4e39f8834896c0354f56ac44dcb50a6"),  // s

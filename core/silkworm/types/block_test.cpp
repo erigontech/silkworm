@@ -41,7 +41,7 @@ TEST_CASE("BlockBody RLP") {
         "6e64616c6c202d2045746865724e696e6a61a0f8c94dfe61cf26dcdf8cffeda3"
         "37cf6a903d65c449d7691a022837f6e2d994598868b769c5451a7aea"};
 
-    Bytes rlp_bytes{from_hex(rlp_hex)};
+    Bytes rlp_bytes{*from_hex(rlp_hex)};
     ByteView in{rlp_bytes};
     BlockBody bb{};
 
@@ -79,7 +79,7 @@ TEST_CASE("BlockBody RLP 2") {
     body.transactions[1].gas_limit = 1'000'000;
     body.transactions[1].to = {};
     body.transactions[1].value = 0;
-    body.transactions[1].data = from_hex("602a6000556101c960015560068060166000396000f3600035600055");
+    body.transactions[1].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
     body.transactions[1].v = 37;
     body.transactions[1].r =
         intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");

@@ -74,7 +74,7 @@ std::string to_hex(const evmc::address& address);
 std::string to_hex(const evmc::bytes32& hash);
 std::string to_hex(ByteView bytes);
 
-Bytes from_hex(std::string_view hex);
+std::optional<Bytes> from_hex(std::string_view hex) noexcept;
 
 // Parses a string input value representing a size in
 // human readable format with qualifiers. eg "256MB"

@@ -39,7 +39,7 @@ TEST_CASE("Account RLP") {
 }
 
 TEST_CASE("Decode account from storage") {
-    Bytes encoded{from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
+    Bytes encoded{*from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
 
     auto [decoded, err]{decode_account_from_storage(encoded)};
     REQUIRE(err == rlp::DecodingError::kOk);

@@ -64,7 +64,7 @@ TEST_CASE("Smart contract with storage") {
     // This contract initially sets its 0th storage to 0x2a
     // and its 1st storage to 0x01c9.
     // When called, it updates the 0th storage to the input provided.
-    Bytes code{from_hex("602a6000556101c960015560068060166000396000f3600035600055")};
+    Bytes code{*from_hex("602a6000556101c960015560068060166000396000f3600035600055")};
     // https://github.com/CoinCulture/evm-tools
     // 0      PUSH1  => 2a
     // 2      PUSH1  => 00
@@ -104,7 +104,7 @@ TEST_CASE("Smart contract with storage") {
     evmc::bytes32 key0{};
     CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0))) == "2a");
 
-    evmc::bytes32 new_val{to_bytes32(from_hex("f5"))};
+    evmc::bytes32 new_val{to_bytes32(*from_hex("f5"))};
     txn.to = contract_address;
     txn.data = full_view(new_val);
 
@@ -120,7 +120,7 @@ TEST_CASE("Maximum call depth") {
     evmc::address contract{0x3589d05a1ec4af9f65b0e5554e645707775ee43c_address};
 
     // The contract just calls itself recursively a given number of times.
-    Bytes code{from_hex("60003580600857005b6001900360005260008060208180305a6103009003f1602357fe5b")};
+    Bytes code{*from_hex("60003580600857005b6001900360005260008060208180305a6103009003f1602357fe5b")};
     /* https://github.com/CoinCulture/evm-tools
     0      PUSH1  => 00
     2      CALLDATALOAD
@@ -165,12 +165,12 @@ TEST_CASE("Maximum call depth") {
     CallResult res{evm.execute(txn, gas)};
     CHECK(res.status == EVMC_SUCCESS);
 
-    evmc::bytes32 num_of_recursions{to_bytes32(from_hex("0400"))};
+    evmc::bytes32 num_of_recursions{to_bytes32(*from_hex("0400"))};
     txn.data = full_view(num_of_recursions);
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_SUCCESS);
 
-    num_of_recursions = to_bytes32(from_hex("0401"));
+    num_of_recursions = to_bytes32(*from_hex("0401"));
     txn.data = full_view(num_of_recursions);
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_INVALID_INSTRUCTION);
@@ -183,7 +183,7 @@ TEST_CASE("DELEGATECALL") {
     evmc::address callee_address{0x3589d05a1ec4af9f65b0e5554e645707775ee43c_address};
 
     // The callee writes the ADDRESS to storage.
-    Bytes callee_code{from_hex("30600055")};
+    Bytes callee_code{*from_hex("30600055")};
     /* https://github.com/CoinCulture/evm-tools
     0      ADDRESS
     1      PUSH1  => 00
@@ -191,7 +191,7 @@ TEST_CASE("DELEGATECALL") {
     */
 
     // The caller delegate-calls the input contract.
-    Bytes caller_code{from_hex("6000808080803561eeeef4")};
+    Bytes caller_code{*from_hex("6000808080803561eeeef4")};
     /* https://github.com/CoinCulture/evm-tools
     0      PUSH1  => 00
     2      DUP1
@@ -230,8 +230,8 @@ TEST_CASE("CREATE should only return on failure") {
     evmc::address caller{0xf466859ead1932d743d622cb74fc058882e8648a_address};
 
     Bytes code{
-        from_hex("0x602180601360003960006000f0503d600055006211223360005260206000602060006000600461900"
-                 "0f1503d60005560206000f3")};
+        *from_hex("0x602180601360003960006000f0503d600055006211223360005260206000602060006000600461900"
+                  "0f1503d60005560206000f3")};
     /* https://github.com/CoinCulture/evm-tools
     0      PUSH1  => 21
     2      DUP1
@@ -288,8 +288,8 @@ TEST_CASE("Contract overwrite") {
     Block block{};
     block.header.number = 7'753'545;
 
-    Bytes old_code{from_hex("6000")};
-    Bytes new_code{from_hex("6001")};
+    Bytes old_code{*from_hex("6000")};
+    Bytes new_code{*from_hex("6001")};
 
     evmc::address caller{0x92a1d964b8fc79c5694343cc943c27a94a3be131_address};
 

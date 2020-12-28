@@ -109,7 +109,7 @@ std::string to_hex(ByteView bytes) {
     return out;
 }
 
-static std::optional<unsigned> decode_hex_digit(char ch) {
+static std::optional<unsigned> decode_hex_digit(char ch) noexcept {
     if (ch >= '0' && ch <= '9') {
         return ch - '0';
     } else if (ch >= 'a' && ch <= 'f') {

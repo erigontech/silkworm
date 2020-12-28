@@ -132,6 +132,7 @@ if(MSVC)
   add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
   add_compile_definitions(_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING)
 
+  add_compile_options(/Ot)     # Optimize for speed
   add_compile_options(/wd5030) # Silence warnings about GNU attributes
   add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
   add_compile_options(/wd4068) # Silence warning C4068: unknown pragma

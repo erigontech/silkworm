@@ -275,13 +275,12 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
     }
 
     ExecutionProcessor processor{block, state, config};
-    try {
-        processor.execute_block();
-    } catch (const ValidationError& e) {
+    std::pair<std::vector<Receipt>, ValidationError> res{processor.execute_block()};
+    if (res.second != ValidationError::kOk) {
         if (invalid) {
             return kPassed;
         }
-        std::cout << e.what() << "\n";
+        std::cout << "Validation error " << static_cast<int>(res.second) << "\n";
         return kFailed;
     }
 

@@ -103,7 +103,7 @@ TEST_CASE("Zero gas price") {
     IntraBlockState state{db};
     ExecutionProcessor processor{block, state};
 
-    CHECK_THROWS_MATCHES(processor.execute_transaction(txn), ValidationError, Message("missing sender"));
+    CHECK(processor.validate_transaction(txn) == ValidationError::kMissingSender);
 
     txn.from = sender;
     Receipt receipt{processor.execute_transaction(txn)};

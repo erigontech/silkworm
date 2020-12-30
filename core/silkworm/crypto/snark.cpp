@@ -17,7 +17,6 @@
 #include "snark.hpp"
 
 #include <algorithm>
-#include <boost/endian/conversion.hpp>
 #include <cassert>
 #include <cstring>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
@@ -130,7 +129,7 @@ Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept {
     auto y{p.Y.as_bigint()};
 
     // Here we convert little-endian data to big-endian output
-    static_assert(boost::endian::order::native == boost::endian::order::little);
+    // TODO[C++20] static_assert(std::endian::order::native == std::endian::order::little);
     static_assert(sizeof(x.data) == 32);
 
     std::memcpy(&out[0], y.data, 32);

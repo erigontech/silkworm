@@ -16,7 +16,6 @@
 
 #include "encode.hpp"
 
-#include <boost/endian/conversion.hpp>
 #include <silkworm/common/util.hpp>
 
 namespace silkworm::rlp {
@@ -104,8 +103,8 @@ size_t length(const intx::uint256& n) {
 ByteView big_endian(uint64_t n) {
     thread_local uint64_t buf;
 
-    static_assert(boost::endian::order::native == boost::endian::order::little,
-                  "We assume a little-endian architecture like amd64");
+    // We assume a little-endian architecture like amd64
+    // TODO[C++20] static_assert(std::endian::order::native == std::endian::order::little);
     buf = intx::bswap(n);
     const uint8_t* p{reinterpret_cast<uint8_t*>(&buf)};
     unsigned zero_bytes = intx::clz(n) / 8;
@@ -119,4 +118,5 @@ ByteView big_endian(const intx::uint256& n) {
     unsigned zero_bytes = intx::clz(n) / 8;
     return {buf + zero_bytes, 32 - zero_bytes};
 }
+
 }  // namespace silkworm::rlp

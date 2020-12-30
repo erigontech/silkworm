@@ -16,7 +16,6 @@
 
 #include "decode.hpp"
 
-#include <boost/endian/conversion.hpp>
 #include <cassert>
 #include <silkworm/common/util.hpp>
 #include <tuple>
@@ -44,8 +43,8 @@ std::pair<uint64_t, DecodingError> read_uint64(ByteView be, bool allow_leading_z
     auto* p{reinterpret_cast<uint8_t*>(&buf)};
     std::memcpy(p + (kMaxBytes - be.length()), &be[0], be.length());
 
-    static_assert(boost::endian::order::native == boost::endian::order::little,
-                  "We assume a little-endian architecture like amd64");
+    // We assume a little-endian architecture like amd64
+    // TODO[C++20] static_assert(std::endian::order::native == std::endian::order::little);
     buf = intx::bswap(buf);
     return {buf, DecodingError::kOk};
 }
@@ -71,7 +70,7 @@ std::pair<intx::uint256, DecodingError> read_uint256(ByteView be, bool allow_lea
     uint8_t* p{as_bytes(buf)};
     std::memcpy(p + (kMaxBytes - be.length()), &be[0], be.length());
 
-    static_assert(boost::endian::order::native == boost::endian::order::little);
+    // TODO[C++20] static_assert(std::endian::order::native == std::endian::order::little);
     buf = intx::bswap(buf);
     return {buf, DecodingError::kOk};
 }

@@ -16,6 +16,10 @@
 
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
+if(NOT MSVC)
+  add_compile_options(-fno-exceptions)
+endif()
+
 file(GLOB_RECURSE SILKWORM_CORE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_CORE_SRC EXCLUDE REGEX "_test\.cpp$")
 

@@ -75,17 +75,32 @@ if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
   endif()
 endif()
 
+# GMP
+find_path(GMP_INCLUDE_DIR NAMES gmp.h)
+if(MSVC)
+  find_library(GMP_LIBRARY mpir)
+else()
+  find_library(GMP_LIBRARY gmp)
+endif()
+if(GMP_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
+  set(gmp_library_type SHARED)
+else()
+  set(gmp_library_type STATIC)
+endif()
+message(STATUS "GMP: ${GMP_LIBRARY}, ${GMP_INCLUDE_DIR}")
+add_library(gmp ${gmp_library_type} IMPORTED)
+set_target_properties(
+  gmp PROPERTIES
+  IMPORTED_LOCATION ${GMP_LIBRARY}
+  INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
+)
+
 # secp256k1
 add_library(secp256k1 secp256k1/src/secp256k1.c)
 
 if(MSVC)
-  find_path(GMP_INCLUDE_DIR NAMES gmp.h)
-  if(GMP_INCLUDE_DIR)
-    message(STATUS "secp256k1 using GMP")
-    target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
-  else()
-    target_compile_definitions(secp256k1 PUBLIC USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
-  endif()
+  target_link_libraries(secp256k1 PRIVATE gmp)
+  target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
   target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26 USE_SCALAR_8X32)
 else()
   target_compile_definitions(secp256k1 PUBLIC USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
@@ -95,9 +110,6 @@ target_compile_definitions(secp256k1 PUBLIC ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PRE
 target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_RECOVERY)
 
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
-if(GMP_INCLUDE_DIR)
-  target_include_directories(secp256k1 PRIVATE ${GMP_INCLUDE_DIR})
-endif()
 
 # libff
 set(CURVE "ALT_BN128" CACHE STRING "" FORCE)

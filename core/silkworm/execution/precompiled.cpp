@@ -16,12 +16,12 @@
 
 #include "precompiled.hpp"
 
+#include <gmp.h>
 #include <silkworm/crypto/blake2.h>
 #include <silkworm/crypto/sha-256.h>
 
 #include <algorithm>
 #include <boost/endian/conversion.hpp>
-#include <boost/multiprecision/cpp_int.hpp>
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <iterator>
@@ -173,33 +173,44 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
 
     input = right_pad(input, base_len + exponent_len + modulus_len);
 
-    boost::multiprecision::cpp_int base{};
+    mpz_t base;
+    mpz_init(base);
+    auto clear_base{gsl::finally([base]() mutable { mpz_clear(base); })};
     if (base_len) {
-        import_bits(base, input.data(), input.data() + base_len);
+        mpz_import(base, base_len, 1, 1, 0, 0, input.data());
         input.remove_prefix(base_len);
     }
 
-    boost::multiprecision::cpp_int exponent{};
+    mpz_t exponent;
+    mpz_init(exponent);
+    auto clear_exponent{gsl::finally([exponent]() mutable { mpz_clear(exponent); })};
     if (exponent_len) {
-        import_bits(exponent, input.data(), input.data() + exponent_len);
+        mpz_import(exponent, exponent_len, 1, 1, 0, 0, input.data());
         input.remove_prefix(exponent_len);
     }
 
-    boost::multiprecision::cpp_int modulus{};
+    mpz_t modulus;
+    mpz_init(modulus);
+    auto clear_modulus{gsl::finally([modulus]() mutable { mpz_clear(modulus); })};
     if (modulus_len) {
-        import_bits(modulus, input.data(), input.data() + modulus_len);
+        mpz_import(modulus, modulus_len, 1, 1, 0, 0, input.data());
     }
 
-    if (modulus == 0) {
+    if (mpz_sgn(modulus) == 0) {
         return Bytes(modulus_len, '\0');
     }
 
-    boost::multiprecision::cpp_int result{boost::multiprecision::powm(base, exponent, modulus)};
+    mpz_t result;
+    mpz_init(result);
+    auto clear_result{gsl::finally([result]() mutable { mpz_clear(result); })};
 
-    Bytes out{};
-    export_bits(result, std::back_inserter(out), 8);
-    assert(out.size() <= modulus_len);
-    out.insert(0, modulus_len - out.size(), '\0');
+    mpz_powm(result, base, exponent, modulus);
+
+    Bytes out(modulus_len, '\0');
+    // export as little-endian
+    mpz_export(out.data(), nullptr, -1, 1, 0, 0, result);
+    // and convert to big-endian
+    std::reverse(out.begin(), out.end());
 
     return out;
 }

@@ -18,36 +18,64 @@
 #define SILKWORM_COMMON_ENDIAN_H_
 
 #include <stdint.h>
-
 #include <cstring>
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <intrin.h>
+#define bswap32 _byteswap_ulong
+#define bswap64 _byteswap_uint64
+
+// On Windows assume little endian
+#define __LITTLE_ENDIAN 1234
+#define __BIG_ENDIAN 4321
+#define __BYTE_ORDER __LITTLE_ENDIAN
+
+#elif __APPLE__
+
+#include <machine/endian.h>
+#define bswap32 __builtin_bswap32
+#define bswap64 __builtin_bswap64
+
+#else
+
+#include <endian.h>
+
+#define bswap32 __builtin_bswap32
+#define bswap64 __builtin_bswap64
+
 #endif
 
 namespace silkworm::endian {
 
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+
 uint32_t load_big_u32(uint8_t const* bytes) noexcept {
-    // TODO[C++20] static_assert(std::endian::order::native == std::endian::order::little);
     uint32_t x;
     std::memcpy(&x, bytes, sizeof(x));
-#ifdef _MSC_VER
-    return _byteswap_uint32(x);
-#else
-    return __builtin_bswap32(x);
-#endif
+    return bswap32(x);
 }
 
 uint64_t load_big_u64(uint8_t const* bytes) noexcept {
-    // TODO[C++20] static_assert(std::endian::order::native == std::endian::order::little);
     uint64_t x;
     std::memcpy(&x, bytes, sizeof(x));
-#ifdef _MSC_VER
-    return _byteswap_uint64(x);
-#else
-    return __builtin_bswap64(x);
-#endif
+    return bswap64(x);
 }
+
+#else
+
+uint32_t load_big_u32(uint8_t const* bytes) noexcept {
+    uint32_t x;
+    std::memcpy(&x, bytes, sizeof(x));
+    return x;
+}
+
+uint64_t load_big_u64(uint8_t const* bytes) noexcept {
+    uint64_t x;
+    std::memcpy(&x, bytes, sizeof(x));
+    return x;
+}
+
+#endif
 
 }  // namespace silkworm::endian
 

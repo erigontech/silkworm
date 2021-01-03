@@ -16,7 +16,9 @@
 
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
-if(NOT MSVC)
+if(MSVC)
+  add_compile_options(/EHsc)
+else()
   add_compile_options(-fno-exceptions)
 endif()
 

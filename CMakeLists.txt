@@ -49,11 +49,11 @@ include(silkworm/evmone/cmake/cable/HunterGate.cmake)
 HunterGate(
   URL "https://github.com/cpp-pm/hunter/archive/v0.23.288.tar.gz"
   SHA1 "6c9b2bc606d86ae31f96a62fc68f0a593024815b"
-  LOCAL
+  FILEPATH "${CMAKE_SOURCE_DIR}/silkworm/cmake/Hunter/config.cmake"
 )
 -----------------------------------------------------------------------------------------------------
 
-(You can update the Hunter version.)
+(You can update the Hunter version, but keep the FILEPATH option.)
 ]]
 
 project(silkworm)

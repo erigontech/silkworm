@@ -67,8 +67,7 @@ int main(int argc, char* argv[]) {
         // counters
         uint64_t nTxs{0}, nErrors{0};
 
-        uint64_t block_num{from};
-        for (; block_num < to; ++block_num) {
+        for (uint64_t block_num{from}; block_num < to; ++block_num) {
             // Note: See the comment above. You may uncomment that line and comment the next line if you're certain
             // that TG is not syncing on the same machine. If you use a long-running transaction by doing this, and
             // you're mistaken (TG is syncing), the database file may 'grow quickly' as per the LMDB docs.
@@ -83,8 +82,10 @@ int main(int argc, char* argv[]) {
             db::Buffer buffer{txn.get(), block_num};
 
             // Execute the block and retreive the receipts
-            std::vector<Receipt> receipts{
-                execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool)};
+            auto [receipts, err]{execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool)};
+            if (err != ValidationError::kOk) {
+                std::cerr << "Validation error " << static_cast<int>(err) << " at block " << block_num << "\n";
+            }
 
             // There is one receipt per transaction
             assert(bh->block.transactions.size() == receipts.size());

@@ -31,8 +31,8 @@ TEST_CASE("Hardcoded Bloom") {
             {
                 0x7f1fef85c4b037150d3675218e0cdb7cf38fea354759471e309f3354918a442f_bytes32,
                 0xd85629c7eaae9ea4a10234fed31bc0aeda29b2683ebe0c1882499d272621f6b6_bytes32,
-            },                                                                           // topics
-            from_hex("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7b"),  // data
+            },                                                                            // topics
+            *from_hex("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7b"),  // data
         },
     };
     Bloom bloom{logs_bloom(logs)};

@@ -21,20 +21,20 @@
 namespace silkworm {
 
 TEST_CASE("Padding") {
-    CHECK(to_hex(right_pad(from_hex("a5"), 3)) == "a50000");
-    CHECK(to_hex(right_pad(from_hex("5a0b54d5dc17e0aadc383d2db4"), 3)) == "5a0b54d5dc17e0aadc383d2db4");
+    CHECK(to_hex(right_pad(*from_hex("a5"), 3)) == "a50000");
+    CHECK(to_hex(right_pad(*from_hex("5a0b54d5dc17e0aadc383d2db4"), 3)) == "5a0b54d5dc17e0aadc383d2db4");
 
-    CHECK(to_hex(left_pad(from_hex("a5"), 3)) == "0000a5");
-    CHECK(to_hex(left_pad(from_hex("5a0b54d5dc17e0aadc383d2db4"), 3)) == "5a0b54d5dc17e0aadc383d2db4");
+    CHECK(to_hex(left_pad(*from_hex("a5"), 3)) == "0000a5");
+    CHECK(to_hex(left_pad(*from_hex("5a0b54d5dc17e0aadc383d2db4"), 3)) == "5a0b54d5dc17e0aadc383d2db4");
 
-    ByteView repeatedly_padded{right_pad(from_hex("b8c4"), 3)};
+    ByteView repeatedly_padded{right_pad(*from_hex("b8c4"), 3)};
     CHECK(to_hex(repeatedly_padded) == "b8c400");
     repeatedly_padded.remove_prefix(1);
     CHECK(to_hex(repeatedly_padded) == "c400");
     repeatedly_padded = right_pad(repeatedly_padded, 4);
     CHECK(to_hex(repeatedly_padded) == "c4000000");
 
-    repeatedly_padded = left_pad(from_hex("b8c4"), 3);
+    repeatedly_padded = left_pad(*from_hex("b8c4"), 3);
     CHECK(to_hex(repeatedly_padded) == "00b8c4");
     repeatedly_padded.remove_suffix(1);
     CHECK(to_hex(repeatedly_padded) == "00b8");
@@ -49,23 +49,23 @@ TEST_CASE("Zeroless view") {
 }
 
 TEST_CASE("to_bytes32") {
-    CHECK(to_hex(to_bytes32(from_hex("05"))) == "0000000000000000000000000000000000000000000000000000000000000005");
+    CHECK(to_hex(to_bytes32(*from_hex("05"))) == "0000000000000000000000000000000000000000000000000000000000000005");
 
-    CHECK(to_hex(to_bytes32(from_hex("0x05"))) == "0000000000000000000000000000000000000000000000000000000000000005");
+    CHECK(to_hex(to_bytes32(*from_hex("0x05"))) == "0000000000000000000000000000000000000000000000000000000000000005");
 
-    CHECK(to_hex(to_bytes32(from_hex("9d36d8120b564f654564a91259a6ca6d37d6473827d45210190ad10f8ca451f2"))) ==
+    CHECK(to_hex(to_bytes32(*from_hex("9d36d8120b564f654564a91259a6ca6d37d6473827d45210190ad10f8ca451f2"))) ==
           "9d36d8120b564f654564a91259a6ca6d37d6473827d45210190ad10f8ca451f2");
 
-    CHECK(to_hex(to_bytes32(from_hex("0X9d36d8120b564f654564a91259a6ca6d37d6473827d45210190ad10f8ca451f2"))) ==
+    CHECK(to_hex(to_bytes32(*from_hex("0X9d36d8120b564f654564a91259a6ca6d37d6473827d45210190ad10f8ca451f2"))) ==
           "9d36d8120b564f654564a91259a6ca6d37d6473827d45210190ad10f8ca451f2");
 
-    CHECK(to_hex(to_bytes32(from_hex("7576351873263824fff23784264823469344629364396429864239864938264a"
-                                     "8236423964bbb009874e"))) ==
+    CHECK(to_hex(to_bytes32(*from_hex("7576351873263824fff23784264823469344629364396429864239864938264a"
+                                      "8236423964bbb009874e"))) ==
           "7576351873263824fff23784264823469344629364396429864239864938264a");
 }
 
 TEST_CASE("parse_size") {
-    std::optional<size_t> size{parse_size("")};
+    std::optional<uint64_t> size{parse_size("")};
     CHECK((size && *size == 0));
 
     static_assert(kKibi == 1024ull);

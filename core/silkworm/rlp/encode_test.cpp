@@ -31,9 +31,9 @@ static Bytes encoded(T x) {
 TEST_CASE("RLP encoding") {
     SECTION("strings") {
         CHECK(to_hex(encoded(ByteView{})) == "80");
-        CHECK(to_hex(encoded(from_hex("7B"))) == "7b");
-        CHECK(to_hex(encoded(from_hex("80"))) == "8180");
-        CHECK(to_hex(encoded(from_hex("ABBA"))) == "82abba");
+        CHECK(to_hex(encoded(*from_hex("7B"))) == "7b");
+        CHECK(to_hex(encoded(*from_hex("80"))) == "8180");
+        CHECK(to_hex(encoded(*from_hex("ABBA"))) == "82abba");
     }
 
     SECTION("uint64") {

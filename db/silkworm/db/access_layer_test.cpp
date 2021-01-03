@@ -45,7 +45,7 @@ static BlockBody sample_block_body() {
     body.transactions[1].gas_limit = 1'000'000;
     body.transactions[1].to = {};
     body.transactions[1].value = 0;
-    body.transactions[1].data = from_hex("602a6000556101c960015560068060166000396000f3600035600055");
+    body.transactions[1].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
     body.transactions[1].v = 37;
     body.transactions[1].r =
         intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
@@ -143,8 +143,8 @@ namespace db {
             CHECK_THROWS_AS(read_block(*txn, block_num, read_senders), MissingSenders);
 
             Bytes full_senders{
-                from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"
-                         "941591b6ca8e8dd05c69efdec02b77c72dac1496")};
+                *from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"
+                          "941591b6ca8e8dd05c69efdec02b77c72dac1496")};
             REQUIRE(full_senders.length() == 2 * kAddressLength);
 
             ByteView truncated_senders{full_senders.data(), kAddressLength};
@@ -198,19 +198,19 @@ namespace db {
         auto table{txn->open(table::kPlainAccountChangeSet)};
 
         Bytes data1{full_view(addr1)};
-        data1.append(from_hex(val1));
+        data1.append(*from_hex(val1));
         table->put(block_key(block_num1), data1);
 
         Bytes data2{full_view(addr2)};
-        data2.append(from_hex(val2));
+        data2.append(*from_hex(val2));
         table->put(block_key(block_num1), data2);
 
         Bytes data3{full_view(addr3)};
-        data3.append(from_hex(val3));
+        data3.append(*from_hex(val3));
         table->put(block_key(block_num1), data3);
 
         Bytes data4{full_view(addr4)};
-        data4.append(from_hex(val4));
+        data4.append(*from_hex(val4));
         table->put(block_key(block_num2), data4);
 
         changes = read_account_changes(*txn, block_num1);
@@ -257,10 +257,10 @@ namespace db {
         auto location3{0x23d623b732046203836a0ec6666856523b7b3ec4bf4290dd0b544aa6fa5e61ea_bytes32};
         auto location4{0x0000000000000000000000000000000000000000000000000000000000000017_bytes32};
 
-        Bytes val1{from_hex("c9b131a4")};
-        Bytes val2{from_hex("068566685666856076ebaf477f07")};
+        Bytes val1{*from_hex("c9b131a4")};
+        Bytes val2{*from_hex("068566685666856076ebaf477f07")};
         Bytes val3{};
-        Bytes val4{from_hex("9a31634956ec64b6865a")};
+        Bytes val4{*from_hex("9a31634956ec64b6865a")};
 
         uint64_t incarnation1{1};
         uint64_t incarnation2{1};

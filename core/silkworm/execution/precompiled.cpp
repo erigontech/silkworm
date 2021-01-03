@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,17 +16,17 @@
 
 #include "precompiled.hpp"
 
+#include <gmp.h>
 #include <silkworm/crypto/blake2.h>
 #include <silkworm/crypto/sha-256.h>
 
 #include <algorithm>
-#include <boost/endian/conversion.hpp>
-#include <boost/multiprecision/cpp_int.hpp>
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <iterator>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #include <limits>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/crypto/rmd160.hpp>
@@ -158,13 +158,13 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
 std::optional<Bytes> expmod_run(ByteView input) noexcept {
     input = right_pad(input, 3 * 32);
 
-    uint64_t base_len{boost::endian::load_big_u64(&input[24])};
+    uint64_t base_len{endian::load_big_u64(&input[24])};
     input.remove_prefix(32);
 
-    uint64_t exponent_len{boost::endian::load_big_u64(&input[24])};
+    uint64_t exponent_len{endian::load_big_u64(&input[24])};
     input.remove_prefix(32);
 
-    uint64_t modulus_len{boost::endian::load_big_u64(&input[24])};
+    uint64_t modulus_len{endian::load_big_u64(&input[24])};
     input.remove_prefix(32);
 
     if (modulus_len == 0) {
@@ -173,33 +173,49 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
 
     input = right_pad(input, base_len + exponent_len + modulus_len);
 
-    boost::multiprecision::cpp_int base{};
+    mpz_t base;
+    mpz_init(base);
     if (base_len) {
-        import_bits(base, input.data(), input.data() + base_len);
+        mpz_import(base, base_len, 1, 1, 0, 0, input.data());
         input.remove_prefix(base_len);
     }
 
-    boost::multiprecision::cpp_int exponent{};
+    mpz_t exponent;
+    mpz_init(exponent);
     if (exponent_len) {
-        import_bits(exponent, input.data(), input.data() + exponent_len);
+        mpz_import(exponent, exponent_len, 1, 1, 0, 0, input.data());
         input.remove_prefix(exponent_len);
     }
 
-    boost::multiprecision::cpp_int modulus{};
+    mpz_t modulus;
+    mpz_init(modulus);
     if (modulus_len) {
-        import_bits(modulus, input.data(), input.data() + modulus_len);
+        mpz_import(modulus, modulus_len, 1, 1, 0, 0, input.data());
     }
 
-    if (modulus == 0) {
+    if (mpz_sgn(modulus) == 0) {
+        mpz_clear(modulus);
+        mpz_clear(exponent);
+        mpz_clear(base);
+
         return Bytes(modulus_len, '\0');
     }
 
-    boost::multiprecision::cpp_int result{boost::multiprecision::powm(base, exponent, modulus)};
+    mpz_t result;
+    mpz_init(result);
 
-    Bytes out{};
-    export_bits(result, std::back_inserter(out), 8);
-    assert(out.size() <= modulus_len);
-    out.insert(0, modulus_len - out.size(), '\0');
+    mpz_powm(result, base, exponent, modulus);
+
+    Bytes out(modulus_len, '\0');
+    // export as little-endian
+    mpz_export(out.data(), nullptr, -1, 1, 0, 0, result);
+    // and convert to big-endian
+    std::reverse(out.begin(), out.end());
+
+    mpz_clear(result);
+    mpz_clear(modulus);
+    mpz_clear(exponent);
+    mpz_clear(base);
 
     return out;
 }
@@ -291,7 +307,7 @@ uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
         // blake2_f_run will fail anyway
         return 0;
     }
-    return boost::endian::load_big_u32(input.data());
+    return endian::load_big_u32(input.data());
 }
 
 std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
@@ -308,7 +324,7 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
         state.f[0] = std::numeric_limits<uint64_t>::max();
     }
 
-    static_assert(boost::endian::order::native == boost::endian::order::little);
+    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN);
     static_assert(sizeof(state.h) == 8 * 8);
     std::memcpy(&state.h, input.data() + 4, 8 * 8);
 
@@ -317,11 +333,12 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
 
     std::memcpy(&state.t, input.data() + 196, 8 * 2);
 
-    uint32_t r{boost::endian::load_big_u32(input.data())};
+    uint32_t r{endian::load_big_u32(input.data())};
     blake2b_compress(&state, block, r);
 
     Bytes out(8 * 8, '\0');
     std::memcpy(&out[0], &state.h[0], 8 * 8);
     return out;
 }
+
 }  // namespace silkworm::precompiled

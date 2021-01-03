@@ -34,14 +34,15 @@ TEST_CASE("Account RLP") {
 
     Account decoded;
     ByteView view{encoded};
-    rlp::decode<Account>(view, decoded);
+    REQUIRE(rlp::decode<Account>(view, decoded) == rlp::DecodingError::kOk);
     CHECK(decoded == account);
 }
 
 TEST_CASE("Decode account from storage") {
-    Bytes encoded{from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
+    Bytes encoded{*from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
 
-    Account decoded{decode_account_from_storage(encoded)};
+    auto [decoded, err]{decode_account_from_storage(encoded)};
+    REQUIRE(err == rlp::DecodingError::kOk);
 
     CHECK(decoded.nonce == 2);
     CHECK(decoded.balance == 1000);
@@ -52,4 +53,5 @@ TEST_CASE("Decode account from storage") {
     CHECK(decoded.encoding_length_for_storage() == encoded.length());
     CHECK(decoded.encode_for_storage(/*omit_code_hash=*/false) == encoded);
 }
+
 }  // namespace silkworm

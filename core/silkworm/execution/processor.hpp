@@ -20,9 +20,11 @@
 #include <stdint.h>
 
 #include <silkworm/execution/evm.hpp>
+#include <silkworm/execution/execution.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
 #include <silkworm/types/transaction.hpp>
+#include <utility>
 #include <vector>
 
 namespace silkworm {
@@ -34,21 +36,25 @@ class ExecutionProcessor {
 
     ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config = kMainnetConfig);
 
-    // precondition: txn.from must be recovered
-    Receipt execute_transaction(const Transaction& txn);
+    // precondition: txn.from must be recovered, otherwise kMissingSender will be returned
+    ValidationError validate_transaction(const Transaction& txn) const noexcept;
+
+    // precondition: transaction must be valid
+    Receipt execute_transaction(const Transaction& txn) noexcept;
 
     /// Execute the block, but do not write to the DB yet
-    std::vector<Receipt> execute_block();
+    std::pair<std::vector<Receipt>, ValidationError> execute_block() noexcept;
 
-    uint64_t cumulative_gas_used() const { return cumulative_gas_used_; }
+    uint64_t cumulative_gas_used() const noexcept { return cumulative_gas_used_; }
 
-    EVM& evm() { return evm_; }
+    EVM& evm() noexcept { return evm_; }
+    const EVM& evm() const noexcept { return evm_; }
 
   private:
-    uint64_t available_gas() const;
-    uint64_t refund_gas(const Transaction& txn, uint64_t gas_left);
+    uint64_t available_gas() const noexcept;
+    uint64_t refund_gas(const Transaction& txn, uint64_t gas_left) noexcept;
 
-    void apply_rewards();
+    void apply_rewards() noexcept;
 
     uint64_t cumulative_gas_used_{0};
     EVM evm_;
@@ -56,7 +62,7 @@ class ExecutionProcessor {
 
 // Returns the intrinsic gas of a transaction.
 // Refer to g0 in Section 6.2 "Execution" of the Yellow Paper.
-intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul);
+intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept;
 
 }  // namespace silkworm
 

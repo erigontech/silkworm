@@ -24,8 +24,9 @@
 namespace silkworm {
 
 std::shared_ptr<evmone::code_analysis> AnalysisCache::get(const evmc::bytes32& key, evmc_revision revision) noexcept {
-    if (revision_ == revision && cache_.exists(key)) {
-        return cache_.get(key);
+    if (revision_ == revision) {
+        const auto* ptr{cache_.get(key)};
+        return ptr ? *ptr : nullptr;
     } else {
         return nullptr;
     }

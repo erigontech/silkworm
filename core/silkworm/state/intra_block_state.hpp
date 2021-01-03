@@ -77,7 +77,7 @@ class IntraBlockState {
 
     ByteView get_code(const evmc::address& address) const noexcept;
     evmc::bytes32 get_code_hash(const evmc::address& address) const noexcept;
-    void set_code(const evmc::address& address, ByteView code) noexcept;
+    void set_code(const evmc::address& address, Bytes code) noexcept;
 
     evmc::bytes32 get_current_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept;
 

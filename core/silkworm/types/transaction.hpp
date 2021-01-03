@@ -48,7 +48,7 @@ namespace rlp {
     void encode(Bytes& to, const Transaction& txn, bool for_signing, std::optional<uint64_t> eip155_chain_id);
 
     template <>
-    void decode(ByteView& from, Transaction& to);
+    [[nodiscard]] DecodingError decode(ByteView& from, Transaction& to) noexcept;
 }  // namespace rlp
 }  // namespace silkworm
 

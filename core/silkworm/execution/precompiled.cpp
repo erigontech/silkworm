@@ -175,7 +175,6 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
 
     mpz_t base;
     mpz_init(base);
-    auto clear_base{gsl::finally([base]() mutable { mpz_clear(base); })};
     if (base_len) {
         mpz_import(base, base_len, 1, 1, 0, 0, input.data());
         input.remove_prefix(base_len);
@@ -183,7 +182,6 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
 
     mpz_t exponent;
     mpz_init(exponent);
-    auto clear_exponent{gsl::finally([exponent]() mutable { mpz_clear(exponent); })};
     if (exponent_len) {
         mpz_import(exponent, exponent_len, 1, 1, 0, 0, input.data());
         input.remove_prefix(exponent_len);
@@ -191,18 +189,21 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
 
     mpz_t modulus;
     mpz_init(modulus);
-    auto clear_modulus{gsl::finally([modulus]() mutable { mpz_clear(modulus); })};
     if (modulus_len) {
         mpz_import(modulus, modulus_len, 1, 1, 0, 0, input.data());
     }
 
     if (mpz_sgn(modulus) == 0) {
+        mpz_clear(modulus);
+        mpz_clear(exponent);
+        mpz_clear(base);
+
         return Bytes(modulus_len, '\0');
     }
 
     mpz_t result;
     mpz_init(result);
-    auto clear_result{gsl::finally([result]() mutable { mpz_clear(result); })};
+    
 
     mpz_powm(result, base, exponent, modulus);
 
@@ -211,6 +212,11 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
     mpz_export(out.data(), nullptr, -1, 1, 0, 0, result);
     // and convert to big-endian
     std::reverse(out.begin(), out.end());
+
+    mpz_clear(result);
+    mpz_clear(modulus);
+    mpz_clear(exponent);
+    mpz_clear(base);
 
     return out;
 }

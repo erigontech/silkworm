@@ -14,6 +14,5 @@
    limitations under the License.
 ]]
 
-# No Hunter package customization currently.
 hunter_config(Boost VERSION 1.72.0-p1)    # <-- Highest available on hunter
 hunter_config(abseil VERSION 20200923.2)  # <-- Required for C++20

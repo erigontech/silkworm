@@ -319,7 +319,7 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
         state.f[0] = std::numeric_limits<uint64_t>::max();
     }
 
-    // TODO[C++20] static_assert(std::endian::order::native == std::endian::order::little);
+    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN);
     static_assert(sizeof(state.h) == 8 * 8);
     std::memcpy(&state.h, input.data() + 4, 8 * 8);
 

@@ -21,6 +21,7 @@
 #include <cstring>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 #include <libff/common/profiling.hpp>
+#include <silkworm/common/endian.hpp>
 
 namespace silkworm::snark {
 
@@ -129,7 +130,7 @@ Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept {
     auto y{p.Y.as_bigint()};
 
     // Here we convert little-endian data to big-endian output
-    // TODO[C++20] static_assert(std::endian::order::native == std::endian::order::little);
+    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN);
     static_assert(sizeof(x.data) == 32);
 
     std::memcpy(&out[0], y.data, 32);
@@ -138,4 +139,5 @@ Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept {
     std::reverse(out.begin(), out.end());
     return out;
 }
+
 }  // namespace silkworm::snark

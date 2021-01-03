@@ -17,6 +17,7 @@
 #include "decode.hpp"
 
 #include <cassert>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <tuple>
 
@@ -43,8 +44,7 @@ std::pair<uint64_t, DecodingError> read_uint64(ByteView be, bool allow_leading_z
     auto* p{reinterpret_cast<uint8_t*>(&buf)};
     std::memcpy(p + (kMaxBytes - be.length()), &be[0], be.length());
 
-    // We assume a little-endian architecture like amd64
-    // TODO[C++20] static_assert(std::endian::order::native == std::endian::order::little);
+    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN, "We assume a little-endian architecture like amd64");
     buf = intx::bswap(buf);
     return {buf, DecodingError::kOk};
 }
@@ -70,7 +70,7 @@ std::pair<intx::uint256, DecodingError> read_uint256(ByteView be, bool allow_lea
     uint8_t* p{as_bytes(buf)};
     std::memcpy(p + (kMaxBytes - be.length()), &be[0], be.length());
 
-    // TODO[C++20] static_assert(std::endian::order::native == std::endian::order::little);
+    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN);
     buf = intx::bswap(buf);
     return {buf, DecodingError::kOk};
 }

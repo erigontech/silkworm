@@ -14,69 +14,72 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_ENDIAN_H_
-#define SILKWORM_COMMON_ENDIAN_H_
+#ifndef SILKWORM_COMMON_ENDIAN_HPP_
+#define SILKWORM_COMMON_ENDIAN_HPP_
 
 #include <stdint.h>
+
 #include <cstring>
 
 #ifdef _WIN32
+
 #include <intrin.h>
-#define bswap32 _byteswap_ulong
-#define bswap64 _byteswap_uint64
+#define SILKWORM_BSWAP32 _byteswap_ulong
+#define SILKWORM_BSWAP64 _byteswap_uint64
 
 // On Windows assume little endian
-#define __LITTLE_ENDIAN 1234
-#define __BIG_ENDIAN 4321
-#define __BYTE_ORDER __LITTLE_ENDIAN
+#define SILKWORM_LITTLE_ENDIAN 1234
+#define SILKWORM_BIG_ENDIAN 4321
+#define SILKWORM_BYTE_ORDER SILKWORM_LITTLE_ENDIAN
 
 #elif __APPLE__
 
 #include <machine/endian.h>
-#define bswap32 __builtin_bswap32
-#define bswap64 __builtin_bswap64
+#define SILKWORM_BSWAP32 __builtin_bswap32
+#define SILKWORM_BSWAP64 __builtin_bswap64
+
+#define SILKWORM_LITTLE_ENDIAN LITTLE_ENDIAN
+#define SILKWORM_BIG_ENDIAN BIG_ENDIAN
+#define SILKWORM_BYTE_ORDER BYTE_ORDER
 
 #else
 
 #include <endian.h>
+#define SILKWORM_BSWAP32 __builtin_bswap32
+#define SILKWORM_BSWAP64 __builtin_bswap64
 
-#define bswap32 __builtin_bswap32
-#define bswap64 __builtin_bswap64
+#define SILKWORM_LITTLE_ENDIAN __LITTLE_ENDIAN
+#define SILKWORM_BIG_ENDIAN __BIG_ENDIAN
+#define SILKWORM_BYTE_ORDER __BYTE_ORDER
 
 #endif
 
 namespace silkworm::endian {
 
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-
-uint32_t load_big_u32(uint8_t const* bytes) noexcept {
+inline uint32_t load_big_u32(uint8_t const* bytes) noexcept {
     uint32_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return bswap32(x);
-}
-
-uint64_t load_big_u64(uint8_t const* bytes) noexcept {
-    uint64_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-    return bswap64(x);
-}
-
+#if SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
+    return x;
+#elif SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
+    return SILKWORM_BSWAP32(x);
 #else
-
-uint32_t load_big_u32(uint8_t const* bytes) noexcept {
-    uint32_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-    return x;
+#error byte order not supported
+#endif
 }
 
-uint64_t load_big_u64(uint8_t const* bytes) noexcept {
+inline uint64_t load_big_u64(uint8_t const* bytes) noexcept {
     uint64_t x;
     std::memcpy(&x, bytes, sizeof(x));
+#if SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
     return x;
-}
-
+#elif SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
+    return SILKWORM_BSWAP64(x);
+#else
+#error byte order not supported
 #endif
+}
 
 }  // namespace silkworm::endian
 
-#endif // !SILKWORM_COMMON_ENDIAN_H_
+#endif  // SILKWORM_COMMON_ENDIAN_HPP_

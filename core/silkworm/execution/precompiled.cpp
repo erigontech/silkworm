@@ -203,7 +203,6 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
 
     mpz_t result;
     mpz_init(result);
-    
 
     mpz_powm(result, base, exponent, modulus);
 

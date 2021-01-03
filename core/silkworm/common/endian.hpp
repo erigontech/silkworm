@@ -21,9 +21,26 @@
 
 #include <cstring>
 
+/*
+Facilities to deal with byte order/endianness
+See https://en.wikipedia.org/wiki/Endianness
+
+The following macros are defined:
+SILKWORM_LITTLE_ENDIAN
+SILKWORM_BIG_ENDIAN
+SILKWORM_BYTE_ORDER
+
+SILKWORM_BYTE_ORDER is equal to SILKWORM_BIG_ENDIAN for big-endian architectures
+and to SILKWORM_LITTLE_ENDIAN for little-endian ones (most current architectures).
+
+In addition, SILKWORM_BSWAP32 & SILKWORM_BSWAP64 macros are defined
+as compiler intrinsics to swap bytes in 32-bit and 64-bit integers respectively.
+*/
+
 #ifdef _WIN32
 
 #include <intrin.h>
+
 #define SILKWORM_BSWAP32 _byteswap_ulong
 #define SILKWORM_BSWAP64 _byteswap_uint64
 
@@ -35,6 +52,7 @@
 #elif __APPLE__
 
 #include <machine/endian.h>
+
 #define SILKWORM_BSWAP32 __builtin_bswap32
 #define SILKWORM_BSWAP64 __builtin_bswap64
 
@@ -45,6 +63,7 @@
 #else
 
 #include <endian.h>
+
 #define SILKWORM_BSWAP32 __builtin_bswap32
 #define SILKWORM_BSWAP64 __builtin_bswap64
 
@@ -56,6 +75,7 @@
 
 namespace silkworm::endian {
 
+// Similar to boost::endian::load_big_u32
 inline uint32_t load_big_u32(uint8_t const* bytes) noexcept {
     uint32_t x;
     std::memcpy(&x, bytes, sizeof(x));
@@ -68,6 +88,7 @@ inline uint32_t load_big_u32(uint8_t const* bytes) noexcept {
 #endif
 }
 
+// Similar to boost::endian::load_big_u64
 inline uint64_t load_big_u64(uint8_t const* bytes) noexcept {
     uint64_t x;
     std::memcpy(&x, bytes, sizeof(x));

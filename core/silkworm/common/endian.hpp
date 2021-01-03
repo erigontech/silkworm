@@ -49,28 +49,18 @@ as compiler intrinsics to swap bytes in 32-bit and 64-bit integers respectively.
 #define SILKWORM_BIG_ENDIAN 4321
 #define SILKWORM_BYTE_ORDER SILKWORM_LITTLE_ENDIAN
 
-#elif __APPLE__
-
-#include <machine/endian.h>
+#elif defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && defined(__ORDER_BIG_ENDIAN__)
 
 #define SILKWORM_BSWAP32 __builtin_bswap32
 #define SILKWORM_BSWAP64 __builtin_bswap64
 
-#define SILKWORM_LITTLE_ENDIAN LITTLE_ENDIAN
-#define SILKWORM_BIG_ENDIAN BIG_ENDIAN
-#define SILKWORM_BYTE_ORDER BYTE_ORDER
+// https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+#define SILKWORM_LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
+#define SILKWORM_BIG_ENDIAN __ORDER_BIG_ENDIAN__
+#define SILKWORM_BYTE_ORDER __BYTE_ORDER__
 
 #else
-
-#include <endian.h>
-
-#define SILKWORM_BSWAP32 __builtin_bswap32
-#define SILKWORM_BSWAP64 __builtin_bswap64
-
-#define SILKWORM_LITTLE_ENDIAN __LITTLE_ENDIAN
-#define SILKWORM_BIG_ENDIAN __BIG_ENDIAN
-#define SILKWORM_BYTE_ORDER __BYTE_ORDER
-
+#error "endianness detection failure"
 #endif
 
 namespace silkworm::endian {
@@ -84,7 +74,7 @@ inline uint32_t load_big_u32(uint8_t const* bytes) noexcept {
 #elif SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
     return SILKWORM_BSWAP32(x);
 #else
-#error byte order not supported
+#error "byte order not supported"
 #endif
 }
 
@@ -97,7 +87,7 @@ inline uint64_t load_big_u64(uint8_t const* bytes) noexcept {
 #elif SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
     return SILKWORM_BSWAP64(x);
 #else
-#error byte order not supported
+#error "byte order not supported"
 #endif
 }
 

@@ -14,16 +14,19 @@
    limitations under the License.
 */
 
-#include <CLI/CLI.hpp>
 #include <atomic>
+#include <string>
+#include <csignal>
+#include <iostream>
+#include <queue>
+#include <thread>
+
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/signals2.hpp>
-#include <csignal>
+#include <CLI/CLI.hpp>
 #include <ethash/keccak.hpp>
-#include <iostream>
-#include <queue>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/worker.hpp>
@@ -32,8 +35,6 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
-#include <string>
-#include <thread>
 
 namespace fs = boost::filesystem;
 using namespace silkworm;
@@ -86,6 +87,8 @@ class Recoverer : public silkworm::Worker {
     // Returns whether or not this worker is busy
     bool is_busy() { return busy_.load(); }
 
+    uint32_t get_id() const { return id_; };
+
     // Pulls results from worker
     std::vector<std::pair<uint64_t, MDB_val>>& get_results(void) { return myresults_; };
 
@@ -93,99 +96,97 @@ class Recoverer : public silkworm::Worker {
     boost::signals2::signal<void(uint32_t sender_id, uint32_t batch_id, bool has_error)> signal_completed;
 
    private:
-    uint32_t id_;                                            // Current worker identifier
-    bool debug_;                                             // Whether or not display debug info
-    std::atomic_bool busy_{false};                           // Whether the thread is busy processing
-    mutable std::mutex mywork_;                              // Work mutex
-    std::vector<package> packages_{};                        // Work packages to process
-    uint32_t current_batch_id_{0};                           // Identifier of the batch being processed
-    size_t mysize_;                                          // Size of the recovery data
-    uint8_t* mydata_{nullptr};                               // Pointer to data where rsults are stored
-    std::vector<std::pair<uint64_t, MDB_val>> myresults_{};  // Results per block pointing to data area
+     const uint32_t id_;                                      // Current worker identifier
+     bool debug_;                                             // Whether or not display debug info
+     std::atomic_bool busy_{false};                           // Whether the thread is busy processing
+     mutable std::mutex mywork_;                              // Work mutex
+     std::vector<package> packages_{};                        // Work packages to process
+     uint32_t current_batch_id_{0};                           // Identifier of the batch being processed
+     size_t mysize_;                                          // Size of the recovery data
+     uint8_t* mydata_{nullptr};                               // Pointer to data where rsults are stored
+     std::vector<std::pair<uint64_t, MDB_val>> myresults_{};  // Results per block pointing to data area
 
-    // Basic work loop (overrides Worker::work())
-    void work() final {
+     // Basic work loop (overrides Worker::work())
+     void work() final {
+         bool recovery_error_{false};
 
-        bool recovery_error_{false};
+         // Try allocate enough memory to store
+         // results output
+         mydata_ = static_cast<uint8_t*>(std::calloc(1, mysize_));
+         if (!mydata_) {
+             throw std::runtime_error("Unable to allocate memory");
+         }
 
-        // Try allocate enough memory to store
-        // results output
-        mydata_ = static_cast<uint8_t*>(std::calloc(1, mysize_));
-        if (!mydata_) {
-            throw std::runtime_error("Unable to allocate memory");
-        }
+         while (!should_stop()) {
+             bool expectedKick{true};
+             if (!kicked_.compare_exchange_strong(expectedKick, false, std::memory_order_relaxed)) {
+                 std::unique_lock l(xwork_);
+                 kicked_signal_.wait_for(l, std::chrono::seconds(1));
+                 continue;
+             }
 
-        while (!should_stop()) {
-            bool expectedKick{true};
-            if (!kicked_.compare_exchange_strong(expectedKick, false, std::memory_order_relaxed)) {
-                std::unique_lock l(xwork_);
-                kicked_signal_.wait_for(l, std::chrono::seconds(1));
-                continue;
-            }
+             if (debug_) {
+                 SILKWORM_LOG(LogLevels::LogDebug)
+                     << "Worker #" << id_ << " started batch #" << current_batch_id_ << std::endl;
+             };
 
-            if (debug_) {
-                SILKWORM_LOG(LogLevels::LogDebug)
-                    << "Worker #" << id_ << " started batch #" << current_batch_id_ << std::endl;
-            };
+             busy_.store(true);
+             {
+                 // Lock mutex so no other jobs may be set
+                 std::unique_lock l{mywork_};
+                 myresults_.clear();
 
-            busy_.store(true);
-            {
-                // Lock mutex so no other jobs may be set
-                std::unique_lock l{mywork_};
-                myresults_.clear();
+                 uint64_t current_block{packages_.at(0).block_num};
+                 size_t block_result_offset{0};
+                 size_t block_result_length{0};
 
-                uint64_t current_block{packages_.at(0).block_num};
-                size_t block_result_offset{0};
-                size_t block_result_length{0};
+                 // Loop
+                 for (auto const& package : packages_) {
+                     // On block switching store the results
+                     if (current_block != package.block_num) {
+                         MDB_val result{block_result_length, (void*)&mydata_[block_result_offset]};
+                         myresults_.push_back({current_block, result});
+                         block_result_offset += block_result_length;
+                         block_result_length = 0;
+                         current_block = package.block_num;
+                         if (should_stop_) break;
+                     }
 
-                // Loop
-                for (auto const& package : packages_) {
+                     std::optional<Bytes> recovered{ecdsa::recover(full_view(package.hash.bytes),
+                                                                   full_view(package.signature), package.recovery_id)};
+                     if (recovered.has_value() && (int)recovered->at(0) == 4) {
+                         auto keyHash{ethash::keccak256(recovered->data() + 1, recovered->length() - 1)};
+                         std::memcpy(&mydata_[block_result_offset + block_result_length],
+                                     &keyHash.bytes[sizeof(keyHash) - kAddressLength], kAddressLength);
+                         block_result_length += kAddressLength;
+                     } else {
+                         SILKWORM_LOG(LogLevels::LogWarn)
+                             << "Recoverer #" << id_ << " "
+                             << "Public key recovery failed at block #" << package.block_num << std::endl;
+                         recovery_error_ = true;
+                         break;  // No need to process other txns
+                     }
+                 }
 
-                    // On block switching store the results
-                    if (current_block != package.block_num) {
-                        MDB_val result{block_result_length, (void*)&mydata_[block_result_offset]};
-                        myresults_.push_back({current_block, result});
-                        block_result_offset += block_result_length;
-                        block_result_length = 0;
-                        current_block = package.block_num;
-                        if (should_stop_) break;
-                    }
+                 // Store results for last block
+                 if (block_result_length && !recovery_error_) {
+                     MDB_val result{block_result_length, (void*)&mydata_[block_result_offset]};
+                     myresults_.push_back({current_block, result});
+                 }
 
-                    std::optional<Bytes> recovered{ecdsa::recover(full_view(package.hash.bytes),
-                                                                  full_view(package.signature), package.recovery_id)};
-                    if (recovered.has_value() && (int)recovered->at(0) == 4) {
-                        auto keyHash{ethash::keccak256(recovered->data() + 1, recovered->length() - 1)};
-                        std::memcpy(&mydata_[block_result_offset + block_result_length],
-                                    &keyHash.bytes[sizeof(keyHash) - kAddressLength], kAddressLength);
-                        block_result_length += kAddressLength;
-                    } else {
-                        SILKWORM_LOG(LogLevels::LogWarn)
-                            << "Recoverer #" << id_ << " "
-                            << "Public key recovery failed at block #" << package.block_num << std::endl;
-                        recovery_error_ = true;
-                        break;  // No need to process other txns
-                    }
-                }
+                 // Raise finished event
+                 signal_completed(id_, current_batch_id_, recovery_error_);
+                 if (debug_) {
+                     SILKWORM_LOG(LogLevels::LogDebug)
+                         << "Worker #" << id_ << " completed batch #" << current_batch_id_ << std::endl;
+                 };
+                 packages_.clear();  // Clear here. Next set_work will swap the cleaned container to master thread
+             }
 
-                // Store results for last block
-                if (block_result_length && !recovery_error_) {
-                    MDB_val result{block_result_length, (void*)&mydata_[block_result_offset]};
-                    myresults_.push_back({current_block, result});
-                }
+             busy_.store(false);
+         }
 
-                // Raise finished event
-                signal_completed(id_, current_batch_id_, recovery_error_);
-                if (debug_) {
-                    SILKWORM_LOG(LogLevels::LogDebug)
-                        << "Worker #" << id_ << " completed batch #" << current_batch_id_ << std::endl;
-                };
-                packages_.clear();  // Clear here. Next set_work will swap the cleaned container to master thread
-            }
-
-            busy_.store(false);
-        }
-
-        std::free(mydata_);
+         std::free(mydata_);
     };
 };
 
@@ -223,23 +224,22 @@ void process_txs_for_signing(ChainConfig& config, uint64_t block_num, std::vecto
 }
 
 bool start_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
-    for (size_t r = 0; r < workers.size(); r++) {
-        SILKWORM_LOG(LogLevels::LogInfo) << "Starting worker thread #" << r << std::endl;
-        workers.at(r)->start();
+    for (const auto& worker : workers) {
+        SILKWORM_LOG(LogLevels::LogInfo) << "Starting worker thread #" << worker->get_id() << std::endl;
+        worker->start();
         // Wait for thread to init properly
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        if (workers.at(r)->get_state() != Worker::WorkerState::kStarted) {
+        if (worker->get_state() != Worker::WorkerState::kStarted) {
             return false;
         }
     }
-    return true;
 }
 
 void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
-    for (size_t r = 0; r < workers.size(); r++) {
-        if (workers.at(r)->get_state() == Worker::WorkerState::kStarted) {
-            SILKWORM_LOG(LogLevels::LogInfo) << "Stopping worker thread #" << r << std::endl;
-            workers.at(r)->stop(wait);
+    for (const auto& worker : workers) {
+        if (worker->get_state() == Worker::WorkerState::kStarted) {
+            SILKWORM_LOG(LogLevels::LogInfo) << "Stopping worker thread #" << worker->get_id() << std::endl;
+            worker->stop(wait);
         }
     }
 }

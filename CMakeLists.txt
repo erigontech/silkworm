@@ -65,16 +65,16 @@ if(NOT SILKWORM_CORE_ONLY)
   include(cmake/Hunter/extra_packages.cmake)
 endif()
 
-# Profing and coverage options
-if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    # coverage
-    add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
-    add_link_options(-fprofile-instr-generate -fcoverage-mapping)
-  else()
-    # profiling
-    add_compile_options(-gline-tables-only)
-  endif()
+option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports" OFF)
+
+if(SILKWORM_CLANG_COVERAGE)
+  add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+  add_link_options(-fprofile-instr-generate -fcoverage-mapping)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$" AND CMAKE_BUILD_TYPE STREQUAL "Release")
+  # useful for performance profiling
+  add_compile_options(-gline-tables-only)
 endif()
 
 # GMP

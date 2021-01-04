@@ -24,12 +24,10 @@
 
 namespace silkworm {
 
-ByteView left_pad(ByteView view, size_t min_size) {
+ByteView left_pad(ByteView view, size_t min_size, Bytes& padded) {
     if (view.size() >= min_size) {
         return view;
     }
-
-    thread_local Bytes padded;
 
     if (padded.size() < min_size) {
         padded.resize(min_size);
@@ -46,12 +44,10 @@ ByteView left_pad(ByteView view, size_t min_size) {
     return padded;
 }
 
-ByteView right_pad(ByteView view, size_t min_size) {
+ByteView right_pad(ByteView view, size_t min_size, Bytes& padded) {
     if (view.size() >= min_size) {
         return view;
     }
-
-    thread_local Bytes padded;
 
     if (padded.size() < view.size()) {
         padded.resize(view.size());

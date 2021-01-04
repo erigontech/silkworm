@@ -28,23 +28,23 @@
 
 namespace silkworm {
 
-// If a given view is shorter than min_size,
+// If a given string is shorter than min_size,
 // pads it to the left with 0s up to min_size.
-// Otherwise returns unmodified view.
+// Otherwise returns unmodified string.
 //
-// Might return a view of a thread-local buffer,
+// Might return a view of the supplied buffer,
 // which must be consumed prior to the next invocation.
 // However, the same view may be padded repeatedly.
-ByteView left_pad(ByteView view, size_t min_size);
+ByteView left_pad(ByteView view, size_t min_size, Bytes& buffer);
 
-// If a given view is shorter than min_size,
+// If a given string is shorter than min_size,
 // pads it to the right with 0s up to min_size.
-// Otherwise returns unmodified view.
+// Otherwise returns unmodified string.
 //
-// Might return a view of a thread-local buffer,
+// Might return a view of the supplied buffer,
 // which must be consumed prior to the next invocation.
 // However, the same view may be padded repeatedly.
-ByteView right_pad(ByteView view, size_t min_size);
+ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer);
 
 // Converts bytes to evmc::address; input is cropped if necessary.
 // Short inputs are left-padded with 0s.

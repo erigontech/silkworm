@@ -27,9 +27,18 @@
 
 namespace silkworm {
 
-class ValidationError : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
+// Classification of invalid transcations and blocks.
+// See Yellow Paper [YP], Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
+// 6.2 "Execution", and 11 "Block Finalisation".
+enum class ValidationError {
+    kOk = 0,
+    kMissingSender,         // S(T) = ∅,           see [YP] Eq (58)
+    kInvalidNonce,          // Tn ≠ σ[S(T)]n,      see [YP] Eq (58)
+    kIntrinsicGas,          // g0 > Tg,            see [YP] Eq (58)
+    kInsufficientFunds,     // v0 > σ[S(T)]b,      see [YP] Eq (58)
+    kBlockGasLimitReached,  // Tg > BHl - l(BR)u,  see [YP] Eq (58)
+    kBlockGasMismatch,      // BHg  ≠ l(BR)u,      see [YP] Eq (160)
+    kReceiptRootMismatch,   // wrong receipt root, see [YP] Eq (31)
 };
 
 /** @brief Executes a given block and writes resulting changes into the database.
@@ -39,8 +48,10 @@ class ValidationError : public std::runtime_error {
  *
  * For better performance use AnalysisCache & ExecutionStatePool.
  */
-std::vector<Receipt> execute_block(const Block& block, StateBuffer& buffer, const ChainConfig& config = kMainnetConfig,
-                                   AnalysisCache* analysis_cache = nullptr, ExecutionStatePool* state_pool = nullptr);
+std::pair<std::vector<Receipt>, ValidationError> execute_block(const Block& block, StateBuffer& buffer,
+                                                               const ChainConfig& config = kMainnetConfig,
+                                                               AnalysisCache* analysis_cache = nullptr,
+                                                               ExecutionStatePool* state_pool = nullptr) noexcept;
 
 }  // namespace silkworm
 

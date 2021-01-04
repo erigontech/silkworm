@@ -143,17 +143,25 @@ namespace detail {
         return to;
     }
 
+    static void check_rlp_err(rlp::DecodingError err) {
+        if (err != rlp::DecodingError::kOk) {
+            throw err;
+        }
+    }
+
     BlockBodyForStorage decode_stored_block_body(ByteView& from) {
-        rlp::Header header{rlp::decode_header(from)};
+        auto [header, err]{rlp::decode_header(from)};
+        check_rlp_err(err);
         if (!header.list) {
-            throw DecodingError("unexpected string");
+            throw rlp::DecodingError::kUnexpectedString;
         }
 
         BlockBodyForStorage to;
-        rlp::decode(from, to.base_txn_id);
-        rlp::decode(from, to.txn_count);
-        rlp::decode_vector(from, to.ommers);
+        check_rlp_err(rlp::decode(from, to.base_txn_id));
+        check_rlp_err(rlp::decode(from, to.txn_count));
+        check_rlp_err(rlp::decode_vector(from, to.ommers));
         return to;
     }
+
 }  // namespace detail
 }  // namespace silkworm::db

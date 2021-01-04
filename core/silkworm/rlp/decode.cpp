@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,69 +16,71 @@
 
 #include "decode.hpp"
 
-#include <boost/endian/conversion.hpp>
 #include <cassert>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
+#include <tuple>
 
 namespace silkworm::rlp {
 
-uint64_t read_uint64(ByteView be, bool allow_leading_zeros) {
+std::pair<uint64_t, DecodingError> read_uint64(ByteView be, bool allow_leading_zeros) noexcept {
     static constexpr size_t kMaxBytes{8};
     static_assert(sizeof(uint64_t) == kMaxBytes);
 
+    uint64_t buf{0};
+
     if (be.length() > kMaxBytes) {
-        throw DecodingError("uint64 overflow");
+        return {buf, DecodingError::kOverflow};
     }
 
     if (be.empty()) {
-        return 0;
+        return {buf, DecodingError::kOk};
     }
 
     if (be[0] == 0 && !allow_leading_zeros) {
-        throw DecodingError("leading zero(s)");
+        return {buf, DecodingError::kLeadingZero};
     }
-
-    uint64_t buf{0};
 
     auto* p{reinterpret_cast<uint8_t*>(&buf)};
     std::memcpy(p + (kMaxBytes - be.length()), &be[0], be.length());
 
-    static_assert(boost::endian::order::native == boost::endian::order::little,
-                  "We assume a little-endian architecture like amd64");
-    return intx::bswap(buf);
+    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN, "We assume a little-endian architecture like amd64");
+    buf = intx::bswap(buf);
+    return {buf, DecodingError::kOk};
 }
 
-intx::uint256 read_uint256(ByteView be, bool allow_leading_zeros) {
+std::pair<intx::uint256, DecodingError> read_uint256(ByteView be, bool allow_leading_zeros) noexcept {
     static constexpr size_t kMaxBytes{32};
     static_assert(sizeof(intx::uint256) == kMaxBytes);
 
+    intx::uint256 buf{0};
+
     if (be.length() > kMaxBytes) {
-        throw DecodingError("uint256 overflow");
+        return {buf, DecodingError::kOverflow};
     }
 
     if (be.empty()) {
-        return 0;
+        return {buf, DecodingError::kOk};
     }
 
     if (be[0] == 0 && !allow_leading_zeros) {
-        throw DecodingError("leading zero(s)");
+        return {buf, DecodingError::kLeadingZero};
     }
-
-    intx::uint256 buf{0};
 
     uint8_t* p{as_bytes(buf)};
     std::memcpy(p + (kMaxBytes - be.length()), &be[0], be.length());
 
-    static_assert(boost::endian::order::native == boost::endian::order::little);
-    return intx::bswap(buf);
+    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN);
+    buf = intx::bswap(buf);
+    return {buf, DecodingError::kOk};
 }
 
-Header decode_header(ByteView& from) {
+std::pair<Header, DecodingError> decode_header(ByteView& from) noexcept {
+    Header h;
     if (from.empty()) {
-        throw DecodingError("input too short");
+        return {h, DecodingError::kInputTooShort};
     }
 
-    Header h{};
     uint8_t b{from[0]};
     if (b < 0x80) {
         h.payload_length = 1;
@@ -87,22 +89,26 @@ Header decode_header(ByteView& from) {
         h.payload_length = b - 0x80;
         if (h.payload_length == 1) {
             if (from.empty()) {
-                throw DecodingError("input too short");
+                return {h, DecodingError::kInputTooShort};
             }
             if (from[0] < 0x80) {
-                throw DecodingError("non-canonical single byte");
+                return {h, DecodingError::kNonCanonicalSingleByte};
             }
         }
     } else if (b < 0xC0) {
         from.remove_prefix(1);
         size_t len_of_len{b - 0xB7u};
         if (from.length() < len_of_len) {
-            throw DecodingError("input too short");
+            return {h, DecodingError::kInputTooShort};
         }
-        h.payload_length = read_uint64(from.substr(0, len_of_len));
+        auto [len, err]{read_uint64(from.substr(0, len_of_len))};
+        if (err != DecodingError::kOk) {
+            return {h, err};
+        }
+        h.payload_length = len;
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
-            throw DecodingError("non-canonical size");
+            return {h, DecodingError::kNonCanonicalSize};
         }
     } else if (b < 0xF8) {
         from.remove_prefix(1);
@@ -113,49 +119,74 @@ Header decode_header(ByteView& from) {
         h.list = true;
         size_t len_of_len{b - 0xF7u};
         if (from.length() < len_of_len) {
-            throw DecodingError("input too short");
+            return {h, DecodingError::kInputTooShort};
         }
-        h.payload_length = read_uint64(from.substr(0, len_of_len));
+        auto [len, err]{read_uint64(from.substr(0, len_of_len))};
+        if (err != DecodingError::kOk) {
+            return {h, err};
+        }
+        h.payload_length = len;
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
-            throw DecodingError("non-canonical size");
+            return {h, DecodingError::kNonCanonicalSize};
         }
     }
 
     if (from.length() < h.payload_length) {
-        throw DecodingError("input too short");
+        return {h, DecodingError::kInputTooShort};
     }
 
-    return h;
+    return {h, DecodingError::kOk};
 }
 
 template <>
-void decode(ByteView& from, Bytes& to) {
-    Header h = decode_header(from);
+[[nodiscard]] DecodingError decode(ByteView& from, Bytes& to) noexcept {
+    auto [h, err]{decode_header(from)};
+    if (err != DecodingError::kOk) {
+        return err;
+    }
     if (h.list) {
-        throw DecodingError("unexpected list");
+        return DecodingError::kUnexpectedList;
     }
     to = from.substr(0, h.payload_length);
     from.remove_prefix(h.payload_length);
+    return DecodingError::kOk;
 }
 
 template <>
-void decode(ByteView& from, uint64_t& to) {
-    Header h{decode_header(from)};
-    if (h.list) {
-        throw DecodingError("unexpected list");
+[[nodiscard]] DecodingError decode(ByteView& from, uint64_t& to) noexcept {
+    auto [h, err1]{decode_header(from)};
+    if (err1 != DecodingError::kOk) {
+        return err1;
     }
-    to = read_uint64(from.substr(0, h.payload_length));
+    if (h.list) {
+        return DecodingError::kUnexpectedList;
+    }
+    DecodingError err2;
+    std::tie(to, err2) = read_uint64(from.substr(0, h.payload_length));
+    if (err2 != DecodingError::kOk) {
+        return err2;
+    }
     from.remove_prefix(h.payload_length);
+    return DecodingError::kOk;
 }
 
 template <>
-void decode(ByteView& from, intx::uint256& to) {
-    Header h{decode_header(from)};
-    if (h.list) {
-        throw DecodingError("unexpected list");
+[[nodiscard]] DecodingError decode(ByteView& from, intx::uint256& to) noexcept {
+    auto [h, err1]{decode_header(from)};
+    if (err1 != DecodingError::kOk) {
+        return err1;
     }
-    to = read_uint256(from.substr(0, h.payload_length));
+    if (h.list) {
+        return DecodingError::kUnexpectedList;
+    }
+    DecodingError err2;
+    std::tie(to, err2) = read_uint256(from.substr(0, h.payload_length));
+    if (err2 != DecodingError::kOk) {
+        return err2;
+    }
     from.remove_prefix(h.payload_length);
+    return DecodingError::kOk;
 }
+
 }  // namespace silkworm::rlp

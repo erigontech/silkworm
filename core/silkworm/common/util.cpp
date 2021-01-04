@@ -109,7 +109,7 @@ std::string to_hex(ByteView bytes) {
     return out;
 }
 
-static unsigned decode_hex_digit(char ch) {
+static std::optional<unsigned> decode_hex_digit(char ch) noexcept {
     if (ch >= '0' && ch <= '9') {
         return ch - '0';
     } else if (ch >= 'a' && ch <= 'f') {
@@ -117,33 +117,38 @@ static unsigned decode_hex_digit(char ch) {
     } else if (ch >= 'A' && ch <= 'F') {
         return ch - 'A' + 10;
     }
-    throw std::out_of_range{"not a hex digit"};
+    return std::nullopt;
 }
 
-Bytes from_hex(std::string_view hex) {
+std::optional<Bytes> from_hex(std::string_view hex) noexcept {
     if (hex.length() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) {
         hex.remove_prefix(2);
     }
 
-    assert(hex.length() % 2 == 0);
+    if (hex.length() % 2 != 0) {
+        return std::nullopt;
+    }
 
     Bytes out{};
     out.reserve(hex.length() / 2);
 
     unsigned carry{0};
     for (size_t i{0}; i < hex.size(); ++i) {
-        unsigned v{decode_hex_digit(hex[i])};
+        std::optional<unsigned> v{decode_hex_digit(hex[i])};
+        if (!v) {
+            return std::nullopt;
+        }
         if (i % 2 == 0) {
-            carry = v << 4;
+            carry = *v << 4;
         } else {
-            out.push_back(static_cast<uint8_t>(carry | v));
+            out.push_back(static_cast<uint8_t>(carry | *v));
         }
     }
 
     return out;
 }
 
-std::optional<size_t> parse_size(const std::string& sizestr) {
+std::optional<uint64_t> parse_size(const std::string& sizestr) {
     if (sizestr.empty()) {
         return 0;
     }

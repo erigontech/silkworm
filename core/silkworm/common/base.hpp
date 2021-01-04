@@ -23,7 +23,6 @@
 #include <stdint.h>
 
 #include <evmc/evmc.hpp>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -32,12 +31,8 @@ namespace silkworm {
 using namespace evmc::literals;
 
 using Bytes = std::basic_string<uint8_t>;
-using ByteView = std::basic_string_view<uint8_t>;
 
-class DecodingError : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
-};
+using ByteView = std::basic_string_view<uint8_t>;
 
 constexpr size_t kAddressLength{20};
 
@@ -53,10 +48,10 @@ constexpr evmc::bytes32 kEmptyListHash{0x1dcc4de8dec75d7aab85b567b6ccd41ad312451
 constexpr evmc::bytes32 kEmptyRoot{0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32};
 
 // https://en.wikipedia.org/wiki/Binary_prefix
-constexpr size_t kKibi{1024};
-constexpr size_t kMebi{1024 * kKibi};
-constexpr size_t kGibi{1024 * kMebi};
-constexpr size_t kTebi{1024 * kGibi};
+constexpr uint64_t kKibi{1024};
+constexpr uint64_t kMebi{1024 * kKibi};
+constexpr uint64_t kGibi{1024 * kMebi};
+constexpr uint64_t kTebi{1024 * kGibi};
 
 constexpr uint64_t kGiga{1'000'000'000};   // = 10^9
 constexpr uint64_t kEther{kGiga * kGiga};  // = 10^18

@@ -79,30 +79,50 @@ namespace rlp {
     void encode(Bytes& to, const Transaction& txn) { encode(to, txn, /*for_signing=*/false, {}); }
 
     template <>
-    void decode(ByteView& from, Transaction& to) {
-        Header h{decode_header(from)};
+    [[nodiscard]] DecodingError decode(ByteView& from, Transaction& to) noexcept {
+        auto [h, err]{decode_header(from)};
+        if (err != DecodingError::kOk) {
+            return err;
+        }
         if (!h.list) {
-            throw DecodingError("unexpected string");
+            return DecodingError::kUnexpectedString;
         }
 
-        decode(from, to.nonce);
-        decode(from, to.gas_price);
-        decode(from, to.gas_limit);
+        if (DecodingError err{decode(from, to.nonce)}; err != DecodingError::kOk) {
+            return err;
+        }
+        if (DecodingError err{decode(from, to.gas_price)}; err != DecodingError::kOk) {
+            return err;
+        }
+        if (DecodingError err{decode(from, to.gas_limit)}; err != DecodingError::kOk) {
+            return err;
+        }
 
         if (from[0] == kEmptyStringCode) {
             to.to = {};
             from.remove_prefix(1);
         } else {
             to.to = evmc::address{};
-            decode(from, to.to->bytes);
+            if (DecodingError err{decode(from, to.to->bytes)}; err != DecodingError::kOk) {
+                return err;
+            }
         }
 
-        decode(from, to.value);
-        decode(from, to.data);
-        decode(from, to.v);
-        decode(from, to.r);
-        decode(from, to.s);
+        if (DecodingError err{decode(from, to.value)}; err != DecodingError::kOk) {
+            return err;
+        }
+        if (DecodingError err{decode(from, to.data)}; err != DecodingError::kOk) {
+            return err;
+        }
+        if (DecodingError err{decode(from, to.v)}; err != DecodingError::kOk) {
+            return err;
+        }
+        if (DecodingError err{decode(from, to.r)}; err != DecodingError::kOk) {
+            return err;
+        }
+        return decode(from, to.s);
     }
+
 }  // namespace rlp
 
 void Transaction::recover_sender(bool homestead, std::optional<uint64_t> eip155_chain_id) {

@@ -46,8 +46,8 @@ TEST_CASE("Execute two blocks") {
     // This contract initially sets its 0th storage to 0x2a
     // and its 1st storage to 0x01c9.
     // When called, it updates its 0th storage to the input provided.
-    Bytes contract_code{from_hex("600035600055")};
-    Bytes deployment_code{from_hex("602a6000556101c960015560068060166000396000f3") + contract_code};
+    Bytes contract_code{*from_hex("600035600055")};
+    Bytes deployment_code{*from_hex("602a6000556101c960015560068060166000396000f3") + contract_code};
 
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
@@ -81,7 +81,7 @@ TEST_CASE("Execute two blocks") {
     evmc::bytes32 storage0{buffer.read_storage(contract_address, incarnation, storage_key0)};
     CHECK(to_hex(storage0) == "000000000000000000000000000000000000000000000000000000000000002a");
 
-    evmc::bytes32 storage_key1{to_bytes32(from_hex("01"))};
+    evmc::bytes32 storage_key1{to_bytes32(*from_hex("01"))};
     evmc::bytes32 storage1{buffer.read_storage(contract_address, incarnation, storage_key1)};
     CHECK(to_hex(storage1) == "00000000000000000000000000000000000000000000000000000000000001c9");
 
@@ -102,7 +102,7 @@ TEST_CASE("Execute two blocks") {
 
     block.transactions[0].nonce = 1;
     block.transactions[0].to = contract_address;
-    block.transactions[0].data = from_hex(new_val);
+    block.transactions[0].data = *from_hex(new_val);
 
     execute_block(block, buffer);
 

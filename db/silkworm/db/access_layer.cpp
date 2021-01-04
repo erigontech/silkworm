@@ -24,16 +24,22 @@
 
 namespace silkworm::db {
 
+static void check_rlp_err(rlp::DecodingError err) {
+    if (err != rlp::DecodingError::kOk) {
+        throw err;
+    }
+}
+
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
                                        const uint8_t (&hash)[kHashLength]) {
     auto table{txn.open(table::kBlockHeaders)};
     std::optional<ByteView> header_rlp{table->get(block_key(block_number, hash))};
     if (!header_rlp) {
-        return {};
+        return std::nullopt;
     }
 
     BlockHeader header;
-    rlp::decode(*header_rlp, header);
+    check_rlp_err(rlp::decode(*header_rlp, header));
     return header;
 }
 
@@ -66,7 +72,7 @@ std::vector<Transaction> read_transactions(std::unique_ptr<lmdb::Table>& txn_tab
         ByteView data{from_mdb_val(data_mdb)};
 
         Transaction eth_txn;
-        rlp::decode(data, eth_txn);
+        check_rlp_err(rlp::decode(data, eth_txn));
         v.push_back(eth_txn);
     }
 
@@ -90,7 +96,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
         return std::nullopt;
     }
 
-    rlp::decode(*header_rlp, bh.block.header);
+    check_rlp_err(rlp::decode(*header_rlp, bh.block.header));
 
     auto body_table{txn.open(table::kBlockBodies)};
     std::optional<ByteView> body_rlp{body_table->get(key)};
@@ -206,14 +212,15 @@ std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address&
         return {};
     }
 
-    std::optional<Account> acc{decode_account_from_storage(*encoded)};
+    auto [acc, err]{decode_account_from_storage(*encoded)};
+    check_rlp_err(err);
 
-    if (acc && acc->incarnation > 0 && acc->code_hash == kEmptyHash) {
+    if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash
         auto code_hash_table{txn.open(table::kPlainContractCode)};
-        std::optional<ByteView> hash{code_hash_table->get(storage_prefix(address, acc->incarnation))};
+        std::optional<ByteView> hash{code_hash_table->get(storage_prefix(address, acc.incarnation))};
         if (hash && hash->length() == kHashLength) {
-            std::memcpy(acc->code_hash.bytes, hash->data(), kHashLength);
+            std::memcpy(acc.code_hash.bytes, hash->data(), kHashLength);
         }
     }
 
@@ -273,9 +280,10 @@ std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const 
 
         std::optional<ByteView> encoded{change_table->get(block_key(change_block), full_view(address))};
         if (encoded && !encoded->empty()) {
-            std::optional<Account> acc{decode_account_from_storage(*encoded)};
-            if (acc && acc->incarnation > 0) {
-                return acc->incarnation;
+            auto [acc, err]{decode_account_from_storage(*encoded)};
+            check_rlp_err(err);
+            if (acc.incarnation > 0) {
+                return acc.incarnation;
             }
         }
 

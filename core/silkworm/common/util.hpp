@@ -22,8 +22,8 @@
 #endif
 
 #include <cstring>
-#include <optional>
 #include <ethash/keccak.hpp>
+#include <optional>
 #include <silkworm/common/base.hpp>
 
 namespace silkworm {
@@ -74,11 +74,11 @@ std::string to_hex(const evmc::address& address);
 std::string to_hex(const evmc::bytes32& hash);
 std::string to_hex(ByteView bytes);
 
-Bytes from_hex(std::string_view hex);
+std::optional<Bytes> from_hex(std::string_view hex) noexcept;
 
 // Parses a string input value representing a size in
 // human readable format with qualifiers. eg "256MB"
-std::optional<size_t> parse_size(const std::string& sizestr);
+std::optional<uint64_t> parse_size(const std::string& sizestr);
 
 // TODO[C++20] replace by starts_with
 inline bool has_prefix(ByteView s, ByteView prefix) { return s.substr(0, prefix.size()) == prefix; }

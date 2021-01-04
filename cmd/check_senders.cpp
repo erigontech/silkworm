@@ -67,7 +67,7 @@ unsigned get_host_cpus() {
 }
 
 class Recoverer : public silkworm::Worker {
-   public:
+  public:
     Recoverer(uint32_t id, size_t size, bool debug) : id_(id), debug_{debug}, mysize_{size} {};
 
     struct package {
@@ -540,7 +540,9 @@ int do_recover(app_options_t& options) {
                         }
 
                         // Throw if any error from workers
-                        if (workers_thread_error_) throw std::runtime_error("Error from worker thread");
+                        if (workers_thread_error_) {
+                            throw std::runtime_error("Error from worker thread");
+                        }
 
                         // Write results to db (if any)
                         bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_,

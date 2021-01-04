@@ -40,13 +40,13 @@ struct Account {
 bool operator==(const Account& a, const Account& b);
 
 // Turbo-Geth (*Account)DecodeForStorage
-Account decode_account_from_storage(ByteView encoded);
+std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView encoded) noexcept;
 
 namespace rlp {
     void encode(Bytes& to, const Account& account);
 
     template <>
-    void decode(ByteView& from, Account& to);
+    [[nodiscard]] DecodingError decode(ByteView& from, Account& to) noexcept;
 }  // namespace rlp
 }  // namespace silkworm
 

@@ -74,7 +74,12 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
                 return kSilkwormBlockNotFound;
             }
 
-            std::vector<Receipt> receipts{execute_block(bh->block, buffer, *config, &analysis_cache, &state_pool)};
+            auto [receipts, err]{execute_block(bh->block, buffer, *config, &analysis_cache, &state_pool)};
+            if (err != ValidationError::kOk) {
+                SILKWORM_LOG(LogError) << "Validation error " << static_cast<int>(err) << " at block " << block_num
+                                       << std::endl;
+                return kSilkwormInvalidBlock;
+            }
 
             if (write_receipts) {
                 buffer.insert_receipts(block_num, receipts);
@@ -106,11 +111,8 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
     } catch (const db::MissingSenders&) {
         SILKWORM_LOG(LogError) << "Missing or incorrect senders at block " << block_num << std::endl;
         return kSilkwormMissingSenders;
-    } catch (const ValidationError& e) {
-        SILKWORM_LOG(LogError) << "Validation error " << e.what() << " at block " << block_num << std::endl;
-        return kSilkwormInvalidBlock;
-    } catch (const DecodingError& e) {
-        SILKWORM_LOG(LogError) << "Decoding error " << e.what() << " at block " << block_num << std::endl;
+    } catch (rlp::DecodingError e) {
+        SILKWORM_LOG(LogError) << "Decoding error " << static_cast<int>(e) << " at block " << block_num << std::endl;
         return kSilkwormDecodingError;
     } catch (...) {
         return kSilkwormUnknownError;

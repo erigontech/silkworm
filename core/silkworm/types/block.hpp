@@ -49,8 +49,8 @@ struct BlockHeader {
     evmc::bytes32 mix_hash{};
     std::array<uint8_t, 8> nonce{};
 
-   private:
-    friend void rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to);
+  private:
+    friend rlp::DecodingError rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to) noexcept;
 
     evmc::bytes32 extra_data_{};
     uint32_t extra_data_size_{0};
@@ -76,13 +76,13 @@ struct BlockWithHash {
 
 namespace rlp {
     template <>
-    void decode(ByteView& from, BlockBody& to);
+    [[nodiscard]] DecodingError decode(ByteView& from, BlockBody& to) noexcept;
 
     template <>
-    void decode(ByteView& from, BlockHeader& to);
+    [[nodiscard]] DecodingError decode(ByteView& from, BlockHeader& to) noexcept;
 
     template <>
-    void decode(ByteView& from, Block& to);
+    [[nodiscard]] DecodingError decode(ByteView& from, Block& to) noexcept;
 }  // namespace rlp
 }  // namespace silkworm
 

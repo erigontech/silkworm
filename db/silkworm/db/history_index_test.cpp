@@ -22,7 +22,7 @@
 namespace silkworm::db::history_index {
 
 TEST_CASE("History index search") {
-    Bytes index{from_hex("0000000000000003000000000002000005")};
+    Bytes index{*from_hex("0000000000000003000000000002000005")};
 
     CHECK(find(index, 1)->change_block == 3);
     CHECK(find(index, 3)->change_block == 3);

@@ -199,12 +199,12 @@ evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const
     return obj && obj->current ? obj->current->code_hash : kEmptyHash;
 }
 
-void IntraBlockState::set_code(const evmc::address& address, ByteView code) noexcept {
+void IntraBlockState::set_code(const evmc::address& address, Bytes code) noexcept {
     auto& obj{get_or_create_object(address)};
     journal_.emplace_back(new state::UpdateDelta{address, obj});
-    obj.code = code;
     ethash::hash256 hash{keccak256(code)};
     std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
+    obj.code = std::move(code);
 }
 
 evmc::bytes32 IntraBlockState::get_current_storage(const evmc::address& address,

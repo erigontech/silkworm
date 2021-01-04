@@ -14,14 +14,30 @@
    limitations under the License.
 ]]
 
-find_package(absl CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+find_package(Catch2 CONFIG REQUIRED)
 
 if(MSVC)
   add_link_options(/STACK:10000000)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   add_link_options(-Wl,-stack_size -Wl,0x1000000)
 endif()
+
+file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
+add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
+target_link_libraries(core_test silkworm_core Catch2::Catch2)
+target_compile_definitions(core_test PRIVATE CATCH_CONFIG_NO_POSIX_SIGNALS) # Wasm compatibility
+if(MSVC)
+  target_compile_options(core_test PRIVATE /EHsc)
+else()
+  target_compile_options(core_test PRIVATE -fno-exceptions)
+endif()
+
+find_package(absl CONFIG REQUIRED)
+find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+
+file(GLOB_RECURSE SILKWORM_DB_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/db/silkworm/*_test.cpp")
+add_executable(db_test unit_test.cpp ${SILKWORM_DB_TESTS})
+target_link_libraries(db_test silkworm_db Catch2::Catch2)
 
 add_executable(check_changes check_changes.cpp)
 target_link_libraries(check_changes PRIVATE silkworm_db absl::flags_parse absl::time Boost::filesystem)
@@ -46,19 +62,6 @@ find_package(nlohmann_json CONFIG REQUIRED)
 add_executable(consensus consensus.cpp)
 target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
 target_link_libraries(consensus PRIVATE silkworm_core nlohmann_json::nlohmann_json Boost::filesystem)
-
-# Unit tests
-enable_testing()
-
-find_package(Catch2 CONFIG REQUIRED)
-
-file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
-add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
-target_link_libraries(core_test silkworm_core Catch2::Catch2)
-
-file(GLOB_RECURSE SILKWORM_DB_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/db/silkworm/*_test.cpp")
-add_executable(db_test unit_test.cpp ${SILKWORM_DB_TESTS})
-target_link_libraries(db_test silkworm_db Catch2::Catch2)
 
 # Benchmarks
 find_package(benchmark CONFIG REQUIRED)

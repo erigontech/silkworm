@@ -17,7 +17,7 @@ as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth
 git clone --recurse-submodules https://github.com/torquem-ch/silkworm.git
 ```
 
-To update the submodules later on run 
+To update the submodules later on run
 ```
 git submodule update --init --recursive
 ```
@@ -60,6 +60,7 @@ cmd/execute -d <path-to-chaindata>
 
 
 ## Windows
+**Note ! Windows builds are maintained for compatibility/portability reasons. However, due to the lack of 128 bit integers support by MSVC, execution performance is inferior when commpared to Linux builds.**
 * Install [Visual Studio](https://www.visualstudio.com/downloads) 2019. Community edition is fine.
 * Make sure your setup includes CMake support and Windows 10 SDK.
 * Install [vcpkg](https://github.com/microsoft/vcpkg#quick-start-windows).

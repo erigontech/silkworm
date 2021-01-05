@@ -68,13 +68,20 @@ unsigned get_host_cpus() {
 
 class Recoverer : public silkworm::Worker {
   public:
-    Recoverer(uint32_t id, size_t size, bool debug) : id_(id), debug_{debug}, mysize_{size} {};
+    Recoverer(uint32_t id, size_t size) : id_(id), mysize_{size} {};
 
+    // Recovery package
     struct package {
         uint64_t block_num;
         ethash::hash256 hash;
         uint8_t recovery_id;
         uint8_t signature[64];
+    };
+
+    // Error returned by worker thread
+    struct error {
+        int err;
+        std::string msg;
     };
 
     // Provides a container of packages to process
@@ -84,21 +91,16 @@ class Recoverer : public silkworm::Worker {
         current_batch_id_ = batch_id;
     }
 
-    // Returns whether or not this worker is busy
-    bool is_busy() { return busy_.load(); }
-
     uint32_t get_id() const { return id_; };
 
     // Pulls results from worker
     std::vector<std::pair<uint64_t, MDB_val>>& get_results(void) { return myresults_; };
 
     // Signal to connected handlers the task has completed
-    boost::signals2::signal<void(uint32_t sender_id, uint32_t batch_id, bool has_error)> signal_completed;
+    boost::signals2::signal<void(uint32_t sender_id, uint32_t batch_id, Recoverer::error error)> signal_completed;
 
    private:
      const uint32_t id_;                                      // Current worker identifier
-     bool debug_;                                             // Whether or not display debug info
-     std::atomic_bool busy_{false};                           // Whether the thread is busy processing
      mutable std::mutex mywork_;                              // Work mutex
      std::vector<package> packages_{};                        // Work packages to process
      uint32_t current_batch_id_{0};                           // Identifier of the batch being processed
@@ -108,7 +110,6 @@ class Recoverer : public silkworm::Worker {
 
      // Basic work loop (overrides Worker::work())
      void work() final {
-         bool recovery_error_{false};
 
          // Try allocate enough memory to store
          // results output
@@ -118,6 +119,8 @@ class Recoverer : public silkworm::Worker {
          }
 
          while (!should_stop()) {
+
+             // Wait for a set of recovery packages to get in
              bool expectedKick{true};
              if (!kicked_.compare_exchange_strong(expectedKick, false, std::memory_order_relaxed)) {
                  std::unique_lock l(xwork_);
@@ -125,16 +128,11 @@ class Recoverer : public silkworm::Worker {
                  continue;
              }
 
-             if (debug_) {
-                 SILKWORM_LOG(LogLevels::LogDebug)
-                     << "Worker #" << id_ << " started batch #" << current_batch_id_ << std::endl;
-             };
-
-             busy_.store(true);
              {
                  // Lock mutex so no other jobs may be set
                  std::unique_lock l{mywork_};
                  myresults_.clear();
+                 error recovery_error{};
 
                  uint64_t current_block{packages_.at(0).block_num};
                  size_t block_result_offset{0};
@@ -160,30 +158,22 @@ class Recoverer : public silkworm::Worker {
                                      &keyHash.bytes[sizeof(keyHash) - kAddressLength], kAddressLength);
                          block_result_length += kAddressLength;
                      } else {
-                         SILKWORM_LOG(LogLevels::LogWarn)
-                             << "Recoverer #" << id_ << " "
-                             << "Public key recovery failed at block #" << package.block_num << std::endl;
-                         recovery_error_ = true;
+                         recovery_error.err = -1;
+                         recovery_error.msg = "Public key recovery failed at block #" + std::to_string(package.block_num);
                          break;  // No need to process other txns
                      }
                  }
 
                  // Store results for last block
-                 if (block_result_length && !recovery_error_) {
+                 if (block_result_length) {
                      MDB_val result{block_result_length, (void*)&mydata_[block_result_offset]};
                      myresults_.push_back({current_block, result});
                  }
 
                  // Raise finished event
-                 signal_completed(id_, current_batch_id_, recovery_error_);
-                 if (debug_) {
-                     SILKWORM_LOG(LogLevels::LogDebug)
-                         << "Worker #" << id_ << " completed batch #" << current_batch_id_ << std::endl;
-                 };
+                 signal_completed(id_, current_batch_id_, recovery_error);
                  packages_.clear();  // Clear here. Next set_work will swap the cleaned container to master thread
              }
-
-             busy_.store(false);
          }
 
          std::free(mydata_);
@@ -386,9 +376,10 @@ int do_recover(app_options_t& options) {
     uint64_t total_transactions{0};              // Overall number of transactions processed
 
     // Recoverer's signal handlers
-    boost::function<void(uint32_t, uint32_t, bool)> finishedHandler =
+    boost::function<void(uint32_t, uint32_t, Recoverer::error)> finishedHandler =
         [&expected_batch_id, &batches_completed, &batches_completed_mtx, &workers_in_flight](
-            uint32_t sender_id, uint32_t batch_id, bool has_error) {
+            uint32_t sender_id, uint32_t batch_id, Recoverer::error error) {
+
             // Ensure threads flush in the right order to preserve key sorting
             // Threads waits for its ticket before flushing
             while (expected_batch_id.load(std::memory_order_relaxed) != batch_id) {
@@ -396,7 +387,9 @@ int do_recover(app_options_t& options) {
             }
 
             // Store error condition if applicabile
-            if (has_error) workers_thread_error_.store(true);
+            if (error.err) {
+                workers_thread_error_.store(true);
+            }
 
             // Save my ids in the queue of results to
             // store in db
@@ -415,9 +408,8 @@ int do_recover(app_options_t& options) {
     // thus the need of a unique_ptr.
     std::vector<std::unique_ptr<Recoverer>> recoverers_{};
     for (uint32_t i = 0; i < options.numthreads; i++) {
-        auto worker = std::make_unique<Recoverer>(i, (options.batch_size * kAddressLength), options.debug);
-        worker->signal_completed.connect(boost::bind(finishedHandler, _1, _2, _3));
-        recoverers_.push_back(std::move(worker));
+        recoverers_.emplace_back(new Recoverer(i, (options.batch_size * kAddressLength)));
+        recoverers_.back()->signal_completed.connect(boost::bind(finishedHandler, _1, _2, _3));
     }
 
     // Start recoverers (here occurs allocation)
@@ -582,9 +574,9 @@ int do_recover(app_options_t& options) {
                 if (++header_index == headers_count) {
                     // We'd go beyond collected canonical headers
                     break;
-                } else {
-                    expected_block++;
                 }
+
+                expected_block++;
                 rc = should_stop_ ? MDB_NOTFOUND : bodies_table->get_next(&mdb_key, &mdb_data);
             }
             if (rc != MDB_NOTFOUND) {
@@ -600,7 +592,9 @@ int do_recover(app_options_t& options) {
                 }
 
                 // Throw if any error from workers
-                if (workers_thread_error_) throw std::runtime_error("Error from worker thread");
+                if (workers_thread_error_) {
+                    throw std::runtime_error("Error from worker thread");
+                }
 
                 // Write results to db (if any)
                 bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers,

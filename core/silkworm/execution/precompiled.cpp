@@ -103,7 +103,8 @@ static intx::uint256 mult_complexity(const intx::uint256& x) noexcept {
 }
 
 uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
-    input = right_pad(input, 3 * 32);
+    Bytes buffer;
+    input = right_pad(input, 3 * 32, buffer);
 
     intx::uint256 base_len256{intx::be::unsafe::load<intx::uint256>(&input[0])};
     intx::uint256 exp_len256{intx::be::unsafe::load<intx::uint256>(&input[32])};
@@ -126,10 +127,10 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
 
     intx::uint256 exp_head{0};  // first 32 bytes of the exponent
     if (input.length() > base_len64) {
-        ByteView exp_input{right_pad(input.substr(base_len64), 32)};
+        ByteView exp_input{right_pad(input.substr(base_len64), 32, buffer)};
         if (exp_len64 < 32) {
             exp_input = exp_input.substr(0, exp_len64);
-            exp_input = left_pad(exp_input, 32);
+            exp_input = left_pad(exp_input, 32, buffer);
         }
         exp_head = intx::be::unsafe::load<intx::uint256>(exp_input.data());
     }
@@ -156,7 +157,8 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
 }
 
 std::optional<Bytes> expmod_run(ByteView input) noexcept {
-    input = right_pad(input, 3 * 32);
+    Bytes buffer;
+    input = right_pad(input, 3 * 32, buffer);
 
     uint64_t base_len{endian::load_big_u64(&input[24])};
     input.remove_prefix(32);
@@ -171,7 +173,7 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
         return Bytes{};
     }
 
-    input = right_pad(input, base_len + exponent_len + modulus_len);
+    input = right_pad(input, base_len + exponent_len + modulus_len, buffer);
 
     mpz_t base;
     mpz_init(base);
@@ -223,7 +225,8 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
 uint64_t bn_add_gas(ByteView, evmc_revision rev) noexcept { return rev >= EVMC_ISTANBUL ? 150 : 500; }
 
 std::optional<Bytes> bn_add_run(ByteView input) noexcept {
-    input = right_pad(input, 128);
+    Bytes buffer;
+    input = right_pad(input, 128, buffer);
 
     snark::init_libff();
 
@@ -244,7 +247,8 @@ std::optional<Bytes> bn_add_run(ByteView input) noexcept {
 uint64_t bn_mul_gas(ByteView, evmc_revision rev) noexcept { return rev >= EVMC_ISTANBUL ? 6'000 : 40'000; }
 
 std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
-    input = right_pad(input, 96);
+    Bytes buffer;
+    input = right_pad(input, 96, buffer);
 
     snark::init_libff();
 

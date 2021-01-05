@@ -137,12 +137,9 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y texinfo
       - run:
-          name: "Install wasmtime"
+          name: "Install Wasmer"
           working_directory: ~/tmp2
-          command: |
-            wget https://wasmtime.dev/install.sh
-            chmod +x install.sh
-            ./install.sh
+          command: curl https://get.wasmer.io -sSfL | sh
       - run:
           name: "Build GMP"
           working_directory: ~/tmp3
@@ -163,7 +160,7 @@ jobs:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: WASMTIME_BACKTRACE_DETAILS=1 wasmtime cmd/core_test
+          command: wasmer cmd/core_test
 
 workflows:
   version: 2

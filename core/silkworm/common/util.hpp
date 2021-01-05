@@ -34,7 +34,7 @@ namespace silkworm {
 //
 // Might return a view of the supplied buffer,
 // which must be consumed prior to the next invocation.
-// However, the same view may be padded repeatedly.
+// However, an already padded view may be padded again.
 ByteView left_pad(ByteView view, size_t min_size, Bytes& buffer);
 
 // If a given string is shorter than min_size,
@@ -43,7 +43,7 @@ ByteView left_pad(ByteView view, size_t min_size, Bytes& buffer);
 //
 // Might return a view of the supplied buffer,
 // which must be consumed prior to the next invocation.
-// However, the same view may be padded repeatedly.
+// However, an already padded view may be padded again.
 ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer);
 
 // Converts bytes to evmc::address; input is cropped if necessary.

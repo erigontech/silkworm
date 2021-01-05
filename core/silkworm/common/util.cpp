@@ -24,42 +24,52 @@
 
 namespace silkworm {
 
-ByteView left_pad(ByteView view, size_t min_size, Bytes& padded) {
+ByteView left_pad(ByteView view, size_t min_size, Bytes& buffer) {
     if (view.size() >= min_size) {
         return view;
     }
 
-    if (padded.size() < min_size) {
-        padded.resize(min_size);
+    if (buffer.size() < min_size) {
+        buffer.resize(min_size);
+    } else {
+        // view & buffer might overlap in memory,
+        // so we avoid shrinking the buffer prior to the memmove
     }
 
     assert(view.size() < min_size);
     size_t prefix_len{min_size - view.size()};
 
-    std::memmove(padded.data() + prefix_len, view.data(), view.size());
+    // view & buffer might overlap in memory,
+    // thus memmove instead of memcpy
+    std::memmove(buffer.data() + prefix_len, view.data(), view.size());
 
-    padded.resize(min_size);
-    std::fill_n(padded.data(), prefix_len, '\0');
+    buffer.resize(min_size);
+    std::memset(buffer.data(), 0, prefix_len);
 
-    return padded;
+    return buffer;
 }
 
-ByteView right_pad(ByteView view, size_t min_size, Bytes& padded) {
+ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer) {
     if (view.size() >= min_size) {
         return view;
     }
 
-    if (padded.size() < view.size()) {
-        padded.resize(view.size());
+    if (buffer.size() < view.size()) {
+        buffer.resize(view.size());
+    } else {
+        // view & buffer might overlap in memory,
+        // so we avoid shrinking the buffer prior to the memmove
     }
 
-    std::memmove(padded.data(), view.data(), view.size());
+    // view & buffer might overlap in memory,
+    // thus memmove instead of memcpy
+    std::memmove(buffer.data(), view.data(), view.size());
 
     assert(view.size() < min_size);
-    padded.resize(view.size());
-    padded.resize(min_size);
+    buffer.resize(view.size());
+    buffer.resize(min_size);
 
-    return padded;
+    return buffer;
 }
 
 evmc::address to_address(ByteView bytes) {

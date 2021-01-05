@@ -135,6 +135,7 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y texinfo
+            curl https://wasmtime.dev/install.sh -sSf | bash
       - run:
           name: "Build GMP"
           command: |
@@ -146,11 +147,15 @@ jobs:
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a
-      - run:
+          command: |
+            cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a -DCMAKE_BUILD_TYPE=Debug
+       - run:
           name: "Build"
           command: cmake --build ~/build -j
-
+       - run:
+          name: "Core unit tests"
+          working_directory: ~/build
+          command: WASMTIME_BACKTRACE_DETAILS=1 wasmtime cmd/core_test
 
 workflows:
   version: 2

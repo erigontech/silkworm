@@ -53,6 +53,7 @@ class EVM {
     const ChainConfig& config() const noexcept { return config_; }
 
     IntraBlockState& state() noexcept { return state_; }
+    const IntraBlockState& state() const noexcept { return state_; }
 
     CallResult execute(const Transaction& txn, uint64_t gas) noexcept;
 

@@ -85,10 +85,10 @@ size_t Account::encoding_length_for_storage() const {
     return len;
 }
 
-Account decode_account_from_storage(ByteView encoded) {
+std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView encoded) noexcept {
     Account a{};
     if (encoded.empty()) {
-        return a;
+        return {a, rlp::DecodingError::kOk};
     }
 
     uint8_t field_set = encoded[0];
@@ -97,16 +97,20 @@ Account decode_account_from_storage(ByteView encoded) {
     if (field_set & 1) {
         uint8_t len = encoded[pos++];
         if (encoded.length() < pos + len) {
-            throw DecodingError("input too short for account nonce");
+            return {a, rlp::DecodingError::kInputTooShort};
         }
-        a.nonce = rlp::read_uint64(encoded.substr(pos, len));
+        auto [nonce, err]{rlp::read_uint64(encoded.substr(pos, len))};
+        if (err != rlp::DecodingError::kOk) {
+            return {a, err};
+        }
+        a.nonce = nonce;
         pos += len;
     }
 
     if (field_set & 2) {
         uint8_t len = encoded[pos++];
         if (encoded.length() < pos + len) {
-            throw DecodingError("input too short for account balance");
+            return {a, rlp::DecodingError::kInputTooShort};
         }
         std::memcpy(&as_bytes(a.balance)[32 - len], &encoded[pos], len);
         a.balance = bswap(a.balance);
@@ -116,24 +120,28 @@ Account decode_account_from_storage(ByteView encoded) {
     if (field_set & 4) {
         uint8_t len = encoded[pos++];
         if (encoded.length() < pos + len) {
-            throw DecodingError("input too short for account incarnation");
+            return {a, rlp::DecodingError::kInputTooShort};
         }
-        a.incarnation = rlp::read_uint64(encoded.substr(pos, len));
+        auto [incarnation, err]{rlp::read_uint64(encoded.substr(pos, len))};
+        if (err != rlp::DecodingError::kOk) {
+            return {a, err};
+        }
+        a.incarnation = incarnation;
         pos += len;
     }
 
     if (field_set & 8) {
         uint8_t len = encoded[pos++];
         if (len != kHashLength) {
-            throw DecodingError("codeHash should be 32 bytes long,");
+            return {a, rlp::DecodingError::kUnexpectedLength};
         }
         if (encoded.length() < pos + len) {
-            throw DecodingError("input too short for account codeHash");
+            return {a, rlp::DecodingError::kInputTooShort};
         }
         std::memcpy(a.code_hash.bytes, &encoded[pos], kHashLength);
     }
 
-    return a;
+    return {a, rlp::DecodingError::kOk};
 }
 
 namespace rlp {
@@ -153,16 +161,26 @@ namespace rlp {
     }
 
     template <>
-    void decode(ByteView& from, Account& to) {
-        Header h = decode_header(from);
+    [[nodiscard]] DecodingError decode(ByteView& from, Account& to) noexcept {
+        auto [h, err]{decode_header(from)};
+        if (err != DecodingError::kOk) {
+            return err;
+        }
         if (!h.list) {
-            throw DecodingError("unexpected string");
+            return DecodingError::kUnexpectedString;
         }
 
-        decode(from, to.nonce);
-        decode(from, to.balance);
-        decode(from, to.storage_root.bytes);
-        decode(from, to.code_hash.bytes);
+        if (DecodingError err{decode(from, to.nonce)}; err != DecodingError::kOk) {
+            return err;
+        }
+        if (DecodingError err{decode(from, to.balance)}; err != DecodingError::kOk) {
+            return err;
+        }
+        if (DecodingError err{decode(from, to.storage_root.bytes)}; err != DecodingError::kOk) {
+            return err;
+        }
+        return decode(from, to.code_hash.bytes);
     }
+
 }  // namespace rlp
 }  // namespace silkworm

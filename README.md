@@ -81,6 +81,6 @@ We follow [Google's C++ Style Guide](https://google.github.io/styleguide/cppguid
 * `snake_case` for function names.
 * .cpp & .hpp file extensions for C++; .c & .h are reserved for C.
 * `using namespace foo` is allowed inside .cpp files, but not inside headers.
-* Exceptions are allowed.
+* Exceptions are allowed outside of Silkworm Core.
 * User-defined literals are allowed.
 * Maximum line length is 120, indentation is 4 spaces – see `.clang-format`.

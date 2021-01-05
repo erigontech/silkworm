@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,29 +22,29 @@
 #endif
 
 #include <cstring>
-#include <optional>
 #include <ethash/keccak.hpp>
+#include <optional>
 #include <silkworm/common/base.hpp>
 
 namespace silkworm {
 
-// If a given view is shorter than min_size,
+// If a given string is shorter than min_size,
 // pads it to the left with 0s up to min_size.
-// Otherwise returns unmodified view.
+// Otherwise returns unmodified string.
 //
-// Might return a view of a thread-local buffer,
+// Might return a view of the supplied buffer,
 // which must be consumed prior to the next invocation.
-// However, the same view may be padded repeatedly.
-ByteView left_pad(ByteView view, size_t min_size);
+// However, an already padded view may be padded again.
+ByteView left_pad(ByteView view, size_t min_size, Bytes& buffer);
 
-// If a given view is shorter than min_size,
+// If a given string is shorter than min_size,
 // pads it to the right with 0s up to min_size.
-// Otherwise returns unmodified view.
+// Otherwise returns unmodified string.
 //
-// Might return a view of a thread-local buffer,
+// Might return a view of the supplied buffer,
 // which must be consumed prior to the next invocation.
-// However, the same view may be padded repeatedly.
-ByteView right_pad(ByteView view, size_t min_size);
+// However, an already padded view may be padded again.
+ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer);
 
 // Converts bytes to evmc::address; input is cropped if necessary.
 // Short inputs are left-padded with 0s.
@@ -74,11 +74,11 @@ std::string to_hex(const evmc::address& address);
 std::string to_hex(const evmc::bytes32& hash);
 std::string to_hex(ByteView bytes);
 
-Bytes from_hex(std::string_view hex);
+std::optional<Bytes> from_hex(std::string_view hex) noexcept;
 
 // Parses a string input value representing a size in
 // human readable format with qualifiers. eg "256MB"
-std::optional<size_t> parse_size(const std::string& sizestr);
+std::optional<uint64_t> parse_size(const std::string& sizestr);
 
 // TODO[C++20] replace by starts_with
 inline bool has_prefix(ByteView s, ByteView prefix) { return s.substr(0, prefix.size()) == prefix; }

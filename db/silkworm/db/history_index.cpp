@@ -19,6 +19,7 @@
 #include <boost/endian/conversion.hpp>
 #include <boost/iterator/counting_iterator.hpp>
 #include <silkworm/common/util.hpp>
+#include <stdexcept>
 
 namespace silkworm::db::history_index {
 
@@ -43,10 +44,10 @@ static SearchResult search_result(ByteView hi, uint32_t i) {
 
 static size_t number_of_elements(ByteView hi) {
     if (hi.length() < 8) {
-        throw DecodingError("minimal length of index chunk is 8");
+        throw std::invalid_argument("minimal length of index chunk is 8");
     }
     if ((hi.length() - 8) % kItemLen) {
-        throw DecodingError("length of index chunk should be 8 (mod 3)");
+        throw std::invalid_argument("length of index chunk should be 8 (mod 3)");
     }
     return (hi.length() - 8) / kItemLen;
 }

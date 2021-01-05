@@ -22,8 +22,9 @@
 
 namespace silkworm {
 
-std::vector<Receipt> execute_block(const Block& block, StateBuffer& buffer, const ChainConfig& config,
-                                   AnalysisCache* analysis_cache, ExecutionStatePool* state_pool) {
+std::pair<std::vector<Receipt>, ValidationError> execute_block(const Block& block, StateBuffer& buffer,
+                                                               const ChainConfig& config, AnalysisCache* analysis_cache,
+                                                               ExecutionStatePool* state_pool) noexcept {
     const BlockHeader& header{block.header};
     uint64_t block_num{header.number};
 
@@ -32,7 +33,13 @@ std::vector<Receipt> execute_block(const Block& block, StateBuffer& buffer, cons
     processor.evm().analysis_cache = analysis_cache;
     processor.evm().state_pool = state_pool;
 
-    std::vector<Receipt> receipts{processor.execute_block()};
+    std::pair<std::vector<Receipt>, ValidationError> res{processor.execute_block()};
+
+    const auto& receipts{res.first};
+    auto& err{res.second};
+    if (err != ValidationError::kOk) {
+        return res;
+    }
 
     uint64_t gas_used{0};
     if (!receipts.empty()) {
@@ -40,19 +47,21 @@ std::vector<Receipt> execute_block(const Block& block, StateBuffer& buffer, cons
     }
 
     if (gas_used != header.gas_used) {
-        throw ValidationError("gas mismatch for block " + std::to_string(block_num));
+        err = ValidationError::kBlockGasMismatch;
+        return res;
     }
 
     if (config.has_byzantium(block_num)) {
         evmc::bytes32 receipt_root{trie::root_hash(receipts)};
         if (receipt_root != header.receipts_root) {
-            throw ValidationError("receipt root mismatch for block " + std::to_string(block_num));
+            err = ValidationError::kReceiptRootMismatch;
+            return res;
         }
     }
 
     processor.evm().state().write_to_db(block_num);
 
-    return receipts;
+    return res;
 }
 
 }  // namespace silkworm

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -24,46 +24,52 @@
 
 namespace silkworm {
 
-ByteView left_pad(ByteView view, size_t min_size) {
+ByteView left_pad(ByteView view, size_t min_size, Bytes& buffer) {
     if (view.size() >= min_size) {
         return view;
     }
 
-    thread_local Bytes padded;
-
-    if (padded.size() < min_size) {
-        padded.resize(min_size);
+    if (buffer.size() < min_size) {
+        buffer.resize(min_size);
+    } else {
+        // view & buffer might overlap in memory,
+        // so we avoid shrinking the buffer prior to the memmove
     }
 
     assert(view.size() < min_size);
     size_t prefix_len{min_size - view.size()};
 
-    std::memmove(padded.data() + prefix_len, view.data(), view.size());
+    // view & buffer might overlap in memory,
+    // thus memmove instead of memcpy
+    std::memmove(buffer.data() + prefix_len, view.data(), view.size());
 
-    padded.resize(min_size);
-    std::fill_n(padded.data(), prefix_len, '\0');
+    buffer.resize(min_size);
+    std::memset(buffer.data(), 0, prefix_len);
 
-    return padded;
+    return buffer;
 }
 
-ByteView right_pad(ByteView view, size_t min_size) {
+ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer) {
     if (view.size() >= min_size) {
         return view;
     }
 
-    thread_local Bytes padded;
-
-    if (padded.size() < view.size()) {
-        padded.resize(view.size());
+    if (buffer.size() < view.size()) {
+        buffer.resize(view.size());
+    } else {
+        // view & buffer might overlap in memory,
+        // so we avoid shrinking the buffer prior to the memmove
     }
 
-    std::memmove(padded.data(), view.data(), view.size());
+    // view & buffer might overlap in memory,
+    // thus memmove instead of memcpy
+    std::memmove(buffer.data(), view.data(), view.size());
 
     assert(view.size() < min_size);
-    padded.resize(view.size());
-    padded.resize(min_size);
+    buffer.resize(view.size());
+    buffer.resize(min_size);
 
-    return padded;
+    return buffer;
 }
 
 evmc::address to_address(ByteView bytes) {
@@ -109,7 +115,7 @@ std::string to_hex(ByteView bytes) {
     return out;
 }
 
-static unsigned decode_hex_digit(char ch) {
+static std::optional<unsigned> decode_hex_digit(char ch) noexcept {
     if (ch >= '0' && ch <= '9') {
         return ch - '0';
     } else if (ch >= 'a' && ch <= 'f') {
@@ -117,33 +123,38 @@ static unsigned decode_hex_digit(char ch) {
     } else if (ch >= 'A' && ch <= 'F') {
         return ch - 'A' + 10;
     }
-    throw std::out_of_range{"not a hex digit"};
+    return std::nullopt;
 }
 
-Bytes from_hex(std::string_view hex) {
+std::optional<Bytes> from_hex(std::string_view hex) noexcept {
     if (hex.length() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) {
         hex.remove_prefix(2);
     }
 
-    assert(hex.length() % 2 == 0);
+    if (hex.length() % 2 != 0) {
+        return std::nullopt;
+    }
 
     Bytes out{};
     out.reserve(hex.length() / 2);
 
     unsigned carry{0};
     for (size_t i{0}; i < hex.size(); ++i) {
-        unsigned v{decode_hex_digit(hex[i])};
+        std::optional<unsigned> v{decode_hex_digit(hex[i])};
+        if (!v) {
+            return std::nullopt;
+        }
         if (i % 2 == 0) {
-            carry = v << 4;
+            carry = *v << 4;
         } else {
-            out.push_back(static_cast<uint8_t>(carry | v));
+            out.push_back(static_cast<uint8_t>(carry | *v));
         }
     }
 
     return out;
 }
 
-std::optional<size_t> parse_size(const std::string& sizestr) {
+std::optional<uint64_t> parse_size(const std::string& sizestr) {
     if (sizestr.empty()) {
         return 0;
     }

@@ -28,7 +28,7 @@
 
 namespace silkworm {
 
-intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) {
+intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept {
     intx::uint128 gas{fee::kGTransaction};
     if (!txn.to && homestead) {
         gas += fee::kGTxCreate;
@@ -61,47 +61,55 @@ static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
 }
 */
 
-Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
-    IntraBlockState& state{evm_.state()};
-
+ValidationError ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
     if (!txn.from) {
-        throw ValidationError("missing sender");
+        return ValidationError::kMissingSender;
     }
 
+    const IntraBlockState& state{evm_.state()};
     uint64_t nonce{state.get_nonce(*txn.from)};
     if (nonce != txn.nonce) {
-        throw ValidationError("invalid nonce");
+        return ValidationError::kInvalidNonce;
     }
 
     uint64_t block_number{evm_.block().header.number};
     bool homestead{evm_.config().has_homestead(block_number)};
-    bool spurious_dragon{evm_.config().has_spurious_dragon(block_number)};
     bool istanbul{evm_.config().has_istanbul(block_number)};
 
     intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
     if (txn.gas_limit < g0) {
-        throw ValidationError("intrinsic gas");
+        return ValidationError::kIntrinsicGas;
     }
 
     intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price)};
     intx::uint512 v0{gas_cost + txn.value};
 
     if (state.get_balance(*txn.from) < v0) {
-        throw ValidationError("insufficient funds");
+        return ValidationError::kInsufficientFunds;
     }
 
     if (available_gas() < txn.gas_limit) {
-        throw ValidationError("block gas limit reached");
+        return ValidationError::kBlockGasLimitReached;
     }
 
-    state.subtract_from_balance(*txn.from, gas_cost.lo);
+    return ValidationError::kOk;
+}
+
+Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept {
+    IntraBlockState& state{evm_.state()};
+    state.subtract_from_balance(*txn.from, txn.gas_limit * txn.gas_price);
     if (txn.to) {
         // EVM itself increments the nonce for contract creation
-        state.set_nonce(*txn.from, nonce + 1);
+        state.set_nonce(*txn.from, txn.nonce + 1);
     }
 
     evm_.state().clear_journal_and_substate();
 
+    uint64_t block_number{evm_.block().header.number};
+    bool homestead{evm_.config().has_homestead(block_number)};
+    bool istanbul{evm_.config().has_istanbul(block_number)};
+
+    intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
     CallResult vm_res{evm_.execute(txn, txn.gas_limit - g0.lo)};
 
     uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left)};
@@ -110,7 +118,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
     state.add_to_balance(evm_.block().header.beneficiary, gas_used * txn.gas_price);
 
     evm_.state().destruct_suicides();
-    if (spurious_dragon) {
+    if (evm_.config().has_spurious_dragon(block_number)) {
         evm_.state().destruct_touched_dead();
     }
 
@@ -126,16 +134,18 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) {
     };
 }
 
-uint64_t ExecutionProcessor::available_gas() const { return evm_.block().header.gas_limit - cumulative_gas_used_; }
+uint64_t ExecutionProcessor::available_gas() const noexcept {
+    return evm_.block().header.gas_limit - cumulative_gas_used_;
+}
 
-uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) {
+uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) noexcept {
     uint64_t refund{std::min((txn.gas_limit - gas_left) / 2, evm_.state().total_refund())};
     gas_left += refund;
     evm_.state().add_to_balance(*txn.from, gas_left * txn.gas_price);
     return gas_left;
 }
 
-std::vector<Receipt> ExecutionProcessor::execute_block() {
+std::pair<std::vector<Receipt>, ValidationError> ExecutionProcessor::execute_block() noexcept {
     std::vector<Receipt> receipts{};
 
     uint64_t block_num{evm_.block().header.number};
@@ -145,6 +155,10 @@ std::vector<Receipt> ExecutionProcessor::execute_block() {
 
     cumulative_gas_used_ = 0;
     for (const Transaction& txn : evm_.block().transactions) {
+        ValidationError err{validate_transaction(txn)};
+        if (err != ValidationError::kOk) {
+            return {receipts, err};
+        }
         receipts.push_back(execute_transaction(txn));
     }
 
@@ -156,10 +170,10 @@ std::vector<Receipt> ExecutionProcessor::execute_block() {
         evm_.state().destruct(kRipemdAddress);
     }
 
-    return receipts;
+    return {receipts, ValidationError::kOk};
 }
 
-void ExecutionProcessor::apply_rewards() {
+void ExecutionProcessor::apply_rewards() noexcept {
     uint64_t block_number{evm_.block().header.number};
     intx::uint256 block_reward;
     if (evm_.config().has_constantinople(block_number)) {
@@ -179,4 +193,5 @@ void ExecutionProcessor::apply_rewards() {
 
     evm_.state().add_to_balance(evm_.block().header.beneficiary, miner_reward);
 }
+
 }  // namespace silkworm

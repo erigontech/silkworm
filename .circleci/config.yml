@@ -126,18 +126,26 @@ jobs:
       - checkout_with_submodules
       - run:
           name: "Install WASI SDK"
+          working_directory: ~/tmp1
           command: |
             wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-12/wasi-sdk-12.0-linux.tar.gz
             tar xvf wasi-sdk-12.0-linux.tar.gz
             sudo mv wasi-sdk-12.0 /opt/wasi-sdk
       - run:
-          name: "Install prerequisites"
+          name: "Install texinfo"
           command: |
             sudo apt-get update
             sudo apt-get install -y texinfo
-            curl https://wasmtime.dev/install.sh -sSf | bash
+      - run:
+          name: "Install wasmtime"
+          working_directory: ~/tmp2
+          command: |
+            wget https://wasmtime.dev/install.sh
+            chmod +x install.sh
+            ./install.sh
       - run:
           name: "Build GMP"
+          working_directory: ~/tmp3
           command: |
             git clone https://github.com/torquem-ch/gmp-wasm
             cd gmp-wasm

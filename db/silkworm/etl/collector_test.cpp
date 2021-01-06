@@ -75,7 +75,7 @@ void run_collector_test(LoadFunc load_func) {
     // Check wheter temporary files were cleaned
     for (size_t i = 0; i < 10; i++) {
         fs::path path{fs::path(etl_tmp_dir.path()) / fs::path("tmp-" + std::to_string(i))};
-        CHECK(false == fs::exists(path));
+        CHECK(!fs::exists(path));
     }
 }
 

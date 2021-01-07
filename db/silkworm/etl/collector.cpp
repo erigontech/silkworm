@@ -102,8 +102,6 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
         // meaningful data
         if (next.has_value()) {
             queue.push(*next);
-        } else {
-            current_file_provider.reset();
         }
     }
 }

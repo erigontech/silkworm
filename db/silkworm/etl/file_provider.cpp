@@ -74,8 +74,10 @@ std::optional<std::pair<Entry, int>> FileProvider::read_entry() {
 }
 
 void FileProvider::reset() {
-    file_.close();
-    fs::remove(filename_.c_str());
+    if (file_.is_open()) {
+        file_.close();
+        fs::remove(filename_.c_str());
+    }
 }
 
 }  // namespace silkworm::etl

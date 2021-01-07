@@ -43,10 +43,9 @@ void FileProvider::flush(Buffer &buffer) {
     for (const auto &entry : entries) {
         head.lengths[0] = entry.key.size();
         head.lengths[1] = entry.value.size();
-        file_.write((const char *)head.bytes, 8);
-        file_.write((const char *)entry.key.data(), entry.key.size());
-        file_.write((const char *)entry.value.data(), entry.value.size());
-        if (file_.fail()) {
+        if (!file_.write((const char *)head.bytes, 8) ||
+            !file_.write((const char *)entry.key.data(), entry.key.size()) ||
+            !file_.write((const char *)entry.value.data(), entry.value.size())) {
             throw etl_error(strerror(errno));
         }
     }
@@ -55,18 +54,19 @@ void FileProvider::flush(Buffer &buffer) {
 
 std::optional<std::pair<Entry, int>> FileProvider::read_entry() {
     head_t head{};
-    file_.read((char *)head.bytes, 8);
-    if (file_.eof()) {
-        return std::nullopt;
+
+    if (!file_.is_open()) {
+        throw etl_error("File handle closed");
     }
-    if (file_.fail()) {
-        throw etl_error(strerror(errno));
+
+    if (!file_.read((char *)head.bytes, 8)) {
+        reset();
+        return std::nullopt;
     }
 
     Entry entry{Bytes(head.lengths[0], '\0'), Bytes(head.lengths[1], '\0')};
-    file_.read((char *)entry.key.data(), head.lengths[0]);
-    file_.read((char *)entry.value.data(), head.lengths[1]);
-    if (file_.fail()) {
+    if (!file_.read((char *)entry.key.data(), head.lengths[0]) ||
+        !file_.read((char *)entry.value.data(), head.lengths[1])) {
         throw etl_error(strerror(errno));
     }
 

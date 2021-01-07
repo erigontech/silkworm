@@ -25,7 +25,7 @@ namespace fs = boost::filesystem;
 FileProvider::FileProvider(const std::string &working_path, size_t id) : id_{id} {
     fs::path path{fs::path(working_path) / fs::path("tmp-" + std::to_string(id))};
     filename_ = path.string();
-    file_.open(filename_, std::ios_base::in | std::ios_base::out | std::ios_base::trunc);
+    file_.open(filename_, std::ios_base::in | std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
     if (!file_.is_open()) throw etl_error(strerror(errno));
 }
 

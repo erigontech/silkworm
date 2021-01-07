@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -65,16 +65,16 @@ if(NOT SILKWORM_CORE_ONLY)
   include(cmake/Hunter/extra_packages.cmake)
 endif()
 
-# Profing and coverage options
-if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    # coverage
-    add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
-    add_link_options(-fprofile-instr-generate -fcoverage-mapping)
-  else()
-    # profiling
-    add_compile_options(-gline-tables-only)
-  endif()
+option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports" OFF)
+
+if(SILKWORM_CLANG_COVERAGE)
+  add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+  add_link_options(-fprofile-instr-generate -fcoverage-mapping)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$" AND CMAKE_BUILD_TYPE STREQUAL "Release")
+  # useful for performance profiling
+  add_compile_options(-gline-tables-only)
 endif()
 
 # GMP
@@ -184,12 +184,20 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
 target_include_directories(evmone PUBLIC evmone/lib/evmone)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE keccak)
 
+if(MSVC)
+  target_compile_options(evmone PRIVATE /EHsc)
+else()
+  target_compile_options(evmone PRIVATE -fno-exceptions)
+endif()
+
 # Silkworm itself
 add_subdirectory(core)
+
 if(NOT SILKWORM_CORE_ONLY)
   add_subdirectory(db)
   add_subdirectory(tg_api)
-  if(NOT SILKWORM_HAS_PARENT)
-    add_subdirectory(cmd)
-  endif()
+endif()
+
+if(NOT SILKWORM_HAS_PARENT)
+  add_subdirectory(cmd)
 endif()

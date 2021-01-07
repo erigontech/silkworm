@@ -25,7 +25,7 @@ void Buffer::put(Entry& entry) {
 
 void Buffer::sort() {
     std::sort(entries_.begin(), entries_.end(),
-              [](const Entry& a, const Entry& b) { return a.key.compare(b.key) > 0; });
+              [](const Entry& a, const Entry& b) { return a.key.compare(b.key) < 0; });
 }
 
 size_t Buffer::size() const noexcept { return size_; }

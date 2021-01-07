@@ -32,7 +32,7 @@ constexpr size_t kOptimalBufferSize = 256 * kMebi;
 constexpr size_t kIdealBatchSize = 128 * kMebi;  // TODO: Commit after ideal size is reached and open new transaction
 
 // Function pointer to process Transform on before Load data into tables
-typedef std::vector<db::Entry> (*Transform)(Entry);
+typedef std::vector<Entry> (*LoadFunc)(Entry);
 
 // Collects data Extracted from db
 class Collector {
@@ -43,7 +43,7 @@ class Collector {
 
     void flush_buffer();                                 // Write buffer to file
     void collect(Entry& entry);                          // Store key-value pair in memory or on disk
-    void load(lmdb::Table* table, Transform transform);  // Load collected entries in destination table
+    void load(lmdb::Table* table, LoadFunc load_func);   // Load collected entries in destination table
 
   private:
     std::string set_work_path(const char* provided_work_path);
@@ -54,7 +54,7 @@ class Collector {
 };
 
 // Default no transform function
-std::vector<db::Entry> identity_transform(db::Entry entry);
+std::vector<Entry> identity_load(Entry entry);
 
 }  // namespace silkworm::etl
 #endif  // !SILKWORM_ETL_COLLECTOR_H_

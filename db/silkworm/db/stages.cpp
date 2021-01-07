@@ -28,8 +28,8 @@ uint64_t get_stage_progress(std::unique_ptr<lmdb::Transaction>& txn, const char*
 }
 
 void set_stage_progress(std::unique_ptr<lmdb::Transaction>& txn, const char* stage_name, uint64_t block_num) {
-    Bytes stage_progress{8, '\0'};
-    boost::endian::store_big_u64(&stage_progress[0], block_num);
+    Bytes stage_progress(sizeof(block_num), 0);
+    boost::endian::store_big_u64(stage_progress.data(), block_num);
     MDB_val mdb_key{std::strlen(stage_name), (void*)stage_name};
     MDB_val mdb_data{db::to_mdb_val(stage_progress)};
     lmdb::err_handler(txn->data_upsert(silkworm::db::table::kSyncStageProgress, &mdb_key, &mdb_data));

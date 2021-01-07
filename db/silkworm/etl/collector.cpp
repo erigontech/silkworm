@@ -24,9 +24,6 @@ namespace silkworm::etl {
 namespace fs = boost::filesystem;
 
 Collector::~Collector() {
-    if (work_path_.empty()) {
-        return;
-    }
 
     fs::path path(work_path_);
     if (fs::exists(path)) {

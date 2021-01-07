@@ -126,17 +126,23 @@ jobs:
       - checkout_with_submodules
       - run:
           name: "Install WASI SDK"
+          working_directory: ~/tmp1
           command: |
             wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-12/wasi-sdk-12.0-linux.tar.gz
             tar xvf wasi-sdk-12.0-linux.tar.gz
             sudo mv wasi-sdk-12.0 /opt/wasi-sdk
       - run:
-          name: "Install prerequisites"
+          name: "Install texinfo"
           command: |
             sudo apt-get update
             sudo apt-get install -y texinfo
       - run:
+          name: "Install Wasmer"
+          working_directory: ~/tmp2
+          command: curl https://get.wasmer.io -sSfL | sh
+      - run:
           name: "Build GMP"
+          working_directory: ~/tmp3
           command: |
             git clone https://github.com/torquem-ch/gmp-wasm
             cd gmp-wasm
@@ -146,11 +152,15 @@ jobs:
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a
+          command: |
+            cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a -DCMAKE_BUILD_TYPE=Debug
       - run:
           name: "Build"
           command: cmake --build ~/build -j
-
+      - run:
+          name: "Core unit tests"
+          working_directory: ~/build
+          command: wasmer cmd/core_test
 
 workflows:
   version: 2

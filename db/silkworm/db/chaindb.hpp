@@ -53,10 +53,10 @@ constexpr size_t kDefaultMapSize{
 struct DatabaseConfig {
     std::string path{};
     size_t map_size{kDefaultMapSize};
-    uint32_t flags{MDB_NOTLS | MDB_NORDAHEAD | MDB_NOSYNC | MDB_RDONLY};  // Default flags
-    uint32_t max_tables{128};                                             // Default max number of named tables
-    mdb_mode_t mode{0644};                                                // Filesystem mode (works only for Linux)
-    void set_readonly(bool value);                                        // Sets/unsets readonly flag
+    uint32_t flags{MDB_NOTLS | MDB_NORDAHEAD | MDB_RDONLY};  // Default flags
+    uint32_t max_tables{128};                                // Default max number of named tables
+    mdb_mode_t mode{0644};                                   // Filesystem mode (works only for Linux)
+    void set_readonly(bool value);                           // Sets/unsets readonly flag
 };
 
 static const MDB_dbi FREE_DBI = 0;  // Reserved for tracking free pages

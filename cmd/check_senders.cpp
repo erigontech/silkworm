@@ -650,6 +650,7 @@ int do_recover(app_options_t& options) {
     if (!main_thread_error_ && !workers_thread_error_ && !options.rundry && !should_stop_) {
         SILKWORM_LOG(LogLevels::LogInfo) << "Committing work ( " << bytes_written << " bytes )" << std::endl;
         try {
+            db::stages::set_stage_progress(lmdb_txn, db::stages::KSenders_key, (options.block_to <= 1 ? 0 : static_cast<uint64_t>(options.block_to)));
             lmdb::err_handler(lmdb_txn->commit());
             lmdb::err_handler(lmdb_env->sync());
         } catch (const std::exception& ex) {

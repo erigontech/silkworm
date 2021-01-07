@@ -271,7 +271,8 @@ size_t Transaction::get_id(void) { return mdb_txn_id(handle_); }
 
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
-std::optional<Bytes> Transaction::data_lookup(const TableConfig& domain, MDB_val* key) {
+std::optional<Bytes> Transaction::get(const TableConfig& domain, MDB_val* mdb_key) {
+
     std::unique_ptr<Table> tbl{nullptr};
 
     try {
@@ -287,8 +288,8 @@ std::optional<Bytes> Transaction::data_lookup(const TableConfig& domain, MDB_val
         return std::nullopt;
     }
 
-    MDB_val data;
-    int rc{tbl->seek_exact(key, &data)};
+    MDB_val mdb_data;
+    int rc{tbl->seek_exact(mdb_key, &mdb_data)};
     switch (rc) {
         case MDB_NOTFOUND:
             return std::nullopt;
@@ -297,25 +298,27 @@ std::optional<Bytes> Transaction::data_lookup(const TableConfig& domain, MDB_val
         default:
             err_handler(rc);
     }
-
-    Bytes ret(static_cast<uint8_t*>(data.mv_data), data.mv_size);
-    return {ret};
+    Bytes ret(mdb_data.mv_size, 0);
+    std::memcpy(ret.data(), mdb_data.mv_data, mdb_data.mv_size);
+    return ret;
 }
 
-int Transaction::data_upsert(const TableConfig& domain, MDB_val* key, MDB_val* value)
+int Transaction::put(const TableConfig& domain, MDB_val* mdb_key, MDB_val* mdb_data)
 {
+    if (is_ro()) {
+        return MDB_BAD_TXN;
+    }
+
     try {
         std::unique_ptr<Table> tbl{nullptr};
         if (!domain.name) {
             tbl = this->open(MAIN_DBI);
         } else {
-            // Should we create if not existent ?
-            tbl = this->open(domain, (this->is_ro() ? 0 : MDB_CREATE));
+            tbl = this->open(domain, MDB_CREATE);
         }
-        tbl->put(key, value, 0);
-        return MDB_SUCCESS;
-
+        return tbl->put(mdb_key, mdb_data, 0);
     } catch (const exception& ex) {
+        // We may fail opening the table
         return ex.err();
     }
 }

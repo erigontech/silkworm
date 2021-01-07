@@ -95,7 +95,6 @@ TEST_CASE("collect_and_load") {
     run_collector_test([](Entry entry) {
         entry.key.at(0) = 1;
         return std::vector<Entry>({entry});
-        ;
     });
 }
 

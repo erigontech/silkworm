@@ -51,18 +51,20 @@ void Collector::collect(Entry& entry) {
 }
 
 void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
+
     if (!file_providers_.size()) {
         buffer_.sort();
         for (const auto& entry : buffer_.get_entries()) {
-            auto entries{load_func(entry)};
-            for (const auto& entry2 : entries) {
-                table->put(entry2.key, entry2.value);
+            auto trasformed_entries{load_func(entry)};
+            for (const auto& transformed_entry : trasformed_entries) {
+                table->put(transformed_entry.key, transformed_entry.value);
             }
         }
         buffer_.clear();
         return;
     }
 
+    // Flush not overflown buffer data to file
     flush_buffer();
 
     // Define a priority queue based on smallest available key
@@ -86,8 +88,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
         auto& current_item{queue.top()};                                       // Pick smallest key by reference
         auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
         // Process linked pairs
-        for (const auto& pair : load_func(current_item.first)) {
-            table->put(pair.key, pair.value);
+        for (const auto& transformed_entry : load_func(current_item.first)) {
+            table->put(transformed_entry.key, transformed_entry.value);
         }
 
         // From the provider which has served the current key

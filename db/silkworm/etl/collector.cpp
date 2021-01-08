@@ -25,6 +25,8 @@ namespace fs = boost::filesystem;
 
 Collector::~Collector() {
 
+    file_providers_.clear();  // Will ensure all files (if any) have been orderly closed and deleted before we remove
+                              // the working dir
     fs::path path(work_path_);
     if (fs::exists(path)) {
         fs::remove_all(path);

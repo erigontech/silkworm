@@ -665,7 +665,9 @@ int do_recover(app_options_t& options) {
 
             db::stages::set_stage_progress(lmdb_txn, db::stages::KSenders_key, (options.block_to <= 1 ? 0 : static_cast<uint64_t>(options.block_to)));
             lmdb::err_handler(lmdb_txn->commit());
-            lmdb::err_handler(lmdb_env->sync());
+            if ((db_config.flags & MDB_NOSYNC) == MDB_NOSYNC) {
+                lmdb::err_handler(lmdb_env->sync());
+            }
         } catch (const std::exception& ex) {
             SILKWORM_LOG(LogLevels::LogCritical) << " Unexpected error : " << ex.what() << std::endl;
             main_thread_error_ = true;

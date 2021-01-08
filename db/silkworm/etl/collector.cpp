@@ -34,8 +34,8 @@ Collector::~Collector() {
 void Collector::flush_buffer() {
     if (buffer_.size()) {
         buffer_.sort();
-        file_providers_.emplace_back(work_path_, file_providers_.size());
-        file_providers_.back().flush(buffer_);
+        file_providers_.emplace_back(new FileProvider(work_path_, file_providers_.size()));
+        file_providers_.back()->flush(buffer_);
         buffer_.clear();
     }
 }
@@ -74,7 +74,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
     // Read one "record" from each data_provider and let the queue
     // sort them. On top of the queue the smallest key
     for (auto& data_provider : file_providers_) {
-        auto item{data_provider.read_entry()};
+        auto item{data_provider->read_entry()};
         if (item.has_value()) {
             queue.push(*item);
         }
@@ -91,7 +91,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
 
         // From the provider which has served the current key
         // read next "record"
-        auto next{current_file_provider.read_entry()};
+        auto next{current_file_provider->read_entry()};
 
         // At this point `current` has been processed.
         // We can remove it from the queue

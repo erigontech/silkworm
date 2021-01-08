@@ -49,7 +49,7 @@ class Collector {
     std::string set_work_path(const char* provided_work_path);
 
     std::string work_path_;
-    std::vector<FileProvider> file_providers_;
+    std::vector<std::unique_ptr<FileProvider>> file_providers_;
     Buffer buffer_;
 };
 

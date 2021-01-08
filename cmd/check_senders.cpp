@@ -311,6 +311,7 @@ size_t bufferize_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std
         for (auto& [block_num, mdb_val] : results) {
             Bytes etl_key(40, '\0');
             boost::endian::store_big_u64(&etl_key[0], block_num);
+            memcpy((void*)&etl_key[8], (void*)&headers[block_num - initial_block], kHashLength);
             Bytes etl_data(static_cast<unsigned char*>(mdb_val.mv_data), mdb_val.mv_size);
             etl::Entry etl_entry{ etl_key, etl_data };
             collector.collect(etl_entry);

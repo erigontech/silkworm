@@ -34,6 +34,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/util.hpp>
+#include <silkworm/etl/collector.hpp>
 #include <silkworm/types/block.hpp>
 
 namespace fs = boost::filesystem;
@@ -284,13 +285,12 @@ uint64_t load_canonical_headers(std::unique_ptr<lmdb::Transaction>& txn, uint64_
 }
 
 // Writes batch results to db
-size_t write_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std::mutex& batches_mtx,
+size_t bufferize_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std::mutex& batches_mtx,
                      std::vector<std::unique_ptr<Recoverer>>& workers, evmc::bytes32* headers,
-                     std::unique_ptr<lmdb::Transaction>& txn, uint64_t initial_block) {
+                     etl::Collector& collector, uint64_t initial_block) {
 
     size_t ret{0};
     std::vector<std::pair<uint64_t, MDB_val>> results{};
-    auto senders{txn->open(db::table::kSenders)};
     do {
         // Loop all completed batches until queue
         // empty. Other batches may complete while
@@ -306,21 +306,15 @@ size_t write_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std::mu
         batches.pop();
         l.unlock();
 
-
-        // Append results to senders table
-        Bytes senders_key(40, '\0');
-        MDB_val mdb_key{db::to_mdb_val(senders_key)};
-        uint64_t highest_block{0};
+        // Bufferize results
         for (auto& [block_num, mdb_val] : results) {
-            highest_block = block_num;
-            boost::endian::store_big_u64(&senders_key[0], block_num);
-            memcpy((void*)&senders_key[8], (void*)&headers[block_num - initial_block], kHashLength);
-            lmdb::err_handler(senders->put_append(&mdb_key, &mdb_val));
-            ret += (mdb_key.mv_size + mdb_val.mv_size);
+            Bytes etl_key(40, '\0');
+            boost::endian::store_big_u64(&etl_key[0], block_num);
+            Bytes etl_data(static_cast<unsigned char*>(mdb_val.mv_data), mdb_val.mv_size);
+            etl::Entry etl_entry{ etl_key, etl_data };
+            collector.collect(etl_entry);
         }
 
-        // Update accrued stage height
-        db::stages::set_stage_progress(txn, db::stages::KSenders_key, highest_block);
         std::vector<std::pair<uint64_t, MDB_val>>().swap(results);
 
     } while (true);
@@ -357,6 +351,7 @@ void do_unwind(std::unique_ptr<lmdb::Transaction>& txn, uint64_t from) {
 
 // Executes the recovery stage
 int do_recover(app_options_t& options) {
+
     std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
     std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
     ChainConfig config{kMainnetConfig};                    // Main net config flags
@@ -369,7 +364,6 @@ int do_recover(app_options_t& options) {
     std::queue<std::pair<uint32_t, uint32_t>>
         batches_completed{};           // Queue of batches completed waiting to be written on disk
     std::mutex batches_completed_mtx;  // Guards the queue
-    size_t bytes_written{0};           // Total bytes written
 
     uint32_t next_worker_id{0};                  // Used to serialize the dispatch of works to threads
     std::atomic<uint32_t> workers_in_flight{0};  // Number of workers in flight
@@ -420,11 +414,19 @@ int do_recover(app_options_t& options) {
         return -1;
     }
 
+    // Initialize db_options
+    lmdb::DatabaseConfig db_config{options.datadir};
+    db_config.set_readonly(false);
+    db_config.map_size = options.mapsize;
+
+    // Compute etl temporary path
+    fs::path db_path(options.datadir);
+    fs::path etl_path(db_path.parent_path() / fs::path("etl-temp"));
+    fs::create_directories(etl_path);
+    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+
     try {
         // Open db and start transaction
-        lmdb::DatabaseConfig db_config{options.datadir};
-        db_config.set_readonly(false);
-        db_config.map_size = options.mapsize;
         lmdb_env = lmdb::get_env(db_config);
         lmdb_txn = lmdb_env->begin_rw_transaction();
 
@@ -537,8 +539,8 @@ int do_recover(app_options_t& options) {
                         }
 
                         // Write results to db (if any)
-                        bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_,
-                                                       canonical_headers, lmdb_txn, options.block_from);
+                        bufferize_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers,
+                                          collector, options.block_from);
 
                         // Dispatch new task to worker
                         total_transactions += recoverPackages.size();
@@ -597,8 +599,8 @@ int do_recover(app_options_t& options) {
                 }
 
                 // Write results to db (if any)
-                bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers,
-                                               lmdb_txn, options.block_from);
+                bufferize_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, collector,
+                                  options.block_from);
 
                 total_transactions += recoverPackages.size();
                 recoverers_.at(next_worker_id)->set_work(next_batch_id, recoverPackages);
@@ -617,8 +619,8 @@ int do_recover(app_options_t& options) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
             }
             if (!should_stop_) {
-                bytes_written += write_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers,
-                                               lmdb_txn, options.block_from);
+                bufferize_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, collector,
+                                  options.block_from);
             }
         }
 
@@ -646,10 +648,19 @@ int do_recover(app_options_t& options) {
         std::free(canonical_headers);
     }
 
+
+
+
     // Should we commit ?
     if (!main_thread_error_ && !workers_thread_error_ && !options.rundry && !should_stop_) {
-        SILKWORM_LOG(LogLevels::LogInfo) << "Committing work ( " << bytes_written << " bytes )" << std::endl;
+
+        SILKWORM_LOG(LogLevels::LogInfo) << "Loading data ..." << std::endl;
         try {
+
+            // Load collected data into Senders' table
+            auto senders_table{lmdb_txn->open(db::table::kSenders)};
+            collector.load(senders_table.get(), etl::identity_load);
+
             db::stages::set_stage_progress(lmdb_txn, db::stages::KSenders_key, (options.block_to <= 1 ? 0 : static_cast<uint64_t>(options.block_to)));
             lmdb::err_handler(lmdb_txn->commit());
             lmdb::err_handler(lmdb_env->sync());
@@ -661,6 +672,8 @@ int do_recover(app_options_t& options) {
 
     lmdb_txn.reset();
     lmdb_env.reset();
+    collector.~Collector();
+
     SILKWORM_LOG(LogLevels::LogInfo) << "All done ! " << std::endl;
     return (main_thread_error_ ? -1 : 0);
 }

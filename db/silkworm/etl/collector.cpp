@@ -63,7 +63,7 @@ void Collector::load(lmdb::Environment* env, lmdb::TableConfig table_config, Loa
             }
         }
         // Commit changes to db and terminate collection
-        txn->commit();
+        lmdb::err_handler(txn->commit());
         buffer_.clear();
         
         return;
@@ -116,7 +116,7 @@ void Collector::load(lmdb::Environment* env, lmdb::TableConfig table_config, Loa
 
         if (current_batch_size > batch_size) {
             // We commit the changes and reopen another transaction
-            txn->commit();
+            lmdb::err_handler(txn->commit());
             txn.reset();
             table.reset();
             txn = env->begin_rw_transaction();
@@ -124,7 +124,7 @@ void Collector::load(lmdb::Environment* env, lmdb::TableConfig table_config, Loa
         }
     }
     // Commit remaining final changes to db and terminate collection
-    txn->commit();
+    lmdb::err_handler(txn->commit());
     txn.reset();
 }
 

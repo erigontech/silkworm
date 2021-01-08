@@ -69,7 +69,9 @@ std::optional<std::pair<Entry, int>> FileProvider::read_entry() {
     Entry entry{Bytes(head.lengths[0], '\0'), Bytes(head.lengths[1], '\0')};
     if (!file_.read((char *)entry.key.data(), head.lengths[0]) ||
         !file_.read((char *)entry.value.data(), head.lengths[1])) {
-        throw etl_error(strerror(errno));
+        int rc{errno};
+        reset();
+        throw etl_error(strerror(rc));
     }
 
     return std::make_pair(entry, id_);

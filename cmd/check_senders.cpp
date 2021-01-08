@@ -674,7 +674,6 @@ int do_recover(app_options_t& options) {
 
     lmdb_txn.reset();
     lmdb_env.reset();
-    collector.~Collector();
 
     SILKWORM_LOG(LogLevels::LogInfo) << "All done ! " << std::endl;
     return (main_thread_error_ ? -1 : 0);

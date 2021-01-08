@@ -29,6 +29,8 @@ FileProvider::FileProvider(const std::string &working_path, size_t id) : id_{id}
     if (!file_.is_open()) throw etl_error(strerror(errno));
 }
 
+FileProvider::~FileProvider(void) { reset(); }
+
 void FileProvider::flush(Buffer &buffer) {
     head_t head{};
 

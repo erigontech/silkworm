@@ -224,6 +224,7 @@ bool start_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
             return false;
         }
     }
+    return true;
 }
 
 void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {

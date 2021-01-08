@@ -661,7 +661,7 @@ int do_recover(app_options_t& options) {
 
             // Load collected data into Senders' table
             auto senders_table{lmdb_txn->open(db::table::kSenders)};
-            collector.load(senders_table.get(), etl::identity_load);
+            collector.load(senders_table.get(), etl::identity_load, MDB_APPEND);
 
             db::stages::set_stage_progress(lmdb_txn, db::stages::KSenders_key, (options.block_to <= 1 ? 0 : static_cast<uint64_t>(options.block_to)));
             lmdb::err_handler(lmdb_txn->commit());

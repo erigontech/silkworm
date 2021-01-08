@@ -49,14 +49,16 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
+void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int flags) {
 
     if (!file_providers_.size()) {
         buffer_.sort();
         for (const auto& entry : buffer_.get_entries()) {
             auto trasformed_entries{load_func(entry)};
             for (const auto& transformed_entry : trasformed_entries) {
-                table->put(transformed_entry.key, transformed_entry.value);
+                MDB_val mdb_key{db::to_mdb_val(transformed_entry.key)};
+                MDB_val mdb_data{db::to_mdb_val(transformed_entry.value)};
+                table->put(&mdb_key, &mdb_data, flags);
             }
         }
         buffer_.clear();
@@ -88,7 +90,9 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
         auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
         // Process linked pairs
         for (const auto& transformed_entry : load_func(current_item.first)) {
-            table->put(transformed_entry.key, transformed_entry.value);
+            MDB_val mdb_key{db::to_mdb_val(transformed_entry.key)};
+            MDB_val mdb_data{db::to_mdb_val(transformed_entry.value)};
+            table->put(&mdb_key, &mdb_data, flags);
         }
 
         // From the provider which has served the current key

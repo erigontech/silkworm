@@ -29,7 +29,7 @@
 namespace silkworm::etl {
 
 constexpr size_t kOptimalBufferSize = 256 * kMebi;
-constexpr size_t kIdealBatchSize = 128 * kMebi;  // TODO: Commit after ideal size is reached and open new transaction
+constexpr size_t kIdealBatchSize = 128 * kMebi;
 
 // Function pointer to process Transform on before Load data into tables
 typedef std::vector<Entry> (*LoadFunc)(Entry);
@@ -41,9 +41,10 @@ class Collector {
         : work_path_{set_work_path(work_path)}, buffer_(Buffer(optimal_size)){};
     ~Collector();
 
-    void flush_buffer();                                 // Write buffer to file
-    void collect(Entry& entry);                          // Store key-value pair in memory or on disk
-    void load(lmdb::Table* table, LoadFunc load_func);   // Load collected entries in destination table
+    void flush_buffer();        // Write buffer to file
+    void collect(Entry& entry); // Store key-value pair in memory or on disk
+    // Load collected entries in destination table
+    void load(lmdb::Environment* env, lmdb::TableConfig table_config, LoadFunc load_func, size_t batch_size);
 
   private:
     std::string set_work_path(const char* provided_work_path);

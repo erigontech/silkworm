@@ -50,7 +50,10 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
+void Collector::load(lmdb::Environment* env, lmdb::TableConfig table_config, LoadFunc load_func, size_t batch_size) {
+    // Open destination table
+    auto txn{env->begin_rw_transaction()};
+    auto table{txn->open(table_config)};
     if (!file_providers_.size()) {
         buffer_.sort();
         for (const auto& entry : buffer_.get_entries()) {
@@ -59,11 +62,15 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
                 table->put(entry2.key, entry2.value);
             }
         }
+        // Commit changes to db and terminate collection
+        txn->commit();
         buffer_.clear();
+        
         return;
     }
 
     flush_buffer();
+
 
     // Define a priority queue based on smallest available key
     auto key_comparer = [](std::pair<Entry, int> left, std::pair<Entry, int> right) {
@@ -80,7 +87,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
             queue.push(*item);
         }
     }
-
+    // Keeps track on how much data we are accumulating in the transaction
+    size_t current_batch_size = 0;
     // Process the queue from smallest to largest key
     while (queue.size()) {
         auto& current_item{queue.top()};                                       // Pick smallest key by reference
@@ -105,7 +113,19 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
         } else {
             current_file_provider.reset();
         }
+
+        if (current_batch_size > batch_size) {
+            // We commit the changes and reopen another transaction
+            txn->commit();
+            txn.reset();
+            table.reset();
+            txn = env->begin_rw_transaction();
+            table = txn->open(table_config);
+        }
     }
+    // Commit remaining final changes to db and terminate collection
+    txn->commit();
+    txn.reset();
 }
 
 std::string Collector::set_work_path(const char* provided_work_path) {

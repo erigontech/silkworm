@@ -17,35 +17,26 @@
 #include "collector.hpp"
 
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem/operations.hpp>
 #include <catch2/catch.hpp>
-#include <set>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/tables.hpp>
+#include <boost/filesystem/operations.hpp>
 
 namespace silkworm::etl {
 
 namespace fs = boost::filesystem;
 
 static std::vector<Entry> generate_entry_set(size_t size) {
-    std::vector<Entry> pairs;
-    std::set<Bytes> keys;
-    while (pairs.size() < size) {
+    std::vector<Entry> set;
+    for (size_t i = 0; i < size; i++)
+    {
         Bytes key(8, '\0');
         Bytes value(8, '\0');
         boost::endian::store_big_u64(&key[0], rand() % 200000000u);
         boost::endian::store_big_u64(&value[0], rand() % 200000000u);
-
-        if (keys.count(key)) {
-            // we want unique keys
-            continue;
-        } else {
-            keys.insert(key);
-        }
-
-        pairs.push_back({key, value});
+        set.push_back({key, value});
     }
-    return pairs;
+    return set;
 }
 
 void run_collector_test(LoadFunc load_func) {
@@ -59,11 +50,13 @@ void run_collector_test(LoadFunc load_func) {
     auto env{lmdb::get_env(db_config)};
     auto txn{env->begin_rw_transaction()};
     // Generate Test Entries
-    auto set{generate_entry_set(1000)};                       // 1000 entries in total
-    auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};  // 100 entries per file (16 bytes per entry)
+    auto set{generate_entry_set(1000)};                         // 1000 entries in total
+    auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};    // 100 entries per file (16 bytes per entry)
     db::table::create_all(*txn);
+    txn->commit();
+    txn.reset();
     // Collection
-    for (auto entry : set) {
+    for (auto entry: set) {
         collector.collect(entry);
     }
     // Check whether temporary files were generated
@@ -72,13 +65,13 @@ void run_collector_test(LoadFunc load_func) {
         CHECK(fs::exists(path));
     }
     // Load data
-    auto to{txn->open(db::table::kHeaderNumbers)};
-    collector.load(to.get(), load_func);
+    collector.load(env.get(), db::table::kHeaderNumbers, load_func, 50 * 16); // batch size can contain 50 entries
+    txn = env->begin_rw_transaction();
     // Check wheter load was performed as intended
-    for (auto& entry : set) {
-        for (auto& transformed_entry : load_func(entry)) {
+    auto to{txn->open(db::table::kHeaderNumbers)};
+    for(auto &entry: set) {
+        for(auto& transformed_entry: load_func(entry)) {
             auto value{to->get(transformed_entry.key)};
-            REQUIRE(value);
             CHECK(value->compare(transformed_entry.value) == 0);
         }
     }
@@ -89,13 +82,14 @@ void run_collector_test(LoadFunc load_func) {
     }
 }
 
-TEST_CASE("collect_and_default_load") { run_collector_test(identity_load); }
+TEST_CASE("collect_and_default_load") {
+    run_collector_test(identity_load);
+}
 
 TEST_CASE("collect_and_load") {
     run_collector_test([](Entry entry) {
-        entry.key.at(0) = 1;
-        return std::vector<Entry>({entry});
+        entry.key.at(0) = (unsigned char) 1;
+        return std::vector<Entry>({entry});;
     });
 }
-
-}  // namespace silkworm::etl
+}

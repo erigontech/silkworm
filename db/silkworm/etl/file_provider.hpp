@@ -38,6 +38,9 @@ class FileProvider {
     std::optional<std::pair<Entry, int>> read_entry();  // Read next data element from file starting from position 0
     void reset();                                       // Remove the file when eof is met
 
+    std::string get_file_name(void) const;
+    size_t get_file_size(void) const;
+
   private:
     size_t id_;
     std::fstream file_;      // Actual file stream

@@ -22,7 +22,7 @@
 #include <set>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/tables.hpp>
-#include <iostream>
+
 namespace silkworm::etl {
 
 namespace fs = boost::filesystem;

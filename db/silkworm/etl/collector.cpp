@@ -18,7 +18,6 @@
 
 #include <boost/filesystem.hpp>
 #include <queue>
-#include <iostream>
 
 namespace silkworm::etl {
 

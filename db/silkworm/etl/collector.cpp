@@ -53,12 +53,12 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
 
     if (!file_providers_.size()) {
         buffer_.sort();
-        for (const auto& entry : buffer_.get_entries()) {
-            auto trasformed_entries{load_func(entry)};
-            for (const auto& transformed_entry : trasformed_entries) {
-                MDB_val mdb_key{db::to_mdb_val(transformed_entry.key)};
-                MDB_val mdb_data{db::to_mdb_val(transformed_entry.value)};
-                table->put(&mdb_key, &mdb_data, flags);
+        for (const auto& etl_entry : buffer_.get_entries()) {
+            auto trasformed_etl_entries{load_func(etl_entry)};
+            for (const auto& transformed_etl_entry : trasformed_etl_entries) {
+                MDB_val mdb_key{db::to_mdb_val(transformed_etl_entry.key)};
+                MDB_val mdb_data{db::to_mdb_val(transformed_etl_entry.value)};
+                lmdb::err_handler(table->put(&mdb_key, &mdb_data, flags));
             }
         }
         buffer_.clear();
@@ -77,8 +77,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
 
     // Read one "record" from each data_provider and let the queue
     // sort them. On top of the queue the smallest key
-    for (auto& data_provider : file_providers_) {
-        auto item{data_provider->read_entry()};
+    for (auto& file_provider : file_providers_) {
+        auto item{file_provider->read_entry()};
         if (item.has_value()) {
             queue.push(*item);
         }
@@ -86,18 +86,18 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
 
     // Process the queue from smallest to largest key
     while (queue.size()) {
-        auto& current_item{queue.top()};                                       // Pick smallest key by reference
-        auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
+        auto& [etl_entry, provider_index]{queue.top()};           // Pick smallest key by reference
+        auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
         // Process linked pairs
-        for (const auto& transformed_entry : load_func(current_item.first)) {
-            MDB_val mdb_key{db::to_mdb_val(transformed_entry.key)};
-            MDB_val mdb_data{db::to_mdb_val(transformed_entry.value)};
-            table->put(&mdb_key, &mdb_data, flags);
+        for (const auto& transformed_etl_entry : load_func(etl_entry)) {
+            MDB_val mdb_key{db::to_mdb_val(transformed_etl_entry.key)};
+            MDB_val mdb_data{db::to_mdb_val(transformed_etl_entry.value)};
+            lmdb::err_handler(table->put(&mdb_key, &mdb_data, flags));
         }
 
         // From the provider which has served the current key
         // read next "record"
-        auto next{current_file_provider->read_entry()};
+        auto next{file_provider->read_entry()};
 
         // At this point `current` has been processed.
         // We can remove it from the queue
@@ -107,6 +107,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         // meaningful data
         if (next.has_value()) {
             queue.push(*next);
+        } else {
+            file_provider.reset();
         }
     }
 }
@@ -115,10 +117,10 @@ void Collector::load(lmdb::Table* table, unsigned int flags)
 {
     if (!file_providers_.size()) {
         buffer_.sort();
-        for (const auto& entry : buffer_.get_entries()) {
-            MDB_val mdb_key{db::to_mdb_val(entry.key)};
-            MDB_val mdb_data{db::to_mdb_val(entry.value)};
-            table->put(&mdb_key, &mdb_data, flags);
+        for (const auto& etl_entry : buffer_.get_entries()) {
+            MDB_val mdb_key{db::to_mdb_val(etl_entry.key)};
+            MDB_val mdb_data{db::to_mdb_val(etl_entry.value)};
+            lmdb::err_handler(table->put(&mdb_key, &mdb_data, flags));
         }
         buffer_.clear();
         return;
@@ -136,8 +138,8 @@ void Collector::load(lmdb::Table* table, unsigned int flags)
 
     // Read one "record" from each data_provider and let the queue
     // sort them. On top of the queue the smallest key
-    for (auto& data_provider : file_providers_) {
-        auto item{ data_provider->read_entry() };
+    for (auto& file_provider : file_providers_) {
+        auto item{file_provider->read_entry()};
         if (item.has_value()) {
             queue.push(*item);
         }
@@ -145,17 +147,17 @@ void Collector::load(lmdb::Table* table, unsigned int flags)
 
     // Process the queue from smallest to largest key
     while (queue.size()) {
-        auto& current_item{queue.top()};                                       // Pick smallest key by reference
-        auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
+        auto& [etl_entry, provider_index]{queue.top()};           // Pick smallest key by reference
+        auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
 
         // Persist item into table
-        MDB_val mdb_key{db::to_mdb_val(current_item.first.key)};
-        MDB_val mdb_data{db::to_mdb_val(current_item.first.value)};
-        table->put(&mdb_key, &mdb_data, flags);
+        MDB_val mdb_key{db::to_mdb_val(etl_entry.key)};
+        MDB_val mdb_data{db::to_mdb_val(etl_entry.value)};
+        lmdb::err_handler(table->put(&mdb_key, &mdb_data, flags));
 
         // From the provider which has served the current key
         // read next "record"
-        auto next{current_file_provider->read_entry()};
+        auto next{file_provider->read_entry()};
 
         // At this point `current` has been processed.
         // We can remove it from the queue
@@ -165,9 +167,10 @@ void Collector::load(lmdb::Table* table, unsigned int flags)
         // meaningful data
         if (next.has_value()) {
             queue.push(*next);
+        } else {
+            file_provider.reset();
         }
     }
-
 }
 
 std::string Collector::set_work_path(const char* provided_work_path) {

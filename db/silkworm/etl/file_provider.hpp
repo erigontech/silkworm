@@ -40,8 +40,9 @@ class FileProvider {
 
   private:
     size_t id_;
-    std::fstream file_;
-    std::string filename_;
+    std::fstream file_;      // Actual file stream
+    std::string file_name_;  // Actual name of file
+    size_t file_size_{0};    // Actual size of written data
 };
 }  // namespace silkworm::etl
 #endif  // !ETL_SILKWORM_FILE_PROVIDER_H_

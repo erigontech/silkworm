@@ -24,9 +24,7 @@ namespace fs = boost::filesystem;
 
 FileProvider::FileProvider(const std::string &working_path, size_t id) : id_{id} {
     fs::path path{fs::path(working_path) / fs::path("tmp-" + std::to_string(id))};
-    filename_ = path.string();
-    file_.open(filename_, std::ios_base::in | std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-    if (!file_.is_open()) throw etl_error(strerror(errno));
+    file_name_ = path.string();
 }
 
 FileProvider::~FileProvider(void) { reset(); }
@@ -34,13 +32,21 @@ FileProvider::~FileProvider(void) { reset(); }
 void FileProvider::flush(Buffer &buffer) {
     head_t head{};
 
-    // Verify we have enough space to store all data
+    // Check we have enough space to store all data
     auto &entries{buffer.get_entries()};
-    size_t data_size{buffer.size() + entries.size() * sizeof(head_t)};
-    fs::path workdir(fs::path(filename_).parent_path());
-    if (fs::space(workdir).available < data_size) {
+    file_size_ = {buffer.size() + entries.size() * sizeof(head_t)};
+    fs::path workdir(fs::path(file_name_).parent_path());
+    if (fs::space(workdir).available < file_size_) {
+        file_size_ = 0;
         throw etl_error("Insufficient disk space");
     }
+
+    // Open file for output and flush data
+    file_.open(file_name_, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+    if (!file_.is_open()) {
+        reset();
+        throw etl_error(strerror(errno));
+    };
 
     for (const auto &entry : entries) {
         head.lengths[0] = entry.key.size();
@@ -48,17 +54,30 @@ void FileProvider::flush(Buffer &buffer) {
         if (!file_.write((const char *)head.bytes, 8) ||
             !file_.write((const char *)entry.key.data(), entry.key.size()) ||
             !file_.write((const char *)entry.value.data(), entry.value.size())) {
-            throw etl_error(strerror(errno));
+            auto err{errno};
+            reset();
+            throw etl_error(strerror(err));
         }
     }
-    file_.seekg(0);
+
+    // Close file in output mode and reopen for input mode
+    // This is actually not strictly needed but amends an odd behavior on Windows
+    // which prevents correct display of file size if the handle
+    // has not been closed
+    file_.close();
+    file_.open(file_name_, std::ios_base::in | std::ios_base::binary);
+    if (!file_.is_open()) {
+        auto err{errno};
+        reset();
+        throw etl_error(strerror(err));
+    };
 }
 
 std::optional<std::pair<Entry, int>> FileProvider::read_entry() {
     head_t head{};
 
-    if (!file_.is_open()) {
-        throw etl_error("File handle closed");
+    if (!file_.is_open() || !file_size_) {
+        throw etl_error("Invalid file handle");
     }
 
     if (!file_.read((char *)head.bytes, 8)) {
@@ -69,18 +88,19 @@ std::optional<std::pair<Entry, int>> FileProvider::read_entry() {
     Entry entry{Bytes(head.lengths[0], '\0'), Bytes(head.lengths[1], '\0')};
     if (!file_.read((char *)entry.key.data(), head.lengths[0]) ||
         !file_.read((char *)entry.value.data(), head.lengths[1])) {
-        int rc{errno};
+        auto err{errno};
         reset();
-        throw etl_error(strerror(rc));
+        throw etl_error(strerror(err));
     }
 
     return std::make_pair(entry, id_);
 }
 
 void FileProvider::reset() {
+    file_size_ = 0;
     if (file_.is_open()) {
         file_.close();
-        fs::remove(filename_.c_str());
+        fs::remove(file_name_.c_str());
     }
 }
 

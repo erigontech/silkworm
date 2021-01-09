@@ -111,6 +111,65 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
     }
 }
 
+void Collector::load(lmdb::Table* table, unsigned int flags)
+{
+    if (!file_providers_.size()) {
+        buffer_.sort();
+        for (const auto& entry : buffer_.get_entries()) {
+            MDB_val mdb_key{db::to_mdb_val(entry.key)};
+            MDB_val mdb_data{db::to_mdb_val(entry.value)};
+            table->put(&mdb_key, &mdb_data, flags);
+        }
+        buffer_.clear();
+        return;
+    }
+
+    // Flush not overflown buffer data to file
+    flush_buffer();
+
+    // Define a priority queue based on smallest available key
+    auto key_comparer = [](std::pair<Entry, int> left, std::pair<Entry, int> right) {
+        return left.first.key.compare(right.first.key) > 0;
+    };
+    std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>, decltype(key_comparer)> queue(
+        key_comparer);
+
+    // Read one "record" from each data_provider and let the queue
+    // sort them. On top of the queue the smallest key
+    for (auto& data_provider : file_providers_) {
+        auto item{ data_provider->read_entry() };
+        if (item.has_value()) {
+            queue.push(*item);
+        }
+    }
+
+    // Process the queue from smallest to largest key
+    while (queue.size()) {
+        auto& current_item{queue.top()};                                       // Pick smallest key by reference
+        auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
+
+        // Persist item into table
+        MDB_val mdb_key{db::to_mdb_val(current_item.first.key)};
+        MDB_val mdb_data{db::to_mdb_val(current_item.first.value)};
+        table->put(&mdb_key, &mdb_data, flags);
+
+        // From the provider which has served the current key
+        // read next "record"
+        auto next{current_file_provider->read_entry()};
+
+        // At this point `current` has been processed.
+        // We can remove it from the queue
+        queue.pop();
+
+        // Add next item to the queue only if it has
+        // meaningful data
+        if (next.has_value()) {
+            queue.push(*next);
+        }
+    }
+
+}
+
 std::string Collector::set_work_path(const char* provided_work_path) {
     // If something provided ensure exists as a directory
     if (provided_work_path) {

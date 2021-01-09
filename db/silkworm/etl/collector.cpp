@@ -18,6 +18,7 @@
 
 #include <boost/filesystem.hpp>
 #include <queue>
+#include <iostream>
 
 namespace silkworm::etl {
 
@@ -50,7 +51,10 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
+void Collector::load(std::shared_ptr<lmdb::Environment> environment, lmdb::TableConfig table_config, size_t batch_size, LoadFunc load_func) {
+    auto txn{environment->begin_rw_transaction()};
+    auto table{txn->open(table_config)};
+
     if (!file_providers_.size()) {
         buffer_.sort();
         for (const auto& entry : buffer_.get_entries()) {
@@ -59,7 +63,11 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
                 table->put(entry2.key, entry2.value);
             }
         }
+
         buffer_.clear();
+        table.reset(nullptr);
+        lmdb::err_handler(txn->commit());
+        txn.reset(nullptr);
         return;
     }
 
@@ -80,13 +88,15 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
             queue.push(*item);
         }
     }
-
+    // Keeps track on how much data a table can hold
+    size_t current_batch_size = 0;
     // Process the queue from smallest to largest key
     while (queue.size()) {
         auto& current_item{queue.top()};                                       // Pick smallest key by reference
         auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
         // Process linked pairs
         for (const auto& pair : load_func(current_item.first)) {
+            current_batch_size += pair.key.size() + pair.value.size();
             table->put(pair.key, pair.value);
         }
 
@@ -105,8 +115,19 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
         } else {
             current_file_provider.reset();
         }
+
+        if (current_batch_size > batch_size) {
+            table.reset(nullptr);
+            lmdb::err_handler(txn->commit());
+            txn.reset(nullptr);
+            txn = environment->begin_rw_transaction();
+            table = txn->open(table_config);
+        }
     }
-}
+    
+    table.reset(nullptr);
+    lmdb::err_handler(txn->commit());
+    txn.reset(nullptr);}
 
 std::string Collector::set_work_path(const char* provided_work_path) {
     // If something provided ensure exists as a directory

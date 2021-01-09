@@ -22,7 +22,7 @@
 #include <set>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/tables.hpp>
-
+#include <iostream>
 namespace silkworm::etl {
 
 namespace fs = boost::filesystem;
@@ -62,6 +62,8 @@ void run_collector_test(LoadFunc load_func) {
     auto set{generate_entry_set(1000)};                       // 1000 entries in total
     auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};  // 100 entries per file (16 bytes per entry)
     db::table::create_all(*txn);
+    txn->commit();
+    txn.reset();
     // Collection
     for (auto entry : set) {
         collector.collect(entry);
@@ -72,9 +74,11 @@ void run_collector_test(LoadFunc load_func) {
         CHECK(fs::exists(path));
     }
     // Load data
+    collector.load(env, db::table::kHeaderNumbers, 50 * 16, load_func); // 50 entries per batch
+    txn = env->begin_rw_transaction();
     auto to{txn->open(db::table::kHeaderNumbers)};
-    collector.load(to.get(), load_func);
     // Check wheter load was performed as intended
+
     for (auto& entry : set) {
         for (auto& transformed_entry : load_func(entry)) {
             auto value{to->get(transformed_entry.key)};

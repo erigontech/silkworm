@@ -236,7 +236,7 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
     }
 }
 
-uint64_t load_canonical_headers(std::unique_ptr<lmdb::Transaction>& txn, uint64_t from, uint64_t to, evmc::bytes32* out) {
+uint64_t load_canonical_headers(lmdb::Transaction* txn, uint64_t from, uint64_t to, evmc::bytes32* out) {
 
     uint64_t count{0};
 
@@ -471,7 +471,7 @@ int do_recover(app_options_t& options) {
         }
 
         // Scan headers table to collect all canonical headers
-        auto headers_count{load_canonical_headers(lmdb_txn, options.block_from, options.block_to, canonical_headers)};
+        auto headers_count{load_canonical_headers(lmdb_txn.get(), options.block_from, options.block_to, canonical_headers)};
         if (!headers_count) {
             // Nothing to process
             throw std::logic_error("No canonical headers collected.");

@@ -88,7 +88,7 @@ class Recoverer : public silkworm::Worker {
     // Provides a container of packages to process
     void set_work(uint32_t batch_id, std::vector<package>& packages) {
         std::unique_lock l{mywork_};
-        std::swap(packages_, packages);
+        packages_.swap(packages);
         current_batch_id_ = batch_id;
     }
 
@@ -236,11 +236,13 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
     }
 }
 
-uint64_t load_canonical_headers(lmdb::Transaction& txn, uint64_t from, uint64_t to, evmc::bytes32* out) {
+std::vector<evmc::bytes32> load_canonical_headers(lmdb::Transaction& txn, uint64_t from, uint64_t to) {
 
-    uint64_t count{0};
-
+    uint64_t count{ to - from + 1 };
     SILKWORM_LOG(LogLevels::LogInfo) << "Loading canonical block headers [" << from << " ... " << to << "]" << std::endl;
+
+    std::vector<evmc::bytes32> ret;
+    ret.reserve(count);
 
     // Locate starting canonical block selected
     // and navigate headers
@@ -250,7 +252,7 @@ uint64_t load_canonical_headers(lmdb::Transaction& txn, uint64_t from, uint64_t 
 
     uint32_t percent{0};
     uint32_t percent_step{5};  // 5% increment among batches
-    size_t batch_size{(to - from + 1) / (100 / percent_step)};
+    size_t batch_size{count / (100 / percent_step)};
 
     int rc{headers_table->seek_exact(&mdb_key, &mdb_data)};
     while (rc == MDB_SUCCESS) {
@@ -264,16 +266,20 @@ uint64_t load_canonical_headers(lmdb::Transaction& txn, uint64_t from, uint64_t 
                     rc = MDB_NOTFOUND;
                     break;
                 } else {
-                    memcpy((void*)&out[count++], mdb_data.mv_data, kHashLength);
+                    ret.push_back(to_bytes32({static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size}));
                     batch_size--;
                 }
             }
 
             if (!batch_size) {
-                batch_size = (to - from + 1) / (100 / percent_step);
+                batch_size = count / (100 / percent_step);
                 percent += percent_step;
                 SILKWORM_LOG(LogLevels::LogInfo)
                     << "... " << std::right << std::setw(3) << std::setfill(' ') << percent << " %" << std::endl;
+                if (should_stop_) {
+                    rc = MDB_NOTFOUND;
+                    continue;
+                }
             }
         }
         rc = (should_stop_ ? MDB_NOTFOUND : headers_table->get_next(&mdb_key, &mdb_data));
@@ -282,13 +288,16 @@ uint64_t load_canonical_headers(lmdb::Transaction& txn, uint64_t from, uint64_t 
         lmdb::err_handler(rc);
     }
 
-    return (should_stop_ ? 0 : count);
+    if (should_stop_) {
+        return {};
+    }
+    return ret;
 }
 
 // Writes batch results to db
 size_t bufferize_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std::mutex& batches_mtx,
-                     std::vector<std::unique_ptr<Recoverer>>& workers, evmc::bytes32* headers,
-                     etl::Collector& collector, uint64_t initial_block) {
+                     std::vector<std::unique_ptr<Recoverer>>& workers, std::vector<evmc::bytes32>::iterator& headers,
+                     etl::Collector& collector) {
 
     size_t ret{0};
     std::vector<std::pair<uint64_t, MDB_val>> results{};
@@ -308,13 +317,13 @@ size_t bufferize_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std
         l.unlock();
 
         // Bufferize results
+        // Note ! Blocks arrive already sorted
         for (auto& [block_num, mdb_val] : results) {
-            Bytes etl_key(40, '\0');
-            boost::endian::store_big_u64(&etl_key[0], block_num);
-            memcpy((void*)&etl_key[8], (void*)&headers[block_num - initial_block], kHashLength);
+            auto etl_key{db::block_key(block_num, headers->bytes)};
             Bytes etl_data(static_cast<unsigned char*>(mdb_val.mv_data), mdb_val.mv_size);
-            etl::Entry etl_entry{ etl_key, etl_data };
+            etl::Entry etl_entry{etl_key, etl_data};
             collector.collect(etl_entry);
+            headers++;
         }
 
         std::vector<std::pair<uint64_t, MDB_val>>().swap(results);
@@ -357,7 +366,7 @@ int do_recover(app_options_t& options) {
     std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
     std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
     ChainConfig config{kMainnetConfig};                    // Main net config flags
-    evmc::bytes32* canonical_headers{nullptr};             // Storage space for canonical headers
+    std::vector<evmc::bytes32> canonical_headers{};        // Storage space for canonical headers
     std::vector<Recoverer::package> recoverPackages{};     // Where to store work packages for recoverers
 
     uint32_t next_batch_id{0};                   // Batch identifier sent to recoverer thread
@@ -459,25 +468,14 @@ int do_recover(app_options_t& options) {
             lmdb_txn = lmdb_env->begin_rw_transaction();
         }
 
-        // Try allocate enough memory space to fit all cananonical header hashes
-        // which need to be processed
-        {
-            void* mem{std::calloc((size_t)(options.block_to - options.block_from) + 1, kHashLength)};
-            if (!mem) {
-                // not enough space to store all
-                throw std::runtime_error("Can't allocate enough memory for headers");
-            }
-            canonical_headers = static_cast<evmc::bytes32*>(mem);
-        }
-
-        // Scan headers table to collect all canonical headers
-        auto headers_count{load_canonical_headers(*lmdb_txn, options.block_from, options.block_to, canonical_headers)};
-        if (!headers_count) {
+        // Load all canonical headers
+        canonical_headers.swap(load_canonical_headers(*lmdb_txn, options.block_from, options.block_to));
+        if (!canonical_headers.size()) {
             // Nothing to process
             throw std::logic_error("No canonical headers collected.");
         }
 
-        SILKWORM_LOG(LogLevels::LogInfo) << "Collected " << headers_count << " canonical headers" << std::endl;
+        SILKWORM_LOG(LogLevels::LogInfo) << "Collected " << canonical_headers.size() << " canonical headers" << std::endl;
 
         {
             // Set to first key which is initial block number
@@ -485,11 +483,11 @@ int do_recover(app_options_t& options) {
 
             uint64_t current_block{0};
             uint64_t expected_block{options.block_from};
-            size_t header_index{0};
+            auto header_read_it{canonical_headers.begin()};
+            auto header_write_it{canonical_headers.begin()};
 
             // Build first block key
-            auto block_key{db::block_key(options.block_from, canonical_headers[header_index].bytes)};
-
+            auto block_key{db::block_key(options.block_from, header_read_it->bytes)};
             MDB_val mdb_key{db::to_mdb_val(block_key)};
             MDB_val mdb_data{};
 
@@ -518,7 +516,7 @@ int do_recover(app_options_t& options) {
                                              " got " + std::to_string(current_block));
                 }
 
-                if (memcmp((void*)&key_view[8], (void*)&canonical_headers[header_index], 32) != 0) {
+                if (memcmp((void*)&key_view[8], (void*)header_read_it->bytes, 32) != 0) {
                     // We stumbled into a non canonical block (not matching header)
                     // move next and repeat
                     rc = should_stop_ ? MDB_NOTFOUND : bodies_table->get_next(&mdb_key, &mdb_data);
@@ -548,8 +546,8 @@ int do_recover(app_options_t& options) {
                         }
 
                         // Write results to db (if any)
-                        bufferize_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers,
-                                          collector, options.block_from);
+                        bufferize_results(batches_completed, batches_completed_mtx, recoverers_, header_write_it,
+                                          collector);
 
                         // Dispatch new task to worker
                         total_transactions += recoverPackages.size();
@@ -582,7 +580,7 @@ int do_recover(app_options_t& options) {
                 }
 
                 // After processing move to next block number and header
-                if (++header_index == headers_count) {
+                if (++header_read_it == canonical_headers.end()) {
                     // We'd go beyond collected canonical headers
                     break;
                 }
@@ -608,8 +606,7 @@ int do_recover(app_options_t& options) {
                 }
 
                 // Write results to db (if any)
-                bufferize_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, collector,
-                                  options.block_from);
+                bufferize_results(batches_completed, batches_completed_mtx, recoverers_, header_write_it, collector);
 
                 total_transactions += recoverPackages.size();
                 recoverers_.at(next_worker_id)->set_work(next_batch_id, recoverPackages);
@@ -628,8 +625,7 @@ int do_recover(app_options_t& options) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
             }
             if (!should_stop_) {
-                bufferize_results(batches_completed, batches_completed_mtx, recoverers_, canonical_headers, collector,
-                                  options.block_from);
+                bufferize_results(batches_completed, batches_completed_mtx, recoverers_, header_write_it, collector);
             }
         }
 
@@ -649,13 +645,9 @@ int do_recover(app_options_t& options) {
         main_thread_error_ = true;
     }
 
-    // Stop all recoverers and close all tables
+    // Stop all recoverers & free memory
     stop_workers(recoverers_, true);
-
-    // free memory
-    if (canonical_headers) {
-        std::free(canonical_headers);
-    }
+    std::vector<evmc::bytes32>{}.swap(canonical_headers);
 
     // Should we commit ?
     if (!main_thread_error_ && !workers_thread_error_ && !options.rundry && !should_stop_) {
@@ -679,6 +671,7 @@ int do_recover(app_options_t& options) {
     }
 
     lmdb_txn.reset();
+    lmdb_env->close();
     lmdb_env.reset();
 
     SILKWORM_LOG(LogLevels::LogInfo) << "All done ! " << std::endl;

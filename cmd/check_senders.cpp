@@ -366,7 +366,6 @@ int do_recover(app_options_t& options) {
     std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
     std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
     ChainConfig config{kMainnetConfig};                    // Main net config flags
-    std::vector<evmc::bytes32> canonical_headers{};        // Storage space for canonical headers
     std::vector<Recoverer::package> recoverPackages{};     // Where to store work packages for recoverers
 
     uint32_t next_batch_id{0};                   // Batch identifier sent to recoverer thread
@@ -469,7 +468,7 @@ int do_recover(app_options_t& options) {
         }
 
         // Load all canonical headers
-        canonical_headers.swap(load_canonical_headers(*lmdb_txn, options.block_from, options.block_to));
+        auto canonical_headers{load_canonical_headers(*lmdb_txn, options.block_from, options.block_to)};
         if (!canonical_headers.size()) {
             // Nothing to process
             throw std::logic_error("No canonical headers collected.");
@@ -647,7 +646,6 @@ int do_recover(app_options_t& options) {
 
     // Stop all recoverers & free memory
     stop_workers(recoverers_, true);
-    std::vector<evmc::bytes32>{}.swap(canonical_headers);
 
     // Should we commit ?
     if (!main_thread_error_ && !workers_thread_error_ && !options.rundry && !should_stop_) {

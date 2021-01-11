@@ -56,9 +56,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         for (const auto& etl_entry : buffer_.get_entries()) {
             auto trasformed_etl_entries{load_func(etl_entry)};
             for (const auto& transformed_etl_entry : trasformed_etl_entries) {
-                MDB_val mdb_key{db::to_mdb_val(transformed_etl_entry.key)};
-                MDB_val mdb_data{db::to_mdb_val(transformed_etl_entry.value)};
-                lmdb::err_handler(table->put(&mdb_key, &mdb_data, flags));
+                table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
             }
         }
         buffer_.clear();
@@ -90,9 +88,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
         // Process linked pairs
         for (const auto& transformed_etl_entry : load_func(etl_entry)) {
-            MDB_val mdb_key{db::to_mdb_val(transformed_etl_entry.key)};
-            MDB_val mdb_data{db::to_mdb_val(transformed_etl_entry.value)};
-            lmdb::err_handler(table->put(&mdb_key, &mdb_data, flags));
+            table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
         }
 
         // From the provider which has served the current key
@@ -118,9 +114,7 @@ void Collector::load(lmdb::Table* table, unsigned int flags)
     if (!file_providers_.size()) {
         buffer_.sort();
         for (const auto& etl_entry : buffer_.get_entries()) {
-            MDB_val mdb_key{db::to_mdb_val(etl_entry.key)};
-            MDB_val mdb_data{db::to_mdb_val(etl_entry.value)};
-            lmdb::err_handler(table->put(&mdb_key, &mdb_data, flags));
+            table->put(etl_entry.key, etl_entry.value, flags);
         }
         buffer_.clear();
         return;
@@ -151,9 +145,7 @@ void Collector::load(lmdb::Table* table, unsigned int flags)
         auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
 
         // Persist item into table
-        MDB_val mdb_key{db::to_mdb_val(etl_entry.key)};
-        MDB_val mdb_data{db::to_mdb_val(etl_entry.value)};
-        lmdb::err_handler(table->put(&mdb_key, &mdb_data, flags));
+        table->put(etl_entry.key, etl_entry.value, flags);
 
         // From the provider which has served the current key
         // read next "record"

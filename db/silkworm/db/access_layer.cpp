@@ -50,10 +50,10 @@ static std::vector<Transaction> read_transactions(lmdb::Transaction& txn, uint64
     }
 
     auto table{txn.open(table::kEthTx)};
-    return read_transactions(table, base_id, count);
+    return read_transactions(*table, base_id, count);
 }
 
-std::vector<Transaction> read_transactions(std::unique_ptr<lmdb::Table>& txn_table, uint64_t base_id, uint64_t count) {
+std::vector<Transaction> read_transactions(lmdb::Table& txn_table, uint64_t base_id, uint64_t count) {
     std::vector<Transaction> v;
     if (count == 0) {
         return v;
@@ -66,8 +66,8 @@ std::vector<Transaction> read_transactions(std::unique_ptr<lmdb::Table>& txn_tab
     MDB_val data_mdb{};
 
     uint64_t i{0};
-    for (int rc{txn_table->seek_exact(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND && i < count;
-         rc = txn_table->get_next(&key_mdb, &data_mdb), ++i) {
+    for (int rc{txn_table.seek_exact(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND && i < count;
+         rc = txn_table.get_next(&key_mdb, &data_mdb), ++i) {
         lmdb::err_handler(rc);
         ByteView data{from_mdb_val(data_mdb)};
 

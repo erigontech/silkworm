@@ -51,7 +51,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
 std::vector<evmc::address> read_senders(lmdb::Transaction& txn, int64_t block_number, const evmc::bytes32& block_hash);
 
 // Overload
-std::vector<Transaction> read_transactions(std::unique_ptr<lmdb::Table>& txn_table, uint64_t base_id, uint64_t count);
+std::vector<Transaction> read_transactions(lmdb::Table& txn_table, uint64_t base_id, uint64_t count);
 
 std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code_hash);
 

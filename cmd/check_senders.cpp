@@ -574,7 +574,7 @@ int do_recover(app_options_t& options) {
 
                     // Load transactions
                     std::vector<Transaction> transactions{
-                        db::read_transactions(transactions_table, body.base_txn_id, body.txn_count)};
+                        db::read_transactions(*transactions_table, body.base_txn_id, body.txn_count)};
 
                     // Enqueue Txs in current batch
                     process_txs_for_signing(config, current_block, transactions, recoverPackages);

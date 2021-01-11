@@ -505,8 +505,15 @@ int do_recover(app_options_t& options) {
                 auto key_view{db::from_mdb_val(mdb_key)};
                 current_block = boost::endian::load_big_u64(key_view.data());
 
-                if (current_block != expected_block) {
-                    // We assume keys in block bodies are properly sorted
+                if (current_block < expected_block) {
+                    // The same block height has been recorded
+                    // but is not canonical;
+                    rc = should_stop_ ? MDB_NOTFOUND : bodies_table->get_next(&mdb_key, &mdb_data);
+                    continue;
+                } else if (current_block > expected_block) {
+                    // We surpassed the expected block which means
+                    // either the db misses a block or blocks are not persisted
+                    // in sequence
                     throw std::runtime_error("Bad block body sequence. Expected " + std::to_string(expected_block) +
                                              " got " + std::to_string(current_block));
                 }

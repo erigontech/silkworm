@@ -258,7 +258,9 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     if (prev == value) {
         return;
     }
-    storage_[address].current[key] = value;
+    if (storage_[address].current.insert_or_assign(key, value).second) {
+        journal_.emplace_back(new state::StorageCreateDelta{address});
+    }
     journal_.emplace_back(new state::StorageChangeDelta{address, key, prev});
 }
 
@@ -335,4 +337,5 @@ void IntraBlockState::subtract_refund(uint64_t subtrahend) noexcept { refund_ -=
 uint64_t IntraBlockState::total_refund() const noexcept {
     return refund_ + fee::kRSelfDestruct * self_destructs_.size();
 }
+
 }  // namespace silkworm

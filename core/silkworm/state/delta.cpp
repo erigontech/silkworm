@@ -49,4 +49,8 @@ StorageWipeDelta::StorageWipeDelta(evmc::address address, state::Storage storage
 
 void StorageWipeDelta::revert(IntraBlockState& state) noexcept { state.storage_[address_] = storage_; }
 
+StorageCreateDelta::StorageCreateDelta(evmc::address address) noexcept : address_{std::move(address)} {}
+
+void StorageCreateDelta::revert(IntraBlockState& state) noexcept { state.storage_.erase(address_); }
+
 }  // namespace silkworm::state

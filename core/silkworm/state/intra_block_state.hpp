@@ -112,6 +112,7 @@ class IntraBlockState {
     friend class state::TouchDelta;
     friend class state::StorageChangeDelta;
     friend class state::StorageWipeDelta;
+    friend class state::StorageCreateDelta;
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key, bool original) const noexcept;
 

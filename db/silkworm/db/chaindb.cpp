@@ -533,10 +533,10 @@ int Table::get_next_nodup(MDB_val* key, MDB_val* data) { return get(key, data, M
 int Table::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
 int Table::get_dcount(size_t* count) { return mdb_cursor_count(handle_, count); }
 
-void Table::put(ByteView key, ByteView data) {
+void Table::put(ByteView key, ByteView data, unsigned int flags) {
     MDB_val key_val{db::to_mdb_val(key)};
     MDB_val data_val{db::to_mdb_val(data)};
-    err_handler(put(&key_val, &data_val, 0));
+    err_handler(put(&key_val, &data_val, flags));
 }
 
 int Table::put_current(MDB_val* key, MDB_val* data) { return put(key, data, MDB_CURRENT); }

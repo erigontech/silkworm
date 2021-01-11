@@ -311,7 +311,7 @@ class Table {
      * #put_reserve(), #put_append(), #put_append_dup() and #put_multiple()
      */
     int put(MDB_val* key, MDB_val* data, unsigned int flag);
-    void put(ByteView key, ByteView data);
+    void put(ByteView key, ByteView data, unsigned int flags = 0);
 
     /** @brief Replace the k/d pair at current cursor position
      *

@@ -236,7 +236,7 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
     }
 }
 
-uint64_t load_canonical_headers(lmdb::Transaction* txn, uint64_t from, uint64_t to, evmc::bytes32* out) {
+uint64_t load_canonical_headers(lmdb::Transaction& txn, uint64_t from, uint64_t to, evmc::bytes32* out) {
 
     uint64_t count{0};
 
@@ -245,7 +245,7 @@ uint64_t load_canonical_headers(lmdb::Transaction* txn, uint64_t from, uint64_t 
     // Locate starting canonical block selected
     // and navigate headers
     auto header_key{db::header_hash_key(from)};
-    auto headers_table{txn->open(db::table::kBlockHeaders)};
+    auto headers_table{txn.open(db::table::kBlockHeaders)};
     MDB_val mdb_key{db::to_mdb_val(header_key)}, mdb_data{};
 
     uint32_t percent{0};
@@ -434,9 +434,9 @@ int do_recover(app_options_t& options) {
 
         SILKWORM_LOG(LogLevels::LogInfo) << "Checking previous stages ..." << std::endl;
 
-        auto stage_headers_height{db::stages::get_stage_progress(lmdb_txn.get(), db::stages::KHeaders_key)};
-        auto stage_bodies_height{db::stages::get_stage_progress(lmdb_txn.get(), db::stages::KBlockBodies_key)};
-        auto stage_senders_height{db::stages::get_stage_progress(lmdb_txn.get(), db::stages::KSenders_key)};
+        auto stage_headers_height{db::stages::get_stage_progress(*lmdb_txn, db::stages::KHeaders_key)};
+        auto stage_bodies_height{db::stages::get_stage_progress(*lmdb_txn, db::stages::KBlockBodies_key)};
+        auto stage_senders_height{db::stages::get_stage_progress(*lmdb_txn, db::stages::KSenders_key)};
 
         SILKWORM_LOG(LogLevels::LogDebug) << "Headers height " << stage_headers_height << std::endl;
         SILKWORM_LOG(LogLevels::LogDebug) << "Bodies  height " << stage_bodies_height << std::endl;
@@ -454,7 +454,7 @@ int do_recover(app_options_t& options) {
         if (options.block_from <= stage_senders_height) {
             do_unwind(lmdb_txn, options.block_from);
             SILKWORM_LOG(LogLevels::LogInfo) << "New stage height " << (options.block_from <= 1 ? 0 : static_cast<uint64_t>(options.block_from) - 1) << std::endl;
-            db::stages::set_stage_progress(lmdb_txn.get(), db::stages::KSenders_key, (options.block_from <= 1 ? 0 : static_cast<uint64_t>(options.block_from) - 1));
+            db::stages::set_stage_progress(*lmdb_txn, db::stages::KSenders_key, (options.block_from <= 1 ? 0 : static_cast<uint64_t>(options.block_from) - 1));
             lmdb_txn->commit();
             lmdb_txn = lmdb_env->begin_rw_transaction();
         }
@@ -471,7 +471,7 @@ int do_recover(app_options_t& options) {
         }
 
         // Scan headers table to collect all canonical headers
-        auto headers_count{load_canonical_headers(lmdb_txn.get(), options.block_from, options.block_to, canonical_headers)};
+        auto headers_count{load_canonical_headers(*lmdb_txn, options.block_from, options.block_to, canonical_headers)};
         if (!headers_count) {
             // Nothing to process
             throw std::logic_error("No canonical headers collected.");
@@ -667,7 +667,7 @@ int do_recover(app_options_t& options) {
             auto senders_table{lmdb_txn->open(db::table::kSenders)};
             collector.load(senders_table.get(), MDB_APPEND);
             SILKWORM_LOG(LogLevels::LogInfo) << "Data loaded ..." << std::endl;
-            db::stages::set_stage_progress(lmdb_txn.get(), db::stages::KSenders_key, (options.block_to <= 1 ? 0 : static_cast<uint64_t>(options.block_to)));
+            db::stages::set_stage_progress(*lmdb_txn, db::stages::KSenders_key, (options.block_to <= 1 ? 0 : static_cast<uint64_t>(options.block_to)));
             lmdb::err_handler(lmdb_txn->commit());
             if ((db_config.flags & MDB_NOSYNC) == MDB_NOSYNC) {
                 lmdb::err_handler(lmdb_env->sync());

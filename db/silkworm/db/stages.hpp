@@ -42,10 +42,10 @@ constexpr const char* KTxLookup_key{"TxLookup"};
 constexpr const char* KTxPool_key{"TxPool"};
 
 // Gets the progress (block height) of any given stage
-uint64_t get_stage_progress(lmdb::Transaction* txn, const char* stage_name);
+uint64_t get_stage_progress(lmdb::Transaction& txn, const char* stage_name);
 
 // Sets the progress (block height) of any given stage
-void set_stage_progress(lmdb::Transaction* txn, const char* stage_name, uint64_t block_num);
+void set_stage_progress(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num);
 
 }  // namespace silkworm::db::stages
 

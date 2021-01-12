@@ -53,10 +53,16 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
 
     if (!file_providers_.size()) {
         buffer_.sort();
-        for (const auto& etl_entry : buffer_.get_entries()) {
-            auto trasformed_etl_entries{load_func(etl_entry)};
-            for (const auto& transformed_etl_entry : trasformed_etl_entries) {
-                table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
+        if (load_func) {
+            for (const auto& etl_entry : buffer_.get_entries()) {
+                auto trasformed_etl_entries{load_func(etl_entry)};
+                for (const auto& transformed_etl_entry : trasformed_etl_entries) {
+                    table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
+                }
+            }
+        } else {
+            for (const auto& etl_entry : buffer_.get_entries()) {
+                table->put(etl_entry.key, etl_entry.value, flags);
             }
         }
         buffer_.clear();
@@ -87,65 +93,13 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         auto& [etl_entry, provider_index]{queue.top()};           // Pick smallest key by reference
         auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
         // Process linked pairs
-        for (const auto& transformed_etl_entry : load_func(etl_entry)) {
-            table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
-        }
-
-        // From the provider which has served the current key
-        // read next "record"
-        auto next{file_provider->read_entry()};
-
-        // At this point `current` has been processed.
-        // We can remove it from the queue
-        queue.pop();
-
-        // Add next item to the queue only if it has
-        // meaningful data
-        if (next.has_value()) {
-            queue.push(*next);
+        if (load_func) {
+            for (const auto& transformed_etl_entry : load_func(etl_entry)) {
+                table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
+            }
         } else {
-            file_provider.reset();
-        }
-    }
-}
-
-void Collector::load(lmdb::Table* table, unsigned int flags)
-{
-    if (!file_providers_.size()) {
-        buffer_.sort();
-        for (const auto& etl_entry : buffer_.get_entries()) {
             table->put(etl_entry.key, etl_entry.value, flags);
         }
-        buffer_.clear();
-        return;
-    }
-
-    // Flush not overflown buffer data to file
-    flush_buffer();
-
-    // Define a priority queue based on smallest available key
-    auto key_comparer = [](std::pair<Entry, int> left, std::pair<Entry, int> right) {
-        return left.first.key.compare(right.first.key) > 0;
-    };
-    std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>, decltype(key_comparer)> queue(
-        key_comparer);
-
-    // Read one "record" from each data_provider and let the queue
-    // sort them. On top of the queue the smallest key
-    for (auto& file_provider : file_providers_) {
-        auto item{file_provider->read_entry()};
-        if (item.has_value()) {
-            queue.push(*item);
-        }
-    }
-
-    // Process the queue from smallest to largest key
-    while (queue.size()) {
-        auto& [etl_entry, provider_index]{queue.top()};           // Pick smallest key by reference
-        auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
-
-        // Persist item into table
-        table->put(etl_entry.key, etl_entry.value, flags);
 
         // From the provider which has served the current key
         // read next "record"

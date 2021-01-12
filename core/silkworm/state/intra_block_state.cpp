@@ -96,7 +96,9 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
     objects_[address] = created;
 
     auto it{storage_.find(address)};
-    if (it != storage_.end()) {
+    if (it == storage_.end()) {
+        journal_.emplace_back(new state::StorageCreateDelta{address});
+    } else {
         journal_.emplace_back(new state::StorageWipeDelta{address, it->second});
         storage_.erase(address);
     }
@@ -258,9 +260,7 @@ void IntraBlockState::set_storage(const evmc::address& address, const evmc::byte
     if (prev == value) {
         return;
     }
-    if (storage_[address].current.insert_or_assign(key, value).second) {
-        journal_.emplace_back(new state::StorageCreateDelta{address});
-    }
+    storage_[address].current[key] = value;
     journal_.emplace_back(new state::StorageChangeDelta{address, key, prev});
 }
 

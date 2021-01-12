@@ -1,3 +1,4 @@
+#include "chaindb.hpp"
 /*
    Copyright 2020 The Silkworm Authors
 
@@ -14,11 +15,11 @@
    limitations under the License.
 */
 
-#include "chaindb.hpp"
-
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/mapped_region.hpp>
+
+#include "chaindb.hpp"
 
 namespace silkworm::lmdb {
 
@@ -270,6 +271,58 @@ size_t Transaction::get_id(void) { return mdb_txn_id(handle_); }
 
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
+std::optional<Bytes> Transaction::get(const TableConfig& domain, MDB_val* mdb_key) {
+
+    std::unique_ptr<Table> tbl{nullptr};
+
+    try {
+        if (!domain.name) {
+            tbl = this->open(MAIN_DBI);
+        } else {
+            // Should we create if not existent ?
+            tbl = this->open(domain, (this->is_ro() ? 0 : MDB_CREATE));
+        }
+    } catch (...) {
+        // Container could not be opened
+        // By consequence value does not exist
+        return std::nullopt;
+    }
+
+    MDB_val mdb_data;
+    int rc{tbl->seek_exact(mdb_key, &mdb_data)};
+    switch (rc) {
+        case MDB_NOTFOUND:
+            return std::nullopt;
+        case MDB_SUCCESS:
+            break;
+        default:
+            err_handler(rc);
+    }
+    Bytes ret(mdb_data.mv_size, 0);
+    std::memcpy(ret.data(), mdb_data.mv_data, mdb_data.mv_size);
+    return ret;
+}
+
+int Transaction::put(const TableConfig& domain, MDB_val* mdb_key, MDB_val* mdb_data)
+{
+    if (is_ro()) {
+        return MDB_BAD_TXN;
+    }
+
+    try {
+        std::unique_ptr<Table> tbl{nullptr};
+        if (!domain.name) {
+            tbl = this->open(MAIN_DBI);
+        } else {
+            tbl = this->open(domain, MDB_CREATE);
+        }
+        return tbl->put(mdb_key, mdb_data, 0);
+    } catch (const exception& ex) {
+        // We may fail opening the table
+        return ex.err();
+    }
+}
+
 std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned flags) {
     flags |= config.flags;
     MDB_dbi dbi{open_dbi(config.name, flags)};
@@ -480,10 +533,10 @@ int Table::get_next_nodup(MDB_val* key, MDB_val* data) { return get(key, data, M
 int Table::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
 int Table::get_dcount(size_t* count) { return mdb_cursor_count(handle_, count); }
 
-void Table::put(ByteView key, ByteView data) {
+void Table::put(ByteView key, ByteView data, unsigned int flags) {
     MDB_val key_val{db::to_mdb_val(key)};
     MDB_val data_val{db::to_mdb_val(data)};
-    err_handler(put(&key_val, &data_val, 0));
+    err_handler(put(&key_val, &data_val, flags));
 }
 
 int Table::put_current(MDB_val* key, MDB_val* data) { return put(key, data, MDB_CURRENT); }

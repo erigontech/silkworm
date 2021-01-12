@@ -33,14 +33,19 @@ namespace silkworm::etl {
 class FileProvider {
   public:
     FileProvider(const std::string& working_path, size_t id);
+    ~FileProvider(void);
     void flush(Buffer& buffer);                         // Write buffer's contents to disk
     std::optional<std::pair<Entry, int>> read_entry();  // Read next data element from file starting from position 0
     void reset();                                       // Remove the file when eof is met
 
+    std::string get_file_name(void) const;
+    size_t get_file_size(void) const;
+
   private:
     size_t id_;
-    std::fstream file_;
-    std::string filename_;
+    std::fstream file_;      // Actual file stream
+    std::string file_name_;  // Actual name of file
+    size_t file_size_{0};    // Actual size of written data
 };
 }  // namespace silkworm::etl
 #endif  // !ETL_SILKWORM_FILE_PROVIDER_H_

@@ -20,10 +20,10 @@
 #include <cassert>
 #include <cstring>
 #include <ethash/keccak.hpp>
+#include <evmone/analysis.hpp>
 #include <iterator>
 
 #include "address.hpp"
-#include "analysis.hpp"
 #include "execution.hpp"
 #include "precompiled.hpp"
 #include "protocol_param.hpp"

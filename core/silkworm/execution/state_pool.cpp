@@ -16,9 +16,8 @@
 
 #include "state_pool.hpp"
 
+#include <evmone/analysis.hpp>
 #include <utility>
-
-#include "analysis.hpp"
 
 namespace silkworm {
 

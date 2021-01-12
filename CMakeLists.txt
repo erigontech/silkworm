@@ -180,7 +180,7 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/limits.hpp
                    evmone/lib/evmone/opcodes_helpers.h)
 
-target_include_directories(evmone PUBLIC evmone/lib/evmone)
+target_include_directories(evmone PUBLIC evmone/lib)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE keccak)
 
 if(MSVC)

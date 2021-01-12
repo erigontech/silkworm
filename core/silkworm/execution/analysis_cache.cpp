@@ -16,10 +16,9 @@
 
 #include "analysis_cache.hpp"
 
+#include <evmone/analysis.hpp>
 #include <memory>
 #include <utility>
-
-#include "analysis.hpp"
 
 namespace silkworm {
 

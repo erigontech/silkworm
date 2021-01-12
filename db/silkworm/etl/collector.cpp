@@ -24,10 +24,9 @@ namespace silkworm::etl {
 namespace fs = boost::filesystem;
 
 Collector::~Collector() {
-    if (work_path_.empty()) {
-        return;
-    }
 
+    file_providers_.clear();  // Will ensure all files (if any) have been orderly closed and deleted before we remove
+                              // the working dir
     fs::path path(work_path_);
     if (fs::exists(path)) {
         fs::remove_all(path);
@@ -37,8 +36,8 @@ Collector::~Collector() {
 void Collector::flush_buffer() {
     if (buffer_.size()) {
         buffer_.sort();
-        file_providers_.emplace_back(work_path_, file_providers_.size());
-        file_providers_.back().flush(buffer_);
+        file_providers_.emplace_back(new FileProvider(work_path_, file_providers_.size()));
+        file_providers_.back()->flush(buffer_);
         buffer_.clear();
     }
 }
@@ -50,19 +49,27 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
+void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int flags) {
+
     if (!file_providers_.size()) {
         buffer_.sort();
-        for (const auto& entry : buffer_.get_entries()) {
-            auto entries{load_func(entry)};
-            for (const auto& entry2 : entries) {
-                table->put(entry2.key, entry2.value);
+        if (load_func) {
+            for (const auto& etl_entry : buffer_.get_entries()) {
+                auto trasformed_etl_entries{load_func(etl_entry)};
+                for (const auto& transformed_etl_entry : trasformed_etl_entries) {
+                    table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
+                }
+            }
+        } else {
+            for (const auto& etl_entry : buffer_.get_entries()) {
+                table->put(etl_entry.key, etl_entry.value, flags);
             }
         }
         buffer_.clear();
         return;
     }
 
+    // Flush not overflown buffer data to file
     flush_buffer();
 
     // Define a priority queue based on smallest available key
@@ -74,8 +81,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
 
     // Read one "record" from each data_provider and let the queue
     // sort them. On top of the queue the smallest key
-    for (auto& data_provider : file_providers_) {
-        auto item{data_provider.read_entry()};
+    for (auto& file_provider : file_providers_) {
+        auto item{file_provider->read_entry()};
         if (item.has_value()) {
             queue.push(*item);
         }
@@ -83,16 +90,20 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
 
     // Process the queue from smallest to largest key
     while (queue.size()) {
-        auto& current_item{queue.top()};                                       // Pick smallest key by reference
-        auto& current_file_provider{file_providers_.at(current_item.second)};  // and set current file provider
+        auto& [etl_entry, provider_index]{queue.top()};           // Pick smallest key by reference
+        auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
         // Process linked pairs
-        for (const auto& pair : load_func(current_item.first)) {
-            table->put(pair.key, pair.value);
+        if (load_func) {
+            for (const auto& transformed_etl_entry : load_func(etl_entry)) {
+                table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
+            }
+        } else {
+            table->put(etl_entry.key, etl_entry.value, flags);
         }
 
         // From the provider which has served the current key
         // read next "record"
-        auto next{current_file_provider.read_entry()};
+        auto next{file_provider->read_entry()};
 
         // At this point `current` has been processed.
         // We can remove it from the queue
@@ -103,7 +114,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func) {
         if (next.has_value()) {
             queue.push(*next);
         } else {
-            current_file_provider.reset();
+            file_provider.reset();
         }
     }
 }

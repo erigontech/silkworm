@@ -405,6 +405,45 @@ int do_scan(db_options_t& db_opts) {
     return retvar;
 }
 
+int do_stages(db_options_t& db_opts) {
+
+    static std::string fmt_hdr{ " %-24s %10s " };
+    static std::string fmt_row{ " %-24s %10u " };
+
+    int retvar{ 0 };
+    std::shared_ptr<lmdb::Environment> lmdb_env{open_db(db_opts, true)};  // Main lmdb environment
+
+    try {
+
+        if (!lmdb_env) throw std::runtime_error("Could not open LMDB environment");
+        auto lmdb_txn{ lmdb_env->begin_ro_transaction() };
+        auto stages{lmdb_txn->open(db::table::kSyncStageProgress)};
+
+        std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
+        std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(10, '-')) << std::endl;
+
+        MDB_val key, data;
+        int rc{stages->get_first(&key, &data)};
+        while (rc == MDB_SUCCESS)
+        {
+            size_t height{boost::endian::load_big_u64(db::from_mdb_val(data).data())};
+            std::cout << (boost::format(fmt_row) % (const char*)key.mv_data % height) << std::endl;
+            rc = stages->get_next(&key, &data);
+        }
+        if (rc != MDB_NOTFOUND) lmdb::err_handler(rc);
+
+    } catch (lmdb::exception& ex) {
+        std::cout << ex.err() << " " << ex.what() << std::endl;
+        retvar = -1;
+    } catch (std::runtime_error& ex) {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    lmdb_env.reset();
+    return retvar;
+}
+
 int do_tables(db_options_t& db_opts) {
 
     static std::string fmt_hdr{" %3s %-24s %10s %2s %10s %10s %10s %12s"};
@@ -797,6 +836,9 @@ int main(int argc, char* argv[]) {
     app_copy.add_option("--xtables", copy_opts.xtables, "Don't copy tables matching this list of names", true);
     app_copy.add_option("--commit", copy_opts.commitsize_str, "Commit every this size bytes", true);
 
+    // Stages tool
+    // List stages keys and their heights
+    auto& app_stages = *app_main.add_subcommand("stages", "List stages and their actual heights");
 
     CLI11_PARSE(app_main, argc, argv);
 
@@ -865,6 +907,8 @@ int main(int argc, char* argv[]) {
         return do_tables(db_opts);
     } else if (app_scan) {
         return do_scan(db_opts);
+    } else if (app_stages) {
+        return do_stages(db_opts);
     } else if (app_freelist) {
         return do_freelist(db_opts, freelist_opts);
     } else if (app_clear) {

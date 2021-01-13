@@ -557,7 +557,6 @@ int do_recover(app_options_t& options) {
                         recoverers_.at(next_worker_id)->set_work(next_batch_id++, work_set);
                         recoverers_.at(next_worker_id)->kick();
                         workers_in_flight++;
-                        batch_size = 0;
 
                         SILKWORM_LOG(LogLevels::LogInfo)
                             << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block
@@ -576,7 +575,6 @@ int do_recover(app_options_t& options) {
 
                     // Enqueue Txs in current batch
                     process_txs_for_signing(config, current_block, transactions, work_set);
-                    batch_size += transactions.size();
                 }
 
                 // After processing move to next block number and header
@@ -612,7 +610,6 @@ int do_recover(app_options_t& options) {
                 recoverers_.at(next_worker_id)->set_work(next_batch_id, work_set);
                 recoverers_.at(next_worker_id)->kick();
                 workers_in_flight++;
-                batch_size = 0;
 
                 SILKWORM_LOG(LogLevels::LogInfo)
                     << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block << " Transactions "

@@ -217,20 +217,20 @@ static void check_rlp_err(rlp::DecodingError err) {
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
 void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
     for (const auto& entry : pre.items()) {
-        evmc::address address{to_address(*from_hex(entry.key()))};
+        evmc::address address{to_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};
 
         Account account;
-        Bytes balance_str{*from_hex(j["balance"].get<std::string>())};
+        Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
         auto [balance, err1]{rlp::read_uint256(balance_str, /*allow_leading_zeros=*/true)};
         check_rlp_err(err1);
         account.balance = balance;
-        Bytes nonce_str{*from_hex(j["nonce"].get<std::string>())};
+        Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
         auto [nonce, err2]{rlp::read_uint64(nonce_str, /*allow_leading_zeros=*/true)};
         check_rlp_err(err2);
         account.nonce = nonce;
 
-        Bytes code{*from_hex(j["code"].get<std::string>())};
+        Bytes code{from_hex(j["code"].get<std::string>()).value()};
         if (!code.empty()) {
             account.incarnation = 1;
             ethash::hash256 hash{keccak256(code)};
@@ -241,8 +241,8 @@ void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
         state.update_account(address, /*initial=*/std::nullopt, account);
 
         for (const auto& storage : j["storage"].items()) {
-            Bytes key{*from_hex(storage.key())};
-            Bytes value{*from_hex(storage.value().get<std::string>())};
+            Bytes key{from_hex(storage.key()).value()};
+            Bytes value{from_hex(storage.value().get<std::string>()).value()};
             state.update_storage(address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
         }
     }
@@ -306,7 +306,7 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer
 
 bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
     for (const auto& entry : expected.items()) {
-        evmc::address address{to_address(*from_hex(entry.key()))};
+        evmc::address address{to_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};
 
         std::optional<Account> account{state.read_account(address)};
@@ -315,7 +315,7 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
             return false;
         }
 
-        Bytes balance_str{*from_hex(j["balance"].get<std::string>())};
+        Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
         auto [expected_balance, err1]{rlp::read_uint256(balance_str, /*allow_leading_zeros=*/true)};
         check_rlp_err(err1);
         if (account->balance != expected_balance) {
@@ -324,7 +324,7 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
             return false;
         }
 
-        Bytes nonce_str{*from_hex(j["nonce"].get<std::string>())};
+        Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
         auto [expected_nonce, err2]{rlp::read_uint64(nonce_str, /*allow_leading_zeros=*/true)};
         check_rlp_err(err2);
         if (account->nonce != expected_nonce) {
@@ -335,15 +335,15 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
 
         auto expected_code{j["code"].get<std::string>()};
         Bytes actual_code{state.read_code(account->code_hash)};
-        if (actual_code != *from_hex(expected_code)) {
+        if (actual_code != from_hex(expected_code)) {
             std::cout << "Code mismatch for " << entry.key() << ":\n";
             std::cout << to_hex(actual_code) << " != " << expected_code << "\n";
             return false;
         }
 
         for (const auto& storage : j["storage"].items()) {
-            Bytes key{*from_hex(storage.key())};
-            Bytes expected_value{*from_hex(storage.value().get<std::string>())};
+            Bytes key{from_hex(storage.key()).value()};
+            Bytes expected_value{from_hex(storage.value().get<std::string>()).value()};
             evmc::bytes32 actual_value{state.read_storage(address, account->incarnation, to_bytes32(key))};
             if (actual_value != to_bytes32(expected_value)) {
                 std::cout << "Storage mismatch for " << entry.key() << " at " << storage.key() << ":\n";
@@ -363,7 +363,7 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         return kSkipped;
     }
 
-    Bytes genesis_rlp{*from_hex(j["genesisRLP"].get<std::string>())};
+    Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
     check_rlp_err(rlp::decode(genesis_view, genesis_block));
@@ -541,7 +541,7 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
     bool parent_has_uncles{false};
     if (j.contains("parentUncles")) {
         auto parent_uncles{j["parentUncles"].get<std::string>()};
-        parent_has_uncles = *from_hex(parent_uncles) != full_view(kEmptyListHash);
+        parent_has_uncles = from_hex(parent_uncles).value() != full_view(kEmptyListHash);
     }
 
     intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp, parent_difficulty,

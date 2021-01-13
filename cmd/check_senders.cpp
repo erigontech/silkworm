@@ -367,10 +367,10 @@ int do_recover(app_options_t& options) {
     std::shared_ptr<lmdb::Environment> lmdb_env{nullptr};  // Main lmdb environment
     std::unique_ptr<lmdb::Transaction> lmdb_txn{nullptr};  // Main lmdb transaction
     ChainConfig config{kMainnetConfig};                    // Main net config flags
-    std::vector<Recoverer::package> recoverPackages{};     // Where to store work packages for recoverers
+    std::vector<Recoverer::package> work_set{};            // Where to store work packages for recoverers
+    work_set.reserve(options.batch_size);
 
     uint32_t next_batch_id{0};                   // Batch identifier sent to recoverer thread
-    size_t batch_size{0};                        // Progressive number of delivered work
     std::atomic<uint32_t> expected_batch_id{0};  // Holder of queue flushing order
     std::queue<std::pair<uint32_t, uint32_t>>
         batches_completed{};           // Queue of batches completed waiting to be written on disk
@@ -533,7 +533,7 @@ int do_recover(app_options_t& options) {
 
                     // Should we overflow the batch queue dispatch the work
                     // accumulated so far to the recoverer thread
-                    if ((batch_size + body.txn_count) > options.batch_size) {
+                    if ((work_set.size() + body.txn_count) > options.batch_size) {
                         // If all workers busy no other option than to wait for
                         // at least one free slot
                         while (workers_in_flight == options.numthreads) {
@@ -550,11 +550,11 @@ int do_recover(app_options_t& options) {
                                           collector);
 
                         // Dispatch new task to worker
-                        total_transactions += recoverPackages.size();
+                        total_transactions += work_set.size();
 
-                        SILKWORM_LOG(LogLevels::LogDebug) << "Package size " << recoverPackages.size() << std::endl;
+                        SILKWORM_LOG(LogLevels::LogDebug) << "Package size " << work_set.size() << std::endl;
 
-                        recoverers_.at(next_worker_id)->set_work(next_batch_id++, recoverPackages);
+                        recoverers_.at(next_worker_id)->set_work(next_batch_id++, work_set);
                         recoverers_.at(next_worker_id)->kick();
                         workers_in_flight++;
                         batch_size = 0;
@@ -575,7 +575,7 @@ int do_recover(app_options_t& options) {
                         db::read_transactions(*transactions_table, body.base_txn_id, body.txn_count)};
 
                     // Enqueue Txs in current batch
-                    process_txs_for_signing(config, current_block, transactions, recoverPackages);
+                    process_txs_for_signing(config, current_block, transactions, work_set);
                     batch_size += transactions.size();
                 }
 
@@ -608,8 +608,8 @@ int do_recover(app_options_t& options) {
                 // Write results to db (if any)
                 bufferize_results(batches_completed, batches_completed_mtx, recoverers_, header_write_it, collector);
 
-                total_transactions += recoverPackages.size();
-                recoverers_.at(next_worker_id)->set_work(next_batch_id, recoverPackages);
+                total_transactions += work_set.size();
+                recoverers_.at(next_worker_id)->set_work(next_batch_id, work_set);
                 recoverers_.at(next_worker_id)->kick();
                 workers_in_flight++;
                 batch_size = 0;

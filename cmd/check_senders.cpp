@@ -591,7 +591,7 @@ int do_recover(app_options_t& options) {
             }
 
             // Should we have a partially filled work package deliver it now
-            if (batch_size && !should_stop_) {
+            if (work_set.size() && !should_stop_) {
                 // If all workers busy no other option than to wait for
                 // at least one free slot
                 while (workers_in_flight == options.numthreads) {

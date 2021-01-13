@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@
 #include <cassert>
 #include <cstring>
 #include <ethash/keccak.hpp>
+#include <evmone/analysis.hpp>
 #include <iterator>
 
 #include "address.hpp"
-#include "analysis.hpp"
 #include "execution.hpp"
 #include "precompiled.hpp"
 #include "protocol_param.hpp"

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -112,6 +112,7 @@ class IntraBlockState {
     friend class state::TouchDelta;
     friend class state::StorageChangeDelta;
     friend class state::StorageWipeDelta;
+    friend class state::StorageCreateDelta;
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key, bool original) const noexcept;
 

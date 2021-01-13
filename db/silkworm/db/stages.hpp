@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -27,19 +27,19 @@ List of stages keys stored into SSP2 table
 
 namespace silkworm::db::stages {
 
-constexpr const char* KAccountHistory_key{"AccountHistoryIndex"};
-constexpr const char* KBlockHashes_key{"BlockHashes"};
-constexpr const char* KBlockBodies_key{"Bodies"};
-constexpr const char* KExecution_key{"Execution"};
-constexpr const char* KFinish_key{"Finish"};
-constexpr const char* KHashState_key{"HashState"};
-constexpr const char* KHeaders_key{"Headers"};
-constexpr const char* KIntermediateHashes_key{"IntermediateHashes"};
-constexpr const char* KLogIndex_key{"LogIndex"};
-constexpr const char* KSenders_key{"Senders"};
-constexpr const char* KStorageHistoryIndex_key{"StorageHistoryIndex"};
-constexpr const char* KTxLookup_key{"TxLookup"};
-constexpr const char* KTxPool_key{"TxPool"};
+constexpr const char* kAccountHistoryKey{"AccountHistoryIndex"};
+constexpr const char* kBlockHashesKey{"BlockHashes"};
+constexpr const char* kBlockBodiesKey{"Bodies"};
+constexpr const char* kExecutionKey{"Execution"};
+constexpr const char* kFinishKey{"Finish"};
+constexpr const char* kHashStateKey{"HashState"};
+constexpr const char* kHeadersKey{"Headers"};
+constexpr const char* kIntermediateHashesKey{"IntermediateHashes"};
+constexpr const char* kLogIndexKey{"LogIndex"};
+constexpr const char* kSendersKey{"Senders"};
+constexpr const char* kStorageHistoryIndexKey{"StorageHistoryIndex"};
+constexpr const char* kTxLookupKey{"TxLookup"};
+constexpr const char* kTxPoolKey{"TxPool"};
 
 // Gets the progress (block height) of any given stage
 uint64_t get_stage_progress(lmdb::Transaction& txn, const char* stage_name);

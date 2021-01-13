@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-21 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,31 +20,13 @@
 #include <limits>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
 
 #include "tg_api/silkworm_tg_api.h"
 
-static constexpr const char* kExecutionStageKey{"Execution"};
-
 using namespace silkworm;
-
-static uint64_t already_executed_block(lmdb::Transaction& txn) {
-    auto tbl{txn.open(db::table::kSyncStageProgress)};
-    std::optional<ByteView> data{tbl->get(byte_view_of_c_str(kExecutionStageKey))};
-    if (data) {
-        return boost::endian::load_big_u64(data->data());
-    } else {
-        return 0;
-    }
-}
-
-static void save_progress(lmdb::Transaction& txn, uint64_t block_number) {
-    auto tbl{txn.open(db::table::kSyncStageProgress)};
-    Bytes val(8, '\0');
-    boost::endian::store_big_u64(&val[0], block_number);
-    tbl->put(byte_view_of_c_str(kExecutionStageKey), val);
-}
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
@@ -99,7 +81,7 @@ int main(int argc, char* argv[]) {
 
         bool write_receipts{db::read_storage_mode_receipts(*txn)};
 
-        uint64_t previous_progress{already_executed_block(*txn)};
+        uint64_t previous_progress{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
         uint64_t current_progress{previous_progress};
 
         for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
@@ -115,7 +97,7 @@ int main(int argc, char* argv[]) {
 
             block_number = current_progress;
 
-            save_progress(*txn, current_progress);
+            db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, current_progress);
             lmdb::err_handler(txn->commit());
             txn.reset();
 

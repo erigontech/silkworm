@@ -320,7 +320,7 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
         check_rlp_err(err1);
         if (account->balance != expected_balance) {
             std::cout << "Balance mismatch for " << entry.key() << ":\n";
-            std::cout << to_string(account->balance, 16) << " ≠ " << j["balance"] << "\n";
+            std::cout << to_string(account->balance, 16) << " != " << j["balance"] << "\n";
             return false;
         }
 
@@ -329,7 +329,7 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
         check_rlp_err(err2);
         if (account->nonce != expected_nonce) {
             std::cout << "Nonce mismatch for " << entry.key() << ":\n";
-            std::cout << account->nonce << " ≠ " << expected_nonce << "\n";
+            std::cout << account->nonce << " != " << expected_nonce << "\n";
             return false;
         }
 
@@ -337,7 +337,7 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
         Bytes actual_code{state.read_code(account->code_hash)};
         if (actual_code != *from_hex(expected_code)) {
             std::cout << "Code mismatch for " << entry.key() << ":\n";
-            std::cout << to_hex(actual_code) << " ≠ " << expected_code << "\n";
+            std::cout << to_hex(actual_code) << " != " << expected_code << "\n";
             return false;
         }
 
@@ -347,7 +347,7 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
             evmc::bytes32 actual_value{state.read_storage(address, account->incarnation, to_bytes32(key))};
             if (actual_value != to_bytes32(expected_value)) {
                 std::cout << "Storage mismatch for " << entry.key() << " at " << storage.key() << ":\n";
-                std::cout << to_hex(actual_value) << " ≠ " << to_hex(expected_value) << "\n";
+                std::cout << to_hex(actual_value) << " != " << to_hex(expected_value) << "\n";
                 return false;
             }
         }
@@ -522,7 +522,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         std::string expected{entry.value()["sender"].get<std::string>()};
         if (to_hex(*txn.from) != expected) {
             std::cout << "Sender mismatch for " << entry.key() << ":\n";
-            std::cout << to_hex(*txn.from) << " ≠ " << expected << "\n";
+            std::cout << to_hex(*txn.from) << " != " << expected << "\n";
             return kFailed;
         }
     }
@@ -550,7 +550,7 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
         return kPassed;
     } else {
         std::cout << "Difficulty mismatch for block " << block_number << "\n";
-        std::cout << hex(calculated_difficulty) << " ≠ " << hex(current_difficulty) << "\n";
+        std::cout << hex(calculated_difficulty) << " != " << hex(current_difficulty) << "\n";
         return kFailed;
     }
 }

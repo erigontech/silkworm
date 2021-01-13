@@ -69,7 +69,7 @@ unsigned get_host_cpus() {
 
 class Recoverer : public silkworm::Worker {
   public:
-    Recoverer(uint32_t id, size_t size) : id_(id), mysize_{size} {};
+    Recoverer(uint32_t id, size_t size) : id_(id), data_size_{size} {};
 
     // Recovery package
     struct package {
@@ -87,35 +87,36 @@ class Recoverer : public silkworm::Worker {
 
     // Provides a container of packages to process
     void set_work(uint32_t batch_id, std::vector<package>& packages) {
-        std::unique_lock l{mywork_};
-        packages_.swap(packages);
-        current_batch_id_ = batch_id;
+        std::unique_lock l{xwork_};
+        work_set_.swap(packages);
+        batch_id_ = batch_id;
     }
 
     uint32_t get_id() const { return id_; };
+    uint32_t get_batch_id() const { return batch_id_; };
 
     // Pulls results from worker
-    std::vector<std::pair<uint64_t, MDB_val>>& get_results(void) { return myresults_; };
+    std::vector<std::pair<uint64_t, MDB_val>>& get_results(void) { return results_; };
 
     // Signal to connected handlers the task has completed
     boost::signals2::signal<void(uint32_t sender_id, uint32_t batch_id, Recoverer::error error)> signal_completed;
 
    private:
-     const uint32_t id_;                                      // Current worker identifier
-     mutable std::mutex mywork_;                              // Work mutex
-     std::vector<package> packages_{};                        // Work packages to process
-     uint32_t current_batch_id_{0};                           // Identifier of the batch being processed
-     size_t mysize_;                                          // Size of the recovery data
-     uint8_t* mydata_{nullptr};                               // Pointer to data where rsults are stored
-     std::vector<std::pair<uint64_t, MDB_val>> myresults_{};  // Results per block pointing to data area
+     const uint32_t id_;                                    // Current worker identifier
+     uint32_t batch_id_{0};                                 // Running batch identifier
+     mutable std::mutex xwork_;                             // Work mutex
+     std::vector<package> work_set_{};                      // Work packages to process
+     size_t data_size_;                                     // Size of the recovery data buffer
+     uint8_t* data_{nullptr};                               // Pointer to data where rsults are stored
+     std::vector<std::pair<uint64_t, MDB_val>> results_{};  // Results per block pointing to data area
 
      // Basic work loop (overrides Worker::work())
      void work() final {
 
          // Try allocate enough memory to store
          // results output
-         mydata_ = static_cast<uint8_t*>(std::calloc(1, mysize_));
-         if (!mydata_) {
+         data_ = static_cast<uint8_t*>(std::calloc(1, data_size_));
+         if (!data_) {
              throw std::runtime_error("Unable to allocate memory");
          }
 
@@ -131,20 +132,20 @@ class Recoverer : public silkworm::Worker {
 
              {
                  // Lock mutex so no other jobs may be set
-                 std::unique_lock l{mywork_};
-                 myresults_.clear();
+                 std::unique_lock l{xwork_};
+                 results_.clear();
                  error recovery_error{};
 
-                 uint64_t current_block{packages_.at(0).block_num};
+                 uint64_t current_block{work_set_.at(0).block_num};
                  size_t block_result_offset{0};
                  size_t block_result_length{0};
 
                  // Loop
-                 for (auto const& package : packages_) {
+                 for (auto const& package : work_set_) {
                      // On block switching store the results
                      if (current_block != package.block_num) {
-                         MDB_val result{block_result_length, (void*)&mydata_[block_result_offset]};
-                         myresults_.push_back({current_block, result});
+                         MDB_val result{block_result_length, (void*)&data_[block_result_offset]};
+                         results_.push_back({current_block, result});
                          block_result_offset += block_result_length;
                          block_result_length = 0;
                          current_block = package.block_num;
@@ -155,7 +156,7 @@ class Recoverer : public silkworm::Worker {
                                                                    full_view(package.signature), package.recovery_id)};
                      if (recovered.has_value() && (int)recovered->at(0) == 4) {
                          auto keyHash{ethash::keccak256(recovered->data() + 1, recovered->length() - 1)};
-                         std::memcpy(&mydata_[block_result_offset + block_result_length],
+                         std::memcpy(&data_[block_result_offset + block_result_length],
                                      &keyHash.bytes[sizeof(keyHash) - kAddressLength], kAddressLength);
                          block_result_length += kAddressLength;
                      } else {
@@ -167,17 +168,17 @@ class Recoverer : public silkworm::Worker {
 
                  // Store results for last block
                  if (block_result_length) {
-                     MDB_val result{block_result_length, (void*)&mydata_[block_result_offset]};
-                     myresults_.push_back({current_block, result});
+                     MDB_val result{block_result_length, (void*)&data_[block_result_offset]};
+                     results_.push_back({current_block, result});
                  }
 
                  // Raise finished event
-                 signal_completed(id_, current_batch_id_, recovery_error);
-                 packages_.clear();  // Clear here. Next set_work will swap the cleaned container to master thread
+                 signal_completed(id_, batch_id_, recovery_error);
+                 work_set_.clear();  // Clear here. Next set_work will swap the cleaned container to master thread
              }
          }
 
-         std::free(mydata_);
+         std::free(data_);
     };
 };
 

@@ -54,6 +54,7 @@ int main(int argc, char* argv[]) {
     lmdb::DatabaseConfig db_config{db_path};
     db_config.set_readonly(false); 
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
+    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
     // We take data from header table and transform it and put it in blockhashes table
     auto header_table{txn->open(db::table::kBlockHeaders)};
     auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};

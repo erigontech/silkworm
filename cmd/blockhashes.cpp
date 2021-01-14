@@ -54,9 +54,9 @@ int main(int argc, char* argv[]) {
     lmdb::DatabaseConfig db_config{db_path};
     db_config.set_readonly(false); 
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
-    auto from{txn->open(db::table::kBlockHeaders)};
-    auto to{txn->open(db::table::kHeaderNumbers)};
+    // We take data from header table and transform it and put it in blockhashes table
+    auto header_table{txn->open(db::table::kBlockHeaders)};
+    auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};
     
     try {
         auto current_block_number{db::stages::get_stage_progress(*txn, db::stages::KBlockHashes_key)};
@@ -67,22 +67,27 @@ int main(int argc, char* argv[]) {
         MDB_val key_mdb{db::to_mdb_val(start)};
         MDB_val data_mdb;
         SILKWORM_LOG(LogInfo) << "Started BlockHashes Extraction" << std::endl;
-        for (int rc{from->seek(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND; rc = from->get_next(&key_mdb, &data_mdb)) {
-            // Extraction occurs here
+
+        for (int rc{header_table->seek(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND; rc = header_table->get_next(&key_mdb, &data_mdb)) {
+            // Check if it's an header entry
             if (key_mdb.mv_size != 40) continue;
             Bytes key(static_cast<unsigned char*>(key_mdb.mv_data), key_mdb.mv_size);
+            // We set the key to the hash of the header and the value to the block number
             etl::Entry entry{key.substr(8,40), key.substr(0,8)};
             collector.collect(entry);
             current_block_number++;
         }
         SILKWORM_LOG(LogInfo) << "Entries Inserted << " << current_block_number - initial_block_number << std::endl;
         SILKWORM_LOG(LogInfo) << "Started BlockHashes Loading" << std::endl;
+        // If it was not empty before appending cannot happen
         if (initial_block_number == 0) {
+            // It First clear from temporary data generated in Stage 1
             txn->open(db::table::kHeaderNumbers)->clear();
-            collector.load(to.get(), nullptr, MDB_APPEND);
+            collector.load(blockhashes_table.get(), nullptr, MDB_APPEND);
         } else {
-            collector.load(to.get(), nullptr, 0);
+            collector.load(blockhashes_table.get(), nullptr, 0);
         }
+        // Update progress
         db::stages::set_stage_progress(*txn, db::stages::KBlockHashes_key, current_block_number);
         lmdb::err_handler(txn->commit());
         SILKWORM_LOG(LogInfo) << "All Done" << std::endl;

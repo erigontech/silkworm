@@ -52,17 +52,20 @@ int main(int argc, char* argv[]) {
         db_config.set_readonly(false); 
         std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
         std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+
         auto header_table{txn->open(db::table::kBlockHeaders)};
         auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};
 
         MDB_val key_mdb, data_mdb;
         SILKWORM_LOG(LogInfo) << "Checking Block Hashes..." << std::endl;
+        // Check if each hash has the correct number accordingly to the header table
         for (int rc{header_table->seek(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND; rc = header_table->get_next(&key_mdb, &data_mdb)) {
             ByteView key{db::from_mdb_val(key_mdb)};
             if (key.size() != 40) continue;
             auto hash{key.substr(8,40)};
             auto expected_number{key.substr(0,8)};
             auto actual_number{blockhashes_table->get(hash)};
+
             if (actual_number->compare(expected_number) != 0) {
                 uint64_t expected_block = boost::endian::load_big_u64(expected_number.data());
                 uint64_t actual_block = boost::endian::load_big_u64(actual_number->data());

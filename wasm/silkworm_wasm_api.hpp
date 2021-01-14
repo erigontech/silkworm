@@ -21,11 +21,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <intx/intx.hpp>
 #include <silkworm/chain/config.hpp>
 
 #define SILKWORM_EXPORT __attribute__((visibility("default")))
 
 extern "C" {
+
+// a + b*2^64 + c*2^128 + d*2^192
+SILKWORM_EXPORT intx::uint256* silkworm_new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d);
 
 SILKWORM_EXPORT const silkworm::ChainConfig* silkworm_lookup_config(uint64_t chain_id);
 
@@ -36,9 +40,10 @@ SILKWORM_EXPORT void silkworm_config_set_update_block(silkworm::ChainConfig* con
 
 SILKWORM_EXPORT void silkworm_config_set_muir_glacier_block(silkworm::ChainConfig* config, uint64_t block);
 
-SILKWORM_EXPORT uint64_t silkworm_difficulty(uint64_t block_number, uint64_t block_timestamp,
-                                             uint64_t parent_difficulty, uint64_t parent_timestamp,
-                                             bool parent_has_uncles, const silkworm::ChainConfig* config);
+// in_out: in parent difficulty, out current difficulty
+SILKWORM_EXPORT void silkworm_difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp,
+                                         uint64_t parent_timestamp, bool parent_has_uncles,
+                                         const silkworm::ChainConfig* config);
 }
 
 #endif  // SILKWORM_WASM_API_HPP_

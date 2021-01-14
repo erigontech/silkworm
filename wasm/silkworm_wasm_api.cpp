@@ -18,12 +18,23 @@
 
 #include <silkworm/chain/difficulty.hpp>
 
+intx::uint256* silkworm_new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) {
+    // For some reason operator new causes import "wasi_snapshot_preview1"
+    void* ptr{malloc(sizeof(intx::uint256))};
+    auto out{static_cast<intx::uint256*>(ptr)};
+    out->lo.lo = a;
+    out->lo.hi = b;
+    out->hi.lo = c;
+    out->hi.hi = d;
+    return out;
+}
+
 const silkworm::ChainConfig* silkworm_lookup_config(uint64_t chain_id) {
     return silkworm::lookup_chain_config(chain_id);
 }
 
 silkworm::ChainConfig* silkworm_new_config(uint64_t chain_id) {
-    // TODO(Andrew) operator new
+    // For some reason operator new causes import "wasi_snapshot_preview1"
     void* ptr{malloc(sizeof(silkworm::ChainConfig))};
     auto out{static_cast<silkworm::ChainConfig*>(ptr)};
     *out = silkworm::ChainConfig{};
@@ -67,11 +78,10 @@ void silkworm_config_set_muir_glacier_block(silkworm::ChainConfig* config, uint6
     config->muir_glacier_block = block;
 }
 
-uint64_t silkworm_difficulty(uint64_t block_number, uint64_t block_timestamp, uint64_t parent_difficulty,
-                             uint64_t parent_timestamp, bool parent_has_uncles, const silkworm::ChainConfig* config) {
-    intx::uint256 x{silkworm::canonical_difficulty(block_number, block_timestamp, parent_difficulty, parent_timestamp,
-                                                   parent_has_uncles, *config)};
-    return static_cast<uint64_t>(x);
+void silkworm_difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp,
+                         uint64_t parent_timestamp, bool parent_has_uncles, const silkworm::ChainConfig* config) {
+    *in_out = silkworm::canonical_difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out,
+                                             parent_timestamp, parent_has_uncles, *config);
 }
 
 int main() { return 0; }

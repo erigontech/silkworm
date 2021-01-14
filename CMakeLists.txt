@@ -153,7 +153,7 @@ if(MSVC)
 
   add_link_options(/ignore:4099)
 else()
-  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers)
+  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -199,4 +199,9 @@ endif()
 
 if(NOT SILKWORM_HAS_PARENT)
   add_subdirectory(cmd)
+endif()
+
+option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
+if(SILKWORM_WASM_API)
+  add_subdirectory(wasm)
 endif()

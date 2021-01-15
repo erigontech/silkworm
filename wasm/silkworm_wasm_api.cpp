@@ -18,13 +18,28 @@
 
 #include <cstdlib>
 #include <silkworm/chain/difficulty.hpp>
+#include <silkworm/common/util.hpp>
 
-SILKWORM_EXPORT void silkworm_delete(void* ptr) { std::free(ptr); }
+SILKWORM_EXPORT void* silkworm_malloc(size_t size) { return std::malloc(size); }
+
+SILKWORM_EXPORT void silkworm_free(void* ptr) { std::free(ptr); }
+
+using namespace silkworm;
+
+Bytes* silkworm_new_bytes_from_hex(char* data, size_t size) {
+    std::optional<Bytes> res{from_hex(std::string_view{data, size})};
+    if (!res) {
+        return nullptr;
+    }
+    auto out{new Bytes};
+    *out = *res;
+    return out;
+}
+
+void silkworm_delete_bytes(Bytes* x) { delete x; }
 
 intx::uint256* silkworm_new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) {
-    // For some reason operator new causes import "wasi_snapshot_preview1"
-    void* ptr{std::malloc(sizeof(intx::uint256))};
-    auto out{static_cast<intx::uint256*>(ptr)};
+    auto out{new intx::uint256};
     out->lo.lo = a;
     out->lo.hi = b;
     out->hi.lo = c;
@@ -32,20 +47,19 @@ intx::uint256* silkworm_new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint6
     return out;
 }
 
-const silkworm::ChainConfig* silkworm_lookup_config(uint64_t chain_id) {
-    return silkworm::lookup_chain_config(chain_id);
-}
+void silkworm_delete_uint256(intx::uint256* x) { delete x; }
 
-silkworm::ChainConfig* silkworm_new_config(uint64_t chain_id) {
-    // For some reason operator new causes import "wasi_snapshot_preview1"
-    void* ptr{std::malloc(sizeof(silkworm::ChainConfig))};
-    auto out{static_cast<silkworm::ChainConfig*>(ptr)};
-    *out = silkworm::ChainConfig{};
+const ChainConfig* silkworm_lookup_config(uint64_t chain_id) { return lookup_chain_config(chain_id); }
+
+ChainConfig* silkworm_new_config(uint64_t chain_id) {
+    auto out{new ChainConfig};
     out->chain_id = chain_id;
     return out;
 }
 
-void silkworm_config_set_update_block(silkworm::ChainConfig* config, evmc_revision update, uint64_t block) {
+void silkworm_delete_config(ChainConfig* x) { delete x; }
+
+void silkworm_config_set_update_block(ChainConfig* config, evmc_revision update, uint64_t block) {
     switch (update) {
         case EVMC_FRONTIER:
             // frontier block is always 0
@@ -77,14 +91,12 @@ void silkworm_config_set_update_block(silkworm::ChainConfig* config, evmc_revisi
     }
 }
 
-void silkworm_config_set_muir_glacier_block(silkworm::ChainConfig* config, uint64_t block) {
-    config->muir_glacier_block = block;
-}
+void silkworm_config_set_muir_glacier_block(ChainConfig* config, uint64_t block) { config->muir_glacier_block = block; }
 
 void silkworm_difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp,
-                         uint64_t parent_timestamp, bool parent_has_uncles, const silkworm::ChainConfig* config) {
-    *in_out = silkworm::canonical_difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out,
-                                             parent_timestamp, parent_has_uncles, *config);
+                         uint64_t parent_timestamp, bool parent_has_uncles, const ChainConfig* config) {
+    *in_out = canonical_difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
+                                   parent_has_uncles, *config);
 }
 
 int main() { return 0; }

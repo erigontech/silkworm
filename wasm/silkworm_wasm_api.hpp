@@ -23,19 +23,26 @@
 
 #include <intx/intx.hpp>
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/base.hpp>
 
 #define SILKWORM_EXPORT __attribute__((visibility("default")))
 
 extern "C" {
 
-SILKWORM_EXPORT void silkworm_delete(void* ptr);
+SILKWORM_EXPORT void* silkworm_malloc(size_t size);
+SILKWORM_EXPORT void silkworm_free(void* ptr);
+
+SILKWORM_EXPORT silkworm::Bytes* silkworm_new_bytes_from_hex(char* data, size_t size);
+SILKWORM_EXPORT void silkworm_delete_bytes(silkworm::Bytes* x);
 
 // a + b*2^64 + c*2^128 + d*2^192
 SILKWORM_EXPORT intx::uint256* silkworm_new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d);
+SILKWORM_EXPORT void silkworm_delete_uint256(intx::uint256* x);
 
 SILKWORM_EXPORT const silkworm::ChainConfig* silkworm_lookup_config(uint64_t chain_id);
 
 SILKWORM_EXPORT silkworm::ChainConfig* silkworm_new_config(uint64_t chain_id);
+SILKWORM_EXPORT void silkworm_delete_config(silkworm::ChainConfig* x);
 
 SILKWORM_EXPORT void silkworm_config_set_update_block(silkworm::ChainConfig* config, evmc_revision update,
                                                       uint64_t block);

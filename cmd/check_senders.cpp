@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -47,7 +47,6 @@ std::atomic_bool workers_thread_error_{false};  // Error detected in one of work
 struct app_options_t {
     std::string datadir{};          // Provided database path
     uint64_t mapsize{0};            // Provided lmdb map size
-    uint32_t numthreads{1};         // Number of recovery threads to start
     size_t batch_size{10'000};      // Number of work packages to serve e worker
     uint32_t block_from{1u};        // Initial block number to start from
     uint32_t block_to{UINT32_MAX};  // Final block number to process
@@ -60,11 +59,6 @@ void sig_handler(int signum) {
     (void)signum;
     std::cout << std::endl << " Got interrupt. Stopping ..." << std::endl << std::endl;
     should_stop_.store(true);
-}
-
-unsigned get_host_cpus() {
-    unsigned n{std::thread::hardware_concurrency()};
-    return n ? n : 2;
 }
 
 class Recoverer : public silkworm::Worker {
@@ -377,6 +371,7 @@ int do_recover(app_options_t& options) {
     std::mutex batches_completed_mtx;  // Guards the queue
 
     uint32_t next_worker_id{0};                  // Used to serialize the dispatch of works to threads
+    const uint32_t workers_max_count{std::max(1u, std::thread::hardware_concurrency() - 1)};
     std::atomic<uint32_t> workers_in_flight{0};  // Number of workers in flight
     uint64_t total_transactions{0};              // Overall number of transactions processed
 
@@ -412,7 +407,7 @@ int do_recover(app_options_t& options) {
     // a full batch. Worker object is not copyable
     // thus the need of a unique_ptr.
     std::vector<std::unique_ptr<Recoverer>> recoverers_{};
-    for (uint32_t i = 0; i < options.numthreads; i++) {
+    for (uint32_t i = 0; i < workers_max_count; i++) {
         recoverers_.emplace_back(new Recoverer(i, (options.batch_size * kAddressLength)));
         recoverers_.back()->signal_completed.connect(boost::bind(finishedHandler, _1, _2, _3));
     }
@@ -536,7 +531,7 @@ int do_recover(app_options_t& options) {
                     if ((work_set.size() + body.txn_count) > options.batch_size) {
                         // If all workers busy no other option than to wait for
                         // at least one free slot
-                        while (workers_in_flight == options.numthreads) {
+                        while (workers_in_flight == workers_max_count) {
                             std::this_thread::sleep_for(std::chrono::milliseconds(500));
                         }
 
@@ -561,10 +556,10 @@ int do_recover(app_options_t& options) {
                         SILKWORM_LOG(LogLevels::LogInfo)
                             << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block
                             << " Transactions " << std::right << std::setw(12) << std::setfill(' ')
-                            << total_transactions << " Workers " << workers_in_flight << "/" << options.numthreads
+                            << total_transactions << " Workers " << workers_in_flight << "/" << workers_max_count
                             << std::endl;
 
-                        if (++next_worker_id == options.numthreads) {
+                        if (++next_worker_id == workers_max_count) {
                             next_worker_id = 0;
                         }
                     }
@@ -594,7 +589,7 @@ int do_recover(app_options_t& options) {
             if (work_set.size() && !should_stop_) {
                 // If all workers busy no other option than to wait for
                 // at least one free slot
-                while (workers_in_flight == options.numthreads) {
+                while (workers_in_flight == workers_max_count) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 }
 
@@ -614,7 +609,7 @@ int do_recover(app_options_t& options) {
                 SILKWORM_LOG(LogLevels::LogInfo)
                     << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block << " Transactions "
                     << std::right << std::setw(12) << std::setfill(' ') << total_transactions << " Workers "
-                    << workers_in_flight << "/" << options.numthreads << std::endl;
+                    << workers_in_flight << "/" << workers_max_count << std::endl;
             }
 
             // Wait for all workers to complete and write their results
@@ -756,15 +751,12 @@ int main(int argc, char* argv[]) {
     CLI::App app("Senders recovery tool.");
     app_options_t options{};
     options.datadir = silkworm::db::default_path();  // Default chain data db path
-    options.numthreads = get_host_cpus() - 1;        // 1 thread per core leaving one slot for main thread
 
     // Command line arguments
     app.add_option("--datadir", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
 
     std::string mapSizeStr{"0"};
     app.add_option("--lmdb.mapSize", mapSizeStr, "Lmdb map size", true);
-    app.add_option("--threads", options.numthreads, "Number of recovering threads", true)
-        ->check(CLI::Range(1u, get_host_cpus() - 1));
     app.add_option("--batch", options.batch_size, "Number of transactions to process per batch", true)
         ->check(CLI::Range((size_t)1'000, (size_t)10'000'000));
     app.add_option("--from", options.block_from, "Initial block number to process (inclusive)", true)

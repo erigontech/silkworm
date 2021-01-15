@@ -33,7 +33,7 @@ extern "C" {
 SILKWORM_EXPORT void* silkworm_malloc(size_t size);
 SILKWORM_EXPORT void silkworm_free(void* ptr);
 
-SILKWORM_EXPORT silkworm::Bytes* silkworm_new_bytes_from_hex(char* data, size_t size);
+SILKWORM_EXPORT silkworm::Bytes* silkworm_new_bytes_from_hex(const char* data, size_t size);
 SILKWORM_EXPORT void silkworm_delete_bytes(silkworm::Bytes* x);
 
 // a + b*2^64 + c*2^128 + d*2^192

@@ -27,7 +27,7 @@ SILKWORM_EXPORT void silkworm_free(void* ptr) { std::free(ptr); }
 
 using namespace silkworm;
 
-Bytes* silkworm_new_bytes_from_hex(char* data, size_t size) {
+Bytes* silkworm_new_bytes_from_hex(const char* data, size_t size) {
     std::optional<Bytes> res{from_hex(std::string_view{data, size})};
     if (!res) {
         return nullptr;

@@ -16,11 +16,14 @@
 
 #include "silkworm_wasm_api.hpp"
 
+#include <cstdlib>
 #include <silkworm/chain/difficulty.hpp>
+
+SILKWORM_EXPORT void silkworm_delete(void* ptr) { std::free(ptr); }
 
 intx::uint256* silkworm_new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) {
     // For some reason operator new causes import "wasi_snapshot_preview1"
-    void* ptr{malloc(sizeof(intx::uint256))};
+    void* ptr{std::malloc(sizeof(intx::uint256))};
     auto out{static_cast<intx::uint256*>(ptr)};
     out->lo.lo = a;
     out->lo.hi = b;
@@ -35,7 +38,7 @@ const silkworm::ChainConfig* silkworm_lookup_config(uint64_t chain_id) {
 
 silkworm::ChainConfig* silkworm_new_config(uint64_t chain_id) {
     // For some reason operator new causes import "wasi_snapshot_preview1"
-    void* ptr{malloc(sizeof(silkworm::ChainConfig))};
+    void* ptr{std::malloc(sizeof(silkworm::ChainConfig))};
     auto out{static_cast<silkworm::ChainConfig*>(ptr)};
     *out = silkworm::ChainConfig{};
     out->chain_id = chain_id;

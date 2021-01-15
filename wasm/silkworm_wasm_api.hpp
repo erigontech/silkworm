@@ -28,6 +28,8 @@
 
 extern "C" {
 
+SILKWORM_EXPORT void silkworm_delete(void* ptr);
+
 // a + b*2^64 + c*2^128 + d*2^192
 SILKWORM_EXPORT intx::uint256* silkworm_new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d);
 

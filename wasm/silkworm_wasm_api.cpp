@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/execution/processor.hpp>
 
 SILKWORM_EXPORT void* silkworm_malloc(size_t size) { return std::malloc(size); }
 
@@ -97,6 +98,37 @@ void silkworm_difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t 
                          uint64_t parent_timestamp, bool parent_has_uncles, const ChainConfig* config) {
     *in_out = canonical_difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
                                    parent_has_uncles, *config);
+}
+
+Transaction* silkworm_new_transaction(const Bytes* rlp) {
+    ByteView view{*rlp};
+    auto txn{new Transaction};
+    if (rlp::decode(view, *txn) == rlp::DecodingError::kOk && view.empty()) {
+        return txn;
+    } else {
+        delete txn;
+        return nullptr;
+    }
+}
+
+void silkworm_delete_transaction(Transaction* x) { delete x; }
+
+uint64_t silkworm_intrinsic_gas(const silkworm::Transaction* txn, bool homestead, bool istanbul) {
+    intx::uint128 gas{intrinsic_gas(*txn, homestead, istanbul)};
+    if (gas.hi) {
+        return -1;
+    } else {
+        return gas.lo;
+    }
+}
+
+const uint8_t* silkworm_recover_sender(silkworm::Transaction* txn, bool homestead, uint64_t chain_id) {
+    if (chain_id == 0) {
+        txn->recover_sender(homestead, std::nullopt);
+    } else {
+        txn->recover_sender(homestead, chain_id);
+    }
+    return txn->from ? txn->from->bytes : nullptr;
 }
 
 int main() { return 0; }

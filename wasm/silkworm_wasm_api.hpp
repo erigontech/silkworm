@@ -24,6 +24,7 @@
 #include <intx/intx.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/base.hpp>
+#include <silkworm/types/transaction.hpp>
 
 #define SILKWORM_EXPORT __attribute__((visibility("default")))
 
@@ -53,6 +54,14 @@ SILKWORM_EXPORT void silkworm_config_set_muir_glacier_block(silkworm::ChainConfi
 SILKWORM_EXPORT void silkworm_difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp,
                                          uint64_t parent_timestamp, bool parent_has_uncles,
                                          const silkworm::ChainConfig* config);
+
+SILKWORM_EXPORT silkworm::Transaction* silkworm_new_transaction(const silkworm::Bytes* rlp);
+SILKWORM_EXPORT void silkworm_delete_transaction(silkworm::Transaction* x);
+
+SILKWORM_EXPORT uint64_t silkworm_intrinsic_gas(const silkworm::Transaction* txn, bool homestead, bool istanbul);
+
+// 0 chain_id means pre EIP-155
+SILKWORM_EXPORT const uint8_t* silkworm_recover_sender(silkworm::Transaction* txn, bool homestead, uint64_t chain_id);
 }
 
 #endif  // SILKWORM_WASM_API_HPP_

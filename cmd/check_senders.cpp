@@ -808,6 +808,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Enable debug logging if required
+    if (options.debug) {
+        Logger::default_logger().verbosity = LogLevels::LogTrace;
+    }
+
     // Invoke proper action
     int rc{-1};
     if (app_recover) {

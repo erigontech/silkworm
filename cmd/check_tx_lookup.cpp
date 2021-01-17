@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     lmdb::DatabaseConfig db_config{db_path};
     db_config.set_readonly(false); 
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+    std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
     auto bodies_table{txn->open(db::table::kBlockBodies)};
     auto tx_lookup_table{txn->open(db::table::kTxLookup)};

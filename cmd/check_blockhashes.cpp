@@ -28,7 +28,7 @@ using namespace silkworm;
 int main(int argc, char* argv[]) { 
     namespace fs = boost::filesystem;
     
-    CLI::App app{"Generates Blockhashes => BlockNumber mapping in database"};
+    CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
 
     std::string db_path{db::default_path()};
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
         lmdb::DatabaseConfig db_config{db_path};
         db_config.set_readonly(false); 
         std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-        std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+        std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
         auto header_table{txn->open(db::table::kBlockHeaders)};
         auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};

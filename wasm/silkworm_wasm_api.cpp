@@ -113,16 +113,12 @@ Transaction* new_transaction(const Bytes* rlp) {
 
 void delete_transaction(Transaction* x) { delete x; }
 
-uint64_t intrinsic_gas(const silkworm::Transaction* txn, bool homestead, bool istanbul) {
-    intx::uint128 gas{intrinsic_gas(*txn, homestead, istanbul)};
-    if (gas.hi) {
-        return -1;
-    } else {
-        return gas.lo;
-    }
+bool check_intrinsic_gas(const Transaction* txn, bool homestead, bool istanbul) {
+    intx::uint128 g0{intrinsic_gas(*txn, homestead, istanbul)};
+    return txn->gas_limit >= g0;
 }
 
-const uint8_t* recover_sender(silkworm::Transaction* txn, bool homestead, uint64_t chain_id) {
+const uint8_t* recover_sender(Transaction* txn, bool homestead, uint64_t chain_id) {
     if (chain_id == 0) {
         txn->recover_sender(homestead, std::nullopt);
     } else {

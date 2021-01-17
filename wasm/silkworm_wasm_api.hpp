@@ -30,38 +30,36 @@
 
 extern "C" {
 
-SILKWORM_EXPORT void* silkworm_malloc(size_t size);
-SILKWORM_EXPORT void silkworm_free(void* ptr);
+SILKWORM_EXPORT void* new_buffer(size_t size);
+SILKWORM_EXPORT void delete_buffer(void* ptr);
 
-SILKWORM_EXPORT silkworm::Bytes* silkworm_new_bytes_from_hex(const char* data, size_t size);
-SILKWORM_EXPORT void silkworm_delete_bytes(silkworm::Bytes* x);
+SILKWORM_EXPORT silkworm::Bytes* new_bytes_from_hex(const char* data, size_t size);
+SILKWORM_EXPORT void delete_bytes(silkworm::Bytes* x);
 
 // a + b*2^64 + c*2^128 + d*2^192
-SILKWORM_EXPORT intx::uint256* silkworm_new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d);
-SILKWORM_EXPORT void silkworm_delete_uint256(intx::uint256* x);
+SILKWORM_EXPORT intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d);
+SILKWORM_EXPORT void delete_uint256(intx::uint256* x);
 
-SILKWORM_EXPORT const silkworm::ChainConfig* silkworm_lookup_config(uint64_t chain_id);
+SILKWORM_EXPORT const silkworm::ChainConfig* lookup_config(uint64_t chain_id);
 
-SILKWORM_EXPORT silkworm::ChainConfig* silkworm_new_config(uint64_t chain_id);
-SILKWORM_EXPORT void silkworm_delete_config(silkworm::ChainConfig* x);
+SILKWORM_EXPORT silkworm::ChainConfig* new_config(uint64_t chain_id);
+SILKWORM_EXPORT void delete_config(silkworm::ChainConfig* x);
 
-SILKWORM_EXPORT void silkworm_config_set_update_block(silkworm::ChainConfig* config, evmc_revision update,
-                                                      uint64_t block);
+SILKWORM_EXPORT void config_set_update_block(silkworm::ChainConfig* config, evmc_revision update, uint64_t block);
 
-SILKWORM_EXPORT void silkworm_config_set_muir_glacier_block(silkworm::ChainConfig* config, uint64_t block);
+SILKWORM_EXPORT void config_set_muir_glacier_block(silkworm::ChainConfig* config, uint64_t block);
 
 // in_out: in parent difficulty, out current difficulty
-SILKWORM_EXPORT void silkworm_difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp,
-                                         uint64_t parent_timestamp, bool parent_has_uncles,
-                                         const silkworm::ChainConfig* config);
+SILKWORM_EXPORT void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp,
+                                uint64_t parent_timestamp, bool parent_has_uncles, const silkworm::ChainConfig* config);
 
-SILKWORM_EXPORT silkworm::Transaction* silkworm_new_transaction(const silkworm::Bytes* rlp);
-SILKWORM_EXPORT void silkworm_delete_transaction(silkworm::Transaction* x);
+SILKWORM_EXPORT silkworm::Transaction* new_transaction(const silkworm::Bytes* rlp);
+SILKWORM_EXPORT void delete_transaction(silkworm::Transaction* x);
 
-SILKWORM_EXPORT uint64_t silkworm_intrinsic_gas(const silkworm::Transaction* txn, bool homestead, bool istanbul);
+SILKWORM_EXPORT uint64_t intrinsic_gas(const silkworm::Transaction* txn, bool homestead, bool istanbul);
 
 // 0 chain_id means pre EIP-155
-SILKWORM_EXPORT const uint8_t* silkworm_recover_sender(silkworm::Transaction* txn, bool homestead, uint64_t chain_id);
+SILKWORM_EXPORT const uint8_t* recover_sender(silkworm::Transaction* txn, bool homestead, uint64_t chain_id);
 }
 
 #endif  // SILKWORM_WASM_API_HPP_

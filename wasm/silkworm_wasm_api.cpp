@@ -21,13 +21,13 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/execution/processor.hpp>
 
-SILKWORM_EXPORT void* silkworm_malloc(size_t size) { return std::malloc(size); }
+void* new_buffer(size_t size) { return std::malloc(size); }
 
-SILKWORM_EXPORT void silkworm_free(void* ptr) { std::free(ptr); }
+void delete_buffer(void* ptr) { std::free(ptr); }
 
 using namespace silkworm;
 
-Bytes* silkworm_new_bytes_from_hex(const char* data, size_t size) {
+Bytes* new_bytes_from_hex(const char* data, size_t size) {
     std::optional<Bytes> res{from_hex(std::string_view{data, size})};
     if (!res) {
         return nullptr;
@@ -37,9 +37,9 @@ Bytes* silkworm_new_bytes_from_hex(const char* data, size_t size) {
     return out;
 }
 
-void silkworm_delete_bytes(Bytes* x) { delete x; }
+void delete_bytes(Bytes* x) { delete x; }
 
-intx::uint256* silkworm_new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) {
+intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) {
     auto out{new intx::uint256};
     out->lo.lo = a;
     out->lo.hi = b;
@@ -48,19 +48,19 @@ intx::uint256* silkworm_new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint6
     return out;
 }
 
-void silkworm_delete_uint256(intx::uint256* x) { delete x; }
+void delete_uint256(intx::uint256* x) { delete x; }
 
-const ChainConfig* silkworm_lookup_config(uint64_t chain_id) { return lookup_chain_config(chain_id); }
+const ChainConfig* lookup_config(uint64_t chain_id) { return lookup_chain_config(chain_id); }
 
-ChainConfig* silkworm_new_config(uint64_t chain_id) {
+ChainConfig* new_config(uint64_t chain_id) {
     auto out{new ChainConfig};
     out->chain_id = chain_id;
     return out;
 }
 
-void silkworm_delete_config(ChainConfig* x) { delete x; }
+void delete_config(ChainConfig* x) { delete x; }
 
-void silkworm_config_set_update_block(ChainConfig* config, evmc_revision update, uint64_t block) {
+void config_set_update_block(ChainConfig* config, evmc_revision update, uint64_t block) {
     switch (update) {
         case EVMC_FRONTIER:
             // frontier block is always 0
@@ -92,15 +92,15 @@ void silkworm_config_set_update_block(ChainConfig* config, evmc_revision update,
     }
 }
 
-void silkworm_config_set_muir_glacier_block(ChainConfig* config, uint64_t block) { config->muir_glacier_block = block; }
+void config_set_muir_glacier_block(ChainConfig* config, uint64_t block) { config->muir_glacier_block = block; }
 
-void silkworm_difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp,
-                         uint64_t parent_timestamp, bool parent_has_uncles, const ChainConfig* config) {
+void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp, uint64_t parent_timestamp,
+                bool parent_has_uncles, const ChainConfig* config) {
     *in_out = canonical_difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
                                    parent_has_uncles, *config);
 }
 
-Transaction* silkworm_new_transaction(const Bytes* rlp) {
+Transaction* new_transaction(const Bytes* rlp) {
     ByteView view{*rlp};
     auto txn{new Transaction};
     if (rlp::decode(view, *txn) == rlp::DecodingError::kOk && view.empty()) {
@@ -111,9 +111,9 @@ Transaction* silkworm_new_transaction(const Bytes* rlp) {
     }
 }
 
-void silkworm_delete_transaction(Transaction* x) { delete x; }
+void delete_transaction(Transaction* x) { delete x; }
 
-uint64_t silkworm_intrinsic_gas(const silkworm::Transaction* txn, bool homestead, bool istanbul) {
+uint64_t intrinsic_gas(const silkworm::Transaction* txn, bool homestead, bool istanbul) {
     intx::uint128 gas{intrinsic_gas(*txn, homestead, istanbul)};
     if (gas.hi) {
         return -1;
@@ -122,7 +122,7 @@ uint64_t silkworm_intrinsic_gas(const silkworm::Transaction* txn, bool homestead
     }
 }
 
-const uint8_t* silkworm_recover_sender(silkworm::Transaction* txn, bool homestead, uint64_t chain_id) {
+const uint8_t* recover_sender(silkworm::Transaction* txn, bool homestead, uint64_t chain_id) {
     if (chain_id == 0) {
         txn->recover_sender(homestead, std::nullopt);
     } else {

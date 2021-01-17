@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
             collector.load(blockhashes_table.get(), nullptr, 0);
         }
         // Update progress
-        db::stages::set_stage_progress(*txn, db::stages::kBlockHashesKey, current_block_number);
+        db::stages::set_stage_progress(*txn, db::stages::kBlockHashesKey, current_block_number-1);
         lmdb::err_handler(txn->commit());
         SILKWORM_LOG(LogInfo) << "All Done" << std::endl;
     } catch (const std::exception& ex) {

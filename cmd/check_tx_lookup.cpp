@@ -35,11 +35,14 @@ using namespace silkworm;
 int main(int argc, char* argv[]) { 
     namespace fs = boost::filesystem;
     
-    CLI::App app{"Generates Blockhashes => BlockNumber mapping in database"};
+    CLI::App app{"Check Tx Hashes => BlockNumber mapping in database"};
 
     std::string db_path{db::default_path()};
+    size_t block_from;
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
+    app.add_option("--from", block_from, "Initial block number to process (inclusive)", true)
+        ->check(CLI::Range(1u, UINT32_MAX));
     CLI11_PARSE(app, argc, argv);
 
     Logger::default_logger().set_local_timezone(true);  // for compatibility with TG logging

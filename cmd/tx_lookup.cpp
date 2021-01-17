@@ -34,11 +34,15 @@ using namespace silkworm;
 int main(int argc, char* argv[]) { 
     namespace fs = boost::filesystem;
     
-    CLI::App app{"Generates Blockhashes => BlockNumber mapping in database"};
+    CLI::App app{"Generates Tx Hashes => BlockNumber mapping in database"};
 
     std::string db_path{db::default_path()};
+    bool full;
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
+    
+    app.add_flag("--full", full, "Runs the full cycle");
+
     CLI11_PARSE(app, argc, argv);
 
     Logger::default_logger().set_local_timezone(true);  // for compatibility with TG logging
@@ -65,6 +69,9 @@ int main(int argc, char* argv[]) {
 
     try {
         auto initial_block_number{db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)};
+        if (full) {
+            initial_block_number = 0;
+        }
         // Extract
         Bytes start(8, '\0');
         boost::endian::store_big_u64(&start[0], initial_block_number);
@@ -109,7 +116,7 @@ int main(int argc, char* argv[]) {
             collector.load(tx_lookup_table.get(), nullptr, 0);
         }
         // Update progress
-        db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, current_block_number);
+        db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, current_block_number-1);
         lmdb::err_handler(txn->commit());
         SILKWORM_LOG(LogInfo) << "All Done" << std::endl;
     } catch (const std::exception& ex) {

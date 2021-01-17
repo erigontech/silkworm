@@ -19,7 +19,6 @@
 #include <boost/filesystem.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/stages.hpp>
 #include <boost/endian/conversion.hpp>

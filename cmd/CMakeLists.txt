@@ -65,6 +65,14 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(blockhashes PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
   target_include_directories(blockhashes PRIVATE ${CMAKE_SOURCE_DIR})
   
+  add_executable(tx_lookup tx_lookup.cpp)
+  target_link_libraries(tx_lookup PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
+  target_include_directories(tx_lookup PRIVATE ${CMAKE_SOURCE_DIR})
+
+  add_executable(check_tx_lookup check_tx_lookup.cpp)
+  target_link_libraries(check_tx_lookup PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
+  target_include_directories(check_tx_lookup PRIVATE ${CMAKE_SOURCE_DIR})
+
   add_executable(check_blockhashes check_blockhashes.cpp)
   target_link_libraries(check_blockhashes PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
   target_include_directories(check_blockhashes PRIVATE ${CMAKE_SOURCE_DIR})

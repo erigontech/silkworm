@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
     db_config.set_readonly(false); 
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
-    // We take data from header table and transform it and put it in blockhashes table
+
     auto bodies_table{txn->open(db::table::kBlockBodies)};
     auto tx_lookup_table{txn->open(db::table::kTxLookup)};
     auto transactions_table{txn->open(db::table::kEthTx)};

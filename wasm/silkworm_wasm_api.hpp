@@ -41,6 +41,8 @@ SILKWORM_EXPORT void delete_buffer(void* ptr);
 SILKWORM_EXPORT silkworm::Bytes* new_bytes_from_hex(const char* data, size_t size);
 SILKWORM_EXPORT void delete_bytes(silkworm::Bytes* x);
 
+SILKWORM_EXPORT uint8_t* bytes_data(silkworm::Bytes* str);
+
 // a + b*2^64 + c*2^128 + d*2^192
 SILKWORM_EXPORT intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d);
 SILKWORM_EXPORT void delete_uint256(intx::uint256* x);
@@ -71,10 +73,23 @@ SILKWORM_EXPORT void keccak256(uint8_t* out, const silkworm::Bytes* in);
 SILKWORM_EXPORT silkworm::Account* new_account(uint64_t nonce, const intx::uint256* balance);
 SILKWORM_EXPORT void delete_account(silkworm::Account* x);
 
-SILKWORM_EXPORT uint8_t* account_code_hash(silkworm::Account* x);
+SILKWORM_EXPORT uint8_t* account_code_hash(silkworm::Account* a);
+
+SILKWORM_EXPORT silkworm::Block* new_block(const silkworm::Bytes* rlp);
+SILKWORM_EXPORT void delete_block(silkworm::Block* x);
+
+SILKWORM_EXPORT silkworm::BlockHeader* block_header(silkworm::Block* b);
 
 SILKWORM_EXPORT silkworm::MemoryBuffer* new_state();
 SILKWORM_EXPORT void delete_state(silkworm::MemoryBuffer* x);
+
+SILKWORM_EXPORT void state_insert_header(silkworm::MemoryBuffer* state, const silkworm::BlockHeader* header);
+
+SILKWORM_EXPORT void state_update_account(silkworm::MemoryBuffer* state, const uint8_t* address,
+                                          const silkworm::Account* initial, const silkworm::Account* current);
+
+SILKWORM_EXPORT void state_update_code(silkworm::MemoryBuffer* state, const uint8_t* address,
+                                       const silkworm::Account* account, const silkworm::Bytes* code);
 }
 
 #endif  // SILKWORM_WASM_API_HPP_

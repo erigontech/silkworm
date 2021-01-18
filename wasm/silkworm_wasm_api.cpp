@@ -39,6 +39,8 @@ Bytes* new_bytes_from_hex(const char* data, size_t size) {
 
 void delete_bytes(Bytes* x) { delete x; }
 
+uint8_t* bytes_data(Bytes* str) { return str->data(); }
+
 intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) {
     auto out{new intx::uint256};
     out->lo.lo = a;
@@ -141,10 +143,48 @@ Account* new_account(uint64_t nonce, const intx::uint256* balance) {
 
 void delete_account(Account* x) { delete x; }
 
-uint8_t* account_code_hash(Account* x) { return x->code_hash.bytes; }
+uint8_t* account_code_hash(Account* a) { return a->code_hash.bytes; }
+
+Block* new_block(const Bytes* rlp) {
+    ByteView view{*rlp};
+    auto block{new Block};
+    if (rlp::decode(view, *block) == rlp::DecodingError::kOk && view.empty()) {
+        return block;
+    } else {
+        delete block;
+        return nullptr;
+    }
+}
+
+void delete_block(Block* x) { delete x; }
+
+BlockHeader* block_header(Block* b) { return &(b->header); }
 
 MemoryBuffer* new_state() { return new MemoryBuffer; }
 
 void delete_state(MemoryBuffer* x) { delete x; }
+
+void state_insert_header(MemoryBuffer* state, const BlockHeader* header) { state->insert_header(*header); }
+
+void state_update_account(MemoryBuffer* state, const uint8_t* address_data, const Account* initial_ptr,
+                          const Account* current_ptr) {
+    evmc::address address;
+    std::memcpy(address.bytes, address_data, kAddressLength);
+    std::optional<Account> initial_opt;
+    if (initial_ptr) {
+        initial_opt = *initial_ptr;
+    }
+    std::optional<Account> current_opt;
+    if (current_ptr) {
+        current_opt = *current_ptr;
+    }
+    state->update_account(address, initial_opt, current_opt);
+}
+
+void state_update_code(MemoryBuffer* state, const uint8_t* address_data, const Account* account, const Bytes* code) {
+    evmc::address address;
+    std::memcpy(address.bytes, address_data, kAddressLength);
+    state->update_account_code(address, account->incarnation, account->code_hash, *code);
+}
 
 int main() { return 0; }

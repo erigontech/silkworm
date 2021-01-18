@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
             SILKWORM_LOG(LogInfo) << "Started BlockHashes Loading" << std::endl;
 
             // Ensure we haven't got dirty data in target table
-            auto target_table{txn->open(db::table::kHeaderNumbers)};
+            auto target_table{txn->open(db::table::kHeaderNumbers, MDB_CREATE)};
             if (last_processed_block_number <= 1) {
                 lmdb::err_handler(target_table->clear());
             } else {

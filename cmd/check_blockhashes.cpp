@@ -57,8 +57,9 @@ int main(int argc, char* argv[]) {
 
         MDB_val key_mdb, data_mdb;
         SILKWORM_LOG(LogInfo) << "Checking Block Hashes..." << std::endl;
+        int rc{header_table->seek(&key_mdb, &data_mdb)};
         // Check if each hash has the correct number accordingly to the header table
-        for (int rc{header_table->seek(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND; rc = header_table->get_next(&key_mdb, &data_mdb)) {
+        while (!rc) {
             ByteView key{db::from_mdb_val(key_mdb)};
             if (key.size() != 40) continue;
             auto hash{key.substr(8,40)};
@@ -71,6 +72,7 @@ int main(int argc, char* argv[]) {
                 SILKWORM_LOG(LogError) << "Mismatch: Expected Number for hash: "
                     << to_hex(hash) << " is " << expected_block << ", but got: " << actual_block << std::endl;
             }
+            rc = header_table->get_next(&key_mdb, &data_mdb);
         }
         SILKWORM_LOG(LogInfo) << "Done!" << std::endl;
     } catch (const std::exception& ex) {

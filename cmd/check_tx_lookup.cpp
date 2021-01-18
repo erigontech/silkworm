@@ -74,30 +74,30 @@ int main(int argc, char* argv[]) {
         MDB_val key_mdb{db::to_mdb_val(start)};
         MDB_val data_mdb;
         SILKWORM_LOG(LogInfo) << "Checking Transaction Lookups..." << std::endl;
-        for (int rc{bodies_table->seek(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND; rc = bodies_table->get_next(&key_mdb, &data_mdb)) {
+        int rc{bodies_table->seek(&key_mdb, &data_mdb)};
+        while (!rc) {
             auto body_rlp{db::from_mdb_val(data_mdb)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
-            if (body.txn_count == 0) {
-                expected_block_number++;
-                continue;
-            }
-            Bytes transaction_key(8, '\0');
-            boost::endian::store_big_u64(transaction_key.data(), body.base_txn_id);
-            MDB_val tx_key_mdb{db::to_mdb_val(transaction_key)};
-            MDB_val tx_data_mdb;
+            if (body.txn_count > 0) {
+                Bytes transaction_key(8, '\0');
+                boost::endian::store_big_u64(transaction_key.data(), body.base_txn_id);
+                MDB_val tx_key_mdb{db::to_mdb_val(transaction_key)};
+                MDB_val tx_data_mdb;
 
-            uint64_t i{0};
-            for (int rc{transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb)}; rc != MDB_NOTFOUND && i < body.txn_count; rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
-                ByteView tx_rlp{db::from_mdb_val(tx_data_mdb)};
-                auto hash{keccak256(tx_rlp)};
-                auto hash_view{full_view(hash.bytes)};
-                auto actual_block_number{boost::endian::load_big_u64(tx_lookup_table->get(hash_view)->data())};
-                if (actual_block_number != expected_block_number) {
-                    SILKWORM_LOG(LogError) << "Mismatch: Expected Number for hash: "
-                        << to_hex(hash_view) << " is " << expected_block_number << ", but got: " << actual_block_number << std::endl;                    
+                uint64_t i{0};
+                for (int rc{transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb)}; rc != MDB_NOTFOUND && i < body.txn_count; rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
+                    ByteView tx_rlp{db::from_mdb_val(tx_data_mdb)};
+                    auto hash{keccak256(tx_rlp)};
+                    auto hash_view{full_view(hash.bytes)};
+                    auto actual_block_number{boost::endian::load_big_u64(tx_lookup_table->get(hash_view)->data())};
+                    if (actual_block_number != expected_block_number) {
+                        SILKWORM_LOG(LogError) << "Mismatch: Expected Number for hash: "
+                            << to_hex(hash_view) << " is " << expected_block_number << ", but got: " << actual_block_number << std::endl;                    
+                    }
                 }
             }
             expected_block_number++;
+            rc = bodies_table->get_next(&key_mdb, &data_mdb);
         }
         SILKWORM_LOG(LogInfo) << "Check finished" << std::endl;
     } catch (const std::exception& ex) {

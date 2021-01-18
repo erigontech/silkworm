@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
         // Extract
         Bytes start(8, '\0');
         boost::endian::store_big_u64(&start[0], initial_block_number);
-        uint64_t current_block_number{initial_block_number-1};
+        uint64_t current_block_number{initial_block_number+1};
         MDB_val key_mdb{db::to_mdb_val(start)};
         MDB_val data_mdb;
         SILKWORM_LOG(LogInfo) << "Started Transaction Lookup Extraction" << std::endl;
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
 
 
         // Update progress
-        db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, current_block_number+1);
+        db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, current_block_number-1);
         lmdb::err_handler(txn->commit());
         SILKWORM_LOG(LogInfo) << "All Done" << std::endl;
     } catch (const std::exception& ex) {

@@ -96,6 +96,8 @@ void config_set_update_block(ChainConfig* config, evmc_revision update, uint64_t
 
 void config_set_muir_glacier_block(ChainConfig* config, uint64_t block) { config->muir_glacier_block = block; }
 
+void config_set_dao_block(ChainConfig* config, uint64_t block) { config->dao_block = block; }
+
 void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp, uint64_t parent_timestamp,
                 bool parent_has_uncles, const ChainConfig* config) {
     *in_out = canonical_difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,

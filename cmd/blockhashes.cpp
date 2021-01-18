@@ -115,6 +115,11 @@ int main(int argc, char* argv[]) {
 
             // Ensure we haven't got dirty data in target table
             auto target_table{txn->open(db::table::kHeaderNumbers, MDB_CREATE)};
+
+            // Note for @funnygiulio
+            // << This block is not actually needed if this stage last value
+            // is properly set. Should be instead part of Unwind function
+
             if (last_processed_block_number <= 1) {
                 lmdb::err_handler(target_table->clear());
             } else {
@@ -130,6 +135,7 @@ int main(int argc, char* argv[]) {
                 }
             }
 
+            // << -- Up to here
             // Eventually bulk load collected items with no transform (may throw)
             collector.load(target_table.get(), nullptr, MDB_APPEND);
 

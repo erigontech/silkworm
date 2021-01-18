@@ -373,7 +373,10 @@ int do_recover(app_options_t& options) {
     uint32_t next_worker_id{0};                  // Used to serialize the dispatch of works to threads
     const uint32_t workers_max_count{std::max(1u, std::thread::hardware_concurrency() - 1)};
     std::atomic<uint32_t> workers_in_flight{0};  // Number of workers in flight
-    uint64_t total_transactions{0};              // Overall number of transactions processed
+    std::vector<std::unique_ptr<Recoverer>> workers_{};
+    workers_.reserve(workers_max_count);
+
+    uint64_t total_transactions{0};  // Overall number of transactions processed
 
     // Recoverer's signal handlers
     boost::function<void(uint32_t, uint32_t, Recoverer::error)> finishedHandler =
@@ -446,13 +449,14 @@ int do_recover(app_options_t& options) {
         SILKWORM_LOG(LogLevels::LogDebug) << "Bodies  height " << stage_bodies_height << std::endl;
         SILKWORM_LOG(LogLevels::LogDebug) << "Senders height " << stage_senders_height << std::endl;
 
-        // Requested from block cannot exceed actual stage_bodies_height
-        if (options.block_from > stage_bodies_height) {
-            options.block_from = (stage_bodies_height ? stage_bodies_height : 1u);
+        // If requested replay then initial block can be anything in [1 ... stage_headers_height]
+        // Otherwise is fixed to this stage height + 1
+        if (options.replay) {
+            options.block_from = std::min(options.block_from, (uint32_t)stage_senders_height + 1u);
+        } else {
+            options.block_from = (uint32_t)stage_senders_height + 1u;
         }
-        if (options.block_to > stage_bodies_height) {
-            options.block_to = stage_bodies_height;
-        }
+        options.block_to = std::max(options.block_from, options.block_to);
 
         // Do we have to unwind Sender's table ?
         if (options.block_from <= stage_senders_height) {

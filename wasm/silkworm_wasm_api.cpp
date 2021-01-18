@@ -127,4 +127,24 @@ const uint8_t* recover_sender(Transaction* txn, bool homestead, uint64_t chain_i
     return txn->from ? txn->from->bytes : nullptr;
 }
 
+void keccak256(uint8_t* out, const Bytes* in) {
+    ethash::hash256 hash{keccak256(*in)};
+    std::memcpy(out, hash.bytes, kHashLength);
+}
+
+Account* new_account(uint64_t nonce, const intx::uint256* balance) {
+    auto out{new Account};
+    out->nonce = nonce;
+    out->balance = *balance;
+    return out;
+}
+
+void delete_account(Account* x) { delete x; }
+
+uint8_t* account_code_hash(Account* x) { return x->code_hash.bytes; }
+
+MemoryBuffer* new_state() { return new MemoryBuffer; }
+
+void delete_state(MemoryBuffer* x) { delete x; }
+
 int main() { return 0; }

@@ -17,6 +17,9 @@
 #ifndef SILKWORM_WASM_API_HPP_
 #define SILKWORM_WASM_API_HPP_
 
+// Preliminary Silkworm API for WebAssembly.
+// Currently it's unstable and is likely to change.
+
 #include <evmc/evmc.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -24,6 +27,8 @@
 #include <intx/intx.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/base.hpp>
+#include <silkworm/state/memory_buffer.hpp>
+#include <silkworm/types/account.hpp>
 #include <silkworm/types/transaction.hpp>
 
 #define SILKWORM_EXPORT __attribute__((visibility("default")))
@@ -60,6 +65,16 @@ SILKWORM_EXPORT bool check_intrinsic_gas(const silkworm::Transaction* txn, bool 
 
 // 0 chain_id means pre EIP-155
 SILKWORM_EXPORT const uint8_t* recover_sender(silkworm::Transaction* txn, bool homestead, uint64_t chain_id);
+
+SILKWORM_EXPORT void keccak256(uint8_t* out, const silkworm::Bytes* in);
+
+SILKWORM_EXPORT silkworm::Account* new_account(uint64_t nonce, const intx::uint256* balance);
+SILKWORM_EXPORT void delete_account(silkworm::Account* x);
+
+SILKWORM_EXPORT uint8_t* account_code_hash(silkworm::Account* x);
+
+SILKWORM_EXPORT silkworm::MemoryBuffer* new_state();
+SILKWORM_EXPORT void delete_state(silkworm::MemoryBuffer* x);
 }
 
 #endif  // SILKWORM_WASM_API_HPP_

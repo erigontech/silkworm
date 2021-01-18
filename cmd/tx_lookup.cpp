@@ -115,6 +115,8 @@ int main(int argc, char* argv[]) {
         } else {
             collector.load(tx_lookup_table.get(), nullptr, 0);
         }
+
+
         // Update progress
         db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, current_block_number-1);
         lmdb::err_handler(txn->commit());

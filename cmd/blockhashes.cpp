@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
     auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};
     
     try {
-        auto current_block_number{db::stages::get_stage_progress(*txn, db::stages::kBlockHashesKey)};
+        auto current_block_number{db::stages::get_stage_progress(*txn, db::stages::kBlockHashesKey)-1};
         auto initial_block_number = current_block_number;
         // Extract
         Bytes start(8, '\0');
@@ -70,6 +70,7 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG(LogInfo) << "Started BlockHashes Extraction" << std::endl;
 
         for (int rc{header_table->seek(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND; rc = header_table->get_next(&key_mdb, &data_mdb)) {
+            lmdb::err_handler(rc);
             // Check if it's an header entry
             if (key_mdb.mv_size != 40) continue;
             Bytes key(static_cast<unsigned char*>(key_mdb.mv_data), key_mdb.mv_size);
@@ -89,7 +90,7 @@ int main(int argc, char* argv[]) {
             collector.load(blockhashes_table.get(), nullptr, 0);
         }
         // Update progress
-        db::stages::set_stage_progress(*txn, db::stages::kBlockHashesKey, current_block_number-1);
+        db::stages::set_stage_progress(*txn, db::stages::kBlockHashesKey, current_block_number+1);
         lmdb::err_handler(txn->commit());
         SILKWORM_LOG(LogInfo) << "All Done" << std::endl;
     } catch (const std::exception& ex) {

@@ -75,12 +75,13 @@ int main(int argc, char* argv[]) {
         // Extract
         Bytes start(8, '\0');
         boost::endian::store_big_u64(&start[0], initial_block_number);
-        uint64_t current_block_number{initial_block_number};
+        uint64_t current_block_number{initial_block_number-1};
         MDB_val key_mdb{db::to_mdb_val(start)};
         MDB_val data_mdb;
         SILKWORM_LOG(LogInfo) << "Started Transaction Lookup Extraction" << std::endl;
         uint64_t total_entries = 0;
         for (int rc{bodies_table->seek(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND; rc = bodies_table->get_next(&key_mdb, &data_mdb)) {
+            lmdb::err_handler(rc);
             auto body_rlp{db::from_mdb_val(data_mdb)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
             Bytes block_number(static_cast<unsigned char*>(key_mdb.mv_data), 8);
@@ -96,6 +97,7 @@ int main(int argc, char* argv[]) {
 
             uint64_t i{0};
             for (int rc{transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb)}; rc != MDB_NOTFOUND && i < body.txn_count; rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
+                lmdb::err_handler(rc);
                 // Take transaction rlp, then hash it in order to get the transaction hash
                 ByteView tx_rlp{db::from_mdb_val(tx_data_mdb)};
                 auto hash{keccak256(tx_rlp)};
@@ -118,7 +120,7 @@ int main(int argc, char* argv[]) {
 
 
         // Update progress
-        db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, current_block_number-1);
+        db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, current_block_number+1);
         lmdb::err_handler(txn->commit());
         SILKWORM_LOG(LogInfo) << "All Done" << std::endl;
     } catch (const std::exception& ex) {

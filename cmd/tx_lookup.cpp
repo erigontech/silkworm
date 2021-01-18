@@ -65,13 +65,12 @@ int main(int argc, char* argv[]) {
         if (full) {
             last_processed_block_number = 0;
         }
-        auto expected_block_number{last_processed_block_number + 1};
-        uint32_t block_number{0};
+        uint64_t block_number{0};
         uint32_t entries_processed_count{0};
 
         // Extract
         Bytes start(8, '\0');
-        boost::endian::store_big_u64(&start[0], expected_block_number);
+        boost::endian::store_big_u64(&start[0], last_processed_block_number+1);
         MDB_val mdb_key{db::to_mdb_val(start)};
         MDB_val mdb_data;
         SILKWORM_LOG(LogInfo) << "Started Tx Lookup Extraction" << std::endl;
@@ -79,8 +78,8 @@ int main(int argc, char* argv[]) {
         while (!rc) { /* Loop as long as we have no errors*/
             auto body_rlp{db::from_mdb_val(mdb_data)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
-            Bytes block_number(static_cast<unsigned char*>(mdb_key.mv_data), 8);
-
+            Bytes block_number_as_bytes(static_cast<unsigned char*>(mdb_key.mv_data), 8);
+            block_number = boost::endian::load_big_u64(&block_number_as_bytes[0]);
             if (body.txn_count > 0) {
                 Bytes transaction_key(8, '\0');
                 boost::endian::store_big_u64(transaction_key.data(), body.base_txn_id);
@@ -93,13 +92,15 @@ int main(int argc, char* argv[]) {
                     // Take transaction rlp, then hash it in order to get the transaction hash
                     ByteView tx_rlp{db::from_mdb_val(tx_data_mdb)};
                     auto hash{keccak256(tx_rlp)};
-                    etl::Entry entry{Bytes(hash.bytes, 32), block_number};
+                    etl::Entry entry{Bytes(hash.bytes, 32), block_number_as_bytes};
                     collector.collect(entry);
                     ++entries_processed_count;
                 }
             }
             // Save last processed block_number and expect next in sequence
-            block_number = expected_block_number++;
+            if (block_number % 100000 == 0) {
+                SILKWORM_LOG(LogInfo) << "Tx Lookup Extraction Progress << " << block_number << std::endl;
+            }
             rc = bodies_table->get_next(&mdb_key, &mdb_data);
         }
 

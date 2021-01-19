@@ -57,10 +57,16 @@ int main(int argc, char* argv[]) {
         MDB_val mdb_key, mdb_data;
         SILKWORM_LOG(LogInfo) << "Checking Block Hashes..." << std::endl;
         int rc{header_table->get_first(&mdb_key, &mdb_data)};
-        // Check if each hash has the correct number accordingly to the header table
+
+        // Check if each hash has the correct number according to the header table
         while (!rc) {
+
             ByteView key{db::from_mdb_val(mdb_key)};
-            if (key.size() != 40) continue;
+
+            if (key.size() != 40) {
+                rc = header_table->get_next(&mdb_key, &mdb_data);
+                continue;
+            }
             auto hash{key.substr(8,40)};
             auto expected_number{key.substr(0,8)};
             auto actual_number{blockhashes_table->get(hash)};

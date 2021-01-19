@@ -162,6 +162,12 @@ void delete_block(Block* x) { delete x; }
 
 BlockHeader* block_header(Block* b) { return &(b->header); }
 
+void block_recover_senders(Block* b, const ChainConfig* config) { b->recover_senders(*config); }
+
+ValidationError block_execute(Block* b, StateBuffer* state, const ChainConfig* config) {
+    return execute_block(*b, *state, *config).second;
+}
+
 MemoryBuffer* new_state() { return new MemoryBuffer; }
 
 void delete_state(MemoryBuffer* x) { delete x; }

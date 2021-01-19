@@ -34,6 +34,20 @@ bool operator==(const BlockBody& a, const BlockBody& b) {
     return a.transactions == b.transactions && a.ommers == b.ommers;
 }
 
+void Block::recover_senders(const ChainConfig& config) {
+    uint64_t block_number{header.number};
+    bool homestead{config.has_homestead(block_number)};
+    bool spurious_dragon{config.has_spurious_dragon(block_number)};
+
+    for (Transaction& txn : transactions) {
+        if (spurious_dragon) {
+            txn.recover_sender(homestead, config.chain_id);
+        } else {
+            txn.recover_sender(homestead, std::nullopt);
+        }
+    }
+}
+
 namespace rlp {
 
     static Header rlp_header(const BlockHeader& header) {

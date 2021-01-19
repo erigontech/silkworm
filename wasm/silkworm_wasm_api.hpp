@@ -27,6 +27,7 @@
 #include <intx/intx.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/base.hpp>
+#include <silkworm/execution/execution.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/transaction.hpp>
@@ -81,6 +82,11 @@ SILKWORM_EXPORT silkworm::Block* new_block(const silkworm::Bytes* rlp);
 SILKWORM_EXPORT void delete_block(silkworm::Block* x);
 
 SILKWORM_EXPORT silkworm::BlockHeader* block_header(silkworm::Block* b);
+
+SILKWORM_EXPORT void block_recover_senders(silkworm::Block* b, const silkworm::ChainConfig* config);
+
+SILKWORM_EXPORT silkworm::ValidationError block_execute(silkworm::Block* b, silkworm::StateBuffer* state,
+                                                        const silkworm::ChainConfig* config);
 
 SILKWORM_EXPORT silkworm::MemoryBuffer* new_state();
 SILKWORM_EXPORT void delete_state(silkworm::MemoryBuffer* x);

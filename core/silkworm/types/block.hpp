@@ -22,6 +22,7 @@
 #include <array>
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
+#include <silkworm/chain/config.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/types/bloom.hpp>
@@ -67,6 +68,8 @@ bool operator==(const BlockBody& a, const BlockBody& b);
 
 struct Block : public BlockBody {
     BlockHeader header;
+
+    void recover_senders(const ChainConfig& config);
 };
 
 struct BlockWithHash {

@@ -98,6 +98,11 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
+
+            if (expected_block_number % 100000 == 0) {
+                SILKWORM_LOG(LogInfo) << "Scanned blocks " << expected_block_number << std::endl;
+            }
+
             expected_block_number++;
             rc = bodies_table->get_next(&mdb_key, &mdb_data);
         }

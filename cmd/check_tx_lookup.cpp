@@ -29,10 +29,23 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/chain/config.hpp>
 #include <iostream>
+#include <csignal>
 
 using namespace silkworm;
 
+std::atomic_bool should_stop_{false};  // Request for stop from user or OS
+
+void sig_handler(int signum) {
+    (void)signum;
+    std::cout << std::endl << " Got interrupt. Stopping ..." << std::endl << std::endl;
+    should_stop_.store(true);
+}
+
 int main(int argc, char* argv[]) {
+
+    signal(SIGINT, sig_handler);
+    signal(SIGTERM, sig_handler);
+
     namespace fs = boost::filesystem;
 
     CLI::App app{"Check Tx Hashes => BlockNumber mapping in database"};
@@ -132,15 +145,19 @@ int main(int argc, char* argv[]) {
                 SILKWORM_LOG(LogInfo) << "Scanned blocks " << expected_block_number << std::endl;
             }
 
-            expected_block_number++;
-            rc = bodies_table->get_next(&mdb_key, &mdb_data);
+            if (!should_stop_) {
+                expected_block_number++;
+                rc = bodies_table->get_next(&mdb_key, &mdb_data);
+            } else {
+                break;
+            }
         }
 
         if (rc != MDB_NOTFOUND) {
             lmdb::err_handler(rc);
         }
 
-        SILKWORM_LOG(LogInfo) << "Check finished" << std::endl;
+        SILKWORM_LOG(LogInfo) << "Check " << (should_stop_ ? "aborted" : "completed") << std::endl;
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogError) << ex.what() << std::endl;
         return -5;

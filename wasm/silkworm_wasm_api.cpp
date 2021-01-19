@@ -203,21 +203,22 @@ Bytes* state_read_code_new(const StateBuffer* state, const uint8_t* code_hash) {
 
 void state_insert_header(StateBuffer* state, const BlockHeader* header) { state->insert_header(*header); }
 
-void state_update_account(StateBuffer* state, const uint8_t* address, const Account* initial_ptr,
-                          const Account* current_ptr) {
-    std::optional<Account> initial_opt;
-    if (initial_ptr) {
-        initial_opt = *initial_ptr;
-    }
+void state_update_account(StateBuffer* state, const uint8_t* address, const Account* current_ptr) {
     std::optional<Account> current_opt;
     if (current_ptr) {
         current_opt = *current_ptr;
     }
-    state->update_account(address_from_ptr(address), initial_opt, current_opt);
+    state->update_account(address_from_ptr(address), /* initial=*/std::nullopt, current_opt);
 }
 
 void state_update_code(StateBuffer* state, const uint8_t* address, const Account* account, const Bytes* code) {
     state->update_account_code(address_from_ptr(address), account->incarnation, account->code_hash, *code);
+}
+
+void state_update_storage(StateBuffer* state, const uint8_t* address, const Account* account, const Bytes* location,
+                          const Bytes* value) {
+    state->update_storage(address_from_ptr(address), account->incarnation, to_bytes32(*location), /*initial=*/{},
+                          to_bytes32(*value));
 }
 
 int main() { return 0; }

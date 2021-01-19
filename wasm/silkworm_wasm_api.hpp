@@ -107,10 +107,14 @@ SILKWORM_EXPORT silkworm::Bytes* state_read_code_new(const silkworm::StateBuffer
 SILKWORM_EXPORT void state_insert_header(silkworm::StateBuffer* state, const silkworm::BlockHeader* header);
 
 SILKWORM_EXPORT void state_update_account(silkworm::StateBuffer* state, const uint8_t* address,
-                                          const silkworm::Account* initial, const silkworm::Account* current);
+                                          const silkworm::Account* current);
 
 SILKWORM_EXPORT void state_update_code(silkworm::StateBuffer* state, const uint8_t* address,
                                        const silkworm::Account* account, const silkworm::Bytes* code);
+
+SILKWORM_EXPORT void state_update_storage(silkworm::StateBuffer* state, const uint8_t* address,
+                                          const silkworm::Account* account, const silkworm::Bytes* location,
+                                          const silkworm::Bytes* value);
 }
 
 #endif  // SILKWORM_WASM_API_HPP_

@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
 
         MDB_val mdb_key, mdb_data;
         SILKWORM_LOG(LogInfo) << "Checking Block Hashes..." << std::endl;
-        int rc{header_table->seek(&mdb_key, &mdb_data)};
+        int rc{header_table->get_first(&mdb_key, &mdb_data)};
         // Check if each hash has the correct number accordingly to the header table
         while (!rc) {
             ByteView key{db::from_mdb_val(mdb_key)};

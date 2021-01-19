@@ -139,11 +139,17 @@ void keccak256(uint8_t* out, const Bytes* in) {
 Account* new_account(uint64_t nonce, const intx::uint256* balance) {
     auto out{new Account};
     out->nonce = nonce;
-    out->balance = *balance;
+    if (balance) {
+        out->balance = *balance;
+    }
     return out;
 }
 
 void delete_account(Account* x) { delete x; }
+
+uint64_t account_nonce(const Account* a) { return a->nonce; }
+
+intx::uint256* account_balance(Account* a) { return &(a->balance); }
 
 uint8_t* account_code_hash(Account* a) { return a->code_hash.bytes; }
 
@@ -172,12 +178,22 @@ MemoryBuffer* new_state() { return new MemoryBuffer; }
 
 void delete_state(MemoryBuffer* x) { delete x; }
 
-void state_insert_header(MemoryBuffer* state, const BlockHeader* header) { state->insert_header(*header); }
+static evmc::address address_from_ptr(const uint8_t* ptr) { return to_address({ptr, kAddressLength}); }
 
-void state_update_account(MemoryBuffer* state, const uint8_t* address_data, const Account* initial_ptr,
+bool state_read_account(const StateBuffer* state, const uint8_t* address, Account* out) {
+    std::optional<Account> account{state->read_account(address_from_ptr(address))};
+    if (account) {
+        *out = *account;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void state_insert_header(StateBuffer* state, const BlockHeader* header) { state->insert_header(*header); }
+
+void state_update_account(StateBuffer* state, const uint8_t* address, const Account* initial_ptr,
                           const Account* current_ptr) {
-    evmc::address address;
-    std::memcpy(address.bytes, address_data, kAddressLength);
     std::optional<Account> initial_opt;
     if (initial_ptr) {
         initial_opt = *initial_ptr;
@@ -186,13 +202,11 @@ void state_update_account(MemoryBuffer* state, const uint8_t* address_data, cons
     if (current_ptr) {
         current_opt = *current_ptr;
     }
-    state->update_account(address, initial_opt, current_opt);
+    state->update_account(address_from_ptr(address), initial_opt, current_opt);
 }
 
-void state_update_code(MemoryBuffer* state, const uint8_t* address_data, const Account* account, const Bytes* code) {
-    evmc::address address;
-    std::memcpy(address.bytes, address_data, kAddressLength);
-    state->update_account_code(address, account->incarnation, account->code_hash, *code);
+void state_update_code(StateBuffer* state, const uint8_t* address, const Account* account, const Bytes* code) {
+    state->update_account_code(address_from_ptr(address), account->incarnation, account->code_hash, *code);
 }
 
 int main() { return 0; }

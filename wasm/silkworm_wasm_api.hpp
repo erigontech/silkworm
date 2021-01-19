@@ -19,6 +19,7 @@
 
 // Preliminary Silkworm API for WebAssembly.
 // Currently it's unstable and is likely to change.
+// Used for https://torquem.ch/eth_tests.html
 
 #include <evmc/evmc.h>
 #include <stdbool.h>
@@ -76,6 +77,10 @@ SILKWORM_EXPORT void keccak256(uint8_t* out, const silkworm::Bytes* in);
 SILKWORM_EXPORT silkworm::Account* new_account(uint64_t nonce, const intx::uint256* balance);
 SILKWORM_EXPORT void delete_account(silkworm::Account* x);
 
+SILKWORM_EXPORT uint64_t account_nonce(const silkworm::Account* a);
+
+SILKWORM_EXPORT intx::uint256* account_balance(silkworm::Account* a);
+
 SILKWORM_EXPORT uint8_t* account_code_hash(silkworm::Account* a);
 
 SILKWORM_EXPORT silkworm::Block* new_block(const silkworm::Bytes* rlp);
@@ -91,12 +96,15 @@ SILKWORM_EXPORT silkworm::ValidationError block_execute(silkworm::Block* b, silk
 SILKWORM_EXPORT silkworm::MemoryBuffer* new_state();
 SILKWORM_EXPORT void delete_state(silkworm::MemoryBuffer* x);
 
-SILKWORM_EXPORT void state_insert_header(silkworm::MemoryBuffer* state, const silkworm::BlockHeader* header);
+SILKWORM_EXPORT bool state_read_account(const silkworm::StateBuffer* state, const uint8_t* address,
+                                        silkworm::Account* out);
 
-SILKWORM_EXPORT void state_update_account(silkworm::MemoryBuffer* state, const uint8_t* address,
+SILKWORM_EXPORT void state_insert_header(silkworm::StateBuffer* state, const silkworm::BlockHeader* header);
+
+SILKWORM_EXPORT void state_update_account(silkworm::StateBuffer* state, const uint8_t* address,
                                           const silkworm::Account* initial, const silkworm::Account* current);
 
-SILKWORM_EXPORT void state_update_code(silkworm::MemoryBuffer* state, const uint8_t* address,
+SILKWORM_EXPORT void state_update_code(silkworm::StateBuffer* state, const uint8_t* address,
                                        const silkworm::Account* account, const silkworm::Bytes* code);
 }
 

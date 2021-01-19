@@ -66,6 +66,7 @@ int main(int argc, char* argv[]) {
     auto tx_lookup_table{txn->open(db::table::kTxLookup)};
     auto transactions_table{txn->open(db::table::kEthTx)};
     uint64_t expected_block_number{0};
+    Bytes buffer{}; // To extract compacted data
 
     try {
 
@@ -106,8 +107,8 @@ int main(int argc, char* argv[]) {
                     }
 
                     // TG stores block height as compact (no leading zeroes)
-                    std::string lookup_data_hex{to_hex(*lookup_data)};
-                    uint64_t actual_block_number{std::strtoull(lookup_data_hex.c_str(), nullptr, 16)};
+                    auto lookup_block_data{left_pad(*lookup_data, sizeof(uint64_t), buffer)};
+                    auto actual_block_number{boost::endian::load_big_u64(lookup_block_data.data())};
 
                     if (actual_block_number != expected_block_number) {
                         std::cout << lookup_data->size() << "   " << to_hex(*lookup_data) << std::endl;

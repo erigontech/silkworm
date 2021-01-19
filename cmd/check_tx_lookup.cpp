@@ -84,14 +84,17 @@ int main(int argc, char* argv[]) {
                 MDB_val tx_data_mdb;
 
                 uint64_t i{0};
-                for (int rc{transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb)}; rc != MDB_NOTFOUND && i < body.txn_count; rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
+                for (int rc{transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb)};
+                     rc != MDB_NOTFOUND && i < body.txn_count;
+                     rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
                     ByteView tx_rlp{db::from_mdb_val(tx_data_mdb)};
                     auto hash{keccak256(tx_rlp)};
                     auto hash_view{full_view(hash.bytes)};
                     auto actual_block_number{boost::endian::load_big_u64(tx_lookup_table->get(hash_view)->data())};
                     if (actual_block_number != expected_block_number) {
-                        SILKWORM_LOG(LogError) << "Mismatch: Expected Number for hash: "
-                            << to_hex(hash_view) << " is " << expected_block_number << ", but got: " << actual_block_number << std::endl;
+                        SILKWORM_LOG(LogError)
+                            << "Mismatch: Expected Number for hash: " << to_hex(hash_view) << " is "
+                            << expected_block_number << ", but got: " << actual_block_number << std::endl;
                     }
                 }
             }

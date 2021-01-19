@@ -101,6 +101,11 @@ int main(int argc, char* argv[]) {
             expected_block_number++;
             rc = bodies_table->get_next(&mdb_key, &mdb_data);
         }
+
+        if (rc != MDB_NOTFOUND) {
+            lmdb::err_handler(rc);
+        }
+
         SILKWORM_LOG(LogInfo) << "Check finished" << std::endl;
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogError) << ex.what() << std::endl;

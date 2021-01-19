@@ -75,8 +75,10 @@ int main(int argc, char* argv[]) {
         int rc{bodies_table->get_first(&mdb_key, &mdb_data)};
 
         while (!rc) {
+
             auto body_rlp{db::from_mdb_val(mdb_data)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
+
             if (body.txn_count > 0) {
                 Bytes transaction_key(8, '\0');
                 boost::endian::store_big_u64(transaction_key.data(), body.base_txn_id);
@@ -84,19 +86,30 @@ int main(int argc, char* argv[]) {
                 MDB_val tx_mdb_data;
 
                 uint64_t i{0};
-                for (int rc{transactions_table->seek_exact(&tx_mdb_key, &tx_mdb_data)};
-                     rc != MDB_NOTFOUND && i < body.txn_count;
+                int rc{transactions_table->seek_exact(&tx_mdb_key, &tx_mdb_data)};
+
+                for (; rc == MDB_SUCCESS && i < body.txn_count;
                      rc = transactions_table->get_next(&tx_mdb_key, &tx_mdb_data), ++i) {
                     ByteView tx_rlp{db::from_mdb_val(tx_mdb_data)};
                     auto hash{keccak256(tx_rlp)};
                     auto hash_view{full_view(hash.bytes)};
-                    auto actual_block_number{boost::endian::load_big_u64(tx_lookup_table->get(hash_view)->data())};
+                    auto lookup_data(tx_lookup_table->get(hash_view));
+                    if (!lookup_data.has_value()) {
+                        /* We did not find the transaction */
+                        SILKWORM_LOG(LogError) << "";
+                    }
+
+                    auto actual_block_number{boost::endian::load_little_u64(tx_lookup_table->get(hash_view)->data())};
                     if (actual_block_number != expected_block_number) {
                         SILKWORM_LOG(LogError)
                             << "Mismatch: Expected Number for hash: " << to_hex(hash_view) << " is "
                             << expected_block_number << ", but got: " << actual_block_number << std::endl;
                     }
                 }
+                if (rc && rc != MDB_NOTFOUND) {
+                    lmdb::err_handler(rc);
+                }
+
             }
 
             if (expected_block_number % 100000 == 0) {

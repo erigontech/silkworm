@@ -71,12 +71,17 @@ int main(int argc, char* argv[]) {
             auto expected_number{key.substr(0,8)};
             auto actual_number{blockhashes_table->get(hash)};
 
-            if (actual_number->compare(expected_number) != 0) {
+            if (!actual_number.has_value()) {
+                SILKWORM_LOG(LogError) << "Error! Hash " << to_hex(hash) << " not found in  "
+                                       << db::table::kHeaderNumbers.name << " table " << std::endl;
+
+            } else if (actual_number->compare(expected_number) != 0) {
                 uint64_t expected_block = boost::endian::load_big_u64(expected_number.data());
                 uint64_t actual_block = boost::endian::load_big_u64(actual_number->data());
-                SILKWORM_LOG(LogError) << "Mismatch: Expected Number for hash: "
-                    << to_hex(hash) << " is " << expected_block << ", but got: " << actual_block << std::endl;
+                SILKWORM_LOG(LogError) << "Error! Hash " << to_hex(hash) << " should match block " << expected_block
+                                       << " but got " << actual_block << std::endl;
             }
+
             rc = header_table->get_next(&mdb_key, &mdb_data);
         }
         SILKWORM_LOG(LogInfo) << "Done!" << std::endl;

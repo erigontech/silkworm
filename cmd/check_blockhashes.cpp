@@ -25,9 +25,9 @@
 
 using namespace silkworm;
 
-int main(int argc, char* argv[]) { 
+int main(int argc, char* argv[]) {
     namespace fs = boost::filesystem;
-    
+
     CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
 
     std::string db_path{db::default_path()};
@@ -43,12 +43,11 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
-    
+
     fs::path datadir(db_path);
 
     try {
         lmdb::DatabaseConfig db_config{db_path};
-        db_config.set_readonly(false); 
         std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
         std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 

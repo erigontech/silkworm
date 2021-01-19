@@ -76,6 +76,8 @@ int main(int argc, char* argv[]) {
 
         while (!rc) {
 
+            Bytes block_key(static_cast<const uint8_t*>(mdb_key.mv_data), mdb_key.mv_size);
+            auto block_number(boost::endian::load_big_u64(&block_key[0]));
             auto body_rlp{db::from_mdb_val(mdb_data)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
 
@@ -90,24 +92,37 @@ int main(int argc, char* argv[]) {
 
                 for (; rc == MDB_SUCCESS && i < body.txn_count;
                      rc = transactions_table->get_next(&tx_mdb_key, &tx_mdb_data), ++i) {
+
                     ByteView tx_rlp{db::from_mdb_val(tx_mdb_data)};
                     auto hash{keccak256(tx_rlp)};
                     auto hash_view{full_view(hash.bytes)};
                     auto lookup_data(tx_lookup_table->get(hash_view));
+
                     if (!lookup_data.has_value()) {
                         /* We did not find the transaction */
-                        SILKWORM_LOG(LogError) << "";
+                        SILKWORM_LOG(LogError) << "Block " << block_number << " transaction " << i << " not found in "
+                                               << db::table::kTxLookup.name << " table" << std::endl;
+                        continue;
                     }
 
-                    auto actual_block_number{boost::endian::load_little_u64(tx_lookup_table->get(hash_view)->data())};
+                    // TG stores block height as compact (no leading zeroes)
+                    std::string lookup_data_hex{to_hex(*lookup_data)};
+                    uint64_t actual_block_number{std::strtoull(lookup_data_hex.c_str(), nullptr, 16)};
+
                     if (actual_block_number != expected_block_number) {
+                        std::cout << lookup_data->size() << "   " << to_hex(*lookup_data) << std::endl;
                         SILKWORM_LOG(LogError)
-                            << "Mismatch: Expected Number for hash: " << to_hex(hash_view) << " is "
+                            << "Mismatch: Expected block number for tx with hash: " << to_hex(hash_view) << " is "
                             << expected_block_number << ", but got: " << actual_block_number << std::endl;
                     }
                 }
                 if (rc && rc != MDB_NOTFOUND) {
                     lmdb::err_handler(rc);
+                }
+
+                if (i != body.txn_count) {
+                    SILKWORM_LOG(LogError) << "Block " << block_number << " claims " << body.txn_count
+                                           << " transactions but only " << i << " read" << std::endl;
                 }
 
             }

@@ -455,7 +455,7 @@ std::optional<ByteView> Table::get(ByteView key) {
     MDB_val data;
     int rc{get(&key_val, &data, MDB_SET)};
     if (rc == MDB_NOTFOUND) {
-        return {};
+        return std::nullopt;
     }
     err_handler(rc);
     return db::from_mdb_val(data);

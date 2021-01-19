@@ -45,6 +45,8 @@ SILKWORM_EXPORT void delete_bytes(silkworm::Bytes* x);
 
 SILKWORM_EXPORT uint8_t* bytes_data(silkworm::Bytes* str);
 
+SILKWORM_EXPORT size_t bytes_length(const silkworm::Bytes* str);
+
 // a + b*2^64 + c*2^128 + d*2^192
 SILKWORM_EXPORT intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d);
 SILKWORM_EXPORT void delete_uint256(intx::uint256* x);
@@ -96,8 +98,11 @@ SILKWORM_EXPORT silkworm::ValidationError block_execute(silkworm::Block* b, silk
 SILKWORM_EXPORT silkworm::MemoryBuffer* new_state();
 SILKWORM_EXPORT void delete_state(silkworm::MemoryBuffer* x);
 
-SILKWORM_EXPORT bool state_read_account(const silkworm::StateBuffer* state, const uint8_t* address,
-                                        silkworm::Account* out);
+// Result has to be freed with delete_account
+SILKWORM_EXPORT silkworm::Account* state_read_account_new(const silkworm::StateBuffer* state, const uint8_t* address);
+
+// Result has to be freed with delete_bytes
+SILKWORM_EXPORT silkworm::Bytes* state_read_code_new(const silkworm::StateBuffer* state, const uint8_t* code_hash);
 
 SILKWORM_EXPORT void state_insert_header(silkworm::StateBuffer* state, const silkworm::BlockHeader* header);
 

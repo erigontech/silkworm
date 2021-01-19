@@ -41,6 +41,8 @@ void delete_bytes(Bytes* x) { delete x; }
 
 uint8_t* bytes_data(Bytes* str) { return str->data(); }
 
+size_t bytes_length(const Bytes* str) { return str->length(); }
+
 intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) {
     auto out{new intx::uint256};
     out->lo.lo = a;
@@ -180,14 +182,23 @@ void delete_state(MemoryBuffer* x) { delete x; }
 
 static evmc::address address_from_ptr(const uint8_t* ptr) { return to_address({ptr, kAddressLength}); }
 
-bool state_read_account(const StateBuffer* state, const uint8_t* address, Account* out) {
+static evmc::bytes32 bytes32_from_ptr(const uint8_t* ptr) { return to_bytes32({ptr, kHashLength}); }
+
+Account* state_read_account_new(const StateBuffer* state, const uint8_t* address) {
     std::optional<Account> account{state->read_account(address_from_ptr(address))};
-    if (account) {
-        *out = *account;
-        return true;
-    } else {
-        return false;
+    if (!account) {
+        return nullptr;
     }
+
+    auto out{new Account};
+    *out = *account;
+    return out;
+}
+
+Bytes* state_read_code_new(const StateBuffer* state, const uint8_t* code_hash) {
+    auto out{new Bytes};
+    *out = state->read_code(bytes32_from_ptr(code_hash));
+    return out;
 }
 
 void state_insert_header(StateBuffer* state, const BlockHeader* header) { state->insert_header(*header); }

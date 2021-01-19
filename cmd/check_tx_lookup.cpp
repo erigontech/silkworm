@@ -31,10 +31,10 @@
 #include <iostream>
 
 using namespace silkworm;
- 
-int main(int argc, char* argv[]) { 
+
+int main(int argc, char* argv[]) {
     namespace fs = boost::filesystem;
-    
+
     CLI::App app{"Check Tx Hashes => BlockNumber mapping in database"};
 
     std::string db_path{db::default_path()};
@@ -59,7 +59,6 @@ int main(int argc, char* argv[]) {
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
     lmdb::DatabaseConfig db_config{db_path};
-    db_config.set_readonly(false); 
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
@@ -92,7 +91,7 @@ int main(int argc, char* argv[]) {
                     auto actual_block_number{boost::endian::load_big_u64(tx_lookup_table->get(hash_view)->data())};
                     if (actual_block_number != expected_block_number) {
                         SILKWORM_LOG(LogError) << "Mismatch: Expected Number for hash: "
-                            << to_hex(hash_view) << " is " << expected_block_number << ", but got: " << actual_block_number << std::endl;                    
+                            << to_hex(hash_view) << " is " << expected_block_number << ", but got: " << actual_block_number << std::endl;
                     }
                 }
             }

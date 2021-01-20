@@ -19,17 +19,16 @@
 #include <boost/filesystem.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/stages.hpp>
 #include <boost/endian/conversion.hpp>
 
 using namespace silkworm;
 
-int main(int argc, char* argv[]) { 
+int main(int argc, char* argv[]) {
     namespace fs = boost::filesystem;
-    
-    CLI::App app{"Generates Blockhashes => BlockNumber mapping in database"};
+
+    CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
 
     std::string db_path{db::default_path()};
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
@@ -44,35 +43,58 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
-    
+
     fs::path datadir(db_path);
 
     try {
         lmdb::DatabaseConfig db_config{db_path};
-        db_config.set_readonly(false); 
         std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-        std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+        std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
         auto header_table{txn->open(db::table::kBlockHeaders)};
         auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};
+        uint32_t scanned_headers{0};
 
-        MDB_val key_mdb, data_mdb;
+        MDB_val mdb_key, mdb_data;
         SILKWORM_LOG(LogInfo) << "Checking Block Hashes..." << std::endl;
-        // Check if each hash has the correct number accordingly to the header table
-        for (int rc{header_table->seek(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND; rc = header_table->get_next(&key_mdb, &data_mdb)) {
-            ByteView key{db::from_mdb_val(key_mdb)};
-            if (key.size() != 40) continue;
+        int rc{header_table->get_first(&mdb_key, &mdb_data)};
+
+        // Check if each hash has the correct number according to the header table
+        while (!rc) {
+
+            ByteView key{db::from_mdb_val(mdb_key)};
+
+            if (key.size() != 40) {
+                rc = header_table->get_next(&mdb_key, &mdb_data);
+                continue;
+            }
+
+            scanned_headers++;
             auto hash{key.substr(8,40)};
             auto expected_number{key.substr(0,8)};
             auto actual_number{blockhashes_table->get(hash)};
 
-            if (actual_number->compare(expected_number) != 0) {
+            if (!actual_number.has_value()) {
+                uint64_t expected_block = boost::endian::load_big_u64(expected_number.data());
+                SILKWORM_LOG(LogError) << "Hash " << to_hex(hash) << " (block " << expected_block << ") not found in "
+                                       << db::table::kHeaderNumbers.name << " table " << std::endl;
+
+            } else if (actual_number->compare(expected_number) != 0) {
                 uint64_t expected_block = boost::endian::load_big_u64(expected_number.data());
                 uint64_t actual_block = boost::endian::load_big_u64(actual_number->data());
-                SILKWORM_LOG(LogError) << "Mismatch: Expected Number for hash: "
-                    << to_hex(hash) << " is " << expected_block << ", but got: " << actual_block << std::endl;
+                SILKWORM_LOG(LogError) << "Hash " << to_hex(hash) << " should match block " << expected_block
+                                       << " but got " << actual_block << std::endl;
             }
+            if (scanned_headers % 100000 == 0) {
+                SILKWORM_LOG(LogInfo) << "Scanned headers " << scanned_headers << std::endl;
+            }
+            rc = header_table->get_next(&mdb_key, &mdb_data);
         }
+        if (rc && rc != MDB_NOTFOUND) {
+            // We might have stumbled into some IO error
+            lmdb::err_handler(rc);
+        }
+
         SILKWORM_LOG(LogInfo) << "Done!" << std::endl;
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogError) << ex.what() << std::endl;

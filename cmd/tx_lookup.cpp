@@ -26,14 +26,25 @@
 
 using namespace silkworm;
 
+static Bytes compact(Bytes& b) {
+    std::string::size_type offset{b.find_first_not_of((uint8_t)0)};
+    if (offset != std::string::npos) {
+        return b.substr(offset);
+    }
+    return b;
+}
+
 int main(int argc, char* argv[]) {
     namespace fs = boost::filesystem;
 
-    CLI::App app{"Generates Blockhashes => BlockNumber mapping in database"};
+    CLI::App app{"Generates Tc Hashes => BlockNumber mapping in database"};
 
     std::string db_path{db::default_path()};
+    bool full;
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
+
+    app.add_flag("--full", full, "Start making lookups from block 0");
     CLI11_PARSE(app, argc, argv);
 
     Logger::default_logger().set_local_timezone(true);  // for compatibility with TG logging
@@ -54,70 +65,71 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
     // We take data from header table and transform it and put it in blockhashes table
-    auto header_table{txn->open(db::table::kBlockHeaders)};
-    auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};
+    auto bodies_table{txn->open(db::table::kBlockBodies)};
+    auto transactions_table{txn->open(db::table::kEthTx)};
 
     try {
-
-        auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kBlockHashesKey)};
-        auto expected_block_number{last_processed_block_number + 1};
-        uint32_t block_number{0};
-        uint32_t blocks_processed_count{0};
+        auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)};
+        if (full) {
+            last_processed_block_number = 0;
+        }
+        uint64_t block_number{0};
+        uint32_t entries_processed_count{0};
 
         // Extract
         Bytes start(8, '\0');
-        boost::endian::store_big_u64(&start[0], expected_block_number);
+        boost::endian::store_big_u64(&start[0], last_processed_block_number + 1);
         MDB_val mdb_key{db::to_mdb_val(start)};
         MDB_val mdb_data;
-        SILKWORM_LOG(LogInfo) << "Started BlockHashes Extraction" << std::endl;
-        int rc{header_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
-        while (!rc) { /* Loop as long as we have no errors*/
+        SILKWORM_LOG(LogInfo) << "Started Tx Lookup Extraction" << std::endl;
+        int rc{bodies_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
+        while (!rc) {                                     /* Loop as long as we have no errors*/
+            auto body_rlp{db::from_mdb_val(mdb_data)};
+            auto body{db::detail::decode_stored_block_body(body_rlp)};
+            Bytes block_number_as_bytes(static_cast<unsigned char*>(mdb_key.mv_data), 8);
+            auto lookup_block_data{compact(block_number_as_bytes)};
+            block_number = boost::endian::load_big_u64(&block_number_as_bytes[0]);
+            if (body.txn_count > 0) {
+                Bytes transaction_key(8, '\0');
+                boost::endian::store_big_u64(transaction_key.data(), body.base_txn_id);
+                MDB_val tx_key_mdb{db::to_mdb_val(transaction_key)};
+                MDB_val tx_data_mdb{};
 
-            if (mdb_key.mv_size != 40) {
-                // Not the key we need
-                rc = header_table->get_next(&mdb_key, &mdb_data);
-                continue;
+                uint64_t i{0};
+                for (int rc{transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb)};
+                     rc != MDB_NOTFOUND && i < body.txn_count;
+                     rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
+                    lmdb::err_handler(rc);
+                    // Take transaction rlp, then hash it in order to get the transaction hash
+                    ByteView tx_rlp{db::from_mdb_val(tx_data_mdb)};
+                    auto hash{keccak256(tx_rlp)};
+                    etl::Entry entry{Bytes(hash.bytes, 32), Bytes(lookup_block_data.data(), lookup_block_data.size())};
+                    collector.collect(entry);
+                    ++entries_processed_count;
+                }
             }
-
-            // Ensure the reached block number is in proper sequence
-            Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
-            auto reached_block_number{boost::endian::load_big_u64(&mdb_key_as_bytes[0])};
-            if (reached_block_number != expected_block_number) {
-                // Something wrong with db
-                // Blocks are out of sequence for any reason
-                // Should not happen but you never know
-                throw std::runtime_error("Bad headers sequence. Expected " + std::to_string(expected_block_number) +
-                    " got " + std::to_string(reached_block_number));
-
-            }
-
-            // We reached a valid block height in proper sequence
-            // Load data into collector
-            etl::Entry etl_entry{mdb_key_as_bytes.substr(8, 40), mdb_key_as_bytes.substr(0, 8)};
-            collector.collect(etl_entry);
-
             // Save last processed block_number and expect next in sequence
-            ++blocks_processed_count;
-            block_number = expected_block_number++;
-            rc = header_table->get_next(&mdb_key, &mdb_data);
+            if (block_number % 100000 == 0) {
+                SILKWORM_LOG(LogInfo) << "Tx Lookup Extraction Progress << " << block_number << std::endl;
+            }
+            rc = bodies_table->get_next(&mdb_key, &mdb_data);
         }
 
         if (rc && rc != MDB_NOTFOUND) { /* MDB_NOTFOUND is not actually an error rather eof */
             lmdb::err_handler(rc);
         }
 
-
-        SILKWORM_LOG(LogInfo) << "Entries Collected << " << blocks_processed_count << std::endl;
+        SILKWORM_LOG(LogInfo) << "Entries Collected << " << entries_processed_count << std::endl;
 
         // Proceed only if we've done something
-        if (blocks_processed_count) {
-            SILKWORM_LOG(LogInfo) << "Started BlockHashes Loading" << std::endl;
+        if (entries_processed_count) {
+            SILKWORM_LOG(LogInfo) << "Started tx Hashes Loading" << std::endl;
 
             // Ensure we haven't got dirty data in target table
-            auto target_table{txn->open(db::table::kHeaderNumbers, MDB_CREATE)};
+            auto target_table{txn->open(db::table::kTxLookup, MDB_CREATE)};
 
             if (last_processed_block_number <= 1) {
-                lmdb::err_handler(target_table->clear());
+                lmdb::err_handler(txn->open(db::table::kTxLookup)->clear());
             } else {
                 boost::endian::store_big_u64(&start[0], last_processed_block_number + 1);
                 mdb_key = db::to_mdb_val(start);
@@ -131,12 +143,11 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            // << -- Up to here
             // Eventually bulk load collected items with no transform (may throw)
             collector.load(target_table.get(), nullptr, MDB_APPEND);
 
             // Update progress height with last processed block
-            db::stages::set_stage_progress(*txn, db::stages::kBlockHashesKey, block_number);
+            db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, block_number);
             lmdb::err_handler(txn->commit());
 
         } else {

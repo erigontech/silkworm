@@ -201,6 +201,14 @@ Bytes* state_read_code_new(const StateBuffer* state, const uint8_t* code_hash) {
     return out;
 }
 
+Bytes* state_read_storage_new(const StateBuffer* state, const uint8_t* address, const Account* account,
+                              const Bytes* location) {
+    evmc::bytes32 value{state->read_storage(address_from_ptr(address), account->incarnation, to_bytes32(*location))};
+    auto out{new Bytes};
+    *out = zeroless_view(value);
+    return out;
+}
+
 void state_insert_header(StateBuffer* state, const BlockHeader* header) { state->insert_header(*header); }
 
 void state_update_account(StateBuffer* state, const uint8_t* address, const Account* current_ptr) {

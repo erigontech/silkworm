@@ -104,6 +104,11 @@ SILKWORM_EXPORT silkworm::Account* state_read_account_new(const silkworm::StateB
 // Result has to be freed with delete_bytes
 SILKWORM_EXPORT silkworm::Bytes* state_read_code_new(const silkworm::StateBuffer* state, const uint8_t* code_hash);
 
+// Result has to be freed with delete_bytes
+SILKWORM_EXPORT silkworm::Bytes* state_read_storage_new(const silkworm::StateBuffer* state, const uint8_t* address,
+                                                        const silkworm::Account* account,
+                                                        const silkworm::Bytes* location);
+
 SILKWORM_EXPORT void state_insert_header(silkworm::StateBuffer* state, const silkworm::BlockHeader* header);
 
 SILKWORM_EXPORT void state_update_account(silkworm::StateBuffer* state, const uint8_t* address,

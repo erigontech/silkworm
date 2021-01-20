@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <array>
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
+#include <silkworm/chain/config.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/types/bloom.hpp>
@@ -67,6 +68,8 @@ bool operator==(const BlockBody& a, const BlockBody& b);
 
 struct Block : public BlockBody {
     BlockHeader header;
+
+    void recover_senders(const ChainConfig& config);
 };
 
 struct BlockWithHash {

@@ -272,17 +272,7 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer
         return kFailed;
     }
 
-    uint64_t block_number{block.header.number};
-    bool homestead{config.has_homestead(block_number)};
-    bool spurious_dragon{config.has_spurious_dragon(block_number)};
-
-    for (Transaction& txn : block.transactions) {
-        if (spurious_dragon) {
-            txn.recover_sender(homestead, config.chain_id);
-        } else {
-            txn.recover_sender(homestead, {});
-        }
-    }
+    block.recover_senders(config);
 
     std::pair<std::vector<Receipt>, ValidationError> res{execute_block(block, state, config)};
     if (res.second != ValidationError::kOk) {

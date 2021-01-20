@@ -26,7 +26,7 @@
 
 using namespace silkworm;
 
-static Bytes compact(Bytes &b) {
+static Bytes compact(Bytes& b) {
     std::string::size_type offset{b.find_first_not_of((uint8_t)0)};
     if (offset != std::string::npos) {
         return b.substr(offset);
@@ -78,12 +78,12 @@ int main(int argc, char* argv[]) {
 
         // Extract
         Bytes start(8, '\0');
-        boost::endian::store_big_u64(&start[0], last_processed_block_number+1);
+        boost::endian::store_big_u64(&start[0], last_processed_block_number + 1);
         MDB_val mdb_key{db::to_mdb_val(start)};
         MDB_val mdb_data;
         SILKWORM_LOG(LogInfo) << "Started Tx Lookup Extraction" << std::endl;
         int rc{bodies_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
-        while (!rc) { /* Loop as long as we have no errors*/
+        while (!rc) {                                     /* Loop as long as we have no errors*/
             auto body_rlp{db::from_mdb_val(mdb_data)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
             Bytes block_number_as_bytes(static_cast<unsigned char*>(mdb_key.mv_data), 8);
@@ -96,7 +96,9 @@ int main(int argc, char* argv[]) {
                 MDB_val tx_data_mdb{};
 
                 uint64_t i{0};
-                for (int rc{transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb)}; rc != MDB_NOTFOUND && i < body.txn_count; rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
+                for (int rc{transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb)};
+                     rc != MDB_NOTFOUND && i < body.txn_count;
+                     rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
                     lmdb::err_handler(rc);
                     // Take transaction rlp, then hash it in order to get the transaction hash
                     ByteView tx_rlp{db::from_mdb_val(tx_data_mdb)};
@@ -116,7 +118,6 @@ int main(int argc, char* argv[]) {
         if (rc && rc != MDB_NOTFOUND) { /* MDB_NOTFOUND is not actually an error rather eof */
             lmdb::err_handler(rc);
         }
-
 
         SILKWORM_LOG(LogInfo) << "Entries Collected << " << entries_processed_count << std::endl;
 

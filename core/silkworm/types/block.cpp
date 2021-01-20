@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -32,6 +32,20 @@ bool operator==(const BlockHeader& a, const BlockHeader& b) {
 
 bool operator==(const BlockBody& a, const BlockBody& b) {
     return a.transactions == b.transactions && a.ommers == b.ommers;
+}
+
+void Block::recover_senders(const ChainConfig& config) {
+    uint64_t block_number{header.number};
+    bool homestead{config.has_homestead(block_number)};
+    bool spurious_dragon{config.has_spurious_dragon(block_number)};
+
+    for (Transaction& txn : transactions) {
+        if (spurious_dragon) {
+            txn.recover_sender(homestead, config.chain_id);
+        } else {
+            txn.recover_sender(homestead, std::nullopt);
+        }
+    }
 }
 
 namespace rlp {

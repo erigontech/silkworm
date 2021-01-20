@@ -26,6 +26,13 @@
 
 using namespace silkworm;
 
+static Bytes compact(Bytes &b) {
+    for(size_t current_index = 0; current_index < b.size(); current_index++) {
+        if (b[current_index] != 0) return b.substr(current_index);
+    }
+    return Bytes(1, '\0');
+}
+
 int main(int argc, char* argv[]) {
     namespace fs = boost::filesystem;
 
@@ -79,6 +86,7 @@ int main(int argc, char* argv[]) {
             auto body_rlp{db::from_mdb_val(mdb_data)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
             Bytes block_number_as_bytes(static_cast<unsigned char*>(mdb_key.mv_data), 8);
+            auto lookup_block_data{compact(block_number_as_bytes)};
             block_number = boost::endian::load_big_u64(&block_number_as_bytes[0]);
             if (body.txn_count > 0) {
                 Bytes transaction_key(8, '\0');
@@ -92,7 +100,7 @@ int main(int argc, char* argv[]) {
                     // Take transaction rlp, then hash it in order to get the transaction hash
                     ByteView tx_rlp{db::from_mdb_val(tx_data_mdb)};
                     auto hash{keccak256(tx_rlp)};
-                    etl::Entry entry{Bytes(hash.bytes, 32), block_number_as_bytes};
+                    etl::Entry entry{Bytes(hash.bytes, 32), Bytes(lookup_block_data.data(), lookup_block_data.size())};
                     collector.collect(entry);
                     ++entries_processed_count;
                 }

@@ -27,10 +27,11 @@
 using namespace silkworm;
 
 static Bytes compact(Bytes &b) {
-    for(size_t current_index = 0; current_index < b.size(); current_index++) {
-        if (b[current_index] != 0) return b.substr(current_index);
+    std::string::size_type offset{b.find_first_not_of((uint8_t)0)};
+    if (offset != std::string::npos) {
+        return b.substr(offset);
     }
-    return Bytes(1, '\0');
+    return b;
 }
 
 int main(int argc, char* argv[]) {

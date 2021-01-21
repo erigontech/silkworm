@@ -40,7 +40,6 @@ class Collector {
         : work_path_{set_work_path(work_path)}, buffer_(Buffer(optimal_size)) {};
     ~Collector();
 
-    void flush_buffer();         // Write buffer to file
     void collect(Entry& entry);  // Store key-value pair in memory or on disk
 
     /** @brief Loads and optionally transforms collected entries into db
@@ -52,10 +51,15 @@ class Collector {
      */
     void load(lmdb::Table* table, LoadFunc load_func, unsigned int db_flags = 0, uint32_t log_every_percent = 100u);
 
+
+    /** @brief Returns the number of actually collected items
+     */
     size_t size() const;
 
   private:
+
     std::string set_work_path(const char* provided_work_path);
+    void flush_buffer();         // Write buffer to file
 
     std::string work_path_;
     Buffer buffer_;

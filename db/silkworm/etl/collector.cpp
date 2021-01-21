@@ -56,7 +56,7 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int mdb_flags, bool log_progress) {
+void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int db_flags, bool log_progress) {
 
     const auto overall_size{size()}; // Amount of work
     uint32_t progress_percent{0};
@@ -69,7 +69,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
             for (const auto& etl_entry : buffer_.get_entries()) {
                 auto trasformed_etl_entries{load_func(etl_entry)};
                 for (const auto& transformed_etl_entry : trasformed_etl_entries) {
-                    table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
+                    table->put(transformed_etl_entry.key, transformed_etl_entry.value, db_flags);
                 }
                 if (!--progress_segment_size) {
                     progress_percent += progress_step;
@@ -80,7 +80,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
             }
         } else {
             for (const auto& etl_entry : buffer_.get_entries()) {
-                table->put(etl_entry.key, etl_entry.value, flags);
+                table->put(etl_entry.key, etl_entry.value, db_flags);
                 if (!--progress_segment_size) {
                     progress_percent += progress_step;
                     progress_segment_size = overall_size / (100 / progress_step);
@@ -120,10 +120,10 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         // Process linked pairs
         if (load_func) {
             for (const auto& transformed_etl_entry : load_func(etl_entry)) {
-                table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
+                table->put(transformed_etl_entry.key, transformed_etl_entry.value, db_flags);
             }
         } else {
-            table->put(etl_entry.key, etl_entry.value, flags);
+            table->put(etl_entry.key, etl_entry.value, db_flags);
         }
 
         // Display progress

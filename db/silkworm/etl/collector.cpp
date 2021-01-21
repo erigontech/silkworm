@@ -56,7 +56,7 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int flags, std::string op_name) {
+void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int flags, bool log_progress) {
 
     if (!file_providers_.size()) {
         buffer_.sort();
@@ -113,10 +113,10 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         }
         entries_processed++;
         // Once in a while updates the user on current progress
-        if (!op_name.empty() && log_tracker >= kLogInterval) {
+        if (log_progress && log_tracker >= kLogInterval) {
             double percentage_completion = ((double)entries_processed / (double)size_)*100;
-            SILKWORM_LOG(LogInfo) << std::setprecision(3) << "Loading Progress " << op_name << " << "
-                << percentage_completion << "%" << std::endl;
+            SILKWORM_LOG(LogInfo) << "Load Progress "
+                                  << " << " << std::setprecision(3) << percentage_completion << "%" << std::endl;
             log_tracker = 0;
         }
 

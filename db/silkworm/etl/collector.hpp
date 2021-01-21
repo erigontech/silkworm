@@ -41,10 +41,10 @@ class Collector {
         : work_path_{set_work_path(work_path)}, buffer_(Buffer(optimal_size)) {};
     ~Collector();
 
-    void flush_buffer();                                 // Write buffer to file
-    void collect(Entry& entry);                          // Store key-value pair in memory or on disk
-    void load(lmdb::Table* table, LoadFunc load_func,
-              unsigned int flags = 0, std::string op_name = "");  // Load collected entries in destination table applying a transformation
+    void flush_buffer();         // Write buffer to file
+    void collect(Entry& entry);  // Store key-value pair in memory or on disk
+    void load(lmdb::Table* table, LoadFunc load_func, unsigned int flags = 0,
+              bool log_progress = false);  // Load collected entries in destination table applying a transformation
     size_t size() const;
 
   private:

@@ -74,7 +74,6 @@ int main(int argc, char* argv[]) {
             last_processed_block_number = 0;
         }
         uint64_t block_number{0};
-        uint32_t entries_processed_count{0};
 
         // Extract
         Bytes start(8, '\0');
@@ -105,7 +104,6 @@ int main(int argc, char* argv[]) {
                     auto hash{keccak256(tx_rlp)};
                     etl::Entry entry{Bytes(hash.bytes, 32), Bytes(lookup_block_data.data(), lookup_block_data.size())};
                     collector.collect(entry);
-                    ++entries_processed_count;
                 }
             }
             // Save last processed block_number and expect next in sequence
@@ -119,10 +117,10 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(rc);
         }
 
-        SILKWORM_LOG(LogInfo) << "Entries Collected << " << entries_processed_count << std::endl;
+        SILKWORM_LOG(LogInfo) << "Entries Collected << " << collector.get_collected_entries() << std::endl;
 
         // Proceed only if we've done something
-        if (entries_processed_count) {
+        if (collector.get_collected_entries()) {
             SILKWORM_LOG(LogInfo) << "Started tx Hashes Loading" << std::endl;
 
             // Ensure we haven't got dirty data in target table

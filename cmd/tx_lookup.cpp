@@ -125,24 +125,23 @@ int main(int argc, char* argv[]) {
 
             // Ensure we haven't got dirty data in target table
             auto target_table{txn->open(db::table::kTxLookup, MDB_CREATE)};
+            unsigned int db_flags{0};
 
             if (last_processed_block_number <= 1) {
+                // We have an empty target table so we can bulk load
+                // keys as sorted from actual collection using MDB_APPEND
                 lmdb::err_handler(txn->open(db::table::kTxLookup)->clear());
+                db_flags = MDB_APPEND;
             } else {
-                boost::endian::store_big_u64(&start[0], last_processed_block_number + 1);
-                mdb_key = db::to_mdb_val(start);
-                rc = target_table->seek_exact(&mdb_key, &mdb_data);
-                while (!rc) {
-                    lmdb::err_handler(target_table->del_current());
-                    rc = target_table->get_next(&mdb_key, &mdb_data);
-                }
-                if (rc != MDB_NOTFOUND) {
-                    lmdb::err_handler(rc);
-                }
+                /*
+                * Target table has tx hash in key and we can't guarantee
+                * newly processed items have higher keys than existing ones
+                * for the reason we need to go with upsert
+                */
             }
 
             // Eventually bulk load collected items with no transform (may throw)
-            collector.load(target_table.get(), nullptr, MDB_APPEND, /* log_every_percent = */ 10);
+            collector.load(target_table.get(), nullptr, db_flags, /* log_every_percent = */ 10);
 
             // Update progress height with last processed block
             db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, block_number);

@@ -44,7 +44,7 @@ class Collector {
     void flush_buffer();                                 // Write buffer to file
     void collect(Entry& entry);                          // Store key-value pair in memory or on disk
     void load(lmdb::Table* table, LoadFunc load_func,
-              unsigned int flags = 0,std::string op_name = nullptr);  // Load collected entries in destination table applying a transformation
+              unsigned int flags = 0,std::string op_name = "");  // Load collected entries in destination table applying a transformation
 
   private:
     std::string set_work_path(const char* provided_work_path);

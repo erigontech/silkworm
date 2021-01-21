@@ -116,7 +116,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         if (log_progress && log_tracker >= kLogInterval) {
             double percentage_completion = ((double)entries_processed / (double)size_)*100;
             SILKWORM_LOG(LogInfo) << "Load Progress "
-                                  << " << " << std::setprecision(3) << percentage_completion << "%" << std::endl;
+                                  << " << " << std::fixed << std::setprecision(3) << percentage_completion << "%"
+                                  << std::endl;
             log_tracker = 0;
         }
 

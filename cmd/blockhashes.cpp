@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
 
             // << -- Up to here
             // Eventually bulk load collected items with no transform (may throw)
-            collector.load(target_table.get(), nullptr, MDB_APPEND);
+            collector.load(target_table.get(), nullptr, MDB_APPEND, /* log_progress = */ true);
 
             // Update progress height with last processed block
             db::stages::set_stage_progress(*txn, db::stages::kBlockHashesKey, block_number);

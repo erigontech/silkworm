@@ -117,10 +117,10 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(rc);
         }
 
-        SILKWORM_LOG(LogInfo) << "Entries Collected << " << collector.get_collected_entries() << std::endl;
+        SILKWORM_LOG(LogInfo) << "Entries Collected << " << collector.size() << std::endl;
 
         // Proceed only if we've done something
-        if (collector.get_collected_entries()) {
+        if (collector.size()) {
             SILKWORM_LOG(LogInfo) << "Started tx Hashes Loading" << std::endl;
 
             // Ensure we haven't got dirty data in target table

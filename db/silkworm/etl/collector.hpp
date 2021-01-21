@@ -38,22 +38,23 @@ typedef std::vector<Entry> (*LoadFunc)(Entry);
 class Collector {
   public:
     Collector(const char* work_path = nullptr, size_t optimal_size = kOptimalBufferSize)
-        : work_path_{set_work_path(work_path)}, entries_collected_(0), buffer_(Buffer(optimal_size)) {};
+        : work_path_{set_work_path(work_path)}, buffer_(Buffer(optimal_size)) {};
     ~Collector();
 
     void flush_buffer();                                 // Write buffer to file
     void collect(Entry& entry);                          // Store key-value pair in memory or on disk
     void load(lmdb::Table* table, LoadFunc load_func,
               unsigned int flags = 0, std::string op_name = "");  // Load collected entries in destination table applying a transformation
-    size_t get_collected_entries();
+    size_t size() const;
 
   private:
     std::string set_work_path(const char* provided_work_path);
 
     std::string work_path_;
-    size_t entries_collected_;
-    std::vector<std::unique_ptr<FileProvider>> file_providers_;
     Buffer buffer_;
+
+    std::vector<std::unique_ptr<FileProvider>> file_providers_;
+    size_t size_{0};
 };
 
 // Default no transform function

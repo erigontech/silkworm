@@ -44,13 +44,13 @@ void Collector::flush_buffer() {
     }
 }
 
-size_t Collector::get_collected_entries() {
-    return entries_collected_;
+size_t Collector::size() const {
+    return size_;
 }
 
 void Collector::collect(Entry& entry) {
     buffer_.put(entry);
-    entries_collected_++;
+    size_++;
     if (buffer_.overflows()) {
         flush_buffer();
     }
@@ -115,7 +115,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         // Once in a while updates the user on current progress
         if (!op_name.empty() && log_tracker >= kLogInterval) {
             double percentage_completion = ((double)entries_processed / (double)entries_collected_)*100;
-            SILKWORM_LOG(LogInfo) << std::setprecision(3) << "Loading Progress " << op_name << " << " 
+            SILKWORM_LOG(LogInfo) << std::setprecision(3) << "Loading Progress " << op_name << " << "
                 << percentage_completion << "%" << std::endl;
             log_tracker = 0;
         }

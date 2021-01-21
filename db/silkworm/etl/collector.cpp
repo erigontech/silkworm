@@ -17,6 +17,7 @@
 #include "collector.hpp"
 
 #include <boost/filesystem.hpp>
+#include <silkworm/common/log.hpp>
 #include <queue>
 
 namespace silkworm::etl {
@@ -49,7 +50,7 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int flags) {
+void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int flags, std::string op_name) {
 
     if (!file_providers_.size()) {
         buffer_.sort();
@@ -68,6 +69,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         buffer_.clear();
         return;
     }
+
+    Logger::default_logger().set_local_timezone(true);  // for compatibility with TG logging
 
     // Flush not overflown buffer data to file
     flush_buffer();
@@ -88,6 +91,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         }
     }
 
+    size_t log_tracker{0};
     // Process the queue from smallest to largest key
     while (queue.size()) {
         auto& [etl_entry, provider_index]{queue.top()};           // Pick smallest key by reference
@@ -96,9 +100,16 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         if (load_func) {
             for (const auto& transformed_etl_entry : load_func(etl_entry)) {
                 table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
+                log_tracker += transformed_etl_entry.size();
             }
         } else {
             table->put(etl_entry.key, etl_entry.value, flags);
+            log_tracker += etl_entry.size();
+        }
+        // Oncde in a while updates the user on current progress
+        if (!op_name.empty() && log_tracker >= kLogInterval) {
+            SILKWORM_LOG(LogInfo) << "Loading Progress " << op_name << ". Current Key << " << to_hex(etl_entry.key) << std::endl;
+            log_tracker = 0;
         }
 
         // From the provider which has served the current key

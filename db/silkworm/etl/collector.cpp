@@ -59,6 +59,12 @@ void Collector::collect(Entry& entry) {
 void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int db_flags, uint32_t log_every_percent) {
 
     const auto overall_size{size()}; // Amount of work
+
+    if (!overall_size) {
+        SILKWORM_LOG(LogInfo) << "ETL Load called without data to process" << std::endl;
+        return;
+    }
+
     const uint32_t progress_step{log_every_percent ? std::max(log_every_percent, 100u) : 100u};
     const size_t progress_increment_count{overall_size / (100 / progress_step)};
     size_t dummy_counter{progress_increment_count};

@@ -42,8 +42,16 @@ class Collector {
 
     void flush_buffer();         // Write buffer to file
     void collect(Entry& entry);  // Store key-value pair in memory or on disk
-    void load(lmdb::Table* table, LoadFunc load_func, unsigned int db_flags = 0,
-              bool log_progress = false);  // Load collected entries in destination table applying a transformation
+
+    /** @brief Loads and optionally transforms collected entries into db
+     *
+     * @param table : The target db table
+     * @param load_func : Pointer to function transforming collected entries. If NULL no transform is executed
+     * @param db_flags : Optional db_flags to apply when persisting to db
+     * @param log_every_percent : Emits a log line indicating progress every this percent increment in processed items
+     */
+    void load(lmdb::Table* table, LoadFunc load_func, unsigned int db_flags = 0, uint32_t log_every_percent = 100u);
+
     size_t size() const;
 
   private:

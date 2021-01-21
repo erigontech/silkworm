@@ -646,7 +646,7 @@ int do_recover(app_options_t& options) {
         try {
             // Load collected data into Senders' table
             auto senders_table{lmdb_txn->open(db::table::kSenders)};
-            collector.load(senders_table.get(), nullptr, MDB_APPEND, "Senders");
+            collector.load(senders_table.get(), nullptr, MDB_APPEND, /* log_every_percent = */ 10);
             SILKWORM_LOG(LogLevels::LogInfo) << "Data loaded ..." << std::endl;
             db::stages::set_stage_progress(*lmdb_txn, db::stages::kSendersKey,
                                            (options.block_to <= 1 ? 0 : static_cast<uint64_t>(options.block_to)));

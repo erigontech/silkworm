@@ -58,6 +58,11 @@ void Collector::collect(Entry& entry) {
 
 void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int flags, bool log_progress) {
 
+    const auto overall_size{size()}; // Amount of work
+    uint32_t progress_percent{0};
+    uint32_t progress_step{5};  // 5% increment among batches
+    size_t progress_segment_size{overall_size / (100 / progress_step)};
+
     if (!file_providers_.size()) {
         buffer_.sort();
         if (load_func) {
@@ -66,10 +71,22 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
                 for (const auto& transformed_etl_entry : trasformed_etl_entries) {
                     table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
                 }
+                if (!--progress_segment_size) {
+                    progress_percent += progress_step;
+                    progress_segment_size = overall_size / (100 / progress_step);
+                    SILKWORM_LOG(LogInfo) << "Load Progress "
+                                          << " << " << progress_percent << "%" << std::endl;
+                }
             }
         } else {
             for (const auto& etl_entry : buffer_.get_entries()) {
                 table->put(etl_entry.key, etl_entry.value, flags);
+                if (!--progress_segment_size) {
+                    progress_percent += progress_step;
+                    progress_segment_size = overall_size / (100 / progress_step);
+                    SILKWORM_LOG(LogInfo) << "Load Progress "
+                        << " << " << progress_percent << "%" << std::endl;
+                }
             }
         }
         buffer_.clear();
@@ -95,30 +112,26 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         }
     }
 
-    size_t log_tracker{0};
-    size_t entries_processed{0};
     // Process the queue from smallest to largest key
     while (queue.size()) {
         auto& [etl_entry, provider_index]{queue.top()};           // Pick smallest key by reference
         auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
+
         // Process linked pairs
         if (load_func) {
             for (const auto& transformed_etl_entry : load_func(etl_entry)) {
                 table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
-                log_tracker += transformed_etl_entry.size();
             }
         } else {
             table->put(etl_entry.key, etl_entry.value, flags);
-            log_tracker += etl_entry.size();
         }
-        entries_processed++;
-        // Once in a while updates the user on current progress
-        if (log_progress && log_tracker >= kLogInterval) {
-            double percentage_completion = ((double)entries_processed / (double)size_)*100;
+
+        // Display progress
+        if (!--progress_segment_size) {
+            progress_percent += progress_step;
+            progress_segment_size = overall_size / (100 / progress_step);
             SILKWORM_LOG(LogInfo) << "Load Progress "
-                                  << " << " << std::fixed << std::setprecision(3) << percentage_completion << "%"
-                                  << std::endl;
-            log_tracker = 0;
+                << " << " << progress_percent << "%" << std::endl;
         }
 
         // From the provider which has served the current key

@@ -29,7 +29,6 @@
 namespace silkworm::etl {
 
 constexpr size_t kOptimalBufferSize = 256 * kMebi;
-constexpr size_t kLogInterval = 100 * kMebi;
 
 // Function pointer to process Load on before Load data into tables
 typedef std::vector<Entry> (*LoadFunc)(Entry);

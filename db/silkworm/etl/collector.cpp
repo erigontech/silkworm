@@ -19,6 +19,7 @@
 #include <boost/filesystem.hpp>
 #include <silkworm/common/log.hpp>
 #include <queue>
+#include <iomanip>
 
 namespace silkworm::etl {
 

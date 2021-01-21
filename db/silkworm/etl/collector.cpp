@@ -157,6 +157,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
             file_provider.reset();
         }
     }
+
+    size_ = 0; // We have consumed all items
 }
 
 std::string Collector::set_work_path(const char* provided_work_path) {

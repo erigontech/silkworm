@@ -42,7 +42,7 @@ class Collector {
 
     void flush_buffer();         // Write buffer to file
     void collect(Entry& entry);  // Store key-value pair in memory or on disk
-    void load(lmdb::Table* table, LoadFunc load_func, unsigned int flags = 0,
+    void load(lmdb::Table* table, LoadFunc load_func, unsigned int mdb_flags = 0,
               bool log_progress = false);  // Load collected entries in destination table applying a transformation
     size_t size() const;
 

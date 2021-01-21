@@ -56,7 +56,7 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int flags, bool log_progress) {
+void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int mdb_flags, bool log_progress) {
 
     const auto overall_size{size()}; // Amount of work
     uint32_t progress_percent{0};

@@ -17,7 +17,9 @@
 #include "collector.hpp"
 
 #include <boost/filesystem.hpp>
+#include <silkworm/common/log.hpp>
 #include <queue>
+#include <iomanip>
 
 namespace silkworm::etl {
 
@@ -42,14 +44,31 @@ void Collector::flush_buffer() {
     }
 }
 
+size_t Collector::size() const {
+    return size_;
+}
+
 void Collector::collect(Entry& entry) {
     buffer_.put(entry);
+    size_++;
     if (buffer_.overflows()) {
         flush_buffer();
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int flags) {
+void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int db_flags, uint32_t log_every_percent) {
+
+    const auto overall_size{size()}; // Amount of work
+
+    if (!overall_size) {
+        SILKWORM_LOG(LogInfo) << "ETL Load called without data to process" << std::endl;
+        return;
+    }
+
+    const uint32_t progress_step{log_every_percent ? std::max(log_every_percent, 100u) : 100u};
+    const size_t progress_increment_count{overall_size / (100 / progress_step)};
+    size_t dummy_counter{progress_increment_count};
+    uint32_t actual_progress{0};
 
     if (!file_providers_.size()) {
         buffer_.sort();
@@ -57,12 +76,24 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
             for (const auto& etl_entry : buffer_.get_entries()) {
                 auto trasformed_etl_entries{load_func(etl_entry)};
                 for (const auto& transformed_etl_entry : trasformed_etl_entries) {
-                    table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
+                    table->put(transformed_etl_entry.key, transformed_etl_entry.value, db_flags);
+                }
+                if (!--dummy_counter) {
+                    actual_progress += progress_step;
+                    dummy_counter = progress_increment_count;
+                    SILKWORM_LOG(LogInfo) << "ETL Load Progress "
+                                          << " << " << actual_progress << "%" << std::endl;
                 }
             }
         } else {
             for (const auto& etl_entry : buffer_.get_entries()) {
-                table->put(etl_entry.key, etl_entry.value, flags);
+                table->put(etl_entry.key, etl_entry.value, db_flags);
+                if (!--dummy_counter) {
+                    actual_progress += progress_step;
+                    dummy_counter = progress_increment_count;
+                    SILKWORM_LOG(LogInfo) << "ETL Load Progress "
+                                          << " << " << actual_progress << "%" << std::endl;
+                }
             }
         }
         buffer_.clear();
@@ -92,13 +123,22 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
     while (queue.size()) {
         auto& [etl_entry, provider_index]{queue.top()};           // Pick smallest key by reference
         auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
+
         // Process linked pairs
         if (load_func) {
             for (const auto& transformed_etl_entry : load_func(etl_entry)) {
-                table->put(transformed_etl_entry.key, transformed_etl_entry.value, flags);
+                table->put(transformed_etl_entry.key, transformed_etl_entry.value, db_flags);
             }
         } else {
-            table->put(etl_entry.key, etl_entry.value, flags);
+            table->put(etl_entry.key, etl_entry.value, db_flags);
+        }
+
+        // Display progress
+        if (!--dummy_counter) {
+            actual_progress += progress_step;
+            dummy_counter = progress_increment_count;
+            SILKWORM_LOG(LogInfo) << "ETL Load Progress "
+                << " << " << actual_progress << "%" << std::endl;
         }
 
         // From the provider which has served the current key
@@ -117,6 +157,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
             file_provider.reset();
         }
     }
+
+    size_ = 0; // We have consumed all items
 }
 
 std::string Collector::set_work_path(const char* provided_work_path) {

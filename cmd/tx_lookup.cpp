@@ -74,7 +74,6 @@ int main(int argc, char* argv[]) {
             last_processed_block_number = 0;
         }
         uint64_t block_number{0};
-        uint32_t entries_processed_count{0};
 
         // Extract
         Bytes start(8, '\0');
@@ -96,7 +95,7 @@ int main(int argc, char* argv[]) {
                 MDB_val tx_data_mdb{};
 
                 uint64_t i{0};
-                for (int rc{transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb)};
+                for (rc = transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb);
                      rc != MDB_NOTFOUND && i < body.txn_count;
                      rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
                     lmdb::err_handler(rc);
@@ -105,7 +104,6 @@ int main(int argc, char* argv[]) {
                     auto hash{keccak256(tx_rlp)};
                     etl::Entry entry{Bytes(hash.bytes, 32), Bytes(lookup_block_data.data(), lookup_block_data.size())};
                     collector.collect(entry);
-                    ++entries_processed_count;
                 }
             }
             // Save last processed block_number and expect next in sequence
@@ -119,32 +117,28 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(rc);
         }
 
-        SILKWORM_LOG(LogInfo) << "Entries Collected << " << entries_processed_count << std::endl;
+        SILKWORM_LOG(LogInfo) << "Entries Collected << " << collector.size() << std::endl;
 
         // Proceed only if we've done something
-        if (entries_processed_count) {
+        if (collector.size()) {
             SILKWORM_LOG(LogInfo) << "Started tx Hashes Loading" << std::endl;
 
-            // Ensure we haven't got dirty data in target table
+            /*
+            * If we're on first sync then we shouldn't have any records in target
+            * table. For this reason we can apply MDB_APPEND to load as
+            * collector (with no transform) ensures collected entries
+            * are already sorted. If instead target table contains already
+            * some data the only option is to load in upsert mode as we
+            * cannot guarantee keys are sorted amongst different calls
+            * of this stage
+            */
             auto target_table{txn->open(db::table::kTxLookup, MDB_CREATE)};
+            size_t target_table_rcount{0};
+            lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
+            unsigned int db_flags{target_table_rcount ? 0u : (uint32_t)MDB_APPEND};
 
-            if (last_processed_block_number <= 1) {
-                lmdb::err_handler(txn->open(db::table::kTxLookup)->clear());
-            } else {
-                boost::endian::store_big_u64(&start[0], last_processed_block_number + 1);
-                mdb_key = db::to_mdb_val(start);
-                rc = target_table->seek_exact(&mdb_key, &mdb_data);
-                while (!rc) {
-                    lmdb::err_handler(target_table->del_current());
-                    rc = target_table->get_next(&mdb_key, &mdb_data);
-                }
-                if (rc != MDB_NOTFOUND) {
-                    lmdb::err_handler(rc);
-                }
-            }
-
-            // Eventually bulk load collected items with no transform (may throw)
-            collector.load(target_table.get(), nullptr, MDB_APPEND);
+            // Eventually load collected items with no transform (may throw)
+            collector.load(target_table.get(), nullptr, db_flags, /* log_every_percent = */ 10);
 
             // Update progress height with last processed block
             db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, block_number);

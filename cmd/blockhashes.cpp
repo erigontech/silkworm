@@ -113,27 +113,22 @@ int main(int argc, char* argv[]) {
         if (blocks_processed_count) {
             SILKWORM_LOG(LogInfo) << "Started BlockHashes Loading" << std::endl;
 
-            // Ensure we haven't got dirty data in target table
+            /*
+            * If we're on first sync then we shouldn't have any records in target
+            * table. For this reason we can apply MDB_APPEND to load as
+            * collector (with no transform) ensures collected entries
+            * are already sorted. If instead target table contains already
+            * some data the only option is to load in upsert mode as we
+            * cannot guarantee keys are sorted amongst different calls
+            * of this stage
+            */
             auto target_table{txn->open(db::table::kHeaderNumbers, MDB_CREATE)};
+            size_t target_table_rcount{0};
+            lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
+            unsigned int db_flags{target_table_rcount ? 0u : (uint32_t)MDB_APPEND};
 
-            if (last_processed_block_number <= 1) {
-                lmdb::err_handler(target_table->clear());
-            } else {
-                boost::endian::store_big_u64(&start[0], last_processed_block_number + 1);
-                mdb_key = db::to_mdb_val(start);
-                rc = target_table->seek_exact(&mdb_key, &mdb_data);
-                while (!rc) {
-                    lmdb::err_handler(target_table->del_current());
-                    rc = target_table->get_next(&mdb_key, &mdb_data);
-                }
-                if (rc != MDB_NOTFOUND) {
-                    lmdb::err_handler(rc);
-                }
-            }
-
-            // << -- Up to here
-            // Eventually bulk load collected items with no transform (may throw)
-            collector.load(target_table.get(), nullptr, MDB_APPEND);
+            // Eventually load collected items with no transform (may throw)
+            collector.load(target_table.get(), nullptr, db_flags, /* log_every_percent = */ 10);
 
             // Update progress height with last processed block
             db::stages::set_stage_progress(*txn, db::stages::kBlockHashesKey, block_number);

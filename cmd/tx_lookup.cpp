@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
                 MDB_val tx_data_mdb{};
 
                 uint64_t i{0};
-                for (int rc{transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb)};
+                for (rc = transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb);
                      rc != MDB_NOTFOUND && i < body.txn_count;
                      rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
                     lmdb::err_handler(rc);

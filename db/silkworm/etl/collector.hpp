@@ -29,29 +29,43 @@
 namespace silkworm::etl {
 
 constexpr size_t kOptimalBufferSize = 256 * kMebi;
-constexpr size_t kIdealBatchSize = 128 * kMebi;  // TODO: Commit after ideal size is reached and open new transaction
 
-// Function pointer to process Transform on before Load data into tables
+// Function pointer to process Load on before Load data into tables
 typedef std::vector<Entry> (*LoadFunc)(Entry);
 
 // Collects data Extracted from db
 class Collector {
   public:
     Collector(const char* work_path = nullptr, size_t optimal_size = kOptimalBufferSize)
-        : work_path_{set_work_path(work_path)}, buffer_(Buffer(optimal_size)){};
+        : work_path_{set_work_path(work_path)}, buffer_(Buffer(optimal_size)) {};
     ~Collector();
 
-    void flush_buffer();                                 // Write buffer to file
-    void collect(Entry& entry);                          // Store key-value pair in memory or on disk
-    void load(lmdb::Table* table, LoadFunc load_func,
-              unsigned int flags = 0);  // Load collected entries in destination table applying a transformation
+    void collect(Entry& entry);  // Store key-value pair in memory or on disk
+
+    /** @brief Loads and optionally transforms collected entries into db
+     *
+     * @param table : The target db table
+     * @param load_func : Pointer to function transforming collected entries. If NULL no transform is executed
+     * @param db_flags : Optional db_flags to apply when persisting to db
+     * @param log_every_percent : Emits a log line indicating progress every this percent increment in processed items
+     */
+    void load(lmdb::Table* table, LoadFunc load_func, unsigned int db_flags = 0, uint32_t log_every_percent = 100u);
+
+
+    /** @brief Returns the number of actually collected items
+     */
+    size_t size() const;
 
   private:
+
     std::string set_work_path(const char* provided_work_path);
+    void flush_buffer();         // Write buffer to file
 
     std::string work_path_;
-    std::vector<std::unique_ptr<FileProvider>> file_providers_;
     Buffer buffer_;
+
+    std::vector<std::unique_ptr<FileProvider>> file_providers_;
+    size_t size_{0};
 };
 
 // Default no transform function

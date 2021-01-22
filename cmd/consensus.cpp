@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -53,19 +53,13 @@ static const std::set<fs::path> kSlowTests{
 // TODO[Issue #23] make the failing tests work
 static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "InvalidBlocks",
+    kBlockchainDir / "TransitionTests",
 
     // Reorgs are not supported yet
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
-        "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
-        "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
     kBlockchainDir / "ValidBlocks" / "bcForkStressTest",
     kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
-
-    // Expected: "UnknownParent"
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
 
     // Nonce >= 2^64 is not supported
     kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
@@ -215,32 +209,42 @@ static void check_rlp_err(rlp::DecodingError err) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
-void init_pre_state(const nlohmann::json& pre, IntraBlockState& state) {
+void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
     for (const auto& entry : pre.items()) {
-        evmc::address address{to_address(*from_hex(entry.key()))};
-        const nlohmann::json& account{entry.value()};
-        Bytes balance_str{*from_hex(account["balance"].get<std::string>())};
+        evmc::address address{to_address(from_hex(entry.key()).value())};
+        const nlohmann::json& j{entry.value()};
+
+        Account account;
+        Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
         auto [balance, err1]{rlp::read_uint256(balance_str, /*allow_leading_zeros=*/true)};
         check_rlp_err(err1);
-        state.set_balance(address, balance);
-        state.set_code(address, *from_hex(account["code"].get<std::string>()));
-        Bytes nonce_str{*from_hex(account["nonce"].get<std::string>())};
+        account.balance = balance;
+        Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
         auto [nonce, err2]{rlp::read_uint64(nonce_str, /*allow_leading_zeros=*/true)};
         check_rlp_err(err2);
-        state.set_nonce(address, nonce);
-        for (const auto& storage : account["storage"].items()) {
-            Bytes key{*from_hex(storage.key())};
-            Bytes value{*from_hex(storage.value().get<std::string>())};
-            state.set_storage(address, to_bytes32(key), to_bytes32(value));
+        account.nonce = nonce;
+
+        Bytes code{from_hex(j["code"].get<std::string>()).value()};
+        if (!code.empty()) {
+            account.incarnation = 1;
+            ethash::hash256 hash{keccak256(code)};
+            std::memcpy(account.code_hash.bytes, hash.bytes, kHashLength);
+            state.update_account_code(address, account.incarnation, account.code_hash, code);
+        }
+
+        state.update_account(address, /*initial=*/std::nullopt, account);
+
+        for (const auto& storage : j["storage"].items()) {
+            Bytes key{from_hex(storage.key()).value()};
+            Bytes value{from_hex(storage.value().get<std::string>()).value()};
+            state.update_storage(address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
         }
     }
-
-    state.finalize_transaction();
 }
 
 enum Status { kPassed, kFailed, kSkipped };
 
-Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockState& state) {
+Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer& state) {
     bool invalid{b.contains("expectException")};
 
     std::optional<Bytes> rlp{from_hex(b["rlp"].get<std::string>())};
@@ -262,20 +266,9 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
         return kFailed;
     }
 
-    uint64_t block_number{block.header.number};
-    bool homestead{config.has_homestead(block_number)};
-    bool spurious_dragon{config.has_spurious_dragon(block_number)};
+    block.recover_senders(config);
 
-    for (Transaction& txn : block.transactions) {
-        if (spurious_dragon) {
-            txn.recover_sender(homestead, config.chain_id);
-        } else {
-            txn.recover_sender(homestead, {});
-        }
-    }
-
-    ExecutionProcessor processor{block, state, config};
-    std::pair<std::vector<Receipt>, ValidationError> res{processor.execute_block()};
+    std::pair<std::vector<Receipt>, ValidationError> res{execute_block(block, state, config)};
     if (res.second != ValidationError::kOk) {
         if (invalid) {
             return kPassed;
@@ -284,59 +277,61 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, IntraBlockS
         return kFailed;
     }
 
-    processor.evm().state().write_to_db(block_number);
-
     if (invalid) {
         std::cout << "Invalid block executed successfully\n";
         std::cout << "Expected: " << b["expectException"] << "\n";
         return kFailed;
     }
 
-    state.db().insert_header(block.header);
+    state.insert_header(block.header);
 
     return kPassed;
 }
 
-bool post_check(const IntraBlockState& state, const nlohmann::json& expected) {
+bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
     for (const auto& entry : expected.items()) {
-        evmc::address address{to_address(*from_hex(entry.key()))};
-        const nlohmann::json& account{entry.value()};
+        evmc::address address{to_address(from_hex(entry.key()).value())};
+        const nlohmann::json& j{entry.value()};
 
-        Bytes balance_str{*from_hex(account["balance"].get<std::string>())};
+        std::optional<Account> account{state.read_account(address)};
+        if (!account) {
+            std::cout << "Missing account " << entry.key() << "\n";
+            return false;
+        }
+
+        Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
         auto [expected_balance, err1]{rlp::read_uint256(balance_str, /*allow_leading_zeros=*/true)};
         check_rlp_err(err1);
-        intx::uint256 actual_balance{state.get_balance(address)};
-        if (actual_balance != expected_balance) {
+        if (account->balance != expected_balance) {
             std::cout << "Balance mismatch for " << entry.key() << ":\n";
-            std::cout << to_string(actual_balance, 16) << " ≠ " << account["balance"] << "\n";
+            std::cout << to_string(account->balance, 16) << " != " << j["balance"] << "\n";
             return false;
         }
 
-        Bytes nonce_str{*from_hex(account["nonce"].get<std::string>())};
+        Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
         auto [expected_nonce, err2]{rlp::read_uint64(nonce_str, /*allow_leading_zeros=*/true)};
         check_rlp_err(err2);
-        uint64_t actual_nonce{state.get_nonce(address)};
-        if (actual_nonce != expected_nonce) {
+        if (account->nonce != expected_nonce) {
             std::cout << "Nonce mismatch for " << entry.key() << ":\n";
-            std::cout << actual_nonce << " ≠ " << expected_nonce << "\n";
+            std::cout << account->nonce << " != " << expected_nonce << "\n";
             return false;
         }
 
-        auto expected_code{account["code"].get<std::string>()};
-        Bytes actual_code{state.get_code(address)};
-        if (actual_code != *from_hex(expected_code)) {
+        auto expected_code{j["code"].get<std::string>()};
+        Bytes actual_code{state.read_code(account->code_hash)};
+        if (actual_code != from_hex(expected_code)) {
             std::cout << "Code mismatch for " << entry.key() << ":\n";
-            std::cout << to_hex(actual_code) << " ≠ " << expected_code << "\n";
+            std::cout << to_hex(actual_code) << " != " << expected_code << "\n";
             return false;
         }
 
-        for (const auto& storage : account["storage"].items()) {
-            Bytes key{*from_hex(storage.key())};
-            Bytes expected_value{*from_hex(storage.value().get<std::string>())};
-            evmc::bytes32 actual_value{state.get_current_storage(address, to_bytes32(key))};
+        for (const auto& storage : j["storage"].items()) {
+            Bytes key{from_hex(storage.key()).value()};
+            Bytes expected_value{from_hex(storage.value().get<std::string>()).value()};
+            evmc::bytes32 actual_value{state.read_storage(address, account->incarnation, to_bytes32(key))};
             if (actual_value != to_bytes32(expected_value)) {
                 std::cout << "Storage mismatch for " << entry.key() << " at " << storage.key() << ":\n";
-                std::cout << to_hex(actual_value) << " ≠ " << to_hex(expected_value) << "\n";
+                std::cout << to_hex(actual_value) << " != " << to_hex(expected_value) << "\n";
                 return false;
             }
         }
@@ -347,28 +342,34 @@ bool post_check(const IntraBlockState& state, const nlohmann::json& expected) {
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
 Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
-    if (!j.contains("postState")) {
-        std::cout << "postStateHash is not supported\n";
-        return kSkipped;
-    }
-
-    Bytes genesis_rlp{*from_hex(j["genesisRLP"].get<std::string>())};
+    Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
     check_rlp_err(rlp::decode(genesis_view, genesis_block));
 
-    MemoryBuffer buffer;
-    buffer.insert_header(genesis_block.header);
+    MemoryBuffer state;
+    state.insert_header(genesis_block.header);
 
     std::string network{j["network"].get<std::string>()};
     const ChainConfig& config{kNetworkConfig.at(network)};
-    IntraBlockState state{buffer};
     init_pre_state(j["pre"], state);
 
     for (const auto& b : j["blocks"]) {
         Status status{run_block(b, config, state)};
         if (status != kPassed) {
             return status;
+        }
+    }
+
+    if (j.contains("postStateHash")) {
+        evmc::bytes32 state_root{state.state_root_hash()};
+        std::string expected_hex{j["postStateHash"].get<std::string>()};
+        if (state_root != to_bytes32(from_hex(expected_hex).value())) {
+            std::cout << "postStateHash mismatch:\n";
+            std::cout << to_hex(state_root) << " != " << expected_hex << "\n";
+            return kFailed;
+        } else {
+            return kPassed;
         }
     }
 
@@ -512,7 +513,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         std::string expected{entry.value()["sender"].get<std::string>()};
         if (to_hex(*txn.from) != expected) {
             std::cout << "Sender mismatch for " << entry.key() << ":\n";
-            std::cout << to_hex(*txn.from) << " ≠ " << expected << "\n";
+            std::cout << to_hex(*txn.from) << " != " << expected << "\n";
             return kFailed;
         }
     }
@@ -531,7 +532,7 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
     bool parent_has_uncles{false};
     if (j.contains("parentUncles")) {
         auto parent_uncles{j["parentUncles"].get<std::string>()};
-        parent_has_uncles = *from_hex(parent_uncles) != full_view(kEmptyListHash);
+        parent_has_uncles = from_hex(parent_uncles).value() != full_view(kEmptyListHash);
     }
 
     intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp, parent_difficulty,
@@ -540,7 +541,7 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
         return kPassed;
     } else {
         std::cout << "Difficulty mismatch for block " << block_number << "\n";
-        std::cout << hex(calculated_difficulty) << " ≠ " << hex(current_difficulty) << "\n";
+        std::cout << hex(calculated_difficulty) << " != " << hex(current_difficulty) << "\n";
         return kFailed;
     }
 }

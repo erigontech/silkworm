@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ namespace state {
 
     // Delta is a revertable change made to IntraBlockState.
     class Delta {
-       public:
+      public:
         Delta(const Delta&) = delete;
         Delta& operator=(const Delta&) = delete;
 
@@ -36,78 +36,91 @@ namespace state {
 
         virtual void revert(IntraBlockState& state) noexcept = 0;
 
-       protected:
+      protected:
         Delta() = default;
     };
 
     // Account created.
     class CreateDelta : public Delta {
-       public:
-        CreateDelta(evmc::address address) noexcept;
+      public:
+        explicit CreateDelta(evmc::address address) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
-       private:
+      private:
         evmc::address address_;
     };
 
     // Account updated.
     class UpdateDelta : public Delta {
-       public:
+      public:
         UpdateDelta(evmc::address address, state::Object previous) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
-       private:
+      private:
         evmc::address address_;
         state::Object previous_;
     };
 
     // Account recorded for self-destruction.
     class SuicideDelta : public Delta {
-       public:
-        SuicideDelta(evmc::address address) noexcept;
+      public:
+        explicit SuicideDelta(evmc::address address) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
-       private:
+      private:
         evmc::address address_;
     };
 
     // Account touched.
     class TouchDelta : public Delta {
-       public:
-        TouchDelta(evmc::address address) noexcept;
+      public:
+        explicit TouchDelta(evmc::address address) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
-       private:
+      private:
         evmc::address address_;
     };
 
-    // Storage updated.
+    // Storage value changed.
     class StorageChangeDelta : public Delta {
-       public:
+      public:
         StorageChangeDelta(evmc::address address, evmc::bytes32 key, evmc::bytes32 previous) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
-       private:
+      private:
         evmc::address address_;
         evmc::bytes32 key_;
         evmc::bytes32 previous_;
     };
 
+    // Entire storage deleted.
     class StorageWipeDelta : public Delta {
-       public:
+      public:
         StorageWipeDelta(evmc::address address, state::Storage storage) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
-       private:
+      private:
         evmc::address address_;
         state::Storage storage_;
     };
+
+    // Storage created.
+    class StorageCreateDelta : public Delta {
+      public:
+        explicit StorageCreateDelta(evmc::address address) noexcept;
+
+        void revert(IntraBlockState& state) noexcept override;
+
+      private:
+        evmc::address address_;
+    };
+
 }  // namespace state
 }  // namespace silkworm
 

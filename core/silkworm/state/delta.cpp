@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -48,5 +48,9 @@ StorageWipeDelta::StorageWipeDelta(evmc::address address, state::Storage storage
     : address_{std::move(address)}, storage_{std::move(storage)} {}
 
 void StorageWipeDelta::revert(IntraBlockState& state) noexcept { state.storage_[address_] = storage_; }
+
+StorageCreateDelta::StorageCreateDelta(evmc::address address) noexcept : address_{std::move(address)} {}
+
+void StorageCreateDelta::revert(IntraBlockState& state) noexcept { state.storage_.erase(address_); }
 
 }  // namespace silkworm::state

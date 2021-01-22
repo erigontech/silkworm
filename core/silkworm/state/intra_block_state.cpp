@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -96,7 +96,9 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
     objects_[address] = created;
 
     auto it{storage_.find(address)};
-    if (it != storage_.end()) {
+    if (it == storage_.end()) {
+        journal_.emplace_back(new state::StorageCreateDelta{address});
+    } else {
         journal_.emplace_back(new state::StorageWipeDelta{address, it->second});
         storage_.erase(address);
     }
@@ -335,4 +337,5 @@ void IntraBlockState::subtract_refund(uint64_t subtrahend) noexcept { refund_ -=
 uint64_t IntraBlockState::total_refund() const noexcept {
     return refund_ + fee::kRSelfDestruct * self_destructs_.size();
 }
+
 }  // namespace silkworm

@@ -365,6 +365,12 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     const ChainConfig& config{kNetworkConfig.at(network)};
     init_pre_state(j["pre"], state);
 
+    evmc::bytes32 state_root{state.state_root_hash()};
+    if (genesis_block.header.state_root != state_root) {
+        std::cout << "genesis state root mismatch\n";
+        return kFailed;
+    }
+
     for (const auto& b : j["blocks"]) {
         Status status{run_block(b, config, state)};
         if (status != kPassed) {
@@ -567,6 +573,8 @@ int main() {
             res += run_test_file(*i, transaction_test);
         }
     }
+
+    // res += run_test_file(kBlockchainDir / "randomStatetest391.json", blockchain_test);
 
     std::cout << "\033[0;32m" << res.passed << " tests passed\033[0m, ";
     if (res.failed) {

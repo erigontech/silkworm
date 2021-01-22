@@ -52,7 +52,11 @@ class MemoryBuffer : public StateBuffer {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
+    evmc::bytes32 state_root_hash() const;
+
   private:
+    evmc::bytes32 account_storage_root(const evmc::address& address, uint64_t incarnation) const;
+
     std::unordered_map<evmc::address, Account> accounts_;
 
     // hash -> code

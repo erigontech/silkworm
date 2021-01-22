@@ -46,6 +46,8 @@ enum class ValidationError {
  * Transaction senders must be already populated.
  * The DB table kCurrentState should match the Ethereum state at the begining of the block.
  *
+ * Warning: This method does not verify state root.
+ *
  * For better performance use AnalysisCache & ExecutionStatePool.
  */
 std::pair<std::vector<Receipt>, ValidationError> execute_block(const Block& block, StateBuffer& buffer,

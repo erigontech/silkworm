@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -45,6 +45,8 @@ enum class ValidationError {
  *
  * Transaction senders must be already populated.
  * The DB table kCurrentState should match the Ethereum state at the begining of the block.
+ *
+ * Warning: This method does not verify state root.
  *
  * For better performance use AnalysisCache & ExecutionStatePool.
  */

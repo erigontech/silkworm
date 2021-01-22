@@ -65,7 +65,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         return;
     }
 
-    const uint32_t progress_step{log_every_percent ? std::max(log_every_percent, 100u) : 100u};
+    const uint32_t progress_step{log_every_percent ? std::min(log_every_percent, 100u) : 100u};
     const size_t progress_increment_count{overall_size / (100 / progress_step)};
     size_t dummy_counter{progress_increment_count};
     uint32_t actual_progress{0};

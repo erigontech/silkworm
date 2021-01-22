@@ -123,24 +123,21 @@ int main(int argc, char* argv[]) {
         if (collector.size()) {
             SILKWORM_LOG(LogInfo) << "Started tx Hashes Loading" << std::endl;
 
-            // Ensure we haven't got dirty data in target table
+            /*
+            * If we're on first sync then we shouldn't have any records in target
+            * table. For this reason we can apply MDB_APPEND to load as
+            * collector (with no transform) ensures collected entries
+            * are already sorted. If instead target table contains already
+            * some data the only option is to load in upsert mode as we
+            * cannot guarantee keys are sorted amongst different calls
+            * of this stage
+            */
             auto target_table{txn->open(db::table::kTxLookup, MDB_CREATE)};
-            unsigned int db_flags{0};
+            size_t target_table_rcount{0};
+            lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
+            unsigned int db_flags{target_table_rcount ? 0u : (uint32_t)MDB_APPEND};
 
-            if (last_processed_block_number <= 1) {
-                // We have an empty target table so we can bulk load
-                // keys as sorted from actual collection using MDB_APPEND
-                lmdb::err_handler(txn->open(db::table::kTxLookup)->clear());
-                db_flags = MDB_APPEND;
-            } else {
-                /*
-                * Target table has tx hash in key and we can't guarantee
-                * newly processed items have higher keys than existing ones
-                * for the reason we need to go with upsert
-                */
-            }
-
-            // Eventually bulk load collected items with no transform (may throw)
+            // Eventually load collected items with no transform (may throw)
             collector.load(target_table.get(), nullptr, db_flags, /* log_every_percent = */ 10);
 
             // Update progress height with last processed block

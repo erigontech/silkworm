@@ -53,19 +53,13 @@ static const std::set<fs::path> kSlowTests{
 // TODO[Issue #23] make the failing tests work
 static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "InvalidBlocks",
+    kBlockchainDir / "TransitionTests",
 
     // Reorgs are not supported yet
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
-        "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
-        "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
     kBlockchainDir / "ValidBlocks" / "bcForkStressTest",
     kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
-
-    // Expected: "UnknownParent"
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
 
     // Nonce >= 2^64 is not supported
     kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
@@ -348,11 +342,6 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
 Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
-    if (!j.contains("postState")) {
-        std::cout << "postStateHash is not supported\n";
-        return kSkipped;
-    }
-
     Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
@@ -365,16 +354,22 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     const ChainConfig& config{kNetworkConfig.at(network)};
     init_pre_state(j["pre"], state);
 
-    evmc::bytes32 state_root{state.state_root_hash()};
-    if (genesis_block.header.state_root != state_root) {
-        std::cout << "genesis state root mismatch\n";
-        return kFailed;
-    }
-
     for (const auto& b : j["blocks"]) {
         Status status{run_block(b, config, state)};
         if (status != kPassed) {
             return status;
+        }
+    }
+
+    if (j.contains("postStateHash")) {
+        evmc::bytes32 state_root{state.state_root_hash()};
+        std::string expected_hex{j["postStateHash"].get<std::string>()};
+        if (state_root != to_bytes32(from_hex(expected_hex).value())) {
+            std::cout << "postStateHash mismatch:\n";
+            std::cout << to_hex(state_root) << " != " << expected_hex << "\n";
+            return kFailed;
+        } else {
+            return kPassed;
         }
     }
 
@@ -573,8 +568,6 @@ int main() {
             res += run_test_file(*i, transaction_test);
         }
     }
-
-    // res += run_test_file(kBlockchainDir / "randomStatetest391.json", blockchain_test);
 
     std::cout << "\033[0;32m" << res.passed << " tests passed\033[0m, ";
     if (res.failed) {

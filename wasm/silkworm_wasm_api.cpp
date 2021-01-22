@@ -180,6 +180,13 @@ MemoryBuffer* new_state() { return new MemoryBuffer; }
 
 void delete_state(MemoryBuffer* x) { delete x; }
 
+uint8_t* state_root_hash_new(const MemoryBuffer* state) {
+    evmc::bytes32 root_hash{state->state_root_hash()};
+    void* out{new_buffer(kHashLength)};
+    std::memcpy(out, root_hash.bytes, kHashLength);
+    return static_cast<uint8_t*>(out);
+}
+
 static evmc::address address_from_ptr(const uint8_t* ptr) { return to_address({ptr, kAddressLength}); }
 
 static evmc::bytes32 bytes32_from_ptr(const uint8_t* ptr) { return to_bytes32({ptr, kHashLength}); }

@@ -27,8 +27,8 @@
 
 #include <intx/intx.hpp>
 #include <silkworm/chain/config.hpp>
+#include <silkworm/chain/validity.hpp>
 #include <silkworm/common/base.hpp>
-#include <silkworm/execution/execution.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/transaction.hpp>

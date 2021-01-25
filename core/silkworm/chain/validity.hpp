@@ -1,0 +1,57 @@
+/*
+   Copyright 2021 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#ifndef SILKWORM_CHAIN_VALIDITY_HPP_
+#define SILKWORM_CHAIN_VALIDITY_HPP_
+
+#include <silkworm/state/buffer.hpp>
+#include <silkworm/types/block.hpp>
+
+namespace silkworm {
+
+// Classification of invalid transactions and blocks.
+enum class ValidationError {
+    kOk = 0,
+
+    // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
+    kReceiptRootMismatch,  // wrong receipt root
+
+    // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
+    kUnknownParent,        // parent block not found
+    kIncorrectDifficulty,  // Hd ≠ D(H)
+    kGasAboveLimit,        // Hg > Hl
+    kInvalidGasLimit,      // |Hl-P(H)Hl|≥P(H)Hl/1024 ∨ Hl<5000
+    kInvalidTimestamp,     // Hs ≤ P(H)Hs
+
+    // See [YP] Section 6.2 "Execution", Eq (58)
+    kMissingSender,         // S(T) = ∅
+    kInvalidNonce,          // Tn ≠ σ[S(T)]n
+    kIntrinsicGas,          // g0 > Tg
+    kInsufficientFunds,     // v0 > σ[S(T)]b
+    kBlockGasLimitReached,  // Tg > BHl - l(BR)u
+
+    // See [YP] Section 11 "Block Finalisation", Eq (160)
+    kBlockGasMismatch,  // BHg  ≠ l(BR)u
+};
+
+// See [YP] Section 4.3.4 "Block Header Validity"
+// Shouldn't be used for genesis block
+ValidationError validate_block_header(const BlockHeader& header, const StateBuffer& state,
+                                      const ChainConfig& config = kMainnetConfig);
+
+}  // namespace silkworm
+
+#endif  // SILKWORM_CHAIN_VALIDITY_HPP_

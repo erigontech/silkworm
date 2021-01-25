@@ -52,7 +52,16 @@ static const std::set<fs::path> kSlowTests{
 
 // TODO[Issue #23] make the failing tests work
 static const std::set<fs::path> kFailingTests{
-    kBlockchainDir / "InvalidBlocks",
+    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "GasLimitHigherThan2p63m1.json",
+    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "log1_wrongBloom.json",
+    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongCoinbase.json",
+    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongStateRoot.json",
+    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongTransactionsTrie.json",
+    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongUncleHash.json",
+    kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
+    kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity",
+    kBlockchainDir / "InvalidBlocks" / "bcUncleTest",
+
     kBlockchainDir / "TransitionTests",
 
     // Reorgs are not supported yet
@@ -268,6 +277,14 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer
 
     block.recover_senders(config);
 
+    if (ValidationError err{validate_block_header(block.header, state, config)}; err != ValidationError::kOk) {
+        if (invalid) {
+            return kPassed;
+        }
+        std::cout << "Validation error " << static_cast<int>(err) << "\n";
+        return kFailed;
+    }
+
     std::pair<std::vector<Receipt>, ValidationError> res{execute_block(block, state, config)};
     if (res.second != ValidationError::kOk) {
         if (invalid) {
@@ -342,6 +359,13 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
 Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
+    std::string seal_engine{j["sealEngine"].get<std::string>()};
+    if (seal_engine != "NoProof") {
+        // TODO[Issue 144] Support Ethash sealEngine
+        std::cout << seal_engine << " seal engine is not supported yet\n";
+        return kSkipped;
+    }
+
     Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;

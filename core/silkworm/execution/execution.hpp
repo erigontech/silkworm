@@ -18,6 +18,7 @@
 #define SILKWORM_EXECUTION_EXECUTION_H_
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/chain/validity.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
 #include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/buffer.hpp>
@@ -26,20 +27,6 @@
 #include <stdexcept>
 
 namespace silkworm {
-
-// Classification of invalid transcations and blocks.
-// See Yellow Paper [YP], Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
-// 6.2 "Execution", and 11 "Block Finalisation".
-enum class ValidationError {
-    kOk = 0,
-    kMissingSender,         // S(T) = ∅,           see [YP] Eq (58)
-    kInvalidNonce,          // Tn ≠ σ[S(T)]n,      see [YP] Eq (58)
-    kIntrinsicGas,          // g0 > Tg,            see [YP] Eq (58)
-    kInsufficientFunds,     // v0 > σ[S(T)]b,      see [YP] Eq (58)
-    kBlockGasLimitReached,  // Tg > BHl - l(BR)u,  see [YP] Eq (58)
-    kBlockGasMismatch,      // BHg  ≠ l(BR)u,      see [YP] Eq (160)
-    kReceiptRootMismatch,   // wrong receipt root, see [YP] Eq (31)
-};
 
 /** @brief Executes a given block and writes resulting changes into the database.
  *

@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/execution/execution.hpp>
 #include <silkworm/execution/processor.hpp>
 
 void* new_buffer(size_t size) { return std::malloc(size); }

@@ -87,6 +87,7 @@ namespace rlp {
         if (!h.list) {
             return DecodingError::kUnexpectedString;
         }
+        size_t leftover{from.length() - h.payload_length};
 
         if (DecodingError err{decode(from, to.nonce)}; err != DecodingError::kOk) {
             return err;
@@ -120,7 +121,11 @@ namespace rlp {
         if (DecodingError err{decode(from, to.r)}; err != DecodingError::kOk) {
             return err;
         }
-        return decode(from, to.s);
+        if (DecodingError err{decode(from, to.s)}; err != DecodingError::kOk) {
+            return err;
+        }
+
+        return from.length() == leftover ? DecodingError::kOk : DecodingError::kInputListHasTooManyElements;
     }
 
 }  // namespace rlp

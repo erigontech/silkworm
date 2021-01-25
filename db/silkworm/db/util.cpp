@@ -155,11 +155,17 @@ namespace detail {
         if (!header.list) {
             throw rlp::DecodingError::kUnexpectedString;
         }
+        size_t leftover{from.length() - header.payload_length};
 
         BlockBodyForStorage to;
         check_rlp_err(rlp::decode(from, to.base_txn_id));
         check_rlp_err(rlp::decode(from, to.txn_count));
         check_rlp_err(rlp::decode_vector(from, to.ommers));
+
+        if (from.length() != leftover) {
+            throw rlp::DecodingError::kInputListHasTooManyElements;
+        }
+
         return to;
     }
 

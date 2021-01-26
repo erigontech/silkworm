@@ -54,9 +54,18 @@ std::pair<std::vector<Receipt>, ValidationError> execute_block(const Block& bloc
     if (config.has_byzantium(block_num)) {
         evmc::bytes32 receipt_root{trie::root_hash(receipts)};
         if (receipt_root != header.receipts_root) {
-            err = ValidationError::kWrongReceiptRoot;
+            err = ValidationError::kWrongReceiptsRoot;
             return res;
         }
+    }
+
+    Bloom bloom{};  // zero initialization
+    for (const Receipt& receipt : receipts) {
+        join(bloom, receipt.bloom);
+    }
+    if (bloom != header.logs_bloom) {
+        err = ValidationError::kWrongLogsBloom;
+        return res;
     }
 
     processor.evm().state().write_to_db(block_num);

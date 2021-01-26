@@ -27,9 +27,11 @@ enum class ValidationError {
     kOk = 0,
 
     // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
+    kWrongStateRoot,
     kWrongOmmersHash,
     kWrongTransactionsRoot,
-    kWrongReceiptRoot,
+    kWrongReceiptsRoot,
+    kWrongLogsBloom,
 
     // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
     kUnknownParent,     // parent block not found

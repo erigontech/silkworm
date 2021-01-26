@@ -53,7 +53,6 @@ static const std::set<fs::path> kSlowTests{
 // TODO[Issue #23] make the failing tests work
 static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "GasLimitHigherThan2p63m1.json",
-    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "log1_wrongBloom.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongCoinbase.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongStateRoot.json",
     kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",

@@ -28,6 +28,7 @@ enum class ValidationError {
 
     // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
     kWrongOmmersHash,
+    kWrongTransactionsRoot,
     kWrongReceiptRoot,
 
     // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)

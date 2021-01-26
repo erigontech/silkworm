@@ -56,7 +56,6 @@ static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "log1_wrongBloom.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongCoinbase.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongStateRoot.json",
-    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongTransactionsTrie.json",
     kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
     kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity",
     kBlockchainDir / "InvalidBlocks" / "bcUncleTest",

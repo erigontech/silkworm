@@ -16,6 +16,8 @@
 
 #include "validity.hpp"
 
+#include <silkworm/trie/vector_root.hpp>
+
 #include "difficulty.hpp"
 
 namespace silkworm {
@@ -66,6 +68,11 @@ ValidationError pre_validate_block(const Block& block, const StateBuffer& state,
     ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
     if (full_view(ommers_hash.bytes) != full_view(block.header.ommers_hash)) {
         return ValidationError::kWrongOmmersHash;
+    }
+
+    evmc::bytes32 txn_root{trie::root_hash(block.transactions)};
+    if (txn_root != block.header.transactions_root) {
+        return ValidationError::kWrongTransactionsRoot;
     }
 
     return ValidationError::kOk;

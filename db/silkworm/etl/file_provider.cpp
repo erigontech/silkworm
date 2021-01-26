@@ -17,13 +17,17 @@
 #include "file_provider.hpp"
 
 #include <boost/filesystem/operations.hpp>
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
 
 namespace silkworm::etl {
 
 namespace fs = boost::filesystem;
 
 FileProvider::FileProvider(const std::string &working_path, size_t id) : id_{id} {
-    fs::path path{fs::path(working_path) / fs::path("tmp-" + std::to_string(rand()))};
+    boost::uuids::uuid identifier = boost::uuids::random_generator()();
+    fs::path path{fs::path(working_path) / fs::path("tmp-" + boost::uuids::to_string(identifier))};
     file_name_ = path.string();
 }
 

@@ -173,7 +173,11 @@ BlockHeader* block_header(Block* b) { return &(b->header); }
 
 void block_recover_senders(Block* b, const ChainConfig* config) { b->recover_senders(*config); }
 
-ValidationError block_execute(Block* b, StateBuffer* state, const ChainConfig* config) {
+ValidationError block_pre_validate(const Block* b, StateBuffer* state, const ChainConfig* config) {
+    return pre_validate_block(*b, *state, *config);
+}
+
+ValidationError block_execute(const Block* b, StateBuffer* state, const ChainConfig* config) {
     return execute_block(*b, *state, *config).second;
 }
 

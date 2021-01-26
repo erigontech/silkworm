@@ -92,7 +92,10 @@ SILKWORM_EXPORT silkworm::BlockHeader* block_header(silkworm::Block* b);
 
 SILKWORM_EXPORT void block_recover_senders(silkworm::Block* b, const silkworm::ChainConfig* config);
 
-SILKWORM_EXPORT silkworm::ValidationError block_execute(silkworm::Block* b, silkworm::StateBuffer* state,
+SILKWORM_EXPORT silkworm::ValidationError block_pre_validate(const silkworm::Block* b, silkworm::StateBuffer* state,
+                                                             const silkworm::ChainConfig* config);
+
+SILKWORM_EXPORT silkworm::ValidationError block_execute(const silkworm::Block* b, silkworm::StateBuffer* state,
                                                         const silkworm::ChainConfig* config);
 
 SILKWORM_EXPORT silkworm::MemoryBuffer* new_state();

@@ -47,8 +47,13 @@ enum class ValidationError {
     kInsufficientFunds,     // v0 > σ[S(T)]b
     kBlockGasLimitReached,  // Tg > BHl - l(BR)u
 
-    // See [YP] Section 11 "Block Finalisation", Eq (160)
-    kWrongBlockGas,  // BHg  ≠ l(BR)u
+    // See [YP] Section 11.1 "Ommer Validation", Eq (157)
+    kTooManyOmmers,       // ‖BU‖ > 2
+    kInvalidOmmerHeader,  // ¬V(U)
+    kNotAnOmmer,          // ¬k(U, P(BH)H, 6)
+
+    // See [YP] Section 11.2 "Transaction Validation", Eq (160)
+    kWrongBlockGas,  // BHg ≠ l(BR)u
 };
 
 // Performs validation of block header & body that can be done prior to execution.

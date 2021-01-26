@@ -59,12 +59,16 @@ struct BlockHeader {
 
 bool operator==(const BlockHeader& a, const BlockHeader& b);
 
+inline bool operator!=(const BlockHeader& a, const BlockHeader& b) { return !(a == b); }
+
 struct BlockBody {
     std::vector<Transaction> transactions;
     std::vector<BlockHeader> ommers;
 };
 
 bool operator==(const BlockBody& a, const BlockBody& b);
+
+inline bool operator!=(const BlockBody& a, const BlockBody& b) { return !(a == b); }
 
 struct Block : public BlockBody {
     BlockHeader header;

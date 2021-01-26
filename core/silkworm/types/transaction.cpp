@@ -87,7 +87,7 @@ namespace rlp {
         if (!h.list) {
             return DecodingError::kUnexpectedString;
         }
-        size_t leftover{from.length() - h.payload_length};
+        uint64_t leftover{from.length() - h.payload_length};
 
         if (DecodingError err{decode(from, to.nonce)}; err != DecodingError::kOk) {
             return err;

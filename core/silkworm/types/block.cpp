@@ -97,7 +97,7 @@ namespace rlp {
         if (!rlp_head.list) {
             return DecodingError::kUnexpectedString;
         }
-        size_t leftover{from.length() - rlp_head.payload_length};
+        uint64_t leftover{from.length() - rlp_head.payload_length};
 
         if (DecodingError err{decode(from, to.parent_hash.bytes)}; err != DecodingError::kOk) {
             return err;
@@ -178,7 +178,7 @@ namespace rlp {
         if (!rlp_head.list) {
             return DecodingError::kUnexpectedString;
         }
-        size_t leftover{from.length() - rlp_head.payload_length};
+        uint64_t leftover{from.length() - rlp_head.payload_length};
 
         if (DecodingError err{decode_vector(from, to.transactions)}; err != DecodingError::kOk) {
             return err;
@@ -199,7 +199,7 @@ namespace rlp {
         if (!rlp_head.list) {
             return DecodingError::kUnexpectedString;
         }
-        size_t leftover{from.length() - rlp_head.payload_length};
+        uint64_t leftover{from.length() - rlp_head.payload_length};
 
         if (DecodingError err{decode(from, to.header)}; err != DecodingError::kOk) {
             return err;

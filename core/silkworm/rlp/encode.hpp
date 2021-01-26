@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2020 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ namespace rlp {
 
     struct Header {
         bool list{false};
-        size_t payload_length{0};
+        uint64_t payload_length{0};
     };
 
     constexpr uint8_t kEmptyStringCode = 0x80;

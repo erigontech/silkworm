@@ -155,7 +155,7 @@ namespace detail {
         if (!header.list) {
             throw rlp::DecodingError::kUnexpectedString;
         }
-        size_t leftover{from.length() - header.payload_length};
+        uint64_t leftover{from.length() - header.payload_length};
 
         BlockBodyForStorage to;
         check_rlp_err(rlp::decode(from, to.base_txn_id));

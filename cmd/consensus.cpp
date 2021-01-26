@@ -57,7 +57,6 @@ static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongCoinbase.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongStateRoot.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongTransactionsTrie.json",
-    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongUncleHash.json",
     kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
     kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity",
     kBlockchainDir / "InvalidBlocks" / "bcUncleTest",
@@ -277,7 +276,7 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer
 
     block.recover_senders(config);
 
-    if (ValidationError err{validate_block_header(block.header, state, config)}; err != ValidationError::kOk) {
+    if (ValidationError err{pre_validate_block(block, state, config)}; err != ValidationError::kOk) {
         if (invalid) {
             return kPassed;
         }

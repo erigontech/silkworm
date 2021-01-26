@@ -27,28 +27,36 @@ enum class ValidationError {
     kOk = 0,
 
     // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
-    kReceiptRootMismatch,  // wrong receipt root
+    kWrongOmmersHash,
+    kWrongReceiptRoot,
 
     // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
-    kUnknownParent,        // parent block not found
-    kIncorrectDifficulty,  // Hd ≠ D(H)
-    kGasAboveLimit,        // Hg > Hl
-    kInvalidGasLimit,      // |Hl-P(H)Hl|≥P(H)Hl/1024 ∨ Hl<5000
-    kInvalidTimestamp,     // Hs ≤ P(H)Hs
+    kUnknownParent,     // parent block not found
+    kWrongDifficulty,   // Hd ≠ D(H)
+    kGasAboveLimit,     // Hg > Hl
+    kInvalidGasLimit,   // |Hl-P(H)Hl|≥P(H)Hl/1024 ∨ Hl<5000
+    kInvalidTimestamp,  // Hs ≤ P(H)Hs
 
     // See [YP] Section 6.2 "Execution", Eq (58)
     kMissingSender,         // S(T) = ∅
-    kInvalidNonce,          // Tn ≠ σ[S(T)]n
+    kWrongNonce,            // Tn ≠ σ[S(T)]n
     kIntrinsicGas,          // g0 > Tg
     kInsufficientFunds,     // v0 > σ[S(T)]b
     kBlockGasLimitReached,  // Tg > BHl - l(BR)u
 
     // See [YP] Section 11 "Block Finalisation", Eq (160)
-    kBlockGasMismatch,  // BHg  ≠ l(BR)u
+    kWrongBlockGas,  // BHg  ≠ l(BR)u
 };
 
-// See [YP] Section 4.3.4 "Block Header Validity"
-// Shouldn't be used for genesis block
+// Performs validation of block header & body that can be done prior to execution.
+// See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
+// and 11.1 "Ommer Validation".
+// Shouldn't be used for genesis block.
+ValidationError pre_validate_block(const Block& block, const StateBuffer& state,
+                                   const ChainConfig& config = kMainnetConfig);
+
+// See [YP] Section 4.3.4 "Block Header Validity".
+// Shouldn't be used for genesis block.
 ValidationError validate_block_header(const BlockHeader& header, const StateBuffer& state,
                                       const ChainConfig& config = kMainnetConfig);
 

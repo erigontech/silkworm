@@ -32,7 +32,7 @@ ValidationError validate_block_header(const BlockHeader& header, const StateBuff
     intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent->difficulty,
                                                   parent->timestamp, parent_has_uncles, config)};
     if (difficulty != header.difficulty) {
-        return ValidationError::kIncorrectDifficulty;
+        return ValidationError::kWrongDifficulty;
     }
 
     if (header.gas_used > header.gas_limit) {
@@ -51,6 +51,21 @@ ValidationError validate_block_header(const BlockHeader& header, const StateBuff
 
     if (header.timestamp <= parent->timestamp) {
         return ValidationError::kInvalidTimestamp;
+    }
+
+    return ValidationError::kOk;
+}
+
+ValidationError pre_validate_block(const Block& block, const StateBuffer& state, const ChainConfig& config) {
+    if (ValidationError err{validate_block_header(block.header, state, config)}; err != ValidationError::kOk) {
+        return err;
+    }
+
+    Bytes ommers_rlp;
+    rlp::encode(ommers_rlp, block.ommers);
+    ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
+    if (full_view(ommers_hash.bytes) != full_view(block.header.ommers_hash)) {
+        return ValidationError::kWrongOmmersHash;
     }
 
     return ValidationError::kOk;

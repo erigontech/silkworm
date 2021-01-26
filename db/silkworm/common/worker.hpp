@@ -30,6 +30,7 @@ class Worker {
 
     Worker() = default;
 
+    /* Not moveable / copyable */
     Worker(Worker const&) = delete;
     Worker& operator=(Worker const&) = delete;
 
@@ -40,7 +41,7 @@ class Worker {
     void kick();                   // Kicks worker thread if waiting
 
     // Whether or not this worker/thread should stop
-    bool should_stop() { return state_.load() == WorkerState::kStopping; }
+    bool should_stop() { return state_.load(std::memory_order_relaxed) == WorkerState::kStopping; }
 
     // Retrieves current state of thread
     WorkerState get_state() { return state_; }
@@ -49,11 +50,11 @@ class Worker {
     std::atomic<WorkerState> state_{WorkerState::kStopped};
     std::unique_ptr<std::thread> thread_{nullptr};
 
-    std::atomic<bool> kicked_{false};
-    std::condition_variable kicked_signal_{};
+    std::atomic_bool kicked_{false};
+    std::condition_variable kicked_cv_{};
     mutable std::mutex xwork_;
 
-   private:
+  private:
     virtual void work() = 0;
 };
 }  // namespace silkworm

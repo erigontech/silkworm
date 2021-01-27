@@ -34,7 +34,7 @@ enum class ValidationError {
     kWrongLogsBloom,
 
     // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
-    kUnknownParent,     // parent block not found
+    kUnknownParent,     // P(H) = ∅ ∨ Hi ≠ P(H)Hi + 1
     kWrongDifficulty,   // Hd ≠ D(H)
     kGasAboveLimit,     // Hg > Hl
     kInvalidGasLimit,   // |Hl-P(H)Hl|≥P(H)Hl/1024 ∨ Hl<5000

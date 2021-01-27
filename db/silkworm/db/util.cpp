@@ -163,7 +163,7 @@ namespace detail {
         check_rlp_err(rlp::decode_vector(from, to.ommers));
 
         if (from.length() != leftover) {
-            throw rlp::DecodingError::kInputListHasTooManyElements;
+            throw rlp::DecodingError::kListLengthMismatch;
         }
 
         return to;

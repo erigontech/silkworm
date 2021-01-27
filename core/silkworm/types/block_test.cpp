@@ -132,7 +132,7 @@ TEST_CASE("Invlaid Block RLP") {
     ByteView view{rlp_bytes};
     Block block;
 
-    CHECK(rlp::decode(view, block) == rlp::DecodingError::kInputListHasTooManyElements);
+    CHECK(rlp::decode(view, block) == rlp::DecodingError::kListLengthMismatch);
 }
 
 }  // namespace silkworm

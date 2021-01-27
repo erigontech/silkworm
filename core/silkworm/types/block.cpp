@@ -157,7 +157,7 @@ namespace rlp {
             return err;
         }
 
-        return from.length() == leftover ? DecodingError::kOk : DecodingError::kInputListHasTooManyElements;
+        return from.length() == leftover ? DecodingError::kOk : DecodingError::kListLengthMismatch;
     }
 
     void encode(Bytes& to, const BlockBody& block_body) {
@@ -187,7 +187,7 @@ namespace rlp {
             return err;
         }
 
-        return from.length() == leftover ? DecodingError::kOk : DecodingError::kInputListHasTooManyElements;
+        return from.length() == leftover ? DecodingError::kOk : DecodingError::kListLengthMismatch;
     }
 
     template <>
@@ -211,7 +211,7 @@ namespace rlp {
             return err;
         }
 
-        return from.length() == leftover ? DecodingError::kOk : DecodingError::kInputListHasTooManyElements;
+        return from.length() == leftover ? DecodingError::kOk : DecodingError::kListLengthMismatch;
     }
 
 }  // namespace rlp

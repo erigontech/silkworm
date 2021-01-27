@@ -41,7 +41,7 @@ enum class DecodingError {
     kUnexpectedLength,
     kUnexpectedString,
     kUnexpectedList,
-    kInputListHasTooManyElements,
+    kListLengthMismatch,
 };
 
 // Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,

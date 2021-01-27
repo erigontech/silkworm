@@ -125,7 +125,7 @@ namespace rlp {
             return err;
         }
 
-        return from.length() == leftover ? DecodingError::kOk : DecodingError::kInputListHasTooManyElements;
+        return from.length() == leftover ? DecodingError::kOk : DecodingError::kListLengthMismatch;
     }
 
 }  // namespace rlp

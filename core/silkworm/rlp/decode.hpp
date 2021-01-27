@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ enum class DecodingError {
     kUnexpectedLength,
     kUnexpectedString,
     kUnexpectedList,
+    kListLengthMismatch,
 };
 
 // Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,

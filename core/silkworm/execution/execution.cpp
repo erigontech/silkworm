@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -47,16 +47,25 @@ std::pair<std::vector<Receipt>, ValidationError> execute_block(const Block& bloc
     }
 
     if (gas_used != header.gas_used) {
-        err = ValidationError::kBlockGasMismatch;
+        err = ValidationError::kWrongBlockGas;
         return res;
     }
 
     if (config.has_byzantium(block_num)) {
         evmc::bytes32 receipt_root{trie::root_hash(receipts)};
         if (receipt_root != header.receipts_root) {
-            err = ValidationError::kReceiptRootMismatch;
+            err = ValidationError::kWrongReceiptsRoot;
             return res;
         }
+    }
+
+    Bloom bloom{};  // zero initialization
+    for (const Receipt& receipt : receipts) {
+        join(bloom, receipt.bloom);
+    }
+    if (bloom != header.logs_bloom) {
+        err = ValidationError::kWrongLogsBloom;
+        return res;
     }
 
     processor.evm().state().write_to_db(block_num);

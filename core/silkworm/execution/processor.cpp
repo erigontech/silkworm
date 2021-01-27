@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ ValidationError ExecutionProcessor::validate_transaction(const Transaction& txn)
     const IntraBlockState& state{evm_.state()};
     uint64_t nonce{state.get_nonce(*txn.from)};
     if (nonce != txn.nonce) {
-        return ValidationError::kInvalidNonce;
+        return ValidationError::kWrongNonce;
     }
 
     uint64_t block_number{evm_.block().header.number};

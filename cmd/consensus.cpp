@@ -58,7 +58,6 @@ static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
     kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity" / "incorrectUncleTimestamp2.json",
     kBlockchainDir / "InvalidBlocks" / "bcUncleTest" / "EqualUncleInTwoDifferentBlocks.json",
-    kBlockchainDir / "InvalidBlocks" / "bcUncleTest" / "twoEqualUncle.json",
 
     kBlockchainDir / "TransitionTests",
 
@@ -75,7 +74,7 @@ static const std::set<fs::path> kFailingTests{
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
-constexpr size_t kColumnWidth{80};
+constexpr size_t kColumnWidth{60};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",

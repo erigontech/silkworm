@@ -75,7 +75,6 @@ static bool is_kin(const BlockHeader& u, const BlockHeader& h, unsigned n, const
         return false;
     }
 
-    // TODO[Issue 23] uncle is not a sibling
     bool siblings{ph == pu && h != u};
     if (siblings) {
         return true;
@@ -105,6 +104,10 @@ ValidationError pre_validate_block(const Block& block, const StateBuffer& state,
 
     if (block.ommers.size() > 2) {
         return ValidationError::kTooManyOmmers;
+    }
+
+    if (block.ommers.size() == 2 && block.ommers[0] == block.ommers[1]) {
+        return ValidationError::kDuplicateOmmer;
     }
 
     std::optional<BlockHeader> parent{get_parent(state, header)};

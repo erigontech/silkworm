@@ -51,6 +51,7 @@ enum class ValidationError {
     kTooManyOmmers,       // ‖BU‖ > 2
     kInvalidOmmerHeader,  // ¬V(U)
     kNotAnOmmer,          // ¬k(U, P(BH)H, 6)
+    kDuplicateOmmer,      // not well covered by the YP actually
 
     // See [YP] Section 11.2 "Transaction Validation", Eq (160)
     kWrongBlockGas,  // BHg ≠ l(BR)u

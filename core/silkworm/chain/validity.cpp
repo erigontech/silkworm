@@ -29,9 +29,27 @@ static std::optional<BlockHeader> get_parent(const StateBuffer& state, const Blo
 ValidationError validate_block_header(const BlockHeader& header, const StateBuffer& state, const ChainConfig& config) {
     // TODO[Issue 144] Ethash PoW verification
 
+    if (header.gas_used > header.gas_limit) {
+        return ValidationError::kGasAboveLimit;
+    }
+
+    if (header.gas_limit < 5000) {
+        return ValidationError::kInvalidGasLimit;
+    }
+
     std::optional<BlockHeader> parent{get_parent(state, header)};
     if (!parent) {
         return ValidationError::kUnknownParent;
+    }
+
+    if (header.timestamp <= parent->timestamp) {
+        return ValidationError::kInvalidTimestamp;
+    }
+
+    uint64_t gas_delta{header.gas_limit > parent->gas_limit ? header.gas_limit - parent->gas_limit
+                                                            : parent->gas_limit - header.gas_limit};
+    if (gas_delta >= parent->gas_limit / 1024) {
+        return ValidationError::kInvalidGasLimit;
     }
 
     bool parent_has_uncles{parent->ommers_hash != kEmptyListHash};
@@ -39,24 +57,6 @@ ValidationError validate_block_header(const BlockHeader& header, const StateBuff
                                                   parent->timestamp, parent_has_uncles, config)};
     if (difficulty != header.difficulty) {
         return ValidationError::kWrongDifficulty;
-    }
-
-    if (header.gas_used > header.gas_limit) {
-        return ValidationError::kGasAboveLimit;
-    }
-
-    uint64_t diff{header.gas_limit > parent->gas_limit ? header.gas_limit - parent->gas_limit
-                                                       : parent->gas_limit - header.gas_limit};
-    if (diff >= parent->gas_limit / 1024) {
-        return ValidationError::kInvalidGasLimit;
-    }
-
-    if (header.gas_limit < 5000) {
-        return ValidationError::kInvalidGasLimit;
-    }
-
-    if (header.timestamp <= parent->timestamp) {
-        return ValidationError::kInvalidTimestamp;
     }
 
     return ValidationError::kOk;

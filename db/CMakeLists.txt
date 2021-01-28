@@ -24,7 +24,7 @@ add_library(silkworm_db ${SILKWORM_DB_SRC})
 target_include_directories(silkworm_db PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SILKWORM_DB_PUBLIC_LIBS silkworm_core lmdb absl::flat_hash_map absl::flat_hash_set absl::btree Boost::filesystem)
-set(SILKWORM_DB_PRIVATE_LIBS cborcpp)
+set(SILKWORM_DB_PRIVATE_LIBS RoaringBitmap cborcpp)
 
 if(MSVC)
   list(APPEND SILKWORM_DB_PRIVATE_LIBS ntdll.lib)

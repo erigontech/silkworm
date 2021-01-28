@@ -29,6 +29,6 @@ add_library(silkworm_core ${SILKWORM_CORE_SRC})
 target_include_directories(silkworm_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SILKWORM_CORE_PUBLIC_LIBS evmc intx::intx keccak ff Microsoft.GSL::GSL)
-set(SILKWORM_CORE_PRIVATE_LIBS evmone secp256k1 gmp)
+set(SILKWORM_CORE_PRIVATE_LIBS RoaringBitmap evmone secp256k1 gmp)
 
 target_link_libraries(silkworm_core PUBLIC ${SILKWORM_CORE_PUBLIC_LIBS} PRIVATE ${SILKWORM_CORE_PRIVATE_LIBS})

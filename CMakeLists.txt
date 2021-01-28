@@ -121,7 +121,7 @@ if(MSVC)
   option(MPIR_INSTEAD_OF_GMP "" ON)
 endif()
 add_subdirectory(libff)
-
+add_subdirectory(CRoaring)
 if(NOT SILKWORM_CORE_ONLY)
   # CBOR
   add_subdirectory(cbor-cpp)

@@ -157,9 +157,15 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
     auto snapshot{state_.take_snapshot()};
 
-    if (message.kind == EVMC_CALL && !(message.flags & EVMC_STATIC)) {
-        state_.subtract_from_balance(message.sender, value);
-        state_.add_to_balance(message.destination, value);
+    if (message.kind == EVMC_CALL) {
+        if (message.flags & EVMC_STATIC) {
+            // Match Go Ethereum logic
+            // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
+            state_.touch(message.destination);
+        } else {
+            state_.subtract_from_balance(message.sender, value);
+            state_.add_to_balance(message.destination, value);
+        }
     }
 
     if (precompiled) {

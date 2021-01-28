@@ -72,6 +72,8 @@ class IntraBlockState {
     void add_to_balance(const evmc::address& address, const intx::uint256& addend) noexcept;
     void subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend) noexcept;
 
+    void touch(const evmc::address& address) noexcept;
+
     uint64_t get_nonce(const evmc::address& address) const noexcept;
     void set_nonce(const evmc::address& address, uint64_t nonce) noexcept;
 
@@ -118,8 +120,6 @@ class IntraBlockState {
 
     state::Object* get_object(const evmc::address& address) const noexcept;
     state::Object& get_or_create_object(const evmc::address& address) noexcept;
-
-    void touch(const evmc::address& address) noexcept;
 
     StateBuffer& db_;
 

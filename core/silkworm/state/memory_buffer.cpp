@@ -116,6 +116,8 @@ void MemoryBuffer::update_storage(const evmc::address& address, uint64_t incarna
     }
 }
 
+size_t MemoryBuffer::number_of_accounts() const { return accounts_.size(); }
+
 size_t MemoryBuffer::storage_size(const evmc::address& address, uint64_t incarnation) const {
     auto it1{storage_.find(address)};
     if (it1 == storage_.end()) {

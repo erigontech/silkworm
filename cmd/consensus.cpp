@@ -303,6 +303,11 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer
 }
 
 bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
+    if (state.number_of_accounts() != expected.size()) {
+        std::cout << "Account number mismatch: " << state.number_of_accounts() << " != " << expected.size() << "\n";
+        return false;
+    }
+
     for (const auto& entry : expected.items()) {
         evmc::address address{to_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,6 +33,12 @@ using Bloom = std::array<uint8_t, kBloomByteLength>;
 inline ByteView full_view(const Bloom& bloom) { return {bloom.data(), kBloomByteLength}; }
 
 Bloom logs_bloom(const std::vector<Log>& logs);
+
+inline void join(Bloom& sum, const Bloom& addend) {
+    for (size_t i{0}; i < kBloomByteLength; ++i) {
+        sum[i] |= addend[i];
+    }
+}
 
 }  // namespace silkworm
 

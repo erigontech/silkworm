@@ -302,7 +302,7 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer
     return kPassed;
 }
 
-bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
+bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
     for (const auto& entry : expected.items()) {
         evmc::address address{to_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};
@@ -336,6 +336,13 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
         if (actual_code != from_hex(expected_code)) {
             std::cout << "Code mismatch for " << entry.key() << ":\n";
             std::cout << to_hex(actual_code) << " != " << expected_code << "\n";
+            return false;
+        }
+
+        size_t storage_size{state.storage_size(address, account->incarnation)};
+        if (storage_size != j["storage"].size()) {
+            std::cout << "Storage size mismatch for " << entry.key() << ":\n";
+            std::cout << storage_size << " != " << j["storage"].size() << "\n";
             return false;
         }
 

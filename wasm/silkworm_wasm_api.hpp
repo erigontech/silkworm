@@ -101,6 +101,9 @@ SILKWORM_EXPORT silkworm::ValidationError block_execute(const silkworm::Block* b
 SILKWORM_EXPORT silkworm::MemoryBuffer* new_state();
 SILKWORM_EXPORT void delete_state(silkworm::MemoryBuffer* x);
 
+SILKWORM_EXPORT size_t state_storage_size(const silkworm::MemoryBuffer* state, const uint8_t* address,
+                                          const silkworm::Account* account);
+
 // Result has to be freed with delete_buffer
 SILKWORM_EXPORT uint8_t* state_root_hash_new(const silkworm::MemoryBuffer* state);
 

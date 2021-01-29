@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -169,6 +169,7 @@ namespace rlp {
         if (!h.list) {
             return DecodingError::kUnexpectedString;
         }
+        uint64_t leftover{from.length() - h.payload_length};
 
         if (DecodingError err{decode(from, to.nonce)}; err != DecodingError::kOk) {
             return err;
@@ -179,7 +180,11 @@ namespace rlp {
         if (DecodingError err{decode(from, to.storage_root.bytes)}; err != DecodingError::kOk) {
             return err;
         }
-        return decode(from, to.code_hash.bytes);
+        if (DecodingError err{decode(from, to.code_hash.bytes)}; err != DecodingError::kOk) {
+            return err;
+        }
+
+        return from.length() == leftover ? DecodingError::kOk : DecodingError::kListLengthMismatch;
     }
 
 }  // namespace rlp

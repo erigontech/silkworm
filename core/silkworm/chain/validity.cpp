@@ -37,6 +37,12 @@ ValidationError validate_block_header(const BlockHeader& header, const StateBuff
         return ValidationError::kInvalidGasLimit;
     }
 
+    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
+    // https://eips.ethereum.org/EIPS/eip-1985
+    if (header.gas_limit > 0x7fffffffffffffff) {
+        return ValidationError::kInvalidGasLimit;
+    }
+
     std::optional<BlockHeader> parent{get_parent(state, header)};
     if (!parent) {
         return ValidationError::kUnknownParent;

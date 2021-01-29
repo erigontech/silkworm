@@ -52,7 +52,6 @@ static const std::set<fs::path> kSlowTests{
 
 // TODO[Issue #23] make the failing tests work
 static const std::set<fs::path> kFailingTests{
-    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "GasLimitHigherThan2p63m1.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongCoinbase.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongStateRoot.json",
     kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
@@ -67,10 +66,10 @@ static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
 
-    // Nonce >= 2^64 is not supported
+    // Nonce >= 2^64 is not supported; see EIP-1985
     kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
 
-    // Gas limit >= 2^64 is not supported
+    // Gas limit >= 2^64 is not supported; see EIP-1985
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 

@@ -66,7 +66,7 @@ static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
 
-    // Nonce >= 2^64 is not supported; see EIP-1985
+    // Nonce >= 2^64 is not supported
     kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
 
     // Gas limit >= 2^64 is not supported; see EIP-1985

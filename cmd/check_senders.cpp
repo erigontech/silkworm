@@ -244,8 +244,8 @@ std::vector<evmc::bytes32> load_canonical_headers(lmdb::Transaction& txn, uint64
 
     // Locate starting canonical block selected
     // and navigate headers
-    auto header_key{db::header_hash_key(from)};
     auto headers_table{txn.open(db::table::kBlockHeaders)};
+    auto header_key{db::header_hash_key(from)};
     MDB_val mdb_key{db::to_mdb_val(header_key)}, mdb_data{};
 
     uint32_t percent{0};

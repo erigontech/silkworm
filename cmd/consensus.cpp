@@ -46,12 +46,10 @@ static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
 
 static const fs::path kTransactionDir{kRootDir / "TransactionTests"};
 
-static const std::set<fs::path> kSlowTests{
+static const std::set<fs::path> kExcludedTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
-};
 
-// TODO[Issue #23] make the failing tests work
-static const std::set<fs::path> kFailingTests{
+    // TODO[Issue #23] make the failing tests work
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongCoinbase.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongStateRoot.json",
     kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
@@ -61,15 +59,19 @@ static const std::set<fs::path> kFailingTests{
     kBlockchainDir / "TransitionTests",
 
     // Reorgs are not supported yet
-    kBlockchainDir / "ValidBlocks" / "bcForkStressTest",
+    kBlockchainDir / "ValidBlocks" / "bcForkStressTest" / "ForkStressTest.json",
     kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
 
-    // Nonce >= 2^64 is not supported
+    // Nonce >= 2^64 is not supported.
+    // Geth excludes this test as well:
+    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L40
     kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
 
-    // Gas limit >= 2^64 is not supported; see EIP-1985
+    // Gas limit >= 2^64 is not supported; see EIP-1985.
+    // Geth excludes this test as well:
+    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
@@ -586,7 +588,7 @@ int main() {
     }
 
     for (auto i = fs::recursive_directory_iterator(kBlockchainDir); i != fs::recursive_directory_iterator{}; ++i) {
-        if (kSlowTests.count(*i) || kFailingTests.count(*i)) {
+        if (kExcludedTests.count(*i)) {
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, blockchain_test);
@@ -594,7 +596,7 @@ int main() {
     }
 
     for (auto i = fs::recursive_directory_iterator(kTransactionDir); i != fs::recursive_directory_iterator{}; ++i) {
-        if (kFailingTests.count(*i)) {
+        if (kExcludedTests.count(*i)) {
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, transaction_test);

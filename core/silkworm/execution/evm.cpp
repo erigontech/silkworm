@@ -159,7 +159,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
     if (message.kind == EVMC_CALL) {
         if (message.flags & EVMC_STATIC) {
-            // Match Go Ethereum logic
+            // Match geth logic
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
             state_.touch(message.destination);
         } else {
@@ -406,7 +406,7 @@ evmc::result EvmHost::call(const evmc_message& message) noexcept {
 
         // https://eips.ethereum.org/EIPS/eip-211
         if (res.status_code == EVMC_REVERT) {
-            // Go Ethereum returns CREATE output only in case of REVERT
+            // geth returns CREATE output only in case of REVERT
             return res;
         } else {
             evmc::result res_with_no_output{res.status_code, res.gas_left, nullptr, 0};

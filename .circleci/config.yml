@@ -72,7 +72,6 @@ jobs:
     steps:
       - run:
           name: "Switch to GCC 7"
-          working_directory: ~/build
           command: |
             sudo apt update
             sudo apt -y install gcc-7 g++-7

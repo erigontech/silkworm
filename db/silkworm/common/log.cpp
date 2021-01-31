@@ -5,7 +5,7 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,28 +20,35 @@
 
 namespace silkworm {
 
-std::ostream& Logger::null_stream_() {
-    static struct NullBuffer : public std::streambuf {
-        int overflow(int c) override { return c; }
-    } null_buffer;
-    static struct NullStream : public std::ostream {
-        NullStream() : std::ostream(&null_buffer) {}
-    } null_stream;
-    return null_stream;
+// Log to one or two output streams - typically the console and optional log file.
+static teestream streams{std::cerr, null_stream()};
+static LogLevels verbosity{LogInfo};
+static constexpr char const kLogTags[7][6] = {
+	"TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",		  };
+
+std::ostream& log_(LogLevels level) {
+	return
+		streams
+			<< kLogTags[level]
+			<< "["
+			<< absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone())
+			<< "] ";
 }
 
-Logger& Logger::default_logger_() noexcept {
-    static Logger logger;
-    return logger;
+LogLevels log_verbosity_() { return verbosity; }
+
+void log_verbosity_(LogLevels level) { verbosity = level; }
+
+void log_set_streams_(std::ostream & o1, std::ostream & o2) { streams.set_streams((o1), (o2)); }
+
+std::ostream& null_stream() {
+	static struct null_buf : public std::streambuf {
+		int overflow(int c) override { return c; }
+	} null_buf;
+	static struct null_strm : public std::ostream {
+		null_strm() : std::ostream(&null_buf) {}
+	} null_strm;
+	return null_strm;
 }
-
-std::string Logger::formatTime(std::string) noexcept {
-    static absl::TimeZone local{absl::LocalTimeZone()};
-    static absl::TimeZone utc{absl::UTCTimeZone()};
-    return absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), (localTime_ ? local : utc));
-}
-
-
-
 
 }  // namespace silkworm

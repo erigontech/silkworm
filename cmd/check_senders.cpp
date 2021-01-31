@@ -214,7 +214,7 @@ void process_txs_for_signing(ChainConfig& config, uint64_t block_num, std::vecto
 
 bool start_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
     for (const auto& worker : workers) {
-        SILKWORM_LOG(LogLevels::LogInfo) << "Starting worker thread #" << worker->get_id() << std::endl;
+        SILKWORM_LOG(LogInfo) << "Starting worker thread #" << worker->get_id() << std::endl;
         worker->start();
         // Wait for thread to init properly
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -228,7 +228,7 @@ bool start_workers(std::vector<std::unique_ptr<Recoverer>>& workers) {
 void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
     for (const auto& worker : workers) {
         if (worker->get_state() == Worker::WorkerState::kStarted) {
-            SILKWORM_LOG(LogLevels::LogInfo) << "Stopping worker thread #" << worker->get_id() << std::endl;
+            SILKWORM_LOG(LogInfo) << "Stopping worker thread #" << worker->get_id() << std::endl;
             worker->stop(wait);
         }
     }
@@ -236,7 +236,7 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
 
 std::vector<evmc::bytes32> load_canonical_headers(lmdb::Transaction& txn, uint64_t from, uint64_t to) {
     uint64_t count{to - from + 1};
-    SILKWORM_LOG(LogLevels::LogInfo) << "Loading canonical block headers [" << from << " ... " << to << "]"
+    SILKWORM_LOG(LogInfo) << "Loading canonical block headers [" << from << " ... " << to << "]"
                                      << std::endl;
 
     std::vector<evmc::bytes32> ret;
@@ -271,7 +271,7 @@ std::vector<evmc::bytes32> load_canonical_headers(lmdb::Transaction& txn, uint64
             if (!batch_size) {
                 batch_size = count / (100 / percent_step);
                 percent += percent_step;
-                SILKWORM_LOG(LogLevels::LogInfo)
+                SILKWORM_LOG(LogInfo)
                     << "... " << std::right << std::setw(3) << std::setfill(' ') << percent << " %" << std::endl;
                 if (should_stop_) {
                     rc = MDB_NOTFOUND;
@@ -331,7 +331,7 @@ size_t bufferize_results(std::queue<std::pair<uint32_t, uint32_t>>& batches, std
 
 // Unwinds Senders' table
 void do_unwind(std::unique_ptr<lmdb::Transaction>& txn, uint64_t from) {
-    SILKWORM_LOG(LogLevels::LogInfo) << "Unwinding Senders' table ... " << std::endl;
+    SILKWORM_LOG(LogInfo) << "Unwinding Senders' table ... " << std::endl;
     auto senders{txn->open(db::table::kSenders, MDB_CREATE)};
     if (from <= 1) {
         lmdb::err_handler(senders->clear());
@@ -410,7 +410,7 @@ int do_recover(app_options_t& options) {
 
     // Start recoverers (here occurs allocation)
     if (!start_workers(recoverers_)) {
-        SILKWORM_LOG(LogLevels::LogCritical) << "Unable to start required recoverers" << std::endl;
+        SILKWORM_LOG(LogCritical) << "Unable to start required recoverers" << std::endl;
         stop_workers(recoverers_, true);
         recoverers_.clear();
         return -1;
@@ -432,15 +432,15 @@ int do_recover(app_options_t& options) {
         lmdb_env = lmdb::get_env(db_config);
         lmdb_txn = lmdb_env->begin_rw_transaction();
 
-        SILKWORM_LOG(LogLevels::LogInfo) << "Checking previous stages ..." << std::endl;
+        SILKWORM_LOG(LogInfo) << "Checking previous stages ..." << std::endl;
 
         auto stage_headers_height{db::stages::get_stage_progress(*lmdb_txn, db::stages::kHeadersKey)};
         auto stage_bodies_height{db::stages::get_stage_progress(*lmdb_txn, db::stages::kBlockBodiesKey)};
         auto stage_senders_height{db::stages::get_stage_progress(*lmdb_txn, db::stages::kSendersKey)};
 
-        SILKWORM_LOG(LogLevels::LogDebug) << "Headers height " << stage_headers_height << std::endl;
-        SILKWORM_LOG(LogLevels::LogDebug) << "Bodies  height " << stage_bodies_height << std::endl;
-        SILKWORM_LOG(LogLevels::LogDebug) << "Senders height " << stage_senders_height << std::endl;
+        SILKWORM_LOG(LogDebug) << "Headers height " << stage_headers_height << std::endl;
+        SILKWORM_LOG(LogDebug) << "Bodies  height " << stage_bodies_height << std::endl;
+        SILKWORM_LOG(LogDebug) << "Senders height " << stage_senders_height << std::endl;
 
         // Requested from block cannot exceed actual stage_bodies_height
         if (options.block_from > stage_bodies_height) {
@@ -453,7 +453,7 @@ int do_recover(app_options_t& options) {
         // Do we have to unwind Sender's table ?
         if (options.block_from <= stage_senders_height) {
             do_unwind(lmdb_txn, options.block_from);
-            SILKWORM_LOG(LogLevels::LogInfo)
+            SILKWORM_LOG(LogInfo)
                 << "New stage height " << (options.block_from <= 1 ? 0 : static_cast<uint64_t>(options.block_from) - 1)
                 << std::endl;
             db::stages::set_stage_progress(
@@ -470,7 +470,7 @@ int do_recover(app_options_t& options) {
             throw std::logic_error("No canonical headers collected.");
         }
 
-        SILKWORM_LOG(LogLevels::LogInfo) << "Collected " << canonical_headers.size() << " canonical headers"
+        SILKWORM_LOG(LogInfo) << "Collected " << canonical_headers.size() << " canonical headers"
                                          << std::endl;
 
         {
@@ -487,7 +487,7 @@ int do_recover(app_options_t& options) {
             MDB_val mdb_key{db::to_mdb_val(block_key)};
             MDB_val mdb_data{};
 
-            SILKWORM_LOG(LogLevels::LogInfo) << "Scanning bodies ... " << std::endl;
+            SILKWORM_LOG(LogInfo) << "Scanning bodies ... " << std::endl;
 
             auto bodies_table{lmdb_txn->open(db::table::kBlockBodies)};
             auto transactions_table{lmdb_txn->open(db::table::kEthTx)};
@@ -544,14 +544,14 @@ int do_recover(app_options_t& options) {
                         // Dispatch new task to worker
                         total_transactions += recoverPackages.size();
 
-                        SILKWORM_LOG(LogLevels::LogDebug) << "Package size " << recoverPackages.size() << std::endl;
+                        SILKWORM_LOG(LogDebug) << "Package size " << recoverPackages.size() << std::endl;
 
                         recoverers_.at(next_worker_id)->set_work(next_batch_id++, recoverPackages);
                         recoverers_.at(next_worker_id)->kick();
                         workers_in_flight++;
                         batch_size = 0;
 
-                        SILKWORM_LOG(LogLevels::LogInfo)
+                        SILKWORM_LOG(LogInfo)
                             << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block
                             << " Transactions " << std::right << std::setw(12) << std::setfill(' ')
                             << total_transactions << " Workers " << workers_in_flight << "/" << options.numthreads
@@ -606,7 +606,7 @@ int do_recover(app_options_t& options) {
                 workers_in_flight++;
                 batch_size = 0;
 
-                SILKWORM_LOG(LogLevels::LogInfo)
+                SILKWORM_LOG(LogInfo)
                     << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block << " Transactions "
                     << std::right << std::setw(12) << std::setfill(' ') << total_transactions << " Workers "
                     << workers_in_flight << "/" << options.numthreads << std::endl;
@@ -621,19 +621,19 @@ int do_recover(app_options_t& options) {
             }
         }
 
-        SILKWORM_LOG(LogLevels::LogInfo) << "Bodies scan " << (should_stop_ ? "aborted! " : "completed!") << std::endl;
+        SILKWORM_LOG(LogInfo) << "Bodies scan " << (should_stop_ ? "aborted! " : "completed!") << std::endl;
 
     } catch (lmdb::exception& ex) {
         // This handles specific lmdb errors
-        SILKWORM_LOG(LogLevels::LogCritical) << "Unexpected error : " << ex.err() << " " << ex.what() << std::endl;
+        SILKWORM_LOG(LogCritical) << "Unexpected error : " << ex.err() << " " << ex.what() << std::endl;
         main_thread_error_ = true;
     } catch (std::logic_error& ex) {
-        SILKWORM_LOG(LogLevels::LogCritical) << ex.what() << std::endl;
+        SILKWORM_LOG(LogCritical) << ex.what() << std::endl;
         main_thread_error_ = true;
     } catch (std::runtime_error& ex) {
         // This handles runtime logic errors
         // eg. trying to open two rw txns
-        SILKWORM_LOG(LogLevels::LogCritical) << "Unexpected error : " << ex.what() << std::endl;
+        SILKWORM_LOG(LogCritical) << "Unexpected error : " << ex.what() << std::endl;
         main_thread_error_ = true;
     }
 
@@ -642,12 +642,12 @@ int do_recover(app_options_t& options) {
 
     // Should we commit ?
     if (!main_thread_error_ && !workers_thread_error_ && !options.rundry && !should_stop_) {
-        SILKWORM_LOG(LogLevels::LogInfo) << "Loading data ..." << std::endl;
+        SILKWORM_LOG(LogInfo) << "Loading data ..." << std::endl;
         try {
             // Load collected data into Senders' table
             auto senders_table{lmdb_txn->open(db::table::kSenders)};
             collector.load(senders_table.get(), nullptr, MDB_APPEND, /* log_every_percent = */ 10);
-            SILKWORM_LOG(LogLevels::LogInfo) << "Data loaded ..." << std::endl;
+            SILKWORM_LOG(LogInfo) << "Data loaded ..." << std::endl;
             db::stages::set_stage_progress(*lmdb_txn, db::stages::kSendersKey,
                                            (options.block_to <= 1 ? 0 : static_cast<uint64_t>(options.block_to)));
             lmdb::err_handler(lmdb_txn->commit());
@@ -655,7 +655,7 @@ int do_recover(app_options_t& options) {
                 lmdb::err_handler(lmdb_env->sync());
             }
         } catch (const std::exception& ex) {
-            SILKWORM_LOG(LogLevels::LogCritical) << " Unexpected error : " << ex.what() << std::endl;
+            SILKWORM_LOG(LogCritical) << " Unexpected error : " << ex.what() << std::endl;
             main_thread_error_ = true;
         }
     }
@@ -664,7 +664,7 @@ int do_recover(app_options_t& options) {
     lmdb_env->close();
     lmdb_env.reset();
 
-    SILKWORM_LOG(LogLevels::LogInfo) << "All done ! " << std::endl;
+    SILKWORM_LOG(LogInfo) << "All done ! " << std::endl;
     return (main_thread_error_ ? -1 : 0);
 }
 
@@ -775,7 +775,7 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
     if (options.debug) {
-        SILKWORM_LOG_VERBOSITY(LogLevels::LogTrace);
+        SILKWORM_LOG_VERBOSITY(LogTrace);
     }
 
     auto lmdb_mapSize{parse_size(mapSizeStr)};

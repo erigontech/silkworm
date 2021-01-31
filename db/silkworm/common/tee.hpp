@@ -29,8 +29,16 @@ namespace silkworm {
 class teebuf: public std::streambuf {
 public:
     // Construct a streambuf which tees output to the supplied streambufs.
-    teebuf(std::streambuf* sb1, std::streambuf* sb2)
-      : sb1(sb1), sb2(sb2) {}
+    teebuf(std::streambuf* b1, std::streambuf* b2)
+      : sb1(b1), sb2(b2) {}
+
+    void set_streams(std::streambuf* b1, std::streambuf* b2) {
+        sb1 = b1;
+        sb2 = b2;
+    }
+
+    std::streambuf * sb1;
+    std::streambuf * sb2;
 
 private:
     // This tee buffer has no buffer. So every character "overflows"
@@ -51,8 +59,6 @@ private:
         int const r2 = sb2->pubsync();
         return ((r1 == 0 && r2 == 0) ? 0 : -1);
     }
-    std::streambuf * sb1;
-    std::streambuf * sb2;
 };
 
 class teestream : public std::ostream {
@@ -60,6 +66,11 @@ public:
     // Construct an ostream which tees output to the supplied ostreams.
    teestream(std::ostream & o1, std::ostream & o2)
       : std::ostream(&tbuf), tbuf(o1.rdbuf(), o2.rdbuf()) {}
+
+    void set_streams(std::ostream & o1, std::ostream & o2) {
+        tbuf.sb1 = o1.rdbuf();
+        tbuf.sb2 = o2.rdbuf();
+    }
 
 private:
     teebuf tbuf;

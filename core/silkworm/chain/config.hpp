@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -66,9 +66,6 @@ struct ChainConfig {
     // https://eips.ethereum.org/EIPS/eip-779
     std::optional<uint64_t> dao_block;
 
-    // Yellow Paper, Appendix K "Anomalies on the Main Network"
-    std::optional<uint64_t> ripemd_deletion_block;
-
     // TODO[ETC] ECIP-1017
 
     bool has_homestead(uint64_t block_num) const noexcept {
@@ -121,7 +118,6 @@ constexpr ChainConfig kMainnetConfig{
     std::nullopt,  // berlin_block
 
     1'920'000,  // dao_block
-    2'675'119,  // ripemd_deletion_block
 };
 
 constexpr ChainConfig kRopstenConfig{

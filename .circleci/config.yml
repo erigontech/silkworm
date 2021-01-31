@@ -68,7 +68,7 @@ jobs:
       BUILD_TYPE: Debug
       CLANG_COVERAGE: OFF
     docker:
-      - image: ethereum/cpp-build-env:12-gcc-7
+      - image: ethereum/cpp-build-env:13-gcc-7
     steps:
       - checkout_with_submodules
       - build

@@ -164,12 +164,6 @@ std::pair<std::vector<Receipt>, ValidationError> ExecutionProcessor::execute_blo
 
     apply_rewards();
 
-    // See Yellow Paper, Appendix K "Anomalies on the Main Network"
-    if (block_num == evm_.config().ripemd_deletion_block) {
-        static constexpr evmc::address kRipemdAddress{0x0000000000000000000000000000000000000003_address};
-        evm_.state().destruct(kRipemdAddress);
-    }
-
     return {receipts, ValidationError::kOk};
 }
 

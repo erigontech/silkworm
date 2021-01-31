@@ -20,11 +20,12 @@
 
 namespace silkworm {
 
-// Log to one or two output streams - typically the console and optional log file.
-static teestream streams{std::cerr, null_stream()};
-static LogLevels verbosity{LogInfo};
-static constexpr char const kLogTags[7][6] = {
-	"TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",		  };
+namespace {
+    teestream streams{std::cerr, null_stream()};
+    LogLevels verbosity{LogInfo};
+    constexpr char const kLogTags[7][6] = {
+        "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",		  };
+}
 
 std::ostream& log_(LogLevels level) {
 	return
@@ -35,11 +36,18 @@ std::ostream& log_(LogLevels level) {
 			<< "] ";
 }
 
-LogLevels log_verbosity_() { return verbosity; }
+LogLevels log_verbosity_() {
+    return verbosity;
+}
 
-void log_verbosity_(LogLevels level) { verbosity = level; }
+void log_verbosity_(LogLevels level) {
+    verbosity = level;
+}
 
-void log_set_streams_(std::ostream & o1, std::ostream & o2) { streams.set_streams((o1), (o2)); }
+// Log to one or two output streams - typically the console and optional log file.
+void log_set_streams_(std::ostream & o1, std::ostream & o2) {
+    streams.set_streams((o1), (o2));
+}
 
 std::ostream& null_stream() {
 	static struct null_buf : public std::streambuf {

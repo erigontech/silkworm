@@ -21,12 +21,12 @@
 
 namespace silkworm {
 
-// stream logging output - e.g.
+// stream labeled logging output - e.g.
 //	  SILKWORM_LOG(LogInfo) << "All your " << num_bases << " base are belong to us\n";
 //
 #define SILKWORM_LOG(level_) if ((level_) < log_verbosity_()) {} else log_(level_)
 
-// change the logging verbosity - default level is LogInfo
+// change the logging verbosity level - default level is LogInfo
 //
 #define SILKWORM_LOG_VERBOSITY(level_) log_verbosity_(level_)
 

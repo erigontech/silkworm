@@ -67,13 +67,11 @@ void run_collector_test(LoadFunc load_func) {
         collector.collect(entry);
     }
     // Check whether temporary files were generated
-    for (size_t i = 0; i < 10; i++) {
-        fs::path path{etl_tmp_dir.path() / fs::path("tmp-" + std::to_string(i))};
-        CHECK(fs::exists(path));
-    }
+    CHECK(std::distance(fs::directory_iterator{etl_tmp_dir.path()}, fs::directory_iterator{}) == 10);
     // Load data
     auto to{txn->open(db::table::kHeaderNumbers)};
     collector.load(to.get(), load_func);
+
     // Check wheter load was performed as intended
     for (auto& entry : set) {
         for (auto& transformed_entry : load_func(entry)) {
@@ -83,10 +81,8 @@ void run_collector_test(LoadFunc load_func) {
         }
     }
     // Check wheter temporary files were cleaned
-    for (size_t i = 0; i < 10; i++) {
-        fs::path path{fs::path(etl_tmp_dir.path()) / fs::path("tmp-" + std::to_string(i))};
-        CHECK(!fs::exists(path));
-    }
+    CHECK(std::distance(fs::directory_iterator{etl_tmp_dir.path()}, fs::directory_iterator{}) == 0);
+
 }
 
 TEST_CASE("collect_and_default_load") { run_collector_test(identity_load); }

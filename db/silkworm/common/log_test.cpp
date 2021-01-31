@@ -46,7 +46,7 @@ namespace {
 
 TEST_CASE("Logging") {
     // test true branch of macro
-    logger.verbosity = LogTrace;
+    SILKWORM_LOG_VERBOSITY_OF(logger, LogTrace);
     SILKWORM_LOG_TO(logger, LogCritical) << "LogCritical" << std::endl;
     CHECK(test_log("CRIT ", kInfix, "LogCritical"));
     SILKWORM_LOG_TO(logger, LogError) << "LogError" << std::endl;
@@ -61,7 +61,7 @@ TEST_CASE("Logging") {
     CHECK(test_log("TRACE", kInfix, "LogTrace"));
 
     // test false branch of macro
-    logger.verbosity = LogDebug;
+    SILKWORM_LOG_VERBOSITY_OF(logger, LogDebug);
     SILKWORM_LOG_TO(logger, LogTrace) << "LogTrace" << std::endl;
     CHECK(test_log("", "", ""));
 }

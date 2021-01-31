@@ -774,9 +774,8 @@ int main(int argc, char* argv[]) {
     auto& app_verify = *app.add_subcommand("verify", "Verifies senders' addresses for given block");
 
     CLI11_PARSE(app, argc, argv);
-    Logger::default_logger().set_local_timezone(true);  // for compatibility with TG logging
     if (options.debug) {
-        Logger::default_logger().verbosity = LogLevels::LogTrace;
+        SILKWORM_LOG_VERBOSITY(LogLevels::LogTrace);
     }
 
     auto lmdb_mapSize{parse_size(mapSizeStr)};

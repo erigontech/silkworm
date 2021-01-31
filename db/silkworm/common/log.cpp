@@ -16,9 +16,11 @@
 
 #include <silkworm/common/log.hpp>
 
+#include <absl/time/clock.h>
+
 namespace silkworm {
 
-std::ostream& Logger::null_stream() {
+std::ostream& Logger::null_stream_() {
     static struct NullBuffer : public std::streambuf {
         int overflow(int c) override { return c; }
     } null_buffer;
@@ -28,9 +30,18 @@ std::ostream& Logger::null_stream() {
     return null_stream;
 }
 
-Logger& Logger::default_logger() noexcept {
+Logger& Logger::default_logger_() noexcept {
     static Logger logger;
     return logger;
 }
+
+std::string Logger::formatTime(std::string) noexcept {
+    static absl::TimeZone local{absl::LocalTimeZone()};
+    static absl::TimeZone utc{absl::UTCTimeZone()};
+    return absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), (localTime_ ? local : utc));
+}
+
+
+
 
 }  // namespace silkworm

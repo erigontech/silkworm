@@ -32,7 +32,7 @@ namespace silkworm::etl {
  */
 class FileProvider {
   public:
-    FileProvider(const std::string& file_name, size_t id);
+    FileProvider(std::string file_name, size_t id);
     ~FileProvider(void);
     void flush(Buffer& buffer);                         // Write buffer's contents to disk
     std::optional<std::pair<Entry, int>> read_entry();  // Read next data element from file starting from position 0

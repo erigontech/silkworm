@@ -22,7 +22,8 @@ namespace silkworm::etl {
 
 namespace fs = boost::filesystem;
 
-FileProvider::FileProvider(const std::string &file_name, size_t id) : id_{id}, file_name_{std::move(file_name)} {}
+// https://abseil.io/tips/117
+FileProvider::FileProvider(std::string file_name, size_t id) : id_{id}, file_name_{std::move(file_name)} {}
 
 FileProvider::~FileProvider(void) { reset(); }
 

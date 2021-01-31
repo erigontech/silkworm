@@ -52,7 +52,6 @@ static const std::set<fs::path> kSlowTests{
 
 // TODO[Issue #23] make the failing tests work
 static const std::set<fs::path> kFailingTests{
-    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "GasLimitHigherThan2p63m1.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongCoinbase.json",
     kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongStateRoot.json",
     kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
@@ -70,7 +69,7 @@ static const std::set<fs::path> kFailingTests{
     // Nonce >= 2^64 is not supported
     kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
 
-    // Gas limit >= 2^64 is not supported
+    // Gas limit >= 2^64 is not supported; see EIP-1985
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
@@ -302,7 +301,12 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer
     return kPassed;
 }
 
-bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
+bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
+    if (state.number_of_accounts() != expected.size()) {
+        std::cout << "Account number mismatch: " << state.number_of_accounts() << " != " << expected.size() << "\n";
+        return false;
+    }
+
     for (const auto& entry : expected.items()) {
         evmc::address address{to_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};
@@ -336,6 +340,13 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
         if (actual_code != from_hex(expected_code)) {
             std::cout << "Code mismatch for " << entry.key() << ":\n";
             std::cout << to_hex(actual_code) << " != " << expected_code << "\n";
+            return false;
+        }
+
+        size_t storage_size{state.storage_size(address, account->incarnation)};
+        if (storage_size != j["storage"].size()) {
+            std::cout << "Storage size mismatch for " << entry.key() << ":\n";
+            std::cout << storage_size << " != " << j["storage"].size() << "\n";
             return false;
         }
 

@@ -106,7 +106,10 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
 
 void IntraBlockState::touch(const evmc::address& address) noexcept {
     bool inserted{touched_.insert(address).second};
-    if (inserted) {
+
+    // See Yellow Paper, Appendix K "Anomalies on the Main Network"
+    static constexpr evmc::address kRipemdAddress{0x0000000000000000000000000000000000000003_address};
+    if (inserted && address != kRipemdAddress) {
         journal_.emplace_back(new state::TouchDelta{address});
     }
 }

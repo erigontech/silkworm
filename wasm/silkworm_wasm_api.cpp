@@ -173,6 +173,8 @@ BlockHeader* block_header(Block* b) { return &(b->header); }
 
 uint64_t header_number(const BlockHeader* header) { return header->number; }
 
+uint8_t* header_state_root(BlockHeader* header) { return header->state_root.bytes; }
+
 void block_recover_senders(Block* b, const ChainConfig* config) { b->recover_senders(*config); }
 
 ValidationError block_pre_validate(const Block* b, StateBuffer* state, const ChainConfig* config) {

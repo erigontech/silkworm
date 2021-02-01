@@ -144,6 +144,18 @@ std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code
     return Bytes{*val};
 }
 
+static auto from_db_format(size_t len, Bytes& database_key, Bytes& database_value) {
+    struct result{uint64_t block_number; Bytes key; Bytes value;};
+    auto block_number{boost::endian::load_big_u64(&database_key[0])};
+    if (database_key.size() == 8) {
+        return result{block_number, database_value.substr(0, len), database_value.substr(len)};
+    } else {
+        Bytes key(len + kIncarnationLength + kHashLength, '\0');
+        std::memcpy(&key[0], &database_key[8], database_key.size() - 8);
+        std::memcpy(&key[database_key.size() - 8], &database_value[0], kHashLength);
+        return result{block_number, key, database_value.substr(kHashLength)};
+    }
+}
 // TG FindByHistory for account
 static std::optional<ByteView> find_account_in_history(lmdb::Transaction& txn, const evmc::address& address,
                                                        uint64_t block_number) {

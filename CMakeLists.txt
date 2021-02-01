@@ -77,6 +77,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$" AND CMAKE_BUILD_TYPE STREQUAL "Relea
   add_compile_options(-gline-tables-only)
 endif()
 
+add_subdirectory(CRoaring EXCLUDE_FROM_ALL)
+
 # GMP
 find_path(GMP_INCLUDE_DIR NAMES gmp.h)
 if(MSVC)
@@ -121,7 +123,7 @@ if(MSVC)
   option(MPIR_INSTEAD_OF_GMP "" ON)
 endif()
 add_subdirectory(libff)
-add_subdirectory(CRoaring)
+
 if(NOT SILKWORM_CORE_ONLY)
   # CBOR
   add_subdirectory(cbor-cpp)

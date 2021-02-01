@@ -50,10 +50,7 @@ static const std::set<fs::path> kExcludedTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
 
     // TODO[Issue #23] make the failing tests work
-    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongCoinbase.json",
-    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongStateRoot.json",
     kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
-    kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity" / "incorrectUncleTimestamp2.json",
     kBlockchainDir / "InvalidBlocks" / "bcUncleTest" / "EqualUncleInTwoDifferentBlocks.json",
 
     kBlockchainDir / "TransitionTests",
@@ -251,7 +248,7 @@ void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
 
 enum Status { kPassed, kFailed, kSkipped };
 
-Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer& state) {
+Status run_block(const nlohmann::json& b, const ChainConfig& config, MemoryBuffer& state) {
     bool invalid{b.contains("expectException")};
 
     std::optional<Bytes> rlp{from_hex(b["rlp"].get<std::string>())};
@@ -293,9 +290,14 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer
     }
 
     if (invalid) {
-        std::cout << "Invalid block executed successfully\n";
-        std::cout << "Expected: " << b["expectException"] << "\n";
-        return kFailed;
+        evmc::bytes32 state_root{state.state_root_hash()};
+        if (state_root == block.header.state_root) {
+            std::cout << "Invalid block executed successfully\n";
+            std::cout << "Expected: " << b["expectException"] << "\n";
+            return kFailed;
+        } else {
+            state.unwind_block(block.header.number);
+        }
     }
 
     state.insert_header(block.header);

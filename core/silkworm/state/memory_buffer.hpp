@@ -58,7 +58,17 @@ class MemoryBuffer : public StateBuffer {
 
     evmc::bytes32 state_root_hash() const;
 
+    void unwind_block(uint64_t block_number);
+
   private:
+    // address -> initial value
+    using AccountChanges = std::unordered_map<evmc::address, std::optional<Account>>;
+
+    // address -> incarnation -> location -> initial value
+    using StorageChanges =
+        std::unordered_map<evmc::address,
+                           std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, evmc::bytes32>>>;
+
     evmc::bytes32 account_storage_root(const evmc::address& address, uint64_t incarnation) const;
 
     std::unordered_map<evmc::address, Account> accounts_;
@@ -74,6 +84,11 @@ class MemoryBuffer : public StateBuffer {
 
     // block number -> hash -> header
     std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, BlockHeader>> headers_;
+
+    std::unordered_map<uint64_t, AccountChanges> account_changes_;  // per block
+    std::unordered_map<uint64_t, StorageChanges> storage_changes_;  // per block
+
+    uint64_t block_number_{0};
 };
 
 }  // namespace silkworm

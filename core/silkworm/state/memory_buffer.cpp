@@ -89,10 +89,16 @@ void MemoryBuffer::insert_header(const BlockHeader& block_header) {
 
 void MemoryBuffer::insert_receipts(uint64_t, const std::vector<Receipt>&) {}
 
-void MemoryBuffer::begin_block(uint64_t) {}
+void MemoryBuffer::begin_block(uint64_t block_number) {
+    block_number_ = block_number;
+    account_changes_.erase(block_number);
+    storage_changes_.erase(block_number);
+}
 
 void MemoryBuffer::update_account(const evmc::address& address, std::optional<Account> initial,
                                   std::optional<Account> current) {
+    account_changes_[block_number_][address] = initial;
+
     if (current) {
         accounts_[address] = *current;
     } else {
@@ -108,11 +114,35 @@ void MemoryBuffer::update_account_code(const evmc::address&, uint64_t, const evm
 }
 
 void MemoryBuffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
-                                  const evmc::bytes32&, const evmc::bytes32& current) {
+                                  const evmc::bytes32& initial, const evmc::bytes32& current) {
+    storage_changes_[block_number_][address][incarnation][location] = initial;
+
     if (is_zero(current)) {
         storage_[address][incarnation].erase(location);
     } else {
         storage_[address][incarnation][location] = current;
+    }
+}
+
+void MemoryBuffer::unwind_block(uint64_t block_number) {
+    for (const auto& [address, account] : account_changes_[block_number]) {
+        if (account) {
+            accounts_[address] = *account;
+        } else {
+            accounts_.erase(address);
+        }
+    }
+
+    for (const auto& [address, storage1] : storage_changes_[block_number]) {
+        for (const auto& [incarnation, storage2] : storage1) {
+            for (const auto& [location, value] : storage2) {
+                if (is_zero(value)) {
+                    storage_[address][incarnation].erase(location);
+                } else {
+                    storage_[address][incarnation][location] = value;
+                }
+            }
+        }
     }
 }
 

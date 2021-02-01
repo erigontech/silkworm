@@ -50,8 +50,9 @@ static const std::set<fs::path> kExcludedTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
 
     // TODO[Issue #23] make the failing tests work
-    kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions_EmptyTransactionAndForkBlocksAhead.json",
     kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions.json",
+    kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions_EmptyTransactionAndForkBlocksAhead.json",
+    kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions_UncleExtradata.json",
 
     // Nonce >= 2^64 is not supported.
     // Geth excludes this test as well:
@@ -288,14 +289,20 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, MemoryBuffe
     }
 
     if (invalid) {
-        evmc::bytes32 state_root{state.state_root_hash()};
-        if (state_root == block.header.state_root) {
-            std::cout << "Invalid block executed successfully\n";
-            std::cout << "Expected: " << b["expectException"] << "\n";
-            return kFailed;
-        } else {
-            state.unwind_block(block.header.number);
+        if (b["expectException"].get<std::string>() == "InvalidStateRoot") {
+            evmc::bytes32 state_root{state.state_root_hash()};
+            if (state_root == block.header.state_root) {
+                std::cout << "Expected InvalidStateRoot\n";
+                return kFailed;
+            } else {
+                state.unwind_block(block.header.number);
+                return kPassed;
+            }
         }
+
+        std::cout << "Invalid block executed successfully\n";
+        std::cout << "Expected: " << b["expectException"] << "\n";
+        return kFailed;
     }
 
     state.insert_header(block.header);

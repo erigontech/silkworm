@@ -103,6 +103,8 @@ SILKWORM_EXPORT void delete_state(silkworm::MemoryBuffer* x);
 
 SILKWORM_EXPORT void state_unwind_block(silkworm::MemoryBuffer* state, uint64_t block_number);
 
+SILKWORM_EXPORT uint64_t state_current_block_number(const silkworm::MemoryBuffer* state);
+
 SILKWORM_EXPORT size_t state_number_of_accounts(const silkworm::MemoryBuffer* state);
 
 SILKWORM_EXPORT size_t state_storage_size(const silkworm::MemoryBuffer* state, const uint8_t* address,

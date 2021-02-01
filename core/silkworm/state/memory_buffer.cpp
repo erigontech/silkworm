@@ -65,17 +65,19 @@ uint64_t MemoryBuffer::previous_incarnation(const evmc::address& address) const 
     return it->second;
 }
 
+uint64_t MemoryBuffer::current_block_number() const { return headers_.size() - 1; }
+
 std::optional<BlockHeader> MemoryBuffer::read_header(uint64_t block_number,
                                                      const evmc::bytes32& block_hash) const noexcept {
-    auto it1{headers_.find(block_number)};
-    if (it1 == headers_.end()) {
+    if (block_number >= headers_.size()) {
         return std::nullopt;
     }
-    auto it2{it1->second.find(block_hash)};
-    if (it2 == it1->second.end()) {
+
+    auto it{headers_[block_number].find(block_hash)};
+    if (it == headers_[block_number].end()) {
         return std::nullopt;
     }
-    return it2->second;
+    return it->second;
 }
 
 void MemoryBuffer::insert_header(const BlockHeader& block_header) {
@@ -84,6 +86,10 @@ void MemoryBuffer::insert_header(const BlockHeader& block_header) {
     ethash::hash256 hash{keccak256(rlp)};
     evmc::bytes32 hash_key;
     std::memcpy(hash_key.bytes, hash.bytes, kHashLength);
+
+    if (headers_.size() <= block_header.number) {
+        headers_.resize(block_header.number + 1);
+    }
     headers_[block_header.number][hash_key] = block_header;
 }
 

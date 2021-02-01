@@ -19,6 +19,7 @@
 
 #include <silkworm/state/buffer.hpp>
 #include <unordered_map>
+#include <vector>
 
 namespace silkworm {
 
@@ -58,6 +59,8 @@ class MemoryBuffer : public StateBuffer {
 
     evmc::bytes32 state_root_hash() const;
 
+    uint64_t current_block_number() const;
+
     void unwind_block(uint64_t block_number);
 
   private:
@@ -83,7 +86,7 @@ class MemoryBuffer : public StateBuffer {
         storage_;
 
     // block number -> hash -> header
-    std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, BlockHeader>> headers_;
+    std::vector<std::unordered_map<evmc::bytes32, BlockHeader>> headers_;
 
     std::unordered_map<uint64_t, AccountChanges> account_changes_;  // per block
     std::unordered_map<uint64_t, StorageChanges> storage_changes_;  // per block

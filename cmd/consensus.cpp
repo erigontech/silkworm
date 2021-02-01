@@ -50,16 +50,8 @@ static const std::set<fs::path> kExcludedTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
 
     // TODO[Issue #23] make the failing tests work
-    kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
-    kBlockchainDir / "InvalidBlocks" / "bcUncleTest" / "EqualUncleInTwoDifferentBlocks.json",
-
-    kBlockchainDir / "TransitionTests",
-
-    // Reorgs are not supported yet
-    kBlockchainDir / "ValidBlocks" / "bcForkStressTest" / "ForkStressTest.json",
-    kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
-    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
+    kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions_EmptyTransactionAndForkBlocksAhead.json",
+    kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions.json",
 
     // Nonce >= 2^64 is not supported.
     // Geth excludes this test as well:
@@ -72,7 +64,7 @@ static const std::set<fs::path> kExcludedTests{
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
-constexpr size_t kColumnWidth{60};
+constexpr size_t kColumnWidth{80};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",
@@ -278,6 +270,12 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, MemoryBuffe
         }
         std::cout << "Validation error " << static_cast<int>(err) << "\n";
         return kFailed;
+    }
+
+    if (block.header.number != state.current_block_number() + 1) {
+        // TODO[Issue #23] support reorgs
+        std::cout << "Reorgs are not supported yet\n";
+        return kSkipped;
     }
 
     std::pair<std::vector<Receipt>, ValidationError> res{execute_block(block, state, config)};

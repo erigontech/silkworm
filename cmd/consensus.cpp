@@ -305,7 +305,7 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, MemoryBuffe
         return kFailed;
     }
 
-    state.insert_header(block.header);
+    state.insert_block(block);
 
     return kPassed;
 }
@@ -389,7 +389,7 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     check_rlp_err(rlp::decode(genesis_view, genesis_block));
 
     MemoryBuffer state;
-    state.insert_header(genesis_block.header);
+    state.insert_block(genesis_block);
 
     std::string network{j["network"].get<std::string>()};
     const ChainConfig& config{kNetworkConfig.at(network)};

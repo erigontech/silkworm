@@ -80,17 +80,37 @@ std::optional<BlockHeader> MemoryBuffer::read_header(uint64_t block_number,
     return it->second;
 }
 
-void MemoryBuffer::insert_header(const BlockHeader& block_header) {
+std::optional<BlockBody> MemoryBuffer::read_body(uint64_t block_number,
+                                                 const evmc::bytes32& block_hash) const noexcept {
+    if (block_number >= bodies_.size()) {
+        return std::nullopt;
+    }
+
+    auto it{bodies_[block_number].find(block_hash)};
+    if (it == bodies_[block_number].end()) {
+        return std::nullopt;
+    }
+    return it->second;
+}
+
+void MemoryBuffer::insert_block(const Block& block) {
+    uint64_t block_number{block.header.number};
+
     Bytes rlp;
-    rlp::encode(rlp, block_header);
+    rlp::encode(rlp, block.header);
     ethash::hash256 hash{keccak256(rlp)};
     evmc::bytes32 hash_key;
     std::memcpy(hash_key.bytes, hash.bytes, kHashLength);
 
-    if (headers_.size() <= block_header.number) {
-        headers_.resize(block_header.number + 1);
+    if (headers_.size() <= block_number) {
+        headers_.resize(block_number + 1);
     }
-    headers_[block_header.number][hash_key] = block_header;
+    headers_[block_number][hash_key] = block.header;
+
+    if (bodies_.size() <= block_number) {
+        bodies_.resize(block_number + 1);
+    }
+    bodies_[block_number][hash_key] = block;
 }
 
 void MemoryBuffer::insert_receipts(uint64_t, const std::vector<Receipt>&) {}

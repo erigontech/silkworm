@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -244,12 +244,13 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     }
 }
 
-void Buffer::insert_header(const BlockHeader& block_header) {
+void Buffer::insert_block(const Block& block) {
     Bytes rlp{};
-    rlp::encode(rlp, block_header);
+    rlp::encode(rlp, block.header);
     ethash::hash256 hash{keccak256(rlp)};
-    Bytes key{block_key(block_header.number, hash.bytes)};
-    headers_[key] = block_header;
+    Bytes key{block_key(block.header.number, hash.bytes)};
+    headers_[key] = block.header;
+    bodies_[key] = block;
 }
 
 std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
@@ -261,6 +262,17 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
         return std::nullopt;
     }
     return db::read_header(*txn_, block_number, block_hash.bytes);
+}
+
+std::optional<BlockBody> Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+    Bytes key{block_key(block_number, block_hash.bytes)};
+    if (auto it{bodies_.find(key)}; it != bodies_.end()) {
+        return it->second;
+    }
+    if (!txn_) {
+        return std::nullopt;
+    }
+    return db::read_body(*txn_, block_number, block_hash.bytes, /*read_senders=*/false);
 }
 
 std::optional<Account> Buffer::read_account(const evmc::address& address) const noexcept {

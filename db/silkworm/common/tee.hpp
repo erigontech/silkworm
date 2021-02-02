@@ -37,9 +37,6 @@ public:
         sb2 = b2;
     }
 
-    std::streambuf * sb1;
-    std::streambuf * sb2;
-
 private:
     // This tee buffer has no buffer. So every character "overflows"
     // and can be put directly into the teed buffers.
@@ -59,6 +56,8 @@ private:
         int const r2 = sb2->pubsync();
         return ((r1 == 0 && r2 == 0) ? 0 : -1);
     }
+    std::streambuf * sb1;
+    std::streambuf * sb2;
 };
 
 class teestream : public std::ostream {
@@ -67,9 +66,8 @@ public:
    teestream(std::ostream & o1, std::ostream & o2)
       : std::ostream(&tbuf), tbuf(o1.rdbuf(), o2.rdbuf()) {}
 
-    void set_streams(std::ostream & o1, std::ostream & o2) {
-        tbuf.sb1 = o1.rdbuf();
-        tbuf.sb2 = o2.rdbuf();
+    void set_streams(std::streambuf* sb1, std::streambuf* sb2) {
+        tbuf.set_streams(sb1, sb2);
     }
 
 private:

@@ -15,7 +15,6 @@
 */
 
 #include <silkworm/common/log.hpp>
-
 #include <absl/time/clock.h>
 
 namespace silkworm {
@@ -27,26 +26,16 @@ namespace {
         "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",		  };
 }
 
-std::ostream& log_(LogLevels level) {
-	return
-		streams
-			<< kLogTags[level]
-			<< "["
-			<< absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone())
-			<< "] ";
+void log_verbosity_(LogLevels level) {
+    verbosity = level;
 }
-
 LogLevels log_verbosity_() {
     return verbosity;
 }
 
-void log_verbosity_(LogLevels level) {
-    verbosity = level;
-}
-
 // Log to one or two output streams - typically the console and optional log file.
-void log_set_streams_(std::ostream & o1, std::ostream & o2) {
-    streams.set_streams((o1), (o2));
+void log_set_streams_(std::ostream& o1, std::ostream& o2) {
+    streams.set_streams(o1.rdbuf(), o2.rdbuf());
 }
 
 std::ostream& null_stream() {
@@ -58,5 +47,21 @@ std::ostream& null_stream() {
 	} null_strm;
 	return null_strm;
 }
+
+std::mutex log_::log_mtx_;
+
+std::ostream& log_header_(LogLevels level) {
+	return
+		streams
+			<< kLogTags[level]
+			<< "["
+			<< absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone())
+			<< "] ";
+}
+
+void log_expand_and_compile_test_() {
+    SILKWORM_LOG(LogNone) << "log_expand_and_compile_test_" << std::endl;
+}
+
 
 }  // namespace silkworm

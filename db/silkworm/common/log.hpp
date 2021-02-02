@@ -43,10 +43,21 @@ std::ostream& null_stream();
 //
 // Below are for access via macros ONLY :(
 //
-std::ostream& log_(LogLevels level);
 LogLevels log_verbosity_();
 void log_verbosity_(LogLevels);
 void log_set_streams_(std::ostream & o1, std::ostream & o2);
+std::ostream& log_header_(LogLevels);
+class log_ {
+  public:
+   log_(LogLevels level_) : level_(level_) { log_mtx_.lock(); }
+    ~log_() { log_mtx_.unlock(); }
+    template <class T> std::ostream& operator<< (const T & message) {
+        return log_header_(level_) << message;
+    }
+  private:
+    LogLevels level_;
+    static std::mutex log_mtx_;
+};
 
 }  // namespace silkworm
 

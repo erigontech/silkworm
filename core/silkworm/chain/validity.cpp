@@ -69,10 +69,17 @@ ValidationError validate_block_header(const BlockHeader& header, const StateBuff
 }
 
 // See [YP] Section 11.1 "Ommer Validation"
-static bool is_kin(const BlockHeader& u, const BlockHeader& h, unsigned n, const StateBuffer& state) {
+static bool is_kin(const BlockHeader& u, const BlockHeader& h, const evmc::bytes32& h_hash, unsigned n,
+                   const StateBuffer& state, std::vector<BlockHeader>& old_ommers) {
     if (n == 0) {
         return false;
     }
+
+    std::optional<BlockBody> h_body{state.read_body(h.number, h_hash)};
+    if (!h_body) {
+        return false;
+    }
+    old_ommers.insert(old_ommers.end(), h_body->ommers.begin(), h_body->ommers.end());
 
     std::optional<BlockHeader> ph{get_parent(state, h)};
     std::optional<BlockHeader> pu{get_parent(state, u)};
@@ -86,7 +93,7 @@ static bool is_kin(const BlockHeader& u, const BlockHeader& h, unsigned n, const
         return true;
     }
 
-    return is_kin(u, *ph, n - 1, state);
+    return is_kin(u, *ph, h.parent_hash, n - 1, state, old_ommers);
 }
 
 ValidationError pre_validate_block(const Block& block, const StateBuffer& state, const ChainConfig& config) {
@@ -122,8 +129,14 @@ ValidationError pre_validate_block(const Block& block, const StateBuffer& state,
         if (ValidationError err{validate_block_header(ommer, state, config)}; err != ValidationError::kOk) {
             return ValidationError::kInvalidOmmerHeader;
         }
-        if (!is_kin(ommer, *parent, 6, state)) {
+        std::vector<BlockHeader> old_ommers;
+        if (!is_kin(ommer, *parent, header.parent_hash, 6, state, old_ommers)) {
             return ValidationError::kNotAnOmmer;
+        }
+        for (const BlockHeader& oo : old_ommers) {
+            if (oo == ommer) {
+                return ValidationError::kDuplicateOmmer;
+            }
         }
     }
 

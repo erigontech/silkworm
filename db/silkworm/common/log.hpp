@@ -18,6 +18,7 @@
 #define SILKWORM_COMMON_LOG_H_
 
 #include <silkworm/common/tee.hpp>
+#include <mutex>
 
 namespace silkworm {
 

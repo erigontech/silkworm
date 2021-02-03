@@ -34,11 +34,12 @@ enum class ValidationError {
     kWrongLogsBloom,
 
     // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
-    kUnknownParent,     // P(H) = ∅ ∨ Hi ≠ P(H)Hi + 1
-    kWrongDifficulty,   // Hd ≠ D(H)
-    kGasAboveLimit,     // Hg > Hl
-    kInvalidGasLimit,   // |Hl-P(H)Hl|≥P(H)Hl/1024 ∨ Hl<5000
-    kInvalidTimestamp,  // Hs ≤ P(H)Hs
+    kUnknownParent,      // P(H) = ∅ ∨ Hi ≠ P(H)Hi + 1
+    kWrongDifficulty,    // Hd ≠ D(H)
+    kGasAboveLimit,      // Hg > Hl
+    kInvalidGasLimit,    // |Hl-P(H)Hl|≥P(H)Hl/1024 ∨ Hl<5000
+    kInvalidTimestamp,   // Hs ≤ P(H)Hs
+    kWrongDaoExtraData,  // see EIP-779
 
     // See [YP] Section 6.2 "Execution", Eq (58)
     kMissingSender,         // S(T) = ∅

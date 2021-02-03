@@ -49,11 +49,6 @@ static const fs::path kTransactionDir{kRootDir / "TransactionTests"};
 static const std::set<fs::path> kExcludedTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
 
-    // TODO[Issue #23] make the failing tests work
-    kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions.json",
-    kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions_EmptyTransactionAndForkBlocksAhead.json",
-    kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions_UncleExtradata.json",
-
     // Nonce >= 2^64 is not supported.
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L40

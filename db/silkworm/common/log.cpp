@@ -19,24 +19,36 @@
 
 namespace silkworm {
 
-namespace {
-    teestream streams{std::cerr, null_stream()};
-    LogLevels verbosity{LogInfo};
-    constexpr char const kLogTags[7][6] = {
+namespace detail {
+
+    teestream log_streams_{std::cerr, null_stream()};
+
+    LogLevels log_verbosity_{LogInfo};
+
+    constexpr char const kLogTags_[7][6] = {
         "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",		  };
-}
 
-void log_verbosity_(LogLevels level) {
-    verbosity = level;
-}
-LogLevels log_verbosity_() {
-    return verbosity;
-}
+    // Log to one or two output streams - typically the console and optional log file.
+    void log_set_streams_(std::ostream& o1, std::ostream& o2) {
+        log_streams_.set_streams(o1.rdbuf(), o2.rdbuf());
+    }
 
-// Log to one or two output streams - typically the console and optional log file.
-void log_set_streams_(std::ostream& o1, std::ostream& o2) {
-    streams.set_streams(o1.rdbuf(), o2.rdbuf());
-}
+    std::mutex log_::log_mtx_;
+
+    std::ostream& log_::header_(LogLevels level) {
+        return
+            log_streams_
+                << kLogTags_[level]
+                << "["
+                << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone())
+                << "] ";
+    }
+
+    void log_expand_and_compile_test_() {
+        SILKWORM_LOG(LogInfo) << "log_expand_and_compile_test_" << std::endl;
+    }
+
+}  // namespace detail
 
 std::ostream& null_stream() {
 	static struct null_buf : public std::streambuf {
@@ -47,21 +59,5 @@ std::ostream& null_stream() {
 	} null_strm;
 	return null_strm;
 }
-
-std::mutex log_::log_mtx_;
-
-std::ostream& log_header_(LogLevels level) {
-	return
-		streams
-			<< kLogTags[level]
-			<< "["
-			<< absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone())
-			<< "] ";
-}
-
-void log_expand_and_compile_test_() {
-    SILKWORM_LOG(LogNone) << "log_expand_and_compile_test_" << std::endl;
-}
-
 
 }  // namespace silkworm

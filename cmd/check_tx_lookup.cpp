@@ -58,7 +58,6 @@ int main(int argc, char* argv[]) {
         ->check(CLI::Range(1u, UINT32_MAX));
     CLI11_PARSE(app, argc, argv);
 
-    Logger::default_logger().set_local_timezone(true);  // for compatibility with TG logging
 
     // Check data.mdb exists in provided directory
     boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};

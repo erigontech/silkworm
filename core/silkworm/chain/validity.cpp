@@ -77,31 +77,32 @@ ValidationError validate_block_header(const BlockHeader& header, const StateBuff
 }
 
 // See [YP] Section 11.1 "Ommer Validation"
-static bool is_kin(const BlockHeader& u, const BlockHeader& h, const evmc::bytes32& h_hash, unsigned n,
-                   const StateBuffer& state, std::vector<BlockHeader>& old_ommers) {
-    if (n == 0) {
+static bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                   const evmc::bytes32& mainline_hash, unsigned n, const StateBuffer& state,
+                   std::vector<BlockHeader>& old_ommers) {
+    if (n == 0 || branch_header == mainline_header) {
         return false;
     }
 
-    std::optional<BlockBody> h_body{state.read_body(h.number, h_hash)};
-    if (!h_body) {
+    std::optional<BlockBody> mainline_body{state.read_body(mainline_header.number, mainline_hash)};
+    if (!mainline_body) {
         return false;
     }
-    old_ommers.insert(old_ommers.end(), h_body->ommers.begin(), h_body->ommers.end());
+    old_ommers.insert(old_ommers.end(), mainline_body->ommers.begin(), mainline_body->ommers.end());
 
-    std::optional<BlockHeader> ph{get_parent(state, h)};
-    std::optional<BlockHeader> pu{get_parent(state, u)};
+    std::optional<BlockHeader> mainline_parent{get_parent(state, mainline_header)};
+    std::optional<BlockHeader> branch_parent{get_parent(state, branch_header)};
 
-    if (!ph) {
+    if (!mainline_parent) {
         return false;
     }
 
-    bool siblings{ph == pu && h != u};
+    bool siblings{branch_parent == mainline_parent};
     if (siblings) {
         return true;
     }
 
-    return is_kin(u, *ph, h.parent_hash, n - 1, state, old_ommers);
+    return is_kin(branch_header, *mainline_parent, mainline_header.parent_hash, n - 1, state, old_ommers);
 }
 
 ValidationError pre_validate_block(const Block& block, const StateBuffer& state, const ChainConfig& config) {

@@ -65,34 +65,66 @@ uint64_t MemoryBuffer::previous_incarnation(const evmc::address& address) const 
     return it->second;
 }
 
+uint64_t MemoryBuffer::current_block_number() const { return headers_.size() - 1; }
+
 std::optional<BlockHeader> MemoryBuffer::read_header(uint64_t block_number,
                                                      const evmc::bytes32& block_hash) const noexcept {
-    auto it1{headers_.find(block_number)};
-    if (it1 == headers_.end()) {
+    if (block_number >= headers_.size()) {
         return std::nullopt;
     }
-    auto it2{it1->second.find(block_hash)};
-    if (it2 == it1->second.end()) {
+
+    auto it{headers_[block_number].find(block_hash)};
+    if (it == headers_[block_number].end()) {
         return std::nullopt;
     }
-    return it2->second;
+    return it->second;
 }
 
-void MemoryBuffer::insert_header(const BlockHeader& block_header) {
+std::optional<BlockBody> MemoryBuffer::read_body(uint64_t block_number,
+                                                 const evmc::bytes32& block_hash) const noexcept {
+    if (block_number >= bodies_.size()) {
+        return std::nullopt;
+    }
+
+    auto it{bodies_[block_number].find(block_hash)};
+    if (it == bodies_[block_number].end()) {
+        return std::nullopt;
+    }
+    return it->second;
+}
+
+void MemoryBuffer::insert_block(const Block& block) {
+    uint64_t block_number{block.header.number};
+
     Bytes rlp;
-    rlp::encode(rlp, block_header);
+    rlp::encode(rlp, block.header);
     ethash::hash256 hash{keccak256(rlp)};
     evmc::bytes32 hash_key;
     std::memcpy(hash_key.bytes, hash.bytes, kHashLength);
-    headers_[block_header.number][hash_key] = block_header;
+
+    if (headers_.size() <= block_number) {
+        headers_.resize(block_number + 1);
+    }
+    headers_[block_number][hash_key] = block.header;
+
+    if (bodies_.size() <= block_number) {
+        bodies_.resize(block_number + 1);
+    }
+    bodies_[block_number][hash_key] = block;
 }
 
 void MemoryBuffer::insert_receipts(uint64_t, const std::vector<Receipt>&) {}
 
-void MemoryBuffer::begin_block(uint64_t) {}
+void MemoryBuffer::begin_block(uint64_t block_number) {
+    block_number_ = block_number;
+    account_changes_.erase(block_number);
+    storage_changes_.erase(block_number);
+}
 
 void MemoryBuffer::update_account(const evmc::address& address, std::optional<Account> initial,
                                   std::optional<Account> current) {
+    account_changes_[block_number_][address] = initial;
+
     if (current) {
         accounts_[address] = *current;
     } else {
@@ -108,11 +140,35 @@ void MemoryBuffer::update_account_code(const evmc::address&, uint64_t, const evm
 }
 
 void MemoryBuffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
-                                  const evmc::bytes32&, const evmc::bytes32& current) {
+                                  const evmc::bytes32& initial, const evmc::bytes32& current) {
+    storage_changes_[block_number_][address][incarnation][location] = initial;
+
     if (is_zero(current)) {
         storage_[address][incarnation].erase(location);
     } else {
         storage_[address][incarnation][location] = current;
+    }
+}
+
+void MemoryBuffer::unwind_block(uint64_t block_number) {
+    for (const auto& [address, account] : account_changes_[block_number]) {
+        if (account) {
+            accounts_[address] = *account;
+        } else {
+            accounts_.erase(address);
+        }
+    }
+
+    for (const auto& [address, storage1] : storage_changes_[block_number]) {
+        for (const auto& [incarnation, storage2] : storage1) {
+            for (const auto& [location, value] : storage2) {
+                if (is_zero(value)) {
+                    storage_[address][incarnation].erase(location);
+                } else {
+                    storage_[address][incarnation][location] = value;
+                }
+            }
+        }
     }
 }
 

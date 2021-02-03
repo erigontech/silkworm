@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -98,6 +98,21 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
 
     check_rlp_err(rlp::decode(*header_rlp, bh.block.header));
 
+    std::optional<BlockBody> body{read_body(txn, block_number, bh.hash.bytes, read_senders)};
+    if (!body) {
+        return std::nullopt;
+    }
+
+    bh.block.ommers = body->ommers;
+    bh.block.transactions = body->transactions;
+
+    return bh;
+}
+
+std::optional<BlockBody> read_body(lmdb::Transaction& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength],
+                                   bool read_senders) {
+    Bytes key{block_key(block_number, hash)};
+
     auto body_table{txn.open(table::kBlockBodies)};
     std::optional<ByteView> body_rlp{body_table->get(key)};
     if (!body_rlp) {
@@ -105,26 +120,29 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     }
 
     auto body{detail::decode_stored_block_body(*body_rlp)};
-    bh.block.ommers = body.ommers;
-    bh.block.transactions = read_transactions(txn, body.base_txn_id, body.txn_count);
+
+    BlockBody out;
+    out.ommers = body.ommers;
+    out.transactions = read_transactions(txn, body.base_txn_id, body.txn_count);
 
     if (read_senders) {
-        std::vector<evmc::address> senders{db::read_senders(txn, block_number, bh.hash)};
-        if (senders.size() != bh.block.transactions.size()) {
+        std::vector<evmc::address> senders{db::read_senders(txn, block_number, hash)};
+        if (senders.size() != out.transactions.size()) {
             throw MissingSenders("senders count does not match transactions count");
         }
         for (size_t i{0}; i < senders.size(); ++i) {
-            bh.block.transactions[i].from = senders[i];
+            out.transactions[i].from = senders[i];
         }
     }
 
-    return bh;
+    return out;
 }
 
-std::vector<evmc::address> read_senders(lmdb::Transaction& txn, int64_t block_number, const evmc::bytes32& block_hash) {
+std::vector<evmc::address> read_senders(lmdb::Transaction& txn, int64_t block_number,
+                                        const uint8_t (&hash)[kHashLength]) {
     std::vector<evmc::address> senders{};
     auto table{txn.open(table::kSenders)};
-    std::optional<ByteView> data{table->get(block_key(block_number, block_hash.bytes))};
+    std::optional<ByteView> data{table->get(block_key(block_number, hash))};
     if (!data) {
         return senders;
     }

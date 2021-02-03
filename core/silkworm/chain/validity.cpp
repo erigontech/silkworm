@@ -65,28 +65,44 @@ ValidationError validate_block_header(const BlockHeader& header, const StateBuff
         return ValidationError::kWrongDifficulty;
     }
 
+    // https://eips.ethereum.org/EIPS/eip-779
+    if (config.dao_block && *config.dao_block <= header.number && header.number <= *config.dao_block + 9) {
+        static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
+        if (header.extra_data() != kDaoExtraData) {
+            return ValidationError::kWrongDaoExtraData;
+        }
+    }
+
     return ValidationError::kOk;
 }
 
 // See [YP] Section 11.1 "Ommer Validation"
-static bool is_kin(const BlockHeader& u, const BlockHeader& h, unsigned n, const StateBuffer& state) {
-    if (n == 0) {
+static bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                   const evmc::bytes32& mainline_hash, unsigned n, const StateBuffer& state,
+                   std::vector<BlockHeader>& old_ommers) {
+    if (n == 0 || branch_header == mainline_header) {
         return false;
     }
 
-    std::optional<BlockHeader> ph{get_parent(state, h)};
-    std::optional<BlockHeader> pu{get_parent(state, u)};
+    std::optional<BlockBody> mainline_body{state.read_body(mainline_header.number, mainline_hash)};
+    if (!mainline_body) {
+        return false;
+    }
+    old_ommers.insert(old_ommers.end(), mainline_body->ommers.begin(), mainline_body->ommers.end());
 
-    if (!ph) {
+    std::optional<BlockHeader> mainline_parent{get_parent(state, mainline_header)};
+    std::optional<BlockHeader> branch_parent{get_parent(state, branch_header)};
+
+    if (!mainline_parent) {
         return false;
     }
 
-    bool siblings{ph == pu && h != u};
+    bool siblings{branch_parent == mainline_parent};
     if (siblings) {
         return true;
     }
 
-    return is_kin(u, *ph, n - 1, state);
+    return is_kin(branch_header, *mainline_parent, mainline_header.parent_hash, n - 1, state, old_ommers);
 }
 
 ValidationError pre_validate_block(const Block& block, const StateBuffer& state, const ChainConfig& config) {
@@ -122,8 +138,14 @@ ValidationError pre_validate_block(const Block& block, const StateBuffer& state,
         if (ValidationError err{validate_block_header(ommer, state, config)}; err != ValidationError::kOk) {
             return ValidationError::kInvalidOmmerHeader;
         }
-        if (!is_kin(ommer, *parent, 6, state)) {
+        std::vector<BlockHeader> old_ommers;
+        if (!is_kin(ommer, *parent, header.parent_hash, 6, state, old_ommers)) {
             return ValidationError::kNotAnOmmer;
+        }
+        for (const BlockHeader& oo : old_ommers) {
+            if (oo == ommer) {
+                return ValidationError::kDuplicateOmmer;
+            }
         }
     }
 

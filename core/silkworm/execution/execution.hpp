@@ -33,7 +33,8 @@ namespace silkworm {
  * Transaction senders must be already populated.
  * The DB table kCurrentState should match the Ethereum state at the begining of the block.
  *
- * Warning: This method does not verify state root.
+ * Warning: This method does not verify state root;
+ * pre-Byzantium receipt root isn't validated either.
  *
  * For better performance use AnalysisCache & ExecutionStatePool.
  */

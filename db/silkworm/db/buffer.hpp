@@ -77,7 +77,11 @@ class Buffer : public StateBuffer {
 
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
+
+    void unwind_state_changes(uint64_t block_number) override;
     ///@}
+
+    evmc::bytes32 state_root_hash() const override;
 
     /// Account (backward) changes per block
     const absl::btree_map<uint64_t, AccountChanges>& account_changes() const { return account_changes_; }

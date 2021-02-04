@@ -150,7 +150,7 @@ void MemoryBuffer::update_storage(const evmc::address& address, uint64_t incarna
     }
 }
 
-void MemoryBuffer::unwind_block(uint64_t block_number) {
+void MemoryBuffer::unwind_state_changes(uint64_t block_number) {
     for (const auto& [address, account] : account_changes_[block_number]) {
         if (account) {
             accounts_[address] = *account;

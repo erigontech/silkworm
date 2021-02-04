@@ -21,9 +21,9 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include <set>
+#include <silkworm/chain/blockchain.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/execution/execution.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/intra_block_state.hpp>
@@ -58,6 +58,36 @@ static const std::set<fs::path> kExcludedTests{
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
+
+    // TODO[Issue #23] support reorgs
+    kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
+        "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
+        "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
+    kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions.json",
+    kBlockchainDir / "ValidBlocks" / "bcForkStressTest" / "ForkStressTest.json",
+    kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
+    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "CallContractFromNotBestBlock.json",
+    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainB.json",
+    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainBCallContractFormA.json",
+    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainB_BlockHash.json",
+    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainB_difficultyB.json",
+    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainBtoChainA.json",
+    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainBtoChainAtoChainB.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "lotsOfBranchesOverrideAtTheEnd.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "lotsOfBranchesOverrideAtTheMiddle.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "lotsOfLeafs.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "newChainFrom4Block.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "newChainFrom5Block.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "newChainFrom6Block.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "sideChainWithMoreTransactions.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "sideChainWithMoreTransactions2.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" /
+        "sideChainWithNewMaxDifficultyStartingFromBlock3AfterBlock4.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "uncleBlockAtBlock3AfterBlock3.json",
+    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "uncleBlockAtBlock3afterBlock4.json",
 };
 
 constexpr size_t kColumnWidth{80};
@@ -236,7 +266,7 @@ void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
 
 enum Status { kPassed, kFailed, kSkipped };
 
-Status run_block(const nlohmann::json& b, const ChainConfig& config, MemoryBuffer& state) {
+Status run_block(const nlohmann::json& b, Blockchain& blockchain) {
     bool invalid{b.contains("expectException")};
 
     std::optional<Bytes> rlp{from_hex(b["rlp"].get<std::string>())};
@@ -258,49 +288,15 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, MemoryBuffe
         return kFailed;
     }
 
-    block.recover_senders(config);
+    bool check_state_root{invalid && b["expectException"].get<std::string>() == "InvalidStateRoot"};
 
-    if (ValidationError err{pre_validate_block(block, state, config)}; err != ValidationError::kOk) {
+    if (ValidationError err{blockchain.insert_block(block, check_state_root)}; err != ValidationError::kOk) {
         if (invalid) {
             return kPassed;
         }
         std::cout << "Validation error " << static_cast<int>(err) << "\n";
         return kFailed;
     }
-
-    if (block.header.number != state.current_block_number() + 1) {
-        // TODO[Issue #23] support reorgs
-        std::cout << "Reorgs are not supported yet\n";
-        return kSkipped;
-    }
-
-    std::pair<std::vector<Receipt>, ValidationError> res{execute_block(block, state, config)};
-    if (res.second != ValidationError::kOk) {
-        if (invalid) {
-            return kPassed;
-        }
-        std::cout << "Validation error " << static_cast<int>(res.second) << "\n";
-        return kFailed;
-    }
-
-    if (invalid) {
-        if (b["expectException"].get<std::string>() == "InvalidStateRoot") {
-            evmc::bytes32 state_root{state.state_root_hash()};
-            if (state_root == block.header.state_root) {
-                std::cout << "Expected InvalidStateRoot\n";
-                return kFailed;
-            } else {
-                state.unwind_block(block.header.number);
-                return kPassed;
-            }
-        }
-
-        std::cout << "Invalid block executed successfully\n";
-        std::cout << "Expected: " << b["expectException"] << "\n";
-        return kFailed;
-    }
-
-    state.insert_block(block);
 
     return kPassed;
 }
@@ -384,14 +380,14 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     check_rlp_err(rlp::decode(genesis_view, genesis_block));
 
     MemoryBuffer state;
-    state.insert_block(genesis_block);
-
     std::string network{j["network"].get<std::string>()};
     const ChainConfig& config{kNetworkConfig.at(network)};
     init_pre_state(j["pre"], state);
 
+    Blockchain blockchain{state, config, genesis_block};
+
     for (const auto& b : j["blocks"]) {
-        Status status{run_block(b, config, state)};
+        Status status{run_block(b, blockchain)};
         if (status != kPassed) {
             return status;
         }

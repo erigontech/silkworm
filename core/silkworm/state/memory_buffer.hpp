@@ -55,15 +55,15 @@ class MemoryBuffer : public StateBuffer {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
+    void unwind_state_changes(uint64_t block_number) override;
+
+    evmc::bytes32 state_root_hash() const override;
+
     size_t number_of_accounts() const;
 
     size_t storage_size(const evmc::address& address, uint64_t incarnation) const;
 
-    evmc::bytes32 state_root_hash() const;
-
     uint64_t current_block_number() const;
-
-    void unwind_block(uint64_t block_number);
 
   private:
     // address -> initial value

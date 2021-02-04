@@ -189,8 +189,6 @@ MemoryBuffer* new_state() { return new MemoryBuffer; }
 
 void delete_state(MemoryBuffer* x) { delete x; }
 
-void state_unwind_block(MemoryBuffer* state, uint64_t block_number) { state->unwind_block(block_number); }
-
 uint64_t state_current_block_number(const MemoryBuffer* state) { return state->current_block_number(); }
 
 uint8_t* state_root_hash_new(const MemoryBuffer* state) {

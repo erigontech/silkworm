@@ -327,4 +327,8 @@ uint64_t Buffer::previous_incarnation(const evmc::address& address) const noexce
     return incarnation ? *incarnation : 0;
 }
 
+void Buffer::unwind_state_changes(uint64_t) { throw std::runtime_error("not yet implemented"); }
+
+evmc::bytes32 Buffer::state_root_hash() const { throw std::runtime_error("not yet implemented"); }
+
 }  // namespace silkworm::db

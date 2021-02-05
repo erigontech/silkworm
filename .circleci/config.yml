@@ -70,6 +70,7 @@ jobs:
             sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 50
             gcc --version
             g++ --version
+      - checkout
       - build
       - test
 
@@ -80,6 +81,7 @@ jobs:
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
     steps:
+      - checkout
       - build
       - run:
           name: "Core unit tests"
@@ -121,6 +123,7 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
+      - checkout
       - run:
           name: "Install WASI SDK"
           working_directory: ~/tmp1

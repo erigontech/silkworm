@@ -1,4 +1,5 @@
 #include "roaring64map.hh"
+#include <optional>
 
 namespace silkworm::bitmapdb{
 // Return value in bitmap that is higher than cap

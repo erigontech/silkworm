@@ -46,35 +46,21 @@ static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
 
 static const fs::path kTransactionDir{kRootDir / "TransactionTests"};
 
-static const std::set<fs::path> kSlowTests{
+static const std::set<fs::path> kExcludedTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
-};
 
-// TODO[Issue #23] make the failing tests work
-static const std::set<fs::path> kFailingTests{
-    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "GasLimitHigherThan2p63m1.json",
-    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongCoinbase.json",
-    kBlockchainDir / "InvalidBlocks" / "bcInvalidHeaderTest" / "wrongStateRoot.json",
-    kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
-    kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity" / "incorrectUncleTimestamp2.json",
-    kBlockchainDir / "InvalidBlocks" / "bcUncleTest" / "EqualUncleInTwoDifferentBlocks.json",
-
-    kBlockchainDir / "TransitionTests",
-
-    // Reorgs are not supported yet
-    kBlockchainDir / "ValidBlocks" / "bcForkStressTest",
-    kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
-    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest",
-
-    // Nonce >= 2^64 is not supported
+    // Nonce >= 2^64 is not supported.
+    // Geth excludes this test as well:
+    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L40
     kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
 
-    // Gas limit >= 2^64 is not supported
+    // Gas limit >= 2^64 is not supported; see EIP-1985.
+    // Geth excludes this test as well:
+    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
-constexpr size_t kColumnWidth{60};
+constexpr size_t kColumnWidth{80};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",
@@ -250,7 +236,7 @@ void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
 
 enum Status { kPassed, kFailed, kSkipped };
 
-Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer& state) {
+Status run_block(const nlohmann::json& b, const ChainConfig& config, MemoryBuffer& state) {
     bool invalid{b.contains("expectException")};
 
     std::optional<Bytes> rlp{from_hex(b["rlp"].get<std::string>())};
@@ -282,6 +268,12 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer
         return kFailed;
     }
 
+    if (block.header.number != state.current_block_number() + 1) {
+        // TODO[Issue #23] support reorgs
+        std::cout << "Reorgs are not supported yet\n";
+        return kSkipped;
+    }
+
     std::pair<std::vector<Receipt>, ValidationError> res{execute_block(block, state, config)};
     if (res.second != ValidationError::kOk) {
         if (invalid) {
@@ -292,17 +284,33 @@ Status run_block(const nlohmann::json& b, const ChainConfig& config, StateBuffer
     }
 
     if (invalid) {
+        if (b["expectException"].get<std::string>() == "InvalidStateRoot") {
+            evmc::bytes32 state_root{state.state_root_hash()};
+            if (state_root == block.header.state_root) {
+                std::cout << "Expected InvalidStateRoot\n";
+                return kFailed;
+            } else {
+                state.unwind_block(block.header.number);
+                return kPassed;
+            }
+        }
+
         std::cout << "Invalid block executed successfully\n";
         std::cout << "Expected: " << b["expectException"] << "\n";
         return kFailed;
     }
 
-    state.insert_header(block.header);
+    state.insert_block(block);
 
     return kPassed;
 }
 
-bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
+bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
+    if (state.number_of_accounts() != expected.size()) {
+        std::cout << "Account number mismatch: " << state.number_of_accounts() << " != " << expected.size() << "\n";
+        return false;
+    }
+
     for (const auto& entry : expected.items()) {
         evmc::address address{to_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};
@@ -339,6 +347,13 @@ bool post_check(const StateBuffer& state, const nlohmann::json& expected) {
             return false;
         }
 
+        size_t storage_size{state.storage_size(address, account->incarnation)};
+        if (storage_size != j["storage"].size()) {
+            std::cout << "Storage size mismatch for " << entry.key() << ":\n";
+            std::cout << storage_size << " != " << j["storage"].size() << "\n";
+            return false;
+        }
+
         for (const auto& storage : j["storage"].items()) {
             Bytes key{from_hex(storage.key()).value()};
             Bytes expected_value{from_hex(storage.value().get<std::string>()).value()};
@@ -369,7 +384,7 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     check_rlp_err(rlp::decode(genesis_view, genesis_block));
 
     MemoryBuffer state;
-    state.insert_header(genesis_block.header);
+    state.insert_block(genesis_block);
 
     std::string network{j["network"].get<std::string>()};
     const ChainConfig& config{kNetworkConfig.at(network)};
@@ -575,7 +590,7 @@ int main() {
     }
 
     for (auto i = fs::recursive_directory_iterator(kBlockchainDir); i != fs::recursive_directory_iterator{}; ++i) {
-        if (kSlowTests.count(*i) || kFailingTests.count(*i)) {
+        if (kExcludedTests.count(*i)) {
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, blockchain_test);
@@ -583,7 +598,7 @@ int main() {
     }
 
     for (auto i = fs::recursive_directory_iterator(kTransactionDir); i != fs::recursive_directory_iterator{}; ++i) {
-        if (kFailingTests.count(*i)) {
+        if (kExcludedTests.count(*i)) {
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, transaction_test);

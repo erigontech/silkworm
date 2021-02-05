@@ -38,7 +38,12 @@ Collector::~Collector() {
 void Collector::flush_buffer() {
     if (buffer_.size()) {
         buffer_.sort();
-        file_providers_.emplace_back(new FileProvider(work_path_, file_providers_.size()));
+
+        /* Build a unique file name to pass FileProvider */
+        fs::path new_file_path{fs::path(work_path_) / fs::path(std::to_string(unique_id_) + "-" +
+                                                               std::to_string(file_providers_.size()) + ".bin")};
+
+        file_providers_.emplace_back(new FileProvider(new_file_path.string(), file_providers_.size()));
         file_providers_.back()->flush(buffer_);
         buffer_.clear();
     }

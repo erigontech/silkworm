@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-201 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -43,12 +43,16 @@ bool read_storage_mode_receipts(lmdb::Transaction& txn);
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
                                        const uint8_t (&hash)[kHashLength]);
 
+std::optional<BlockBody> read_body(lmdb::Transaction& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength],
+                                   bool read_senders);
+
 // See TG ReadBlockByNumber
 // might throw MissingSenders
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders);
 
 // See TG ReadSenders
-std::vector<evmc::address> read_senders(lmdb::Transaction& txn, int64_t block_number, const evmc::bytes32& block_hash);
+std::vector<evmc::address> read_senders(lmdb::Transaction& txn, int64_t block_number,
+                                        const uint8_t (&hash)[kHashLength]);
 
 // Overload
 std::vector<Transaction> read_transactions(lmdb::Table& txn_table, uint64_t base_id, uint64_t count);

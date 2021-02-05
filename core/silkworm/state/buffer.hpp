@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -47,9 +47,13 @@ class StateBuffer {
 
     virtual std::optional<BlockHeader> read_header(uint64_t block_number,
                                                    const evmc::bytes32& block_hash) const noexcept = 0;
+
+    virtual std::optional<BlockBody> read_body(uint64_t block_number,
+                                               const evmc::bytes32& block_hash) const noexcept = 0;
+
     ///@}
 
-    virtual void insert_header(const BlockHeader& block_header) = 0;
+    virtual void insert_block(const Block& block) = 0;
 
     virtual void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) = 0;
 

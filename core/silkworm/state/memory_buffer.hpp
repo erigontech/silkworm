@@ -19,6 +19,7 @@
 
 #include <silkworm/state/buffer.hpp>
 #include <unordered_map>
+#include <vector>
 
 namespace silkworm {
 
@@ -37,7 +38,9 @@ class MemoryBuffer : public StateBuffer {
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
 
-    void insert_header(const BlockHeader& block_header) override;
+    std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
+
+    void insert_block(const Block& block) override;
 
     void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
 
@@ -52,9 +55,25 @@ class MemoryBuffer : public StateBuffer {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
+    size_t number_of_accounts() const;
+
+    size_t storage_size(const evmc::address& address, uint64_t incarnation) const;
+
     evmc::bytes32 state_root_hash() const;
 
+    uint64_t current_block_number() const;
+
+    void unwind_block(uint64_t block_number);
+
   private:
+    // address -> initial value
+    using AccountChanges = std::unordered_map<evmc::address, std::optional<Account>>;
+
+    // address -> incarnation -> location -> initial value
+    using StorageChanges =
+        std::unordered_map<evmc::address,
+                           std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, evmc::bytes32>>>;
+
     evmc::bytes32 account_storage_root(const evmc::address& address, uint64_t incarnation) const;
 
     std::unordered_map<evmc::address, Account> accounts_;
@@ -69,7 +88,15 @@ class MemoryBuffer : public StateBuffer {
         storage_;
 
     // block number -> hash -> header
-    std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, BlockHeader>> headers_;
+    std::vector<std::unordered_map<evmc::bytes32, BlockHeader>> headers_;
+
+    // block number -> hash -> body
+    std::vector<std::unordered_map<evmc::bytes32, BlockBody>> bodies_;
+
+    std::unordered_map<uint64_t, AccountChanges> account_changes_;  // per block
+    std::unordered_map<uint64_t, StorageChanges> storage_changes_;  // per block
+
+    uint64_t block_number_{0};
 };
 
 }  // namespace silkworm

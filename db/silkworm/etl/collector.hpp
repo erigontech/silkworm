@@ -57,12 +57,24 @@ class Collector {
     size_t size() const;
 
   private:
-
     std::string set_work_path(const char* provided_work_path);
-    void flush_buffer();         // Write buffer to file
+    void flush_buffer();  // Write buffer to file
 
     std::string work_path_;
     Buffer buffer_;
+
+    /*
+    * TL;DR; In no way two instances of collector can have
+    * the same unique_id_
+    *
+    * This id will be unique across the application
+    * No other object will be located at the same address
+    * If this object gets destroyed another object may get
+    * the same address but in such case all dependant files
+    * would be already destroyed too thus keeping file
+    * names uniqueness.
+    */
+    uintptr_t unique_id_{reinterpret_cast<uintptr_t>(this)};
 
     std::vector<std::unique_ptr<FileProvider>> file_providers_;
     size_t size_{0};

@@ -31,7 +31,6 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
     assert(mdb_txn);
 
     using namespace silkworm;
-    Logger::default_logger().set_local_timezone(true);  // for compatibility with TG logging
 
     const ChainConfig* config{lookup_chain_config(chain_id)};
     if (!config) {

@@ -171,6 +171,10 @@ void delete_block(Block* x) { delete x; }
 
 BlockHeader* block_header(Block* b) { return &(b->header); }
 
+uint64_t header_number(const BlockHeader* header) { return header->number; }
+
+uint8_t* header_state_root(BlockHeader* header) { return header->state_root.bytes; }
+
 void block_recover_senders(Block* b, const ChainConfig* config) { b->recover_senders(*config); }
 
 ValidationError block_pre_validate(const Block* b, StateBuffer* state, const ChainConfig* config) {
@@ -185,6 +189,10 @@ MemoryBuffer* new_state() { return new MemoryBuffer; }
 
 void delete_state(MemoryBuffer* x) { delete x; }
 
+void state_unwind_block(MemoryBuffer* state, uint64_t block_number) { state->unwind_block(block_number); }
+
+uint64_t state_current_block_number(const MemoryBuffer* state) { return state->current_block_number(); }
+
 uint8_t* state_root_hash_new(const MemoryBuffer* state) {
     evmc::bytes32 root_hash{state->state_root_hash()};
     void* out{new_buffer(kHashLength)};
@@ -195,6 +203,12 @@ uint8_t* state_root_hash_new(const MemoryBuffer* state) {
 static evmc::address address_from_ptr(const uint8_t* ptr) { return to_address({ptr, kAddressLength}); }
 
 static evmc::bytes32 bytes32_from_ptr(const uint8_t* ptr) { return to_bytes32({ptr, kHashLength}); }
+
+size_t state_number_of_accounts(const MemoryBuffer* state) { return state->number_of_accounts(); }
+
+size_t state_storage_size(const MemoryBuffer* state, const uint8_t* address, const Account* account) {
+    return state->storage_size(address_from_ptr(address), account->incarnation);
+}
 
 Account* state_read_account_new(const StateBuffer* state, const uint8_t* address) {
     std::optional<Account> account{state->read_account(address_from_ptr(address))};
@@ -221,7 +235,7 @@ Bytes* state_read_storage_new(const StateBuffer* state, const uint8_t* address, 
     return out;
 }
 
-void state_insert_header(StateBuffer* state, const BlockHeader* header) { state->insert_header(*header); }
+void state_insert_block(StateBuffer* state, const Block* block) { state->insert_block(*block); }
 
 void state_update_account(StateBuffer* state, const uint8_t* address, const Account* current_ptr) {
     std::optional<Account> current_opt;

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -52,9 +52,11 @@ class Buffer : public StateBuffer {
 
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
+
+    std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
     ///@}
 
-    void insert_header(const BlockHeader& block_header) override;
+    void insert_block(const Block& block) override;
 
     void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
 
@@ -97,6 +99,8 @@ class Buffer : public StateBuffer {
     std::optional<uint64_t> historical_block_{};
 
     absl::btree_map<Bytes, BlockHeader> headers_{};
+    absl::btree_map<Bytes, BlockBody> bodies_{};
+
     absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
 
     // address -> incarnation -> location -> value

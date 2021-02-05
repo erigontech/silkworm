@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -29,8 +29,13 @@ namespace silkworm {
 class teebuf: public std::streambuf {
 public:
     // Construct a streambuf which tees output to the supplied streambufs.
-    teebuf(std::streambuf* sb1, std::streambuf* sb2)
-      : sb1(sb1), sb2(sb2) {}
+    teebuf(std::streambuf* b1, std::streambuf* b2)
+      : sb1(b1), sb2(b2) {}
+
+    void set_streams(std::streambuf* b1, std::streambuf* b2) {
+        sb1 = b1;
+        sb2 = b2;
+    }
 
 private:
     // This tee buffer has no buffer. So every character "overflows"
@@ -60,6 +65,10 @@ public:
     // Construct an ostream which tees output to the supplied ostreams.
    teestream(std::ostream & o1, std::ostream & o2)
       : std::ostream(&tbuf), tbuf(o1.rdbuf(), o2.rdbuf()) {}
+
+    void set_streams(std::streambuf* sb1, std::streambuf* sb2) {
+        tbuf.set_streams(sb1, sb2);
+    }
 
 private:
     teebuf tbuf;

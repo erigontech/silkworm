@@ -21,7 +21,7 @@
 
 #include "history_index.hpp"
 #include "tables.hpp"
-
+#include "bitmapdb.hpp"
 namespace silkworm::db {
 
 static void check_rlp_err(rlp::DecodingError err) {
@@ -144,6 +144,18 @@ std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code
     return Bytes{*val};
 }
 
+/*static auto from_db_format(size_t len, Bytes& database_key, Bytes& database_value) {
+    struct result{uint64_t block_number; Bytes key; Bytes value;};
+    auto block_number{boost::endian::load_big_u64(&database_key[0])};
+    if (database_key.size() == 8) {
+        return result{block_number, database_value.substr(0, len), database_value.substr(len)};
+    } else {
+        Bytes key(len + kIncarnationLength + kHashLength, '\0');
+        std::memcpy(&key[0], &database_key[8], database_key.size() - 8);
+        std::memcpy(&key[database_key.size() - 8], &database_value[0], kHashLength);
+        return result{block_number, key, database_value.substr(kHashLength)};
+    }
+}*/
 // TG FindByHistory for account
 static std::optional<ByteView> find_account_in_history(lmdb::Transaction& txn, const evmc::address& address,
                                                        uint64_t block_number) {
@@ -153,23 +165,20 @@ static std::optional<ByteView> find_account_in_history(lmdb::Transaction& txn, c
         return std::nullopt;
     }
 
-    ByteView k{entry->key};
-    if (!has_prefix(k, full_view(address))) {
+    roaring::Roaring64Map bitmap;
+    bitmap.readSafe((const char *)entry->key.data(), entry->key.size());
+
+    if (!has_prefix(entry->key, full_view(address))) {
         return std::nullopt;
     }
 
-    std::optional<history_index::SearchResult> res{history_index::find(entry->value, block_number)};
-    if (!res) {
+    auto changeset_block_number{bitmapdb::seek_in_bitmap(bitmap, block_number)};
+    if (!changeset_block_number) {
         return std::nullopt;
-    }
-
-    if (res->new_record) {
-        return ByteView{};
     }
 
     auto change_table{txn.open(table::kPlainAccountChangeSet)};
-    uint64_t change_block{res->change_block};
-    return change_table->get(block_key(change_block), full_view(address));
+    return change_table->get(block_key(*changeset_block_number), full_view(address));
 }
 
 // TG FindByHistory for storage
@@ -177,25 +186,25 @@ static std::optional<ByteView> find_storage_in_history(lmdb::Transaction& txn, c
                                                        uint64_t incarnation, const evmc::bytes32& location,
                                                        uint64_t block_number) {
     auto history_table{txn.open(table::kStorageHistory)};
-    std::optional<Entry> entry{history_table->seek(storage_history_key(address, location, block_number))};
+    std::optional<Entry> entry{history_table->seek(account_history_key(address, block_number))};
     if (!entry) {
         return std::nullopt;
     }
 
-    ByteView k{entry->key};
-    if (k.substr(0, kAddressLength) != full_view(address) ||
-        k.substr(kAddressLength, kHashLength) != full_view(location)) {
+    roaring::Roaring64Map bitmap;
+    bitmap.readSafe((const char *)entry->key.data(), entry->key.size());
+
+    if (!has_prefix(entry->key, full_view(address))) {
         return std::nullopt;
     }
 
-    std::optional<history_index::SearchResult> res{history_index::find(entry->value, block_number)};
-    if (!res) {
+    auto changeset_block_number{bitmapdb::seek_in_bitmap(bitmap, block_number)};
+    if (!changeset_block_number) {
         return std::nullopt;
     }
 
     auto change_table{txn.open(table::kPlainStorageChangeSet)};
-    uint64_t change_block{res->change_block};
-    return change_table->get(storage_change_key(change_block, address, incarnation), full_view(location));
+    return change_table->get(storage_change_key(*changeset_block_number, address, incarnation), full_view(location));
 }
 
 std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address& address,

@@ -172,7 +172,7 @@ static std::optional<ByteView> find_account_in_history(lmdb::Transaction& txn, c
         return std::nullopt;
     }
 
-    auto changeset_block_number{bitmapdb::seek_in_bitmap(bitmap, block_number)};
+    auto changeset_block_number{bitmap::seek_in_bitmap(bitmap, block_number)};
     if (!changeset_block_number) {
         return std::nullopt;
     }
@@ -198,7 +198,7 @@ static std::optional<ByteView> find_storage_in_history(lmdb::Transaction& txn, c
         return std::nullopt;
     }
 
-    auto changeset_block_number{bitmapdb::seek_in_bitmap(bitmap, block_number)};
+    auto changeset_block_number{bitmap::seek_in_bitmap(bitmap, block_number)};
     if (!changeset_block_number) {
         return std::nullopt;
     }

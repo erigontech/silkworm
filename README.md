@@ -17,11 +17,6 @@ as outlined in its [release commentary](https://ledgerwatch.github.io/turbo_geth
 git clone --recurse-submodules https://github.com/torquem-ch/silkworm.git
 ```
 
-To update the submodules later on run
-```
-git submodule update --init --recursive
-```
-
 ## Linux & macOS
 Building silkworm requires:
 * C++17 compiler (GCC or Clang)

@@ -17,4 +17,6 @@
 set(CMAKE_C_COMPILER /opt/wasi-sdk/bin/clang)
 set(CMAKE_CXX_COMPILER /opt/wasi-sdk/bin/clang++)
 
+add_definitions(-DCATCH_CONFIG_NO_POSIX_SIGNALS)
+
 include(${CMAKE_CURRENT_LIST_DIR}/toolchain.cmake)

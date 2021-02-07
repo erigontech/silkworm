@@ -21,7 +21,7 @@ git clone --recurse-submodules https://github.com/torquem-ch/silkworm.git
 Building silkworm requires:
 * C++17 compiler (GCC or Clang)
 * [CMake](http://cmake.org)
-* [GMP](http://gmplib.org) (`sudo apt-get install libgmp3-dev` or `brew install gmp`)
+* [GMP](http://gmplib.org) (`sudo apt-get install libgmp3-dev` or `brew install gmp` or https://gmplib.org/manual/Installing-GMP)
 
 Once the prerequisites are installed, bootstrap cmake by running
 ```

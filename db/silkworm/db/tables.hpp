@@ -26,8 +26,7 @@ see its common/dbutils/bucket.go.
 namespace silkworm::db::table {
 
 /* Canonical tables */
-constexpr lmdb::TableConfig kMAIN_DBI{0};
-constexpr lmdb::TableConfig kAccountChangeSet{"ACS", MDB_DUPSORT};
+constexpr lmdb::TableConfig kMAIN_DBI{nullptr};
 constexpr lmdb::TableConfig kAccountHistory{"hAT"};
 constexpr lmdb::TableConfig kBlockBodies{"b"};
 constexpr lmdb::TableConfig kBlockHeaders{"h"};
@@ -64,14 +63,12 @@ constexpr lmdb::TableConfig kPreimage{"secure-key-"};
 constexpr lmdb::TableConfig kSenders{"txSenders"};
 constexpr lmdb::TableConfig kSequence{"sequence"};
 constexpr lmdb::TableConfig kSnapshotInfo{"SNINFO"};
-constexpr lmdb::TableConfig kStorageChangeSet{"SCS", MDB_DUPSORT};
 constexpr lmdb::TableConfig kStorageHistory{"hST"};
 constexpr lmdb::TableConfig kSyncStageProgress{"SSP2"};
 constexpr lmdb::TableConfig kSyncStageUnwind{"SSU2"};
 constexpr lmdb::TableConfig kTxLookup{"l"};
 
 constexpr lmdb::TableConfig kTables[]{
-    kAccountChangeSet,
     kAccountHistory,
     kBlockBodies,
     kBlockHeaders,
@@ -107,7 +104,6 @@ constexpr lmdb::TableConfig kTables[]{
     kSenders,
     kSequence,
     kSnapshotInfo,
-    kStorageChangeSet,
     kStorageHistory,
     kSyncStageProgress,
     kSyncStageUnwind,

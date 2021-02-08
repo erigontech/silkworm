@@ -53,6 +53,8 @@ class StateBuffer {
 
     virtual std::optional<intx::uint256> total_difficulty(uint64_t block_number,
                                                           const evmc::bytes32& block_hash) const noexcept = 0;
+
+    virtual std::pair<uint64_t, evmc::bytes32> current_canonical_block() const = 0;
     ///@}
 
     virtual evmc::bytes32 insert_block(const Block& block) = 0;

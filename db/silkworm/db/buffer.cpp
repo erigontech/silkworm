@@ -248,6 +248,10 @@ void Buffer::canonize_block(uint64_t, const evmc::bytes32&) { throw std::runtime
 
 void Buffer::decanonize_block(uint64_t) { throw std::runtime_error("not yet implemented"); }
 
+std::pair<uint64_t, evmc::bytes32> Buffer::current_canonical_block() const {
+    throw std::runtime_error("not yet implemented");
+}
+
 evmc::bytes32 Buffer::insert_block(const Block& block) {
     Bytes rlp{};
     rlp::encode(rlp, block.header);

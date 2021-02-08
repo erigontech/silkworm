@@ -65,8 +65,6 @@ uint64_t MemoryBuffer::previous_incarnation(const evmc::address& address) const 
     return it->second;
 }
 
-uint64_t MemoryBuffer::current_block_number() const { return headers_.size() - 1; }
-
 std::optional<BlockHeader> MemoryBuffer::read_header(uint64_t block_number,
                                                      const evmc::bytes32& block_hash) const noexcept {
     if (block_number >= headers_.size()) {
@@ -104,6 +102,10 @@ std::optional<intx::uint256> MemoryBuffer::total_difficulty(uint64_t block_numbe
         return std::nullopt;
     }
     return it->second;
+}
+
+std::pair<uint64_t, evmc::bytes32> MemoryBuffer::current_canonical_block() const {
+    return {canonical_hashes_.size(), canonical_hashes_.back()};
 }
 
 evmc::bytes32 MemoryBuffer::insert_block(const Block& block) {

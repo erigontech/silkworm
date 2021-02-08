@@ -105,8 +105,6 @@ SILKWORM_EXPORT silkworm::ValidationError block_execute(const silkworm::Block* b
 SILKWORM_EXPORT silkworm::MemoryBuffer* new_state();
 SILKWORM_EXPORT void delete_state(silkworm::MemoryBuffer* x);
 
-SILKWORM_EXPORT uint64_t state_current_block_number(const silkworm::MemoryBuffer* state);
-
 SILKWORM_EXPORT size_t state_number_of_accounts(const silkworm::MemoryBuffer* state);
 
 SILKWORM_EXPORT size_t state_storage_size(const silkworm::MemoryBuffer* state, const uint8_t* address,

@@ -189,8 +189,6 @@ MemoryBuffer* new_state() { return new MemoryBuffer; }
 
 void delete_state(MemoryBuffer* x) { delete x; }
 
-uint64_t state_current_block_number(const MemoryBuffer* state) { return state->current_block_number(); }
-
 uint8_t* state_root_hash_new(const MemoryBuffer* state) {
     evmc::bytes32 root_hash{state->state_root_hash()};
     void* out{new_buffer(kHashLength)};

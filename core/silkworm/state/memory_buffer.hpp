@@ -43,6 +43,8 @@ class MemoryBuffer : public StateBuffer {
     std::optional<intx::uint256> total_difficulty(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const noexcept override;
 
+    std::pair<uint64_t, evmc::bytes32> current_canonical_block() const override;
+
     evmc::bytes32 insert_block(const Block& block) override;
 
     void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override;
@@ -69,8 +71,6 @@ class MemoryBuffer : public StateBuffer {
     size_t number_of_accounts() const;
 
     size_t storage_size(const evmc::address& address, uint64_t incarnation) const;
-
-    uint64_t current_block_number() const;
 
   private:
     // address -> initial value

@@ -93,7 +93,7 @@ std::optional<BlockBody> MemoryBuffer::read_body(uint64_t block_number,
     return it->second;
 }
 
-void MemoryBuffer::insert_block(const Block& block) {
+void MemoryBuffer::insert_block(const Block& block, bool canonical) {
     uint64_t block_number{block.header.number};
 
     Bytes rlp;
@@ -111,7 +111,16 @@ void MemoryBuffer::insert_block(const Block& block) {
         bodies_.resize(block_number + 1);
     }
     bodies_[block_number][hash_key] = block;
+
+    if (canonical) {
+        if (canonical_hashes_.size() <= block_number) {
+            canonical_hashes_.resize(block_number + 1);
+        }
+        canonical_hashes_[block_number] = hash_key;
+    }
 }
+
+void MemoryBuffer::decanonize_block(uint64_t block_number) { canonical_hashes_.resize(block_number); }
 
 void MemoryBuffer::insert_receipts(uint64_t, const std::vector<Receipt>&) {}
 

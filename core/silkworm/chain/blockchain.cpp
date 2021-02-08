@@ -22,7 +22,7 @@ namespace silkworm {
 
 Blockchain::Blockchain(StateBuffer& state, const ChainConfig& config, const Block& genesis_block)
     : state_{state}, config_{config} {
-    state_.insert_block(genesis_block);
+    state_.insert_block(genesis_block, /*canonical=*/true);
 }
 
 ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
@@ -48,7 +48,7 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
         }
     }
 
-    state_.insert_block(block);
+    state_.insert_block(block, /*canonical=*/true);
 
     return ValidationError::kOk;
 }

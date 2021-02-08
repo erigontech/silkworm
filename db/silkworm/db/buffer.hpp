@@ -56,7 +56,9 @@ class Buffer : public StateBuffer {
     std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
     ///@}
 
-    void insert_block(const Block& block) override;
+    void insert_block(const Block& block, bool canonical) override;
+
+    void decanonize_block(uint64_t block_number) override;
 
     void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
 

@@ -52,7 +52,9 @@ class StateBuffer {
                                                const evmc::bytes32& block_hash) const noexcept = 0;
     ///@}
 
-    virtual void insert_block(const Block& block) = 0;
+    virtual void insert_block(const Block& block, bool canonical) = 0;
+
+    virtual void decanonize_block(uint64_t block_number) = 0;
 
     virtual void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) = 0;
 

@@ -40,7 +40,9 @@ class MemoryBuffer : public StateBuffer {
 
     std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
 
-    void insert_block(const Block& block) override;
+    void insert_block(const Block& block, bool canonical) override;
+
+    void decanonize_block(uint64_t block_number) override;
 
     void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
 
@@ -92,6 +94,8 @@ class MemoryBuffer : public StateBuffer {
 
     // block number -> hash -> body
     std::vector<std::unordered_map<evmc::bytes32, BlockBody>> bodies_;
+
+    std::vector<evmc::bytes32> canonical_hashes_;
 
     std::unordered_map<uint64_t, AccountChanges> account_changes_;  // per block
     std::unordered_map<uint64_t, StorageChanges> storage_changes_;  // per block

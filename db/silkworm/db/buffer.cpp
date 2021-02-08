@@ -244,7 +244,7 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     }
 }
 
-void Buffer::insert_block(const Block& block) {
+void Buffer::insert_block(const Block& block, bool) {
     Bytes rlp{};
     rlp::encode(rlp, block.header);
     ethash::hash256 hash{keccak256(rlp)};
@@ -252,6 +252,8 @@ void Buffer::insert_block(const Block& block) {
     headers_[key] = block.header;
     bodies_[key] = block;
 }
+
+void Buffer::decanonize_block(uint64_t) { throw std::runtime_error("not yet implemented"); }
 
 std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
     Bytes key{block_key(block_number, block_hash.bytes)};

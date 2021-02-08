@@ -233,8 +233,6 @@ Bytes* state_read_storage_new(const StateBuffer* state, const uint8_t* address, 
     return out;
 }
 
-void state_insert_block(StateBuffer* state, const Block* block) { state->insert_block(*block); }
-
 void state_update_account(StateBuffer* state, const uint8_t* address, const Account* current_ptr) {
     std::optional<Account> current_opt;
     if (current_ptr) {

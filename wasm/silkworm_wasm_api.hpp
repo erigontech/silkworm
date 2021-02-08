@@ -126,8 +126,6 @@ SILKWORM_EXPORT silkworm::Bytes* state_read_storage_new(const silkworm::StateBuf
                                                         const silkworm::Account* account,
                                                         const silkworm::Bytes* location);
 
-SILKWORM_EXPORT void state_insert_block(silkworm::StateBuffer* state, const silkworm::Block* block);
-
 SILKWORM_EXPORT void state_update_account(silkworm::StateBuffer* state, const uint8_t* address,
                                           const silkworm::Account* current);
 

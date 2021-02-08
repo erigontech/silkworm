@@ -22,7 +22,8 @@ namespace silkworm {
 
 Blockchain::Blockchain(StateBuffer& state, const ChainConfig& config, const Block& genesis_block)
     : state_{state}, config_{config} {
-    state_.insert_block(genesis_block, /*canonical=*/true);
+    evmc::bytes32 hash{state_.insert_block(genesis_block)};
+    state_.canonize_block(genesis_block.header.number, hash);
 }
 
 ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
@@ -48,7 +49,8 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
         }
     }
 
-    state_.insert_block(block, /*canonical=*/true);
+    evmc::bytes32 hash{state_.insert_block(block)};
+    state_.canonize_block(block.header.number, hash);
 
     return ValidationError::kOk;
 }

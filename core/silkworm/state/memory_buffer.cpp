@@ -93,31 +93,56 @@ std::optional<BlockBody> MemoryBuffer::read_body(uint64_t block_number,
     return it->second;
 }
 
-void MemoryBuffer::insert_block(const Block& block, bool canonical) {
+std::optional<intx::uint256> MemoryBuffer::total_difficulty(uint64_t block_number,
+                                                            const evmc::bytes32& block_hash) const noexcept {
+    if (block_number >= difficulty_.size()) {
+        return std::nullopt;
+    }
+
+    auto it{difficulty_[block_number].find(block_hash)};
+    if (it == difficulty_[block_number].end()) {
+        return std::nullopt;
+    }
+    return it->second;
+}
+
+evmc::bytes32 MemoryBuffer::insert_block(const Block& block) {
     uint64_t block_number{block.header.number};
 
     Bytes rlp;
     rlp::encode(rlp, block.header);
-    ethash::hash256 hash{keccak256(rlp)};
-    evmc::bytes32 hash_key;
-    std::memcpy(hash_key.bytes, hash.bytes, kHashLength);
+    ethash::hash256 ethash_hash{keccak256(rlp)};
+    evmc::bytes32 hash;
+    std::memcpy(hash.bytes, ethash_hash.bytes, kHashLength);
 
     if (headers_.size() <= block_number) {
         headers_.resize(block_number + 1);
     }
-    headers_[block_number][hash_key] = block.header;
+    headers_[block_number][hash] = block.header;
 
     if (bodies_.size() <= block_number) {
         bodies_.resize(block_number + 1);
     }
-    bodies_[block_number][hash_key] = block;
+    bodies_[block_number][hash] = block;
 
-    if (canonical) {
-        if (canonical_hashes_.size() <= block_number) {
-            canonical_hashes_.resize(block_number + 1);
-        }
-        canonical_hashes_[block_number] = hash_key;
+    if (difficulty_.size() <= block_number) {
+        difficulty_.resize(block_number + 1);
     }
+    if (block_number == 0) {
+        difficulty_[block_number][hash] = 0;
+    } else {
+        difficulty_[block_number][hash] = difficulty_[block_number - 1][block.header.parent_hash];
+    }
+    difficulty_[block_number][hash] += block.header.difficulty;
+
+    return hash;
+}
+
+void MemoryBuffer::canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) {
+    if (canonical_hashes_.size() <= block_number) {
+        canonical_hashes_.resize(block_number + 1);
+    }
+    canonical_hashes_[block_number] = block_hash;
 }
 
 void MemoryBuffer::decanonize_block(uint64_t block_number) { canonical_hashes_.resize(block_number); }

@@ -54,9 +54,14 @@ class Buffer : public StateBuffer {
                                            const evmc::bytes32& block_hash) const noexcept override;
 
     std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
+
+    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
+                                                  const evmc::bytes32& block_hash) const noexcept override;
     ///@}
 
-    void insert_block(const Block& block, bool canonical) override;
+    evmc::bytes32 insert_block(const Block& block) override;
+
+    void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override;
 
     void decanonize_block(uint64_t block_number) override;
 
@@ -106,6 +111,7 @@ class Buffer : public StateBuffer {
 
     absl::btree_map<Bytes, BlockHeader> headers_{};
     absl::btree_map<Bytes, BlockBody> bodies_{};
+    absl::btree_map<Bytes, intx::uint256> difficulty_{};
 
     absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
 

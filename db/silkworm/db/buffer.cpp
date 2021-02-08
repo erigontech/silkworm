@@ -244,16 +244,43 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     }
 }
 
-void Buffer::insert_block(const Block& block, bool) {
-    Bytes rlp{};
-    rlp::encode(rlp, block.header);
-    ethash::hash256 hash{keccak256(rlp)};
-    Bytes key{block_key(block.header.number, hash.bytes)};
-    headers_[key] = block.header;
-    bodies_[key] = block;
-}
+void Buffer::canonize_block(uint64_t, const evmc::bytes32&) { throw std::runtime_error("not yet implemented"); }
 
 void Buffer::decanonize_block(uint64_t) { throw std::runtime_error("not yet implemented"); }
+
+evmc::bytes32 Buffer::insert_block(const Block& block) {
+    Bytes rlp{};
+    rlp::encode(rlp, block.header);
+    ethash::hash256 ethash_hash{keccak256(rlp)};
+    uint64_t block_number{block.header.number};
+    Bytes key{block_key(block_number, ethash_hash.bytes)};
+    headers_[key] = block.header;
+    bodies_[key] = block;
+
+    if (block_number == 0) {
+        difficulty_[key] = 0;
+    } else {
+        std::optional<intx::uint256> parent_difficulty{total_difficulty(block_number - 1, block.header.parent_hash)};
+        difficulty_[key] = parent_difficulty.value_or(0);
+    }
+    difficulty_[key] += block.header.difficulty;
+
+    evmc::bytes32 hash;
+    std::memcpy(hash.bytes, ethash_hash.bytes, kHashLength);
+    return hash;
+}
+
+std::optional<intx::uint256> Buffer::total_difficulty(uint64_t block_number,
+                                                      const evmc::bytes32& block_hash) const noexcept {
+    Bytes key{block_key(block_number, block_hash.bytes)};
+    if (auto it{difficulty_.find(key)}; it != difficulty_.end()) {
+        return it->second;
+    }
+    if (!txn_) {
+        return std::nullopt;
+    }
+    return db::read_total_difficulty(*txn_, block_number, block_hash.bytes);
+}
 
 std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
     Bytes key{block_key(block_number, block_hash.bytes)};

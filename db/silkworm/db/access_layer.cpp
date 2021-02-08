@@ -33,14 +33,27 @@ static void check_rlp_err(rlp::DecodingError err) {
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
                                        const uint8_t (&hash)[kHashLength]) {
     auto table{txn.open(table::kBlockHeaders)};
-    std::optional<ByteView> header_rlp{table->get(block_key(block_number, hash))};
-    if (!header_rlp) {
+    std::optional<ByteView> rlp{table->get(block_key(block_number, hash))};
+    if (!rlp) {
         return std::nullopt;
     }
 
     BlockHeader header;
-    check_rlp_err(rlp::decode(*header_rlp, header));
+    check_rlp_err(rlp::decode(*rlp, header));
     return header;
+}
+
+std::optional<intx::uint256> read_total_difficulty(lmdb::Transaction& txn, uint64_t block_number,
+                                                   const uint8_t (&hash)[kHashLength]) {
+    auto table{txn.open(table::kBlockHeaders)};
+    std::optional<ByteView> rlp{table->get(total_difficulty_key(block_number, hash))};
+    if (!rlp) {
+        return std::nullopt;
+    }
+
+    intx::uint256 td{0};
+    check_rlp_err(rlp::decode(*rlp, td));
+    return td;
 }
 
 // TG ReadTransactions

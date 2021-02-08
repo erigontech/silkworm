@@ -50,9 +50,14 @@ class StateBuffer {
 
     virtual std::optional<BlockBody> read_body(uint64_t block_number,
                                                const evmc::bytes32& block_hash) const noexcept = 0;
+
+    virtual std::optional<intx::uint256> total_difficulty(uint64_t block_number,
+                                                          const evmc::bytes32& block_hash) const noexcept = 0;
     ///@}
 
-    virtual void insert_block(const Block& block, bool canonical) = 0;
+    virtual evmc::bytes32 insert_block(const Block& block) = 0;
+
+    virtual void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) = 0;
 
     virtual void decanonize_block(uint64_t block_number) = 0;
 

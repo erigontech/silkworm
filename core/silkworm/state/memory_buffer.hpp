@@ -40,7 +40,12 @@ class MemoryBuffer : public StateBuffer {
 
     std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
 
-    void insert_block(const Block& block, bool canonical) override;
+    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
+                                                  const evmc::bytes32& block_hash) const noexcept override;
+
+    evmc::bytes32 insert_block(const Block& block) override;
+
+    void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override;
 
     void decanonize_block(uint64_t block_number) override;
 
@@ -94,6 +99,9 @@ class MemoryBuffer : public StateBuffer {
 
     // block number -> hash -> body
     std::vector<std::unordered_map<evmc::bytes32, BlockBody>> bodies_;
+
+    // block number -> hash -> total difficulty
+    std::vector<std::unordered_map<evmc::bytes32, intx::uint256>> difficulty_;
 
     std::vector<evmc::bytes32> canonical_hashes_;
 

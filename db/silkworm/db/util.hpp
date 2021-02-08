@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -60,6 +60,9 @@ Bytes block_key(uint64_t block_number);
 
 // Turbo-Geth HeaderKey & BlockBodyKey
 Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
+
+// Turbo-Geth HeaderTDKey
+Bytes total_difficulty_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation);
 

@@ -67,7 +67,7 @@ class Buffer : public StateBuffer {
 
     ///@}
 
-    evmc::bytes32 insert_block(const Block& block) override;
+    void insert_block(const Block& block, const evmc::bytes32& hash) override;
 
     void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override;
 

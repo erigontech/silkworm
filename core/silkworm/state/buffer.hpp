@@ -63,7 +63,7 @@ class StateBuffer {
 
     ///@}
 
-    virtual evmc::bytes32 insert_block(const Block& block) = 0;
+    virtual void insert_block(const Block& block, const evmc::bytes32& hash) = 0;
 
     virtual void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) = 0;
 

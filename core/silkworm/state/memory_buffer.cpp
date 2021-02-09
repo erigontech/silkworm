@@ -114,14 +114,8 @@ std::optional<evmc::bytes32> MemoryBuffer::canonical_hash(uint64_t block_number)
     return canonical_hashes_[block_number];
 }
 
-evmc::bytes32 MemoryBuffer::insert_block(const Block& block) {
+void MemoryBuffer::insert_block(const Block& block, const evmc::bytes32& hash) {
     uint64_t block_number{block.header.number};
-
-    Bytes rlp;
-    rlp::encode(rlp, block.header);
-    ethash::hash256 ethash_hash{keccak256(rlp)};
-    evmc::bytes32 hash;
-    std::memcpy(hash.bytes, ethash_hash.bytes, kHashLength);
 
     if (headers_.size() <= block_number) {
         headers_.resize(block_number + 1);
@@ -142,8 +136,6 @@ evmc::bytes32 MemoryBuffer::insert_block(const Block& block) {
         difficulty_[block_number][hash] = difficulty_[block_number - 1][block.header.parent_hash];
     }
     difficulty_[block_number][hash] += block.header.difficulty;
-
-    return hash;
 }
 
 void MemoryBuffer::canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) {

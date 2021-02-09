@@ -49,7 +49,7 @@ class MemoryBuffer : public StateBuffer {
 
     std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
 
-    evmc::bytes32 insert_block(const Block& block) override;
+    void insert_block(const Block& block, const evmc::bytes32& hash) override;
 
     void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override;
 

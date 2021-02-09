@@ -254,12 +254,9 @@ void Buffer::canonize_block(uint64_t, const evmc::bytes32&) { throw std::runtime
 
 void Buffer::decanonize_block(uint64_t) { throw std::runtime_error("not yet implemented"); }
 
-evmc::bytes32 Buffer::insert_block(const Block& block) {
-    Bytes rlp{};
-    rlp::encode(rlp, block.header);
-    ethash::hash256 ethash_hash{keccak256(rlp)};
+void Buffer::insert_block(const Block& block, const evmc::bytes32& hash) {
     uint64_t block_number{block.header.number};
-    Bytes key{block_key(block_number, ethash_hash.bytes)};
+    Bytes key{block_key(block_number, hash.bytes)};
     headers_[key] = block.header;
     bodies_[key] = block;
 
@@ -270,10 +267,6 @@ evmc::bytes32 Buffer::insert_block(const Block& block) {
         difficulty_[key] = parent_difficulty.value_or(0);
     }
     difficulty_[key] += block.header.difficulty;
-
-    evmc::bytes32 hash;
-    std::memcpy(hash.bytes, ethash_hash.bytes, kHashLength);
-    return hash;
 }
 
 std::optional<intx::uint256> Buffer::total_difficulty(uint64_t block_number,

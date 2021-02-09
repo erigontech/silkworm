@@ -22,7 +22,8 @@ namespace silkworm {
 
 Blockchain::Blockchain(StateBuffer& state, const ChainConfig& config, const Block& genesis_block)
     : state_{state}, config_{config} {
-    evmc::bytes32 hash{state_.insert_block(genesis_block)};
+    evmc::bytes32 hash{genesis_block.header.hash()};
+    state_.insert_block(genesis_block, hash);
     state_.canonize_block(genesis_block.header.number, hash);
 }
 
@@ -33,8 +34,8 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
 
     block.recover_senders(config_);
 
-    // TODO(Andrew) hash should be calculated here
-    evmc::bytes32 hash{state_.insert_block(block)};
+    evmc::bytes32 hash{block.header.hash()};
+    state_.insert_block(block, hash);
 
     uint64_t current_canonical_block{state_.current_canonical_block()};
     intx::uint256 current_total_difficulty{

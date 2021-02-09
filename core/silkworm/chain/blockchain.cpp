@@ -35,24 +35,56 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
     block.recover_senders(config_);
 
     evmc::bytes32 hash{block.header.hash()};
+
+    uint64_t ancestor{canonical_ancestor(block.header, hash)};
+    uint64_t current_canonical_block{state_.current_canonical_block()};
+    unwind_last_n_changes(current_canonical_block, static_cast<size_t>(current_canonical_block - ancestor));
+
+    uint64_t block_number{block.header.number};
+
+    std::vector<BlockWithHash> chain{intermediate_chain(block_number - 1, block.header.parent_hash, ancestor)};
+    chain.push_back({block, hash});
+
+    ValidationError err{ValidationError::kOk};
+    size_t num_of_executed_chain_blocks{0};
+    for (const BlockWithHash& x : chain) {
+        err = execute_block(x.block, check_state_root);
+        if (err != ValidationError::kOk) {
+            break;
+        }
+        ++num_of_executed_chain_blocks;
+    }
+
+    if (err != ValidationError::kOk) {
+        // TODO(Andrew) mark the block as bad
+        unwind_last_n_changes(block_number, num_of_executed_chain_blocks);
+        re_execute_canonical_chain(ancestor, current_canonical_block);
+        return err;
+    }
+
     state_.insert_block(block, hash);
 
-    uint64_t current_canonical_block{state_.current_canonical_block()};
     intx::uint256 current_total_difficulty{
         *state_.total_difficulty(current_canonical_block, *state_.canonical_hash(current_canonical_block))};
 
-    if (state_.total_difficulty(block.header.number, hash) <= current_total_difficulty) {
-        return ValidationError::kOk;
+    if (state_.total_difficulty(block_number, hash) > current_total_difficulty) {
+        // canonize the new chain
+        for (uint64_t i{current_canonical_block}; i > ancestor; --i) {
+            state_.decanonize_block(i);
+        }
+        for (const BlockWithHash& x : chain) {
+            state_.canonize_block(x.block.header.number, x.hash);
+        }
+    } else {
+        unwind_last_n_changes(block_number, num_of_executed_chain_blocks);
+        re_execute_canonical_chain(ancestor, current_canonical_block);
     }
 
-    uint64_t ancestor{canonical_ancestor(block.header, hash)};
-    decanonize_chain(ancestor);
-    return canonize_chain(block, hash, ancestor, check_state_root);
+    return ValidationError::kOk;
 }
 
-ValidationError Blockchain::execute_and_canonize_block(const Block& block, const evmc::bytes32& hash,
-                                                       bool check_state_root) {
-    std::pair<std::vector<Receipt>, ValidationError> res{execute_block(block, state_, config_)};
+ValidationError Blockchain::execute_block(const Block& block, bool check_state_root) {
+    std::pair<std::vector<Receipt>, ValidationError> res{silkworm::execute_block(block, state_, config_)};
     if (res.second != ValidationError::kOk) {
         return res.second;
     }
@@ -65,16 +97,35 @@ ValidationError Blockchain::execute_and_canonize_block(const Block& block, const
         }
     }
 
-    state_.canonize_block(block.header.number, hash);
-
     return ValidationError::kOk;
 }
 
-ValidationError Blockchain::canonize_chain(const Block& block, evmc::bytes32 hash, uint64_t canonical_ancestor,
-                                           bool check_state_root) {
-    std::vector<BlockWithHash> chain(block.header.number - canonical_ancestor);
+void Blockchain::re_execute_canonical_chain(uint64_t from, uint64_t to) {
+    for (uint64_t block_number{from + 1}; block_number <= to; ++block_number) {
+        std::optional<evmc::bytes32> hash{state_.canonical_hash(block_number)};
+        std::optional<BlockBody> body{state_.read_body(block_number, *hash)};
+        std::optional<BlockHeader> header{state_.read_header(block_number, *hash)};
 
-    for (uint64_t block_number{block.header.number}; block_number > canonical_ancestor; --block_number) {
+        Block block;
+        block.header = *header;
+        block.transactions = body->transactions;
+        block.ommers = body->ommers;
+
+        silkworm::execute_block(block, state_, config_);
+    }
+}
+
+void Blockchain::unwind_last_n_changes(uint64_t from, size_t n) {
+    for (size_t i{0}; i < n; ++i) {
+        state_.unwind_state_changes(from - i);
+    }
+}
+
+std::vector<BlockWithHash> Blockchain::intermediate_chain(uint64_t block_number, evmc::bytes32 hash,
+                                                          uint64_t canonical_ancestor) const {
+    std::vector<BlockWithHash> chain(block_number - canonical_ancestor);
+
+    for (; block_number > canonical_ancestor; --block_number) {
         BlockWithHash& x{chain[block_number - canonical_ancestor - 1]};
 
         std::optional<BlockBody> body{state_.read_body(block_number, hash)};
@@ -87,26 +138,7 @@ ValidationError Blockchain::canonize_chain(const Block& block, evmc::bytes32 has
         hash = header->parent_hash;
     }
 
-    for (const BlockWithHash& x : chain) {
-        if (ValidationError err{execute_and_canonize_block(x.block, x.hash, check_state_root)};
-            err != ValidationError::kOk) {
-            // TODO(Andrew) mark this & subsequent blocks as invalid and remove them from the state
-            return err;
-        }
-    }
-
-    return ValidationError::kOk;
-}
-
-void Blockchain::decanonize_chain(uint64_t back_to) {
-    while (true) {
-        uint64_t block_number{state_.current_canonical_block()};
-        if (block_number <= back_to) {
-            return;
-        }
-        state_.unwind_state_changes(block_number);
-        state_.decanonize_block(block_number);
-    }
+    return chain;
 }
 
 uint64_t Blockchain::canonical_ancestor(const BlockHeader& header, const evmc::bytes32& hash) const {

@@ -61,8 +61,6 @@ static const std::set<fs::path> kExcludedTests{
 
     // TODO[Issue #23] fix this test
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
-        "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
         "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
 };
 

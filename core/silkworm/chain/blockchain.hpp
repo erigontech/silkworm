@@ -19,6 +19,7 @@
 
 #include <silkworm/chain/validity.hpp>
 #include <silkworm/state/buffer.hpp>
+#include <vector>
 
 namespace silkworm {
 
@@ -32,12 +33,14 @@ class Blockchain {
     ValidationError insert_block(Block& block, bool check_state_root);
 
   private:
-    ValidationError execute_and_canonize_block(const Block& block, const evmc::bytes32& hash, bool check_state_root);
+    ValidationError execute_block(const Block& block, bool check_state_root);
 
-    ValidationError canonize_chain(const Block& block, evmc::bytes32 hash, uint64_t canonical_ancestor,
-                                   bool check_state_root);
+    void re_execute_canonical_chain(uint64_t from, uint64_t to);
 
-    void decanonize_chain(uint64_t back_to);
+    void unwind_last_n_changes(uint64_t from, size_t n);
+
+    std::vector<BlockWithHash> intermediate_chain(uint64_t block_number, evmc::bytes32 hash,
+                                                  uint64_t canonical_ancestor) const;
 
     uint64_t canonical_ancestor(const BlockHeader& header, const evmc::bytes32& hash) const;
 

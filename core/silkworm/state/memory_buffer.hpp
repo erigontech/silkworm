@@ -43,7 +43,11 @@ class MemoryBuffer : public StateBuffer {
     std::optional<intx::uint256> total_difficulty(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const noexcept override;
 
-    std::pair<uint64_t, evmc::bytes32> current_canonical_block() const override;
+    evmc::bytes32 state_root_hash() const override;
+
+    uint64_t current_canonical_block() const override;
+
+    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
 
     evmc::bytes32 insert_block(const Block& block) override;
 
@@ -65,8 +69,6 @@ class MemoryBuffer : public StateBuffer {
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
     void unwind_state_changes(uint64_t block_number) override;
-
-    evmc::bytes32 state_root_hash() const override;
 
     size_t number_of_accounts() const;
 

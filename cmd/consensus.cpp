@@ -59,27 +59,9 @@ static const std::set<fs::path> kExcludedTests{
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 
-    // TODO[Issue #23] support reorgs
-    kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
-    kBlockchainDir / "ValidBlocks" / "bcForkStressTest" / "ForkStressTest.json",
-    kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
-    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainB.json",
-    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainBCallContractFormA.json",
-    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainB_BlockHash.json",
-    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainB_difficultyB.json",
-    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainBtoChainA.json",
-    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainBtoChainAtoChainB.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "lotsOfBranchesOverrideAtTheEnd.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "lotsOfBranchesOverrideAtTheMiddle.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "lotsOfLeafs.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "newChainFrom4Block.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "newChainFrom5Block.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "newChainFrom6Block.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "sideChainWithMoreTransactions2.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" /
-        "sideChainWithNewMaxDifficultyStartingFromBlock3AfterBlock4.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "uncleBlockAtBlock3AfterBlock3.json",
+    // TODO[Issue #23] fix this test
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
+        "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
 };
 
 constexpr size_t kColumnWidth{80};

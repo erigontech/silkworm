@@ -40,6 +40,7 @@ class Buffer : public StateBuffer {
 
     /** @name Readers */
     ///@{
+
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
     Bytes read_code(const evmc::bytes32& code_hash) const noexcept override;
@@ -58,7 +59,12 @@ class Buffer : public StateBuffer {
     std::optional<intx::uint256> total_difficulty(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const noexcept override;
 
-    std::pair<uint64_t, evmc::bytes32> current_canonical_block() const override;
+    evmc::bytes32 state_root_hash() const override;
+
+    uint64_t current_canonical_block() const override;
+
+    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
+
     ///@}
 
     evmc::bytes32 insert_block(const Block& block) override;
@@ -73,6 +79,7 @@ class Buffer : public StateBuffer {
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
      */
     ///@{
+
     /** Mark the beggining of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
      */
@@ -88,9 +95,8 @@ class Buffer : public StateBuffer {
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
     void unwind_state_changes(uint64_t block_number) override;
-    ///@}
 
-    evmc::bytes32 state_root_hash() const override;
+    ///@}
 
     /// Account (backward) changes per block
     const absl::btree_map<uint64_t, AccountChanges>& account_changes() const { return account_changes_; }

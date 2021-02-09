@@ -104,8 +104,14 @@ std::optional<intx::uint256> MemoryBuffer::total_difficulty(uint64_t block_numbe
     return it->second;
 }
 
-std::pair<uint64_t, evmc::bytes32> MemoryBuffer::current_canonical_block() const {
-    return {canonical_hashes_.size() - 1, canonical_hashes_.back()};
+uint64_t MemoryBuffer::current_canonical_block() const { return canonical_hashes_.size() - 1; }
+
+std::optional<evmc::bytes32> MemoryBuffer::canonical_hash(uint64_t block_number) const {
+    if (block_number >= canonical_hashes_.size()) {
+        return std::nullopt;
+    }
+
+    return canonical_hashes_[block_number];
 }
 
 evmc::bytes32 MemoryBuffer::insert_block(const Block& block) {

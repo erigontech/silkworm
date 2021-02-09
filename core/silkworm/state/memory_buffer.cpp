@@ -105,7 +105,7 @@ std::optional<intx::uint256> MemoryBuffer::total_difficulty(uint64_t block_numbe
 }
 
 std::pair<uint64_t, evmc::bytes32> MemoryBuffer::current_canonical_block() const {
-    return {canonical_hashes_.size(), canonical_hashes_.back()};
+    return {canonical_hashes_.size() - 1, canonical_hashes_.back()};
 }
 
 evmc::bytes32 MemoryBuffer::insert_block(const Block& block) {

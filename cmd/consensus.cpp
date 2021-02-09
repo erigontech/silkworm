@@ -62,14 +62,8 @@ static const std::set<fs::path> kExcludedTests{
     // TODO[Issue #23] support reorgs
     kBlockchainDir / "InvalidBlocks" / "bcMultiChainTest" / "UncleFromSideChain.json",
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" / "HomesteadOverrideFrontier.json",
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
-        "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
-        "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
-    kBlockchainDir / "TransitionTests" / "bcHomesteadToDao" / "DaoTransactions.json",
     kBlockchainDir / "ValidBlocks" / "bcForkStressTest" / "ForkStressTest.json",
     kBlockchainDir / "ValidBlocks" / "bcGasPricerTest" / "RPC_API_Test.json",
-    kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "CallContractFromNotBestBlock.json",
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainB.json",
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainBCallContractFormA.json",
     kBlockchainDir / "ValidBlocks" / "bcMultiChainTest" / "ChainAtoChainB_BlockHash.json",
@@ -82,12 +76,10 @@ static const std::set<fs::path> kExcludedTests{
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "newChainFrom4Block.json",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "newChainFrom5Block.json",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "newChainFrom6Block.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "sideChainWithMoreTransactions.json",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "sideChainWithMoreTransactions2.json",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" /
         "sideChainWithNewMaxDifficultyStartingFromBlock3AfterBlock4.json",
     kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "uncleBlockAtBlock3AfterBlock3.json",
-    kBlockchainDir / "ValidBlocks" / "bcTotalDifficultyTest" / "uncleBlockAtBlock3afterBlock4.json",
 };
 
 constexpr size_t kColumnWidth{80};

@@ -31,26 +31,35 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
         return err;
     }
 
-    // TODO[Issue #23] support reorgs
+    auto [current_number, current_hash]{state_.current_canonical_block()};
+    intx::uint256 current_total_difficult{*state_.total_difficulty(current_number, current_hash)};
 
     block.recover_senders(config_);
 
-    std::pair<std::vector<Receipt>, ValidationError> res{execute_block(block, state_, config_)};
-    if (res.second != ValidationError::kOk) {
-        return res.second;
-    }
+    evmc::bytes32 block_hash{state_.insert_block(block)};
+    uint64_t block_number{block.header.number};
+    intx::uint256 block_total_difficult{*state_.total_difficulty(block_number, block_hash)};
 
-    if (check_state_root) {
-        evmc::bytes32 state_root{state_.state_root_hash()};
-        if (state_root != block.header.state_root) {
-            state_.unwind_state_changes(block.header.number);
+    if (block_total_difficult > current_total_difficult) {
+        // TODO[Issue #23] perform reorg if necessary
+
+        std::pair<std::vector<Receipt>, ValidationError> res{execute_block(block, state_, config_)};
+        if (res.second != ValidationError::kOk) {
             // TODO(Andrew) mark the block as invalid and remove it from the state
-            return ValidationError::kWrongStateRoot;
+            return res.second;
         }
-    }
 
-    evmc::bytes32 hash{state_.insert_block(block)};
-    state_.canonize_block(block.header.number, hash);
+        if (check_state_root) {
+            evmc::bytes32 state_root{state_.state_root_hash()};
+            if (state_root != block.header.state_root) {
+                state_.unwind_state_changes(block_number);
+                // TODO(Andrew) mark the block as invalid and remove it from the state
+                return ValidationError::kWrongStateRoot;
+            }
+        }
+
+        state_.canonize_block(block_number, block_hash);
+    }
 
     return ValidationError::kOk;
 }

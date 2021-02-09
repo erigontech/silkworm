@@ -62,6 +62,8 @@ static const std::set<fs::path> kExcludedTests{
     // TODO[Issue #23] fix this test
     kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
         "blockChainFrontierWithLargerTDvsHomesteadBlockchain.json",
+    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
+        "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
 };
 
 constexpr size_t kColumnWidth{80};
@@ -269,6 +271,12 @@ Status run_block(const nlohmann::json& b, Blockchain& blockchain) {
             return kPassed;
         }
         std::cout << "Validation error " << static_cast<int>(err) << "\n";
+        return kFailed;
+    }
+
+    if (invalid) {
+        std::cout << "Invalid block executed successfully\n";
+        std::cout << "Expected: " << b["expectException"] << "\n";
         return kFailed;
     }
 

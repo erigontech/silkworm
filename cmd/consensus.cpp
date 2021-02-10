@@ -236,10 +236,10 @@ void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
 
 enum Status { kPassed, kFailed, kSkipped };
 
-Status run_block(const nlohmann::json& b, Blockchain& blockchain) {
-    bool invalid{b.contains("expectException")};
+Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
+    bool invalid{json_block.contains("expectException")};
 
-    std::optional<Bytes> rlp{from_hex(b["rlp"].get<std::string>())};
+    std::optional<Bytes> rlp{from_hex(json_block["rlp"].get<std::string>())};
     if (!rlp) {
         if (invalid) {
             return kPassed;
@@ -258,7 +258,7 @@ Status run_block(const nlohmann::json& b, Blockchain& blockchain) {
         return kFailed;
     }
 
-    bool check_state_root{invalid && b["expectException"].get<std::string>() == "InvalidStateRoot"};
+    bool check_state_root{invalid && json_block["expectException"].get<std::string>() == "InvalidStateRoot"};
 
     if (ValidationError err{blockchain.insert_block(block, check_state_root)}; err != ValidationError::kOk) {
         if (invalid) {
@@ -270,7 +270,7 @@ Status run_block(const nlohmann::json& b, Blockchain& blockchain) {
 
     if (invalid) {
         std::cout << "Invalid block executed successfully\n";
-        std::cout << "Expected: " << b["expectException"] << "\n";
+        std::cout << "Expected: " << json_block["expectException"] << "\n";
         return kFailed;
     }
 
@@ -342,36 +342,36 @@ bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
-    std::string seal_engine{j["sealEngine"].get<std::string>()};
+Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfig>) {
+    std::string seal_engine{json_test["sealEngine"].get<std::string>()};
     if (seal_engine != "NoProof") {
         // TODO[Issue 144] Support Ethash sealEngine
         std::cout << seal_engine << " seal engine is not supported yet\n";
         return kSkipped;
     }
 
-    Bytes genesis_rlp{from_hex(j["genesisRLP"].get<std::string>()).value()};
+    Bytes genesis_rlp{from_hex(json_test["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
     check_rlp_err(rlp::decode(genesis_view, genesis_block));
 
     MemoryBuffer state;
-    std::string network{j["network"].get<std::string>()};
+    std::string network{json_test["network"].get<std::string>()};
     const ChainConfig& config{kNetworkConfig.at(network)};
-    init_pre_state(j["pre"], state);
+    init_pre_state(json_test["pre"], state);
 
     Blockchain blockchain{state, config, genesis_block};
 
-    for (const auto& b : j["blocks"]) {
-        Status status{run_block(b, blockchain)};
+    for (const auto& json_block : json_test["blocks"]) {
+        Status status{run_block(json_block, blockchain)};
         if (status != kPassed) {
             return status;
         }
     }
 
-    if (j.contains("postStateHash")) {
+    if (json_test.contains("postStateHash")) {
         evmc::bytes32 state_root{state.state_root_hash()};
-        std::string expected_hex{j["postStateHash"].get<std::string>()};
+        std::string expected_hex{json_test["postStateHash"].get<std::string>()};
         if (state_root != to_bytes32(from_hex(expected_hex).value())) {
             std::cout << "postStateHash mismatch:\n";
             std::cout << to_hex(state_root) << " != " << expected_hex << "\n";
@@ -381,7 +381,7 @@ Status blockchain_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         }
     }
 
-    if (post_check(state, j["postState"])) {
+    if (post_check(state, json_test["postState"])) {
         return kPassed;
     } else {
         return kFailed;

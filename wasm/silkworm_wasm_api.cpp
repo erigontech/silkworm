@@ -19,7 +19,6 @@
 #include <cstdlib>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/execution/execution.hpp>
 #include <silkworm/execution/processor.hpp>
 
 void* new_buffer(size_t size) { return std::malloc(size); }
@@ -177,21 +176,9 @@ uint8_t* header_state_root(BlockHeader* header) { return header->state_root.byte
 
 void block_recover_senders(Block* b, const ChainConfig* config) { b->recover_senders(*config); }
 
-ValidationError block_pre_validate(const Block* b, StateBuffer* state, const ChainConfig* config) {
-    return pre_validate_block(*b, *state, *config);
-}
-
-ValidationError block_execute(const Block* b, StateBuffer* state, const ChainConfig* config) {
-    return execute_block(*b, *state, *config).second;
-}
-
 MemoryBuffer* new_state() { return new MemoryBuffer; }
 
 void delete_state(MemoryBuffer* x) { delete x; }
-
-void state_unwind_block(MemoryBuffer* state, uint64_t block_number) { state->unwind_block(block_number); }
-
-uint64_t state_current_block_number(const MemoryBuffer* state) { return state->current_block_number(); }
 
 uint8_t* state_root_hash_new(const MemoryBuffer* state) {
     evmc::bytes32 root_hash{state->state_root_hash()};
@@ -235,8 +222,6 @@ Bytes* state_read_storage_new(const StateBuffer* state, const uint8_t* address, 
     return out;
 }
 
-void state_insert_block(StateBuffer* state, const Block* block) { state->insert_block(*block); }
-
 void state_update_account(StateBuffer* state, const uint8_t* address, const Account* current_ptr) {
     std::optional<Account> current_opt;
     if (current_ptr) {
@@ -253,6 +238,16 @@ void state_update_storage(StateBuffer* state, const uint8_t* address, const Acco
                           const Bytes* value) {
     state->update_storage(address_from_ptr(address), account->incarnation, to_bytes32(*location), /*initial=*/{},
                           to_bytes32(*value));
+}
+
+Blockchain* new_blockchain(StateBuffer* state, const ChainConfig* config, const Block* genesis_block) {
+    return new Blockchain{*state, *config, *genesis_block};
+}
+
+void delete_blockchain(Blockchain* x) { delete x; }
+
+ValidationResult blockchain_insert_block(Blockchain* chain, Block* block, bool check_state_root) {
+    return chain->insert_block(*block, check_state_root);
 }
 
 int main() { return 0; }

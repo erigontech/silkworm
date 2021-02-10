@@ -46,6 +46,10 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
 std::optional<BlockBody> read_body(lmdb::Transaction& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength],
                                    bool read_senders);
 
+// See TG ReadTd
+std::optional<intx::uint256> read_total_difficulty(lmdb::Transaction& txn, uint64_t block_number,
+                                                   const uint8_t (&hash)[kHashLength]);
+
 // See TG ReadBlockByNumber
 // might throw MissingSenders
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders);

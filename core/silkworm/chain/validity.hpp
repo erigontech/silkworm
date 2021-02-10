@@ -23,7 +23,7 @@
 namespace silkworm {
 
 // Classification of invalid transactions and blocks.
-enum class ValidationError {
+enum class ValidationResult {
     kOk = 0,
 
     // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
@@ -62,13 +62,13 @@ enum class ValidationError {
 // See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
 // and 11.1 "Ommer Validation".
 // Shouldn't be used for genesis block.
-ValidationError pre_validate_block(const Block& block, const StateBuffer& state,
-                                   const ChainConfig& config = kMainnetConfig);
+[[nodiscard]] ValidationResult pre_validate_block(const Block& block, const StateBuffer& state,
+                                                  const ChainConfig& config = kMainnetConfig);
 
 // See [YP] Section 4.3.4 "Block Header Validity".
 // Shouldn't be used for genesis block.
-ValidationError validate_block_header(const BlockHeader& header, const StateBuffer& state,
-                                      const ChainConfig& config = kMainnetConfig);
+[[nodiscard]] ValidationResult validate_block_header(const BlockHeader& header, const StateBuffer& state,
+                                                     const ChainConfig& config = kMainnetConfig);
 
 }  // namespace silkworm
 

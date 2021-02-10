@@ -30,7 +30,7 @@ Bytes Account::encode_for_storage(bool omit_code_hash) const {
     uint8_t field_set{0};
 
     if (nonce != 0) {
-        field_set = 1;
+        field_set |= 1;
         ByteView be{rlp::big_endian(nonce)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);

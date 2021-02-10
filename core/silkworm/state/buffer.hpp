@@ -35,6 +35,7 @@ class StateBuffer {
 
     /** @name Readers */
     ///@{
+
     virtual std::optional<Account> read_account(const evmc::address& address) const noexcept = 0;
 
     virtual Bytes read_code(const evmc::bytes32& code_hash) const noexcept = 0;
@@ -51,9 +52,22 @@ class StateBuffer {
     virtual std::optional<BlockBody> read_body(uint64_t block_number,
                                                const evmc::bytes32& block_hash) const noexcept = 0;
 
+    virtual std::optional<intx::uint256> total_difficulty(uint64_t block_number,
+                                                          const evmc::bytes32& block_hash) const noexcept = 0;
+
+    virtual evmc::bytes32 state_root_hash() const = 0;
+
+    virtual uint64_t current_canonical_block() const = 0;
+
+    virtual std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const = 0;
+
     ///@}
 
-    virtual void insert_block(const Block& block) = 0;
+    virtual void insert_block(const Block& block, const evmc::bytes32& hash) = 0;
+
+    virtual void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) = 0;
+
+    virtual void decanonize_block(uint64_t block_number) = 0;
 
     virtual void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) = 0;
 
@@ -61,6 +75,7 @@ class StateBuffer {
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
      */
     ///@{
+
     /** Mark the beggining of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
      */
@@ -74,6 +89,9 @@ class StateBuffer {
 
     virtual void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                                 const evmc::bytes32& initial, const evmc::bytes32& current) = 0;
+
+    virtual void unwind_state_changes(uint64_t block_number) = 0;
+
     ///@}
 };
 

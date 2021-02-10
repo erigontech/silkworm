@@ -54,6 +54,14 @@ Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     return key;
 }
 
+Bytes total_difficulty_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
+    Bytes key(8 + kHashLength + 1, '\0');
+    boost::endian::store_big_u64(&key[0], block_number);
+    std::memcpy(&key[8], hash, kHashLength);
+    key[8 + kHashLength] = 't';
+    return key;
+}
+
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation) {
     Bytes res(8 + kStoragePrefixLength, '\0');
     boost::endian::store_big_u64(&res[0], block_number);

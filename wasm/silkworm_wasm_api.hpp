@@ -26,8 +26,7 @@
 #include <stdint.h>
 
 #include <intx/intx.hpp>
-#include <silkworm/chain/config.hpp>
-#include <silkworm/chain/validity.hpp>
+#include <silkworm/chain/blockchain.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/account.hpp>
@@ -96,18 +95,8 @@ SILKWORM_EXPORT uint8_t* header_state_root(silkworm::BlockHeader* header);
 
 SILKWORM_EXPORT void block_recover_senders(silkworm::Block* b, const silkworm::ChainConfig* config);
 
-SILKWORM_EXPORT silkworm::ValidationError block_pre_validate(const silkworm::Block* b, silkworm::StateBuffer* state,
-                                                             const silkworm::ChainConfig* config);
-
-SILKWORM_EXPORT silkworm::ValidationError block_execute(const silkworm::Block* b, silkworm::StateBuffer* state,
-                                                        const silkworm::ChainConfig* config);
-
 SILKWORM_EXPORT silkworm::MemoryBuffer* new_state();
 SILKWORM_EXPORT void delete_state(silkworm::MemoryBuffer* x);
-
-SILKWORM_EXPORT void state_unwind_block(silkworm::MemoryBuffer* state, uint64_t block_number);
-
-SILKWORM_EXPORT uint64_t state_current_block_number(const silkworm::MemoryBuffer* state);
 
 SILKWORM_EXPORT size_t state_number_of_accounts(const silkworm::MemoryBuffer* state);
 
@@ -128,8 +117,6 @@ SILKWORM_EXPORT silkworm::Bytes* state_read_storage_new(const silkworm::StateBuf
                                                         const silkworm::Account* account,
                                                         const silkworm::Bytes* location);
 
-SILKWORM_EXPORT void state_insert_block(silkworm::StateBuffer* state, const silkworm::Block* block);
-
 SILKWORM_EXPORT void state_update_account(silkworm::StateBuffer* state, const uint8_t* address,
                                           const silkworm::Account* current);
 
@@ -139,6 +126,13 @@ SILKWORM_EXPORT void state_update_code(silkworm::StateBuffer* state, const uint8
 SILKWORM_EXPORT void state_update_storage(silkworm::StateBuffer* state, const uint8_t* address,
                                           const silkworm::Account* account, const silkworm::Bytes* location,
                                           const silkworm::Bytes* value);
+
+SILKWORM_EXPORT silkworm::Blockchain* new_blockchain(silkworm::StateBuffer* state, const silkworm::ChainConfig* config,
+                                                     const silkworm::Block* genesis_block);
+SILKWORM_EXPORT void delete_blockchain(silkworm::Blockchain* x);
+
+SILKWORM_EXPORT silkworm::ValidationResult blockchain_insert_block(silkworm::Blockchain* chain, silkworm::Block* block,
+                                                                   bool check_state_root);
 }
 
 #endif  // SILKWORM_WASM_API_HPP_

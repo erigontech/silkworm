@@ -26,54 +26,54 @@ static std::optional<BlockHeader> get_parent(const StateBuffer& state, const Blo
     return state.read_header(header.number - 1, header.parent_hash);
 }
 
-ValidationError validate_block_header(const BlockHeader& header, const StateBuffer& state, const ChainConfig& config) {
+ValidationResult validate_block_header(const BlockHeader& header, const StateBuffer& state, const ChainConfig& config) {
     // TODO[Issue 144] Ethash PoW verification
 
     if (header.gas_used > header.gas_limit) {
-        return ValidationError::kGasAboveLimit;
+        return ValidationResult::kGasAboveLimit;
     }
 
     if (header.gas_limit < 5000) {
-        return ValidationError::kInvalidGasLimit;
+        return ValidationResult::kInvalidGasLimit;
     }
 
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
     // https://eips.ethereum.org/EIPS/eip-1985
     if (header.gas_limit > 0x7fffffffffffffff) {
-        return ValidationError::kInvalidGasLimit;
+        return ValidationResult::kInvalidGasLimit;
     }
 
     std::optional<BlockHeader> parent{get_parent(state, header)};
     if (!parent) {
-        return ValidationError::kUnknownParent;
+        return ValidationResult::kUnknownParent;
     }
 
     if (header.timestamp <= parent->timestamp) {
-        return ValidationError::kInvalidTimestamp;
+        return ValidationResult::kInvalidTimestamp;
     }
 
     uint64_t gas_delta{header.gas_limit > parent->gas_limit ? header.gas_limit - parent->gas_limit
                                                             : parent->gas_limit - header.gas_limit};
     if (gas_delta >= parent->gas_limit / 1024) {
-        return ValidationError::kInvalidGasLimit;
+        return ValidationResult::kInvalidGasLimit;
     }
 
     bool parent_has_uncles{parent->ommers_hash != kEmptyListHash};
     intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent->difficulty,
                                                   parent->timestamp, parent_has_uncles, config)};
     if (difficulty != header.difficulty) {
-        return ValidationError::kWrongDifficulty;
+        return ValidationResult::kWrongDifficulty;
     }
 
     // https://eips.ethereum.org/EIPS/eip-779
     if (config.dao_block && *config.dao_block <= header.number && header.number <= *config.dao_block + 9) {
         static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
         if (header.extra_data() != kDaoExtraData) {
-            return ValidationError::kWrongDaoExtraData;
+            return ValidationResult::kWrongDaoExtraData;
         }
     }
 
-    return ValidationError::kOk;
+    return ValidationResult::kOk;
 }
 
 // See [YP] Section 11.1 "Ommer Validation"
@@ -105,10 +105,10 @@ static bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline
     return is_kin(branch_header, *mainline_parent, mainline_header.parent_hash, n - 1, state, old_ommers);
 }
 
-ValidationError pre_validate_block(const Block& block, const StateBuffer& state, const ChainConfig& config) {
+ValidationResult pre_validate_block(const Block& block, const StateBuffer& state, const ChainConfig& config) {
     const BlockHeader& header{block.header};
 
-    if (ValidationError err{validate_block_header(header, state, config)}; err != ValidationError::kOk) {
+    if (ValidationResult err{validate_block_header(header, state, config)}; err != ValidationResult::kOk) {
         return err;
     }
 
@@ -116,40 +116,40 @@ ValidationError pre_validate_block(const Block& block, const StateBuffer& state,
     rlp::encode(ommers_rlp, block.ommers);
     ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
     if (full_view(ommers_hash.bytes) != full_view(header.ommers_hash)) {
-        return ValidationError::kWrongOmmersHash;
+        return ValidationResult::kWrongOmmersHash;
     }
 
     evmc::bytes32 txn_root{trie::root_hash(block.transactions)};
     if (txn_root != header.transactions_root) {
-        return ValidationError::kWrongTransactionsRoot;
+        return ValidationResult::kWrongTransactionsRoot;
     }
 
     if (block.ommers.size() > 2) {
-        return ValidationError::kTooManyOmmers;
+        return ValidationResult::kTooManyOmmers;
     }
 
     if (block.ommers.size() == 2 && block.ommers[0] == block.ommers[1]) {
-        return ValidationError::kDuplicateOmmer;
+        return ValidationResult::kDuplicateOmmer;
     }
 
     std::optional<BlockHeader> parent{get_parent(state, header)};
 
     for (const BlockHeader& ommer : block.ommers) {
-        if (ValidationError err{validate_block_header(ommer, state, config)}; err != ValidationError::kOk) {
-            return ValidationError::kInvalidOmmerHeader;
+        if (ValidationResult err{validate_block_header(ommer, state, config)}; err != ValidationResult::kOk) {
+            return ValidationResult::kInvalidOmmerHeader;
         }
         std::vector<BlockHeader> old_ommers;
         if (!is_kin(ommer, *parent, header.parent_hash, 6, state, old_ommers)) {
-            return ValidationError::kNotAnOmmer;
+            return ValidationResult::kNotAnOmmer;
         }
         for (const BlockHeader& oo : old_ommers) {
             if (oo == ommer) {
-                return ValidationError::kDuplicateOmmer;
+                return ValidationResult::kDuplicateOmmer;
             }
         }
     }
 
-    return ValidationError::kOk;
+    return ValidationResult::kOk;
 }
 
 }  // namespace silkworm

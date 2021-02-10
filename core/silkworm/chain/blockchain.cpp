@@ -28,8 +28,8 @@ Blockchain::Blockchain(StateBuffer& state, const ChainConfig& config, const Bloc
     state_.canonize_block(genesis_block.header.number, hash);
 }
 
-ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
-    if (ValidationError err{pre_validate_block(block, state_, config_)}; err != ValidationError::kOk) {
+ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
+    if (ValidationResult err{pre_validate_block(block, state_, config_)}; err != ValidationResult::kOk) {
         return err;
     }
 
@@ -49,17 +49,17 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
     std::vector<BlockWithHash> chain{intermediate_chain(block_number - 1, block.header.parent_hash, ancestor)};
     chain.push_back({block, hash});
 
-    ValidationError err{ValidationError::kOk};
+    ValidationResult err{ValidationResult::kOk};
     size_t num_of_executed_chain_blocks{0};
     for (const BlockWithHash& x : chain) {
         err = execute_block(x.block, check_state_root);
-        if (err != ValidationError::kOk) {
+        if (err != ValidationResult::kOk) {
             break;
         }
         ++num_of_executed_chain_blocks;
     }
 
-    if (err != ValidationError::kOk) {
+    if (err != ValidationResult::kOk) {
         bad_blocks_[hash] = err;
         unwind_last_changes(ancestor, ancestor + num_of_executed_chain_blocks);
         re_execute_canonical_chain(ancestor, current_canonical_block);
@@ -84,12 +84,12 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
         re_execute_canonical_chain(ancestor, current_canonical_block);
     }
 
-    return ValidationError::kOk;
+    return ValidationResult::kOk;
 }
 
-ValidationError Blockchain::execute_block(const Block& block, bool check_state_root) {
-    std::pair<std::vector<Receipt>, ValidationError> res{silkworm::execute_block(block, state_, config_)};
-    if (res.second != ValidationError::kOk) {
+ValidationResult Blockchain::execute_block(const Block& block, bool check_state_root) {
+    std::pair<std::vector<Receipt>, ValidationResult> res{silkworm::execute_block(block, state_, config_)};
+    if (res.second != ValidationResult::kOk) {
         return res.second;
     }
 
@@ -97,11 +97,11 @@ ValidationError Blockchain::execute_block(const Block& block, bool check_state_r
         evmc::bytes32 state_root{state_.state_root_hash()};
         if (state_root != block.header.state_root) {
             state_.unwind_state_changes(block.header.number);
-            return ValidationError::kWrongStateRoot;
+            return ValidationResult::kWrongStateRoot;
         }
     }
 
-    return ValidationError::kOk;
+    return ValidationResult::kOk;
 }
 
 void Blockchain::re_execute_canonical_chain(uint64_t ancestor, uint64_t tip) {
@@ -116,8 +116,8 @@ void Blockchain::re_execute_canonical_chain(uint64_t ancestor, uint64_t tip) {
         block.transactions = body->transactions;
         block.ommers = body->ommers;
 
-        [[maybe_unused]] ValidationError err{execute_block(block, /*check_state_root=*/false)};
-        assert(err == ValidationError::kOk);
+        [[maybe_unused]] ValidationResult err{execute_block(block, /*check_state_root=*/false)};
+        assert(err == ValidationResult::kOk);
     }
 }
 

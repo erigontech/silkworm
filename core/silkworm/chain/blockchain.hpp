@@ -31,10 +31,10 @@ class Blockchain {
     Blockchain(const Blockchain&) = delete;
     Blockchain& operator=(const Blockchain&) = delete;
 
-    ValidationError insert_block(Block& block, bool check_state_root);
+    ValidationResult insert_block(Block& block, bool check_state_root);
 
   private:
-    ValidationError execute_block(const Block& block, bool check_state_root);
+    ValidationResult execute_block(const Block& block, bool check_state_root);
 
     void re_execute_canonical_chain(uint64_t ancestor, uint64_t tip);
 
@@ -47,7 +47,7 @@ class Blockchain {
 
     StateBuffer& state_;
     const ChainConfig& config_;
-    std::unordered_map<evmc::bytes32, ValidationError> bad_blocks_;
+    std::unordered_map<evmc::bytes32, ValidationResult> bad_blocks_;
 };
 
 }  // namespace silkworm

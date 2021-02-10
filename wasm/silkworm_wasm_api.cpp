@@ -246,7 +246,7 @@ Blockchain* new_blockchain(StateBuffer* state, const ChainConfig* config, const 
 
 void delete_blockchain(Blockchain* x) { delete x; }
 
-ValidationError blockchain_insert_block(Blockchain* chain, Block* block, bool check_state_root) {
+ValidationResult blockchain_insert_block(Blockchain* chain, Block* block, bool check_state_root) {
     return chain->insert_block(*block, check_state_root);
 }
 

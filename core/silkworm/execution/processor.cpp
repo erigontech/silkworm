@@ -61,15 +61,15 @@ static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
 }
 */
 
-ValidationError ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
+ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
     if (!txn.from) {
-        return ValidationError::kMissingSender;
+        return ValidationResult::kMissingSender;
     }
 
     const IntraBlockState& state{evm_.state()};
     uint64_t nonce{state.get_nonce(*txn.from)};
     if (nonce != txn.nonce) {
-        return ValidationError::kWrongNonce;
+        return ValidationResult::kWrongNonce;
     }
 
     uint64_t block_number{evm_.block().header.number};
@@ -78,21 +78,21 @@ ValidationError ExecutionProcessor::validate_transaction(const Transaction& txn)
 
     intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
     if (txn.gas_limit < g0) {
-        return ValidationError::kIntrinsicGas;
+        return ValidationResult::kIntrinsicGas;
     }
 
     intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price)};
     intx::uint512 v0{gas_cost + txn.value};
 
     if (state.get_balance(*txn.from) < v0) {
-        return ValidationError::kInsufficientFunds;
+        return ValidationResult::kInsufficientFunds;
     }
 
     if (available_gas() < txn.gas_limit) {
-        return ValidationError::kBlockGasLimitReached;
+        return ValidationResult::kBlockGasLimitReached;
     }
 
-    return ValidationError::kOk;
+    return ValidationResult::kOk;
 }
 
 Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept {
@@ -145,7 +145,7 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
     return gas_left;
 }
 
-std::pair<std::vector<Receipt>, ValidationError> ExecutionProcessor::execute_block() noexcept {
+std::pair<std::vector<Receipt>, ValidationResult> ExecutionProcessor::execute_block() noexcept {
     std::vector<Receipt> receipts{};
 
     uint64_t block_num{evm_.block().header.number};
@@ -155,8 +155,8 @@ std::pair<std::vector<Receipt>, ValidationError> ExecutionProcessor::execute_blo
 
     cumulative_gas_used_ = 0;
     for (const Transaction& txn : evm_.block().transactions) {
-        ValidationError err{validate_transaction(txn)};
-        if (err != ValidationError::kOk) {
+        ValidationResult err{validate_transaction(txn)};
+        if (err != ValidationResult::kOk) {
             return {receipts, err};
         }
         receipts.push_back(execute_transaction(txn));
@@ -164,7 +164,7 @@ std::pair<std::vector<Receipt>, ValidationError> ExecutionProcessor::execute_blo
 
     apply_rewards();
 
-    return {receipts, ValidationError::kOk};
+    return {receipts, ValidationResult::kOk};
 }
 
 void ExecutionProcessor::apply_rewards() noexcept {

@@ -131,8 +131,8 @@ SILKWORM_EXPORT silkworm::Blockchain* new_blockchain(silkworm::StateBuffer* stat
                                                      const silkworm::Block* genesis_block);
 SILKWORM_EXPORT void delete_blockchain(silkworm::Blockchain* x);
 
-SILKWORM_EXPORT silkworm::ValidationError blockchain_insert_block(silkworm::Blockchain* chain, silkworm::Block* block,
-                                                                  bool check_state_root);
+SILKWORM_EXPORT silkworm::ValidationResult blockchain_insert_block(silkworm::Blockchain* chain, silkworm::Block* block,
+                                                                   bool check_state_root);
 }
 
 #endif  // SILKWORM_WASM_API_HPP_

@@ -19,6 +19,7 @@
 
 #include <silkworm/chain/validity.hpp>
 #include <silkworm/state/buffer.hpp>
+#include <unordered_map>
 #include <vector>
 
 namespace silkworm {
@@ -46,6 +47,7 @@ class Blockchain {
 
     StateBuffer& state_;
     const ChainConfig& config_;
+    std::unordered_map<evmc::bytes32, ValidationError> bad_blocks_;
 };
 
 }  // namespace silkworm

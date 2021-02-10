@@ -33,9 +33,12 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
         return err;
     }
 
-    block.recover_senders(config_);
-
     evmc::bytes32 hash{block.header.hash()};
+    if (auto it{bad_blocks_.find(hash)}; it != bad_blocks_.end()) {
+        return it->second;
+    }
+
+    block.recover_senders(config_);
 
     uint64_t ancestor{canonical_ancestor(block.header, hash)};
     uint64_t current_canonical_block{state_.current_canonical_block()};
@@ -57,7 +60,7 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
     }
 
     if (err != ValidationError::kOk) {
-        // TODO(Andrew) mark the block as bad
+        bad_blocks_[hash] = err;
         unwind_last_changes(ancestor, ancestor + num_of_executed_chain_blocks);
         re_execute_canonical_chain(ancestor, current_canonical_block);
         return err;

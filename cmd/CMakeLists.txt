@@ -75,6 +75,11 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(check_blockhashes check_blockhashes.cpp)
   target_link_libraries(check_blockhashes PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
   target_include_directories(check_blockhashes PRIVATE ${CMAKE_SOURCE_DIR})
+
+  add_executable(extract_headers extract_headers.cpp)
+  target_link_libraries(extract_headers PRIVATE silkworm_db silkworm_tg_api CLI11::CLI11 Boost::filesystem)
+  target_include_directories(extract_headers PRIVATE ${CMAKE_SOURCE_DIR})
+
   # Ethereum Consensus Tests
   find_package(nlohmann_json CONFIG REQUIRED)
   add_executable(consensus consensus.cpp)

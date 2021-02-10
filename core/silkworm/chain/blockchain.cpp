@@ -16,6 +16,7 @@
 
 #include "blockchain.hpp"
 
+#include <cassert>
 #include <silkworm/execution/execution.hpp>
 
 namespace silkworm {
@@ -38,7 +39,7 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
 
     uint64_t ancestor{canonical_ancestor(block.header, hash)};
     uint64_t current_canonical_block{state_.current_canonical_block()};
-    unwind_last_n_changes(current_canonical_block, static_cast<size_t>(current_canonical_block - ancestor));
+    unwind_last_changes(ancestor, current_canonical_block);
 
     uint64_t block_number{block.header.number};
 
@@ -57,7 +58,7 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
 
     if (err != ValidationError::kOk) {
         // TODO(Andrew) mark the block as bad
-        unwind_last_n_changes(block_number, num_of_executed_chain_blocks);
+        unwind_last_changes(ancestor, ancestor + num_of_executed_chain_blocks);
         re_execute_canonical_chain(ancestor, current_canonical_block);
         return err;
     }
@@ -76,7 +77,7 @@ ValidationError Blockchain::insert_block(Block& block, bool check_state_root) {
             state_.canonize_block(x.block.header.number, x.hash);
         }
     } else {
-        unwind_last_n_changes(block_number, num_of_executed_chain_blocks);
+        unwind_last_changes(ancestor, ancestor + num_of_executed_chain_blocks);
         re_execute_canonical_chain(ancestor, current_canonical_block);
     }
 
@@ -100,8 +101,9 @@ ValidationError Blockchain::execute_block(const Block& block, bool check_state_r
     return ValidationError::kOk;
 }
 
-void Blockchain::re_execute_canonical_chain(uint64_t from, uint64_t to) {
-    for (uint64_t block_number{from + 1}; block_number <= to; ++block_number) {
+void Blockchain::re_execute_canonical_chain(uint64_t ancestor, uint64_t tip) {
+    assert(ancestor <= tip);
+    for (uint64_t block_number{ancestor + 1}; block_number <= tip; ++block_number) {
         std::optional<evmc::bytes32> hash{state_.canonical_hash(block_number)};
         std::optional<BlockBody> body{state_.read_body(block_number, *hash)};
         std::optional<BlockHeader> header{state_.read_header(block_number, *hash)};
@@ -111,13 +113,15 @@ void Blockchain::re_execute_canonical_chain(uint64_t from, uint64_t to) {
         block.transactions = body->transactions;
         block.ommers = body->ommers;
 
-        silkworm::execute_block(block, state_, config_);
+        [[maybe_unused]] ValidationError err{execute_block(block, /*check_state_root=*/false)};
+        assert(err == ValidationError::kOk);
     }
 }
 
-void Blockchain::unwind_last_n_changes(uint64_t from, size_t n) {
-    for (size_t i{0}; i < n; ++i) {
-        state_.unwind_state_changes(from - i);
+void Blockchain::unwind_last_changes(uint64_t ancestor, uint64_t tip) {
+    assert(ancestor <= tip);
+    for (uint64_t block_number{tip}; block_number > ancestor; --block_number) {
+        state_.unwind_state_changes(block_number);
     }
 }
 

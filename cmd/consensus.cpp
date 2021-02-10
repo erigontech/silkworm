@@ -58,10 +58,6 @@ static const std::set<fs::path> kExcludedTests{
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
-
-    // TODO[Issue #23] fix this test
-    kBlockchainDir / "TransitionTests" / "bcFrontierToHomestead" /
-        "blockChainFrontierWithLargerTDvsHomesteadBlockchain2.json",
 };
 
 constexpr size_t kColumnWidth{80};

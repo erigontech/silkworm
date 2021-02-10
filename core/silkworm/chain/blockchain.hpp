@@ -35,9 +35,9 @@ class Blockchain {
   private:
     ValidationError execute_block(const Block& block, bool check_state_root);
 
-    void re_execute_canonical_chain(uint64_t from, uint64_t to);
+    void re_execute_canonical_chain(uint64_t ancestor, uint64_t tip);
 
-    void unwind_last_n_changes(uint64_t from, size_t n);
+    void unwind_last_changes(uint64_t ancestor, uint64_t tip);
 
     std::vector<BlockWithHash> intermediate_chain(uint64_t block_number, evmc::bytes32 hash,
                                                   uint64_t canonical_ancestor) const;

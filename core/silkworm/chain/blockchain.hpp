@@ -31,10 +31,10 @@ class Blockchain {
     Blockchain(const Blockchain&) = delete;
     Blockchain& operator=(const Blockchain&) = delete;
 
-    ValidationResult insert_block(Block& block, bool check_state_root);
+    [[nodiscard]] ValidationResult insert_block(Block& block, bool check_state_root);
 
   private:
-    ValidationResult execute_block(const Block& block, bool check_state_root);
+    [[nodiscard]] ValidationResult execute_block(const Block& block, bool check_state_root);
 
     void re_execute_canonical_chain(uint64_t ancestor, uint64_t tip);
 

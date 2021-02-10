@@ -37,13 +37,13 @@ class ExecutionProcessor {
     ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config = kMainnetConfig);
 
     // precondition: txn.from must be recovered, otherwise kMissingSender will be returned
-    ValidationResult validate_transaction(const Transaction& txn) const noexcept;
+    [[nodiscard]] ValidationResult validate_transaction(const Transaction& txn) const noexcept;
 
     // precondition: transaction must be valid
     Receipt execute_transaction(const Transaction& txn) noexcept;
 
     /// Execute the block, but do not write to the DB yet
-    std::pair<std::vector<Receipt>, ValidationResult> execute_block() noexcept;
+    [[nodiscard]] std::pair<std::vector<Receipt>, ValidationResult> execute_block() noexcept;
 
     uint64_t cumulative_gas_used() const noexcept { return cumulative_gas_used_; }
 

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ TEST_CASE("Execute two blocks") {
     // Execute first block
     // ---------------------------------------
 
-    execute_block(block, buffer);
+    CHECK(execute_block(block, buffer).second == ValidationResult::kOk);
 
     auto contract_address{create_address(sender, /*nonce=*/0)};
     std::optional<Account> contract_account{buffer.read_account(contract_address)};
@@ -104,7 +104,7 @@ TEST_CASE("Execute two blocks") {
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
 
-    execute_block(block, buffer);
+    CHECK(execute_block(block, buffer).second == ValidationResult::kOk);
 
     storage0 = buffer.read_storage(contract_address, incarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);

@@ -23,22 +23,22 @@
 
 namespace silkworm::rlp {
 
-std::pair<uint64_t, DecodingError> read_uint64(ByteView be, bool allow_leading_zeros) noexcept {
+std::pair<uint64_t, DecodingResult> read_uint64(ByteView be, bool allow_leading_zeros) noexcept {
     static constexpr size_t kMaxBytes{8};
     static_assert(sizeof(uint64_t) == kMaxBytes);
 
     uint64_t buf{0};
 
     if (be.length() > kMaxBytes) {
-        return {buf, DecodingError::kOverflow};
+        return {buf, DecodingResult::kOverflow};
     }
 
     if (be.empty()) {
-        return {buf, DecodingError::kOk};
+        return {buf, DecodingResult::kOk};
     }
 
     if (be[0] == 0 && !allow_leading_zeros) {
-        return {buf, DecodingError::kLeadingZero};
+        return {buf, DecodingResult::kLeadingZero};
     }
 
     auto* p{reinterpret_cast<uint8_t*>(&buf)};
@@ -46,25 +46,25 @@ std::pair<uint64_t, DecodingError> read_uint64(ByteView be, bool allow_leading_z
 
     static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN, "We assume a little-endian architecture like amd64");
     buf = intx::bswap(buf);
-    return {buf, DecodingError::kOk};
+    return {buf, DecodingResult::kOk};
 }
 
-std::pair<intx::uint256, DecodingError> read_uint256(ByteView be, bool allow_leading_zeros) noexcept {
+std::pair<intx::uint256, DecodingResult> read_uint256(ByteView be, bool allow_leading_zeros) noexcept {
     static constexpr size_t kMaxBytes{32};
     static_assert(sizeof(intx::uint256) == kMaxBytes);
 
     intx::uint256 buf{0};
 
     if (be.length() > kMaxBytes) {
-        return {buf, DecodingError::kOverflow};
+        return {buf, DecodingResult::kOverflow};
     }
 
     if (be.empty()) {
-        return {buf, DecodingError::kOk};
+        return {buf, DecodingResult::kOk};
     }
 
     if (be[0] == 0 && !allow_leading_zeros) {
-        return {buf, DecodingError::kLeadingZero};
+        return {buf, DecodingResult::kLeadingZero};
     }
 
     uint8_t* p{as_bytes(buf)};
@@ -72,13 +72,13 @@ std::pair<intx::uint256, DecodingError> read_uint256(ByteView be, bool allow_lea
 
     static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN);
     buf = intx::bswap(buf);
-    return {buf, DecodingError::kOk};
+    return {buf, DecodingResult::kOk};
 }
 
-std::pair<Header, DecodingError> decode_header(ByteView& from) noexcept {
+std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
     Header h;
     if (from.empty()) {
-        return {h, DecodingError::kInputTooShort};
+        return {h, DecodingResult::kInputTooShort};
     }
 
     uint8_t b{from[0]};
@@ -89,26 +89,26 @@ std::pair<Header, DecodingError> decode_header(ByteView& from) noexcept {
         h.payload_length = b - 0x80;
         if (h.payload_length == 1) {
             if (from.empty()) {
-                return {h, DecodingError::kInputTooShort};
+                return {h, DecodingResult::kInputTooShort};
             }
             if (from[0] < 0x80) {
-                return {h, DecodingError::kNonCanonicalSingleByte};
+                return {h, DecodingResult::kNonCanonicalSingleByte};
             }
         }
     } else if (b < 0xC0) {
         from.remove_prefix(1);
         size_t len_of_len{b - 0xB7u};
         if (from.length() < len_of_len) {
-            return {h, DecodingError::kInputTooShort};
+            return {h, DecodingResult::kInputTooShort};
         }
         auto [len, err]{read_uint64(from.substr(0, len_of_len))};
-        if (err != DecodingError::kOk) {
+        if (err != DecodingResult::kOk) {
             return {h, err};
         }
         h.payload_length = len;
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
-            return {h, DecodingError::kNonCanonicalSize};
+            return {h, DecodingResult::kNonCanonicalSize};
         }
     } else if (b < 0xF8) {
         from.remove_prefix(1);
@@ -119,74 +119,74 @@ std::pair<Header, DecodingError> decode_header(ByteView& from) noexcept {
         h.list = true;
         size_t len_of_len{b - 0xF7u};
         if (from.length() < len_of_len) {
-            return {h, DecodingError::kInputTooShort};
+            return {h, DecodingResult::kInputTooShort};
         }
         auto [len, err]{read_uint64(from.substr(0, len_of_len))};
-        if (err != DecodingError::kOk) {
+        if (err != DecodingResult::kOk) {
             return {h, err};
         }
         h.payload_length = len;
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
-            return {h, DecodingError::kNonCanonicalSize};
+            return {h, DecodingResult::kNonCanonicalSize};
         }
     }
 
     if (from.length() < h.payload_length) {
-        return {h, DecodingError::kInputTooShort};
+        return {h, DecodingResult::kInputTooShort};
     }
 
-    return {h, DecodingError::kOk};
+    return {h, DecodingResult::kOk};
 }
 
 template <>
-[[nodiscard]] DecodingError decode(ByteView& from, Bytes& to) noexcept {
+DecodingResult decode(ByteView& from, Bytes& to) noexcept {
     auto [h, err]{decode_header(from)};
-    if (err != DecodingError::kOk) {
+    if (err != DecodingResult::kOk) {
         return err;
     }
     if (h.list) {
-        return DecodingError::kUnexpectedList;
+        return DecodingResult::kUnexpectedList;
     }
     to = from.substr(0, h.payload_length);
     from.remove_prefix(h.payload_length);
-    return DecodingError::kOk;
+    return DecodingResult::kOk;
 }
 
 template <>
-[[nodiscard]] DecodingError decode(ByteView& from, uint64_t& to) noexcept {
+DecodingResult decode(ByteView& from, uint64_t& to) noexcept {
     auto [h, err1]{decode_header(from)};
-    if (err1 != DecodingError::kOk) {
+    if (err1 != DecodingResult::kOk) {
         return err1;
     }
     if (h.list) {
-        return DecodingError::kUnexpectedList;
+        return DecodingResult::kUnexpectedList;
     }
-    DecodingError err2;
+    DecodingResult err2;
     std::tie(to, err2) = read_uint64(from.substr(0, h.payload_length));
-    if (err2 != DecodingError::kOk) {
+    if (err2 != DecodingResult::kOk) {
         return err2;
     }
     from.remove_prefix(h.payload_length);
-    return DecodingError::kOk;
+    return DecodingResult::kOk;
 }
 
 template <>
-[[nodiscard]] DecodingError decode(ByteView& from, intx::uint256& to) noexcept {
+DecodingResult decode(ByteView& from, intx::uint256& to) noexcept {
     auto [h, err1]{decode_header(from)};
-    if (err1 != DecodingError::kOk) {
+    if (err1 != DecodingResult::kOk) {
         return err1;
     }
     if (h.list) {
-        return DecodingError::kUnexpectedList;
+        return DecodingResult::kUnexpectedList;
     }
-    DecodingError err2;
+    DecodingResult err2;
     std::tie(to, err2) = read_uint256(from.substr(0, h.payload_length));
-    if (err2 != DecodingError::kOk) {
+    if (err2 != DecodingResult::kOk) {
         return err2;
     }
     from.remove_prefix(h.payload_length);
-    return DecodingError::kOk;
+    return DecodingResult::kOk;
 }
 
 }  // namespace silkworm::rlp

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -40,13 +40,13 @@ struct Account {
 bool operator==(const Account& a, const Account& b);
 
 // Turbo-Geth (*Account)DecodeForStorage
-std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView encoded) noexcept;
+[[nodiscard]] std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView encoded) noexcept;
 
 namespace rlp {
     void encode(Bytes& to, const Account& account);
 
     template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, Account& to) noexcept;
+    DecodingResult decode(ByteView& from, Account& to) noexcept;
 }  // namespace rlp
 }  // namespace silkworm
 

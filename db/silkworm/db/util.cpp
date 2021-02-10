@@ -151,8 +151,8 @@ namespace detail {
         return to;
     }
 
-    static void check_rlp_err(rlp::DecodingError err) {
-        if (err != rlp::DecodingError::kOk) {
+    static void check_rlp_err(rlp::DecodingResult err) {
+        if (err != rlp::DecodingResult::kOk) {
             throw err;
         }
     }
@@ -161,7 +161,7 @@ namespace detail {
         auto [header, err]{rlp::decode_header(from)};
         check_rlp_err(err);
         if (!header.list) {
-            throw rlp::DecodingError::kUnexpectedString;
+            throw rlp::DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - header.payload_length};
 
@@ -171,7 +171,7 @@ namespace detail {
         check_rlp_err(rlp::decode_vector(from, to.ommers));
 
         if (from.length() != leftover) {
-            throw rlp::DecodingError::kListLengthMismatch;
+            throw rlp::DecodingResult::kListLengthMismatch;
         }
 
         return to;

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ TEST_CASE("Account RLP") {
 
     Account decoded;
     ByteView view{encoded};
-    REQUIRE(rlp::decode<Account>(view, decoded) == rlp::DecodingError::kOk);
+    REQUIRE(rlp::decode<Account>(view, decoded) == rlp::DecodingResult::kOk);
     CHECK(decoded == account);
 }
 
@@ -42,7 +42,7 @@ TEST_CASE("Decode account from storage") {
     Bytes encoded{*from_hex("0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
 
     auto [decoded, err]{decode_account_from_storage(encoded)};
-    REQUIRE(err == rlp::DecodingError::kOk);
+    REQUIRE(err == rlp::DecodingResult::kOk);
 
     CHECK(decoded.nonce == 2);
     CHECK(decoded.balance == 1000);

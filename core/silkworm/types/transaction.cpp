@@ -79,23 +79,23 @@ namespace rlp {
     void encode(Bytes& to, const Transaction& txn) { encode(to, txn, /*for_signing=*/false, {}); }
 
     template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, Transaction& to) noexcept {
+    DecodingResult decode(ByteView& from, Transaction& to) noexcept {
         auto [h, err]{decode_header(from)};
-        if (err != DecodingError::kOk) {
+        if (err != DecodingResult::kOk) {
             return err;
         }
         if (!h.list) {
-            return DecodingError::kUnexpectedString;
+            return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - h.payload_length};
 
-        if (DecodingError err{decode(from, to.nonce)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.nonce)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.gas_price)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.gas_price)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.gas_limit)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.gas_limit)}; err != DecodingResult::kOk) {
             return err;
         }
 
@@ -104,28 +104,28 @@ namespace rlp {
             from.remove_prefix(1);
         } else {
             to.to = evmc::address{};
-            if (DecodingError err{decode(from, to.to->bytes)}; err != DecodingError::kOk) {
+            if (DecodingResult err{decode(from, to.to->bytes)}; err != DecodingResult::kOk) {
                 return err;
             }
         }
 
-        if (DecodingError err{decode(from, to.value)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.value)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.data)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.data)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.v)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.v)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.r)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.r)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.s)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.s)}; err != DecodingResult::kOk) {
             return err;
         }
 
-        return from.length() == leftover ? DecodingError::kOk : DecodingError::kListLengthMismatch;
+        return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
     }
 
 }  // namespace rlp

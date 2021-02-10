@@ -38,10 +38,9 @@ namespace silkworm {
  *
  * For better performance use AnalysisCache & ExecutionStatePool.
  */
-std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& block, StateBuffer& buffer,
-                                                                const ChainConfig& config = kMainnetConfig,
-                                                                AnalysisCache* analysis_cache = nullptr,
-                                                                ExecutionStatePool* state_pool = nullptr) noexcept;
+[[nodiscard]] std::pair<std::vector<Receipt>, ValidationResult> execute_block(
+    const Block& block, StateBuffer& buffer, const ChainConfig& config = kMainnetConfig,
+    AnalysisCache* analysis_cache = nullptr, ExecutionStatePool* state_pool = nullptr) noexcept;
 
 }  // namespace silkworm
 

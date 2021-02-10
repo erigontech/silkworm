@@ -98,75 +98,75 @@ namespace rlp {
     }
 
     template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, BlockHeader& to) noexcept {
+    DecodingResult decode(ByteView& from, BlockHeader& to) noexcept {
         auto [rlp_head, err1]{decode_header(from)};
-        if (err1 != DecodingError::kOk) {
+        if (err1 != DecodingResult::kOk) {
             return err1;
         }
         if (!rlp_head.list) {
-            return DecodingError::kUnexpectedString;
+            return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - rlp_head.payload_length};
 
-        if (DecodingError err{decode(from, to.parent_hash.bytes)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.parent_hash.bytes)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.ommers_hash.bytes)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.ommers_hash.bytes)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.beneficiary.bytes)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.beneficiary.bytes)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.state_root.bytes)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.state_root.bytes)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.transactions_root.bytes)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.transactions_root.bytes)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.receipts_root.bytes)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.receipts_root.bytes)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.logs_bloom)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.logs_bloom)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.difficulty)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.difficulty)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.number)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.number)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.gas_limit)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.gas_limit)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.gas_used)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.gas_used)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.timestamp)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.timestamp)}; err != DecodingResult::kOk) {
             return err;
         }
 
         auto [extra_data_head, err2]{decode_header(from)};
-        if (err2 != DecodingError::kOk) {
+        if (err2 != DecodingResult::kOk) {
             return err2;
         }
         if (extra_data_head.list) {
-            return DecodingError::kUnexpectedList;
+            return DecodingResult::kUnexpectedList;
         }
         if (extra_data_head.payload_length > 32) {
-            return DecodingError::kUnexpectedLength;
+            return DecodingResult::kUnexpectedLength;
         }
         to.extra_data_size_ = static_cast<uint32_t>(extra_data_head.payload_length);
         std::memcpy(to.extra_data_.bytes, from.data(), to.extra_data_size_);
         from.remove_prefix(to.extra_data_size_);
 
-        if (DecodingError err{decode(from, to.mix_hash.bytes)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.mix_hash.bytes)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.nonce)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.nonce)}; err != DecodingResult::kOk) {
             return err;
         }
 
-        return from.length() == leftover ? DecodingError::kOk : DecodingError::kListLengthMismatch;
+        return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
     }
 
     void encode(Bytes& to, const BlockBody& block_body) {
@@ -179,48 +179,48 @@ namespace rlp {
     }
 
     template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, BlockBody& to) noexcept {
+    DecodingResult decode(ByteView& from, BlockBody& to) noexcept {
         auto [rlp_head, err]{decode_header(from)};
-        if (err != DecodingError::kOk) {
+        if (err != DecodingResult::kOk) {
             return err;
         }
         if (!rlp_head.list) {
-            return DecodingError::kUnexpectedString;
+            return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - rlp_head.payload_length};
 
-        if (DecodingError err{decode_vector(from, to.transactions)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode_vector(from, to.transactions)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode_vector(from, to.ommers)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode_vector(from, to.ommers)}; err != DecodingResult::kOk) {
             return err;
         }
 
-        return from.length() == leftover ? DecodingError::kOk : DecodingError::kListLengthMismatch;
+        return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
     }
 
     template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, Block& to) noexcept {
+    DecodingResult decode(ByteView& from, Block& to) noexcept {
         auto [rlp_head, err]{decode_header(from)};
-        if (err != DecodingError::kOk) {
+        if (err != DecodingResult::kOk) {
             return err;
         }
         if (!rlp_head.list) {
-            return DecodingError::kUnexpectedString;
+            return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - rlp_head.payload_length};
 
-        if (DecodingError err{decode(from, to.header)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.header)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode_vector(from, to.transactions)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode_vector(from, to.transactions)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode_vector(from, to.ommers)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode_vector(from, to.ommers)}; err != DecodingResult::kOk) {
             return err;
         }
 
-        return from.length() == leftover ? DecodingError::kOk : DecodingError::kListLengthMismatch;
+        return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
     }
 
 }  // namespace rlp

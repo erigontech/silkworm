@@ -110,7 +110,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
     } catch (const db::MissingSenders&) {
         SILKWORM_LOG(LogError) << "Missing or incorrect senders at block " << block_num << std::endl;
         return kSilkwormMissingSenders;
-    } catch (rlp::DecodingError e) {
+    } catch (rlp::DecodingResult e) {
         SILKWORM_LOG(LogError) << "Decoding error " << static_cast<int>(e) << " at block " << block_num << std::endl;
         return kSilkwormDecodingError;
     } catch (...) {

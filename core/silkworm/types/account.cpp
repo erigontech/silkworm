@@ -85,10 +85,10 @@ size_t Account::encoding_length_for_storage() const {
     return len;
 }
 
-std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView encoded) noexcept {
+std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView encoded) noexcept {
     Account a{};
     if (encoded.empty()) {
-        return {a, rlp::DecodingError::kOk};
+        return {a, rlp::DecodingResult::kOk};
     }
 
     uint8_t field_set = encoded[0];
@@ -97,10 +97,10 @@ std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView enco
     if (field_set & 1) {
         uint8_t len = encoded[pos++];
         if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingError::kInputTooShort};
+            return {a, rlp::DecodingResult::kInputTooShort};
         }
         auto [nonce, err]{rlp::read_uint64(encoded.substr(pos, len))};
-        if (err != rlp::DecodingError::kOk) {
+        if (err != rlp::DecodingResult::kOk) {
             return {a, err};
         }
         a.nonce = nonce;
@@ -110,7 +110,7 @@ std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView enco
     if (field_set & 2) {
         uint8_t len = encoded[pos++];
         if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingError::kInputTooShort};
+            return {a, rlp::DecodingResult::kInputTooShort};
         }
         std::memcpy(&as_bytes(a.balance)[32 - len], &encoded[pos], len);
         a.balance = bswap(a.balance);
@@ -120,10 +120,10 @@ std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView enco
     if (field_set & 4) {
         uint8_t len = encoded[pos++];
         if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingError::kInputTooShort};
+            return {a, rlp::DecodingResult::kInputTooShort};
         }
         auto [incarnation, err]{rlp::read_uint64(encoded.substr(pos, len))};
-        if (err != rlp::DecodingError::kOk) {
+        if (err != rlp::DecodingResult::kOk) {
             return {a, err};
         }
         a.incarnation = incarnation;
@@ -133,15 +133,15 @@ std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView enco
     if (field_set & 8) {
         uint8_t len = encoded[pos++];
         if (len != kHashLength) {
-            return {a, rlp::DecodingError::kUnexpectedLength};
+            return {a, rlp::DecodingResult::kUnexpectedLength};
         }
         if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingError::kInputTooShort};
+            return {a, rlp::DecodingResult::kInputTooShort};
         }
         std::memcpy(a.code_hash.bytes, &encoded[pos], kHashLength);
     }
 
-    return {a, rlp::DecodingError::kOk};
+    return {a, rlp::DecodingResult::kOk};
 }
 
 namespace rlp {
@@ -161,30 +161,30 @@ namespace rlp {
     }
 
     template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, Account& to) noexcept {
+    DecodingResult decode(ByteView& from, Account& to) noexcept {
         auto [h, err]{decode_header(from)};
-        if (err != DecodingError::kOk) {
+        if (err != DecodingResult::kOk) {
             return err;
         }
         if (!h.list) {
-            return DecodingError::kUnexpectedString;
+            return DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - h.payload_length};
 
-        if (DecodingError err{decode(from, to.nonce)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.nonce)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.balance)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.balance)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.storage_root.bytes)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.storage_root.bytes)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingError err{decode(from, to.code_hash.bytes)}; err != DecodingError::kOk) {
+        if (DecodingResult err{decode(from, to.code_hash.bytes)}; err != DecodingResult::kOk) {
             return err;
         }
 
-        return from.length() == leftover ? DecodingError::kOk : DecodingError::kListLengthMismatch;
+        return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
     }
 
 }  // namespace rlp

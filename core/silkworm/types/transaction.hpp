@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ namespace rlp {
     void encode(Bytes& to, const Transaction& txn, bool for_signing, std::optional<uint64_t> eip155_chain_id);
 
     template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, Transaction& to) noexcept;
+    DecodingResult decode(ByteView& from, Transaction& to) noexcept;
 }  // namespace rlp
 }  // namespace silkworm
 

@@ -37,7 +37,7 @@ class ExecutionProcessor {
     ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config = kMainnetConfig);
 
     // precondition: txn.from must be recovered, otherwise kMissingSender will be returned
-    [[nodiscard]] ValidationResult validate_transaction(const Transaction& txn) const noexcept;
+    ValidationResult validate_transaction(const Transaction& txn) const noexcept;
 
     // precondition: transaction must be valid
     Receipt execute_transaction(const Transaction& txn) noexcept;

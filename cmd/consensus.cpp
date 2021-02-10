@@ -194,8 +194,8 @@ static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
     {"difficultyRopsten.json", kRopstenConfig},
 };
 
-static void check_rlp_err(rlp::DecodingError err) {
-    if (err != rlp::DecodingError::kOk) {
+static void check_rlp_err(rlp::DecodingResult err) {
+    if (err != rlp::DecodingResult::kOk) {
         throw err;
     }
 }
@@ -250,7 +250,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
 
     Block block;
     ByteView view{*rlp};
-    if (rlp::decode(view, block) != rlp::DecodingError::kOk || !view.empty()) {
+    if (rlp::decode(view, block) != rlp::DecodingResult::kOk || !view.empty()) {
         if (invalid) {
             return kPassed;
         }
@@ -406,7 +406,7 @@ static void print_test_status(std::string_view key, Status status) {
     }
 }
 
-struct RunResults {
+struct [[nodiscard]] RunResults {
     size_t passed{0};
     size_t failed{0};
     size_t skipped{0};
@@ -433,9 +433,8 @@ struct RunResults {
     }
 };
 
-[[nodiscard]] RunResults run_test_file(const fs::path& file_path,
-                                       Status (*runner)(const nlohmann::json&, std::optional<ChainConfig>),
-                                       std::optional<ChainConfig> config = {}) {
+RunResults run_test_file(const fs::path& file_path, Status (*runner)(const nlohmann::json&, std::optional<ChainConfig>),
+                         std::optional<ChainConfig> config = {}) {
     std::ifstream in{file_path.string()};
     nlohmann::json json;
     in >> json;
@@ -461,7 +460,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     std::optional<Bytes> rlp{from_hex(j["rlp"].get<std::string>())};
     if (rlp) {
         ByteView view{*rlp};
-        if (rlp::decode(view, txn) == rlp::DecodingError::kOk) {
+        if (rlp::decode(view, txn) == rlp::DecodingResult::kOk) {
             decoded = view.empty();
         }
     }

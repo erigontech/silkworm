@@ -24,8 +24,8 @@
 
 namespace silkworm::db {
 
-static void check_rlp_err(rlp::DecodingError err) {
-    if (err != rlp::DecodingError::kOk) {
+static void check_rlp_err(rlp::DecodingResult err) {
+    if (err != rlp::DecodingResult::kOk) {
         throw err;
     }
 }

@@ -18,12 +18,11 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/endian/conversion.hpp>
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/stages.hpp>
 #include <silkworm/types/transaction.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/chain/config.hpp>
@@ -31,38 +30,58 @@
 using namespace silkworm;
 
 // Definitions
-using Hash = std::string;           // todo: provide correct definition
-using Header = std::string;         // todo: provide correct definition
-using BlockNum = uint64_t;          // todo: provide correct definition
+using Hash = evmc::bytes32; // uint8_t bytes[32], see common/utils.hpp for conversions
+using Header = BlockHeader;
+using BlockNum = uint64_t;
+//using Bytes = std::basic_string<uint8_t>; already defined elsewhere
 
-bool is_common(Hash h) {return h.length() % 2 == 0;}   // todo: provide correct implementation
-std::string rlp_encode_base64(Header hd) {return hd;}  // todo: provide correct implementation
-long time(Header) {return 0;}                          // todo: provide correct implementation
+std::string base64encode(Bytes);   // todo: we need to implement this?
 
 class Db {                                  // todo: provide correct implementation
-    std::string sb_path;
+    std::shared_ptr<lmdb::Environment> env;
+    std::unique_ptr<lmdb::Transaction> txn;
   public:
-    Db(std::string sb_path): sb_path{sb_path} {}
+    Db(std::string db_path) {
+        lmdb::DatabaseConfig db_config{db_path};
+        db_config.set_readonly(false);
+        env = lmdb::get_env(db_config);
+        txn = env->begin_ro_transaction();  // todo: check if ro is ok or we need rw
+    }
 
-    Hash read_canonical_hash(BlockNum b)    {return "canonical-hash-of-block-" + std::to_string(b);}
-    Hash read_head_header_hash()            {return "head-header-hash";}
+    std::optional<Hash> read_canonical_hash(BlockNum b) {  // throws db exceptions
+        auto header_table = txn->open(db::table::kBlockHeaders);
+        // accessing this table with only b we will get the hash of the canonical block at height b
+        std::optional<ByteView> hash = header_table->get(db::header_hash_key(b));
+        if (!hash) return std::nullopt; // not found
+        assert(hash->size() == kHashLength);
+        return to_bytes32(hash.value()); // copy
+    }
 
-    Header read_header(Hash h, BlockNum b)  {return "header-of-hash-" + h + "-and-block-" + std::to_string(b);}
-    Header read_header(Hash h)              {return "header-of-hash-" + h;}
+    Bytes head_header_key();    // todo: implement
 
-    //namespace fs = boost::filesystem;
+    std::optional<Hash> read_head_header_hash() {
+        auto head_header_table = txn->open(db::table::kHeadHeader);
+        std::optional<ByteView> hash = head_header_table->get(head_header_key());
+        if (!hash) return std::nullopt; // not found
+        assert(hash->size() == kHashLength);
+        return to_bytes32(hash.value()); // copy
+    }
 
-    /* examples
-    fs::path datadir(db_path);
-    lmdb::DatabaseConfig db_config{db_path};
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
-    auto bodies_table{txn->open(db::table::kBlockBodies)};
-    auto tx_lookup_table{txn->open(db::table::kTxLookup)};
-    auto transactions_table{txn->open(db::table::kEthTx)};
-    uint64_t expected_block_number{0};
-    Bytes buffer{}; // To extract compacted data
-    */
+    std::optional<BlockHeader> read_header(BlockNum b, Hash h)  {
+        // auto header_table = txn->open(db::table::kBlockHeaders);
+        // std::optional<ByteView> header_rlp = header_table->get(db::block_key(b, h));
+        // ... decode header_rlp ...
+        // but there is an implementation id db
+        return db::read_header(*txn, b, h.bytes);
+    }
+
+    std::optional<BlockHeader> read_header(Hash h) {
+        auto blockhashes_table = txn->open(db::table::kHeaderNumbers);
+        auto encoded_block_num = blockhashes_table->get(h.bytes);
+        if (!encoded_block_num) return {};
+        BlockNum block_num = boost::endian::load_big_u64(encoded_block_num->data());
+        return read_header(block_num, h);
+    }
 };
 
 class HeaderListFile {
@@ -131,22 +150,25 @@ int main(int argc, char* argv[]) {
 
     BlockNum block_num = 0;
     for(; block_num < UINT64_MAX; block_num += block_step) {
-        Hash hash = db.read_canonical_hash(block_num);
-        if (is_common(hash))
-            break;
-        Header header = db.read_header(hash, block_num);
-        string encoded_header = rlp_encode_base64(header);
-        output.add_header(encoded_header);
+        std::optional<Hash> hash = db.read_canonical_hash(block_num);
+        if (!hash) break;
+        std::optional<BlockHeader> header = db.read_header(block_num, hash.value());
+        if (!hash) throw std::logic_error("header hash without header in db");
+        Bytes encoded_header;
+        rlp::encode(encoded_header, header.value());
+        output.add_header(base64encode(encoded_header));
     }
 
     // Final tasks
     cout << "Last block is " << block_num << "\n";
 
-    Hash hash = db.read_head_header_hash();
-    Header header = db.read_header(hash);
+    auto hash = db.read_head_header_hash();
+    if (!hash) throw std::logic_error("hash of head header not found in db");
+    auto header = db.read_header(hash.value());
+    if (!header) throw std::logic_error("head header not found in db");
 
     auto unix_timestamp = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-    cout << "Latest header timestamp: " << time(header) << ", current time: " << unix_timestamp << "\n";
+    cout << "Latest header timestamp: " << header->timestamp << ", current time: " << unix_timestamp << "\n";
 }
 
 

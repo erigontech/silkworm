@@ -19,6 +19,7 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
+#include <boost/beast/core/detail/base64.hpp>
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/util.hpp>
@@ -35,9 +36,7 @@ using Header = BlockHeader;
 using BlockNum = uint64_t;
 //using Bytes = std::basic_string<uint8_t>; already defined elsewhere
 
-std::string base64encode(Bytes);   // todo: we need to implement this?
-
-class Db {                                  // todo: provide correct implementation
+class Db {
     std::shared_ptr<lmdb::Environment> env;
     std::unique_ptr<lmdb::Transaction> txn;
   public:
@@ -57,7 +56,11 @@ class Db {                                  // todo: provide correct implementat
         return to_bytes32(hash.value()); // copy
     }
 
-    Bytes head_header_key();    // todo: implement
+    Bytes head_header_key() {
+        std::string table_name = db::table::kHeadHeader.name; // todo: check!
+        Bytes key{table_name.begin(), table_name.end()};
+        return key;
+    }
 
     std::optional<Hash> read_head_header_hash() {
         auto head_header_table = txn->open(db::table::kHeadHeader);
@@ -99,11 +102,16 @@ class HeaderListFile {
 
         empty = false;
     }
-    ~HeaderListFile() {
+    void close() {
+        if (!output_file.is_open()) return;
         if (!empty)
             output_file << "\n"  // terminate last line
                         << template_end(); // write final part of the template
         output_file.close();
+
+    }
+    ~HeaderListFile() {
+        close();
     }
   private:
     std::string template_begin() {std::size_t pos = file_template.find('@'); return file_template.substr (0, pos);}
@@ -122,6 +130,14 @@ class HeaderListFile {
     };
     )TEMPLATE";     // improvement: handle whitespaces here and at add_header()
 };
+
+std::string base64encode(const ByteView& bytes) {
+    size_t encoded_len = boost::beast::detail::base64::encoded_size(bytes.length());
+    std::unique_ptr encoded_bytes = std::unique_ptr<char[]>(new char[encoded_len]);
+    boost::beast::detail::base64::encode(encoded_bytes.get(), bytes.data(), bytes.length());
+    //encoded_bytes[encoded_len] = 0;
+    return std::string(encoded_bytes.get(),encoded_len);
+}
 
 // Main
 int main(int argc, char* argv[]) {
@@ -146,10 +162,10 @@ int main(int argc, char* argv[]) {
 
     // Main loop
     Db db{db_path};
-    HeaderListFile output{file_name};
 
+    HeaderListFile output{file_name};
     BlockNum block_num = 0;
-    for(; block_num < UINT64_MAX; block_num += block_step) {
+    for (; block_num < UINT64_MAX; block_num += block_step) {
         std::optional<Hash> hash = db.read_canonical_hash(block_num);
         if (!hash) break;
         std::optional<BlockHeader> header = db.read_header(block_num, hash.value());
@@ -158,6 +174,7 @@ int main(int argc, char* argv[]) {
         rlp::encode(encoded_header, header.value());
         output.add_header(base64encode(encoded_header));
     }
+    output.close();
 
     // Final tasks
     cout << "Last block is " << block_num << "\n";

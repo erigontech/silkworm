@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -28,11 +28,6 @@
 #include <silkworm/types/block.hpp>
 #include <stack>
 #include <vector>
-
-// TODO(Andrew) get rid of this when
-// https://github.com/ethereum/evmc/pull/528
-// is merged and released
-enum evmc_status_code_extra { EVMC_BALANCE_TOO_LOW = 32 };
 
 namespace silkworm {
 
@@ -89,7 +84,8 @@ class EvmHost : public evmc::Host {
 
     bool account_exists(const evmc::address& address) const noexcept override;
 
-    evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept override;
+    evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key,
+                              bool* warm_read) const noexcept override;
 
     evmc_storage_status set_storage(const evmc::address& address, const evmc::bytes32& key,
                                     const evmc::bytes32& value) noexcept override;

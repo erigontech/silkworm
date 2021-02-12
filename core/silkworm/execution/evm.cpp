@@ -61,7 +61,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 
     auto value{intx::be::load<intx::uint256>(message.value)};
     if (state_.get_balance(message.sender) < value) {
-        res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
+        res.status_code = EVMC_INSUFFICIENT_BALANCE;
         return res;
     }
 
@@ -143,7 +143,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
     auto value{intx::be::load<intx::uint256>(message.value)};
     if (message.kind != EVMC_DELEGATECALL && state_.get_balance(message.sender) < value) {
-        res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
+        res.status_code = EVMC_INSUFFICIENT_BALANCE;
         return res;
     }
 
@@ -301,13 +301,14 @@ bool EvmHost::account_exists(const evmc::address& address) const noexcept {
     }
 }
 
-evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept {
-    return evm_.state().get_current_storage(address, key);
+evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::bytes32& key,
+                                   bool* warm_read) const noexcept {
+    return evm_.state().get_current_storage(address, key, warm_read);
 }
 
 evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evmc::bytes32& key,
                                          const evmc::bytes32& new_val) noexcept {
-    evmc::bytes32 current_val{evm_.state().get_current_storage(address, key)};
+    evmc::bytes32 current_val{evm_.state().get_current_storage(address, key, nullptr)};
 
     if (current_val == new_val) {
         return EVMC_STORAGE_UNCHANGED;

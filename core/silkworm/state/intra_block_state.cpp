@@ -212,8 +212,16 @@ void IntraBlockState::set_code(const evmc::address& address, Bytes code) noexcep
     obj.code = std::move(code);
 }
 
-evmc::bytes32 IntraBlockState::get_current_storage(const evmc::address& address,
-                                                   const evmc::bytes32& key) const noexcept {
+evmc::bytes32 IntraBlockState::get_current_storage(const evmc::address& address, const evmc::bytes32& key,
+                                                   bool* warm_read) noexcept {
+    const bool cold_read{accessed_storage_keys_[address].insert(key).second};
+    if (warm_read) {
+        *warm_read = !cold_read;
+    }
+    if (cold_read) {
+        journal_.emplace_back(new state::StorageAccessDelta{address, key});
+    }
+
     return get_storage(address, key, /*original=*/false);
 }
 
@@ -259,7 +267,7 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const e
 
 void IntraBlockState::set_storage(const evmc::address& address, const evmc::bytes32& key,
                                   const evmc::bytes32& value) noexcept {
-    evmc::bytes32 prev{get_current_storage(address, key)};
+    evmc::bytes32 prev{get_current_storage(address, key, nullptr)};
     if (prev == value) {
         return;
     }
@@ -329,6 +337,7 @@ void IntraBlockState::clear_journal_and_substate() {
     logs_.clear();
     touched_.clear();
     refund_ = 0;
+    accessed_storage_keys_.clear();
 }
 
 void IntraBlockState::add_log(const Log& log) noexcept { logs_.push_back(log); }

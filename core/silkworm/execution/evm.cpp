@@ -307,8 +307,8 @@ evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::byt
 }
 
 evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evmc::bytes32& key,
-                                         const evmc::bytes32& new_val) noexcept {
-    evmc::bytes32 current_val{evm_.state().get_current_storage(address, key, nullptr)};
+                                         const evmc::bytes32& new_val, bool* warm_read) noexcept {
+    evmc::bytes32 current_val{evm_.state().get_current_storage(address, key, warm_read)};
 
     if (current_val == new_val) {
         return EVMC_STORAGE_UNCHANGED;
@@ -333,7 +333,20 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
         return EVMC_STORAGE_MODIFIED;
     }
 
-    uint64_t sload_cost{evm_.config().has_istanbul(block_number) ? fee::kGSLoadIstanbul : fee::kGSLoadTangerineWhistle};
+    uint64_t sload_cost{0};
+    if (evm_.config().has_berlin(block_number)) {
+        sload_cost = fee::kWarmStorageReadCost;
+    } else if (evm_.config().has_istanbul(block_number)) {
+        sload_cost = fee::kGSLoadIstanbul;
+    } else {
+        sload_cost = fee::kGSLoadTangerineWhistle;
+    }
+
+    uint64_t sstore_reset_gas{fee::kGSReset};
+    if (evm_.config().has_berlin(block_number)) {
+        sstore_reset_gas -= fee::kColdSloadCost;
+    }
+
     // https://eips.ethereum.org/EIPS/eip-1283
     evmc::bytes32 original_val{evm_.state().get_original_storage(address, key)};
 
@@ -358,7 +371,7 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
             if (is_zero(original_val)) {
                 evm_.state().add_refund(fee::kGSSet - sload_cost);
             } else {
-                evm_.state().add_refund(fee::kGSReset - sload_cost);
+                evm_.state().add_refund(sstore_reset_gas - sload_cost);
             }
         }
         return EVMC_STORAGE_MODIFIED_AGAIN;

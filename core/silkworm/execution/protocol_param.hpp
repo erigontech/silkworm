@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ namespace silkworm {
 namespace fee {
     constexpr uint64_t kGSLoadTangerineWhistle{200};
     constexpr uint64_t kGSLoadIstanbul{800};
+    constexpr uint64_t kWarmStorageReadCost{100};  // EIP-2929
+    constexpr uint64_t kColdSloadCost{2'100};      // EIP-2929
 
     constexpr uint64_t kGSSet{20'000};
     constexpr uint64_t kGSReset{5'000};

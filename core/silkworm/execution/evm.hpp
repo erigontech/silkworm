@@ -87,8 +87,8 @@ class EvmHost : public evmc::Host {
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key,
                               bool* warm_read) const noexcept override;
 
-    evmc_storage_status set_storage(const evmc::address& address, const evmc::bytes32& key,
-                                    const evmc::bytes32& value) noexcept override;
+    evmc_storage_status set_storage(const evmc::address& address, const evmc::bytes32& key, const evmc::bytes32& value,
+                                    bool* warm_read) noexcept override;
 
     evmc::uint256be get_balance(const evmc::address& address) const noexcept override;
 

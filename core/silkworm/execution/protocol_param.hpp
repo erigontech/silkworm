@@ -45,7 +45,8 @@ namespace fee {
     constexpr uint64_t kGTxDataNonZeroIstanbul{16};
     constexpr uint64_t kGTransaction{21'000};
 
-    constexpr uint64_t kGQuadDivisor{20};
+    constexpr uint64_t kGQuadDivisorEip198{20};
+    constexpr uint64_t kGQuadDivisorEip2565{3};
 }  // namespace fee
 
 namespace param {

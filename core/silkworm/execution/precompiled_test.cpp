@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -92,6 +92,7 @@ TEST_CASE("EXPMOD") {
         "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"
         "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd");
     CHECK(expmod_gas(in, EVMC_BYZANTIUM) == UINT64_MAX);
+    CHECK(expmod_gas(in, EVMC_BERLIN) == UINT64_MAX);
 
     in = *from_hex(
         "0000000000000000000000000000000000000000000000000000000000000100"
@@ -111,6 +112,7 @@ TEST_CASE("EXPMOD") {
         "3abbbd78fa27dd113921d3facbcc1d6040243c9761867c69a1dc13d9f71898121ff696561458d9d9f87536d6a84f"
         "b602c91f9b07e561fa2f54eb0f9f1984f3cbe728ec142cbed52f");
     CHECK(expmod_gas(in, EVMC_BYZANTIUM) == 30310);
+    CHECK(expmod_gas(in, EVMC_BERLIN) == 5461);
 }
 
 TEST_CASE("BN_ADD") {

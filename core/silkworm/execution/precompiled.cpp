@@ -92,7 +92,7 @@ uint64_t id_gas(ByteView input, evmc_revision) noexcept { return 15 + 3 * ((inpu
 
 std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
 
-static intx::uint256 mult_complexity(const intx::uint256& x) noexcept {
+static intx::uint256 mult_complexity_eip198(const intx::uint256& x) noexcept {
     if (x <= 64) {
         return sqr(x);
     } else if (x <= 1024) {
@@ -102,7 +102,14 @@ static intx::uint256 mult_complexity(const intx::uint256& x) noexcept {
     }
 }
 
-uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
+static intx::uint256 mult_complexity_eip2565(const intx::uint256& max_length) noexcept {
+    intx::uint256 words{(max_length + 7) >> 3};  // ⌈max_length/8⌉
+    return sqr(words);
+}
+
+uint64_t expmod_gas(ByteView input, evmc_revision rev) noexcept {
+    const uint64_t min_gas{rev < EVMC_BERLIN ? 0 : 200u};
+
     Bytes buffer;
     input = right_pad(input, 3 * 32, buffer);
 
@@ -111,7 +118,7 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
     intx::uint256 mod_len256{intx::be::unsafe::load<intx::uint256>(&input[64])};
 
     if (base_len256 == 0 && mod_len256 == 0) {
-        return 0;
+        return min_gas;
     }
 
     if (intx::count_significant_words<uint64_t>(base_len256) > 1 ||
@@ -148,11 +155,19 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
         adjusted_exponent_len = 1;
     }
 
-    intx::uint256 gas{mult_complexity(std::max(mod_len256, base_len256)) * adjusted_exponent_len / fee::kGQuadDivisor};
+    const intx::uint256 max_length{std::max(mod_len256, base_len256)};
+
+    intx::uint256 gas;
+    if (rev < EVMC_BERLIN) {
+        gas = mult_complexity_eip198(max_length) * adjusted_exponent_len / fee::kGQuadDivisorEip198;
+    } else {
+        gas = mult_complexity_eip2565(max_length) * adjusted_exponent_len / fee::kGQuadDivisorEip2565;
+    }
+
     if (intx::count_significant_words<uint64_t>(gas) > 1) {
         return UINT64_MAX;
     } else {
-        return intx::narrow_cast<uint64_t>(gas);
+        return std::max(min_gas, intx::narrow_cast<uint64_t>(gas));
     }
 }
 

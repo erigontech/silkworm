@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -43,7 +43,8 @@ namespace fee {
     constexpr uint64_t kGTxDataNonZeroIstanbul{16};
     constexpr uint64_t kGTransaction{21'000};
 
-    constexpr uint64_t kGQuadDivisor{20};
+    constexpr uint64_t kGQuadDivisorEip198{20};
+    constexpr uint64_t kGQuadDivisorEip2565{3};
 }  // namespace fee
 
 namespace param {

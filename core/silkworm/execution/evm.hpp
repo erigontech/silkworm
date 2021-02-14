@@ -84,11 +84,12 @@ class EvmHost : public evmc::Host {
 
     bool account_exists(const evmc::address& address) const noexcept override;
 
-    evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key,
-                              bool* warm_read) const noexcept override;
+    evmc_access_status access_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept override;
 
-    evmc_storage_status set_storage(const evmc::address& address, const evmc::bytes32& key, const evmc::bytes32& value,
-                                    bool* warm_read) noexcept override;
+    evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept override;
+
+    evmc_storage_status set_storage(const evmc::address& address, const evmc::bytes32& key,
+                                    const evmc::bytes32& value) noexcept override;
 
     evmc::uint256be get_balance(const evmc::address& address) const noexcept override;
 

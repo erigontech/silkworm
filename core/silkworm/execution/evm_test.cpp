@@ -102,7 +102,7 @@ TEST_CASE("Smart contract with storage") {
 
     evmc::address contract_address{create_address(caller, /*nonce=*/1)};
     evmc::bytes32 key0{};
-    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0, nullptr))) == "2a");
+    CHECK(to_hex(zeroless_view(state.get_current_storage(contract_address, key0))) == "2a");
 
     evmc::bytes32 new_val{to_bytes32(*from_hex("f5"))};
     txn.to = contract_address;
@@ -110,7 +110,7 @@ TEST_CASE("Smart contract with storage") {
 
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_SUCCESS);
-    CHECK(state.get_current_storage(contract_address, key0, nullptr) == new_val);
+    CHECK(state.get_current_storage(contract_address, key0) == new_val);
 }
 
 TEST_CASE("Maximum call depth") {
@@ -220,8 +220,7 @@ TEST_CASE("DELEGATECALL") {
     CHECK(res.status == EVMC_SUCCESS);
 
     evmc::bytes32 key0{};
-    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0, nullptr))) ==
-          to_hex(full_view(caller_address)));
+    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0))) == to_hex(full_view(caller_address)));
 }
 
 // https://eips.ethereum.org/EIPS/eip-211#specification
@@ -281,7 +280,7 @@ TEST_CASE("CREATE should only return on failure") {
 
     evmc::address contract_address{create_address(caller, /*nonce=*/0)};
     evmc::bytes32 key0{};
-    CHECK(is_zero(state.get_current_storage(contract_address, key0, nullptr)));
+    CHECK(is_zero(state.get_current_storage(contract_address, key0)));
 }
 
 // https://github.com/ethereum/EIPs/issues/684

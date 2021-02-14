@@ -81,7 +81,9 @@ class IntraBlockState {
     evmc::bytes32 get_code_hash(const evmc::address& address) const noexcept;
     void set_code(const evmc::address& address, Bytes code) noexcept;
 
-    evmc::bytes32 get_current_storage(const evmc::address& address, const evmc::bytes32& key, bool* warm_read) noexcept;
+    evmc_access_status access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept;
+
+    evmc::bytes32 get_current_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept;
 
     // https://eips.ethereum.org/EIPS/eip-2200
     evmc::bytes32 get_original_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept;

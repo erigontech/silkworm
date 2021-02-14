@@ -301,14 +301,17 @@ bool EvmHost::account_exists(const evmc::address& address) const noexcept {
     }
 }
 
-evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::bytes32& key,
-                                   bool* warm_read) const noexcept {
-    return evm_.state().get_current_storage(address, key, warm_read);
+evmc_access_status EvmHost::access_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept {
+    return evm_.state().access_storage(address, key);
+}
+
+evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept {
+    return evm_.state().get_current_storage(address, key);
 }
 
 evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evmc::bytes32& key,
-                                         const evmc::bytes32& new_val, bool* warm_read) noexcept {
-    evmc::bytes32 current_val{evm_.state().get_current_storage(address, key, warm_read)};
+                                         const evmc::bytes32& new_val) noexcept {
+    evmc::bytes32 current_val{evm_.state().get_current_storage(address, key)};
 
     if (current_val == new_val) {
         return EVMC_STORAGE_UNCHANGED;

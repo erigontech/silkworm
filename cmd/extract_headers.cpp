@@ -39,12 +39,13 @@ using BlockNum = uint64_t;
 class Db {
     std::shared_ptr<lmdb::Environment> env;
     std::unique_ptr<lmdb::Transaction> txn;
+
   public:
     Db(std::string db_path) {
         lmdb::DatabaseConfig db_config{db_path};
-        db_config.set_readonly(false);
+        //db_config.set_readonly(false);
         env = lmdb::get_env(db_config);
-        txn = env->begin_ro_transaction();  // todo: check if ro is ok or we need rw
+        txn = env->begin_ro_transaction();
     }
 
     std::optional<Hash> read_canonical_hash(BlockNum b) {  // throws db exceptions
@@ -133,15 +134,14 @@ class HeaderListFile {
 
 std::string base64encode(const ByteView& bytes) {
     size_t encoded_len = boost::beast::detail::base64::encoded_size(bytes.length());
-    std::unique_ptr encoded_bytes = std::unique_ptr<char[]>(new char[encoded_len]);
-    boost::beast::detail::base64::encode(encoded_bytes.get(), bytes.data(), bytes.length());
-    //encoded_bytes[encoded_len] = 0;
-    return std::string(encoded_bytes.get(),encoded_len);
+    std::string encoded_bytes(encoded_len, '\0');                                          // since c++11 string.data() is contiguous
+    boost::beast::detail::base64::encode(encoded_bytes.data(), bytes.data(), bytes.length()); // and we can write safely in it
+    return encoded_bytes;
 }
 
 // Main
 int main(int argc, char* argv[]) {
-    using std::string, std::cout;
+    using std::string, std::cout, std::cerr;
     using namespace std::chrono;
 
     // Command line parsing
@@ -161,31 +161,38 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     // Main loop
-    Db db{db_path};
+    try {
+        Db db{db_path};
 
-    HeaderListFile output{file_name};
-    BlockNum block_num = 0;
-    for (; block_num < UINT64_MAX; block_num += block_step) {
-        std::optional<Hash> hash = db.read_canonical_hash(block_num);
-        if (!hash) break;
-        std::optional<BlockHeader> header = db.read_header(block_num, hash.value());
-        if (!hash) throw std::logic_error("header hash without header in db");
-        Bytes encoded_header;
-        rlp::encode(encoded_header, header.value());
-        output.add_header(base64encode(encoded_header));
+        HeaderListFile output{file_name};
+        BlockNum block_num = 0;
+        for (; block_num < UINT64_MAX; block_num += block_step) {
+            std::optional<Hash> hash = db.read_canonical_hash(block_num);
+            if (!hash) break;
+            std::optional<BlockHeader> header = db.read_header(block_num, *hash);
+            if (!hash) throw std::logic_error("block header not found in db (but its hash is present)");
+            Bytes encoded_header;
+            rlp::encode(encoded_header, *header);
+            output.add_header(base64encode(encoded_header));
+        }
+        output.close();
+
+        // Final tasks
+        cout << "Last block is " << block_num << "\n";
+
+        auto hash = db.read_head_header_hash();
+        if (!hash) throw std::logic_error("hash of head header not found in db");
+        auto header = db.read_header(*hash);
+        if (!header) throw std::logic_error("head header not found in db");
+
+        auto unix_timestamp = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
+        cout << "Latest header timestamp: " << header->timestamp << ", current time: " << unix_timestamp << "\n";
+        return 0;
     }
-    output.close();
-
-    // Final tasks
-    cout << "Last block is " << block_num << "\n";
-
-    auto hash = db.read_head_header_hash();
-    if (!hash) throw std::logic_error("hash of head header not found in db");
-    auto header = db.read_header(hash.value());
-    if (!header) throw std::logic_error("head header not found in db");
-
-    auto unix_timestamp = duration_cast<seconds>(system_clock::now().time_since_epoch()).count();
-    cout << "Latest header timestamp: " << header->timestamp << ", current time: " << unix_timestamp << "\n";
+    catch(std::exception& e) {
+        cerr << "Exception: " << e.what() << "\n";
+        return 1;
+    }
 }
 
 

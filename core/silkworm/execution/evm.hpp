@@ -84,6 +84,8 @@ class EvmHost : public evmc::Host {
 
     bool account_exists(const evmc::address& address) const noexcept override;
 
+    evmc_access_status access_account(const evmc::address& address) const noexcept override;
+
     evmc_access_status access_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept override;
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept override;

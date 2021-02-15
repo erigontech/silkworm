@@ -65,7 +65,8 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
         return res;
     }
 
-    uint64_t nonce{state_.get_nonce(message.sender)};
+    const uint64_t nonce{state_.get_nonce(message.sender)};
+    state_.set_nonce(message.sender, nonce + 1);
 
     evmc::address contract_addr{};
     if (message.kind == EVMC_CREATE) {
@@ -75,7 +76,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
         contract_addr = create2_address(message.sender, message.create2_salt, init_code_hash.bytes);
     }
 
-    state_.set_nonce(message.sender, nonce + 1);
+    state_.access_account(contract_addr);
 
     if (state_.get_nonce(contract_addr) != 0 || state_.get_code_hash(contract_addr) != kEmptyHash) {
         // https://github.com/ethereum/EIPs/issues/684
@@ -299,6 +300,13 @@ bool EvmHost::account_exists(const evmc::address& address) const noexcept {
     } else {
         return evm_.state().exists(address);
     }
+}
+
+evmc_access_status EvmHost::access_account(const evmc::address& address) const noexcept {
+    if (evm_.is_precompiled(address)) {
+        return EVMC_WARM_ACCESS;
+    }
+    return evm_.state().access_account(address);
 }
 
 evmc_access_status EvmHost::access_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept {

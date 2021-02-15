@@ -133,6 +133,17 @@ namespace state {
         evmc::bytes32 key_;
     };
 
+    // Account accessed (see EIP-2929).
+    class AccountAccessDelta : public Delta {
+      public:
+        explicit AccountAccessDelta(evmc::address address) noexcept;
+
+        void revert(IntraBlockState& state) noexcept override;
+
+      private:
+        evmc::address address_;
+    };
+
 }  // namespace state
 }  // namespace silkworm
 

@@ -97,13 +97,15 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
 
 Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept {
     IntraBlockState& state{evm_.state()};
+    evm_.state().clear_journal_and_substate();
+
+    state.access_account(*txn.from);
     state.subtract_from_balance(*txn.from, txn.gas_limit * txn.gas_price);
     if (txn.to) {
+        state.access_account(*txn.to);
         // EVM itself increments the nonce for contract creation
         state.set_nonce(*txn.from, txn.nonce + 1);
     }
-
-    evm_.state().clear_journal_and_substate();
 
     uint64_t block_number{evm_.block().header.number};
     bool homestead{evm_.config().has_homestead(block_number)};

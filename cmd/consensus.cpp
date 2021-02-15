@@ -58,6 +58,10 @@ static const std::set<fs::path> kExcludedTests{
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
+
+    // TODO[Issue 99] Reenable after EIP-2315 is implemented
+    kBlockchainDir / "GeneralStateTests" / "stSubroutine",
+    kBlockchainDir / "ValidBlocks" / "bcStateTests" / "testOpcodes.json",
 };
 
 constexpr size_t kColumnWidth{80};
@@ -122,6 +126,19 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
          0,  // constantinople_block
          0,  // petersburg_block
          0,  // istanbul_block
+     }},
+    {"Berlin",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+         0,  // petersburg_block
+         0,  // istanbul_block
+         0,  // muir_glacier_block
+         0,  // berlin_block
      }},
     {"FrontierToHomesteadAt5",
      {

@@ -174,11 +174,11 @@ int main(int argc, char* argv[]) {
     // Command line parsing
     CLI::App app{"Extract Headers. Hard-code historical headers, from block zero to the current block with a certain step"};
 
-    string file_name = "hard_coded_headers.h";
+    string name = "last";
     string db_path = db::default_path();
-    uint64_t block_step = 100'000u;     // todo: uint64_t o BlockNum?
+    uint64_t block_step = 100'000u;
 
-    app.add_option("-n,--name,name", file_name, "Name of the output file", true);
+    app.add_option("-n,--name,name", name, "Name suffix of the output file", true);
         // also accepted as a positional
     app.add_option("-d,--datadir", db_path, "Path to the chain database", true)
         ->check(CLI::ExistingDirectory);
@@ -191,7 +191,8 @@ int main(int argc, char* argv[]) {
     try {
         Db db{db_path};
 
-        HeaderListFile output{file_name};
+        string file_name = "hard_coded_headers_" + name + ".h";
+        HeaderListFile output{file_name}; // "hard_coded_headers_%s.go"
         BlockNum block_num = 0;
         for (; block_num < UINT64_MAX; block_num += block_step) {
             optional<Hash> hash = db.read_canonical_hash(block_num);

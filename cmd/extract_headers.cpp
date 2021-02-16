@@ -31,7 +31,15 @@
 using namespace silkworm;
 
 // Definitions
-using Hash = evmc::bytes32; // uint8_t bytes[32], see common/utils.hpp for conversions
+
+using Hash = evmc::bytes32; // uint8_t bytes[32], see common/utils.hpp for conversions, use to_hex() to print, to_bytes to get Bytes
+Bytes to_bytes(Hash h) {
+    return {h.bytes, 32};
+}
+ByteView to_byteview(Hash h) {
+    return {h.bytes, 32};
+}
+
 using Header = BlockHeader;
 using BlockNum = uint64_t;
 //using Bytes = std::basic_string<uint8_t>; already defined elsewhere
@@ -57,10 +65,11 @@ class Db {
         return to_bytes32(hash.value()); // copy
     }
 
-    Bytes head_header_key() {
-        std::string table_name = db::table::kHeadHeader.name; // todo: check!
+    Bytes head_header_key() { // todo: add to db::util.h?
+        std::string table_name = db::table::kHeadHeader.name;
         Bytes key{table_name.begin(), table_name.end()};
         return key;
+        //return from_hex("4c617374486561646572").value();
     }
 
     std::optional<Hash> read_head_header_hash() {
@@ -79,9 +88,15 @@ class Db {
         return db::read_header(*txn, b, h.bytes);
     }
 
+    Bytes header_numbers_key(Hash h) { // todo: add to db::util.h?
+        //Bytes key(kHashLength, '\0');
+        //std::memcpy(key.data(), h.bytes, kHashLength); // old style
+        return {h.bytes, 32};
+    }
+
     std::optional<BlockHeader> read_header(Hash h) {
         auto blockhashes_table = txn->open(db::table::kHeaderNumbers);
-        auto encoded_block_num = blockhashes_table->get(h.bytes);
+        auto encoded_block_num = blockhashes_table->get(header_numbers_key(h));
         if (!encoded_block_num) return {};
         BlockNum block_num = boost::endian::load_big_u64(encoded_block_num->data());
         return read_header(block_num, h);
@@ -136,12 +151,13 @@ std::string base64encode(const ByteView& bytes) {
     size_t encoded_len = boost::beast::detail::base64::encoded_size(bytes.length());
     std::string encoded_bytes(encoded_len, '\0');                                          // since c++11 string.data() is contiguous
     boost::beast::detail::base64::encode(encoded_bytes.data(), bytes.data(), bytes.length()); // and we can write safely in it
+    //encoded_bytes.resize(tot_bytes);
     return encoded_bytes;
 }
 
 // Main
 int main(int argc, char* argv[]) {
-    using std::string, std::cout, std::cerr;
+    using std::string, std::cout, std::cerr, std::optional;
     using namespace std::chrono;
 
     // Command line parsing
@@ -167,9 +183,9 @@ int main(int argc, char* argv[]) {
         HeaderListFile output{file_name};
         BlockNum block_num = 0;
         for (; block_num < UINT64_MAX; block_num += block_step) {
-            std::optional<Hash> hash = db.read_canonical_hash(block_num);
+            optional<Hash> hash = db.read_canonical_hash(block_num);
             if (!hash) break;
-            std::optional<BlockHeader> header = db.read_header(block_num, *hash);
+            optional<BlockHeader> header = db.read_header(block_num, *hash);
             if (!hash) throw std::logic_error("block header not found in db (but its hash is present)");
             Bytes encoded_header;
             rlp::encode(encoded_header, *header);
@@ -182,6 +198,7 @@ int main(int argc, char* argv[]) {
 
         auto hash = db.read_head_header_hash();
         if (!hash) throw std::logic_error("hash of head header not found in db");
+        //cout << "hash of head header: " << to_hex(hash.value()) << "\n";
         auto header = db.read_header(*hash);
         if (!header) throw std::logic_error("head header not found in db");
 

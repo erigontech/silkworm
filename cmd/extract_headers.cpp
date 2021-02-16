@@ -31,7 +31,18 @@
 using namespace silkworm;
 
 // Definitions
+class Hash: public evmc::bytes32 {
+  public:
+    Hash() {}
 
+    Hash(ByteView bv) {std::memcpy(bytes, bv.data(), 32);}
+
+    operator Bytes() {return {bytes, 32};}
+    operator ByteView() {return {bytes, 32};}
+
+    std::string to_hex() { return silkworm::to_hex(*this); }
+};
+/*
 using Hash = evmc::bytes32; // uint8_t bytes[32], see common/utils.hpp for conversions, use to_hex() to print, to_bytes to get Bytes
 Bytes to_bytes(Hash h) {
     return {h.bytes, 32};
@@ -39,6 +50,7 @@ Bytes to_bytes(Hash h) {
 ByteView to_byteview(Hash h) {
     return {h.bytes, 32};
 }
+*/
 
 using Header = BlockHeader;
 using BlockNum = uint64_t;
@@ -62,7 +74,7 @@ class Db {
         std::optional<ByteView> hash = header_table->get(db::header_hash_key(b));
         if (!hash) return std::nullopt; // not found
         assert(hash->size() == kHashLength);
-        return to_bytes32(hash.value()); // copy
+        return hash.value(); // copy
     }
 
     Bytes head_header_key() { // todo: add to db::util.h?
@@ -77,7 +89,7 @@ class Db {
         std::optional<ByteView> hash = head_header_table->get(head_header_key());
         if (!hash) return std::nullopt; // not found
         assert(hash->size() == kHashLength);
-        return to_bytes32(hash.value()); // copy
+        return hash.value(); // copy
     }
 
     std::optional<BlockHeader> read_header(BlockNum b, Hash h)  {
@@ -151,7 +163,6 @@ std::string base64encode(const ByteView& bytes) {
     size_t encoded_len = boost::beast::detail::base64::encoded_size(bytes.length());
     std::string encoded_bytes(encoded_len, '\0');                                          // since c++11 string.data() is contiguous
     boost::beast::detail::base64::encode(encoded_bytes.data(), bytes.data(), bytes.length()); // and we can write safely in it
-    //encoded_bytes.resize(tot_bytes);
     return encoded_bytes;
 }
 

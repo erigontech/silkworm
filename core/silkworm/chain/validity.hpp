@@ -27,7 +27,11 @@ enum class [[nodiscard]] ValidationResult{
     kOk = 0,
 
     // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
-    kWrongStateRoot, kWrongOmmersHash, kWrongTransactionsRoot, kWrongReceiptsRoot, kWrongLogsBloom,
+    kWrongStateRoot,
+    kWrongOmmersHash,
+    kWrongTransactionsRoot,
+    kWrongReceiptsRoot,
+    kWrongLogsBloom,
 
     // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
     kUnknownParent,      // P(H) = ∅ ∨ Hi ≠ P(H)Hi + 1
@@ -53,6 +57,8 @@ enum class [[nodiscard]] ValidationResult{
 
     // See [YP] Section 11.2 "Transaction Validation", Eq (160)
     kWrongBlockGas,  // BHg ≠ l(BR)u
+
+    kUnsupportedEip2718Type,
 };
 
 // Performs validation of block header & body that can be done prior to execution.

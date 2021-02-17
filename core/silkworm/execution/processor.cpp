@@ -129,6 +129,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     cumulative_gas_used_ += gas_used;
 
     return {
+        txn.type,                         // type
         vm_res.status == EVMC_SUCCESS,    // success
         cumulative_gas_used_,             // cumulative_gas_used
         logs_bloom(evm_.state().logs()),  // bloom

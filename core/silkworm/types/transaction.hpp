@@ -24,7 +24,10 @@
 
 namespace silkworm {
 
+static constexpr uint8_t kEip2930TransactionType{1};
+
 struct Transaction {
+    std::optional<uint8_t> type{std::nullopt};  // EIP-2718
     uint64_t nonce{0};
     intx::uint256 gas_price;
     uint64_t gas_limit{0};

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@
 #ifndef SILKWORM_TYPES_RECEIPT_H_
 #define SILKWORM_TYPES_RECEIPT_H_
 
+#include <optional>
 #include <silkworm/types/bloom.hpp>
 #include <silkworm/types/log.hpp>
 
 namespace silkworm {
 
 struct Receipt {
+    std::optional<uint8_t> type{std::nullopt};  // EIP-2718
     bool success{false};
     uint64_t cumulative_gas_used{0};
     Bloom bloom;

@@ -153,6 +153,14 @@ ValidationResult pre_validate_block(const Block& block, const StateBuffer& state
         }
     }
 
+    for (const Transaction& txn : block.transactions) {
+        if (txn.type) {
+            if (!config.has_berlin(header.number) || txn.type != kEip2930TransactionType) {
+                return ValidationResult::kUnsupportedEip2718Type;
+            }
+        }
+    }
+
     return ValidationResult::kOk;
 }
 

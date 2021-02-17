@@ -32,8 +32,17 @@
 namespace silkworm::rlp {
 
 enum class [[nodiscard]] DecodingResult{
-    kOk = 0,           kOverflow,         kLeadingZero,      kInputTooShort,  kNonCanonicalSingleByte,
-    kNonCanonicalSize, kUnexpectedLength, kUnexpectedString, kUnexpectedList, kListLengthMismatch,
+    kOk = 0,
+    kOverflow,
+    kLeadingZero,
+    kInputTooShort,
+    kNonCanonicalSingleByte,
+    kNonCanonicalSize,
+    kUnexpectedLength,
+    kUnexpectedString,
+    kUnexpectedList,
+    kListLengthMismatch,
+    kUnsupportedEip2718Type,
 };
 
 // Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,

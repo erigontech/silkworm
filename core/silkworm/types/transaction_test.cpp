@@ -23,6 +23,7 @@ namespace silkworm {
 
 TEST_CASE("Transaction RLP") {
     Transaction txn{
+        std::nullopt,                                        // type
         12,                                                  // nonce
         20000000000,                                         // gas_price
         21000,                                               // gas_limit
@@ -48,6 +49,7 @@ TEST_CASE("Recover sender 1") {
     // https://etherscan.io/tx/0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
     // Block 46147
     Transaction txn{
+        std::nullopt,                                        // type
         0,                                                   // nonce
         50'000 * kGiga,                                      // gas_price
         21'000,                                              // gas_limit
@@ -67,6 +69,7 @@ TEST_CASE("Recover sender 2") {
     // https://etherscan.io/tx/0xe17d4d0c4596ea7d5166ad5da600a6fdc49e26e0680135a2f7300eedfd0d8314
     // Block 46214
     Transaction txn{
+        std::nullopt,                                        // type
         1,                                                   // nonce
         50'000 * kGiga,                                      // gas_price
         21'750,                                              // gas_limit

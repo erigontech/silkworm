@@ -24,8 +24,8 @@
 namespace silkworm {
 
 bool operator==(const Transaction& a, const Transaction& b) {
-    return a.nonce == b.nonce && a.gas_price == b.gas_price && a.gas_limit == b.gas_limit && a.to == b.to &&
-           a.value == b.value && a.data == b.data && a.v == b.v && a.r == b.r && a.s == b.s;
+    return a.type == b.type && a.nonce == b.nonce && a.gas_price == b.gas_price && a.gas_limit == b.gas_limit &&
+           a.to == b.to && a.value == b.value && a.data == b.data && a.v == b.v && a.r == b.r && a.s == b.s;
 }
 
 namespace rlp {
@@ -49,11 +49,19 @@ namespace rlp {
     }
 
     size_t length(const Transaction& txn) {
-        Header rlp_head = rlp_header(txn, /*for_signing=*/false, {});
-        return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
+        Header rlp_head{rlp_header(txn, /*for_signing=*/false, {})};
+        size_t rlp_len{length_of_length(rlp_head.payload_length) + rlp_head.payload_length};
+        if (txn.type) {
+            return rlp_len + 1;
+        } else {
+            return rlp_len;
+        }
     }
 
     void encode(Bytes& to, const Transaction& txn, bool for_signing, std::optional<uint64_t> eip155_chain_id) {
+        if (txn.type) {
+            to.push_back(*txn.type);
+        }
         encode_header(to, rlp_header(txn, for_signing, eip155_chain_id));
         encode(to, txn.nonce);
         encode(to, txn.gas_price);
@@ -80,6 +88,16 @@ namespace rlp {
 
     template <>
     DecodingResult decode(ByteView& from, Transaction& to) noexcept {
+        if (!from.empty() && from[0] <= 0x7f) {
+            if (from[0] != kEip2930TransactionType) {
+                return DecodingResult::kUnsupportedEip2718Type;
+            }
+            from.remove_prefix(1);
+            to.type = from[0];
+        } else {
+            to.type = std::nullopt;
+        }
+
         auto [h, err]{decode_header(from)};
         if (err != DecodingResult::kOk) {
             return err;

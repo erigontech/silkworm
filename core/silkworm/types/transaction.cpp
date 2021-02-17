@@ -50,7 +50,7 @@ namespace rlp {
 
     size_t length(const Transaction& txn) {
         Header rlp_head{rlp_header(txn, /*for_signing=*/false, {})};
-        size_t rlp_len{length_of_length(rlp_head.payload_length) + rlp_head.payload_length};
+        auto rlp_len{static_cast<size_t>(length_of_length(rlp_head.payload_length) + rlp_head.payload_length)};
         if (txn.type) {
             return rlp_len + 1;
         } else {

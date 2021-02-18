@@ -23,11 +23,15 @@
 #include <silkworm/rlp/encode.hpp>
 namespace silkworm {
 
+bool operator==(const AccessListEntry& a, const AccessListEntry& b) {
+    return a.account == b.account && a.storage_keys == b.storage_keys;
+}
+
 bool operator==(const Transaction& a, const Transaction& b) {
-    // from is omitted since it's calculated
+    // from is omitted since it's derived from the signature
     return a.type == b.type && a.nonce == b.nonce && a.gas_price == b.gas_price && a.gas_limit == b.gas_limit &&
            a.to == b.to && a.value == b.value && a.data == b.data && a.odd_y_parity == b.odd_y_parity &&
-           a.chain_id == b.chain_id && a.r == b.r && a.s == b.s;
+           a.chain_id == b.chain_id && a.r == b.r && a.s == b.s && a.access_list == b.access_list;
 }
 
 // https://eips.ethereum.org/EIPS/eip-155
@@ -42,21 +46,74 @@ void Transaction::set_v(const intx::uint256& v) {
 
 namespace rlp {
 
+    static Header rlp_header(const AccessListEntry& e) {
+        Header h{true, kAddressLength + 1};
+        h.payload_length += length(e.storage_keys);
+        return h;
+    }
+
+    size_t length(const AccessListEntry& e) {
+        Header rlp_head{rlp_header(e)};
+        return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
+    }
+
+    void encode(Bytes& to, const AccessListEntry& e) {
+        encode_header(to, rlp_header(e));
+        encode(to, e.account.bytes);
+        encode(to, e.storage_keys);
+    }
+
+    template <>
+    DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept {
+        auto [rlp_head, err]{decode_header(from)};
+        if (err != DecodingResult::kOk) {
+            return err;
+        }
+        if (!rlp_head.list) {
+            return DecodingResult::kUnexpectedString;
+        }
+        uint64_t leftover{from.length() - rlp_head.payload_length};
+
+        if (DecodingResult err{decode(from, to.account.bytes)}; err != DecodingResult::kOk) {
+            return err;
+        }
+        if (DecodingResult err{decode_vector(from, to.storage_keys)}; err != DecodingResult::kOk) {
+            return err;
+        }
+
+        return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
+    }
+
     static Header rlp_header(const Transaction& txn, bool for_signing) {
         Header h{true, 0};
+
+        if (txn.type) {
+            h.payload_length += length(txn.chain_id.value_or(0));
+        }
+
         h.payload_length += length(txn.nonce);
         h.payload_length += length(txn.gas_price);
         h.payload_length += length(txn.gas_limit);
         h.payload_length += txn.to ? (kAddressLength + 1) : 1;
         h.payload_length += length(txn.value);
         h.payload_length += length(txn.data);
+
+        if (txn.type == kEip2930TransactionType) {
+            h.payload_length += length(txn.access_list);
+        }
+
         if (!for_signing) {
-            h.payload_length += length(txn.v());
+            if (txn.type) {
+                h.payload_length += length(txn.odd_y_parity);
+            } else {
+                h.payload_length += length(txn.v());
+            }
             h.payload_length += length(txn.r);
             h.payload_length += length(txn.s);
-        } else if (txn.chain_id) {
+        } else if (!txn.type && txn.chain_id) {
             h.payload_length += length(*txn.chain_id) + 2;
         }
+
         return h;
     }
 
@@ -75,6 +132,11 @@ namespace rlp {
             to.push_back(*txn.type);
         }
         encode_header(to, rlp_header(txn, for_signing));
+
+        if (txn.type) {
+            encode(to, txn.chain_id.value_or(0));
+        }
+
         encode(to, txn.nonce);
         encode(to, txn.gas_price);
         encode(to, txn.gas_limit);
@@ -85,11 +147,20 @@ namespace rlp {
         }
         encode(to, txn.value);
         encode(to, txn.data);
+
+        if (txn.type == kEip2930TransactionType) {
+            encode(to, txn.access_list);
+        }
+
         if (!for_signing) {
-            encode(to, txn.v());
+            if (txn.type) {
+                encode(to, txn.odd_y_parity);
+            } else {
+                encode(to, txn.v());
+            }
             encode(to, txn.r);
             encode(to, txn.s);
-        } else if (txn.chain_id) {
+        } else if (!txn.type && txn.chain_id) {
             encode(to, *txn.chain_id);
             encode(to, 0);
             encode(to, 0);
@@ -104,8 +175,8 @@ namespace rlp {
             if (from[0] != kEip2930TransactionType) {
                 return DecodingResult::kUnsupportedEip2718Type;
             }
-            from.remove_prefix(1);
             to.type = from[0];
+            from.remove_prefix(1);
         } else {
             to.type = std::nullopt;
         }
@@ -119,6 +190,14 @@ namespace rlp {
         }
         uint64_t leftover{from.length() - h.payload_length};
 
+        if (to.type) {
+            intx::uint256 chain_id;
+            if (DecodingResult err{decode(from, chain_id)}; err != DecodingResult::kOk) {
+                return err;
+            }
+            to.chain_id = chain_id;
+        }
+
         if (DecodingResult err{decode(from, to.nonce)}; err != DecodingResult::kOk) {
             return err;
         }
@@ -130,7 +209,7 @@ namespace rlp {
         }
 
         if (from[0] == kEmptyStringCode) {
-            to.to = {};
+            to.to = std::nullopt;
             from.remove_prefix(1);
         } else {
             to.to = evmc::address{};
@@ -146,11 +225,23 @@ namespace rlp {
             return err;
         }
 
-        intx::uint256 v;
-        if (DecodingResult err{decode(from, v)}; err != DecodingResult::kOk) {
-            return err;
+        if (to.type == kEip2930TransactionType) {
+            if (DecodingResult err{decode_vector(from, to.access_list)}; err != DecodingResult::kOk) {
+                return err;
+            }
         }
-        to.set_v(v);
+
+        if (to.type) {
+            if (DecodingResult err{decode(from, to.odd_y_parity)}; err != DecodingResult::kOk) {
+                return err;
+            }
+        } else {
+            intx::uint256 v;
+            if (DecodingResult err{decode(from, v)}; err != DecodingResult::kOk) {
+                return err;
+            }
+            to.set_v(v);
+        }
 
         if (DecodingResult err{decode(from, to.r)}; err != DecodingResult::kOk) {
             return err;

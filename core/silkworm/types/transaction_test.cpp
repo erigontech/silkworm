@@ -43,6 +43,42 @@ TEST_CASE("Transaction RLP") {
     Transaction decoded;
     ByteView view{encoded};
     REQUIRE(rlp::decode<Transaction>(view, decoded) == rlp::DecodingResult::kOk);
+    CHECK(view.empty());
+    CHECK(decoded == txn);
+}
+
+TEST_CASE("EIP-2930 Transaction RLP") {
+    std::vector<AccessListEntry> access_list{
+        {0xf66852bc122fd40bfecc63cd48217e88bda12109_address,
+         {
+             0xe9e0d8424f305be2979455ab6aa95db719be69f2834e23165ce09d9a4864f6c9_bytes32,
+             0x7d3bb8a6435e4ce9e45f58502878b8f1f23663a52ad694c2b1ec7fa8f6181922_bytes32,
+         }},
+        {0x1ec419f4f780ee4a3f7bd76d269ba137502be84f_address, {}},
+    };
+
+    Transaction txn{
+        kEip2930TransactionType,                             // type
+        7,                                                   // nonce
+        30000000000,                                         // gas_price
+        5748100,                                             // gas_limit
+        0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,  // to
+        2 * kEther,                                          // value
+        *from_hex("6ebaf477f83e051589c1188bcc6ddccd"),       // data
+        false,                                               // odd_y_parity
+        5,                                                   // chain_id
+        intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
+        intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
+        access_list,
+    };
+
+    Bytes encoded{};
+    rlp::encode(encoded, txn);
+
+    Transaction decoded;
+    ByteView view{encoded};
+    REQUIRE(rlp::decode<Transaction>(view, decoded) == rlp::DecodingResult::kOk);
+    CHECK(view.empty());
     CHECK(decoded == txn);
 }
 

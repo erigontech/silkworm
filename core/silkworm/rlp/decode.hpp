@@ -17,8 +17,8 @@
 // RLP decoding functions as per
 // https://eth.wiki/en/fundamentals/rlp
 
-#ifndef SILKWORM_RLP_DECODE_H_
-#define SILKWORM_RLP_DECODE_H_
+#ifndef SILKWORM_RLP_DECODE_HPP_
+#define SILKWORM_RLP_DECODE_HPP_
 
 #include <array>
 #include <cstring>
@@ -53,7 +53,13 @@ template <class T>
 DecodingResult decode(ByteView& from, T& to) noexcept;
 
 template <>
+DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept;
+
+template <>
 DecodingResult decode(ByteView& from, Bytes& to) noexcept;
+
+template <>
+DecodingResult decode(ByteView& from, bool& to) noexcept;
 
 template <>
 DecodingResult decode(ByteView& from, uint64_t& to) noexcept;
@@ -123,4 +129,4 @@ DecodingResult decode_vector(ByteView& from, std::vector<T>& to) noexcept {
 
 }  // namespace silkworm::rlp
 
-#endif  // SILKWORM_RLP_DECODE_H_
+#endif  // SILKWORM_RLP_DECODE_HPP_

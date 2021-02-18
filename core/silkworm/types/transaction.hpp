@@ -21,10 +21,19 @@
 #include <intx/intx.hpp>
 #include <optional>
 #include <silkworm/rlp/decode.hpp>
+#include <vector>
 
 namespace silkworm {
 
 static constexpr uint8_t kEip2930TransactionType{1};
+
+// https://eips.ethereum.org/EIPS/eip-2930
+struct AccessListEntry {
+    evmc::address account{};
+    std::vector<evmc::bytes32> storage_keys{};
+};
+
+bool operator==(const AccessListEntry& a, const AccessListEntry& b);
 
 struct Transaction {
     std::optional<uint8_t> type{std::nullopt};  // EIP-2718
@@ -39,7 +48,10 @@ struct Transaction {
     bool odd_y_parity{false};                             // EIP-155
     std::optional<intx::uint256> chain_id{std::nullopt};  // EIP-155
     intx::uint256 r{0}, s{0};                             // signature
-    std::optional<evmc::address> from{std::nullopt};      // sender recovered from the signature
+
+    std::vector<AccessListEntry> access_list{};  // EIP-2930
+
+    std::optional<evmc::address> from{std::nullopt};  // sender recovered from the signature
 
     intx::uint256 v() const;             // EIP-155
     void set_v(const intx::uint256& v);  // EIP-155
@@ -56,6 +68,9 @@ bool operator==(const Transaction& a, const Transaction& b);
 
 namespace rlp {
     void encode(Bytes& to, const Transaction& txn, bool for_signing);
+
+    template <>
+    DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept;
 
     template <>
     DecodingResult decode(ByteView& from, Transaction& to) noexcept;

@@ -18,14 +18,14 @@
 
 #include <boost/endian/conversion.hpp>
 #include <cassert>
-
+#include <iostream>
 #include "history_index.hpp"
 #include "tables.hpp"
 #include "bitmapdb.hpp"
 namespace silkworm::db {
 
-static void check_rlp_err(rlp::DecodingError err) {
-    if (err != rlp::DecodingError::kOk) {
+static void check_rlp_err(rlp::DecodingResult err) {
+    if (err != rlp::DecodingResult::kOk) {
         throw err;
     }
 }
@@ -33,14 +33,27 @@ static void check_rlp_err(rlp::DecodingError err) {
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
                                        const uint8_t (&hash)[kHashLength]) {
     auto table{txn.open(table::kBlockHeaders)};
-    std::optional<ByteView> header_rlp{table->get(block_key(block_number, hash))};
-    if (!header_rlp) {
+    std::optional<ByteView> rlp{table->get(block_key(block_number, hash))};
+    if (!rlp) {
         return std::nullopt;
     }
 
     BlockHeader header;
-    check_rlp_err(rlp::decode(*header_rlp, header));
+    check_rlp_err(rlp::decode(*rlp, header));
     return header;
+}
+
+std::optional<intx::uint256> read_total_difficulty(lmdb::Transaction& txn, uint64_t block_number,
+                                                   const uint8_t (&hash)[kHashLength]) {
+    auto table{txn.open(table::kBlockHeaders)};
+    std::optional<ByteView> rlp{table->get(total_difficulty_key(block_number, hash))};
+    if (!rlp) {
+        return std::nullopt;
+    }
+
+    intx::uint256 td{0};
+    check_rlp_err(rlp::decode(*rlp, td));
+    return td;
 }
 
 // TG ReadTransactions
@@ -162,18 +175,6 @@ std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code
     return Bytes{*val};
 }
 
-/*static auto from_db_format(size_t len, Bytes& database_key, Bytes& database_value) {
-    struct result{uint64_t block_number; Bytes key; Bytes value;};
-    auto block_number{boost::endian::load_big_u64(&database_key[0])};
-    if (database_key.size() == 8) {
-        return result{block_number, database_value.substr(0, len), database_value.substr(len)};
-    } else {
-        Bytes key(len + kIncarnationLength + kHashLength, '\0');
-        std::memcpy(&key[0], &database_key[8], database_key.size() - 8);
-        std::memcpy(&key[database_key.size() - 8], &database_value[0], kHashLength);
-        return result{block_number, key, database_value.substr(kHashLength)};
-    }
-}*/
 // TG FindByHistory for account
 static std::optional<ByteView> find_account_in_history(lmdb::Transaction& txn, const evmc::address& address,
                                                        uint64_t block_number) {
@@ -183,8 +184,7 @@ static std::optional<ByteView> find_account_in_history(lmdb::Transaction& txn, c
         return std::nullopt;
     }
 
-    roaring::Roaring64Map bitmap;
-    bitmap.readSafe((const char *)entry->key.data(), entry->key.size());
+    auto bitmap{roaring::Roaring64Map::readSafe((const char *)entry->key.data(), entry->key.size())};
 
     if (!has_prefix(entry->key, full_view(address))) {
         return std::nullopt;
@@ -195,8 +195,7 @@ static std::optional<ByteView> find_account_in_history(lmdb::Transaction& txn, c
         return std::nullopt;
     }
 
-    auto change_table{txn.open(table::kPlainAccountChangeSet)};
-    return change_table->get(block_key(*changeset_block_number), full_view(address));
+    return read_account_changes(txn, *changeset_block_number)[address];
 }
 
 // TG FindByHistory for storage
@@ -205,6 +204,7 @@ static std::optional<ByteView> find_storage_in_history(lmdb::Transaction& txn, c
                                                        uint64_t block_number) {
     auto history_table{txn.open(table::kStorageHistory)};
     std::optional<Entry> entry{history_table->seek(account_history_key(address, block_number))};
+        std::cout << entry->key.size() << std::endl;
     if (!entry) {
         return std::nullopt;
     }
@@ -221,8 +221,7 @@ static std::optional<ByteView> find_storage_in_history(lmdb::Transaction& txn, c
         return std::nullopt;
     }
 
-    auto change_table{txn.open(table::kPlainStorageChangeSet)};
-    return change_table->get(storage_change_key(*changeset_block_number, address, incarnation), full_view(location));
+    return read_storage_changes(txn, *changeset_block_number)[address][incarnation][location];
 }
 
 std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address& address,

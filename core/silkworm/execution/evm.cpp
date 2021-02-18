@@ -214,13 +214,14 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept {
     address_stack_.push(msg.destination);
 
+    const evmc_revision rev{revision()};
+
     evmc_result res;
     if (exo_evm) {
         EvmHost host{*this};
-        res = exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), revision(), &msg, code.data(),
-                               code.size());
+        res = exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
     } else {
-        res = execute_endogenously(msg, code, code_hash);
+        res = execute_endogenously(rev, msg, code, code_hash);
     }
 
     address_stack_.pop();
@@ -228,10 +229,8 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     return evmc::result{res};
 }
 
-evmc_result EVM::execute_endogenously(const evmc_message& msg, ByteView code,
+evmc_result EVM::execute_endogenously(evmc_revision rev, const evmc_message& msg, ByteView code,
                                       std::optional<evmc::bytes32> code_hash) noexcept {
-    const evmc_revision rev{revision()};
-
     std::shared_ptr<evmone::code_analysis> analysis;
     if (code_hash && analysis_cache) {
         // cache contract code

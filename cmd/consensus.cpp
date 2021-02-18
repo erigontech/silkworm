@@ -247,7 +247,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
         if (invalid) {
             return kPassed;
         }
-        std::cout << "Failure to read hex\n";
+        std::cout << "Failure to read hex" << std::endl;
         return kFailed;
     }
 
@@ -257,7 +257,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
         if (invalid) {
             return kPassed;
         }
-        std::cout << "Failure to decode RLP\n";
+        std::cout << "Failure to decode RLP" << std::endl;
         return kFailed;
     }
 
@@ -267,13 +267,13 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
         if (invalid) {
             return kPassed;
         }
-        std::cout << "Validation error " << static_cast<int>(err) << "\n";
+        std::cout << "Validation error " << static_cast<int>(err) << std::endl;
         return kFailed;
     }
 
     if (invalid) {
         std::cout << "Invalid block executed successfully\n";
-        std::cout << "Expected: " << json_block["expectException"] << "\n";
+        std::cout << "Expected: " << json_block["expectException"] << std::endl;
         return kFailed;
     }
 
@@ -282,7 +282,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
 
 bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
     if (state.number_of_accounts() != expected.size()) {
-        std::cout << "Account number mismatch: " << state.number_of_accounts() << " != " << expected.size() << "\n";
+        std::cout << "Account number mismatch: " << state.number_of_accounts() << " != " << expected.size() << std::endl;
         return false;
     }
 
@@ -292,7 +292,7 @@ bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
 
         std::optional<Account> account{state.read_account(address)};
         if (!account) {
-            std::cout << "Missing account " << entry.key() << "\n";
+            std::cout << "Missing account " << entry.key() << std::endl;
             return false;
         }
 
@@ -300,8 +300,8 @@ bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
         auto [expected_balance, err1]{rlp::read_uint256(balance_str, /*allow_leading_zeros=*/true)};
         check_rlp_err(err1);
         if (account->balance != expected_balance) {
-            std::cout << "Balance mismatch for " << entry.key() << ":\n";
-            std::cout << to_string(account->balance, 16) << " != " << j["balance"] << "\n";
+            std::cout << "Balance mismatch for " << entry.key() << ":\n"
+                      << to_string(account->balance, 16) << " != " << j["balance"] << std::endl;
             return false;
         }
 
@@ -309,23 +309,23 @@ bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
         auto [expected_nonce, err2]{rlp::read_uint64(nonce_str, /*allow_leading_zeros=*/true)};
         check_rlp_err(err2);
         if (account->nonce != expected_nonce) {
-            std::cout << "Nonce mismatch for " << entry.key() << ":\n";
-            std::cout << account->nonce << " != " << expected_nonce << "\n";
+            std::cout << "Nonce mismatch for " << entry.key() << ":\n"
+                      << account->nonce << " != " << expected_nonce << std::endl;
             return false;
         }
 
         auto expected_code{j["code"].get<std::string>()};
         Bytes actual_code{state.read_code(account->code_hash)};
         if (actual_code != from_hex(expected_code)) {
-            std::cout << "Code mismatch for " << entry.key() << ":\n";
-            std::cout << to_hex(actual_code) << " != " << expected_code << "\n";
+            std::cout << "Code mismatch for " << entry.key() << ":\n"
+                      << to_hex(actual_code) << " != " << expected_code << std::endl;
             return false;
         }
 
         size_t storage_size{state.storage_size(address, account->incarnation)};
         if (storage_size != j["storage"].size()) {
-            std::cout << "Storage size mismatch for " << entry.key() << ":\n";
-            std::cout << storage_size << " != " << j["storage"].size() << "\n";
+            std::cout << "Storage size mismatch for " << entry.key() << ":\n"
+                      << storage_size << " != " << j["storage"].size() << std::endl;
             return false;
         }
 
@@ -334,8 +334,8 @@ bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
             Bytes expected_value{from_hex(storage.value().get<std::string>()).value()};
             evmc::bytes32 actual_value{state.read_storage(address, account->incarnation, to_bytes32(key))};
             if (actual_value != to_bytes32(expected_value)) {
-                std::cout << "Storage mismatch for " << entry.key() << " at " << storage.key() << ":\n";
-                std::cout << to_hex(actual_value) << " != " << to_hex(expected_value) << "\n";
+                std::cout << "Storage mismatch for " << entry.key() << " at " << storage.key() << ":\n"
+                          << to_hex(actual_value) << " != " << to_hex(expected_value) << std::endl;
                 return false;
             }
         }
@@ -349,7 +349,7 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
     std::string seal_engine{json_test["sealEngine"].get<std::string>()};
     if (seal_engine != "NoProof") {
         // TODO[Issue 144] Support Ethash sealEngine
-        std::cout << seal_engine << " seal engine is not supported yet\n";
+        std::cout << seal_engine << " seal engine is not supported yet" << std::endl;
         return kSkipped;
     }
 
@@ -377,8 +377,7 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
         evmc::bytes32 state_root{state.state_root_hash()};
         std::string expected_hex{json_test["postStateHash"].get<std::string>()};
         if (state_root != to_bytes32(from_hex(expected_hex).value())) {
-            std::cout << "postStateHash mismatch:\n";
-            std::cout << to_hex(state_root) << " != " << expected_hex << "\n";
+            std::cout << "postStateHash mismatch:\n" << to_hex(state_root) << " != " << expected_hex << std::endl;
             return kFailed;
         } else {
             return kPassed;
@@ -399,13 +398,13 @@ static void print_test_status(std::string_view key, Status status) {
     }
     switch (status) {
         case kPassed:
-            std::cout << "\033[0;32m  Passed\033[0m\n";
+            std::cout << "\033[0;32m  Passed\033[0m" << std::endl;
             break;
         case kFailed:
-            std::cout << "\033[1;31m  Failed\033[0m\n";
+            std::cout << "\033[1;31m  Failed\033[0m" << std::endl;
             break;
         case kSkipped:
-            std::cout << " Skipped\n";
+            std::cout << " Skipped" << std::endl;
             break;
     }
 }
@@ -478,7 +477,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 
         if (!decoded) {
             if (valid) {
-                std::cout << "Failed to decode valid transaction\n";
+                std::cout << "Failed to decode valid transaction" << std::endl;
                 return kFailed;
             } else {
                 continue;
@@ -493,7 +492,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
         if (g0 > txn.gas_limit) {
             if (valid) {
-                std::cout << "g0 > gas_limit for valid transaction\n";
+                std::cout << "g0 > gas_limit for valid transaction" << std::endl;
                 return kFailed;
             } else {
                 continue;
@@ -507,13 +506,13 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         }
 
         if (valid && !txn.from.has_value()) {
-            std::cout << "Failed to recover sender\n";
+            std::cout << "Failed to recover sender" << std::endl;
             return kFailed;
         }
 
         if (!valid && txn.from.has_value()) {
-            std::cout << entry.key() << "\n";
-            std::cout << "Sender recovered for invalid transaction\n";
+            std::cout << entry.key() << "\n"
+                      << "Sender recovered for invalid transaction" << std::endl;
             return kFailed;
         }
 
@@ -523,8 +522,8 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 
         std::string expected{entry.value()["sender"].get<std::string>()};
         if (to_hex(*txn.from) != expected) {
-            std::cout << "Sender mismatch for " << entry.key() << ":\n";
-            std::cout << to_hex(*txn.from) << " != " << expected << "\n";
+            std::cout << "Sender mismatch for " << entry.key() << ":\n"
+                      << to_hex(*txn.from) << " != " << expected << std::endl;
             return kFailed;
         }
     }
@@ -551,8 +550,8 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
     if (calculated_difficulty == current_difficulty) {
         return kPassed;
     } else {
-        std::cout << "Difficulty mismatch for block " << block_number << "\n";
-        std::cout << hex(calculated_difficulty) << " != " << hex(current_difficulty) << "\n";
+        std::cout << "Difficulty mismatch for block " << block_number << "\n"
+                  << hex(calculated_difficulty) << " != " << hex(current_difficulty) << std::endl;
         return kFailed;
     }
 }
@@ -617,7 +616,7 @@ int main(int argc, char* argv[]) {
     if (res.failed) {
         std::cout << "\033[0m";
     }
-    std::cout << ", " << res.skipped << " skipped\n";
+    std::cout << ", " << res.skipped << " skipped" << std::endl;
 
     return static_cast<int>(res.failed);
 }

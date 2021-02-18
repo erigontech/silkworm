@@ -42,15 +42,6 @@ class Hash: public evmc::bytes32 {
 
     std::string to_hex() { return silkworm::to_hex(*this); }
 };
-/*
-using Hash = evmc::bytes32; // uint8_t bytes[32], see common/utils.hpp for conversions, use to_hex() to print, to_bytes to get Bytes
-Bytes to_bytes(Hash h) {
-    return {h.bytes, 32};
-}
-ByteView to_byteview(Hash h) {
-    return {h.bytes, 32};
-}
-*/
 
 using Header = BlockHeader;
 using BlockNum = uint64_t;
@@ -163,6 +154,8 @@ std::string base64encode(const ByteView& bytes) {
     size_t encoded_len = boost::beast::detail::base64::encoded_size(bytes.length());
     std::string encoded_bytes(encoded_len, '\0');                                          // since c++11 string.data() is contiguous
     boost::beast::detail::base64::encode(encoded_bytes.data(), bytes.data(), bytes.length()); // and we can write safely in it
+    size_t padding = int(encoded_bytes[encoded_len-1] == '=') + int(encoded_bytes[encoded_len-2] == '=');
+    if (padding) encoded_bytes.erase(encoded_len-padding);
     return encoded_bytes;
 }
 

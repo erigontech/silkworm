@@ -79,7 +79,7 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(nlohmann_json CONFIG REQUIRED)
   add_executable(consensus consensus.cpp)
   target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
-  target_link_libraries(consensus PRIVATE silkworm_core nlohmann_json::nlohmann_json Boost::filesystem)
+  target_link_libraries(consensus PRIVATE silkworm_core nlohmann_json::nlohmann_json evmc::loader CLI11::CLI11 Boost::filesystem)
 
   # Benchmarks
   find_package(benchmark CONFIG REQUIRED)

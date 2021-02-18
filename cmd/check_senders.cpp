@@ -74,7 +74,7 @@ class Recoverer : public silkworm::Worker {
     struct package {
         uint64_t block_num;
         ethash::hash256 hash;
-        uint8_t recovery_id;
+        bool odd_y_parity;
         uint8_t signature[64];
     };
 
@@ -149,7 +149,7 @@ class Recoverer : public silkworm::Worker {
                     }
 
                     std::optional<Bytes> recovered{ecdsa::recover(full_view(package.hash.bytes),
-                                                                  full_view(package.signature), package.recovery_id)};
+                                                                  full_view(package.signature), package.odd_y_parity)};
                     if (recovered.has_value() && (int)recovered->at(0) == 4) {
                         auto keyHash{ethash::keccak256(recovered->data() + 1, recovered->length() - 1)};
                         std::memcpy(&mydata_[block_result_offset + block_result_length],
@@ -186,26 +186,22 @@ void process_txs_for_signing(ChainConfig& config, uint64_t block_num, std::vecto
             throw std::runtime_error("Got invalid signature in tx for block number " + std::to_string(block_num));
         }
 
-        ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(txn.v)};
-
         Bytes rlp{};
-        if (x.eip155_chain_id) {
+        if (txn.chain_id) {
             if (!config.has_spurious_dragon(block_num)) {
                 throw std::runtime_error("EIP-155 signature in tx before Spurious Dragon for block number " +
                                          std::to_string(block_num));
-            } else if (x.eip155_chain_id != config.chain_id) {
+            } else if (txn.chain_id != config.chain_id) {
                 throw std::runtime_error("Got invalid EIP-155 signature in tx for block number " +
                                          std::to_string(block_num) + " chain_id : expected " +
-                                         std::to_string(config.chain_id) + " got " +
-                                         intx::to_string(*x.eip155_chain_id));
+                                         std::to_string(config.chain_id) + " got " + intx::to_string(*txn.chain_id));
             }
-            rlp::encode(rlp, txn, true, {config.chain_id});
-        } else {
-            rlp::encode(rlp, txn, true, {});
         }
 
+        rlp::encode(rlp, txn, /*for_signing=*/true);
+
         auto hash{keccak256(rlp)};
-        Recoverer::package rp{block_num, hash, x.recovery_id};
+        Recoverer::package rp{block_num, hash, txn.odd_y_parity};
         intx::be::unsafe::store(rp.signature, txn.r);
         intx::be::unsafe::store(rp.signature + 32, txn.s);
         packages.push_back(rp);
@@ -236,8 +232,7 @@ void stop_workers(std::vector<std::unique_ptr<Recoverer>>& workers, bool wait) {
 
 std::vector<evmc::bytes32> load_canonical_headers(lmdb::Transaction& txn, uint64_t from, uint64_t to) {
     uint64_t count{to - from + 1};
-    SILKWORM_LOG(LogInfo) << "Loading canonical block headers [" << from << " ... " << to << "]"
-                                     << std::endl;
+    SILKWORM_LOG(LogInfo) << "Loading canonical block headers [" << from << " ... " << to << "]" << std::endl;
 
     std::vector<evmc::bytes32> ret;
     ret.reserve(count);
@@ -271,8 +266,8 @@ std::vector<evmc::bytes32> load_canonical_headers(lmdb::Transaction& txn, uint64
             if (!batch_size) {
                 batch_size = count / (100 / percent_step);
                 percent += percent_step;
-                SILKWORM_LOG(LogInfo)
-                    << "... " << std::right << std::setw(3) << std::setfill(' ') << percent << " %" << std::endl;
+                SILKWORM_LOG(LogInfo) << "... " << std::right << std::setw(3) << std::setfill(' ') << percent << " %"
+                                      << std::endl;
                 if (should_stop_) {
                     rc = MDB_NOTFOUND;
                     continue;
@@ -453,9 +448,9 @@ int do_recover(app_options_t& options) {
         // Do we have to unwind Sender's table ?
         if (options.block_from <= stage_senders_height) {
             do_unwind(lmdb_txn, options.block_from);
-            SILKWORM_LOG(LogInfo)
-                << "New stage height " << (options.block_from <= 1 ? 0 : static_cast<uint64_t>(options.block_from) - 1)
-                << std::endl;
+            SILKWORM_LOG(LogInfo) << "New stage height "
+                                  << (options.block_from <= 1 ? 0 : static_cast<uint64_t>(options.block_from) - 1)
+                                  << std::endl;
             db::stages::set_stage_progress(
                 *lmdb_txn, db::stages::kSendersKey,
                 (options.block_from <= 1 ? 0 : static_cast<uint64_t>(options.block_from) - 1));
@@ -470,8 +465,7 @@ int do_recover(app_options_t& options) {
             throw std::logic_error("No canonical headers collected.");
         }
 
-        SILKWORM_LOG(LogInfo) << "Collected " << canonical_headers.size() << " canonical headers"
-                                         << std::endl;
+        SILKWORM_LOG(LogInfo) << "Collected " << canonical_headers.size() << " canonical headers" << std::endl;
 
         {
             // Set to first key which is initial block number
@@ -551,11 +545,10 @@ int do_recover(app_options_t& options) {
                         workers_in_flight++;
                         batch_size = 0;
 
-                        SILKWORM_LOG(LogInfo)
-                            << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block
-                            << " Transactions " << std::right << std::setw(12) << std::setfill(' ')
-                            << total_transactions << " Workers " << workers_in_flight << "/" << options.numthreads
-                            << std::endl;
+                        SILKWORM_LOG(LogInfo) << "Block " << std::right << std::setw(9) << std::setfill(' ')
+                                              << current_block << " Transactions " << std::right << std::setw(12)
+                                              << std::setfill(' ') << total_transactions << " Workers "
+                                              << workers_in_flight << "/" << options.numthreads << std::endl;
 
                         if (++next_worker_id == options.numthreads) {
                             next_worker_id = 0;
@@ -606,10 +599,10 @@ int do_recover(app_options_t& options) {
                 workers_in_flight++;
                 batch_size = 0;
 
-                SILKWORM_LOG(LogInfo)
-                    << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block << " Transactions "
-                    << std::right << std::setw(12) << std::setfill(' ') << total_transactions << " Workers "
-                    << workers_in_flight << "/" << options.numthreads << std::endl;
+                SILKWORM_LOG(LogInfo) << "Block " << std::right << std::setw(9) << std::setfill(' ') << current_block
+                                      << " Transactions " << std::right << std::setw(12) << std::setfill(' ')
+                                      << total_transactions << " Workers " << workers_in_flight << "/"
+                                      << options.numthreads << std::endl;
             }
 
             // Wait for all workers to complete and write their results
@@ -723,7 +716,7 @@ int do_verify(app_options_t& options) {
 
             for (size_t i = 0; i < bh->block.transactions.size(); i++) {
                 Bytes rlp{};
-                rlp::encode(rlp, bh->block.transactions.at(i), /*forsigning*/ false, {});
+                rlp::encode(rlp, bh->block.transactions.at(i), /*for_signing=*/false);
                 ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
                 ByteView bv{hash.bytes, 32};
                 std::cout << std::right << std::setw(4) << std::setfill(' ') << i << " 0x" << to_hex(bv) << " 0x"

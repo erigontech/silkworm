@@ -68,7 +68,7 @@ TEST_CASE("BlockBody RLP 2") {
     body.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
     body.transactions[0].value = 1'027'501'080 * kGiga;
     body.transactions[0].data = {};
-    body.transactions[0].v = 27;
+    body.transactions[0].set_v(27);
     body.transactions[0].r =
         intx::from_string<intx::uint256>("0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353");
     body.transactions[0].s =
@@ -80,7 +80,7 @@ TEST_CASE("BlockBody RLP 2") {
     body.transactions[1].to = {};
     body.transactions[1].value = 0;
     body.transactions[1].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
-    body.transactions[1].v = 37;
+    body.transactions[1].set_v(37);
     body.transactions[1].r =
         intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
     body.transactions[1].s =

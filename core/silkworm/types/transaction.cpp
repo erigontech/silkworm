@@ -24,13 +24,25 @@
 namespace silkworm {
 
 bool operator==(const Transaction& a, const Transaction& b) {
+    // from is omitted since it's calculated
     return a.type == b.type && a.nonce == b.nonce && a.gas_price == b.gas_price && a.gas_limit == b.gas_limit &&
-           a.to == b.to && a.value == b.value && a.data == b.data && a.v == b.v && a.r == b.r && a.s == b.s;
+           a.to == b.to && a.value == b.value && a.data == b.data && a.odd_y_parity == b.odd_y_parity &&
+           a.chain_id == b.chain_id && a.r == b.r && a.s == b.s;
+}
+
+// https://eips.ethereum.org/EIPS/eip-155
+intx::uint256 Transaction::v() const { return ecdsa::y_parity_and_chain_id_to_v(odd_y_parity, chain_id); }
+
+// https://eips.ethereum.org/EIPS/eip-155
+void Transaction::set_v(const intx::uint256& v) {
+    ecdsa::YParityAndChainId y{ecdsa::v_to_y_parity_and_chain_id(v)};
+    odd_y_parity = y.odd;
+    chain_id = y.chain_id;
 }
 
 namespace rlp {
 
-    static Header rlp_header(const Transaction& txn, bool for_signing, std::optional<uint64_t> eip155_chain_id) {
+    static Header rlp_header(const Transaction& txn, bool for_signing) {
         Header h{true, 0};
         h.payload_length += length(txn.nonce);
         h.payload_length += length(txn.gas_price);
@@ -39,17 +51,17 @@ namespace rlp {
         h.payload_length += length(txn.value);
         h.payload_length += length(txn.data);
         if (!for_signing) {
-            h.payload_length += length(txn.v);
+            h.payload_length += length(txn.v());
             h.payload_length += length(txn.r);
             h.payload_length += length(txn.s);
-        } else if (eip155_chain_id) {
-            h.payload_length += length(*eip155_chain_id) + 2;
+        } else if (txn.chain_id) {
+            h.payload_length += length(*txn.chain_id) + 2;
         }
         return h;
     }
 
     size_t length(const Transaction& txn) {
-        Header rlp_head{rlp_header(txn, /*for_signing=*/false, {})};
+        Header rlp_head{rlp_header(txn, /*for_signing=*/false)};
         auto rlp_len{static_cast<size_t>(length_of_length(rlp_head.payload_length) + rlp_head.payload_length)};
         if (txn.type) {
             return rlp_len + 1;
@@ -58,11 +70,11 @@ namespace rlp {
         }
     }
 
-    void encode(Bytes& to, const Transaction& txn, bool for_signing, std::optional<uint64_t> eip155_chain_id) {
+    void encode(Bytes& to, const Transaction& txn, bool for_signing) {
         if (txn.type) {
             to.push_back(*txn.type);
         }
-        encode_header(to, rlp_header(txn, for_signing, eip155_chain_id));
+        encode_header(to, rlp_header(txn, for_signing));
         encode(to, txn.nonce);
         encode(to, txn.gas_price);
         encode(to, txn.gas_limit);
@@ -74,17 +86,17 @@ namespace rlp {
         encode(to, txn.value);
         encode(to, txn.data);
         if (!for_signing) {
-            encode(to, txn.v);
+            encode(to, txn.v());
             encode(to, txn.r);
             encode(to, txn.s);
-        } else if (eip155_chain_id) {
-            encode(to, *eip155_chain_id);
+        } else if (txn.chain_id) {
+            encode(to, *txn.chain_id);
             encode(to, 0);
             encode(to, 0);
         };
     }
 
-    void encode(Bytes& to, const Transaction& txn) { encode(to, txn, /*for_signing=*/false, {}); }
+    void encode(Bytes& to, const Transaction& txn) { encode(to, txn, /*for_signing=*/false); }
 
     template <>
     DecodingResult decode(ByteView& from, Transaction& to) noexcept {
@@ -133,9 +145,13 @@ namespace rlp {
         if (DecodingResult err{decode(from, to.data)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingResult err{decode(from, to.v)}; err != DecodingResult::kOk) {
+
+        intx::uint256 v;
+        if (DecodingResult err{decode(from, v)}; err != DecodingResult::kOk) {
             return err;
         }
+        to.set_v(v);
+
         if (DecodingResult err{decode(from, to.r)}; err != DecodingResult::kOk) {
             return err;
         }
@@ -148,36 +164,31 @@ namespace rlp {
 
 }  // namespace rlp
 
-void Transaction::recover_sender(bool homestead, std::optional<uint64_t> eip155_chain_id) {
+void Transaction::recover_sender(bool homestead, std::optional<uint64_t> permitted_chain_id) {
     from.reset();
 
     if (!silkworm::ecdsa::is_valid_signature(r, s, homestead)) {
         return;
     }
 
-    ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(v)};
-    if (x.eip155_chain_id && x.eip155_chain_id != eip155_chain_id) {
+    if (chain_id && chain_id != permitted_chain_id) {
         return;
     }
 
     Bytes rlp{};
-    bool for_signing{true};
-    if (x.eip155_chain_id) {
-        rlp::encode(rlp, *this, for_signing, eip155_chain_id);
-    } else {
-        rlp::encode(rlp, *this, for_signing, {});
-    }
+    rlp::encode(rlp, *this, /*for_signing=*/true);
     ethash::hash256 hash{keccak256(rlp)};
 
     uint8_t signature[32 * 2];
     intx::be::unsafe::store(signature, r);
     intx::be::unsafe::store(signature + 32, s);
 
-    std::optional<Bytes> recovered{ecdsa::recover(full_view(hash.bytes), full_view(signature), x.recovery_id)};
+    std::optional<Bytes> recovered{ecdsa::recover(full_view(hash.bytes), full_view(signature), odd_y_parity)};
     if (recovered) {
         hash = ethash::keccak256(recovered->data() + 1, recovered->length() - 1);
         from = evmc::address{};
         std::memcpy(from->bytes, &hash.bytes[12], 32 - 12);
     }
 }
+
 }  // namespace silkworm

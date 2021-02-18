@@ -522,7 +522,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         if (spurious_dragon) {
             txn.recover_sender(homestead, config.chain_id);
         } else {
-            txn.recover_sender(homestead, {});
+            txn.recover_sender(homestead, std::nullopt);
         }
 
         if (valid && !txn.from.has_value()) {

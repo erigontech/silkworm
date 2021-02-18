@@ -58,6 +58,7 @@ enum class [[nodiscard]] ValidationResult{
     // See [YP] Section 11.2 "Transaction Validation", Eq (160)
     kWrongBlockGas,  // BHg ≠ l(BR)u
 
+    kWrongChainId,  // EIP-155
     kUnsupportedEip2718Type,
 };
 

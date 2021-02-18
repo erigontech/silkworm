@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_TRANSACTION_H_
-#define SILKWORM_TYPES_TRANSACTION_H_
+#ifndef SILKWORM_TYPES_TRANSACTION_HPP_
+#define SILKWORM_TYPES_TRANSACTION_HPP_
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
@@ -28,31 +28,39 @@ static constexpr uint8_t kEip2930TransactionType{1};
 
 struct Transaction {
     std::optional<uint8_t> type{std::nullopt};  // EIP-2718
+
     uint64_t nonce{0};
-    intx::uint256 gas_price;
+    intx::uint256 gas_price{0};
     uint64_t gas_limit{0};
-    std::optional<evmc::address> to;
-    intx::uint256 value;
-    Bytes data;
-    intx::uint256 v, r, s;              // signature
-    std::optional<evmc::address> from;  // sender recovered from the signature
+    std::optional<evmc::address> to{std::nullopt};
+    intx::uint256 value{0};
+    Bytes data{};
+
+    bool odd_y_parity{false};                             // EIP-155
+    std::optional<intx::uint256> chain_id{std::nullopt};  // EIP-155
+    intx::uint256 r{0}, s{0};                             // signature
+    std::optional<evmc::address> from{std::nullopt};      // sender recovered from the signature
+
+    intx::uint256 v() const;             // EIP-155
+    void set_v(const intx::uint256& v);  // EIP-155
 
     // Populates the from field with recovered sender.
     // See Yellow Paper, Appendix F "Signing Transactions",
     // https://eips.ethereum.org/EIPS/eip-2 and
     // https://eips.ethereum.org/EIPS/eip-155.
     // If recovery fails the from field is set to null.
-    void recover_sender(bool homestead, std::optional<uint64_t> eip155_chain_id);
+    void recover_sender(bool homestead, std::optional<uint64_t> permitted_chain_id);
 };
 
 bool operator==(const Transaction& a, const Transaction& b);
 
 namespace rlp {
-    void encode(Bytes& to, const Transaction& txn, bool for_signing, std::optional<uint64_t> eip155_chain_id);
+    void encode(Bytes& to, const Transaction& txn, bool for_signing);
 
     template <>
     DecodingResult decode(ByteView& from, Transaction& to) noexcept;
 }  // namespace rlp
+
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_TRANSACTION_H_
+#endif  // SILKWORM_TYPES_TRANSACTION_HPP_

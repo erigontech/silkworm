@@ -154,6 +154,9 @@ ValidationResult pre_validate_block(const Block& block, const StateBuffer& state
     }
 
     for (const Transaction& txn : block.transactions) {
+        if (txn.chain_id && txn.chain_id != config.chain_id) {
+            return ValidationResult::kWrongChainId;
+        }
         if (txn.type) {
             if (!config.has_berlin(header.number) || txn.type != kEip2930TransactionType) {
                 return ValidationResult::kUnsupportedEip2718Type;

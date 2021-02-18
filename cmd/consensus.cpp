@@ -23,7 +23,6 @@
 #include <iostream>
 #include <map>
 #include <nlohmann/json.hpp>
-#include <set>
 #include <silkworm/chain/blockchain.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/util.hpp>
@@ -34,6 +33,7 @@
 #include <silkworm/types/block.hpp>
 #include <string>
 #include <string_view>
+#include <vector>
 
 // See https://ethereum-tests.readthedocs.io
 
@@ -41,15 +41,13 @@ using namespace silkworm;
 
 namespace fs = boost::filesystem;
 
-static const fs::path kRootDir{SILKWORM_CONSENSUS_TEST_DIR};
+static const fs::path kDifficultyDir{"BasicTests"};
 
-static const fs::path kDifficultyDir{kRootDir / "BasicTests"};
+static const fs::path kBlockchainDir{"BlockchainTests"};
 
-static const fs::path kBlockchainDir{kRootDir / "BlockchainTests"};
+static const fs::path kTransactionDir{"TransactionTests"};
 
-static const fs::path kTransactionDir{kRootDir / "TransactionTests"};
-
-static const std::set<fs::path> kExcludedTests{
+static const std::vector<fs::path> kExcludedTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
 
     // Nonce >= 2^64 is not supported.
@@ -559,10 +557,21 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
     }
 }
 
+bool exclude_test(const fs::path& p, const fs::path root_dir) {
+    for (const fs::path& e : kExcludedTests) {
+        if (root_dir / e == p) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int main(int argc, char* argv[]) {
     CLI::App app{"Run Ethereum consensus tests"};
     std::string evm_path{};
     app.add_option("--evm", evm_path, "Path to EVMC-compliant VM");
+    std::string tests_path{SILKWORM_CONSENSUS_TEST_DIR};
+    app.add_option("--tests", tests_path, "Path to consensus tests", true)->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
 
     if (!evm_path.empty()) {
@@ -576,20 +585,24 @@ int main(int argc, char* argv[]) {
 
     RunResults res{};
 
+    const fs::path root_dir{tests_path};
+
     for (const auto& entry : kDifficultyConfig) {
-        res += run_test_file(kDifficultyDir / entry.first, difficulty_test, entry.second);
+        res += run_test_file(root_dir / kDifficultyDir / entry.first, difficulty_test, entry.second);
     }
 
-    for (auto i = fs::recursive_directory_iterator(kBlockchainDir); i != fs::recursive_directory_iterator{}; ++i) {
-        if (kExcludedTests.count(*i)) {
+    for (auto i = fs::recursive_directory_iterator(root_dir / kBlockchainDir); i != fs::recursive_directory_iterator{};
+         ++i) {
+        if (exclude_test(*i, root_dir)) {
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, blockchain_test);
         }
     }
 
-    for (auto i = fs::recursive_directory_iterator(kTransactionDir); i != fs::recursive_directory_iterator{}; ++i) {
-        if (kExcludedTests.count(*i)) {
+    for (auto i = fs::recursive_directory_iterator(root_dir / kTransactionDir); i != fs::recursive_directory_iterator{};
+         ++i) {
+        if (exclude_test(*i, root_dir)) {
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, transaction_test);

@@ -72,6 +72,8 @@ HunterGate(
 
 project(silkworm)
 
+option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
+
 option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
 
 include(cmake/Hunter/core_packages.cmake)
@@ -180,7 +182,9 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 # evmone with dependencies
-add_compile_definitions(EVMC_LOADER_MOCK)
+if(SILKWORM_WASM_API)
+  add_compile_definitions(EVMC_LOADER_MOCK)
+endif()
 add_subdirectory(evmone/evmc)
 add_subdirectory(keccak)
 find_package(intx CONFIG REQUIRED)
@@ -215,7 +219,6 @@ if(NOT SILKWORM_HAS_PARENT)
   add_subdirectory(cmd)
 endif()
 
-option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
 if(SILKWORM_WASM_API)
   add_subdirectory(wasm)
 endif()

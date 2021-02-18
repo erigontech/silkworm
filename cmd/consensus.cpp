@@ -14,6 +14,9 @@
    limitations under the License.
 */
 
+#include <evmc/loader.h>
+
+#include <CLI/CLI.hpp>
 #include <boost/filesystem.hpp>
 #include <exception>
 #include <fstream>
@@ -200,6 +203,8 @@ static void check_rlp_err(rlp::DecodingResult err) {
     }
 }
 
+evmc_vm* evm{nullptr};
+
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
 void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
     for (const auto& entry : pre.items()) {
@@ -361,6 +366,7 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
     init_pre_state(json_test["pre"], state);
 
     Blockchain blockchain{state, config, genesis_block};
+    blockchain.exo_evm = evm;
 
     for (const auto& json_block : json_test["blocks"]) {
         Status status{run_block(json_block, blockchain)};
@@ -553,7 +559,21 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
     }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    CLI::App app{"Run Ethereum consensus tests"};
+    std::string evm_path{};
+    app.add_option("--evm", evm_path, "Path to EVMC-compliant VM");
+    CLI11_PARSE(app, argc, argv);
+
+    if (!evm_path.empty()) {
+        evmc_loader_error_code err;
+        evm = evmc_load_and_create(evm_path.c_str(), &err);
+        if (err) {
+            std::cerr << "Failed to load EVM: " << evmc_last_error_msg() << std::endl;
+            return -1;
+        }
+    }
+
     RunResults res{};
 
     for (const auto& entry : kDifficultyConfig) {

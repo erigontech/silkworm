@@ -214,8 +214,23 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept {
     address_stack_.push(msg.destination);
 
-    EvmHost host{*this};
-    evmc_revision rev{revision()};
+    evmc_result res;
+    if (exo_evm) {
+        EvmHost host{*this};
+        res = exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), revision(), &msg, code.data(),
+                               code.size());
+    } else {
+        res = execute_endogenously(msg, code, code_hash);
+    }
+
+    address_stack_.pop();
+
+    return evmc::result{res};
+}
+
+evmc_result EVM::execute_endogenously(const evmc_message& msg, ByteView code,
+                                      std::optional<evmc::bytes32> code_hash) noexcept {
+    const evmc_revision rev{revision()};
 
     std::shared_ptr<evmone::code_analysis> analysis;
     if (code_hash && analysis_cache) {
@@ -237,6 +252,8 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
         state = std::make_unique<evmone::execution_state>();
     }
 
+    EvmHost host{*this};
+
     state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size(), *analysis);
 
     const auto* instruction{&state->analysis->instrs[0]};
@@ -245,13 +262,11 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     }
 
     const uint8_t* output_data{state->output_size ? &state->memory[state->output_offset] : nullptr};
-    evmc::result res{evmc::make_result(state->status, state->gas_left, output_data, state->output_size)};
+    evmc_result res{evmc::make_result(state->status, state->gas_left, output_data, state->output_size)};
 
     if (state_pool) {
         state_pool->release(std::move(state));
     }
-
-    address_stack_.pop();
 
     return res;
 }
@@ -464,4 +479,5 @@ void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t
     std::copy_n(data, data_size, std::back_inserter(log.data));
     evm_.state().add_log(log);
 }
+
 }  // namespace silkworm

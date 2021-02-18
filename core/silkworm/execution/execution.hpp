@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_EXECUTION_H_
-#define SILKWORM_EXECUTION_EXECUTION_H_
+#ifndef SILKWORM_EXECUTION_EXECUTION_HPP_
+#define SILKWORM_EXECUTION_EXECUTION_HPP_
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/validity.hpp>
@@ -40,8 +40,9 @@ namespace silkworm {
  */
 [[nodiscard]] std::pair<std::vector<Receipt>, ValidationResult> execute_block(
     const Block& block, StateBuffer& buffer, const ChainConfig& config = kMainnetConfig,
-    AnalysisCache* analysis_cache = nullptr, ExecutionStatePool* state_pool = nullptr) noexcept;
+    AnalysisCache* analysis_cache = nullptr, ExecutionStatePool* state_pool = nullptr,
+    evmc_vm* exo_evm = nullptr) noexcept;
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_EXECUTION_EXECUTION_H_
+#endif  // SILKWORM_EXECUTION_EXECUTION_HPP_

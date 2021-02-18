@@ -25,7 +25,8 @@ namespace silkworm {
 std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& block, StateBuffer& buffer,
                                                                 const ChainConfig& config,
                                                                 AnalysisCache* analysis_cache,
-                                                                ExecutionStatePool* state_pool) noexcept {
+                                                                ExecutionStatePool* state_pool,
+                                                                evmc_vm* exo_evm) noexcept {
     const BlockHeader& header{block.header};
     uint64_t block_num{header.number};
 
@@ -33,6 +34,7 @@ std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& blo
     ExecutionProcessor processor{block, state, config};
     processor.evm().analysis_cache = analysis_cache;
     processor.evm().state_pool = state_pool;
+    processor.evm().exo_evm = exo_evm;
 
     std::pair<std::vector<Receipt>, ValidationResult> res{processor.execute_block()};
 

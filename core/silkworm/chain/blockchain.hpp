@@ -33,6 +33,8 @@ class Blockchain {
 
     ValidationResult insert_block(Block& block, bool check_state_root);
 
+    evmc_vm* exo_evm{nullptr};
+
   private:
     ValidationResult execute_block(const Block& block, bool check_state_root);
 

@@ -72,7 +72,6 @@ class Db {
         std::string table_name = db::table::kHeadHeader.name;
         Bytes key{table_name.begin(), table_name.end()};
         return key;
-        //return from_hex("4c617374486561646572").value();
     }
 
     std::optional<Hash> read_head_header_hash() {
@@ -84,16 +83,16 @@ class Db {
     }
 
     std::optional<BlockHeader> read_header(BlockNum b, Hash h)  {
-        // auto header_table = txn->open(db::table::kBlockHeaders);
-        // std::optional<ByteView> header_rlp = header_table->get(db::block_key(b, h));
-        // ... decode header_rlp ...
-        // but there is an implementation id db
         return db::read_header(*txn, b, h.bytes);
     }
 
+    std::optional<ByteView> read_rlp_encoded_header(BlockNum b, Hash h)  {
+        auto header_table = txn->open(db::table::kBlockHeaders);
+        std::optional<ByteView> rlp = header_table->get(db::block_key(b, h.bytes));
+        return rlp;
+    }
+
     Bytes header_numbers_key(Hash h) { // todo: add to db::util.h?
-        //Bytes key(kHashLength, '\0');
-        //std::memcpy(key.data(), h.bytes, kHashLength); // old style
         return {h.bytes, 32};
     }
 
@@ -185,16 +184,14 @@ int main(int argc, char* argv[]) {
         Db db{db_path};
 
         string file_name = "hard_coded_headers_" + name + ".h";
-        HeaderListFile output{file_name}; // "hard_coded_headers_%s.go"
+        HeaderListFile output{file_name};
         BlockNum block_num = 0;
         for (; block_num < UINT64_MAX; block_num += block_step) {
             optional<Hash> hash = db.read_canonical_hash(block_num);
             if (!hash) break;
-            optional<BlockHeader> header = db.read_header(block_num, *hash);
-            if (!hash) throw std::logic_error("block header not found in db (but its hash is present)");
-            Bytes encoded_header;
-            rlp::encode(encoded_header, *header);
-            output.add_header(base64encode(encoded_header));
+            optional<ByteView> encoded_header = db.read_rlp_encoded_header(block_num, *hash);
+            if (!encoded_header) throw std::logic_error("block header not found in db (but its hash is present)");
+            output.add_header(base64encode(*encoded_header));
         }
         output.close();
 
@@ -203,7 +200,6 @@ int main(int argc, char* argv[]) {
 
         auto hash = db.read_head_header_hash();
         if (!hash) throw std::logic_error("hash of head header not found in db");
-        //cout << "hash of head header: " << to_hex(hash.value()) << "\n";
         auto header = db.read_header(*hash);
         if (!header) throw std::logic_error("head header not found in db");
 

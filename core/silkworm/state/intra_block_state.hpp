@@ -81,6 +81,10 @@ class IntraBlockState {
     evmc::bytes32 get_code_hash(const evmc::address& address) const noexcept;
     void set_code(const evmc::address& address, Bytes code) noexcept;
 
+    evmc_access_status access_account(const evmc::address& address) noexcept;
+
+    evmc_access_status access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept;
+
     evmc::bytes32 get_current_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept;
 
     // https://eips.ethereum.org/EIPS/eip-2200
@@ -115,6 +119,8 @@ class IntraBlockState {
     friend class state::StorageChangeDelta;
     friend class state::StorageWipeDelta;
     friend class state::StorageCreateDelta;
+    friend class state::StorageAccessDelta;
+    friend class state::AccountAccessDelta;
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key, bool original) const noexcept;
 
@@ -133,6 +139,9 @@ class IntraBlockState {
     std::vector<Log> logs_;
     robin_hood::unordered_flat_set<evmc::address> touched_;
     uint64_t refund_{0};
+    // EIP-2929 substate
+    robin_hood::unordered_flat_set<evmc::address> accessed_addresses_;
+    robin_hood::unordered_flat_map<evmc::address, robin_hood::unordered_flat_set<evmc::bytes32>> accessed_storage_keys_;
 };
 
 }  // namespace silkworm

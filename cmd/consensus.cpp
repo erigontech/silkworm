@@ -61,6 +61,12 @@ static const std::vector<fs::path> kExcludedTests{
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
+// TODO[Issue 99] Reenable after EIP-2315 is implemented
+static const std::vector<fs::path> kEip2315Tests{
+    kBlockchainDir / "GeneralStateTests" / "stSubroutine",
+    kBlockchainDir / "ValidBlocks" / "bcStateTests" / "testOpcodes.json",
+};
+
 constexpr size_t kColumnWidth{80};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
@@ -123,6 +129,19 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
          0,  // constantinople_block
          0,  // petersburg_block
          0,  // istanbul_block
+     }},
+    {"Berlin",
+     {
+         1,  // chain_id
+         0,  // homestead_block
+         0,  // tangerine_whistle_block
+         0,  // spurious_dragon_block
+         0,  // byzantium_block
+         0,  // constantinople_block
+         0,  // petersburg_block
+         0,  // istanbul_block
+         0,  // muir_glacier_block
+         0,  // berlin_block
      }},
     {"FrontierToHomesteadAt5",
      {
@@ -282,7 +301,8 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
 
 bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
     if (state.number_of_accounts() != expected.size()) {
-        std::cout << "Account number mismatch: " << state.number_of_accounts() << " != " << expected.size() << std::endl;
+        std::cout << "Account number mismatch: " << state.number_of_accounts() << " != " << expected.size()
+                  << std::endl;
         return false;
     }
 
@@ -556,8 +576,16 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
     }
 }
 
-bool exclude_test(const fs::path& p, const fs::path root_dir) {
+bool exclude_test(const fs::path& p, const fs::path root_dir, bool skip_eip_2315) {
     for (const fs::path& e : kExcludedTests) {
+        if (root_dir / e == p) {
+            return true;
+        }
+    }
+    if (!skip_eip_2315) {
+        return false;
+    }
+    for (const fs::path& e : kEip2315Tests) {
         if (root_dir / e == p) {
             return true;
         }
@@ -571,6 +599,8 @@ int main(int argc, char* argv[]) {
     app.add_option("--evm", evm_path, "Path to EVMC-compliant VM");
     std::string tests_path{SILKWORM_CONSENSUS_TEST_DIR};
     app.add_option("--tests", tests_path, "Path to consensus tests", true)->check(CLI::ExistingDirectory);
+    bool skip_eip_2315{false};
+    app.add_flag("--skip-eip-2315", skip_eip_2315, "Skip EIP-2315 tests");
     CLI11_PARSE(app, argc, argv);
 
     if (!evm_path.empty()) {
@@ -592,7 +622,7 @@ int main(int argc, char* argv[]) {
 
     for (auto i = fs::recursive_directory_iterator(root_dir / kBlockchainDir); i != fs::recursive_directory_iterator{};
          ++i) {
-        if (exclude_test(*i, root_dir)) {
+        if (exclude_test(*i, root_dir, skip_eip_2315)) {
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, blockchain_test);
@@ -601,7 +631,7 @@ int main(int argc, char* argv[]) {
 
     for (auto i = fs::recursive_directory_iterator(root_dir / kTransactionDir); i != fs::recursive_directory_iterator{};
          ++i) {
-        if (exclude_test(*i, root_dir)) {
+        if (exclude_test(*i, root_dir, skip_eip_2315)) {
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, transaction_test);

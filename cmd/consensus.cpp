@@ -612,6 +612,12 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    const RunResults kSkippedTest{
+        0,  // passed
+        0,  // failed
+        1,  // skipped
+    };
+
     RunResults res{};
 
     const fs::path root_dir{tests_path};
@@ -623,6 +629,7 @@ int main(int argc, char* argv[]) {
     for (auto i = fs::recursive_directory_iterator(root_dir / kBlockchainDir); i != fs::recursive_directory_iterator{};
          ++i) {
         if (exclude_test(*i, root_dir, skip_eip_2315)) {
+            res += kSkippedTest;
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, blockchain_test);
@@ -632,6 +639,7 @@ int main(int argc, char* argv[]) {
     for (auto i = fs::recursive_directory_iterator(root_dir / kTransactionDir); i != fs::recursive_directory_iterator{};
          ++i) {
         if (exclude_test(*i, root_dir, skip_eip_2315)) {
+            res += kSkippedTest;
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
             res += run_test_file(*i, transaction_test);

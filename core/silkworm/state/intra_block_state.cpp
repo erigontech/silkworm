@@ -212,6 +212,22 @@ void IntraBlockState::set_code(const evmc::address& address, Bytes code) noexcep
     obj.code = std::move(code);
 }
 
+evmc_access_status IntraBlockState::access_account(const evmc::address& address) noexcept {
+    const bool cold_read{accessed_addresses_.insert(address).second};
+    if (cold_read) {
+        journal_.emplace_back(new state::AccountAccessDelta{address});
+    }
+    return cold_read ? EVMC_COLD_ACCESS : EVMC_WARM_ACCESS;
+}
+
+evmc_access_status IntraBlockState::access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept {
+    const bool cold_read{accessed_storage_keys_[address].insert(key).second};
+    if (cold_read) {
+        journal_.emplace_back(new state::StorageAccessDelta{address, key});
+    }
+    return cold_read ? EVMC_COLD_ACCESS : EVMC_WARM_ACCESS;
+}
+
 evmc::bytes32 IntraBlockState::get_current_storage(const evmc::address& address,
                                                    const evmc::bytes32& key) const noexcept {
     return get_storage(address, key, /*original=*/false);
@@ -329,6 +345,9 @@ void IntraBlockState::clear_journal_and_substate() {
     logs_.clear();
     touched_.clear();
     refund_ = 0;
+    // EIP-2929
+    accessed_addresses_.clear();
+    accessed_storage_keys_.clear();
 }
 
 void IntraBlockState::add_log(const Log& log) noexcept { logs_.push_back(log); }

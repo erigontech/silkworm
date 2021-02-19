@@ -29,11 +29,6 @@
 #include <stack>
 #include <vector>
 
-// TODO(Andrew) get rid of this when
-// https://github.com/ethereum/evmc/pull/528
-// is merged and released
-enum evmc_status_code_extra { EVMC_BALANCE_TOO_LOW = 32 };
-
 namespace silkworm {
 
 struct CallResult {
@@ -93,6 +88,10 @@ class EvmHost : public evmc::Host {
     explicit EvmHost(EVM& evm) noexcept : evm_{evm} {}
 
     bool account_exists(const evmc::address& address) const noexcept override;
+
+    evmc_access_status access_account(const evmc::address& address) noexcept override;
+
+    evmc_access_status access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept override;
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept override;
 

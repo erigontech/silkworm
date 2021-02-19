@@ -45,7 +45,7 @@ struct BlockHeader {
     uint64_t gas_used{0};
     uint64_t timestamp{0};
 
-    ByteView extra_data() const { return {extra_data_.bytes, extra_data_size_}; }
+    ByteView extra_data() const { return {extra_data_.data(), extra_data_size_}; }
 
     evmc::bytes32 mix_hash{};
     std::array<uint8_t, 8> nonce{};
@@ -55,7 +55,7 @@ struct BlockHeader {
   private:
     friend rlp::DecodingResult rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to) noexcept;
 
-    evmc::bytes32 extra_data_{};
+    Bytes extra_data_{};
     uint32_t extra_data_size_{0};
 };
 

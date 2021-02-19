@@ -152,11 +152,16 @@ namespace rlp {
         if (extra_data_head.list) {
             return DecodingResult::kUnexpectedList;
         }
-        if (extra_data_head.payload_length > 32) {
-            return DecodingResult::kUnexpectedLength;
-        }
+
+        // TODO Verify payload length is consistent
+        // with chain type
+        //if (extra_data_head.payload_length > 32) {
+        //    return DecodingResult::kUnexpectedLength;
+        //}
+
         to.extra_data_size_ = static_cast<uint32_t>(extra_data_head.payload_length);
-        std::memcpy(to.extra_data_.bytes, from.data(), to.extra_data_size_);
+        to.extra_data_.resize(extra_data_head.payload_length, '0');
+        std::memcpy(to.extra_data_.data(), from.data(), to.extra_data_size_);
         from.remove_prefix(to.extra_data_size_);
 
         if (DecodingResult err{decode(from, to.mix_hash.bytes)}; err != DecodingResult::kOk) {

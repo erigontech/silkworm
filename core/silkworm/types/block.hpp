@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_BLOCK_H_
-#define SILKWORM_TYPES_BLOCK_H_
+#ifndef SILKWORM_TYPES_BLOCK_HPP_
+#define SILKWORM_TYPES_BLOCK_HPP_
 
 #include <stdint.h>
 
@@ -45,7 +45,7 @@ struct BlockHeader {
     uint64_t gas_used{0};
     uint64_t timestamp{0};
 
-    ByteView extra_data() const { return {extra_data_.data(), extra_data_size_}; }
+    Bytes extra_data{};
 
     evmc::bytes32 mix_hash{};
     std::array<uint8_t, 8> nonce{};
@@ -54,9 +54,6 @@ struct BlockHeader {
 
   private:
     friend rlp::DecodingResult rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to) noexcept;
-
-    Bytes extra_data_{};
-    uint32_t extra_data_size_{0};
 };
 
 bool operator==(const BlockHeader& a, const BlockHeader& b);
@@ -93,6 +90,7 @@ namespace rlp {
     template <>
     DecodingResult decode(ByteView& from, Block& to) noexcept;
 }  // namespace rlp
+
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_BLOCK_H_
+#endif  // SILKWORM_TYPES_BLOCK_HPP_

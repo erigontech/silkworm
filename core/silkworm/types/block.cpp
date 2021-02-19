@@ -35,8 +35,7 @@ bool operator==(const BlockHeader& a, const BlockHeader& b) {
            a.state_root == b.state_root && a.transactions_root == b.transactions_root &&
            a.receipts_root == b.receipts_root && a.logs_bloom == b.logs_bloom && a.difficulty == b.difficulty &&
            a.number == b.number && a.gas_limit == b.gas_limit && a.gas_used == b.gas_used &&
-           a.timestamp == b.timestamp && a.extra_data() == b.extra_data() && a.mix_hash == b.mix_hash &&
-           a.nonce == b.nonce;
+           a.timestamp == b.timestamp && a.extra_data == b.extra_data && a.mix_hash == b.mix_hash && a.nonce == b.nonce;
 }
 
 bool operator==(const BlockBody& a, const BlockBody& b) {
@@ -68,7 +67,7 @@ namespace rlp {
         rlp_head.payload_length += length(header.gas_limit);
         rlp_head.payload_length += length(header.gas_used);
         rlp_head.payload_length += length(header.timestamp);
-        rlp_head.payload_length += length(header.extra_data());
+        rlp_head.payload_length += length(header.extra_data);
         rlp_head.payload_length += 8 + 1;  // nonce
         return rlp_head;
     }
@@ -92,7 +91,7 @@ namespace rlp {
         encode(to, header.gas_limit);
         encode(to, header.gas_used);
         encode(to, header.timestamp);
-        encode(to, header.extra_data());
+        encode(to, header.extra_data);
         encode(to, header.mix_hash.bytes);
         encode(to, header.nonce);
     }
@@ -144,26 +143,9 @@ namespace rlp {
         if (DecodingResult err{decode(from, to.timestamp)}; err != DecodingResult::kOk) {
             return err;
         }
-
-        auto [extra_data_head, err2]{decode_header(from)};
-        if (err2 != DecodingResult::kOk) {
-            return err2;
+        if (DecodingResult err{decode(from, to.extra_data)}; err != DecodingResult::kOk) {
+            return err;
         }
-        if (extra_data_head.list) {
-            return DecodingResult::kUnexpectedList;
-        }
-
-        // TODO Verify payload length is consistent
-        // with chain type
-        //if (extra_data_head.payload_length > 32) {
-        //    return DecodingResult::kUnexpectedLength;
-        //}
-
-        to.extra_data_size_ = static_cast<uint32_t>(extra_data_head.payload_length);
-        to.extra_data_.resize(extra_data_head.payload_length, '0');
-        std::memcpy(to.extra_data_.data(), from.data(), to.extra_data_size_);
-        from.remove_prefix(to.extra_data_size_);
-
         if (DecodingResult err{decode(from, to.mix_hash.bytes)}; err != DecodingResult::kOk) {
             return err;
         }

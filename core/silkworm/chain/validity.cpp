@@ -43,6 +43,10 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
         return ValidationResult::kInvalidGasLimit;
     }
 
+    if (header.extra_data.length() > 32) {
+        return ValidationResult::kExtraDataTooLong;
+    }
+
     std::optional<BlockHeader> parent{get_parent(state, header)};
     if (!parent) {
         return ValidationResult::kUnknownParent;
@@ -68,7 +72,7 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
     // https://eips.ethereum.org/EIPS/eip-779
     if (config.dao_block && *config.dao_block <= header.number && header.number <= *config.dao_block + 9) {
         static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
-        if (header.extra_data() != kDaoExtraData) {
+        if (header.extra_data != kDaoExtraData) {
             return ValidationResult::kWrongDaoExtraData;
         }
     }

@@ -35,6 +35,7 @@ enum class [[nodiscard]] ValidationResult{
     kGasAboveLimit,      // Hg > Hl
     kInvalidGasLimit,    // |Hl-P(H)Hl|≥P(H)Hl/1024 ∨ Hl<5000
     kInvalidTimestamp,   // Hs ≤ P(H)Hs
+    kExtraDataTooLong,   // ‖Hx‖ > 32
     kWrongDaoExtraData,  // see EIP-779
 
     // See [YP] Section 6.2 "Execution", Eq (58)

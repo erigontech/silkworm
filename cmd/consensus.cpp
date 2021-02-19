@@ -612,7 +612,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    const RunResults kSkippedTest{
+    static constexpr RunResults kSkippedTest{
         0,  // passed
         0,  // failed
         1,  // skipped

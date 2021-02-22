@@ -64,6 +64,13 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
         state.set_nonce(*txn.from, txn.nonce + 1);
     }
 
+    for (const AccessListEntry& ae : txn.access_list) {
+        state.access_account(ae.account);
+        for (const evmc::bytes32& key : ae.storage_keys) {
+            state.access_storage(ae.account, key);
+        }
+    }
+
     uint64_t block_number{evm_.block().header.number};
     bool homestead{evm_.config().has_homestead(block_number)};
     bool istanbul{evm_.config().has_istanbul(block_number)};

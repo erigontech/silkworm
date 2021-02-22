@@ -23,7 +23,8 @@
 namespace silkworm {
 
 // Returns the intrinsic gas of a transaction.
-// Refer to g0 in Section 6.2 "Execution" of the Yellow Paper.
+// Refer to g0 in Section 6.2 "Execution" of the Yellow Paper
+// and EIP-2930 "Optional access lists"
 intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept;
 
 }  // namespace silkworm

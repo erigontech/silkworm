@@ -28,12 +28,10 @@ namespace silkworm {
 namespace fee {
     constexpr uint64_t kGSLoadTangerineWhistle{200};
     constexpr uint64_t kGSLoadIstanbul{800};
-
-    // https://eips.ethereum.org/EIPS/eip-2930
-    constexpr uint64_t kWarmStorageReadCost{100};
-    constexpr uint64_t kColdSloadCost{2'100};
-    constexpr uint64_t kAccessListStorageKeyCost{1'900};
-    constexpr uint64_t kAccessListAddressCost{2'400};
+    constexpr uint64_t kWarmStorageReadCost{100};         // EIP-2929
+    constexpr uint64_t kColdSloadCost{2'100};             // EIP-2929
+    constexpr uint64_t kAccessListStorageKeyCost{1'900};  // EIP-2930
+    constexpr uint64_t kAccessListAddressCost{2'400};     // EIP-2930
 
     constexpr uint64_t kGSSet{20'000};
     constexpr uint64_t kGSReset{5'000};

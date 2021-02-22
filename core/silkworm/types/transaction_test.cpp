@@ -49,12 +49,12 @@ TEST_CASE("Transaction RLP") {
 
 TEST_CASE("EIP-2930 Transaction RLP") {
     std::vector<AccessListEntry> access_list{
-        {0xf66852bc122fd40bfecc63cd48217e88bda12109_address,
+        {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
          {
-             0xe9e0d8424f305be2979455ab6aa95db719be69f2834e23165ce09d9a4864f6c9_bytes32,
-             0x7d3bb8a6435e4ce9e45f58502878b8f1f23663a52ad694c2b1ec7fa8f6181922_bytes32,
+             0x0000000000000000000000000000000000000000000000000000000000000003_bytes32,
+             0x0000000000000000000000000000000000000000000000000000000000000007_bytes32,
          }},
-        {0x1ec419f4f780ee4a3f7bd76d269ba137502be84f_address, {}},
+        {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
     };
 
     Transaction txn{

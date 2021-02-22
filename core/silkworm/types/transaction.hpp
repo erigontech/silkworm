@@ -60,6 +60,7 @@ struct Transaction {
     // See Yellow Paper, Appendix F "Signing Transactions",
     // https://eips.ethereum.org/EIPS/eip-2 and
     // https://eips.ethereum.org/EIPS/eip-155.
+    // If recovery fails the from field is set to null.
     //
     // Precondition: pre_validate_transaction must return kOk.
     void recover_sender();

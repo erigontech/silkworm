@@ -24,8 +24,14 @@ namespace silkworm {
 
 intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept {
     intx::uint128 gas{fee::kGTransaction};
+
     if (!txn.to && homestead) {
         gas += fee::kGTxCreate;
+    }
+
+    gas += static_cast<intx::uint128>(txn.access_list.size()) * fee::kAccessListAddressCost;
+    for (const AccessListEntry& e : txn.access_list) {
+        gas += static_cast<intx::uint128>(e.storage_keys.size()) * fee::kAccessListStorageKeyCost;
     }
 
     if (txn.data.empty()) {

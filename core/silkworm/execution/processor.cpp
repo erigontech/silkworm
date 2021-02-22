@@ -16,50 +16,16 @@
 
 #include "processor.hpp"
 
-#include <algorithm>
-#include <ethash/keccak.hpp>
-#include <intx/int128.hpp>
-#include <iostream>
 #include <silkworm/chain/dao.hpp>
+#include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <utility>
 
 #include "execution.hpp"
 
 namespace silkworm {
 
-intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept {
-    intx::uint128 gas{fee::kGTransaction};
-    if (!txn.to && homestead) {
-        gas += fee::kGTxCreate;
-    }
-
-    if (txn.data.empty()) {
-        return gas;
-    }
-
-    intx::uint128 non_zero_bytes{std::count_if(txn.data.begin(), txn.data.end(), [](char c) { return c != 0; })};
-
-    uint64_t nonZeroGas{istanbul ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
-    gas += non_zero_bytes * nonZeroGas;
-
-    intx::uint128 zero_bytes{txn.data.length() - non_zero_bytes};
-    gas += zero_bytes * fee::kGTxDataZero;
-
-    return gas;
-}
-
 ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config)
     : evm_{block, state, config} {}
-
-/*
-static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
-    Bytes rlp{};
-    rlp::encode(rlp, txn);
-    ethash::hash256 hash{keccak256(rlp)};
-    std::cout << "0x" << to_hex(full_view(hash.bytes)) << " " << gas_used << "\n";
-}
-*/
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
     if (!txn.from) {

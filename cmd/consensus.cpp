@@ -25,8 +25,8 @@
 #include <nlohmann/json.hpp>
 #include <silkworm/chain/blockchain.hpp>
 #include <silkworm/chain/difficulty.hpp>
+#include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/execution/processor.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/state/memory_buffer.hpp>

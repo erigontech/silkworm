@@ -22,11 +22,11 @@
 #include <ethash/keccak.hpp>
 #include <evmone/analysis.hpp>
 #include <iterator>
+#include <silkworm/chain/protocol_param.hpp>
 
 #include "address.hpp"
 #include "execution.hpp"
 #include "precompiled.hpp"
-#include "protocol_param.hpp"
 #include "state_pool.hpp"
 
 namespace silkworm {

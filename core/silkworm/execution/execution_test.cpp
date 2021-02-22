@@ -20,8 +20,8 @@
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <silkworm/chain/config.hpp>
+#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/execution/address.hpp>
-#include <silkworm/execution/protocol_param.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/account.hpp>

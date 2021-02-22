@@ -21,10 +21,10 @@
 #include <intx/int128.hpp>
 #include <iostream>
 #include <silkworm/chain/dao.hpp>
+#include <silkworm/chain/protocol_param.hpp>
 #include <utility>
 
 #include "execution.hpp"
-#include "protocol_param.hpp"
 
 namespace silkworm {
 

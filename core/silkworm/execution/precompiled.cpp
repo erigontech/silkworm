@@ -26,13 +26,12 @@
 #include <iterator>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #include <limits>
+#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/crypto/rmd160.hpp>
 #include <silkworm/crypto/snark.hpp>
-
-#include "protocol_param.hpp"
 
 namespace silkworm::precompiled {
 

@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_PROTOCOL_PARAM_H_
-#define SILKWORM_EXECUTION_PROTOCOL_PARAM_H_
+#ifndef SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_
+#define SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_
 
 #include <stdint.h>
 
@@ -57,6 +57,7 @@ namespace param {
     constexpr uint64_t kByzantiumBlockReward{3 * kEther};
     constexpr uint64_t kConstantinopleBlockReward{2 * kEther};
 }  // namespace param
+
 }  // namespace silkworm
 
-#endif  // SILKWORM_EXECUTION_PROTOCOL_PARAM_H_
+#endif  // SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_

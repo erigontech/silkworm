@@ -18,11 +18,11 @@
 
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
+#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 
 #include "address.hpp"
 #include "execution.hpp"
-#include "protocol_param.hpp"
 
 namespace silkworm {
 

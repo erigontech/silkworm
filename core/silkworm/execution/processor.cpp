@@ -38,15 +38,6 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
         return ValidationResult::kWrongNonce;
     }
 
-    uint64_t block_number{evm_.block().header.number};
-    bool homestead{evm_.config().has_homestead(block_number)};
-    bool istanbul{evm_.config().has_istanbul(block_number)};
-
-    intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
-    if (txn.gas_limit < g0) {
-        return ValidationResult::kIntrinsicGas;
-    }
-
     intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price)};
     intx::uint512 v0{gas_cost + txn.value};
 

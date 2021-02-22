@@ -60,8 +60,9 @@ struct Transaction {
     // See Yellow Paper, Appendix F "Signing Transactions",
     // https://eips.ethereum.org/EIPS/eip-2 and
     // https://eips.ethereum.org/EIPS/eip-155.
-    // If recovery fails the from field is set to null.
-    void recover_sender(bool homestead, std::optional<uint64_t> permitted_chain_id);
+    //
+    // Precondition: pre_validate_transaction must return kOk.
+    void recover_sender();
 };
 
 bool operator==(const Transaction& a, const Transaction& b);

@@ -99,7 +99,7 @@ TEST_CASE("Recover sender 1") {
         intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
     };
 
-    txn.recover_sender(/*homestead=*/false, std::nullopt);
+    txn.recover_sender();
     CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
 }
 
@@ -120,7 +120,7 @@ TEST_CASE("Recover sender 2") {
         intx::from_string<intx::uint256>("0x65f766849f97b15f01d0877636fbed0fa4e39f8834896c0354f56ac44dcb50a6"),  // s
     };
 
-    txn.recover_sender(/*homestead=*/false, std::nullopt);
+    txn.recover_sender();
     CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
 }
 

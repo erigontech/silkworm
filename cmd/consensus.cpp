@@ -25,7 +25,7 @@
 #include <nlohmann/json.hpp>
 #include <silkworm/chain/blockchain.hpp>
 #include <silkworm/chain/difficulty.hpp>
-#include <silkworm/chain/intrinsic_gas.hpp>
+#include <silkworm/chain/validity.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/intra_block_state.hpp>
@@ -505,25 +505,18 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         }
 
         ChainConfig config{kNetworkConfig.at(entry.key())};
-        bool homestead{config.has_homestead(0)};
-        bool spurious_dragon{config.has_spurious_dragon(0)};
-        bool istanbul{config.has_istanbul(0)};
 
-        intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
-        if (g0 > txn.gas_limit) {
+        if (ValidationResult err{pre_validate_transaction(txn, /*block_number=*/0, config)};
+            err != ValidationResult::kOk) {
             if (valid) {
-                std::cout << "g0 > gas_limit for valid transaction" << std::endl;
+                std::cout << "Validation error " << static_cast<int>(err) << std::endl;
                 return kFailed;
             } else {
                 continue;
             }
         }
 
-        if (spurious_dragon) {
-            txn.recover_sender(homestead, config.chain_id);
-        } else {
-            txn.recover_sender(homestead, std::nullopt);
-        }
+        txn.recover_sender();
 
         if (valid && !txn.from.has_value()) {
             std::cout << "Failed to recover sender" << std::endl;

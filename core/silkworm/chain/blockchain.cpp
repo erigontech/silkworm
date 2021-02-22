@@ -38,7 +38,7 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
         return it->second;
     }
 
-    block.recover_senders(config_);
+    block.recover_senders();
 
     uint64_t ancestor{canonical_ancestor(block.header, hash)};
     uint64_t current_canonical_block{state_.current_canonical_block()};

@@ -72,7 +72,7 @@ inline bool operator!=(const BlockBody& a, const BlockBody& b) { return !(a == b
 struct Block : public BlockBody {
     BlockHeader header;
 
-    void recover_senders(const ChainConfig& config);
+    void recover_senders();
 };
 
 struct BlockWithHash {

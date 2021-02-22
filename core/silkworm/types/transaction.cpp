@@ -21,6 +21,7 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/rlp/encode.hpp>
+
 namespace silkworm {
 
 bool operator==(const AccessListEntry& a, const AccessListEntry& b) {
@@ -255,16 +256,8 @@ namespace rlp {
 
 }  // namespace rlp
 
-void Transaction::recover_sender(bool homestead, std::optional<uint64_t> permitted_chain_id) {
+void Transaction::recover_sender() {
     from.reset();
-
-    if (!silkworm::ecdsa::is_valid_signature(r, s, homestead)) {
-        return;
-    }
-
-    if (chain_id && chain_id != permitted_chain_id) {
-        return;
-    }
 
     Bytes rlp{};
     rlp::encode(rlp, *this, /*for_signing=*/true);

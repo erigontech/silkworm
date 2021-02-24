@@ -70,8 +70,7 @@ SILKWORM_EXPORT void delete_transaction(silkworm::Transaction* x);
 
 SILKWORM_EXPORT bool check_intrinsic_gas(const silkworm::Transaction* txn, bool homestead, bool istanbul);
 
-// 0 chain_id means pre EIP-155
-SILKWORM_EXPORT const uint8_t* recover_sender(silkworm::Transaction* txn, bool homestead, uint64_t chain_id);
+SILKWORM_EXPORT const uint8_t* recover_sender(silkworm::Transaction* txn);
 
 SILKWORM_EXPORT void keccak256(uint8_t* out, const silkworm::Bytes* in);
 
@@ -93,7 +92,7 @@ SILKWORM_EXPORT uint64_t header_number(const silkworm::BlockHeader* header);
 
 SILKWORM_EXPORT uint8_t* header_state_root(silkworm::BlockHeader* header);
 
-SILKWORM_EXPORT void block_recover_senders(silkworm::Block* b, const silkworm::ChainConfig* config);
+SILKWORM_EXPORT void block_recover_senders(silkworm::Block* b);
 
 SILKWORM_EXPORT silkworm::MemoryBuffer* new_state();
 SILKWORM_EXPORT void delete_state(silkworm::MemoryBuffer* x);

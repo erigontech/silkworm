@@ -26,13 +26,12 @@
 #include <iterator>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #include <limits>
+#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/crypto/rmd160.hpp>
 #include <silkworm/crypto/snark.hpp>
-
-#include "protocol_param.hpp"
 
 namespace silkworm::precompiled {
 
@@ -54,12 +53,12 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
         return Bytes{};
     }
 
-    ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(v)};
-    if (x.eip155_chain_id) {
+    ecdsa::YParityAndChainId y{ecdsa::v_to_y_parity_and_chain_id(v)};
+    if (y.chain_id) {
         return Bytes{};
     }
 
-    std::optional<Bytes> key{ecdsa::recover(d.substr(0, 32), d.substr(64, 64), x.recovery_id)};
+    std::optional<Bytes> key{ecdsa::recover(d.substr(0, 32), d.substr(64, 64), y.odd)};
     if (!key || key->at(0) != 4) {
         return Bytes{};
     }

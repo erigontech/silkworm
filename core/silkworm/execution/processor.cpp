@@ -16,50 +16,16 @@
 
 #include "processor.hpp"
 
-#include <algorithm>
-#include <ethash/keccak.hpp>
-#include <intx/int128.hpp>
-#include <iostream>
 #include <silkworm/chain/dao.hpp>
-#include <utility>
+#include <silkworm/chain/intrinsic_gas.hpp>
+#include <silkworm/chain/protocol_param.hpp>
 
 #include "execution.hpp"
-#include "protocol_param.hpp"
 
 namespace silkworm {
 
-intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept {
-    intx::uint128 gas{fee::kGTransaction};
-    if (!txn.to && homestead) {
-        gas += fee::kGTxCreate;
-    }
-
-    if (txn.data.empty()) {
-        return gas;
-    }
-
-    intx::uint128 non_zero_bytes{std::count_if(txn.data.begin(), txn.data.end(), [](char c) { return c != 0; })};
-
-    uint64_t nonZeroGas{istanbul ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
-    gas += non_zero_bytes * nonZeroGas;
-
-    intx::uint128 zero_bytes{txn.data.length() - non_zero_bytes};
-    gas += zero_bytes * fee::kGTxDataZero;
-
-    return gas;
-}
-
 ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config)
     : evm_{block, state, config} {}
-
-/*
-static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
-    Bytes rlp{};
-    rlp::encode(rlp, txn);
-    ethash::hash256 hash{keccak256(rlp)};
-    std::cout << "0x" << to_hex(full_view(hash.bytes)) << " " << gas_used << "\n";
-}
-*/
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
     if (!txn.from) {
@@ -70,15 +36,6 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
     uint64_t nonce{state.get_nonce(*txn.from)};
     if (nonce != txn.nonce) {
         return ValidationResult::kWrongNonce;
-    }
-
-    uint64_t block_number{evm_.block().header.number};
-    bool homestead{evm_.config().has_homestead(block_number)};
-    bool istanbul{evm_.config().has_istanbul(block_number)};
-
-    intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
-    if (txn.gas_limit < g0) {
-        return ValidationResult::kIntrinsicGas;
     }
 
     intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price)};
@@ -107,6 +64,13 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
         state.set_nonce(*txn.from, txn.nonce + 1);
     }
 
+    for (const AccessListEntry& ae : txn.access_list) {
+        state.access_account(ae.account);
+        for (const evmc::bytes32& key : ae.storage_keys) {
+            state.access_storage(ae.account, key);
+        }
+    }
+
     uint64_t block_number{evm_.block().header.number};
     bool homestead{evm_.config().has_homestead(block_number)};
     bool istanbul{evm_.config().has_istanbul(block_number)};
@@ -129,6 +93,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     cumulative_gas_used_ += gas_used;
 
     return {
+        txn.type,                         // type
         vm_res.status == EVMC_SUCCESS,    // success
         cumulative_gas_used_,             // cumulative_gas_used
         logs_bloom(evm_.state().logs()),  // bloom

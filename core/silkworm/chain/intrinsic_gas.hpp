@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,23 +14,19 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_RECEIPT_H_
-#define SILKWORM_TYPES_RECEIPT_H_
+#ifndef SILKWORM_CHAIN_INTRINSIC_GAS_HPP_
+#define SILKWORM_CHAIN_INTRINSIC_GAS_HPP_
 
-#include <optional>
-#include <silkworm/types/bloom.hpp>
-#include <silkworm/types/log.hpp>
+#include <intx/int128.hpp>
+#include <silkworm/types/transaction.hpp>
 
 namespace silkworm {
 
-struct Receipt {
-    std::optional<uint8_t> type{std::nullopt};  // EIP-2718
-    bool success{false};
-    uint64_t cumulative_gas_used{0};
-    Bloom bloom;
-    std::vector<Log> logs;
-};
+// Returns the intrinsic gas of a transaction.
+// Refer to g0 in Section 6.2 "Execution" of the Yellow Paper
+// and EIP-2930 "Optional access lists"
+intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept;
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_RECEIPT_H_
+#endif  // SILKWORM_CHAIN_INTRINSIC_GAS_HPP_

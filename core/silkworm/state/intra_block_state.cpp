@@ -18,8 +18,8 @@
 
 #include <cstring>
 #include <ethash/keccak.hpp>
+#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/execution/protocol_param.hpp>
 
 namespace silkworm {
 

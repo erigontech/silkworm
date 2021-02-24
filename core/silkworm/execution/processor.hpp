@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_PROCESSOR_H_
-#define SILKWORM_EXECUTION_PROCESSOR_H_
+#ifndef SILKWORM_EXECUTION_PROCESSOR_HPP_
+#define SILKWORM_EXECUTION_PROCESSOR_HPP_
 
 #include <stdint.h>
 
@@ -36,7 +36,9 @@ class ExecutionProcessor {
 
     ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config = kMainnetConfig);
 
-    // precondition: txn.from must be recovered, otherwise kMissingSender will be returned
+    // Preconditions:
+    // 1) pre_validate_transaction(txn) must return kOk
+    // 2) txn.from must be recovered, otherwise kMissingSender will be returned
     ValidationResult validate_transaction(const Transaction& txn) const noexcept;
 
     // precondition: transaction must be valid
@@ -60,10 +62,6 @@ class ExecutionProcessor {
     EVM evm_;
 };
 
-// Returns the intrinsic gas of a transaction.
-// Refer to g0 in Section 6.2 "Execution" of the Yellow Paper.
-intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept;
-
 }  // namespace silkworm
 
-#endif  // SILKWORM_EXECUTION_PROCESSOR_H_
+#endif  // SILKWORM_EXECUTION_PROCESSOR_HPP_

@@ -16,11 +16,41 @@
 
 #include "validity.hpp"
 
+#include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/trie/vector_root.hpp>
 
 #include "difficulty.hpp"
+#include "intrinsic_gas.hpp"
 
 namespace silkworm {
+
+ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config) {
+    if (txn.chain_id) {
+        if (!config.has_spurious_dragon(block_number) || txn.chain_id != config.chain_id) {
+            return ValidationResult::kWrongChainId;
+        }
+    }
+
+    if (txn.type) {
+        if (!config.has_berlin(block_number) || txn.type != kEip2930TransactionType) {
+            return ValidationResult::kUnsupportedEip2718Type;
+        }
+    }
+
+    const bool homestead{config.has_homestead(block_number)};
+    const bool istanbul{config.has_istanbul(block_number)};
+
+    if (!ecdsa::is_valid_signature(txn.r, txn.s, homestead)) {
+        return ValidationResult::kInvalidSignature;
+    }
+
+    intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
+    if (txn.gas_limit < g0) {
+        return ValidationResult::kIntrinsicGas;
+    }
+
+    return ValidationResult::kOk;
+}
 
 static std::optional<BlockHeader> get_parent(const StateBuffer& state, const BlockHeader& header) {
     return state.read_header(header.number - 1, header.parent_hash);
@@ -150,6 +180,12 @@ ValidationResult pre_validate_block(const Block& block, const StateBuffer& state
             if (oo == ommer) {
                 return ValidationResult::kDuplicateOmmer;
             }
+        }
+    }
+
+    for (const Transaction& txn : block.transactions) {
+        if (ValidationResult err{pre_validate_transaction(txn, header.number, config)}; err != ValidationResult::kOk) {
+            return err;
         }
     }
 

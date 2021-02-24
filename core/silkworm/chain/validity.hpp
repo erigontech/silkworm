@@ -27,7 +27,11 @@ enum class [[nodiscard]] ValidationResult{
     kOk = 0,
 
     // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
-    kWrongStateRoot, kWrongOmmersHash, kWrongTransactionsRoot, kWrongReceiptsRoot, kWrongLogsBloom,
+    kWrongStateRoot,
+    kWrongOmmersHash,
+    kWrongTransactionsRoot,
+    kWrongReceiptsRoot,
+    kWrongLogsBloom,
 
     // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
     kUnknownParent,      // P(H) = ∅ ∨ Hi ≠ P(H)Hi + 1
@@ -53,9 +57,20 @@ enum class [[nodiscard]] ValidationResult{
 
     // See [YP] Section 11.2 "Transaction Validation", Eq (160)
     kWrongBlockGas,  // BHg ≠ l(BR)u
+
+    kInvalidSignature,  // EIP-2
+
+    kWrongChainId,  // EIP-155
+
+    kUnsupportedEip2718Type,
 };
 
-// Performs validation of block header & body that can be done prior to execution.
+// Performs validation of a transaction that can be done prior to sender recovery and block execution.
+// May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedEip2718Type, or kOk.
+ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number,
+                                          const ChainConfig& config = kMainnetConfig);
+
+// Performs validation of block header & body that can be done prior to sender recovery and execution.
 // See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
 // and 11.1 "Ommer Validation".
 // Shouldn't be used for genesis block.

@@ -18,8 +18,8 @@
 
 #include <cstdlib>
 #include <silkworm/chain/difficulty.hpp>
+#include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/execution/processor.hpp>
 
 void* new_buffer(size_t size) { return std::malloc(size); }
 
@@ -124,12 +124,8 @@ bool check_intrinsic_gas(const Transaction* txn, bool homestead, bool istanbul) 
     return txn->gas_limit >= g0;
 }
 
-const uint8_t* recover_sender(Transaction* txn, bool homestead, uint64_t chain_id) {
-    if (chain_id == 0) {
-        txn->recover_sender(homestead, std::nullopt);
-    } else {
-        txn->recover_sender(homestead, chain_id);
-    }
+const uint8_t* recover_sender(Transaction* txn) {
+    txn->recover_sender();
     return txn->from ? txn->from->bytes : nullptr;
 }
 
@@ -174,7 +170,7 @@ uint64_t header_number(const BlockHeader* header) { return header->number; }
 
 uint8_t* header_state_root(BlockHeader* header) { return header->state_root.bytes; }
 
-void block_recover_senders(Block* b, const ChainConfig* config) { b->recover_senders(*config); }
+void block_recover_senders(Block* b) { b->recover_senders(); }
 
 MemoryBuffer* new_state() { return new MemoryBuffer; }
 

@@ -140,6 +140,11 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
 }
 
 template <>
+DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept {
+    return decode(from, to.bytes);
+}
+
+template <>
 DecodingResult decode(ByteView& from, Bytes& to) noexcept {
     auto [h, err]{decode_header(from)};
     if (err != DecodingResult::kOk) {
@@ -150,6 +155,19 @@ DecodingResult decode(ByteView& from, Bytes& to) noexcept {
     }
     to = from.substr(0, h.payload_length);
     from.remove_prefix(h.payload_length);
+    return DecodingResult::kOk;
+}
+
+template <>
+DecodingResult decode(ByteView& from, bool& to) noexcept {
+    uint64_t i{0};
+    if (DecodingResult err{decode(from, i)}; err != DecodingResult::kOk) {
+        return err;
+    }
+    if (i > 1) {
+        return DecodingResult::kOverflow;
+    }
+    to = i;
     return DecodingResult::kOk;
 }
 

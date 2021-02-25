@@ -31,7 +31,7 @@ namespace silkworm {
 /** @brief Executes a given block and writes resulting changes into the database.
  *
  * Transaction senders must be already populated.
- * The DB table kCurrentState should match the Ethereum state at the begining of the block.
+ * kPlainState DB table (+auxilary tables) should match the Ethereum state at the begining of the block.
  *
  * Warning: This method does not verify state root;
  * pre-Byzantium receipt root isn't validated either.

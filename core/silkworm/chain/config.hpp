@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_CONFIG_H_
-#define SILKWORM_CHAIN_CONFIG_H_
+#ifndef SILKWORM_CHAIN_CONFIG_HPP_
+#define SILKWORM_CHAIN_CONFIG_HPP_
 
 #include <stdint.h>
 
@@ -106,16 +106,15 @@ struct ChainConfig {
 constexpr ChainConfig kMainnetConfig{
     1,  // chain_id
 
-    1'150'000,  // homestead_block
-    2'463'000,  // tangerine_whistle_block
-    2'675'000,  // spurious_dragon_block
-    4'370'000,  // byzantium_block
-    7'280'000,  // constantinople_block
-    7'280'000,  // petersburg_block
-    9'069'000,  // istanbul_block
-    9'200'000,  // muir_glacier_block
-
-    std::nullopt,  // berlin_block
+    1'150'000,   // homestead_block
+    2'463'000,   // tangerine_whistle_block
+    2'675'000,   // spurious_dragon_block
+    4'370'000,   // byzantium_block
+    7'280'000,   // constantinople_block
+    7'280'000,   // petersburg_block
+    9'069'000,   // istanbul_block
+    9'200'000,   // muir_glacier_block
+    12'244'000,  // berlin_block
 
     1'920'000,  // dao_block
 };
@@ -131,18 +130,21 @@ constexpr ChainConfig kRopstenConfig{
     4'939'394,  // petersburg_block
     6'485'846,  // istanbul_block
     7'117'117,  // muir_glacier_block
+    9'812'189,  // berlin_block
 };
 
 constexpr ChainConfig kGoerliConfig{
     5,  // chain_id
 
-    0,          // homestead_block
-    0,          // tangerine_whistle_block
-    0,          // spurious_dragon_block
-    0,          // byzantium_block
-    0,          // constantinople_block
-    0,          // petersburg_block
-    1'561'651,  // istanbul_block
+    0,             // homestead_block
+    0,             // tangerine_whistle_block
+    0,             // spurious_dragon_block
+    0,             // byzantium_block
+    0,             // constantinople_block
+    0,             // petersburg_block
+    1'561'651,     // istanbul_block
+    std::nullopt,  // muir_glacier_block
+    4'460'644,     // berlin_block
 };
 
 // https://ecips.ethereumclassic.org/ECIPs/ecip-1066
@@ -175,4 +177,4 @@ inline const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_CHAIN_CONFIG_H_
+#endif  // SILKWORM_CHAIN_CONFIG_HPP_

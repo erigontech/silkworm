@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_TABLES_H_
-#define SILKWORM_DB_TABLES_H_
+#ifndef SILKWORM_DB_TABLES_HPP_
+#define SILKWORM_DB_TABLES_HPP_
 
 #include <silkworm/db/chaindb.hpp>
 
@@ -33,24 +33,25 @@ constexpr lmdb::TableConfig kBlockHeaders{"h"};
 constexpr lmdb::TableConfig kBlockReceipts{"r"};
 constexpr lmdb::TableConfig kBloomBitsIndex{"iB"};
 constexpr lmdb::TableConfig kBloomBits{"B"};
+constexpr lmdb::TableConfig kBodiesSnapshotInfo{"bSNINFO"};
 constexpr lmdb::TableConfig kCallFromIndex{"call_from_index"};
 constexpr lmdb::TableConfig kCallToIndex{"call_to_index"};
 constexpr lmdb::TableConfig kClique{"clique-"};
 constexpr lmdb::TableConfig kCode{"CODE"};
 constexpr lmdb::TableConfig kConfig{"ethereum-config-"};
 constexpr lmdb::TableConfig kContractCode{"contractCode"};
-constexpr lmdb::TableConfig kCurrentState{"CST2", MDB_DUPSORT};
 constexpr lmdb::TableConfig kDatabaseInfo{"DBINFO"};
 constexpr lmdb::TableConfig kDatabaseVersion{"DatabaseVersion"};
 constexpr lmdb::TableConfig kEthTx{"eth_tx"};
 constexpr lmdb::TableConfig kFastTrieProgress{"TrieSync"};
+constexpr lmdb::TableConfig kHashedAccounts{"hashed_accounts"};
+constexpr lmdb::TableConfig kHashedStorage{"hashed_storage", MDB_DUPSORT};
 constexpr lmdb::TableConfig kHeadBlock{"LastBlock"};
 constexpr lmdb::TableConfig kHeadFastBlock{"LastFast"};
 constexpr lmdb::TableConfig kHeadHeader{"LastHeader"};
 constexpr lmdb::TableConfig kHeaderNumbers{"H"};
+constexpr lmdb::TableConfig kHeadersSnapshotInfo{"hSNINFO"};
 constexpr lmdb::TableConfig kIncarnationMap{"incarnationMap"};
-constexpr lmdb::TableConfig kIntermediateTrieHash{"iTh2", MDB_DUPSORT, lmdb::TableCustomKeyComparator::None,
-                                                  lmdb::TableCustomDupComparator::ExcludeSuffix32};
 constexpr lmdb::TableConfig kLogAddressIndex{"log_address_index"};
 constexpr lmdb::TableConfig kLogTopicIndex{"log_topic_index"};
 constexpr lmdb::TableConfig kLogs{"log"};
@@ -63,9 +64,12 @@ constexpr lmdb::TableConfig kPreimage{"secure-key-"};
 constexpr lmdb::TableConfig kSenders{"txSenders"};
 constexpr lmdb::TableConfig kSequence{"sequence"};
 constexpr lmdb::TableConfig kSnapshotInfo{"SNINFO"};
+constexpr lmdb::TableConfig kStateSnapshotInfo{"sSNINFO"};
 constexpr lmdb::TableConfig kStorageHistory{"hST"};
 constexpr lmdb::TableConfig kSyncStageProgress{"SSP2"};
 constexpr lmdb::TableConfig kSyncStageUnwind{"SSU2"};
+constexpr lmdb::TableConfig kTrieOfAccounts{"trie_account"};
+constexpr lmdb::TableConfig kTrieOfStorage{"trie_storage"};
 constexpr lmdb::TableConfig kTxLookup{"l"};
 
 constexpr lmdb::TableConfig kTables[]{
@@ -75,23 +79,25 @@ constexpr lmdb::TableConfig kTables[]{
     kBlockReceipts,
     kBloomBits,
     kBloomBitsIndex,
+    kBodiesSnapshotInfo,
     kCallFromIndex,
     kCallToIndex,
     kClique,
     kCode,
     kConfig,
     kContractCode,
-    kCurrentState,
     kDatabaseInfo,
     kDatabaseVersion,
     kEthTx,
     kFastTrieProgress,
+    kHashedAccounts,
+    kHashedStorage,
     kHeadBlock,
     kHeadFastBlock,
     kHeadHeader,
     kHeaderNumbers,
+    kHeadersSnapshotInfo,
     kIncarnationMap,
-    kIntermediateTrieHash,
     kLogAddressIndex,
     kLogTopicIndex,
     kLogs,
@@ -104,9 +110,12 @@ constexpr lmdb::TableConfig kTables[]{
     kSenders,
     kSequence,
     kSnapshotInfo,
+    kStateSnapshotInfo,
     kStorageHistory,
     kSyncStageProgress,
     kSyncStageUnwind,
+    kTrieOfAccounts,
+    kTrieOfStorage,
     kTxLookup,
 };
 
@@ -118,4 +127,4 @@ std::optional<lmdb::TableConfig> get_config(std::string name);
 
 }  // namespace silkworm::db::table
 
-#endif  // SILKWORM_DB_TABLES_H_
+#endif  // SILKWORM_DB_TABLES_HPP_

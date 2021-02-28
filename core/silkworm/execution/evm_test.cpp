@@ -312,4 +312,40 @@ TEST_CASE("Contract overwrite") {
     CHECK(res.gas_left == 0);
 }
 
+TEST_CASE("EIP-2315") {
+    Block block{};
+    block.header.number = 13'000'000;
+
+    evmc::address address{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
+
+    // 0    PUSH1  => 02
+    // 2    PUSH1  => 03
+    // 4    PUSH1  => 0b
+    // 6    JUMPSUB
+    // 7    PUSH1  => 07
+    // 9    SSTORE
+    // 10   STOP
+    // 11   BEGINSUB
+    // 12   MUL
+    // 13   JUMPSUB
+    Bytes code{*from_hex("60026003600b5e600755005c025d")};
+
+    MemoryBuffer db;
+    IntraBlockState state{db};
+    state.set_code(address, code);
+
+    EVM evm{block, state};
+
+    Transaction txn{};
+    txn.from = address;
+    txn.to = address;
+
+    uint64_t gas{1'000'000};
+    CallResult res{evm.execute(txn, gas)};
+    REQUIRE(res.status == EVMC_SUCCESS);
+
+    auto key7{to_bytes32(*from_hex("07"))};
+    CHECK(to_hex(zeroless_view(state.get_current_storage(address, key7))) == "06");
+}
+
 }  // namespace silkworm

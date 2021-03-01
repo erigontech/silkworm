@@ -327,7 +327,7 @@ TEST_CASE("EIP-2315") {
     // 10   STOP
     // 11   BEGINSUB
     // 12   MUL
-    // 13   JUMPSUB
+    // 13   RETURNSUB
     Bytes code{*from_hex("60026003600b5e600755005c025d")};
 
     MemoryBuffer db;

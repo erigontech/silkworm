@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 #include "evm.hpp"
 
 #include <catch2/catch.hpp>
+#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 
 #include "address.hpp"
-#include "protocol_param.hpp"
 
 namespace silkworm {
 
@@ -45,7 +45,7 @@ TEST_CASE("Value transfer") {
     txn.value = value;
 
     CallResult res{evm.execute(txn, 0)};
-    CHECK(res.status == static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW));
+    CHECK(res.status == EVMC_INSUFFICIENT_BALANCE);
 
     state.add_to_balance(from, kEther);
 

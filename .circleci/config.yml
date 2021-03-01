@@ -15,15 +15,6 @@
 version: 2.1
 
 commands:
-  checkout_with_submodules:
-    steps:
-      - checkout
-      - run:
-          name: "Update submodules"
-          command: |
-            git submodule sync
-            git submodule update --init --recursive
-
   build:
     steps:
       - run:
@@ -60,7 +51,7 @@ commands:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
-          command: cmd/consensus
+          command: cmd/consensus --skip-eip-2315
 
 jobs:
   linux-gcc-7:
@@ -79,7 +70,7 @@ jobs:
             sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 50
             gcc --version
             g++ --version
-      - checkout_with_submodules
+      - checkout
       - build
       - test
 
@@ -90,7 +81,7 @@ jobs:
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
     steps:
-      - checkout_with_submodules
+      - checkout
       - build
       - run:
           name: "Core unit tests"
@@ -108,7 +99,7 @@ jobs:
           name: "Ethereum consensus tests"
           working_directory: ~/build
           command: |
-            cmd/consensus
+            cmd/consensus --skip-eip-2315
             mv default.profraw consensus.profraw
       - run:
           name: "Coverage"
@@ -132,7 +123,7 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
-      - checkout_with_submodules
+      - checkout
       - run:
           name: "Install WASI SDK"
           working_directory: ~/tmp1

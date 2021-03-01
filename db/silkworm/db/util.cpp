@@ -54,6 +54,14 @@ Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     return key;
 }
 
+Bytes total_difficulty_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
+    Bytes key(8 + kHashLength + 1, '\0');
+    boost::endian::store_big_u64(&key[0], block_number);
+    std::memcpy(&key[8], hash, kHashLength);
+    key[8 + kHashLength] = 't';
+    return key;
+}
+
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation) {
     Bytes res(8 + kStoragePrefixLength, '\0');
     boost::endian::store_big_u64(&res[0], block_number);
@@ -143,8 +151,8 @@ namespace detail {
         return to;
     }
 
-    static void check_rlp_err(rlp::DecodingError err) {
-        if (err != rlp::DecodingError::kOk) {
+    static void check_rlp_err(rlp::DecodingResult err) {
+        if (err != rlp::DecodingResult::kOk) {
             throw err;
         }
     }
@@ -153,7 +161,7 @@ namespace detail {
         auto [header, err]{rlp::decode_header(from)};
         check_rlp_err(err);
         if (!header.list) {
-            throw rlp::DecodingError::kUnexpectedString;
+            throw rlp::DecodingResult::kUnexpectedString;
         }
         uint64_t leftover{from.length() - header.payload_length};
 
@@ -163,7 +171,7 @@ namespace detail {
         check_rlp_err(rlp::decode_vector(from, to.ommers));
 
         if (from.length() != leftover) {
-            throw rlp::DecodingError::kListLengthMismatch;
+            throw rlp::DecodingResult::kListLengthMismatch;
         }
 
         return to;

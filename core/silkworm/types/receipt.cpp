@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -32,6 +32,9 @@ static Header header(const Receipt& r) {
 }
 
 void encode(Bytes& to, const Receipt& r) {
+    if (r.type) {
+        to.push_back(*r.type);
+    }
     encode_header(to, header(r));
     encode(to, r.success);
     encode(to, r.cumulative_gas_used);

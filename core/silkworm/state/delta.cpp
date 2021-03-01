@@ -53,4 +53,13 @@ StorageCreateDelta::StorageCreateDelta(evmc::address address) noexcept : address
 
 void StorageCreateDelta::revert(IntraBlockState& state) noexcept { state.storage_.erase(address_); }
 
+StorageAccessDelta::StorageAccessDelta(evmc::address address, evmc::bytes32 key) noexcept
+    : address_{std::move(address)}, key_{std::move(key)} {}
+
+void StorageAccessDelta::revert(IntraBlockState& state) noexcept { state.accessed_storage_keys_[address_].erase(key_); }
+
+AccountAccessDelta::AccountAccessDelta(evmc::address address) noexcept : address_{std::move(address)} {}
+
+void AccountAccessDelta::revert(IntraBlockState& state) noexcept { state.accessed_addresses_.erase(address_); }
+
 }  // namespace silkworm::state

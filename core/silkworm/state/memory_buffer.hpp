@@ -40,7 +40,20 @@ class MemoryBuffer : public StateBuffer {
 
     std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
 
-    void insert_block(const Block& block) override;
+    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
+                                                  const evmc::bytes32& block_hash) const noexcept override;
+
+    evmc::bytes32 state_root_hash() const override;
+
+    uint64_t current_canonical_block() const override;
+
+    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
+
+    void insert_block(const Block& block, const evmc::bytes32& hash) override;
+
+    void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override;
+
+    void decanonize_block(uint64_t block_number) override;
 
     void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
 
@@ -55,15 +68,11 @@ class MemoryBuffer : public StateBuffer {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
+    void unwind_state_changes(uint64_t block_number) override;
+
     size_t number_of_accounts() const;
 
     size_t storage_size(const evmc::address& address, uint64_t incarnation) const;
-
-    evmc::bytes32 state_root_hash() const;
-
-    uint64_t current_block_number() const;
-
-    void unwind_block(uint64_t block_number);
 
   private:
     // address -> initial value
@@ -92,6 +101,11 @@ class MemoryBuffer : public StateBuffer {
 
     // block number -> hash -> body
     std::vector<std::unordered_map<evmc::bytes32, BlockBody>> bodies_;
+
+    // block number -> hash -> total difficulty
+    std::vector<std::unordered_map<evmc::bytes32, intx::uint256>> difficulty_;
+
+    std::vector<evmc::bytes32> canonical_hashes_;
 
     std::unordered_map<uint64_t, AccountChanges> account_changes_;  // per block
     std::unordered_map<uint64_t, StorageChanges> storage_changes_;  // per block

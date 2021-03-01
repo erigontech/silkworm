@@ -27,7 +27,6 @@ endif()
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/core/silkworm/*_test.cpp")
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
 target_link_libraries(core_test silkworm_core Catch2::Catch2)
-target_compile_definitions(core_test PRIVATE CATCH_CONFIG_NO_POSIX_SIGNALS) # Wasm compatibility
 if(MSVC)
   target_compile_options(core_test PRIVATE /EHsc)
 else()
@@ -76,11 +75,16 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(check_blockhashes check_blockhashes.cpp)
   target_link_libraries(check_blockhashes PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
   target_include_directories(check_blockhashes PRIVATE ${CMAKE_SOURCE_DIR})
+
+  add_executable(extract_headers extract_headers.cpp)
+  target_link_libraries(extract_headers PRIVATE silkworm_db silkworm_tg_api CLI11::CLI11 Boost::filesystem)
+  target_include_directories(extract_headers PRIVATE ${CMAKE_SOURCE_DIR})
+
   # Ethereum Consensus Tests
   find_package(nlohmann_json CONFIG REQUIRED)
   add_executable(consensus consensus.cpp)
   target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
-  target_link_libraries(consensus PRIVATE silkworm_core nlohmann_json::nlohmann_json Boost::filesystem)
+  target_link_libraries(consensus PRIVATE silkworm_core nlohmann_json::nlohmann_json evmc::loader CLI11::CLI11 Boost::filesystem)
 
   # Benchmarks
   find_package(benchmark CONFIG REQUIRED)

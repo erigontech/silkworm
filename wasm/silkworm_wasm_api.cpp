@@ -18,9 +18,8 @@
 
 #include <cstdlib>
 #include <silkworm/chain/difficulty.hpp>
+#include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/execution/execution.hpp>
-#include <silkworm/execution/processor.hpp>
 
 void* new_buffer(size_t size) { return std::malloc(size); }
 
@@ -110,7 +109,7 @@ void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_tim
 Transaction* new_transaction(const Bytes* rlp) {
     ByteView view{*rlp};
     auto txn{new Transaction};
-    if (rlp::decode(view, *txn) == rlp::DecodingError::kOk && view.empty()) {
+    if (rlp::decode(view, *txn) == rlp::DecodingResult::kOk && view.empty()) {
         return txn;
     } else {
         delete txn;
@@ -125,12 +124,8 @@ bool check_intrinsic_gas(const Transaction* txn, bool homestead, bool istanbul) 
     return txn->gas_limit >= g0;
 }
 
-const uint8_t* recover_sender(Transaction* txn, bool homestead, uint64_t chain_id) {
-    if (chain_id == 0) {
-        txn->recover_sender(homestead, std::nullopt);
-    } else {
-        txn->recover_sender(homestead, chain_id);
-    }
+const uint8_t* recover_sender(Transaction* txn) {
+    txn->recover_sender();
     return txn->from ? txn->from->bytes : nullptr;
 }
 
@@ -159,7 +154,7 @@ uint8_t* account_code_hash(Account* a) { return a->code_hash.bytes; }
 Block* new_block(const Bytes* rlp) {
     ByteView view{*rlp};
     auto block{new Block};
-    if (rlp::decode(view, *block) == rlp::DecodingError::kOk && view.empty()) {
+    if (rlp::decode(view, *block) == rlp::DecodingResult::kOk && view.empty()) {
         return block;
     } else {
         delete block;
@@ -175,23 +170,11 @@ uint64_t header_number(const BlockHeader* header) { return header->number; }
 
 uint8_t* header_state_root(BlockHeader* header) { return header->state_root.bytes; }
 
-void block_recover_senders(Block* b, const ChainConfig* config) { b->recover_senders(*config); }
-
-ValidationError block_pre_validate(const Block* b, StateBuffer* state, const ChainConfig* config) {
-    return pre_validate_block(*b, *state, *config);
-}
-
-ValidationError block_execute(const Block* b, StateBuffer* state, const ChainConfig* config) {
-    return execute_block(*b, *state, *config).second;
-}
+void block_recover_senders(Block* b) { b->recover_senders(); }
 
 MemoryBuffer* new_state() { return new MemoryBuffer; }
 
 void delete_state(MemoryBuffer* x) { delete x; }
-
-void state_unwind_block(MemoryBuffer* state, uint64_t block_number) { state->unwind_block(block_number); }
-
-uint64_t state_current_block_number(const MemoryBuffer* state) { return state->current_block_number(); }
 
 uint8_t* state_root_hash_new(const MemoryBuffer* state) {
     evmc::bytes32 root_hash{state->state_root_hash()};
@@ -235,8 +218,6 @@ Bytes* state_read_storage_new(const StateBuffer* state, const uint8_t* address, 
     return out;
 }
 
-void state_insert_block(StateBuffer* state, const Block* block) { state->insert_block(*block); }
-
 void state_update_account(StateBuffer* state, const uint8_t* address, const Account* current_ptr) {
     std::optional<Account> current_opt;
     if (current_ptr) {
@@ -253,6 +234,16 @@ void state_update_storage(StateBuffer* state, const uint8_t* address, const Acco
                           const Bytes* value) {
     state->update_storage(address_from_ptr(address), account->incarnation, to_bytes32(*location), /*initial=*/{},
                           to_bytes32(*value));
+}
+
+Blockchain* new_blockchain(StateBuffer* state, const ChainConfig* config, const Block* genesis_block) {
+    return new Blockchain{*state, *config, *genesis_block};
+}
+
+void delete_blockchain(Blockchain* x) { delete x; }
+
+ValidationResult blockchain_insert_block(Blockchain* chain, Block* block, bool check_state_root) {
+    return chain->insert_block(*block, check_state_root);
 }
 
 int main() { return 0; }

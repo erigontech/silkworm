@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_PROTOCOL_PARAM_H_
-#define SILKWORM_EXECUTION_PROTOCOL_PARAM_H_
+#ifndef SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_
+#define SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_
 
 #include <stdint.h>
 
@@ -28,6 +28,10 @@ namespace silkworm {
 namespace fee {
     constexpr uint64_t kGSLoadTangerineWhistle{200};
     constexpr uint64_t kGSLoadIstanbul{800};
+    constexpr uint64_t kWarmStorageReadCost{100};         // EIP-2929
+    constexpr uint64_t kColdSloadCost{2'100};             // EIP-2929
+    constexpr uint64_t kAccessListStorageKeyCost{1'900};  // EIP-2930
+    constexpr uint64_t kAccessListAddressCost{2'400};     // EIP-2930
 
     constexpr uint64_t kGSSet{20'000};
     constexpr uint64_t kGSReset{5'000};
@@ -43,7 +47,8 @@ namespace fee {
     constexpr uint64_t kGTxDataNonZeroIstanbul{16};
     constexpr uint64_t kGTransaction{21'000};
 
-    constexpr uint64_t kGQuadDivisor{20};
+    constexpr uint64_t kGQuadDivisorEip198{20};
+    constexpr uint64_t kGQuadDivisorEip2565{3};
 }  // namespace fee
 
 namespace param {
@@ -54,6 +59,7 @@ namespace param {
     constexpr uint64_t kByzantiumBlockReward{3 * kEther};
     constexpr uint64_t kConstantinopleBlockReward{2 * kEther};
 }  // namespace param
+
 }  // namespace silkworm
 
-#endif  // SILKWORM_EXECUTION_PROTOCOL_PARAM_H_
+#endif  // SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_

@@ -244,13 +244,41 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     }
 }
 
-void Buffer::insert_block(const Block& block) {
-    Bytes rlp{};
-    rlp::encode(rlp, block.header);
-    ethash::hash256 hash{keccak256(rlp)};
-    Bytes key{block_key(block.header.number, hash.bytes)};
+evmc::bytes32 Buffer::state_root_hash() const { throw std::runtime_error("not yet implemented"); }
+
+uint64_t Buffer::current_canonical_block() const { throw std::runtime_error("not yet implemented"); }
+
+std::optional<evmc::bytes32> Buffer::canonical_hash(uint64_t) const { throw std::runtime_error("not yet implemented"); }
+
+void Buffer::canonize_block(uint64_t, const evmc::bytes32&) { throw std::runtime_error("not yet implemented"); }
+
+void Buffer::decanonize_block(uint64_t) { throw std::runtime_error("not yet implemented"); }
+
+void Buffer::insert_block(const Block& block, const evmc::bytes32& hash) {
+    uint64_t block_number{block.header.number};
+    Bytes key{block_key(block_number, hash.bytes)};
     headers_[key] = block.header;
     bodies_[key] = block;
+
+    if (block_number == 0) {
+        difficulty_[key] = 0;
+    } else {
+        std::optional<intx::uint256> parent_difficulty{total_difficulty(block_number - 1, block.header.parent_hash)};
+        difficulty_[key] = parent_difficulty.value_or(0);
+    }
+    difficulty_[key] += block.header.difficulty;
+}
+
+std::optional<intx::uint256> Buffer::total_difficulty(uint64_t block_number,
+                                                      const evmc::bytes32& block_hash) const noexcept {
+    Bytes key{block_key(block_number, block_hash.bytes)};
+    if (auto it{difficulty_.find(key)}; it != difficulty_.end()) {
+        return it->second;
+    }
+    if (!txn_) {
+        return std::nullopt;
+    }
+    return db::read_total_difficulty(*txn_, block_number, block_hash.bytes);
 }
 
 std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
@@ -326,5 +354,7 @@ uint64_t Buffer::previous_incarnation(const evmc::address& address) const noexce
     std::optional<uint64_t> incarnation{db::read_previous_incarnation(*txn_, address, historical_block_)};
     return incarnation ? *incarnation : 0;
 }
+
+void Buffer::unwind_state_changes(uint64_t) { throw std::runtime_error("not yet implemented"); }
 
 }  // namespace silkworm::db

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
             }
 
             auto [receipts, err]{execute_block(bh->block, buffer, *config, &analysis_cache, &state_pool)};
-            if (err != ValidationError::kOk) {
+            if (err != ValidationResult::kOk) {
                 SILKWORM_LOG(LogError) << "Validation error " << static_cast<int>(err) << " at block " << block_num
                                        << std::endl;
                 return kSilkwormInvalidBlock;
@@ -110,7 +110,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
     } catch (const db::MissingSenders&) {
         SILKWORM_LOG(LogError) << "Missing or incorrect senders at block " << block_num << std::endl;
         return kSilkwormMissingSenders;
-    } catch (rlp::DecodingError e) {
+    } catch (rlp::DecodingResult e) {
         SILKWORM_LOG(LogError) << "Decoding error " << static_cast<int>(e) << " at block " << block_num << std::endl;
         return kSilkwormDecodingError;
     } catch (...) {

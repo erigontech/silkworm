@@ -1,5 +1,5 @@
-#[[
-   Copyright 2020 The Silkworm Authors
+/*
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,11 +12,21 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-set(CMAKE_C_COMPILER /opt/wasi-sdk/bin/clang)
-set(CMAKE_CXX_COMPILER /opt/wasi-sdk/bin/clang++)
+#ifndef SILKWORM_CHAIN_INTRINSIC_GAS_HPP_
+#define SILKWORM_CHAIN_INTRINSIC_GAS_HPP_
 
-add_definitions(-DCATCH_CONFIG_NO_POSIX_SIGNALS)
+#include <intx/int128.hpp>
+#include <silkworm/types/transaction.hpp>
 
-include(${CMAKE_CURRENT_LIST_DIR}/toolchain.cmake)
+namespace silkworm {
+
+// Returns the intrinsic gas of a transaction.
+// Refer to g0 in Section 6.2 "Execution" of the Yellow Paper
+// and EIP-2930 "Optional access lists"
+intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept;
+
+}  // namespace silkworm
+
+#endif  // SILKWORM_CHAIN_INTRINSIC_GAS_HPP_

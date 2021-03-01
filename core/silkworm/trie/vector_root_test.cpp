@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -27,9 +27,10 @@ TEST_CASE("Empty root hash") { CHECK(root_hash(std::vector<Transaction>{}) == kE
 
 TEST_CASE("Hardcoded root hash") {
     std::vector<Receipt> receipts{
-        {true, 21'000, {}, {}},
-        {true, 42'000, {}, {}},
-        {true,
+        {std::nullopt, true, 21'000, {}, {}},
+        {std::nullopt, true, 42'000, {}, {}},
+        {std::nullopt,
+         true,
          65'092,
          {},
          {Log{0x8d12a197cb00d4747a1fe03395095ce2a5cc6819_address,

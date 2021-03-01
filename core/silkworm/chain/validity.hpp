@@ -23,7 +23,7 @@
 namespace silkworm {
 
 // Classification of invalid transactions and blocks.
-enum class ValidationError {
+enum class [[nodiscard]] ValidationResult{
     kOk = 0,
 
     // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
@@ -39,6 +39,7 @@ enum class ValidationError {
     kGasAboveLimit,      // Hg > Hl
     kInvalidGasLimit,    // |Hl-P(H)Hl|≥P(H)Hl/1024 ∨ Hl<5000
     kInvalidTimestamp,   // Hs ≤ P(H)Hs
+    kExtraDataTooLong,   // ‖Hx‖ > 32
     kWrongDaoExtraData,  // see EIP-779
 
     // See [YP] Section 6.2 "Execution", Eq (58)
@@ -56,19 +57,30 @@ enum class ValidationError {
 
     // See [YP] Section 11.2 "Transaction Validation", Eq (160)
     kWrongBlockGas,  // BHg ≠ l(BR)u
+
+    kInvalidSignature,  // EIP-2
+
+    kWrongChainId,  // EIP-155
+
+    kUnsupportedEip2718Type,
 };
 
-// Performs validation of block header & body that can be done prior to execution.
+// Performs validation of a transaction that can be done prior to sender recovery and block execution.
+// May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedEip2718Type, or kOk.
+ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number,
+                                          const ChainConfig& config = kMainnetConfig);
+
+// Performs validation of block header & body that can be done prior to sender recovery and execution.
 // See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
 // and 11.1 "Ommer Validation".
 // Shouldn't be used for genesis block.
-ValidationError pre_validate_block(const Block& block, const StateBuffer& state,
-                                   const ChainConfig& config = kMainnetConfig);
+ValidationResult pre_validate_block(const Block& block, const StateBuffer& state,
+                                    const ChainConfig& config = kMainnetConfig);
 
 // See [YP] Section 4.3.4 "Block Header Validity".
 // Shouldn't be used for genesis block.
-ValidationError validate_block_header(const BlockHeader& header, const StateBuffer& state,
-                                      const ChainConfig& config = kMainnetConfig);
+ValidationResult validate_block_header(const BlockHeader& header, const StateBuffer& state,
+                                       const ChainConfig& config = kMainnetConfig);
 
 }  // namespace silkworm
 

@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_BLOCK_H_
-#define SILKWORM_TYPES_BLOCK_H_
+#ifndef SILKWORM_TYPES_BLOCK_HPP_
+#define SILKWORM_TYPES_BLOCK_HPP_
 
 #include <stdint.h>
 
@@ -45,16 +45,15 @@ struct BlockHeader {
     uint64_t gas_used{0};
     uint64_t timestamp{0};
 
-    ByteView extra_data() const { return {extra_data_.bytes, extra_data_size_}; }
+    Bytes extra_data{};
 
     evmc::bytes32 mix_hash{};
     std::array<uint8_t, 8> nonce{};
 
-  private:
-    friend rlp::DecodingError rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to) noexcept;
+    evmc::bytes32 hash() const;
 
-    evmc::bytes32 extra_data_{};
-    uint32_t extra_data_size_{0};
+  private:
+    friend rlp::DecodingResult rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to) noexcept;
 };
 
 bool operator==(const BlockHeader& a, const BlockHeader& b);
@@ -73,7 +72,7 @@ inline bool operator!=(const BlockBody& a, const BlockBody& b) { return !(a == b
 struct Block : public BlockBody {
     BlockHeader header;
 
-    void recover_senders(const ChainConfig& config);
+    void recover_senders();
 };
 
 struct BlockWithHash {
@@ -83,14 +82,15 @@ struct BlockWithHash {
 
 namespace rlp {
     template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, BlockBody& to) noexcept;
+    DecodingResult decode(ByteView& from, BlockBody& to) noexcept;
 
     template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, BlockHeader& to) noexcept;
+    DecodingResult decode(ByteView& from, BlockHeader& to) noexcept;
 
     template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, Block& to) noexcept;
+    DecodingResult decode(ByteView& from, Block& to) noexcept;
 }  // namespace rlp
+
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_BLOCK_H_
+#endif  // SILKWORM_TYPES_BLOCK_HPP_

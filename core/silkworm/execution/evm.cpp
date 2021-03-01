@@ -22,11 +22,11 @@
 #include <ethash/keccak.hpp>
 #include <evmone/analysis.hpp>
 #include <iterator>
+#include <silkworm/chain/protocol_param.hpp>
 
 #include "address.hpp"
 #include "execution.hpp"
 #include "precompiled.hpp"
-#include "protocol_param.hpp"
 #include "state_pool.hpp"
 
 namespace silkworm {
@@ -61,11 +61,12 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 
     auto value{intx::be::load<intx::uint256>(message.value)};
     if (state_.get_balance(message.sender) < value) {
-        res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
+        res.status_code = EVMC_INSUFFICIENT_BALANCE;
         return res;
     }
 
-    uint64_t nonce{state_.get_nonce(message.sender)};
+    const uint64_t nonce{state_.get_nonce(message.sender)};
+    state_.set_nonce(message.sender, nonce + 1);
 
     evmc::address contract_addr{};
     if (message.kind == EVMC_CREATE) {
@@ -75,7 +76,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
         contract_addr = create2_address(message.sender, message.create2_salt, init_code_hash.bytes);
     }
 
-    state_.set_nonce(message.sender, nonce + 1);
+    state_.access_account(contract_addr);
 
     if (state_.get_nonce(contract_addr) != 0 || state_.get_code_hash(contract_addr) != kEmptyHash) {
         // https://github.com/ethereum/EIPs/issues/684
@@ -143,7 +144,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 
     auto value{intx::be::load<intx::uint256>(message.value)};
     if (message.kind != EVMC_DELEGATECALL && state_.get_balance(message.sender) < value) {
-        res.status_code = static_cast<evmc_status_code>(EVMC_BALANCE_TOO_LOW);
+        res.status_code = EVMC_INSUFFICIENT_BALANCE;
         return res;
     }
 
@@ -214,9 +215,23 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
 evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept {
     address_stack_.push(msg.destination);
 
-    EvmHost host{*this};
-    evmc_revision rev{revision()};
+    const evmc_revision rev{revision()};
 
+    evmc_result res;
+    if (exo_evm) {
+        EvmHost host{*this};
+        res = exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
+    } else {
+        res = execute_endogenously(rev, msg, code, code_hash);
+    }
+
+    address_stack_.pop();
+
+    return evmc::result{res};
+}
+
+evmc_result EVM::execute_endogenously(evmc_revision rev, const evmc_message& msg, ByteView code,
+                                      std::optional<evmc::bytes32> code_hash) noexcept {
     std::shared_ptr<evmone::code_analysis> analysis;
     if (code_hash && analysis_cache) {
         // cache contract code
@@ -237,6 +252,8 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
         state = std::make_unique<evmone::execution_state>();
     }
 
+    EvmHost host{*this};
+
     state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size(), *analysis);
 
     const auto* instruction{&state->analysis->instrs[0]};
@@ -245,13 +262,11 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     }
 
     const uint8_t* output_data{state->output_size ? &state->memory[state->output_offset] : nullptr};
-    evmc::result res{evmc::make_result(state->status, state->gas_left, output_data, state->output_size)};
+    evmc_result res{evmc::make_result(state->status, state->gas_left, output_data, state->output_size)};
 
     if (state_pool) {
         state_pool->release(std::move(state));
     }
-
-    address_stack_.pop();
 
     return res;
 }
@@ -301,6 +316,17 @@ bool EvmHost::account_exists(const evmc::address& address) const noexcept {
     }
 }
 
+evmc_access_status EvmHost::access_account(const evmc::address& address) noexcept {
+    if (evm_.is_precompiled(address)) {
+        return EVMC_WARM_ACCESS;
+    }
+    return evm_.state().access_account(address);
+}
+
+evmc_access_status EvmHost::access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept {
+    return evm_.state().access_storage(address, key);
+}
+
 evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept {
     return evm_.state().get_current_storage(address, key);
 }
@@ -332,7 +358,20 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
         return EVMC_STORAGE_MODIFIED;
     }
 
-    uint64_t sload_cost{evm_.config().has_istanbul(block_number) ? fee::kGSLoadIstanbul : fee::kGSLoadTangerineWhistle};
+    uint64_t sload_cost{0};
+    if (evm_.config().has_berlin(block_number)) {
+        sload_cost = fee::kWarmStorageReadCost;
+    } else if (evm_.config().has_istanbul(block_number)) {
+        sload_cost = fee::kGSLoadIstanbul;
+    } else {
+        sload_cost = fee::kGSLoadTangerineWhistle;
+    }
+
+    uint64_t sstore_reset_gas{fee::kGSReset};
+    if (evm_.config().has_berlin(block_number)) {
+        sstore_reset_gas -= fee::kColdSloadCost;
+    }
+
     // https://eips.ethereum.org/EIPS/eip-1283
     evmc::bytes32 original_val{evm_.state().get_original_storage(address, key)};
 
@@ -357,7 +396,7 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
             if (is_zero(original_val)) {
                 evm_.state().add_refund(fee::kGSSet - sload_cost);
             } else {
-                evm_.state().add_refund(fee::kGSReset - sload_cost);
+                evm_.state().add_refund(sstore_reset_gas - sload_cost);
             }
         }
         return EVMC_STORAGE_MODIFIED_AGAIN;
@@ -464,4 +503,5 @@ void EvmHost::emit_log(const evmc::address& address, const uint8_t* data, size_t
     std::copy_n(data, data_size, std::back_inserter(log.data));
     evm_.state().add_log(log);
 }
+
 }  // namespace silkworm

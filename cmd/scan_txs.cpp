@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 
             // Execute the block and retreive the receipts
             auto [receipts, err]{execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool)};
-            if (err != ValidationError::kOk) {
+            if (err != ValidationResult::kOk) {
                 std::cerr << "Validation error " << static_cast<int>(err) << " at block " << block_num << "\n";
             }
 

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -78,7 +78,11 @@ int main(int argc, char* argv[]) {
 
         db::Buffer buffer{txn.get(), block_num};
 
-        execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool);
+        ValidationResult err{execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool).second};
+        if (err != ValidationResult::kOk) {
+            std::cerr << "Failed to execute block " << block_num << "\n";
+            continue;
+        }
 
         db::AccountChanges db_account_changes{db::read_account_changes(*txn, block_num)};
         const db::AccountChanges& calculated_account_changes{buffer.account_changes().at(block_num)};

@@ -247,7 +247,7 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
 
     state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size(), dummy_analysis);
 
-    evmc_result res{evmone::baseline_execute_on_state(*state)};
+    evmc_result res{evmone::baseline_execute(*state)};
 
     if (state_pool) {
         state_pool->release(std::move(state));

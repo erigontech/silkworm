@@ -24,7 +24,7 @@ Worker::~Worker() {
         thread_.reset(nullptr);
     }
 }
-void Worker::start() {
+void Worker::start(bool wait) {
     WorkerState expected_state{WorkerState::kStopped};
     if (!state_.compare_exchange_strong(expected_state, WorkerState::kStarting)) {
         return;
@@ -41,6 +41,13 @@ void Worker::start() {
         }
         state_.store(WorkerState::kStopped);
     }));
+
+    while (wait) {
+        if (state_.load(std::memory_order_relaxed) != WorkerState::kStarting) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
 }
 void Worker::stop(bool wait) {
     WorkerState expected_state{WorkerState::kStarted};

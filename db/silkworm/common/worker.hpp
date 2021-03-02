@@ -36,7 +36,7 @@ class Worker {
 
     virtual ~Worker();
 
-    void start();                  // Start worker thread
+    void start(bool wait = true);  // Start worker thread (by default waits for status)
     void stop(bool wait = false);  // Stops worker thread (optionally wait for complete stop)
     void kick();                   // Kicks worker thread if waiting
 

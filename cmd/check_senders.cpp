@@ -198,7 +198,7 @@ void process_txs_for_signing(ChainConfig& config, uint64_t block_num, std::vecto
             }
         }
 
-        rlp::encode(rlp, txn, /*for_signing=*/true);
+        rlp::encode(rlp, txn, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
 
         auto hash{keccak256(rlp)};
         Recoverer::package rp{block_num, hash, txn.odd_y_parity};
@@ -716,7 +716,8 @@ int do_verify(app_options_t& options) {
 
             for (size_t i = 0; i < bh->block.transactions.size(); i++) {
                 Bytes rlp{};
-                rlp::encode(rlp, bh->block.transactions.at(i), /*for_signing=*/false);
+                rlp::encode(rlp, bh->block.transactions.at(i), /*for_signing=*/false,
+                            /*wrap_eip2718_into_array=*/false);
                 ethash::hash256 hash{ethash::keccak256(rlp.data(), rlp.length())};
                 ByteView bv{hash.bytes, 32};
                 std::cout << std::right << std::setw(4) << std::setfill(' ') << i << " 0x" << to_hex(bv) << " 0x"

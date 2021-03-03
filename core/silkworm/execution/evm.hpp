@@ -67,8 +67,11 @@ class EVM {
 
     evmc::result execute(const evmc_message& message, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept;
 
-    evmc_result execute_endogenously(evmc_revision rev, const evmc_message& message, ByteView code,
-                                     std::optional<evmc::bytes32> code_hash) noexcept;
+    evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message,
+                                                  ByteView code) noexcept;
+
+    evmc_result execute_with_default_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
+                                                 std::optional<evmc::bytes32> code_hash) noexcept;
 
     evmc_revision revision() const noexcept;
 

@@ -61,7 +61,6 @@ static const std::vector<fs::path> kExcludedTests{
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
-// TODO[Issue 99] Reenable after EIP-2315 is implemented
 static const std::vector<fs::path> kEip2315Tests{
     kBlockchainDir / "GeneralStateTests" / "stSubroutine",
     kBlockchainDir / "ValidBlocks" / "bcStateTests" / "testOpcodes.json",

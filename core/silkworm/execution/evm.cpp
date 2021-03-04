@@ -21,6 +21,7 @@
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <evmone/analysis.hpp>
+#include <evmone/baseline.hpp>
 #include <iterator>
 #include <silkworm/chain/protocol_param.hpp>
 
@@ -221,8 +222,10 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     if (exo_evm) {
         EvmHost host{*this};
         res = exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
+    } else if (analysis_cache) {
+        res = execute_with_default_interpreter(rev, msg, code, code_hash);
     } else {
-        res = execute_endogenously(rev, msg, code, code_hash);
+        res = execute_with_baseline_interpreter(rev, msg, code);
     }
 
     address_stack_.pop();
@@ -230,8 +233,31 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     return evmc::result{res};
 }
 
-evmc_result EVM::execute_endogenously(evmc_revision rev, const evmc_message& msg, ByteView code,
-                                      std::optional<evmc::bytes32> code_hash) noexcept {
+evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code) noexcept {
+    static const evmone::code_analysis dummy_analysis;  // analysis isn't used in baseline interpreter
+
+    std::unique_ptr<evmone::execution_state> state;
+    if (state_pool) {
+        state = state_pool->acquire();
+    } else {
+        state = std::make_unique<evmone::execution_state>();
+    }
+
+    EvmHost host{*this};
+
+    state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size(), dummy_analysis);
+
+    evmc_result res{evmone::baseline_execute(*state)};
+
+    if (state_pool) {
+        state_pool->release(std::move(state));
+    }
+
+    return res;
+}
+
+evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
+                                                  std::optional<evmc::bytes32> code_hash) noexcept {
     std::shared_ptr<evmone::code_analysis> analysis;
     if (code_hash && analysis_cache) {
         // cache contract code

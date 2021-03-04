@@ -131,7 +131,9 @@ class IntraBlockState {
 
     mutable robin_hood::unordered_flat_map<evmc::address, state::Object> objects_;
     mutable robin_hood::unordered_flat_map<evmc::address, state::Storage> storage_;
-    mutable robin_hood::unordered_flat_map<evmc::bytes32, Bytes> code_;
+
+    // we want pointer stability here, thus node map
+    mutable robin_hood::unordered_node_map<evmc::bytes32, Bytes> code_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 

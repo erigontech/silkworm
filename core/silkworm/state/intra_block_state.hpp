@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_H_
-#define SILKWORM_STATE_INTRA_BLOCK_STATE_H_
+#ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_
+#define SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_
 
 #include <robin_hood.h>
 
@@ -131,6 +131,7 @@ class IntraBlockState {
 
     mutable robin_hood::unordered_flat_map<evmc::address, state::Object> objects_;
     mutable robin_hood::unordered_flat_map<evmc::address, state::Storage> storage_;
+    mutable robin_hood::unordered_flat_map<evmc::bytes32, Bytes> code_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 
@@ -146,4 +147,4 @@ class IntraBlockState {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_STATE_INTRA_BLOCK_STATE_H_
+#endif  // SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_

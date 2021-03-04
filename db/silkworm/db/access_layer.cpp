@@ -18,10 +18,10 @@
 
 #include <boost/endian/conversion.hpp>
 #include <cassert>
-#include <iostream>
-#include "history_index.hpp"
-#include "tables.hpp"
+
 #include "bitmapdb.hpp"
+#include "tables.hpp"
+
 namespace silkworm::db {
 
 static void check_rlp_err(rlp::DecodingResult err) {
@@ -176,59 +176,63 @@ std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code
 }
 
 // TG FindByHistory for account
-static std::optional<ByteView> find_account_in_history(lmdb::Transaction& txn, const evmc::address& address,
-                                                       uint64_t block_number) {
+static std::optional<ByteView> historical_account(lmdb::Transaction& txn, const evmc::address& address,
+                                                  uint64_t block_number) {
     auto history_table{txn.open(table::kAccountHistory)};
     std::optional<Entry> entry{history_table->seek(account_history_key(address, block_number))};
     if (!entry) {
         return std::nullopt;
     }
 
-    auto bitmap{roaring::Roaring64Map::readSafe((const char *)entry->key.data(), entry->key.size())};
-
     if (!has_prefix(entry->key, full_view(address))) {
         return std::nullopt;
     }
 
-    auto changeset_block_number{bitmap::seek_in_bitmap(bitmap, block_number)};
-    if (!changeset_block_number) {
+    auto bitmap{
+        roaring::Roaring64Map::readSafe(reinterpret_cast<const char*>(entry->value.data()), entry->value.size())};
+
+    auto change_block{bitmap::seek_in_bitmap(bitmap, block_number)};
+    if (!change_block) {
         return std::nullopt;
     }
 
-    return read_account_changes(txn, *changeset_block_number)[address];
+    auto change_table{txn.open(table::kPlainAccountChangeSet)};
+    return change_table->get(block_key(*change_block), full_view(address));
 }
 
 // TG FindByHistory for storage
-static std::optional<ByteView> find_storage_in_history(lmdb::Transaction& txn, const evmc::address& address,
-                                                       uint64_t incarnation, const evmc::bytes32& location,
-                                                       uint64_t block_number) {
+static std::optional<ByteView> historical_storage(lmdb::Transaction& txn, const evmc::address& address,
+                                                  uint64_t incarnation, const evmc::bytes32& location,
+                                                  uint64_t block_number) {
     auto history_table{txn.open(table::kStorageHistory)};
-    std::optional<Entry> entry{history_table->seek(account_history_key(address, block_number))};
-        std::cout << entry->key.size() << std::endl;
+    std::optional<Entry> entry{history_table->seek(storage_history_key(address, location, block_number))};
     if (!entry) {
         return std::nullopt;
     }
 
-    roaring::Roaring64Map bitmap;
-    bitmap.readSafe((const char *)entry->key.data(), entry->key.size());
-
-    if (!has_prefix(entry->key, full_view(address))) {
+    ByteView k{entry->key};
+    if (k.substr(0, kAddressLength) != full_view(address) ||
+        k.substr(kAddressLength, kHashLength) != full_view(location)) {
         return std::nullopt;
     }
 
-    auto changeset_block_number{bitmap::seek_in_bitmap(bitmap, block_number)};
-    if (!changeset_block_number) {
+    auto bitmap{
+        roaring::Roaring64Map::readSafe(reinterpret_cast<const char*>(entry->value.data()), entry->value.size())};
+
+    auto change_block{bitmap::seek_in_bitmap(bitmap, block_number)};
+    if (!change_block) {
         return std::nullopt;
     }
 
-    return read_storage_changes(txn, *changeset_block_number)[address][incarnation][location];
+    auto change_table{txn.open(table::kPlainStorageChangeSet)};
+    return change_table->get(storage_change_key(*change_block, address, incarnation), full_view(location));
 }
 
 std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address& address,
                                     std::optional<uint64_t> block_num) {
     std::optional<ByteView> encoded{};
     if (block_num) {
-        encoded = find_account_in_history(txn, address, *block_num);
+        encoded = historical_account(txn, address, *block_num);
     }
     if (!encoded) {
         auto state_table{txn.open(table::kPlainState)};
@@ -257,7 +261,7 @@ evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address,
                            const evmc::bytes32& location, std::optional<uint64_t> block_num) {
     std::optional<ByteView> val{};
     if (block_num) {
-        val = find_storage_in_history(txn, address, incarnation, location, *block_num);
+        val = historical_storage(txn, address, incarnation, location, *block_num);
     }
     if (!val) {
         auto table{txn.open(table::kPlainState)};
@@ -273,54 +277,15 @@ evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address,
 }
 
 std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const evmc::address& address,
-                                                  std::optional<uint64_t> block_num) {
-    if (!block_num) {
-        // Current incarnation
-        auto incarnation_table{txn.open(table::kIncarnationMap)};
-        std::optional<ByteView> val{incarnation_table->get(full_view(address))};
-        if (!val) {
-            return {};
-        }
-        assert(val->length() == 8);
-        return boost::endian::load_big_u64(val->data());
+                                                  std::optional<uint64_t>) {
+    // TODO(Andrew): Historical previous incarnation
+    auto incarnation_table{txn.open(table::kIncarnationMap)};
+    std::optional<ByteView> val{incarnation_table->get(full_view(address))};
+    if (!val) {
+        return std::nullopt;
     }
-
-    auto history_table{txn.open(table::kAccountHistory)};
-    auto change_table{txn.open(table::kPlainAccountChangeSet)};
-
-    // Search through history and find the latest non-zero incarnation of the account,
-    // disregarding future changes (happening after the block_number).
-    uint64_t block_number{*block_num};
-    while (true) {
-        std::optional<Entry> entry{history_table->seek(account_history_key(address, block_number))};
-        if (!entry || !has_prefix(entry->key, full_view(address))) {
-            return {};
-        }
-
-        std::optional<history_index::SearchResult> changed_at{history_index::find(entry->value, block_number)};
-        if (!changed_at) {
-            return {};
-        }
-
-        uint64_t change_block{changed_at->change_block};
-
-        std::optional<ByteView> encoded{change_table->get(block_key(change_block), full_view(address))};
-        if (encoded && !encoded->empty()) {
-            auto [acc, err]{decode_account_from_storage(*encoded)};
-            check_rlp_err(err);
-            if (acc.incarnation > 0) {
-                return acc.incarnation;
-            }
-        }
-
-        // The account was deleted or had zero incarnation,
-        // so go further back in time.
-        changed_at = history_index::find_previous(entry->value, block_number);
-        if (!changed_at) {
-            return {};
-        }
-        block_number = changed_at->change_block;
-    }
+    assert(val->length() == 8);
+    return boost::endian::load_big_u64(val->data());
 }
 
 AccountChanges read_account_changes(lmdb::Transaction& txn, uint64_t block_num) {
@@ -345,7 +310,7 @@ AccountChanges read_account_changes(lmdb::Transaction& txn, uint64_t block_num) 
 StorageChanges read_storage_changes(lmdb::Transaction& txn, uint64_t block_num) {
     StorageChanges changes;
     auto table{txn.open(table::kPlainStorageChangeSet)};
-    Bytes prefix{block_key(block_num)};
+    const Bytes prefix{block_key(block_num)};
     MDB_val key_mdb{to_mdb_val(prefix)};
     MDB_val data_mdb;
     for (int rc{table->seek(&key_mdb, &data_mdb)}; rc != MDB_NOTFOUND; rc = table->get_next(&key_mdb, &data_mdb)) {

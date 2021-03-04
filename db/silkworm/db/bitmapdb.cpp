@@ -19,8 +19,9 @@
 namespace silkworm::db::bitmap {
 
 std::optional<uint64_t> seek_in_bitmap(roaring::Roaring64Map &bitmap, uint64_t cap) {
+    // TODO(Andrew) binary search instead of iteration
     for (auto it = bitmap.begin(); it != bitmap.end(); ++it) {
-        if (*it > cap) return *it;
+        if (*it >= cap) return *it;
     }
     return std::nullopt;
 }

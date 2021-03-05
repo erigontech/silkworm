@@ -214,7 +214,7 @@ void IntraBlockState::set_code(const evmc::address& address, Bytes code) noexcep
     ethash::hash256 hash{keccak256(code)};
     std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
 
-    // Don't override already existing code so that views of it
+    // Don't overwrite already existing code so that views of it
     // that were previously returned by get_code() are still valid.
     code_.try_emplace(obj.current->code_hash, std::move(code));
 }

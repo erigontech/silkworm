@@ -560,16 +560,15 @@ protected:
                 // First worker created
                 if (!workers_.size()) {
                     if (!initialize_new_worker(/*show_error =*/ true)) {
-                        return Status::WorkerInitError;
+                        ret = Status::WorkerInitError;
                     }
                     continue;
                 }
 
-                // Do we have ready results from workers ?
+                // Do we have ready results from workers  that we need to bufferize ?
                 it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
-                    auto s = w->get_status();
-                    return (s == RecoveryWorker::Status::Aborted || s == RecoveryWorker::Status::Error ||
-                            s == RecoveryWorker::Status::ResultsReady);
+                    auto s = static_cast<int>(w->get_status());
+                    return (s >= 2);
                 });
                 if (it != workers_.end()) {
                     ret = bufferize_workers_results();

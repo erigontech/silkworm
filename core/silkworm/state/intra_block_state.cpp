@@ -213,7 +213,10 @@ void IntraBlockState::set_code(const evmc::address& address, Bytes code) noexcep
     journal_.emplace_back(new state::UpdateDelta{address, obj});
     ethash::hash256 hash{keccak256(code)};
     std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
-    code_[obj.current->code_hash] = std::move(code);
+
+    // Don't override already existing code so that views of it
+    // that were previously returned by get_code() are still valid.
+    code_.try_emplace(obj.current->code_hash, std::move(code));
 }
 
 evmc_access_status IntraBlockState::access_account(const evmc::address& address) noexcept {

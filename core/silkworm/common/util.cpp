@@ -21,6 +21,7 @@
 #include <cstring>
 #include <iterator>
 #include <regex>
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace silkworm {
 
@@ -155,35 +156,60 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
 }
 
 std::optional<uint64_t> parse_size(const std::string& sizestr) {
+
     if (sizestr.empty()) {
-        return 0;
+        return 0ull;
     }
 
-    static const std::regex pattern{"^([0-9]{1,})([\\ ]{0,})?(B|KB|MB|GB|TB)?$"};
+    static const std::regex pattern{"^(\\d*)(\\.\\d{1,3})?\\ *?(B|KB|MB|GB|TB)?$", std::regex_constants::icase};
     std::smatch matches;
     if (!std::regex_search(sizestr, matches, pattern, std::regex_constants::match_default)) {
         return std::nullopt;
     };
 
-    uint64_t number{std::strtoull(matches[1].str().c_str(), nullptr, 10)};
+    std::string int_part, dec_part, suf_part;
+    uint64_t multiplier{1}; // Default for bytes (B|b)
 
-    if (matches[3].length() == 0) {
-        return number;
+    for (size_t i = 1; i < matches.size(); i++) {
+        switch (i) {
+            case 1:
+                int_part = matches[i].str();
+                break;
+            case 2:
+                if (!matches[i].str().empty()) {
+                    dec_part = matches[i].str().substr(1);
+                }
+                break;
+            case 3:
+                suf_part = matches[i].str();
+                break;
+            default:
+                break;
+        }
     }
-    std::string suffix = matches[3].str();
-    if (suffix == "B") {
-        return number;
-    } else if (suffix == "KB") {
-        return number * kKibi;
-    } else if (suffix == "MB") {
-        return number * kMebi;
-    } else if (suffix == "GB") {
-        return number * kGibi;
-    } else if (suffix == "TB") {
-        return number * kTebi;
+
+    if (boost::iequals(suf_part, "KB")) {
+        multiplier = kKibi;
+    } else if (boost::iequals(suf_part, "MB")) {
+        multiplier = kMebi;
+    } else if (boost::iequals(suf_part, "GB")) {
+        multiplier = kGibi;
+    } else if (boost::iequals(suf_part, "TB")) {
+        multiplier = kTebi;
     } else {
         return std::nullopt;
     }
+
+    auto number{std::strtoull(int_part.c_str(), nullptr, 10)};
+    number *= multiplier;
+    if (!dec_part.empty()) {
+        // Use literals so we don't deal with floats and doubles
+        auto base{"1" + std::string(dec_part.size(), '0')};
+        auto b{std::strtoul(base.c_str(), nullptr, 10)};
+        auto d{ std::strtoul(dec_part.c_str(), nullptr, 10) };
+        number += multiplier / b * d;
+    }
+    return number;
 }
 
 size_t prefix_length(ByteView a, ByteView b) {

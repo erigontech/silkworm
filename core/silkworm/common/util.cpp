@@ -21,7 +21,6 @@
 #include <cstring>
 #include <iterator>
 #include <regex>
-#include <boost/algorithm/string/predicate.hpp>
 
 namespace silkworm {
 
@@ -155,6 +154,14 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
     return out;
 }
 
+inline bool case_insensitive_char_comparer(char a, char b) {
+    return(tolower(a) == tolower(b));
+}
+
+bool iequals(const std::string& a, const std::string& b) {
+    return (a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), case_insensitive_char_comparer));
+}
+
 std::optional<uint64_t> parse_size(const std::string& sizestr) {
 
     if (sizestr.empty()) {
@@ -189,13 +196,13 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
     }
 
     if (!suf_part.empty()) {
-        if (boost::iequals(suf_part, "KB")) {
+        if (iequals(suf_part, "KB")) {
             multiplier = kKibi;
-        } else if (boost::iequals(suf_part, "MB")) {
+        } else if (iequals(suf_part, "MB")) {
             multiplier = kMebi;
-        } else if (boost::iequals(suf_part, "GB")) {
+        } else if (iequals(suf_part, "GB")) {
             multiplier = kGibi;
-        } else if (boost::iequals(suf_part, "TB")) {
+        } else if (iequals(suf_part, "TB")) {
             multiplier = kTebi;
         }
     }

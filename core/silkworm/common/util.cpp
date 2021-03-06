@@ -188,16 +188,16 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
         }
     }
 
-    if (boost::iequals(suf_part, "KB")) {
-        multiplier = kKibi;
-    } else if (boost::iequals(suf_part, "MB")) {
-        multiplier = kMebi;
-    } else if (boost::iequals(suf_part, "GB")) {
-        multiplier = kGibi;
-    } else if (boost::iequals(suf_part, "TB")) {
-        multiplier = kTebi;
-    } else {
-        return std::nullopt;
+    if (!suf_part.empty()) {
+        if (boost::iequals(suf_part, "KB")) {
+            multiplier = kKibi;
+        } else if (boost::iequals(suf_part, "MB")) {
+            multiplier = kMebi;
+        } else if (boost::iequals(suf_part, "GB")) {
+            multiplier = kGibi;
+        } else if (boost::iequals(suf_part, "TB")) {
+            multiplier = kTebi;
+        }
     }
 
     auto number{std::strtoull(int_part.c_str(), nullptr, 10)};
@@ -206,8 +206,8 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
         // Use literals so we don't deal with floats and doubles
         auto base{"1" + std::string(dec_part.size(), '0')};
         auto b{std::strtoul(base.c_str(), nullptr, 10)};
-        auto d{ std::strtoul(dec_part.c_str(), nullptr, 10) };
-        number += multiplier / b * d;
+        auto d{std::strtoul(dec_part.c_str(), nullptr, 10)};
+        number += multiplier * d / b;
     }
     return number;
 }

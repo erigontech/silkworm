@@ -57,7 +57,7 @@ class IntraBlockState {
     bool exists(const evmc::address& address) const noexcept;
 
     // https://eips.ethereum.org/EIPS/eip-161
-    bool dead(const evmc::address& address) const noexcept;
+    bool is_dead(const evmc::address& address) const noexcept;
 
     void create_contract(const evmc::address& address) noexcept;
 

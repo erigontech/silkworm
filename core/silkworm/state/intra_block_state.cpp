@@ -60,7 +60,7 @@ bool IntraBlockState::exists(const evmc::address& address) const noexcept {
     return obj && obj->current;
 }
 
-bool IntraBlockState::dead(const evmc::address& address) const noexcept {
+bool IntraBlockState::is_dead(const evmc::address& address) const noexcept {
     auto* obj{get_object(address)};
     if (!obj || !obj->current) {
         return true;
@@ -122,15 +122,15 @@ void IntraBlockState::record_suicide(const evmc::address& address) noexcept {
 }
 
 void IntraBlockState::destruct_suicides() {
-    for (const evmc::address& a : self_destructs_) {
-        destruct(a);
+    for (const auto& address : self_destructs_) {
+        destruct(address);
     }
 }
 
 void IntraBlockState::destruct_touched_dead() {
-    for (const evmc::address& a : touched_) {
-        if (dead(a)) {
-            destruct(a);
+    for (const auto& address : touched_) {
+        if (is_dead(address)) {
+            destruct(address);
         }
     }
 }
@@ -140,10 +140,9 @@ void IntraBlockState::destruct_touched_dead() {
 void IntraBlockState::destruct(const evmc::address& address) {
     storage_.erase(address);
     auto* obj{get_object(address)};
-    if (!obj) {
-        return;
+    if (obj) {
+        obj->current.reset();
     }
-    obj->current.reset();
 }
 
 intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const noexcept {
@@ -249,7 +248,7 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const e
                                            bool original) const noexcept {
     auto* obj{get_object(address)};
     if (!obj || !obj->current) {
-        return evmc::bytes32{};
+        return {};
     }
 
     state::Storage& storage{storage_[address]};

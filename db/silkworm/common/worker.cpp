@@ -46,7 +46,7 @@ void Worker::start(bool wait) {
         if (state_.load(std::memory_order_relaxed) != WorkerState::kStarting) {
             break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 void Worker::stop(bool wait) {

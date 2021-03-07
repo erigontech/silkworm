@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_OBJECT_H_
-#define SILKWORM_STATE_OBJECT_H_
+#ifndef SILKWORM_STATE_OBJECT_HPP_
+#define SILKWORM_STATE_OBJECT_HPP_
 
 #include <robin_hood.h>
 
@@ -28,7 +28,6 @@ namespace silkworm::state {
 struct Object {
     std::optional<Account> initial;
     std::optional<Account> current;
-    std::optional<Bytes> code;
 };
 
 struct CommittedValue {
@@ -43,4 +42,4 @@ struct Storage {
 
 }  // namespace silkworm::state
 
-#endif  // SILKWORM_STATE_OBJECT_H_
+#endif  // SILKWORM_STATE_OBJECT_HPP_

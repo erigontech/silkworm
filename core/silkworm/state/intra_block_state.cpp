@@ -60,7 +60,7 @@ bool IntraBlockState::exists(const evmc::address& address) const noexcept {
     return obj && obj->current;
 }
 
-bool IntraBlockState::dead(const evmc::address& address) const noexcept {
+bool IntraBlockState::is_dead(const evmc::address& address) const noexcept {
     auto* obj{get_object(address)};
     if (!obj || !obj->current) {
         return true;
@@ -122,15 +122,15 @@ void IntraBlockState::record_suicide(const evmc::address& address) noexcept {
 }
 
 void IntraBlockState::destruct_suicides() {
-    for (const evmc::address& a : self_destructs_) {
-        destruct(a);
+    for (const auto& address : self_destructs_) {
+        destruct(address);
     }
 }
 
 void IntraBlockState::destruct_touched_dead() {
-    for (const evmc::address& a : touched_) {
-        if (dead(a)) {
-            destruct(a);
+    for (const auto& address : touched_) {
+        if (is_dead(address)) {
+            destruct(address);
         }
     }
 }
@@ -140,11 +140,9 @@ void IntraBlockState::destruct_touched_dead() {
 void IntraBlockState::destruct(const evmc::address& address) {
     storage_.erase(address);
     auto* obj{get_object(address)};
-    if (!obj) {
-        return;
+    if (obj) {
+        obj->current.reset();
     }
-    obj->current.reset();
-    obj->code.reset();
 }
 
 intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const noexcept {
@@ -187,16 +185,21 @@ void IntraBlockState::set_nonce(const evmc::address& address, uint64_t nonce) no
 ByteView IntraBlockState::get_code(const evmc::address& address) const noexcept {
     auto* obj{get_object(address)};
 
-    if (!obj || !obj->current || obj->current->code_hash == kEmptyHash) {
+    if (!obj || !obj->current) {
         return {};
     }
-    if (obj->code) {
-        return *obj->code;
+
+    const auto& code_hash{obj->current->code_hash};
+    if (code_hash == kEmptyHash) {
+        return {};
     }
 
-    obj->code = db_.read_code(obj->current->code_hash);
+    if (auto it{code_.find(code_hash)}; it != code_.end()) {
+        return it->second;
+    }
 
-    return *obj->code;
+    code_[code_hash] = db_.read_code(code_hash);
+    return code_[code_hash];
 }
 
 evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const noexcept {
@@ -209,7 +212,10 @@ void IntraBlockState::set_code(const evmc::address& address, Bytes code) noexcep
     journal_.emplace_back(new state::UpdateDelta{address, obj});
     ethash::hash256 hash{keccak256(code)};
     std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
-    obj.code = std::move(code);
+
+    // Don't overwrite already existing code so that views of it
+    // that were previously returned by get_code() are still valid.
+    code_.try_emplace(obj.current->code_hash, std::move(code));
 }
 
 evmc_access_status IntraBlockState::access_account(const evmc::address& address) noexcept {
@@ -242,7 +248,7 @@ evmc::bytes32 IntraBlockState::get_storage(const evmc::address& address, const e
                                            bool original) const noexcept {
     auto* obj{get_object(address)};
     if (!obj || !obj->current) {
-        return evmc::bytes32{};
+        return {};
     }
 
     state::Storage& storage{storage_[address]};
@@ -304,8 +310,10 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
 
     for (const auto& [address, obj] : objects_) {
         db_.update_account(address, obj.initial, obj.current);
-        if (obj.current && obj.code && (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
-            db_.update_account_code(address, obj.current->incarnation, obj.current->code_hash, *obj.code);
+        if (obj.current && obj.current->code_hash != kEmptyHash &&
+            (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
+            db_.update_account_code(address, obj.current->incarnation, obj.current->code_hash,
+                                    code_[obj.current->code_hash]);
         }
     }
 }

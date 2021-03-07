@@ -88,9 +88,13 @@ if(SILKWORM_CLANG_COVERAGE)
   add_link_options(-fprofile-instr-generate -fcoverage-mapping)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$" AND CMAKE_BUILD_TYPE STREQUAL "Release")
-  # useful for performance profiling
-  add_compile_options(-gline-tables-only)
+# minimal debug info for sampling profiler
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
+    add_compile_options(-gline-tables-only)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-g1)
+  endif()
 endif()
 
 # GMP

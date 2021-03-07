@@ -168,7 +168,7 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
         return 0ull;
     }
 
-    static const std::regex pattern{"^(\\d*)(\\.\\d{1,3})?\\ *?(B|KB|MB|GB|TB)?$", std::regex_constants::icase};
+    static const std::regex pattern{R"(^(\d*)(\.\d{1,3})?\ *?(B|KB|MB|GB|TB)?$)", std::regex_constants::icase};
     std::smatch matches;
     if (!std::regex_search(sizestr, matches, pattern, std::regex_constants::match_default)) {
         return std::nullopt;
@@ -177,23 +177,11 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
     std::string int_part, dec_part, suf_part;
     uint64_t multiplier{1}; // Default for bytes (B|b)
 
-    for (size_t i = 1; i < matches.size(); i++) {
-        switch (i) {
-            case 1:
-                int_part = matches[i].str();
-                break;
-            case 2:
-                if (!matches[i].str().empty()) {
-                    dec_part = matches[i].str().substr(1);
-                }
-                break;
-            case 3:
-                suf_part = matches[i].str();
-                break;
-            default:
-                break;
-        }
+    int_part = matches[1].str();
+    if (!matches[2].str().empty()) {
+        dec_part = matches[2].str().substr(1);
     }
+    suf_part = matches[3].str();
 
     if (!suf_part.empty()) {
         if (iequals(suf_part, "KB")) {

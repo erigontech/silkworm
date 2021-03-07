@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_H_
-#define SILKWORM_STATE_INTRA_BLOCK_STATE_H_
+#ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_
+#define SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_
 
 #include <robin_hood.h>
 
@@ -57,7 +57,7 @@ class IntraBlockState {
     bool exists(const evmc::address& address) const noexcept;
 
     // https://eips.ethereum.org/EIPS/eip-161
-    bool dead(const evmc::address& address) const noexcept;
+    bool is_dead(const evmc::address& address) const noexcept;
 
     void create_contract(const evmc::address& address) noexcept;
 
@@ -132,6 +132,9 @@ class IntraBlockState {
     mutable robin_hood::unordered_flat_map<evmc::address, state::Object> objects_;
     mutable robin_hood::unordered_flat_map<evmc::address, state::Storage> storage_;
 
+    // we want pointer stability here, thus node map
+    mutable robin_hood::unordered_node_map<evmc::bytes32, Bytes> code_;
+
     std::vector<std::unique_ptr<state::Delta>> journal_;
 
     // substate
@@ -146,4 +149,4 @@ class IntraBlockState {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_STATE_INTRA_BLOCK_STATE_H_
+#endif  // SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_

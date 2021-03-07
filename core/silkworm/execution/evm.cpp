@@ -186,7 +186,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
             }
         }
     } else {
-        Bytes code{state_.get_code(message.destination)};
+        ByteView code{state_.get_code(message.destination)};
         if (code.empty()) {
             return res;
         }
@@ -336,7 +336,7 @@ bool EVM::is_precompiled(const evmc::address& contract) const noexcept {
 
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {
     if (evm_.config().has_spurious_dragon(evm_.block_.header.number)) {
-        return !evm_.state().dead(address);
+        return !evm_.state().is_dead(address);
     } else {
         return evm_.state().exists(address);
     }
@@ -439,7 +439,7 @@ size_t EvmHost::get_code_size(const evmc::address& address) const noexcept {
 }
 
 evmc::bytes32 EvmHost::get_code_hash(const evmc::address& address) const noexcept {
-    if (evm_.state().dead(address)) {
+    if (evm_.state().is_dead(address)) {
         return {};
     } else {
         return evm_.state().get_code_hash(address);

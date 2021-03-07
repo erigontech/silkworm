@@ -16,10 +16,7 @@
 
 #include "util.hpp"
 
-#include <algorithm>
 #include <cassert>
-#include <cstring>
-#include <iterator>
 #include <regex>
 
 namespace silkworm {

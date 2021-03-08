@@ -276,9 +276,17 @@ evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address,
     return res;
 }
 
+static std::optional<uint64_t> historical_previous_incarnation() {
+    // TODO(Andrew): implement properly
+    return std::nullopt;
+}
+
 std::optional<uint64_t> read_previous_incarnation(lmdb::Transaction& txn, const evmc::address& address,
-                                                  std::optional<uint64_t>) {
-    // TODO(Andrew): Historical previous incarnation
+                                                  std::optional<uint64_t> block_num) {
+    if (block_num) {
+        return historical_previous_incarnation();
+    }
+
     auto incarnation_table{txn.open(table::kIncarnationMap)};
     std::optional<ByteView> val{incarnation_table->get(full_view(address))};
     if (!val) {

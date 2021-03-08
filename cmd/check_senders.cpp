@@ -267,8 +267,8 @@ class RecoveryFarm final
                 }
             }
 
-            if (height_to == UINT32_MAX) {
-                auto blocks_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kBlockBodiesKey)};
+            auto blocks_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kBlockBodiesKey)};
+            if (height_to > blocks_stage_height) {
                 height_to = blocks_stage_height;
                 if (height_to < height_from) {
                     // We actually don't need to recover anything

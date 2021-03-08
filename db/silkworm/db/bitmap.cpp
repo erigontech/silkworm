@@ -23,9 +23,9 @@ roaring::Roaring64Map read(ByteView serialized) {
 }
 
 std::optional<uint64_t> seek(const roaring::Roaring64Map &bitmap, uint64_t n) {
-    // TODO(Andrew) binary search instead of iteration
-    for (auto it = bitmap.begin(); it != bitmap.end(); ++it) {
-        if (*it >= n) return *it;
+    auto it{bitmap.begin()};
+    if (it.move(n)) {
+        return *it;
     }
     return std::nullopt;
 }

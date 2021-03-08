@@ -163,7 +163,7 @@ class RecoveryWorker final : public silkworm::Worker {
                 }
 
                 std::optional<Bytes> recovered{
-                    ecdsa::recover(full_view(package.hash.bytes), full_view(package.signature), package.recovery_id)};
+                    ecdsa::recover(full_view(package.hash.bytes), full_view(package.signature), package.odd_y_parity)};
 
                 if (recovered.has_value() && (int)recovered->at(0) == 4) {
                     auto keyHash{ethash::keccak256(recovered->data() + 1, recovered->length() - 1)};
@@ -577,27 +577,25 @@ private:
                 return Status::InvalidTransactionSignature;
             }
 
-            ecdsa::RecoveryId x{ ecdsa::get_signature_recovery_id(transaction.v) };
             Bytes rlp{};
-            if (x.eip155_chain_id) {
+            if (transaction.chain_id) {
                 if (!config.has_spurious_dragon(block_num)) {
                     SILKWORM_LOG(LogLevels::LogError) << "EIP-155 signature in transaction before Spurious Dragon for block " << block_num << std::endl;
                     return Status::InvalidTransactionSignature;
-                } else if (x.eip155_chain_id != config.chain_id) {
+                } else if (*transaction.chain_id != config.chain_id) {
 
                     SILKWORM_LOG(LogLevels::LogError)
                         << "EIP-155 invalid signature in transaction for block " << block_num << std::endl;
                     SILKWORM_LOG(LogLevels::LogError) << "Expected chain_id " << config.chain_id << " got "
-                                                      << intx::to_string(*x.eip155_chain_id) << std::endl;
+                                                      << intx::to_string(*transaction.chain_id) << std::endl;
                     return Status::InvalidTransactionSignature;
                 }
-                rlp::encode(rlp, transaction, true, { config.chain_id });
-            } else {
-                rlp::encode(rlp, transaction, true, {});
             }
 
+            rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
+
             auto hash{keccak256(rlp)};
-            RecoveryWorker::package package{block_num, hash, x.recovery_id};
+            RecoveryWorker::package package{block_num, hash, transaction.odd_y_parity};
             intx::be::unsafe::store(package.signature, transaction.r);
             intx::be::unsafe::store(package.signature + 32, transaction.s);
             (*batch_).push_back(package);
@@ -857,11 +855,8 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    Logger::default_logger().set_local_timezone(true);  // for compatibility with TG logging
-    Logger::default_logger().verbosity = options.debug ? LogLevels::LogDebug : Logger::default_logger().verbosity;
-
     if (options.debug) {
-        SILKWORM_LOG_VERBOSITY(LogTrace);
+        SILKWORM_LOG_VERBOSITY(LogDebug);
     }
 
     auto lmdb_mapSize{parse_size(mapSizeStr)};
@@ -893,11 +888,6 @@ int main(int argc, char* argv[]) {
                       << "Try --help for help" << std::endl;
             return -1;
         }
-    }
-
-    // Enable debug logging if required
-    if (options.debug) {
-        Logger::default_logger().verbosity = LogLevels::LogTrace;
     }
 
     // Invoke proper action
@@ -940,7 +930,7 @@ int main(int argc, char* argv[]) {
             SILKWORM_LOG(LogLevels::LogError) << (app_recover ? "Recovery" : "Unwind") << "returned " << rc << std::endl;
         } else {
             if (!options.dry) {
-                SILKWORM_LOG(LogLevels::LogInfo) << "Committing" << rc << std::endl;
+                SILKWORM_LOG(LogLevels::LogInfo) << "Committing" << std::endl;
                 lmdb::err_handler(lmdb_txn->commit());
             }
         }

@@ -36,7 +36,12 @@ struct AccessListEntry {
 bool operator==(const AccessListEntry& a, const AccessListEntry& b);
 
 struct Transaction {
-    std::optional<uint8_t> type{std::nullopt};  // EIP-2718
+    // EIP-2718 transaction type, see
+    // https://eips.ethereum.org/EIPS/eip-2718
+    //
+    // Only legacy (=std::nullopt) and EIP-2930 (=1) types are currently supported;
+    // one should not set this field to anything else.
+    std::optional<uint8_t> type{std::nullopt};
 
     uint64_t nonce{0};
     intx::uint256 gas_price{0};
@@ -69,7 +74,12 @@ struct Transaction {
 bool operator==(const Transaction& a, const Transaction& b);
 
 namespace rlp {
-    void encode(Bytes& to, const Transaction& txn, bool for_signing);
+    // According to EIP-2718, serialized transactions are prepended with 1 byte containing the type
+    // (0x01 for EIP-2930 transactions); the same goes for receipts. This is true for signing and
+    // transaction root calculation. However, in block body RLP serialized EIP-2718 transactions
+    // are additionally wrapped into RLP byte array. (Refer to geth implementation;
+    // EIP-2718 is mute on block RLP.)
+    void encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_eip2718_into_array);
 
     template <>
     DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept;

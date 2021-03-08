@@ -66,6 +66,14 @@ TEST_CASE("to_bytes32") {
           "7576351873263824fff23784264823469344629364396429864239864938264a");
 }
 
+TEST_CASE("iequals") {
+    std::string a{"Hello World"};
+    std::string b{"Hello wOrld"};
+    std::string c{"Hello World "};
+    CHECK(iequals(a, b));
+    CHECK(!iequals(a, c));
+}
+
 TEST_CASE("parse_size") {
     std::optional<uint64_t> size{parse_size("")};
     CHECK((size && *size == 0));
@@ -87,7 +95,12 @@ TEST_CASE("parse_size") {
     CHECK((size && *size == 400 * kGibi));
     size = parse_size("2TB");
     CHECK((size && *size == 2 * kTebi));
-
+    size = parse_size(".5TB");
+    CHECK((size && *size == (kTebi * 0.5)));
+    size = parse_size("0.5TB");
+    CHECK((size && *size == (kTebi * 0.5)));
+    size = parse_size("0.5   TB");
+    CHECK((size && *size == (kTebi * 0.5)));
     CHECK(!parse_size("ABBA"));
 }
 

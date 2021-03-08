@@ -23,7 +23,12 @@
 
 namespace silkworm::trie {
 
-TEST_CASE("Empty root hash") { CHECK(root_hash(std::vector<Transaction>{}) == kEmptyRoot); }
+TEST_CASE("Empty root hash") {
+    static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
+        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/false);
+    };
+    CHECK(root_hash(std::vector<Transaction>{}, kEncoder) == kEmptyRoot);
+}
 
 TEST_CASE("Hardcoded root hash") {
     std::vector<Receipt> receipts{
@@ -43,6 +48,8 @@ TEST_CASE("Hardcoded root hash") {
     for (auto& r : receipts) {
         r.bloom = logs_bloom(r.logs);
     }
-    CHECK(to_hex(root_hash(receipts)) == "7ea023138ee7d80db04eeec9cf436dc35806b00cc5fe8e5f611fb7cf1b35b177");
+    static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+    CHECK(to_hex(root_hash(receipts, kEncoder)) == "7ea023138ee7d80db04eeec9cf436dc35806b00cc5fe8e5f611fb7cf1b35b177");
 }
+
 }  // namespace silkworm::trie

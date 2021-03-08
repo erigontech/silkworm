@@ -526,38 +526,42 @@ private:
             if (status == RecoveryWorker::Status::Error) {
                 SILKWORM_LOG(LogLevels::LogError)
                     << "Got error from worker id " << worker->get_id() << " : " << worker->get_error() << std::endl;
-                should_stop_.store(true);
                 ret = Status::RecoveryError;
+                break;
             } else if (status == RecoveryWorker::Status::Aborted) {
                 ret = Status::WorkerAborted;
+                break;
             } else if (status == RecoveryWorker::Status::ResultsReady) {
                 if (!worker->pull_results(status, worker_results)) {
                     ret = Status::WorkerStatusMismatch;
+                    break;
                 } else {
-                    // Save results in etl
-                    if (!should_stop()) {
-                        for (auto& [block_num, mdb_val] : worker_results) {
-                            last_processed_block_ = block_num;
-                            total_processed_blocks_++;
-                            total_recovered_transactions_ += (mdb_val.mv_size / kAddressLength);
 
-                            auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
-                            Bytes etl_data(static_cast<unsigned char*>(mdb_val.mv_data), mdb_val.mv_size);
-                            etl::Entry item{etl_key, etl_data};
-                            collector_.collect(item);  // TODO check for errors (eg. disk full)
-                            headers_it_2_++;
-                        }
-                        SILKWORM_LOG(LogLevels::LogInfo)
-                            << "ETL Load [1/2] : "
-                            << (boost::format(fmt_row) % total_processed_blocks_ % total_recovered_transactions_)
-                            << std::endl;
+                    for (auto& [block_num, mdb_val] : worker_results) {
+                        last_processed_block_ = block_num;
+                        total_processed_blocks_++;
+                        total_recovered_transactions_ += (mdb_val.mv_size / kAddressLength);
+
+                        auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
+                        Bytes etl_data(static_cast<unsigned char*>(mdb_val.mv_data), mdb_val.mv_size);
+                        etl::Entry item{etl_key, etl_data};
+                        collector_.collect(item);  // TODO check for errors (eg. disk full)
+                        headers_it_2_++;
                     }
+                    SILKWORM_LOG(LogLevels::LogInfo)
+                        << "ETL Load [1/2] : "
+                        << (boost::format(fmt_row) % total_processed_blocks_ % total_recovered_transactions_)
+                        << std::endl;
                 }
             }
 
             worker_results.clear();
 
-        } while (ret == Status::Succeded && !should_stop());
+        } while (!should_stop());
+
+        if (ret != Status::Succeded) {
+            should_stop_.store(true);
+        }
 
         return ret;
     }

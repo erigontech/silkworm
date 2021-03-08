@@ -129,7 +129,7 @@ class RecoveryWorker final : public silkworm::Worker {
 
         while (!should_stop()) {
             bool expected_kick_value{true};
-            if (!kicked_.compare_exchange_strong(expected_kick_value, false, std::memory_order_relaxed)) {
+            if (!kicked_.compare_exchange_strong(expected_kick_value, false)) {
                 std::unique_lock l(xwork_);
                 kicked_cv_.wait_for(l, std::chrono::seconds(1));
                 continue;
@@ -371,7 +371,10 @@ class RecoveryFarm final
             SILKWORM_LOG(LogLevels::LogDebug) << "End   read block bodies ... " << std::endl;
 
             if (!should_stop()) {
-                dispatch_batch();  // Dispatch residual work
+                ret = dispatch_batch();
+                if (ret != Status::Succeded) {
+                    throw std::runtime_error("Unable to dispatch work");
+                }
             } else {
                 stop_all_workers();
             }
@@ -515,7 +518,7 @@ private:
             if (status == RecoveryWorker::Status::Error) {
                 SILKWORM_LOG(LogLevels::LogError)
                     << "Got error from worker id " << worker->get_id() << " : " << worker->get_error() << std::endl;
-                should_stop_.store(true, std::memory_order_relaxed);
+                should_stop_.store(true);
                 ret = Status::RecoveryError;
             } else if (status == RecoveryWorker::Status::Aborted) {
                 ret = Status::WorkerAborted;
@@ -621,16 +624,18 @@ private:
             });
 
             if (it != workers_.end()) {
+                SILKWORM_LOG(LogLevels::LogDebug) << "Found available worker" << std::endl;
                 (*it)->set_work(batch_id_++, batch_);
                 break;
             } else {
 
-                // Do we have ready results from workers  that we need to bufferize ?
+                // Do we have ready results from workers that we need to bufferize ?
                 it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
                     auto s = static_cast<int>(w->get_status());
                     return (s >= 2);
                 });
                 if (it != workers_.end()) {
+                    SILKWORM_LOG(LogLevels::LogDebug) << "Bufferize results" << std::endl;
                     ret = bufferize_workers_results();
                     continue;
                 }
@@ -640,12 +645,11 @@ private:
                 if (workers_.size() != max_workers_) {
                     if (!initialize_new_worker()) {
                         max_workers_ = workers_.size(); // Don't try to spawn new workers. Maybe we're OOM
-                        continue;
                     }
                 }
 
                 // No other option than wait a while and retry
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
         };
 
@@ -660,7 +664,7 @@ private:
             workers_.emplace_back(new RecoveryWorker(workers_.size(), max_batch_size_ * kAddressLength));
             workers_.back()->signal_completed.connect(
                 boost::bind(&RecoveryFarm::worker_completed_handler, this, _1, _2));
-            workers_.back()->start();
+            workers_.back()->start(/*wait = */ true);
             return workers_.back()->get_state() == Worker::WorkerState::kStarted;
         } catch (const std::exception& ex) {
             if (show_error) {
@@ -749,13 +753,13 @@ private:
     void worker_completed_handler(RecoveryWorker* sender, uint32_t batch_id) {
         // Ensure worker threads complete batches in the same order they
         // were launched
-        while (completed_batch_id.load(std::memory_order_relaxed) != batch_id) {
+        while (completed_batch_id.load() != batch_id) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
         auto returned_error = sender->get_error();
         if (!returned_error.empty()) {
-            should_stop_.store(true, std::memory_order_relaxed);
+            should_stop_.store(true);
         }
 
         // Save my ids in the queue of results to

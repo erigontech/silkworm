@@ -19,20 +19,20 @@
 namespace silkworm {
 Worker::~Worker() {
     if (state_.load() != WorkerState::kStopped) {
-        state_.store(WorkerState::kStopping, std::memory_order_relaxed);
+        state_.store(WorkerState::kStopping);
         thread_->join();
         thread_.reset(nullptr);
     }
 }
-void Worker::start() {
+void Worker::start(bool wait) {
     WorkerState expected_state{WorkerState::kStopped};
-    if (!state_.compare_exchange_strong(expected_state, WorkerState::kStarting, std::memory_order_relaxed)) {
+    if (!state_.compare_exchange_strong(expected_state, WorkerState::kStarting)) {
         return;
     }
 
     thread_.reset(new std::thread([&]() {
         WorkerState expected_state{WorkerState::kStarting};
-        if (state_.compare_exchange_strong(expected_state, WorkerState::kStarted, std::memory_order_relaxed)) {
+        if (state_.compare_exchange_strong(expected_state, WorkerState::kStarted)) {
             try {
                 work();
             } catch (const std::exception& ex) {
@@ -42,10 +42,18 @@ void Worker::start() {
         state_.store(WorkerState::kStopped);
     }));
 
+    while (wait)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        auto state{get_state()};
+        if (state == WorkerState::kStarted) {
+            break;
+        }
+    }
 }
 void Worker::stop(bool wait) {
     WorkerState expected_state{WorkerState::kStarted};
-    if (state_.compare_exchange_strong(expected_state, WorkerState::kStopping, std::memory_order_relaxed)) {
+    if (state_.compare_exchange_strong(expected_state, WorkerState::kStopping)) {
         kick();
     }
     if (wait) {
@@ -53,7 +61,7 @@ void Worker::stop(bool wait) {
     }
 }
 void Worker::kick() {
-    kicked_.store(true, std::memory_order_relaxed);
+    kicked_.store(true);
     kicked_cv_.notify_one();
 }
 }  //  namespace silkworm

@@ -36,7 +36,7 @@ class Worker {
 
     virtual ~Worker();
 
-    void start();                  // Start worker thread (by default waits for status)
+    void start(bool wait = true);  // Start worker thread (by default waits for status)
     void stop(bool wait = false);  // Stops worker thread (optionally wait for complete stop)
     void kick();                   // Kicks worker thread if waiting
 
@@ -44,17 +44,18 @@ class Worker {
     bool should_stop() { return state_.load(std::memory_order_relaxed) == WorkerState::kStopping; }
 
     // Retrieves current state of thread
-    WorkerState get_state() { return state_.load(std::memory_order_relaxed); }
+    WorkerState get_state() { return state_.load(); }
 
    protected:
-    std::atomic<WorkerState> state_{WorkerState::kStopped};
-    std::unique_ptr<std::thread> thread_{nullptr};
 
     std::atomic_bool kicked_{false};
     std::condition_variable kicked_cv_{};
     mutable std::mutex xwork_;
 
   private:
+
+    std::atomic<WorkerState> state_{WorkerState::kStopped};
+    std::unique_ptr<std::thread> thread_{nullptr};
     virtual void work() = 0;
 };
 }  // namespace silkworm

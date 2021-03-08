@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,13 +23,19 @@
 
 namespace silkworm::trie {
 
-TEST_CASE("Empty root hash") { CHECK(root_hash(std::vector<Transaction>{}) == kEmptyRoot); }
+TEST_CASE("Empty root hash") {
+    static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
+        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/false);
+    };
+    CHECK(root_hash(std::vector<Transaction>{}, kEncoder) == kEmptyRoot);
+}
 
 TEST_CASE("Hardcoded root hash") {
     std::vector<Receipt> receipts{
-        {true, 21'000, {}, {}},
-        {true, 42'000, {}, {}},
-        {true,
+        {std::nullopt, true, 21'000, {}, {}},
+        {std::nullopt, true, 42'000, {}, {}},
+        {std::nullopt,
+         true,
          65'092,
          {},
          {Log{0x8d12a197cb00d4747a1fe03395095ce2a5cc6819_address,
@@ -42,6 +48,8 @@ TEST_CASE("Hardcoded root hash") {
     for (auto& r : receipts) {
         r.bloom = logs_bloom(r.logs);
     }
-    CHECK(to_hex(root_hash(receipts)) == "7ea023138ee7d80db04eeec9cf436dc35806b00cc5fe8e5f611fb7cf1b35b177");
+    static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+    CHECK(to_hex(root_hash(receipts, kEncoder)) == "7ea023138ee7d80db04eeec9cf436dc35806b00cc5fe8e5f611fb7cf1b35b177");
 }
+
 }  // namespace silkworm::trie

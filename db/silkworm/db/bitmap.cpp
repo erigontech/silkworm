@@ -1,5 +1,5 @@
-#[[
-   Copyright 2020 The Silkworm Authors
+/*
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,11 +12,22 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-set(CMAKE_C_COMPILER /opt/wasi-sdk/bin/clang)
-set(CMAKE_CXX_COMPILER /opt/wasi-sdk/bin/clang++)
+#include "bitmap.hpp"
 
-add_definitions(-DCATCH_CONFIG_NO_POSIX_SIGNALS)
+namespace silkworm::db::bitmap {
 
-include(${CMAKE_CURRENT_LIST_DIR}/toolchain.cmake)
+roaring::Roaring64Map read(ByteView serialized) {
+    return roaring::Roaring64Map::readSafe(reinterpret_cast<const char *>(serialized.data()), serialized.size());
+}
+
+std::optional<uint64_t> seek(const roaring::Roaring64Map &bitmap, uint64_t n) {
+    auto it{bitmap.begin()};
+    if (it.move(n)) {
+        return *it;
+    }
+    return std::nullopt;
+}
+
+};  // namespace silkworm::db::bitmap

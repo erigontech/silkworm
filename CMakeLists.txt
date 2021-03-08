@@ -16,11 +16,25 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/evmone/evmc/.git)
-  message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")
+find_package(Git)
+if(GIT_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.gitmodules")
+  # Update submodules
+  option(GIT_SUBMODULE "Check submodules during build" ON)
+  if(GIT_SUBMODULE)
+    message(STATUS "Submodule update")
+    execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                    RESULT_VARIABLE GIT_SUBMOD_RESULT)
+    if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+       message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+    endif()
+  endif()
+else()
+  message(FATAL_ERROR "Git tool is required.")
 endif()
 
 get_directory_property(SILKWORM_HAS_PARENT PARENT_DIRECTORY)
+
 if(NOT SILKWORM_HAS_PARENT)
   include(evmone/cmake/cable/bootstrap.cmake)
   include(CableBuildType)
@@ -58,6 +72,8 @@ HunterGate(
 
 project(silkworm)
 
+option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
+
 option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
 
 include(cmake/Hunter/core_packages.cmake)
@@ -72,9 +88,13 @@ if(SILKWORM_CLANG_COVERAGE)
   add_link_options(-fprofile-instr-generate -fcoverage-mapping)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$" AND CMAKE_BUILD_TYPE STREQUAL "Release")
-  # useful for performance profiling
-  add_compile_options(-gline-tables-only)
+# minimal debug info for sampling profiler
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang$")
+    add_compile_options(-gline-tables-only)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-g1)
+  endif()
 endif()
 
 # GMP
@@ -123,6 +143,13 @@ endif()
 add_subdirectory(libff)
 
 if(NOT SILKWORM_CORE_ONLY)
+
+  # Roaring Bitmaps
+  set(ENABLE_ROARING_TESTS OFF)
+  option(ROARING_BUILD_STATIC "Build a static library" ON)
+  option(ROARING_LINK_STATIC "Link executables (tests, benchmarks) statically" ON)
+  add_subdirectory(CRoaring EXCLUDE_FROM_ALL)
+
   # CBOR
   add_subdirectory(cbor-cpp)
 
@@ -166,14 +193,19 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 # evmone with dependencies
-add_compile_definitions(EVMC_LOADER_MOCK)
+if(SILKWORM_WASM_API)
+  add_compile_definitions(EVMC_LOADER_MOCK)
+endif()
 add_subdirectory(evmone/evmc)
 add_subdirectory(keccak)
 find_package(intx CONFIG REQUIRED)
 
 add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/analysis.hpp
+                   evmone/lib/evmone/baseline.cpp
+                   evmone/lib/evmone/baseline.hpp
                    evmone/lib/evmone/execution_state.hpp
+                   evmone/lib/evmone/instruction_traits.hpp
                    evmone/lib/evmone/instructions_calls.cpp
                    evmone/lib/evmone/instructions.cpp
                    evmone/lib/evmone/instructions.hpp
@@ -181,7 +213,7 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/opcodes_helpers.h)
 
 target_include_directories(evmone PUBLIC evmone/lib)
-target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE keccak)
+target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions keccak)
 
 if(MSVC)
   target_compile_options(evmone PRIVATE /EHsc)
@@ -201,7 +233,6 @@ if(NOT SILKWORM_HAS_PARENT)
   add_subdirectory(cmd)
 endif()
 
-option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
 if(SILKWORM_WASM_API)
   add_subdirectory(wasm)
 endif()

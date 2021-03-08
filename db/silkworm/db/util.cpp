@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -53,6 +53,14 @@ Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     return key;
 }
 
+Bytes total_difficulty_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
+    Bytes key(8 + kHashLength + 1, '\0');
+    boost::endian::store_big_u64(&key[0], block_number);
+    std::memcpy(&key[8], hash, kHashLength);
+    key[8 + kHashLength] = 't';
+    return key;
+}
+
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation) {
     Bytes res(8 + kStoragePrefixLength, '\0');
     boost::endian::store_big_u64(&res[0], block_number);
@@ -91,37 +99,25 @@ std::string default_path() {
     if (env) {
         base_dir = env;
     } else {
-        env = std::getenv("APPDATA");
+#ifdef _WIN32
+        std::string env_name{"APPDATA"};
+#else
+        std::string env_name{"HOME"};
+#endif
+        env = std::getenv(env_name.c_str());
         if (env) {
             base_dir = env;
-        }
+        } else {
+            return base_dir;  // We actually don't know where to persist data
+        };
     }
-
-    if (base_dir.empty()) {
-#if defined(_WIN32)
-        /* Should not happen */
-        return base_dir;
-#else
-        env = std::getenv("HOME");
-        if (!env) {
-            return base_dir;
-        }
-#endif
-        std::string home_dir{env};
 
 #ifdef _WIN32
-        base_dir = home_dir;
-#elif __APPLE__
-        base_dir = home_dir + "/Library";
-#else
-        base_dir = home_dir + "/.local/share";
-#endif
-    }
-
-#if defined(_WIN32) || defined(__APPLE__)
     base_dir += "/TurboGeth";
+#elif __APPLE__
+    base_dir += "/Library/TurboGeth";
 #else
-    base_dir += "/turbogeth";
+    base_dir += "/.local/share/turbogeth";
 #endif
 
     return base_dir + "/tg/chaindata";
@@ -142,8 +138,8 @@ namespace detail {
         return to;
     }
 
-    static void check_rlp_err(rlp::DecodingError err) {
-        if (err != rlp::DecodingError::kOk) {
+    static void check_rlp_err(rlp::DecodingResult err) {
+        if (err != rlp::DecodingResult::kOk) {
             throw err;
         }
     }
@@ -152,13 +148,19 @@ namespace detail {
         auto [header, err]{rlp::decode_header(from)};
         check_rlp_err(err);
         if (!header.list) {
-            throw rlp::DecodingError::kUnexpectedString;
+            throw rlp::DecodingResult::kUnexpectedString;
         }
+        uint64_t leftover{from.length() - header.payload_length};
 
         BlockBodyForStorage to;
         check_rlp_err(rlp::decode(from, to.base_txn_id));
         check_rlp_err(rlp::decode(from, to.txn_count));
         check_rlp_err(rlp::decode_vector(from, to.ommers));
+
+        if (from.length() != leftover) {
+            throw rlp::DecodingResult::kListLengthMismatch;
+        }
+
         return to;
     }
 

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,9 +22,11 @@
 
 namespace silkworm {
 
-std::pair<std::vector<Receipt>, ValidationError> execute_block(const Block& block, StateBuffer& buffer,
-                                                               const ChainConfig& config, AnalysisCache* analysis_cache,
-                                                               ExecutionStatePool* state_pool) noexcept {
+std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& block, StateBuffer& buffer,
+                                                                const ChainConfig& config,
+                                                                AnalysisCache* analysis_cache,
+                                                                ExecutionStatePool* state_pool,
+                                                                evmc_vm* exo_evm) noexcept {
     const BlockHeader& header{block.header};
     uint64_t block_num{header.number};
 
@@ -32,12 +34,13 @@ std::pair<std::vector<Receipt>, ValidationError> execute_block(const Block& bloc
     ExecutionProcessor processor{block, state, config};
     processor.evm().analysis_cache = analysis_cache;
     processor.evm().state_pool = state_pool;
+    processor.evm().exo_evm = exo_evm;
 
-    std::pair<std::vector<Receipt>, ValidationError> res{processor.execute_block()};
+    std::pair<std::vector<Receipt>, ValidationResult> res{processor.execute_block()};
 
     const auto& receipts{res.first};
     auto& err{res.second};
-    if (err != ValidationError::kOk) {
+    if (err != ValidationResult::kOk) {
         return res;
     }
 
@@ -47,16 +50,26 @@ std::pair<std::vector<Receipt>, ValidationError> execute_block(const Block& bloc
     }
 
     if (gas_used != header.gas_used) {
-        err = ValidationError::kBlockGasMismatch;
+        err = ValidationResult::kWrongBlockGas;
         return res;
     }
 
     if (config.has_byzantium(block_num)) {
-        evmc::bytes32 receipt_root{trie::root_hash(receipts)};
+        static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+        evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
         if (receipt_root != header.receipts_root) {
-            err = ValidationError::kReceiptRootMismatch;
+            err = ValidationResult::kWrongReceiptsRoot;
             return res;
         }
+    }
+
+    Bloom bloom{};  // zero initialization
+    for (const Receipt& receipt : receipts) {
+        join(bloom, receipt.bloom);
+    }
+    if (bloom != header.logs_bloom) {
+        err = ValidationResult::kWrongLogsBloom;
+        return res;
     }
 
     processor.evm().state().write_to_db(block_num);

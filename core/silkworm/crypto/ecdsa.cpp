@@ -22,20 +22,28 @@
 
 namespace silkworm::ecdsa {
 
-RecoveryId get_signature_recovery_id(const intx::uint256& v) {
-    RecoveryId res{};
+intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) {
+    if (chain_id) {
+        return *chain_id * 2 + 35 + odd;
+    } else {
+        return odd ? 28 : 27;
+    }
+}
+
+YParityAndChainId v_to_y_parity_and_chain_id(const intx::uint256& v) {
+    YParityAndChainId res{};
     if (v == 27 || v == 28) {
         // pre EIP-155
-        res.recovery_id = intx::narrow_cast<uint8_t>(v - 27);
-        res.eip155_chain_id = {};
+        res.odd = v == 28;
+        res.chain_id = std::nullopt;
     } else {
         // https://eips.ethereum.org/EIPS/eip-155
-        // Find chain_id and recovery_id ∈ {0, 1} such that
-        // v = chain_id * 2 + 35 + recovery_id
+        // Find chain_id and y_parity ∈ {0, 1} such that
+        // v = chain_id * 2 + 35 + y_parity
         intx::uint256 w{v - 35};
-        intx::uint256 chain_id{w >> 1};                                     // w / 2
-        res.recovery_id = intx::narrow_cast<uint8_t>(w - (chain_id << 1));  // w - chain_id * 2
-        res.eip155_chain_id = chain_id;
+        intx::uint256 chain_id{w >> 1};  // w / 2
+        res.odd = static_cast<uint64_t>(w) % 2;
+        res.chain_id = chain_id;
     }
     return res;
 }
@@ -54,7 +62,7 @@ bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool hom
     return true;
 }
 
-std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recovery_id) {
+std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity) {
     static secp256k1_context* context{secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)};
 
     if (message.length() != 32 || signature.length() != 64) {
@@ -62,7 +70,7 @@ std::optional<Bytes> recover(ByteView message, ByteView signature, uint8_t recov
     }
 
     secp256k1_ecdsa_recoverable_signature sig;
-    if (!secp256k1_ecdsa_recoverable_signature_parse_compact(context, &sig, &signature[0], recovery_id)) {
+    if (!secp256k1_ecdsa_recoverable_signature_parse_compact(context, &sig, &signature[0], odd_y_parity)) {
         return std::nullopt;
     }
 

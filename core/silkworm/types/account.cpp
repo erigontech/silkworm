@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@
 namespace silkworm {
 
 bool operator==(const Account& a, const Account& b) {
-    // Intentionally omit storage_root
     return a.nonce == b.nonce && a.balance == b.balance && a.code_hash == b.code_hash && a.incarnation == b.incarnation;
 }
 
@@ -30,7 +29,7 @@ Bytes Account::encode_for_storage(bool omit_code_hash) const {
     uint8_t field_set{0};
 
     if (nonce != 0) {
-        field_set = 1;
+        field_set |= 1;
         ByteView be{rlp::big_endian(nonce)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);
@@ -85,10 +84,10 @@ size_t Account::encoding_length_for_storage() const {
     return len;
 }
 
-std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView encoded) noexcept {
+std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView encoded) noexcept {
     Account a{};
     if (encoded.empty()) {
-        return {a, rlp::DecodingError::kOk};
+        return {a, rlp::DecodingResult::kOk};
     }
 
     uint8_t field_set = encoded[0];
@@ -97,10 +96,10 @@ std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView enco
     if (field_set & 1) {
         uint8_t len = encoded[pos++];
         if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingError::kInputTooShort};
+            return {a, rlp::DecodingResult::kInputTooShort};
         }
         auto [nonce, err]{rlp::read_uint64(encoded.substr(pos, len))};
-        if (err != rlp::DecodingError::kOk) {
+        if (err != rlp::DecodingResult::kOk) {
             return {a, err};
         }
         a.nonce = nonce;
@@ -110,7 +109,7 @@ std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView enco
     if (field_set & 2) {
         uint8_t len = encoded[pos++];
         if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingError::kInputTooShort};
+            return {a, rlp::DecodingResult::kInputTooShort};
         }
         std::memcpy(&as_bytes(a.balance)[32 - len], &encoded[pos], len);
         a.balance = bswap(a.balance);
@@ -120,10 +119,10 @@ std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView enco
     if (field_set & 4) {
         uint8_t len = encoded[pos++];
         if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingError::kInputTooShort};
+            return {a, rlp::DecodingResult::kInputTooShort};
         }
         auto [incarnation, err]{rlp::read_uint64(encoded.substr(pos, len))};
-        if (err != rlp::DecodingError::kOk) {
+        if (err != rlp::DecodingResult::kOk) {
             return {a, err};
         }
         a.incarnation = incarnation;
@@ -133,54 +132,33 @@ std::pair<Account, rlp::DecodingError> decode_account_from_storage(ByteView enco
     if (field_set & 8) {
         uint8_t len = encoded[pos++];
         if (len != kHashLength) {
-            return {a, rlp::DecodingError::kUnexpectedLength};
+            return {a, rlp::DecodingResult::kUnexpectedLength};
         }
         if (encoded.length() < pos + len) {
-            return {a, rlp::DecodingError::kInputTooShort};
+            return {a, rlp::DecodingResult::kInputTooShort};
         }
         std::memcpy(a.code_hash.bytes, &encoded[pos], kHashLength);
     }
 
-    return {a, rlp::DecodingError::kOk};
+    return {a, rlp::DecodingResult::kOk};
 }
 
-namespace rlp {
+Bytes Account::rlp(const evmc::bytes32& storage_root) const {
+    rlp::Header h{true, 0};
+    h.payload_length += rlp::length(nonce);
+    h.payload_length += rlp::length(balance);
+    h.payload_length += kHashLength + 1;
+    h.payload_length += kHashLength + 1;
 
-    void encode(Bytes& to, const Account& account) {
-        Header h{true, 0};
-        h.payload_length += length(account.nonce);
-        h.payload_length += length(account.balance);
-        h.payload_length += kHashLength + 1;
-        h.payload_length += kHashLength + 1;
+    Bytes to;
 
-        encode_header(to, h);
-        encode(to, account.nonce);
-        encode(to, account.balance);
-        encode(to, account.storage_root.bytes);
-        encode(to, account.code_hash.bytes);
-    }
+    rlp::encode_header(to, h);
+    rlp::encode(to, nonce);
+    rlp::encode(to, balance);
+    rlp::encode(to, storage_root.bytes);
+    rlp::encode(to, code_hash.bytes);
 
-    template <>
-    [[nodiscard]] DecodingError decode(ByteView& from, Account& to) noexcept {
-        auto [h, err]{decode_header(from)};
-        if (err != DecodingError::kOk) {
-            return err;
-        }
-        if (!h.list) {
-            return DecodingError::kUnexpectedString;
-        }
+    return to;
+}
 
-        if (DecodingError err{decode(from, to.nonce)}; err != DecodingError::kOk) {
-            return err;
-        }
-        if (DecodingError err{decode(from, to.balance)}; err != DecodingError::kOk) {
-            return err;
-        }
-        if (DecodingError err{decode(from, to.storage_root.bytes)}; err != DecodingError::kOk) {
-            return err;
-        }
-        return decode(from, to.code_hash.bytes);
-    }
-
-}  // namespace rlp
 }  // namespace silkworm

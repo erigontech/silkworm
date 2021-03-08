@@ -15,15 +15,6 @@
 version: 2.1
 
 commands:
-  checkout_with_submodules:
-    steps:
-      - checkout
-      - run:
-          name: "Update submodules"
-          command: |
-            git submodule sync
-            git submodule update --init --recursive
-
   build:
     steps:
       - run:
@@ -33,7 +24,7 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/toolchain.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}-{{checksum "cmake/Hunter/extra_packages.cmake"}}
+          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum ".circleci/config.yml"}}-{{checksum "cmake/toolchain.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}-{{checksum "cmake/Hunter/extra_packages.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
@@ -60,17 +51,26 @@ commands:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
-          command: cmd/consensus
+          command: cmd/consensus --skip-eip-2315
 
 jobs:
   linux-gcc-7:
     environment:
       BUILD_TYPE: Debug
       CLANG_COVERAGE: OFF
-    docker:
-      - image: ethereum/cpp-build-env:12-gcc-7
+    machine:
+      image: ubuntu-2004:202010-01
     steps:
-      - checkout_with_submodules
+      - run:
+          name: "Switch to GCC 7"
+          command: |
+            sudo apt update
+            sudo apt -y install gcc-7 g++-7
+            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 50
+            sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 50
+            gcc --version
+            g++ --version
+      - checkout
       - build
       - test
 
@@ -81,7 +81,7 @@ jobs:
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
     steps:
-      - checkout_with_submodules
+      - checkout
       - build
       - run:
           name: "Core unit tests"
@@ -99,7 +99,7 @@ jobs:
           name: "Ethereum consensus tests"
           working_directory: ~/build
           command: |
-            cmd/consensus
+            cmd/consensus --skip-eip-2315
             mv default.profraw consensus.profraw
       - run:
           name: "Coverage"
@@ -123,7 +123,7 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
-      - checkout_with_submodules
+      - checkout
       - run:
           name: "Install WASI SDK"
           working_directory: ~/tmp1

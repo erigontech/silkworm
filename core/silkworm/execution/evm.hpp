@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_EVM_H_
-#define SILKWORM_EXECUTION_EVM_H_
+#ifndef SILKWORM_EXECUTION_EVM_HPP_
+#define SILKWORM_EXECUTION_EVM_HPP_
 
 #include <stdint.h>
 
@@ -28,11 +28,6 @@
 #include <silkworm/types/block.hpp>
 #include <stack>
 #include <vector>
-
-// TODO(Andrew) get rid of this when
-// https://github.com/ethereum/evmc/pull/528
-// is merged and released
-enum evmc_status_code_extra { EVMC_BALANCE_TOO_LOW = 32 };
 
 namespace silkworm {
 
@@ -61,6 +56,8 @@ class EVM {
 
     ExecutionStatePool* state_pool{nullptr};  // use for better performance
 
+    evmc_vm* exo_evm{nullptr};  // it's possible to use an exogenous EVMC VM
+
   private:
     friend class EvmHost;
 
@@ -69,6 +66,12 @@ class EVM {
     evmc::result call(const evmc_message& message) noexcept;
 
     evmc::result execute(const evmc_message& message, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept;
+
+    evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message,
+                                                  ByteView code) noexcept;
+
+    evmc_result execute_with_default_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
+                                                 std::optional<evmc::bytes32> code_hash) noexcept;
 
     evmc_revision revision() const noexcept;
 
@@ -88,6 +91,10 @@ class EvmHost : public evmc::Host {
     explicit EvmHost(EVM& evm) noexcept : evm_{evm} {}
 
     bool account_exists(const evmc::address& address) const noexcept override;
+
+    evmc_access_status access_account(const evmc::address& address) noexcept override;
+
+    evmc_access_status access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept override;
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept override;
 
@@ -117,6 +124,7 @@ class EvmHost : public evmc::Host {
   private:
     EVM& evm_;
 };
+
 }  // namespace silkworm
 
-#endif  // SILKWORM_EXECUTION_EVM_H_
+#endif  // SILKWORM_EXECUTION_EVM_HPP_

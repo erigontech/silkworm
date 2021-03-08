@@ -26,13 +26,12 @@
 #include <iterator>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #include <limits>
+#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/crypto/rmd160.hpp>
 #include <silkworm/crypto/snark.hpp>
-
-#include "protocol_param.hpp"
 
 namespace silkworm::precompiled {
 
@@ -54,12 +53,12 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
         return Bytes{};
     }
 
-    ecdsa::RecoveryId x{ecdsa::get_signature_recovery_id(v)};
-    if (x.eip155_chain_id) {
+    ecdsa::YParityAndChainId y{ecdsa::v_to_y_parity_and_chain_id(v)};
+    if (y.chain_id) {
         return Bytes{};
     }
 
-    std::optional<Bytes> key{ecdsa::recover(d.substr(0, 32), d.substr(64, 64), x.recovery_id)};
+    std::optional<Bytes> key{ecdsa::recover(d.substr(0, 32), d.substr(64, 64), y.odd)};
     if (!key || key->at(0) != 4) {
         return Bytes{};
     }
@@ -92,7 +91,7 @@ uint64_t id_gas(ByteView input, evmc_revision) noexcept { return 15 + 3 * ((inpu
 
 std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
 
-static intx::uint256 mult_complexity(const intx::uint256& x) noexcept {
+static intx::uint256 mult_complexity_eip198(const intx::uint256& x) noexcept {
     if (x <= 64) {
         return sqr(x);
     } else if (x <= 1024) {
@@ -102,7 +101,14 @@ static intx::uint256 mult_complexity(const intx::uint256& x) noexcept {
     }
 }
 
-uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
+static intx::uint256 mult_complexity_eip2565(const intx::uint256& max_length) noexcept {
+    intx::uint256 words{(max_length + 7) >> 3};  // ⌈max_length/8⌉
+    return sqr(words);
+}
+
+uint64_t expmod_gas(ByteView input, evmc_revision rev) noexcept {
+    const uint64_t min_gas{rev < EVMC_BERLIN ? 0 : 200u};
+
     Bytes buffer;
     input = right_pad(input, 3 * 32, buffer);
 
@@ -111,7 +117,7 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
     intx::uint256 mod_len256{intx::be::unsafe::load<intx::uint256>(&input[64])};
 
     if (base_len256 == 0 && mod_len256 == 0) {
-        return 0;
+        return min_gas;
     }
 
     if (intx::count_significant_words<uint64_t>(base_len256) > 1 ||
@@ -148,11 +154,19 @@ uint64_t expmod_gas(ByteView input, evmc_revision) noexcept {
         adjusted_exponent_len = 1;
     }
 
-    intx::uint256 gas{mult_complexity(std::max(mod_len256, base_len256)) * adjusted_exponent_len / fee::kGQuadDivisor};
+    const intx::uint256 max_length{std::max(mod_len256, base_len256)};
+
+    intx::uint256 gas;
+    if (rev < EVMC_BERLIN) {
+        gas = mult_complexity_eip198(max_length) * adjusted_exponent_len / fee::kGQuadDivisorEip198;
+    } else {
+        gas = mult_complexity_eip2565(max_length) * adjusted_exponent_len / fee::kGQuadDivisorEip2565;
+    }
+
     if (intx::count_significant_words<uint64_t>(gas) > 1) {
         return UINT64_MAX;
     } else {
-        return intx::narrow_cast<uint64_t>(gas);
+        return std::max(min_gas, intx::narrow_cast<uint64_t>(gas));
     }
 }
 

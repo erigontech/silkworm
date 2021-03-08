@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ TEST_CASE("BlockBody RLP") {
     ByteView in{rlp_bytes};
     BlockBody bb{};
 
-    REQUIRE(rlp::decode(in, bb) == rlp::DecodingError::kOk);
+    REQUIRE(rlp::decode(in, bb) == rlp::DecodingResult::kOk);
 
     CHECK(bb.transactions.size() == 0);
     REQUIRE(bb.ommers.size() == 1);
@@ -68,7 +68,7 @@ TEST_CASE("BlockBody RLP 2") {
     body.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
     body.transactions[0].value = 1'027'501'080 * kGiga;
     body.transactions[0].data = {};
-    body.transactions[0].v = 27;
+    body.transactions[0].set_v(27);
     body.transactions[0].r =
         intx::from_string<intx::uint256>("0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353");
     body.transactions[0].s =
@@ -80,7 +80,7 @@ TEST_CASE("BlockBody RLP 2") {
     body.transactions[1].to = {};
     body.transactions[1].value = 0;
     body.transactions[1].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
-    body.transactions[1].v = 37;
+    body.transactions[1].set_v(37);
     body.transactions[1].r =
         intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
     body.transactions[1].s =
@@ -106,10 +106,67 @@ TEST_CASE("BlockBody RLP 2") {
 
     ByteView view{rlp};
     BlockBody decoded{};
-    REQUIRE(rlp::decode(view, decoded) == rlp::DecodingError::kOk);
+    REQUIRE(rlp::decode(view, decoded) == rlp::DecodingResult::kOk);
 
     CHECK(view.empty());
     CHECK(decoded == body);
+}
+
+TEST_CASE("Invlaid Block RLP") {
+    // Consensus test RLP_InputList_TooManyElements_HEADER_DECODEINTO_BLOCK_EXTBLOCK_HEADER
+    const char* rlp_hex{
+        "0xf90260f90207a068a61c4a05db4913009de5666753258eb9306157680dc5da0d93656550c9257ea01dcc4de8dec75d7aab85b567b6cc"
+        "d41ad312451b948a7413f0a142fd40d49347948888f1f195afa192cfee860698584c030f4c9db1a0ef1552a40b7165c3cd773806b9e0c1"
+        "65b75356e0314bf0706f279c729f51e017a0b6c9fd1447d0b414a1f05957927746f58ef5a2ebde17db631d460eaf6a93b18da0bc37d797"
+        "53ad738a6dac4921e57392f145d8887476de3f783dfa7edae9283e52b90100000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "0000000000000000000000008302000001832fefd8825208845509814280a00451dd53d9c09f3cfb627b51d9d80632ed801f6330ee584b"
+        "ffc26caac9b9249f88c7bffe5ebd94cc2ff861f85f800a82c35094095e7baea6a6c7c4c2dfeb977efac326af552d870a801ba098c3a099"
+        "885a281885f487fd37550de16436e8c47874cd213531b10fe751617fa044b6b81011ce57bffcaf610bf728fb8a7237ad261ea2d937423d"
+        "78eb9e137076c0"};
+
+    Bytes rlp_bytes{*from_hex(rlp_hex)};
+    ByteView view{rlp_bytes};
+    Block block;
+
+    CHECK(rlp::decode(view, block) == rlp::DecodingResult::kListLengthMismatch);
+}
+
+TEST_CASE("EIP-2718 Block RLP") {
+    const char* rlp_hex{
+        "f90319f90211a00000000000000000000000000000000000000000000000000000000000000000a01dcc4de8dec75d7aab85b567b6ccd4"
+        "1ad312451b948a7413f0a142fd40d49347948888f1f195afa192cfee860698584c030f4c9db1a0ef1552a40b7165c3cd773806b9e0c165"
+        "b75356e0314bf0706f279c729f51e017a0e6e49996c7ec59f7a23d22b83239a60151512c65613bf84a0d7da336399ebc4aa0cafe75574d"
+        "59780665a97fbfd11365c7545aa8f1abf4e5e12e8243334ef7286bb9010000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        "000000000000000000000083020000820200832fefd882a410845506eb0796636f6f6c65737420626c6f636b206f6e20636861696ea0bd"
+        "4472abb6659ebe3ee06ee4d7b72a00a9f4d001caca51342001075469aff49888a13a5a8c8f2bb1c4f90101f85f800a82c35094095e7bae"
+        "a6a6c7c4c2dfeb977efac326af552d870a801ba09bea4c4daac7c7c52e093e6a4c35dbbcf8856f1af7b059ba20253e70848d094fa08a8f"
+        "ae537ce25ed8cb5af9adac3f141af69bd515bd2ba031522df09b97dd72b1b89e01f89b01800a8301e24194095e7baea6a6c7c4c2dfeb97"
+        "7efac326af552d878080f838f7940000000000000000000000000000000000000001e1a000000000000000000000000000000000000000"
+        "0000000000000000000000000001a03dbacc8d0259f2508625e97fdfc57cd85fdd16e5821bc2c10bdd1a52649e8335a0476e10695b183a"
+        "87b0aa292a7f4b78ef0c3fbe62aa2c42c84e1d9c3da159ef14c0"};
+
+    Bytes rlp_bytes{*from_hex(rlp_hex)};
+    ByteView view{rlp_bytes};
+    Block block;
+
+    REQUIRE(rlp::decode(view, block) == rlp::DecodingResult::kOk);
+    CHECK(view.empty());
+
+    REQUIRE(block.transactions.size() == 2);
+
+    CHECK(block.transactions[0].type == std::nullopt);
+    CHECK(block.transactions[0].access_list.empty());
+
+    CHECK(block.transactions[1].type == kEip2930TransactionType);
+    CHECK(block.transactions[1].access_list.size() == 1);
 }
 
 }  // namespace silkworm

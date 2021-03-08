@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,23 +14,22 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_RECEIPT_H_
-#define SILKWORM_TYPES_RECEIPT_H_
+#ifndef SILKWORM_DB_BITMAP_HPP_
+#define SILKWORM_DB_BITMAP_HPP_
 
 #include <optional>
-#include <silkworm/types/bloom.hpp>
-#include <silkworm/types/log.hpp>
+#include <roaring64map.hh>
+#include <silkworm/common/base.hpp>
 
-namespace silkworm {
+namespace silkworm::db::bitmap {
 
-struct Receipt {
-    std::optional<uint8_t> type{std::nullopt};  // EIP-2718
-    bool success{false};
-    uint64_t cumulative_gas_used{0};
-    Bloom bloom;
-    std::vector<Log> logs;
-};
+roaring::Roaring64Map read(ByteView serialized);
 
-}  // namespace silkworm
+// Return the first value in the bitmap that is not less than (i.e. greater or equal to) n,
+// or std::nullopt if no such element is found.
+// See TG SeekInBitmap64.
+std::optional<uint64_t> seek(const roaring::Roaring64Map &bitmap, uint64_t n);
 
-#endif  // SILKWORM_TYPES_RECEIPT_H_
+};  // namespace silkworm::db::bitmap
+
+#endif  // !SILKWORM_DB_BITMAP_HPP_

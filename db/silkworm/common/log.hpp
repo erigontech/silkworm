@@ -1,11 +1,11 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020 - 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,48 +17,52 @@
 #ifndef SILKWORM_COMMON_LOG_H_
 #define SILKWORM_COMMON_LOG_H_
 
-#include <absl/time/clock.h>
-
 #include <silkworm/common/tee.hpp>
+#include <mutex>
 
 namespace silkworm {
 
+// stream labeled logging output - e.g.
+//	  SILKWORM_LOG(LogInfo) << "All your " << num_bases << " base are belong to us\n";
+//
+#define SILKWORM_LOG(level_) \
+    if ((level_) < silkworm::log_verbosity_) {} else log_(level_) << " "
+
+// change the logging verbosity level - default level is LogInfo
+//
+#define SILKWORM_LOG_VERBOSITY(level_) \
+    (silkworm::log_verbosity_ = (level_))
+
+// available verbosity levels
 enum LogLevels { LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCritical, LogNone };
 
-// Log to one or two output streams - typically the console and optional log file.
-class Logger {
+// change the logging output streams - default is (cerr, null_stream())
+//
+#define SILKWORM_LOG_STREAMS(stream1_, stream2_) \
+    silkworm::log_set_streams_((stream1_), (stream2_));
+
+// silence
+std::ostream& null_stream();
+
+//
+// Below are for access via macros ONLY.
+// Placing them in detail namespace prevents use of macros in nested namespaces of silkworm :(
+//
+extern LogLevels log_verbosity_;
+void log_set_streams_(std::ostream & o1, std::ostream & o2);
+class log_ {
   public:
-    explicit Logger(std::ostream& o1 = std::cerr, std::ostream& o2 = Logger::null_stream()) : stream_(o1, o2) {}
-
-    LogLevels verbosity{LogInfo};
-
-    void set_local_timezone(bool local) noexcept { timezone_ = local ? absl::LocalTimeZone() : absl::UTCTimeZone(); }
-
-    std::ostream& log(LogLevels level) {
-        return stream_ << kLogTags[level] << "[" << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), timezone_)
-                       << "] ";
+    log_(LogLevels level_) : level_(level_) { log_mtx_.lock(); }
+    ~log_() { log_mtx_.unlock(); }
+    std::ostream& header_(LogLevels);
+    template <class T> std::ostream& operator<< (const T & message) {
+        return header_(level_) << message;
     }
-
-    static Logger& default_logger() noexcept;
-    static std::ostream& null_stream();
-
   private:
-    teestream stream_;
-    absl::TimeZone timezone_{absl::UTCTimeZone()};
-    static constexpr char const kLogTags[7][6] = {
-        "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE",
-    };
+    LogLevels level_;
+    static std::mutex log_mtx_;
 };
-
-#define SILKWORM_LOG_TO(logger_, level_)  \
-    if ((level_) < (logger_).verbosity) { \
-    } else                                \
-        (logger_).log((level_))
-
-// Example usage:
-// SILKWORM_LOG(LogInfo) << "All your " << num_bases << " base are belong to us\n";
-#define SILKWORM_LOG(level_) SILKWORM_LOG_TO(Logger::default_logger(), (level_))
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_LOG_H_
+#endif	// SILKWORM_COMMON_LOG_H_

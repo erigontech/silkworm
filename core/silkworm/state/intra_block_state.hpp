@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_H_
-#define SILKWORM_STATE_INTRA_BLOCK_STATE_H_
+#ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_
+#define SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_
 
 #include <robin_hood.h>
 
@@ -57,7 +57,7 @@ class IntraBlockState {
     bool exists(const evmc::address& address) const noexcept;
 
     // https://eips.ethereum.org/EIPS/eip-161
-    bool dead(const evmc::address& address) const noexcept;
+    bool is_dead(const evmc::address& address) const noexcept;
 
     void create_contract(const evmc::address& address) noexcept;
 
@@ -72,12 +72,18 @@ class IntraBlockState {
     void add_to_balance(const evmc::address& address, const intx::uint256& addend) noexcept;
     void subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend) noexcept;
 
+    void touch(const evmc::address& address) noexcept;
+
     uint64_t get_nonce(const evmc::address& address) const noexcept;
     void set_nonce(const evmc::address& address, uint64_t nonce) noexcept;
 
     ByteView get_code(const evmc::address& address) const noexcept;
     evmc::bytes32 get_code_hash(const evmc::address& address) const noexcept;
     void set_code(const evmc::address& address, Bytes code) noexcept;
+
+    evmc_access_status access_account(const evmc::address& address) noexcept;
+
+    evmc_access_status access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept;
 
     evmc::bytes32 get_current_storage(const evmc::address& address, const evmc::bytes32& key) const noexcept;
 
@@ -113,18 +119,21 @@ class IntraBlockState {
     friend class state::StorageChangeDelta;
     friend class state::StorageWipeDelta;
     friend class state::StorageCreateDelta;
+    friend class state::StorageAccessDelta;
+    friend class state::AccountAccessDelta;
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key, bool original) const noexcept;
 
     state::Object* get_object(const evmc::address& address) const noexcept;
     state::Object& get_or_create_object(const evmc::address& address) noexcept;
 
-    void touch(const evmc::address& address) noexcept;
-
     StateBuffer& db_;
 
     mutable robin_hood::unordered_flat_map<evmc::address, state::Object> objects_;
     mutable robin_hood::unordered_flat_map<evmc::address, state::Storage> storage_;
+
+    // we want pointer stability here, thus node map
+    mutable robin_hood::unordered_node_map<evmc::bytes32, Bytes> code_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 
@@ -133,8 +142,11 @@ class IntraBlockState {
     std::vector<Log> logs_;
     robin_hood::unordered_flat_set<evmc::address> touched_;
     uint64_t refund_{0};
+    // EIP-2929 substate
+    robin_hood::unordered_flat_set<evmc::address> accessed_addresses_;
+    robin_hood::unordered_flat_map<evmc::address, robin_hood::unordered_flat_set<evmc::bytes32>> accessed_storage_keys_;
 };
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_STATE_INTRA_BLOCK_STATE_H_
+#endif  // SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_

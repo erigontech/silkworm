@@ -18,8 +18,8 @@
 
 #include <cstdlib>
 #include <silkworm/chain/difficulty.hpp>
+#include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/execution/processor.hpp>
 
 void* new_buffer(size_t size) { return std::malloc(size); }
 
@@ -109,7 +109,7 @@ void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_tim
 Transaction* new_transaction(const Bytes* rlp) {
     ByteView view{*rlp};
     auto txn{new Transaction};
-    if (rlp::decode(view, *txn) == rlp::DecodingError::kOk && view.empty()) {
+    if (rlp::decode(view, *txn) == rlp::DecodingResult::kOk && view.empty()) {
         return txn;
     } else {
         delete txn;
@@ -124,12 +124,8 @@ bool check_intrinsic_gas(const Transaction* txn, bool homestead, bool istanbul) 
     return txn->gas_limit >= g0;
 }
 
-const uint8_t* recover_sender(Transaction* txn, bool homestead, uint64_t chain_id) {
-    if (chain_id == 0) {
-        txn->recover_sender(homestead, std::nullopt);
-    } else {
-        txn->recover_sender(homestead, chain_id);
-    }
+const uint8_t* recover_sender(Transaction* txn) {
+    txn->recover_sender();
     return txn->from ? txn->from->bytes : nullptr;
 }
 
@@ -158,7 +154,7 @@ uint8_t* account_code_hash(Account* a) { return a->code_hash.bytes; }
 Block* new_block(const Bytes* rlp) {
     ByteView view{*rlp};
     auto block{new Block};
-    if (rlp::decode(view, *block) == rlp::DecodingError::kOk && view.empty()) {
+    if (rlp::decode(view, *block) == rlp::DecodingResult::kOk && view.empty()) {
         return block;
     } else {
         delete block;
@@ -170,11 +166,11 @@ void delete_block(Block* x) { delete x; }
 
 BlockHeader* block_header(Block* b) { return &(b->header); }
 
-void block_recover_senders(Block* b, const ChainConfig* config) { b->recover_senders(*config); }
+uint64_t header_number(const BlockHeader* header) { return header->number; }
 
-ValidationError block_execute(Block* b, StateBuffer* state, const ChainConfig* config) {
-    return execute_block(*b, *state, *config).second;
-}
+uint8_t* header_state_root(BlockHeader* header) { return header->state_root.bytes; }
+
+void block_recover_senders(Block* b) { b->recover_senders(); }
 
 MemoryBuffer* new_state() { return new MemoryBuffer; }
 
@@ -190,6 +186,12 @@ uint8_t* state_root_hash_new(const MemoryBuffer* state) {
 static evmc::address address_from_ptr(const uint8_t* ptr) { return to_address({ptr, kAddressLength}); }
 
 static evmc::bytes32 bytes32_from_ptr(const uint8_t* ptr) { return to_bytes32({ptr, kHashLength}); }
+
+size_t state_number_of_accounts(const MemoryBuffer* state) { return state->number_of_accounts(); }
+
+size_t state_storage_size(const MemoryBuffer* state, const uint8_t* address, const Account* account) {
+    return state->storage_size(address_from_ptr(address), account->incarnation);
+}
 
 Account* state_read_account_new(const StateBuffer* state, const uint8_t* address) {
     std::optional<Account> account{state->read_account(address_from_ptr(address))};
@@ -216,8 +218,6 @@ Bytes* state_read_storage_new(const StateBuffer* state, const uint8_t* address, 
     return out;
 }
 
-void state_insert_header(StateBuffer* state, const BlockHeader* header) { state->insert_header(*header); }
-
 void state_update_account(StateBuffer* state, const uint8_t* address, const Account* current_ptr) {
     std::optional<Account> current_opt;
     if (current_ptr) {
@@ -234,6 +234,16 @@ void state_update_storage(StateBuffer* state, const uint8_t* address, const Acco
                           const Bytes* value) {
     state->update_storage(address_from_ptr(address), account->incarnation, to_bytes32(*location), /*initial=*/{},
                           to_bytes32(*value));
+}
+
+Blockchain* new_blockchain(StateBuffer* state, const ChainConfig* config, const Block* genesis_block) {
+    return new Blockchain{*state, *config, *genesis_block};
+}
+
+void delete_blockchain(Blockchain* x) { delete x; }
+
+ValidationResult blockchain_insert_block(Blockchain* chain, Block* block, bool check_state_root) {
+    return chain->insert_block(*block, check_state_root);
 }
 
 int main() { return 0; }

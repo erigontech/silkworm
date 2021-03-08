@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include <silkworm/execution/execution.hpp>
 
 using namespace evmc::literals;
+using namespace silkworm;
 
 // Non-existing accounts only touched by zero-value internal transactions:
 // e.g. https://etherscan.io/address/0x000000000000000000636f6e736f6c652e6c6f67
@@ -36,9 +37,21 @@ static const absl::flat_hash_set<evmc::address> kPhantomAccounts{
     0x5a719cf3e02c17c876f6d294adb5cb7c6eb47e2f_address,
 };
 
-ABSL_FLAG(std::string, datadir, silkworm::db::default_path(), "chain DB path");
+ABSL_FLAG(std::string, datadir, db::default_path(), "chain DB path");
 ABSL_FLAG(uint64_t, from, 1, "start from block number (inclusive)");
 ABSL_FLAG(uint64_t, to, UINT64_MAX, "check up to block number (exclusive)");
+
+static void print_storage_changes(const db::StorageChanges& s) {
+    for (const auto& [address, x] : s) {
+        std::cout << to_hex(address) << "\n";
+        for (const auto& [incarnation, changes] : x) {
+            std::cout << "  " << incarnation << "\n";
+            for (const auto& [location, value] : changes) {
+                std::cout << "    " << to_hex(location) << " = " << to_hex(value) << "\n";
+            }
+        }
+    }
+}
 
 int main(int argc, char* argv[]) {
     absl::SetProgramUsageMessage("Executes Ethereum blocks and compares resulting change sets against DB.");
@@ -55,8 +68,6 @@ int main(int argc, char* argv[]) {
 
     absl::Time t1{absl::Now()};
     std::cout << t1 << " Checking change sets in " << absl::GetFlag(FLAGS_datadir) << "\n";
-
-    using namespace silkworm;
 
     lmdb::DatabaseConfig db_config{absl::GetFlag(FLAGS_datadir)};
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
@@ -78,7 +89,11 @@ int main(int argc, char* argv[]) {
 
         db::Buffer buffer{txn.get(), block_num};
 
-        execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool);
+        ValidationResult err{execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool).second};
+        if (err != ValidationResult::kOk) {
+            std::cerr << "Failed to execute block " << block_num << "\n";
+            continue;
+        }
 
         db::AccountChanges db_account_changes{db::read_account_changes(*txn, block_num)};
         const db::AccountChanges& calculated_account_changes{buffer.account_changes().at(block_num)};
@@ -118,6 +133,9 @@ int main(int argc, char* argv[]) {
         }
         if (calculated_storage_changes != db_storage_changes) {
             std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";
+            print_storage_changes(calculated_storage_changes);
+            std::cout << "vs\n";
+            print_storage_changes(db_storage_changes);
         }
 
         if (block_num % 1000 == 0) {

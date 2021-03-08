@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_PROCESSOR_H_
-#define SILKWORM_EXECUTION_PROCESSOR_H_
+#ifndef SILKWORM_EXECUTION_PROCESSOR_HPP_
+#define SILKWORM_EXECUTION_PROCESSOR_HPP_
 
 #include <stdint.h>
 
+#include <silkworm/chain/validity.hpp>
 #include <silkworm/execution/evm.hpp>
-#include <silkworm/execution/execution.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
 #include <silkworm/types/transaction.hpp>
@@ -36,14 +36,16 @@ class ExecutionProcessor {
 
     ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config = kMainnetConfig);
 
-    // precondition: txn.from must be recovered, otherwise kMissingSender will be returned
-    ValidationError validate_transaction(const Transaction& txn) const noexcept;
+    // Preconditions:
+    // 1) pre_validate_transaction(txn) must return kOk
+    // 2) txn.from must be recovered, otherwise kMissingSender will be returned
+    ValidationResult validate_transaction(const Transaction& txn) const noexcept;
 
     // precondition: transaction must be valid
     Receipt execute_transaction(const Transaction& txn) noexcept;
 
     /// Execute the block, but do not write to the DB yet
-    std::pair<std::vector<Receipt>, ValidationError> execute_block() noexcept;
+    [[nodiscard]] std::pair<std::vector<Receipt>, ValidationResult> execute_block() noexcept;
 
     uint64_t cumulative_gas_used() const noexcept { return cumulative_gas_used_; }
 
@@ -60,10 +62,6 @@ class ExecutionProcessor {
     EVM evm_;
 };
 
-// Returns the intrinsic gas of a transaction.
-// Refer to g0 in Section 6.2 "Execution" of the Yellow Paper.
-intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept;
-
 }  // namespace silkworm
 
-#endif  // SILKWORM_EXECUTION_PROCESSOR_H_
+#endif  // SILKWORM_EXECUTION_PROCESSOR_HPP_

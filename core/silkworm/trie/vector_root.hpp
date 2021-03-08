@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TRIE_VECTOR_ROOT_H_
-#define SILKWORM_TRIE_VECTOR_ROOT_H_
+#ifndef SILKWORM_TRIE_VECTOR_ROOT_HPP_
+#define SILKWORM_TRIE_VECTOR_ROOT_HPP_
 
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/trie/hash_builder.hpp>
@@ -36,8 +36,8 @@ inline size_t adjust_index_for_rlp(size_t i, size_t len) {
 
 // Trie root hash of RLP-encoded values, the keys are RLP-encoded integers.
 // See Section 4.3.2. "Holistic Validity" of the Yellow Paper.
-template <class T>
-evmc::bytes32 root_hash(const std::vector<T>& v) {
+template <class Value, typename Encoder>
+evmc::bytes32 root_hash(const std::vector<Value>& v, Encoder value_encoder) {
     if (v.empty()) {
         return kEmptyRoot;
     }
@@ -47,7 +47,7 @@ evmc::bytes32 root_hash(const std::vector<T>& v) {
 
     size_t index{adjust_index_for_rlp(0, v.size())};
     rlp::encode(index_rlp, index);
-    rlp::encode(value_rlp, v[index]);
+    value_encoder(value_rlp, v[index]);
 
     HashBuilder hb{index_rlp, value_rlp};
 
@@ -56,13 +56,14 @@ evmc::bytes32 root_hash(const std::vector<T>& v) {
         index_rlp.clear();
         rlp::encode(index_rlp, index);
         value_rlp.clear();
-        rlp::encode(value_rlp, v[index]);
+        value_encoder(value_rlp, v[index]);
 
         hb.add(index_rlp, value_rlp);
     }
 
     return hb.root_hash();
 }
+
 }  // namespace silkworm::trie
 
-#endif  // SILKWORM_TRIE_VECTOR_ROOT_H_
+#endif  // SILKWORM_TRIE_VECTOR_ROOT_HPP_

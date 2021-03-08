@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 // RLP encoding functions as per
 // https://eth.wiki/en/fundamentals/rlp
 
-#ifndef SILKWORM_RLP_ENCODE_H_
-#define SILKWORM_RLP_ENCODE_H_
+#ifndef SILKWORM_RLP_ENCODE_HPP_
+#define SILKWORM_RLP_ENCODE_HPP_
 
 #include <array>
 #include <gsl/span>
@@ -33,6 +33,7 @@ struct BlockBody;
 struct BlockHeader;
 struct Log;
 struct Receipt;
+struct AccessListEntry;
 struct Transaction;
 
 namespace rlp {
@@ -42,8 +43,8 @@ namespace rlp {
         uint64_t payload_length{0};
     };
 
-    constexpr uint8_t kEmptyStringCode = 0x80;
-    constexpr uint8_t kEmptyListCode = 0xC0;
+    constexpr uint8_t kEmptyStringCode{0x80};
+    constexpr uint8_t kEmptyListCode{0xC0};
 
     void encode_header(Bytes& to, Header header);
 
@@ -73,6 +74,7 @@ namespace rlp {
     void encode(Bytes& to, const BlockHeader&);
     void encode(Bytes& to, const Log&);
     void encode(Bytes& to, const Receipt&);
+    void encode(Bytes& to, const AccessListEntry&);
     void encode(Bytes& to, const Transaction&);
 
     size_t length_of_length(uint64_t payload_length);
@@ -85,6 +87,7 @@ namespace rlp {
 
     size_t length(const BlockHeader&);
     size_t length(const Log&);
+    size_t length(const AccessListEntry&);
     size_t length(const Transaction&);
 
     template <class T>
@@ -116,6 +119,7 @@ namespace rlp {
     // which must be consumed prior to the next invocation.
     ByteView big_endian(const intx::uint256& n);
 }  // namespace rlp
+
 }  // namespace silkworm
 
-#endif  // SILKWORM_RLP_ENCODE_H_
+#endif  // SILKWORM_RLP_ENCODE_HPP_

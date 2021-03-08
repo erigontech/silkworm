@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ class Buffer : public StateBuffer {
 
     /** @name Readers */
     ///@{
+
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
     Bytes read_code(const evmc::bytes32& code_hash) const noexcept override;
@@ -52,9 +53,25 @@ class Buffer : public StateBuffer {
 
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
+
+    std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
+
+    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
+                                                  const evmc::bytes32& block_hash) const noexcept override;
+
+    evmc::bytes32 state_root_hash() const override;
+
+    uint64_t current_canonical_block() const override;
+
+    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
+
     ///@}
 
-    void insert_header(const BlockHeader& block_header) override;
+    void insert_block(const Block& block, const evmc::bytes32& hash) override;
+
+    void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override;
+
+    void decanonize_block(uint64_t block_number) override;
 
     void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
 
@@ -62,6 +79,7 @@ class Buffer : public StateBuffer {
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
      */
     ///@{
+
     /** Mark the beggining of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
      */
@@ -75,6 +93,9 @@ class Buffer : public StateBuffer {
 
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
+
+    void unwind_state_changes(uint64_t block_number) override;
+
     ///@}
 
     /// Account (backward) changes per block
@@ -97,6 +118,9 @@ class Buffer : public StateBuffer {
     std::optional<uint64_t> historical_block_{};
 
     absl::btree_map<Bytes, BlockHeader> headers_{};
+    absl::btree_map<Bytes, BlockBody> bodies_{};
+    absl::btree_map<Bytes, intx::uint256> difficulty_{};
+
     absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
 
     // address -> incarnation -> location -> value

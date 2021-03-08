@@ -67,32 +67,98 @@ uint64_t MemoryBuffer::previous_incarnation(const evmc::address& address) const 
 
 std::optional<BlockHeader> MemoryBuffer::read_header(uint64_t block_number,
                                                      const evmc::bytes32& block_hash) const noexcept {
-    auto it1{headers_.find(block_number)};
-    if (it1 == headers_.end()) {
+    if (block_number >= headers_.size()) {
         return std::nullopt;
     }
-    auto it2{it1->second.find(block_hash)};
-    if (it2 == it1->second.end()) {
+
+    auto it{headers_[block_number].find(block_hash)};
+    if (it == headers_[block_number].end()) {
         return std::nullopt;
     }
-    return it2->second;
+    return it->second;
 }
 
-void MemoryBuffer::insert_header(const BlockHeader& block_header) {
-    Bytes rlp;
-    rlp::encode(rlp, block_header);
-    ethash::hash256 hash{keccak256(rlp)};
-    evmc::bytes32 hash_key;
-    std::memcpy(hash_key.bytes, hash.bytes, kHashLength);
-    headers_[block_header.number][hash_key] = block_header;
+std::optional<BlockBody> MemoryBuffer::read_body(uint64_t block_number,
+                                                 const evmc::bytes32& block_hash) const noexcept {
+    if (block_number >= bodies_.size()) {
+        return std::nullopt;
+    }
+
+    auto it{bodies_[block_number].find(block_hash)};
+    if (it == bodies_[block_number].end()) {
+        return std::nullopt;
+    }
+    return it->second;
 }
+
+std::optional<intx::uint256> MemoryBuffer::total_difficulty(uint64_t block_number,
+                                                            const evmc::bytes32& block_hash) const noexcept {
+    if (block_number >= difficulty_.size()) {
+        return std::nullopt;
+    }
+
+    auto it{difficulty_[block_number].find(block_hash)};
+    if (it == difficulty_[block_number].end()) {
+        return std::nullopt;
+    }
+    return it->second;
+}
+
+uint64_t MemoryBuffer::current_canonical_block() const { return canonical_hashes_.size() - 1; }
+
+std::optional<evmc::bytes32> MemoryBuffer::canonical_hash(uint64_t block_number) const {
+    if (block_number >= canonical_hashes_.size()) {
+        return std::nullopt;
+    }
+
+    return canonical_hashes_[block_number];
+}
+
+void MemoryBuffer::insert_block(const Block& block, const evmc::bytes32& hash) {
+    uint64_t block_number{block.header.number};
+
+    if (headers_.size() <= block_number) {
+        headers_.resize(block_number + 1);
+    }
+    headers_[block_number][hash] = block.header;
+
+    if (bodies_.size() <= block_number) {
+        bodies_.resize(block_number + 1);
+    }
+    bodies_[block_number][hash] = block;
+
+    if (difficulty_.size() <= block_number) {
+        difficulty_.resize(block_number + 1);
+    }
+    if (block_number == 0) {
+        difficulty_[block_number][hash] = 0;
+    } else {
+        difficulty_[block_number][hash] = difficulty_[block_number - 1][block.header.parent_hash];
+    }
+    difficulty_[block_number][hash] += block.header.difficulty;
+}
+
+void MemoryBuffer::canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) {
+    if (canonical_hashes_.size() <= block_number) {
+        canonical_hashes_.resize(block_number + 1);
+    }
+    canonical_hashes_[block_number] = block_hash;
+}
+
+void MemoryBuffer::decanonize_block(uint64_t block_number) { canonical_hashes_.resize(block_number); }
 
 void MemoryBuffer::insert_receipts(uint64_t, const std::vector<Receipt>&) {}
 
-void MemoryBuffer::begin_block(uint64_t) {}
+void MemoryBuffer::begin_block(uint64_t block_number) {
+    block_number_ = block_number;
+    account_changes_.erase(block_number);
+    storage_changes_.erase(block_number);
+}
 
 void MemoryBuffer::update_account(const evmc::address& address, std::optional<Account> initial,
                                   std::optional<Account> current) {
+    account_changes_[block_number_][address] = initial;
+
     if (current) {
         accounts_[address] = *current;
     } else {
@@ -108,12 +174,51 @@ void MemoryBuffer::update_account_code(const evmc::address&, uint64_t, const evm
 }
 
 void MemoryBuffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
-                                  const evmc::bytes32&, const evmc::bytes32& current) {
+                                  const evmc::bytes32& initial, const evmc::bytes32& current) {
+    storage_changes_[block_number_][address][incarnation][location] = initial;
+
     if (is_zero(current)) {
         storage_[address][incarnation].erase(location);
     } else {
         storage_[address][incarnation][location] = current;
     }
+}
+
+void MemoryBuffer::unwind_state_changes(uint64_t block_number) {
+    for (const auto& [address, account] : account_changes_[block_number]) {
+        if (account) {
+            accounts_[address] = *account;
+        } else {
+            accounts_.erase(address);
+        }
+    }
+
+    for (const auto& [address, storage1] : storage_changes_[block_number]) {
+        for (const auto& [incarnation, storage2] : storage1) {
+            for (const auto& [location, value] : storage2) {
+                if (is_zero(value)) {
+                    storage_[address][incarnation].erase(location);
+                } else {
+                    storage_[address][incarnation][location] = value;
+                }
+            }
+        }
+    }
+}
+
+size_t MemoryBuffer::number_of_accounts() const { return accounts_.size(); }
+
+size_t MemoryBuffer::storage_size(const evmc::address& address, uint64_t incarnation) const {
+    auto it1{storage_.find(address)};
+    if (it1 == storage_.end()) {
+        return 0;
+    }
+    auto it2{it1->second.find(incarnation)};
+    if (it2 == it1->second.end()) {
+        return 0;
+    }
+
+    return it2->second.size();
 }
 
 // https://eth.wiki/fundamentals/patricia-tree#storage-trie
@@ -157,14 +262,10 @@ evmc::bytes32 MemoryBuffer::state_root_hash() const {
     }
 
     std::map<evmc::bytes32, Bytes> account_rlp;
-    Bytes rlp;
     for (const auto& [address, account] : accounts_) {
         ethash::hash256 hash{keccak256(full_view(address))};
-        Account copy{account};
-        copy.storage_root = account_storage_root(address, account.incarnation);
-        rlp.clear();
-        rlp::encode(rlp, copy);
-        account_rlp[to_bytes32(full_view(hash.bytes))] = rlp;
+        evmc::bytes32 storage_root{account_storage_root(address, account.incarnation)};
+        account_rlp[to_bytes32(full_view(hash.bytes))] = account.rlp(storage_root);
     }
 
     auto it{account_rlp.cbegin()};

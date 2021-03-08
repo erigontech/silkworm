@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,3 +16,17 @@
 
 hunter_config(Boost VERSION 1.72.0-p1)    # <-- Highest available on hunter
 hunter_config(abseil VERSION 20200923.2)  # <-- Required for C++20
+
+hunter_config(
+  Catch
+  VERSION 2.13.4
+  URL https://github.com/catchorg/Catch2/archive/v2.13.4.tar.gz
+  SHA1 b8417c5c87ab385c9f56576aefbcc098fb923e57
+)
+
+hunter_config(
+  intx
+  VERSION 0.5.1
+  URL https://github.com/chfast/intx/archive/v0.5.1.tar.gz
+  SHA1 743c46a82750143bd302a4394b7008a2112fc97b
+)

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,94 +16,60 @@
 
 #include "processor.hpp"
 
-#include <algorithm>
-#include <ethash/keccak.hpp>
-#include <intx/int128.hpp>
-#include <iostream>
 #include <silkworm/chain/dao.hpp>
-#include <utility>
+#include <silkworm/chain/intrinsic_gas.hpp>
+#include <silkworm/chain/protocol_param.hpp>
 
 #include "execution.hpp"
-#include "protocol_param.hpp"
 
 namespace silkworm {
-
-intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept {
-    intx::uint128 gas{fee::kGTransaction};
-    if (!txn.to && homestead) {
-        gas += fee::kGTxCreate;
-    }
-
-    if (txn.data.empty()) {
-        return gas;
-    }
-
-    intx::uint128 non_zero_bytes{std::count_if(txn.data.begin(), txn.data.end(), [](char c) { return c != 0; })};
-
-    uint64_t nonZeroGas{istanbul ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
-    gas += non_zero_bytes * nonZeroGas;
-
-    intx::uint128 zero_bytes{txn.data.length() - non_zero_bytes};
-    gas += zero_bytes * fee::kGTxDataZero;
-
-    return gas;
-}
 
 ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config)
     : evm_{block, state, config} {}
 
-/*
-static void print_gas_used(const Transaction& txn, uint64_t gas_used) {
-    Bytes rlp{};
-    rlp::encode(rlp, txn);
-    ethash::hash256 hash{keccak256(rlp)};
-    std::cout << "0x" << to_hex(full_view(hash.bytes)) << " " << gas_used << "\n";
-}
-*/
-
-ValidationError ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
+ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
     if (!txn.from) {
-        return ValidationError::kMissingSender;
+        return ValidationResult::kMissingSender;
     }
 
     const IntraBlockState& state{evm_.state()};
     uint64_t nonce{state.get_nonce(*txn.from)};
     if (nonce != txn.nonce) {
-        return ValidationError::kInvalidNonce;
-    }
-
-    uint64_t block_number{evm_.block().header.number};
-    bool homestead{evm_.config().has_homestead(block_number)};
-    bool istanbul{evm_.config().has_istanbul(block_number)};
-
-    intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
-    if (txn.gas_limit < g0) {
-        return ValidationError::kIntrinsicGas;
+        return ValidationResult::kWrongNonce;
     }
 
     intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price)};
     intx::uint512 v0{gas_cost + txn.value};
 
     if (state.get_balance(*txn.from) < v0) {
-        return ValidationError::kInsufficientFunds;
+        return ValidationResult::kInsufficientFunds;
     }
 
     if (available_gas() < txn.gas_limit) {
-        return ValidationError::kBlockGasLimitReached;
+        return ValidationResult::kBlockGasLimitReached;
     }
 
-    return ValidationError::kOk;
+    return ValidationResult::kOk;
 }
 
 Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept {
     IntraBlockState& state{evm_.state()};
+    evm_.state().clear_journal_and_substate();
+
+    state.access_account(*txn.from);
     state.subtract_from_balance(*txn.from, txn.gas_limit * txn.gas_price);
     if (txn.to) {
+        state.access_account(*txn.to);
         // EVM itself increments the nonce for contract creation
         state.set_nonce(*txn.from, txn.nonce + 1);
     }
 
-    evm_.state().clear_journal_and_substate();
+    for (const AccessListEntry& ae : txn.access_list) {
+        state.access_account(ae.account);
+        for (const evmc::bytes32& key : ae.storage_keys) {
+            state.access_storage(ae.account, key);
+        }
+    }
 
     uint64_t block_number{evm_.block().header.number};
     bool homestead{evm_.config().has_homestead(block_number)};
@@ -127,6 +93,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     cumulative_gas_used_ += gas_used;
 
     return {
+        txn.type,                         // type
         vm_res.status == EVMC_SUCCESS,    // success
         cumulative_gas_used_,             // cumulative_gas_used
         logs_bloom(evm_.state().logs()),  // bloom
@@ -145,7 +112,7 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
     return gas_left;
 }
 
-std::pair<std::vector<Receipt>, ValidationError> ExecutionProcessor::execute_block() noexcept {
+std::pair<std::vector<Receipt>, ValidationResult> ExecutionProcessor::execute_block() noexcept {
     std::vector<Receipt> receipts{};
 
     uint64_t block_num{evm_.block().header.number};
@@ -155,8 +122,8 @@ std::pair<std::vector<Receipt>, ValidationError> ExecutionProcessor::execute_blo
 
     cumulative_gas_used_ = 0;
     for (const Transaction& txn : evm_.block().transactions) {
-        ValidationError err{validate_transaction(txn)};
-        if (err != ValidationError::kOk) {
+        ValidationResult err{validate_transaction(txn)};
+        if (err != ValidationResult::kOk) {
             return {receipts, err};
         }
         receipts.push_back(execute_transaction(txn));
@@ -164,13 +131,7 @@ std::pair<std::vector<Receipt>, ValidationError> ExecutionProcessor::execute_blo
 
     apply_rewards();
 
-    // See Yellow Paper, Appendix K "Anomalies on the Main Network"
-    if (block_num == evm_.config().ripemd_deletion_block) {
-        static constexpr evmc::address kRipemdAddress{0x0000000000000000000000000000000000000003_address};
-        evm_.state().destruct(kRipemdAddress);
-    }
-
-    return {receipts, ValidationError::kOk};
+    return {receipts, ValidationResult::kOk};
 }
 
 void ExecutionProcessor::apply_rewards() noexcept {

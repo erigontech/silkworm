@@ -14,10 +14,11 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_EXECUTION_H_
-#define SILKWORM_EXECUTION_EXECUTION_H_
+#ifndef SILKWORM_EXECUTION_EXECUTION_HPP_
+#define SILKWORM_EXECUTION_EXECUTION_HPP_
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/chain/validity.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
 #include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/buffer.hpp>
@@ -27,34 +28,21 @@
 
 namespace silkworm {
 
-// Classification of invalid transcations and blocks.
-// See Yellow Paper [YP], Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
-// 6.2 "Execution", and 11 "Block Finalisation".
-enum class ValidationError {
-    kOk = 0,
-    kMissingSender,         // S(T) = ∅,           see [YP] Eq (58)
-    kInvalidNonce,          // Tn ≠ σ[S(T)]n,      see [YP] Eq (58)
-    kIntrinsicGas,          // g0 > Tg,            see [YP] Eq (58)
-    kInsufficientFunds,     // v0 > σ[S(T)]b,      see [YP] Eq (58)
-    kBlockGasLimitReached,  // Tg > BHl - l(BR)u,  see [YP] Eq (58)
-    kBlockGasMismatch,      // BHg  ≠ l(BR)u,      see [YP] Eq (160)
-    kReceiptRootMismatch,   // wrong receipt root, see [YP] Eq (31)
-};
-
 /** @brief Executes a given block and writes resulting changes into the database.
  *
  * Transaction senders must be already populated.
- * The DB table kCurrentState should match the Ethereum state at the begining of the block.
+ * kPlainState DB table (+auxilary tables) should match the Ethereum state at the begining of the block.
  *
- * Warning: This method does not verify state root.
+ * Warning: This method does not verify state root;
+ * pre-Byzantium receipt root isn't validated either.
  *
  * For better performance use AnalysisCache & ExecutionStatePool.
  */
-std::pair<std::vector<Receipt>, ValidationError> execute_block(const Block& block, StateBuffer& buffer,
-                                                               const ChainConfig& config = kMainnetConfig,
-                                                               AnalysisCache* analysis_cache = nullptr,
-                                                               ExecutionStatePool* state_pool = nullptr) noexcept;
+[[nodiscard]] std::pair<std::vector<Receipt>, ValidationResult> execute_block(
+    const Block& block, StateBuffer& buffer, const ChainConfig& config = kMainnetConfig,
+    AnalysisCache* analysis_cache = nullptr, ExecutionStatePool* state_pool = nullptr,
+    evmc_vm* exo_evm = nullptr) noexcept;
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_EXECUTION_EXECUTION_H_
+#endif  // SILKWORM_EXECUTION_EXECUTION_HPP_

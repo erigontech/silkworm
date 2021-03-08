@@ -72,7 +72,7 @@ class RecoveryWorker final : public silkworm::Worker {
     struct package {
         uint64_t block_num;
         ethash::hash256 hash;
-        uint8_t recovery_id;
+        bool odd_y_parity;
         uint8_t signature[64];
     };
 
@@ -861,7 +861,7 @@ int main(int argc, char* argv[]) {
     Logger::default_logger().verbosity = options.debug ? LogLevels::LogDebug : Logger::default_logger().verbosity;
 
     if (options.debug) {
-        Logger::default_logger().verbosity = LogLevels::LogTrace;
+        SILKWORM_LOG_VERBOSITY(LogTrace);
     }
 
     auto lmdb_mapSize{parse_size(mapSizeStr)};

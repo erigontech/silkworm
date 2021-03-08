@@ -20,9 +20,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/signals2.hpp>
+#include <boost/format.hpp>
 #include <csignal>
 #include <ethash/keccak.hpp>
-#include <iostream>
 #include <queue>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
@@ -241,39 +241,39 @@ class RecoveryFarm final
      * @param height_from : Lower boundary for blocks to process (included)
      * @param height_to   : Upper boundary for blocks to process (included)
      */
-    Status recover(ChainConfig config, uint64_t height_from, uint64_t height_to) {
+    Status recover(ChainConfig config, uint64_t height_from, uint64_t height_to, bool force) {
         Status ret{Status::Succeded};
         try {
-            if (height_from > height_to) {
-                return Status::InvalidRange;
-            }
 
-            auto headers_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kHeadersKey)};
-            auto blocks_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kBlockBodiesKey)};
+            // Retrieve previous stage height
             auto senders_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kSendersKey)};
-
-            // We need to have headers and blocks to proceed
-            if (headers_stage_height < height_from || blocks_stage_height < height_from) {
-                // We actually don't have anything to recover
-                return Status::Succeded;
+            if (height_from > (senders_stage_height + 1)) {
+                height_from = (senders_stage_height + 1);
+            }
+            if (height_from <= senders_stage_height) {
+                if (force) {
+                    uint64_t new_height{height_from ? height_from - 1 : height_from};
+                    Status ret_status = unwind(new_height);
+                    if (ret_status != Status::Succeded) {
+                        return ret_status;
+                    }
+                    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
+                } else {
+                    height_from = senders_stage_height + 1;
+                }
             }
 
             if (height_to == UINT64_MAX) {
-                height_to = std::min(headers_stage_height, blocks_stage_height);
-            }
-
-            if (headers_stage_height < height_to || blocks_stage_height < height_to) {
-                return Status::PrevStagesInadequate;
-            }
-
-            // Sanity checks
-            if (height_from <= senders_stage_height) {
-                uint64_t new_height{height_from ? height_from - 1 : height_from};
-                Status ret_status = unwind(new_height);
-                if (ret_status != Status::Succeded) {
-                    return ret_status;
+                auto blocks_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kBlockBodiesKey)};
+                height_to = blocks_stage_height;
+                if (height_to < height_from) {
+                    // We actually don't need to recover anything
+                    return Status::Succeded;
                 }
-                db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
+            }
+
+            if (height_from > height_to) {
+                return Status::InvalidRange;
             }
 
             // Load canonical headers
@@ -298,7 +298,7 @@ class RecoveryFarm final
             uint64_t block_num{0};                     // Block number being processed
             uint64_t expected_block_num{height_from};  // Expected block number in sequence
 
-            SILKWORM_LOG(LogLevels::LogInfo) << "Scanning block bodies ... " << std::endl;
+            SILKWORM_LOG(LogLevels::LogDebug) << "Begin read block bodies ... " << std::endl;
             auto bodies_table{db_transaction_.open(db::table::kBlockBodies)};
             auto transactions_table{db_transaction_.open(db::table::kEthTx)};
 
@@ -368,12 +368,12 @@ class RecoveryFarm final
                 lmdb::err_handler(rc);
             }
 
+            SILKWORM_LOG(LogLevels::LogDebug) << "End   read block bodies ... " << std::endl;
+
             if (!should_stop()) {
                 dispatch_batch();  // Dispatch residual work
             } else {
-                for (auto& worker : workers_) {
-                    worker->stop(/*wait =*/true);
-                }
+                stop_all_workers();
             }
 
         } catch (const lmdb::exception& ex) {
@@ -384,19 +384,32 @@ class RecoveryFarm final
             ret = Status::RecoveryError;
         }
 
-        // Wait for all threads to stop
-        do {
-            auto it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
-                return w->get_status() == RecoveryWorker::Status::Working;
-            });
-            if (it == workers_.end()) {
-                break;
+        // If everything ok from previous steps wait for all workers to complete
+        // and bufferize results
+        if (!static_cast<int>(ret))
+        {
+            wait_workers_completion();
+            bufferize_workers_results();
+            if (collector_.size() && !should_stop()) {
+                try {
+                    // Prepare target table
+                    auto target_table = db_transaction_.open(db::table::kSenders, MDB_CREATE);
+                    SILKWORM_LOG(LogLevels::LogInfo) << "ETL Load [2/2] : Loading data into " << target_table->get_name() << std::endl;
+                    collector_.load(
+                        target_table.get(), nullptr, MDB_APPEND,
+                        /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 0 : 20));
+                    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block_);
+                } catch (const lmdb::exception& ex) {
+                    SILKWORM_LOG(LogLevels::LogError) << "Senders' recovery : Database error " << ex.what() << std::endl;
+                    ret = Status::DatabaseError;
+                } catch (const std::exception& ex) {
+                    SILKWORM_LOG(LogLevels::LogError) << "Senders' recovery : " << ex.what() << std::endl;
+                    ret = Status::RecoveryError;
+                }
             }
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        } while (true);
+        }
 
-        // Bufferize residual results
-        bufferize_workers_results();
+        return ret;
   }
 
   /**
@@ -407,18 +420,22 @@ class RecoveryFarm final
       SILKWORM_LOG(LogLevels::LogInfo) << "Unwinding Senders' table to height " << new_height << std::endl;
       try {
           auto unwind_table{db_transaction_.open(db::table::kSenders, MDB_CREATE)};
-          if (new_height <= 1) {
-              lmdb::err_handler(unwind_table->clear());
-          } else {
-              Bytes key(40, '\0');
-              boost::endian::store_big_u64(&key[0], new_height + 1);  // New stage height is last processed
-              MDB_val mdb_key{db::to_mdb_val(key)}, mdb_data{};
-              lmdb::err_handler(unwind_table->seek(&mdb_key, &mdb_data));
-              do {
-                  /* Delete all records sequentially */
-                  lmdb::err_handler(unwind_table->del_current());
-                  lmdb::err_handler(unwind_table->get_next(&mdb_key, &mdb_data));
-              } while (true);
+          uint64_t rcount{0};
+          lmdb::err_handler(unwind_table->get_rcount(&rcount));
+          if (rcount) {
+              if (new_height <= 1) {
+                  lmdb::err_handler(unwind_table->clear());
+              } else {
+                  Bytes key(40, '\0');
+                  boost::endian::store_big_u64(&key[0], new_height + 1);  // New stage height is last processed
+                  MDB_val mdb_key{db::to_mdb_val(key)}, mdb_data{};
+                  lmdb::err_handler(unwind_table->seek(&mdb_key, &mdb_data));
+                  do {
+                      /* Delete all records sequentially */
+                      lmdb::err_handler(unwind_table->del_current());
+                      lmdb::err_handler(unwind_table->get_next(&mdb_key, &mdb_data));
+                  } while (true);
+              }
           }
       } catch (const lmdb::exception& ex) {
           if (ex.err() != MDB_NOTFOUND) {
@@ -430,21 +447,53 @@ class RecoveryFarm final
       return Status::Succeded;
   }
 
-protected:
+private:
 
     /**
     * @brief Gets whether or not this class should stop working
     */
     bool should_stop() {
 
-        // TODO Handle interrupt signal
         return should_stop_.load() || g_should_stop.load();
+    }
+
+    /**
+     * @brief Forces each worker to stop
+     */
+    void stop_all_workers() {
+        for (const auto& worker : workers_) {
+            worker->stop(/* wait =*/true);
+        }
+    }
+
+    /**
+     * @brief Waits till every worker has finished or aborted
+     */
+    void wait_workers_completion() {
+        if (workers_.size()) {
+            uint64_t attempts{0};
+            do {
+                auto it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
+                    return w->get_status() == RecoveryWorker::Status::Working;
+                });
+                if (it == workers_.end()) {
+                    break;
+                }
+                attempts++;
+                if (!(attempts % 10)) {
+                    SILKWORM_LOG(LogLevels::LogDebug) << "Waiting for workers to complete" << std::endl;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            } while (true);
+        }
     }
 
     /**
     * @brief Collects results from worker's completed tasks
     */
     Status bufferize_workers_results() {
+
+        static std::string fmt_row{"%10u bks %12u txs"};
 
         Status ret{Status::Succeded};
         std::vector<std::pair<uint64_t, MDB_val>> worker_results{};
@@ -471,19 +520,26 @@ protected:
             } else if (status == RecoveryWorker::Status::Aborted) {
                 ret = Status::WorkerAborted;
             } else if (status == RecoveryWorker::Status::ResultsReady) {
-                worker->pull_results(worker_results);
+                worker->pull_results(worker_results);  // This also resets worker to Idle
                 // Save results in etl
                 if (!should_stop()) {
                     for (auto& [block_num, mdb_val] : worker_results) {
+
+                        last_processed_block_ = block_num;
+                        total_processed_blocks_++;
+                        total_recovered_transactions_ += (mdb_val.mv_size / kAddressLength);
+
                         auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
-                        total_recovered_transactions += (mdb_val.mv_size / kAddressLength);
                         Bytes etl_data(static_cast<unsigned char*>(mdb_val.mv_data), mdb_val.mv_size);
                         etl::Entry item{etl_key, etl_data};
                         collector_.collect(item);  // TODO check for errors (eg. disk full)
                         headers_it_2_++;
+
                     }
                     SILKWORM_LOG(LogLevels::LogInfo)
-                        << "Processed transactions " << total_recovered_transactions << std::endl;
+                        << "ETL Load [1/2] : "
+                        << (boost::format(fmt_row) % total_processed_blocks_ % total_recovered_transactions_)
+                        << std::endl;
                 }
             }
 
@@ -550,6 +606,13 @@ protected:
             return ret;
         }
 
+        // First worker created
+        if (!workers_.size()) {
+            if (!initialize_new_worker(/*show_error =*/ true)) {
+                ret = Status::WorkerInitError;
+            }
+        }
+
         // Locate first available worker
         while (ret == Status::Succeded) {
 
@@ -561,14 +624,6 @@ protected:
                 (*it)->set_work(batch_id_++, batch_);
                 break;
             } else {
-
-                // First worker created
-                if (!workers_.size()) {
-                    if (!initialize_new_worker(/*show_error =*/ true)) {
-                        ret = Status::WorkerInitError;
-                    }
-                    continue;
-                }
 
                 // Do we have ready results from workers  that we need to bufferize ?
                 it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
@@ -590,7 +645,7 @@ protected:
                 }
 
                 // No other option than wait a while and retry
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
         };
 
@@ -605,7 +660,7 @@ protected:
             workers_.emplace_back(new RecoveryWorker(workers_.size(), max_batch_size_ * kAddressLength));
             workers_.back()->signal_completed.connect(
                 boost::bind(&RecoveryFarm::worker_completed_handler, this, _1, _2));
-            workers_.back()->start(/*wait = */ true);
+            workers_.back()->start();
             return workers_.back()->get_state() == Worker::WorkerState::kStarted;
         } catch (const std::exception& ex) {
             if (show_error) {
@@ -626,7 +681,7 @@ protected:
     Status fill_canonical_headers(uint64_t height_from, uint64_t height_to) {
 
         const uint64_t count{height_to - height_to + 1};
-        SILKWORM_LOG(LogLevels::LogInfo) << "Loading canonical headers [" << height_from << " ... " << height_to
+        SILKWORM_LOG(LogLevels::LogInfo) << "Loading canonical headers [" << height_from << " .. " << height_to
                                          << "]" << std::endl;
 
         try {
@@ -696,7 +751,7 @@ protected:
         // Ensure worker threads complete batches in the same order they
         // were launched
         while (completed_batch_id.load(std::memory_order_relaxed) != batch_id) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
         auto returned_error = sender->get_error();
@@ -712,7 +767,6 @@ protected:
         completed_batch_id++;
     }
 
-private:
 
   friend class RecoveryWorker;
   lmdb::Transaction& db_transaction_;                       // Database transaction
@@ -739,7 +793,9 @@ private:
   std::atomic_bool should_stop_{false};
 
   /* Stats */
-  uint64_t total_recovered_transactions{0};
+  uint64_t total_recovered_transactions_{0};
+  uint64_t total_processed_blocks_{0};
+  uint64_t last_processed_block_{0};
 };
 
 // Prints out info of block's transactions with senders
@@ -846,8 +902,8 @@ int main(int argc, char* argv[]) {
     app.add_flag("--dry", options.dry, "Runs the full cycle but nothing is persisted");
 
     app.require_subcommand(1);  // One of the following subcommands is required
-    auto& app_recover = *app.add_subcommand("recover", "Recovers senders' addresses");
-    auto& app_verify = *app.add_subcommand("verify", "Verifies senders' addresses for given block");
+    auto& app_recover = *app.add_subcommand("recover", "Recovers Senders' addresses");
+    auto& app_unwind = *app.add_subcommand("unwind", "Unwinds Senders' stage to given height");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -895,11 +951,10 @@ int main(int argc, char* argv[]) {
     }
 
     // Invoke proper action
-    int rc{-1};
-
+    int rc{0};
     try {
 
-        if (!app_recover && !app_verify) {
+        if (!app_recover && !app_unwind) {
             throw std::runtime_error("Invalid operation");
         }
 
@@ -923,14 +978,19 @@ int main(int argc, char* argv[]) {
 
         // Create farm instance and do work
         RecoveryFarm farm(*lmdb_txn, 6, options.batch_size, collector);
-        auto result{farm.recover(chain_config, options.block_from, options.block_to)};
-        if (static_cast<int>(result)) {
-            SILKWORM_LOG(LogLevels::LogError) << "Recovery returned " << magic_enum::enum_name(result) << std::endl;
+        RecoveryFarm::Status result{RecoveryFarm::Status::Succeded};
+        if (app_recover) {
+            result = farm.recover(chain_config, options.block_from, options.block_to, options.force);
+        } else {
+            result = farm.unwind(options.block_from);
         }
-        //rc = static_cast<int>(farm.recover(chain_config, options.block_from, options.block_to));
-        //if (!rc) {
-        //    lmdb::err_handler(lmdb_txn->commit());
-        //}
+        if (rc = static_cast<int>(result), rc) {
+            SILKWORM_LOG(LogLevels::LogError) << (app_recover ? "Recovery" : "Unwind") << "returned " << magic_enum::enum_name(result) << std::endl;
+        } else {
+            if (!lmdb_txn->is_ro()) {
+                lmdb::err_handler(lmdb_txn->commit());
+            }
+        }
 
     } catch (const fs::filesystem_error& ex) {
         SILKWORM_LOG(LogLevels::LogError) << ex.what() << " Check your filesystem permissions" << std::endl;

@@ -36,7 +36,7 @@ class Worker {
 
     virtual ~Worker();
 
-    void start(bool wait = true);  // Start worker thread (by default waits for status)
+    void start();                  // Start worker thread (by default waits for status)
     void stop(bool wait = false);  // Stops worker thread (optionally wait for complete stop)
     void kick();                   // Kicks worker thread if waiting
 
@@ -44,7 +44,7 @@ class Worker {
     bool should_stop() { return state_.load(std::memory_order_relaxed) == WorkerState::kStopping; }
 
     // Retrieves current state of thread
-    WorkerState get_state() { return state_; }
+    WorkerState get_state() { return state_.load(std::memory_order_relaxed); }
 
    protected:
     std::atomic<WorkerState> state_{WorkerState::kStopped};

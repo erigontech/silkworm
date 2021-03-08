@@ -14,15 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_BITMAPDB_H_
-#define SILKWORM_DB_BITMAPDB_H_
-
-#include <optional>
-#include <roaring64map.hh>
+#include "bitmap.hpp"
 
 namespace silkworm::db::bitmap {
-// Return value in bitmap that is higher than cap
-std::optional<uint64_t> seek_in_bitmap(roaring::Roaring64Map &bitmap, uint64_t cap);
-};  // namespace silkworm::bitmapdb
 
-#endif  // !SILKWORM_DB_BITMAPDB_H_
+roaring::Roaring64Map read(ByteView serialized) {
+    return roaring::Roaring64Map::readSafe(reinterpret_cast<const char *>(serialized.data()), serialized.size());
+}
+
+std::optional<uint64_t> seek(const roaring::Roaring64Map &bitmap, uint64_t n) {
+    // TODO(Andrew) binary search instead of iteration
+    for (auto it = bitmap.begin(); it != bitmap.end(); ++it) {
+        if (*it >= n) return *it;
+    }
+    return std::nullopt;
+}
+
+};  // namespace silkworm::db::bitmap

@@ -19,7 +19,7 @@
 #include <boost/endian/conversion.hpp>
 #include <cassert>
 
-#include "bitmapdb.hpp"
+#include "bitmap.hpp"
 #include "tables.hpp"
 
 namespace silkworm::db {
@@ -188,10 +188,9 @@ static std::optional<ByteView> historical_account(lmdb::Transaction& txn, const 
         return std::nullopt;
     }
 
-    auto bitmap{
-        roaring::Roaring64Map::readSafe(reinterpret_cast<const char*>(entry->value.data()), entry->value.size())};
+    auto bitmap{bitmap::read(entry->value)};
 
-    auto change_block{bitmap::seek_in_bitmap(bitmap, block_number)};
+    auto change_block{bitmap::seek(bitmap, block_number)};
     if (!change_block) {
         return std::nullopt;
     }
@@ -216,10 +215,9 @@ static std::optional<ByteView> historical_storage(lmdb::Transaction& txn, const 
         return std::nullopt;
     }
 
-    auto bitmap{
-        roaring::Roaring64Map::readSafe(reinterpret_cast<const char*>(entry->value.data()), entry->value.size())};
+    auto bitmap{bitmap::read(entry->value)};
 
-    auto change_block{bitmap::seek_in_bitmap(bitmap, block_number)};
+    auto change_block{bitmap::seek(bitmap, block_number)};
     if (!change_block) {
         return std::nullopt;
     }

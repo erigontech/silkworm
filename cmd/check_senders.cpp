@@ -72,7 +72,7 @@ class RecoveryWorker final : public silkworm::Worker {
         // results output
         data_ = static_cast<uint8_t*>(std::calloc(1, data_size_));
         if (!data_) {
-            throw std::runtime_error("Unable to allocate memory");
+            throw std::runtime_error("Memory allocation failed");
         }
 
     };

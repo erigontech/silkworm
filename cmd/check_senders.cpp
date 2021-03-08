@@ -86,9 +86,11 @@ class RecoveryWorker final : public silkworm::Worker {
 
     // Provides a container of packages to process
     void set_work(uint32_t batch_id, std::vector<package>& packages) {
-        std::unique_lock l{xwork_};
-        work_set_.swap(packages);
-        batch_id_ = batch_id;
+        {
+            std::lock_guard l{xwork_};
+            work_set_.swap(packages);
+            batch_id_ = batch_id;
+        }
         Worker::kick();
     }
 
@@ -135,7 +137,6 @@ class RecoveryWorker final : public silkworm::Worker {
             }
 
             // Lock mutex so no other jobs may be set
-            std::unique_lock l{xwork_};
             status_.store(Status::Working);
             results_.clear();
 
@@ -184,7 +185,6 @@ class RecoveryWorker final : public silkworm::Worker {
             // Raise finished event
             signal_completed(this, batch_id_);
             work_set_.clear();  // Clear here. Next set_work will swap the cleaned container to master thread
-            l.unlock();
         }
 
         std::free(data_);

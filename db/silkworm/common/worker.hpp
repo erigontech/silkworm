@@ -50,7 +50,7 @@ class Worker {
 
     std::atomic_bool kicked_{false};
     std::condition_variable kicked_cv_{};
-    mutable std::mutex xwork_;
+    std::mutex xwork_;
 
   private:
 

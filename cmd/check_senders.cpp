@@ -85,10 +85,10 @@ class RecoveryWorker final : public silkworm::Worker {
     };
 
     // Provides a container of packages to process
-    void set_work(uint32_t batch_id, std::vector<package>& packages) {
+    void set_work(uint32_t batch_id, std::unique_ptr<std::vector<package>> batch) {
         {
             std::lock_guard l{xwork_};
-            work_set_.swap(packages);
+            batch_ = std::move(batch);
             batch_id_ = batch_id;
         }
         Worker::kick();
@@ -112,7 +112,7 @@ class RecoveryWorker final : public silkworm::Worker {
   private:
     const uint32_t id_;                                    // Current worker identifier
     uint32_t batch_id_{0};                                 // Running batch identifier
-    std::vector<package> work_set_{};                      // Work packages to process
+    std::unique_ptr<std::vector<package>> batch_;          // Batch to process
     size_t data_size_;                                     // Size of the recovery data buffer
     uint8_t* data_{nullptr};                               // Pointer to data where rsults are stored
     std::vector<std::pair<uint64_t, MDB_val>> results_{};  // Results per block pointing to data area
@@ -140,11 +140,11 @@ class RecoveryWorker final : public silkworm::Worker {
             status_.store(Status::Working);
             results_.clear();
 
-            uint64_t block_num{work_set_.front().block_num};
+            uint64_t block_num{(*batch_).front().block_num};
             size_t block_result_offset{0};
             size_t block_result_length{0};
 
-            for (auto const& package : work_set_) {
+            for (auto const& package : (*batch_)) {
 
                 // On block switching store the results
                 if (block_num != package.block_num) {
@@ -161,6 +161,7 @@ class RecoveryWorker final : public silkworm::Worker {
 
                 std::optional<Bytes> recovered{
                     ecdsa::recover(full_view(package.hash.bytes), full_view(package.signature), package.recovery_id)};
+
                 if (recovered.has_value() && (int)recovered->at(0) == 4) {
                     auto keyHash{ethash::keccak256(recovered->data() + 1, recovered->length() - 1)};
                     std::memcpy(&data_[block_result_offset + block_result_length],
@@ -184,7 +185,7 @@ class RecoveryWorker final : public silkworm::Worker {
 
             // Raise finished event
             signal_completed(this, batch_id_);
-            work_set_.clear();  // Clear here. Next set_work will swap the cleaned container to master thread
+            batch_.reset();
         }
 
         std::free(data_);
@@ -215,7 +216,6 @@ class RecoveryFarm final
           max_batch_size_{max_batch_size},
           collector_{collector} {
         workers_.reserve(max_workers);
-        batch_.reserve(max_batch_size);
     };
     ~RecoveryFarm() = default;
 
@@ -309,6 +309,9 @@ class RecoveryFarm final
                 return Status::BlockNotFound;
             }
 
+            // Initializes first batch
+            init_batch();
+
             while (!rc && !should_stop()) {
                 auto key_view{db::from_mdb_val(mdb_key)};
                 block_num = boost::endian::load_big_u64(key_view.data());
@@ -341,7 +344,7 @@ class RecoveryFarm final
 
                 if (transactions.size()) {
 
-                    if ((batch_.size() + transactions.size()) > max_batch_size_) {
+                    if (((*batch_).size() + transactions.size()) > max_batch_size_) {
                         ret = dispatch_batch();
                         if (ret != Status::Succeded) {
                             throw std::runtime_error("Unable to dispatch work");
@@ -371,7 +374,7 @@ class RecoveryFarm final
             SILKWORM_LOG(LogLevels::LogDebug) << "End   read block bodies ... " << std::endl;
 
             if (!should_stop() && !static_cast<int>(ret)) {
-                ret = dispatch_batch();
+                ret = dispatch_batch(/* renew = */ false);
                 if (ret != Status::Succeded) {
                     throw std::runtime_error("Unable to dispatch work");
                 }
@@ -591,7 +594,7 @@ private:
             RecoveryWorker::package package{block_num, hash, x.recovery_id};
             intx::be::unsafe::store(package.signature, transaction.r);
             intx::be::unsafe::store(package.signature + 32, transaction.s);
-            batch_.push_back(package);
+            (*batch_).push_back(package);
 
         }
 
@@ -602,10 +605,10 @@ private:
     * @brief Dispatches the collected batch of data to first available worker.
     * Eventually creates worksers up to max_workers
     */
-    Status dispatch_batch() {
+    Status dispatch_batch(bool renew = true) {
 
         Status ret{Status::Succeded};
-        if (!batch_.size() || should_stop()) {
+        if (!(*batch_).size() || should_stop()) {
             return ret;
         }
 
@@ -626,7 +629,10 @@ private:
             if (it != workers_.end()) {
                 SILKWORM_LOG(LogLevels::LogDebug)
                     << "Dispatching package to worker #" << (std::distance(workers_.begin(), it)) << std::endl;
-                (*it)->set_work(batch_id_++, batch_);
+                (*it)->set_work(batch_id_++, std::move(batch_)); // Transfers ownership of batch to worker
+                if (renew) {
+                    init_batch();
+                }
                 break;
             } else {
                 // Do we have ready results from workers that we need to bufferize ?
@@ -770,35 +776,43 @@ private:
         completed_batch_id++;
     }
 
+    /**
+     * @brief Initializes a new batch container
+     */
+    void init_batch() {
+        batch_ = std::make_unique<std::vector<RecoveryWorker::package>>();
+        (*batch_).reserve(max_batch_size_);
+    }
 
-  friend class RecoveryWorker;
-  lmdb::Transaction& db_transaction_;                       // Database transaction
+    friend class RecoveryWorker;
+    lmdb::Transaction& db_transaction_;  // Database transaction
 
-  /* Recovery workers */
-  uint32_t max_workers_;                                    // Max number of workers/threads
-  std::vector<std::unique_ptr<RecoveryWorker>> workers_{};  // Actual collection of recoverers
+    /* Recovery workers */
+    uint32_t max_workers_;                                    // Max number of workers/threads
+    std::vector<std::unique_ptr<RecoveryWorker>> workers_{};  // Actual collection of recoverers
 
-  /* Canonical headers */
-  std::vector<evmc::bytes32> headers_{};               // Collected canonical headers
-  std::vector<evmc::bytes32>::iterator headers_it_1_;  // For blocks reading
-  std::vector<evmc::bytes32>::iterator headers_it_2_;  // For buffer results
+    /* Canonical headers */
+    std::vector<evmc::bytes32> headers_{};               // Collected canonical headers
+    std::vector<evmc::bytes32>::iterator headers_it_1_;  // For blocks reading
+    std::vector<evmc::bytes32>::iterator headers_it_2_;  // For buffer results
 
-  /* Batches */
-  const size_t max_batch_size_;                   // Max number of transaction to be sent a worker for recovery
-  std::vector<RecoveryWorker::package> batch_{};  // Collection of transactions to be sent a worker for recovery
-  uint32_t batch_id_{0};                          // Incremental id of launched batches
-  std::atomic_uint32_t completed_batch_id{0};     // Incremental id of completed batches
-  std::queue<std::pair<uint32_t, uint32_t>>
-      batches_completed{};           // Queue of batches completed waiting to be written on disk
-  std::mutex batches_completed_mtx;  // Guards the queue
-  etl::Collector& collector_;
+    /* Batches */
+    const size_t max_batch_size_;  // Max number of transaction to be sent a worker for recovery
+    std::unique_ptr<std::vector<RecoveryWorker::package>>
+        batch_;                                  // Collection of transactions to be sent a worker for recovery
+    uint32_t batch_id_{0};                       // Incremental id of launched batches
+    std::atomic_uint32_t completed_batch_id{0};  // Incremental id of completed batches
+    std::queue<std::pair<uint32_t, uint32_t>>
+        batches_completed{};           // Queue of batches completed waiting to be written on disk
+    std::mutex batches_completed_mtx;  // Guards the queue
+    etl::Collector& collector_;
 
-  std::atomic_bool should_stop_{false};
+    std::atomic_bool should_stop_{false};
 
-  /* Stats */
-  uint64_t total_recovered_transactions_{0};
-  uint64_t total_processed_blocks_{0};
-  uint64_t last_processed_block_{0};
+    /* Stats */
+    uint64_t total_recovered_transactions_{0};
+    uint64_t total_processed_blocks_{0};
+    uint64_t last_processed_block_{0};
 };
 
 // Prints out info of block's transactions with senders

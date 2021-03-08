@@ -153,7 +153,11 @@ ValidationResult pre_validate_block(const Block& block, const StateBuffer& state
         return ValidationResult::kWrongOmmersHash;
     }
 
-    evmc::bytes32 txn_root{trie::root_hash(block.transactions)};
+    static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
+        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/false);
+    };
+
+    evmc::bytes32 txn_root{trie::root_hash(block.transactions, kEncoder)};
     if (txn_root != header.transactions_root) {
         return ValidationResult::kWrongTransactionsRoot;
     }

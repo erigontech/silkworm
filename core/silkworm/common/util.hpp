@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_UTIL_H_
-#define SILKWORM_COMMON_UTIL_H_
+#ifndef SILKWORM_COMMON_UTIL_HPP_
+#define SILKWORM_COMMON_UTIL_HPP_
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -79,6 +79,9 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept;
 // Parses a string input value representing a size in
 // human readable format with qualifiers. eg "256MB"
 std::optional<uint64_t> parse_size(const std::string& sizestr);
+
+// Compares two strings for equality with case insensitivity
+bool iequals(const std::string& a, const std::string& b);
 
 // TODO[C++20] replace by starts_with
 inline bool has_prefix(ByteView s, ByteView prefix) { return s.substr(0, prefix.size()) == prefix; }

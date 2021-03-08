@@ -101,11 +101,11 @@ int main(int argc, char* argv[]) {
                 MDB_val tx_mdb_data;
 
                 uint64_t i{0};
-                int rc{transactions_table->seek_exact(&tx_mdb_key, &tx_mdb_data)};
+                for (int rc2{transactions_table->seek_exact(&tx_mdb_key, &tx_mdb_data)};
+                     rc2 == MDB_SUCCESS && i < body.txn_count;
+                     rc2 = transactions_table->get_next(&tx_mdb_key, &tx_mdb_data), ++i) {
 
-                for (; rc == MDB_SUCCESS && i < body.txn_count;
-                     rc = transactions_table->get_next(&tx_mdb_key, &tx_mdb_data), ++i) {
-
+                    lmdb::err_handler(rc2);
                     ByteView tx_rlp{db::from_mdb_val(tx_mdb_data)};
                     auto hash{keccak256(tx_rlp)};
                     auto hash_view{full_view(hash.bytes)};
@@ -128,9 +128,6 @@ int main(int argc, char* argv[]) {
                             << "Mismatch: Expected block number for tx with hash: " << to_hex(hash_view) << " is "
                             << expected_block_number << ", but got: " << actual_block_number << std::endl;
                     }
-                }
-                if (rc && rc != MDB_NOTFOUND) {
-                    lmdb::err_handler(rc);
                 }
 
                 if (i != body.txn_count) {

@@ -55,7 +55,8 @@ std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& blo
     }
 
     if (config.has_byzantium(block_num)) {
-        evmc::bytes32 receipt_root{trie::root_hash(receipts)};
+        static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+        evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
         if (receipt_root != header.receipts_root) {
             err = ValidationResult::kWrongReceiptsRoot;
             return res;

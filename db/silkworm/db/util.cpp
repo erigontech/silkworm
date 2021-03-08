@@ -100,7 +100,6 @@ std::string default_path() {
     if (env) {
         base_dir = env;
     } else {
-
 #ifdef _WIN32
         std::string env_name{"APPDATA"};
 #else
@@ -110,14 +109,14 @@ std::string default_path() {
         if (env) {
             base_dir = env;
         } else {
-            return base_dir; // We actually don't know where to persist data
+            return base_dir;  // We actually don't know where to persist data
         };
     }
 
 #ifdef _WIN32
     base_dir += "/TurboGeth";
 #elif __APPLE__
-    base_dir += "/Library/TurboGeth"
+    base_dir += "/Library/TurboGeth";
 #else
     base_dir += "/.local/share/turbogeth";
 #endif

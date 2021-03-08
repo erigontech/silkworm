@@ -888,9 +888,9 @@ int main(int argc, char* argv[]) {
     app.add_option("--lmdb.mapSize", mapSizeStr, "Lmdb map size", true);
 
     app.add_option("--from", options.block_from, "Initial block number to process (inclusive)", true)->required()
-        ->check(CLI::Range(1ull, UINT64_MAX));
+        ->check(CLI::Range(1ui64, UINT64_MAX));
     app.add_option("--to", options.block_to, "Final block number to process (inclusive)", true)
-        ->check(CLI::Range(1ull, UINT64_MAX));
+        ->check(CLI::Range(1ui64, UINT64_MAX));
 
 
     app.add_option("--batch", options.batch_size, "Number of transactions to process per batch", true)

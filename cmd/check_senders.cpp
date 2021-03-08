@@ -66,7 +66,16 @@ void sig_handler(int signum) {
 class RecoveryWorker final : public silkworm::Worker {
   public:
 
-    RecoveryWorker(uint32_t id, size_t data_size) : id_(id), data_size_{data_size} {};
+    RecoveryWorker(uint32_t id, size_t data_size) : id_(id), data_size_{data_size} {
+
+        // Try allocate enough memory to store
+        // results output
+        data_ = static_cast<uint8_t*>(std::calloc(1, data_size_));
+        if (!data_) {
+            throw std::runtime_error("Unable to allocate memory");
+        }
+
+    };
 
     // Recovery package
     struct package {
@@ -125,12 +134,6 @@ class RecoveryWorker final : public silkworm::Worker {
     // Basic work loop (overrides Worker::work())
     void work() final {
 
-        // Try allocate enough memory to store
-        // results output
-        data_ = static_cast<uint8_t*>(std::calloc(1, data_size_));
-        if (!data_) {
-            throw std::runtime_error("Unable to allocate memory");
-        }
 
         while (!should_stop()) {
             bool expected_kick_value{true};

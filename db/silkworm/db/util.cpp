@@ -100,37 +100,26 @@ std::string default_path() {
     if (env) {
         base_dir = env;
     } else {
-        env = std::getenv("APPDATA");
-        if (env) {
-            base_dir = env;
-        }
-    }
-
-    if (base_dir.empty()) {
-#if defined(_WIN32)
-        /* Should not happen */
-        return base_dir;
-#else
-        env = std::getenv("HOME");
-        if (!env) {
-            return base_dir;
-        }
-#endif
-        std::string home_dir{env};
 
 #ifdef _WIN32
-        base_dir = home_dir;
-#elif __APPLE__
-        base_dir = home_dir + "/Library";
+        std::string env_name{"APPDATA"};
 #else
-        base_dir = home_dir + "/.local/share";
+        std::string env_name{"HOME"};
 #endif
+        env = std::getenv(env_name.c_str());
+        if (env) {
+            base_dir = env;
+        } else {
+            return base_dir; // We actually don't know where to persist data
+        };
     }
 
-#if defined(_WIN32) || defined(__APPLE__)
+#ifdef _WIN32
     base_dir += "/TurboGeth";
+#elif __APPLE__
+    base_dir += "/Library/TurboGeth"
 #else
-    base_dir += "/turbogeth";
+    base_dir += "/.local/share/turbogeth";
 #endif
 
     return base_dir + "/tg/chaindata";

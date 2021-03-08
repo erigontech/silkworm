@@ -168,10 +168,10 @@ namespace rlp {
         }
         uint64_t leftover{from.length() - rlp_head.payload_length};
 
-        if (DecodingResult err{decode_vector(from, to.transactions)}; err != DecodingResult::kOk) {
+        if (err = decode_vector(from, to.transactions); err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingResult err{decode_vector(from, to.ommers)}; err != DecodingResult::kOk) {
+        if (err = decode_vector(from, to.ommers); err != DecodingResult::kOk) {
             return err;
         }
 
@@ -189,13 +189,13 @@ namespace rlp {
         }
         uint64_t leftover{from.length() - rlp_head.payload_length};
 
-        if (DecodingResult err{decode(from, to.header)}; err != DecodingResult::kOk) {
+        if (err = decode(from, to.header); err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingResult err{decode_vector(from, to.transactions)}; err != DecodingResult::kOk) {
+        if (err = decode_vector(from, to.transactions); err != DecodingResult::kOk) {
             return err;
         }
-        if (DecodingResult err{decode_vector(from, to.ommers)}; err != DecodingResult::kOk) {
+        if (err = decode_vector(from, to.ommers); err != DecodingResult::kOk) {
             return err;
         }
 

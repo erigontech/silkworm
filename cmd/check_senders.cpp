@@ -31,7 +31,6 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/types/block.hpp>
 #include <string>
@@ -140,7 +139,7 @@ class RecoveryWorker final : public silkworm::Worker {
             status_.store(Status::Working);
             results_.clear();
 
-            uint64_t block_num{work_set_.at(0).block_num};
+            uint64_t block_num{work_set_.front().block_num};
             size_t block_result_offset{0};
             size_t block_result_length{0};
 
@@ -371,7 +370,7 @@ class RecoveryFarm final
 
             SILKWORM_LOG(LogLevels::LogDebug) << "End   read block bodies ... " << std::endl;
 
-            if (!should_stop()) {
+            if (!should_stop() && !static_cast<int>(ret)) {
                 ret = dispatch_batch();
                 if (ret != Status::Succeded) {
                     throw std::runtime_error("Unable to dispatch work");
@@ -625,11 +624,11 @@ private:
             });
 
             if (it != workers_.end()) {
-                SILKWORM_LOG(LogLevels::LogDebug) << "Found available worker" << std::endl;
+                SILKWORM_LOG(LogLevels::LogDebug)
+                    << "Dispatching package to worker #" << (std::distance(workers_.begin(), it)) << std::endl;
                 (*it)->set_work(batch_id_++, batch_);
                 break;
             } else {
-
                 // Do we have ready results from workers that we need to bufferize ?
                 it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
                     auto s = static_cast<int>(w->get_status());
@@ -989,7 +988,7 @@ int main(int argc, char* argv[]) {
             result = farm.unwind(options.block_from);
         }
         if (rc = static_cast<int>(result), rc) {
-            SILKWORM_LOG(LogLevels::LogError) << (app_recover ? "Recovery" : "Unwind") << "returned " << magic_enum::enum_name(result) << std::endl;
+            SILKWORM_LOG(LogLevels::LogError) << (app_recover ? "Recovery" : "Unwind") << "returned " << rc << std::endl;
         } else {
             if (!lmdb_txn->is_ro()) {
                 lmdb::err_handler(lmdb_txn->commit());

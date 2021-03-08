@@ -839,7 +839,7 @@ int main(int argc, char* argv[]) {
     app.add_option("--workers", options.max_workers, "Max number of worker threads", true)
         ->check(CLI::Range(1u, std::thread::hardware_concurrency()));
 
-    app.add_option("--from", options.block_from, "Initial block number to process (inclusive)", true)->required()
+    app.add_option("--from", options.block_from, "Initial block number to process (inclusive)", true)
         ->check(CLI::Range(1u, UINT32_MAX));
     app.add_option("--to", options.block_to, "Final block number to process (inclusive)", true)
         ->check(CLI::Range(1u, UINT32_MAX));

@@ -335,7 +335,8 @@ class RecoveryFarm final
                 }
 
                 // Get the body and its transactions
-                auto block_body{db::detail::decode_stored_block_body(db::from_mdb_val(mdb_data))};
+                auto body_rlp{db::from_mdb_val(mdb_data)};
+                auto block_body{db::detail::decode_stored_block_body(body_rlp)};
                 std::vector<Transaction> transactions{
                     db::read_transactions(*transactions_table, block_body.base_txn_id, block_body.txn_count)};
 

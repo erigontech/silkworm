@@ -60,9 +60,6 @@ static const std::vector<fs::path> kExcludedTests{
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
-
-    // Failing due to a suspiciously high nonce in post state of 0x0000000000000000000000000000000000001102
-    kBlockchainDir / "GeneralStateTests" / "stBugs" / "extcodehashEmpty.json",
 };
 
 constexpr size_t kColumnWidth{80};

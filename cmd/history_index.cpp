@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
                     db_flags = 0;
                 }
                 while (bm.cardinality() > 0) {
-                    auto current_chunk{db::bitmap::cut_left(&bm, 1950)};
+                    auto current_chunk{db::bitmap::cut_left(&bm, db::bitmap::kBitmapChunkLimit)};
                     // make chunk index
                     auto chunk_index{Bytes(entry.key.size() + 8, '\0')};
 

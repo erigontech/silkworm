@@ -23,6 +23,8 @@
 
 namespace silkworm::db::bitmap {
 
+constexpr size_t kBitmapChunkLimit = 1950;
+
 roaring::Roaring64Map read(ByteView serialized);
 
 // Return the first value in the bitmap that is not less than (i.e. greater or equal to) n,

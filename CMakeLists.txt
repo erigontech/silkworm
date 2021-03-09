@@ -143,6 +143,13 @@ endif()
 add_subdirectory(libff)
 
 if(NOT SILKWORM_CORE_ONLY)
+
+  # Roaring Bitmaps
+  set(ENABLE_ROARING_TESTS OFF)
+  option(ROARING_BUILD_STATIC "Build a static library" ON)
+  option(ROARING_LINK_STATIC "Link executables (tests, benchmarks) statically" ON)
+  add_subdirectory(CRoaring EXCLUDE_FROM_ALL)
+
   # CBOR
   add_subdirectory(cbor-cpp)
 

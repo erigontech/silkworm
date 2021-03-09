@@ -753,11 +753,6 @@ class RecoveryFarm final {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
-        auto returned_error = sender->get_error();
-        if (!returned_error.empty()) {
-            should_stop_.store(true);
-        }
-
         // Save my ids in the queue of results to
         // store in db
         std::lock_guard l(batches_completed_mtx);

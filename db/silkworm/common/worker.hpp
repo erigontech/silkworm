@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020 - 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_WORKER_H_
-#define SILKWORM_WORKER_H_
+#ifndef SILKWORM_WORKER_HPP_
+#define SILKWORM_WORKER_HPP_
 
 #include <atomic>
 #include <condition_variable>
@@ -25,7 +25,7 @@
 namespace silkworm {
 
 class Worker {
-   public:
+  public:
     enum class WorkerState { kStopped, kStarting, kStarted, kStopping };
 
     Worker() = default;
@@ -41,23 +41,21 @@ class Worker {
     void kick();                   // Kicks worker thread if waiting
 
     // Whether or not this worker/thread should stop
-    bool should_stop() { return state_.load(std::memory_order_relaxed) == WorkerState::kStopping; }
+    bool should_stop() { return state_.load() == WorkerState::kStopping; }
 
     // Retrieves current state of thread
     WorkerState get_state() { return state_.load(); }
 
-   protected:
-
+  protected:
     std::atomic_bool kicked_{false};
     std::condition_variable kicked_cv_{};
     std::mutex xwork_;
 
   private:
-
     std::atomic<WorkerState> state_{WorkerState::kStopped};
     std::unique_ptr<std::thread> thread_{nullptr};
     virtual void work() = 0;
 };
 }  // namespace silkworm
 
-#endif  // SILKWORM_WORKER_H_
+#endif  // SILKWORM_WORKER_HPP_

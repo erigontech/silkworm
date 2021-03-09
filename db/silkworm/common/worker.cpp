@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020 - 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -42,8 +42,7 @@ void Worker::start(bool wait) {
         state_.store(WorkerState::kStopped);
     }));
 
-    while (wait)
-    {
+    while (wait) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         auto state{get_state()};
         if (state == WorkerState::kStarted) {

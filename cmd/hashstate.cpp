@@ -25,39 +25,44 @@
 #include <silkworm/etl/collector.hpp>
 
 using namespace silkworm;
+namespace fs = boost::filesystem;
+
 enum Operation {
-    Account,
-    Storage,
+    HashAccount,
+    HashStorage,
     Code
 };
 
 void promote_clean(lmdb::Transaction * txn, std::string etl_path, Operation operation) {
-    auto source_table{operation != Operation.Code ? 
-        txn->open(db::tables::kPlainState) : txn->open(db::tables::kPlainContractCode)
+    auto source_table{operation != Code ? 
+        txn->open(db::table::kPlainState) : txn->open(db::table::kPlainContractCode)
     };
     MDB_val mdb_key{db::to_mdb_val(Bytes(8, '\0'))};
     MDB_val mdb_data;
     int rc{source_table->seek(&mdb_key, &mdb_data)};
     fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.string().c_str(), 512 * kMebi);
+    etl::Collector collector(etl_path.c_str(), 512 * kMebi);
     while (!rc) { /* Loop as long as we have no errors*/
 
         // Ensure the reached block number is in proper sequence
         Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
-        Bytes mdb_value_as_bytes{static_cast<uint8_t*>(mdb_value.mv_data), mdb_value.mv_size};
+        Bytes mdb_value_as_bytes{static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size};
         Bytes new_key;
         switch (operation) {
-            case Operation.Account:
-                new_key = full_view(keccak256(key));
-            case Operation.Storage:
+            case HashAccount:
+                new_key = Bytes(keccak256(mdb_key_as_bytes).bytes, kHashLength);
+                break;
+            case HashStorage:
                 new_key = Bytes('\0', kHashLength*2+db::kIncarnationLength);
-                std::memcpy(&new_key[0], keccak256(mdb_key_as_bytes.substring(0, kAddressLength)).bytes, kHashLength);
+                std::memcpy(&new_key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
                 std::memcpy(&new_key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
-                std::memcpy(&new_key[kHashLength + db::kIncarnationLength], keccak256(mdb_key_as_bytes.substring(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
-            case Operation.Code:
+                std::memcpy(&new_key[kHashLength + db::kIncarnationLength], keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
+                break;
+            case Code:
                 new_key = Bytes('\0', kHashLength+db::kIncarnationLength);
-                std::memcpy(&new_key[0], keccak256(mdb_key_as_bytes.substring(0, kAddressLength)).bytes, kHashLength);
+                std::memcpy(&new_key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
                 std::memcpy(&new_key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
+                break;
         }
         etl::Entry entry{new_key, mdb_value_as_bytes};
         collector.collect(entry);
@@ -68,38 +73,31 @@ void promote_clean(lmdb::Transaction * txn, std::string etl_path, Operation oper
         lmdb::err_handler(rc);
     }
 
+    SILKWORM_LOG(LogInfo) << "Started Loading" << std::endl;
 
-    SILKWORM_LOG(LogInfo) << "Entries Collected << " << blocks_processed_count << std::endl;
-
-    // Proceed only if we've done something
-    if (blocks_processed_count) {
-        SILKWORM_LOG(LogInfo) << "Started Loading" << std::endl;
-
-        /*
-        * If we're on first sync then we shouldn't have any records in target
-        * table. For this reason we can apply MDB_APPEND to load as
-        * collector (with no transform) ensures collected entries
-        * are already sorted. If instead target table contains already
-        * some data the only option is to load in upsert mode as we
-        * cannot guarantee keys are sorted amongst different calls
-        * of this stage
-        */
-        switch (operation) {
-            case Operation.Account:
-                    collector.load(txn->open(db::table::kHashedAccounts, MDB_CREATE).get(), nullptr, MDB_APPEND, /* log_every_percent = */ 10);
-            case Operation.Storage:
-                    collector.load(txn->open(db::table::kHashedStorage, MDB_CREATE).get(), nullptr, MDB_APPEND_DUP, /* log_every_percent = */ 10);
-            case Operation.Code:
-                    collector.load(txn->open(db::table::kContractCode, MDB_CREATE).get(), nullptr, MDB_APPEND, /* log_every_percent = */ 10);
-        }
-        // Update progress height with last processed block
-        db::stages::set_stage_progress(*txn, db::stages::kHashStateKey, db::stages::get_stage_progress(*txn, db::stages::kExecutionKey));
-        lmdb::err_handler(txn->commit());
-    } else {
-        SILKWORM_LOG(LogInfo) << "Nothing to process" << std::endl;
+    /*
+    * If we're on first sync then we shouldn't have any records in target
+    * table. For this reason we can apply MDB_APPEND to load as
+    * collector (with no transform) ensures collected entries
+    * are already sorted. If instead target table contains already
+    * some data the only option is to load in upsert mode as we
+    * cannot guarantee keys are sorted amongst different calls
+    * of this stage
+    */
+    switch (operation) {
+        case HashAccount:
+                collector.load(txn->open(db::table::kHashedAccounts, MDB_CREATE).get(), nullptr, MDB_APPEND, /* log_every_percent = */ 10);
+                break;
+        case HashStorage:
+                collector.load(txn->open(db::table::kHashedStorage, MDB_CREATE).get(), nullptr, MDB_APPENDDUP, /* log_every_percent = */ 10);
+                break;
+        case Code:
+                collector.load(txn->open(db::table::kContractCode, MDB_CREATE).get(), nullptr, MDB_APPEND, /* log_every_percent = */ 10);
+                break;
     }
-
-    SILKWORM_LOG(LogInfo) << "All Done" << std::endl;
+    // Update progress height with last processed block
+    db::stages::set_stage_progress(*txn, db::stages::kHashStateKey, db::stages::get_stage_progress(*txn, db::stages::kExecutionKey));
+    lmdb::err_handler(txn->commit());
 }
 
 void promote(lmdb::Transaction *, std::string , Operation ) {
@@ -107,8 +105,6 @@ void promote(lmdb::Transaction *, std::string , Operation ) {
 }
 
 int main(int argc, char* argv[]) {
-    namespace fs = boost::filesystem;
-
     CLI::App app{"Generates Hashed state"};
 
     std::string db_path{db::default_path()};
@@ -136,22 +132,23 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
     try {
-        auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
+        uint64_t last_processed_block_number;
         if (full) {
             txn->open(db::table::kHashedAccounts)->clear();
             txn->open(db::table::kHashedStorage)->clear();
             txn->open(db::table::kContractCode)->clear();
             last_processed_block_number = 0;
-        }
-
-        if (last_processed_block_number != 0 || incrementally) {
-            promote(txn.get(), etl_path, Operation.Account);
-            promote(txn.get(), etl_path, Operation.Storage);
-            promote(txn.get(), etl_path, Operation.Code);
         } else {
-            promote_clean(txn.get(), etl_path, Operation.Account);
-            promote_clean(txn.get(), etl_path, Operation.Storage);
-            promote_clean(txn.get(), etl_path, Operation.Code);
+            last_processed_block_number = db::stages::get_stage_progress(*txn, db::stages::kHashStateKey);
+        }
+        if (last_processed_block_number != 0 || incrementally) {
+            promote(txn.get(), etl_path.string(), HashAccount);
+            promote(txn.get(), etl_path.string(), HashStorage);
+            promote(txn.get(), etl_path.string(), Code);
+        } else {
+            promote_clean(txn.get(), etl_path.string(), HashAccount);
+            promote_clean(txn.get(), etl_path.string(), HashStorage);
+            promote_clean(txn.get(), etl_path.string(), Code);
         }
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogError) << ex.what() << std::endl;

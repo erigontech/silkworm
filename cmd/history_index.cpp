@@ -87,11 +87,7 @@ int main(int argc, char* argv[]) {
         MDB_val mdb_key{db::to_mdb_val(start)};
         MDB_val mdb_data;
 
-        if (storage) {
-            SILKWORM_LOG(LogInfo) << "Started Storage Index Extraction" << std::endl;
-        } else {
-            SILKWORM_LOG(LogInfo) << "Started Account Index Extraction" << std::endl;
-        }
+        SILKWORM_LOG(LogInfo) << "Started " << (storage ? "Storage" : "Account") << " Index Extraction" << std::endl;
 
         size_t allocated_space{0};
         uint64_t block_number{0};

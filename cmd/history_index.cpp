@@ -168,7 +168,7 @@ int main(int argc, char* argv[]) {
                 while (bm.cardinality() > 0) {
                     auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
                     // make chunk index
-                    auto chunk_index{Bytes(entry.key.size() + 8, '\0')};
+                    Bytes chunk_index(entry.key.size() + 8, '\0');
                     std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
                     uint64_t suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
                     boost::endian::store_big_u64(&chunk_index[entry.key.size()], suffix);

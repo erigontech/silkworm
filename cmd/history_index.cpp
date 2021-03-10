@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
 
             collector.load(target_table.get(), [](etl::Entry entry, lmdb::Table * history_index_table, unsigned int db_flags) {
                 auto bm{roaring::Roaring64Map::readSafe((const char *)entry.value.data(), entry.value.size())};
-                auto last_chunk_index{Bytes(entry.key.size() + 8, '\0')};
+                Bytes last_chunk_index(entry.key.size() + 8, '\0');
                 std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
                 boost::endian::store_big_u64(&last_chunk_index[entry.key.size()], (uint64_t)-1);
                 auto previous_bitmap_bytes{history_index_table->get(last_chunk_index)};

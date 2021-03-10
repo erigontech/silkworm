@@ -140,21 +140,12 @@ int main(int argc, char* argv[]) {
         if (collector.size()) {
             SILKWORM_LOG(LogInfo) << "Started Loading" << std::endl;
 
-            /*
-            * If we're on first sync then we shouldn't have any records in target
-            * table. For this reason we can apply MDB_APPEND to load as
-            * collector (with no transform) ensures collected entries
-            * are already sorted. If instead target table contains already
-            * some data the only option is to load in upsert mode as we
-            * cannot guarantee keys are sorted amongst different calls
-            * of this stage
-            */
             auto target_table{txn->open(index_config, MDB_CREATE)};
             size_t target_table_rcount{0};
             lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
             unsigned int db_flags{target_table_rcount ? 0u : (uint32_t)MDB_APPEND};
-            // Eventually load collected items with no transform (may throw)
 
+            // Eventually load collected items WITH transform (may throw)
             collector.load(target_table.get(), [](etl::Entry entry, lmdb::Table * history_index_table, unsigned int db_flags) {
                 auto bm{roaring::Roaring64Map::readSafe((const char *)entry.value.data(), entry.value.size())};
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');

@@ -23,12 +23,17 @@
 
 namespace silkworm::db::bitmap {
 
+constexpr size_t kBitmapChunkLimit = 1950;
+
 roaring::Roaring64Map read(ByteView serialized);
 
 // Return the first value in the bitmap that is not less than (i.e. greater or equal to) n,
 // or std::nullopt if no such element is found.
 // See TG SeekInBitmap64.
 std::optional<uint64_t> seek(const roaring::Roaring64Map &bitmap, uint64_t n);
+
+// Return cut bitmap of given size limit
+roaring::Roaring64Map cut_left(roaring::Roaring64Map &bitmap, uint64_t len);
 
 };  // namespace silkworm::db::bitmap
 

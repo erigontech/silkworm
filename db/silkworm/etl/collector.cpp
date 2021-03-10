@@ -1,12 +1,9 @@
 /*
    Copyright 2020 The Silkworm Authors
-
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
-
        http://www.apache.org/licenses/LICENSE-2.0
-
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -79,10 +76,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         buffer_.sort();
         if (load_func) {
             for (const auto& etl_entry : buffer_.get_entries()) {
-                auto trasformed_etl_entries{load_func(etl_entry)};
-                for (const auto& transformed_etl_entry : trasformed_etl_entries) {
-                    table->put(transformed_etl_entry.key, transformed_etl_entry.value, db_flags);
-                }
+                load_func(etl_entry, table, db_flags);
+                
                 if (!--dummy_counter) {
                     actual_progress += progress_step;
                     dummy_counter = progress_increment_count;
@@ -131,9 +126,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
 
         // Process linked pairs
         if (load_func) {
-            for (const auto& transformed_etl_entry : load_func(etl_entry)) {
-                table->put(transformed_etl_entry.key, transformed_etl_entry.value, db_flags);
-            }
+            load_func(etl_entry, table, db_flags);
         } else {
             table->put(etl_entry.key, etl_entry.value, db_flags);
         }
@@ -162,7 +155,6 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
             file_provider.reset();
         }
     }
-
     size_ = 0; // We have consumed all items
 }
 
@@ -183,7 +175,5 @@ std::string Collector::set_work_path(const char* provided_work_path) {
     fs::create_directories(p);
     return p.string();
 }
-
-std::vector<Entry> identity_load(Entry entry) { return std::vector<Entry>({entry}); }
 
 }  // namespace silkworm::etl

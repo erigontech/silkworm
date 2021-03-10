@@ -126,10 +126,10 @@ int main(int argc, char *argv[]) {
             lmdb::err_handler(rc);
         }
 
-        for (auto &it : bitmaps) {
-            Bytes bitmap_bytes(it.second.getSizeInBytes(), '\0');
-            it.second.write((char *)bitmap_bytes.data());
-            etl::Entry entry{Bytes((unsigned char *)it.first.c_str(), it.first.size()), bitmap_bytes};
+        for (const auto &[key, bm] : bitmaps) {
+            Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
+            bm.write((char *)bitmap_bytes.data());
+            etl::Entry entry{Bytes((unsigned char *)key.c_str(), key.size()), bitmap_bytes};
             collector.collect(entry);
         }
         bitmaps.clear();

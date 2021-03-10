@@ -17,24 +17,23 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
+#include <iomanip>
 #include <iostream>
 #include <roaring64map.hh>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/db/bitmap.hpp>
-#include <unordered_map>
-#include <iomanip>
 #include <string>
+#include <unordered_map>
 
 using namespace silkworm;
 
 constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
 
-
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     namespace fs = boost::filesystem;
 
     CLI::App app{"Generates History Indexes"};
@@ -47,9 +46,7 @@ int main(int argc, char* argv[]) {
     app.add_flag("--full", full, "Start making history indexes from block 0");
     app.add_flag("--storage", storage, "Do history of storages");
 
-
     CLI11_PARSE(app, argc, argv);
-
 
     // Check data.mdb exists in provided directory
     boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
@@ -67,9 +64,10 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
     // We take data from header table and transform it and put it in blockhashes table
-    lmdb::TableConfig changeset_config = storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
+    lmdb::TableConfig changeset_config =
+        storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
     lmdb::TableConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
-    const char * stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
+    const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
     auto changeset_table{txn->open(changeset_config)};
     std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
 
@@ -95,24 +93,25 @@ int main(int argc, char* argv[]) {
         while (!rc) {                                        /* Loop as long as we have no errors*/
             std::string composite_key;
             if (storage) {
-                char composite_key_array[kHashLength+kAddressLength];
-                std::memcpy(&composite_key_array[0], &static_cast<uint8_t*>(mdb_key.mv_data)[8], kAddressLength);
-                std::memcpy(&composite_key_array[kAddressLength], static_cast<uint8_t*>(mdb_data.mv_data), kHashLength);
+                char composite_key_array[kHashLength + kAddressLength];
+                std::memcpy(&composite_key_array[0], &static_cast<uint8_t *>(mdb_key.mv_data)[8], kAddressLength);
+                std::memcpy(&composite_key_array[kAddressLength], static_cast<uint8_t *>(mdb_data.mv_data),
+                            kHashLength);
                 composite_key = std::string(composite_key_array);
             } else {
-                composite_key = std::string(static_cast<char*>(mdb_data.mv_data), kAddressLength);
+                composite_key = std::string(static_cast<char *>(mdb_data.mv_data), kAddressLength);
             }
 
             if (bitmaps.find(composite_key) == bitmaps.end()) {
                 bitmaps.emplace(composite_key, roaring::Roaring64Map());
             }
-            block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(mdb_key.mv_data));
+            block_number = boost::endian::load_big_u64(static_cast<uint8_t *>(mdb_key.mv_data));
             bitmaps.at(composite_key).add(block_number);
             allocated_space += 8;
             if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
-                for (auto& it: bitmaps) {
+                for (auto &it : bitmaps) {
                     Bytes bitmap_bytes(it.second.getSizeInBytes(), '\0');
-                    it.second.write((char *) &bitmap_bytes[0]);
+                    it.second.write((char *)&bitmap_bytes[0]);
                     etl::Entry entry{Bytes((unsigned char *)it.first.c_str(), it.first.size()), bitmap_bytes};
                     collector.collect(entry);
                 }
@@ -127,9 +126,9 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(rc);
         }
 
-        for (auto& it: bitmaps) {
+        for (auto &it : bitmaps) {
             Bytes bitmap_bytes(it.second.getSizeInBytes(), '\0');
-            it.second.write((char *) bitmap_bytes.data());
+            it.second.write((char *)bitmap_bytes.data());
             etl::Entry entry{Bytes((unsigned char *)it.first.c_str(), it.first.size()), bitmap_bytes};
             collector.collect(entry);
         }
@@ -146,28 +145,32 @@ int main(int argc, char* argv[]) {
             unsigned int db_flags{target_table_rcount ? 0u : (uint32_t)MDB_APPEND};
 
             // Eventually load collected items WITH transform (may throw)
-            collector.load(target_table.get(), [](etl::Entry entry, lmdb::Table * history_index_table, unsigned int db_flags) {
-                auto bm{roaring::Roaring64Map::readSafe((const char *)entry.value.data(), entry.value.size())};
-                Bytes last_chunk_index(entry.key.size() + 8, '\0');
-                std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
-                boost::endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
-                auto previous_bitmap_bytes{history_index_table->get(last_chunk_index)};
-                if (previous_bitmap_bytes.has_value()) {
-                    bm |= roaring::Roaring64Map::readSafe((const char *)previous_bitmap_bytes->data(), previous_bitmap_bytes->size());
-                    db_flags = 0;
-                }
-                while (bm.cardinality() > 0) {
-                    auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
-                    // make chunk index
-                    Bytes chunk_index(entry.key.size() + 8, '\0');
-                    std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
-                    uint64_t suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
-                    boost::endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
-                    Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
-                    current_chunk.write((char *) &current_chunk_bytes[0]);
-                    history_index_table->put(chunk_index, current_chunk_bytes, db_flags);
-                }
-            }, db_flags, /* log_every_percent = */ 20);
+            collector.load(
+                target_table.get(),
+                [](etl::Entry entry, lmdb::Table *history_index_table, unsigned int db_flags) {
+                    auto bm{roaring::Roaring64Map::readSafe((const char *)entry.value.data(), entry.value.size())};
+                    Bytes last_chunk_index(entry.key.size() + 8, '\0');
+                    std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
+                    boost::endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
+                    auto previous_bitmap_bytes{history_index_table->get(last_chunk_index)};
+                    if (previous_bitmap_bytes.has_value()) {
+                        bm |= roaring::Roaring64Map::readSafe((const char *)previous_bitmap_bytes->data(),
+                                                              previous_bitmap_bytes->size());
+                        db_flags = 0;
+                    }
+                    while (bm.cardinality() > 0) {
+                        auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
+                        // make chunk index
+                        Bytes chunk_index(entry.key.size() + 8, '\0');
+                        std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
+                        uint64_t suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
+                        boost::endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
+                        Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
+                        current_chunk.write((char *)&current_chunk_bytes[0]);
+                        history_index_table->put(chunk_index, current_chunk_bytes, db_flags);
+                    }
+                },
+                db_flags, /* log_every_percent = */ 20);
 
             // Update progress height with last processed block
             db::stages::set_stage_progress(*txn, stage_key, block_number);
@@ -178,7 +181,7 @@ int main(int argc, char* argv[]) {
         }
 
         SILKWORM_LOG(LogInfo) << "All Done" << std::endl;
-    } catch (const std::exception& ex) {
+    } catch (const std::exception &ex) {
         SILKWORM_LOG(LogError) << ex.what() << std::endl;
         return -5;
     }

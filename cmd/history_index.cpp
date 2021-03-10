@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
 
         if (full) {
             last_processed_block_number = 0;
-            txn->open(index_config)->clear();
+            txn->open(index_config, MDB_CREATE)->clear();
         }
 
         // Extract
@@ -86,6 +86,7 @@ int main(int argc, char* argv[]) {
         boost::endian::store_big_u64(&start[0], last_processed_block_number);
         MDB_val mdb_key{db::to_mdb_val(start)};
         MDB_val mdb_data;
+
         if (storage) {
             SILKWORM_LOG(LogInfo) << "Started Storage Index Extraction" << std::endl;
         } else {

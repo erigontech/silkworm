@@ -159,7 +159,7 @@ int main(int argc, char* argv[]) {
                 auto bm{roaring::Roaring64Map::readSafe((const char *)entry.value.data(), entry.value.size())};
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');
                 std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
-                boost::endian::store_big_u64(&last_chunk_index[entry.key.size()], (uint64_t)-1);
+                boost::endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
                 auto previous_bitmap_bytes{history_index_table->get(last_chunk_index)};
                 if (previous_bitmap_bytes.has_value()) {
                     bm |= roaring::Roaring64Map::readSafe((const char *)previous_bitmap_bytes->data(), previous_bitmap_bytes->size());
@@ -169,9 +169,8 @@ int main(int argc, char* argv[]) {
                     auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
                     // make chunk index
                     auto chunk_index{Bytes(entry.key.size() + 8, '\0')};
-
                     std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
-                    uint64_t suffix{bm.cardinality() == 0 ? (uint64_t) -1 : current_chunk.maximum()};
+                    uint64_t suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
                     boost::endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
                     Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
                     current_chunk.write((char *) &current_chunk_bytes[0]);

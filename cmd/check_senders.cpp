@@ -92,11 +92,9 @@ class RecoveryWorker final : public silkworm::Worker {
 
     // Provides a container of packages to process
     void set_work(uint32_t batch_id, std::unique_ptr<std::vector<package>> batch) {
-        std::unique_lock l{xwork_};
         batch_ = std::move(batch);
         batch_id_ = batch_id;
         status_.store(Status::Working);
-        l.unlock();
         Worker::kick();
     }
 
@@ -129,13 +127,7 @@ class RecoveryWorker final : public silkworm::Worker {
 
     // Basic work loop (overrides Worker::work())
     void work() final {
-        while (!should_stop()) {
-            bool expected_kick_value{true};
-            if (!kicked_.compare_exchange_strong(expected_kick_value, false)) {
-                std::unique_lock l(xwork_);
-                kicked_cv_.wait_for(l, std::chrono::seconds(1));
-                continue;
-            }
+        while (wait_for_kick()) {
 
             // Prefer swapping with a new vector instead of clear
             std::vector<std::pair<uint64_t, MDB_val>>().swap(results_);
@@ -376,8 +368,6 @@ class RecoveryFarm final {
                 if (ret != Status::Succeded) {
                     throw std::runtime_error("Unable to dispatch work");
                 }
-            } else {
-                stop_all_workers();
             }
 
         } catch (const lmdb::exception& ex) {
@@ -401,7 +391,7 @@ class RecoveryFarm final {
                         << "ETL Load [2/2] : Loading data into " << target_table->get_name() << std::endl;
                     collector_.load(
                         target_table.get(), nullptr, MDB_APPEND,
-                        /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 0 : 20));
+                        /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 1 : 20));
                     db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block_);
                 } catch (const lmdb::exception& ex) {
                     SILKWORM_LOG(LogLevels::LogError)
@@ -414,6 +404,8 @@ class RecoveryFarm final {
             }
         }
 
+        SILKWORM_LOG(LogLevels::LogDebug) << "Stopping workers ... " << std::endl;
+        stop_all_workers(/*wait = */ true);
         return ret;
     }
 
@@ -460,9 +452,9 @@ class RecoveryFarm final {
     /**
      * @brief Forces each worker to stop
      */
-    void stop_all_workers() {
+    void stop_all_workers(bool wait = true) {
         for (const auto& worker : workers_) {
-            worker->stop(/* wait =*/true);
+            worker->stop(wait);
         }
     }
 

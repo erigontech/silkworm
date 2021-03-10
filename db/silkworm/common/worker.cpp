@@ -34,6 +34,7 @@ void Worker::start(bool wait) {
         WorkerState expected_state{WorkerState::kStarting};
         if (state_.compare_exchange_strong(expected_state, WorkerState::kStarted)) {
             try {
+                kicked_.store(false);
                 work();
             } catch (const std::exception& ex) {
                 std::cerr << "Exception thrown in worker thread : " << ex.what() << std::endl;
@@ -61,6 +62,20 @@ void Worker::stop(bool wait) {
 }
 void Worker::kick() {
     kicked_.store(true);
-    kicked_cv_.notify_one();
+    kicked_cv_.notify_all();
+}
+
+bool Worker::wait_for_kick(uint32_t timeout) {
+
+    while (true) {
+        bool expected_kick_value{true};
+        if (!kicked_.compare_exchange_strong(expected_kick_value, false)) {
+            std::unique_lock l(kick_mtx_);
+            (void)kicked_cv_.wait_for(l, std::chrono::seconds(timeout));
+            continue;
+        }
+        break;
+    }
+    return should_stop() ? false : true;
 }
 }  //  namespace silkworm

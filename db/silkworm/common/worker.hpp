@@ -47,14 +47,23 @@ class Worker {
     WorkerState get_state() { return state_.load(); }
 
   protected:
-    std::atomic_bool kicked_{false};
-    std::condition_variable kicked_cv_{};
-    std::mutex xwork_;
+    /**
+     * @brief Puts the underlying thread in non-busy wait for a kick
+     * to waken up and do work.
+     * Returns True if the kick has been received and should go ahead
+     * otherwise False (i.e. the thread has been asked to stop)
+     *
+     * @param timeout: Timeout for conditional variable wait (seconds)
+     */
+    bool wait_for_kick(uint32_t timeout = 1);  // Puts a thread in non-busy wait for data to process
+    std::atomic_bool kicked_{false};           // Whether or not the kick has been received
+    std::condition_variable kicked_cv_{};      // Condition variable to wait for kick
+    std::mutex kick_mtx_{};                    // Mutex for conditional wait of kick
 
   private:
     std::atomic<WorkerState> state_{WorkerState::kStopped};
     std::unique_ptr<std::thread> thread_{nullptr};
-    virtual void work() = 0;
+    virtual void work() = 0;  // Derived classes must override
 };
 }  // namespace silkworm
 

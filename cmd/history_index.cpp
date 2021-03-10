@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
                 std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
                 boost::endian::store_big_u64(&last_chunk_index[entry.key.size()], (uint64_t)-1);
                 auto previous_bitmap_bytes{history_index_table->get(last_chunk_index)};
-                if (previous_bitmap_bytes != std::nullopt) {
+                if (previous_bitmap_bytes.has_value()) {
                     bm |= roaring::Roaring64Map::readSafe((const char *)previous_bitmap_bytes->data(), previous_bitmap_bytes->size());
                     db_flags = 0;
                 }

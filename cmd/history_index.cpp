@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
                     db_flags = 0;
                 }
                 while (bm.cardinality() > 0) {
-                    auto current_chunk{db::bitmap::cut_left(&bm, db::bitmap::kBitmapChunkLimit)};
+                    auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
                     // make chunk index
                     auto chunk_index{Bytes(entry.key.size() + 8, '\0')};
 
@@ -180,7 +180,7 @@ int main(int argc, char* argv[]) {
                     current_chunk.write((char *) &current_chunk_bytes[0]);
                     history_index_table->put(chunk_index, current_chunk_bytes, db_flags);
                 }
-            }, db_flags, 20);
+            }, db_flags, /* log_every_percent = */ 20);
 
             // Update progress height with last processed block
             db::stages::set_stage_progress(*txn, stage_key, block_number);

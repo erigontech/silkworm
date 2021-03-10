@@ -27,7 +27,7 @@ namespace silkworm::db::bitmap {
         roaring::Roaring64Map expected(roaring::api::roaring_bitmap_from_range(0, 100000, 1));
         roaring::Roaring64Map actual;
         std::vector<roaring::Roaring64Map> bitmap_chunks;
-        while(bitmap.cardinality() != 0) bitmap_chunks.push_back(cut_left(&bitmap, kBitmapChunkLimit));
+        while(bitmap.cardinality() != 0) bitmap_chunks.push_back(cut_left(bitmap, kBitmapChunkLimit));
         for(const auto &chunk: bitmap_chunks) actual |= chunk;
         CHECK(actual == expected);
     }

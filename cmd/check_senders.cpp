@@ -902,7 +902,7 @@ int main(int argc, char* argv[]) {
 
         if (rc = static_cast<int>(result), rc) {
             SILKWORM_LOG(LogLevels::LogError)
-                << (app_recover ? "Recovery" : "Unwind") << "returned " << rc << std::endl;
+                << (app_recover ? "Recovery" : "Unwind") << " returned code " << rc << std::endl;
         } else {
             if (!options.dry) {
                 SILKWORM_LOG(LogLevels::LogInfo) << "Committing" << std::endl;

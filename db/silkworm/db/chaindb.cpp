@@ -1,6 +1,5 @@
-#include "chaindb.hpp"
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,6 +13,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#include "chaindb.hpp"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -272,7 +273,6 @@ size_t Transaction::get_id(void) { return mdb_txn_id(handle_); }
 bool Transaction::is_ro(void) { return ((flags_ & MDB_RDONLY) == MDB_RDONLY); }
 
 std::optional<Bytes> Transaction::get(const TableConfig& domain, MDB_val* mdb_key) {
-
     std::unique_ptr<Table> tbl{nullptr};
 
     try {
@@ -303,8 +303,7 @@ std::optional<Bytes> Transaction::get(const TableConfig& domain, MDB_val* mdb_ke
     return ret;
 }
 
-int Transaction::put(const TableConfig& domain, MDB_val* mdb_key, MDB_val* mdb_data)
-{
+int Transaction::put(const TableConfig& domain, MDB_val* mdb_key, MDB_val* mdb_data) {
     if (is_ro()) {
         return MDB_BAD_TXN;
     }
@@ -326,24 +325,6 @@ int Transaction::put(const TableConfig& domain, MDB_val* mdb_key, MDB_val* mdb_d
 std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned flags) {
     flags |= config.flags;
     MDB_dbi dbi{open_dbi(config.name, flags)};
-
-    // Apply custom comparators (if any)
-    // Uncomment the following when necessary
-    // switch (config.key_comparator) // use mdb_set_compare
-    //{
-    // default:
-    //    break;
-    //}
-
-    // Apply custom dup comparators (if any)
-    switch (config.dup_comparator)  // use mdb_set_dupsort
-    {
-        case TableCustomDupComparator::ExcludeSuffix32:
-            err_handler(mdb_set_dupsort(handle_, dbi, dup_cmp_exclude_suffix32));
-            break;
-        default:
-            break;
-    }
 
     return std::make_unique<Table>(this, dbi, config.name);
 }
@@ -601,17 +582,4 @@ std::shared_ptr<Environment> get_env(DatabaseConfig config) {
     return newitem;
 }
 
-int dup_cmp_exclude_suffix32(const MDB_val* a, const MDB_val* b) {
-    size_t lenA{(a->mv_size >= 32) ? a->mv_size - 32 : a->mv_size};
-    size_t lenB{(b->mv_size >= 32) ? b->mv_size - 32 : b->mv_size};
-    size_t len{lenA};
-    int64_t len_diff{(int64_t)lenA - (int64_t)(lenB)};
-
-    if (len_diff > 0) {
-        len = lenB;
-        len_diff = 1;
-    }
-    int diff{memcmp(a->mv_data, b->mv_data, len)};
-    return diff ? diff : (len_diff < 0 ? -1 : (int)len_diff);
-}
 }  // namespace silkworm::lmdb

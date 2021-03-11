@@ -14,10 +14,10 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_DELTA_H_
-#define SILKWORM_STATE_DELTA_H_
+#ifndef SILKWORM_STATE_DELTA_HPP_
+#define SILKWORM_STATE_DELTA_HPP_
 
-#include <evmc/evmc.hpp>
+#include <silkworm/common/base.hpp>
 #include <silkworm/state/object.hpp>
 
 namespace silkworm {
@@ -147,4 +147,4 @@ namespace state {
 }  // namespace state
 }  // namespace silkworm
 
-#endif  // SILKWORM_STATE_DELTA_H_
+#endif  // SILKWORM_STATE_DELTA_HPP_

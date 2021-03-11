@@ -19,9 +19,9 @@
 
 #include <robin_hood.h>
 
-#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <memory>
+#include <silkworm/common/base.hpp>
 #include <silkworm/state/buffer.hpp>
 #include <silkworm/state/delta.hpp>
 #include <silkworm/state/object.hpp>

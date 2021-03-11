@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
             auto target_table{txn->open(db::table::kHeaderNumbers, MDB_CREATE)};
             size_t target_table_rcount{0};
             lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
-            unsigned int db_flags{target_table_rcount ? 0u : (uint32_t)MDB_APPEND};
+            unsigned int db_flags{target_table_rcount ? 0u : MDB_APPEND};
 
             // Eventually load collected items with no transform (may throw)
             collector.load(target_table.get(), nullptr, db_flags, /* log_every_percent = */ 10);

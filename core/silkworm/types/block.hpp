@@ -20,7 +20,6 @@
 #include <stdint.h>
 
 #include <array>
-#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/util.hpp>

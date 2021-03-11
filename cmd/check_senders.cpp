@@ -138,7 +138,7 @@ class RecoveryWorker final : public silkworm::Worker {
             for (auto const& package : (*batch_)) {
                 // On block switching store the results
                 if (block_num != package.block_num) {
-                    MDB_val result{block_result_length, (void*)&data_[block_result_offset]};
+                    MDB_val result{block_result_length, &data_[block_result_offset]};
                     results_.push_back({block_num, result});
                     block_result_offset += block_result_length;
                     block_result_length = 0;
@@ -152,7 +152,7 @@ class RecoveryWorker final : public silkworm::Worker {
                 std::optional<Bytes> recovered{
                     ecdsa::recover(full_view(package.hash.bytes), full_view(package.signature), package.odd_y_parity)};
 
-                if (recovered.has_value() && (int)recovered->at(0) == 4) {
+                if (recovered.has_value() && recovered->at(0) == 4u) {
                     auto keyHash{ethash::keccak256(recovered->data() + 1, recovered->length() - 1)};
                     std::memcpy(&data_[block_result_offset + block_result_length],
                                 &keyHash.bytes[sizeof(keyHash) - kAddressLength], kAddressLength);
@@ -167,7 +167,7 @@ class RecoveryWorker final : public silkworm::Worker {
             if (status_.load() == Status::Working) {
                 // Store results for last block
                 if (block_result_length) {
-                    MDB_val result{block_result_length, (void*)&data_[block_result_offset]};
+                    MDB_val result{block_result_length, &data_[block_result_offset]};
                     results_.push_back({block_num, result});
                 }
                 status_.store(Status::ResultsReady);
@@ -327,7 +327,7 @@ class RecoveryFarm final {
                     return Status::BadBlockSequence;
                 }
 
-                if (memcmp((void*)&key_view[8], (void*)headers_it_1_->bytes, 32) != 0) {
+                if (memcmp(&key_view[8], headers_it_1_->bytes, 32) != 0) {
                     // We stumbled into a non canonical block (not matching header)
                     // move next and repeat
                     rc = bodies_table->get_next(&mdb_key, &mdb_data);
@@ -803,7 +803,7 @@ int main(int argc, char* argv[]) {
     // Init command line parser
     CLI::App app("Senders recovery tool.");
     app_options_t options{};
-    options.datadir = silkworm::db::default_path();  // Default chain data db path
+    options.datadir = db::default_path();  // Default chain data db path
 
     // Command line arguments
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
@@ -820,7 +820,7 @@ int main(int argc, char* argv[]) {
         ->check(CLI::Range(1u, UINT32_MAX));
 
     app.add_option("--batch", options.batch_size, "Number of transactions to process per batch", true)
-        ->check(CLI::Range((size_t)1'000, (size_t)10'000'000));
+        ->check(CLI::Range(1'000u, 10'000'000u));
 
     app.add_flag("--debug", options.debug, "May print some debug/trace info.");
     app.add_flag("--force", options.force, "Force reprocessing of blocks");

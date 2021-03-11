@@ -14,14 +14,13 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_BUFFER_H_
-#define SILKWORM_DB_BUFFER_H_
+#ifndef SILKWORM_DB_BUFFER_HPP_
+#define SILKWORM_DB_BUFFER_HPP_
 
 #include <absl/container/btree_map.h>
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
-#include <evmc/evmc.hpp>
 #include <optional>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
@@ -145,4 +144,4 @@ class Buffer : public StateBuffer {
 
 }  // namespace silkworm::db
 
-#endif  // SILKWORM_DB_BUFFER_H_
+#endif  // SILKWORM_DB_BUFFER_HPP_

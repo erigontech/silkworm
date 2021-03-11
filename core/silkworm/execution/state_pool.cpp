@@ -16,7 +16,11 @@
 
 #include "state_pool.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <evmone/analysis.hpp>
+#pragma GCC diagnostic pop
+
 #include <utility>
 
 namespace silkworm {

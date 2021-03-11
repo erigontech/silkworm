@@ -91,6 +91,32 @@ inline uint64_t load_big_u64(uint8_t const* bytes) noexcept {
 #endif
 }
 
+// Similar to boost::endian::load_little_u32
+inline uint32_t load_little_u32(uint8_t const* bytes) noexcept {
+    uint32_t x;
+    std::memcpy(&x, bytes, sizeof(x));
+#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
+    return x;
+#elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
+    return SILKWORM_BSWAP32(x);
+#else
+#error "byte order not supported"
+#endif
+}
+
+// Similar to boost::endian::load_little_u64
+inline uint64_t load_little_u64(uint8_t const* bytes) noexcept {
+    uint64_t x;
+    std::memcpy(&x, bytes, sizeof(x));
+#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
+    return x;
+#elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
+    return SILKWORM_BSWAP64(x);
+#else
+#error "byte order not supported"
+#endif
+}
+
 }  // namespace silkworm::endian
 
 #endif  // SILKWORM_COMMON_ENDIAN_HPP_

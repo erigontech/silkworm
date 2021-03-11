@@ -18,11 +18,16 @@
 #define SILKWORM_DB_BITMAP_HPP_
 
 #include <optional>
-#include <roaring64map.hh>
 #include <silkworm/common/base.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <roaring64map.hh>
+#pragma GCC diagnostic pop
 
 namespace silkworm::db::bitmap {
 
+// TG bitmapdb.ChunkLimit
 constexpr size_t kBitmapChunkLimit = 1950;
 
 roaring::Roaring64Map read(ByteView serialized);

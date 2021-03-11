@@ -16,6 +16,7 @@
 
 #include "access_layer.hpp"
 
+#include <nlohmann/json.hpp>
 #include <boost/endian/conversion.hpp>
 #include <cassert>
 
@@ -353,6 +354,79 @@ bool read_storage_mode_receipts(lmdb::Transaction& txn) {
 bool migration_happened(lmdb::Transaction& txn, const char* name) {
     auto tbl{txn.open(table::kMigrations)};
     return tbl->get(byte_view_of_c_str(name)).has_value();
+}
+
+std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
+    using json = nlohmann::json;
+    auto genesis{read_block(txn, 0u, false)};
+    if (!genesis) {
+        return std::nullopt;
+    }
+
+    MDB_val config_key{kHashLength, static_cast<void*>(genesis->hash.bytes)};
+    auto config_value = txn.get(table::kConfig, &config_key);
+    if (!config_value) {
+        return std::nullopt;
+    }
+
+    /*
+    * Sample config
+    {
+   "byzantiumBlock":4370000,
+   "chainId":1,
+   "constantinopleBlock":7280000,
+   "daoForkBlock":1920000,
+   "daoForkSupport":true,
+   "eip150Block":2463000,
+   "eip150Hash":"0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0",
+   "eip155Block":2675000,
+   "eip158Block":2675000,
+   "ethash":{},
+   "homesteadBlock":1150000,
+   "istanbulBlock":9069000,
+   "muirGlacierBlock":9200000,
+   "petersburgBlock":7280000
+    }
+    */
+
+    auto config_json{json::parse(config_value->c_str())};
+    ChainConfig config{};
+
+    if (config_json.contains("chainId")) {
+        config.chain_id = config_json["chainId"].get<uint64_t>();
+    }
+    if (config_json.contains("homesteadBlock")) {
+        config.homestead_block.emplace(config_json["homesteadBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("eip150Block")) {
+        config.tangerine_whistle_block.emplace(config_json["eip150Block"].get<uint64_t>());
+    }
+    if (config_json.contains("eip155Block")) {
+        config.spurious_dragon_block.emplace(config_json["eip155Block"].get<uint64_t>());
+    }
+    if (config_json.contains("byzantiumBlock")) {
+        config.byzantium_block.emplace(config_json["byzantiumBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("constantinopleBlock")) {
+        config.constantinople_block.emplace(config_json["constantinopleBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("petersburgBlock")) {
+        config.petersburg_block.emplace(config_json["petersburgBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("istanbulBlock")) {
+        config.istanbul_block.emplace(config_json["istanbulBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("muirGlacierBlock")) {
+        config.muir_glacier_block.emplace(config_json["muirGlacierBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("daoForkBlock")) {
+        config.dao_block.emplace(config_json["daoForkBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("berlinBlock")) {
+        config.berlin_block.emplace(config_json["berlinBlock"].get<uint64_t>());
+    }
+
+    return config;
 }
 
 }  // namespace silkworm::db

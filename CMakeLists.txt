@@ -211,7 +211,8 @@ if(MSVC)
 
   add_link_options(/ignore:4099)
 else()
-  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough -Wold-style-cast)
+  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

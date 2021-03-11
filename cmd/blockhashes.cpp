@@ -32,14 +32,13 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Generates Blockhashes => BlockNumber mapping in database"};
 
     std::string db_path{db::default_path()};
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
 
-
     // Check data.mdb exists in provided directory
-    boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
-    if (!boost::filesystem::exists(db_file)) {
+    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
@@ -57,7 +56,6 @@ int main(int argc, char* argv[]) {
     auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};
 
     try {
-
         auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kBlockHashesKey)};
         auto expected_block_number{last_processed_block_number + 1};
         uint32_t block_number{0};
@@ -70,7 +68,7 @@ int main(int argc, char* argv[]) {
         MDB_val mdb_data;
         SILKWORM_LOG(LogInfo) << "Started BlockHashes Extraction" << std::endl;
         int rc{header_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
-        while (!rc) { /* Loop as long as we have no errors*/
+        while (!rc) {                                     /* Loop as long as we have no errors*/
 
             if (mdb_key.mv_size != 40) {
                 // Not the key we need
@@ -86,8 +84,7 @@ int main(int argc, char* argv[]) {
                 // Blocks are out of sequence for any reason
                 // Should not happen but you never know
                 throw std::runtime_error("Bad headers sequence. Expected " + std::to_string(expected_block_number) +
-                    " got " + std::to_string(reached_block_number));
-
+                                         " got " + std::to_string(reached_block_number));
             }
 
             // We reached a valid block height in proper sequence
@@ -105,7 +102,6 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(rc);
         }
 
-
         SILKWORM_LOG(LogInfo) << "Entries Collected << " << blocks_processed_count << std::endl;
 
         // Proceed only if we've done something
@@ -113,14 +109,14 @@ int main(int argc, char* argv[]) {
             SILKWORM_LOG(LogInfo) << "Started BlockHashes Loading" << std::endl;
 
             /*
-            * If we're on first sync then we shouldn't have any records in target
-            * table. For this reason we can apply MDB_APPEND to load as
-            * collector (with no transform) ensures collected entries
-            * are already sorted. If instead target table contains already
-            * some data the only option is to load in upsert mode as we
-            * cannot guarantee keys are sorted amongst different calls
-            * of this stage
-            */
+             * If we're on first sync then we shouldn't have any records in target
+             * table. For this reason we can apply MDB_APPEND to load as
+             * collector (with no transform) ensures collected entries
+             * are already sorted. If instead target table contains already
+             * some data the only option is to load in upsert mode as we
+             * cannot guarantee keys are sorted amongst different calls
+             * of this stage
+             */
             auto target_table{txn->open(db::table::kHeaderNumbers, MDB_CREATE)};
             size_t target_table_rcount{0};
             lmdb::err_handler(target_table->get_rcount(&target_table_rcount));

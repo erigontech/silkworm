@@ -26,19 +26,19 @@
 
 #include "tg_api/silkworm_tg_api.h"
 
-using namespace silkworm;
-
 int main(int argc, char* argv[]) {
+    using namespace silkworm;
+
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
     std::string db_path{db::default_path()};
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
 
     std::string map_size_str{};
     CLI::Option* map_size_option{app.add_option("--lmdb.mapSize", map_size_str, "Lmdb map size")};
 
-    uint64_t to_block{std::numeric_limits<uint64_t>::max()};
+    uint64_t to_block{UINT64_MAX};
     app.add_option("--to", to_block, "Block execute up to");
 
     std::string batch_size_str{"512MB"};
@@ -46,10 +46,11 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
+    namespace fs = boost::filesystem;
 
     // Check data.mdb exists in provided directory
-    boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
-    if (!boost::filesystem::exists(db_file)) {
+    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }

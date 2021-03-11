@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 
     std::string db_path{db::default_path()};
     bool full, storage;
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
 
     app.add_flag("--full", full, "Start making history indexes from block 0");
@@ -49,8 +49,8 @@ int main(int argc, char *argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     // Check data.mdb exists in provided directory
-    boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
-    if (!boost::filesystem::exists(db_file)) {
+    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
@@ -109,10 +109,10 @@ int main(int argc, char *argv[]) {
             bitmaps.at(composite_key).add(block_number);
             allocated_space += 8;
             if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
-                for (const auto& [key, bm] : bitmaps) {
+                for (const auto &[key, bm] : bitmaps) {
                     Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-                    bm.write((char*)bitmap_bytes.data());
-                    etl::Entry entry{ Bytes((unsigned char*)key.c_str(), key.size()), bitmap_bytes };
+                    bm.write((char *)bitmap_bytes.data());
+                    etl::Entry entry{Bytes((unsigned char *)key.c_str(), key.size()), bitmap_bytes};
                     collector.collect(entry);
                 }
                 SILKWORM_LOG(LogInfo) << "Current Block: " << block_number << std::endl;

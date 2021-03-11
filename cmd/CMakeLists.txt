@@ -43,10 +43,10 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(db_test silkworm_db Catch2::Catch2)
 
   add_executable(check_changes check_changes.cpp)
-  target_link_libraries(check_changes PRIVATE silkworm_db absl::flags_parse absl::time Boost::filesystem)
+  target_link_libraries(check_changes PRIVATE silkworm_db CLI11::CLI11 absl::time Boost::filesystem)
 
   add_executable(scan_txs scan_txs.cpp)
-  target_link_libraries(scan_txs PRIVATE silkworm_db absl::flags_parse absl::time Boost::filesystem)
+  target_link_libraries(scan_txs PRIVATE silkworm_db CLI11::CLI11 absl::time Boost::filesystem)
 
   find_package(CLI11 CONFIG REQUIRED)
 

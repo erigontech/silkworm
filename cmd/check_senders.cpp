@@ -224,6 +224,8 @@ class RecoveryFarm final {
         WorkerAborted = 11,
         WorkerStatusMismatch = 12,
         FileSystemError = 13,
+        InvalidChainConfig = 14,
+        NoDataToProcess = 15,
     };
 
     /**
@@ -232,8 +234,14 @@ class RecoveryFarm final {
      * @param height_from : Lower boundary for blocks to process (included)
      * @param height_to   : Upper boundary for blocks to process (included)
      */
-    Status recover(ChainConfig config, uint64_t height_from, uint64_t height_to, bool force) {
+    Status recover(uint64_t height_from, uint64_t height_to, bool force) {
         Status ret{Status::Succeded};
+
+        auto config{db::read_chain_config(db_transaction_)};
+        if (!config.has_value()) {
+            return Status::InvalidChainConfig;
+        }
+
         try {
             // Retrieve previous stage height
             auto senders_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kSendersKey)};
@@ -258,7 +266,7 @@ class RecoveryFarm final {
                 height_to = blocks_stage_height;
                 if (height_to < height_from) {
                     // We actually don't need to recover anything
-                    return Status::Succeded;
+                    return Status::NoDataToProcess;
                 }
             }
 
@@ -341,7 +349,7 @@ class RecoveryFarm final {
                         }
                     }
 
-                    ret = fill_batch(config, block_num, transactions);
+                    ret = fill_batch(*config, block_num, transactions);
                     if (ret != Status::Succeded) {
                         throw std::runtime_error("Unable to transform transactions");
                     }
@@ -867,9 +875,6 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Invalid operation");
         }
 
-        // TODO Get it from DB ?
-        ChainConfig chain_config{kMainnetConfig};
-
         // Set database parameters
         lmdb::DatabaseConfig db_config{options.datadir};
         db_config.set_readonly(false);
@@ -890,7 +895,7 @@ int main(int argc, char* argv[]) {
         RecoveryFarm::Status result{RecoveryFarm::Status::Succeded};
 
         if (app_recover) {
-            result = farm.recover(chain_config, options.block_from, options.block_to, options.force);
+            result = farm.recover(options.block_from, options.block_to, options.force);
         } else {
             result = farm.unwind(options.block_from);
         }

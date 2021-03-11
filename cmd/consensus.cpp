@@ -48,6 +48,7 @@ static const fs::path kBlockchainDir{"BlockchainTests"};
 static const fs::path kTransactionDir{"TransactionTests"};
 
 static const std::vector<fs::path> kExcludedTests{
+    // Very slow tests
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
 
     // Nonce >= 2^64 is not supported.
@@ -59,11 +60,6 @@ static const std::vector<fs::path> kExcludedTests{
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
-};
-
-static const std::vector<fs::path> kEip2315Tests{
-    kBlockchainDir / "GeneralStateTests" / "stSubroutine",
-    kBlockchainDir / "ValidBlocks" / "bcStateTests" / "testOpcodes.json",
 };
 
 constexpr size_t kColumnWidth{80};
@@ -568,16 +564,8 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
     }
 }
 
-bool exclude_test(const fs::path& p, const fs::path root_dir, bool skip_eip_2315) {
+bool exclude_test(const fs::path& p, const fs::path root_dir) {
     for (const fs::path& e : kExcludedTests) {
-        if (root_dir / e == p) {
-            return true;
-        }
-    }
-    if (!skip_eip_2315) {
-        return false;
-    }
-    for (const fs::path& e : kEip2315Tests) {
         if (root_dir / e == p) {
             return true;
         }
@@ -591,8 +579,6 @@ int main(int argc, char* argv[]) {
     app.add_option("--evm", evm_path, "Path to EVMC-compliant VM");
     std::string tests_path{SILKWORM_CONSENSUS_TEST_DIR};
     app.add_option("--tests", tests_path, "Path to consensus tests", true)->check(CLI::ExistingDirectory);
-    bool skip_eip_2315{false};
-    app.add_flag("--skip-eip-2315", skip_eip_2315, "Skip EIP-2315 tests");
     CLI11_PARSE(app, argc, argv);
 
     if (!evm_path.empty()) {
@@ -620,7 +606,7 @@ int main(int argc, char* argv[]) {
 
     for (auto i = fs::recursive_directory_iterator(root_dir / kBlockchainDir); i != fs::recursive_directory_iterator{};
          ++i) {
-        if (exclude_test(*i, root_dir, skip_eip_2315)) {
+        if (exclude_test(*i, root_dir)) {
             res += kSkippedTest;
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
@@ -630,7 +616,7 @@ int main(int argc, char* argv[]) {
 
     for (auto i = fs::recursive_directory_iterator(root_dir / kTransactionDir); i != fs::recursive_directory_iterator{};
          ++i) {
-        if (exclude_test(*i, root_dir, skip_eip_2315)) {
+        if (exclude_test(*i, root_dir)) {
             res += kSkippedTest;
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {

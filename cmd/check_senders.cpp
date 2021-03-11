@@ -128,7 +128,6 @@ class RecoveryWorker final : public silkworm::Worker {
     // Basic work loop (overrides Worker::work())
     void work() final {
         while (wait_for_kick()) {
-
             // Prefer swapping with a new vector instead of clear
             std::vector<std::pair<uint64_t, MDB_val>>().swap(results_);
 
@@ -424,7 +423,7 @@ class RecoveryFarm final {
         SILKWORM_LOG(LogLevels::LogInfo) << "Unwinding Senders' table to height " << new_height << std::endl;
         try {
             auto unwind_table{db_transaction_.open(db::table::kSenders, MDB_CREATE)};
-            uint64_t rcount{0};
+            size_t rcount{0};
             lmdb::err_handler(unwind_table->get_rcount(&rcount));
             if (rcount) {
                 if (new_height <= 1) {
@@ -856,7 +855,7 @@ int main(int argc, char* argv[]) {
     // check whether it is empty
     fs::path db_path = fs::path(options.datadir);
     if (!fs::exists(db_path) || !fs::is_directory(db_path) || fs::is_empty(db_path)) {
-        std::cerr << "Invalid or empty --datadir \"" << options.datadir << "\"" << std::endl
+        std::cerr << "Invalid or empty --chaindata \"" << options.datadir << "\"" << std::endl
                   << "Try --help for help" << std::endl;
         return -1;
     } else {

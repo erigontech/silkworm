@@ -15,13 +15,12 @@
 */
 
 #include <CLI/CLI.hpp>
-
-#include <boost/filesystem.hpp>
-#include <silkworm/etl/collector.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/db/stages.hpp>
 #include <boost/endian/conversion.hpp>
+#include <boost/filesystem.hpp>
+#include <silkworm/common/log.hpp>
+#include <silkworm/db/stages.hpp>
+#include <silkworm/db/tables.hpp>
+#include <silkworm/etl/collector.hpp>
 
 using namespace silkworm;
 
@@ -31,14 +30,13 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
 
     std::string db_path{db::default_path()};
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
 
-
     // Check data.mdb exists in provided directory
-    boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
-    if (!boost::filesystem::exists(db_file)) {
+    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
@@ -60,7 +58,6 @@ int main(int argc, char* argv[]) {
 
         // Check if each hash has the correct number according to the header table
         while (!rc) {
-
             ByteView key{db::from_mdb_val(mdb_key)};
 
             if (key.size() != 40) {
@@ -69,8 +66,8 @@ int main(int argc, char* argv[]) {
             }
 
             scanned_headers++;
-            auto hash{key.substr(8,40)};
-            auto expected_number{key.substr(0,8)};
+            auto hash{key.substr(8, 40)};
+            auto expected_number{key.substr(0, 8)};
             auto actual_number{blockhashes_table->get(hash)};
 
             if (!actual_number.has_value()) {

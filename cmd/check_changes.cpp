@@ -15,11 +15,9 @@
 */
 
 #include <absl/container/flat_hash_set.h>
-#include <absl/flags/flag.h>
-#include <absl/flags/parse.h>
-#include <absl/flags/usage.h>
 #include <absl/time/time.h>
 
+#include <CLI/CLI.hpp>
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <silkworm/db/access_layer.hpp>
@@ -37,10 +35,6 @@ static const absl::flat_hash_set<evmc::address> kPhantomAccounts{
     0x5a719cf3e02c17c876f6d294adb5cb7c6eb47e2f_address,
 };
 
-ABSL_FLAG(std::string, datadir, db::default_path(), "chain DB path");
-ABSL_FLAG(uint64_t, from, 1, "start from block number (inclusive)");
-ABSL_FLAG(uint64_t, to, UINT64_MAX, "check up to block number (exclusive)");
-
 static void print_storage_changes(const db::StorageChanges& s) {
     for (const auto& [address, x] : s) {
         std::cout << to_hex(address) << "\n";
@@ -54,26 +48,25 @@ static void print_storage_changes(const db::StorageChanges& s) {
 }
 
 int main(int argc, char* argv[]) {
-    absl::SetProgramUsageMessage("Executes Ethereum blocks and compares resulting change sets against DB.");
-    absl::ParseCommandLine(argc, argv);
+    CLI::App app{"Executes Ethereum blocks and compares resulting change sets against DB"};
 
-    namespace fs = boost::filesystem;
+    std::string db_path{db::default_path()};
+    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
+        ->check(CLI::ExistingDirectory);
 
-    fs::path db_path(absl::GetFlag(FLAGS_datadir));
-    if (!fs::exists(db_path) || !fs::is_directory(db_path) || db_path.empty()) {
-        std::cerr << absl::GetFlag(FLAGS_datadir) << " does not exist.\n";
-        std::cerr << "Use --datadir flag to point to a Turbo-Geth populated chaindata folder.\n";
-        return -1;
-    }
+    uint64_t from{1};
+    app.add_option("--from", from, "start from block number (inclusive)");
+
+    uint64_t to{UINT64_MAX};
+    app.add_option("--to", to, "check up to block number (exclusive)");
+
+    CLI11_PARSE(app, argc, argv);
 
     absl::Time t1{absl::Now()};
-    std::cout << t1 << " Checking change sets in " << absl::GetFlag(FLAGS_datadir) << "\n";
+    std::cout << t1 << " Checking change sets in " << db_path << "\n";
 
-    lmdb::DatabaseConfig db_config{absl::GetFlag(FLAGS_datadir)};
+    lmdb::DatabaseConfig db_config{db_path};
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-
-    const uint64_t from{absl::GetFlag(FLAGS_from)};
-    const uint64_t to{absl::GetFlag(FLAGS_to)};
 
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;

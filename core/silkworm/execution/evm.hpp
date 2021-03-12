@@ -17,14 +17,16 @@
 #ifndef SILKWORM_EXECUTION_EVM_HPP_
 #define SILKWORM_EXECUTION_EVM_HPP_
 
+#include <stack>
+#include <vector>
+
 #include <intx/intx.hpp>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
 #include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
-#include <stack>
-#include <vector>
 
 namespace silkworm {
 

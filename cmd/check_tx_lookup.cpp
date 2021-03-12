@@ -14,11 +14,13 @@
    limitations under the License.
 */
 
+#include <csignal>
+#include <iostream>
+
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
-#include <csignal>
-#include <iostream>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>

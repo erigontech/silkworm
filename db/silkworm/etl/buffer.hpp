@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-#pragma once
-#ifndef SILKWORM_ETL_BUFFER_H_
-#define SILKWORM_ETL_BUFFER_H_
+#ifndef SILKWORM_ETL_BUFFER_HPP_
+#define SILKWORM_ETL_BUFFER_HPP_
 
 #include <algorithm>
+#include <vector>
+
 #include <silkworm/common/base.hpp>
 #include <silkworm/etl/util.hpp>
-#include <vector>
 
 namespace silkworm::etl {
 
@@ -42,5 +42,7 @@ class Buffer {
     size_t optimal_size_;
     size_t size_ = 0;
 };
+
 }  // namespace silkworm::etl
-#endif  // !SILKWORM_ETL_BUFFER_H_
+
+#endif  // !SILKWORM_ETL_BUFFER_HPP_

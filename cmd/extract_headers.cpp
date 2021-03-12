@@ -13,18 +13,21 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#include <chrono>
+#include <iostream>
+#include <string>
+
 #include <CLI/CLI.hpp>
 #include <boost/beast/core/detail/base64.hpp>
 #include <boost/endian/conversion.hpp>
-#include <chrono>
-#include <iostream>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/transaction.hpp>
-#include <string>
 
 using namespace silkworm;
 

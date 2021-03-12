@@ -17,8 +17,9 @@
 #ifndef SILKWORM_TYPES_LOG_HPP_
 #define SILKWORM_TYPES_LOG_HPP_
 
-#include <silkworm/common/base.hpp>
 #include <vector>
+
+#include <silkworm/common/base.hpp>
 
 namespace silkworm {
 

@@ -18,6 +18,7 @@
 #define SILKWORM_CHAIN_INTRINSIC_GAS_HPP_
 
 #include <intx/int128.hpp>
+
 #include <silkworm/types/transaction.hpp>
 
 namespace silkworm {

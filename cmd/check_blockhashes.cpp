@@ -17,6 +17,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>

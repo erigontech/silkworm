@@ -18,6 +18,7 @@
 #define SILKWORM_STATE_BUFFER_HPP_
 
 #include <optional>
+
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>

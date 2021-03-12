@@ -14,10 +14,11 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_ACCOUNT_H_
-#define SILKWORM_TYPES_ACCOUNT_H_
+#ifndef SILKWORM_TYPES_ACCOUNT_HPP_
+#define SILKWORM_TYPES_ACCOUNT_HPP_
 
 #include <intx/intx.hpp>
+
 #include <silkworm/common/base.hpp>
 #include <silkworm/rlp/decode.hpp>
 
@@ -45,4 +46,4 @@ bool operator==(const Account& a, const Account& b);
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_ACCOUNT_H_
+#endif  // SILKWORM_TYPES_ACCOUNT_HPP_

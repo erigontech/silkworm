@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@
 
 // C API exported by Silkworm to be used in Turbo-Geth.
 
-#include <lmdb/lmdb.h>
 #include <stdbool.h>
 #include <stdint.h>
+
+#include <lmdb/lmdb.h>
 
 #if defined _MSC_VER
 #define SILKWORM_EXPORT __declspec(dllexport)

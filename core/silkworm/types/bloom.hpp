@@ -14,15 +14,16 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_BLOOM_H_
-#define SILKWORM_TYPES_BLOOM_H_
+#ifndef SILKWORM_TYPES_BLOOM_HPP_
+#define SILKWORM_TYPES_BLOOM_HPP_
 
 #include <stddef.h>
 #include <stdint.h>
 
 #include <array>
-#include <silkworm/types/log.hpp>
 #include <vector>
+
+#include <silkworm/types/log.hpp>
 
 namespace silkworm {
 
@@ -42,4 +43,4 @@ inline void join(Bloom& sum, const Bloom& addend) {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_BLOOM_H_
+#endif  // SILKWORM_TYPES_BLOOM_HPP_

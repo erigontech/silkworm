@@ -18,7 +18,9 @@
 
 #include <cassert>
 #include <cstring>
+
 #include <ethash/keccak.hpp>
+
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/rlp/encode.hpp>

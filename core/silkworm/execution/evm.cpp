@@ -19,10 +19,12 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <iterator>
+
 #include <ethash/keccak.hpp>
 #include <evmone/analysis.hpp>
 #include <evmone/baseline.hpp>
-#include <iterator>
+
 #include <silkworm/chain/protocol_param.hpp>
 
 #include "address.hpp"

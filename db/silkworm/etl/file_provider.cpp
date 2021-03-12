@@ -17,6 +17,7 @@
 #include "file_provider.hpp"
 
 #include <boost/filesystem/operations.hpp>
+
 #include <silkworm/common/util.hpp>
 
 namespace silkworm::etl {

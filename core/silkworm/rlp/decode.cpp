@@ -17,9 +17,10 @@
 #include "decode.hpp"
 
 #include <cassert>
+#include <tuple>
+
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
-#include <tuple>
 
 namespace silkworm::rlp {
 

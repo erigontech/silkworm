@@ -16,8 +16,10 @@
 
 #include "memory_buffer.hpp"
 
-#include <ethash/keccak.hpp>
 #include <map>
+
+#include <ethash/keccak.hpp>
+
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/trie/hash_builder.hpp>

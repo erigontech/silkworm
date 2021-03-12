@@ -19,8 +19,10 @@
 
 // See Yellow Paper, Appendix F "Signing Transactions"
 
-#include <intx/intx.hpp>
 #include <optional>
+
+#include <intx/intx.hpp>
+
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::ecdsa {

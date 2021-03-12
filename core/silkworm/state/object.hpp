@@ -17,9 +17,10 @@
 #ifndef SILKWORM_STATE_OBJECT_HPP_
 #define SILKWORM_STATE_OBJECT_HPP_
 
+#include <optional>
+
 #include <robin_hood.h>
 
-#include <optional>
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/account.hpp>
 

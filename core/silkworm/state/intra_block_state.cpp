@@ -17,7 +17,9 @@
 #include "intra_block_state.hpp"
 
 #include <cstring>
+
 #include <ethash/keccak.hpp>
+
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/util.hpp>
 

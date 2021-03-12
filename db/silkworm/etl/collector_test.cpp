@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -13,10 +13,12 @@
 
 #include "collector.hpp"
 
+#include <set>
+
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <catch2/catch.hpp>
-#include <set>
+
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/tables.hpp>
 
@@ -75,7 +77,7 @@ void run_collector_test(LoadFunc load_func) {
 TEST_CASE("collect_and_default_load") { run_collector_test(nullptr); }
 
 TEST_CASE("collect_and_load") {
-    run_collector_test([](Entry entry, lmdb::Table * table, unsigned int) {
+    run_collector_test([](Entry entry, lmdb::Table* table, unsigned int) {
         entry.key.at(0) = 1;
         table->put(entry.key, entry.value);
     });

@@ -16,11 +16,13 @@
 
 #include "util.hpp"
 
-#include <boost/endian/conversion.hpp>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+
+#include <boost/endian/conversion.hpp>
 #include <intx/int128.hpp>
+
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>

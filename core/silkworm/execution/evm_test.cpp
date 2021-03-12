@@ -17,6 +17,7 @@
 #include "evm.hpp"
 
 #include <catch2/catch.hpp>
+
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 

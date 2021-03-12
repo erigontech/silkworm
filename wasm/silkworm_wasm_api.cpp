@@ -17,6 +17,7 @@
 #include "silkworm_wasm_api.hpp"
 
 #include <cstdlib>
+
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/common/util.hpp>

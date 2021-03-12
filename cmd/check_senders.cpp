@@ -14,16 +14,20 @@
    limitations under the License.
 */
 
-#include <CLI/CLI.hpp>
 #include <atomic>
+#include <csignal>
+#include <queue>
+#include <string>
+#include <thread>
+
+#include <CLI/CLI.hpp>
 #include <boost/endian.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/signals2.hpp>
-#include <csignal>
 #include <ethash/keccak.hpp>
-#include <queue>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/worker.hpp>
@@ -33,8 +37,6 @@
 #include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/types/block.hpp>
-#include <string>
-#include <thread>
 
 namespace fs = boost::filesystem;
 using namespace silkworm;

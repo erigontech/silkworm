@@ -21,12 +21,13 @@
 // See TG core/rawdb/accessors_chain.go
 
 #include <optional>
+#include <vector>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
-#include <vector>
 
 namespace silkworm::db {
 

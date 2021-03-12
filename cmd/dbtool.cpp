@@ -14,20 +14,22 @@
    limitations under the License.
 */
 
+#include <csignal>
+#include <iostream>
+#include <regex>
+#include <string>
+
 #include <CLI/CLI.hpp>
 #include <boost/bind.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
-#include <csignal>
-#include <iostream>
-#include <regex>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
-#include <string>
 
 namespace fs = boost::filesystem;
 using namespace silkworm;

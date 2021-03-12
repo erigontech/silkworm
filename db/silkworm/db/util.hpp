@@ -14,20 +14,21 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_UTIL_H_
-#define SILKWORM_DB_UTIL_H_
+#ifndef SILKWORM_DB_UTIL_HPP_
+#define SILKWORM_DB_UTIL_HPP_
 
 /*
 Part of the compatibility layer with the Turbo-Geth DB format;
 see its package dbutils.
 */
 
+#include <string>
+
 #include <absl/container/btree_map.h>
 #include <lmdb/lmdb.h>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/block.hpp>
-#include <string>
 
 namespace silkworm::db {
 
@@ -106,4 +107,4 @@ namespace detail {
 }  // namespace detail
 }  // namespace silkworm::db
 
-#endif  // SILKWORM_DB_UTIL_H_
+#endif  // SILKWORM_DB_UTIL_HPP_

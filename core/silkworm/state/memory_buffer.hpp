@@ -14,12 +14,13 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_MEMORY_BUFFER_H_
-#define SILKWORM_STATE_MEMORY_BUFFER_H_
+#ifndef SILKWORM_STATE_MEMORY_BUFFER_HPP_
+#define SILKWORM_STATE_MEMORY_BUFFER_HPP_
 
-#include <silkworm/state/buffer.hpp>
 #include <unordered_map>
 #include <vector>
+
+#include <silkworm/state/buffer.hpp>
 
 namespace silkworm {
 
@@ -115,4 +116,4 @@ class MemoryBuffer : public StateBuffer {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_STATE_MEMORY_BUFFER_H_
+#endif  // SILKWORM_STATE_MEMORY_BUFFER_HPP_

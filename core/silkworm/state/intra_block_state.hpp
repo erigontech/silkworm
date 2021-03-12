@@ -17,16 +17,17 @@
 #ifndef SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_
 #define SILKWORM_STATE_INTRA_BLOCK_STATE_HPP_
 
-#include <robin_hood.h>
+#include <memory>
+#include <vector>
 
 #include <intx/intx.hpp>
-#include <memory>
+#include <robin_hood.h>
+
 #include <silkworm/common/base.hpp>
 #include <silkworm/state/buffer.hpp>
 #include <silkworm/state/delta.hpp>
 #include <silkworm/state/object.hpp>
 #include <silkworm/types/log.hpp>
-#include <vector>
 
 namespace silkworm {
 

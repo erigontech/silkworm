@@ -16,9 +16,11 @@
 
 #include "execution.hpp"
 
-#include <catch2/catch.hpp>
 #include <cstring>
+
+#include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/execution/address.hpp>

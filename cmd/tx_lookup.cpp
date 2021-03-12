@@ -27,7 +27,7 @@
 using namespace silkworm;
 
 static Bytes compact(Bytes& b) {
-    std::string::size_type offset{b.find_first_not_of(static_cast<uint8_t>(0))};
+    std::string::size_type offset{b.find_first_not_of(uint8_t{0})};
     if (offset != std::string::npos) {
         return b.substr(offset);
     }

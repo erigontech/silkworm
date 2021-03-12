@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
         int rc{bodies_table->get_first(&mdb_key, &mdb_data)};
 
         while (!rc) {
-            Bytes block_key(static_cast<const uint8_t*>(mdb_key.mv_data), mdb_key.mv_size);
+            ByteView block_key(db::from_mdb_val(mdb_key));
             auto block_number(boost::endian::load_big_u64(&block_key[0]));
             auto body_rlp{db::from_mdb_val(mdb_data)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};

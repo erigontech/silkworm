@@ -528,7 +528,7 @@ class RecoveryFarm final {
                         total_recovered_transactions_ += (mdb_val.mv_size / kAddressLength);
 
                         auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
-                        Bytes etl_data(static_cast<unsigned char*>(mdb_val.mv_data), mdb_val.mv_size);
+                        Bytes etl_data(db::from_mdb_val(mdb_val));
                         etl::Entry item{etl_key, etl_data};
                         collector_.collect(item);  // TODO check for errors (eg. disk full)
                         headers_it_2_++;

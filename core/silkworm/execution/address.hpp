@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,12 +14,10 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_ADDRESS_H_
-#define SILKWORM_EXECUTION_ADDRESS_H_
+#ifndef SILKWORM_EXECUTION_ADDRESS_HPP_
+#define SILKWORM_EXECUTION_ADDRESS_HPP_
 
-#include <stdint.h>
-
-#include <evmc/evmc.hpp>
+#include <silkworm/common/base.hpp>
 
 namespace silkworm {
 // Yellow Paper, Section 7
@@ -30,4 +28,4 @@ evmc::address create2_address(const evmc::address& caller, const evmc::bytes32& 
                               uint8_t (&code_hash)[32]) noexcept;
 }  // namespace silkworm
 
-#endif  // SILKWORM_EXECUTION_ADDRESS_H_
+#endif  // SILKWORM_EXECUTION_ADDRESS_HPP_

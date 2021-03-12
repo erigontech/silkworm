@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,16 +21,18 @@
 namespace silkworm::db::stages {
 
 uint64_t get_stage_progress(lmdb::Transaction& txn, const char* stage_name) {
-    MDB_val mdb_key{std::strlen(stage_name), (void*)stage_name};
+    MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};
     auto data{txn.get(silkworm::db::table::kSyncStageProgress, &mdb_key)};
-    if (!data.has_value()) return 0;
+    if (!data.has_value()) {
+        return 0;
+    }
     return boost::endian::load_big_u64(data->c_str());
 }
 
 void set_stage_progress(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num) {
     Bytes stage_progress(sizeof(block_num), 0);
     boost::endian::store_big_u64(stage_progress.data(), block_num);
-    MDB_val mdb_key{std::strlen(stage_name), (void*)stage_name};
+    MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};
     MDB_val mdb_data{db::to_mdb_val(stage_progress)};
     lmdb::err_handler(txn.put(silkworm::db::table::kSyncStageProgress, &mdb_key, &mdb_data));
 }

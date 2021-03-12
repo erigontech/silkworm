@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_DAO_H_
-#define SILKWORM_CHAIN_DAO_H_
+#ifndef SILKWORM_CHAIN_DAO_HPP_
+#define SILKWORM_CHAIN_DAO_HPP_
 
 // https://eips.ethereum.org/EIPS/eip-779
 
-#include <evmc/evmc.hpp>
 #include <silkworm/state/intra_block_state.hpp>
 
 namespace silkworm::dao {
@@ -93,4 +92,4 @@ void transfer_balances(IntraBlockState& state);
 
 }  // namespace silkworm::dao
 
-#endif  // SILKWORM_CHAIN_DAO_H_
+#endif  // SILKWORM_CHAIN_DAO_HPP_

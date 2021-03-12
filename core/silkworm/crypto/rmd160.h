@@ -57,17 +57,6 @@ typedef int the_correct_size_was_chosen [sizeof (dword) == 4? 1: -1];
 
 /********************************************************************/
 
-/* macro definitions */
-
-/* collect four bytes into one word: */
-#define BYTES_TO_DWORD(strptr)                    \
-            (((dword) *((strptr)+3) << 24) | \
-             ((dword) *((strptr)+2) << 16) | \
-             ((dword) *((strptr)+1) <<  8) | \
-             ((dword) *(strptr)))
-
-/********************************************************************/
-
 /* function prototypes */
 
 void rmd160_init(dword *MDbuf);

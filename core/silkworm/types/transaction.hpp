@@ -17,9 +17,9 @@
 #ifndef SILKWORM_TYPES_TRANSACTION_HPP_
 #define SILKWORM_TYPES_TRANSACTION_HPP_
 
-#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <optional>
+#include <silkworm/common/base.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <vector>
 

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ class Progress {
     uint32_t percent(void) {
         if (!max_counter_) return 100;
         if (!current_counter_) return 0;
-        return (uint32_t)(current_counter_ * 100 / max_counter_);
+        return static_cast<uint32_t>(current_counter_ * 100 / max_counter_);
     }
 
     void step(void) { current_counter_++; }
@@ -75,7 +75,7 @@ class Progress {
     }
 
     std::string print_progress(char c = '.') {
-        uint32_t percentage{(uint32_t)percent()};
+        uint32_t percentage{percent()};
         uint32_t numChars{percentage / percent_step_};
         if (!numChars) return "";
         std::string ret(numChars, c);
@@ -308,7 +308,7 @@ dbTablesInfo get_tablesInfo(std::shared_ptr<lmdb::Environment>& env) {
         // auto dataview{ db::from_mdb_val(data) };
         // std::cout << std::setw(24) << std::left << (const char*)key.mv_data << to_hex(dataview) << std::endl;
 
-        auto named = tx->open({(const char*)key.mv_data});
+        auto named = tx->open(lmdb::TableConfig{static_cast<const char*>(key.mv_data)});
         table = new dbTableEntry{named->get_dbi(), named->get_name()};
         lmdb::err_handler(named->get_stat(&table->stat));
         ret.pages += table->pages();
@@ -414,7 +414,7 @@ int do_stages(db_options_t& db_opts) {
         int rc{stages->get_first(&key, &data)};
         while (rc == MDB_SUCCESS) {
             size_t height{boost::endian::load_big_u64(db::from_mdb_val(data).data())};
-            std::cout << (boost::format(fmt_row) % (const char*)key.mv_data % height) << std::endl;
+            std::cout << (boost::format(fmt_row) % static_cast<const char*>(key.mv_data) % height) << std::endl;
             rc = stages->get_next(&key, &data);
         }
         if (rc != MDB_NOTFOUND) lmdb::err_handler(rc);
@@ -683,7 +683,7 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
             std::unique_ptr<lmdb::Table> lmdb_src_tbl{lmdb_src_txn->open(*src_config)};
             std::unique_ptr<lmdb::Transaction> lmdb_tgt_txn{lmdb_tgt_env->begin_rw_transaction()};
             std::unique_ptr<lmdb::Table> lmdb_tgt_tbl{
-                lmdb_tgt_txn->open(*src_config, (exists_on_target ? 0u : (unsigned int)MDB_CREATE))};
+                lmdb_tgt_txn->open(*src_config, (exists_on_target ? 0u : MDB_CREATE))};
 
             // If table exists on target and is populated and NOT --upsert then
             // skip with error
@@ -864,7 +864,7 @@ int main(int argc, char* argv[]) {
         copy_opts.newmapsize = *tmpsize;
         if (copy_opts.filesize) {
             copy_opts.newmapsize =
-                std::max((size_t)*tmpsize, copy_opts.filesize);  // Do not accept mapSize below filesize
+                std::max(*tmpsize, static_cast<uint64_t>(copy_opts.filesize));  // Do not accept mapSize below filesize
         }
         tmpsize.reset();
 
@@ -878,7 +878,7 @@ int main(int argc, char* argv[]) {
             std::cout << " Provided --commit size is invalid" << std::endl;
             return -1;
         }
-        copy_opts.commitsize = std::max((uint64_t)*tmpsize, (uint64_t)(1ull << 20));
+        copy_opts.commitsize = std::max(*tmpsize, static_cast<uint64_t>(1ull << 20));
         tmpsize.reset();
     }
 

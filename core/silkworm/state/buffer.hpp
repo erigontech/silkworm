@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_BUFFER_H_
-#define SILKWORM_STATE_BUFFER_H_
+#ifndef SILKWORM_STATE_BUFFER_HPP_
+#define SILKWORM_STATE_BUFFER_HPP_
 
-#include <evmc/evmc.hpp>
 #include <optional>
+#include <silkworm/common/base.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
@@ -97,4 +97,4 @@ class StateBuffer {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_STATE_BUFFER_H_
+#endif  // SILKWORM_STATE_BUFFER_HPP_

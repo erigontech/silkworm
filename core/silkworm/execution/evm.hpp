@@ -17,9 +17,6 @@
 #ifndef SILKWORM_EXECUTION_EVM_HPP_
 #define SILKWORM_EXECUTION_EVM_HPP_
 
-#include <stdint.h>
-
-#include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/execution/analysis_cache.hpp>

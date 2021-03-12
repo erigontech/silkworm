@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
             }
 
             // Ensure the reached block number is in proper sequence
-            Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
+            Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
             auto reached_block_number{boost::endian::load_big_u64(&mdb_key_as_bytes[0])};
             if (reached_block_number != expected_block_number) {
                 // Something wrong with db
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
             auto target_table{txn->open(db::table::kHeaderNumbers, MDB_CREATE)};
             size_t target_table_rcount{0};
             lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
-            unsigned int db_flags{target_table_rcount ? 0u : (uint32_t)MDB_APPEND};
+            unsigned int db_flags{target_table_rcount ? 0u : MDB_APPEND};
 
             // Eventually load collected items with no transform (may throw)
             collector.load(target_table.get(), nullptr, db_flags, /* log_every_percent = */ 10);

@@ -19,7 +19,6 @@
 #include <boost/filesystem.hpp>
 #include <iomanip>
 #include <iostream>
-#include <roaring64map.hh>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
@@ -95,8 +94,7 @@ int main(int argc, char *argv[]) {
             if (storage) {
                 char composite_key_array[kHashLength + kAddressLength];
                 std::memcpy(&composite_key_array[0], &static_cast<uint8_t *>(mdb_key.mv_data)[8], kAddressLength);
-                std::memcpy(&composite_key_array[kAddressLength], static_cast<uint8_t *>(mdb_data.mv_data),
-                            kHashLength);
+                std::memcpy(&composite_key_array[kAddressLength], mdb_data.mv_data, kHashLength);
                 composite_key = std::string(composite_key_array);
             } else {
                 composite_key = std::string(static_cast<char *>(mdb_data.mv_data), kAddressLength);
@@ -111,8 +109,8 @@ int main(int argc, char *argv[]) {
             if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
                 for (const auto &[key, bm] : bitmaps) {
                     Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-                    bm.write((char *)bitmap_bytes.data());
-                    etl::Entry entry{Bytes((unsigned char *)key.c_str(), key.size()), bitmap_bytes};
+                    bm.write(byte_ptr_cast(bitmap_bytes.data()));
+                    etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
                     collector.collect(entry);
                 }
                 SILKWORM_LOG(LogInfo) << "Current Block: " << block_number << std::endl;
@@ -128,8 +126,8 @@ int main(int argc, char *argv[]) {
 
         for (const auto &[key, bm] : bitmaps) {
             Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-            bm.write((char *)bitmap_bytes.data());
-            etl::Entry entry{Bytes((unsigned char *)key.c_str(), key.size()), bitmap_bytes};
+            bm.write(byte_ptr_cast(bitmap_bytes.data()));
+            etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
             collector.collect(entry);
         }
         bitmaps.clear();
@@ -142,19 +140,19 @@ int main(int argc, char *argv[]) {
             auto target_table{txn->open(index_config, MDB_CREATE)};
             size_t target_table_rcount{0};
             lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
-            unsigned int db_flags{target_table_rcount ? 0u : (uint32_t)MDB_APPEND};
+            unsigned int db_flags{target_table_rcount ? 0u : MDB_APPEND};
 
             // Eventually load collected items WITH transform (may throw)
             collector.load(
                 target_table.get(),
                 [](etl::Entry entry, lmdb::Table *history_index_table, unsigned int db_flags) {
-                    auto bm{roaring::Roaring64Map::readSafe((const char *)entry.value.data(), entry.value.size())};
+                    auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
                     Bytes last_chunk_index(entry.key.size() + 8, '\0');
                     std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
                     boost::endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
                     auto previous_bitmap_bytes{history_index_table->get(last_chunk_index)};
                     if (previous_bitmap_bytes.has_value()) {
-                        bm |= roaring::Roaring64Map::readSafe((const char *)previous_bitmap_bytes->data(),
+                        bm |= roaring::Roaring64Map::readSafe(byte_ptr_cast(previous_bitmap_bytes->data()),
                                                               previous_bitmap_bytes->size());
                         db_flags = 0;
                     }
@@ -166,7 +164,7 @@ int main(int argc, char *argv[]) {
                         uint64_t suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
                         boost::endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
                         Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
-                        current_chunk.write((char *)&current_chunk_bytes[0]);
+                        current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
                         history_index_table->put(chunk_index, current_chunk_bytes, db_flags);
                     }
                 },

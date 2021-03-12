@@ -24,7 +24,6 @@
 #include <cstring>
 #include <ethash/keccak.hpp>
 #include <iterator>
-#include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #include <limits>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
@@ -32,6 +31,11 @@
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/crypto/rmd160.hpp>
 #include <silkworm/crypto/snark.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
+#pragma GCC diagnostic pop
 
 namespace silkworm::precompiled {
 

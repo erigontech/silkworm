@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_LOG_H_
-#define SILKWORM_COMMON_LOG_H_
+#ifndef SILKWORM_COMMON_LOG_HPP_
+#define SILKWORM_COMMON_LOG_HPP_
 
 #include <silkworm/common/tee.hpp>
 #include <mutex>
@@ -65,4 +65,4 @@ class log_ {
 
 }  // namespace silkworm
 
-#endif	// SILKWORM_COMMON_LOG_H_
+#endif	// !SILKWORM_COMMON_LOG_HPP_

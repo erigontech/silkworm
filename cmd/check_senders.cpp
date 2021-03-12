@@ -529,8 +529,8 @@ class RecoveryFarm final {
 
                         auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
                         Bytes etl_data(static_cast<unsigned char*>(mdb_val.mv_data), mdb_val.mv_size);
-                        etl::Entry item{etl_key, etl_data};
-                        collector_.collect(item);  // TODO check for errors (eg. disk full)
+                        etl::Entry entry{etl_key, etl_data};
+                        collector_.collect(entry);  // TODO check for errors (eg. disk full)
                         headers_it_2_++;
                     }
                     SILKWORM_LOG(LogLevels::LogInfo)

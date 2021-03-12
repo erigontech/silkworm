@@ -121,7 +121,7 @@ namespace rlp {
 
     size_t length(const Transaction& txn) {
         Header rlp_head{rlp_header(txn, /*for_signing=*/false)};
-        size_t rlp_len{length_of_length(rlp_head.payload_length) + rlp_head.payload_length};
+        auto rlp_len{static_cast<size_t>(length_of_length(rlp_head.payload_length) + rlp_head.payload_length)};
         if (txn.type) {
             // EIP-2718 transactions are wrapped into byte array in block RLP
             return length_of_length(rlp_len + 1) + rlp_len + 1;
@@ -161,7 +161,7 @@ namespace rlp {
         Header rlp_head{rlp_header(txn, for_signing)};
 
         if (wrap_into_array) {
-            size_t rlp_len{length_of_length(rlp_head.payload_length) + rlp_head.payload_length};
+            auto rlp_len{static_cast<size_t>(length_of_length(rlp_head.payload_length) + rlp_head.payload_length)};
             encode_header(to, {false, rlp_len + 1});
         }
 

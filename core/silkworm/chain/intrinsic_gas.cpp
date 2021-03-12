@@ -30,9 +30,9 @@ intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbu
     }
 
     // https://eips.ethereum.org/EIPS/eip-2930
-    gas += static_cast<intx::uint128>(txn.access_list.size()) * fee::kAccessListAddressCost;
+    gas += intx::uint128{txn.access_list.size()} * fee::kAccessListAddressCost;
     for (const AccessListEntry& e : txn.access_list) {
-        gas += static_cast<intx::uint128>(e.storage_keys.size()) * fee::kAccessListStorageKeyCost;
+        gas += intx::uint128{e.storage_keys.size()} * fee::kAccessListStorageKeyCost;
     }
 
     if (txn.data.empty()) {

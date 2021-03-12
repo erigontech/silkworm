@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
             }
 
             // Ensure the reached block number is in proper sequence
-            Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
+            Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
             auto reached_block_number{boost::endian::load_big_u64(&mdb_key_as_bytes[0])};
             if (reached_block_number != expected_block_number) {
                 // Something wrong with db

@@ -94,8 +94,7 @@ int main(int argc, char *argv[]) {
             if (storage) {
                 char composite_key_array[kHashLength + kAddressLength];
                 std::memcpy(&composite_key_array[0], &static_cast<uint8_t *>(mdb_key.mv_data)[8], kAddressLength);
-                std::memcpy(&composite_key_array[kAddressLength], static_cast<uint8_t *>(mdb_data.mv_data),
-                            kHashLength);
+                std::memcpy(&composite_key_array[kAddressLength], mdb_data.mv_data, kHashLength);
                 composite_key = std::string(composite_key_array);
             } else {
                 composite_key = std::string(static_cast<char *>(mdb_data.mv_data), kAddressLength);

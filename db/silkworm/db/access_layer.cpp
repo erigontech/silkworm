@@ -358,13 +358,16 @@ bool migration_happened(lmdb::Transaction& txn, const char* name) {
 
 std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
     using json = nlohmann::json;
-    auto genesis{read_block(txn, 0u, false)};
-    if (!genesis) {
+
+    auto headers_key{header_hash_key(0)};
+    auto mdb_key{to_mdb_val(headers_key)};
+    auto genesis_hash{txn.get(db::table::kBlockHeaders, &mdb_key)};
+    if (!genesis_hash.has_value()) {
         return std::nullopt;
     }
 
-    MDB_val config_key{kHashLength, static_cast<void*>(genesis->hash.bytes)};
-    auto config_value = txn.get(table::kConfig, &config_key);
+    mdb_key = to_mdb_val(*genesis_hash);
+    auto config_value = txn.get(table::kConfig, &mdb_key);
     if (!config_value) {
         return std::nullopt;
     }

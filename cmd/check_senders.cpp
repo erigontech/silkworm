@@ -853,7 +853,7 @@ int main(int argc, char* argv[]) {
 
     // If database path is provided (and has passed CLI::ExistingDirectory validator
     // check whether it is empty
-    fs::path db_path = fs::path(options.datadir);
+    fs::path db_path(options.datadir);
     if (!fs::exists(db_path) || !fs::is_directory(db_path) || fs::is_empty(db_path)) {
         std::cerr << "Invalid or empty --chaindata \"" << options.datadir << "\"" << std::endl
                   << "Try --help for help" << std::endl;
@@ -880,7 +880,6 @@ int main(int argc, char* argv[]) {
         db_config.map_size = options.mapsize;
 
         // Compute etl temporary path
-        fs::path db_path(options.datadir);
         fs::path etl_path(db_path.parent_path() / fs::path("etl-temp"));
         fs::create_directories(etl_path);
         etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);

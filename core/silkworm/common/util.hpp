@@ -17,14 +17,16 @@
 #ifndef SILKWORM_COMMON_UTIL_HPP_
 #define SILKWORM_COMMON_UTIL_HPP_
 
+#include <cstring>
+#include <optional>
+
+#include <ethash/keccak.hpp>
+
+#include <silkworm/common/base.hpp>
+
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
-
-#include <cstring>
-#include <ethash/keccak.hpp>
-#include <optional>
-#include <silkworm/common/base.hpp>
 
 namespace silkworm {
 

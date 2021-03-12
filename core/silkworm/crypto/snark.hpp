@@ -17,13 +17,14 @@
 #ifndef SILKWORM_CRYPTO_SNARK_HPP_
 #define SILKWORM_CRYPTO_SNARK_HPP_
 
+#include <optional>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <libff/algebra/curves/alt_bn128/alt_bn128_g1.hpp>
+#include <libff/algebra/curves/alt_bn128/alt_bn128_g2.hpp>
 #pragma GCC diagnostic pop
 
-#include <libff/algebra/curves/alt_bn128/alt_bn128_g2.hpp>
-#include <optional>
 #include <silkworm/common/base.hpp>
 
 // Utility functions for zkSNARK related precompiled contracts.

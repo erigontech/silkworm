@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 #include "hash_builder.hpp"
 
 #include <algorithm>
+#include <iterator>
+
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
-#include <iterator>
+
 #include <silkworm/common/util.hpp>
 
 namespace silkworm::trie {

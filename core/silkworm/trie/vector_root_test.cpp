@@ -17,6 +17,7 @@
 #include "vector_root.hpp"
 
 #include <catch2/catch.hpp>
+
 #include <silkworm/common/util.hpp>
 #include <silkworm/types/receipt.hpp>
 #include <silkworm/types/transaction.hpp>

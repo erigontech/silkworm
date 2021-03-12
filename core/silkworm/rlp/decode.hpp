@@ -22,12 +22,14 @@
 
 #include <array>
 #include <cstring>
-#include <gsl/span>
-#include <intx/intx.hpp>
-#include <silkworm/common/base.hpp>
-#include <silkworm/rlp/encode.hpp>
 #include <utility>
 #include <vector>
+
+#include <gsl/span>
+#include <intx/intx.hpp>
+
+#include <silkworm/common/base.hpp>
+#include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::rlp {
 
@@ -99,7 +101,6 @@ DecodingResult decode(ByteView& from, std::array<uint8_t, N>& to) noexcept {
 
 template <class T>
 DecodingResult decode_vector(ByteView& from, std::vector<T>& to) noexcept {
-
     auto [h, err]{decode_header(from)};
     if (err != DecodingResult::kOk) {
         return err;

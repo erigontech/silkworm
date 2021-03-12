@@ -17,7 +17,9 @@
 #include "silkworm_tg_api.h"
 
 #include <cassert>
+
 #include <gsl/gsl_util>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>

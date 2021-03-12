@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,11 +14,12 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TRIE_HASH_BUILDER_H_
-#define SILKWORM_TRIE_HASH_BUILDER_H_
+#ifndef SILKWORM_TRIE_HASH_BUILDER_HPP_
+#define SILKWORM_TRIE_HASH_BUILDER_HPP_
+
+#include <vector>
 
 #include <silkworm/common/base.hpp>
-#include <vector>
 
 namespace silkworm::trie {
 
@@ -26,7 +27,7 @@ namespace silkworm::trie {
 // See Appendix D "Modified Merkle Patricia Trie" of the Yellow Paper
 // and https://eth.wiki/fundamentals/patricia-tree
 class HashBuilder {
-   public:
+  public:
     HashBuilder(const HashBuilder&) = delete;
     HashBuilder& operator=(const HashBuilder&) = delete;
 
@@ -42,7 +43,7 @@ class HashBuilder {
     // May only be called after all entries have been added.
     evmc::bytes32 root_hash();
 
-   private:
+  private:
     void gen_struct_step(ByteView curr, ByteView succ, ByteView value);
 
     void branch_ref(uint16_t mask);
@@ -53,6 +54,7 @@ class HashBuilder {
     std::vector<uint16_t> groups_;
     std::vector<Bytes> stack_;  // node references: hashes or embedded RLPs
 };
+
 }  // namespace silkworm::trie
 
-#endif  // SILKWORM_TRIE_HASH_BUILDER_H_
+#endif  // SILKWORM_TRIE_HASH_BUILDER_HPP_

@@ -14,15 +14,19 @@
    limitations under the License.
 */
 
-#include <evmc/loader.h>
-
-#include <CLI/CLI.hpp>
-#include <boost/filesystem.hpp>
 #include <exception>
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include <CLI/CLI.hpp>
+#include <boost/filesystem.hpp>
+#include <evmc/loader.h>
 #include <nlohmann/json.hpp>
+
 #include <silkworm/chain/blockchain.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/validity.hpp>
@@ -31,9 +35,6 @@
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/block.hpp>
-#include <string>
-#include <string_view>
-#include <vector>
 
 // See https://ethereum-tests.readthedocs.io
 

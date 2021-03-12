@@ -16,9 +16,10 @@
 
 #include "access_layer.hpp"
 
-#include <nlohmann/json.hpp>
-#include <boost/endian/conversion.hpp>
 #include <cassert>
+
+#include <boost/endian/conversion.hpp>
+#include <nlohmann/json.hpp>
 
 #include "bitmap.hpp"
 #include "tables.hpp"

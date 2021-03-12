@@ -19,13 +19,14 @@
 
 #include <stdint.h>
 
+#include <utility>
+#include <vector>
+
 #include <silkworm/chain/validity.hpp>
 #include <silkworm/execution/evm.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
 #include <silkworm/types/transaction.hpp>
-#include <utility>
-#include <vector>
 
 namespace silkworm {
 

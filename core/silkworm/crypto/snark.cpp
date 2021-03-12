@@ -19,8 +19,10 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 #include <libff/common/profiling.hpp>
+
 #include <silkworm/common/endian.hpp>
 
 namespace silkworm::snark {

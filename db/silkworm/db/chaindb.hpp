@@ -22,18 +22,19 @@
  * See http://www.lmdb.tech/doc/index.html
  */
 
-#include <lmdb/lmdb.h>
-
 #include <exception>
 #include <map>
 #include <mutex>
 #include <optional>
-#include <silkworm/common/base.hpp>
-#include <silkworm/common/util.hpp>
-#include <silkworm/db/util.hpp>
 #include <string>
 #include <thread>
 #include <vector>
+
+#include <lmdb/lmdb.h>
+
+#include <silkworm/common/base.hpp>
+#include <silkworm/common/util.hpp>
+#include <silkworm/db/util.hpp>
 
 static_assert(sizeof(size_t) == 8, "32 bit environment limits LMDB size");
 

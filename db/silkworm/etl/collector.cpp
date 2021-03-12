@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -13,17 +13,18 @@
 
 #include "collector.hpp"
 
-#include <boost/filesystem.hpp>
-#include <silkworm/common/log.hpp>
-#include <queue>
 #include <iomanip>
+#include <queue>
+
+#include <boost/filesystem.hpp>
+
+#include <silkworm/common/log.hpp>
 
 namespace silkworm::etl {
 
 namespace fs = boost::filesystem;
 
 Collector::~Collector() {
-
     file_providers_.clear();  // Will ensure all files (if any) have been orderly closed and deleted before we remove
                               // the working dir
     fs::path path(work_path_);
@@ -46,9 +47,7 @@ void Collector::flush_buffer() {
     }
 }
 
-size_t Collector::size() const {
-    return size_;
-}
+size_t Collector::size() const { return size_; }
 
 void Collector::collect(Entry& entry) {
     buffer_.put(entry);
@@ -58,9 +57,9 @@ void Collector::collect(Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int db_flags, uint32_t log_every_percent) {
-
-    const auto overall_size{size()}; // Amount of work
+void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int db_flags,
+                     uint32_t log_every_percent) {
+    const auto overall_size{size()};  // Amount of work
 
     if (!overall_size) {
         SILKWORM_LOG(LogInfo) << "ETL Load called without data to process" << std::endl;
@@ -77,7 +76,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         if (load_func) {
             for (const auto& etl_entry : buffer_.get_entries()) {
                 load_func(etl_entry, table, db_flags);
-                
+
                 if (!--dummy_counter) {
                     actual_progress += progress_step;
                     dummy_counter = progress_increment_count;
@@ -136,7 +135,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
             actual_progress += progress_step;
             dummy_counter = progress_increment_count;
             SILKWORM_LOG(LogInfo) << "ETL Load Progress "
-                << " << " << actual_progress << "%" << std::endl;
+                                  << " << " << actual_progress << "%" << std::endl;
         }
 
         // From the provider which has served the current key
@@ -155,7 +154,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
             file_provider.reset();
         }
     }
-    size_ = 0; // We have consumed all items
+    size_ = 0;  // We have consumed all items
 }
 
 std::string Collector::set_work_path(const char* provided_work_path) {

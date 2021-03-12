@@ -17,11 +17,13 @@
 #ifndef SILKWORM_TYPES_TRANSACTION_HPP_
 #define SILKWORM_TYPES_TRANSACTION_HPP_
 
-#include <intx/intx.hpp>
 #include <optional>
+#include <vector>
+
+#include <intx/intx.hpp>
+
 #include <silkworm/common/base.hpp>
 #include <silkworm/rlp/decode.hpp>
-#include <vector>
 
 namespace silkworm {
 

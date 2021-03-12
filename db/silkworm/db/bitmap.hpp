@@ -18,12 +18,13 @@
 #define SILKWORM_DB_BITMAP_HPP_
 
 #include <optional>
-#include <silkworm/common/base.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <roaring64map.hh>
 #pragma GCC diagnostic pop
+
+#include <silkworm/common/base.hpp>
 
 namespace silkworm::db::bitmap {
 

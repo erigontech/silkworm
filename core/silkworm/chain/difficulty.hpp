@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,10 +14,11 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_DIFFICULTY_H_
-#define SILKWORM_CHAIN_DIFFICULTY_H_
+#ifndef SILKWORM_CHAIN_DIFFICULTY_HPP_
+#define SILKWORM_CHAIN_DIFFICULTY_HPP_
 
 #include <intx/intx.hpp>
+
 #include <silkworm/chain/config.hpp>
 
 namespace silkworm {
@@ -49,4 +50,4 @@ intx::uint256 canonical_difficulty(uint64_t block_number, uint64_t block_timesta
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_CHAIN_DIFFICULTY_H_
+#endif  // SILKWORM_CHAIN_DIFFICULTY_HPP_

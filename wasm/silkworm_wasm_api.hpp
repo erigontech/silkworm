@@ -21,11 +21,12 @@
 // Currently it's unstable and is likely to change.
 // Used for https://torquem.ch/eth_tests.html
 
-#include <evmc/evmc.h>
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <evmc/evmc.h>
 #include <intx/intx.hpp>
+
 #include <silkworm/chain/blockchain.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/state/memory_buffer.hpp>

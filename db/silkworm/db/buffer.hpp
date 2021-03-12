@@ -17,18 +17,19 @@
 #ifndef SILKWORM_DB_BUFFER_HPP_
 #define SILKWORM_DB_BUFFER_HPP_
 
+#include <optional>
+#include <vector>
+
 #include <absl/container/btree_map.h>
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 
-#include <optional>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/state/buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
-#include <vector>
 
 namespace silkworm::db {
 

@@ -14,10 +14,12 @@
    limitations under the License.
 */
 
+#include <iostream>
+
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
-#include <iostream>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>

@@ -17,10 +17,11 @@
 #ifndef SILKWORM_CHAIN_BLOCKCHAIN_HPP_
 #define SILKWORM_CHAIN_BLOCKCHAIN_HPP_
 
-#include <silkworm/chain/validity.hpp>
-#include <silkworm/state/buffer.hpp>
 #include <unordered_map>
 #include <vector>
+
+#include <silkworm/chain/validity.hpp>
+#include <silkworm/state/buffer.hpp>
 
 namespace silkworm {
 

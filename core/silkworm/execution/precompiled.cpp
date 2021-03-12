@@ -17,25 +17,27 @@
 #include "precompiled.hpp"
 
 #include <gmp.h>
-#include <silkworm/crypto/blake2.h>
-#include <silkworm/crypto/sha-256.h>
 
 #include <algorithm>
 #include <cstring>
-#include <ethash/keccak.hpp>
 #include <iterator>
 #include <limits>
-#include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/endian.hpp>
-#include <silkworm/common/util.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
-#include <silkworm/crypto/rmd160.hpp>
-#include <silkworm/crypto/snark.hpp>
+
+#include <ethash/keccak.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #pragma GCC diagnostic pop
+
+#include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/endian.hpp>
+#include <silkworm/common/util.hpp>
+#include <silkworm/crypto/blake2.h>
+#include <silkworm/crypto/ecdsa.hpp>
+#include <silkworm/crypto/rmd160.hpp>
+#include <silkworm/crypto/sha-256.h>
+#include <silkworm/crypto/snark.hpp>
 
 namespace silkworm::precompiled {
 

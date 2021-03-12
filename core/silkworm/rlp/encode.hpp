@@ -21,11 +21,13 @@
 #define SILKWORM_RLP_ENCODE_HPP_
 
 #include <array>
+#include <optional>
+#include <vector>
+
 #include <gsl/span>
 #include <intx/intx.hpp>
-#include <optional>
+
 #include <silkworm/common/base.hpp>
-#include <vector>
 
 namespace silkworm {
 

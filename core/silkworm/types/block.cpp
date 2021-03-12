@@ -17,6 +17,7 @@
 #include "block.hpp"
 
 #include <cstring>
+
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm {

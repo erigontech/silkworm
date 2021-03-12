@@ -17,8 +17,10 @@
 #ifndef SILKWORM_EXECUTION_ANALYSIS_CACHE_HPP_
 #define SILKWORM_EXECUTION_ANALYSIS_CACHE_HPP_
 
-#include <lrucache.hpp>
 #include <memory>
+
+#include <lrucache.hpp>
+
 #include <silkworm/common/base.hpp>
 
 namespace evmone {

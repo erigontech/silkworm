@@ -43,8 +43,8 @@ class teebuf : public std::streambuf {
         if (c == EOF) {
             return !EOF;
         } else {
-            int const r1 = sb1->sputc(c);
-            int const r2 = sb2->sputc(c);
+            int const r1 = sb1->sputc(static_cast<char>(c));
+            int const r2 = sb2->sputc(static_cast<char>(c));
             return (r1 == EOF || r2 == EOF) ? EOF : c;
         }
     }

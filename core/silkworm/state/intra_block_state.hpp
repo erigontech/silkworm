@@ -21,9 +21,9 @@
 #include <vector>
 
 #include <intx/intx.hpp>
-#include <robin_hood.h>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/hash_maps.hpp>
 #include <silkworm/state/buffer.hpp>
 #include <silkworm/state/delta.hpp>
 #include <silkworm/state/object.hpp>
@@ -130,22 +130,22 @@ class IntraBlockState {
 
     StateBuffer& db_;
 
-    mutable robin_hood::unordered_flat_map<evmc::address, state::Object> objects_;
-    mutable robin_hood::unordered_flat_map<evmc::address, state::Storage> storage_;
+    mutable SILKWORM_FLAT_HASH_MAP<evmc::address, state::Object> objects_;
+    mutable SILKWORM_FLAT_HASH_MAP<evmc::address, state::Storage> storage_;
 
     // we want pointer stability here, thus node map
-    mutable robin_hood::unordered_node_map<evmc::bytes32, Bytes> code_;
+    mutable SILKWORM_NODE_HASH_MAP<evmc::bytes32, Bytes> code_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 
     // substate
-    robin_hood::unordered_flat_set<evmc::address> self_destructs_;
+    SILKWORM_FLAT_HASH_SET<evmc::address> self_destructs_;
     std::vector<Log> logs_;
-    robin_hood::unordered_flat_set<evmc::address> touched_;
+    SILKWORM_FLAT_HASH_SET<evmc::address> touched_;
     uint64_t refund_{0};
     // EIP-2929 substate
-    robin_hood::unordered_flat_set<evmc::address> accessed_addresses_;
-    robin_hood::unordered_flat_map<evmc::address, robin_hood::unordered_flat_set<evmc::bytes32>> accessed_storage_keys_;
+    SILKWORM_FLAT_HASH_SET<evmc::address> accessed_addresses_;
+    SILKWORM_FLAT_HASH_MAP<evmc::address, SILKWORM_FLAT_HASH_SET<evmc::bytes32>> accessed_storage_keys_;
 };
 
 }  // namespace silkworm

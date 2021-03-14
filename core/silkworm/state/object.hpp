@@ -19,9 +19,8 @@
 
 #include <optional>
 
-#include <robin_hood.h>
-
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/hash_maps.hpp>
 #include <silkworm/types/account.hpp>
 
 namespace silkworm::state {
@@ -37,8 +36,8 @@ struct CommittedValue {
 };
 
 struct Storage {
-    robin_hood::unordered_flat_map<evmc::bytes32, CommittedValue> committed;
-    robin_hood::unordered_flat_map<evmc::bytes32, evmc::bytes32> current;
+    SILKWORM_FLAT_HASH_MAP<evmc::bytes32, CommittedValue> committed;
+    SILKWORM_FLAT_HASH_MAP<evmc::bytes32, evmc::bytes32> current;
 };
 
 }  // namespace silkworm::state

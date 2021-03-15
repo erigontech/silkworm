@@ -17,6 +17,21 @@
 #ifndef SILKWORM_COMMON_HASH_MAPS_HPP_
 #define SILKWORM_COMMON_HASH_MAPS_HPP_
 
+/*
+Macro aliases to fast hash maps and sets, such as Abseil "Swiss tables"
+
+The following macros are defined:
+SILKWORM_FLAT_HASH_MAP
+SILKWORM_FLAT_HASH_SET
+SILKWORM_NODE_HASH_MAP
+
+SILKWORM_FLAT_HASH_MAP is a hash map without pointer stability.
+SILKWORM_FLAT_HASH_SET is a hash set without pointer stability.
+SILKWORM_NODE_HASH_MAP is a hash map with pointer stability.
+
+See https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
+*/
+
 #if defined(__wasm__)
 
 #include <unordered_map>

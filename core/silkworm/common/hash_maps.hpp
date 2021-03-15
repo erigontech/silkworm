@@ -39,12 +39,12 @@ The following aliases are defined:
 
 FlatHashMap – a hash map that might not have pointer stability.
 FlatHashSet – a hash set that might not have pointer stability.
-FlatNodeMap – a hash map guaranteed to have pointer stability.
+NodeHashMap – a hash map guaranteed to have pointer stability.
 
 See https://abseil.io/docs/cpp/guides/container#hash-tables
 and https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
 
-N.B. FlatHashMap is generally faster than FlatNodeMap,
+N.B. FlatHashMap is generally faster than NodeHashMap,
 so prefer it unless you need pointer stability.
 */
 

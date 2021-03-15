@@ -34,6 +34,10 @@ See https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
 
 #if defined(__wasm__)
 
+// Abseil is not compatible with Wasm due to its mutli-threading features,
+// at least not under CMake, but see
+// https://github.com/abseil/abseil-cpp/pull/721
+
 #include <unordered_map>
 #include <unordered_set>
 

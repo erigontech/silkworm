@@ -130,22 +130,22 @@ class IntraBlockState {
 
     StateBuffer& db_;
 
-    mutable SILKWORM_FLAT_HASH_MAP<evmc::address, state::Object> objects_;
-    mutable SILKWORM_FLAT_HASH_MAP<evmc::address, state::Storage> storage_;
+    mutable FlatHashMap<evmc::address, state::Object> objects_;
+    mutable FlatHashMap<evmc::address, state::Storage> storage_;
 
     // we want pointer stability here, thus node map
-    mutable SILKWORM_NODE_HASH_MAP<evmc::bytes32, Bytes> code_;
+    mutable NodeHashMap<evmc::bytes32, Bytes> code_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 
     // substate
-    SILKWORM_FLAT_HASH_SET<evmc::address> self_destructs_;
+    FlatHashSet<evmc::address> self_destructs_;
     std::vector<Log> logs_;
-    SILKWORM_FLAT_HASH_SET<evmc::address> touched_;
+    FlatHashSet<evmc::address> touched_;
     uint64_t refund_{0};
     // EIP-2929 substate
-    SILKWORM_FLAT_HASH_SET<evmc::address> accessed_addresses_;
-    SILKWORM_FLAT_HASH_MAP<evmc::address, SILKWORM_FLAT_HASH_SET<evmc::bytes32>> accessed_storage_keys_;
+    FlatHashSet<evmc::address> accessed_addresses_;
+    FlatHashMap<evmc::address, FlatHashSet<evmc::bytes32>> accessed_storage_keys_;
 };
 
 }  // namespace silkworm

@@ -36,8 +36,8 @@ struct CommittedValue {
 };
 
 struct Storage {
-    SILKWORM_FLAT_HASH_MAP<evmc::bytes32, CommittedValue> committed;
-    SILKWORM_FLAT_HASH_MAP<evmc::bytes32, evmc::bytes32> current;
+    FlatHashMap<evmc::bytes32, CommittedValue> committed;
+    FlatHashMap<evmc::bytes32, evmc::bytes32> current;
 };
 
 }  // namespace silkworm::state

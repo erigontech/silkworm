@@ -17,19 +17,35 @@
 #ifndef SILKWORM_COMMON_HASH_MAPS_HPP_
 #define SILKWORM_COMMON_HASH_MAPS_HPP_
 
+#if defined(__wasm__)
+
+#include <unordered_map>
+#include <unordered_set>
+
+#else
+
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
+#include <absl/container/node_hash_map.h>
+
+#endif
+
+namespace silkworm {
+
 /*
-Macro aliases to fast hash maps and sets, such as Abseil "Swiss tables"
+Alias templates to fast hash maps and sets, such as Abseil "Swiss tables"
 
-The following macros are defined:
-SILKWORM_FLAT_HASH_MAP
-SILKWORM_FLAT_HASH_SET
-SILKWORM_NODE_HASH_MAP
+The following aliases are defined:
 
-SILKWORM_FLAT_HASH_MAP is a hash map without pointer stability.
-SILKWORM_FLAT_HASH_SET is a hash set without pointer stability.
-SILKWORM_NODE_HASH_MAP is a hash map with pointer stability.
+FlatHashMap – a hash map that might not have pointer stability.
+FlatHashSet – a hash set that might not have pointer stability.
+FlatNodeMap – a hash map guaranteed to have pointer stability.
 
-See https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
+See https://abseil.io/docs/cpp/guides/container#hash-tables
+and https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
+
+N.B. FlatHashMap is generally faster than FlatNodeMap,
+so prefer it unless you need pointer stability.
 */
 
 #if defined(__wasm__)
@@ -38,23 +54,28 @@ See https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
 // at least not under CMake, but see
 // https://github.com/abseil/abseil-cpp/pull/721
 
-#include <unordered_map>
-#include <unordered_set>
+template <class K, class V>
+using FlatHashMap = std::unordered_map<K, V>;
 
-#define SILKWORM_FLAT_HASH_MAP std::unordered_map
-#define SILKWORM_FLAT_HASH_SET std::unordered_set
-#define SILKWORM_NODE_HASH_MAP std::unordered_map
+template <class T>
+using FlatHashSet = std::unordered_set<T>;
+
+template <class K, class V>
+using NodeHashMap = std::unordered_map<K, V>;
 
 #else
 
-#include <absl/container/flat_hash_map.h>
-#include <absl/container/flat_hash_set.h>
-#include <absl/container/node_hash_map.h>
+template <class K, class V>
+using FlatHashMap = absl::flat_hash_map<K, V>;
 
-#define SILKWORM_FLAT_HASH_MAP absl::flat_hash_map
-#define SILKWORM_FLAT_HASH_SET absl::flat_hash_set
-#define SILKWORM_NODE_HASH_MAP absl::node_hash_map
+template <class T>
+using FlatHashSet = absl::flat_hash_set<T>;
+
+template <class K, class V>
+using NodeHashMap = absl::node_hash_map<K, V>;
 
 #endif
+
+}  // namespace silkworm
 
 #endif  // SILKWORM_COMMON_HASH_MAPS_HPP_

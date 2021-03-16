@@ -29,22 +29,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /*
- * File:   lrucache.hpp
  * Author: Alexander Ponomarev
  *
  * Created on June 20, 2013, 5:09 PM
  *
- * Modified on Dec 29, 2020 by Andrew Ashikhmin
+ * Modified by Andrew Ashikhmin
  */
 
-#ifndef _LRUCACHE_HPP_INCLUDED_
-#define _LRUCACHE_HPP_INCLUDED_
+#ifndef SILKWORM_COMMON_LRU_CACHE_HPP
+#define SILKWORM_COMMON_LRU_CACHE_HPP
 
 #include <cstddef>
 #include <list>
 #include <unordered_map>
 
-namespace cache {
+namespace silkworm {
 
 template <typename key_t, typename value_t>
 class lru_cache {
@@ -52,7 +51,7 @@ class lru_cache {
     typedef typename std::pair<key_t, value_t> key_value_pair_t;
     typedef typename std::list<key_value_pair_t>::iterator list_iterator_t;
 
-    lru_cache(size_t max_size) : _max_size(max_size) {}
+    explicit lru_cache(size_t max_size) : _max_size(max_size) {}
 
     void put(const key_t& key, const value_t& value) {
         auto it = _cache_items_map.find(key);
@@ -94,6 +93,6 @@ class lru_cache {
     size_t _max_size;
 };
 
-}  // namespace cache
+}  // namespace silkworm
 
-#endif /* _LRUCACHE_HPP_INCLUDED_ */
+#endif  // SILKWORM_COMMON_LRU_CACHE_HPP

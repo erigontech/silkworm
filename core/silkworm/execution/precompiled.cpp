@@ -252,12 +252,12 @@ std::optional<Bytes> bn_add_run(ByteView input) noexcept {
 
     std::optional<libff::alt_bn128_G1> x{snark::decode_g1_element(input.substr(0, 64))};
     if (!x) {
-        return {};
+        return std::nullopt;
     }
 
     std::optional<libff::alt_bn128_G1> y{snark::decode_g1_element(input.substr(64, 64))};
     if (!y) {
-        return {};
+        return std::nullopt;
     }
 
     libff::alt_bn128_G1 sum{*x + *y};
@@ -274,7 +274,7 @@ std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
 
     std::optional<libff::alt_bn128_G1> x{snark::decode_g1_element(input.substr(0, 64))};
     if (!x) {
-        return {};
+        return std::nullopt;
     }
 
     snark::Scalar n{snark::to_scalar(input.substr(64, 32))};
@@ -292,7 +292,7 @@ uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
 
 std::optional<Bytes> snarkv_run(ByteView input) noexcept {
     if (input.size() % kSnarkvStride != 0) {
-        return {};
+        return std::nullopt;
     }
     size_t k{input.size() / kSnarkvStride};
 
@@ -305,11 +305,11 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept {
     for (size_t i{0}; i < k; ++i) {
         std::optional<alt_bn128_G1> a{snark::decode_g1_element(input.substr(i * kSnarkvStride, 64))};
         if (!a) {
-            return {};
+            return std::nullopt;
         }
         std::optional<alt_bn128_G2> b{snark::decode_g2_element(input.substr(i * kSnarkvStride + 64, 128))};
         if (!b) {
-            return {};
+            return std::nullopt;
         }
 
         if (a->is_zero() || b->is_zero()) {
@@ -336,11 +336,11 @@ uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
 
 std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
     if (input.size() != 213) {
-        return {};
+        return std::nullopt;
     }
     uint8_t f{input[212]};
     if (f != 0 && f != 1) {
-        return {};
+        return std::nullopt;
     }
 
     blake2b_state state{};

@@ -35,7 +35,7 @@ TEST_CASE("Value transfer") {
 
     MemoryBuffer db;
     IntraBlockState state{db};
-    EVM evm{block, state};
+    EVM evm{block, state, kMainnetConfig};
 
     CHECK(state.get_balance(from) == 0);
     CHECK(state.get_balance(to) == 0);
@@ -87,7 +87,7 @@ TEST_CASE("Smart contract with storage") {
 
     MemoryBuffer db;
     IntraBlockState state{db};
-    EVM evm{block, state};
+    EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
     txn.from = caller;
@@ -156,7 +156,7 @@ TEST_CASE("Maximum call depth") {
     IntraBlockState state{db};
     state.set_code(contract, code);
 
-    EVM evm{block, state};
+    EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
     txn.from = caller;
@@ -209,7 +209,7 @@ TEST_CASE("DELEGATECALL") {
     state.set_code(caller_address, caller_code);
     state.set_code(callee_address, callee_code);
 
-    EVM evm{block, state};
+    EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
     txn.from = caller_address;
@@ -269,7 +269,7 @@ TEST_CASE("CREATE should only return on failure") {
 
     MemoryBuffer db;
     IntraBlockState state{db};
-    EVM evm{block, state};
+    EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
     txn.from = caller;
@@ -300,7 +300,7 @@ TEST_CASE("Contract overwrite") {
     IntraBlockState state{db};
     state.set_code(contract_address, old_code);
 
-    EVM evm{block, state};
+    EVM evm{block, state, kMainnetConfig};
 
     Transaction txn{};
     txn.from = caller;

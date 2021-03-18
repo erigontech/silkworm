@@ -35,7 +35,7 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config = kMainnetConfig);
+    ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config);
 
     // Preconditions:
     // 1) pre_validate_transaction(txn) must return kOk

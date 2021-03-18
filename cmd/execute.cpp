@@ -80,14 +80,18 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
         bool write_receipts{db::read_storage_mode_receipts(*txn)};
+        auto chain_config{db::read_chain_config(*txn)};
+        if (!chain_config.has_value()) {
+            throw std::runtime_error("Unable to retrieve chain config");
+        }
 
         uint64_t previous_progress{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
         uint64_t current_progress{previous_progress};
 
         for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
             int lmdb_error_code{MDB_SUCCESS};
-            SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), /*chain_id=*/1, block_number, to_block,
-                                                              *batch_size, write_receipts, &current_progress,
+            SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), chain_config->chain_id, block_number,
+                                                              to_block, *batch_size, write_receipts, &current_progress,
                                                               &lmdb_error_code)};
             if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
                 SILKWORM_LOG(LogError) << "Error in silkworm_execute_blocks: " << status

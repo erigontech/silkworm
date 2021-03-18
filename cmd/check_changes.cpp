@@ -69,6 +69,13 @@ int main(int argc, char* argv[]) {
     lmdb::DatabaseConfig db_config{db_path};
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
 
+    std::unique_ptr<lmdb::Transaction> cfg_txn{env->begin_ro_transaction()};
+    auto chain_config{db::read_chain_config(*cfg_txn)};
+    if (!chain_config) {
+        throw std::runtime_error("Unable to retrieve chain config");
+    }
+    cfg_txn.release();
+
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
 
@@ -83,7 +90,7 @@ int main(int argc, char* argv[]) {
 
         db::Buffer buffer{txn.get(), block_num};
 
-        ValidationResult err{execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool).second};
+        ValidationResult err{execute_block(bh->block, buffer, *chain_config, &analysis_cache, &state_pool).second};
         if (err != ValidationResult::kOk) {
             std::cerr << "Failed to execute block " << block_num << "\n";
             continue;

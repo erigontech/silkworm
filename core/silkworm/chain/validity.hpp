@@ -43,11 +43,11 @@ enum class [[nodiscard]] ValidationResult{
     kWrongDaoExtraData,  // see EIP-779
 
     // See [YP] Section 6.2 "Execution", Eq (58)
-    kMissingSender,         // S(T) = ∅
-    kWrongNonce,            // Tn ≠ σ[S(T)]n
-    kIntrinsicGas,          // g0 > Tg
-    kInsufficientFunds,     // v0 > σ[S(T)]b
-    kBlockGasLimitReached,  // Tg > BHl - l(BR)u
+    kMissingSender,          // S(T) = ∅
+    kWrongNonce,             // Tn ≠ σ[S(T)]n
+    kIntrinsicGas,           // g0 > Tg
+    kInsufficientFunds,      // v0 > σ[S(T)]b
+    kBlockGasLimitExceeded,  // Tg > BHl - l(BR)u
 
     // See [YP] Section 11.1 "Ommer Validation", Eq (157)
     kTooManyOmmers,       // ‖BU‖ > 2

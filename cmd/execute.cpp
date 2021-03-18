@@ -81,6 +81,9 @@ int main(int argc, char* argv[]) {
 
         bool write_receipts{db::read_storage_mode_receipts(*txn)};
         auto chain_config{db::read_chain_config(*txn)};
+        if (!chain_config.has_value()) {
+            throw std::runtime_error("Unable to retrieve chain config");
+        }
 
         uint64_t previous_progress{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
         uint64_t current_progress{previous_progress};

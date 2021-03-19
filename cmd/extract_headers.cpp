@@ -60,10 +60,12 @@ class Db {
     }
 
     std::optional<Hash> read_canonical_hash(BlockNum b) {  // throws db exceptions
-        auto header_table = txn->open(db::table::kBlockHeaders);
+        auto header_table = txn->open(db::table::kHeadersHash);
         // accessing this table with only b we will get the hash of the canonical block at height b
-        std::optional<ByteView> hash = header_table->get(db::header_hash_key(b));
-        if (!hash) return std::nullopt;  // not found
+        auto hash = header_table->get(db::block_key(b));
+        if (!hash.has_value()) {
+            return std::nullopt;  // not found
+        }
         assert(hash->size() == kHashLength);
         return hash.value();  // copy
     }
@@ -85,7 +87,7 @@ class Db {
     std::optional<BlockHeader> read_header(BlockNum b, Hash h) { return db::read_header(*txn, b, h.bytes); }
 
     std::optional<ByteView> read_rlp_encoded_header(BlockNum b, Hash h) {
-        auto header_table = txn->open(db::table::kBlockHeaders);
+        auto header_table = txn->open(db::table::kHeadersRlp);
         std::optional<ByteView> rlp = header_table->get(db::block_key(b, h.bytes));
         return rlp;
     }

@@ -212,21 +212,22 @@ class RecoveryFarm final {
 
     enum class Status {
         Succeded = 0,
-        DatabaseError = 1,
-        HeaderNotFound = 2,
-        BadHeaderSequence = 3,
-        InvalidRange = 4,
-        PrevStagesInadequate = 5,
-        BlockNotFound = 6,
-        BadBlockSequence = 7,
-        InvalidTransactionSignature = 8,
-        RecoveryError = 9,
-        WorkerInitError = 10,
-        WorkerAborted = 11,
-        WorkerStatusMismatch = 12,
-        FileSystemError = 13,
-        InvalidChainConfig = 14,
-        NoDataToProcess = 15,
+        DatabaseError,
+        HeaderNotFound,
+        BadHeaderHash,
+        BadHeaderSequence,
+        InvalidRange,
+        PrevStagesInadequate,
+        BlockNotFound,
+        BadBlockSequence,
+        InvalidTransactionSignature,
+        RecoveryError,
+        WorkerInitError,
+        WorkerAborted,
+        WorkerStatusMismatch,
+        FileSystemError,
+        InvalidChainConfig,
+        NoDataToProcess
     };
 
     /**
@@ -688,8 +689,8 @@ class RecoveryFarm final {
             // Locate starting canonical header selected
             uint64_t expected_block_num{height_from};
             uint64_t reached_block_num{0};
-            auto headers_table{db_transaction_.open(db::table::kBlockHeaders)};
-            auto header_key{db::header_hash_key(expected_block_num)};
+            auto headers_table{db_transaction_.open(db::table::kHeadersHash)};
+            auto header_key{db::block_key(expected_block_num)};
             MDB_val mdb_key{db::to_mdb_val(header_key)}, mdb_data{};
 
             int rc{headers_table->seek_exact(&mdb_key, &mdb_data)};
@@ -703,26 +704,23 @@ class RecoveryFarm final {
 
             // Read all headers up to block_to included
             while (!rc) {
-                if (mdb_key.mv_size == header_key.length() && mdb_data.mv_size) {
-                    ByteView data_view{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
-                    if (data_view[8] == 'n') {
-                        reached_block_num = boost::endian::load_big_u64(&data_view[0]);
-                        if (reached_block_num != expected_block_num) {
-                            SILKWORM_LOG(LogLevels::LogError) << "Bad header sequence ! Expected " << expected_block_num
-                                                              << " got " << reached_block_num << std::endl;
-                            return Status::BadHeaderSequence;
-                        }
 
-                        // We have a canonical header in right sequence
-                        headers_.push_back(to_bytes32(db::from_mdb_val(mdb_data)));
-                        expected_block_num++;
-
-                        // Don't pass upper boundary
-                        if (reached_block_num == height_to) {
-                            break;
-                        }
-                    }
+                ByteView key_view{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
+                reached_block_num = boost::endian::load_big_u64(&key_view[0]);
+                if (reached_block_num != expected_block_num) {
+                    SILKWORM_LOG(LogLevels::LogError) << "Bad header sequence ! Expected " << expected_block_num
+                                                      << " got " << reached_block_num << std::endl;
+                    return Status::BadHeaderSequence;
                 }
+
+                if (mdb_data.mv_size != kHashLength) {
+                    SILKWORM_LOG(LogLevels::LogError) << "Bad header hash at height "<< reached_block_num << std::endl;
+                    return Status::BadHeaderHash;
+                }
+
+                // We have a canonical header hash in right sequence
+                headers_.push_back(to_bytes32(db::from_mdb_val(mdb_data)));
+                expected_block_num++;
                 rc = headers_table->get_next(&mdb_key, &mdb_data);
             }
 

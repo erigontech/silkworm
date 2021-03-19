@@ -96,7 +96,7 @@ namespace db {
 
         CHECK(!read_header(*txn, header.number, hash.bytes));
 
-        auto header_table{txn->open(table::kBlockHeaders)};
+        auto header_table{txn->open(table::kHeadersRlp)};
         Bytes key{block_key(header.number, hash.bytes)};
         header_table->put(key, rlp);
 
@@ -108,7 +108,7 @@ namespace db {
             bool read_senders{false};
             CHECK(!read_block(*txn, block_num, read_senders));
 
-            header_table->put(header_hash_key(block_num), full_view(hash.bytes));
+            header_table->put(block_key(block_num), full_view(hash.bytes));
             CHECK(!read_block(*txn, block_num, read_senders));
 
             BlockBody body{sample_block_body()};

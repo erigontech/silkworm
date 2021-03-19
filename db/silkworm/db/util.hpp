@@ -53,17 +53,12 @@ using StorageChanges = absl::btree_map<evmc::address, absl::btree_map<uint64_t, 
 // Turbo-Geth PlainGenerateStoragePrefix
 Bytes storage_prefix(const evmc::address& address, uint64_t incarnation);
 
-// Turbo-Geth HeaderHashKey
-Bytes header_hash_key(uint64_t block_number);
-
-// Turbo-Geth ReceiptsKey
+// Turbo-Geth CanonicalHeadersKey / ReceiptsKey
 Bytes block_key(uint64_t block_number);
 
 // Turbo-Geth HeaderKey & BlockBodyKey
 Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 
-// Turbo-Geth HeaderTDKey
-Bytes total_difficulty_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation);
 

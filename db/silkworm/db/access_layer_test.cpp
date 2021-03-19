@@ -96,6 +96,11 @@ namespace db {
 
         CHECK(!read_header(*txn, header.number, hash.bytes));
 
+        // Write canonical header hash + header rlp
+        auto header_canonical{txn->open(table::kHeadersHash)};
+        auto k{block_key(block_num)};
+        header_canonical->put(k, Bytes(hash.bytes, kHashLength));
+
         auto header_table{txn->open(table::kHeadersRlp)};
         Bytes key{block_key(header.number, hash.bytes)};
         header_table->put(key, rlp);

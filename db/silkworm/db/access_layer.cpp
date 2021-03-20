@@ -47,7 +47,7 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
 
 std::optional<intx::uint256> read_total_difficulty(lmdb::Transaction& txn, uint64_t block_number,
                                                    const uint8_t (&hash)[kHashLength]) {
-    auto table{txn.open(table::kHeadersDifficulty)};
+    auto table{txn.open(table::kDifficulty)};
     std::optional<ByteView> rlp{table->get(block_key(block_number, hash))};
     if (!rlp) {
         return std::nullopt;

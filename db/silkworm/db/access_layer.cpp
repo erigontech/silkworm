@@ -34,7 +34,7 @@ static void check_rlp_err(rlp::DecodingResult err) {
 
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
                                        const uint8_t (&hash)[kHashLength]) {
-    auto table{txn.open(table::kHeadersRlp)};
+    auto table{txn.open(table::kHeaders)};
     std::optional<ByteView> rlp{table->get(block_key(block_number, hash))};
     if (!rlp) {
         return std::nullopt;
@@ -106,7 +106,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     std::memcpy(bh.hash.bytes, hash->data(), kHashLength);
 
     Bytes key{block_key(block_number, bh.hash.bytes)};
-    auto header_table{txn.open(table::kHeadersRlp)};
+    auto header_table{txn.open(table::kHeaders)};
     std::optional<ByteView> header_rlp{header_table->get(key)};
     if (!header_rlp) {
         return std::nullopt;

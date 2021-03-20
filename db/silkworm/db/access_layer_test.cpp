@@ -101,7 +101,7 @@ namespace db {
         auto k{block_key(block_num)};
         canonical_hashes_table->put(k, Bytes(hash.bytes, kHashLength));
 
-        auto header_table{txn->open(table::kHeadersRlp)};
+        auto header_table{txn->open(table::kHeaders)};
         Bytes key{block_key(header.number, hash.bytes)};
         header_table->put(key, rlp);
 

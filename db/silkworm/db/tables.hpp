@@ -32,8 +32,8 @@ constexpr lmdb::TableConfig kBlockBodies{"b"};
 
 constexpr lmdb::TableConfig kCanonicalHashes{"canonical_headers", 0,
                                              lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) -> header_hash
-constexpr lmdb::TableConfig kHeadersRlp{"headers", 0,
-                                        lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) + hash -> header (RLP)
+constexpr lmdb::TableConfig kHeaders{"headers", 0,
+                                     lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) + hash -> header (RLP)
 constexpr lmdb::TableConfig kHeadersDifficulty{
     "header_to_td", 0, lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) + hash -> total_difficulty (RLP)
 
@@ -89,7 +89,7 @@ constexpr lmdb::TableConfig kTables[]{
     kCallFromIndex,
     kCallToIndex,
     kCanonicalHashes,
-    kHeadersRlp,
+    kHeaders,
     kHeadersDifficulty,
     kClique,
     kCode,

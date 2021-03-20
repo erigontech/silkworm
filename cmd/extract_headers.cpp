@@ -87,7 +87,7 @@ class Db {
     std::optional<BlockHeader> read_header(BlockNum b, Hash h) { return db::read_header(*txn, b, h.bytes); }
 
     std::optional<ByteView> read_rlp_encoded_header(BlockNum b, Hash h) {
-        auto header_table = txn->open(db::table::kHeadersRlp);
+        auto header_table = txn->open(db::table::kHeaders);
         std::optional<ByteView> rlp = header_table->get(db::block_key(b, h.bytes));
         return rlp;
     }

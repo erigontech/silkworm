@@ -22,6 +22,8 @@
 
 #include "chaindb.hpp"
 
+#include <iostream>
+
 namespace silkworm::lmdb {
 
 void DatabaseConfig::set_readonly(bool value) {
@@ -326,6 +328,20 @@ std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned fla
     flags |= config.flags;
     MDB_dbi dbi{open_dbi(config.name, flags)};
 
+    // Apply custom comparators if any
+    if (config.cmp_func || config.dcmp_func) {
+        std::cout << "Setting custom comp" << std::endl;
+        unsigned int persisted_flags{0};
+        lmdb::err_handler(mdb_dbi_flags(handle_, dbi, &persisted_flags));
+        if (config.cmp_func) {
+            lmdb::err_handler(mdb_set_compare(handle_, dbi, config.cmp_func));
+        }
+        if (config.dcmp_func && (persisted_flags & MDB_DUPSORT)) {
+            lmdb::err_handler(mdb_set_dupsort(handle_, dbi, config.dcmp_func));
+        }
+    }
+
+
     return std::make_unique<Table>(this, dbi, config.name);
 }
 
@@ -580,6 +596,12 @@ std::shared_ptr<Environment> get_env(DatabaseConfig config) {
 
     s_envs[envkey] = {newitem, compare_flags};
     return newitem;
+}
+
+/* Custom Key comparators */
+
+int cmp_fixed_len_key(const MDB_val* a, const MDB_val* b) {
+    return memcmp(a->mv_data, b->mv_data, a->mv_size);
 }
 
 }  // namespace silkworm::lmdb

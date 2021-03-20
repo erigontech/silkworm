@@ -22,8 +22,6 @@
 
 #include "chaindb.hpp"
 
-#include <iostream>
-
 namespace silkworm::lmdb {
 
 void DatabaseConfig::set_readonly(bool value) {
@@ -330,7 +328,6 @@ std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned fla
 
     // Apply custom comparators if any
     if (config.cmp_func || config.dcmp_func) {
-        std::cout << "Setting custom comp" << std::endl;
         unsigned int persisted_flags{0};
         lmdb::err_handler(mdb_dbi_flags(handle_, dbi, &persisted_flags));
         if (config.cmp_func) {

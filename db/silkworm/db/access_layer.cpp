@@ -95,8 +95,8 @@ std::vector<Transaction> read_transactions(lmdb::Table& txn_table, uint64_t base
 }
 
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders) {
-    auto canonical_header_table{txn.open(table::kHeadersHash)};
-    std::optional<ByteView> hash{canonical_header_table->get(block_key(block_number))};
+    auto canonical_table{txn.open(table::kCanonicalHashes)};
+    std::optional<ByteView> hash{canonical_table->get(block_key(block_number))};
     if (!hash) {
         return std::nullopt;
     }
@@ -363,7 +363,7 @@ std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
 
     auto headers_key{block_key(0)};
     auto mdb_key{to_mdb_val(headers_key)};
-    auto genesis_hash{txn.get(db::table::kHeadersHash, &mdb_key)};
+    auto genesis_hash{txn.get(db::table::kCanonicalHashes, &mdb_key)};
     if (!genesis_hash.has_value()) {
         return std::nullopt;
     }

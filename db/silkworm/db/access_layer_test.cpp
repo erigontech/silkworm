@@ -97,9 +97,9 @@ namespace db {
         CHECK(!read_header(*txn, header.number, hash.bytes));
 
         // Write canonical header hash + header rlp
-        auto header_canonical{txn->open(table::kHeadersHash)};
+        auto canonical_hashes_table{txn->open(table::kCanonicalHashes)};
         auto k{block_key(block_num)};
-        header_canonical->put(k, Bytes(hash.bytes, kHashLength));
+        canonical_hashes_table->put(k, Bytes(hash.bytes, kHashLength));
 
         auto header_table{txn->open(table::kHeadersRlp)};
         Bytes key{block_key(header.number, hash.bytes)};

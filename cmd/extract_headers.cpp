@@ -60,9 +60,9 @@ class Db {
     }
 
     std::optional<Hash> read_canonical_hash(BlockNum b) {  // throws db exceptions
-        auto header_table = txn->open(db::table::kHeadersHash);
+        auto hashes_table = txn->open(db::table::kCanonicalHashes);
         // accessing this table with only b we will get the hash of the canonical block at height b
-        auto hash = header_table->get(db::block_key(b));
+        auto hash = hashes_table->get(db::block_key(b));
         if (!hash.has_value()) {
             return std::nullopt;  // not found
         }

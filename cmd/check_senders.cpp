@@ -689,11 +689,11 @@ class RecoveryFarm final {
             // Locate starting canonical header selected
             uint64_t expected_block_num{height_from};
             uint64_t reached_block_num{0};
-            auto headers_table{db_transaction_.open(db::table::kHeadersHash)};
+            auto hashes_table{db_transaction_.open(db::table::kCanonicalHashes)};
             auto header_key{db::block_key(expected_block_num)};
             MDB_val mdb_key{db::to_mdb_val(header_key)}, mdb_data{};
 
-            int rc{headers_table->seek_exact(&mdb_key, &mdb_data)};
+            int rc{hashes_table->seek_exact(&mdb_key, &mdb_data)};
             if (rc) {
                 if (rc == MDB_NOTFOUND) {
                     SILKWORM_LOG(LogLevels::LogError) << "Header " << expected_block_num << " not found" << std::endl;
@@ -704,24 +704,23 @@ class RecoveryFarm final {
 
             // Read all headers up to block_to included
             while (!rc) {
-
                 ByteView key_view{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
                 reached_block_num = boost::endian::load_big_u64(&key_view[0]);
                 if (reached_block_num != expected_block_num) {
-                    SILKWORM_LOG(LogLevels::LogError) << "Bad header sequence ! Expected " << expected_block_num
+                    SILKWORM_LOG(LogLevels::LogError) << "Bad header hash sequence ! Expected " << expected_block_num
                                                       << " got " << reached_block_num << std::endl;
                     return Status::BadHeaderSequence;
                 }
 
                 if (mdb_data.mv_size != kHashLength) {
-                    SILKWORM_LOG(LogLevels::LogError) << "Bad header hash at height "<< reached_block_num << std::endl;
+                    SILKWORM_LOG(LogLevels::LogError) << "Bad header hash at height " << reached_block_num << std::endl;
                     return Status::BadHeaderHash;
                 }
 
                 // We have a canonical header hash in right sequence
                 headers_.push_back(to_bytes32(db::from_mdb_val(mdb_data)));
                 expected_block_num++;
-                rc = headers_table->get_next(&mdb_key, &mdb_data);
+                rc = hashes_table->get_next(&mdb_key, &mdb_data);
             }
 
             if (rc && rc != MDB_NOTFOUND) {

@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
         std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
         std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-        auto canonical_hashes_table{txn->open(db::table::kHeadersHash)};
+        auto canonical_hashes_table{txn->open(db::table::kCanonicalHashes)};
         auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};
         uint32_t scanned_headers{0};
 

@@ -113,9 +113,6 @@ namespace db {
             bool read_senders{false};
             CHECK(!read_block(*txn, block_num, read_senders));
 
-            header_table->put(block_key(block_num), full_view(hash.bytes));
-            CHECK(!read_block(*txn, block_num, read_senders));
-
             BlockBody body{sample_block_body()};
 
             detail::BlockBodyForStorage storage_body;

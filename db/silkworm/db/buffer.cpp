@@ -130,8 +130,7 @@ void Buffer::write_to_state_table() {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             state_table->del(full_view(address));
             if (it->second.has_value()) {
-                bool omit_code_hash{false};
-                Bytes encoded{it->second->encode_for_storage(omit_code_hash)};
+                Bytes encoded{it->second->encode_for_storage()};
                 state_table->put(full_view(address), encoded);
             }
         }

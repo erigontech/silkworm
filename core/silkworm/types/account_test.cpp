@@ -34,7 +34,7 @@ TEST_CASE("Decode account from storage") {
     CHECK(decoded.incarnation == 5);
 
     CHECK(decoded.encoding_length_for_storage() == encoded.length());
-    CHECK(decoded.encode_for_storage(/*omit_code_hash=*/false) == encoded);
+    CHECK(decoded.encode_for_storage() == encoded);
 }
 
 }  // namespace silkworm

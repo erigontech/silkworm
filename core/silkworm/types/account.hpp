@@ -31,7 +31,7 @@ struct Account {
     uint64_t incarnation{0};
 
     // Turbo-Geth (*Account)EncodeForStorage
-    Bytes encode_for_storage(bool omit_code_hash) const;
+    Bytes encode_for_storage(bool omit_code_hash = false) const;
 
     // Turbo-Geth (*Account)EncodingLengthForStorage
     size_t encoding_length_for_storage() const;

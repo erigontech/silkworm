@@ -64,8 +64,10 @@ static const MDB_dbi FREE_DBI = 0;  // Reserved for tracking free pages
 static const MDB_dbi MAIN_DBI = 1;  // Reserved for tracking named tables
 
 struct TableConfig {
-    const char* name{nullptr};
-    const unsigned int flags{0};
+    const char* name{nullptr};    // Name of the table (is key in MAIN_DBI)
+    const unsigned int flags{0};  // Flags being used when table is created (are then persisted)
+    int (*cmp_func)(const MDB_val* a, const MDB_val* b){nullptr};   // Pointer to custom key comparator function
+    int (*dcmp_func)(const MDB_val* a, const MDB_val* b){nullptr};  // Pointer to custom dupkey comparator function
 };
 
 /**
@@ -384,6 +386,13 @@ class Table {
 };
 
 std::shared_ptr<Environment> get_env(DatabaseConfig config);
+
+/* Custom Key comparators */
+
+/** @brief Compares two keys lexically with strong assumption both keys are same size
+* 
+*/
+int cmp_fixed_len_key(const MDB_val* a, const MDB_val* b);
 
 }  // namespace silkworm::lmdb
 

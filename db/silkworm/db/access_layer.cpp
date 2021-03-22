@@ -34,7 +34,7 @@ static void check_rlp_err(rlp::DecodingResult err) {
 
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
                                        const uint8_t (&hash)[kHashLength]) {
-    auto table{txn.open(table::kBlockHeaders)};
+    auto table{txn.open(table::kHeaders)};
     std::optional<ByteView> rlp{table->get(block_key(block_number, hash))};
     if (!rlp) {
         return std::nullopt;
@@ -47,8 +47,8 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
 
 std::optional<intx::uint256> read_total_difficulty(lmdb::Transaction& txn, uint64_t block_number,
                                                    const uint8_t (&hash)[kHashLength]) {
-    auto table{txn.open(table::kBlockHeaders)};
-    std::optional<ByteView> rlp{table->get(total_difficulty_key(block_number, hash))};
+    auto table{txn.open(table::kDifficulty)};
+    std::optional<ByteView> rlp{table->get(block_key(block_number, hash))};
     if (!rlp) {
         return std::nullopt;
     }
@@ -95,8 +95,8 @@ std::vector<Transaction> read_transactions(lmdb::Table& txn_table, uint64_t base
 }
 
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders) {
-    auto header_table{txn.open(table::kBlockHeaders)};
-    std::optional<ByteView> hash{header_table->get(header_hash_key(block_number))};
+    auto canonical_table{txn.open(table::kCanonicalHashes)};
+    std::optional<ByteView> hash{canonical_table->get(block_key(block_number))};
     if (!hash) {
         return std::nullopt;
     }
@@ -106,6 +106,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     std::memcpy(bh.hash.bytes, hash->data(), kHashLength);
 
     Bytes key{block_key(block_number, bh.hash.bytes)};
+    auto header_table{txn.open(table::kHeaders)};
     std::optional<ByteView> header_rlp{header_table->get(key)};
     if (!header_rlp) {
         return std::nullopt;
@@ -360,9 +361,9 @@ bool migration_happened(lmdb::Transaction& txn, const char* name) {
 std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
     using json = nlohmann::json;
 
-    auto headers_key{header_hash_key(0)};
+    auto headers_key{block_key(0)};
     auto mdb_key{to_mdb_val(headers_key)};
-    auto genesis_hash{txn.get(db::table::kBlockHeaders, &mdb_key)};
+    auto genesis_hash{txn.get(db::table::kCanonicalHashes, &mdb_key)};
     if (!genesis_hash.has_value()) {
         return std::nullopt;
     }

@@ -257,7 +257,6 @@ class RecoveryFarm final {
                     if (ret_status != Status::Succeded) {
                         return ret_status;
                     }
-                    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
                 } else {
                     height_from = senders_stage_height + 1;
                 }
@@ -449,6 +448,15 @@ class RecoveryFarm final {
                     << "Senders Unwinding : Unexpected database error :  " << ex.what() << std::endl;
                 return Status::DatabaseError;
             }
+        }
+
+        // Eventually update new stage height
+        try {
+            db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
+        } catch (const lmdb::exception& ex) {
+            SILKWORM_LOG(LogLevels::LogError)
+                << "Senders Unwinding : Unexpected database error :  " << ex.what() << std::endl;
+            return Status::DatabaseError;
         }
         return Status::Succeded;
     }

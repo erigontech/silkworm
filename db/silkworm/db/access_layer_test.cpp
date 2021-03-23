@@ -305,5 +305,35 @@ namespace db {
         db_changes = read_storage_changes(*txn, block_num3);
         CHECK(db_changes == expected_changes3);
     }
+
+    TEST_CASE("parse_chain_config") {
+        CHECK(!parse_chain_config(R"({
+            "firstName": "John",
+            "lastName": "Smith",
+            "children": [],
+            "spouse": null
+        })"));
+
+        std::optional<ChainConfig> config{parse_chain_config(R"({
+            "chainId":1,
+            "homesteadBlock":1150000,
+            "daoForkBlock":1920000,
+            "daoForkSupport":true,
+            "eip150Block":2463000,
+            "eip150Hash":"0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0",
+            "eip155Block":2675000,
+            "eip158Block":2675000,
+            "byzantiumBlock":4370000,
+            "constantinopleBlock":7280000,
+            "petersburgBlock":7280000,
+            "istanbulBlock":9069000,
+            "muirGlacierBlock":9200000,
+            "berlinBlock":12244000,
+            "ethash":{}
+        })")};
+
+        CHECK(config == kMainnetConfig);
+    }
+
 }  // namespace db
 }  // namespace silkworm

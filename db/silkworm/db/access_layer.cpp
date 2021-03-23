@@ -395,7 +395,8 @@ std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
 }
 */
 std::optional<ChainConfig> parse_chain_config(std::string_view json) {
-    auto config_json{nlohmann::json::parse(json)};
+    // https://github.com/nlohmann/json/issues/2204
+    auto config_json = nlohmann::json::parse(json);
 
     if (!config_json.contains("chainId")) {
         return std::nullopt;

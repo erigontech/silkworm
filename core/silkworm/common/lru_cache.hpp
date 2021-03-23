@@ -41,7 +41,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstddef>
 #include <list>
-#include <unordered_map>
+
+#include <silkworm/common/hash_maps.hpp>
 
 namespace silkworm {
 
@@ -89,7 +90,7 @@ class lru_cache {
 
   private:
     std::list<key_value_pair_t> _cache_items_list;
-    std::unordered_map<key_t, list_iterator_t> _cache_items_map;
+    FlatHashMap<key_t, list_iterator_t> _cache_items_map;
     size_t _max_size;
 };
 

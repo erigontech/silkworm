@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
     // We take data from header table and transform it and put it in blockhashes table
-    auto header_table{txn->open(db::table::kBlockHeaders)};
+    auto canonical_hashes_table{txn->open(db::table::kCanonicalHashes)};
     auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};
 
     try {
@@ -64,18 +64,15 @@ int main(int argc, char* argv[]) {
         uint32_t blocks_processed_count{0};
 
         // Extract
-        Bytes start(8, '\0');
-        boost::endian::store_big_u64(&start[0], expected_block_number);
-        MDB_val mdb_key{db::to_mdb_val(start)};
-        MDB_val mdb_data;
-        SILKWORM_LOG(LogInfo) << "Started BlockHashes Extraction" << std::endl;
-        int rc{header_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
-        while (!rc) {                                     /* Loop as long as we have no errors*/
+        auto header_key{db::block_key(expected_block_number)};
+        MDB_val mdb_key{db::to_mdb_val(header_key)}, mdb_data{};
 
-            if (mdb_key.mv_size != 40) {
-                // Not the key we need
-                rc = header_table->get_next(&mdb_key, &mdb_data);
-                continue;
+        SILKWORM_LOG(LogInfo) << "Started BlockHashes Extraction" << std::endl;
+        int rc{canonical_hashes_table->seek_exact(&mdb_key, &mdb_data)};  // Sets cursor to matching header
+        while (!rc) {                                                     /* Loop as long as we have no errors*/
+
+            if (mdb_data.mv_size != kHashLength) {
+                throw std::runtime_error("Invalid header hash for block " + std::to_string(expected_block_number));
             }
 
             // Ensure the reached block number is in proper sequence
@@ -91,13 +88,14 @@ int main(int argc, char* argv[]) {
 
             // We reached a valid block height in proper sequence
             // Load data into collector
-            etl::Entry etl_entry{mdb_key_as_bytes.substr(8, 40), mdb_key_as_bytes.substr(0, 8)};
+            Bytes mdb_data_as_bytes{db::from_mdb_val(mdb_data)};
+            etl::Entry etl_entry{/* hash */ mdb_data_as_bytes, /* block number */ mdb_key_as_bytes};
             collector.collect(etl_entry);
 
             // Save last processed block_number and expect next in sequence
             ++blocks_processed_count;
             block_number = expected_block_number++;
-            rc = header_table->get_next(&mdb_key, &mdb_data);
+            rc = canonical_hashes_table->get_next(&mdb_key, &mdb_data);
         }
 
         if (rc && rc != MDB_NOTFOUND) { /* MDB_NOTFOUND is not actually an error rather eof */

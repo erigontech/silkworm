@@ -46,7 +46,10 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
     }
 
     if (available_gas() < txn.gas_limit) {
-        return ValidationResult::kBlockGasLimitReached;
+        // Corresponds to the final condition of Eq (58) in Yellow Paper Section 6.2 "Execution".
+        // The sum of the transaction’s gas limit and the gas utilized in this block prior
+        // must be no greater than the block’s gas limit.
+        return ValidationResult::kBlockGasLimitExceeded;
     }
 
     return ValidationResult::kOk;

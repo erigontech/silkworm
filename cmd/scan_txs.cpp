@@ -47,6 +47,14 @@ int main(int argc, char* argv[]) {
     int retvar{0};
     lmdb::DatabaseConfig db_config{db_path};
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
+
+    std::unique_ptr<lmdb::Transaction> cfg_txn{env->begin_ro_transaction()};
+    auto chain_config{db::read_chain_config(*cfg_txn)};
+    if (!chain_config) {
+        throw std::runtime_error("Unable to retrieve chain config");
+    }
+    cfg_txn.release();
+
     // Note: If TurboGeth is actively syncing its database (syncing), it is important not to create
     // long-running datbase reads transactions even though that may make your processing faster.
     // Uncomment the following line (and comment the line below) only if you're certain TG is not
@@ -75,7 +83,7 @@ int main(int argc, char* argv[]) {
             db::Buffer buffer{txn.get(), block_num};
 
             // Execute the block and retreive the receipts
-            auto [receipts, err]{execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool)};
+            auto [receipts, err]{execute_block(bh->block, buffer, *chain_config, &analysis_cache, &state_pool)};
             if (err != ValidationResult::kOk) {
                 std::cerr << "Validation error " << static_cast<int>(err) << " at block " << block_num << "\n";
             }

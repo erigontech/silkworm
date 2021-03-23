@@ -458,7 +458,7 @@ class RecoveryFarm final {
                 << "Senders Unwinding : Unexpected database error :  " << ex.what() << std::endl;
             return Status::DatabaseError;
         }
-        return Status::Succeded;
+        return should_stop() ? Status::WorkerAborted : Status::Succeded;
     }
 
   private:

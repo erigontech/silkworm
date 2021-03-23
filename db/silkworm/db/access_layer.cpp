@@ -359,8 +359,6 @@ bool migration_happened(lmdb::Transaction& txn, const char* name) {
 }
 
 std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
-    using json = nlohmann::json;
-
     auto headers_key{block_key(0)};
     auto mdb_key{to_mdb_val(headers_key)};
     auto genesis_hash{txn.get(db::table::kCanonicalHashes, &mdb_key)};
@@ -374,32 +372,39 @@ std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
         return std::nullopt;
     }
 
-    /*
-    * Sample config
-    {
-   "byzantiumBlock":4370000,
-   "chainId":1,
-   "constantinopleBlock":7280000,
-   "daoForkBlock":1920000,
-   "daoForkSupport":true,
-   "eip150Block":2463000,
-   "eip150Hash":"0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0",
-   "eip155Block":2675000,
-   "eip158Block":2675000,
-   "ethash":{},
-   "homesteadBlock":1150000,
-   "istanbulBlock":9069000,
-   "muirGlacierBlock":9200000,
-   "petersburgBlock":7280000
-    }
-    */
+    return parse_chain_config(byte_ptr_cast(config_value->c_str()));
+}
 
-    auto config_json{json::parse(config_value->c_str())};
+/*
+* Sample config
+{
+"byzantiumBlock":4370000,
+"chainId":1,
+"constantinopleBlock":7280000,
+"daoForkBlock":1920000,
+"daoForkSupport":true,
+"eip150Block":2463000,
+"eip150Hash":"0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0",
+"eip155Block":2675000,
+"eip158Block":2675000,
+"ethash":{},
+"homesteadBlock":1150000,
+"istanbulBlock":9069000,
+"muirGlacierBlock":9200000,
+"petersburgBlock":7280000
+}
+*/
+std::optional<ChainConfig> parse_chain_config(std::string_view json) {
+    // https://github.com/nlohmann/json/issues/2204
+    auto config_json = nlohmann::json::parse(json);
+
+    if (!config_json.contains("chainId")) {
+        return std::nullopt;
+    }
+
     ChainConfig config{};
+    config.chain_id = config_json["chainId"].get<uint64_t>();
 
-    if (config_json.contains("chainId")) {
-        config.chain_id = config_json["chainId"].get<uint64_t>();
-    }
     if (config_json.contains("homesteadBlock")) {
         config.homestead_block.emplace(config_json["homesteadBlock"].get<uint64_t>());
     }

@@ -19,9 +19,8 @@
 
 #include <memory>
 
-#include <lrucache.hpp>
-
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/lru_cache.hpp>
 
 namespace evmone {
 struct code_analysis;
@@ -55,7 +54,7 @@ class AnalysisCache {
              evmc_revision revision) noexcept;
 
   private:
-    cache::lru_cache<evmc::bytes32, std::shared_ptr<evmone::code_analysis>> cache_;
+    lru_cache<evmc::bytes32, std::shared_ptr<evmone::code_analysis>> cache_;
     evmc_revision revision_{EVMC_MAX_REVISION};
 };
 

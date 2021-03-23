@@ -87,6 +87,9 @@ bool migration_happened(lmdb::Transaction& txn, const char* name);
 // See TG chainConfig / chainConfigWithGenesis
 std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn);
 
+// Parses chain config from TG JSON format
+std::optional<ChainConfig> parse_chain_config(std::string_view json);
+
 }  // namespace silkworm::db
 
 #endif  // !SILKWORM_DB_ACCESS_LAYER_HPP_

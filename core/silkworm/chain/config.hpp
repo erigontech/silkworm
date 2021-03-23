@@ -103,6 +103,8 @@ struct ChainConfig {
     bool has_berlin(uint64_t block_num) const noexcept { return berlin_block.has_value() && berlin_block <= block_num; }
 };
 
+bool operator==(const ChainConfig& a, const ChainConfig& b);
+
 constexpr ChainConfig kMainnetConfig{
     1,  // chain_id
 

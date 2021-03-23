@@ -69,38 +69,40 @@ struct ChainConfig {
     // TODO[ETC] ECIP-1017
 
     bool has_homestead(uint64_t block_num) const noexcept {
-        return homestead_block.has_value() && homestead_block <= block_num;
+        return homestead_block.has_value() && homestead_block.value() <= block_num;
     }
 
     bool has_tangerine_whistle(uint64_t block_num) const noexcept {
-        return tangerine_whistle_block.has_value() && tangerine_whistle_block <= block_num;
+        return tangerine_whistle_block.has_value() && tangerine_whistle_block.value() <= block_num;
     }
 
     bool has_spurious_dragon(uint64_t block_num) const noexcept {
-        return spurious_dragon_block.has_value() && spurious_dragon_block <= block_num;
+        return spurious_dragon_block.has_value() && spurious_dragon_block.value() <= block_num;
     }
 
     bool has_byzantium(uint64_t block_num) const noexcept {
-        return byzantium_block.has_value() && byzantium_block <= block_num;
+        return byzantium_block.has_value() && byzantium_block.value() <= block_num;
     }
 
     bool has_constantinople(uint64_t block_num) const noexcept {
-        return constantinople_block.has_value() && constantinople_block <= block_num;
+        return constantinople_block.has_value() && constantinople_block.value() <= block_num;
     }
 
     bool has_petersburg(uint64_t block_num) const noexcept {
-        return petersburg_block.has_value() && petersburg_block <= block_num;
+        return petersburg_block.has_value() && petersburg_block.value() <= block_num;
     }
 
     bool has_istanbul(uint64_t block_num) const noexcept {
-        return istanbul_block.has_value() && istanbul_block <= block_num;
+        return istanbul_block.has_value() && istanbul_block.value() <= block_num;
     }
 
     bool has_muir_glacier(uint64_t block_num) const noexcept {
-        return muir_glacier_block.has_value() && muir_glacier_block <= block_num;
+        return muir_glacier_block.has_value() && muir_glacier_block.value() <= block_num;
     }
 
-    bool has_berlin(uint64_t block_num) const noexcept { return berlin_block.has_value() && berlin_block <= block_num; }
+    bool has_berlin(uint64_t block_num) const noexcept {
+        return berlin_block.has_value() && berlin_block.value() <= block_num;
+    }
 };
 
 bool operator==(const ChainConfig& a, const ChainConfig& b);

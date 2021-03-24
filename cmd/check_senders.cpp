@@ -919,6 +919,8 @@ int main(int argc, char* argv[]) {
             if (!options.dry) {
                 SILKWORM_LOG(LogLevels::LogInfo) << "Committing" << std::endl;
                 lmdb::err_handler(lmdb_txn->commit());
+            } else {
+                SILKWORM_LOG(LogLevels::LogInfo) << "Not committing (--dry)" << std::endl;
             }
         }
 

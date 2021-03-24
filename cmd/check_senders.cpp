@@ -257,7 +257,6 @@ class RecoveryFarm final {
                     if (ret_status != Status::Succeded) {
                         return ret_status;
                     }
-                    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
                 } else {
                     height_from = senders_stage_height + 1;
                 }
@@ -424,6 +423,7 @@ class RecoveryFarm final {
      */
     Status unwind(uint64_t new_height) {
         SILKWORM_LOG(LogLevels::LogInfo) << "Unwinding Senders' table to height " << new_height << std::endl;
+        Status ret{Status::Succeded};
         try {
             auto unwind_table{db_transaction_.open(db::table::kSenders, MDB_CREATE)};
             size_t rcount{0};
@@ -440,6 +440,10 @@ class RecoveryFarm final {
                         /* Delete all records sequentially */
                         lmdb::err_handler(unwind_table->del_current());
                         lmdb::err_handler(unwind_table->get_next(&mdb_key, &mdb_data));
+                        if (--rcount % 1'000 && should_stop()) {
+                            ret = Status::WorkerAborted;
+                            break;
+                        }
                     } while (true);
                 }
             }
@@ -450,7 +454,18 @@ class RecoveryFarm final {
                 return Status::DatabaseError;
             }
         }
-        return Status::Succeded;
+
+        // Eventually update new stage height
+        if (ret == Status::Succeded) {
+            try {
+                db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
+            } catch (const lmdb::exception& ex) {
+                SILKWORM_LOG(LogLevels::LogError)
+                    << "Senders Unwinding : Unexpected database error :  " << ex.what() << std::endl;
+                return Status::DatabaseError;
+            }
+        }
+        return should_stop() ? Status::WorkerAborted : ret;
     }
 
   private:

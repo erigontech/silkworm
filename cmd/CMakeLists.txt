@@ -68,6 +68,10 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(hashstate PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
   target_include_directories(hashstate PRIVATE ${CMAKE_SOURCE_DIR})
 
+  add_executable(check_hashstate check_hashstate.cpp)
+  target_link_libraries(check_hashstate PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
+  target_include_directories(check_hashstate PRIVATE ${CMAKE_SOURCE_DIR})
+
   add_executable(tx_lookup tx_lookup.cpp)
   target_link_libraries(tx_lookup PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
   target_include_directories(tx_lookup PRIVATE ${CMAKE_SOURCE_DIR})

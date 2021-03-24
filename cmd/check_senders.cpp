@@ -400,7 +400,7 @@ class RecoveryFarm final {
                         << "ETL Load [2/2] : Loading data into " << target_table->get_name() << std::endl;
                     collector_.load(
                         target_table.get(), nullptr, MDB_APPEND,
-                        /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 1 : 20));
+                        /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 50 : 10));
                     db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block_);
                 } catch (const lmdb::exception& ex) {
                     SILKWORM_LOG(LogLevels::LogError)

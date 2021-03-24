@@ -636,9 +636,9 @@ class RecoveryFarm final {
             });
 
             if (it != workers_.end()) {
-                SILKWORM_LOG(LogLevels::LogDebug)
-                    << "Dispatching package to worker #" << (std::distance(workers_.begin(), it)) << std::endl;
                 (*it)->set_work(batch_id_++, std::move(batch_));  // Transfers ownership of batch to worker
+                SILKWORM_LOG(LogLevels::LogDebug) << "Dispatched package " << batch_id_ << " to worker "
+                                                  << (std::distance(workers_.begin(), it)) << std::endl;
                 if (renew) {
                     init_batch();
                 }

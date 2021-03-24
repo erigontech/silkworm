@@ -14,9 +14,8 @@
    limitations under the License.
 */
 
-#pragma once
-#ifndef SILKWORM_DB_STAGES_H_
-#define SILKWORM_DB_STAGES_H_
+#ifndef SILKWORM_DB_STAGES_HPP_
+#define SILKWORM_DB_STAGES_HPP_
 
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
@@ -49,4 +48,4 @@ void set_stage_progress(lmdb::Transaction& txn, const char* stage_name, uint64_t
 
 }  // namespace silkworm::db::stages
 
-#endif  // !SILKWORM_DB_STAGES_H_
+#endif  // SILKWORM_DB_STAGES_HPP_

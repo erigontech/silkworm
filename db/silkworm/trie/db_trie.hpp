@@ -21,6 +21,7 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/db/chaindb.hpp>
+#include <silkworm/etl/collector.hpp>
 
 namespace silkworm::trie {
 
@@ -32,12 +33,63 @@ struct Node {
     std::vector<evmc::bytes32> hashes{};
 };
 
+// TG RootHashAggregator
+class Aggregator {
+  public:
+    Aggregator(const Aggregator&) = delete;
+    Aggregator& operator=(const Aggregator&) = delete;
+
+    Aggregator() = default;
+
+    void add_account();
+
+    void cut_off();
+
+    evmc::bytes32 root() const;
+};
+
+// TG AccTrieCursor
+class AccountTrieCursor {
+  public:
+    AccountTrieCursor(const AccountTrieCursor&) = delete;
+    AccountTrieCursor& operator=(const AccountTrieCursor&) = delete;
+
+    AccountTrieCursor(lmdb::Transaction& txn, etl::Collector& account_collector);
+
+    bool can_skip_state() const;
+
+    Bytes first_uncovered_prefix() const;
+
+    void next();
+};
+
+// TG FlatDBTrieLoader
+class DbTrieLoader {
+  public:
+    DbTrieLoader(const DbTrieLoader&) = delete;
+    DbTrieLoader& operator=(const DbTrieLoader&) = delete;
+
+    DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector);
+
+    evmc::bytes32 calculate_root();
+
+  private:
+    lmdb::Transaction& txn_;
+    etl::Collector& account_collector_;
+    Aggregator aggregator_;
+};
+
+class WrongRoot : public std::runtime_error {
+  public:
+    WrongRoot() : std::runtime_error{"wrong trie root"} {}
+};
+
 // TG UnmarshalTrieNode
 Node unmarshal_node(ByteView v);
 
 // TG RegenerateIntermediateHashes
-// returns root hash
-evmc::bytes32 regenerate_db_tries(lmdb::Transaction& txn);
+// might throw WrongRoot
+void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, evmc::bytes32* expected_root = nullptr);
 
 }  // namespace silkworm::trie
 

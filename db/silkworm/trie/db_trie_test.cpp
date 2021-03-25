@@ -26,8 +26,10 @@
 namespace silkworm::trie {
 
 TEST_CASE("Layout of account trie") {
-    TemporaryDirectory tmp_dir;
-    lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
+    TemporaryDirectory tmp_dir1;
+    TemporaryDirectory tmp_dir2;
+
+    lmdb::DatabaseConfig db_config{tmp_dir1.path(), 32 * kMebi};
     db_config.set_readonly(false);
     auto env{lmdb::get_env(db_config)};
     auto txn{env->begin_rw_transaction()};
@@ -66,8 +68,8 @@ TEST_CASE("Layout of account trie") {
     hashed_accounts->put(full_view(hash6), a6.encode_for_storage());
     hb.add(full_view(hash6), a6.rlp(/*storage_root=*/kEmptyRoot));
 
-    evmc::bytes32 root_hash{regenerate_db_tries(*txn)};
-    CHECK(root_hash == hb.root_hash());
+    evmc::bytes32 expected_root{hb.root_hash()};
+    regenerate_db_tries(*txn, tmp_dir2.path(), &expected_root);
 
     auto account_trie{txn->open(db::table::kTrieOfAccounts)};
 

@@ -16,20 +16,88 @@
 
 #include "db_trie.hpp"
 
+#include <silkworm/common/log.hpp>
+#include <silkworm/db/tables.hpp>
+
 namespace silkworm::trie {
 
-evmc::bytes32 regenerate_db_tries(lmdb::Transaction&) {
+void Aggregator::cut_off() {
     // TODO[Issue 179] implement
-    // TODO[Issue 179] use ETL
-    // TODO[Issue 179] storage
+}
 
-    return kEmptyRoot;
+evmc::bytes32 Aggregator::root() const {
+    // TODO[Issue 179] implement
+    return {};
+}
+
+AccountTrieCursor::AccountTrieCursor(lmdb::Transaction&, etl::Collector&) {}
+
+bool AccountTrieCursor::can_skip_state() const {
+    // TODO[Issue 179] implement
+    return false;
+}
+
+void AccountTrieCursor::next() {
+    // TODO[Issue 179] implement
+}
+
+DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector)
+    : txn_{txn}, account_collector_{account_collector} {}
+
+// CalcTrieRoot algo:
+//	for iterateIHOfAccounts {
+//		if canSkipState
+//          goto SkipAccounts
+//
+//		for iterateAccounts from prevIH to currentIH {
+//			use(account)
+//			for iterateIHOfStorage within accountWithIncarnation{
+//				if canSkipState
+//					goto SkipStorage
+//
+//				for iterateStorage from prevIHOfStorage to currentIHOfStorage {
+//					use(storage)
+//				}
+//            SkipStorage:
+//				use(ihStorage)
+//			}
+//		}
+//    SkipAccounts:
+//		use(AccTrie)
+//	}
+evmc::bytes32 DbTrieLoader::calculate_root() {
+    auto account_state_cursor{txn_.open(db::table::kHashedAccounts)};
+
+    for (AccountTrieCursor account_trie_cursor{txn_, account_collector_};; account_trie_cursor.next()) {
+        // TODO[Issue 179] can_skip_state
+
+        // TODO[Issue 179] implement inner loop
+        break;
+    }
+
+    aggregator_.cut_off();
+
+    return aggregator_.root();
 }
 
 Node unmarshal_node(ByteView) {
     Node n;
     // TODO[Issue 179] implement
     return n;
+}
+
+void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, evmc::bytes32* expected_root) {
+    // TODO[Issue 179] storage
+    etl::Collector account_collector{tmp_dir};
+    DbTrieLoader loader{txn, account_collector};
+    evmc::bytes32 root{loader.calculate_root()};
+    if (expected_root && root != *expected_root) {
+        SILKWORM_LOG(LogError) << "Wrong trie root: " << to_hex(root) << ", expected: " << to_hex(*expected_root)
+                               << "\n";
+        throw WrongRoot{};
+    }
+    auto account_tbl{txn.open(db::table::kTrieOfAccounts)};
+    account_collector.load(account_tbl.get());
 }
 
 }  // namespace silkworm::trie

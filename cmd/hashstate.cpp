@@ -73,16 +73,16 @@ void promote_clean(lmdb::Transaction * txn, std::string etl_path, Operation oper
         if (operation == HashAccount) {
             // Account
             if (mdb_key.mv_size != kAddressLength) {
-                rc = source_table->get_next(&mdb_key, &mdb_data);
+                rc = source_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
                 continue; 
             }
             etl::Entry entry{Bytes(keccak256(mdb_key_as_bytes).bytes, kHashLength), mdb_value_as_bytes};
             collector.collect(entry);
-            rc = source_table->get_next(&mdb_key, &mdb_data);
+            rc = source_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
         } else if (operation == HashStorage) {
             // Storage
             if (mdb_key.mv_size == kAddressLength) {
-                rc = source_table->get_next(&mdb_key, &mdb_data);
+                rc = source_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
                 continue;
             }
             Bytes new_key(kHashLength*2+db::kIncarnationLength, '\0');
@@ -91,7 +91,7 @@ void promote_clean(lmdb::Transaction * txn, std::string etl_path, Operation oper
             std::memcpy(&new_key[kHashLength + db::kIncarnationLength], keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
             etl::Entry entry{new_key, mdb_value_as_bytes};
             collector.collect(entry);
-            rc = source_table->get_next(&mdb_key, &mdb_data);
+            rc = source_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
         } else {
             // Code
             if (mdb_key.mv_size != kAddressLength+db::kIncarnationLength) {
@@ -163,49 +163,59 @@ void promote(lmdb::Transaction * txn, Operation operation) {
         Bytes db_key{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};
         if (operation == HashAccount) {
             auto value{plainstate_table->get(db_key)};
+            if (to_hex(full_view(keccak256(db_key).bytes)) == "eb43bda90d5d97f9985eb9debfb6d0552ad28c05ec1c94e40e072788852360fa") {
+                std::cout << "lol" << std::endl;
+            }
             if (value == std::nullopt) {
-                rc = changeset_table->get_next(&mdb_key, &mdb_data);
+                rc = changeset_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
                 continue;   
-            }       
+            } 
+            if (to_hex(full_view(keccak256(db_key).bytes)) == "eb43bda90d5d97f9985eb9debfb6d0552ad28c05ec1c94e40e072788852360fa") {
+                std::cout << "lol1" << std::endl;
+            }      
             auto hash{keccak256(db_key)};
             target_table->put(full_view(hash.bytes), *value, 0);
+            rc = changeset_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
         } else if (operation == HashStorage) {
             Bytes key(kHashLength*2+db::kIncarnationLength, '\0');
             auto value{plainstate_table->get(db_key)};
+            if (value == std::nullopt) {
+                rc = changeset_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
+                continue;
+            }
             std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
             std::memcpy(&key[kHashLength + db::kIncarnationLength], keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
             target_table->put(key, *value, 0);
+            rc = changeset_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
         } else {
             // get incarnation
             auto encoded_account{plainstate_table->get(db_key)};
             if (encoded_account == std::nullopt) {
-                rc = changeset_table->get_next(&mdb_key, &mdb_data);
+                rc = changeset_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
                 continue;  
             }
             auto incarnation{extract_incarnation(*encoded_account)};
             if (incarnation == 0) {
-                rc = changeset_table->get_next(&mdb_key, &mdb_data);
+                rc = changeset_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
                 continue;
             }
-            std::cout << incarnation << std::endl;
             // get code hash
             Bytes plain_key(kAddressLength + db::kIncarnationLength, '\0');
             std::memcpy(&plain_key[0], &db_key[0], kAddressLength);   
             boost::endian::store_big_u64(&plain_key[kAddressLength], incarnation);
             auto code_hash{codehash_table->get(plain_key)};
             if (code_hash == std::nullopt) {
-                rc = changeset_table->get_next(&mdb_key, &mdb_data);
+                rc = changeset_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
                 continue;
             }
             // put data in db
             Bytes key(kHashLength + db::kIncarnationLength, '\0');
-            std::memcpy(&key[0], keccak256(db_key).bytes, kHashLength);   
-            boost::endian::store_big_u64(&key[kHashLength], incarnation);
-            printKey(db_key);
+            std::memcpy(&key[0], keccak256(plain_key.substr(0, kAddressLength)).bytes, kHashLength);   
+            std::memcpy(&key[kHashLength], &plain_key[kAddressLength], db::kIncarnationLength);   
             target_table->put(key, *code_hash, 0);
+            rc = changeset_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
         }
-        rc = changeset_table->get_next(&mdb_key, &mdb_data);
     }
 }
 
@@ -215,13 +225,14 @@ int main(int argc, char* argv[]) {
     std::string db_path{db::default_path()};
     bool full{false};
     bool incrementally{false};
+    bool reset{false};
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
 
     app.add_flag("--full", full, "Start making lookups from block 0");
     app.add_flag("--increment", incrementally, "Use incremental method");
+        app.add_flag("--reset", reset, "Reset HashState");
     CLI11_PARSE(app, argc, argv);
-    SILKWORM_LOG(LogInfo) << "Starting HashState" << std::endl;
 
 
     // Check data.mdb exists in provided directory
@@ -239,19 +250,24 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
     try {
-        if (full) {
+
+        if (full || reset) {
             txn->open(db::table::kHashedAccounts)->clear();
             txn->open(db::table::kHashedStorage)->clear();
             txn->open(db::table::kContractCode)->clear();
             db::stages::set_stage_progress(*txn, db::stages::kHashStateKey, 0);
-                    lmdb::err_handler(txn->commit());
-
-            return 5;
+            if (reset) {
+                SILKWORM_LOG(LogInfo) << "Reset Complete!" << std::endl;
+                lmdb::err_handler(txn->commit());
+                return 0;
+            }
         }
+        SILKWORM_LOG(LogInfo) << "Starting HashState" << std::endl;
+
         auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
         if (last_processed_block_number != 0 || incrementally) {
             SILKWORM_LOG(LogInfo) << "Starting Account Hashing" << std::endl;
-            // promote(txn.get(), HashAccount);
+            promote(txn.get(), HashAccount);
             SILKWORM_LOG(LogInfo) << "Starting Storage Hashing" << std::endl;
             // promote(txn.get(), HashStorage);
             SILKWORM_LOG(LogInfo) << "Hashing Code Keys" << std::endl;

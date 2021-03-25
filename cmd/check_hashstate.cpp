@@ -83,17 +83,12 @@ void check(lmdb::Transaction * txn, Operation operation) {
             std::memcpy(&key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
             std::memcpy(&key[kHashLength + db::kIncarnationLength], keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
-            auto found{false};
-            while (!rc) {
-                Bytes current_value{static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size};
-                rc = target_table->get_next_dup(&mdb_key, &mdb_data);
-                if (expected_value.compare(current_value) == 0) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
+            MDB_val mdb_key_hashed{db::to_mdb_val(key)};
+            MDB_val mdb_data_hashed;
+            rc = target_table->seek_exact(&mdb_key_hashed, &mdb_data_hashed);
+            if (rc != 0) {
                 SILKWORM_LOG(LogError) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
+                return;
             }
             rc = source_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
         } else {
@@ -108,7 +103,8 @@ void check(lmdb::Transaction * txn, Operation operation) {
             auto actual_value{target_table->get(key)};
             if (actual_value == std::nullopt) {
                 SILKWORM_LOG(LogError) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
-                return;
+                rc = source_table->get_next(&mdb_key, &mdb_data);
+                continue;
             }
 
             if (actual_value->compare(expected_value) != 0) {

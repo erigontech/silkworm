@@ -101,16 +101,6 @@ void check(lmdb::Transaction * txn, Operation operation) {
             std::memcpy(&key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
             auto actual_value{target_table->get(key)};
-            if (actual_value == std::nullopt) {
-                SILKWORM_LOG(LogError) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
-                rc = source_table->get_next(&mdb_key, &mdb_data);
-                continue;
-            }
-
-            if (actual_value->compare(expected_value) != 0) {
-                SILKWORM_LOG(LogError) << "Expected: " << to_hex(expected_value) << ", Actual: << " << to_hex(*actual_value) << std::endl;
-                return;
-            }
             rc = source_table->get_next(&mdb_key, &mdb_data);
         }
     }

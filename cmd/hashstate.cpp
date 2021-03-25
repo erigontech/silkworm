@@ -269,7 +269,7 @@ int main(int argc, char* argv[]) {
             SILKWORM_LOG(LogInfo) << "Starting Account Hashing" << std::endl;
             promote(txn.get(), HashAccount);
             SILKWORM_LOG(LogInfo) << "Starting Storage Hashing" << std::endl;
-            // promote(txn.get(), HashStorage);
+            promote(txn.get(), HashStorage);
             SILKWORM_LOG(LogInfo) << "Hashing Code Keys" << std::endl;
             promote(txn.get(), Code);
         } else {

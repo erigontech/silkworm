@@ -18,6 +18,7 @@
 
 #include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
+
 #include <silkworm/common/temp_dir.hpp>
 
 #include "tables.hpp"
@@ -95,7 +96,12 @@ namespace db {
 
         CHECK(!read_header(*txn, header.number, hash.bytes));
 
-        auto header_table{txn->open(table::kBlockHeaders)};
+        // Write canonical header hash + header rlp
+        auto canonical_hashes_table{txn->open(table::kCanonicalHashes)};
+        auto k{block_key(block_num)};
+        canonical_hashes_table->put(k, Bytes(hash.bytes, kHashLength));
+
+        auto header_table{txn->open(table::kHeaders)};
         Bytes key{block_key(header.number, hash.bytes)};
         header_table->put(key, rlp);
 
@@ -105,9 +111,6 @@ namespace db {
 
         SECTION("read_block") {
             bool read_senders{false};
-            CHECK(!read_block(*txn, block_num, read_senders));
-
-            header_table->put(header_hash_key(block_num), full_view(hash.bytes));
             CHECK(!read_block(*txn, block_num, read_senders));
 
             BlockBody body{sample_block_body()};
@@ -302,5 +305,35 @@ namespace db {
         db_changes = read_storage_changes(*txn, block_num3);
         CHECK(db_changes == expected_changes3);
     }
+
+    TEST_CASE("parse_chain_config") {
+        CHECK(!parse_chain_config(R"({
+            "firstName": "John",
+            "lastName": "Smith",
+            "children": [],
+            "spouse": null
+        })"));
+
+        std::optional<ChainConfig> config{parse_chain_config(R"({
+            "chainId":1,
+            "homesteadBlock":1150000,
+            "daoForkBlock":1920000,
+            "daoForkSupport":true,
+            "eip150Block":2463000,
+            "eip150Hash":"0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0",
+            "eip155Block":2675000,
+            "eip158Block":2675000,
+            "byzantiumBlock":4370000,
+            "constantinopleBlock":7280000,
+            "petersburgBlock":7280000,
+            "istanbulBlock":9069000,
+            "muirGlacierBlock":9200000,
+            "berlinBlock":12244000,
+            "ethash":{}
+        })")};
+
+        CHECK(config == kMainnetConfig);
+    }
+
 }  // namespace db
 }  // namespace silkworm

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #define SILKWORM_CRYPTO_RMD160_HPP_
 
 #include <gsl/span>
+
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::crypto {

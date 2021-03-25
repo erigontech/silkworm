@@ -14,22 +14,23 @@
    limitations under the License.
 */
 
-#include <CLI/CLI.hpp>
-
-#include <boost/filesystem.hpp>
-#include <silkworm/etl/collector.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/util.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/types/transaction.hpp>
-#include <boost/endian/conversion.hpp>
-#include <silkworm/common/util.hpp>
-#include <silkworm/chain/config.hpp>
-#include <iostream>
 #include <csignal>
+#include <iostream>
+
+#include <CLI/CLI.hpp>
+#include <boost/endian/conversion.hpp>
+#include <boost/filesystem.hpp>
+
+#include <silkworm/chain/config.hpp>
+#include <silkworm/common/log.hpp>
+#include <silkworm/common/util.hpp>
+#include <silkworm/crypto/ecdsa.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/stages.hpp>
+#include <silkworm/db/tables.hpp>
+#include <silkworm/db/util.hpp>
+#include <silkworm/etl/collector.hpp>
+#include <silkworm/types/transaction.hpp>
 
 using namespace silkworm;
 
@@ -42,7 +43,6 @@ void sig_handler(int signum) {
 }
 
 int main(int argc, char* argv[]) {
-
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
@@ -52,16 +52,15 @@ int main(int argc, char* argv[]) {
 
     std::string db_path{db::default_path()};
     size_t block_from;
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
     app.add_option("--from", block_from, "Initial block number to process (inclusive)", true)
         ->check(CLI::Range(1u, UINT32_MAX));
     CLI11_PARSE(app, argc, argv);
 
-
     // Check data.mdb exists in provided directory
-    boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
-    if (!boost::filesystem::exists(db_file)) {
+    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
@@ -78,18 +77,16 @@ int main(int argc, char* argv[]) {
     auto tx_lookup_table{txn->open(db::table::kTxLookup)};
     auto transactions_table{txn->open(db::table::kEthTx)};
     uint64_t expected_block_number{0};
-    Bytes buffer{}; // To extract compacted data
+    Bytes buffer{};  // To extract compacted data
 
     try {
-
         SILKWORM_LOG(LogInfo) << "Checking Transaction Lookups..." << std::endl;
 
         MDB_val mdb_key, mdb_data;
         int rc{bodies_table->get_first(&mdb_key, &mdb_data)};
 
         while (!rc) {
-
-            Bytes block_key(static_cast<const uint8_t*>(mdb_key.mv_data), mdb_key.mv_size);
+            ByteView block_key(db::from_mdb_val(mdb_key));
             auto block_number(boost::endian::load_big_u64(&block_key[0]));
             auto body_rlp{db::from_mdb_val(mdb_data)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
@@ -104,7 +101,6 @@ int main(int argc, char* argv[]) {
                 for (int rc2{transactions_table->seek_exact(&tx_mdb_key, &tx_mdb_data)};
                      rc2 == MDB_SUCCESS && i < body.txn_count;
                      rc2 = transactions_table->get_next(&tx_mdb_key, &tx_mdb_data), ++i) {
-
                     lmdb::err_handler(rc2);
                     ByteView tx_rlp{db::from_mdb_val(tx_mdb_data)};
                     auto hash{keccak256(tx_rlp)};
@@ -134,7 +130,6 @@ int main(int argc, char* argv[]) {
                     SILKWORM_LOG(LogError) << "Block " << block_number << " claims " << body.txn_count
                                            << " transactions but only " << i << " read" << std::endl;
                 }
-
             }
 
             if (expected_block_number % 100000 == 0) {

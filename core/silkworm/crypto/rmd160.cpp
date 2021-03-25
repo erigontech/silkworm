@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 #include "rmd160.hpp"
 
+#include <silkworm/common/endian.hpp>
+
 #include "rmd160.h"
 
 namespace silkworm::crypto {
@@ -30,7 +32,7 @@ void calculate_ripemd_160(gsl::span<uint8_t, 20> out, ByteView in) noexcept {
     uint32_t current[16];
     for (size_t remaining{in.size()}; remaining >= 64; remaining -= 64) {
         for (unsigned i{0}; i < 16; ++i) {
-            current[i] = BYTES_TO_DWORD(ptr);
+            current[i] = endian::load_little_u32(ptr);
             ptr += 4;
         }
         rmd160_compress(buf, current);

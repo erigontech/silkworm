@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,28 +14,30 @@
    limitations under the License.
 */
 
+#include <csignal>
+#include <iostream>
+#include <regex>
+#include <string>
+
 #include <CLI/CLI.hpp>
 #include <boost/bind.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
-#include <csignal>
-#include <iostream>
-#include <regex>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
-#include <string>
 
-namespace bfs = boost::filesystem;
+namespace fs = boost::filesystem;
 using namespace silkworm;
 
 bool shouldStop{false};
 
 class Progress {
-   public:
+  public:
     Progress(uint32_t width) : bar_width_{width}, percent_step_{100u / width} {};
     ~Progress() = default;
 
@@ -43,7 +45,7 @@ class Progress {
     uint32_t percent(void) {
         if (!max_counter_) return 100;
         if (!current_counter_) return 0;
-        return (uint32_t)(current_counter_ * 100 / max_counter_);
+        return static_cast<uint32_t>(current_counter_ * 100 / max_counter_);
     }
 
     void step(void) { current_counter_++; }
@@ -75,14 +77,14 @@ class Progress {
     }
 
     std::string print_progress(char c = '.') {
-        uint32_t percentage{(uint32_t)percent()};
+        uint32_t percentage{percent()};
         uint32_t numChars{percentage / percent_step_};
         if (!numChars) return "";
         std::string ret(numChars, c);
         return ret;
     }
 
-   private:
+  private:
     uint32_t bar_width_;
     uint32_t percent_step_;
     size_t max_counter_{0};
@@ -115,7 +117,7 @@ struct dbFreeEntry {
 };
 
 struct dbFreeInfo {
-    size_t pages{ 0 };
+    size_t pages{0};
     size_t size{0};
     std::vector<dbFreeEntry> entries{};
 };
@@ -137,28 +139,27 @@ struct clear_options_t {
 };
 
 struct compact_options_t {
-    std::string workdir{};              // Where compacted file should be located
-    bool replace{false};                // Wheter or not compacted file shoudl replace original one
-    bool nobak{false};                  // Whether or not the original file should be renamed to bak
-    bfs::path dir{};                    // Path to target data directory (i.e. workdir)
-    bfs::path file{};                   // Path to target data file
+    std::string workdir{};  // Where compacted file should be located
+    bool replace{false};    // Wheter or not compacted file shoudl replace original one
+    bool nobak{false};      // Whether or not the original file should be renamed to bak
+    fs::path dir{};         // Path to target data directory (i.e. workdir)
+    fs::path file{};        // Path to target data file
 };
 
-struct copy_options_t
-{
-    std::string targetdir{};            // Target directory of database
-    bool create{false};                 // Whether or not new data.mdb have to be created
-    bool noempty{false};                // Omit copying a table when empty
-    bool upsert{false};                 // Copy using upsert instead of append (reuses free pages if any)
-    std::string newmapsize_str{};       // Size of target file (as input literal)
-    uint64_t newmapsize{0};             // Computed map size
-    std::vector<std::string> tables{};  // A limited set of table names to copy
-    std::vector<std::string> xtables{}; // A limited set of table names to NOT copy
-    std::string commitsize_str{"1GB"};  // Provided commit size literal default 5GB
-    uint64_t commitsize{0};             // Computed commit size
-    bfs::path dir{};                    // Path to target data directory (i.e. workdir)
-    bfs::path file{};                   // Path to target data file
-    size_t filesize{0};                 // Size of target file if exists
+struct copy_options_t {
+    std::string targetdir{};             // Target directory of database
+    bool create{false};                  // Whether or not new data.mdb have to be created
+    bool noempty{false};                 // Omit copying a table when empty
+    bool upsert{false};                  // Copy using upsert instead of append (reuses free pages if any)
+    std::string newmapsize_str{};        // Size of target file (as input literal)
+    uint64_t newmapsize{0};              // Computed map size
+    std::vector<std::string> tables{};   // A limited set of table names to copy
+    std::vector<std::string> xtables{};  // A limited set of table names to NOT copy
+    std::string commitsize_str{"1GB"};   // Provided commit size literal default 5GB
+    uint64_t commitsize{0};              // Computed commit size
+    fs::path dir{};                      // Path to target data directory (i.e. workdir)
+    fs::path file{};                     // Path to target data file
+    size_t filesize{0};                  // Size of target file if exists
 };
 
 void sig_handler(int signum) {
@@ -169,7 +170,6 @@ void sig_handler(int signum) {
 
 std::shared_ptr<lmdb::Environment> open_db(db_options_t& db_opts, bool readonly) {
     try {
-
         lmdb::DatabaseConfig db_config{db_opts.datadir, db_opts.mapsize};
         db_config.set_readonly(readonly);
         return lmdb::get_env(db_config);
@@ -207,14 +207,12 @@ int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
                       << " records) " << std::flush;
 
             if (!app_opts.yes) {
-
-                std::regex pattern{ "^([yY])?([nN])?$" };
+                std::regex pattern{"^([yY])?([nN])?$"};
                 std::smatch matches;
 
                 std::string user_input;
                 std::cout << "Confirm ? [y/N] ";
-                do
-                {
+                do {
                     std::cin >> user_input;
                     std::cin.clear();
                     if (std::regex_search(user_input, matches, pattern, std::regex_constants::match_default)) {
@@ -256,7 +254,6 @@ int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
 }
 
 dbFreeInfo get_freeInfo(std::shared_ptr<lmdb::Environment>& env) {
-
     std::unique_ptr<lmdb::Transaction> tx{env->begin_ro_transaction()};
     std::unique_ptr<lmdb::Table> free_db{tx->open(lmdb::FREE_DBI)};
 
@@ -282,7 +279,6 @@ dbFreeInfo get_freeInfo(std::shared_ptr<lmdb::Environment>& env) {
 }
 
 dbTablesInfo get_tablesInfo(std::shared_ptr<lmdb::Environment>& env) {
-
     std::unique_ptr<lmdb::Transaction> tx{env->begin_ro_transaction()};
 
     dbTablesInfo ret{};
@@ -311,11 +307,10 @@ dbTablesInfo get_tablesInfo(std::shared_ptr<lmdb::Environment>& env) {
 
     int rc{unnamed->get_first(&key, &data)};
     while (rc == MDB_SUCCESS) {
+        // auto dataview{ db::from_mdb_val(data) };
+        // std::cout << std::setw(24) << std::left << (const char*)key.mv_data << to_hex(dataview) << std::endl;
 
-        //auto dataview{ db::from_mdb_val(data) };
-        //std::cout << std::setw(24) << std::left << (const char*)key.mv_data << to_hex(dataview) << std::endl;
-
-        auto named = tx->open({(const char*)key.mv_data});
+        auto named = tx->open(lmdb::TableConfig{static_cast<const char*>(key.mv_data)});
         table = new dbTableEntry{named->get_dbi(), named->get_name()};
         lmdb::err_handler(named->get_stat(&table->stat));
         ret.pages += table->pages();
@@ -331,48 +326,44 @@ dbTablesInfo get_tablesInfo(std::shared_ptr<lmdb::Environment>& env) {
 }
 
 int do_scan(db_options_t& db_opts) {
-
-    static std::string fmt_hdr{ " %3s %-24s %=50s %13s %13s %13s" };
+    static std::string fmt_hdr{" %3s %-24s %=50s %13s %13s %13s"};
 
     int retvar{0};
-    std::shared_ptr<lmdb::Environment> lmdb_env{ open_db(db_opts, true) };  // Main lmdb environment
-    try
-    {
+    std::shared_ptr<lmdb::Environment> lmdb_env{open_db(db_opts, true)};  // Main lmdb environment
+    try {
         if (!lmdb_env) throw std::runtime_error("Could not open LMDB environment");
-        auto tablesInfo{ get_tablesInfo(lmdb_env) };
+        auto tablesInfo{get_tablesInfo(lmdb_env)};
         auto lmdb_txn = lmdb_env->begin_ro_transaction();
         if (tablesInfo.tables.size()) {
-            std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Progress" % "Keys" % "Data" % "Size") << std::endl;
+            std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Progress" % "Keys" % "Data" % "Size")
+                      << std::endl;
             std::cout << (boost::format(fmt_hdr) % std::string(3, '-') % std::string(24, '-') % std::string(50, '-') %
                           std::string(13, '-') % std::string(13, '-') % std::string(13, '-'))
                       << std::flush;
             for (dbTableEntry item : tablesInfo.tables) {
-
                 std::unique_ptr<lmdb::Table> lmdb_tbl;
 
                 std::cout << "\n" << (boost::format(" %3u %-24s ") % item.id % item.name) << std::flush;
                 if (item.id < 2) {
                     lmdb_tbl = lmdb_txn->open(item.id);
                 } else {
-                    std::optional<lmdb::TableConfig> tbl_config{ db::table::get_config(item.name) };
+                    std::optional<lmdb::TableConfig> tbl_config{db::table::get_config(item.name)};
                     if (!tbl_config.has_value()) {
                         lmdb_tbl = lmdb_txn->open({item.name.c_str()});
-                    } else
-                    {
+                    } else {
                         lmdb_tbl = lmdb_txn->open(*tbl_config);
                     }
                 };
 
                 MDB_val key, data;
-                size_t key_size{ 0 };
-                size_t data_size{ 0 };
+                size_t key_size{0};
+                size_t data_size{0};
                 Progress progress{50};
                 progress.set_task_count(item.stat.ms_entries);
                 size_t batch_size{progress.get_increment_count()};
 
                 int rc{lmdb_tbl->get_first(&key, &data)};
-                while (rc == MDB_SUCCESS)
-                {
+                while (rc == MDB_SUCCESS) {
                     key_size += key.mv_size;
                     data_size += data.mv_size;
                     if (!--batch_size) {
@@ -387,7 +378,8 @@ int do_scan(db_options_t& db_opts) {
                 if (rc != MDB_NOTFOUND) lmdb::err_handler(rc);
                 progress.set_current(item.stat.ms_entries);
                 std::cout << progress.print_interval('.') << std::flush;
-                std::cout << (boost::format(" %13u %13u %13u") % key_size % data_size % (key_size + data_size)) << std::flush;
+                std::cout << (boost::format(" %13u %13u %13u") % key_size % data_size % (key_size + data_size))
+                          << std::flush;
             }
         }
 
@@ -406,17 +398,15 @@ int do_scan(db_options_t& db_opts) {
 }
 
 int do_stages(db_options_t& db_opts) {
+    static std::string fmt_hdr{" %-24s %10s "};
+    static std::string fmt_row{" %-24s %10u "};
 
-    static std::string fmt_hdr{ " %-24s %10s " };
-    static std::string fmt_row{ " %-24s %10u " };
-
-    int retvar{ 0 };
+    int retvar{0};
     std::shared_ptr<lmdb::Environment> lmdb_env{open_db(db_opts, true)};  // Main lmdb environment
 
     try {
-
         if (!lmdb_env) throw std::runtime_error("Could not open LMDB environment");
-        auto lmdb_txn{ lmdb_env->begin_ro_transaction() };
+        auto lmdb_txn{lmdb_env->begin_ro_transaction()};
         auto stages{lmdb_txn->open(db::table::kSyncStageProgress)};
 
         std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
@@ -424,10 +414,9 @@ int do_stages(db_options_t& db_opts) {
 
         MDB_val key, data;
         int rc{stages->get_first(&key, &data)};
-        while (rc == MDB_SUCCESS)
-        {
+        while (rc == MDB_SUCCESS) {
             size_t height{boost::endian::load_big_u64(db::from_mdb_val(data).data())};
-            std::cout << (boost::format(fmt_row) % (const char*)key.mv_data % height) << std::endl;
+            std::cout << (boost::format(fmt_row) % static_cast<const char*>(key.mv_data) % height) << std::endl;
             rc = stages->get_next(&key, &data);
         }
         if (rc != MDB_NOTFOUND) lmdb::err_handler(rc);
@@ -445,7 +434,6 @@ int do_stages(db_options_t& db_opts) {
 }
 
 int do_tables(db_options_t& db_opts) {
-
     static std::string fmt_hdr{" %3s %-24s %10s %2s %10s %10s %10s %12s"};
     static std::string fmt_row{" %3i %-24s %10u %2u %10u %10u %10u %12u"};
 
@@ -453,7 +441,6 @@ int do_tables(db_options_t& db_opts) {
     std::shared_ptr<lmdb::Environment> lmdb_env{open_db(db_opts, true)};  // Main lmdb environment
 
     try {
-
         if (!lmdb_env) throw std::runtime_error("Could not open LMDB environment");
 
         auto freeInfo{get_freeInfo(lmdb_env)};
@@ -485,7 +472,8 @@ int do_tables(db_options_t& db_opts) {
         std::cout << " Free pages count     : " << (boost::format("%13u") % freeInfo.pages) << std::endl;
         std::cout << " Free pages size   (C): " << (boost::format("%13u") % freeInfo.size) << std::endl;
         std::cout << " Available space      : "
-                  << (boost::format("%13u") % (tablesInfo.mapsize - tablesInfo.size + freeInfo.size)) << " == A - B + C " << std::endl;
+                  << (boost::format("%13u") % (tablesInfo.mapsize - tablesInfo.size + freeInfo.size))
+                  << " == A - B + C " << std::endl;
 
     } catch (lmdb::exception& ex) {
         std::cout << ex.err() << " " << ex.what() << std::endl;
@@ -507,18 +495,15 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
     std::shared_ptr<lmdb::Environment> lmdb_env{open_db(db_opts, true)};  // Main lmdb environment
 
     try {
-
         if (!lmdb_env) throw std::runtime_error("Could not open LMDB environment");
         auto freeInfo{get_freeInfo(lmdb_env)};
         if (freeInfo.entries.size() && app_opts.details) {
-
             std::cout << std::endl;
             std::cout << (boost::format(fmt_hdr) % "TxId" % "Pages" % "Size") << std::endl;
             std::cout << (boost::format(fmt_hdr) % std::string(9, '-') % std::string(9, '-') % std::string(12, '-'))
                       << std::endl;
             for (auto& item : freeInfo.entries) {
-                std::cout << (boost::format(fmt_row) % item.id % item.pages % item.size)
-                          << std::endl;
+                std::cout << (boost::format(fmt_row) % item.id % item.pages % item.size) << std::endl;
             }
         }
         std::cout << "\n Free pages count     : " << boost::format("%13u") % freeInfo.pages << "\n"
@@ -542,36 +527,35 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
     std::shared_ptr<lmdb::Environment> lmdb_tgt_env{nullptr};                  // Target lmdb environment
 
     try {
-
         if (!lmdb_src_env) throw std::runtime_error("Could not open LMDB environment");
         size_t src_filesize{0};
         uint32_t src_flags{0};
         bool src_nosubdir{false};
-        boost::filesystem::path src_path{db_opts.datadir};
+        fs::path src_path{db_opts.datadir};
 
         lmdb::err_handler(lmdb_src_env->get_filesize(&src_filesize));
         lmdb::err_handler(lmdb_src_env->get_flags(&src_flags));
         src_nosubdir = ((src_flags & MDB_NOSUBDIR) == MDB_NOSUBDIR);
-        if (!src_nosubdir) src_path /= boost::filesystem::path{"data.mdb"};
+        if (!src_nosubdir) src_path /= fs::path{"data.mdb"};
 
         // Ensure target working directory has enough free space
         // at least the size of origin db
-        auto tgt_path = bfs::path{app_opts.workdir};
-        if (!src_nosubdir) tgt_path /= boost::filesystem::path{"data.mdb"};
-        auto target_space = bfs::space(tgt_path.parent_path());
+        auto tgt_path = fs::path{app_opts.workdir};
+        if (!src_nosubdir) tgt_path /= fs::path{"data.mdb"};
+        auto target_space = fs::space(tgt_path.parent_path());
         if (target_space.free <= src_filesize) {
             throw std::runtime_error("Insufficient disk space on working directory");
         }
 
-        std::cout << " Compacting " << src_path << "\n into " << tgt_path << "\n Please be patient as there is no progress report ..."
-                  << std::endl;
+        std::cout << " Compacting " << src_path << "\n into " << tgt_path
+                  << "\n Please be patient as there is no progress report ..." << std::endl;
         lmdb::err_handler(mdb_env_copy2(*(lmdb_src_env->handle()), tgt_path.string().c_str(), MDB_CP_COMPACT));
         std::cout << "\n Database compaction " << (shouldStop ? "aborted !" : "completed ...") << std::endl;
 
         if (!shouldStop) {
             // Do we have a valid compacted file on disk ?
             // replace source with target
-            if (!bfs::exists(tgt_path)) {
+            if (!fs::exists(tgt_path)) {
                 throw std::runtime_error("Can't locate compacted database");
             }
 
@@ -580,14 +564,14 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
                 // Create a backup copy before replacing ?
                 if (!app_opts.nobak) {
                     std::cout << " Creating backup copy of origin database ..." << std::endl;
-                    bfs::path src_path_bak{src_path.parent_path() / bfs::path{"data.mdb.bak"}};
-                    if (bfs::exists(src_path_bak)) bfs::remove(src_path_bak);
-                    bfs::rename(src_path, src_path_bak);
+                    fs::path src_path_bak{src_path.parent_path() / fs::path{"data.mdb.bak"}};
+                    if (fs::exists(src_path_bak)) fs::remove(src_path_bak);
+                    fs::rename(src_path, src_path_bak);
                 }
 
                 std::cout << " Replacing origin database with compacted ..." << std::endl;
-                if (bfs::exists(src_path)) bfs::remove(src_path);
-                bfs::rename(src_path, tgt_path);
+                if (fs::exists(src_path)) fs::remove(src_path);
+                fs::rename(src_path, tgt_path);
             }
         }
 
@@ -604,12 +588,10 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
 }
 
 int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
+    int retvar{0};
+    std::shared_ptr<lmdb::Environment> lmdb_src_env{open_db(db_opts, true)};  // Main lmdb environment
 
-    int retvar{ 0 };
-    std::shared_ptr<lmdb::Environment> lmdb_src_env{ open_db(db_opts, true) };  // Main lmdb environment
-
-    try
-    {
+    try {
         if (!lmdb_src_env) throw std::runtime_error("Could not open source LMDB environment");
 
         db_options_t tgt_opts{};
@@ -629,7 +611,7 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
             throw std::runtime_error("Source db has no tables to copy.");
         }
 
-        size_t bytesWritten{ 0 };
+        size_t bytesWritten{0};
         std::cout << boost::format(" %-24s %=50s") % "Table" % "Progress" << std::endl;
         std::cout << boost::format(" %-24s %=50s") % std::string(24, '-') % std::string(50, '-') << std::flush;
 
@@ -677,18 +659,17 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
 
             // Is source table already present in target db ?
             bool exists_on_target{false};
-            if(tgt_tableInfo.tables.size())
-            {
-                auto it = std::find_if(tgt_tableInfo.tables.begin(), tgt_tableInfo.tables.end(), boost::bind(&dbTableEntry::name, _1) == src_table.name);
+            if (tgt_tableInfo.tables.size()) {
+                auto it = std::find_if(tgt_tableInfo.tables.begin(), tgt_tableInfo.tables.end(),
+                                       boost::bind(&dbTableEntry::name, _1) == src_table.name);
                 if (it != tgt_tableInfo.tables.end()) exists_on_target = true;
             }
-
 
             // Ensure there is enough free space on target
             // In case the user have opted for Upsert mode we need to
             // compute all reclaimable space + the difference amongst data size and map_size
             // In case we go for append then data is appended to the end of file
-            size_t tgt_free_space{ tgt_tableInfo.mapsize - tgt_tableInfo.size };
+            size_t tgt_free_space{tgt_tableInfo.mapsize - tgt_tableInfo.size};
             if (app_opts.upsert) tgt_free_space += tgt_freeInfo.size;
             if (tgt_free_space < src_table.size()) {
                 tgt_opts.mapsize += (src_table.size() - tgt_free_space);
@@ -700,10 +681,11 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
             }
 
             // Ready to copy
-            std::unique_ptr<lmdb::Transaction> lmdb_src_txn{ lmdb_src_env->begin_ro_transaction() };
+            std::unique_ptr<lmdb::Transaction> lmdb_src_txn{lmdb_src_env->begin_ro_transaction()};
             std::unique_ptr<lmdb::Table> lmdb_src_tbl{lmdb_src_txn->open(*src_config)};
-            std::unique_ptr<lmdb::Transaction> lmdb_tgt_txn{ lmdb_tgt_env->begin_rw_transaction() };
-            std::unique_ptr<lmdb::Table> lmdb_tgt_tbl{lmdb_tgt_txn->open(*src_config, (exists_on_target ? 0u : (unsigned int)MDB_CREATE))};
+            std::unique_ptr<lmdb::Transaction> lmdb_tgt_txn{lmdb_tgt_env->begin_rw_transaction()};
+            std::unique_ptr<lmdb::Table> lmdb_tgt_tbl{
+                lmdb_tgt_txn->open(*src_config, (exists_on_target ? 0u : MDB_CREATE))};
 
             // If table exists on target and is populated and NOT --upsert then
             // skip with error
@@ -780,7 +762,6 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
     }
 
     return retvar;
-
 }
 
 int main(int argc, char* argv[]) {
@@ -798,7 +779,7 @@ int main(int argc, char* argv[]) {
     CLI::Range range32(1u, UINT32_MAX);
 
     // Common CLI options
-    app_main.add_option("--datadir", db_opts.datadir, "Path to directory for data.mdb", false);
+    app_main.add_option("--chaindata", db_opts.datadir, "Path to directory for data.mdb", false);
     app_main.add_option("--lmdb.mapSize", db_opts.mapsize_str, "Lmdb map size", true);
 
     // List tables and gives info about storage
@@ -853,9 +834,9 @@ int main(int argc, char* argv[]) {
 
     // Cli args sanification for compact
     if (app_compact) {
-        compact_opts.dir = bfs::path(compact_opts.workdir);
-        compact_opts.file = (compact_opts.dir / bfs::path("data.mdb"));
-        if (bfs::exists(compact_opts.file)) {
+        compact_opts.dir = fs::path(compact_opts.workdir);
+        compact_opts.file = (compact_opts.dir / fs::path("data.mdb"));
+        if (fs::exists(compact_opts.file)) {
             std::cout << " An data.mdb file already present in workdir" << std::endl;
             return -1;
         }
@@ -863,11 +844,10 @@ int main(int argc, char* argv[]) {
 
     // Cli args sanification for copy
     if (app_copy) {
-
-        copy_opts.dir = bfs::path(copy_opts.targetdir);
-        copy_opts.file = (copy_opts.dir / bfs::path("data.mdb"));
-        if (bfs::exists(copy_opts.file)) {
-            copy_opts.filesize = bfs::file_size(copy_opts.file);
+        copy_opts.dir = fs::path(copy_opts.targetdir);
+        copy_opts.file = (copy_opts.dir / fs::path("data.mdb"));
+        if (fs::exists(copy_opts.file)) {
+            copy_opts.filesize = fs::file_size(copy_opts.file);
             if (copy_opts.create) {
                 std::cout << " Data.mdb file already present in target directory but you have set --create"
                           << std::endl;
@@ -885,7 +865,8 @@ int main(int argc, char* argv[]) {
         }
         copy_opts.newmapsize = *tmpsize;
         if (copy_opts.filesize) {
-            copy_opts.newmapsize = std::max((size_t)*tmpsize, copy_opts.filesize);  // Do not accept mapSize below filesize
+            copy_opts.newmapsize =
+                std::max(*tmpsize, static_cast<uint64_t>(copy_opts.filesize));  // Do not accept mapSize below filesize
         }
         tmpsize.reset();
 
@@ -899,7 +880,7 @@ int main(int argc, char* argv[]) {
             std::cout << " Provided --commit size is invalid" << std::endl;
             return -1;
         }
-        copy_opts.commitsize = std::max((uint64_t)*tmpsize, (uint64_t)(1ull << 20));
+        copy_opts.commitsize = std::max(*tmpsize, static_cast<uint64_t>(1ull << 20));
         tmpsize.reset();
     }
 

@@ -14,18 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_ACCESS_LAYER_H_
-#define SILKWORM_DB_ACCESS_LAYER_H_
+#ifndef SILKWORM_DB_ACCESS_LAYER_HPP_
+#define SILKWORM_DB_ACCESS_LAYER_HPP_
 
 // Database Access Layer
 // See TG core/rawdb/accessors_chain.go
 
 #include <optional>
+#include <vector>
+
+#include <silkworm/chain/config.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
-#include <vector>
 
 namespace silkworm::db {
 
@@ -81,6 +83,13 @@ StorageChanges read_storage_changes(lmdb::Transaction& txn, uint64_t block_numbe
 
 bool migration_happened(lmdb::Transaction& txn, const char* name);
 
+// Retrieves the chain_id for which database is populated
+// See TG chainConfig / chainConfigWithGenesis
+std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn);
+
+// Parses chain config from TG JSON format
+std::optional<ChainConfig> parse_chain_config(std::string_view json);
+
 }  // namespace silkworm::db
 
-#endif  // SILKWORM_DB_ACCESS_LAYER_H_
+#endif  // !SILKWORM_DB_ACCESS_LAYER_HPP_

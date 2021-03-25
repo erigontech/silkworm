@@ -14,46 +14,47 @@
    limitations under the License.
 */
 
-#include <absl/container/flat_hash_set.h>
-#include <absl/flags/flag.h>
-#include <absl/flags/parse.h>
-#include <absl/flags/usage.h>
-#include <absl/time/time.h>
-
-#include <boost/filesystem.hpp>
 #include <iostream>
+
+#include <CLI/CLI.hpp>
+#include <boost/filesystem.hpp>
+
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 
-ABSL_FLAG(std::string, datadir, silkworm::db::default_path(), "chain DB path");
-ABSL_FLAG(uint64_t, from, 1, "start from block number (inclusive)");
-ABSL_FLAG(uint64_t, to, UINT64_MAX, "check up to block number (exclusive)");
-
 int main(int argc, char* argv[]) {
-    absl::SetProgramUsageMessage("Executes Ethereum blocks and scans txs for errored txs.");
-    absl::ParseCommandLine(argc, argv);
-
-    namespace fs = boost::filesystem;
+    CLI::App app{"Executes Ethereum blocks and scans txs for errored txs"};
     using namespace silkworm;
 
-    fs::path db_path(absl::GetFlag(FLAGS_datadir));
-    if (!fs::exists(db_path) || !fs::is_directory(db_path) || db_path.empty()) {
-        std::cerr << db_path << " does not exist.\n";
-        std::cerr << "Use --datadir flag to point to a Turbo-Geth chaindata folder.\n";
-        return -1;
-    }
+    std::string db_path{db::default_path()};
+    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
+        ->check(CLI::ExistingDirectory);
 
-    const uint64_t from{absl::GetFlag(FLAGS_from)};
-    const uint64_t to{absl::GetFlag(FLAGS_to)};
+    uint64_t from{1};
+    app.add_option("--from", from, "start from block number (inclusive)");
+
+    uint64_t to{UINT64_MAX};
+    app.add_option("--to", to, "check up to block number (exclusive)");
+
+    CLI11_PARSE(app, argc, argv);
+
     if (from > to) {
         std::cerr << "--from (" << from << ") must be less than or equal to --to (" << to << ").\n";
         return -1;
     }
 
     int retvar{0};
-    lmdb::DatabaseConfig db_config{absl::GetFlag(FLAGS_datadir)};
+    lmdb::DatabaseConfig db_config{db_path};
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
+
+    std::unique_ptr<lmdb::Transaction> cfg_txn{env->begin_ro_transaction()};
+    auto chain_config{db::read_chain_config(*cfg_txn)};
+    if (!chain_config) {
+        throw std::runtime_error("Unable to retrieve chain config");
+    }
+    cfg_txn.release();
+
     // Note: If TurboGeth is actively syncing its database (syncing), it is important not to create
     // long-running datbase reads transactions even though that may make your processing faster.
     // Uncomment the following line (and comment the line below) only if you're certain TG is not
@@ -82,7 +83,7 @@ int main(int argc, char* argv[]) {
             db::Buffer buffer{txn.get(), block_num};
 
             // Execute the block and retreive the receipts
-            auto [receipts, err]{execute_block(bh->block, buffer, kMainnetConfig, &analysis_cache, &state_pool)};
+            auto [receipts, err]{execute_block(bh->block, buffer, *chain_config, &analysis_cache, &state_pool)};
             if (err != ValidationResult::kOk) {
                 std::cerr << "Validation error " << static_cast<int>(err) << " at block " << block_num << "\n";
             }

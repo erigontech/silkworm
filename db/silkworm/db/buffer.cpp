@@ -16,10 +16,11 @@
 
 #include "buffer.hpp"
 
-#include <absl/container/btree_set.h>
-
 #include <algorithm>
+
+#include <absl/container/btree_set.h>
 #include <boost/endian/conversion.hpp>
+
 #include <silkworm/common/util.hpp>
 #include <silkworm/types/log_cbor.hpp>
 #include <silkworm/types/receipt_cbor.hpp>

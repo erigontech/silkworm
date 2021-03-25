@@ -51,7 +51,7 @@ commands:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
-          command: cmd/consensus --skip-eip-2315
+          command: cmd/consensus
 
 jobs:
   linux-gcc-7:
@@ -99,7 +99,7 @@ jobs:
           name: "Ethereum consensus tests"
           working_directory: ~/build
           command: |
-            cmd/consensus --skip-eip-2315
+            cmd/consensus
             mv default.profraw consensus.profraw
       - run:
           name: "Coverage"

@@ -14,20 +14,17 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_INTRINSIC_GAS_HPP_
-#define SILKWORM_CHAIN_INTRINSIC_GAS_HPP_
-
-#include <intx/int128.hpp>
-
-#include <silkworm/types/transaction.hpp>
+#include "config.hpp"
 
 namespace silkworm {
 
-// Returns the intrinsic gas of a transaction.
-// Refer to g0 in Section 6.2 "Execution" of the Yellow Paper
-// and EIP-2930 "Optional access lists"
-intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbul) noexcept;
+bool operator==(const ChainConfig& a, const ChainConfig& b) {
+    return a.chain_id == b.chain_id && a.homestead_block == b.homestead_block &&
+           a.tangerine_whistle_block == b.tangerine_whistle_block &&
+           a.spurious_dragon_block == b.spurious_dragon_block && a.byzantium_block == b.byzantium_block &&
+           a.constantinople_block == b.constantinople_block && a.petersburg_block == b.petersburg_block &&
+           a.istanbul_block == b.istanbul_block && a.muir_glacier_block == b.muir_glacier_block &&
+           a.berlin_block == b.berlin_block && a.dao_block == b.dao_block;
+}
 
 }  // namespace silkworm
-
-#endif  // SILKWORM_CHAIN_INTRINSIC_GAS_HPP_

@@ -20,14 +20,15 @@
 #include <stdint.h>
 
 #include <array>
-#include <evmc/evmc.hpp>
+#include <vector>
+
 #include <intx/intx.hpp>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/types/bloom.hpp>
 #include <silkworm/types/transaction.hpp>
-#include <vector>
 
 namespace silkworm {
 

@@ -97,6 +97,14 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
   endif()
 endif()
 
+# Windows tweaks
+if(MSVC)
+  add_definitions(-D_WIN32_WINNT=0x0602) # Min Windows 8
+  add_definitions(-DVC_EXTRALEAN)        # Process windows headers faster ...
+  add_definitions(-DWIN32_LEAN_AND_MEAN) # ... and prevent winsock mismatch with Boost's
+  add_definitions(-DNOMINMAX)            # Prevent MSVC to tamper with std::min/std::max
+endif()
+
 # GMP
 find_path(GMP_INCLUDE_DIR NAMES gmp.h)
 if(MSVC)
@@ -161,37 +169,6 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(lmdb PUBLIC lmdb-go)
 endif()
 
-# Warnings options
-if(MSVC)
-
-  add_definitions(-D_WIN32_WINNT=0x0602) # Min Windows 8
-  add_definitions(-DVC_EXTRALEAN)        # Process windows headers faster ...
-  add_definitions(-DWIN32_LEAN_AND_MEAN) # ... and prevent winsock mismatch with Boost's
-  add_definitions(-DNOMINMAX)            # Prevent MSVC to tamper with std::min/std::max
-
-  # Abseil triggeres some deprecation warnings
-  add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
-  add_compile_definitions(_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING)
-
-  add_compile_options(/wd5030) # Silence warnings about GNU attributes
-  add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
-  add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
-  add_compile_options(/W4)
-
-  add_link_options(/ignore:4099)
-else()
-  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  add_compile_options(-Wno-attributes)
-endif()
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
-  add_compile_options(-Wthread-safety)
-endif()
-
 # evmone with dependencies
 if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
@@ -219,6 +196,33 @@ if(MSVC)
   target_compile_options(evmone PRIVATE /EHsc)
 else()
   target_compile_options(evmone PRIVATE -fno-exceptions)
+endif()
+
+# Warnings options
+if(MSVC)
+  # Abseil triggeres some deprecation warnings
+  add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+  add_compile_definitions(_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING)
+
+  add_compile_options(/wd5030) # Silence warnings about GNU attributes
+  add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
+  add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
+  add_compile_options(/wd5030) # Silence warning C5030: unknown gnu/clang attribute
+  add_compile_options(/W4)
+
+  add_link_options(/ignore:4099)
+else()
+  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  add_compile_options(-Wno-attributes)
+endif()
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+  add_compile_options(-Wthread-safety)
 endif()
 
 # Silkworm itself

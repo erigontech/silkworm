@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,26 +14,27 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_CHAINDB_H_
-#define SILKWORM_DB_CHAINDB_H_
+#ifndef SILKWORM_DB_CHAINDB_HPP_
+#define SILKWORM_DB_CHAINDB_HPP_
 
 /**
  * Wrappers for the LMDB database library.
  * See http://www.lmdb.tech/doc/index.html
  */
 
-#include <lmdb/lmdb.h>
-
 #include <exception>
 #include <map>
 #include <mutex>
 #include <optional>
-#include <silkworm/common/base.hpp>
-#include <silkworm/common/util.hpp>
-#include <silkworm/db/util.hpp>
 #include <string>
 #include <thread>
 #include <vector>
+
+#include <lmdb/lmdb.h>
+
+#include <silkworm/common/base.hpp>
+#include <silkworm/common/util.hpp>
+#include <silkworm/db/util.hpp>
 
 static_assert(sizeof(size_t) == 8, "32 bit environment limits LMDB size");
 
@@ -62,20 +63,11 @@ struct DatabaseConfig {
 static const MDB_dbi FREE_DBI = 0;  // Reserved for tracking free pages
 static const MDB_dbi MAIN_DBI = 1;  // Reserved for tracking named tables
 
-enum class TableCustomDupComparator {
-    None,
-    ExcludeSuffix32,
-};
-
-enum class TableCustomKeyComparator {
-    None,
-};
-
 struct TableConfig {
-    const char* name{nullptr};
-    const unsigned int flags{0};
-    TableCustomKeyComparator key_comparator{TableCustomKeyComparator::None};
-    TableCustomDupComparator dup_comparator{TableCustomDupComparator::None};
+    const char* name{nullptr};    // Name of the table (is key in MAIN_DBI)
+    const unsigned int flags{0};  // Flags being used when table is created (are then persisted)
+    int (*cmp_func)(const MDB_val* a, const MDB_val* b){nullptr};   // Pointer to custom key comparator function
+    int (*dcmp_func)(const MDB_val* a, const MDB_val* b){nullptr};  // Pointer to custom dupkey comparator function
 };
 
 /**
@@ -399,9 +391,13 @@ class Table {
 
 std::shared_ptr<Environment> get_env(DatabaseConfig config);
 
-// Custom compartor(s)
-int dup_cmp_exclude_suffix32(const MDB_val* a, const MDB_val* b);
+/* Custom Key comparators */
+
+/** @brief Compares two keys lexically with strong assumption both keys are same size
+* 
+*/
+int cmp_fixed_len_key(const MDB_val* a, const MDB_val* b);
 
 }  // namespace silkworm::lmdb
 
-#endif  // SILKWORM_DB_CHAINDB_H_
+#endif  // SILKWORM_DB_CHAINDB_HPP_

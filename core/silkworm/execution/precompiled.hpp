@@ -14,12 +14,13 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_PRECOMPILED_H_
-#define SILKWORM_EXECUTION_PRECOMPILED_H_
+#ifndef SILKWORM_EXECUTION_PRECOMPILED_HPP_
+#define SILKWORM_EXECUTION_PRECOMPILED_HPP_
+
+#include <optional>
 
 #include <evmc/evmc.h>
 
-#include <optional>
 #include <silkworm/common/base.hpp>
 
 // See Yellow Paper, Appendix E "Precompiled Contracts"
@@ -80,4 +81,4 @@ static_assert(std::size(kContracts) == kNumOfIstanbulContracts);
 
 }  // namespace silkworm::precompiled
 
-#endif  // SILKWORM_EXECUTION_PRECOMPILED_H_
+#endif  // SILKWORM_EXECUTION_PRECOMPILED_HPP_

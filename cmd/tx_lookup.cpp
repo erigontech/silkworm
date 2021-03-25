@@ -14,10 +14,12 @@
    limitations under the License.
 */
 
+#include <iostream>
+
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
-#include <iostream>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -27,7 +29,7 @@
 using namespace silkworm;
 
 static Bytes compact(Bytes& b) {
-    std::string::size_type offset{b.find_first_not_of((uint8_t)0)};
+    std::string::size_type offset{b.find_first_not_of(uint8_t{0})};
     if (offset != std::string::npos) {
         return b.substr(offset);
     }
@@ -41,16 +43,15 @@ int main(int argc, char* argv[]) {
 
     std::string db_path{db::default_path()};
     bool full;
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
 
     app.add_flag("--full", full, "Start making lookups from block 0");
     CLI11_PARSE(app, argc, argv);
 
-
     // Check data.mdb exists in provided directory
-    boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
-    if (!boost::filesystem::exists(db_file)) {
+    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
@@ -123,18 +124,18 @@ int main(int argc, char* argv[]) {
             SILKWORM_LOG(LogInfo) << "Started tx Hashes Loading" << std::endl;
 
             /*
-            * If we're on first sync then we shouldn't have any records in target
-            * table. For this reason we can apply MDB_APPEND to load as
-            * collector (with no transform) ensures collected entries
-            * are already sorted. If instead target table contains already
-            * some data the only option is to load in upsert mode as we
-            * cannot guarantee keys are sorted amongst different calls
-            * of this stage
-            */
+             * If we're on first sync then we shouldn't have any records in target
+             * table. For this reason we can apply MDB_APPEND to load as
+             * collector (with no transform) ensures collected entries
+             * are already sorted. If instead target table contains already
+             * some data the only option is to load in upsert mode as we
+             * cannot guarantee keys are sorted amongst different calls
+             * of this stage
+             */
             auto target_table{txn->open(db::table::kTxLookup, MDB_CREATE)};
             size_t target_table_rcount{0};
             lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
-            unsigned int db_flags{target_table_rcount ? 0u : (uint32_t)MDB_APPEND};
+            unsigned int db_flags{target_table_rcount ? 0u : MDB_APPEND};
 
             // Eventually load collected items with no transform (may throw)
             collector.load(target_table.get(), nullptr, db_flags, /* log_every_percent = */ 10);

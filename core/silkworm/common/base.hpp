@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,17 +14,21 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_BASE_H_
-#define SILKWORM_COMMON_BASE_H_
+#ifndef SILKWORM_COMMON_BASE_HPP_
+#define SILKWORM_COMMON_BASE_HPP_
 
 // The most common and basic types and constants.
 
 #include <stddef.h>
 #include <stdint.h>
 
-#include <evmc/evmc.hpp>
 #include <string>
 #include <string_view>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <evmc/evmc.hpp>
+#pragma GCC diagnostic pop
 
 namespace silkworm {
 
@@ -58,4 +62,4 @@ constexpr uint64_t kEther{kGiga * kGiga};  // = 10^18
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_BASE_H_
+#endif  // SILKWORM_COMMON_BASE_HPP_

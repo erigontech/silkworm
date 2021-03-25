@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_LOG_H_
-#define SILKWORM_TYPES_LOG_H_
+#ifndef SILKWORM_TYPES_LOG_HPP_
+#define SILKWORM_TYPES_LOG_HPP_
 
-#include <evmc/evmc.hpp>
-#include <silkworm/common/base.hpp>
 #include <vector>
+
+#include <silkworm/common/base.hpp>
 
 namespace silkworm {
 
@@ -31,4 +31,4 @@ struct Log {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_LOG_H_
+#endif  // SILKWORM_TYPES_LOG_HPP_

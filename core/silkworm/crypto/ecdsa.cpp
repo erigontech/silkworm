@@ -42,7 +42,7 @@ YParityAndChainId v_to_y_parity_and_chain_id(const intx::uint256& v) {
         // v = chain_id * 2 + 35 + y_parity
         intx::uint256 w{v - 35};
         intx::uint256 chain_id{w >> 1};  // w / 2
-        res.odd = static_cast<uint64_t>(w) % 2;
+        res.odd = intx::narrow_cast<uint64_t>(w) % 2;
         res.chain_id = chain_id;
     }
     return res;

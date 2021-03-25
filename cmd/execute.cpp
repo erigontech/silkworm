@@ -17,7 +17,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
-#include <limits>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -26,19 +26,19 @@
 
 #include "tg_api/silkworm_tg_api.h"
 
-using namespace silkworm;
-
 int main(int argc, char* argv[]) {
+    using namespace silkworm;
+
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
     std::string db_path{db::default_path()};
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
 
     std::string map_size_str{};
     CLI::Option* map_size_option{app.add_option("--lmdb.mapSize", map_size_str, "Lmdb map size")};
 
-    uint64_t to_block{std::numeric_limits<uint64_t>::max()};
+    uint64_t to_block{UINT64_MAX};
     app.add_option("--to", to_block, "Block execute up to");
 
     std::string batch_size_str{"512MB"};
@@ -46,10 +46,11 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
+    namespace fs = boost::filesystem;
 
     // Check data.mdb exists in provided directory
-    boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
-    if (!boost::filesystem::exists(db_file)) {
+    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
@@ -79,14 +80,18 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
         bool write_receipts{db::read_storage_mode_receipts(*txn)};
+        auto chain_config{db::read_chain_config(*txn)};
+        if (!chain_config.has_value()) {
+            throw std::runtime_error("Unable to retrieve chain config");
+        }
 
         uint64_t previous_progress{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
         uint64_t current_progress{previous_progress};
 
         for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
             int lmdb_error_code{MDB_SUCCESS};
-            SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), /*chain_id=*/1, block_number, to_block,
-                                                              *batch_size, write_receipts, &current_progress,
+            SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), chain_config->chain_id, block_number,
+                                                              to_block, *batch_size, write_receipts, &current_progress,
                                                               &lmdb_error_code)};
             if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
                 SILKWORM_LOG(LogError) << "Error in silkworm_execute_blocks: " << status

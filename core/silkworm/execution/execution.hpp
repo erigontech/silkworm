@@ -17,6 +17,8 @@
 #ifndef SILKWORM_EXECUTION_EXECUTION_HPP_
 #define SILKWORM_EXECUTION_EXECUTION_HPP_
 
+#include <stdexcept>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/validity.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
@@ -24,7 +26,6 @@
 #include <silkworm/state/buffer.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
-#include <stdexcept>
 
 namespace silkworm {
 
@@ -38,10 +39,11 @@ namespace silkworm {
  *
  * For better performance use AnalysisCache & ExecutionStatePool.
  */
-[[nodiscard]] std::pair<std::vector<Receipt>, ValidationResult> execute_block(
-    const Block& block, StateBuffer& buffer, const ChainConfig& config = kMainnetConfig,
-    AnalysisCache* analysis_cache = nullptr, ExecutionStatePool* state_pool = nullptr,
-    evmc_vm* exo_evm = nullptr) noexcept;
+[[nodiscard]] std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& block, StateBuffer& buffer,
+                                                                              const ChainConfig& config,
+                                                                              AnalysisCache* analysis_cache = nullptr,
+                                                                              ExecutionStatePool* state_pool = nullptr,
+                                                                              evmc_vm* exo_evm = nullptr) noexcept;
 
 }  // namespace silkworm
 

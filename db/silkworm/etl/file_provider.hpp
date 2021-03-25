@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
    limitations under the License.
 */
 
-#pragma once
-#ifndef ETL_SILKWORM_FILE_PROVIDER_H_
-#define ETL_SILKWORM_FILE_PROVIDER_H_
+#ifndef ETL_SILKWORM_FILE_PROVIDER_HPP_
+#define ETL_SILKWORM_FILE_PROVIDER_HPP_
 
 #include <fstream>
 #include <memory>
 #include <optional>
+
 #include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/util.hpp>
 
@@ -47,5 +47,7 @@ class FileProvider {
     std::string file_name_;  // Actual name of file
     size_t file_size_{0};    // Actual size of written data
 };
+
 }  // namespace silkworm::etl
-#endif  // !ETL_SILKWORM_FILE_PROVIDER_H_
+
+#endif  // !ETL_SILKWORM_FILE_PROVIDER_HPP_

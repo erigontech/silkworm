@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020 - 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_WORKER_H_
-#define SILKWORM_WORKER_H_
+#ifndef SILKWORM_WORKER_HPP_
+#define SILKWORM_WORKER_HPP_
 
 #include <atomic>
 #include <condition_variable>
@@ -25,17 +25,18 @@
 namespace silkworm {
 
 class Worker {
-   public:
+  public:
     enum class WorkerState { kStopped, kStarting, kStarted, kStopping };
 
     Worker() = default;
 
+    /* Not moveable / copyable */
     Worker(Worker const&) = delete;
     Worker& operator=(Worker const&) = delete;
 
     virtual ~Worker();
 
-    void start();                  // Start worker thread
+    void start(bool wait = true);  // Start worker thread (by default waits for status)
     void stop(bool wait = false);  // Stops worker thread (optionally wait for complete stop)
     void kick();                   // Kicks worker thread if waiting
 
@@ -43,19 +44,27 @@ class Worker {
     bool should_stop() { return state_.load() == WorkerState::kStopping; }
 
     // Retrieves current state of thread
-    WorkerState get_state() { return state_; }
+    WorkerState get_state() { return state_.load(); }
 
-   protected:
+  protected:
+    /**
+     * @brief Puts the underlying thread in non-busy wait for a kick
+     * to waken up and do work.
+     * Returns True if the kick has been received and should go ahead
+     * otherwise False (i.e. the thread has been asked to stop)
+     *
+     * @param timeout: Timeout for conditional variable wait (seconds)
+     */
+    bool wait_for_kick(uint32_t timeout = 1);  // Puts a thread in non-busy wait for data to process
+    std::atomic_bool kicked_{false};           // Whether or not the kick has been received
+    std::condition_variable kicked_cv_{};      // Condition variable to wait for kick
+    std::mutex kick_mtx_{};                    // Mutex for conditional wait of kick
+
+  private:
     std::atomic<WorkerState> state_{WorkerState::kStopped};
     std::unique_ptr<std::thread> thread_{nullptr};
-
-    std::atomic<bool> kicked_{false};
-    std::condition_variable kicked_signal_{};
-    mutable std::mutex xwork_;
-
-   private:
-    virtual void work() = 0;
+    virtual void work() = 0;  // Derived classes must override
 };
 }  // namespace silkworm
 
-#endif  // SILKWORM_WORKER_H_
+#endif  // SILKWORM_WORKER_HPP_

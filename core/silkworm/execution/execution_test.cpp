@@ -16,9 +16,11 @@
 
 #include "execution.hpp"
 
-#include <catch2/catch.hpp>
 #include <cstring>
+
+#include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/execution/address.hpp>
@@ -66,7 +68,7 @@ TEST_CASE("Execute two blocks") {
     // Execute first block
     // ---------------------------------------
 
-    CHECK(execute_block(block, buffer).second == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
 
     auto contract_address{create_address(sender, /*nonce=*/0)};
     std::optional<Account> contract_account{buffer.read_account(contract_address)};
@@ -104,7 +106,7 @@ TEST_CASE("Execute two blocks") {
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
 
-    CHECK(execute_block(block, buffer).second == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
 
     storage0 = buffer.read_storage(contract_address, incarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);

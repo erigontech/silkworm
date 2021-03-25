@@ -17,6 +17,7 @@
 #include "blockchain.hpp"
 
 #include <cassert>
+
 #include <silkworm/execution/execution.hpp>
 
 namespace silkworm {

@@ -16,8 +16,10 @@
 
 #include "access_layer.hpp"
 
-#include <boost/endian/conversion.hpp>
 #include <cassert>
+
+#include <boost/endian/conversion.hpp>
+#include <nlohmann/json.hpp>
 
 #include "bitmap.hpp"
 #include "tables.hpp"
@@ -32,7 +34,7 @@ static void check_rlp_err(rlp::DecodingResult err) {
 
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
                                        const uint8_t (&hash)[kHashLength]) {
-    auto table{txn.open(table::kBlockHeaders)};
+    auto table{txn.open(table::kHeaders)};
     std::optional<ByteView> rlp{table->get(block_key(block_number, hash))};
     if (!rlp) {
         return std::nullopt;
@@ -45,8 +47,8 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
 
 std::optional<intx::uint256> read_total_difficulty(lmdb::Transaction& txn, uint64_t block_number,
                                                    const uint8_t (&hash)[kHashLength]) {
-    auto table{txn.open(table::kBlockHeaders)};
-    std::optional<ByteView> rlp{table->get(total_difficulty_key(block_number, hash))};
+    auto table{txn.open(table::kDifficulty)};
+    std::optional<ByteView> rlp{table->get(block_key(block_number, hash))};
     if (!rlp) {
         return std::nullopt;
     }
@@ -93,8 +95,8 @@ std::vector<Transaction> read_transactions(lmdb::Table& txn_table, uint64_t base
 }
 
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders) {
-    auto header_table{txn.open(table::kBlockHeaders)};
-    std::optional<ByteView> hash{header_table->get(header_hash_key(block_number))};
+    auto canonical_table{txn.open(table::kCanonicalHashes)};
+    std::optional<ByteView> hash{canonical_table->get(block_key(block_number))};
     if (!hash) {
         return std::nullopt;
     }
@@ -104,6 +106,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
     std::memcpy(bh.hash.bytes, hash->data(), kHashLength);
 
     Bytes key{block_key(block_number, bh.hash.bytes)};
+    auto header_table{txn.open(table::kHeaders)};
     std::optional<ByteView> header_rlp{header_table->get(key)};
     if (!header_rlp) {
         return std::nullopt;
@@ -353,6 +356,87 @@ bool read_storage_mode_receipts(lmdb::Transaction& txn) {
 bool migration_happened(lmdb::Transaction& txn, const char* name) {
     auto tbl{txn.open(table::kMigrations)};
     return tbl->get(byte_view_of_c_str(name)).has_value();
+}
+
+std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
+    auto headers_key{block_key(0)};
+    auto mdb_key{to_mdb_val(headers_key)};
+    auto genesis_hash{txn.get(db::table::kCanonicalHashes, &mdb_key)};
+    if (!genesis_hash.has_value()) {
+        return std::nullopt;
+    }
+
+    mdb_key = to_mdb_val(*genesis_hash);
+    auto config_value = txn.get(table::kConfig, &mdb_key);
+    if (!config_value) {
+        return std::nullopt;
+    }
+
+    return parse_chain_config(byte_ptr_cast(config_value->c_str()));
+}
+
+/*
+* Sample config
+{
+"byzantiumBlock":4370000,
+"chainId":1,
+"constantinopleBlock":7280000,
+"daoForkBlock":1920000,
+"daoForkSupport":true,
+"eip150Block":2463000,
+"eip150Hash":"0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0",
+"eip155Block":2675000,
+"eip158Block":2675000,
+"ethash":{},
+"homesteadBlock":1150000,
+"istanbulBlock":9069000,
+"muirGlacierBlock":9200000,
+"petersburgBlock":7280000
+}
+*/
+std::optional<ChainConfig> parse_chain_config(std::string_view json) {
+    // https://github.com/nlohmann/json/issues/2204
+    auto config_json = nlohmann::json::parse(json);
+
+    if (!config_json.contains("chainId")) {
+        return std::nullopt;
+    }
+
+    ChainConfig config{};
+    config.chain_id = config_json["chainId"].get<uint64_t>();
+
+    if (config_json.contains("homesteadBlock")) {
+        config.homestead_block.emplace(config_json["homesteadBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("eip150Block")) {
+        config.tangerine_whistle_block.emplace(config_json["eip150Block"].get<uint64_t>());
+    }
+    if (config_json.contains("eip155Block")) {
+        config.spurious_dragon_block.emplace(config_json["eip155Block"].get<uint64_t>());
+    }
+    if (config_json.contains("byzantiumBlock")) {
+        config.byzantium_block.emplace(config_json["byzantiumBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("constantinopleBlock")) {
+        config.constantinople_block.emplace(config_json["constantinopleBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("petersburgBlock")) {
+        config.petersburg_block.emplace(config_json["petersburgBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("istanbulBlock")) {
+        config.istanbul_block.emplace(config_json["istanbulBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("muirGlacierBlock")) {
+        config.muir_glacier_block.emplace(config_json["muirGlacierBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("daoForkBlock")) {
+        config.dao_block.emplace(config_json["daoForkBlock"].get<uint64_t>());
+    }
+    if (config_json.contains("berlinBlock")) {
+        config.berlin_block.emplace(config_json["berlinBlock"].get<uint64_t>());
+    }
+
+    return config;
 }
 
 }  // namespace silkworm::db

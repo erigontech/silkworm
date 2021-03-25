@@ -3,3 +3,19 @@ ColumnLimit: 120
 IndentWidth: 4
 AccessModifierOffset: -2
 NamespaceIndentation: Inner
+IncludeCategories:
+  # Silkworm headers
+  - Regex:           '<silkworm.*'
+    Priority:        4
+  
+  # C standard library
+  - Regex:           '<[[:alnum:]]+\.h>'
+    Priority:        1
+
+  # C++ standard library
+  - Regex:           '<[[:alnum:]_]+>'
+    Priority:        2
+
+  # Third-party libraries
+  - Regex:           '<.*'
+    Priority:        3

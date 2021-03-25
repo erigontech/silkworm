@@ -17,10 +17,10 @@
 #ifndef SILKWORM_STATE_OBJECT_HPP_
 #define SILKWORM_STATE_OBJECT_HPP_
 
-#include <robin_hood.h>
-
 #include <optional>
+
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/hash_maps.hpp>
 #include <silkworm/types/account.hpp>
 
 namespace silkworm::state {
@@ -36,8 +36,8 @@ struct CommittedValue {
 };
 
 struct Storage {
-    robin_hood::unordered_flat_map<evmc::bytes32, CommittedValue> committed;
-    robin_hood::unordered_flat_map<evmc::bytes32, evmc::bytes32> current;
+    FlatHashMap<evmc::bytes32, CommittedValue> committed;
+    FlatHashMap<evmc::bytes32, evmc::bytes32> current;
 };
 
 }  // namespace silkworm::state

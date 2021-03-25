@@ -14,10 +14,11 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_RECEIPT_H_
-#define SILKWORM_TYPES_RECEIPT_H_
+#ifndef SILKWORM_TYPES_RECEIPT_HPP_
+#define SILKWORM_TYPES_RECEIPT_HPP_
 
 #include <optional>
+
 #include <silkworm/types/bloom.hpp>
 #include <silkworm/types/log.hpp>
 
@@ -33,4 +34,4 @@ struct Receipt {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_RECEIPT_H_
+#endif  // SILKWORM_TYPES_RECEIPT_HPP_

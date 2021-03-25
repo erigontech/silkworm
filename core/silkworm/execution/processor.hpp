@@ -19,13 +19,14 @@
 
 #include <stdint.h>
 
+#include <utility>
+#include <vector>
+
 #include <silkworm/chain/validity.hpp>
 #include <silkworm/execution/evm.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
 #include <silkworm/types/transaction.hpp>
-#include <utility>
-#include <vector>
 
 namespace silkworm {
 
@@ -34,7 +35,7 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config = kMainnetConfig);
+    ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config);
 
     // Preconditions:
     // 1) pre_validate_transaction(txn) must return kOk

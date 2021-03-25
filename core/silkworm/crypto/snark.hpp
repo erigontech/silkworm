@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,12 +14,17 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CRYPTO_SNARK_H_
-#define SILKWORM_CRYPTO_SNARK_H_
+#ifndef SILKWORM_CRYPTO_SNARK_HPP_
+#define SILKWORM_CRYPTO_SNARK_HPP_
 
+#include <optional>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <libff/algebra/curves/alt_bn128/alt_bn128_g1.hpp>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_g2.hpp>
-#include <optional>
+#pragma GCC diagnostic pop
+
 #include <silkworm/common/base.hpp>
 
 // Utility functions for zkSNARK related precompiled contracts.
@@ -45,4 +50,4 @@ Bytes encode_g1_element(libff::alt_bn128_G1 p) noexcept;
 
 }  // namespace silkworm::snark
 
-#endif  // SILKWORM_CRYPTO_SNARK_H_
+#endif  // SILKWORM_CRYPTO_SNARK_HPP_

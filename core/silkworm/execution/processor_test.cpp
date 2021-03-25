@@ -18,6 +18,7 @@
 
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
+
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 
@@ -102,7 +103,7 @@ TEST_CASE("Zero gas price") {
 
     MemoryBuffer db;
     IntraBlockState state{db};
-    ExecutionProcessor processor{block, state};
+    ExecutionProcessor processor{block, state, kMainnetConfig};
 
     CHECK(processor.validate_transaction(txn) == ValidationResult::kMissingSender);
 
@@ -144,7 +145,7 @@ TEST_CASE("No refund on error") {
 
     MemoryBuffer db;
     IntraBlockState state{db};
-    ExecutionProcessor processor{block, state};
+    ExecutionProcessor processor{block, state, kMainnetConfig};
 
     Transaction txn{
         std::nullopt,  // type
@@ -234,7 +235,7 @@ TEST_CASE("Self-destruct") {
 
     MemoryBuffer db;
     IntraBlockState state{db};
-    ExecutionProcessor processor{block, state};
+    ExecutionProcessor processor{block, state, kMainnetConfig};
 
     state.add_to_balance(caller_address, kEther);
     state.set_code(caller_address, caller_code);
@@ -381,7 +382,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     IntraBlockState state{buffer};
     state.add_to_balance(caller, kEther);
 
-    ExecutionProcessor processor{block, state};
+    ExecutionProcessor processor{block, state, kMainnetConfig};
 
     Receipt receipt{processor.execute_transaction(txn)};
     // out of gas
@@ -423,7 +424,7 @@ TEST_CASE("Empty suicide beneficiary") {
     IntraBlockState state{db};
     state.add_to_balance(caller, kEther);
 
-    ExecutionProcessor processor{block, state};
+    ExecutionProcessor processor{block, state, kMainnetConfig};
 
     Receipt receipt{processor.execute_transaction(txn)};
     CHECK(receipt.success);

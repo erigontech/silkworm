@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020 - 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -24,16 +24,17 @@ Worker::~Worker() {
         thread_.reset(nullptr);
     }
 }
-void Worker::start() {
-    WorkerState expected{WorkerState::kStopped};
-    if (!state_.compare_exchange_strong(expected, WorkerState::kStarting)) {
+void Worker::start(bool wait) {
+    WorkerState expected_state{WorkerState::kStopped};
+    if (!state_.compare_exchange_strong(expected_state, WorkerState::kStarting)) {
         return;
     }
 
     thread_.reset(new std::thread([&]() {
-        WorkerState expected{WorkerState::kStarting};
-        if (state_.compare_exchange_strong(expected, WorkerState::kStarted)) {
+        WorkerState expected_state{WorkerState::kStarting};
+        if (state_.compare_exchange_strong(expected_state, WorkerState::kStarted)) {
             try {
+                kicked_.store(false);
                 work();
             } catch (const std::exception& ex) {
                 std::cerr << "Exception thrown in worker thread : " << ex.what() << std::endl;
@@ -41,18 +42,40 @@ void Worker::start() {
         }
         state_.store(WorkerState::kStopped);
     }));
-}
-void Worker::stop(bool wait) {
-    WorkerState expected{WorkerState::kStarted};
-    if (state_.compare_exchange_strong(expected, WorkerState::kStopping)) {
-        kick();
-        if (wait) {
-            thread_->join();
+
+    while (wait) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        auto state{get_state()};
+        if (state == WorkerState::kStarted) {
+            break;
         }
     }
 }
+void Worker::stop(bool wait) {
+    WorkerState expected_state{WorkerState::kStarted};
+    if (state_.compare_exchange_strong(expected_state, WorkerState::kStopping)) {
+        kick();
+    }
+    if (wait) {
+        thread_->join();
+    }
+}
 void Worker::kick() {
-    kicked_.store(true, std::memory_order_relaxed);
-    kicked_signal_.notify_one();
+    kicked_.store(true);
+    kicked_cv_.notify_all();
+}
+
+bool Worker::wait_for_kick(uint32_t timeout) {
+
+    while (true) {
+        bool expected_kick_value{true};
+        if (!kicked_.compare_exchange_strong(expected_kick_value, false)) {
+            std::unique_lock l(kick_mtx_);
+            (void)kicked_cv_.wait_for(l, std::chrono::seconds(timeout));
+            continue;
+        }
+        break;
+    }
+    return should_stop() ? false : true;
 }
 }  //  namespace silkworm

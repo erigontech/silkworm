@@ -69,39 +69,43 @@ struct ChainConfig {
     // TODO[ETC] ECIP-1017
 
     bool has_homestead(uint64_t block_num) const noexcept {
-        return homestead_block.has_value() && homestead_block <= block_num;
+        return homestead_block.has_value() && homestead_block.value() <= block_num;
     }
 
     bool has_tangerine_whistle(uint64_t block_num) const noexcept {
-        return tangerine_whistle_block.has_value() && tangerine_whistle_block <= block_num;
+        return tangerine_whistle_block.has_value() && tangerine_whistle_block.value() <= block_num;
     }
 
     bool has_spurious_dragon(uint64_t block_num) const noexcept {
-        return spurious_dragon_block.has_value() && spurious_dragon_block <= block_num;
+        return spurious_dragon_block.has_value() && spurious_dragon_block.value() <= block_num;
     }
 
     bool has_byzantium(uint64_t block_num) const noexcept {
-        return byzantium_block.has_value() && byzantium_block <= block_num;
+        return byzantium_block.has_value() && byzantium_block.value() <= block_num;
     }
 
     bool has_constantinople(uint64_t block_num) const noexcept {
-        return constantinople_block.has_value() && constantinople_block <= block_num;
+        return constantinople_block.has_value() && constantinople_block.value() <= block_num;
     }
 
     bool has_petersburg(uint64_t block_num) const noexcept {
-        return petersburg_block.has_value() && petersburg_block <= block_num;
+        return petersburg_block.has_value() && petersburg_block.value() <= block_num;
     }
 
     bool has_istanbul(uint64_t block_num) const noexcept {
-        return istanbul_block.has_value() && istanbul_block <= block_num;
+        return istanbul_block.has_value() && istanbul_block.value() <= block_num;
     }
 
     bool has_muir_glacier(uint64_t block_num) const noexcept {
-        return muir_glacier_block.has_value() && muir_glacier_block <= block_num;
+        return muir_glacier_block.has_value() && muir_glacier_block.value() <= block_num;
     }
 
-    bool has_berlin(uint64_t block_num) const noexcept { return berlin_block.has_value() && berlin_block <= block_num; }
+    bool has_berlin(uint64_t block_num) const noexcept {
+        return berlin_block.has_value() && berlin_block.value() <= block_num;
+    }
 };
+
+bool operator==(const ChainConfig& a, const ChainConfig& b);
 
 constexpr ChainConfig kMainnetConfig{
     1,  // chain_id
@@ -131,6 +135,20 @@ constexpr ChainConfig kRopstenConfig{
     6'485'846,  // istanbul_block
     7'117'117,  // muir_glacier_block
     9'812'189,  // berlin_block
+};
+
+constexpr ChainConfig kRinkebyConfig{
+    4,  // chain_id
+
+    1,             // homestead_block
+    2,             // tangerine_whistle_block
+    3,             // spurious_dragon_block
+    1'035'301,     // byzantium_block
+    3'660'663,     // constantinople_block
+    4'321'234,     // petersburg_block
+    5'435'345,     // istanbul_block
+    std::nullopt,  // muir_glacier_block
+    8'290'928,     // berlin_block
 };
 
 constexpr ChainConfig kGoerliConfig{
@@ -166,6 +184,8 @@ inline const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept {
             return &kMainnetConfig;
         case kRopstenConfig.chain_id:
             return &kRopstenConfig;
+        case kRinkebyConfig.chain_id:
+            return &kRinkebyConfig;
         case kGoerliConfig.chain_id:
             return &kGoerliConfig;
         case kClassicMainnetConfig.chain_id:

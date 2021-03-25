@@ -291,6 +291,7 @@ class Table {
     int get_prev_dup(MDB_val* key,
                      MDB_val* data);            // Move cursor at previous data item in current key (only MDB_DUPSORT)
     int get_next(MDB_val* key, MDB_val* data);  // Move cursor at next item in table
+    std::optional<db::Entry> get_next();        // Move cursor at next item in table
     int get_next_dup(MDB_val* key, MDB_val* data);    // Move cursor at next data item in current key (only MDB_DUPSORT)
     int get_next_nodup(MDB_val* key, MDB_val* data);  // Move cursor at next data item in next key (only MDB_DUPSORT)
     int get_last(MDB_val* key, MDB_val* data);        // Move cursor at last item in table
@@ -390,8 +391,8 @@ std::shared_ptr<Environment> get_env(DatabaseConfig config);
 /* Custom Key comparators */
 
 /** @brief Compares two keys lexically with strong assumption both keys are same size
-* 
-*/
+ *
+ */
 int cmp_fixed_len_key(const MDB_val* a, const MDB_val* b);
 
 }  // namespace silkworm::lmdb

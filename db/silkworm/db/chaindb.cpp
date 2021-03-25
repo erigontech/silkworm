@@ -338,7 +338,6 @@ std::unique_ptr<Table> Transaction::open(const TableConfig& config, unsigned fla
         }
     }
 
-
     return std::make_unique<Table>(this, dbi, config.name);
 }
 
@@ -473,6 +472,20 @@ std::optional<ByteView> Table::get(ByteView key, ByteView sub_key) {
     }
 }
 
+std::optional<db::Entry> Table::get_next() {
+    MDB_val key_val;
+    MDB_val data;
+    int rc{get(&key_val, &data, MDB_NEXT)};
+    if (rc == MDB_NOTFOUND) {
+        return std::nullopt;
+    }
+    err_handler(rc);
+    db::Entry out;
+    out.key = db::from_mdb_val(data);
+    out.value = db::from_mdb_val(data);
+    return out;
+}
+
 void Table::del(ByteView key) {
     if (get(key)) {
         err_handler(del_current());
@@ -597,8 +610,6 @@ std::shared_ptr<Environment> get_env(DatabaseConfig config) {
 
 /* Custom Key comparators */
 
-int cmp_fixed_len_key(const MDB_val* a, const MDB_val* b) {
-    return memcmp(a->mv_data, b->mv_data, a->mv_size);
-}
+int cmp_fixed_len_key(const MDB_val* a, const MDB_val* b) { return memcmp(a->mv_data, b->mv_data, a->mv_size); }
 
 }  // namespace silkworm::lmdb

@@ -27,7 +27,7 @@
 
 namespace silkworm::trie {
 
-static Bytes unpack_nibbles(ByteView packed) {
+Bytes unpack_nibbles(ByteView packed) {
     Bytes out(2 * packed.length(), '\0');
     for (size_t i{0}; i < packed.length(); ++i) {
         out[2 * i] = packed[i] >> 4;

@@ -23,6 +23,9 @@
 
 namespace silkworm::trie {
 
+// TG DecompressNibbles
+Bytes unpack_nibbles(ByteView packed);
+
 // Calculates root hash of a Modified Merkle Patricia Trie.
 // See Appendix D "Modified Merkle Patricia Trie" of the Yellow Paper
 // and https://eth.wiki/fundamentals/patricia-tree

@@ -401,7 +401,14 @@ class RecoveryFarm final {
                     collector_.load(
                         target_table.get(), nullptr, MDB_APPEND,
                         /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 50 : 10));
-                    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block_);
+
+                    // Get the last processed block and update stage height
+                    MDB_val mdb_key{}, mdb_val{};
+                    lmdb::err_handler(target_table->get_last(&mdb_key, &mdb_val));
+                    ByteView key_view{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
+                    auto last_processed_block{boost::endian::load_big_u64(&key_view[0])};
+                    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
+
                 } catch (const lmdb::exception& ex) {
                     SILKWORM_LOG(LogLevels::LogError)
                         << "Senders' recovery : Database error " << ex.what() << std::endl;
@@ -541,7 +548,6 @@ class RecoveryFarm final {
                     break;
                 } else {
                     for (auto& [block_num, mdb_val] : worker_results) {
-                        last_processed_block_ = block_num;
                         total_processed_blocks_++;
                         total_recovered_transactions_ += (mdb_val.mv_size / kAddressLength);
 
@@ -810,7 +816,6 @@ class RecoveryFarm final {
     /* Stats */
     uint64_t total_recovered_transactions_{0};
     uint64_t total_processed_blocks_{0};
-    uint64_t last_processed_block_{0};
 };
 
 int main(int argc, char* argv[]) {

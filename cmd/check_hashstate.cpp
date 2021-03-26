@@ -58,7 +58,7 @@ void check(lmdb::Transaction * txn, Operation operation) {
         if (operation == HashAccount) {
             // Account
             if (mdb_key.mv_size != kAddressLength) {
-                rc = source_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
+                rc = source_table->get_next(&mdb_key, &mdb_data);
                 continue; 
             }
             auto hash{keccak256(mdb_key_as_bytes)};
@@ -72,11 +72,11 @@ void check(lmdb::Transaction * txn, Operation operation) {
                 SILKWORM_LOG(LogError) << "Expected: " << to_hex(expected_value) << ", Actual: << " << to_hex(*actual_value) << std::endl;
                 return;
             }
-            rc = source_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
+            rc = source_table->get_next(&mdb_key, &mdb_data);
         } else if (operation == HashStorage) {
             // Storage
             if (mdb_key.mv_size == kAddressLength) {
-                rc = source_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
+                rc = source_table->get_next(&mdb_key, &mdb_data);
                 continue;
             }
             Bytes key(kHashLength*2+db::kIncarnationLength, '\0');
@@ -84,13 +84,13 @@ void check(lmdb::Transaction * txn, Operation operation) {
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
             std::memcpy(&key[kHashLength + db::kIncarnationLength], keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
             MDB_val mdb_key_hashed{db::to_mdb_val(key)};
-            MDB_val mdb_data_hashed;
+            MDB_val mdb_data_hashed{db::to_mdb_val(expected_value)};
             rc = target_table->seek_exact(&mdb_key_hashed, &mdb_data_hashed);
             if (rc != 0) {
                 SILKWORM_LOG(LogError) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
                 return;
             }
-            rc = source_table->get_next_dup_unrestricted(&mdb_key, &mdb_data);
+            rc = source_table->get_next(&mdb_key, &mdb_data);
         } else {
             // Code
             if (mdb_key.mv_size != kAddressLength+db::kIncarnationLength) {

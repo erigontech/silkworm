@@ -293,10 +293,6 @@ class Table {
     int get_next(MDB_val* key, MDB_val* data);  // Move cursor at next item in table
     int get_next_dup(MDB_val* key, MDB_val* data);    // Move cursor at next data item in current key (only MDB_DUPSORT)
     int get_next_nodup(MDB_val* key, MDB_val* data);  // Move cursor at next data item in next key (only MDB_DUPSORT)
-    /* Move cursor at next data item in current key (only MDB_DUPSORT).
-     * If no more pairs are in current key it moves cursor at next data item in next key.
-     */
-    int get_next_dup_unrestricted(MDB_val* key, MDB_val* data);
     int get_last(MDB_val* key, MDB_val* data);        // Move cursor at last item in table
     int get_dcount(size_t* count);                    // Returns the count of duplicates at current position
 

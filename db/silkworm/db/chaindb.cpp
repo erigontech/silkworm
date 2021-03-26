@@ -524,11 +524,6 @@ int Table::get_prev_dup(MDB_val* key, MDB_val* data) { return get(key, data, MDB
 int Table::get_next(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT); }
 int Table::get_next_dup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT_DUP); }
 int Table::get_next_nodup(MDB_val* key, MDB_val* data) { return get(key, data, MDB_NEXT_NODUP); }
-int Table::get_next_dup_unrestricted(MDB_val* key, MDB_val* data) {
-    auto rc{get(key, data, MDB_NEXT_DUP)};
-    if (rc == MDB_NOTFOUND) rc = get(key, data, MDB_NEXT_NODUP);
-    return rc;
-}
 int Table::get_last(MDB_val* key, MDB_val* data) { return get(key, data, MDB_LAST); }
 int Table::get_dcount(size_t* count) { return mdb_cursor_count(handle_, count); }
 

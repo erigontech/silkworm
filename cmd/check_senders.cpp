@@ -368,16 +368,15 @@ class RecoveryFarm final {
 
             if (rc && rc != MDB_NOTFOUND) {
                 lmdb::err_handler(rc);
-            }
-
-            SILKWORM_LOG(LogLevels::LogDebug) << "End   read block bodies ... " << std::endl;
-
-            if (!should_stop() && !static_cast<int>(ret)) {
+            } else {
                 ret = dispatch_batch(/* renew = */ false);
                 if (ret != Status::Succeded) {
                     throw std::runtime_error("Unable to dispatch work");
                 }
             }
+
+            SILKWORM_LOG(LogLevels::LogDebug) << "End   read block bodies ... " << std::endl;
+
 
         } catch (const lmdb::exception& ex) {
             SILKWORM_LOG(LogLevels::LogError) << "Senders' recovery : Database error " << ex.what() << std::endl;
@@ -389,8 +388,8 @@ class RecoveryFarm final {
 
         // If everything ok from previous steps wait for all workers to complete
         // and bufferize results
+        wait_workers_completion();
         if (!static_cast<int>(ret)) {
-            wait_workers_completion();
             bufferize_workers_results();
             if (collector_.size() && !should_stop()) {
                 try {
@@ -504,8 +503,7 @@ class RecoveryFarm final {
                 if (it == workers_.end()) {
                     break;
                 }
-                attempts++;
-                if (!(attempts % 10)) {
+                if (!(++attempts % 10)) {
                     SILKWORM_LOG(LogLevels::LogDebug) << "Waiting for workers to complete" << std::endl;
                 }
             } while (true);
@@ -624,8 +622,12 @@ class RecoveryFarm final {
      */
     Status dispatch_batch(bool renew = true) {
         Status ret{Status::Succeded};
-        if (!batch_ || !(*batch_).size() || should_stop()) {
-            return ret;
+
+        if (should_stop()) {
+            init_batch(); // Empties the batch
+            return Status::WorkerAborted;
+        } else if (!batch_ || !(*batch_).size()) {
+            return Status::Succeded;
         }
 
         // First worker created

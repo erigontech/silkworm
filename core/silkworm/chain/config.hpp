@@ -137,6 +137,20 @@ constexpr ChainConfig kRopstenConfig{
     9'812'189,  // berlin_block
 };
 
+constexpr ChainConfig kRinkebyConfig{
+    4,  // chain_id
+
+    1,             // homestead_block
+    2,             // tangerine_whistle_block
+    3,             // spurious_dragon_block
+    1'035'301,     // byzantium_block
+    3'660'663,     // constantinople_block
+    4'321'234,     // petersburg_block
+    5'435'345,     // istanbul_block
+    std::nullopt,  // muir_glacier_block
+    8'290'928,     // berlin_block
+};
+
 constexpr ChainConfig kGoerliConfig{
     5,  // chain_id
 
@@ -170,6 +184,8 @@ inline const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept {
             return &kMainnetConfig;
         case kRopstenConfig.chain_id:
             return &kRopstenConfig;
+        case kRinkebyConfig.chain_id:
+            return &kRinkebyConfig;
         case kGoerliConfig.chain_id:
             return &kGoerliConfig;
         case kClassicMainnetConfig.chain_id:

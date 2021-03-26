@@ -377,7 +377,6 @@ class RecoveryFarm final {
 
             SILKWORM_LOG(LogLevels::LogDebug) << "End   read block bodies ... " << std::endl;
 
-
         } catch (const lmdb::exception& ex) {
             SILKWORM_LOG(LogLevels::LogError) << "Senders' recovery : Database error " << ex.what() << std::endl;
             ret = Status::DatabaseError;
@@ -496,15 +495,15 @@ class RecoveryFarm final {
         if (workers_.size()) {
             uint64_t attempts{0};
             do {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                 auto it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
                     return w->get_status() == RecoveryWorker::Status::Working;
                 });
                 if (it == workers_.end()) {
                     break;
                 }
-                if (!(++attempts % 10)) {
-                    SILKWORM_LOG(LogLevels::LogDebug) << "Waiting for workers to complete" << std::endl;
+                if (!(++attempts % 60)) {
+                    SILKWORM_LOG(LogLevels::LogInfo) << "Waiting for workers to complete" << std::endl;
                 }
             } while (true);
         }
@@ -514,7 +513,7 @@ class RecoveryFarm final {
      * @brief Collects results from worker's completed tasks
      */
     Status bufferize_workers_results() {
-        static std::string fmt_row{"%10u bks %12u txs"};
+        static std::string fmt_row{"%10u b %12u t"};
 
         Status ret{Status::Succeded};
         std::vector<std::pair<uint64_t, MDB_val>> worker_results{};
@@ -528,6 +527,10 @@ class RecoveryFarm final {
             // Pull results
             auto& item{batches_completed.front()};
             auto& worker{workers_.at(item.first)};
+
+            SILKWORM_LOG(LogLevels::LogDebug)
+                << "Collecting  package " << item.second << " worker " << item.first << std::endl;
+
             batches_completed.pop();
             l.unlock();
 
@@ -624,7 +627,7 @@ class RecoveryFarm final {
         Status ret{Status::Succeded};
 
         if (should_stop()) {
-            init_batch(); // Empties the batch
+            init_batch();  // Empties the batch
             return Status::WorkerAborted;
         } else if (!batch_ || !(*batch_).size()) {
             return Status::Succeded;
@@ -644,9 +647,9 @@ class RecoveryFarm final {
             });
 
             if (it != workers_.end()) {
-                (*it)->set_work(batch_id_++, std::move(batch_));  // Transfers ownership of batch to worker
-                SILKWORM_LOG(LogLevels::LogDebug) << "Dispatched package " << batch_id_ << " to worker "
+                SILKWORM_LOG(LogLevels::LogDebug) << "Dispatching package " << batch_id_ << " worker "
                                                   << (std::distance(workers_.begin(), it)) << std::endl;
+                (*it)->set_work(batch_id_++, std::move(batch_));  // Transfers ownership of batch to worker
                 if (renew) {
                     init_batch();
                 }
@@ -658,7 +661,6 @@ class RecoveryFarm final {
                     return (s >= 2);
                 });
                 if (it != workers_.end()) {
-                    SILKWORM_LOG(LogLevels::LogDebug) << "Bufferize results" << std::endl;
                     ret = bufferize_workers_results();
                     continue;
                 }
@@ -668,11 +670,13 @@ class RecoveryFarm final {
                 if (workers_.size() != max_workers_) {
                     if (!initialize_new_worker()) {
                         max_workers_ = workers_.size();  // Don't try to spawn new workers. Maybe we're OOM
+                    } else {
+                        continue;
                     }
                 }
 
                 // No other option than wait a while and retry
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
         };
 

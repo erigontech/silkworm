@@ -152,7 +152,10 @@ uint64_t extract_incarnation(ByteView encoded) {
     if (field_set & 4) {
         // Incarnation has been found.
         uint8_t len = encoded[pos++];
-        auto [incarnation, _]{rlp::read_uint64(encoded.substr(pos, len))};
+        auto [incarnation, err]{rlp::read_uint64(encoded.substr(pos, len))};
+        if (err != rlp::DecodingResult::kOk) {
+            throw err; 
+        }
         return incarnation;
     }
     return 0;

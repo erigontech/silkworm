@@ -17,11 +17,13 @@
 #ifndef SILKWORM_TRIE_DB_TRIE_HPP_
 #define SILKWORM_TRIE_DB_TRIE_HPP_
 
+#include <optional>
 #include <vector>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/etl/collector.hpp>
+#include <silkworm/types/account.hpp>
 
 namespace silkworm::trie {
 
@@ -41,7 +43,7 @@ class Aggregator {
 
     Aggregator() = default;
 
-    void add_account();
+    void add_account(const Account& account);
 
     void cut_off();
 
@@ -59,6 +61,8 @@ class AccountTrieCursor {
     bool can_skip_state() const;
 
     Bytes first_uncovered_prefix() const;
+
+    std::optional<Bytes> key() const;
 
     void next();
 };

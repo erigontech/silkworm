@@ -18,8 +18,13 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/trie/hash_builder.hpp>
 
 namespace silkworm::trie {
+
+void Aggregator::add_account(const Account&) {
+    // TODO[Issue 179]  implement
+}
 
 void Aggregator::cut_off() {
     // TODO[Issue 179] implement
@@ -35,6 +40,16 @@ AccountTrieCursor::AccountTrieCursor(lmdb::Transaction&, etl::Collector&) {}
 bool AccountTrieCursor::can_skip_state() const {
     // TODO[Issue 179] implement
     return false;
+}
+
+Bytes AccountTrieCursor::first_uncovered_prefix() const {
+    // TODO[Issue 179]  implement
+    return {};
+}
+
+std::optional<Bytes> AccountTrieCursor::key() const {
+    // TODO[Issue 179]  implement
+    return std::nullopt;
 }
 
 void AccountTrieCursor::next() {
@@ -66,13 +81,25 @@ DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_colle
 //		use(AccTrie)
 //	}
 evmc::bytes32 DbTrieLoader::calculate_root() {
-    auto account_state_cursor{txn_.open(db::table::kHashedAccounts)};
+    auto acc_state{txn_.open(db::table::kHashedAccounts)};
 
-    for (AccountTrieCursor account_trie_cursor{txn_, account_collector_};; account_trie_cursor.next()) {
-        // TODO[Issue 179] can_skip_state
+    for (AccountTrieCursor acc_trie{txn_, account_collector_}; acc_trie.key(); acc_trie.next()) {
+        if (!acc_trie.can_skip_state()) {
+            for (auto entry{acc_state->seek(acc_trie.first_uncovered_prefix())}; entry; entry = acc_state->get_next()) {
+                Bytes key_hex{unpack_nibbles(entry->key)};
+                if (acc_trie.key() < key_hex) {
+                    break;
+                }
+                auto [account, err]{decode_account_from_storage(entry->value)};
+                if (err != rlp::DecodingResult::kOk) {
+                    throw err;
+                }
+                aggregator_.add_account(account);
 
-        // TODO[Issue 179] implement inner loop
-        break;
+                // TODO[Issue 179] storage
+            }
+        }
+        // TODO[Issue 179] SkipAccounts
     }
 
     aggregator_.cut_off();

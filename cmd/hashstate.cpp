@@ -26,13 +26,21 @@
 
 using namespace silkworm;
 namespace fs = boost::filesystem;
+/*
+    * Operation is used to distinguish what bucket we want to generated 
+    * HashAccount is for genenerating HashedAccountBucket
+    * HashStorage is for genenerating HashedStorageBucket
+    * Code generates hashed key => code_hash mapping
 
+*/
 enum Operation {
     HashAccount,
     HashStorage,
     Code
 };
-
+/*
+    *  Convert changeset key/value pair to their database format
+*/
 Bytes convert_to_db_format(Bytes &key, Bytes &value) {
     if (key.size() == 8) {
         return value.substr(0, kAddressLength);
@@ -42,7 +50,10 @@ Bytes convert_to_db_format(Bytes &key, Bytes &value) {
     std::memcpy(&db_key[kAddressLength + db::kIncarnationLength], &value[0], kHashLength);
     return db_key;
 }
-
+/*
+    *  Convert get tables configuration pair for incremental promotion
+    *  First configuration of the pair is the source and second configuration is the table to fill.
+*/
 std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_promote(Operation operation) {
     switch (operation) {
         case HashAccount:
@@ -54,6 +65,10 @@ std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_promote(Operation
     }
 
 }
+/*
+    *  If we havent done hashstate before(first sync), it is possible to just hash values from plainstates,
+    *  This is way faster than using changeset because it uses less database reads.
+*/
 void promote_clean(lmdb::Transaction * txn, std::string etl_path, Operation operation) {
     auto source_table{operation != Code ? 
         txn->open(db::table::kPlainState) : txn->open(db::table::kPlainContractCode)
@@ -121,7 +136,9 @@ void promote_clean(lmdb::Transaction * txn, std::string etl_path, Operation oper
                 break;
     }
 }
-
+/*
+    * Extract the incarnation from an encoded account object without fully decoding it.
+*/
 uint64_t extract_incarnation(ByteView encoded) {
     uint8_t field_set = encoded[0];
     size_t pos{1};
@@ -133,13 +150,18 @@ uint64_t extract_incarnation(ByteView encoded) {
         pos += encoded[pos++];
     }
     if (field_set & 4) {
+        // Incarnation has been found.
         uint8_t len = encoded[pos++];
         auto [incarnation, _]{rlp::read_uint64(encoded.substr(pos, len))};
         return incarnation;
     }
     return 0;
 }
-
+/*
+    *  If we have done hashstate before(not first sync),
+    *  We need to use changeset because we can use the progress system.
+    *  Note: Standard Promotion is way slower than Clean Promotion
+*/
 void promote(lmdb::Transaction * txn, Operation operation) {
     auto [changeset_config, target_config] = get_tables_for_promote(operation);
     auto changeset_table{txn->open(changeset_config)};
@@ -158,21 +180,25 @@ void promote(lmdb::Transaction * txn, Operation operation) {
         Bytes mdb_value_as_bytes{static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size};
         Bytes db_key{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};
         if (operation == HashAccount) {
+            // We get account and hash its key.
             auto value{plainstate_table->get(db_key)};
             if (value == std::nullopt) {
                 rc = changeset_table->get_next(&mdb_key, &mdb_data);
                 continue;   
-            }    
+            }
+            // Hashing
             auto hash{keccak256(db_key)};
             target_table->put(full_view(hash.bytes), *value, 0);
             rc = changeset_table->get_next(&mdb_key, &mdb_data);
         } else if (operation == HashStorage) {
+            // We get storage value and hash its key.
             Bytes key(kHashLength*2+db::kIncarnationLength, '\0');
             auto value{plainstate_table->get(db_key)};
             if (value == std::nullopt) {
                 rc = changeset_table->get_next(&mdb_key, &mdb_data);
                 continue;
             }
+            // Hashing
             std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
             std::memcpy(&key[kHashLength + db::kIncarnationLength], keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
@@ -199,7 +225,7 @@ void promote(lmdb::Transaction * txn, Operation operation) {
                 rc = changeset_table->get_next(&mdb_key, &mdb_data);
                 continue;
             }
-            // put data in db
+            // Hash and concatenate everything together
             Bytes key(kHashLength + db::kIncarnationLength, '\0');
             std::memcpy(&key[0], keccak256(plain_key.substr(0, kAddressLength)).bytes, kHashLength);   
             std::memcpy(&key[kHashLength], &plain_key[kAddressLength], db::kIncarnationLength);   

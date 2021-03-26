@@ -22,8 +22,13 @@
 
 namespace silkworm::trie {
 
-void Aggregator::add_account(const Account&) {
-    // TODO[Issue 179]  implement
+void Aggregator::add_account(ByteView key, const Account& a) {
+    curr_ = succ_;
+    succ_ = key;
+    if (!curr_.empty()) {
+        // TODO[Issue 179] gen struct step
+    }
+    account_ = a;
 }
 
 void Aggregator::cut_off() {
@@ -43,12 +48,12 @@ bool AccountTrieCursor::can_skip_state() const {
 }
 
 Bytes AccountTrieCursor::first_uncovered_prefix() const {
-    // TODO[Issue 179]  implement
+    // TODO[Issue 179] implement
     return {};
 }
 
 std::optional<Bytes> AccountTrieCursor::key() const {
-    // TODO[Issue 179]  implement
+    // TODO[Issue 179] implement
     return std::nullopt;
 }
 
@@ -83,23 +88,29 @@ DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_colle
 evmc::bytes32 DbTrieLoader::calculate_root() {
     auto acc_state{txn_.open(db::table::kHashedAccounts)};
 
-    for (AccountTrieCursor acc_trie{txn_, account_collector_}; acc_trie.key(); acc_trie.next()) {
+    for (AccountTrieCursor acc_trie{txn_, account_collector_};; acc_trie.next()) {
         if (!acc_trie.can_skip_state()) {
             for (auto entry{acc_state->seek(acc_trie.first_uncovered_prefix())}; entry; entry = acc_state->get_next()) {
                 Bytes key_hex{unpack_nibbles(entry->key)};
-                if (acc_trie.key() < key_hex) {
+                if (acc_trie.key() && acc_trie.key() < key_hex) {
                     break;
                 }
                 auto [account, err]{decode_account_from_storage(entry->value)};
                 if (err != rlp::DecodingResult::kOk) {
                     throw err;
                 }
-                aggregator_.add_account(account);
+                aggregator_.add_account(key_hex, account);
 
                 // TODO[Issue 179] storage
             }
         }
-        // TODO[Issue 179] SkipAccounts
+
+        // SkipAccounts
+        if (!acc_trie.key()) {
+            break;
+        }
+
+        // TODO[Issue 179] Receive AHashStreamItem
     }
 
     aggregator_.cut_off();

@@ -43,11 +43,16 @@ class Aggregator {
 
     Aggregator() = default;
 
-    void add_account(const Account& account);
+    void add_account(ByteView key, const Account& account);
 
     void cut_off();
 
     evmc::bytes32 root() const;
+
+  private:
+    Bytes curr_;
+    Bytes succ_;
+    Account account_;
 };
 
 // TG AccTrieCursor

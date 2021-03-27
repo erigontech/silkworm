@@ -22,7 +22,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
-
+#include <thread>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
@@ -34,6 +34,7 @@
 using namespace silkworm;
 
 constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
+
 
 void loader_function(etl::Entry entry, lmdb::Table *target_table, unsigned int db_flags) {
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
@@ -74,14 +75,15 @@ class listener_log_index : public cbor::listener {
                 topics_map_->emplace(key, roaring::Roaring());
             }
             topics_map_->at(key).add(block_number_);
-            total_allocated_ += 8;
+            total_allocated_ += 40;
         } else if (size == kAddressLength) {
             if (addrs_map_->find(key) == addrs_map_->end()) {
                 addrs_map_->emplace(key, roaring::Roaring());
             }
             addrs_map_->at(key).add(block_number_);
-            total_allocated_ += 8;
+            total_allocated_ += 28;
         }
+        delete[] data;
     }
 
     virtual void on_string(std::string &) {};
@@ -108,6 +110,10 @@ class listener_log_index : public cbor::listener {
 
     virtual void on_extra_special(unsigned long long){};
 
+    void set_block_number(uint64_t block_number) {
+        block_number_ = block_number;
+        total_allocated_ = 0;
+    }
     uint64_t get_total_allocated() { return total_allocated_; }
 
     private:
@@ -191,16 +197,16 @@ int main(int argc, char *argv[]) {
         uint64_t allocated_space{0};
         std::unordered_map<std::string, roaring::Roaring> topic_bitmaps;
         std::unordered_map<std::string, roaring::Roaring> addresses_bitmaps;
-
+        listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps);
         int rc{log_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
         while (!rc) {                                        /* Loop as long as we have no errors*/
             block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(mdb_key.mv_data));
-            listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps);
+            current_listener.set_block_number(block_number);
             cbor::input input(static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size);
             cbor::decoder decoder(input, current_listener);
             decoder.run();
             allocated_space += current_listener.get_total_allocated();  
-            if (64 * (topic_bitmaps.size() + addresses_bitmaps.size()) + allocated_space > kBitmapBufferSizeLimit) {
+            if (allocated_space > kBitmapBufferSizeLimit) {
                 flush_log_bitmaps(topic_collector, addresses_collector, topic_bitmaps, addresses_bitmaps);
                 SILKWORM_LOG(LogInfo) << "Current Block: " << block_number << std::endl;
                 allocated_space = 0;

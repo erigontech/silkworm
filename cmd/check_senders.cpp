@@ -418,7 +418,6 @@ class RecoveryFarm final {
             }
         }
 
-        SILKWORM_LOG(LogLevels::LogDebug) << "Stopping workers ... " << std::endl;
         stop_all_workers(/*wait = */ true);
         return ret;
     }
@@ -483,6 +482,7 @@ class RecoveryFarm final {
      * @brief Forces each worker to stop
      */
     void stop_all_workers(bool wait = true) {
+                SILKWORM_LOG(LogLevels::LogDebug) << "Stopping workers ... " << std::endl;
         for (const auto& worker : workers_) {
             worker->stop(wait);
         }

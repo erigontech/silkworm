@@ -33,7 +33,7 @@
 
 using namespace silkworm;
 
-constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
+constexpr size_t kBitmapBufferSizeLimit = 512 * kMebi;
 
 
 void loader_function(etl::Entry entry, lmdb::Table *target_table, unsigned int db_flags) {
@@ -63,8 +63,8 @@ void loader_function(etl::Entry entry, lmdb::Table *target_table, unsigned int d
 class listener_log_index : public cbor::listener {
     public:
     listener_log_index(uint64_t block_number, std::unordered_map<std::string, roaring::Roaring> * topics_map,
-                std::unordered_map<std::string, roaring::Roaring> * addrs_map): 
-                block_number_(block_number), topics_map_(topics_map), addrs_map_(addrs_map) {};
+                std::unordered_map<std::string, roaring::Roaring> * addrs_map, uint64_t * allocated_topics, uint64_t * allocated_addrs_): 
+                block_number_(block_number), topics_map_(topics_map), addrs_map_(addrs_map), allocated_topics_(allocated_topics), allocated_addrs_(allocated_addrs_) {};
 
     virtual void on_integer(int){};
 
@@ -75,13 +75,13 @@ class listener_log_index : public cbor::listener {
                 topics_map_->emplace(key, roaring::Roaring());
             }
             topics_map_->at(key).add(block_number_);
-            total_allocated_ += 40;
+            *allocated_topics_ += kHashLength;
         } else if (size == kAddressLength) {
             if (addrs_map_->find(key) == addrs_map_->end()) {
                 addrs_map_->emplace(key, roaring::Roaring());
             }
             addrs_map_->at(key).add(block_number_);
-            total_allocated_ += 28;
+            *allocated_addrs_ += kAddressLength;
         }
         delete[] data;
     }
@@ -112,35 +112,24 @@ class listener_log_index : public cbor::listener {
 
     void set_block_number(uint64_t block_number) {
         block_number_ = block_number;
-        total_allocated_ = 0;
     }
-    uint64_t get_total_allocated() { return total_allocated_; }
 
     private:
         uint64_t block_number_;
         std::unordered_map<std::string, roaring::Roaring> * topics_map_;
         std::unordered_map<std::string, roaring::Roaring> * addrs_map_;
-        uint64_t total_allocated_ = 0;
+        uint64_t *allocated_topics_;
+        uint64_t *allocated_addrs_;
 };
 
-void flush_log_bitmaps(etl::Collector & topic_collector, etl::Collector & addrs_collector, 
-                        std::unordered_map<std::string, roaring::Roaring> & topics_map,
-                        std::unordered_map<std::string, roaring::Roaring> & addrs_map) {
-    for (const auto &[key, bm] : topics_map) {
+void flush_bitmaps(etl::Collector& collector, std::unordered_map<std::string, roaring::Roaring>& map) {
+    for (const auto &[key, bm] : map) {
         Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
         bm.write(byte_ptr_cast(bitmap_bytes.data()));
         etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
-        topic_collector.collect(entry);
+        collector.collect(entry);
     }
-
-    for (const auto &[key, bm] : addrs_map) {
-        Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-        bm.write(byte_ptr_cast(bitmap_bytes.data()));
-        etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
-        addrs_collector.collect(entry);
-    }
-    topics_map.clear();
-    addrs_map.clear();
+    map.clear();
 }
 
 int main(int argc, char *argv[]) {
@@ -194,10 +183,11 @@ int main(int argc, char *argv[]) {
         SILKWORM_LOG(LogInfo) << "Started Log Index Extraction" << std::endl;
 
         uint64_t block_number{0};
-        uint64_t allocated_space{0};
+        uint64_t topics_allocated_space{0};
+        uint64_t addrs_allocated_space{0};
         std::unordered_map<std::string, roaring::Roaring> topic_bitmaps;
         std::unordered_map<std::string, roaring::Roaring> addresses_bitmaps;
-        listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps);
+        listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps, &topics_allocated_space, &addrs_allocated_space);
         int rc{log_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
         while (!rc) {                                        /* Loop as long as we have no errors*/
             block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(mdb_key.mv_data));
@@ -205,11 +195,16 @@ int main(int argc, char *argv[]) {
             cbor::input input(static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size);
             cbor::decoder decoder(input, current_listener);
             decoder.run();
-            allocated_space += current_listener.get_total_allocated();  
-            if (allocated_space > kBitmapBufferSizeLimit) {
-                flush_log_bitmaps(topic_collector, addresses_collector, topic_bitmaps, addresses_bitmaps);
+            if (topics_allocated_space > kBitmapBufferSizeLimit) {
+                flush_bitmaps(topic_collector, topic_bitmaps);
                 SILKWORM_LOG(LogInfo) << "Current Block: " << block_number << std::endl;
-                allocated_space = 0;
+                topics_allocated_space = 0;
+            }
+
+            if (addrs_allocated_space > kBitmapBufferSizeLimit) {
+                flush_bitmaps(addresses_collector, addresses_bitmaps);
+                SILKWORM_LOG(LogInfo) << "Current Block: " << block_number << std::endl;
+                addrs_allocated_space = 0;
             }
     
             rc = log_table->get_next(&mdb_key, &mdb_data);
@@ -219,7 +214,8 @@ int main(int argc, char *argv[]) {
             lmdb::err_handler(rc);
         }
 
-        flush_log_bitmaps(topic_collector, addresses_collector, topic_bitmaps, addresses_bitmaps);
+        flush_bitmaps(topic_collector, topic_bitmaps);
+        flush_bitmaps(addresses_collector, addresses_bitmaps);
 
         SILKWORM_LOG(LogInfo) << "Latest Block: " << block_number << std::endl;
         // Proceed only if we've done something
@@ -228,9 +224,9 @@ int main(int argc, char *argv[]) {
         unsigned int db_flags{block_number ? 0u : MDB_APPEND};
 
         // Eventually load collected items WITH transform (may throw)
-        topic_collector.load(txn->open(db::table::kLogTopicIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 20);
+        topic_collector.load(txn->open(db::table::kLogTopicIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 10);
         SILKWORM_LOG(LogInfo) << "Started Address Loading" << std::endl;
-        addresses_collector.load(txn->open(db::table::kLogAddressIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 20);
+        addresses_collector.load(txn->open(db::table::kLogAddressIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 10);
 
         // Update progress height with last processed block
         db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, block_number);

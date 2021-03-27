@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
-    SILKWORM_LOG(LogInfo) << "Starting HashState" << std::endl;
+    SILKWORM_LOG(LogInfo) << "Checking HashState" << std::endl;
 
 
     // Check data.mdb exists in provided directory

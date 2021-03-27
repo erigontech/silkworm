@@ -79,20 +79,19 @@ void promote_clean_state(lmdb::Transaction * txn, std::string etl_path) {
     etl::Collector collector_account(etl_path.c_str(), 512 * kMebi);
     etl::Collector collector_storage(etl_path.c_str(), 512 * kMebi);
     int percent{0};
-    uint8_t previous_start_byte{0};
+    uint64_t next_start_byte{0};
     while (!rc) { /* Loop as long as we have no errors*/
         Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
         Bytes mdb_value_as_bytes{static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size};
-        if (mdb_key_as_bytes.at(0) % 25 == 0 && mdb_key_as_bytes.at(0) != previous_start_byte) {
+        if (static_cast<uint8_t>(mdb_key_as_bytes.at(0)) >= next_start_byte) {
             SILKWORM_LOG(LogInfo) << "Progress: " << percent << "%" << std::endl;
             percent += 10;
-            previous_start_byte = mdb_key_as_bytes.at(0);
+            next_start_byte += 25;
         }
         // Account
         if (mdb_key.mv_size == kAddressLength) {
             etl::Entry entry{Bytes(keccak256(mdb_key_as_bytes).bytes, kHashLength), mdb_value_as_bytes};
             collector_account.collect(entry);
-            rc = source_table->get_next(&mdb_key, &mdb_data);
         } else {
             Bytes new_key(kHashLength*2+db::kIncarnationLength, '\0');
             std::memcpy(&new_key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
@@ -100,8 +99,8 @@ void promote_clean_state(lmdb::Transaction * txn, std::string etl_path) {
             std::memcpy(&new_key[kHashLength + db::kIncarnationLength], keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
             etl::Entry entry{new_key, mdb_value_as_bytes};
             collector_storage.collect(entry);
-            rc = source_table->get_next(&mdb_key, &mdb_data);
         }
+        rc = source_table->get_next(&mdb_key, &mdb_data);
     }
 
     if (rc && rc != MDB_NOTFOUND) { /* MDB_NOTFOUND is not actually an error rather eof */

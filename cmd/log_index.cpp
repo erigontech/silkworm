@@ -35,12 +35,6 @@ using namespace silkworm;
 
 constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
 
-void printKey(Bytes  b) {
-    for(size_t i = 0; i<b.size(); i++)
-        std::cout << +b.at(i) << " ";
-    std::cout << std::endl;
-    std::cout << std::endl;
-}
 void loader_function(etl::Entry entry, lmdb::Table *target_table, unsigned int db_flags) {
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
     Bytes last_chunk_index(entry.key.size() + 4, '\0');

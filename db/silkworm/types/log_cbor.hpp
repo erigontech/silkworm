@@ -24,7 +24,6 @@ namespace silkworm {
 // TG-compatible CBOR encoding for storage.
 // See core/types/log.go
 Bytes cbor_encode(const std::vector<Log>& v);
-
 }  // namespace silkworm
 
 #endif  // SILKWORM_TYPES_LOG_CBOR_H_

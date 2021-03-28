@@ -24,23 +24,26 @@
 #include <silkworm/etl/util.hpp>
 
 namespace silkworm::etl {
-
+constexpr size_t kInitialBufferCap = 32768;
 // In ETL, a buffer must be used stores entries, sort them and write them to file
 class Buffer {
   public:
-    Buffer(size_t optimal_size) : optimal_size_(optimal_size){};
-
+    Buffer(size_t optimal_size) : entries_{new Entry[kInitialBufferCap]}, optimal_size_(optimal_size) {};
+    ~Buffer();
     void put(Entry& entry);           // Add a new entry to the buffer
     void clear();                     // Free buffer's contents
     bool overflows() const noexcept;  // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
     void sort();                      // Sort buffer in crescent order by key comparison
     size_t size() const noexcept;     // Actual size of accounted data
-    std::vector<Entry>& get_entries();
+    size_t length() const noexcept; // Number of entries
+    Entry* get_entries();
 
   private:
-    std::vector<Entry> entries_;
+    Entry * entries_;
     size_t optimal_size_;
     size_t size_ = 0;
+    size_t length_ = 0;
+    size_t buffer_cap_ = kInitialBufferCap;
 };
 
 }  // namespace silkworm::etl

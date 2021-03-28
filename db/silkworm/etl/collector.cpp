@@ -74,8 +74,10 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
     if (!file_providers_.size()) {
         buffer_.sort();
         if (load_func) {
-            for (const auto& etl_entry : buffer_.get_entries()) {
-                load_func(etl_entry, table, db_flags);
+            auto entries{buffer_.get_entries()};
+            auto length{buffer_.length()};
+            for (size_t i = 0; i < length; i++) {
+                load_func(entries[i], table, db_flags);
 
                 if (!--dummy_counter) {
                     actual_progress += progress_step;
@@ -85,8 +87,10 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
                 }
             }
         } else {
-            for (const auto& etl_entry : buffer_.get_entries()) {
-                table->put(etl_entry.key, etl_entry.value, db_flags);
+            auto entries{buffer_.get_entries()};
+            auto length{buffer_.length()};
+            for (size_t i = 0; i < length; i++) {
+                table->put(entries[i].key, entries[i].value, db_flags);
                 if (!--dummy_counter) {
                     actual_progress += progress_step;
                     dummy_counter = progress_increment_count;
@@ -155,6 +159,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         }
     }
     size_ = 0;  // We have consumed all items
+    buffer_.~Buffer();
 }
 
 std::string Collector::set_work_path(const char* provided_work_path) {

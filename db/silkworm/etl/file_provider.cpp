@@ -33,8 +33,9 @@ void FileProvider::flush(Buffer &buffer) {
     head_t head{};
 
     // Check we have enough space to store all data
-    auto &entries{buffer.get_entries()};
-    file_size_ = {buffer.size() + entries.size() * sizeof(head_t)};
+    auto entries{buffer.get_entries()};
+    auto length{buffer.length()};
+    file_size_ = {buffer.size() + length * sizeof(head_t)};
     fs::path workdir(fs::path(file_name_).parent_path());
     if (fs::space(workdir).available < file_size_) {
         file_size_ = 0;
@@ -48,12 +49,12 @@ void FileProvider::flush(Buffer &buffer) {
         throw etl_error(strerror(errno));
     };
 
-    for (const auto &entry : entries) {
-        head.lengths[0] = entry.key.size();
-        head.lengths[1] = entry.value.size();
+    for (size_t i = 0; i < length; i++) {
+        head.lengths[0] = entries[i].size();
+        head.lengths[1] = entries[i].size();
         if (!file_.write(byte_ptr_cast(head.bytes), 8) ||
-            !file_.write(byte_ptr_cast(entry.key.data()), entry.key.size()) ||
-            !file_.write(byte_ptr_cast(entry.value.data()), entry.value.size())) {
+            !file_.write(byte_ptr_cast(entries[i].key.data()), entries[i].key.size()) ||
+            !file_.write(byte_ptr_cast(entries[i].value.data()), entries[i].value.size())) {
             auto err{errno};
             reset();
             throw etl_error(strerror(err));

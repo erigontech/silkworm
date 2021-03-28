@@ -50,8 +50,8 @@ void FileProvider::flush(Buffer &buffer) {
     };
 
     for (size_t i = 0; i < length; i++) {
-        head.lengths[0] = entries[i].size();
-        head.lengths[1] = entries[i].size();
+        head.lengths[0] = entries[i].key.size();
+        head.lengths[1] = entries[i].value.size();
         if (!file_.write(byte_ptr_cast(head.bytes), 8) ||
             !file_.write(byte_ptr_cast(entries[i].key.data()), entries[i].key.size()) ||
             !file_.write(byte_ptr_cast(entries[i].value.data()), entries[i].value.size())) {
@@ -93,7 +93,6 @@ std::optional<std::pair<Entry, int>> FileProvider::read_entry() {
         reset();
         throw etl_error(strerror(err));
     }
-
     return std::make_pair(entry, id_);
 }
 

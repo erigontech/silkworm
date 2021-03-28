@@ -18,7 +18,7 @@
 
 namespace silkworm::etl {
 
-Buffer::~Buffer() {
+void Buffer::reset() {
     delete[] entries_;
 }
 

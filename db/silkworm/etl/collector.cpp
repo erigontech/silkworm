@@ -99,13 +99,13 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
                 }
             }
         }
-        buffer_.clear();
+        buffer_.reset();
         return;
     }
 
     // Flush not overflown buffer data to file
     flush_buffer();
-
+    buffer_.reset();
     // Define a priority queue based on smallest available key
     auto key_comparer = [](std::pair<Entry, int> left, std::pair<Entry, int> right) {
         return left.first.key.compare(right.first.key) > 0;
@@ -159,7 +159,6 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         }
     }
     size_ = 0;  // We have consumed all items
-    buffer_.~Buffer();
 }
 
 std::string Collector::set_work_path(const char* provided_work_path) {

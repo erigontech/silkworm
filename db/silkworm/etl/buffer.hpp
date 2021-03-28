@@ -29,7 +29,7 @@ constexpr size_t kInitialBufferCap = 32768;
 class Buffer {
   public:
     Buffer(size_t optimal_size) : entries_{new Entry[kInitialBufferCap]}, optimal_size_(optimal_size) {};
-    ~Buffer();
+    void reset();
     void put(Entry& entry);           // Add a new entry to the buffer
     void clear();                     // Free buffer's contents
     bool overflows() const noexcept;  // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)

@@ -14,6 +14,7 @@
 #include "collector.hpp"
 
 #include <set>
+#include <iostream>
 
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem/operations.hpp>

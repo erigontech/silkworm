@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -21,7 +22,6 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -35,7 +35,7 @@ using namespace silkworm;
 constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
 
 int main(int argc, char *argv[]) {
-    namespace fs = boost::filesystem;
+    namespace fs = std::filesystem;
 
     CLI::App app{"Generates History Indexes"};
 

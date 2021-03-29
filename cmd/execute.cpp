@@ -14,9 +14,10 @@
    limitations under the License.
 */
 
+#include <filesystem>
+
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -46,7 +47,7 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    namespace fs = boost::filesystem;
+    namespace fs = std::filesystem;
 
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};

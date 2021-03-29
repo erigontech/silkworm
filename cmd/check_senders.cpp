@@ -16,13 +16,13 @@
 
 #include <atomic>
 #include <csignal>
+#include <filesystem>
 #include <queue>
 #include <string>
 #include <thread>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/signals2.hpp>
@@ -39,7 +39,7 @@
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/types/block.hpp>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 using namespace silkworm;
 
 std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
@@ -483,7 +483,7 @@ class RecoveryFarm final {
      * @brief Forces each worker to stop
      */
     void stop_all_workers(bool wait = true) {
-                SILKWORM_LOG(LogLevels::LogDebug) << "Stopping workers ... " << std::endl;
+        SILKWORM_LOG(LogLevels::LogDebug) << "Stopping workers ... " << std::endl;
         for (const auto& worker : workers_) {
             worker->stop(wait);
         }
@@ -925,8 +925,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (rc = static_cast<int>(result), rc) {
-            SILKWORM_LOG(LogLevels::LogError) << (app_recover ? "Recovery" : "Unwind") << " returned "
-                                              << magic_enum::enum_name(result) << std::endl;
+            SILKWORM_LOG(LogLevels::LogError)
+                << (app_recover ? "Recovery" : "Unwind") << " returned " << magic_enum::enum_name(result) << std::endl;
         } else {
             if (!options.dry) {
                 SILKWORM_LOG(LogLevels::LogInfo) << "Committing" << std::endl;

@@ -14,10 +14,12 @@
    limitations under the License.
 */
 
+#include <filesystem>
+#include <iostream>
+
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
-#include <iostream>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -25,12 +27,12 @@
 #include <silkworm/etl/collector.hpp>
 
 using namespace silkworm;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 enum Operation {
     HashAccount,
     HashStorage,
-    Code
+    Code,
 };
 
 std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_checking(Operation operation) {
@@ -42,9 +44,9 @@ std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_checking(Operatio
         default:
             return {db::table::kPlainContractCode, db::table::kContractCode};
     }
-
 }
-void check(lmdb::Transaction * txn, Operation operation) {
+
+void check(lmdb::Transaction* txn, Operation operation) {
     auto [source_config, target_config] = get_tables_for_checking(operation);
     auto source_table{txn->open(source_config)};
     auto target_table{txn->open(target_config)};
@@ -59,7 +61,7 @@ void check(lmdb::Transaction * txn, Operation operation) {
             // Account
             if (mdb_key.mv_size != kAddressLength) {
                 rc = source_table->get_next(&mdb_key, &mdb_data);
-                continue; 
+                continue;
             }
             auto hash{keccak256(mdb_key_as_bytes)};
             auto key{full_view(hash.bytes)};
@@ -69,7 +71,8 @@ void check(lmdb::Transaction * txn, Operation operation) {
                 return;
             }
             if (actual_value->compare(expected_value) != 0) {
-                SILKWORM_LOG(LogError) << "Expected: " << to_hex(expected_value) << ", Actual: << " << to_hex(*actual_value) << std::endl;
+                SILKWORM_LOG(LogError) << "Expected: " << to_hex(expected_value) << ", Actual: << "
+                                       << to_hex(*actual_value) << std::endl;
                 return;
             }
             rc = source_table->get_next(&mdb_key, &mdb_data);
@@ -79,10 +82,11 @@ void check(lmdb::Transaction * txn, Operation operation) {
                 rc = source_table->get_next(&mdb_key, &mdb_data);
                 continue;
             }
-            Bytes key(kHashLength*2+db::kIncarnationLength, '\0');
+            Bytes key(kHashLength * 2 + db::kIncarnationLength, '\0');
             std::memcpy(&key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
-            std::memcpy(&key[kHashLength + db::kIncarnationLength], keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
+            std::memcpy(&key[kHashLength + db::kIncarnationLength],
+                        keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
             MDB_val mdb_key_hashed{db::to_mdb_val(key)};
             MDB_val mdb_data_hashed{db::to_mdb_val(expected_value)};
             rc = target_table->seek_exact(&mdb_key_hashed, &mdb_data_hashed);
@@ -93,11 +97,11 @@ void check(lmdb::Transaction * txn, Operation operation) {
             rc = source_table->get_next(&mdb_key, &mdb_data);
         } else {
             // Code
-            if (mdb_key.mv_size != kAddressLength+db::kIncarnationLength) {
+            if (mdb_key.mv_size != kAddressLength + db::kIncarnationLength) {
                 rc = source_table->get_next(&mdb_key, &mdb_data);
                 continue;
             }
-            Bytes key(kHashLength+db::kIncarnationLength, '\0');            
+            Bytes key(kHashLength + db::kIncarnationLength, '\0');
             std::memcpy(&key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
             auto actual_value{target_table->get(key)};
@@ -108,7 +112,8 @@ void check(lmdb::Transaction * txn, Operation operation) {
             }
 
             if (actual_value->compare(expected_value) != 0) {
-                SILKWORM_LOG(LogError) << "Expected: " << to_hex(expected_value) << ", Actual: << " << to_hex(*actual_value) << std::endl;
+                SILKWORM_LOG(LogError) << "Expected: " << to_hex(expected_value) << ", Actual: << "
+                                       << to_hex(*actual_value) << std::endl;
                 return;
             }
             rc = source_table->get_next(&mdb_key, &mdb_data);
@@ -129,10 +134,9 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
     SILKWORM_LOG(LogInfo) << "Checking HashState" << std::endl;
 
-
     // Check data.mdb exists in provided directory
-    boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
-    if (!boost::filesystem::exists(db_file)) {
+    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }

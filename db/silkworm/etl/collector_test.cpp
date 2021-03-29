@@ -13,10 +13,10 @@
 
 #include "collector.hpp"
 
+#include <filesystem>
 #include <set>
 
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem/operations.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/temp_dir.hpp>
@@ -24,7 +24,7 @@
 
 namespace silkworm::etl {
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 static std::vector<Entry> generate_entry_set(size_t size) {
     std::vector<Entry> pairs;

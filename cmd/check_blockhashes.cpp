@@ -14,9 +14,10 @@
    limitations under the License.
 */
 
+#include <filesystem>
+
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/stages.hpp>
@@ -26,7 +27,7 @@
 using namespace silkworm;
 
 int main(int argc, char* argv[]) {
-    namespace fs = boost::filesystem;
+    namespace fs = std::filesystem;
 
     CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
 
@@ -59,7 +60,6 @@ int main(int argc, char* argv[]) {
 
         // Check if each hash has the correct number according to the header table
         while (!rc) {
-
             ByteView hash_key_view{db::from_mdb_val(mdb_key)};    // Height number
             ByteView hash_data_view{db::from_mdb_val(mdb_data)};  // Canonical Hash
             auto block_data_view{blockhashes_table->get(hash_data_view)};

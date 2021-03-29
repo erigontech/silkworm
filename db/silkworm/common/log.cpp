@@ -22,7 +22,7 @@ namespace silkworm {
 
 teestream log_streams_{std::cerr, null_stream()};
 
-LogLevels log_verbosity_{LogInfo};
+LogLevels log_verbosity_{LogLevels::LogInfo};
 
 constexpr char const kLogTags_[7][6] = {
     "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",
@@ -34,11 +34,11 @@ void log_set_streams_(std::ostream& o1, std::ostream& o2) { log_streams_.set_str
 std::mutex log_::log_mtx_;
 
 std::ostream& log_::header_(LogLevels level) {
-    return log_streams_ << kLogTags_[level] << "["
+    return log_streams_ << kLogTags_[static_cast<int>(level)] << "["
                         << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "]";
 }
 
-void log_expand_and_compile_test_() { SILKWORM_LOG(LogInfo) << "log_expand_and_compile_test_" << std::endl; }
+void log_expand_and_compile_test_() { SILKWORM_LOG(LogLevels::LogInfo) << "log_expand_and_compile_test_" << std::endl; }
 
 std::ostream& null_stream() {
     static struct null_buf : public std::streambuf {

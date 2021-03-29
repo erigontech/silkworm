@@ -36,7 +36,7 @@ namespace silkworm {
 #define SILKWORM_LOG_VERBOSITY(level_) (silkworm::log_verbosity_ = (level_))
 
 // available verbosity levels
-enum LogLevels { LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCritical, LogNone };
+enum class LogLevels { LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCritical, LogNone };
 
 // change the logging output streams - default is (cerr, null_stream())
 //

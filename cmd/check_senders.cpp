@@ -483,7 +483,7 @@ class RecoveryFarm final {
      * @brief Forces each worker to stop
      */
     void stop_all_workers(bool wait = true) {
-                SILKWORM_LOG(LogLevels::LogDebug) << "Stopping workers ... " << std::endl;
+        SILKWORM_LOG(LogLevels::LogDebug) << "Stopping workers ... " << std::endl;
         for (const auto& worker : workers_) {
             worker->stop(wait);
         }
@@ -859,7 +859,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     if (options.debug) {
-        SILKWORM_LOG_VERBOSITY(LogDebug);
+        SILKWORM_LOG_VERBOSITY(LogLevels::LogDebug);
     }
 
     auto lmdb_mapSize{parse_size(mapSizeStr)};
@@ -925,8 +925,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (rc = static_cast<int>(result), rc) {
-            SILKWORM_LOG(LogLevels::LogError) << (app_recover ? "Recovery" : "Unwind") << " returned "
-                                              << magic_enum::enum_name(result) << std::endl;
+            SILKWORM_LOG(LogLevels::LogError)
+                << (app_recover ? "Recovery" : "Unwind") << " returned " << magic_enum::enum_name(result) << std::endl;
         } else {
             if (!options.dry) {
                 SILKWORM_LOG(LogLevels::LogInfo) << "Committing" << std::endl;

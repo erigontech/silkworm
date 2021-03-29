@@ -21,6 +21,7 @@
 #include <boost/filesystem.hpp>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
@@ -158,7 +159,7 @@ uint64_t extract_incarnation(ByteView encoded) {
         uint8_t len = encoded[pos++];
         auto [incarnation, err]{rlp::read_uint64(encoded.substr(pos, len))};
         if (err != rlp::DecodingResult::kOk) {
-            throw err;
+            throw std::runtime_error("Decoding error " + std::string(magic_enum::enum_name(err)));
         }
         return incarnation;
     }

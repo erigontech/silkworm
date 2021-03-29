@@ -30,6 +30,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -913,8 +914,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (rc = static_cast<int>(result), rc) {
-            SILKWORM_LOG(LogLevels::LogError)
-                << (app_recover ? "Recovery" : "Unwind") << " returned code " << rc << std::endl;
+            SILKWORM_LOG(LogLevels::LogError) << (app_recover ? "Recovery" : "Unwind") << " returned "
+                                              << magic_enum::enum_name(result) << std::endl;
         } else {
             if (!options.dry) {
                 SILKWORM_LOG(LogLevels::LogInfo) << "Committing" << std::endl;

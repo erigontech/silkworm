@@ -61,17 +61,6 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
-      - run:
-          name: "Switch to GCC 9"
-          command: |
-            sudo apt install software-properties-common
-            sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-            sudo apt update
-            sudo apt -y install gcc-9 g++-9
-            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 50
-            sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 50
-            gcc --version
-            g++ --version
       - checkout
       - build
       - test

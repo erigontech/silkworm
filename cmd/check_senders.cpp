@@ -369,16 +369,14 @@ class RecoveryFarm final {
 
             if (rc && rc != MDB_NOTFOUND) {
                 lmdb::err_handler(rc);
-            }
-
-            SILKWORM_LOG(LogLevels::LogDebug) << "End   read block bodies ... " << std::endl;
-
-            if (!should_stop() && !static_cast<int>(ret)) {
+            } else {
                 ret = dispatch_batch(/* renew = */ false);
                 if (ret != Status::Succeded) {
                     throw std::runtime_error("Unable to dispatch work");
                 }
             }
+
+            SILKWORM_LOG(LogLevels::LogDebug) << "End   read block bodies ... " << std::endl;
 
         } catch (const lmdb::exception& ex) {
             SILKWORM_LOG(LogLevels::LogError) << "Senders' recovery : Database error " << ex.what() << std::endl;
@@ -390,8 +388,8 @@ class RecoveryFarm final {
 
         // If everything ok from previous steps wait for all workers to complete
         // and bufferize results
+        wait_workers_completion();
         if (!static_cast<int>(ret)) {
-            wait_workers_completion();
             bufferize_workers_results();
             if (collector_.size() && !should_stop()) {
                 try {
@@ -401,8 +399,15 @@ class RecoveryFarm final {
                         << "ETL Load [2/2] : Loading data into " << target_table->get_name() << std::endl;
                     collector_.load(
                         target_table.get(), nullptr, MDB_APPEND,
-                        /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 1 : 20));
-                    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block_);
+                        /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 50 : 10));
+
+                    // Get the last processed block and update stage height
+                    MDB_val mdb_key{}, mdb_val{};
+                    lmdb::err_handler(target_table->get_last(&mdb_key, &mdb_val));
+                    ByteView key_view{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
+                    auto last_processed_block{boost::endian::load_big_u64(&key_view[0])};
+                    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
+
                 } catch (const lmdb::exception& ex) {
                     SILKWORM_LOG(LogLevels::LogError)
                         << "Senders' recovery : Database error " << ex.what() << std::endl;
@@ -414,7 +419,6 @@ class RecoveryFarm final {
             }
         }
 
-        SILKWORM_LOG(LogLevels::LogDebug) << "Stopping workers ... " << std::endl;
         stop_all_workers(/*wait = */ true);
         return ret;
     }
@@ -479,6 +483,7 @@ class RecoveryFarm final {
      * @brief Forces each worker to stop
      */
     void stop_all_workers(bool wait = true) {
+                SILKWORM_LOG(LogLevels::LogDebug) << "Stopping workers ... " << std::endl;
         for (const auto& worker : workers_) {
             worker->stop(wait);
         }
@@ -491,16 +496,15 @@ class RecoveryFarm final {
         if (workers_.size()) {
             uint64_t attempts{0};
             do {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                 auto it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
                     return w->get_status() == RecoveryWorker::Status::Working;
                 });
                 if (it == workers_.end()) {
                     break;
                 }
-                attempts++;
-                if (!(attempts % 10)) {
-                    SILKWORM_LOG(LogLevels::LogDebug) << "Waiting for workers to complete" << std::endl;
+                if (!(++attempts % 60)) {
+                    SILKWORM_LOG(LogLevels::LogInfo) << "Waiting for workers to complete" << std::endl;
                 }
             } while (true);
         }
@@ -510,7 +514,7 @@ class RecoveryFarm final {
      * @brief Collects results from worker's completed tasks
      */
     Status bufferize_workers_results() {
-        static std::string fmt_row{"%10u bks %12u txs"};
+        static std::string fmt_row{"%10u b %12u t"};
 
         Status ret{Status::Succeded};
         std::vector<std::pair<uint64_t, MDB_val>> worker_results{};
@@ -524,6 +528,10 @@ class RecoveryFarm final {
             // Pull results
             auto& item{batches_completed.front()};
             auto& worker{workers_.at(item.first)};
+
+            SILKWORM_LOG(LogLevels::LogDebug)
+                << "Collecting  package " << item.second << " worker " << item.first << std::endl;
+
             batches_completed.pop();
             l.unlock();
 
@@ -542,7 +550,6 @@ class RecoveryFarm final {
                     break;
                 } else {
                     for (auto& [block_num, mdb_val] : worker_results) {
-                        last_processed_block_ = block_num;
                         total_processed_blocks_++;
                         total_recovered_transactions_ += (mdb_val.mv_size / kAddressLength);
 
@@ -619,8 +626,12 @@ class RecoveryFarm final {
      */
     Status dispatch_batch(bool renew = true) {
         Status ret{Status::Succeded};
-        if (!batch_ || !(*batch_).size() || should_stop()) {
-            return ret;
+
+        if (should_stop()) {
+            init_batch();  // Empties the batch
+            return Status::WorkerAborted;
+        } else if (!batch_ || !(*batch_).size()) {
+            return Status::Succeded;
         }
 
         // First worker created
@@ -637,8 +648,8 @@ class RecoveryFarm final {
             });
 
             if (it != workers_.end()) {
-                SILKWORM_LOG(LogLevels::LogDebug)
-                    << "Dispatching package to worker #" << (std::distance(workers_.begin(), it)) << std::endl;
+                SILKWORM_LOG(LogLevels::LogDebug) << "Dispatching package " << batch_id_ << " worker "
+                                                  << (std::distance(workers_.begin(), it)) << std::endl;
                 (*it)->set_work(batch_id_++, std::move(batch_));  // Transfers ownership of batch to worker
                 if (renew) {
                     init_batch();
@@ -651,7 +662,6 @@ class RecoveryFarm final {
                     return (s >= 2);
                 });
                 if (it != workers_.end()) {
-                    SILKWORM_LOG(LogLevels::LogDebug) << "Bufferize results" << std::endl;
                     ret = bufferize_workers_results();
                     continue;
                 }
@@ -661,11 +671,13 @@ class RecoveryFarm final {
                 if (workers_.size() != max_workers_) {
                     if (!initialize_new_worker()) {
                         max_workers_ = workers_.size();  // Don't try to spawn new workers. Maybe we're OOM
+                    } else {
+                        continue;
                     }
                 }
 
                 // No other option than wait a while and retry
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
         };
 
@@ -811,7 +823,6 @@ class RecoveryFarm final {
     /* Stats */
     uint64_t total_recovered_transactions_{0};
     uint64_t total_processed_blocks_{0};
-    uint64_t last_processed_block_{0};
 };
 
 int main(int argc, char* argv[]) {
@@ -920,6 +931,8 @@ int main(int argc, char* argv[]) {
             if (!options.dry) {
                 SILKWORM_LOG(LogLevels::LogInfo) << "Committing" << std::endl;
                 lmdb::err_handler(lmdb_txn->commit());
+            } else {
+                SILKWORM_LOG(LogLevels::LogInfo) << "Not committing (--dry)" << std::endl;
             }
         }
 

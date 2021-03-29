@@ -38,8 +38,14 @@ void Buffer::put(Entry& entry) {
 }
 
 void Buffer::sort() {
-    std::sort(entries_, entries_ + length_,
-              [](const Entry& a, const Entry& b) { return a.key.compare(b.key) < 0; });
+    std::sort(entries_.begin(), entries_.end(),
+              [](const Entry& a, const Entry& b) { 
+                auto diff{a.key.compare(b.key)};
+                if (diff == 0) {
+                    return a.value.compare(b.value) < 0;
+                }
+                return diff < 0; 
+                });
 }
 
 size_t Buffer::size() const noexcept { return size_; }

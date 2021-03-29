@@ -19,6 +19,7 @@
 #include <boost/filesystem.hpp>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
@@ -93,10 +94,11 @@ int main(int argc, char* argv[]) {
             SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), chain_config->chain_id, block_number,
                                                               to_block, *batch_size, write_receipts, &current_progress,
                                                               &lmdb_error_code)};
-            if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
-                SILKWORM_LOG(LogError) << "Error in silkworm_execute_blocks: " << status
+            if (status != SilkwormStatusCode::kSilkwormSuccess &&
+                status != SilkwormStatusCode::kSilkwormBlockNotFound) {
+                SILKWORM_LOG(LogError) << "Error in silkworm_execute_blocks: " << magic_enum::enum_name(status)
                                        << ", LMDB: " << lmdb_error_code << std::endl;
-                return status;
+                return magic_enum::enum_integer(status);
             }
 
             block_number = current_progress;
@@ -105,7 +107,7 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(txn->commit());
             txn.reset();
 
-            if (status == kSilkwormBlockNotFound) {
+            if (status == SilkwormStatusCode::kSilkwormBlockNotFound) {
                 break;
             }
 

@@ -38,7 +38,7 @@ void Buffer::put(Entry& entry) {
 }
 
 void Buffer::sort() {
-    std::sort(entries_.begin(), entries_.end(),
+    std::sort(entries_, entries_ + length_,
               [](const Entry& a, const Entry& b) { 
                 auto diff{a.key.compare(b.key)};
                 if (diff == 0) {

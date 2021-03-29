@@ -19,20 +19,23 @@
 #include <random>
 
 static std::string random_string(size_t len) {
-    static const char alphanum[]{
+    static constexpr char kAlphaNum[]{
         "0123456789"
         "abcdefghijklmnopqrstuvwxyz"};
 
+    // don't count the null terminator
+    static constexpr size_t kNumberOfCharacters{sizeof(kAlphaNum) - 1};
+
     std::random_device rd;
     std::default_random_engine engine(rd());
-    std::uniform_int_distribution<size_t> uniform_dist(0, sizeof(alphanum) - 1);
+    std::uniform_int_distribution<size_t> uniform_dist(0, kNumberOfCharacters - 1);
 
     std::string s;
     s.reserve(len);
 
     for (size_t i{0}; i < len; ++i) {
         size_t random_number{uniform_dist(engine)};
-        s += alphanum[random_number];
+        s += kAlphaNum[random_number];
     }
 
     return s;

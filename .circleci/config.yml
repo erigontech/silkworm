@@ -15,6 +15,15 @@
 version: 2.1
 
 commands:
+  checkout_with_submodules:
+    steps:
+      - checkout
+      - run:
+          name: "Update submodules"
+          command: |
+            git submodule sync
+            git submodule update --init --recursive
+
   build:
     steps:
       - run:
@@ -61,7 +70,7 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
-      - checkout
+      - checkout_with_submodules
       - build
       - test
 
@@ -72,7 +81,7 @@ jobs:
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
     steps:
-      - checkout
+      - checkout_with_submodules
       - build
       - run:
           name: "Core unit tests"
@@ -114,7 +123,7 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
-      - checkout
+      - checkout_with_submodules
       - run:
           name: "Install WASI SDK"
           working_directory: ~/tmp1

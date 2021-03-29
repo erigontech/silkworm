@@ -63,22 +63,13 @@ commands:
           command: cmd/consensus
 
 jobs:
-  linux-gcc-7:
+  linux-gcc-9:
     environment:
       BUILD_TYPE: Debug
       CLANG_COVERAGE: OFF
     machine:
       image: ubuntu-2004:202010-01
     steps:
-      - run:
-          name: "Switch to GCC 7"
-          command: |
-            sudo apt update
-            sudo apt -y install gcc-7 g++-7
-            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 50
-            sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 50
-            gcc --version
-            g++ --version
       - checkout_with_submodules
       - build
       - test
@@ -175,6 +166,6 @@ workflows:
   version: 2
   silkworm:
     jobs:
-      - linux-gcc-7
+      - linux-gcc-9
       - linux-clang-coverage
       - linux-wasm-build

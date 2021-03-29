@@ -22,10 +22,10 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/common/magic_enum.hpp>
 
 SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uint64_t chain_id, uint64_t start_block,
                                                            uint64_t max_block, uint64_t batch_size, bool write_receipts,
@@ -114,9 +114,11 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
         SILKWORM_LOG(LogError) << "Missing or incorrect senders at block " << block_num << std::endl;
         return SilkwormStatusCode::kSilkwormMissingSenders;
     } catch (rlp::DecodingResult e) {
-        SILKWORM_LOG(LogError) << "Decoding error " << magic_enum::enum_name(e) << " at block " << block_num << std::endl;
+        SILKWORM_LOG(LogError) << "Decoding error " << magic_enum::enum_name(e) << " at block " << block_num
+                               << std::endl;
         return SilkwormStatusCode::kSilkwormDecodingError;
     } catch (...) {
+        SILKWORM_LOG(LogError) << "Unkown error at block " << block_num << std::endl;
         return SilkwormStatusCode::kSilkwormUnknownError;
     }
 }

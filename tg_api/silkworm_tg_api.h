@@ -40,7 +40,7 @@
 extern "C" {
 #endif
 
-enum class SilkwormStatusCode {
+enum SilkwormStatusCode {
     kSilkwormSuccess = 0,
     kSilkwormBlockNotFound = 1,
     kSilkwormUnknownChainId = 2,

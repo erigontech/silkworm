@@ -68,7 +68,7 @@ std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_promote(Operation
  *  This is way faster than using changeset because it uses less database reads.
  */
 void promote_clean_state(lmdb::Transaction* txn, std::string etl_path) {
-    SILKWORM_LOG(LogLevels::LogInfo) << "Hashing state" << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Hashing state" << std::endl;
     auto source_table{txn->open(db::table::kPlainState)};
     MDB_val mdb_key{db::to_mdb_val(Bytes(8, '\0'))};
     MDB_val mdb_data;
@@ -82,7 +82,7 @@ void promote_clean_state(lmdb::Transaction* txn, std::string etl_path) {
         Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
         Bytes mdb_value_as_bytes{static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size};
         if (static_cast<uint8_t>(mdb_key_as_bytes.at(0)) >= next_start_byte) {
-            SILKWORM_LOG(LogLevels::LogInfo) << "Progress: " << percent << "%" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Progress: " << percent << "%" << std::endl;
             percent += 10;
             next_start_byte += 25;
         }
@@ -106,11 +106,11 @@ void promote_clean_state(lmdb::Transaction* txn, std::string etl_path) {
         lmdb::err_handler(rc);
     }
 
-    SILKWORM_LOG(LogLevels::LogInfo) << "Started Account Loading" << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Started Account Loading" << std::endl;
     collector_account.load(txn->open(db::table::kHashedAccounts, MDB_CREATE).get(), nullptr, MDB_APPEND,
                            /* log_every_percent = */ 10);
 
-    SILKWORM_LOG(LogLevels::LogInfo) << "Started Storage Loading" << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Started Storage Loading" << std::endl;
     collector_storage.load(txn->open(db::table::kHashedStorage, MDB_CREATE).get(), nullptr, MDB_APPENDDUP,
                            /* log_every_percent = */ 10);
 }
@@ -122,7 +122,7 @@ void promote_clean_code(lmdb::Transaction* txn, std::string etl_path) {
     int rc{source_table->seek(&mdb_key, &mdb_data)};
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.c_str(), 512 * kMebi);
-    SILKWORM_LOG(LogLevels::LogInfo) << "Hashing code keys" << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Hashing code keys" << std::endl;
     while (!rc) { /* Loop as long as we have no errors*/
         Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
         Bytes mdb_value_as_bytes{static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size};
@@ -137,7 +137,7 @@ void promote_clean_code(lmdb::Transaction* txn, std::string etl_path) {
     if (rc != MDB_NOTFOUND) {
         lmdb::err_handler(rc);
     }
-    SILKWORM_LOG(LogLevels::LogInfo) << "Started Code Loading" << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Started Code Loading" << std::endl;
     collector.load(txn->open(db::table::kContractCode, MDB_CREATE).get(), nullptr, MDB_APPEND,
                    /* log_every_percent = */ 10);
 }
@@ -262,7 +262,7 @@ int main(int argc, char* argv[]) {
     // Check data.mdb exists in provided directory
     boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
     if (!boost::filesystem::exists(db_file)) {
-        SILKWORM_LOG(LogLevels::LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
     fs::path datadir(db_path);
@@ -280,20 +280,20 @@ int main(int argc, char* argv[]) {
             txn->open(db::table::kContractCode)->clear();
             db::stages::set_stage_progress(*txn, db::stages::kHashStateKey, 0);
             if (reset) {
-                SILKWORM_LOG(LogLevels::LogInfo) << "Reset Complete!" << std::endl;
+                SILKWORM_LOG(LogLevel::Info) << "Reset Complete!" << std::endl;
                 lmdb::err_handler(txn->commit());
                 return 0;
             }
         }
-        SILKWORM_LOG(LogLevels::LogInfo) << "Starting HashState" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
         auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
         if (last_processed_block_number != 0 || incrementally) {
-            SILKWORM_LOG(LogLevels::LogInfo) << "Starting Account Hashing" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Starting Account Hashing" << std::endl;
             promote(txn.get(), HashAccount);
-            SILKWORM_LOG(LogLevels::LogInfo) << "Starting Storage Hashing" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Starting Storage Hashing" << std::endl;
             promote(txn.get(), HashStorage);
-            SILKWORM_LOG(LogLevels::LogInfo) << "Hashing Code Keys" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Hashing Code Keys" << std::endl;
             promote(txn.get(), Code);
         } else {
             promote_clean_state(txn.get(), etl_path.string());
@@ -304,9 +304,9 @@ int main(int argc, char* argv[]) {
                                        db::stages::get_stage_progress(*txn, db::stages::kExecutionKey));
         lmdb::err_handler(txn->commit());
         txn.reset();
-        SILKWORM_LOG(LogLevels::LogInfo) << "All Done!" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevels::LogError) << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }
 }

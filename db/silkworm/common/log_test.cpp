@@ -48,23 +48,23 @@ TEST_CASE("Logging") {
     SILKWORM_LOG_STREAMS(stream1, stream2);
 
     // test true branch of macro
-    SILKWORM_LOG_VERBOSITY(LogLevels::LogTrace);
-    SILKWORM_LOG(LogLevels::LogCritical) << "LogCritical" << std::endl;
+    SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
+    SILKWORM_LOG(LogLevel::Critical) << "LogCritical" << std::endl;
     CHECK(test_log("CRIT ", kInfix, "LogCritical"));
-    SILKWORM_LOG(LogLevels::LogError) << "LogError" << std::endl;
+    SILKWORM_LOG(LogLevel::Error) << "LogError" << std::endl;
     CHECK(test_log("ERROR", kInfix, "LogError"));
-    SILKWORM_LOG(LogLevels::LogWarn) << "LogWarn" << std::endl;
+    SILKWORM_LOG(LogLevel::Warn) << "LogWarn" << std::endl;
     CHECK(test_log("WARN ", kInfix, "LogWarn"));
-    SILKWORM_LOG(LogLevels::LogInfo) << "LogInfo" << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "LogInfo" << std::endl;
     CHECK(test_log("INFO ", kInfix, "LogInfo"));
-    SILKWORM_LOG(LogLevels::LogDebug) << "LogDebug" << std::endl;
+    SILKWORM_LOG(LogLevel::Debug) << "LogDebug" << std::endl;
     CHECK(test_log("DEBUG", kInfix, "LogDebug"));
-    SILKWORM_LOG(LogLevels::LogTrace) << "LogTrace" << std::endl;
+    SILKWORM_LOG(LogLevel::Trace) << "LogTrace" << std::endl;
     CHECK(test_log("TRACE", kInfix, "LogTrace"));
 
     // test false branch of macro
-    SILKWORM_LOG_VERBOSITY(LogLevels::LogDebug);
-    SILKWORM_LOG(LogLevels::LogTrace) << "LogTrace" << std::endl;
+    SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
+    SILKWORM_LOG(LogLevel::Trace) << "LogTrace" << std::endl;
     CHECK(test_log("", "", ""));
 }
 

@@ -62,11 +62,11 @@ void check(lmdb::Transaction* txn, Operation operation) {
             auto key{full_view(hash.bytes)};
             auto actual_value{target_table->get(key)};
             if (actual_value == std::nullopt) {
-                SILKWORM_LOG(LogLevels::LogError) << "key: " << to_hex(key) << ", does not exist." << std::endl;
+                SILKWORM_LOG(LogLevel::Error) << "key: " << to_hex(key) << ", does not exist." << std::endl;
                 return;
             }
             if (actual_value->compare(expected_value) != 0) {
-                SILKWORM_LOG(LogLevels::LogError)
+                SILKWORM_LOG(LogLevel::Error)
                     << "Expected: " << to_hex(expected_value) << ", Actual: << " << to_hex(*actual_value) << std::endl;
                 return;
             }
@@ -86,7 +86,7 @@ void check(lmdb::Transaction* txn, Operation operation) {
             MDB_val mdb_data_hashed{db::to_mdb_val(expected_value)};
             rc = target_table->seek_exact(&mdb_key_hashed, &mdb_data_hashed);
             if (rc != 0) {
-                SILKWORM_LOG(LogLevels::LogError) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
+                SILKWORM_LOG(LogLevel::Error) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
                 return;
             }
             rc = source_table->get_next(&mdb_key, &mdb_data);
@@ -101,13 +101,13 @@ void check(lmdb::Transaction* txn, Operation operation) {
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
             auto actual_value{target_table->get(key)};
             if (actual_value == std::nullopt) {
-                SILKWORM_LOG(LogLevels::LogError) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
+                SILKWORM_LOG(LogLevel::Error) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
                 rc = source_table->get_next(&mdb_key, &mdb_data);
                 continue;
             }
 
             if (actual_value->compare(expected_value) != 0) {
-                SILKWORM_LOG(LogLevels::LogError)
+                SILKWORM_LOG(LogLevel::Error)
                     << "Expected: " << to_hex(expected_value) << ", Actual: << " << to_hex(*actual_value) << std::endl;
                 return;
             }
@@ -127,12 +127,12 @@ int main(int argc, char* argv[]) {
     app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
-    SILKWORM_LOG(LogLevels::LogInfo) << "Checking HashState" << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Checking HashState" << std::endl;
 
     // Check data.mdb exists in provided directory
     boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
     if (!boost::filesystem::exists(db_file)) {
-        SILKWORM_LOG(LogLevels::LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
     fs::path datadir(db_path);
@@ -144,15 +144,15 @@ int main(int argc, char* argv[]) {
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
     try {
-        SILKWORM_LOG(LogLevels::LogInfo) << "Checking Accounts" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Checking Accounts" << std::endl;
         check(txn.get(), HashAccount);
-        SILKWORM_LOG(LogLevels::LogInfo) << "Checking Storage" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Checking Storage" << std::endl;
         check(txn.get(), HashStorage);
-        SILKWORM_LOG(LogLevels::LogInfo) << "Checking Code Keys" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Checking Code Keys" << std::endl;
         check(txn.get(), Code);
-        SILKWORM_LOG(LogLevels::LogInfo) << "All Done!" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevels::LogError) << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }
 }

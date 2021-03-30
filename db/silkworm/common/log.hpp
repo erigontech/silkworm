@@ -36,7 +36,7 @@ namespace silkworm {
 #define SILKWORM_LOG_VERBOSITY(level_) (silkworm::log_verbosity_ = (level_))
 
 // available verbosity levels
-enum class LogLevels { LogTrace, LogDebug, LogInfo, LogWarn, LogError, LogCritical, LogNone };
+enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, None };
 
 // change the logging output streams - default is (cerr, null_stream())
 //
@@ -49,20 +49,20 @@ std::ostream& null_stream();
 // Below are for access via macros ONLY.
 // Placing them in detail namespace prevents use of macros in nested namespaces of silkworm :(
 //
-extern LogLevels log_verbosity_;
+extern LogLevel log_verbosity_;
 void log_set_streams_(std::ostream& o1, std::ostream& o2);
 class log_ {
   public:
-    log_(LogLevels level_) : level_(level_) { log_mtx_.lock(); }
+    log_(LogLevel level_) : level_(level_) { log_mtx_.lock(); }
     ~log_() { log_mtx_.unlock(); }
-    std::ostream& header_(LogLevels);
+    std::ostream& header_(LogLevel);
     template <class T>
     std::ostream& operator<<(const T& message) {
         return header_(level_) << message;
     }
 
   private:
-    LogLevels level_;
+    LogLevel level_;
     static std::mutex log_mtx_;
 };
 

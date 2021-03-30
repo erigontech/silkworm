@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
     if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogLevels::LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
     fs::path datadir(db_path);
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
         auto header_key{db::block_key(expected_block_number)};
         MDB_val mdb_key{db::to_mdb_val(header_key)}, mdb_data{};
 
-        SILKWORM_LOG(LogLevels::LogInfo) << "Started BlockHashes Extraction" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Started BlockHashes Extraction" << std::endl;
         int rc{canonical_hashes_table->seek_exact(&mdb_key, &mdb_data)};  // Sets cursor to matching header
         while (!rc) {                                                     /* Loop as long as we have no errors*/
 
@@ -102,11 +102,11 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(rc);
         }
 
-        SILKWORM_LOG(LogLevels::LogInfo) << "Entries Collected << " << blocks_processed_count << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Entries Collected << " << blocks_processed_count << std::endl;
 
         // Proceed only if we've done something
         if (blocks_processed_count) {
-            SILKWORM_LOG(LogLevels::LogInfo) << "Started BlockHashes Loading" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Started BlockHashes Loading" << std::endl;
 
             /*
              * If we're on first sync then we shouldn't have any records in target
@@ -130,12 +130,12 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(txn->commit());
 
         } else {
-            SILKWORM_LOG(LogLevels::LogInfo) << "Nothing to process" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
         }
 
-        SILKWORM_LOG(LogLevels::LogInfo) << "All Done" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevels::LogError) << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }
     return 0;

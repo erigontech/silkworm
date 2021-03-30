@@ -26,12 +26,6 @@
 
 namespace silkworm::db {
 
-static void check_rlp_err(rlp::DecodingResult err) {
-    if (err != rlp::DecodingResult::kOk) {
-        throw err;
-    }
-}
-
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
                                        const uint8_t (&hash)[kHashLength]) {
     auto table{txn.open(table::kHeaders)};
@@ -41,7 +35,7 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
     }
 
     BlockHeader header;
-    check_rlp_err(rlp::decode(*rlp, header));
+    rlp::err_handler(rlp::decode(*rlp, header));
     return header;
 }
 
@@ -54,7 +48,7 @@ std::optional<intx::uint256> read_total_difficulty(lmdb::Transaction& txn, uint6
     }
 
     intx::uint256 td{0};
-    check_rlp_err(rlp::decode(*rlp, td));
+    rlp::err_handler(rlp::decode(*rlp, td));
     return td;
 }
 
@@ -87,7 +81,7 @@ std::vector<Transaction> read_transactions(lmdb::Table& txn_table, uint64_t base
         ByteView data{from_mdb_val(data_mdb)};
 
         Transaction eth_txn;
-        check_rlp_err(rlp::decode(data, eth_txn));
+        rlp::err_handler(rlp::decode(data, eth_txn));
         v.push_back(eth_txn);
     }
 
@@ -112,7 +106,7 @@ std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_n
         return std::nullopt;
     }
 
-    check_rlp_err(rlp::decode(*header_rlp, bh.block.header));
+    rlp::err_handler(rlp::decode(*header_rlp, bh.block.header));
 
     std::optional<BlockBody> body{read_body(txn, block_number, bh.hash.bytes, read_senders)};
     if (!body) {
@@ -244,7 +238,7 @@ std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address&
     }
 
     auto [acc, err]{decode_account_from_storage(*encoded)};
-    check_rlp_err(err);
+    rlp::err_handler(err);
 
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash

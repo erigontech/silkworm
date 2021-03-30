@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
     if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
     fs::path datadir(db_path);
@@ -86,7 +86,8 @@ int main(int argc, char *argv[]) {
         MDB_val mdb_key{db::to_mdb_val(start)};
         MDB_val mdb_data;
 
-        SILKWORM_LOG(LogInfo) << "Started " << (storage ? "Storage" : "Account") << " Index Extraction" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Extraction"
+                                     << std::endl;
 
         size_t allocated_space{0};
         uint64_t block_number{0};
@@ -115,7 +116,7 @@ int main(int argc, char *argv[]) {
                     etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
                     collector.collect(entry);
                 }
-                SILKWORM_LOG(LogInfo) << "Current Block: " << block_number << std::endl;
+                SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
                 bitmaps.clear();
                 allocated_space = 0;
             }
@@ -134,10 +135,10 @@ int main(int argc, char *argv[]) {
         }
         bitmaps.clear();
 
-        SILKWORM_LOG(LogInfo) << "Latest Block: " << block_number << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
         // Proceed only if we've done something
         if (collector.size()) {
-            SILKWORM_LOG(LogInfo) << "Started Loading" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Started Loading" << std::endl;
 
             auto target_table{txn->open(index_config, MDB_CREATE)};
             size_t target_table_rcount{0};
@@ -177,12 +178,12 @@ int main(int argc, char *argv[]) {
             lmdb::err_handler(txn->commit());
 
         } else {
-            SILKWORM_LOG(LogInfo) << "Nothing to process" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
         }
 
-        SILKWORM_LOG(LogInfo) << "All Done" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
     } catch (const std::exception &ex) {
-        SILKWORM_LOG(LogError) << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }
     return 0;

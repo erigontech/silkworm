@@ -14,10 +14,10 @@
    limitations under the License.
 */
 
+#include <filesystem>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
-#include <boost/filesystem.hpp>
 
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>

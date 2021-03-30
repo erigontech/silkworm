@@ -74,7 +74,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
     if (!file_providers_.size()) {
         buffer_.sort();
         if (load_func) {
-            for (const auto& etl_entry : buffer_.get_entries()) {
+            for (const auto& etl_entry : buffer_.entries()) {
                 load_func(etl_entry, table, db_flags);
 
                 if (!--dummy_counter) {
@@ -85,7 +85,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
                 }
             }
         } else {
-            for (const auto& etl_entry : buffer_.get_entries()) {
+            for (const auto& etl_entry : buffer_.entries()) {
                 table->put(etl_entry.key, etl_entry.value, db_flags);
                 if (!--dummy_counter) {
                     actual_progress += progress_step;

@@ -17,7 +17,7 @@
 #include "bitmap.hpp"
 
 #include <silkworm/common/util.hpp>
-
+#include <iostream>
 namespace silkworm::db::bitmap {
 
 roaring::Roaring64Map read(ByteView serialized) {

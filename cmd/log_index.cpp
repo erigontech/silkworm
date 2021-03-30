@@ -224,9 +224,9 @@ int main(int argc, char *argv[]) {
         unsigned int db_flags{block_number ? 0u : MDB_APPEND};
 
         // Eventually load collected items WITH transform (may throw)
-        topic_collector.load(txn->open(db::table::kLogTopicIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 10);
+        topic_collector.load(txn->open(db::table::kLogTopicIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 1);
         SILKWORM_LOG(LogInfo) << "Started Address Loading" << std::endl;
-        addresses_collector.load(txn->open(db::table::kLogAddressIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 10);
+        addresses_collector.load(txn->open(db::table::kLogAddressIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 1);
 
         // Update progress height with last processed block
         db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, block_number);

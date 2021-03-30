@@ -139,14 +139,11 @@ int main(int argc, char *argv[]) {
         if (collector.size()) {
             SILKWORM_LOG(LogInfo) << "Started Loading" << std::endl;
 
-            auto target_table{txn->open(index_config, MDB_CREATE)};
-            size_t target_table_rcount{0};
-            lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
-            unsigned int db_flags{target_table_rcount ? 0u : MDB_APPEND};
+            unsigned int db_flags{last_processed_block_number ? 0u : MDB_APPEND};
 
             // Eventually load collected items WITH transform (may throw)
             collector.load(
-                target_table.get(),
+                txn->open(index_config, MDB_CREATE).get(),
                 [](etl::Entry entry, lmdb::Table *history_index_table, unsigned int db_flags) {
                     auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
                     Bytes last_chunk_index(entry.key.size() + 8, '\0');

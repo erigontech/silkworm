@@ -113,9 +113,8 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
     } catch (const db::MissingSenders&) {
         SILKWORM_LOG(LogLevel::Error) << "Missing or incorrect senders at block " << block_num << std::endl;
         return SilkwormStatusCode::kSilkwormMissingSenders;
-    } catch (rlp::DecodingResult e) {
-        SILKWORM_LOG(LogLevel::Error)
-            << "Decoding error " << magic_enum::enum_name(e) << " at block " << block_num << std::endl;
+    } catch (const rlp::DecodingError& ex) {
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << " at block " << block_num << std::endl;
         return SilkwormStatusCode::kSilkwormDecodingError;
     } catch (...) {
         SILKWORM_LOG(LogLevel::Error) << "Unkown error at block " << block_num << std::endl;

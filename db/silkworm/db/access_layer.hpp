@@ -32,14 +32,14 @@
 
 namespace silkworm::rlp {
 
-class decode_error : public std::exception {
+class DecodingError : public std::exception {
   public:
-    explicit decode_error(DecodingResult err)
+    explicit DecodingError(DecodingResult err)
         : err_{magic_enum::enum_integer<DecodingResult>(err)},
           message_{"Decoding error : " + std::string(magic_enum::enum_name<DecodingResult>(err))} {};
-    explicit decode_error(DecodingResult err, const std::string& message)
+    explicit DecodingError(DecodingResult err, const std::string& message)
         : err_{magic_enum::enum_integer<DecodingResult>(err)}, message_{message} {};
-    virtual ~decode_error() noexcept {};
+    virtual ~DecodingError() noexcept {};
     const char* what() const noexcept override { return message_.c_str(); }
     int err() const noexcept { return err_; }
 
@@ -50,7 +50,7 @@ class decode_error : public std::exception {
 
 inline void err_handler(DecodingResult err) {
     if (err != DecodingResult::kOk) {
-        throw decode_error(err);
+        throw DecodingError(err);
     }
 }
 

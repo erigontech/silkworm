@@ -62,7 +62,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
     const auto overall_size{size()};  // Amount of work
 
     if (!overall_size) {
-        SILKWORM_LOG(LogInfo) << "ETL Load called without data to process" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "ETL Load called without data to process" << std::endl;
         return;
     }
 
@@ -80,8 +80,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
                 if (!--dummy_counter) {
                     actual_progress += progress_step;
                     dummy_counter = progress_increment_count;
-                    SILKWORM_LOG(LogInfo) << "ETL Load Progress "
-                                          << " << " << actual_progress << "%" << std::endl;
+                    SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
+                                                 << " << " << actual_progress << "%" << std::endl;
                 }
             }
         } else {
@@ -90,8 +90,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
                 if (!--dummy_counter) {
                     actual_progress += progress_step;
                     dummy_counter = progress_increment_count;
-                    SILKWORM_LOG(LogInfo) << "ETL Load Progress "
-                                          << " << " << actual_progress << "%" << std::endl;
+                    SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
+                                                 << " << " << actual_progress << "%" << std::endl;
                 }
             }
         }
@@ -138,8 +138,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         if (!--dummy_counter) {
             actual_progress += progress_step;
             dummy_counter = progress_increment_count;
-            SILKWORM_LOG(LogInfo) << "ETL Load Progress "
-                                  << " << " << actual_progress << "%" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
+                                         << " << " << actual_progress << "%" << std::endl;
         }
 
         // From the provider which has served the current key

@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
     if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
     fs::path datadir(db_path);
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
     Bytes buffer{};  // To extract compacted data
 
     try {
-        SILKWORM_LOG(LogInfo) << "Checking Transaction Lookups..." << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Checking Transaction Lookups..." << std::endl;
 
         MDB_val mdb_key, mdb_data;
         int rc{bodies_table->get_first(&mdb_key, &mdb_data)};
@@ -109,8 +109,9 @@ int main(int argc, char* argv[]) {
 
                     if (!lookup_data.has_value()) {
                         /* We did not find the transaction */
-                        SILKWORM_LOG(LogError) << "Block " << block_number << " transaction " << i << " not found in "
-                                               << db::table::kTxLookup.name << " table" << std::endl;
+                        SILKWORM_LOG(LogLevel::Error)
+                            << "Block " << block_number << " transaction " << i << " not found in "
+                            << db::table::kTxLookup.name << " table" << std::endl;
                         continue;
                     }
 
@@ -120,20 +121,20 @@ int main(int argc, char* argv[]) {
 
                     if (actual_block_number != expected_block_number) {
                         std::cout << lookup_data->size() << "   " << to_hex(*lookup_data) << std::endl;
-                        SILKWORM_LOG(LogError)
+                        SILKWORM_LOG(LogLevel::Error)
                             << "Mismatch: Expected block number for tx with hash: " << to_hex(hash_view) << " is "
                             << expected_block_number << ", but got: " << actual_block_number << std::endl;
                     }
                 }
 
                 if (i != body.txn_count) {
-                    SILKWORM_LOG(LogError) << "Block " << block_number << " claims " << body.txn_count
-                                           << " transactions but only " << i << " read" << std::endl;
+                    SILKWORM_LOG(LogLevel::Error) << "Block " << block_number << " claims " << body.txn_count
+                                                      << " transactions but only " << i << " read" << std::endl;
                 }
             }
 
             if (expected_block_number % 100000 == 0) {
-                SILKWORM_LOG(LogInfo) << "Scanned blocks " << expected_block_number << std::endl;
+                SILKWORM_LOG(LogLevel::Info) << "Scanned blocks " << expected_block_number << std::endl;
             }
 
             if (!should_stop_) {
@@ -148,9 +149,9 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(rc);
         }
 
-        SILKWORM_LOG(LogInfo) << "Check " << (should_stop_ ? "aborted" : "completed") << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Check " << (should_stop_ ? "aborted" : "completed") << std::endl;
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogError) << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }
     return 0;

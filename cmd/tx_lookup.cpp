@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
     if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
     fs::path datadir(db_path);
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
         boost::endian::store_big_u64(&start[0], last_processed_block_number + 1);
         MDB_val mdb_key{db::to_mdb_val(start)};
         MDB_val mdb_data;
-        SILKWORM_LOG(LogInfo) << "Started Tx Lookup Extraction" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Extraction" << std::endl;
         int rc{bodies_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
         while (!rc) {                                     /* Loop as long as we have no errors*/
             auto body_rlp{db::from_mdb_val(mdb_data)};
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
             }
             // Save last processed block_number and expect next in sequence
             if (block_number % 100000 == 0) {
-                SILKWORM_LOG(LogInfo) << "Tx Lookup Extraction Progress << " << block_number << std::endl;
+                SILKWORM_LOG(LogLevel::Info) << "Tx Lookup Extraction Progress << " << block_number << std::endl;
             }
             rc = bodies_table->get_next(&mdb_key, &mdb_data);
         }
@@ -117,11 +117,11 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(rc);
         }
 
-        SILKWORM_LOG(LogInfo) << "Entries Collected << " << collector.size() << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Entries Collected << " << collector.size() << std::endl;
 
         // Proceed only if we've done something
         if (collector.size()) {
-            SILKWORM_LOG(LogInfo) << "Started tx Hashes Loading" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Started tx Hashes Loading" << std::endl;
 
             /*
              * If we're on first sync then we shouldn't have any records in target
@@ -145,12 +145,12 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(txn->commit());
 
         } else {
-            SILKWORM_LOG(LogInfo) << "Nothing to process" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
         }
 
-        SILKWORM_LOG(LogInfo) << "All Done" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogError) << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }
     return 0;

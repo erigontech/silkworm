@@ -20,6 +20,7 @@
 #include <boost/endian/conversion.hpp>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
@@ -52,24 +53,24 @@ int main(int argc, char* argv[]) {
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
     if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
 
     // Check provided map size is valid
     auto map_size{parse_size(map_size_str)};
     if (!map_size.has_value()) {
-        SILKWORM_LOG(LogError) << "Invalid --lmdb.mapSize value provided : " << map_size_str << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Invalid --lmdb.mapSize value provided : " << map_size_str << std::endl;
         return -2;
     }
 
     auto batch_size{parse_size(batch_size_str)};
     if (!batch_size.has_value()) {
-        SILKWORM_LOG(LogError) << "Invalid --batch value provided : " << batch_size_str << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Invalid --batch value provided : " << batch_size_str << std::endl;
         return -3;
     }
 
-    SILKWORM_LOG(LogInfo) << "Starting block execution. DB: " << db_file << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Starting block execution. DB: " << db_file << std::endl;
 
     try {
         lmdb::DatabaseConfig db_config{db_path};
@@ -94,10 +95,11 @@ int main(int argc, char* argv[]) {
             SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), chain_config->chain_id, block_number,
                                                               to_block, *batch_size, write_receipts, &current_progress,
                                                               &lmdb_error_code)};
-            if (status != kSilkwormSuccess && status != kSilkwormBlockNotFound) {
-                SILKWORM_LOG(LogError) << "Error in silkworm_execute_blocks: " << status
-                                       << ", LMDB: " << lmdb_error_code << std::endl;
-                return status;
+            if (status != SilkwormStatusCode::kSilkwormSuccess &&
+                status != SilkwormStatusCode::kSilkwormBlockNotFound) {
+                SILKWORM_LOG(LogLevel::Error) << "Error in silkworm_execute_blocks: " << magic_enum::enum_name(status)
+                                              << ", LMDB: " << lmdb_error_code << std::endl;
+                return magic_enum::enum_integer(status);
             }
 
             block_number = current_progress;
@@ -106,22 +108,23 @@ int main(int argc, char* argv[]) {
             lmdb::err_handler(txn->commit());
             txn.reset();
 
-            if (status == kSilkwormBlockNotFound) {
+            if (status == SilkwormStatusCode::kSilkwormBlockNotFound) {
                 break;
             }
 
-            SILKWORM_LOG(LogInfo) << "Blocks <= " << current_progress << " committed" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "Blocks <= " << current_progress << " committed" << std::endl;
             txn = env->begin_rw_transaction();
         }
 
         if (current_progress > previous_progress) {
-            SILKWORM_LOG(LogInfo) << "All blocks <= " << current_progress << " executed and committed" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "All blocks <= " << current_progress << " executed and committed"
+                                         << std::endl;
         } else {
-            SILKWORM_LOG(LogWarn) << "Nothing to execute" << std::endl;
+            SILKWORM_LOG(LogLevel::Warn) << "Nothing to execute" << std::endl;
         }
 
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogError) << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }
 

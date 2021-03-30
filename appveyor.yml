@@ -29,6 +29,8 @@ cache:
 
 before_build:
   - cd "%APPVEYOR_BUILD_FOLDER%"
+  - git submodule sync
+  - git submodule update --init --recursive
   - SET INCLUDE=C:\Tools\vcpkg\installed\x64-windows\include;%INCLUDE%
   - SET PATH=C:\Tools\vcpkg\installed\x64-windows\bin;%PATH%
   - cmake -H. -Bbuild -Wno-dev

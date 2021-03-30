@@ -15,6 +15,15 @@
 version: 2.1
 
 commands:
+  checkout_with_submodules:
+    steps:
+      - checkout
+      - run:
+          name: "Update submodules"
+          command: |
+            git submodule sync
+            git submodule update --init --recursive
+
   build:
     steps:
       - run:
@@ -54,23 +63,14 @@ commands:
           command: cmd/consensus
 
 jobs:
-  linux-gcc-7:
+  linux-gcc-9:
     environment:
-      BUILD_TYPE: Debug
+      BUILD_TYPE: Release
       CLANG_COVERAGE: OFF
     machine:
       image: ubuntu-2004:202010-01
     steps:
-      - run:
-          name: "Switch to GCC 7"
-          command: |
-            sudo apt update
-            sudo apt -y install gcc-7 g++-7
-            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 50
-            sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 50
-            gcc --version
-            g++ --version
-      - checkout
+      - checkout_with_submodules
       - build
       - test
 
@@ -81,7 +81,7 @@ jobs:
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
     steps:
-      - checkout
+      - checkout_with_submodules
       - build
       - run:
           name: "Core unit tests"
@@ -98,6 +98,7 @@ jobs:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
+          no_output_timeout: 15m
           command: |
             cmd/consensus
             mv default.profraw consensus.profraw
@@ -123,7 +124,7 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
     steps:
-      - checkout
+      - checkout_with_submodules
       - run:
           name: "Install WASI SDK"
           working_directory: ~/tmp1
@@ -166,6 +167,6 @@ workflows:
   version: 2
   silkworm:
     jobs:
-      - linux-gcc-7
+      - linux-gcc-9
       - linux-clang-coverage
       - linux-wasm-build

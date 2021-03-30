@@ -158,9 +158,7 @@ uint64_t extract_incarnation(ByteView encoded) {
         // Incarnation has been found.
         uint8_t len = encoded[pos++];
         auto [incarnation, err]{rlp::read_uint64(encoded.substr(pos, len))};
-        if (err != rlp::DecodingResult::kOk) {
-            throw std::runtime_error("Decoding error " + std::string(magic_enum::enum_name(err)));
-        }
+        rlp::err_handler(err);
         return incarnation;
     }
     return 0;

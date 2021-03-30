@@ -98,9 +98,7 @@ roaring::Roaring cut_left(roaring::Roaring &bm, uint64_t size_limit) {
     roaring::Roaring res(roaring::api::roaring_bitmap_from_range(from, from + i, 1));
     res &= bm;
     res.runOptimize();
-    for (uint64_t k = from; k <= from + i; k++) {
-        bm.remove(k);
-    }
+    roaring::api::roaring_bitmap_remove_range_closed(&bm.roaring, from, from + i);
     return res;
 }
 

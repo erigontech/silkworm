@@ -221,12 +221,12 @@ int main(int argc, char *argv[]) {
         // Proceed only if we've done something
         SILKWORM_LOG(LogInfo) << "Started Topics Loading" << std::endl;
         // if stage has never been touched then appending is safe
-        unsigned int db_flags{block_number ? 0u : MDB_APPEND};
+        unsigned int db_flags{last_processed_block_number ? 0u : MDB_APPEND};
 
         // Eventually load collected items WITH transform (may throw)
-        topic_collector.load(txn->open(db::table::kLogTopicIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 1);
+        topic_collector.load(txn->open(db::table::kLogTopicIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 10);
         SILKWORM_LOG(LogInfo) << "Started Address Loading" << std::endl;
-        addresses_collector.load(txn->open(db::table::kLogAddressIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 1);
+        addresses_collector.load(txn->open(db::table::kLogAddressIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 10);
 
         // Update progress height with last processed block
         db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, block_number);

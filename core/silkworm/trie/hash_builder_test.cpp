@@ -27,6 +27,11 @@
 namespace silkworm::trie {
 
 TEST_CASE("HashBuilder") {
+    // Empty trie
+    HashBuilder empty_hb;
+    CHECK(to_hex(empty_hb.root_hash()) == to_hex(full_view(kEmptyRoot)));
+
+    // ------------------------------------------------------------------------------------------
     // The first entry
     Bytes key0{*from_hex("646f")};      // "do"
     Bytes val0{*from_hex("76657262")};  // "verb"
@@ -35,7 +40,8 @@ TEST_CASE("HashBuilder") {
     Bytes rlp0{*from_hex("c98320") + key0 + *from_hex("84") + val0};
     ethash::hash256 hash0{keccak256(rlp0)};
 
-    HashBuilder hb0{key0, val0};
+    HashBuilder hb0;
+    hb0.add(key0, val0);
     CHECK(to_hex(hb0.root_hash()) == to_hex(full_view(hash0.bytes)));
 
     // ------------------------------------------------------------------------------------------
@@ -62,7 +68,8 @@ TEST_CASE("HashBuilder") {
     std::copy_n(hash1_2.bytes, kHashLength, std::back_inserter(rlp1));
     ethash::hash256 hash1{keccak256(rlp1)};
 
-    HashBuilder hb1{key0, val0};
+    HashBuilder hb1;
+    hb1.add(key0, val0);
     hb1.add(key1, val1);
     CHECK(to_hex(hb1.root_hash()) == to_hex(full_view(hash1.bytes)));
 }

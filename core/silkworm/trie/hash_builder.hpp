@@ -34,8 +34,7 @@ class HashBuilder {
     HashBuilder(const HashBuilder&) = delete;
     HashBuilder& operator=(const HashBuilder&) = delete;
 
-    // Must be constructed with the very first (lexicographically) key/value pair.
-    HashBuilder(ByteView key0, ByteView value0);
+    HashBuilder() = default;
 
     // Entries must be added in the strictly increasing lexicographic order (by key).
     // Consequently, duplicate keys are not allowed.

@@ -35,13 +35,14 @@ TEST_CASE("Layout of account trie") {
     auto txn{env->begin_rw_transaction()};
     db::table::create_all(*txn);
 
+    HashBuilder hb;
+
     auto hashed_accounts{txn->open(db::table::kHashedAccounts)};
 
     auto hash1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
     Account a1{0, 3 * kEther};
     hashed_accounts->put(full_view(hash1), a1.encode_for_storage());
-
-    HashBuilder hb{full_view(hash1), a1.rlp(/*storage_root=*/kEmptyRoot)};
+    hb.add(full_view(hash1), a1.rlp(/*storage_root=*/kEmptyRoot));
 
     auto hash2{0xB040000000000000000000000000000000000000000000000000000000000000_bytes32};
     Account a2{0, 1 * kEther};

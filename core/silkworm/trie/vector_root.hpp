@@ -38,21 +38,13 @@ inline size_t adjust_index_for_rlp(size_t i, size_t len) {
 // See Section 4.3.2. "Holistic Validity" of the Yellow Paper.
 template <class Value, typename Encoder>
 evmc::bytes32 root_hash(const std::vector<Value>& v, Encoder value_encoder) {
-    if (v.empty()) {
-        return kEmptyRoot;
-    }
+    Bytes index_rlp;
+    Bytes value_rlp;
 
-    Bytes index_rlp{};
-    Bytes value_rlp{};
+    HashBuilder hb;
 
-    size_t index{adjust_index_for_rlp(0, v.size())};
-    rlp::encode(index_rlp, index);
-    value_encoder(value_rlp, v[index]);
-
-    HashBuilder hb{index_rlp, value_rlp};
-
-    for (size_t j{1}; j < v.size(); ++j) {
-        index = adjust_index_for_rlp(j, v.size());
+    for (size_t j{0}; j < v.size(); ++j) {
+        size_t index{adjust_index_for_rlp(j, v.size())};
         index_rlp.clear();
         rlp::encode(index_rlp, index);
         value_rlp.clear();

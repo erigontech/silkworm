@@ -94,17 +94,21 @@ static ByteView node_ref(ByteView rlp) {
     return {hash.bytes, kHashLength};
 }
 
-HashBuilder::HashBuilder(ByteView key0, ByteView value0) : key_{unpack_nibbles(key0)}, value_{value0} {}
-
 void HashBuilder::add(ByteView packed, ByteView value) {
     Bytes key{unpack_nibbles(packed)};
     assert(key > key_);
-    gen_struct_step(key_, key, value_);
+    if (!key_.empty()) {
+        gen_struct_step(key_, key, value_);
+    }
     key_ = key;
     value_ = value;
 }
 
 evmc::bytes32 HashBuilder::root_hash() {
+    if (key_.empty()) {
+        return kEmptyRoot;
+    }
+
     gen_struct_step(key_, {}, value_);
     key_.clear();
     value_.clear();

@@ -64,7 +64,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
     const auto overall_size{size()};  // Amount of work
 
     if (!overall_size) {
-        SILKWORM_LOG(LogInfo) << "ETL Load called without data to process" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "ETL Load called without data to process" << std::endl;
         return;
     }
 
@@ -82,8 +82,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
                 if (!--dummy_counter) {
                     actual_progress += progress_step;
                     dummy_counter = progress_increment_count;
-                    SILKWORM_LOG(LogInfo) << "ETL Load Progress "
-                                          << " << " << actual_progress << "%" << std::endl;
+                    SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
+                                                 << " << " << actual_progress << "%" << std::endl;
                 }
             }
         } else {
@@ -92,8 +92,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
                 if (!--dummy_counter) {
                     actual_progress += progress_step;
                     dummy_counter = progress_increment_count;
-                    SILKWORM_LOG(LogInfo) << "ETL Load Progress "
-                                          << " << " << actual_progress << "%" << std::endl;
+                    SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
+                                                 << " << " << actual_progress << "%" << std::endl;
                 }
             }
         }
@@ -106,11 +106,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
 
     // Define a priority queue based on smallest available key
     auto key_comparer = [](std::pair<Entry, int> left, std::pair<Entry, int> right) {
-        auto diff{left.first.key.compare(right.first.key)};
-        if (diff == 0) {
-            return left.first.value.compare(right.first.value) > 0;
-        }
-        return diff > 0;
+        return right.first < left.first;
     };
     std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>, decltype(key_comparer)> queue(
         key_comparer);
@@ -140,8 +136,8 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
         if (!--dummy_counter) {
             actual_progress += progress_step;
             dummy_counter = progress_increment_count;
-            SILKWORM_LOG(LogInfo) << "ETL Load Progress "
-                                  << " << " << actual_progress << "%" << std::endl;
+            SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
+                                         << " << " << actual_progress << "%" << std::endl;
         }
 
         // From the provider which has served the current key

@@ -27,12 +27,12 @@
 
 namespace silkworm::etl {
 
-constexpr size_t kInitialBufferSize = 32768;
+constexpr size_t kInitialBufferCapacity = 32768;
 
 // In ETL, a buffer must be used stores entries, sort them and write them to file
 class Buffer {
   public:
-    Buffer(size_t optimal_size) : optimal_size_(optimal_size), buffer_(kInitialBufferSize) {}
+    Buffer(size_t optimal_size) : optimal_size_(optimal_size), buffer_(kInitialBufferCapacity) {}
 
     void put(const Entry& entry);     // Add a new entry to the buffer
     void clear() noexcept;            // Set the buffer to contain 0 entries

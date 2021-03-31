@@ -130,8 +130,8 @@ void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, evmc::byte
     DbTrieLoader loader{txn, account_collector};
     evmc::bytes32 root{loader.calculate_root()};
     if (expected_root && root != *expected_root) {
-        SILKWORM_LOG(LogError) << "Wrong trie root: " << to_hex(root) << ", expected: " << to_hex(*expected_root)
-                               << "\n";
+        SILKWORM_LOG(LogLevel::Error) << "Wrong trie root: " << to_hex(root) << ", expected: " << to_hex(*expected_root)
+                                      << "\n";
         throw WrongRoot{};
     }
     auto account_tbl{txn.open(db::table::kTrieOfAccounts)};

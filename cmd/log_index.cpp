@@ -66,9 +66,9 @@ class listener_log_index : public cbor::listener {
                 std::unordered_map<std::string, roaring::Roaring> * addrs_map, uint64_t * allocated_topics, uint64_t * allocated_addrs_): 
                 block_number_(block_number), topics_map_(topics_map), addrs_map_(addrs_map), allocated_topics_(allocated_topics), allocated_addrs_(allocated_addrs_) {};
 
-    virtual void on_integer(int){};
+    void on_integer(int){};
 
-    virtual void on_bytes(unsigned char *data, int size) {
+    void on_bytes(unsigned char *data, int size) {
         std::string key(reinterpret_cast<const char *>(data), size);
         if (size == kHashLength) {
             if (topics_map_->find(key) == topics_map_->end()) {
@@ -83,32 +83,31 @@ class listener_log_index : public cbor::listener {
             addrs_map_->at(key).add(block_number_);
             *allocated_addrs_ += kAddressLength;
         }
-        delete[] data;
     }
 
-    virtual void on_string(std::string &) {};
+    void on_string(std::string &) {};
 
-    virtual void on_array(int) {}
+    void on_array(int) {}
 
-    virtual void on_map(int){};
+    void on_map(int){};
 
-    virtual void on_tag(unsigned int){};
+    void on_tag(unsigned int){};
 
-    virtual void on_special(unsigned int){};
+    void on_special(unsigned int){};
     
-    virtual void on_bool(bool){};
+    void on_bool(bool){};
     
-    virtual void on_null(){};
+    void on_null(){};
     
-    virtual void on_undefined(){};
+    void on_undefined(){};
 
-    virtual void on_error(const char *){};
+    void on_error(const char *){};
 
-    virtual void on_extra_integer(unsigned long long, int ){};
+    void on_extra_integer(unsigned long long, int ){};
 
-    virtual void on_extra_tag(unsigned long long){};
+    void on_extra_tag(unsigned long long){};
 
-    virtual void on_extra_special(unsigned long long){};
+    void on_extra_special(unsigned long long){};
 
     void set_block_number(uint64_t block_number) {
         block_number_ = block_number;

@@ -16,21 +16,31 @@
 
 #include "buffer.hpp"
 
+#include <cassert>
+
 namespace silkworm::etl {
 
-void Buffer::put(Entry& entry) {
+void Buffer::put(const Entry& entry) {
     size_ += entry.size();
-    entries_.push_back(std::move(entry));
+
+    assert(length_ <= buffer_.size());
+    if (length_ == buffer_.size()) {
+        buffer_.push_back(entry);
+    } else {
+        buffer_[length_] = entry;
+    }
+
+    ++length_;
 }
 
-void Buffer::sort() { std::sort(entries_.begin(), entries_.end()); }
+void Buffer::sort() { std::sort(buffer_.data(), buffer_.data() + length_); }
 
 size_t Buffer::size() const noexcept { return size_; }
 
-std::vector<Entry>& Buffer::get_entries() { return entries_; }
+gsl::span<const Entry> Buffer::entries() const noexcept { return {buffer_.data(), length_}; }
 
-void Buffer::clear() {
-    std::vector<Entry>().swap(entries_);
+void Buffer::clear() noexcept {
+    length_ = 0;
     size_ = 0;
 }
 

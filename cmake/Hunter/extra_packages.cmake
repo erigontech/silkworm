@@ -16,6 +16,6 @@
 
 hunter_add_package(abseil)
 hunter_add_package(benchmark)
-hunter_add_package(Boost)
+hunter_add_package(Boost COMPONENTS date_time)
 hunter_add_package(CLI11)
 hunter_add_package(nlohmann_json)

@@ -15,8 +15,11 @@
 ]]
 
 find_package(absl CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+
+# Boost interprocess depends on date_time
+# See https://pdimov.github.io/boostdep-report/
+find_package(Boost CONFIG REQUIRED COMPONENTS date_time)
 
 file(GLOB_RECURSE SILKWORM_DB_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp$")
@@ -25,7 +28,7 @@ add_library(silkworm_db ${SILKWORM_DB_SRC})
 target_include_directories(silkworm_db PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SILKWORM_DB_PUBLIC_LIBS silkworm_core lmdb absl::flat_hash_map absl::flat_hash_set absl::btree roaring nlohmann_json::nlohmann_json)
-set(SILKWORM_DB_PRIVATE_LIBS cborcpp)
+set(SILKWORM_DB_PRIVATE_LIBS cborcpp Boost::date_time)
 
 if(MSVC)
   list(APPEND SILKWORM_DB_PRIVATE_LIBS ntdll.lib)

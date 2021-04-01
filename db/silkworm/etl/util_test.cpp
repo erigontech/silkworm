@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,35 +14,28 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_ETL_UTIL_HPP_
-#define SILKWORM_ETL_UTIL_HPP_
+#include "util.hpp"
 
-#include <stdexcept>
+#include <catch2/catch.hpp>
 
-#include <silkworm/common/base.hpp>
+#include <silkworm/common/util.hpp>
 
 namespace silkworm::etl {
 
-class etl_error : public std::runtime_error {
-  public:
-    using std::runtime_error::runtime_error;
-};
+TEST_CASE("ETL Entry comparison") {
+    Entry a{*from_hex("1a"), *from_hex("75")};
+    Entry b{*from_hex("f7"), *from_hex("4056")};
+    CHECK(a < b);
+    CHECK(!(b < a));
+    CHECK(!(a < a));
+    CHECK(!(b < b));
 
-// Head of each data chunk on file
-union head_t {
-    uint32_t lengths[2];
-    uint8_t bytes[8];
-};
-
-// A data chunk on file or buffer
-struct Entry {
-    Bytes key;
-    Bytes value;
-    size_t size() const noexcept { return key.size() + value.size(); }
-};
-
-bool operator<(const Entry& a, const Entry& b);
+    Entry c{*from_hex("ee48"), *from_hex("75")};
+    Entry d{*from_hex("ee48"), *from_hex("4056")};
+    CHECK(!(c < d));
+    CHECK(d < c);
+    CHECK(!(c < c));
+    CHECK(!(d < d));
+}
 
 }  // namespace silkworm::etl
-
-#endif  // SILKWORM_ETL_UTIL_HPP_

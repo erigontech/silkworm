@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,32 +16,34 @@
 
 #include "buffer.hpp"
 
+#include <cassert>
+
 namespace silkworm::etl {
 
-void Buffer::put(Entry& entry) {
+void Buffer::put(const Entry& entry) {
     size_ += entry.size();
-    entries_.push_back(std::move(entry));
+
+    assert(length_ <= buffer_.size());
+    if (length_ == buffer_.size()) {
+        buffer_.push_back(entry);
+    } else {
+        buffer_[length_] = entry;
+    }
+
+    ++length_;
 }
 
-void Buffer::sort() {
-    std::sort(entries_.begin(), entries_.end(),
-              [](const Entry& a, const Entry& b) { 
-                auto diff{a.key.compare(b.key)};
-                if (diff == 0) {
-                    return a.value.compare(b.value) < 0;
-                }
-                return diff < 0; 
-                });
-}
+void Buffer::sort() { std::sort(buffer_.data(), buffer_.data() + length_); }
 
 size_t Buffer::size() const noexcept { return size_; }
 
-std::vector<Entry>& Buffer::get_entries() { return entries_; }
+gsl::span<const Entry> Buffer::entries() const noexcept { return {buffer_.data(), length_}; }
 
-void Buffer::clear() {
-    std::vector<Entry>().swap(entries_);
+void Buffer::clear() noexcept {
+    length_ = 0;
     size_ = 0;
 }
 
 bool Buffer::overflows() const noexcept { return size_ >= optimal_size_; }
+
 }  // namespace silkworm::etl

@@ -30,3 +30,10 @@ hunter_config(
   URL https://github.com/chfast/intx/archive/v0.5.1.tar.gz
   SHA1 743c46a82750143bd302a4394b7008a2112fc97b
 )
+
+hunter_config(
+    Microsoft.GSL
+    VERSION 3.1.0
+    URL https://github.com/microsoft/GSL/archive/v3.1.0.tar.gz
+    SHA1 3f2891a46595806563e7a0e25bb7ecbb30776445
+)

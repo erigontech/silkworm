@@ -20,27 +20,33 @@
 #include <algorithm>
 #include <vector>
 
+#include <gsl/span>
+
 #include <silkworm/common/base.hpp>
 #include <silkworm/etl/util.hpp>
 
 namespace silkworm::etl {
 
+constexpr size_t kInitialBufferCapacity = 32768;
+
 // In ETL, a buffer must be used stores entries, sort them and write them to file
 class Buffer {
   public:
-    Buffer(size_t optimal_size) : optimal_size_(optimal_size){};
+    Buffer(size_t optimal_size) : optimal_size_(optimal_size), buffer_(kInitialBufferCapacity) {}
 
-    void put(Entry& entry);           // Add a new entry to the buffer
-    void clear();                     // Free buffer's contents
+    void put(const Entry& entry);     // Add a new entry to the buffer
+    void clear() noexcept;            // Set the buffer to contain 0 entries
     bool overflows() const noexcept;  // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
-    void sort();                      // Sort buffer in crescent order by key comparison
+    void sort();                      // Sort buffer in increasing order by key comparison
     size_t size() const noexcept;     // Actual size of accounted data
-    std::vector<Entry>& get_entries();
+    gsl::span<const Entry> entries() const noexcept;
 
   private:
-    std::vector<Entry> entries_;
     size_t optimal_size_;
     size_t size_ = 0;
+
+    size_t length_ = 0;          // number of entries
+    std::vector<Entry> buffer_;  // buffer for holding entries
 };
 
 }  // namespace silkworm::etl

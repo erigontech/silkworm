@@ -36,7 +36,6 @@ endif()
 if(NOT SILKWORM_CORE_ONLY)
 
   find_package(absl CONFIG REQUIRED)
-  find_package(Boost CONFIG REQUIRED)
 
   file(GLOB_RECURSE SILKWORM_DB_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/db/silkworm/*_test.cpp")
   add_executable(db_test unit_test.cpp ${SILKWORM_DB_TESTS})

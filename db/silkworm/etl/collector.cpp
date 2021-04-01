@@ -35,7 +35,7 @@ Collector::~Collector() {
 
 void Collector::flush_buffer() {
     if (buffer_.size()) {
-        SILKWORM_LOG(LogInfo) << "Flushing Buffer File..." << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Flushing Buffer File..." << std::endl;
         buffer_.sort();
 
         /* Build a unique file name to pass FileProvider */
@@ -45,7 +45,7 @@ void Collector::flush_buffer() {
         file_providers_.emplace_back(new FileProvider(new_file_path.string(), file_providers_.size()));
         file_providers_.back()->flush(buffer_);
         buffer_.clear();
-        SILKWORM_LOG(LogInfo) << "Buffer Flushed" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Buffer Flushed" << std::endl;
     }
 }
 

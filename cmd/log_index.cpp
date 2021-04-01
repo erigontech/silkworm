@@ -15,7 +15,6 @@
 */
 
 #include <iomanip>
-#include <iostream>
 #include <string>
 #include <unordered_map>
 
@@ -66,9 +65,9 @@ class listener_log_index : public cbor::listener {
                 std::unordered_map<std::string, roaring::Roaring> * addrs_map, uint64_t * allocated_topics, uint64_t * allocated_addrs_): 
                 block_number_(block_number), topics_map_(topics_map), addrs_map_(addrs_map), allocated_topics_(allocated_topics), allocated_addrs_(allocated_addrs_) {};
 
-    void on_integer(int){};
+    void on_integer(int) override {};
 
-    void on_bytes(unsigned char *data, int size) {
+    void on_bytes(unsigned char *data, int size) override {
         std::string key(reinterpret_cast<const char *>(data), size);
         if (size == kHashLength) {
             if (topics_map_->find(key) == topics_map_->end()) {
@@ -85,29 +84,33 @@ class listener_log_index : public cbor::listener {
         }
     }
 
-    void on_string(std::string &) {};
+    void on_string(std::string &) override {};
 
-    void on_array(int) {}
+    void on_array(int) override {}
 
-    void on_map(int){};
+    void on_map(int) override {};
 
-    void on_tag(unsigned int){};
+    void on_tag(unsigned int) override {};
 
-    void on_special(unsigned int){};
+    void on_special(unsigned int) override {};
     
-    void on_bool(bool){};
+    void on_bool(bool) override {};
     
-    void on_null(){};
+    void on_null() override {};
     
-    void on_undefined(){};
+    void on_undefined() override {};
 
-    void on_error(const char *){};
+    void on_error(const char *) override {};
 
-    void on_extra_integer(unsigned long long, int ){};
+    void on_extra_integer(unsigned long long, int ) override {};
 
-    void on_extra_tag(unsigned long long){};
+    void on_extra_tag(unsigned long long) override {};
 
-    void on_extra_special(unsigned long long){};
+    void on_extra_special(unsigned long long) override {};
+
+    void on_double(double) override {};
+
+    void on_float32(float) override {};
 
     void set_block_number(uint64_t block_number) {
         block_number_ = block_number;
@@ -148,7 +151,7 @@ int main(int argc, char *argv[]) {
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
     if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogError) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
     fs::path datadir(db_path);
@@ -179,7 +182,7 @@ int main(int argc, char *argv[]) {
         MDB_val mdb_key{db::to_mdb_val(start)};
         MDB_val mdb_data;
 
-        SILKWORM_LOG(LogInfo) << "Started Log Index Extraction" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Started Log Index Extraction" << std::endl;
 
         uint64_t block_number{0};
         uint64_t topics_allocated_space{0};
@@ -196,13 +199,13 @@ int main(int argc, char *argv[]) {
             decoder.run();
             if (topics_allocated_space > kBitmapBufferSizeLimit) {
                 flush_bitmaps(topic_collector, topic_bitmaps);
-                SILKWORM_LOG(LogInfo) << "Current Block: " << block_number << std::endl;
+                SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
                 topics_allocated_space = 0;
             }
 
             if (addrs_allocated_space > kBitmapBufferSizeLimit) {
                 flush_bitmaps(addresses_collector, addresses_bitmaps);
-                SILKWORM_LOG(LogInfo) << "Current Block: " << block_number << std::endl;
+                SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
                 addrs_allocated_space = 0;
             }
     
@@ -216,24 +219,24 @@ int main(int argc, char *argv[]) {
         flush_bitmaps(topic_collector, topic_bitmaps);
         flush_bitmaps(addresses_collector, addresses_bitmaps);
 
-        SILKWORM_LOG(LogInfo) << "Latest Block: " << block_number << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
         // Proceed only if we've done something
-        SILKWORM_LOG(LogInfo) << "Started Topics Loading" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Started Topics Loading" << std::endl;
         // if stage has never been touched then appending is safe
         unsigned int db_flags{last_processed_block_number ? 0u : MDB_APPEND};
 
         // Eventually load collected items WITH transform (may throw)
         topic_collector.load(txn->open(db::table::kLogTopicIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 10);
-        SILKWORM_LOG(LogInfo) << "Started Address Loading" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Started Address Loading" << std::endl;
         addresses_collector.load(txn->open(db::table::kLogAddressIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 10);
 
         // Update progress height with last processed block
         db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, block_number);
         lmdb::err_handler(txn->commit());
         txn.reset();
-        SILKWORM_LOG(LogInfo) << "All Done" << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
     } catch (const std::exception &ex) {
-        SILKWORM_LOG(LogError) << ex.what() << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }
     return 0;

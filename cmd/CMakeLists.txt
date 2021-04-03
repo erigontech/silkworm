@@ -94,10 +94,6 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(initialize_with_genesis PRIVATE silkworm_db jsoncpp CLI11::CLI11 Boost::filesystem)
   target_include_directories(initialize_with_genesis PRIVATE ${CMAKE_SOURCE_DIR})
 
-  add_executable(print_db_content print_db_content.cpp)
-  target_link_libraries(print_db_content PRIVATE silkworm_db jsoncpp CLI11::CLI11 Boost::filesystem)
-  target_include_directories(print_db_content PRIVATE ${CMAKE_SOURCE_DIR})
-
   add_executable(check_blockhashes check_blockhashes.cpp)
   target_link_libraries(check_blockhashes PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
   target_include_directories(check_blockhashes PRIVATE ${CMAKE_SOURCE_DIR})

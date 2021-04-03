@@ -127,52 +127,65 @@ int main(int argc, char* argv[]) {
             case 1:
                 genesis_json = nlohmann::json::parse(kMainnetGenesis);
                 break;
+            case 5:
+                genesis_json = nlohmann::json::parse(kGoerliGenesis);
+                break;
             default:
                 SILKWORM_LOG(LogLevel::Error) << "chain id: " << chain_id << " does not exist." << std::endl;
                 return -1;
         }
     }
-    // Filling account + constructing genesis root hash
-    auto alloc_json{genesis_json["alloc"]};
-    std::map<evmc::bytes32, Bytes> account_rlp;
-    // Tables used
-    auto plainstate_table{txn->open(db::table::kPlainState)};
-    auto account_changeset_table{txn->open(db::table::kPlainAccountChangeSet)};
+    if (!genesis_json.contains("difficulty") || !genesis_json.contains("nonce") ||
+        !genesis_json.contains("gasLimit") || !genesis_json.contains("timestamp") || 
+        !genesis_json.contains("extraData")) {
+        SILKWORM_LOG(LogLevel::Error) << "Incomplete Genesis File" << std::endl;
+        return -1;
+    }
     auto block_number{Bytes(8, '\0')};
-    std::unique_ptr<trie::HashBuilder> hb;
-    // Iterate over allocs
-    for (auto& [key, value] : alloc_json.items()) {
-        auto address_bytes{from_hex(key)};
-        if (address_bytes == std::nullopt) {
-            SILKWORM_LOG(LogLevel::Error) << "Cannot decode allocs from genesis" << std::endl;
-            return -1;
+    evmc::bytes32 root_hash;
+    if (genesis_json.contains("alloc")) {
+        // Filling account + constructing genesis root hash
+        auto alloc_json{genesis_json["alloc"]};
+        std::map<evmc::bytes32, Bytes> account_rlp;
+        // Tables used
+        auto plainstate_table{txn->open(db::table::kPlainState)};
+        auto account_changeset_table{txn->open(db::table::kPlainAccountChangeSet)};
+        std::unique_ptr<trie::HashBuilder> hb;
+        // Iterate over allocs
+        for (auto& [key, value] : alloc_json.items()) {
+            auto address_bytes{from_hex(key)};
+            if (address_bytes == std::nullopt) {
+                SILKWORM_LOG(LogLevel::Error) << "Cannot decode allocs from genesis" << std::endl;
+                return -1;
+            }
+            auto balance_str{value["balance"].get<std::string>()};
+            intx::uint256 balance;        
+            Account account;
+            if (is_hex(balance_str)) {
+                auto balance_bytes{from_hex(balance_str)};
+                auto [balance_decoded, err]{rlp::read_uint256(*balance_bytes, /*allow_leading_zeros=*/true)};
+                check_rlp_err(err);
+                balance = balance_decoded;
+            } else {
+                balance = convert_string_to_uint256(balance_str);
+            }
+            account.balance = balance;
+            // Make the account
+            account_changeset_table->put(block_number, *address_bytes);
+            plainstate_table->put(*address_bytes, account.encode_for_storage(true));
+            // Fills hash builder
+            auto hash{keccak256(*address_bytes)};
+            if (hb == nullptr) {
+                hb = std::make_unique<trie::HashBuilder>(full_view(hash.bytes), account.rlp(kEmptyRoot));
+            } else {
+                hb->add(full_view(hash.bytes), account.rlp(kEmptyRoot));
+            }
         }
-        auto balance_str{value["balance"].get<std::string>()};
-        intx::uint256 balance;        
-        Account account;
-        if (is_hex(balance_str)) {
-            auto balance_bytes{from_hex(balance_str)};
-            auto [balance_decoded, err]{rlp::read_uint256(*balance_bytes, /*allow_leading_zeros=*/true)};
-            check_rlp_err(err);
-            balance = balance_decoded;
-        } else {
-            balance = convert_string_to_uint256(balance_str);
-        }
-        account.balance = balance;
-        // Make the account
-        account_changeset_table->put(block_number, *address_bytes);
-        plainstate_table->put(*address_bytes, account.encode_for_storage(true));
-        // Fills hash builder
-        auto hash{keccak256(*address_bytes)};
-        if (hb == nullptr) {
-            hb = std::make_unique<trie::HashBuilder>(full_view(hash.bytes), account.rlp(kEmptyRoot));
-        } else {
-            hb->add(full_view(hash.bytes), account.rlp(kEmptyRoot));
-        }
+        root_hash = hb->root_hash();
+    } else {
+        root_hash = kEmptyRoot;
     }
 
-
-    auto root_hash{hb->root_hash()};
     // Fill Header
     BlockHeader header;
     header.ommers_hash = kNullOmmers;
@@ -197,7 +210,7 @@ int main(int argc, char* argv[]) {
     header.timestamp = get_uint_from_field(timestamp);
     auto extra_data_str{genesis_json["extraData"].get<std::string>()};
     header.extra_data = from_hex(extra_data_str).value();
-    auto nonce_str{genesis_json["extraData"].get<std::string>()};
+    auto nonce_str{genesis_json["nonce"].get<std::string>()};
     auto nonce_bytes{from_hex(nonce_str)};
     std::array<uint8_t, 8> nonce{};
     for (size_t i = 0; i < 8; i++) nonce[i] = nonce_bytes->at(i);

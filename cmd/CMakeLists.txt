@@ -96,6 +96,9 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(extract_headers PRIVATE silkworm_db silkworm_tg_api CLI11::CLI11 Boost::filesystem)
   target_include_directories(extract_headers PRIVATE ${CMAKE_SOURCE_DIR})
 
+  add_executable(log_index log_index.cpp)
+  target_link_libraries(log_index PRIVATE silkworm_db cborcpp silkworm_tg_api CLI11::CLI11 Boost::filesystem)
+  target_include_directories(log_index PRIVATE ${CMAKE_SOURCE_DIR})
   # Ethereum Consensus Tests
   find_package(nlohmann_json CONFIG REQUIRED)
   add_executable(consensus consensus.cpp)

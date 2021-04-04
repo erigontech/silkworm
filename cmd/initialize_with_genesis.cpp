@@ -215,9 +215,9 @@ int main(int argc, char* argv[]) {
     header.extra_data = from_hex(extra_data_str).value();
     auto nonce_str{genesis_json["nonce"].get<std::string>()};
     auto nonce_bytes{from_hex(nonce_str)};
-    std::array<uint8_t, 8> nonce{};
-    for (size_t i = 0; i < 8; i++) nonce[i] = nonce_bytes->at(i);
-    header.nonce = nonce;
+    auto diff_nonce_size(8-nonce_bytes->size());
+    for (size_t i = 0; i < nonce_bytes->size(); i++) 
+        header.nonce[i+diff_nonce_size] = nonce_bytes->at(i+diff_nonce_size);
     // Write header
     auto blockhash{header.hash()};
     Bytes rlp_header;

@@ -40,6 +40,7 @@ std::optional<uint64_t> seek(const roaring::Roaring64Map &bitmap, uint64_t n);
 
 // Return cut bitmap of given size limit
 roaring::Roaring64Map cut_left(roaring::Roaring64Map &bitmap, uint64_t len);
+roaring::Roaring cut_left(roaring::Roaring &bitmap, uint64_t len);
 
 };  // namespace silkworm::db::bitmap
 

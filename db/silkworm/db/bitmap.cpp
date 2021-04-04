@@ -17,7 +17,7 @@
 #include "bitmap.hpp"
 
 #include <silkworm/common/util.hpp>
-#include <iostream>
+
 namespace silkworm::db::bitmap {
 
 roaring::Roaring64Map read(ByteView serialized) {
@@ -70,8 +70,7 @@ roaring::Roaring64Map cut_left(roaring::Roaring64Map &bm, uint64_t size_limit) {
 
 roaring::Roaring cut_left(roaring::Roaring &bm, uint64_t size_limit) {
     if (bm.getSizeInBytes() <= size_limit) {
-        roaring::Roaring res(
-            roaring::api::roaring_bitmap_from_range(bm.minimum(), bm.maximum() + 1, 1));  // With range
+        roaring::Roaring res(roaring::api::roaring_bitmap_from_range(bm.minimum(), bm.maximum() + 1, 1));  // With range
         res &= bm;
         res.runOptimize();
         bm = roaring::Roaring();
@@ -85,8 +84,7 @@ roaring::Roaring cut_left(roaring::Roaring &bm, uint64_t size_limit) {
     uint64_t j = 0;
     while (i < j) {
         uint64_t h = (i + j) >> 1;
-        roaring::Roaring current_bitmap(
-            roaring::api::roaring_bitmap_from_range(from, from + i + 1, 1));  // With range
+        roaring::Roaring current_bitmap(roaring::api::roaring_bitmap_from_range(from, from + i + 1, 1));  // With range
         current_bitmap &= bm;
         current_bitmap.runOptimize();
         if (current_bitmap.getSizeInBytes() <= size_limit) {
@@ -102,4 +100,4 @@ roaring::Roaring cut_left(roaring::Roaring &bm, uint64_t size_limit) {
     return res;
 }
 
-};  // namespace silkworm::db::bitmap
+}  // namespace silkworm::db::bitmap

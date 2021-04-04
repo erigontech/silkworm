@@ -16,24 +16,24 @@
 
 #include <iomanip>
 #include <string>
+#include <thread>
 #include <unordered_map>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/filesystem.hpp>
-#include <thread>
+#include <cbor/decoder.h>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <cbor/decoder.h>
 
 using namespace silkworm;
 
 constexpr size_t kBitmapBufferSizeLimit = 512 * kMebi;
-
 
 void loader_function(etl::Entry entry, lmdb::Table *target_table, unsigned int db_flags) {
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
@@ -42,8 +42,7 @@ void loader_function(etl::Entry entry, lmdb::Table *target_table, unsigned int d
     boost::endian::store_big_u32(&last_chunk_index[entry.key.size()], UINT32_MAX);
     auto previous_bitmap_bytes{target_table->get(last_chunk_index)};
     if (previous_bitmap_bytes.has_value()) {
-        bm |= roaring::Roaring::readSafe(byte_ptr_cast(previous_bitmap_bytes->data()),
-                                                previous_bitmap_bytes->size());
+        bm |= roaring::Roaring::readSafe(byte_ptr_cast(previous_bitmap_bytes->data()), previous_bitmap_bytes->size());
         db_flags = 0;
     }
     while (bm.cardinality() > 0) {
@@ -60,12 +59,17 @@ void loader_function(etl::Entry entry, lmdb::Table *target_table, unsigned int d
 }
 
 class listener_log_index : public cbor::listener {
-    public:
-    listener_log_index(uint64_t block_number, std::unordered_map<std::string, roaring::Roaring> * topics_map,
-                std::unordered_map<std::string, roaring::Roaring> * addrs_map, uint64_t * allocated_topics, uint64_t * allocated_addrs_): 
-                block_number_(block_number), topics_map_(topics_map), addrs_map_(addrs_map), allocated_topics_(allocated_topics), allocated_addrs_(allocated_addrs_) {};
+  public:
+    listener_log_index(uint64_t block_number, std::unordered_map<std::string, roaring::Roaring> *topics_map,
+                       std::unordered_map<std::string, roaring::Roaring> *addrs_map, uint64_t *allocated_topics,
+                       uint64_t *allocated_addrs_)
+        : block_number_(block_number),
+          topics_map_(topics_map),
+          addrs_map_(addrs_map),
+          allocated_topics_(allocated_topics),
+          allocated_addrs_(allocated_addrs_){};
 
-    void on_integer(int) override {};
+    void on_integer(int) override{};
 
     void on_bytes(unsigned char *data, int size) override {
         std::string key(reinterpret_cast<const char *>(data), size);
@@ -84,47 +88,45 @@ class listener_log_index : public cbor::listener {
         }
     }
 
-    void on_string(std::string &) override {};
+    void on_string(std::string &) override{};
 
     void on_array(int) override {}
 
-    void on_map(int) override {};
+    void on_map(int) override{};
 
-    void on_tag(unsigned int) override {};
+    void on_tag(unsigned int) override{};
 
-    void on_special(unsigned int) override {};
-    
-    void on_bool(bool) override {};
-    
-    void on_null() override {};
-    
-    void on_undefined() override {};
+    void on_special(unsigned int) override{};
 
-    void on_error(const char *) override {};
+    void on_bool(bool) override{};
 
-    void on_extra_integer(unsigned long long, int ) override {};
+    void on_null() override{};
 
-    void on_extra_tag(unsigned long long) override {};
+    void on_undefined() override{};
 
-    void on_extra_special(unsigned long long) override {};
+    void on_error(const char *) override{};
 
-    void on_double(double) override {};
+    void on_extra_integer(unsigned long long, int) override{};
 
-    void on_float32(float) override {};
+    void on_extra_tag(unsigned long long) override{};
 
-    void set_block_number(uint64_t block_number) {
-        block_number_ = block_number;
-    }
+    void on_extra_special(unsigned long long) override{};
 
-    private:
-        uint64_t block_number_;
-        std::unordered_map<std::string, roaring::Roaring> * topics_map_;
-        std::unordered_map<std::string, roaring::Roaring> * addrs_map_;
-        uint64_t *allocated_topics_;
-        uint64_t *allocated_addrs_;
+    void on_double(double) override{};
+
+    void on_float32(float) override{};
+
+    void set_block_number(uint64_t block_number) { block_number_ = block_number; }
+
+  private:
+    uint64_t block_number_;
+    std::unordered_map<std::string, roaring::Roaring> *topics_map_;
+    std::unordered_map<std::string, roaring::Roaring> *addrs_map_;
+    uint64_t *allocated_topics_;
+    uint64_t *allocated_addrs_;
 };
 
-void flush_bitmaps(etl::Collector& collector, std::unordered_map<std::string, roaring::Roaring>& map) {
+void flush_bitmaps(etl::Collector &collector, std::unordered_map<std::string, roaring::Roaring> &map) {
     for (const auto &[key, bm] : map) {
         Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
         bm.write(byte_ptr_cast(bitmap_bytes.data()));
@@ -189,12 +191,13 @@ int main(int argc, char *argv[]) {
         uint64_t addrs_allocated_space{0};
         std::unordered_map<std::string, roaring::Roaring> topic_bitmaps;
         std::unordered_map<std::string, roaring::Roaring> addresses_bitmaps;
-        listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps, &topics_allocated_space, &addrs_allocated_space);
+        listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps, &topics_allocated_space,
+                                            &addrs_allocated_space);
         int rc{log_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
-        while (!rc) {                                        /* Loop as long as we have no errors*/
-            block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(mdb_key.mv_data));
+        while (!rc) {                                  /* Loop as long as we have no errors*/
+            block_number = boost::endian::load_big_u64(static_cast<uint8_t *>(mdb_key.mv_data));
             current_listener.set_block_number(block_number);
-            cbor::input input(static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size);
+            cbor::input input(static_cast<uint8_t *>(mdb_data.mv_data), mdb_data.mv_size);
             cbor::decoder decoder(input, current_listener);
             decoder.run();
             if (topics_allocated_space > kBitmapBufferSizeLimit) {
@@ -208,7 +211,7 @@ int main(int argc, char *argv[]) {
                 SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
                 addrs_allocated_space = 0;
             }
-    
+
             rc = log_table->get_next(&mdb_key, &mdb_data);
         }
 
@@ -226,9 +229,11 @@ int main(int argc, char *argv[]) {
         unsigned int db_flags{last_processed_block_number ? 0u : MDB_APPEND};
 
         // Eventually load collected items WITH transform (may throw)
-        topic_collector.load(txn->open(db::table::kLogTopicIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 10);
+        topic_collector.load(txn->open(db::table::kLogTopicIndex, MDB_CREATE).get(), loader_function, db_flags,
+                             /* log_every_percent = */ 10);
         SILKWORM_LOG(LogLevel::Info) << "Started Address Loading" << std::endl;
-        addresses_collector.load(txn->open(db::table::kLogAddressIndex, MDB_CREATE).get(), loader_function, db_flags, /* log_every_percent = */ 10);
+        addresses_collector.load(txn->open(db::table::kLogAddressIndex, MDB_CREATE).get(), loader_function, db_flags,
+                                 /* log_every_percent = */ 10);
 
         // Update progress height with last processed block
         db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, block_number);

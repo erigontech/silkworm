@@ -68,4 +68,36 @@ roaring::Roaring64Map cut_left(roaring::Roaring64Map &bm, uint64_t size_limit) {
     return res;
 }
 
-};  // namespace silkworm::db::bitmap
+roaring::Roaring cut_left(roaring::Roaring &bm, uint64_t size_limit) {
+    if (bm.getSizeInBytes() <= size_limit) {
+        roaring::Roaring res(roaring::api::roaring_bitmap_from_range(bm.minimum(), bm.maximum() + 1, 1));  // With range
+        res &= bm;
+        res.runOptimize();
+        bm = roaring::Roaring();
+        return res;
+    }
+    auto from{bm.minimum()};
+    auto min_max{bm.maximum() - bm.minimum()};
+
+    // We look for the cutting point
+    uint64_t i = min_max;
+    uint64_t j = 0;
+    while (i < j) {
+        uint64_t h = (i + j) >> 1;
+        roaring::Roaring current_bitmap(roaring::api::roaring_bitmap_from_range(from, from + i + 1, 1));  // With range
+        current_bitmap &= bm;
+        current_bitmap.runOptimize();
+        if (current_bitmap.getSizeInBytes() <= size_limit) {
+            i = h + 1;
+        } else {
+            j = h;
+        }
+    }
+    roaring::Roaring res(roaring::api::roaring_bitmap_from_range(from, from + i, 1));
+    res &= bm;
+    res.runOptimize();
+    roaring::api::roaring_bitmap_remove_range_closed(&bm.roaring, from, from + i);
+    return res;
+}
+
+}  // namespace silkworm::db::bitmap

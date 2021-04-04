@@ -127,6 +127,9 @@ int main(int argc, char* argv[]) {
             case 1:
                 genesis_json = nlohmann::json::parse(kMainnetGenesis);
                 break;
+            case 4:
+                genesis_json = nlohmann::json::parse(kRinkebyGenesis);
+                break;
             case 5:
                 genesis_json = nlohmann::json::parse(kGoerliGenesis);
                 break;

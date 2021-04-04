@@ -33,12 +33,6 @@ else()
   target_compile_options(core_test PRIVATE -fno-exceptions)
 endif()
 
-add_library(jsoncpp SHARED IMPORTED)
-set_target_properties(jsoncpp PROPERTIES
-  IMPORTED_LOCATION "/usr/local/lib/libjsoncpp.dylib"
-  INTERFACE_INCLUDE_DIRECTORIES "/usr/local/include/json"
-)
-
 if(NOT SILKWORM_CORE_ONLY)
 
   find_package(absl CONFIG REQUIRED)
@@ -91,7 +85,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(history_index PRIVATE ${CMAKE_SOURCE_DIR})
 
   add_executable(initialize_with_genesis initialize_with_genesis.cpp)
-  target_link_libraries(initialize_with_genesis PRIVATE silkworm_db jsoncpp CLI11::CLI11 Boost::filesystem)
+  target_link_libraries(initialize_with_genesis PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
   target_include_directories(initialize_with_genesis PRIVATE ${CMAKE_SOURCE_DIR})
 
   add_executable(check_blockhashes check_blockhashes.cpp)

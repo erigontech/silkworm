@@ -126,6 +126,9 @@ evmc::bytes32 HashBuilder::root_hash() {
 
 // https://github.com/ledgerwatch/turbo-geth/blob/master/docs/programmers_guide/guide.md#generating-the-structural-information-from-the-sequence-of-keys
 void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const ByteView value) {
+    // TODO[Issue 179] use collector
+    (void)collector;
+
     for (bool build_extensions{false};; build_extensions = true) {
         const bool prec_exists{!groups_.empty()};
         const size_t prec_len{groups_.empty() ? 0 : groups_.size() - 1};

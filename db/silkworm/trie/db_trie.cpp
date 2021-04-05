@@ -18,17 +18,21 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/trie/hash_builder.hpp>
 
 namespace silkworm::trie {
 
+Aggregator::Aggregator(etl::Collector& account_collector) {
+    builder_.collector = [&account_collector](ByteView key_hex, const Node& node) {
+        etl::Entry e;
+        e.key = key_hex;
+        e.value = marshal_node(node);
+        account_collector.collect(e);
+    };
+}
+
 void Aggregator::add_account(ByteView key, const Account& a) {
-    curr_ = succ_;
-    succ_ = key;
-    if (!curr_.empty()) {
-        // TODO[Issue 179] gen struct step
-    }
-    account_ = a;
+    // TODO[Issue 179] storage
+    builder_.add(key, a.rlp(/*storage_root=*/kEmptyRoot));
 }
 
 void Aggregator::cut_off() {
@@ -40,7 +44,7 @@ evmc::bytes32 Aggregator::root() const {
     return {};
 }
 
-AccountTrieCursor::AccountTrieCursor(lmdb::Transaction&, etl::Collector&) {}
+AccountTrieCursor::AccountTrieCursor(lmdb::Transaction&) {}
 
 bool AccountTrieCursor::can_skip_state() const {
     // TODO[Issue 179] implement
@@ -62,7 +66,7 @@ void AccountTrieCursor::next() {
 }
 
 DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector)
-    : txn_{txn}, account_collector_{account_collector} {}
+    : txn_{txn}, aggregator_{account_collector} {}
 
 // CalcTrieRoot algo:
 //	for iterateIHOfAccounts {
@@ -88,7 +92,7 @@ DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_colle
 evmc::bytes32 DbTrieLoader::calculate_root() {
     auto acc_state{txn_.open(db::table::kHashedAccounts)};
 
-    for (AccountTrieCursor acc_trie{txn_, account_collector_};; acc_trie.next()) {
+    for (AccountTrieCursor acc_trie{txn_};; acc_trie.next()) {
         if (!acc_trie.can_skip_state()) {
             for (auto entry{acc_state->seek(acc_trie.first_uncovered_prefix())}; entry; entry = acc_state->get_next()) {
                 Bytes key_hex{unpack_nibbles(entry->key)};
@@ -116,6 +120,11 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
     aggregator_.cut_off();
 
     return aggregator_.root();
+}
+
+Bytes marshal_node(const Node&) {
+    // TODO[Issue 179] implement
+    return {};
 }
 
 Node unmarshal_node(ByteView) {

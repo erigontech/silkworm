@@ -23,17 +23,10 @@
 #include <silkworm/common/base.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/etl/collector.hpp>
+#include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/types/account.hpp>
 
 namespace silkworm::trie {
-
-struct Node {
-    uint16_t state_mask{0};
-    uint16_t tree_mask{0};
-    uint16_t hash_mask{0};
-
-    std::vector<evmc::bytes32> hashes{};
-};
 
 // TG RootHashAggregator
 class Aggregator {
@@ -41,7 +34,7 @@ class Aggregator {
     Aggregator(const Aggregator&) = delete;
     Aggregator& operator=(const Aggregator&) = delete;
 
-    Aggregator() = default;
+    explicit Aggregator(etl::Collector& account_collector);
 
     void add_account(ByteView key, const Account& account);
 
@@ -50,9 +43,7 @@ class Aggregator {
     evmc::bytes32 root() const;
 
   private:
-    Bytes curr_;
-    Bytes succ_;
-    Account account_;
+    HashBuilder builder_;
 };
 
 // TG AccTrieCursor
@@ -61,7 +52,7 @@ class AccountTrieCursor {
     AccountTrieCursor(const AccountTrieCursor&) = delete;
     AccountTrieCursor& operator=(const AccountTrieCursor&) = delete;
 
-    AccountTrieCursor(lmdb::Transaction& txn, etl::Collector& account_collector);
+    explicit AccountTrieCursor(lmdb::Transaction& txn);
 
     bool can_skip_state() const;
 
@@ -84,7 +75,6 @@ class DbTrieLoader {
 
   private:
     lmdb::Transaction& txn_;
-    etl::Collector& account_collector_;
     Aggregator aggregator_;
 };
 
@@ -92,6 +82,9 @@ class WrongRoot : public std::runtime_error {
   public:
     WrongRoot() : std::runtime_error{"wrong trie root"} {}
 };
+
+// TG MarshalTrieNode
+Bytes marshal_node(const Node& n);
 
 // TG UnmarshalTrieNode
 Node unmarshal_node(ByteView v);

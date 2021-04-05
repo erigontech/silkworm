@@ -17,14 +17,23 @@
 #ifndef SILKWORM_TRIE_HASH_BUILDER_HPP_
 #define SILKWORM_TRIE_HASH_BUILDER_HPP_
 
+#include <functional>
 #include <vector>
 
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::trie {
 
-// TG DecompressNibbles
-Bytes unpack_nibbles(ByteView packed);
+struct Node {
+    uint16_t state_mask{0};
+    uint16_t tree_mask{0};
+    uint16_t hash_mask{0};
+
+    std::vector<evmc::bytes32> hashes{};
+};
+
+// TG HashCollector2
+using HashCollector = std::function<void(ByteView key_hex, const Node&)>;
 
 // Calculates root hash of a Modified Merkle Patricia Trie.
 // See Appendix D "Modified Merkle Patricia Trie" of the Yellow Paper
@@ -43,7 +52,10 @@ class HashBuilder {
     void add(ByteView key, ByteView value);
 
     // May only be called after all entries have been added.
+    // Not idempotent, may only be called once.
     evmc::bytes32 root_hash();
+
+    HashCollector collector{nullptr};
 
   private:
     void gen_struct_step(ByteView curr, ByteView succ, ByteView value);
@@ -56,6 +68,9 @@ class HashBuilder {
     std::vector<uint16_t> groups_;
     std::vector<Bytes> stack_;  // node references: hashes or embedded RLPs
 };
+
+// TG DecompressNibbles
+Bytes unpack_nibbles(ByteView packed);
 
 }  // namespace silkworm::trie
 

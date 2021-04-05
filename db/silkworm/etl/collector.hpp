@@ -39,7 +39,7 @@ class Collector {
         : work_path_{set_work_path(work_path)}, buffer_(Buffer(optimal_size)){};
     ~Collector();
 
-    void collect(Entry& entry);  // Store key-value pair in memory or on disk
+    void collect(const Entry& entry);  // Store key-value pair in memory or on disk
 
     /** @brief Loads and optionally transforms collected entries into db
      *

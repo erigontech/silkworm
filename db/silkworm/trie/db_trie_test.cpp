@@ -16,6 +16,8 @@
 
 #include "db_trie.hpp"
 
+#include <bitset>
+
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/temp_dir.hpp>

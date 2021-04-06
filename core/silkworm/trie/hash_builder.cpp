@@ -126,9 +126,6 @@ evmc::bytes32 HashBuilder::root_hash() {
 
 // https://github.com/ledgerwatch/turbo-geth/blob/master/docs/programmers_guide/guide.md#generating-the-structural-information-from-the-sequence-of-keys
 void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const ByteView value) {
-    // TODO[Issue 179] use collector
-    (void)collector;
-
     for (bool build_extensions{false};; build_extensions = true) {
         const bool prec_exists{!groups_.empty()};
         const size_t prec_len{groups_.empty() ? 0 : groups_.size() - 1};
@@ -161,8 +158,30 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
             return;
         }
 
+        if (collector && (groups_[max_len].hash != 0 || groups_[max_len].tree != 0)) {  // top level must be in db
+            // TODO[Issue 179] is this necessary?
+            // if maxLen != 0 {
+            //        hasTree[maxLen-1] |= 1 << curr[maxLen-1] // register myself in parent bitmap
+            // }
+            if (max_len > 1) {
+                Node n;
+                n.mask = groups_[max_len];
+                // TODO[Issue 179]
+                // n.hashes = e.topHashes(curr[:maxLen], hasHash[maxLen], groups[maxLen])
+                collector(curr.substr(0, max_len), n);
+            }
+        }
+
         // Close the immediately encompassing prefix group, if needed
         if (!succ.empty() || prec_exists) {
+            if (max_len > 0) {
+                groups_[max_len - 1].hash |= 1u << curr[max_len - 1];
+                // TODO[Issue 179] is this necessary?
+                // if (hasTree[maxLen] ) {
+                //	hasTree[maxLen-1] |= 1 << curr[maxLen-1]
+                //}
+            }
+
             branch_ref(groups_[max_len].state);
         }
 

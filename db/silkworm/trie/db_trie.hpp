@@ -47,12 +47,12 @@ class Aggregator {
 };
 
 // TG AccTrieCursor
-class AccountTrieCursor {
+class AccountCursor {
   public:
-    AccountTrieCursor(const AccountTrieCursor&) = delete;
-    AccountTrieCursor& operator=(const AccountTrieCursor&) = delete;
+    AccountCursor(const AccountCursor&) = delete;
+    AccountCursor& operator=(const AccountCursor&) = delete;
 
-    explicit AccountTrieCursor(lmdb::Transaction& txn);
+    explicit AccountCursor(lmdb::Transaction& txn);
 
     bool can_skip_state() const;
 

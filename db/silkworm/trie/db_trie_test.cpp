@@ -78,17 +78,17 @@ TEST_CASE("Layout of account trie") {
     REQUIRE(val1);
     Node node1{unmarshal_node(*val1)};
 
-    CHECK(0b1011 == node1.state_mask);
-    CHECK(0b0001 == node1.tree_mask);
-    CHECK(0b1001 == node1.hash_mask);
+    CHECK(0b1011 == node1.mask.state);
+    CHECK(0b0001 == node1.mask.tree);
+    CHECK(0b1001 == node1.mask.hash);
 
     auto val2{account_trie->get(*from_hex("0B00"))};
     REQUIRE(val2);
     Node node2{unmarshal_node(*val2)};
 
-    CHECK(0b10001 == node2.state_mask);
-    CHECK(0b00000 == node2.tree_mask);
-    CHECK(0b10000 == node2.hash_mask);
+    CHECK(0b10001 == node2.mask.state);
+    CHECK(0b00000 == node2.mask.tree);
+    CHECK(0b10000 == node2.mask.hash);
 
     // TODO[Issue 179] check that there's nothing else in account_trie
 }

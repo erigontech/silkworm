@@ -24,11 +24,14 @@
 
 namespace silkworm::trie {
 
-struct Node {
-    uint16_t state_mask{0};
-    uint16_t tree_mask{0};
-    uint16_t hash_mask{0};
+struct NodeMask {
+    uint16_t state{0};
+    uint16_t tree{0};
+    uint16_t hash{0};
+};
 
+struct Node {
+    NodeMask mask{};
     std::vector<evmc::bytes32> hashes{};
 };
 
@@ -65,7 +68,7 @@ class HashBuilder {
     Bytes key_;  // unpacked – one nibble per byte
     Bytes value_;
 
-    std::vector<uint16_t> groups_;
+    std::vector<NodeMask> groups_;
     std::vector<Bytes> stack_;  // node references: hashes or embedded RLPs
 };
 

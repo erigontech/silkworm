@@ -142,7 +142,7 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
         if (groups_.size() <= max_len) {
             groups_.resize(max_len + 1);
         }
-        groups_[max_len] |= 1u << extra_digit;
+        groups_[max_len].state |= 1u << extra_digit;
 
         size_t remainder_start{max_len};
         if (!succ.empty() || prec_exists) {
@@ -163,7 +163,7 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
 
         // Close the immediately encompassing prefix group, if needed
         if (!succ.empty() || prec_exists) {
-            branch_ref(groups_[max_len]);
+            branch_ref(groups_[max_len].state);
         }
 
         groups_.resize(max_len);
@@ -175,7 +175,7 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
 
         // Identify preceding key for the buildExtensions invocation
         curr = curr.substr(0, prec_len);
-        while (!groups_.empty() && groups_.back() == 0) {
+        while (!groups_.empty() && groups_.back().state == 0) {
             groups_.pop_back();
         }
     }
@@ -212,4 +212,5 @@ void HashBuilder::branch_ref(uint16_t mask) {
     stack_.resize(first_child_idx + 1);
     stack_.back() = node_ref(rlp);
 }
+
 }  // namespace silkworm::trie

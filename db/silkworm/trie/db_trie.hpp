@@ -38,9 +38,8 @@ class Aggregator {
 
     void add_account(ByteView key, const Account& account);
 
-    void cut_off();
-
-    evmc::bytes32 root() const;
+    // Not idempotent, may only be called once.
+    evmc::bytes32 root();
 
   private:
     HashBuilder builder_;

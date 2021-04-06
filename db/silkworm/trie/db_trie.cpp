@@ -35,14 +35,7 @@ void Aggregator::add_account(ByteView key, const Account& a) {
     builder_.add(key, a.rlp(/*storage_root=*/kEmptyRoot));
 }
 
-void Aggregator::cut_off() {
-    // TODO[Issue 179] implement
-}
-
-evmc::bytes32 Aggregator::root() const {
-    // TODO[Issue 179] implement
-    return {};
-}
+evmc::bytes32 Aggregator::root() { return builder_.root_hash(); }
 
 AccountCursor::AccountCursor(lmdb::Transaction&) {}
 
@@ -116,8 +109,6 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
 
         // TODO[Issue 179] Receive AHashStreamItem
     }
-
-    aggregator_.cut_off();
 
     return aggregator_.root();
 }

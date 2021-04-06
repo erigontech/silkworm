@@ -30,9 +30,9 @@ Aggregator::Aggregator(etl::Collector& account_collector) {
     };
 }
 
-void Aggregator::add_account(ByteView key, const Account& a) {
+void Aggregator::add_account(ByteView packed_key, const Account& a) {
     // TODO[Issue 179] storage
-    builder_.add(key, a.rlp(/*storage_root=*/kEmptyRoot));
+    builder_.add(packed_key, a.rlp(/*storage_root=*/kEmptyRoot));
 }
 
 evmc::bytes32 Aggregator::root() { return builder_.root_hash(); }
@@ -96,7 +96,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                 if (err != rlp::DecodingResult::kOk) {
                     throw err;
                 }
-                aggregator_.add_account(key_hex, account);
+                aggregator_.add_account(entry->key, account);
 
                 // TODO[Issue 179] storage
             }

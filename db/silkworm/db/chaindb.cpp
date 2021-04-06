@@ -481,7 +481,7 @@ std::optional<db::Entry> Table::get_next() {
     }
     err_handler(rc);
     db::Entry out;
-    out.key = db::from_mdb_val(data);
+    out.key = db::from_mdb_val(key_val);
     out.value = db::from_mdb_val(data);
     return out;
 }

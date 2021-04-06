@@ -36,7 +36,7 @@ class Aggregator {
 
     explicit Aggregator(etl::Collector& account_collector);
 
-    void add_account(ByteView key, const Account& account);
+    void add_account(ByteView packed_key, const Account& account);
 
     // Not idempotent, may only be called once.
     evmc::bytes32 root();

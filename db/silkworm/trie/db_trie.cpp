@@ -16,6 +16,10 @@
 
 #include "db_trie.hpp"
 
+#include <bitset>
+
+#include <boost/endian/conversion.hpp>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/tables.hpp>
 
@@ -113,14 +117,61 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
     return aggregator_.root();
 }
 
-Bytes marshal_node(const Node&) {
-    // TODO[Issue 179] implement
-    return {};
+Bytes marshal_node(const Node& n) {
+    size_t buf_size{3 * 2 + n.hashes.size() * kHashLength};
+    if (n.root_hash) {
+        buf_size += kHashLength;
+    }
+    Bytes buf(buf_size, '\0');
+    size_t pos{0};
+
+    boost::endian::store_big_u16(&buf[pos], n.mask.state);
+    pos += 2;
+
+    boost::endian::store_big_u16(&buf[pos], n.mask.tree);
+    pos += 2;
+
+    boost::endian::store_big_u16(&buf[pos], n.mask.hash);
+    pos += 2;
+
+    if (n.root_hash) {
+        std::memcpy(&buf[pos], n.root_hash->bytes, kHashLength);
+        pos += kHashLength;
+    }
+
+    for (const auto& hash : n.hashes) {
+        std::memcpy(&buf[pos], hash.bytes, kHashLength);
+        pos += kHashLength;
+    }
+
+    return buf;
 }
 
-Node unmarshal_node(ByteView) {
+Node unmarshal_node(ByteView v) {
     Node n;
-    // TODO[Issue 179] implement
+
+    n.mask.state = boost::endian::load_big_u16(v.data());
+    v.remove_prefix(2);
+    n.mask.tree = boost::endian::load_big_u16(v.data());
+    v.remove_prefix(2);
+    n.mask.hash = boost::endian::load_big_u16(v.data());
+    v.remove_prefix(2);
+
+    if (std::bitset<16>(n.mask.hash).count() + 1 == v.length() / kHashLength) {
+        n.root_hash = evmc::bytes32{};
+        std::memcpy(n.root_hash->bytes, v.data(), kHashLength);
+        v.remove_prefix(kHashLength);
+    } else {
+        n.root_hash = std::nullopt;
+    }
+
+    size_t num_hashes{v.length() / kHashLength};
+    n.hashes.resize(num_hashes);
+    for (size_t i{0}; i < num_hashes; ++i) {
+        std::memcpy(n.hashes[i].bytes, v.data(), kHashLength);
+        v.remove_prefix(kHashLength);
+    }
+
     return n;
 }
 

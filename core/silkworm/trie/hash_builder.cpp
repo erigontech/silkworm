@@ -17,6 +17,7 @@
 #include "hash_builder.hpp"
 
 #include <algorithm>
+#include <bitset>
 #include <cassert>
 #include <cstring>
 
@@ -26,6 +27,14 @@
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::trie {
+
+bool operator==(const NodeMask& a, const NodeMask& b) {
+    return a.state == b.state && a.tree == b.tree && a.hash == b.hash;
+}
+
+bool operator==(const Node& a, const Node& b) {
+    return a.mask == b.mask && a.hashes == b.hashes && a.root_hash == b.root_hash;
+}
 
 Bytes unpack_nibbles(ByteView packed) {
     Bytes out(2 * packed.length(), '\0');
@@ -202,7 +211,7 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
 
 // Takes children from the stack and replaces them with branch node ref.
 void HashBuilder::branch_ref(uint16_t mask) {
-    const size_t first_child_idx{stack_.size() - popcount(mask)};
+    const size_t first_child_idx{stack_.size() - std::bitset<16>(mask).count()};
 
     rlp::Header h;
     h.list = true;

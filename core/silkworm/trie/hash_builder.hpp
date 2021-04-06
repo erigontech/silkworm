@@ -18,6 +18,7 @@
 #define SILKWORM_TRIE_HASH_BUILDER_HPP_
 
 #include <functional>
+#include <optional>
 #include <vector>
 
 #include <silkworm/common/base.hpp>
@@ -30,10 +31,17 @@ struct NodeMask {
     uint16_t hash{0};
 };
 
+bool operator==(const NodeMask& a, const NodeMask& b);
+
+// presumed invariant
+// std::bitset<16>(mask.hash).count() == hashes.size()
 struct Node {
     NodeMask mask{};
     std::vector<evmc::bytes32> hashes{};
+    std::optional<evmc::bytes32> root_hash{std::nullopt};
 };
+
+bool operator==(const Node& a, const Node& b);
 
 // TG HashCollector2
 using HashCollector = std::function<void(ByteView key_hex, const Node&)>;

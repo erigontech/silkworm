@@ -37,24 +37,24 @@ void Aggregator::add_account(ByteView key, const Account& a) {
 
 evmc::bytes32 Aggregator::root() { return builder_.root_hash(); }
 
-AccountCursor::AccountCursor(lmdb::Transaction&) {}
+AccountTrieCursor::AccountTrieCursor(lmdb::Transaction&) {}
 
-bool AccountCursor::can_skip_state() const {
+bool AccountTrieCursor::can_skip_state() const {
     // TODO[Issue 179] implement
     return false;
 }
 
-Bytes AccountCursor::first_uncovered_prefix() const {
+Bytes AccountTrieCursor::first_uncovered_prefix() const {
     // TODO[Issue 179] implement
     return {};
 }
 
-std::optional<Bytes> AccountCursor::key() const {
+std::optional<Bytes> AccountTrieCursor::key() const {
     // TODO[Issue 179] implement
     return std::nullopt;
 }
 
-void AccountCursor::next() {
+void AccountTrieCursor::next() {
     // TODO[Issue 179] implement
 }
 
@@ -85,7 +85,7 @@ DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_colle
 evmc::bytes32 DbTrieLoader::calculate_root() {
     auto acc_state{txn_.open(db::table::kHashedAccounts)};
 
-    for (AccountCursor acc_trie{txn_};; acc_trie.next()) {
+    for (AccountTrieCursor acc_trie{txn_};; acc_trie.next()) {
         if (!acc_trie.can_skip_state()) {
             for (auto entry{acc_state->seek(acc_trie.first_uncovered_prefix())}; entry; entry = acc_state->get_next()) {
                 Bytes key_hex{unpack_nibbles(entry->key)};

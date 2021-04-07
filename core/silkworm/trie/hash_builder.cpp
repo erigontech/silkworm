@@ -28,12 +28,9 @@
 
 namespace silkworm::trie {
 
-bool operator==(const NodeMask& a, const NodeMask& b) {
-    return a.state == b.state && a.tree == b.tree && a.hash == b.hash;
-}
-
 bool operator==(const Node& a, const Node& b) {
-    return a.mask == b.mask && a.hashes == b.hashes && a.root_hash == b.root_hash;
+    return a.state_mask == b.state_mask && a.tree_mask == b.tree_mask && a.hash_mask == b.hash_mask &&
+           a.hashes == b.hashes && a.root_hash == b.root_hash;
 }
 
 Bytes unpack_nibbles(ByteView packed) {
@@ -139,20 +136,25 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
         const bool prec_exists{!groups_.empty()};
         const size_t prec_len{groups_.empty() ? 0 : groups_.size() - 1};
         const size_t succ_len{prefix_length(succ, curr)};
-        const size_t max_len{std::max(prec_len, succ_len)};
-        assert(max_len < curr.length());
+        const size_t len{std::max(prec_len, succ_len)};
+        assert(len < curr.length());
 
         // Add the digit immediately following the max common prefix and compute length of remainder
         // length
-        const uint8_t extra_digit{curr[max_len]};
-        if (groups_.size() <= max_len) {
-            groups_.resize(max_len + 1);
+        const uint8_t extra_digit{curr[len]};
+        if (groups_.size() <= len) {
+            groups_.resize(len + 1);
         }
-        groups_[max_len].state |= 1u << extra_digit;
+        groups_[len] |= 1u << extra_digit;
 
-        size_t remainder_start{max_len};
+        size_t remainder_start{len};
         if (!succ.empty() || prec_exists) {
             ++remainder_start;
+        }
+
+        if (tree_masks_.size() < curr.length()) {
+            tree_masks_.resize(curr.length());
+            hash_masks_.resize(curr.length());
         }
 
         const ByteView short_node_key{curr.substr(remainder_start)};
@@ -167,34 +169,49 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
             return;
         }
 
-        if (collector && (groups_[max_len].hash != 0 || groups_[max_len].tree != 0)) {  // top level must be in db
-            // TODO[Issue 179] is this necessary?
-            // if maxLen != 0 {
-            //        hasTree[maxLen-1] |= 1 << curr[maxLen-1] // register myself in parent bitmap
-            // }
-            if (max_len > 1) {
+        if (collector && (tree_masks_[len] || hash_masks_[len])) {
+            if (len > 0) {
+                tree_masks_[len - 1] |= 1u << curr[len - 1];  // register myself in parent bitmap
+            }
+            if (len > 1) {
                 Node n;
-                n.mask = groups_[max_len];
+                n.state_mask = groups_[len];
+                n.tree_mask = tree_masks_[len];
+                n.hash_mask = hash_masks_[len];
                 // TODO[Issue 179]
                 // n.hashes = e.topHashes(curr[:maxLen], hasHash[maxLen], groups[maxLen])
-                collector(curr.substr(0, max_len), n);
+                collector(curr.substr(0, len), n);
             }
         }
 
         // Close the immediately encompassing prefix group, if needed
         if (!succ.empty() || prec_exists) {
-            if (max_len > 0) {
-                groups_[max_len - 1].hash |= 1u << curr[max_len - 1];
-                // TODO[Issue 179] is this necessary?
-                // if (hasTree[maxLen] ) {
-                //	hasTree[maxLen-1] |= 1 << curr[maxLen-1]
-                //}
+            if (len > 0) {
+                hash_masks_[len - 1] |= 1u << curr[len - 1];
+                if (tree_masks_[len]) {
+                    tree_masks_[len - 1] |= 1u << curr[len - 1];
+                }
             }
 
-            branch_ref(groups_[max_len].state);
+            branch_ref(groups_[len]);
         }
 
-        groups_.resize(max_len);
+        if (collector) {
+            bool send{len == 0 &&
+                      (tree_masks_[len] || hash_masks_[len])};  // account.root - store only if have useful info
+            send |= len == 1 && groups_[len];                   // first level of trie_account - store in any case
+            if (send) {
+                Node n;
+                n.state_mask = groups_[len];
+                n.tree_mask = tree_masks_[len];
+                n.hash_mask = hash_masks_[len];
+                collector(curr.substr(0, len), n);
+            }
+        }
+
+        groups_.resize(len);
+        tree_masks_.resize(len);
+        hash_masks_.resize(len);
 
         // Check the end of recursion
         if (prec_len == 0) {
@@ -203,7 +220,7 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
 
         // Identify preceding key for the buildExtensions invocation
         curr = curr.substr(0, prec_len);
-        while (!groups_.empty() && groups_.back().state == 0) {
+        while (!groups_.empty() && groups_.back() == 0) {
             groups_.pop_back();
         }
     }

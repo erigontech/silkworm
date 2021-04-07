@@ -27,6 +27,10 @@ namespace silkworm::trie {
 
 Aggregator::Aggregator(etl::Collector& account_collector) {
     builder_.collector = [&account_collector](ByteView key_hex, const Node& node) {
+        if (key_hex.empty()) {
+            return;
+        }
+
         etl::Entry e;
         e.key = key_hex;
         e.value = marshal_node(node);
@@ -125,13 +129,13 @@ Bytes marshal_node(const Node& n) {
     Bytes buf(buf_size, '\0');
     size_t pos{0};
 
-    boost::endian::store_big_u16(&buf[pos], n.mask.state);
+    boost::endian::store_big_u16(&buf[pos], n.state_mask);
     pos += 2;
 
-    boost::endian::store_big_u16(&buf[pos], n.mask.tree);
+    boost::endian::store_big_u16(&buf[pos], n.tree_mask);
     pos += 2;
 
-    boost::endian::store_big_u16(&buf[pos], n.mask.hash);
+    boost::endian::store_big_u16(&buf[pos], n.hash_mask);
     pos += 2;
 
     if (n.root_hash) {
@@ -150,14 +154,14 @@ Bytes marshal_node(const Node& n) {
 Node unmarshal_node(ByteView v) {
     Node n;
 
-    n.mask.state = boost::endian::load_big_u16(v.data());
+    n.state_mask = boost::endian::load_big_u16(v.data());
     v.remove_prefix(2);
-    n.mask.tree = boost::endian::load_big_u16(v.data());
+    n.tree_mask = boost::endian::load_big_u16(v.data());
     v.remove_prefix(2);
-    n.mask.hash = boost::endian::load_big_u16(v.data());
+    n.hash_mask = boost::endian::load_big_u16(v.data());
     v.remove_prefix(2);
 
-    if (std::bitset<16>(n.mask.hash).count() + 1 == v.length() / kHashLength) {
+    if (std::bitset<16>(n.hash_mask).count() + 1 == v.length() / kHashLength) {
         n.root_hash = evmc::bytes32{};
         std::memcpy(n.root_hash->bytes, v.data(), kHashLength);
         v.remove_prefix(kHashLength);

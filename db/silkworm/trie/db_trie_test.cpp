@@ -29,16 +29,16 @@ namespace silkworm::trie {
 
 TEST_CASE("Node marshalling") {
     Node n;
-    n.mask.state = 0xf601;
-    n.mask.tree = 0x0b45;
-    n.mask.hash = 0x4004;
+    n.state_mask = 0xf601;
+    n.tree_mask = 0x0b45;
+    n.hash_mask = 0x4004;
     n.hashes = {
         0x90d53cd810cc5d4243766cd4451e7b9d14b736a1148b26b3baac7617f617d321_bytes32,
         0xcc35c964dda53ba6c0b87798073a9628dbc9cd26b5cce88eb69655a9c609caf1_bytes32,
     };
     n.root_hash = 0xaaaabbbb0006767767776fffffeee44444000005567645600000000eeddddddd_bytes32;
 
-    REQUIRE(std::bitset<16>(n.mask.hash).count() == n.hashes.size());
+    REQUIRE(std::bitset<16>(n.hash_mask).count() == n.hashes.size());
 
     Bytes b{marshal_node(n)};
 
@@ -92,26 +92,27 @@ TEST_CASE("Layout of account trie") {
     evmc::bytes32 expected_root{hb.root_hash()};
     regenerate_db_tries(*txn, tmp_dir2.path(), &expected_root);
 
-    // TODO[Issue 179] uncomment the rest of the test
-    /*
-        auto account_trie{txn->open(db::table::kTrieOfAccounts)};
+    auto account_trie{txn->open(db::table::kTrieOfAccounts)};
 
-        auto val1{account_trie->get(*from_hex("0B"))};
-        REQUIRE(val1);
-        Node node1{unmarshal_node(*val1)};
+    auto val1{account_trie->get(*from_hex("0B"))};
+    REQUIRE(val1);
+    Node node1{unmarshal_node(*val1)};
 
-        CHECK(0b1011 == node1.mask.state);
-        CHECK(0b0001 == node1.mask.tree);
-        CHECK(0b1001 == node1.mask.hash);
+    CHECK(0b1011 == node1.state_mask);
+    CHECK(0b0001 == node1.tree_mask);
+    CHECK(0b1001 == node1.hash_mask);
 
-        auto val2{account_trie->get(*from_hex("0B00"))};
-        REQUIRE(val2);
-        Node node2{unmarshal_node(*val2)};
+    // TODO[Issue 179] CHECK(std::bitset<16>(node1.mask.hash).count() == node1.hashes.size());
 
-        CHECK(0b10001 == node2.mask.state);
-        CHECK(0b00000 == node2.mask.tree);
-        CHECK(0b10000 == node2.mask.hash);
-    */
+    auto val2{account_trie->get(*from_hex("0B00"))};
+    REQUIRE(val2);
+    Node node2{unmarshal_node(*val2)};
+
+    CHECK(0b10001 == node2.state_mask);
+    CHECK(0b00000 == node2.tree_mask);
+    CHECK(0b10000 == node2.hash_mask);
+
+    // TODO[Issue 179] CHECK(std::bitset<16>(node2.mask.hash).count() == node2.hashes.size());
 
     // TODO[Issue 179] check that there's nothing else in account_trie
 }

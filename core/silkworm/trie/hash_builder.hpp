@@ -25,18 +25,15 @@
 
 namespace silkworm::trie {
 
-struct NodeMask {
-    uint16_t state{0};
-    uint16_t tree{0};
-    uint16_t hash{0};
-};
-
-bool operator==(const NodeMask& a, const NodeMask& b);
-
-// presumed invariant
-// std::bitset<16>(mask.hash).count() == hashes.size()
+// TODO[Issue 179] verify
+// Presumed Invariants:
+// 1) tree_mask ⊆ state_mask
+// 2) hash_mask ⊆ state_mask
+// 3) #hash_mask == #hashes
 struct Node {
-    NodeMask mask{};
+    uint16_t state_mask{0};
+    uint16_t tree_mask{0};
+    uint16_t hash_mask{0};
     std::vector<evmc::bytes32> hashes{};
     std::optional<evmc::bytes32> root_hash{std::nullopt};
 };
@@ -69,6 +66,7 @@ class HashBuilder {
     HashCollector collector{nullptr};
 
   private:
+    // See TG GenStructStep
     void gen_struct_step(ByteView curr, ByteView succ, ByteView value);
 
     void branch_ref(uint16_t mask);
@@ -76,7 +74,9 @@ class HashBuilder {
     Bytes key_;  // unpacked – one nibble per byte
     Bytes value_;
 
-    std::vector<NodeMask> groups_;
+    std::vector<uint16_t> groups_;
+    std::vector<uint16_t> tree_masks_;
+    std::vector<uint16_t> hash_masks_;
     std::vector<Bytes> stack_;  // node references: hashes or embedded RLPs
 };
 

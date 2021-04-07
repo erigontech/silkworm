@@ -225,7 +225,7 @@ evmc_access_status IntraBlockState::access_account(const evmc::address& address)
     if (cold_read) {
         journal_.emplace_back(new state::AccountAccessDelta{address});
     }
-    return cold_read ? EVMC_COLD_ACCESS : EVMC_WARM_ACCESS;
+    return cold_read ? EVMC_ACCESS_COLD : EVMC_ACCESS_WARM;
 }
 
 evmc_access_status IntraBlockState::access_storage(const evmc::address& address, const evmc::bytes32& key) noexcept {
@@ -233,7 +233,7 @@ evmc_access_status IntraBlockState::access_storage(const evmc::address& address,
     if (cold_read) {
         journal_.emplace_back(new state::StorageAccessDelta{address, key});
     }
-    return cold_read ? EVMC_COLD_ACCESS : EVMC_WARM_ACCESS;
+    return cold_read ? EVMC_ACCESS_COLD : EVMC_ACCESS_WARM;
 }
 
 evmc::bytes32 IntraBlockState::get_current_storage(const evmc::address& address,

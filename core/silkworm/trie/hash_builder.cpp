@@ -20,6 +20,7 @@
 #include <bitset>
 #include <cassert>
 #include <cstring>
+#include <utility>
 
 #include <ethash/keccak.hpp>
 
@@ -34,9 +35,21 @@ static void assert_subset(uint16_t sub, uint16_t sup) {
 
 namespace silkworm::trie {
 
+Node::Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vector<evmc::bytes32> hashes,
+           std::optional<evmc::bytes32> root_hash)
+    : state_mask_{state_mask},
+      tree_mask_{tree_mask},
+      hash_mask_{hash_mask},
+      hashes_{std::move(hashes)},
+      root_hash_{std::move(root_hash)} {
+    assert_subset(tree_mask_, state_mask_);
+    assert_subset(hash_mask_, state_mask_);
+    assert(std::bitset<16>(hash_mask_).count() == hashes_.size());
+}
+
 bool operator==(const Node& a, const Node& b) {
-    return a.state_mask == b.state_mask && a.tree_mask == b.tree_mask && a.hash_mask == b.hash_mask &&
-           a.hashes == b.hashes && a.root_hash == b.root_hash;
+    return a.state_mask() == b.state_mask() && a.tree_mask() == b.tree_mask() && a.hash_mask() == b.hash_mask() &&
+           a.hashes() == b.hashes() && a.root_hash() == b.root_hash();
 }
 
 Bytes unpack_nibbles(ByteView packed) {
@@ -195,15 +208,13 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
                         tree_masks_[len - 1] |= 1u << curr[len - 1];  // register myself in parent bitmap
                     }
 
-                    Node n;
-                    n.state_mask = groups_[len];
-                    n.tree_mask = tree_masks_[len];
-                    n.hash_mask = hash_masks_[len];
-                    n.hashes.resize(child_hashes.size());
+                    std::vector<evmc::bytes32> hashes(child_hashes.size());
                     for (size_t i{0}; i < child_hashes.size(); ++i) {
                         assert(child_hashes[i].size() == kHashLength);
-                        std::memcpy(n.hashes[i].bytes, child_hashes[i].data(), kHashLength);
+                        std::memcpy(hashes[i].bytes, child_hashes[i].data(), kHashLength);
                     }
+                    Node n{groups_[len], tree_masks_[len], hash_masks_[len], hashes};
+
                     collector(curr.substr(0, len), n);
                 }
             }

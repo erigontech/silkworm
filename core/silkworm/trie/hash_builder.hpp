@@ -25,17 +25,32 @@
 
 namespace silkworm::trie {
 
-// TODO[Issue 179] verify
 // Presumed Invariants:
 // 1) tree_mask ⊆ state_mask
 // 2) hash_mask ⊆ state_mask
 // 3) #hash_mask == #hashes
-struct Node {
-    uint16_t state_mask{0};
-    uint16_t tree_mask{0};
-    uint16_t hash_mask{0};
-    std::vector<evmc::bytes32> hashes{};
-    std::optional<evmc::bytes32> root_hash{std::nullopt};
+class Node {
+  public:
+    Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vector<evmc::bytes32> hashes,
+         std::optional<evmc::bytes32> root_hash = std::nullopt);
+
+    Node(const Node& other) = default;
+    Node& operator=(const Node& other) = default;
+
+    uint16_t state_mask() const { return state_mask_; }
+    uint16_t tree_mask() const { return tree_mask_; }
+    uint16_t hash_mask() const { return hash_mask_; }
+
+    const std::vector<evmc::bytes32>& hashes() const { return hashes_; }
+
+    const std::optional<evmc::bytes32>& root_hash() const { return root_hash_; }
+
+  private:
+    uint16_t state_mask_{0};
+    uint16_t tree_mask_{0};
+    uint16_t hash_mask_{0};
+    std::vector<evmc::bytes32> hashes_{};
+    std::optional<evmc::bytes32> root_hash_{std::nullopt};
 };
 
 bool operator==(const Node& a, const Node& b);

@@ -28,17 +28,17 @@
 namespace silkworm::trie {
 
 TEST_CASE("Node marshalling") {
-    Node n;
-    n.state_mask = 0xf601;
-    n.tree_mask = 0x0b45;
-    n.hash_mask = 0x4004;
-    n.hashes = {
-        0x90d53cd810cc5d4243766cd4451e7b9d14b736a1148b26b3baac7617f617d321_bytes32,
-        0xcc35c964dda53ba6c0b87798073a9628dbc9cd26b5cce88eb69655a9c609caf1_bytes32,
-    };
-    n.root_hash = 0xaaaabbbb0006767767776fffffeee44444000005567645600000000eeddddddd_bytes32;
+    Node n{/*state_mask*/ 0xf607,
+           /*tree_mask*/ 0x0005,
+           /*hash_mask*/ 0x4004,
+           /*hashes*/
+           {
+               0x90d53cd810cc5d4243766cd4451e7b9d14b736a1148b26b3baac7617f617d321_bytes32,
+               0xcc35c964dda53ba6c0b87798073a9628dbc9cd26b5cce88eb69655a9c609caf1_bytes32,
+           },
+           /*root_hash*/ 0xaaaabbbb0006767767776fffffeee44444000005567645600000000eeddddddd_bytes32};
 
-    REQUIRE(std::bitset<16>(n.hash_mask).count() == n.hashes.size());
+    REQUIRE(std::bitset<16>(n.hash_mask()).count() == n.hashes().size());
 
     Bytes b{marshal_node(n)};
 
@@ -98,28 +98,28 @@ TEST_CASE("Layout of account trie") {
     REQUIRE(val1);
     Node node1{unmarshal_node(*val1)};
 
-    CHECK(0b1011 == node1.state_mask);
-    CHECK(0b0001 == node1.tree_mask);
-    CHECK(0b1001 == node1.hash_mask);
+    CHECK(0b1011 == node1.state_mask());
+    CHECK(0b0001 == node1.tree_mask());
+    CHECK(0b1001 == node1.hash_mask());
 
-    CHECK(!node1.root_hash);
+    CHECK(!node1.root_hash());
 
-    REQUIRE(node1.hashes.size() == 2);
-    CHECK(to_hex(node1.hashes[0]) == "86b50d01e06bb57923d56f77a9169bd6a076caf6e5f3599eaf3377ea7b16b527");
-    CHECK(to_hex(node1.hashes[1]) == "5a9b2d3fe40002e2893c30fc364d1cd9b327cdbe01c9c4cb13e684c06bba9be4");
+    REQUIRE(node1.hashes().size() == 2);
+    CHECK(to_hex(node1.hashes()[0]) == "86b50d01e06bb57923d56f77a9169bd6a076caf6e5f3599eaf3377ea7b16b527");
+    CHECK(to_hex(node1.hashes()[1]) == "5a9b2d3fe40002e2893c30fc364d1cd9b327cdbe01c9c4cb13e684c06bba9be4");
 
     auto val2{account_trie->get(*from_hex("0B00"))};
     REQUIRE(val2);
     Node node2{unmarshal_node(*val2)};
 
-    CHECK(0b10001 == node2.state_mask);
-    CHECK(0b00000 == node2.tree_mask);
-    CHECK(0b10000 == node2.hash_mask);
+    CHECK(0b10001 == node2.state_mask());
+    CHECK(0b00000 == node2.tree_mask());
+    CHECK(0b10000 == node2.hash_mask());
 
-    CHECK(!node2.root_hash);
+    CHECK(!node2.root_hash());
 
-    REQUIRE(node2.hashes.size() == 1);
-    CHECK(to_hex(node2.hashes[0]) == "72156b0033e1c3afa2f86ae5b80f59647614607352f5087b02970c046da73940");
+    REQUIRE(node2.hashes().size() == 1);
+    CHECK(to_hex(node2.hashes()[0]) == "72156b0033e1c3afa2f86ae5b80f59647614607352f5087b02970c046da73940");
 
     // TODO[Issue 179] check that there's nothing else in account_trie
 }

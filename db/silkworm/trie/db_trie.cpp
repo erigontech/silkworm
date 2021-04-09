@@ -122,28 +122,28 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
 }
 
 Bytes marshal_node(const Node& n) {
-    size_t buf_size{3 * 2 + n.hashes.size() * kHashLength};
-    if (n.root_hash) {
+    size_t buf_size{3 * 2 + n.hashes().size() * kHashLength};
+    if (n.root_hash()) {
         buf_size += kHashLength;
     }
     Bytes buf(buf_size, '\0');
     size_t pos{0};
 
-    boost::endian::store_big_u16(&buf[pos], n.state_mask);
+    boost::endian::store_big_u16(&buf[pos], n.state_mask());
     pos += 2;
 
-    boost::endian::store_big_u16(&buf[pos], n.tree_mask);
+    boost::endian::store_big_u16(&buf[pos], n.tree_mask());
     pos += 2;
 
-    boost::endian::store_big_u16(&buf[pos], n.hash_mask);
+    boost::endian::store_big_u16(&buf[pos], n.hash_mask());
     pos += 2;
 
-    if (n.root_hash) {
-        std::memcpy(&buf[pos], n.root_hash->bytes, kHashLength);
+    if (n.root_hash()) {
+        std::memcpy(&buf[pos], n.root_hash()->bytes, kHashLength);
         pos += kHashLength;
     }
 
-    for (const auto& hash : n.hashes) {
+    for (const auto& hash : n.hashes()) {
         std::memcpy(&buf[pos], hash.bytes, kHashLength);
         pos += kHashLength;
     }
@@ -152,31 +152,28 @@ Bytes marshal_node(const Node& n) {
 }
 
 Node unmarshal_node(ByteView v) {
-    Node n;
-
-    n.state_mask = boost::endian::load_big_u16(v.data());
+    auto state_mask{boost::endian::load_big_u16(v.data())};
     v.remove_prefix(2);
-    n.tree_mask = boost::endian::load_big_u16(v.data());
+    auto tree_mask{boost::endian::load_big_u16(v.data())};
     v.remove_prefix(2);
-    n.hash_mask = boost::endian::load_big_u16(v.data());
+    auto hash_mask{boost::endian::load_big_u16(v.data())};
     v.remove_prefix(2);
 
-    if (std::bitset<16>(n.hash_mask).count() + 1 == v.length() / kHashLength) {
-        n.root_hash = evmc::bytes32{};
-        std::memcpy(n.root_hash->bytes, v.data(), kHashLength);
+    std::optional<evmc::bytes32> root_hash{std::nullopt};
+    if (std::bitset<16>(hash_mask).count() + 1 == v.length() / kHashLength) {
+        root_hash = evmc::bytes32{};
+        std::memcpy(root_hash->bytes, v.data(), kHashLength);
         v.remove_prefix(kHashLength);
-    } else {
-        n.root_hash = std::nullopt;
     }
 
     size_t num_hashes{v.length() / kHashLength};
-    n.hashes.resize(num_hashes);
+    std::vector<evmc::bytes32> hashes(num_hashes);
     for (size_t i{0}; i < num_hashes; ++i) {
-        std::memcpy(n.hashes[i].bytes, v.data(), kHashLength);
+        std::memcpy(hashes[i].bytes, v.data(), kHashLength);
         v.remove_prefix(kHashLength);
     }
 
-    return n;
+    return {state_mask, tree_mask, hash_mask, hashes, root_hash};
 }
 
 void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, evmc::bytes32* expected_root) {

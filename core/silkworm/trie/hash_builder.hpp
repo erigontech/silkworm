@@ -69,7 +69,7 @@ class HashBuilder {
     // See TG GenStructStep
     void gen_struct_step(ByteView curr, ByteView succ, ByteView value);
 
-    void branch_ref(uint16_t mask);
+    std::vector<Bytes> branch_ref(uint16_t state_mask, uint16_t hash_mask);
 
     Bytes key_;  // unpacked – one nibble per byte
     Bytes value_;

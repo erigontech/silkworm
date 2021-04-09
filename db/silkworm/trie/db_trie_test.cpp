@@ -102,7 +102,11 @@ TEST_CASE("Layout of account trie") {
     CHECK(0b0001 == node1.tree_mask);
     CHECK(0b1001 == node1.hash_mask);
 
-    // TODO[Issue 179] CHECK(std::bitset<16>(node1.mask.hash).count() == node1.hashes.size());
+    CHECK(!node1.root_hash);
+
+    REQUIRE(node1.hashes.size() == 2);
+    CHECK(to_hex(node1.hashes[0]) == "86b50d01e06bb57923d56f77a9169bd6a076caf6e5f3599eaf3377ea7b16b527");
+    CHECK(to_hex(node1.hashes[1]) == "5a9b2d3fe40002e2893c30fc364d1cd9b327cdbe01c9c4cb13e684c06bba9be4");
 
     auto val2{account_trie->get(*from_hex("0B00"))};
     REQUIRE(val2);
@@ -112,7 +116,10 @@ TEST_CASE("Layout of account trie") {
     CHECK(0b00000 == node2.tree_mask);
     CHECK(0b10000 == node2.hash_mask);
 
-    // TODO[Issue 179] CHECK(std::bitset<16>(node2.mask.hash).count() == node2.hashes.size());
+    CHECK(!node2.root_hash);
+
+    REQUIRE(node2.hashes.size() == 1);
+    CHECK(to_hex(node2.hashes[0]) == "72156b0033e1c3afa2f86ae5b80f59647614607352f5087b02970c046da73940");
 
     // TODO[Issue 179] check that there's nothing else in account_trie
 }

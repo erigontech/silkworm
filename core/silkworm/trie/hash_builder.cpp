@@ -26,6 +26,12 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 
+static void assert_subset(uint16_t sub, uint16_t sup) {
+    auto intersection{sub & sup};
+    assert(intersection == sub);
+    (void)intersection;
+}
+
 namespace silkworm::trie {
 
 bool operator==(const Node& a, const Node& b) {
@@ -169,43 +175,37 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
             return;
         }
 
-        if (collector && (tree_masks_[len] || hash_masks_[len])) {
-            if (len > 0) {
-                tree_masks_[len - 1] |= 1u << curr[len - 1];  // register myself in parent bitmap
-            }
-            if (len > 1) {
-                Node n;
-                n.state_mask = groups_[len];
-                n.tree_mask = tree_masks_[len];
-                n.hash_mask = hash_masks_[len];
-                // TODO[Issue 179]
-                // n.hashes = e.topHashes(curr[:maxLen], hasHash[maxLen], groups[maxLen])
-                collector(curr.substr(0, len), n);
-            }
-        }
-
         // Close the immediately encompassing prefix group, if needed
         if (!succ.empty() || prec_exists) {
-            if (len > 0) {
-                hash_masks_[len - 1] |= 1u << curr[len - 1];
-                if (tree_masks_[len]) {
-                    tree_masks_[len - 1] |= 1u << curr[len - 1];
+            // branch node
+            std::vector<Bytes> child_hashes{branch_ref(groups_[len], hash_masks_[len])};
+
+            if (collector) {
+                if (len > 0) {
+                    hash_masks_[len - 1] |= 1u << curr[len - 1];
+                    if (tree_masks_[len]) {
+                        tree_masks_[len - 1] |= 1u << curr[len - 1];
+                    }
                 }
-            }
 
-            branch_ref(groups_[len]);
-        }
+                bool send{tree_masks_[len] || hash_masks_[len]};  // store only if have useful info
+                send |= len == 1 && groups_[len];                 // first level of trie_account - store in any case
+                if (send) {
+                    if (len > 0) {
+                        tree_masks_[len - 1] |= 1u << curr[len - 1];  // register myself in parent bitmap
+                    }
 
-        if (collector) {
-            bool send{len == 0 &&
-                      (tree_masks_[len] || hash_masks_[len])};  // account.root - store only if have useful info
-            send |= len == 1 && groups_[len];                   // first level of trie_account - store in any case
-            if (send) {
-                Node n;
-                n.state_mask = groups_[len];
-                n.tree_mask = tree_masks_[len];
-                n.hash_mask = hash_masks_[len];
-                collector(curr.substr(0, len), n);
+                    Node n;
+                    n.state_mask = groups_[len];
+                    n.tree_mask = tree_masks_[len];
+                    n.hash_mask = hash_masks_[len];
+                    n.hashes.resize(child_hashes.size());
+                    for (size_t i{0}; i < child_hashes.size(); ++i) {
+                        assert(child_hashes[i].size() == kHashLength);
+                        std::memcpy(n.hashes[i].bytes, child_hashes[i].data(), kHashLength);
+                    }
+                    collector(curr.substr(0, len), n);
+                }
             }
         }
 
@@ -227,15 +227,19 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
 }
 
 // Takes children from the stack and replaces them with branch node ref.
-void HashBuilder::branch_ref(uint16_t mask) {
-    const size_t first_child_idx{stack_.size() - std::bitset<16>(mask).count()};
+std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_mask) {
+    assert_subset(hash_mask, state_mask);
+    std::vector<Bytes> child_hashes;
+    child_hashes.reserve(std::bitset<16>(hash_mask).count());
+
+    const size_t first_child_idx{stack_.size() - std::bitset<16>(state_mask).count()};
 
     rlp::Header h;
     h.list = true;
     h.payload_length = 17;
 
     for (size_t i{first_child_idx}, digit{0}; digit < 16; ++digit) {
-        if (mask & (1u << digit)) {
+        if (state_mask & (1u << digit)) {
             h.payload_length += stack_[i++].length();
         }
     }
@@ -244,7 +248,10 @@ void HashBuilder::branch_ref(uint16_t mask) {
     rlp::encode_header(rlp, h);
 
     for (size_t i{first_child_idx}, digit{0}; digit < 16; ++digit) {
-        if (mask & (1u << digit)) {
+        if (state_mask & (1u << digit)) {
+            if (hash_mask & (1u << digit)) {
+                child_hashes.push_back(stack_[i]);
+            }
             rlp::encode(rlp, stack_[i++]);
         } else {
             rlp.push_back(rlp::kEmptyStringCode);
@@ -256,6 +263,8 @@ void HashBuilder::branch_ref(uint16_t mask) {
 
     stack_.resize(first_child_idx + 1);
     stack_.back() = node_ref(rlp);
+
+    return child_hashes;
 }
 
 }  // namespace silkworm::trie

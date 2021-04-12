@@ -17,6 +17,50 @@
 #ifndef SILKWORM_TRIE_DB_TRIE_HPP_
 #define SILKWORM_TRIE_DB_TRIE_HPP_
 
+/* On trie_account & trie_storage DB tables
+
+state_mask (groups in HashBuilder) - mark prefixes existing in hashed_accounts (hashed_storage) table
+tree_mask - mark prefixes existing in trie_account (trie_storage) table
+hash_mask - mark prefixes whose hashes are saved in the current trie_account (trie_storage) record (actually only
+hashes of branch nodes can be saved)
+
+For example:
++-----------------------------------------------------------------------------------------------------+
+| DB record: 0x0B, state_mask: 0b1011, tree_mask: 0b1001, hash_mask: 0b1001, hashes: [x,x]            |
++-----------------------------------------------------------------------------------------------------+
+                |                                           |                               |
+                v                                           |                               v
++-----------------------------------------------+           |            +----------------------------------------+
+| DB record: 0x0B00, state_mask: 0b10001        |           |            | DB record: 0x0B03, state_mask: 0b10010 |
+| tree_mask: 0, hash_mask: 0b10000, hashes: [x] |           |            | tree_mask: 0, hash_mask: 0, hashes: [] |
++-----------------------------------------------+           |            +----------------------------------------+
+        |                    |                              |                         |                  |
+        v                    v                              v                         v                  v
++--------------------+   +----------------------+     +---------------+        +---------------+  +---------------+
+| Account:           |   | BranchNode: 0x0B0004 |     | Account:      |        | Account:      |  | Account:      |
+| 0x0B0000...        |   | has no record in     |     | 0x0B01...     |        | 0x0B0301...   |  | 0x0B0304...   |
+| in hashed_accounts |   |    trie_account      |     |               |        |               |  |               |
++--------------------+   +----------------------+     +---------------+        +---------------+  +---------------+
+                           |                |
+                           v                v
+                      +---------------+  +---------------+
+                      | Account:      |  | Account:      |
+                      | 0x0B000400... |  | 0x0B000401... |
+                      +---------------+  +---------------+
+
+Invariants:
+- tree_mask is a subset of state_mask (tree_mask ⊆ state_mask)
+- hash_mask is a subset of state_mask (hash_mask ⊆ state_mask)
+- the first level in account_trie always exists if state_mask≠0
+- trie_storage record of account root (length=40) must have +1 hash - it's the account root
+- each record in trie_account table must have an ancestor (may be not immediate) and this ancestor must have
+the correct bit in tree_mask bitmap
+- if state_mask has a bit - then hashed_accounts table must have a record corresponding to this bit
+- each trie_account record must cover some state (means state_mask is always ≠ 0)
+- trie_account records with length=1 may satisfy (tree_mask=0 ∧ hash_mask=0)
+- Other records in trie_account and trie_storage must satisfy (tree_mask≠0 ∨ hash_mask≠0)
+*/
+
 #include <optional>
 #include <vector>
 

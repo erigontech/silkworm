@@ -193,6 +193,7 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
             // branch node
             std::vector<Bytes> child_hashes{branch_ref(groups_[len], hash_masks_[len])};
 
+            // See db/silkworm/trie/db_trie.hpp
             if (collector) {
                 if (len > 0) {
                     hash_masks_[len - 1] |= 1u << curr[len - 1];

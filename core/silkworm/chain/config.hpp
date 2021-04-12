@@ -60,7 +60,7 @@ struct ChainConfig {
     // https://eips.ethereum.org/EIPS/eip-2387
     std::optional<uint64_t> muir_glacier_block;
 
-    // https://github.com/ethereum/eth1.0-specs/blob/master/network-upgrades/berlin.md
+    // https://github.com/ethereum/eth1.0-specs/blob/master/network-upgrades/mainnet-upgrades/berlin.md
     std::optional<uint64_t> berlin_block;
 
     // https://eips.ethereum.org/EIPS/eip-779

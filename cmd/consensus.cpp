@@ -586,7 +586,7 @@ int main(int argc, char* argv[]) {
 
     if (!evm_path.empty()) {
         evmc_loader_error_code err;
-        evm = evmc_load_and_create(evm_path.c_str(), &err);
+        evm = evmc_load_and_configure(evm_path.c_str(), &err);
         if (err) {
             std::cerr << "Failed to load EVM: " << evmc_last_error_msg() << std::endl;
             return -1;

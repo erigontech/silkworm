@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     // Check flags
-    if (fs::exists(out)) {
+    if (fs::exists(fs::path(out) / fs::path("data.mdb"))) {
         SILKWORM_LOG(LogLevel::Error) << out << " already exist." << std::endl;
         return -1;
     }
@@ -116,26 +116,29 @@ int main(int argc, char* argv[]) {
     db_config.set_readonly(false);
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
-    // We create all tables
-    db::table::create_all(*txn);
+
     // Read genesis json file
     nlohmann::json genesis_json;
-
+    nlohmann::json alloc_json = {};
     if (chain_id <= 0) {
         std::ifstream t(genesis.data());
         std::string str((std::istreambuf_iterator<char>(t)),
                         std::istreambuf_iterator<char>());
         genesis_json = nlohmann::json::parse(str);
+        if (genesis_json.contains("alloc")) {
+            alloc_json = genesis_json["alloc"];
+        }
     } else {
         switch (chain_id) {
             case 1:
-                genesis_json = nlohmann::json::parse(kMainnetGenesis);
+                genesis_json = kMainnetGenesis;
+                alloc_json = kMainnetGenesisAllocation;
                 break;
             case 4:
-                genesis_json = nlohmann::json::parse(kRinkebyGenesis);
+                // genesis_json = nlohmann::json::parse(kRinkebyGenesis);
                 break;
             case 5:
-                genesis_json = nlohmann::json::parse(kGoerliGenesis);
+                // genesis_json = nlohmann::json::parse(kGoerliGenesis);
                 break;
             default:
                 SILKWORM_LOG(LogLevel::Error) << "chain id: " << chain_id << " does not exist." << std::endl;
@@ -148,11 +151,13 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG(LogLevel::Error) << "Incomplete Genesis File" << std::endl;
         return -1;
     }
+    // We create all tables
+    db::table::create_all(*txn);
+
     auto block_number{Bytes(8, '\0')};
     evmc::bytes32 root_hash;
-    if (genesis_json.contains("alloc")) {
+    if (alloc_json.size() > 0) {
         // Filling account + constructing genesis root hash
-        auto alloc_json{genesis_json["alloc"]};
         std::map<evmc::bytes32, Bytes> account_rlp;
         // Tables used
         auto plainstate_table{txn->open(db::table::kPlainState)};
@@ -164,7 +169,7 @@ int main(int argc, char* argv[]) {
                 SILKWORM_LOG(LogLevel::Error) << "Cannot decode allocs from genesis" << std::endl;
                 return -1;
             }
-            auto balance_str{value["balance"].get<std::string>()};
+            auto balance_str{value.get<std::string>()};
             intx::uint256 balance;        
             Account account;
             if (is_hex(balance_str)) {

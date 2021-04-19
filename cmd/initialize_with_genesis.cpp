@@ -124,28 +124,10 @@ std::pair<Bytes, Bytes> init_migrations_value[migrations_count] = {
      *from_hex("a272756e77696e645f426c6f636b4861736865734800000000000000006b426c6f636b486173686573480000000000000000")},
     {*from_hex("756e77696e645f7374616765735f746f5f7573655f6e616d65645f6b657973"), *from_hex("a0")}};
 
-static void check_rlp_err(rlp::DecodingResult err) {
-    if (err != rlp::DecodingResult::kOk) {
-        throw err;
-    }
-}
 
 static bool is_hex(std::string const& s) {
     return s.compare(0, 2, "0x") == 0 && s.size() > 2 &&
            s.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string::npos;
-}
-
-static uint64_t get_uint_from_field(std::string const& field) {
-    int form = is_hex(field) ? 16 : 10;
-    uint64_t res = strtoull(field.c_str(), nullptr, form);
-    if (errno == EINVAL) {
-        SILKWORM_LOG(LogLevel::Error) << field << " not a valid number." << std::endl;
-        throw;
-    } else if (errno == ERANGE) {
-        SILKWORM_LOG(LogLevel::Error) << field << " must be uint64" << std::endl;
-        throw;
-    }
-    return res;
 }
 
 int main(int argc, char* argv[]) {
@@ -250,7 +232,6 @@ int main(int argc, char* argv[]) {
 
             // Iterate over allocs
             for (auto& item : genesis_json["alloc"].items()) {
-
                 if (!item.value().is_object() || !item.value().contains("balance") ||
                     !item.value()["balance"].is_string()) {
                     throw std::invalid_argument("alloc address " + item.key() + " has badly formatted allocation");
@@ -264,20 +245,12 @@ int main(int argc, char* argv[]) {
                 }
 
                 auto balance_str{item.value()["balance"].get<std::string>()};
-                intx::uint256 balance;
-                Account account;
-                if (is_hex(balance_str)) {
-                    auto balance_bytes{from_hex(balance_str)};
-                    auto [balance_decoded, err]{rlp::read_uint256(*balance_bytes, /*allow_leading_zeros=*/true)};
-                    check_rlp_err(err);
-                    balance = balance_decoded;
-                } else {
-                    balance = intx::from_string<intx::uint256>(balance_str);
-                }
-                account.balance = balance;
+                Account account{0, intx::from_string<intx::uint256>(balance_str)};
+
                 // Make the account
                 account_changeset_table->put(block_number, *address_bytes);
                 plainstate_table->put(*address_bytes, account.encode_for_storage(true));
+
                 // Fills hash builder
                 auto hash{keccak256(*address_bytes)};
                 account_rlp[to_bytes32(hash.bytes)] = account.rlp(kEmptyRoot);
@@ -300,29 +273,19 @@ int main(int argc, char* argv[]) {
         header.state_root = root_hash;
         header.transactions_root = kEmptyRoot;
         header.receipts_root = kEmptyRoot;
-        intx::uint256 difficulty;
+
         auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
-        Bytes difficulty_bytes;
-        if (is_hex(difficulty_str)) {
-            difficulty_bytes = *from_hex(difficulty_str);
-            auto [difficulty_decoded, err]{rlp::read_uint256(difficulty_bytes, /*allow_leading_zeros=*/true)};
-            check_rlp_err(err);
-            difficulty = difficulty_decoded;
-        } else {
-            difficulty = intx::from_string<intx::uint256>(difficulty_str);
-        }
-        header.difficulty = difficulty;
-        auto gas_limit{genesis_json["gasLimit"].get<std::string>()};
-        header.gas_limit = get_uint_from_field(gas_limit);
-        auto timestamp{genesis_json["timestamp"].get<std::string>()};
-        header.timestamp = get_uint_from_field(timestamp);
-        auto extra_data_str{genesis_json["extraData"].get<std::string>()};
-        header.extra_data = from_hex(extra_data_str).value();
+        header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
+
+        header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
+        header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
+
         auto nonce_str{genesis_json["nonce"].get<std::string>()};
         auto nonce_bytes{from_hex(nonce_str)};
         auto diff_nonce_size(8 - nonce_bytes->size());
         for (size_t i = 0; i < nonce_bytes->size(); i++)
             header.nonce[i + diff_nonce_size] = nonce_bytes->at(i + diff_nonce_size);
+
         // Write header
         auto blockhash{header.hash()};
 
@@ -334,7 +297,7 @@ int main(int argc, char* argv[]) {
         txn->open(db::table::kCanonicalHashes)->put(block_number, full_view(blockhash.bytes));
         // Write body
         txn->open(db::table::kBlockBodies)->put(key, Bytes(genesis_body, 4));
-        txn->open(db::table::kDifficulty)->put(key, difficulty_bytes);
+        txn->open(db::table::kDifficulty)->put(key, intx::as_bytes(header.difficulty));
         txn->open(db::table::kBlockReceipts)->put(key.substr(0, 8), Bytes(genesis_receipts, 1));
         txn->open(db::table::kHeadHeader)
             ->put(Bytes(reinterpret_cast<const uint8_t*>(last_header_key.c_str()), last_header_key.size()),

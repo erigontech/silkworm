@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
         1 *
         kMebi};  // As we're basically creating a new db set an initial map_size (Windows does not create it without)
 
-    app.add_option("--out", out, "Path to the newly created chaindata", true)->required();
+    app.add_option("--out", out, "Path to new chaindata folder", true)->required();
 
     auto genesis_opt =
         app.add_option("--genesis", genesis, "Path to the genesis json file", true)->check(CLI::ExistingFile);
@@ -179,55 +179,53 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
+    // Either --chainId or --genesis are mandatory
     if (!genesis_opt->count() && !chain_id_opt->count()) {
         std::cerr << "\nError: Provide either a custom genesis file or a known chain_id" << std::endl;
         return -1;
     }
 
-    // Check flags
+    // Check destination directory
     if (fs::exists(fs::path(out) / fs::path("data.mdb"))) {
-        SILKWORM_LOG(LogLevel::Error) << out << " already exist." << std::endl;
+        std::cerr << "\nError : A data file (data.mdb) already exists in target folder" << std::endl;
         return -1;
     }
 
-    // Read genesis json file
-    nlohmann::json genesis_json;
+    // Read data from selected source
+    std::string source_data;
 
     // If provided a json file parse it
     if (genesis_opt->count()) {
         std::ifstream t(genesis.data());
-        std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-        genesis_json = nlohmann::json::parse(str, nullptr, false);
-        if (genesis_json == nlohmann::json::value_t::discarded) {
-            SILKWORM_LOG(LogLevel::Error) << "Invalid JSON format" << std::endl;
-            return -1;
-        }
-
+        source_data = std::string ((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
     } else {
+
         // Parse from a known set of configs
-        std::string str;
         switch (chain_id) {
             case 1:
-                str.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+                source_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
                 break;
             case 4:
-                str.assign(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
+                source_data.assign(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
                 break;
             case 5:
-                str.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
+                source_data.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
                 break;
             default:
                 SILKWORM_LOG(LogLevel::Error) << "Unknown chain id: " << chain_id << std::endl;
                 return -1;
         }
 
-        genesis_json = nlohmann::json::parse(str, nullptr, false);
-        if (genesis_json == nlohmann::json::value_t::discarded) {
-            SILKWORM_LOG(LogLevel::Error) << "Invalid JSON format" << std::endl;
-            return -1;
-        }
     }
 
+    // Parse Json data
+    auto genesis_json{nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false)};
+    if (genesis_json == nlohmann::json::value_t::discarded) {
+        std::cerr << "\nError : Provided data is not a valid JSON format" << std::endl;
+        return -1;
+    }
+
+    // Sanity checks over collected data
     if (!genesis_json.contains("difficulty") || !genesis_json.contains("nonce") || !genesis_json.contains("gasLimit") ||
         !genesis_json.contains("timestamp") || !genesis_json.contains("extraData") ||
         !genesis_json.contains("config") || !genesis_json["config"].contains("chainId")) {

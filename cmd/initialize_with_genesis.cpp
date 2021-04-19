@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
     auto genesis_opt =
         app.add_option("--genesis", genesis, "Path to the genesis json file", true)->check(CLI::ExistingFile);
     auto chain_id_opt =
-        app.add_option("--chainid", chain_id, "Specify id of the chain to generate")->excludes(genesis_opt);
+        app.add_option("--chainid", chain_id, "Specify id of the chain to generate")->excludes(genesis_opt)->check(CLI::Range(0u, 65535u));
 
     CLI11_PARSE(app, argc, argv);
 
@@ -204,7 +204,9 @@ int main(int argc, char* argv[]) {
     // Read genesis json file
     nlohmann::json genesis_json;
 
-    if (chain_id <= 0) {
+    // If provided a json file parse it
+    if (genesis_opt->count()) {
+
         std::ifstream t(genesis.data());
         std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
         genesis_json = nlohmann::json::parse(str, nullptr, false);
@@ -213,7 +215,9 @@ int main(int argc, char* argv[]) {
             return -1;
         }
 
-    } else {
+    } else  {
+
+        // Parse from a known set of configs
         std::string str;
         switch (chain_id) {
             case 1:
@@ -239,7 +243,7 @@ int main(int argc, char* argv[]) {
 
     if (!genesis_json.contains("difficulty") || !genesis_json.contains("nonce") || !genesis_json.contains("gasLimit") ||
         !genesis_json.contains("timestamp") || !genesis_json.contains("extraData") ||
-        !genesis_json.contains("config") || !genesis_json["config"].contains("chainID")) {
+        !genesis_json.contains("config") || !genesis_json["config"].contains("chainId")) {
         SILKWORM_LOG(LogLevel::Error) << "Incomplete Genesis File" << std::endl;
         return -1;
     }

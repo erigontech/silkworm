@@ -218,15 +218,14 @@ int main(int argc, char* argv[]) {
     // Sanity checks over collected data
     if (!genesis_json.contains("difficulty") || !genesis_json.contains("nonce") || !genesis_json.contains("gasLimit") ||
         !genesis_json.contains("timestamp") || !genesis_json.contains("extraData") ||
-        !genesis_json.contains("config") || !genesis_json["config"].contains("chainId")) {
+        !genesis_json.contains("config") || !genesis_json["config"].contains("chainId") ||
+        !genesis_json["config"]["chainId"].is_number()) {
         SILKWORM_LOG(LogLevel::Error) << "Incomplete Genesis File" << std::endl;
         return -1;
     }
 
-    
     bool res{false};
     try {
-
         // Prime directories and DB
         lmdb::DatabaseConfig db_config{out};
         db_config.set_readonly(false);
@@ -250,13 +249,21 @@ int main(int argc, char* argv[]) {
             auto account_changeset_table{txn->open(db::table::kPlainAccountChangeSet)};
 
             // Iterate over allocs
-            for (auto& [key, value] : genesis_json["alloc"].items()) {
-                auto address_bytes{from_hex(key)};
-                if (address_bytes == std::nullopt) {
-                    SILKWORM_LOG(LogLevel::Error) << "Cannot decode allocs from genesis" << std::endl;
-                    return -1;
+            for (auto& item : genesis_json["alloc"].items()) {
+
+                if (!item.value().is_object() || !item.value().contains("balance") ||
+                    !item.value()["balance"].is_string()) {
+                    throw std::invalid_argument("alloc address " + item.key() + " has badly formatted allocation");
                 }
-                auto balance_str{value["balance"].get<std::string>()};
+
+                auto address_bytes{from_hex(item.key())};
+                if (address_bytes == std::nullopt || address_bytes.value().length() != kAddressLength) {
+                    throw std::invalid_argument("alloc address " + item.key() +
+                                                " is not valid. Either not hex or not " +
+                                                std::to_string(kAddressLength) + " bytes");
+                }
+
+                auto balance_str{item.value()["balance"].get<std::string>()};
                 intx::uint256 balance;
                 Account account;
                 if (is_hex(balance_str)) {
@@ -275,6 +282,7 @@ int main(int argc, char* argv[]) {
                 auto hash{keccak256(*address_bytes)};
                 account_rlp[to_bytes32(hash.bytes)] = account.rlp(kEmptyRoot);
             }
+
             auto it{account_rlp.cbegin()};
             trie::HashBuilder hb{full_view(it->first), it->second};
             for (++it; it != account_rlp.cend(); ++it) {
@@ -366,5 +374,4 @@ int main(int argc, char* argv[]) {
     }
 
     return res ? 0 : -1;
-
 }

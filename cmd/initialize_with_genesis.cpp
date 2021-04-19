@@ -130,16 +130,6 @@ static void check_rlp_err(rlp::DecodingResult err) {
     }
 }
 
-static intx::uint256 convert_string_to_uint256(std::string const& str) {
-    intx::uint256 res{0};
-    for (size_t i = 0; i < str.size(); i++) {
-        auto current_digit{str.at(i) - '0'};
-        res += current_digit;
-        res *= 10;
-    }
-    return res / 10;
-}
-
 static bool is_hex(std::string const& s) {
     return s.compare(0, 2, "0x") == 0 && s.size() > 2 &&
            s.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string::npos;
@@ -275,7 +265,7 @@ int main(int argc, char* argv[]) {
                     check_rlp_err(err);
                     balance = balance_decoded;
                 } else {
-                    balance = convert_string_to_uint256(balance_str);
+                    balance = intx::from_string<intx::uint256>(balance_str);
                 }
                 account.balance = balance;
                 // Make the account
@@ -311,7 +301,7 @@ int main(int argc, char* argv[]) {
             check_rlp_err(err);
             difficulty = difficulty_decoded;
         } else {
-            difficulty = convert_string_to_uint256(difficulty_str);
+            difficulty = intx::from_string<intx::uint256>(difficulty_str);
         }
         header.difficulty = difficulty;
         auto gas_limit{genesis_json["gasLimit"].get<std::string>()};

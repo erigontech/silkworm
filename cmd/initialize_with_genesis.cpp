@@ -169,7 +169,9 @@ int main(int argc, char* argv[]) {
         1 *
         kMebi};  // As we're basically creating a new db set an initial map_size (Windows does not create it without)
 
-    app.add_option("--out", out, "Path to new chaindata folder", true)->required();
+    app.add_option("--out", out, "Path to new chaindata folder (must exist)", true)
+        ->required()
+        ->check(CLI::ExistingDirectory);
 
     auto genesis_opt =
         app.add_option("--genesis", genesis, "Path to the genesis json file", true)->check(CLI::ExistingFile);
@@ -197,9 +199,8 @@ int main(int argc, char* argv[]) {
     // If provided a json file parse it
     if (genesis_opt->count()) {
         std::ifstream t(genesis.data());
-        source_data = std::string ((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+        source_data = std::string((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
     } else {
-
         // Parse from a known set of configs
         switch (chain_id) {
             case 1:
@@ -215,7 +216,6 @@ int main(int argc, char* argv[]) {
                 SILKWORM_LOG(LogLevel::Error) << "Unknown chain id: " << chain_id << std::endl;
                 return -1;
         }
-
     }
 
     // Parse Json data
@@ -236,7 +236,6 @@ int main(int argc, char* argv[]) {
     try {
 
         // Prime directories and DB
-        fs::create_directories(out);
         lmdb::DatabaseConfig db_config{out};
         db_config.set_readonly(false);
         db_config.map_size = map_size;

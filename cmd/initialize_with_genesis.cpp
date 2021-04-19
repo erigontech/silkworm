@@ -233,6 +233,8 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    
+    bool res{false};
     try {
 
         // Prime directories and DB
@@ -353,9 +355,26 @@ int main(int argc, char* argv[]) {
         }
         lmdb::err_handler(txn->commit());
         txn.reset();
-        SILKWORM_LOG(LogLevel::Info) << "Database Initiliazed" << std::endl;
-
+        res = true;
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << "Unexpected error : " << ex.what() << std::endl;
+        std::cerr << "\nUnexpected error : " << ex.what() << std::endl;
     }
+
+    if (!res) {
+        // Delete created db (if any)
+        fs::path out_path(out);
+        fs::path out_file_path(out / fs::path("data.mdb"));
+        fs::path out_lock_path(out / fs::path("lock.mdb"));
+        if (fs::exists(out_file_path)) {
+            fs::remove(out_file_path);
+        }
+        if (fs::exists(out_lock_path)) {
+            fs::remove(out_lock_path);
+        }
+    } else {
+        std::cout << "\nDatabase initialized" << std::endl;
+    }
+
+    return res ? 0 : -1;
+
 }

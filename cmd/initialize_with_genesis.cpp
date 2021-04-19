@@ -125,11 +125,6 @@ std::pair<Bytes, Bytes> init_migrations_value[migrations_count] = {
     {*from_hex("756e77696e645f7374616765735f746f5f7573655f6e616d65645f6b657973"), *from_hex("a0")}};
 
 
-static bool is_hex(std::string const& s) {
-    return s.compare(0, 2, "0x") == 0 && s.size() > 2 &&
-           s.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string::npos;
-}
-
 int main(int argc, char* argv[]) {
     namespace fs = boost::filesystem;
     int chain_id{-1};

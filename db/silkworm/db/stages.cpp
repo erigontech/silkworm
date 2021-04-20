@@ -39,7 +39,10 @@ namespace {
 
         MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};
         auto data{txn.get(domain, &mdb_key)};
-        if ((*data).size() != sizeof(uint64_t)) {
+        if (!data.has_value()) {
+            return 0;
+        }
+        else if (data->size() != sizeof(uint64_t)) {
             throw std::length_error("Expected 8 bytes of data got " + std::to_string((*data).size()));
         }
         return boost::endian::load_big_u64(data->c_str());

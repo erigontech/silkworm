@@ -34,7 +34,7 @@ namespace {
     uint64_t get_stage_data(lmdb::Transaction& txn, const char* stage_name, const lmdb::TableConfig& domain) {
 
         if (!is_known_stage(stage_name)) {
-            throw std::invalid_argument("Unknown stage name");
+            throw std::invalid_argument("Unknown stage name " + std::string(stage_name));
         }
 
         MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};

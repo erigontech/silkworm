@@ -20,21 +20,42 @@
 
 namespace silkworm::db::stages {
 
-uint64_t get_stage_progress(lmdb::Transaction& txn, const char* stage_name) {
-    MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};
-    auto data{txn.get(silkworm::db::table::kSyncStageProgress, &mdb_key)};
-    if (!data.has_value()) {
-        return 0;
+namespace {
+
+    uint64_t get_stage_data(lmdb::Transaction& txn, const char* stage_name, const lmdb::TableConfig& domain) {
+        MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};
+        auto data{txn.get(domain, &mdb_key)};
+        if ((*data).size() != sizeof(uint64_t)) {
+            throw std::length_error("Expected 8 bytes of data got " + std::to_string((*data).size()));
+        }
+        return boost::endian::load_big_u64(data->c_str());
     }
-    return boost::endian::load_big_u64(data->c_str());
+
+    void set_stage_data(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num,
+                        const lmdb::TableConfig& domain) {
+        Bytes stage_progress(sizeof(block_num), 0);
+        boost::endian::store_big_u64(stage_progress.data(), block_num);
+        MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};
+        MDB_val mdb_data{db::to_mdb_val(stage_progress)};
+        lmdb::err_handler(txn.put(domain, &mdb_key, &mdb_data));
+    }
+
+}  // namespace
+
+uint64_t get_stage_progress(lmdb::Transaction& txn, const char* stage_name) {
+    return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageProgress);
 }
 
 void set_stage_progress(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num) {
-    Bytes stage_progress(sizeof(block_num), 0);
-    boost::endian::store_big_u64(stage_progress.data(), block_num);
-    MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};
-    MDB_val mdb_data{db::to_mdb_val(stage_progress)};
-    lmdb::err_handler(txn.put(silkworm::db::table::kSyncStageProgress, &mdb_key, &mdb_data));
+    set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageProgress);
+}
+
+uint64_t get_stage_unwind(lmdb::Transaction& txn, const char* stage_name) {
+    return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageUnwind);
+}
+
+void set_stage_unwind(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num) {
+    set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageUnwind);
 }
 
 }  // namespace silkworm::db::stages

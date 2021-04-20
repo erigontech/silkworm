@@ -31,6 +31,9 @@ TEST_CASE("Hex") {
     expected = from_hex("0x");
     CHECK((expected.has_value() == true && expected->size() == 0));
 
+    expected = from_hex("0x0");
+    CHECK((expected.has_value() == false));
+
     expected = from_hex("0x0a");
     CHECK((expected.has_value() == true && expected->size() == 1 && expected->at(0) == 0x0a));
 

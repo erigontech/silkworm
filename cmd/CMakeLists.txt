@@ -84,7 +84,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(history_index PRIVATE ${CMAKE_SOURCE_DIR})
 
   add_executable(initialize_with_genesis initialize_with_genesis.cpp)
-  target_link_libraries(initialize_with_genesis PRIVATE silkworm_db CLI11::CLI11 Boost::filesystem)
+  target_link_libraries(initialize_with_genesis PRIVATE silkworm_db CLI11::CLI11)
   target_include_directories(initialize_with_genesis PRIVATE ${CMAKE_SOURCE_DIR})
 
   add_executable(check_blockhashes check_blockhashes.cpp)

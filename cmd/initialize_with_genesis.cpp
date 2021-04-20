@@ -17,11 +17,11 @@
 #include <stdlib.h>
 
 #include <fstream>
+#include <filesystem>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/common/base.hpp>
@@ -126,7 +126,7 @@ std::pair<Bytes, Bytes> init_migrations_value[migrations_count] = {
 
 
 int main(int argc, char* argv[]) {
-    namespace fs = boost::filesystem;
+    namespace fs = std::filesystem;
     int chain_id{-1};
     CLI::App app{"Initializes database with genesis json file"};
 

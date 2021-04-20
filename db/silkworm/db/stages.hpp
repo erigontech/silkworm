@@ -39,7 +39,7 @@ constexpr const char* kHashStateKey{"HashState"};                     // Apply K
 constexpr const char* kAccountHistoryKey{"AccountHistoryIndex"};      // Generating history index for accounts
 constexpr const char* kStorageHistoryIndexKey{"StorageHistoryIndex"}; // Generating history index for storage
 constexpr const char* kLogIndexKey{"LogIndex"};                       // Generating logs index (from receipts)
-constexpr const char* kCallTracesKey{"LogIndex"};                     // Generating call traces index
+constexpr const char* kCallTracesKey{"CallTraces"};                   // Generating call traces index
 constexpr const char* kTxLookupKey{"TxLookup"};                       // Generating transactions lookup index
 constexpr const char* kTxPoolKey{"TxPool"};                           // Starts Backend
 constexpr const char* kFinishKey{"Finish"};                           // Nominal stage after all other stages
@@ -50,6 +50,10 @@ constexpr const char* kMiningFinishKey{"MiningFinish"};               // Mining 
 
 // clang-format on
 
+constexpr const char* AllStages[]{
+    kHeadersKey,   kBlockHashesKey,    kBlockBodiesKey,         kSendersKey,  kExecutionKey,  kIntermediateHashesKey,
+    kHashStateKey, kAccountHistoryKey, kStorageHistoryIndexKey, kLogIndexKey, kCallTracesKey, kTxLookupKey,
+    kTxPoolKey,    kFinishKey};
 
 // Gets the progress (block height) of any given stage
 uint64_t get_stage_progress(lmdb::Transaction& txn, const char* stage_name);
@@ -67,7 +71,6 @@ void set_stage_unwind(lmdb::Transaction& txn, const char* stage_name, uint64_t b
 
 // Clears the invalidation point for the given stage
 void clear_stage_unwind(lmdb::Transaction& txn, const char* stage_name);
-
 
 }  // namespace silkworm::db::stages
 

@@ -22,7 +22,21 @@ namespace silkworm::db::stages {
 
 namespace {
 
+    bool is_known_stage(const char* name) {
+        for (auto stage : AllStages) {
+            if (strcmp(stage, name) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     uint64_t get_stage_data(lmdb::Transaction& txn, const char* stage_name, const lmdb::TableConfig& domain) {
+
+        if (!is_known_stage(stage_name)) {
+            throw std::invalid_argument("Unknown stage name");
+        }
+
         MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};
         auto data{txn.get(domain, &mdb_key)};
         if ((*data).size() != sizeof(uint64_t)) {
@@ -33,6 +47,11 @@ namespace {
 
     void set_stage_data(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num,
                         const lmdb::TableConfig& domain) {
+
+        if (!is_known_stage(stage_name)) {
+            throw std::invalid_argument("Unknown stage name");
+        }
+
         Bytes stage_progress(sizeof(block_num), 0);
         boost::endian::store_big_u64(stage_progress.data(), block_num);
         MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};

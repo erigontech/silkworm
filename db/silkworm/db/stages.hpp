@@ -15,8 +15,8 @@
 */
 
 #pragma once
-#ifndef SILKWORM_DB_STAGES_H_
-#define SILKWORM_DB_STAGES_H_
+#ifndef SILKWORM_DB_STAGES_HPP_
+#define SILKWORM_DB_STAGES_HPP_
 
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
@@ -74,4 +74,4 @@ void clear_stage_unwind(lmdb::Transaction& txn, const char* stage_name);
 
 }  // namespace silkworm::db::stages
 
-#endif  // !SILKWORM_DB_STAGES_H_
+#endif  // !SILKWORM_DB_STAGES_HPP_

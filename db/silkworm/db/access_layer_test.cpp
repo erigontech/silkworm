@@ -332,7 +332,8 @@ namespace db {
             "ethash":{}
         })")};
 
-        CHECK(config == kMainnetConfig);
+        CHECK(config.has_value());
+        CHECK(config.value() == kMainnetConfig);
     }
 
 }  // namespace db

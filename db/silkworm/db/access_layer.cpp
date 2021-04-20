@@ -389,10 +389,12 @@ std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
 }
 */
 std::optional<ChainConfig> parse_chain_config(std::string_view json) {
-    // https://github.com/nlohmann/json/issues/2204
-    auto config_json = nlohmann::json::parse(json);
 
-    if (!config_json.contains("chainId") || !config_json["chainId"].is_number()) {
+    // https://github.com/nlohmann/json/issues/2204
+    auto config_json = nlohmann::json::parse(json, nullptr, false);
+
+    if (config_json == nlohmann::json::value_t::discarded || !config_json.contains("chainId") ||
+        !config_json["chainId"].is_number()) {
         return std::nullopt;
     }
 
@@ -404,14 +406,14 @@ std::optional<ChainConfig> parse_chain_config(std::string_view json) {
         TARGET.emplace(config_json[SOURCE].get<uint64_t>());               \
     }
 
-    READ_JSON_UINT64("homeSteadBlock", config.homestead_block);
-    READ_JSON_UINT64("eip150Block", config.homestead_block);
+    READ_JSON_UINT64("homesteadBlock", config.homestead_block);
+    READ_JSON_UINT64("eip150Block", config.tangerine_whistle_block);
     READ_JSON_UINT64("eip155Block", config.spurious_dragon_block);
     READ_JSON_UINT64("byzantiumBlock", config.byzantium_block);
     READ_JSON_UINT64("constantinopleBlock", config.constantinople_block);
     READ_JSON_UINT64("petersburgBlock", config.petersburg_block);
     READ_JSON_UINT64("istanbulBlock", config.istanbul_block);
-    READ_JSON_UINT64("muirGlacierlBlock", config.muir_glacier_block);
+    READ_JSON_UINT64("muirGlacierBlock", config.muir_glacier_block);
     READ_JSON_UINT64("daoForkBlock", config.dao_block);
     READ_JSON_UINT64("berlinBlock", config.berlin_block);
 

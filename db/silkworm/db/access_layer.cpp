@@ -392,43 +392,30 @@ std::optional<ChainConfig> parse_chain_config(std::string_view json) {
     // https://github.com/nlohmann/json/issues/2204
     auto config_json = nlohmann::json::parse(json);
 
-    if (!config_json.contains("chainId")) {
+    if (!config_json.contains("chainId") || !config_json["chainId"].is_number()) {
         return std::nullopt;
     }
 
     ChainConfig config{};
     config.chain_id = config_json["chainId"].get<uint64_t>();
 
-    if (config_json.contains("homesteadBlock")) {
-        config.homestead_block.emplace(config_json["homesteadBlock"].get<uint64_t>());
+#define READ_JSON_UINT64(SOURCE, TARGET)                                   \
+    if (config_json.contains(SOURCE) && config_json[SOURCE].is_number()) { \
+        TARGET.emplace(config_json[SOURCE].get<uint64_t>());               \
     }
-    if (config_json.contains("eip150Block")) {
-        config.tangerine_whistle_block.emplace(config_json["eip150Block"].get<uint64_t>());
-    }
-    if (config_json.contains("eip155Block")) {
-        config.spurious_dragon_block.emplace(config_json["eip155Block"].get<uint64_t>());
-    }
-    if (config_json.contains("byzantiumBlock")) {
-        config.byzantium_block.emplace(config_json["byzantiumBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("constantinopleBlock")) {
-        config.constantinople_block.emplace(config_json["constantinopleBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("petersburgBlock")) {
-        config.petersburg_block.emplace(config_json["petersburgBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("istanbulBlock")) {
-        config.istanbul_block.emplace(config_json["istanbulBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("muirGlacierBlock")) {
-        config.muir_glacier_block.emplace(config_json["muirGlacierBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("daoForkBlock")) {
-        config.dao_block.emplace(config_json["daoForkBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("berlinBlock")) {
-        config.berlin_block.emplace(config_json["berlinBlock"].get<uint64_t>());
-    }
+
+    READ_JSON_UINT64("homeSteadBlock", config.homestead_block);
+    READ_JSON_UINT64("eip150Block", config.homestead_block);
+    READ_JSON_UINT64("eip155Block", config.spurious_dragon_block);
+    READ_JSON_UINT64("byzantiumBlock", config.byzantium_block);
+    READ_JSON_UINT64("constantinopleBlock", config.constantinople_block);
+    READ_JSON_UINT64("petersburgBlock", config.petersburg_block);
+    READ_JSON_UINT64("istanbulBlock", config.istanbul_block);
+    READ_JSON_UINT64("muirGlacierlBlock", config.muir_glacier_block);
+    READ_JSON_UINT64("daoForkBlock", config.dao_block);
+    READ_JSON_UINT64("berlinBlock", config.berlin_block);
+
+#undef READ_JSON_UINT64
 
     return config;
 }

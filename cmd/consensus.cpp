@@ -216,6 +216,7 @@ static void check_rlp_err(rlp::DecodingResult err) {
     }
 }
 
+ExecutionStatePool state_pool;
 evmc_vm* evm{nullptr};
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
@@ -380,6 +381,7 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
     init_pre_state(json_test["pre"], state);
 
     Blockchain blockchain{state, config, genesis_block};
+    blockchain.state_pool = &state_pool;
     blockchain.exo_evm = evm;
 
     for (const auto& json_block : json_test["blocks"]) {
@@ -584,7 +586,7 @@ int main(int argc, char* argv[]) {
 
     if (!evm_path.empty()) {
         evmc_loader_error_code err;
-        evm = evmc_load_and_create(evm_path.c_str(), &err);
+        evm = evmc_load_and_configure(evm_path.c_str(), &err);
         if (err) {
             std::cerr << "Failed to load EVM: " << evmc_last_error_msg() << std::endl;
             return -1;

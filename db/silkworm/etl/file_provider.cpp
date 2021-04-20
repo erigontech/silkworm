@@ -33,7 +33,7 @@ void FileProvider::flush(Buffer &buffer) {
     head_t head{};
 
     // Check we have enough space to store all data
-    auto &entries{buffer.get_entries()};
+    auto entries{buffer.entries()};
     file_size_ = {buffer.size() + entries.size() * sizeof(head_t)};
     fs::path workdir(fs::path(file_name_).parent_path());
     if (fs::space(workdir).available < file_size_) {

@@ -35,6 +35,7 @@ Collector::~Collector() {
 
 void Collector::flush_buffer() {
     if (buffer_.size()) {
+        SILKWORM_LOG(LogLevel::Info) << "Flushing Buffer File..." << std::endl;
         buffer_.sort();
 
         /* Build a unique file name to pass FileProvider */
@@ -44,6 +45,7 @@ void Collector::flush_buffer() {
         file_providers_.emplace_back(new FileProvider(new_file_path.string(), file_providers_.size()));
         file_providers_.back()->flush(buffer_);
         buffer_.clear();
+        SILKWORM_LOG(LogLevel::Info) << "Buffer Flushed" << std::endl;
     }
 }
 
@@ -71,30 +73,24 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
     size_t dummy_counter{progress_increment_count};
     uint32_t actual_progress{0};
 
-    if (!file_providers_.size()) {
+    if (file_providers_.empty()) {
         buffer_.sort();
-        if (load_func) {
-            for (const auto& etl_entry : buffer_.get_entries()) {
-                load_func(etl_entry, table, db_flags);
 
-                if (!--dummy_counter) {
-                    actual_progress += progress_step;
-                    dummy_counter = progress_increment_count;
-                    SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
-                                                 << " << " << actual_progress << "%" << std::endl;
-                }
-            }
-        } else {
-            for (const auto& etl_entry : buffer_.get_entries()) {
+        for (const auto& etl_entry : buffer_.entries()) {
+            if (load_func) {
+                load_func(etl_entry, table, db_flags);
+            } else {
                 table->put(etl_entry.key, etl_entry.value, db_flags);
-                if (!--dummy_counter) {
-                    actual_progress += progress_step;
-                    dummy_counter = progress_increment_count;
-                    SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
-                                                 << " << " << actual_progress << "%" << std::endl;
-                }
+            }
+
+            if (!--dummy_counter) {
+                actual_progress += progress_step;
+                dummy_counter = progress_increment_count;
+                SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
+                                             << " << " << actual_progress << "%" << std::endl;
             }
         }
+
         buffer_.clear();
         return;
     }
@@ -104,11 +100,7 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
 
     // Define a priority queue based on smallest available key
     auto key_comparer = [](std::pair<Entry, int> left, std::pair<Entry, int> right) {
-        auto diff{left.first.key.compare(right.first.key)};
-        if (diff == 0) {
-            return left.first.value.compare(right.first.value) > 0;
-        }
-        return diff > 0;
+        return right.first < left.first;
     };
     std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>, decltype(key_comparer)> queue(
         key_comparer);

@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 ]]
 
 find_package(absl CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+find_package(Boost CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_DB_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
@@ -24,7 +24,7 @@ list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp$")
 add_library(silkworm_db ${SILKWORM_DB_SRC})
 target_include_directories(silkworm_db PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(SILKWORM_DB_PUBLIC_LIBS silkworm_core lmdb absl::flat_hash_map absl::flat_hash_set absl::btree Boost::filesystem roaring nlohmann_json::nlohmann_json)
+set(SILKWORM_DB_PUBLIC_LIBS silkworm_core lmdb absl::flat_hash_map absl::flat_hash_set absl::btree roaring nlohmann_json::nlohmann_json)
 set(SILKWORM_DB_PRIVATE_LIBS cborcpp)
 
 if(MSVC)

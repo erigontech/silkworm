@@ -15,6 +15,7 @@
 */
 
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -23,7 +24,6 @@
 #include <vector>
 
 #include <CLI/CLI.hpp>
-#include <boost/filesystem.hpp>
 #include <evmc/loader.h>
 #include <nlohmann/json.hpp>
 
@@ -40,7 +40,7 @@
 
 using namespace silkworm;
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 static const fs::path kDifficultyDir{"BasicTests"};
 

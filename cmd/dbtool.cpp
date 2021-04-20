@@ -15,6 +15,7 @@
 */
 
 #include <csignal>
+#include <filesystem>
 #include <iostream>
 #include <regex>
 #include <string>
@@ -22,7 +23,6 @@
 #include <CLI/CLI.hpp>
 #include <boost/bind.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 
 #include <silkworm/chain/config.hpp>
@@ -31,7 +31,7 @@
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 using namespace silkworm;
 
 bool shouldStop{false};

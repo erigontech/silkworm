@@ -18,10 +18,10 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <filesystem>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 #include <cbor/decoder.h>
 
 #include <silkworm/common/log.hpp>
@@ -137,7 +137,7 @@ void flush_bitmaps(etl::Collector &collector, std::unordered_map<std::string, ro
 }
 
 int main(int argc, char *argv[]) {
-    namespace fs = boost::filesystem;
+    namespace fs = std::filesystem;
 
     CLI::App app{"Generates Log Index"};
 

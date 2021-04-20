@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
+#include <filesystem>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -29,7 +29,7 @@
 using namespace silkworm;
 
 int main(int argc, char* argv[]) {
-    namespace fs = boost::filesystem;
+    namespace fs = std::filesystem;
 
     CLI::App app{"Generates Blockhashes => BlockNumber mapping in database"};
 

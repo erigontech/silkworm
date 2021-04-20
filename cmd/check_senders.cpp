@@ -16,13 +16,13 @@
 
 #include <atomic>
 #include <csignal>
+#include <filesystem>
 #include <queue>
 #include <string>
 #include <thread>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/signals2.hpp>
@@ -39,7 +39,7 @@
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/types/block.hpp>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 using namespace silkworm;
 
 std::atomic_bool g_should_stop{false};  // Request for stop from user or OS

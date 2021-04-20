@@ -15,11 +15,11 @@
 */
 
 #include <csignal>
+#include <filesystem>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-    namespace fs = boost::filesystem;
+    namespace fs = std::filesystem;
 
     CLI::App app{"Check Tx Hashes => BlockNumber mapping in database"};
 

@@ -25,7 +25,9 @@
 
 namespace silkworm::trie {
 
-// Presumed Invariants:
+// See db/silkworm/trie/db_trie.hpp
+//
+// Presumed invariants:
 // 1) tree_mask ⊆ state_mask
 // 2) hash_mask ⊆ state_mask
 // 3) #hash_mask == #hashes

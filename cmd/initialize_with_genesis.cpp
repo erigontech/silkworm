@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
 
     // Either --chainId or --genesis are mandatory
     if (!genesis_opt->count() && !chain_id_opt->count()) {
-        std::cerr << "\nError: Provide either a custom genesis file or a known chain_id" << std::endl;
+        std::cerr << "\nError: Provide either a custom --genesis file or a known --chainid" << std::endl;
         return -1;
     }
 
@@ -113,10 +113,19 @@ int main(int argc, char* argv[]) {
     // Sanity checks over collected data
     if (!genesis_json.contains("difficulty") || !genesis_json.contains("nonce") || !genesis_json.contains("gasLimit") ||
         !genesis_json.contains("timestamp") || !genesis_json.contains("extraData") ||
-        !genesis_json.contains("config") || !genesis_json["config"].contains("chainId") ||
-        !genesis_json["config"]["chainId"].is_number()) {
-        SILKWORM_LOG(LogLevel::Error) << "Incomplete Genesis File" << std::endl;
+        !genesis_json.contains("config") || !genesis_json["config"].is_object()) {
+        std::cerr << "\nError : Incomplete genesis file" << std::endl;
         return -1;
+    }
+
+    // Try parse genesis config
+    {
+        auto genesis_json_config = genesis_json["config"];
+        auto chain_config = db::parse_chain_config(genesis_json_config.dump());
+        if (!chain_config.has_value()) {
+            std::cerr << "\nError : Incomplete / wrong genesis config member" << std::endl;
+            return -1;
+        }
     }
 
     bool res{false};
@@ -192,8 +201,9 @@ int main(int argc, char* argv[]) {
 
         header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
         header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
+
         auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
-        std::memcpy(&header.nonce, &nonce, 8);
+        std::memcpy(&header.nonce[0], &nonce, 8);
 
         // Write header
         auto blockhash{header.hash()};
@@ -212,11 +222,10 @@ int main(int argc, char* argv[]) {
             ->put(Bytes(reinterpret_cast<const uint8_t*>(last_header_key.c_str()), last_header_key.size()),
                   full_view(blockhash.bytes));
         txn->open(db::table::kHeaderNumbers)->put(full_view(blockhash.bytes), key.substr(0, 8));
+
         // Write Chain Config
-        auto chain_config{genesis_json["config"].dump()};
-        txn->open(db::table::kConfig)
-            ->put(full_view(blockhash.bytes),
-                  Bytes(reinterpret_cast<const uint8_t*>(chain_config.c_str()), chain_config.size()));
+        auto config_data{genesis_json["config"].dump()};
+        txn->open(db::table::kConfig)->put(full_view(blockhash.bytes), byte_view_of_c_str(config_data.c_str()));
 
         lmdb::err_handler(txn->commit());
         txn.reset();

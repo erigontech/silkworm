@@ -27,8 +27,10 @@ static std::string random_string(size_t len) {
     static constexpr size_t kNumberOfCharacters{sizeof(kAlphaNum) - 1};
 
     std::random_device rd;
-    std::default_random_engine engine(rd());
-    std::uniform_int_distribution<size_t> uniform_dist(0, kNumberOfCharacters - 1);
+    std::default_random_engine engine{rd()};
+
+    // yield random numbers up to and including kNumberOfCharacters - 1
+    std::uniform_int_distribution<size_t> uniform_dist{0, kNumberOfCharacters - 1};
 
     std::string s;
     s.reserve(len);

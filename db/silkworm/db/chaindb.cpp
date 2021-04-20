@@ -16,8 +16,9 @@
 
 #include "chaindb.hpp"
 
+#include <filesystem>
+
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
 #include "chaindb.hpp"
@@ -45,16 +46,16 @@ Environment::Environment(const DatabaseConfig& config) {
     // LMDB to truncate data file thus losing data
     size_t data_file_size{0};
     size_t data_map_size{0};
-    boost::filesystem::path data_path{config.path};
+    std::filesystem::path data_path{config.path};
     bool nosubdir{(config.flags & MDB_NOSUBDIR) == MDB_NOSUBDIR};
     if (!nosubdir) {
-        data_path /= boost::filesystem::path{"data.mdb"};
+        data_path /= std::filesystem::path{"data.mdb"};
     }
-    if (boost::filesystem::exists(data_path)) {
-        if (!boost::filesystem::is_regular_file(data_path)) {
+    if (std::filesystem::exists(data_path)) {
+        if (!std::filesystem::is_regular_file(data_path)) {
             throw std::runtime_error(data_path.string() + " is not a regular file");
         }
-        data_file_size = boost::filesystem::file_size(data_path);
+        data_file_size = std::filesystem::file_size(data_path);
     }
     data_map_size = std::max(data_file_size, config.map_size);
 
@@ -117,11 +118,11 @@ int Environment::get_filesize(size_t* size) {
     uint32_t flags{0};
     int rc{get_flags(&flags)};
     if (rc) return rc;
-    boost::filesystem::path data_path{path_};
+    std::filesystem::path data_path{path_};
     bool nosubdir{(flags & MDB_NOSUBDIR) == MDB_NOSUBDIR};
-    if (!nosubdir) data_path /= boost::filesystem::path{"data.mdb"};
-    if (boost::filesystem::exists(data_path) && boost::filesystem::is_regular_file(data_path)) {
-        *size = boost::filesystem::file_size(data_path);
+    if (!nosubdir) data_path /= std::filesystem::path{"data.mdb"};
+    if (std::filesystem::exists(data_path) && std::filesystem::is_regular_file(data_path)) {
+        *size = std::filesystem::file_size(data_path);
         return MDB_SUCCESS;
     }
     return ENOENT;

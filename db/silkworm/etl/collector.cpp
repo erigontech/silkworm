@@ -13,16 +13,16 @@
 
 #include "collector.hpp"
 
+#include <filesystem>
 #include <iomanip>
 #include <queue>
 
-#include <boost/filesystem.hpp>
-
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/temp_dir.hpp>
 
 namespace silkworm::etl {
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 Collector::~Collector() {
     file_providers_.clear();  // Will ensure all files (if any) have been orderly closed and deleted before we remove
@@ -166,9 +166,7 @@ std::string Collector::set_work_path(const char* provided_work_path) {
     // No path provided so we need to get a unique temporary directory
     // to prevent different instances of collector to clash each other
     // with same filenames
-    fs::path p{fs::temp_directory_path() / fs::unique_path()};
-    fs::create_directories(p);
-    return p.string();
+    return create_temporary_directory().string();
 }
 
 }  // namespace silkworm::etl

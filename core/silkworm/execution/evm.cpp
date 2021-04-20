@@ -346,7 +346,7 @@ bool EvmHost::account_exists(const evmc::address& address) const noexcept {
 
 evmc_access_status EvmHost::access_account(const evmc::address& address) noexcept {
     if (evm_.is_precompiled(address)) {
-        return EVMC_WARM_ACCESS;
+        return EVMC_ACCESS_WARM;
     }
     return evm_.state().access_account(address);
 }

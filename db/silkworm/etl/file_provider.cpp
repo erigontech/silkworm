@@ -16,13 +16,13 @@
 
 #include "file_provider.hpp"
 
-#include <boost/filesystem/operations.hpp>
+#include <filesystem>
 
 #include <silkworm/common/util.hpp>
 
 namespace silkworm::etl {
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 // https://abseil.io/tips/117
 FileProvider::FileProvider(std::string file_name, size_t id) : id_{id}, file_name_{std::move(file_name)} {}

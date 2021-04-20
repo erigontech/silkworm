@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
+#include <filesystem>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -27,9 +27,13 @@
 #include <silkworm/etl/collector.hpp>
 
 using namespace silkworm;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
-enum Operation { HashAccount, HashStorage, Code };
+enum Operation {
+    HashAccount,
+    HashStorage,
+    Code,
+};
 
 std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_checking(Operation operation) {
     switch (operation) {
@@ -41,6 +45,7 @@ std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_checking(Operatio
             return {db::table::kPlainContractCode, db::table::kContractCode};
     }
 }
+
 void check(lmdb::Transaction* txn, Operation operation) {
     auto [source_config, target_config] = get_tables_for_checking(operation);
     auto source_table{txn->open(source_config)};
@@ -130,8 +135,8 @@ int main(int argc, char* argv[]) {
     SILKWORM_LOG(LogLevel::Info) << "Checking HashState" << std::endl;
 
     // Check data.mdb exists in provided directory
-    boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
-    if (!boost::filesystem::exists(db_file)) {
+    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }

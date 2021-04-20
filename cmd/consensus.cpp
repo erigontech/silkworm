@@ -15,6 +15,7 @@
 */
 
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -23,7 +24,6 @@
 #include <vector>
 
 #include <CLI/CLI.hpp>
-#include <boost/filesystem.hpp>
 #include <evmc/loader.h>
 #include <nlohmann/json.hpp>
 
@@ -40,7 +40,7 @@
 
 using namespace silkworm;
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 static const fs::path kDifficultyDir{"BasicTests"};
 
@@ -586,7 +586,7 @@ int main(int argc, char* argv[]) {
 
     if (!evm_path.empty()) {
         evmc_loader_error_code err;
-        evm = evmc_load_and_create(evm_path.c_str(), &err);
+        evm = evmc_load_and_configure(evm_path.c_str(), &err);
         if (err) {
             std::cerr << "Failed to load EVM: " << evmc_last_error_msg() << std::endl;
             return -1;

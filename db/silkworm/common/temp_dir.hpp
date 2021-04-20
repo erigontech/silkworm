@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_TEMP_DIR_H_
-#define SILKWORM_COMMON_TEMP_DIR_H_
+#ifndef SILKWORM_COMMON_TEMP_DIR_HPP_
+#define SILKWORM_COMMON_TEMP_DIR_HPP_
 
+#include <filesystem>
 #include <string>
 
 namespace silkworm {
+
+std::filesystem::path create_temporary_directory(size_t max_tries = 1000);
 
 // Creates a temporary directory on construction and removes it on destruction.
 class TemporaryDirectory {
@@ -38,4 +41,4 @@ class TemporaryDirectory {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_TEMP_DIR_H_
+#endif  // SILKWORM_COMMON_TEMP_DIR_HPP_

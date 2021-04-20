@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
+#include <filesystem>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/filesystem.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/magic_enum.hpp>
@@ -28,7 +28,8 @@
 #include <silkworm/etl/collector.hpp>
 
 using namespace silkworm;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
+
 /*
     * Operation is used to distinguish what bucket we want to generated
     * HashAccount is for genenerating HashedAccountBucket
@@ -36,11 +37,16 @@ namespace fs = boost::filesystem;
     * Code generates hashed key => code_hash mapping
 
 */
-enum Operation { HashAccount, HashStorage, Code };
+enum Operation {
+    HashAccount,
+    HashStorage,
+    Code,
+};
+
 /*
  *  Convert changeset key/value pair to their database format
  */
-Bytes convert_to_db_format(Bytes& key, Bytes& value) {
+Bytes convert_to_db_format(const Bytes& key, const Bytes& value) {
     if (key.size() == 8) {
         return value.substr(0, kAddressLength);
     }
@@ -258,8 +264,8 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     // Check data.mdb exists in provided directory
-    boost::filesystem::path db_file{boost::filesystem::path(db_path) / boost::filesystem::path("data.mdb")};
-    if (!boost::filesystem::exists(db_file)) {
+    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }

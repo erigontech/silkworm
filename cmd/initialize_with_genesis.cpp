@@ -16,8 +16,8 @@
 
 #include <stdlib.h>
 
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
@@ -192,12 +192,8 @@ int main(int argc, char* argv[]) {
 
         header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
         header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
-
-        auto nonce_str{genesis_json["nonce"].get<std::string>()};
-        auto nonce_bytes{from_hex(nonce_str)};
-        auto diff_nonce_size(8 - nonce_bytes->size());
-        for (size_t i = 0; i < nonce_bytes->size(); i++)
-            header.nonce[i + diff_nonce_size] = nonce_bytes->at(i + diff_nonce_size);
+        auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
+        std::memcpy(&header.nonce, &nonce, 8);
 
         // Write header
         auto blockhash{header.hash()};

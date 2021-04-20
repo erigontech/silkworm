@@ -65,6 +65,10 @@ uint64_t get_stage_unwind(lmdb::Transaction& txn, const char* stage_name);
 // Sets the invalidation point for the given stage
 void set_stage_unwind(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num);
 
+// Clears the invalidation point for the given stage
+void clear_stage_unwind(lmdb::Transaction& txn, const char* stage_name);
+
+
 }  // namespace silkworm::db::stages
 
 #endif  // !SILKWORM_DB_STAGES_H_

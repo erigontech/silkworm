@@ -58,4 +58,8 @@ void set_stage_unwind(lmdb::Transaction& txn, const char* stage_name, uint64_t b
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageUnwind);
 }
 
+void clear_stage_unwind(lmdb::Transaction& txn, const char* stage_name) {
+    set_stage_data(txn, stage_name, 0, silkworm::db::table::kSyncStageUnwind);
+}
+
 }  // namespace silkworm::db::stages

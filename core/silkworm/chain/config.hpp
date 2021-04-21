@@ -26,8 +26,15 @@
 namespace silkworm {
 
 struct ChainConfig {
+
     // https://eips.ethereum.org/EIPS/eip-155
     uint64_t chain_id{0};
+
+    /*
+    * Note for developers !
+    * Adding/removing members here require to integrate Json() method
+    * in config.cpp *AND* in silkworm/db/common/access_layer.cpp
+    */
 
 #define IMPLEMENT_HAS(NAME)                                                   \
     bool has_##NAME(uint64_t block_num) const noexcept {                      \

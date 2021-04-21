@@ -237,7 +237,7 @@ void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
 
         Bytes code{from_hex(j["code"].get<std::string>()).value()};
         if (!code.empty()) {
-            account.incarnation = 1;
+            account.incarnation = kDefaultIncarnation;
             ethash::hash256 hash{keccak256(code)};
             std::memcpy(account.code_hash.bytes, hash.bytes, kHashLength);
             state.update_account_code(address, account.incarnation, account.code_hash, code);

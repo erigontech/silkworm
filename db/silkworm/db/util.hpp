@@ -37,8 +37,6 @@ static_assert(kIncarnationLength == sizeof(uint64_t));
 
 constexpr size_t kStoragePrefixLength{kAddressLength + kIncarnationLength};
 
-constexpr uint64_t kDefaultIncarnation{1};
-
 struct Entry {
     ByteView key;
     ByteView value;
@@ -58,7 +56,6 @@ Bytes block_key(uint64_t block_number);
 
 // Turbo-Geth HeaderKey & BlockBodyKey
 Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
-
 
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation);
 

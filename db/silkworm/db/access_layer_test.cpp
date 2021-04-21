@@ -18,7 +18,9 @@
 
 #include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
+#include <nlohmann/json.hpp>
 
+#include <silkworm/common/chain_genesis.hpp>
 #include <silkworm/common/temp_dir.hpp>
 
 #include "tables.hpp"
@@ -334,6 +336,33 @@ namespace db {
 
         CHECK(config.has_value());
         CHECK(config.value() == kMainnetConfig);
+
+        std::string source_genesis(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+
+        auto genesis_json{nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false)};
+        CHECK(genesis_json != nlohmann::json::value_t::discarded);
+        CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
+        config = parse_chain_config(genesis_json["config"].dump());
+        CHECK(config.has_value());
+        CHECK(config.value() == kMainnetConfig);
+
+        source_genesis.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
+
+        genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
+        CHECK(genesis_json != nlohmann::json::value_t::discarded);
+        CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
+        config = parse_chain_config(genesis_json["config"].dump());
+        CHECK(config.has_value());
+        CHECK(config.value() == kGoerliConfig);
+
+        source_genesis.assign(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
+
+        genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
+        CHECK(genesis_json != nlohmann::json::value_t::discarded);
+        CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
+        config = parse_chain_config(genesis_json["config"].dump());
+        CHECK(config.has_value());
+        CHECK(config.value() == kRinkebyConfig);
     }
 
 }  // namespace db

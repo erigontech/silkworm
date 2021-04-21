@@ -26,29 +26,27 @@
 namespace silkworm {
 
 struct ChainConfig {
-
     // https://eips.ethereum.org/EIPS/eip-155
     uint64_t chain_id{0};
 
     /*
-    * Note for developers !
-    * Adding/removing members here require to integrate Json() method
-    * in config.cpp *AND* in silkworm/db/common/access_layer.cpp
-    */
-
-#define IMPLEMENT_HAS(NAME)                                                   \
-    bool has_##NAME(uint64_t block_num) const noexcept {                      \
-        return NAME##_block.has_value() && NAME##_block.value() <= block_num; \
-    }
+     * Note for developers !
+     * Adding/removing members here require to integrate Json() method
+     * in config.cpp *AND* in silkworm/db/common/access_layer.cpp
+     */
 
     // https://eips.ethereum.org/EIPS/eip-606
     std::optional<uint64_t> homestead_block;
-    IMPLEMENT_HAS(homestead)
+    bool has_homestead(uint64_t block_num) const noexcept {
+        return homestead_block.has_value() && homestead_block.value() <= block_num;
+    }
 
     // https://eips.ethereum.org/EIPS/eip-608
     // https://ecips.ethereumclassic.org/ECIPs/ecip-1015
     std::optional<uint64_t> tangerine_whistle_block;
-    IMPLEMENT_HAS(tangerine_whistle);
+    bool has_tangerine_whistle(uint64_t block_num) const noexcept {
+        return tangerine_whistle_block.has_value() && tangerine_whistle_block.value() <= block_num;
+    }
 
     // TODO[ETC] EIP-160 was applied to ETC before the rest of Spurious Dragon; see
     // https://ecips.ethereumclassic.org/ECIPs/ecip-1066
@@ -56,41 +54,53 @@ struct ChainConfig {
     // https://eips.ethereum.org/EIPS/eip-607
     // https://ecips.ethereumclassic.org/ECIPs/ecip-1054
     std::optional<uint64_t> spurious_dragon_block;
-    IMPLEMENT_HAS(spurious_dragon);
+    bool has_spurious_dragon(uint64_t block_num) const noexcept {
+        return spurious_dragon_block.has_value() && spurious_dragon_block.value() <= block_num;
+    }
 
     // https://eips.ethereum.org/EIPS/eip-609
     // https://ecips.ethereumclassic.org/ECIPs/ecip-1054
     std::optional<uint64_t> byzantium_block;
-    IMPLEMENT_HAS(byzantium);
+    bool has_byzantium(uint64_t block_num) const noexcept {
+        return byzantium_block.has_value() && byzantium_block.value() <= block_num;
+    }
 
     // https://eips.ethereum.org/EIPS/eip-1013
     // https://ecips.ethereumclassic.org/ECIPs/ecip-1056
     std::optional<uint64_t> constantinople_block;
-    IMPLEMENT_HAS(constantinople);
+    bool has_constantinople(uint64_t block_num) const noexcept {
+        return constantinople_block.has_value() && constantinople_block.value() <= block_num;
+    }
 
     // https://eips.ethereum.org/EIPS/eip-1716
     // https://ecips.ethereumclassic.org/ECIPs/ecip-1056
     std::optional<uint64_t> petersburg_block;
-    IMPLEMENT_HAS(petersburg);
+    bool has_petersburg(uint64_t block_num) const noexcept {
+        return petersburg_block.has_value() && petersburg_block.value() <= block_num;
+    }
 
     // https://eips.ethereum.org/EIPS/eip-1679
     // https://ecips.ethereumclassic.org/ECIPs/ecip-1088
     std::optional<uint64_t> istanbul_block;
-    IMPLEMENT_HAS(istanbul);
+    bool has_istanbul(uint64_t block_num) const noexcept {
+        return istanbul_block.has_value() && istanbul_block.value() <= block_num;
+    }
 
     // https://eips.ethereum.org/EIPS/eip-2387
     std::optional<uint64_t> muir_glacier_block;
-    IMPLEMENT_HAS(muir_glacier);
+    bool has_muir_glacier(uint64_t block_num) const noexcept {
+        return muir_glacier_block.has_value() && muir_glacier_block.value() <= block_num;
+    }
 
     // https://github.com/ethereum/eth1.0-specs/blob/master/network-upgrades/berlin.md
     std::optional<uint64_t> berlin_block;
-    IMPLEMENT_HAS(berlin);
+    bool has_berlin(uint64_t block_num) const noexcept {
+        return berlin_block.has_value() && berlin_block.value() <= block_num;
+    }
 
     // https://eips.ethereum.org/EIPS/eip-779
     std::optional<uint64_t> dao_block;
-    IMPLEMENT_HAS(dao);
-
-#undef IMPLEMENT_HAS
+    bool has_dao(uint64_t block_num) const noexcept { return dao_block.has_value() && dao_block.value() <= block_num; }
 
     nlohmann::json Json() const noexcept;
 };

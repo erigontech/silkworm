@@ -18,35 +18,33 @@
 
 namespace silkworm {
 
+static inline void member_to_json(nlohmann::json& json, const std::string& key,
+                                  const std::optional<uint64_t>& source) {
+    if (source.has_value()) {
+        json[key] = source.value();
+    }
+}
+
 nlohmann::json ChainConfig::Json() const noexcept {
     nlohmann::json ret;
 
     ret["chainId"] = chain_id;
 
-#define OPTIONAL_TO_JSON(SOURCE, TARGET) \
-    if (SOURCE.has_value()) {            \
-        ret[TARGET] = SOURCE.value();    \
-    }
-
-    OPTIONAL_TO_JSON(homestead_block, "homesteadBlock");
-    OPTIONAL_TO_JSON(tangerine_whistle_block, "eip150Block");
-    OPTIONAL_TO_JSON(spurious_dragon_block, "eip155Block");
-    OPTIONAL_TO_JSON(byzantium_block, "byzantiumBlock");
-    OPTIONAL_TO_JSON(constantinople_block, "constantinopleBlock");
-    OPTIONAL_TO_JSON(petersburg_block, "petersburgBlock");
-    OPTIONAL_TO_JSON(istanbul_block, "istanbulBlock");
-    OPTIONAL_TO_JSON(muir_glacier_block, "muirGlacierBlock");
-    OPTIONAL_TO_JSON(dao_block, "daoForkBlock");
-    OPTIONAL_TO_JSON(berlin_block, "berlinBlock");
-
-#undef OPTIONAL_TO_JSON
+    member_to_json(ret, "homesteadBlock", homestead_block);
+    member_to_json(ret, "eip150Block", tangerine_whistle_block);
+    member_to_json(ret, "eip155Block", spurious_dragon_block);
+    member_to_json(ret, "byzantiumBlock", byzantium_block);
+    member_to_json(ret, "constantinopleBlock", constantinople_block);
+    member_to_json(ret, "petersburgBlock", petersburg_block);
+    member_to_json(ret, "istanbulBlock", istanbul_block);
+    member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
+    member_to_json(ret, "daoForkBlock", dao_block);
+    member_to_json(ret, "berlinBlock", berlin_block);
 
     return ret;
 }
 
-bool operator==(const ChainConfig& a, const ChainConfig& b) {
-    return a.Json() == b.Json();
-}
+bool operator==(const ChainConfig& a, const ChainConfig& b) { return a.Json() == b.Json(); }
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.Json().dump(); }
 
 }  // namespace silkworm

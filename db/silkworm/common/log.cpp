@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <thread>
+
 #include <absl/time/clock.h>
 
 #include <silkworm/common/log.hpp>
@@ -35,7 +37,8 @@ std::mutex log_::log_mtx_;
 
 std::ostream& log_::header_(LogLevel level) {
     return log_streams_ << kLogTags_[static_cast<int>(level)] << "["
-                        << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "]";
+                        << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone())
+                        << "] " << std::this_thread::get_id() << " ";
 }
 
 void log_expand_and_compile_test_() { SILKWORM_LOG(LogLevel::Info) << "log_expand_and_compile_test_" << std::endl; }

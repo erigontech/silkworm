@@ -408,7 +408,13 @@ std::optional<ChainConfig> parse_chain_config(std::string_view json) {
 
     READ_JSON_UINT64("homesteadBlock", config.homestead_block);
     READ_JSON_UINT64("eip150Block", config.tangerine_whistle_block);
+
+    /** Quote @yperbasis
+    * "We can treat both eip155 & eip158 as synonyms for Spurious Dragon."
+    */
     READ_JSON_UINT64("eip155Block", config.spurious_dragon_block);
+    READ_JSON_UINT64("eip158Block", config.spurious_dragon_block);
+
     READ_JSON_UINT64("byzantiumBlock", config.byzantium_block);
     READ_JSON_UINT64("constantinopleBlock", config.constantinople_block);
     READ_JSON_UINT64("petersburgBlock", config.petersburg_block);

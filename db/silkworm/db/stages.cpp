@@ -23,7 +23,7 @@ namespace silkworm::db::stages {
 namespace {
 
     bool is_known_stage(const char* name) {
-        for (auto stage : AllStages) {
+        for (auto stage : kAllStages) {
             if (strcmp(stage, name) == 0) {
                 return true;
             }

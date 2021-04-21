@@ -33,7 +33,7 @@ constexpr const char* kHeadersKey{"Headers"};                         // Headers
 constexpr const char* kBlockHashesKey{"BlockHashes"};                 // Headers Number are written, fills blockHash => number bucket
 constexpr const char* kBlockBodiesKey{"Bodies"};                      // Block bodies are downloaded, TxHash and UncleHash are getting verified
 constexpr const char* kSendersKey{"Senders"};                         // "From" recovered from signatures
-constexpr const char* kExecutionKey{"Execution"};                     // Executing each block w/o buildinf a trie
+constexpr const char* kExecutionKey{"Execution"};                     // Executing each block w/o building a trie
 constexpr const char* kIntermediateHashesKey{"IntermediateHashes"};   // Generate intermediate hashes, calculate the state root hash
 constexpr const char* kHashStateKey{"HashState"};                     // Apply Keccak256 to all the keys in the state
 constexpr const char* kAccountHistoryKey{"AccountHistoryIndex"};      // Generating history index for accounts
@@ -50,7 +50,7 @@ constexpr const char* kMiningFinishKey{"MiningFinish"};               // Mining 
 
 // clang-format on
 
-constexpr const char* AllStages[]{
+constexpr const char* kAllStages[]{
     kHeadersKey,   kBlockHashesKey,    kBlockBodiesKey,         kSendersKey,  kExecutionKey,  kIntermediateHashesKey,
     kHashStateKey, kAccountHistoryKey, kStorageHistoryIndexKey, kLogIndexKey, kCallTracesKey, kTxLookupKey,
     kTxPoolKey,    kFinishKey};

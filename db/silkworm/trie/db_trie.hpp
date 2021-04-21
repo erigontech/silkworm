@@ -38,15 +38,16 @@ For example:
         v                    v                              v                         v                  v
 +--------------------+   +----------------------+     +---------------+        +---------------+  +---------------+
 | Account:           |   | BranchNode: 0x0B0004 |     | Account:      |        | Account:      |  | Account:      |
-| 0x0B0000...        |   | has no record in     |     | 0x0B01...     |        | 0x0B0301...   |  | 0x0B0304...   |
+| 0xB00...           |   | has no record in     |     | 0xB1...       |        | 0xB31...      |  | 0xB34...      |
 | in hashed_accounts |   |    trie_account      |     |               |        |               |  |               |
 +--------------------+   +----------------------+     +---------------+        +---------------+  +---------------+
                            |                |
                            v                v
                       +---------------+  +---------------+
                       | Account:      |  | Account:      |
-                      | 0x0B000400... |  | 0x0B000401... |
+                      | 0xB040...     |  | 0xB041...     |
                       +---------------+  +---------------+
+N.B. Nibbles in trie_account keys are unpacked, while hashed_accounts have packed keys.
 
 Invariants:
 - tree_mask is a subset of state_mask (tree_mask ⊆ state_mask)
@@ -134,7 +135,7 @@ Node unmarshal_node(ByteView v);
 
 // TG RegenerateIntermediateHashes
 // might throw WrongRoot
-void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, evmc::bytes32* expected_root = nullptr);
+void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc::bytes32* expected_root = nullptr);
 
 }  // namespace silkworm::trie
 

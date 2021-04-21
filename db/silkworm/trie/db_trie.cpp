@@ -176,7 +176,7 @@ Node unmarshal_node(ByteView v) {
     return {state_mask, tree_mask, hash_mask, hashes, root_hash};
 }
 
-void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, evmc::bytes32* expected_root) {
+void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc::bytes32* expected_root) {
     // TODO[Issue 179] storage
     etl::Collector account_collector{tmp_dir};
     DbTrieLoader loader{txn, account_collector};

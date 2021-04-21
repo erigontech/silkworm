@@ -15,6 +15,7 @@
 ]]
 
 find_package(Microsoft.GSL CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 if(MSVC)
   add_compile_options(/EHsc)

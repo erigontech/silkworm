@@ -18,13 +18,35 @@
 
 namespace silkworm {
 
-bool operator==(const ChainConfig& a, const ChainConfig& b) {
-    return a.chain_id == b.chain_id && a.homestead_block == b.homestead_block &&
-           a.tangerine_whistle_block == b.tangerine_whistle_block &&
-           a.spurious_dragon_block == b.spurious_dragon_block && a.byzantium_block == b.byzantium_block &&
-           a.constantinople_block == b.constantinople_block && a.petersburg_block == b.petersburg_block &&
-           a.istanbul_block == b.istanbul_block && a.muir_glacier_block == b.muir_glacier_block &&
-           a.berlin_block == b.berlin_block && a.dao_block == b.dao_block;
+nlohmann::json ChainConfig::Json() const noexcept {
+    nlohmann::json ret;
+
+    ret["chainId"] = chain_id;
+
+#define OPTIONAL_TO_JSON(SOURCE, TARGET) \
+    if (SOURCE.has_value()) {            \
+        ret[TARGET] = SOURCE.value();    \
+    }
+
+    OPTIONAL_TO_JSON(homestead_block, "homesteadBlock");
+    OPTIONAL_TO_JSON(tangerine_whistle_block, "eip150Block");
+    OPTIONAL_TO_JSON(spurious_dragon_block, "eip155Block");
+    OPTIONAL_TO_JSON(byzantium_block, "byzantiumBlock");
+    OPTIONAL_TO_JSON(constantinople_block, "constantinopleBlock");
+    OPTIONAL_TO_JSON(petersburg_block, "petersburgBlock");
+    OPTIONAL_TO_JSON(istanbul_block, "istanbulBlock");
+    OPTIONAL_TO_JSON(muir_glacier_block, "muirGlacierBlock");
+    OPTIONAL_TO_JSON(dao_block, "daoForkBlock");
+    OPTIONAL_TO_JSON(berlin_block, "berlinBlock");
+
+#undef OPTIONAL_TO_JSON
+
+    return ret;
 }
+
+bool operator==(const ChainConfig& a, const ChainConfig& b) {
+    return a.Json() == b.Json();
+}
+std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.Json().dump(); }
 
 }  // namespace silkworm

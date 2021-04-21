@@ -166,6 +166,12 @@ int main(int argc, char* argv[]) {
                                                 std::to_string(kAddressLength) + " bytes");
                 }
 
+                auto account_hash{to_bytes32(keccak256(*address_bytes).bytes)};
+                // Is it unique ?
+                if (account_rlp.find(account_hash) != account_rlp.end()) {
+                    throw std::logic_error("Account " + item.key() + " has been allocated twice");
+                }
+
                 auto balance_str{item.value()["balance"].get<std::string>()};
                 Account account{0, intx::from_string<intx::uint256>(balance_str)};
 

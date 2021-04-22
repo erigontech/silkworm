@@ -39,7 +39,6 @@ using namespace silkworm;
 
 constexpr uint8_t genesis_body[] = {195, 128, 128, 192};
 constexpr uint8_t genesis_receipts[] = {246};
-constexpr evmc::bytes32 kNullOmmers{0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes32};
 
 std::string last_header_key = "LastHeader";
 
@@ -98,6 +97,7 @@ int main(int argc, char* argv[]) {
                 source_data.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
                 break;
             default:
+                // TODO Configs for ETC and Ropsten
                 SILKWORM_LOG(LogLevel::Error) << "Unknown chain id: " << chain_id << std::endl;
                 return -1;
         }
@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
         db::table::create_all(*txn);
 
         auto block_number{Bytes(8, '\0')};
-        evmc::bytes32 root_hash;
+        evmc::bytes32 root_hash{kEmptyRoot};  // Will eventually be overwritten if there are allocations
 
         if (genesis_json.contains("alloc")) {
             if (!genesis_json["alloc"].is_object()) {
@@ -166,8 +166,8 @@ int main(int argc, char* argv[]) {
                                                 std::to_string(kAddressLength) + " bytes");
                 }
 
+                // Check account uniqueness ? (can't have two alloc records for same account)
                 auto account_hash{to_bytes32(keccak256(*address_bytes).bytes)};
-                // Is it unique ?
                 if (account_rlp.find(account_hash) != account_rlp.end()) {
                     throw std::logic_error("Account " + item.key() + " has been allocated twice");
                 }
@@ -180,8 +180,7 @@ int main(int argc, char* argv[]) {
                 plainstate_table->put(*address_bytes, account.encode_for_storage(true));
 
                 // Fills hash builder
-                auto hash{keccak256(*address_bytes)};
-                account_rlp[to_bytes32(hash.bytes)] = account.rlp(kEmptyRoot);
+                account_rlp[account_hash] = account.rlp(kEmptyRoot);
             }
 
             auto it{account_rlp.cbegin()};
@@ -190,21 +189,17 @@ int main(int argc, char* argv[]) {
                 hb.add(full_view(it->first), it->second);
             }
             root_hash = hb.root_hash();
-
-        } else {
-            root_hash = kEmptyRoot;
         }
 
         // Fill Header
         BlockHeader header;
-        header.ommers_hash = kNullOmmers;
+        header.ommers_hash = kEmptyListHash;
         header.state_root = root_hash;
         header.transactions_root = kEmptyRoot;
         header.receipts_root = kEmptyRoot;
 
         auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
         header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
-
         header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
         header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
 

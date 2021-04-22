@@ -339,7 +339,7 @@ namespace db {
 
         std::string source_genesis(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
 
-        auto genesis_json{nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false)};
+        auto genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
         CHECK(genesis_json != nlohmann::json::value_t::discarded);
         CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
         config = parse_chain_config(genesis_json["config"].dump());

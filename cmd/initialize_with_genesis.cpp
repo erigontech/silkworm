@@ -173,7 +173,7 @@ int main(int argc, char* argv[]) {
                 auto account_hash{to_bytes32(k.bytes)};
                 bool is_null{true};
                 for (auto& b : account_hash.bytes) {
-                    if ((int)b) {
+                    if (static_cast<int>(b)) {
                         is_null = false;
                         break;
                     }

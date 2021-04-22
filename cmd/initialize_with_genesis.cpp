@@ -88,12 +88,15 @@ int main(int argc, char* argv[]) {
         // Parse from a known set of configs
         switch (chain_id) {
             case 1:
+                assert(sizeof_genesis_mainnet_data() != 0);
                 source_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
                 break;
             case 4:
+                assert(sizeof_genesis_rinkeby_data() != 0);
                 source_data.assign(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
                 break;
             case 5:
+                assert(sizeof_genesis_goerli_data() != 0);
                 source_data.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
                 break;
             default:
@@ -111,12 +114,31 @@ int main(int argc, char* argv[]) {
     }
 
     // Sanity checks over collected data
-    if (!genesis_json.contains("difficulty") || !genesis_json.contains("nonce") || !genesis_json.contains("gasLimit") ||
-        !genesis_json.contains("timestamp") || !genesis_json.contains("extraData") ||
-        !genesis_json.contains("config") || !genesis_json["config"].is_object()) {
+    std::string err{};
+    if (!genesis_json.contains("difficulty")) err.append("difficulty;");
+    if (!genesis_json.contains("nonce")) err.append("nonce;");
+    if (!genesis_json.contains("gasLimit")) err.append("gasLimit;");
+    if (!genesis_json.contains("timestamp")) err.append("timestamp;");
+    if (!genesis_json.contains("extraData")) err.append("extraData;");
+    if (!genesis_json.contains("config")) {
+        err.append("config;");
+    } else {
+        if (!genesis_json["config"].is_object()) {
+            err.append("config not object");
+        }
+    }
+    if (!err.empty()) {
         std::cerr << "\nError : Incomplete genesis file" << std::endl;
+        std::cerr << err << std::endl;
         return -1;
     }
+
+    //if (!genesis_json.contains("difficulty") || !genesis_json.contains("nonce") || !genesis_json.contains("gasLimit") ||
+    //    !genesis_json.contains("timestamp") || !genesis_json.contains("extraData") ||
+    //    !genesis_json.contains("config") || !genesis_json["config"].is_object()) {
+    //    std::cerr << "\nError : Incomplete genesis file" << std::endl;
+    //    return -1;
+    //}
 
     // Try parse genesis config
     {

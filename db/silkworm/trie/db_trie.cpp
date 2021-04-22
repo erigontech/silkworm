@@ -25,7 +25,8 @@
 
 namespace silkworm::trie {
 
-Aggregator::Aggregator(etl::Collector& account_collector) {
+Aggregator::Aggregator(etl::Collector& account_collector, etl::Collector&) {
+    // TODO[Issue 179] storage collector
     builder_.collector = [&account_collector](ByteView key_hex, const Node& node) {
         if (key_hex.empty()) {
             return;
@@ -66,8 +67,8 @@ void AccountTrieCursor::next() {
     // TODO[Issue 179] implement
 }
 
-DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector)
-    : txn_{txn}, aggregator_{account_collector} {}
+DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
+    : txn_{txn}, aggregator_{account_collector, storage_collector} {}
 
 // CalcTrieRoot algo:
 //	for iterateIHOfAccounts {
@@ -177,9 +178,9 @@ Node unmarshal_node(ByteView v) {
 }
 
 void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc::bytes32* expected_root) {
-    // TODO[Issue 179] storage
     etl::Collector account_collector{tmp_dir};
-    DbTrieLoader loader{txn, account_collector};
+    etl::Collector storage_collector{tmp_dir};
+    DbTrieLoader loader{txn, account_collector, storage_collector};
     evmc::bytes32 root{loader.calculate_root()};
     if (expected_root && root != *expected_root) {
         SILKWORM_LOG(LogLevel::Error) << "Wrong trie root: " << to_hex(root) << ", expected: " << to_hex(*expected_root)
@@ -188,6 +189,8 @@ void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc
     }
     auto account_tbl{txn.open(db::table::kTrieOfAccounts)};
     account_collector.load(account_tbl.get());
+    auto storage_tbl{txn.open(db::table::kTrieOfStorage)};
+    storage_collector.load(storage_tbl.get());
 }
 
 }  // namespace silkworm::trie

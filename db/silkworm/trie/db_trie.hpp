@@ -79,7 +79,7 @@ class Aggregator {
     Aggregator(const Aggregator&) = delete;
     Aggregator& operator=(const Aggregator&) = delete;
 
-    explicit Aggregator(etl::Collector& account_collector);
+    Aggregator(etl::Collector& account_collector, etl::Collector& storage_collector);
 
     void add_account(ByteView packed_key, const Account& account);
 
@@ -113,7 +113,7 @@ class DbTrieLoader {
     DbTrieLoader(const DbTrieLoader&) = delete;
     DbTrieLoader& operator=(const DbTrieLoader&) = delete;
 
-    DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector);
+    DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector, etl::Collector& storage_collector);
 
     evmc::bytes32 calculate_root();
 

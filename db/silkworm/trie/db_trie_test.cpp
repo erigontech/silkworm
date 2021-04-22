@@ -18,6 +18,7 @@
 
 #include <bitset>
 
+#include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/temp_dir.hpp>
@@ -45,9 +46,53 @@ TEST_CASE("Node marshalling") {
     CHECK(unmarshal_node(b) == n);
 }
 
+static evmc::bytes32 setup_storage(lmdb::Transaction& txn, ByteView storage_key) {
+    const auto loc1{0x1200000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const auto loc2{0x1400000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const auto loc3{0x3000000000000000000000000000000000000000000000000000000000E00000_bytes32};
+    const auto loc4{0x3000000000000000000000000000000000000000000000000000000000E00001_bytes32};
+
+    const auto val1{*from_hex("0x42")};
+    const auto val2{*from_hex("0x01")};
+    const auto val3{*from_hex("0x127a89")};
+    const auto val4{*from_hex("0x05")};
+
+    auto hashed_storage{txn.open(db::table::kHashedStorage)};
+
+    Bytes data1{full_view(loc1)};
+    data1.append(val1);
+    hashed_storage->put(storage_key, data1);
+    Bytes data2{full_view(loc2)};
+    data2.append(val2);
+    hashed_storage->put(storage_key, data2);
+    Bytes data3{full_view(loc3)};
+    data3.append(val3);
+    hashed_storage->put(storage_key, data3);
+    Bytes data4{full_view(loc4)};
+    data4.append(val4);
+    hashed_storage->put(storage_key, data4);
+
+    HashBuilder storage_hb;
+
+    Bytes value_rlp;
+    rlp::encode(value_rlp, val1);
+    storage_hb.add(full_view(loc1), value_rlp);
+    value_rlp.clear();
+    rlp::encode(value_rlp, val2);
+    storage_hb.add(full_view(loc2), value_rlp);
+    value_rlp.clear();
+    rlp::encode(value_rlp, val3);
+    storage_hb.add(full_view(loc3), value_rlp);
+    value_rlp.clear();
+    rlp::encode(value_rlp, val4);
+    storage_hb.add(full_view(loc4), value_rlp);
+
+    return storage_hb.root_hash();
+}
+
 TEST_CASE("Layout of account trie") {
-    TemporaryDirectory tmp_dir1;
-    TemporaryDirectory tmp_dir2;
+    const TemporaryDirectory tmp_dir1;
+    const TemporaryDirectory tmp_dir2;
 
     lmdb::DatabaseConfig db_config{tmp_dir1.path(), 32 * kMebi};
     db_config.set_readonly(false);
@@ -55,48 +100,67 @@ TEST_CASE("Layout of account trie") {
     auto txn{env->begin_rw_transaction()};
     db::table::create_all(*txn);
 
-    HashBuilder hb;
+    // ----------------------------------------------------------------
+    // Set up test accounts. See the big comment in db_trie.hpp
+    // ----------------------------------------------------------------
 
     auto hashed_accounts{txn->open(db::table::kHashedAccounts)};
 
-    auto hash1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
-    Account a1{0, 3 * kEther};
-    hashed_accounts->put(full_view(hash1), a1.encode_for_storage());
-    hb.add(full_view(hash1), a1.rlp(/*storage_root=*/kEmptyRoot));
+    HashBuilder hb;
 
-    auto hash2{0xB040000000000000000000000000000000000000000000000000000000000000_bytes32};
-    Account a2{0, 1 * kEther};
-    hashed_accounts->put(full_view(hash2), a2.encode_for_storage());
-    hb.add(full_view(hash2), a2.rlp(/*storage_root=*/kEmptyRoot));
+    const auto key1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const Account a1{0, 3 * kEther};
+    hashed_accounts->put(full_view(key1), a1.encode_for_storage());
+    hb.add(full_view(key1), a1.rlp(/*storage_root=*/kEmptyRoot));
 
-    auto hash3{0xB041000000000000000000000000000000000000000000000000000000000000_bytes32};
-    Account a3{0, 2 * kEther};
-    hashed_accounts->put(full_view(hash3), a3.encode_for_storage());
-    hb.add(full_view(hash3), a3.rlp(/*storage_root=*/kEmptyRoot));
+    const auto key2{0xB040000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const Account a2{0, 1 * kEther};
+    hashed_accounts->put(full_view(key2), a2.encode_for_storage());
+    hb.add(full_view(key2), a2.rlp(/*storage_root=*/kEmptyRoot));
 
-    auto hash4{0xB100000000000000000000000000000000000000000000000000000000000000_bytes32};
-    Account a4{0, 4 * kEther};
-    hashed_accounts->put(full_view(hash4), a4.encode_for_storage());
-    hb.add(full_view(hash4), a4.rlp(/*storage_root=*/kEmptyRoot));
+    const auto key3{0xB041000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const auto code_hash{0x5be74cad16203c4905c068b012a2e9fb6d19d036c410f16fd177f337541440dd_bytes32};
+    const Account a3{0, 2 * kEther, code_hash, kDefaultIncarnation};
+    hashed_accounts->put(full_view(key3), a3.encode_for_storage());
 
-    auto hash5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
-    Account a5{0, 8 * kEther};
-    hashed_accounts->put(full_view(hash5), a5.encode_for_storage());
-    hb.add(full_view(hash5), a5.rlp(/*storage_root=*/kEmptyRoot));
+    Bytes storage_key(kHashLength + db::kIncarnationLength, '\0');
+    std::memcpy(&storage_key[0], key3.bytes, kHashLength);
+    boost::endian::store_big_u64(&storage_key[kHashLength], kDefaultIncarnation);
+    const evmc::bytes32 storage_root{setup_storage(*txn, storage_key)};
 
-    auto hash6{0xB340000000000000000000000000000000000000000000000000000000000000_bytes32};
-    Account a6{0, 1 * kEther};
-    hashed_accounts->put(full_view(hash6), a6.encode_for_storage());
-    hb.add(full_view(hash6), a6.rlp(/*storage_root=*/kEmptyRoot));
+    hb.add(full_view(key3), a3.rlp(storage_root));
 
-    evmc::bytes32 expected_root{hb.root_hash()};
+    const auto key4{0xB100000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const Account a4{0, 4 * kEther};
+    hashed_accounts->put(full_view(key4), a4.encode_for_storage());
+    hb.add(full_view(key4), a4.rlp(/*storage_root=*/kEmptyRoot));
+
+    const auto key5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const Account a5{0, 8 * kEther};
+    hashed_accounts->put(full_view(key5), a5.encode_for_storage());
+    hb.add(full_view(key5), a5.rlp(/*storage_root=*/kEmptyRoot));
+
+    const auto key6{0xB340000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const Account a6{0, 1 * kEther};
+    hashed_accounts->put(full_view(key6), a6.encode_for_storage());
+    hb.add(full_view(key6), a6.rlp(/*storage_root=*/kEmptyRoot));
+
+    // ----------------------------------------------------------------
+    // Populate account & storage trie DB tables
+    // ----------------------------------------------------------------
+
+    const evmc::bytes32 expected_root{hb.root_hash()};
     regenerate_db_tries(*txn, tmp_dir2.path(), &expected_root);
+
+    // ----------------------------------------------------------------
+    // Check account trie
+    // ----------------------------------------------------------------
 
     auto account_trie{txn->open(db::table::kTrieOfAccounts)};
 
-    auto val1{account_trie->get(*from_hex("0B"))};
-    REQUIRE(val1);
-    Node node1{unmarshal_node(*val1)};
+    const auto marshalled_node1{account_trie->get(*from_hex("0B"))};
+    REQUIRE(marshalled_node1);
+    const Node node1{unmarshal_node(*marshalled_node1)};
 
     CHECK(0b1011 == node1.state_mask());
     CHECK(0b0001 == node1.tree_mask());
@@ -105,12 +169,12 @@ TEST_CASE("Layout of account trie") {
     CHECK(!node1.root_hash());
 
     REQUIRE(node1.hashes().size() == 2);
-    CHECK(to_hex(node1.hashes()[0]) == "86b50d01e06bb57923d56f77a9169bd6a076caf6e5f3599eaf3377ea7b16b527");
+    CHECK(to_hex(node1.hashes()[0]) == "73c79f000d939ffefc2538946c674266463820d253cceb8e5ae847cad62cc4e3");
     CHECK(to_hex(node1.hashes()[1]) == "5a9b2d3fe40002e2893c30fc364d1cd9b327cdbe01c9c4cb13e684c06bba9be4");
 
-    auto val2{account_trie->get(*from_hex("0B00"))};
-    REQUIRE(val2);
-    Node node2{unmarshal_node(*val2)};
+    const auto marshalled_node2{account_trie->get(*from_hex("0B00"))};
+    REQUIRE(marshalled_node2);
+    const Node node2{unmarshal_node(*marshalled_node2)};
 
     CHECK(0b10001 == node2.state_mask());
     CHECK(0b00000 == node2.tree_mask());
@@ -119,9 +183,30 @@ TEST_CASE("Layout of account trie") {
     CHECK(!node2.root_hash());
 
     REQUIRE(node2.hashes().size() == 1);
-    CHECK(to_hex(node2.hashes()[0]) == "72156b0033e1c3afa2f86ae5b80f59647614607352f5087b02970c046da73940");
+    CHECK(to_hex(node2.hashes()[0]) == "8856c9d96e1321531e4d9ab27eb5a56b5c448effc4fd41bd591b0b14f055c5f9");
 
     // TODO[Issue 179] check that there's nothing else in account_trie
+
+    // ----------------------------------------------------------------
+    // Check storage trie
+    // ----------------------------------------------------------------
+
+    auto storage_trie{txn->open(db::table::kTrieOfStorage)};
+
+    const auto marshalled_node3{storage_trie->get(storage_key)};
+    REQUIRE(marshalled_node3);
+    const Node node3{unmarshal_node(*marshalled_node3)};
+
+    CHECK(0b1010 == node3.state_mask());
+    CHECK(0b0000 == node3.tree_mask());
+    CHECK(0b0010 == node3.hash_mask());
+
+    CHECK(node3.root_hash() == storage_root);
+
+    REQUIRE(node3.hashes().size() == 1);
+    CHECK(to_hex(node3.hashes()[0]) == "6a37be14be662e2278327442d451710915bf0ec444c8b588ad1698df00a6e2c7");
+
+    // TODO[Issue 179] check that there's nothing else in storage_trie
 }
 
 }  // namespace silkworm::trie

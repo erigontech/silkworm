@@ -153,6 +153,9 @@ int main(int argc, char* argv[]) {
             auto account_changeset_table{txn->open(db::table::kPlainAccountChangeSet)};
 
             // Iterate over allocs
+            int null_count{0};
+            int not_null_count{0};
+
             for (auto& item : genesis_json["alloc"].items()) {
                 if (!item.value().is_object() || !item.value().contains("balance") ||
                     !item.value()["balance"].is_string()) {
@@ -166,30 +169,57 @@ int main(int argc, char* argv[]) {
                                                 std::to_string(kAddressLength) + " bytes");
                 }
 
-                // Check account uniqueness ? (can't have two alloc records for same account)
-                auto account_hash{to_bytes32(keccak256(*address_bytes).bytes)};
-                if (account_rlp.find(account_hash) != account_rlp.end()) {
-                    throw std::logic_error("Account " + item.key() + " has been allocated twice");
+                auto k{keccak256(*address_bytes)};
+                auto account_hash{to_bytes32(k.bytes)};
+                bool is_null{true};
+                for (auto& b : account_hash.bytes) {
+                    if ((int)b) {
+                        is_null = false;
+                        break;
+                    }
                 }
 
-                auto balance_str{item.value()["balance"].get<std::string>()};
-                Account account{0, intx::from_string<intx::uint256>(balance_str)};
+                if (is_null) {
+                    null_count++;
+                    std::cout << "Address " << to_hex(address_bytes.value()) << std::endl;
+                    std::cout << "Hash    " << to_hex(account_hash) << std::endl;
+                } else {
+                    not_null_count++;
+                }
 
-                // Make the account
-                account_changeset_table->put(block_number, *address_bytes);
-                plainstate_table->put(*address_bytes, account.encode_for_storage(true));
+                //// Check account uniqueness ? (can't have two alloc records for same account)
+                // auto account_hash{to_bytes32((keccak256(address_bytes.value())).bytes)};
+                // if (account_rlp.size() && account_rlp.find(account_hash) != account_rlp.end()) {
+                //    std::cout << "Address " << to_hex(address_bytes.value()) << std::endl;
+                //    std::cout << "Hash    " << to_hex(keccak256(address_bytes.value()).bytes) << std::endl;
+                //    for (auto& b : account_hash.bytes) {
+                //        std::cout << "Byte " << (int)b << std::endl;
+                //    }
+                //    throw std::logic_error("Account " + item.key() + " has been allocated twice");
+                //}
 
-                // Fills hash builder
-                account_rlp[account_hash] = account.rlp(kEmptyRoot);
+                // auto balance_str{item.value()["balance"].get<std::string>()};
+                // Account account{0, intx::from_string<intx::uint256>(balance_str)};
+
+                //// Make the account
+                // account_changeset_table->put(block_number, *address_bytes);
+                // plainstate_table->put(*address_bytes, account.encode_for_storage(true));
+
+                //// Fills hash builder
+                // account_rlp[account_hash] = account.rlp(kEmptyRoot);
             }
 
-            auto it{account_rlp.cbegin()};
-            trie::HashBuilder hb{full_view(it->first), it->second};
-            for (++it; it != account_rlp.cend(); ++it) {
-                hb.add(full_view(it->first), it->second);
-            }
-            root_hash = hb.root_hash();
+            // auto it{account_rlp.cbegin()};
+            // trie::HashBuilder hb{full_view(it->first), it->second};
+            // for (++it; it != account_rlp.cend(); ++it) {
+            //    hb.add(full_view(it->first), it->second);
+            //}
+            // root_hash = hb.root_hash();
+        std::cout << "Null count " << null_count << " Not null count " << not_null_count << std::endl;
         }
+
+        // Stop for debug
+        throw std::runtime_error("Debug");
 
         // Fill Header
         BlockHeader header;

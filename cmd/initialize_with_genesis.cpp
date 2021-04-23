@@ -133,7 +133,8 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    //if (!genesis_json.contains("difficulty") || !genesis_json.contains("nonce") || !genesis_json.contains("gasLimit") ||
+    // if (!genesis_json.contains("difficulty") || !genesis_json.contains("nonce") || !genesis_json.contains("gasLimit")
+    // ||
     //    !genesis_json.contains("timestamp") || !genesis_json.contains("extraData") ||
     //    !genesis_json.contains("config") || !genesis_json["config"].is_object()) {
     //    std::cerr << "\nError : Incomplete genesis file" << std::endl;
@@ -192,16 +193,9 @@ int main(int argc, char* argv[]) {
                 }
 
                 auto k{keccak256(*address_bytes)};
-                auto account_hash{to_bytes32(k.bytes)};
-                bool is_null{true};
-                for (auto& b : account_hash.bytes) {
-                    if (static_cast<int>(b)) {
-                        is_null = false;
-                        break;
-                    }
-                }
+                auto account_hash{to_bytes32({k.bytes, kHashLength})};
 
-                if (is_null) {
+                if (is_zero(account_hash)) {
                     null_count++;
                     std::cout << "Address " << to_hex(address_bytes.value()) << std::endl;
                     std::cout << "Hash    " << to_hex(account_hash) << std::endl;
@@ -237,7 +231,7 @@ int main(int argc, char* argv[]) {
             //    hb.add(full_view(it->first), it->second);
             //}
             // root_hash = hb.root_hash();
-        std::cout << "Null count " << null_count << " Not null count " << not_null_count << std::endl;
+            std::cout << "Null count " << null_count << " Not null count " << not_null_count << std::endl;
         }
 
         // Stop for debug

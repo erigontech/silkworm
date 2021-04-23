@@ -243,7 +243,7 @@ std::optional<Account> read_account(lmdb::Transaction& txn, const evmc::address&
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash
         auto code_hash_table{txn.open(table::kPlainContractCode)};
-        std::optional<ByteView> hash{code_hash_table->get(storage_prefix(address, acc.incarnation))};
+        std::optional<ByteView> hash{code_hash_table->get(storage_prefix(full_view(address), acc.incarnation))};
         if (hash && hash->length() == kHashLength) {
             std::memcpy(acc.code_hash.bytes, hash->data(), kHashLength);
         }
@@ -260,7 +260,7 @@ evmc::bytes32 read_storage(lmdb::Transaction& txn, const evmc::address& address,
     }
     if (!val) {
         auto table{txn.open(table::kPlainState)};
-        val = table->get(storage_prefix(address, incarnation), full_view(location));
+        val = table->get(storage_prefix(full_view(address), incarnation), full_view(location));
     }
     if (!val) {
         return {};

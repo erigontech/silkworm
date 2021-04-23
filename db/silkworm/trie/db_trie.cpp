@@ -48,12 +48,7 @@ evmc::bytes32 Aggregator::root() { return builder_.root_hash(); }
 
 AccountTrieCursor::AccountTrieCursor(lmdb::Transaction&) {}
 
-bool AccountTrieCursor::can_skip_state() const {
-    // TODO[Issue 179] implement
-    return false;
-}
-
-Bytes AccountTrieCursor::first_uncovered_prefix() const {
+Bytes AccountTrieCursor::first_uncovered_prefix() {
     // TODO[Issue 179] implement
     return {};
 }
@@ -67,10 +62,41 @@ void AccountTrieCursor::next() {
     // TODO[Issue 179] implement
 }
 
+bool AccountTrieCursor::can_skip_state() const {
+    // TODO[Issue 179] implement
+    return false;
+}
+
+StorageTrieCursor::StorageTrieCursor(lmdb::Transaction&) {}
+
+Bytes StorageTrieCursor::seek_to_account(ByteView) {
+    // TODO[Issue 179] implement
+    return {};
+}
+
+Bytes StorageTrieCursor::first_uncovered_prefix() {
+    // TODO[Issue 179] implement
+    return {};
+}
+
+std::optional<Bytes> StorageTrieCursor::key() const {
+    // TODO[Issue 179] implement
+    return std::nullopt;
+}
+
+void StorageTrieCursor::next() {
+    // TODO[Issue 179] implement
+}
+
+bool StorageTrieCursor::can_skip_state() const {
+    // TODO[Issue 179] implement
+    return false;
+}
+
 DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
     : txn_{txn}, aggregator_{account_collector, storage_collector} {}
 
-// CalcTrieRoot algo:
+// calculate_root algo:
 //	for iterateIHOfAccounts {
 //		if canSkipState
 //          goto SkipAccounts
@@ -93,21 +119,43 @@ DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_colle
 //	}
 evmc::bytes32 DbTrieLoader::calculate_root() {
     auto acc_state{txn_.open(db::table::kHashedAccounts)};
+    auto storage_state{txn_.open(db::table::kHashedStorage)};
+
+    StorageTrieCursor storage_trie{txn_};
 
     for (AccountTrieCursor acc_trie{txn_};; acc_trie.next()) {
         if (!acc_trie.can_skip_state()) {
-            for (auto entry{acc_state->seek(acc_trie.first_uncovered_prefix())}; entry; entry = acc_state->get_next()) {
-                Bytes key_hex{unpack_nibbles(entry->key)};
+            for (auto a{acc_state->seek(acc_trie.first_uncovered_prefix())}; a; a = acc_state->get_next()) {
+                const Bytes key_hex{unpack_nibbles(a->key)};
                 if (acc_trie.key() && acc_trie.key() < key_hex) {
                     break;
                 }
-                auto [account, err]{decode_account_from_storage(entry->value)};
+                const auto [account, err]{decode_account_from_storage(a->value)};
                 if (err != rlp::DecodingResult::kOk) {
                     throw err;
                 }
-                aggregator_.add_account(entry->key, account);
+                aggregator_.add_account(a->key, account);
 
-                // TODO[Issue 179] storage
+                if (account.incarnation == 0) {
+                    continue;
+                }
+
+                const Bytes acc_with_inc{db::storage_prefix(a->key, account.incarnation)};
+                for (storage_trie.seek_to_account(acc_with_inc);; storage_trie.next()) {
+                    if (!storage_trie.can_skip_state()) {
+                        for (auto s{storage_state->seek_dup(acc_with_inc, storage_trie.first_uncovered_prefix())}; s;
+                             s = storage_state->get_next_dup()) {
+                            // TODO[Issue 179] implement
+                        }
+                    }
+
+                    // SkipStorage
+                    if (!storage_trie.key()) {
+                        break;
+                    }
+
+                    // TODO[Issue 179] use storage trie
+                }
             }
         }
 
@@ -116,7 +164,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
             break;
         }
 
-        // TODO[Issue 179] Receive AHashStreamItem
+        // TODO[Issue 179] use account trie
     }
 
     return aggregator_.root();
@@ -153,11 +201,11 @@ Bytes marshal_node(const Node& n) {
 }
 
 Node unmarshal_node(ByteView v) {
-    auto state_mask{boost::endian::load_big_u16(v.data())};
+    const auto state_mask{boost::endian::load_big_u16(v.data())};
     v.remove_prefix(2);
-    auto tree_mask{boost::endian::load_big_u16(v.data())};
+    const auto tree_mask{boost::endian::load_big_u16(v.data())};
     v.remove_prefix(2);
-    auto hash_mask{boost::endian::load_big_u16(v.data())};
+    const auto hash_mask{boost::endian::load_big_u16(v.data())};
     v.remove_prefix(2);
 
     std::optional<evmc::bytes32> root_hash{std::nullopt};
@@ -167,7 +215,7 @@ Node unmarshal_node(ByteView v) {
         v.remove_prefix(kHashLength);
     }
 
-    size_t num_hashes{v.length() / kHashLength};
+    const size_t num_hashes{v.length() / kHashLength};
     std::vector<evmc::bytes32> hashes(num_hashes);
     for (size_t i{0}; i < num_hashes; ++i) {
         std::memcpy(hashes[i].bytes, v.data(), kHashLength);
@@ -181,7 +229,7 @@ void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc
     etl::Collector account_collector{tmp_dir};
     etl::Collector storage_collector{tmp_dir};
     DbTrieLoader loader{txn, account_collector, storage_collector};
-    evmc::bytes32 root{loader.calculate_root()};
+    const evmc::bytes32 root{loader.calculate_root()};
     if (expected_root && root != *expected_root) {
         SILKWORM_LOG(LogLevel::Error) << "Wrong trie root: " << to_hex(root) << ", expected: " << to_hex(*expected_root)
                                       << "\n";

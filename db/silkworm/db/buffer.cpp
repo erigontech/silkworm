@@ -81,7 +81,8 @@ void Buffer::update_account_code(const evmc::address& address, uint64_t incarnat
     if (hash_to_code_.insert_or_assign(code_hash, code).second) {
         bump_batch_size(kHashLength, code.length());
     }
-    if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(address, incarnation), code_hash).second) {
+    if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(full_view(address), incarnation), code_hash)
+            .second) {
         bump_batch_size(kStoragePrefixLength, kHashLength);
     }
 }
@@ -138,7 +139,7 @@ void Buffer::write_to_state_table() {
         if (auto it{storage_.find(address)}; it != storage_.end()) {
             for (const auto& contract : it->second) {
                 uint64_t incarnation{contract.first};
-                Bytes prefix{storage_prefix(address, incarnation)};
+                Bytes prefix{storage_prefix(full_view(address), incarnation)};
 
                 const auto& contract_storage{contract.second};
 

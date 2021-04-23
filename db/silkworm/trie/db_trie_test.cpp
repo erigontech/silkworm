@@ -123,9 +123,7 @@ TEST_CASE("Layout of account trie") {
     const Account a3{0, 2 * kEther, code_hash, kDefaultIncarnation};
     hashed_accounts->put(full_view(key3), a3.encode_for_storage());
 
-    Bytes storage_key(kHashLength + db::kIncarnationLength, '\0');
-    std::memcpy(&storage_key[0], key3.bytes, kHashLength);
-    boost::endian::store_big_u64(&storage_key[kHashLength], kDefaultIncarnation);
+    Bytes storage_key{db::storage_prefix(full_view(key3), kDefaultIncarnation)};
     const evmc::bytes32 storage_root{setup_storage(*txn, storage_key)};
 
     hb.add(full_view(key3), a3.rlp(storage_root));

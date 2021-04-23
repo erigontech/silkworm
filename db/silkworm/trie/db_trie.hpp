@@ -98,13 +98,32 @@ class AccountTrieCursor {
 
     explicit AccountTrieCursor(lmdb::Transaction& txn);
 
-    bool can_skip_state() const;
-
-    Bytes first_uncovered_prefix() const;
+    Bytes first_uncovered_prefix();
 
     std::optional<Bytes> key() const;
 
     void next();
+
+    bool can_skip_state() const;
+};
+
+// TG StorageTrieCursor
+class StorageTrieCursor {
+  public:
+    StorageTrieCursor(const StorageTrieCursor&) = delete;
+    StorageTrieCursor& operator=(const StorageTrieCursor&) = delete;
+
+    explicit StorageTrieCursor(lmdb::Transaction& txn);
+
+    Bytes seek_to_account(ByteView hashed_address_with_incarnation);
+
+    Bytes first_uncovered_prefix();
+
+    std::optional<Bytes> key() const;
+
+    void next();
+
+    bool can_skip_state() const;
 };
 
 // TG FlatDBTrieLoader

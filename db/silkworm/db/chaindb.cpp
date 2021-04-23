@@ -456,35 +456,57 @@ std::optional<ByteView> Table::get(ByteView key) {
 }
 
 std::optional<ByteView> Table::get(ByteView key, ByteView sub_key) {
-    MDB_val key_val{db::to_mdb_val(key)};
-    MDB_val data{db::to_mdb_val(sub_key)};
-    int rc{get(&key_val, &data, MDB_GET_BOTH_RANGE)};
+    MDB_val mdb_key{db::to_mdb_val(key)};
+    MDB_val mdb_val{db::to_mdb_val(sub_key)};
+    int rc{get(&mdb_key, &mdb_val, MDB_GET_BOTH_RANGE)};
     if (rc == MDB_NOTFOUND) {
-        return {};
+        return std::nullopt;
     }
     err_handler(rc);
 
-    ByteView x{db::from_mdb_val(data)};
+    ByteView x{db::from_mdb_val(mdb_val)};
     if (!has_prefix(x, sub_key)) {
-        return {};
+        return std::nullopt;
     } else {
         x.remove_prefix(sub_key.length());
         return x;
     }
 }
 
+std::optional<ByteView> Table::seek_dup(ByteView key, ByteView data) {
+    MDB_val mdb_key{db::to_mdb_val(key)};
+    MDB_val mdb_val{db::to_mdb_val(data)};
+    int rc{get(&mdb_key, &mdb_val, MDB_GET_BOTH_RANGE)};
+    if (rc == MDB_NOTFOUND) {
+        return std::nullopt;
+    }
+    err_handler(rc);
+    return db::from_mdb_val(mdb_val);
+}
+
 std::optional<db::Entry> Table::get_next() {
-    MDB_val key_val;
-    MDB_val data;
-    int rc{get(&key_val, &data, MDB_NEXT)};
+    MDB_val mdb_key;
+    MDB_val mdb_val;
+    int rc{get(&mdb_key, &mdb_val, MDB_NEXT)};
     if (rc == MDB_NOTFOUND) {
         return std::nullopt;
     }
     err_handler(rc);
     db::Entry out;
-    out.key = db::from_mdb_val(key_val);
-    out.value = db::from_mdb_val(data);
+    out.key = db::from_mdb_val(mdb_key);
+    out.value = db::from_mdb_val(mdb_val);
     return out;
+}
+
+std::optional<ByteView> Table::get_next_dup() {
+    MDB_val mdb_key;
+    MDB_val mdb_val;
+    int rc{get(&mdb_key, &mdb_val, MDB_NEXT_DUP)};
+    if (rc == MDB_NOTFOUND) {
+        return std::nullopt;
+    }
+    err_handler(rc);
+    return db::from_mdb_val(mdb_val);
 }
 
 void Table::del(ByteView key) {

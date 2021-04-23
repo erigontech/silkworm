@@ -264,6 +264,9 @@ class Table {
      */
     std::optional<ByteView> get(ByteView key, ByteView sub_key);
 
+    // TODO[Issue 179] comment
+    std::optional<ByteView> seek_dup(ByteView key, ByteView data);
+
     /** @brief Deletes an entry.
      * Doesn't do anything if the item is not present.
      */
@@ -293,6 +296,7 @@ class Table {
     int get_next(MDB_val* key, MDB_val* data);  // Move cursor at next item in table
     std::optional<db::Entry> get_next();        // Move cursor at next item in table
     int get_next_dup(MDB_val* key, MDB_val* data);    // Move cursor at next data item in current key (only MDB_DUPSORT)
+    std::optional<ByteView> get_next_dup();           // Move cursor at next data item in current key (only MDB_DUPSORT)
     int get_next_nodup(MDB_val* key, MDB_val* data);  // Move cursor at next data item in next key (only MDB_DUPSORT)
     int get_last(MDB_val* key, MDB_val* data);        // Move cursor at last item in table
     int get_dcount(size_t* count);                    // Returns the count of duplicates at current position

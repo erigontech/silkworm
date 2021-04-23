@@ -48,8 +48,9 @@ using AccountChanges = absl::btree_map<evmc::address, Bytes>;
 // address -> incarnation -> location -> zeroless initial value
 using StorageChanges = absl::btree_map<evmc::address, absl::btree_map<uint64_t, absl::btree_map<evmc::bytes32, Bytes>>>;
 
-// Turbo-Geth PlainGenerateStoragePrefix
-Bytes storage_prefix(const evmc::address& address, uint64_t incarnation);
+// Turbo-Geth GenerateStoragePrefix, PlainGenerateStoragePrefix
+// address can be either plain account address (20 bytes) or hash thereof (32 bytes)
+Bytes storage_prefix(ByteView address, uint64_t incarnation);
 
 // Turbo-Geth CanonicalHeadersKey / ReceiptsKey
 Bytes block_key(uint64_t block_number);

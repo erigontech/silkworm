@@ -264,8 +264,14 @@ class Table {
      */
     std::optional<ByteView> get(ByteView key, ByteView sub_key);
 
-    // TODO[Issue 179] comment
-    std::optional<ByteView> seek_dup(ByteView key, ByteView data);
+    /* For a given key with multiple sorted values (MDB_DUPSORT)
+     * find the first value >= lower_bound.
+     *
+     * lower_bound may not be empty.
+     *
+     * See the memory warning above.
+     */
+    std::optional<ByteView> seek_dup(ByteView key, ByteView lower_bound);
 
     /** @brief Deletes an entry.
      * Doesn't do anything if the item is not present.
@@ -281,10 +287,10 @@ class Table {
      * MDB_cursor interfaces
      */
 
-    std::optional<db::Entry> seek(ByteView prefix);  // Position cursor to first key >= of given prefix
-    int seek(MDB_val* key, MDB_val* data);           // Position cursor to first key >= of given key
-    int seek_exact(MDB_val* key, MDB_val* data);     // Position cursor to key == of given key
-    int get_current(MDB_val* key, MDB_val* data);    // Gets data from current cursor position
+    std::optional<db::Entry> seek(ByteView lower_bound);  // Position cursor to first key >= lower_bound
+    int seek(MDB_val* key, MDB_val* data);                // Position cursor to first key >= than the given key
+    int seek_exact(MDB_val* key, MDB_val* data);          // Position cursor to key == to the given key
+    int get_current(MDB_val* key, MDB_val* data);         // Gets data from current cursor position
     int del_current(bool alldupkeys = false);  // Delete key/data pair at current cursor position. alldupkeys may be set
                                                // true only for tables opened MDB_DUPSORT flag and in that case all
                                                // records with same key are deleted too

@@ -16,6 +16,7 @@
 
 #include "chaindb.hpp"
 
+#include <cassert>
 #include <filesystem>
 
 #include <boost/algorithm/string.hpp>
@@ -473,9 +474,10 @@ std::optional<ByteView> Table::get(ByteView key, ByteView sub_key) {
     }
 }
 
-std::optional<ByteView> Table::seek_dup(ByteView key, ByteView data) {
+std::optional<ByteView> Table::seek_dup(ByteView key, ByteView lower_bound) {
+    assert(!lower_bound.empty());
     MDB_val mdb_key{db::to_mdb_val(key)};
-    MDB_val mdb_val{db::to_mdb_val(data)};
+    MDB_val mdb_val{db::to_mdb_val(lower_bound)};
     int rc{get(&mdb_key, &mdb_val, MDB_GET_BOTH_RANGE)};
     if (rc == MDB_NOTFOUND) {
         return std::nullopt;
@@ -521,19 +523,19 @@ void Table::del(ByteView key, ByteView sub_key) {
     }
 }
 
-std::optional<db::Entry> Table::seek(ByteView prefix) {
-    MDB_val key_val{db::to_mdb_val(prefix)};
-    MDB_val data;
-    MDB_cursor_op op{prefix.empty() ? MDB_FIRST : MDB_SET_RANGE};
-    int rc{get(&key_val, &data, op)};
+std::optional<db::Entry> Table::seek(ByteView lower_bound) {
+    MDB_val mdb_key{db::to_mdb_val(lower_bound)};
+    MDB_val mdb_val;
+    const MDB_cursor_op op{lower_bound.empty() ? MDB_FIRST : MDB_SET_RANGE};
+    int rc{get(&mdb_key, &mdb_val, op)};
     if (rc == MDB_NOTFOUND) {
-        return {};
+        return std::nullopt;
     }
     err_handler(rc);
 
     db::Entry entry;
-    entry.key = db::from_mdb_val(key_val);
-    entry.value = db::from_mdb_val(data);
+    entry.key = db::from_mdb_val(mdb_key);
+    entry.value = db::from_mdb_val(mdb_val);
     return entry;
 }
 

@@ -76,7 +76,7 @@ Bytes StorageTrieCursor::seek_to_account(ByteView) {
 
 Bytes StorageTrieCursor::first_uncovered_prefix() {
     // TODO[Issue 179] implement
-    return {};
+    return Bytes(1, '\0');
 }
 
 std::optional<Bytes> StorageTrieCursor::key() const {

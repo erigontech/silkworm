@@ -22,6 +22,7 @@
 #include <silkworm/common/temp_dir.hpp>
 
 #include "tables.hpp"
+#include "stages.hpp"
 
 namespace silkworm {
 
@@ -72,6 +73,44 @@ static BlockBody sample_block_body() {
 }
 
 namespace db {
+
+    TEST_CASE("read_stages") {
+        TemporaryDirectory tmp_dir;
+
+        lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
+        db_config.set_readonly(false);
+        auto env{lmdb::get_env(db_config)};
+        auto txn{env->begin_rw_transaction()};
+        table::create_all(*txn);
+
+        // Querying an non existent stage name should throe
+        CHECK_THROWS(stages::get_stage_progress(*txn, "NonExistentStage"));
+        CHECK_THROWS(stages::get_stage_unwind(*txn, "NonExistentStage"));
+
+        // Not valued stage should return 0
+        CHECK(stages::get_stage_progress(*txn, stages::kBlockBodiesKey) == 0);
+        CHECK(stages::get_stage_unwind(*txn, stages::kBlockBodiesKey) == 0);
+
+        // Value a stage progress and check returned value
+        uint64_t block_num{0};
+        uint64_t expected_block_num{123456};
+        CHECK_NOTHROW(stages::set_stage_progress(*txn, stages::kBlockBodiesKey, expected_block_num));
+        CHECK_NOTHROW(stages::set_stage_unwind(*txn, stages::kBlockBodiesKey, expected_block_num));
+        CHECK_NOTHROW(block_num = stages::get_stage_progress(*txn, stages::kBlockBodiesKey));
+        CHECK(block_num == expected_block_num);
+        CHECK_NOTHROW(block_num = stages::get_stage_unwind(*txn, stages::kBlockBodiesKey));
+        CHECK(block_num == expected_block_num);
+        CHECK_NOTHROW(stages::clear_stage_unwind(*txn, stages::kBlockBodiesKey));
+        CHECK(!stages::get_stage_unwind(*txn, stages::kBlockBodiesKey));
+
+        // Write voluntary wrong value in stage
+        Bytes stage_progress(2, 0);
+        MDB_val mdb_key{std::strlen(stages::kBlockBodiesKey), const_cast<char*>(stages::kBlockBodiesKey)};
+        MDB_val mdb_data{db::to_mdb_val(stage_progress)};
+        CHECK_NOTHROW(lmdb::err_handler(txn->put(table::kSyncStageProgress, &mdb_key, &mdb_data)));
+        CHECK_THROWS(block_num = stages::get_stage_progress(*txn, stages::kBlockBodiesKey));
+
+    }
 
     TEST_CASE("read_header") {
         TemporaryDirectory tmp_dir;

@@ -448,7 +448,7 @@ int Table::put(MDB_val* key, MDB_val* data, unsigned int flag) { return mdb_curs
 std::optional<ByteView> Table::get(ByteView key) {
     MDB_val key_val{db::to_mdb_val(key)};
     MDB_val data;
-    int rc{get(&key_val, &data, MDB_SET)};
+    const int rc{get(&key_val, &data, MDB_SET)};
     if (rc == MDB_NOTFOUND) {
         return std::nullopt;
     }
@@ -459,7 +459,7 @@ std::optional<ByteView> Table::get(ByteView key) {
 std::optional<ByteView> Table::get(ByteView key, ByteView sub_key) {
     MDB_val mdb_key{db::to_mdb_val(key)};
     MDB_val mdb_val{db::to_mdb_val(sub_key)};
-    int rc{get(&mdb_key, &mdb_val, MDB_GET_BOTH_RANGE)};
+    const int rc{get(&mdb_key, &mdb_val, MDB_GET_BOTH_RANGE)};
     if (rc == MDB_NOTFOUND) {
         return std::nullopt;
     }
@@ -478,7 +478,7 @@ std::optional<ByteView> Table::seek_dup(ByteView key, ByteView lower_bound) {
     assert(!lower_bound.empty());
     MDB_val mdb_key{db::to_mdb_val(key)};
     MDB_val mdb_val{db::to_mdb_val(lower_bound)};
-    int rc{get(&mdb_key, &mdb_val, MDB_GET_BOTH_RANGE)};
+    const int rc{get(&mdb_key, &mdb_val, MDB_GET_BOTH_RANGE)};
     if (rc == MDB_NOTFOUND) {
         return std::nullopt;
     }
@@ -489,7 +489,7 @@ std::optional<ByteView> Table::seek_dup(ByteView key, ByteView lower_bound) {
 std::optional<db::Entry> Table::get_next() {
     MDB_val mdb_key;
     MDB_val mdb_val;
-    int rc{get(&mdb_key, &mdb_val, MDB_NEXT)};
+    const int rc{get(&mdb_key, &mdb_val, MDB_NEXT)};
     if (rc == MDB_NOTFOUND) {
         return std::nullopt;
     }
@@ -503,7 +503,7 @@ std::optional<db::Entry> Table::get_next() {
 std::optional<ByteView> Table::get_next_dup() {
     MDB_val mdb_key;
     MDB_val mdb_val;
-    int rc{get(&mdb_key, &mdb_val, MDB_NEXT_DUP)};
+    const int rc{get(&mdb_key, &mdb_val, MDB_NEXT_DUP)};
     if (rc == MDB_NOTFOUND) {
         return std::nullopt;
     }
@@ -527,7 +527,7 @@ std::optional<db::Entry> Table::seek(ByteView lower_bound) {
     MDB_val mdb_key{db::to_mdb_val(lower_bound)};
     MDB_val mdb_val;
     const MDB_cursor_op op{lower_bound.empty() ? MDB_FIRST : MDB_SET_RANGE};
-    int rc{get(&mdb_key, &mdb_val, op)};
+    const int rc{get(&mdb_key, &mdb_val, op)};
     if (rc == MDB_NOTFOUND) {
         return std::nullopt;
     }

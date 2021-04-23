@@ -107,7 +107,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Parse Json data
-    auto genesis_json{nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false)};
+    // N.B. = instead of {} initialization due to https://github.com/nlohmann/json/issues/2204
+    auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
     if (genesis_json == nlohmann::json::value_t::discarded) {
         std::cerr << "\nError : Provided data is not a valid JSON format" << std::endl;
         return -1;

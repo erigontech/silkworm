@@ -18,6 +18,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/util.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 
@@ -47,11 +48,13 @@ TEST_CASE("Value transfer") {
 
     CallResult res{evm.execute(txn, 0)};
     CHECK(res.status == EVMC_INSUFFICIENT_BALANCE);
+    CHECK(res.data == Bytes{});
 
     state.add_to_balance(from, kEther);
 
     res = evm.execute(txn, 0);
     CHECK(res.status == EVMC_SUCCESS);
+    CHECK(res.data == Bytes{});
 
     CHECK(state.get_balance(from) == kEther - value);
     CHECK(state.get_balance(to) == value);
@@ -96,10 +99,12 @@ TEST_CASE("Smart contract with storage") {
     uint64_t gas{0};
     CallResult res{evm.execute(txn, gas)};
     CHECK(res.status == EVMC_OUT_OF_GAS);
+    CHECK(res.data == Bytes{});
 
     gas = 50'000;
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_SUCCESS);
+    CHECK(res.data == silkworm::from_hex("600035600055"));
 
     evmc::address contract_address{create_address(caller, /*nonce=*/1)};
     evmc::bytes32 key0{};
@@ -111,6 +116,7 @@ TEST_CASE("Smart contract with storage") {
 
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_SUCCESS);
+    CHECK(res.data == Bytes{});
     CHECK(state.get_current_storage(contract_address, key0) == new_val);
 }
 
@@ -168,16 +174,19 @@ TEST_CASE("Maximum call depth") {
     uint64_t gas{1'000'000};
     CallResult res{evm.execute(txn, gas)};
     CHECK(res.status == EVMC_SUCCESS);
+    CHECK(res.data == Bytes{});
 
     evmc::bytes32 num_of_recursions{to_bytes32(*from_hex("0400"))};
     txn.data = full_view(num_of_recursions);
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_SUCCESS);
+    CHECK(res.data == Bytes{});
 
     num_of_recursions = to_bytes32(*from_hex("0401"));
     txn.data = full_view(num_of_recursions);
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_INVALID_INSTRUCTION);
+    CHECK(res.data == Bytes{});
 }
 
 TEST_CASE("DELEGATECALL") {
@@ -222,6 +231,7 @@ TEST_CASE("DELEGATECALL") {
     uint64_t gas{1'000'000};
     CallResult res{evm.execute(txn, gas)};
     CHECK(res.status == EVMC_SUCCESS);
+    CHECK(res.data == Bytes{});
 
     evmc::bytes32 key0{};
     CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0))) == to_hex(full_view(caller_address)));
@@ -281,6 +291,7 @@ TEST_CASE("CREATE should only return on failure") {
     uint64_t gas{150'000};
     CallResult res{evm.execute(txn, gas)};
     CHECK(res.status == EVMC_SUCCESS);
+    CHECK(res.data == Bytes{});
 
     evmc::address contract_address{create_address(caller, /*nonce=*/0)};
     evmc::bytes32 key0{};
@@ -314,6 +325,7 @@ TEST_CASE("Contract overwrite") {
 
     CHECK(res.status == EVMC_INVALID_INSTRUCTION);
     CHECK(res.gas_left == 0);
+    CHECK(res.data == Bytes{});
 }
 
 }  // namespace silkworm

@@ -22,6 +22,7 @@
 
 #include <intx/intx.hpp>
 
+#include <silkworm/common/util.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
 #include <silkworm/execution/state_pool.hpp>
@@ -33,6 +34,7 @@ namespace silkworm {
 struct CallResult {
     evmc_status_code status{EVMC_SUCCESS};
     uint64_t gas_left{0};
+    Bytes data;
 };
 
 class EVM {

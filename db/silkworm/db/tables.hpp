@@ -73,8 +73,8 @@ constexpr lmdb::TableConfig kSequence{"sequence"};
 constexpr lmdb::TableConfig kSnapshotInfo{"SNINFO"};
 constexpr lmdb::TableConfig kStateSnapshotInfo{"sSNINFO"};
 constexpr lmdb::TableConfig kStorageHistory{"hST"};
-constexpr lmdb::TableConfig kSyncStageProgress{"SSP2"};
-constexpr lmdb::TableConfig kSyncStageUnwind{"SSU2"};
+constexpr lmdb::TableConfig kSyncStageProgress{"SSP2"};  // Progresss for stages
+constexpr lmdb::TableConfig kSyncStageUnwind{"SSU2"};    // Unwind point for stages
 constexpr lmdb::TableConfig kTrieOfAccounts{"trie_account"};
 constexpr lmdb::TableConfig kTrieOfStorage{"trie_storage"};
 constexpr lmdb::TableConfig kTxLookup{"l"};

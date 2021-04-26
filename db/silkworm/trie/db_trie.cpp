@@ -25,8 +25,7 @@
 
 namespace silkworm::trie {
 
-Aggregator::Aggregator(etl::Collector& account_collector, etl::Collector&) {
-    // TODO[Issue 179] storage collector
+AccountAggregator::AccountAggregator(etl::Collector& account_collector) {
     builder_.collector = [&account_collector](ByteView unpacked_key, const Node& node) {
         if (unpacked_key.empty()) {
             return;
@@ -39,16 +38,23 @@ Aggregator::Aggregator(etl::Collector& account_collector, etl::Collector&) {
     };
 }
 
-void Aggregator::add_account(ByteView packed_key, const Account& a) {
-    // TODO[Issue 179] storage
-    builder_.add(packed_key, a.rlp(/*storage_root=*/kEmptyRoot));
+void AccountAggregator::add(ByteView packed_key, const Account& a, const evmc::bytes32& storage_root) {
+    builder_.add(packed_key, a.rlp(storage_root));
 }
 
-void Aggregator::add_storage(ByteView, ByteView, ByteView) {
-    // TODO[Issue 179] implement
+evmc::bytes32 AccountAggregator::root() { return builder_.root_hash(); }
+
+StorageAggregator::StorageAggregator(etl::Collector&) {
+    // TODO[Issue 179] use storage_collector
 }
 
-evmc::bytes32 Aggregator::root() { return builder_.root_hash(); }
+void StorageAggregator::add(ByteView packed_location, ByteView value) {
+    rlp_.clear();
+    rlp::encode(rlp_, value);
+    builder_.add(packed_location, rlp_);
+}
+
+evmc::bytes32 StorageAggregator::root() { return builder_.root_hash(); }
 
 AccountTrieCursor::AccountTrieCursor(lmdb::Transaction&) {}
 
@@ -98,7 +104,7 @@ bool StorageTrieCursor::can_skip_state() const {
 }
 
 DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
-    : txn_{txn}, aggregator_{account_collector, storage_collector} {}
+    : txn_{txn}, aggregator_{account_collector}, storage_collector_{storage_collector} {}
 
 // calculate_root algo:
 //	for iterateIHOfAccounts {
@@ -141,34 +147,41 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
             if (err != rlp::DecodingResult::kOk) {
                 throw err;
             }
-            aggregator_.add_account(a->key, account);
 
-            if (account.incarnation == 0) {
-                continue;
-            }
+            evmc::bytes32 storage_root{kEmptyRoot};
 
-            const Bytes acc_with_inc{db::storage_prefix(a->key, account.incarnation)};
-            for (storage_trie.seek_to_account(acc_with_inc);; storage_trie.next()) {
-                if (storage_trie.can_skip_state()) {
-                    goto use_storage_trie;
-                }
+            if (account.incarnation) {
+                StorageAggregator storage_aggregator{storage_collector_};
 
-                for (auto s{storage_state->seek_dup(acc_with_inc, storage_trie.first_uncovered_prefix())}; s;
-                     s = storage_state->get_next_dup()) {
-                    const Bytes unpacked_loc{unpack_nibbles(s->substr(0, kHashLength))};
-                    if (storage_trie.key() && storage_trie.key() < unpacked_loc) {
+                const Bytes acc_with_inc{db::storage_prefix(a->key, account.incarnation)};
+                for (storage_trie.seek_to_account(acc_with_inc);; storage_trie.next()) {
+                    if (storage_trie.can_skip_state()) {
+                        goto use_storage_trie;
+                    }
+
+                    for (auto s{storage_state->seek_dup(acc_with_inc, storage_trie.first_uncovered_prefix())}; s;
+                         s = storage_state->get_next_dup()) {
+                        const ByteView packed_loc{s->substr(0, kHashLength)};
+                        const ByteView value{s->substr(kHashLength)};
+                        const Bytes unpacked_loc{unpack_nibbles(packed_loc)};
+                        if (storage_trie.key() && storage_trie.key() < unpacked_loc) {
+                            break;
+                        }
+                        storage_aggregator.add(packed_loc, value);
+                    }
+
+                use_storage_trie:
+                    if (!storage_trie.key()) {
                         break;
                     }
-                    aggregator_.add_storage(acc_with_inc, unpacked_loc, s->substr(kHashLength));
+
+                    // TODO[Issue 179] use storage trie
                 }
 
-            use_storage_trie:
-                if (!storage_trie.key()) {
-                    break;
-                }
-
-                // TODO[Issue 179] use storage trie
+                storage_root = storage_aggregator.root();
             }
+
+            aggregator_.add(a->key, account, storage_root);
         }
 
     use_account_trie:

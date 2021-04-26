@@ -74,22 +74,41 @@ the correct bit in tree_mask bitmap
 namespace silkworm::trie {
 
 // TG RootHashAggregator
-class Aggregator {
+class AccountAggregator {
   public:
-    Aggregator(const Aggregator&) = delete;
-    Aggregator& operator=(const Aggregator&) = delete;
+    AccountAggregator(const AccountAggregator&) = delete;
+    AccountAggregator& operator=(const AccountAggregator&) = delete;
 
-    Aggregator(etl::Collector& account_collector, etl::Collector& storage_collector);
+    explicit AccountAggregator(etl::Collector& account_collector);
 
-    void add_account(ByteView packed_key, const Account& account);
-
-    void add_storage(ByteView account_with_incarnation, ByteView unpacked_location, ByteView value);
+    // Entries must be added in the strictly increasing lexicographic order (by key).
+    // See HashBuilder::add
+    void add(ByteView packed_key, const Account& account, const evmc::bytes32& storage_root);
 
     // Not idempotent, may only be called once.
     evmc::bytes32 root();
 
   private:
     HashBuilder builder_;
+};
+
+class StorageAggregator {
+  public:
+    StorageAggregator(const StorageAggregator&) = delete;
+    StorageAggregator& operator=(const StorageAggregator&) = delete;
+
+    explicit StorageAggregator(etl::Collector& storage_collector);
+
+    // Entries must be added in the strictly increasing lexicographic order (by key).
+    // See HashBuilder::add
+    void add(ByteView packed_location, ByteView value);
+
+    // Not idempotent, may only be called once.
+    evmc::bytes32 root();
+
+  private:
+    HashBuilder builder_;
+    Bytes rlp_;
 };
 
 // TG AccTrieCursor
@@ -140,7 +159,8 @@ class DbTrieLoader {
 
   private:
     lmdb::Transaction& txn_;
-    Aggregator aggregator_;
+    AccountAggregator aggregator_;
+    etl::Collector& storage_collector_;
 };
 
 class WrongRoot : public std::runtime_error {

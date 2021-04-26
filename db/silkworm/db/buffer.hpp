@@ -27,6 +27,7 @@
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/state/buffer.hpp>
+#include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
@@ -122,6 +123,8 @@ class Buffer : public StateBuffer {
     absl::btree_map<Bytes, intx::uint256> difficulty_{};
 
     absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
+
+    evmc::bytes32 account_storage_root(const evmc::address& address, uint64_t incarnation) const;
 
     // address -> incarnation -> location -> value
     absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>

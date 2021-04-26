@@ -29,6 +29,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
@@ -116,31 +117,31 @@ int main(int argc, char* argv[]) {
 
     // Sanity checks over collected data
     std::string err{};
-    if (!genesis_json.contains("difficulty")) err.append("difficulty;");
-    if (!genesis_json.contains("nonce")) err.append("nonce;");
-    if (!genesis_json.contains("gasLimit")) err.append("gasLimit;");
-    if (!genesis_json.contains("timestamp")) err.append("timestamp;");
-    if (!genesis_json.contains("extraData")) err.append("extraData;");
+    if (!genesis_json.contains("difficulty")) err.append("* Missing difficulty member\n");
+    if (!genesis_json.contains("nonce")) err.append("* Missing nonce member\n;");
+    if (!genesis_json.contains("gasLimit")) err.append("* Missing gasLimit member\n;");
+    if (!genesis_json.contains("timestamp")) err.append("* Missing timestamp member\n;");
+    if (!genesis_json.contains("extraData")) err.append("* Missing extraData member\n;");
     if (!genesis_json.contains("config")) {
-        err.append("config;");
+        err.append("* Missing config member\n;");
     } else {
         if (!genesis_json["config"].is_object()) {
-            err.append("config not object");
+            err.append("* Member config is not object");
+        } else {
+            if (genesis_json["config"].contains("ethash") &&
+                (!genesis_json.contains("mixhash") || !genesis_json["mixhash"].is_string())) {
+                err.append("Missing mixhash member for ethash PoW chain");
+            }
         }
     }
-    if (!err.empty()) {
-        std::cerr << "\nError : Incomplete genesis file" << std::endl;
-        std::cerr << err << std::endl;
-        return -1;
+    if (genesis_json.contains("alloc") && !genesis_json["alloc"].is_object()) {
+        err.append("* alloc member is not object");
     }
 
-    // if (!genesis_json.contains("difficulty") || !genesis_json.contains("nonce") || !genesis_json.contains("gasLimit")
-    // ||
-    //    !genesis_json.contains("timestamp") || !genesis_json.contains("extraData") ||
-    //    !genesis_json.contains("config") || !genesis_json["config"].is_object()) {
-    //    std::cerr << "\nError : Incomplete genesis file" << std::endl;
-    //    return -1;
-    //}
+    if (!err.empty()) {
+        std::cerr << "\nError : Incomplete genesis Json data : \n" << err << std::endl;
+        return -1;
+    }
 
     // Try parse genesis config
     {
@@ -162,23 +163,13 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
         db::table::create_all(*txn);
 
-        auto block_number{Bytes(8, '\0')};
-        evmc::bytes32 root_hash{kEmptyRoot};  // Will eventually be overwritten if there are allocations
+        // Initialize state_buffer for allocations (if any)
+        // and get root_hash
+        db::Buffer state_buffer(txn.get());
 
+        // Allocate accounts
         if (genesis_json.contains("alloc")) {
-            if (!genesis_json["alloc"].is_object()) {
-                throw std::invalid_argument("alloc member is not object");
-            }
-
-            // Filling account + constructing genesis root hash
-            std::map<evmc::bytes32, Bytes> account_rlp;
-            // Tables used
-            auto plainstate_table{txn->open(db::table::kPlainState)};
-            auto account_changeset_table{txn->open(db::table::kPlainAccountChangeSet)};
-
-            // Iterate over allocs
-            int null_count{0};
-            int not_null_count{0};
+            auto expected_allocations{genesis_json["alloc"].size()};
 
             for (auto& item : genesis_json["alloc"].items()) {
                 if (!item.value().is_object() || !item.value().contains("balance") ||
@@ -193,55 +184,41 @@ int main(int argc, char* argv[]) {
                                                 std::to_string(kAddressLength) + " bytes");
                 }
 
-                auto k{keccak256(*address_bytes)};
-                auto account_hash{to_bytes32({k.bytes, kHashLength})};
-
-                if (is_zero(account_hash)) {
-                    null_count++;
-                    std::cout << "Address " << to_hex(address_bytes.value()) << std::endl;
-                    std::cout << "Hash    " << to_hex(account_hash) << std::endl;
-                } else {
-                    not_null_count++;
-                }
-
-                //// Check account uniqueness ? (can't have two alloc records for same account)
-                // auto account_hash{to_bytes32((keccak256(address_bytes.value())).bytes)};
-                // if (account_rlp.size() && account_rlp.find(account_hash) != account_rlp.end()) {
-                //    std::cout << "Address " << to_hex(address_bytes.value()) << std::endl;
-                //    std::cout << "Hash    " << to_hex(keccak256(address_bytes.value()).bytes) << std::endl;
-                //    for (auto& b : account_hash.bytes) {
-                //        std::cout << "Byte " << (int)b << std::endl;
-                //    }
-                //    throw std::logic_error("Account " + item.key() + " has been allocated twice");
-                //}
-
-                // auto balance_str{item.value()["balance"].get<std::string>()};
-                // Account account{0, intx::from_string<intx::uint256>(balance_str)};
-
-                //// Make the account
-                // account_changeset_table->put(block_number, *address_bytes);
-                // plainstate_table->put(*address_bytes, account.encode_for_storage(true));
-
-                //// Fills hash builder
-                // account_rlp[account_hash] = account.rlp(kEmptyRoot);
+                evmc::address account_address = to_address(*address_bytes);
+                auto balance_str{item.value()["balance"].get<std::string>()};
+                Account account{0, intx::from_string<intx::uint256>(balance_str)};
+                state_buffer.update_account(account_address, std::nullopt, account);
             }
 
-            // auto it{account_rlp.cbegin()};
-            // trie::HashBuilder hb{full_view(it->first), it->second};
-            // for (++it; it != account_rlp.cend(); ++it) {
-            //    hb.add(full_view(it->first), it->second);
-            //}
-            // root_hash = hb.root_hash();
-            std::cout << "Null count " << null_count << " Not null count " << not_null_count << std::endl;
-        }
+            auto applied_allocations{state_buffer.account_changes().at(0).size()};
+            if (applied_allocations != expected_allocations) {
+                // Maybe some account alloc has been inserted twice ?
+                std::cout << "Allocations expected " << expected_allocations << " applied " << applied_allocations
+                          << std::endl;
+                throw std::logic_error("Allocations mismatch. Check uniqueness of accounts");
+            }
 
-        // Stop for debug
-        throw std::runtime_error("Debug");
+            state_buffer.write_to_db();
+        }
 
         // Fill Header
         BlockHeader header;
+
+        auto extra_data = from_hex(genesis_json["extraData"].get<std::string>());
+        if (extra_data.has_value()) {
+            header.extra_data = *extra_data;
+        }
+
+        if (genesis_json.contains("mixhash")) {
+            auto mixhash = from_hex(genesis_json["mixhash"].get<std::string>());
+            if (!mixhash.has_value() || mixhash->size() != kHashLength) {
+                throw std::invalid_argument("mixhash is not an hex hash");
+            }
+            std::memcpy(header.mix_hash.bytes, mixhash->data(), mixhash->size());
+        }
+
         header.ommers_hash = kEmptyListHash;
-        header.state_root = root_hash;
+        header.state_root = state_buffer.state_root_hash();
         header.transactions_root = kEmptyRoot;
         header.receipts_root = kEmptyRoot;
 
@@ -254,26 +231,29 @@ int main(int argc, char* argv[]) {
         std::memcpy(&header.nonce[0], &nonce, 8);
 
         // Write header
-        auto blockhash{header.hash()};
+        auto block_hash{header.hash()};
+        auto block_key{db::block_key(0)};
 
         Bytes rlp_header;
         rlp::encode(rlp_header, header);
+
         Bytes key(8 + kHashLength, '\0');
-        std::memcpy(&key[8], blockhash.bytes, kHashLength);
+        std::memcpy(&key[8], block_hash.bytes, kHashLength);
         txn->open(db::table::kHeaders)->put(key, rlp_header);
-        txn->open(db::table::kCanonicalHashes)->put(block_number, full_view(blockhash.bytes));
+        txn->open(db::table::kCanonicalHashes)->put(block_key, full_view(block_hash.bytes));
+
         // Write body
         txn->open(db::table::kBlockBodies)->put(key, Bytes(genesis_body, 4));
         txn->open(db::table::kDifficulty)->put(key, intx::as_bytes(header.difficulty));
         txn->open(db::table::kBlockReceipts)->put(key.substr(0, 8), Bytes(genesis_receipts, 1));
         txn->open(db::table::kHeadHeader)
             ->put(Bytes(reinterpret_cast<const uint8_t*>(last_header_key.c_str()), last_header_key.size()),
-                  full_view(blockhash.bytes));
-        txn->open(db::table::kHeaderNumbers)->put(full_view(blockhash.bytes), key.substr(0, 8));
+                  full_view(block_hash.bytes));
+        txn->open(db::table::kHeaderNumbers)->put(full_view(block_hash.bytes), key.substr(0, 8));
 
         // Write Chain Config
         auto config_data{genesis_json["config"].dump()};
-        txn->open(db::table::kConfig)->put(full_view(blockhash.bytes), byte_view_of_c_str(config_data.c_str()));
+        txn->open(db::table::kConfig)->put(full_view(block_hash.bytes), byte_view_of_c_str(config_data.c_str()));
 
         lmdb::err_handler(txn->commit());
         txn.reset();

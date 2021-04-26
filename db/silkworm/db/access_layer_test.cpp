@@ -22,6 +22,7 @@
 
 #include <silkworm/common/chain_genesis.hpp>
 #include <silkworm/common/temp_dir.hpp>
+#include <silkworm/db/buffer.hpp>
 
 #include "tables.hpp"
 
@@ -365,5 +366,82 @@ namespace db {
         CHECK(config.value() == kRinkebyConfig);
     }
 
+    TEST_CASE("mainnet_genesis") {
+        TemporaryDirectory tmp_dir;
+
+        lmdb::DatabaseConfig db_config{tmp_dir.path(), 1 * kMebi};
+        db_config.set_readonly(false);
+        auto env{lmdb::get_env(db_config)};
+        auto txn{env->begin_rw_transaction()};
+        table::create_all(*txn);
+
+        // Parse genesis data
+        std::string source_data;
+        source_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+        auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
+        CHECK(genesis_json != nlohmann::json::value_t::discarded);
+
+        CHECK(genesis_json.contains("difficulty"));
+        CHECK(genesis_json.contains("nonce"));
+        CHECK(genesis_json.contains("gasLimit"));
+        CHECK(genesis_json.contains("timestamp"));
+        CHECK(genesis_json.contains("extraData"));
+        CHECK((genesis_json.contains("alloc") && genesis_json["alloc"].is_object() && genesis_json["alloc"].size()));
+
+        db::Buffer state_buffer(txn.get());
+        auto expected_allocations{genesis_json["alloc"].size()};
+        for (auto& item : genesis_json["alloc"].items()) {
+            if (!item.value().is_object() || !item.value().contains("balance") ||
+                !item.value()["balance"].is_string()) {
+                throw std::invalid_argument("alloc address " + item.key() + " has badly formatted allocation");
+            }
+
+            auto address_bytes{from_hex(item.key())};
+            if (address_bytes == std::nullopt || address_bytes.value().length() != kAddressLength) {
+                throw std::invalid_argument("alloc address " + item.key() + " is not valid. Either not hex or not " +
+                                            std::to_string(kAddressLength) + " bytes");
+            }
+
+            evmc::address account_address = to_address(*address_bytes);
+            auto balance_str{item.value()["balance"].get<std::string>()};
+            Account account{0, intx::from_string<intx::uint256>(balance_str)};
+            state_buffer.update_account(account_address, std::nullopt, account);
+        }
+
+        SECTION("state_root") {
+            auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
+            auto actual_state_root{state_buffer.state_root_hash()};
+            auto a = full_view(expected_state_root);
+            auto b = full_view(actual_state_root);
+            CHECK(to_hex(a) == to_hex(b));
+        }
+
+        // Fill Header
+        BlockHeader header;
+        auto extra_data = from_hex(genesis_json["extraData"].get<std::string>());
+        if (extra_data.has_value()) {
+            header.extra_data = *extra_data;
+        }
+
+        header.ommers_hash = kEmptyListHash;
+        header.state_root = state_buffer.state_root_hash();
+        header.transactions_root = kEmptyRoot;
+        header.receipts_root = kEmptyRoot;
+        auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
+        header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
+        header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
+
+        CHECK(header.gas_limit == 5000ull);
+
+        header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
+        auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
+        std::memcpy(&header.nonce[0], &nonce, 8);
+
+        auto expected_hash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
+        auto actual_hash{header.hash()};
+        auto a = full_view(expected_hash);
+        auto b = full_view(actual_hash);
+        CHECK(to_hex(a) == to_hex(b));
+    }
 }  // namespace db
 }  // namespace silkworm

@@ -83,6 +83,8 @@ class Aggregator {
 
     void add_account(ByteView packed_key, const Account& account);
 
+    void add_storage(ByteView account_with_incarnation, ByteView unpacked_location, ByteView value);
+
     // Not idempotent, may only be called once.
     evmc::bytes32 root();
 

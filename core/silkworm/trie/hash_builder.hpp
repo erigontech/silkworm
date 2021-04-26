@@ -58,7 +58,7 @@ class Node {
 bool operator==(const Node& a, const Node& b);
 
 // TG HashCollector2
-using HashCollector = std::function<void(ByteView key_hex, const Node&)>;
+using HashCollector = std::function<void(ByteView unpacked_key, const Node&)>;
 
 // Calculates root hash of a Modified Merkle Patricia Trie.
 // See Appendix D "Modified Merkle Patricia Trie" of the Yellow Paper

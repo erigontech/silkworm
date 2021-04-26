@@ -158,8 +158,8 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
         const size_t len{std::max(prec_len, succ_len)};
         assert(len < curr.length());
 
-        // Add the digit immediately following the max common prefix and compute length of remainder
-        // length
+        // Add the digit immediately following the max common prefix
+        // and compute remainder's length
         const uint8_t extra_digit{curr[len]};
         if (groups_.size() <= len) {
             groups_.resize(len + 1);

@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
                 state_buffer.update_account(account_address, std::nullopt, account);
             }
 
-            auto applied_allocations{state_buffer.account_changes().at(0).size()};
+            auto applied_allocations{static_cast<size_t>(state_buffer.account_changes().at(0).size())};
             if (applied_allocations != expected_allocations) {
                 // Maybe some account alloc has been inserted twice ?
                 std::cout << "Allocations expected " << expected_allocations << " applied " << applied_allocations

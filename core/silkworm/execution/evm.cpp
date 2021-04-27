@@ -56,7 +56,7 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
 
     evmc::result res{contract_creation ? create(message) : call(message)};
 
-    return {res.status_code, static_cast<uint64_t>(res.gas_left)};
+    return {res.status_code, static_cast<uint64_t>(res.gas_left), {res.output_data, res.output_size}};
 }
 
 evmc::result EVM::create(const evmc_message& message) noexcept {

@@ -72,11 +72,6 @@ inline ByteView byte_view_of_c_str(const char* str) {
     return {reinterpret_cast<const uint8_t*>(str), std::strlen(str)};
 }
 
-inline char* byte_ptr_cast(uint8_t* ptr) { return reinterpret_cast<char*>(ptr); }
-inline const char* byte_ptr_cast(const uint8_t* ptr) { return reinterpret_cast<const char*>(ptr); }
-inline uint8_t* byte_ptr_cast(char* ptr) { return reinterpret_cast<uint8_t*>(ptr); }
-inline const uint8_t* byte_ptr_cast(const char* ptr) { return reinterpret_cast<const uint8_t*>(ptr); }
-
 std::string to_hex(const evmc::address& address);
 std::string to_hex(const evmc::bytes32& hash);
 std::string to_hex(ByteView bytes);
@@ -109,4 +104,4 @@ inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_UTIL_H_
+#endif  // SILKWORM_COMMON_UTIL_HPP_

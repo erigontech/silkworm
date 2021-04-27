@@ -23,6 +23,7 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/common/cast.hpp>
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -68,9 +69,7 @@ inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHash
 // Leading zero bytes are stripped
 ByteView zeroless_view(const evmc::bytes32& hash);
 
-inline ByteView byte_view_of_c_str(const char* str) {
-    return {reinterpret_cast<const uint8_t*>(str), std::strlen(str)};
-}
+inline ByteView byte_view_of_c_str(const char* str) { return {byte_ptr_cast(str), std::strlen(str)}; }
 
 std::string to_hex(const evmc::address& address);
 std::string to_hex(const evmc::bytes32& hash);

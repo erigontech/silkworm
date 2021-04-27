@@ -389,7 +389,8 @@ namespace db {
         CHECK((genesis_json.contains("alloc") && genesis_json["alloc"].is_object() && genesis_json["alloc"].size()));
 
         db::Buffer state_buffer(txn.get());
-        auto expected_allocations{genesis_json["alloc"].size()};
+        size_t expected_allocations{genesis_json["alloc"].size()};
+
         for (auto& item : genesis_json["alloc"].items()) {
             if (!item.value().is_object() || !item.value().contains("balance") ||
                 !item.value()["balance"].is_string()) {
@@ -408,6 +409,9 @@ namespace db {
             state_buffer.update_account(account_address, std::nullopt, account);
         }
 
+        auto applied_allocations{static_cast<size_t>(state_buffer.account_changes().at(0).size())};
+        CHECK(applied_allocations == expected_allocations);
+
         SECTION("state_root") {
             auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
             auto actual_state_root{state_buffer.state_root_hash()};
@@ -423,6 +427,11 @@ namespace db {
             header.extra_data = *extra_data;
         }
 
+        auto mix_data = from_hex(genesis_json["mixhash"].get<std::string>());
+        CHECK((mix_data.has_value() && mix_data->size() == kHashLength));
+        std::memcpy(header.mix_hash.bytes, mix_data->data(), kHashLength);
+
+        header.beneficiary = 0x0000000000000000000000000000000000000000_address;
         header.ommers_hash = kEmptyListHash;
         header.state_root = state_buffer.state_root_hash();
         header.transactions_root = kEmptyRoot;
@@ -437,11 +446,8 @@ namespace db {
         auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
         std::memcpy(&header.nonce[0], &nonce, 8);
 
-        auto expected_hash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
-        auto actual_hash{header.hash()};
-        auto a = full_view(expected_hash);
-        auto b = full_view(actual_hash);
-        CHECK(to_hex(a) == to_hex(b));
+        // TODO - Validate ethash PoW provided nonce and mix_hash
+
     }
 }  // namespace db
 }  // namespace silkworm

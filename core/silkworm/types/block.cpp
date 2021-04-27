@@ -18,6 +18,7 @@
 
 #include <cstring>
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm {
@@ -25,7 +26,7 @@ namespace silkworm {
 evmc::bytes32 BlockHeader::hash() const {
     Bytes rlp;
     rlp::encode(rlp, *this);
-    return {*reinterpret_cast<evmc::bytes32*>(keccak256(rlp).bytes)};
+    return bit_cast<evmc::bytes32>(keccak256(rlp));
 }
 
 bool operator==(const BlockHeader& a, const BlockHeader& b) {

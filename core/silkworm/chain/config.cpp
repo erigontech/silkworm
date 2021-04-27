@@ -18,13 +18,33 @@
 
 namespace silkworm {
 
-bool operator==(const ChainConfig& a, const ChainConfig& b) {
-    return a.chain_id == b.chain_id && a.homestead_block == b.homestead_block &&
-           a.tangerine_whistle_block == b.tangerine_whistle_block &&
-           a.spurious_dragon_block == b.spurious_dragon_block && a.byzantium_block == b.byzantium_block &&
-           a.constantinople_block == b.constantinople_block && a.petersburg_block == b.petersburg_block &&
-           a.istanbul_block == b.istanbul_block && a.muir_glacier_block == b.muir_glacier_block &&
-           a.berlin_block == b.berlin_block && a.dao_block == b.dao_block;
+static inline void member_to_json(nlohmann::json& json, const std::string& key,
+                                  const std::optional<uint64_t>& source) {
+    if (source.has_value()) {
+        json[key] = source.value();
+    }
 }
+
+nlohmann::json ChainConfig::Json() const noexcept {
+    nlohmann::json ret;
+
+    ret["chainId"] = chain_id;
+
+    member_to_json(ret, "homesteadBlock", homestead_block);
+    member_to_json(ret, "eip150Block", tangerine_whistle_block);
+    member_to_json(ret, "eip155Block", spurious_dragon_block);
+    member_to_json(ret, "byzantiumBlock", byzantium_block);
+    member_to_json(ret, "constantinopleBlock", constantinople_block);
+    member_to_json(ret, "petersburgBlock", petersburg_block);
+    member_to_json(ret, "istanbulBlock", istanbul_block);
+    member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
+    member_to_json(ret, "daoForkBlock", dao_block);
+    member_to_json(ret, "berlinBlock", berlin_block);
+
+    return ret;
+}
+
+bool operator==(const ChainConfig& a, const ChainConfig& b) { return a.Json() == b.Json(); }
+std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.Json().dump(); }
 
 }  // namespace silkworm

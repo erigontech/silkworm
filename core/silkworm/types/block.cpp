@@ -25,10 +25,7 @@ namespace silkworm {
 evmc::bytes32 BlockHeader::hash() const {
     Bytes rlp;
     rlp::encode(rlp, *this);
-    ethash::hash256 ethash_hash{keccak256(rlp)};
-    evmc::bytes32 hash;
-    std::memcpy(hash.bytes, ethash_hash.bytes, kHashLength);
-    return hash;
+    return {*reinterpret_cast<evmc::bytes32*>(keccak256(rlp).bytes)};
 }
 
 bool operator==(const BlockHeader& a, const BlockHeader& b) {

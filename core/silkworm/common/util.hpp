@@ -23,7 +23,6 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/common/base.hpp>
-#include <silkworm/common/cast.hpp>
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -69,7 +68,14 @@ inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHash
 // Leading zero bytes are stripped
 ByteView zeroless_view(const evmc::bytes32& hash);
 
-inline ByteView byte_view_of_c_str(const char* str) { return {byte_ptr_cast(str), std::strlen(str)}; }
+inline ByteView byte_view_of_c_str(const char* str) {
+    return {reinterpret_cast<const uint8_t*>(str), std::strlen(str)};
+}
+
+inline char* byte_ptr_cast(uint8_t* ptr) { return reinterpret_cast<char*>(ptr); }
+inline const char* byte_ptr_cast(const uint8_t* ptr) { return reinterpret_cast<const char*>(ptr); }
+inline uint8_t* byte_ptr_cast(char* ptr) { return reinterpret_cast<uint8_t*>(ptr); }
+inline const uint8_t* byte_ptr_cast(const char* ptr) { return reinterpret_cast<const uint8_t*>(ptr); }
 
 std::string to_hex(const evmc::address& address);
 std::string to_hex(const evmc::bytes32& hash);
@@ -103,4 +109,4 @@ inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_COMMON_UTIL_HPP_
+#endif  // SILKWORM_COMMON_UTIL_H_

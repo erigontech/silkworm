@@ -21,7 +21,6 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/cast.hpp>
 #include <silkworm/common/util.hpp>
 
 namespace silkworm {
@@ -213,7 +212,8 @@ evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const
 void IntraBlockState::set_code(const evmc::address& address, Bytes code) noexcept {
     auto& obj{get_or_create_object(address)};
     journal_.emplace_back(new state::UpdateDelta{address, obj});
-    obj.current->code_hash = bit_cast<evmc::bytes32>(keccak256(code));
+    ethash::hash256 hash{keccak256(code)};
+    std::memcpy(obj.current->code_hash.bytes, hash.bytes, kHashLength);
 
     // Don't overwrite already existing code so that views of it
     // that were previously returned by get_code() are still valid.

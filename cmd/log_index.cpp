@@ -14,17 +14,16 @@
    limitations under the License.
 */
 
-#include <filesystem>
 #include <iomanip>
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <filesystem>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 #include <cbor/decoder.h>
 
-#include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
@@ -73,7 +72,7 @@ class listener_log_index : public cbor::listener {
     void on_integer(int) override{};
 
     void on_bytes(unsigned char *data, int size) override {
-        std::string key(byte_ptr_cast(data), size);
+        std::string key(reinterpret_cast<const char *>(data), size);
         if (size == kHashLength) {
             if (topics_map_->find(key) == topics_map_->end()) {
                 topics_map_->emplace(key, roaring::Roaring());

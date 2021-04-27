@@ -21,8 +21,6 @@
 #include <boost/endian/conversion.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/common/cast.hpp>
-
 #include "bitmap.hpp"
 #include "tables.hpp"
 
@@ -413,10 +411,11 @@ std::optional<ChainConfig> parse_chain_config(std::string_view json) {
     read_json_config_member(config_json, "eip150Block", config.tangerine_whistle_block);
 
     /** Quote @yperbasis
-     * "We can treat both eip155 & eip158 as synonyms for Spurious Dragon."
-     */
+    * "We can treat both eip155 & eip158 as synonyms for Spurious Dragon."
+    */
     read_json_config_member(config_json, "eip155Block", config.spurious_dragon_block);
     read_json_config_member(config_json, "eip158Block", config.spurious_dragon_block);
+
 
     read_json_config_member(config_json, "byzantiumBlock", config.byzantium_block);
     read_json_config_member(config_json, "constantinopleBlock", config.constantinople_block);

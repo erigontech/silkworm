@@ -18,7 +18,7 @@
 
 #include <filesystem>
 
-#include <silkworm/common/util.hpp>
+#include <silkworm/common/cast.hpp>
 
 namespace silkworm::etl {
 

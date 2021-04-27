@@ -24,6 +24,7 @@
 #include <boost/endian/conversion.hpp>
 #include <cbor/decoder.h>
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>

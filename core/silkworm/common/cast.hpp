@@ -35,11 +35,9 @@ inline const uint8_t* byte_ptr_cast(const char* ptr) { return reinterpret_cast<c
 // Backport of C++20 std::bit_cast
 // https://en.cppreference.com/w/cpp/numeric/bit_cast
 template <class To, class From>
-To bit_cast(const From& src) noexcept {
-    static_assert(sizeof(To) == sizeof(From), "bit_cast requires source and destination to be the same size");
-    static_assert(std::is_trivially_copyable_v<From>, "bit_cast requires the source type to be copyable");
-    static_assert(std::is_trivially_copyable_v<To>, "bit_cast requires the destination type to be copyable");
-
+typename std::enable_if_t<
+    sizeof(To) == sizeof(From) && std::is_trivially_copyable_v<From> && std::is_trivially_copyable_v<To>, To>
+bit_cast(const From& src) noexcept {
     To dst;
     std::memcpy(&dst, &src, sizeof(To));
     return dst;

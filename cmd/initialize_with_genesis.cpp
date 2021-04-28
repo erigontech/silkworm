@@ -41,7 +41,7 @@ using namespace silkworm;
 constexpr uint8_t genesis_body[] = {195, 128, 128, 192};
 constexpr uint8_t genesis_receipts[] = {246};
 
-std::string last_header_key = "LastHeader";
+constexpr const char* kLastHeaderKey = "LastHeader";
 
 int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
@@ -245,9 +245,7 @@ int main(int argc, char* argv[]) {
         txn->open(db::table::kBlockBodies)->put(key, Bytes(genesis_body, 4));
         txn->open(db::table::kDifficulty)->put(key, intx::as_bytes(header.difficulty));
         txn->open(db::table::kBlockReceipts)->put(key.substr(0, 8), Bytes(genesis_receipts, 1));
-        txn->open(db::table::kHeadHeader)
-            ->put(Bytes(reinterpret_cast<const uint8_t*>(last_header_key.c_str()), last_header_key.size()),
-                  full_view(block_hash.bytes));
+        txn->open(db::table::kHeadHeader)->put(byte_view_of_c_str(kLastHeaderKey), full_view(block_hash.bytes));
         txn->open(db::table::kHeaderNumbers)->put(full_view(block_hash.bytes), key.substr(0, 8));
 
         // Write Chain Config

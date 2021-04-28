@@ -30,6 +30,7 @@
 #include <silkworm/chain/blockchain.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/validity.hpp>
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/intra_block_state.hpp>
@@ -259,8 +260,7 @@ void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
         Bytes code{from_hex(j["code"].get<std::string>()).value()};
         if (!code.empty()) {
             account.incarnation = 1;
-            ethash::hash256 hash{keccak256(code)};
-            std::memcpy(account.code_hash.bytes, hash.bytes, kHashLength);
+            account.code_hash = bit_cast<evmc::bytes32>(keccak256(code));
             state.update_account_code(address, account.incarnation, account.code_hash, code);
         }
 

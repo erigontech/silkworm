@@ -308,7 +308,7 @@ static inline ALWAYS_INLINE void keccak(uint64_t* out, size_t bits, const uint8_
             input_view.remove_prefix(word_size);
             continue;
         }
-        std::memcpy(last_word_iter, input_view.data(), input_view.size());
+        __builtin_memcpy(last_word_iter, input_view.data(), input_view.size());
         last_word_iter += input_view.size();
         break;
     }

@@ -596,7 +596,7 @@ class RecoveryFarm final {
             }
 
             if (transaction.chain_id) {
-                if (has_spurious_dragon) {
+                if (!has_spurious_dragon) {
                     SILKWORM_LOG(LogLevel::Error)
                         << "EIP-155 signature in transaction before Spurious Dragon for block " << block_num
                         << std::endl;

@@ -25,26 +25,25 @@
 namespace silkworm {
 
 ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config) {
+    const evmc_revision rev{config.revision(block_number)};
+
     if (txn.chain_id) {
-        if (!config.has_spurious_dragon(block_number) || txn.chain_id != config.chain_id) {
+        if (rev < EVMC_SPURIOUS_DRAGON || txn.chain_id != config.chain_id) {
             return ValidationResult::kWrongChainId;
         }
     }
 
     if (txn.type) {
-        if (!config.has_berlin(block_number) || txn.type != kEip2930TransactionType) {
+        if (rev < EVMC_BERLIN || txn.type != kEip2930TransactionType) {
             return ValidationResult::kUnsupportedEip2718Type;
         }
     }
 
-    const bool homestead{config.has_homestead(block_number)};
-    const bool istanbul{config.has_istanbul(block_number)};
-
-    if (!ecdsa::is_valid_signature(txn.r, txn.s, homestead)) {
+    if (!ecdsa::is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
         return ValidationResult::kInvalidSignature;
     }
 
-    intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
+    const intx::uint128 g0{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
     if (txn.gas_limit < g0) {
         return ValidationResult::kIntrinsicGas;
     }

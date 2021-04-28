@@ -65,35 +65,9 @@ ChainConfig* new_config(uint64_t chain_id) {
 
 void delete_config(ChainConfig* x) { delete x; }
 
-void config_set_update_block(ChainConfig* config, evmc_revision update, uint64_t block) {
-    switch (update) {
-        case EVMC_FRONTIER:
-            // frontier block is always 0
-            return;
-        case EVMC_HOMESTEAD:
-            config->homestead_block = block;
-            return;
-        case EVMC_TANGERINE_WHISTLE:
-            config->tangerine_whistle_block = block;
-            return;
-        case EVMC_SPURIOUS_DRAGON:
-            config->spurious_dragon_block = block;
-            return;
-        case EVMC_BYZANTIUM:
-            config->byzantium_block = block;
-            return;
-        case EVMC_CONSTANTINOPLE:
-            config->constantinople_block = block;
-            return;
-        case EVMC_PETERSBURG:
-            config->petersburg_block = block;
-            return;
-        case EVMC_ISTANBUL:
-            config->istanbul_block = block;
-            return;
-        case EVMC_BERLIN:
-            config->berlin_block = block;
-            return;
+void config_set_fork_block(ChainConfig* config, evmc_revision fork, uint64_t block) {
+    if (fork > 0) {  // Frontier block is always 0
+        config->fork_blocks[fork - 1] = block;
     }
 }
 

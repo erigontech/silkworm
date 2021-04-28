@@ -88,22 +88,27 @@ intx::uint256 canonical_difficulty_byzantium(uint64_t block_number, const uint64
 intx::uint256 canonical_difficulty(uint64_t block_number, uint64_t block_timestamp,
                                    const intx::uint256& parent_difficulty, uint64_t parent_timestamp,
                                    bool parent_has_uncles, const ChainConfig& config) {
-    if (config.has_byzantium(block_number)) {
-        // https://eips.ethereum.org/EIPS/eip-649
-        uint64_t bomb_delay{3'000'000};
-        if (config.has_muir_glacier(block_number)) {
+    const evmc_revision rev{config.revision(block_number)};
+
+    if (rev >= EVMC_BYZANTIUM) {
+        uint64_t bomb_delay{0};
+        if (config.muir_glacier_block && block_number >= config.muir_glacier_block) {
             // https://eips.ethereum.org/EIPS/eip-2384
             bomb_delay = 9'000'000;
-        } else if (config.has_constantinople(block_number)) {
+        } else if (rev >= EVMC_CONSTANTINOPLE) {
             // https://eips.ethereum.org/EIPS/eip-1234
             bomb_delay = 5'000'000;
+        } else {
+            // https://eips.ethereum.org/EIPS/eip-649
+            bomb_delay = 3'000'000;
         }
         return canonical_difficulty_byzantium(block_number, block_timestamp, parent_difficulty, parent_timestamp,
                                               parent_has_uncles, bomb_delay);
-    } else if (config.has_homestead(block_number)) {
+    } else if (rev >= EVMC_HOMESTEAD) {
         return canonical_difficulty_homestead(block_number, block_timestamp, parent_difficulty, parent_timestamp);
     } else {
         return canonical_difficulty_frontier(block_number, block_timestamp, parent_difficulty, parent_timestamp);
     }
 }
+
 }  // namespace silkworm

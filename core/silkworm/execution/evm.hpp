@@ -22,8 +22,8 @@
 
 #include <intx/intx.hpp>
 
-#include <silkworm/common/util.hpp>
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/execution/analysis_cache.hpp>
 #include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/intra_block_state.hpp>
@@ -53,6 +53,8 @@ class EVM {
 
     CallResult execute(const Transaction& txn, uint64_t gas) noexcept;
 
+    evmc_revision revision() const noexcept;
+
     AnalysisCache* analysis_cache{nullptr};  // use for better performance
 
     ExecutionStatePool* state_pool{nullptr};  // use for better performance
@@ -73,8 +75,6 @@ class EVM {
 
     evmc_result execute_with_default_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
                                                  std::optional<evmc::bytes32> code_hash) noexcept;
-
-    evmc_revision revision() const noexcept;
 
     uint8_t number_of_precompiles() const noexcept;
     bool is_precompiled(const evmc::address& contract) const noexcept;

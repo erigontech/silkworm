@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <thread>
+
 #include <absl/time/clock.h>
 
 #include <silkworm/common/log.hpp>
@@ -23,6 +25,7 @@ namespace silkworm {
 teestream log_streams_{std::cerr, null_stream()};
 
 LogLevel log_verbosity_{LogLevel::Info};
+bool log_thread_enabled_{false};
 
 constexpr char const kLogTags_[7][6] = {
     "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",
@@ -34,8 +37,12 @@ void log_set_streams_(std::ostream& o1, std::ostream& o2) { log_streams_.set_str
 std::mutex log_::log_mtx_;
 
 std::ostream& log_::header_(LogLevel level) {
-    return log_streams_ << kLogTags_[static_cast<int>(level)] << "["
-                        << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "]";
+    log_streams_ << kLogTags_[static_cast<int>(level)]
+                << "[" << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "] ";
+    if (log_thread_enabled_) {
+        log_streams_ << std::this_thread::get_id() << " ";
+    }
+    return log_streams_;
 }
 
 void log_expand_and_compile_test_() { SILKWORM_LOG(LogLevel::Info) << "log_expand_and_compile_test_" << std::endl; }

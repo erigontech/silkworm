@@ -44,7 +44,7 @@ evmc::bytes32 root_hash(const std::vector<Value>& v, Encoder value_encoder) {
     HashBuilder hb;
 
     for (size_t j{0}; j < v.size(); ++j) {
-        size_t index{adjust_index_for_rlp(j, v.size())};
+        const size_t index{adjust_index_for_rlp(j, v.size())};
         index_rlp.clear();
         rlp::encode(index_rlp, index);
         value_rlp.clear();

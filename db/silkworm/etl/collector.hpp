@@ -32,11 +32,13 @@ typedef void (*LoadFunc)(Entry, lmdb::Table*, unsigned int);
 // Collects data Extracted from db
 class Collector {
   public:
+    // Not copyable nor movable
     Collector(const Collector&) = delete;
     Collector& operator=(const Collector&) = delete;
 
     explicit Collector(const char* work_path = nullptr, size_t optimal_size = kOptimalBufferSize)
-        : work_path_{set_work_path(work_path)}, buffer_(Buffer(optimal_size)){};
+        : work_path_{set_work_path(work_path)}, buffer_{optimal_size} {}
+
     ~Collector();
 
     void collect(const Entry& entry);  // Store key-value pair in memory or on disk

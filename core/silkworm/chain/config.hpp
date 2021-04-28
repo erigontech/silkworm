@@ -53,7 +53,15 @@ struct ChainConfig {
     // https://eips.ethereum.org/EIPS/eip-779
     std::optional<uint64_t> dao_block{std::nullopt};
 
+    // Returns the revision level at given block number
+    // In other words, on behalf of Json chain config data
+    // returns whether or not specific HF have occurred
     evmc_revision revision(uint64_t block_number) const noexcept;
+
+    // As ancillary to revision this returns at which block
+    // a specific revision has occurred. If return value is std::nullopt
+    // it means the actual chain either does not support such revision
+    std::optional<uint64_t> revision_block(evmc_revision rev) const noexcept;
 
     nlohmann::json to_json() const noexcept;
 

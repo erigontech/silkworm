@@ -73,6 +73,14 @@ evmc_revision ChainConfig::revision(uint64_t block_number) const noexcept {
     return EVMC_FRONTIER;
 }
 
+std::optional<uint64_t> ChainConfig::revision_block(evmc_revision rev) const noexcept {
+    if (rev == EVMC_FRONTIER) {
+        return 0;
+    }
+    size_t i{static_cast<size_t>(rev) - 1};
+    return fork_blocks.at(i);
+}
+
 bool operator==(const ChainConfig& a, const ChainConfig& b) { return a.to_json() == b.to_json(); }
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }

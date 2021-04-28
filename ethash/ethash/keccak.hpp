@@ -7,6 +7,7 @@
 #define ETHASH_KECCAK_HPP_
 
 #include "hash_types.hpp"
+#include <stddef.h>
 
 #if defined(_MSC_VER)
 #include <string.h>

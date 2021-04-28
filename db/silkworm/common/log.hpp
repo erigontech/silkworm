@@ -35,6 +35,10 @@ namespace silkworm {
 //
 #define SILKWORM_LOG_VERBOSITY(level_) (silkworm::log_verbosity_ = (level_))
 
+// change if thread is logged (true) or not (false) - default is false
+//
+#define SILKWORM_LOG_THREAD(log_thread_) (silkworm::log_thread_enabled_ = (log_thread_))
+
 // available verbosity levels
 enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, None };
 
@@ -50,6 +54,7 @@ std::ostream& null_stream();
 // Placing them in detail namespace prevents use of macros in nested namespaces of silkworm :(
 //
 extern LogLevel log_verbosity_;
+extern bool log_thread_enabled_;
 void log_set_streams_(std::ostream& o1, std::ostream& o2);
 class log_ {
   public:

@@ -24,6 +24,7 @@
 
 #include <ethash/keccak.hpp>
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 
@@ -143,8 +144,7 @@ evmc::bytes32 HashBuilder::root_hash() {
     if (node_ref.length() == kHashLength) {
         std::memcpy(res.bytes, node_ref.data(), kHashLength);
     } else {
-        ethash::hash256 hash{keccak256(node_ref)};
-        std::memcpy(res.bytes, hash.bytes, kHashLength);
+        res = bit_cast<evmc::bytes32>(keccak256(node_ref));
     }
     return res;
 }

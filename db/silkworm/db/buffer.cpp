@@ -103,6 +103,39 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     }
 }
 
+evmc::bytes32 Buffer::account_storage_root(const evmc::address& address, uint64_t incarnation) const {
+    auto it1{storage_.find(address)};
+    if (it1 == storage_.end()) {
+        return kEmptyRoot;
+    }
+
+    auto it2{it1->second.find(incarnation)};
+    if (it2 == it1->second.end()) {
+        return kEmptyRoot;
+    }
+
+    const auto& storage{it2->second};
+    if (storage.empty()) {
+        return kEmptyRoot;
+    }
+
+    std::map<evmc::bytes32, Bytes> storage_rlp;
+    Bytes rlp;
+    for (const auto& [location, value] : storage) {
+        ethash::hash256 hash{keccak256(full_view(location))};
+        rlp.clear();
+        rlp::encode(rlp, zeroless_view(value));
+        storage_rlp[to_bytes32(full_view(hash.bytes))] = rlp;
+    }
+
+    trie::HashBuilder hb;
+    for (const auto& [hash, rlp] : storage_rlp) {
+        hb.add(full_view(hash), rlp);
+    }
+
+    return hb.root_hash();
+}
+
 static void upsert_storage_value(lmdb::Table& state_table, ByteView storage_prefix, const evmc::bytes32& location,
                                  const evmc::bytes32& value) {
     state_table.del(storage_prefix, full_view(location));
@@ -245,7 +278,26 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     }
 }
 
-evmc::bytes32 Buffer::state_root_hash() const { throw std::runtime_error("not yet implemented"); }
+evmc::bytes32 Buffer::state_root_hash() const {
+    if (accounts_.empty()) {
+        return kEmptyRoot;
+    }
+
+    std::map<evmc::bytes32, Bytes> account_rlp;
+    for (const auto& [address, account] : accounts_) {
+        if (account.has_value()) {
+            ethash::hash256 hash{keccak256(full_view(address))};
+            evmc::bytes32 storage_root{account_storage_root(address, account->incarnation)};
+            account_rlp[to_bytes32(full_view(hash.bytes))] = account->rlp(storage_root);
+        }
+    }
+
+    trie::HashBuilder hb;
+    for (const auto& [hash, rlp] : account_rlp) {
+        hb.add(full_view(hash), rlp);
+    }
+    return hb.root_hash();
+}
 
 uint64_t Buffer::current_canonical_block() const { throw std::runtime_error("not yet implemented"); }
 

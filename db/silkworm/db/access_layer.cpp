@@ -21,6 +21,8 @@
 #include <boost/endian/conversion.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/common/cast.hpp>
+
 #include "bitmap.hpp"
 #include "tables.hpp"
 
@@ -369,6 +371,13 @@ std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
     return parse_chain_config(byte_ptr_cast(config_value->c_str()));
 }
 
+static inline void read_json_config_member(const nlohmann::json& json, const std::string& key,
+                                           std::optional<uint64_t>& target) {
+    if (json.contains(key) && json[key].is_number()) {
+        target.emplace(json[key].get<uint64_t>());
+    }
+}
+
 /*
 * Sample config
 {
@@ -390,45 +399,32 @@ std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
 */
 std::optional<ChainConfig> parse_chain_config(std::string_view json) {
     // https://github.com/nlohmann/json/issues/2204
-    auto config_json = nlohmann::json::parse(json);
+    auto config_json = nlohmann::json::parse(json, nullptr, false);
 
-    if (!config_json.contains("chainId")) {
+    if (config_json == nlohmann::json::value_t::discarded || !config_json.contains("chainId") ||
+        !config_json["chainId"].is_number()) {
         return std::nullopt;
     }
 
     ChainConfig config{};
     config.chain_id = config_json["chainId"].get<uint64_t>();
 
-    if (config_json.contains("homesteadBlock")) {
-        config.homestead_block.emplace(config_json["homesteadBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("eip150Block")) {
-        config.tangerine_whistle_block.emplace(config_json["eip150Block"].get<uint64_t>());
-    }
-    if (config_json.contains("eip155Block")) {
-        config.spurious_dragon_block.emplace(config_json["eip155Block"].get<uint64_t>());
-    }
-    if (config_json.contains("byzantiumBlock")) {
-        config.byzantium_block.emplace(config_json["byzantiumBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("constantinopleBlock")) {
-        config.constantinople_block.emplace(config_json["constantinopleBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("petersburgBlock")) {
-        config.petersburg_block.emplace(config_json["petersburgBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("istanbulBlock")) {
-        config.istanbul_block.emplace(config_json["istanbulBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("muirGlacierBlock")) {
-        config.muir_glacier_block.emplace(config_json["muirGlacierBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("daoForkBlock")) {
-        config.dao_block.emplace(config_json["daoForkBlock"].get<uint64_t>());
-    }
-    if (config_json.contains("berlinBlock")) {
-        config.berlin_block.emplace(config_json["berlinBlock"].get<uint64_t>());
-    }
+    read_json_config_member(config_json, "homesteadBlock", config.homestead_block);
+    read_json_config_member(config_json, "eip150Block", config.tangerine_whistle_block);
+
+    /** Quote @yperbasis
+     * "We can treat both eip155 & eip158 as synonyms for Spurious Dragon."
+     */
+    read_json_config_member(config_json, "eip155Block", config.spurious_dragon_block);
+    read_json_config_member(config_json, "eip158Block", config.spurious_dragon_block);
+
+    read_json_config_member(config_json, "byzantiumBlock", config.byzantium_block);
+    read_json_config_member(config_json, "constantinopleBlock", config.constantinople_block);
+    read_json_config_member(config_json, "petersburgBlock", config.petersburg_block);
+    read_json_config_member(config_json, "istanbulBlock", config.istanbul_block);
+    read_json_config_member(config_json, "muirGlacierBlock", config.muir_glacier_block);
+    read_json_config_member(config_json, "daoForkBlock", config.dao_block);
+    read_json_config_member(config_json, "berlinBlock", config.berlin_block);
 
     return config;
 }

@@ -585,15 +585,18 @@ class RecoveryFarm final {
      */
     Status fill_batch(ChainConfig config, uint64_t block_num, std::vector<Transaction>& transactions) {
         const evmc_revision rev{config.revision(block_num)};
+        const bool has_homestead{rev >= EVMC_HOMESTEAD};
+        const bool has_spurious_dragon{rev >= EVMC_SPURIOUS_DRAGON};
+
         for (const auto& transaction : transactions) {
-            if (!silkworm::ecdsa::is_valid_signature(transaction.r, transaction.s, rev >= EVMC_HOMESTEAD)) {
+            if (!silkworm::ecdsa::is_valid_signature(transaction.r, transaction.s, has_homestead)) {
                 SILKWORM_LOG(LogLevel::Error)
                     << "Got invalid signature in transaction for block " << block_num << std::endl;
                 return Status::InvalidTransactionSignature;
             }
 
             if (transaction.chain_id) {
-                if (rev < EVMC_SPURIOUS_DRAGON) {
+                if (has_spurious_dragon) {
                     SILKWORM_LOG(LogLevel::Error)
                         << "EIP-155 signature in transaction before Spurious Dragon for block " << block_num
                         << std::endl;

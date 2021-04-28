@@ -30,6 +30,16 @@ TEST_CASE("Config lookup") {
 }
 
 TEST_CASE("Config revision") {
+    CHECK(kMainnetConfig.revision_block(EVMC_FRONTIER) == 0);
+    CHECK(kMainnetConfig.revision_block(EVMC_HOMESTEAD) == 1'150'000);
+    CHECK(kMainnetConfig.revision_block(EVMC_TANGERINE_WHISTLE) == 2'463'000);
+    CHECK(kMainnetConfig.revision_block(EVMC_SPURIOUS_DRAGON) == 2'675'000);
+    CHECK(kMainnetConfig.revision_block(EVMC_BYZANTIUM) == 4'370'000);
+    CHECK(kMainnetConfig.revision_block(EVMC_CONSTANTINOPLE) == 7'280'000);
+    CHECK(kMainnetConfig.revision_block(EVMC_PETERSBURG) == 7'280'000);
+    CHECK(kMainnetConfig.revision_block(EVMC_ISTANBUL) == 9'069'000);
+    CHECK(kMainnetConfig.revision_block(EVMC_BERLIN) == 12'244'000);
+
     CHECK(kMainnetConfig.revision(0) == EVMC_FRONTIER);
     CHECK(kMainnetConfig.revision(1) == EVMC_FRONTIER);
     CHECK(kMainnetConfig.revision(200'000) == EVMC_FRONTIER);

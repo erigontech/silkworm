@@ -145,8 +145,7 @@ int main(int argc, char* argv[]) {
 
     // Try parse genesis config
     {
-        auto genesis_json_config = genesis_json["config"];
-        auto chain_config = db::parse_chain_config(genesis_json_config.dump());
+        const auto chain_config = ChainConfig::from_json(genesis_json["config"]);
         if (!chain_config.has_value()) {
             std::cerr << "\nError : Incomplete / wrong genesis config member" << std::endl;
             return -1;

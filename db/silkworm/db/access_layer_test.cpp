@@ -24,8 +24,8 @@
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
 
-#include "tables.hpp"
 #include "stages.hpp"
+#include "tables.hpp"
 
 namespace silkworm {
 
@@ -112,7 +112,6 @@ namespace db {
         MDB_val mdb_data{db::to_mdb_val(stage_progress)};
         CHECK_NOTHROW(lmdb::err_handler(txn->put(table::kSyncStageProgress, &mdb_key, &mdb_data)));
         CHECK_THROWS(block_num = stages::get_stage_progress(*txn, stages::kBlockBodiesKey));
-
     }
 
     TEST_CASE("read_header") {
@@ -348,41 +347,13 @@ namespace db {
         CHECK(db_changes == expected_changes3);
     }
 
-    TEST_CASE("parse_chain_config") {
-        CHECK(!parse_chain_config(R"({
-            "firstName": "John",
-            "lastName": "Smith",
-            "children": [],
-            "spouse": null
-        })"));
-
-        std::optional<ChainConfig> config{parse_chain_config(R"({
-            "chainId":1,
-            "homesteadBlock":1150000,
-            "daoForkBlock":1920000,
-            "daoForkSupport":true,
-            "eip150Block":2463000,
-            "eip150Hash":"0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0",
-            "eip155Block":2675000,
-            "eip158Block":2675000,
-            "byzantiumBlock":4370000,
-            "constantinopleBlock":7280000,
-            "petersburgBlock":7280000,
-            "istanbulBlock":9069000,
-            "muirGlacierBlock":9200000,
-            "berlinBlock":12244000,
-            "ethash":{}
-        })")};
-
-        CHECK(config.has_value());
-        CHECK(config.value() == kMainnetConfig);
-
+    TEST_CASE("genesis config") {
         std::string source_genesis(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
 
         auto genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
         CHECK(genesis_json != nlohmann::json::value_t::discarded);
         CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
-        config = parse_chain_config(genesis_json["config"].dump());
+        auto config = ChainConfig::from_json(genesis_json["config"]);
         CHECK(config.has_value());
         CHECK(config.value() == kMainnetConfig);
 
@@ -391,7 +362,7 @@ namespace db {
         genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
         CHECK(genesis_json != nlohmann::json::value_t::discarded);
         CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
-        config = parse_chain_config(genesis_json["config"].dump());
+        config = ChainConfig::from_json(genesis_json["config"]);
         CHECK(config.has_value());
         CHECK(config.value() == kGoerliConfig);
 
@@ -400,7 +371,7 @@ namespace db {
         genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
         CHECK(genesis_json != nlohmann::json::value_t::discarded);
         CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
-        config = parse_chain_config(genesis_json["config"].dump());
+        config = ChainConfig::from_json(genesis_json["config"]);
         CHECK(config.has_value());
         CHECK(config.value() == kRinkebyConfig);
     }
@@ -486,7 +457,6 @@ namespace db {
         std::memcpy(&header.nonce[0], &nonce, 8);
 
         // TODO - Validate ethash PoW provided nonce and mix_hash
-
     }
 }  // namespace db
 }  // namespace silkworm

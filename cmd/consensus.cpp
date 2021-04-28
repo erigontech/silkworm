@@ -73,125 +73,146 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Homestead",
      {
          1,  // chain_id
-         0,  // homestead_block
+         {
+             0,  // homestead_block
+         },
      }},
     {"EIP150",
      {
          1,  // chain_id
-         0,  // homestead_block
-         0,  // tangerine_whistle_block
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+         },
      }},
     {"EIP158",
      {
          1,  // chain_id
-         0,  // homestead_block
-         0,  // tangerine_whistle_block
-         0,  // spurious_dragon_block
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+         },
      }},
     {"Byzantium",
      {
          1,  // chain_id
-         0,  // homestead_block
-         0,  // tangerine_whistle_block
-         0,  // spurious_dragon_block
-         0,  // byzantium_block
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+         },
      }},
     {"Constantinople",
      {
          1,  // chain_id
-         0,  // homestead_block
-         0,  // tangerine_whistle_block
-         0,  // spurious_dragon_block
-         0,  // byzantium_block
-         0,  // constantinople_block
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+             0,  // constantinople_block
+         },
      }},
     {"ConstantinopleFix",
      {
          1,  // chain_id
-         0,  // homestead_block
-         0,  // tangerine_whistle_block
-         0,  // spurious_dragon_block
-         0,  // byzantium_block
-         0,  // constantinople_block
-         0,  // petersburg_block
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+             0,  // constantinople_block
+             0,  // petersburg_block
+         },
      }},
     {"Istanbul",
      {
          1,  // chain_id
-         0,  // homestead_block
-         0,  // tangerine_whistle_block
-         0,  // spurious_dragon_block
-         0,  // byzantium_block
-         0,  // constantinople_block
-         0,  // petersburg_block
-         0,  // istanbul_block
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+             0,  // constantinople_block
+             0,  // petersburg_block
+             0,  // istanbul_block
+         },
      }},
     {"Berlin",
      {
          1,  // chain_id
-         0,  // homestead_block
-         0,  // tangerine_whistle_block
-         0,  // spurious_dragon_block
-         0,  // byzantium_block
-         0,  // constantinople_block
-         0,  // petersburg_block
-         0,  // istanbul_block
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+             0,  // constantinople_block
+             0,  // petersburg_block
+             0,  // istanbul_block
+             0,  // berlin_block
+         },
          0,  // muir_glacier_block
-         0,  // berlin_block
      }},
     {"FrontierToHomesteadAt5",
      {
          1,  // chain_id
-         5,  // homestead_block
+         {
+             5,  // homestead_block
+         },
      }},
     {"HomesteadToEIP150At5",
      {
          1,  // chain_id
-         0,  // homestead_block
-         5,  // tangerine_whistle_block
+         {
+             0,  // homestead_block
+             5,  // tangerine_whistle_block
+         },
      }},
     {"HomesteadToDaoAt5",
      {
-         1,   // chain_id
-         0,   // homestead_block
-         {},  // tangerine_whistle_block
-         {},  // spurious_dragon_block
-         {},  // byzantium_block
-         {},  // constantinople_block
-         {},  // petersburg_block
-         {},  // istanbul_block
-         {},  // muir_glacier_block
-         {},  // berlin_block
-         5,   // dao_block
+         1,  // chain_id
+         {
+             0,  // homestead_block
+         },
+         std::nullopt,  // muir_glacier_block
+         5,             // dao_block
      }},
     {"EIP158ToByzantiumAt5",
      {
          1,  // chain_id
-         0,  // homestead_block
-         0,  // tangerine_whistle_block
-         0,  // spurious_dragon_block
-         5,  // byzantium_block
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             5,  // byzantium_block
+         },
      }},
     {"ByzantiumToConstantinopleFixAt5",
      {
          1,  // chain_id
-         0,  // homestead_block
-         0,  // tangerine_whistle_block
-         0,  // spurious_dragon_block
-         0,  // byzantium_block
-         5,  // constantinople_block
-         5,  // petersburg_block
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+             5,  // constantinople_block
+             5,  // petersburg_block
+         },
      }},
     {"EIP2384",
      {
          1,  // chain_id
-         0,  // homestead_block
-         0,  // tangerine_whistle_block
-         0,  // spurious_dragon_block
-         0,  // byzantium_block
-         0,  // constantinople_block
-         0,  // petersburg_block
-         0,  // istanbul_block
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+             0,  // constantinople_block
+             0,  // petersburg_block
+             0,  // istanbul_block
+         },
          0,  // muir_glacier_block
      }},
 };

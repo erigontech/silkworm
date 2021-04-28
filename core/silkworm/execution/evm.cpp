@@ -90,11 +90,10 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 
     auto snapshot{state_.take_snapshot()};
 
-    uint64_t block_num{block_.header.number};
-    bool spurious_dragon{config().has_spurious_dragon(block_num)};
-
     state_.create_contract(contract_addr);
-    if (spurious_dragon) {
+
+    const evmc_revision rev{revision()};
+    if (rev >= EVMC_SPURIOUS_DRAGON) {
         state_.set_nonce(contract_addr, 1);
     }
 
@@ -119,13 +118,13 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
         size_t code_len{res.output_size};
         uint64_t code_deploy_gas{code_len * fee::kGCodeDeposit};
 
-        if (spurious_dragon && code_len > param::kMaxCodeSize) {
+        if (rev >= EVMC_SPURIOUS_DRAGON && code_len > param::kMaxCodeSize) {
             // https://eips.ethereum.org/EIPS/eip-170
             res.status_code = EVMC_OUT_OF_GAS;
         } else if (res.gas_left >= 0 && static_cast<uint64_t>(res.gas_left) >= code_deploy_gas) {
             res.gas_left -= code_deploy_gas;
             state_.set_code(contract_addr, {res.output_data, res.output_size});
-        } else if (config().has_homestead(block_num)) {
+        } else if (rev >= EVMC_HOMESTEAD) {
             res.status_code = EVMC_OUT_OF_GAS;
         }
     }
@@ -151,11 +150,11 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         return res;
     }
 
-    bool precompiled{is_precompiled(message.destination)};
+    const bool precompiled{is_precompiled(message.destination)};
+    const evmc_revision rev{revision()};
 
     // https://eips.ethereum.org/EIPS/eip-161
-    if (value == 0 && config().has_spurious_dragon(block_.header.number) && !state_.exists(message.destination) &&
-        !precompiled) {
+    if (value == 0 && rev >= EVMC_SPURIOUS_DRAGON && !state_.exists(message.destination) && !precompiled) {
         return res;
     }
 
@@ -299,32 +298,18 @@ evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_
     return res;
 }
 
-evmc_revision EVM::revision() const noexcept {
-    uint64_t block_number{block_.header.number};
-
-    if (config().has_berlin(block_number)) return EVMC_BERLIN;
-    if (config().has_istanbul(block_number)) return EVMC_ISTANBUL;
-    if (config().has_petersburg(block_number)) return EVMC_PETERSBURG;
-    if (config().has_constantinople(block_number)) return EVMC_CONSTANTINOPLE;
-    if (config().has_byzantium(block_number)) return EVMC_BYZANTIUM;
-    if (config().has_spurious_dragon(block_number)) return EVMC_SPURIOUS_DRAGON;
-    if (config().has_tangerine_whistle(block_number)) return EVMC_TANGERINE_WHISTLE;
-    if (config().has_homestead(block_number)) return EVMC_HOMESTEAD;
-
-    return EVMC_FRONTIER;
-}
+evmc_revision EVM::revision() const noexcept { return config().revision(block_.header.number); }
 
 uint8_t EVM::number_of_precompiles() const noexcept {
-    uint64_t block_number{block_.header.number};
+    const evmc_revision rev{revision()};
 
-    if (config().has_istanbul(block_number)) {
+    if (rev >= EVMC_ISTANBUL) {
         return precompiled::kNumOfIstanbulContracts;
-    }
-    if (config().has_byzantium(block_number)) {
+    } else if (rev >= EVMC_BYZANTIUM) {
         return precompiled::kNumOfByzantiumContracts;
+    } else {
+        return precompiled::kNumOfFrontierContracts;
     }
-
-    return precompiled::kNumOfFrontierContracts;
 }
 
 bool EVM::is_precompiled(const evmc::address& contract) const noexcept {
@@ -337,7 +322,9 @@ bool EVM::is_precompiled(const evmc::address& contract) const noexcept {
 }
 
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {
-    if (evm_.config().has_spurious_dragon(evm_.block_.header.number)) {
+    const evmc_revision rev{evm_.revision()};
+
+    if (rev >= EVMC_SPURIOUS_DRAGON) {
         return !evm_.state().is_dead(address);
     } else {
         return evm_.state().exists(address);
@@ -369,9 +356,8 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
 
     evm_.state().set_storage(address, key, new_val);
 
-    uint64_t block_number{evm_.block_.header.number};
-    bool eip1283{evm_.config().has_istanbul(block_number) ||
-                 (evm_.config().has_constantinople(block_number) && !evm_.config().has_petersburg(block_number))};
+    const evmc_revision rev{evm_.revision()};
+    const bool eip1283{rev >= EVMC_ISTANBUL || rev == EVMC_CONSTANTINOPLE};
 
     if (!eip1283) {
         if (is_zero(current_val)) {
@@ -387,16 +373,16 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
     }
 
     uint64_t sload_cost{0};
-    if (evm_.config().has_berlin(block_number)) {
+    if (rev >= EVMC_BERLIN) {
         sload_cost = fee::kWarmStorageReadCost;
-    } else if (evm_.config().has_istanbul(block_number)) {
+    } else if (rev >= EVMC_ISTANBUL) {
         sload_cost = fee::kGSLoadIstanbul;
     } else {
         sload_cost = fee::kGSLoadTangerineWhistle;
     }
 
     uint64_t sstore_reset_gas{fee::kGSReset};
-    if (evm_.config().has_berlin(block_number)) {
+    if (rev >= EVMC_BERLIN) {
         sstore_reset_gas -= fee::kColdSloadCost;
     }
 

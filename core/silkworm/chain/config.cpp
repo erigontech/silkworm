@@ -18,33 +18,63 @@
 
 namespace silkworm {
 
-static inline void member_to_json(nlohmann::json& json, const std::string& key,
-                                  const std::optional<uint64_t>& source) {
+static inline void member_to_json(nlohmann::json& json, const std::string& key, const std::optional<uint64_t>& source) {
     if (source.has_value()) {
         json[key] = source.value();
     }
 }
 
-nlohmann::json ChainConfig::Json() const noexcept {
+static inline void read_json_config_member(const nlohmann::json& json, const std::string& key,
+                                           std::optional<uint64_t>& target) {
+    if (json.contains(key)) {
+        target = json[key].get<uint64_t>();
+    }
+}
+
+nlohmann::json ChainConfig::to_json() const noexcept {
     nlohmann::json ret;
 
     ret["chainId"] = chain_id;
 
-    member_to_json(ret, "homesteadBlock", homestead_block);
-    member_to_json(ret, "eip150Block", tangerine_whistle_block);
-    member_to_json(ret, "eip155Block", spurious_dragon_block);
-    member_to_json(ret, "byzantiumBlock", byzantium_block);
-    member_to_json(ret, "constantinopleBlock", constantinople_block);
-    member_to_json(ret, "petersburgBlock", petersburg_block);
-    member_to_json(ret, "istanbulBlock", istanbul_block);
+    for (int i{0}; i < EVMC_MAX_REVISION; ++i) {
+        member_to_json(ret, kJsonForkNames[i], fork_blocks[i]);
+    }
+
     member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
     member_to_json(ret, "daoForkBlock", dao_block);
-    member_to_json(ret, "berlinBlock", berlin_block);
 
     return ret;
 }
 
-bool operator==(const ChainConfig& a, const ChainConfig& b) { return a.Json() == b.Json(); }
-std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.Json().dump(); }
+std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) noexcept {
+    if (json == nlohmann::json::value_t::discarded || !json.contains("chainId") || !json["chainId"].is_number()) {
+        return std::nullopt;
+    }
+
+    ChainConfig config{};
+    config.chain_id = json["chainId"].get<uint64_t>();
+
+    for (int i{0}; i < EVMC_MAX_REVISION; ++i) {
+        read_json_config_member(json, kJsonForkNames[i], config.fork_blocks[i]);
+    }
+
+    read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
+    read_json_config_member(json, "daoForkBlock", config.dao_block);
+
+    return config;
+}
+
+evmc_revision ChainConfig::revision(uint64_t block_number) const noexcept {
+    for (int i{EVMC_MAX_REVISION}; i > 0; --i) {
+        if (fork_blocks[i - 1] && block_number >= fork_blocks[i - 1]) {
+            return static_cast<evmc_revision>(i);
+        }
+    }
+    return EVMC_FRONTIER;
+}
+
+bool operator==(const ChainConfig& a, const ChainConfig& b) { return a.to_json() == b.to_json(); }
+
+std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }
 
 }  // namespace silkworm

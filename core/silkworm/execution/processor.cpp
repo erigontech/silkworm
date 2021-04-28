@@ -74,11 +74,9 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
         }
     }
 
-    uint64_t block_number{evm_.block().header.number};
-    bool homestead{evm_.config().has_homestead(block_number)};
-    bool istanbul{evm_.config().has_istanbul(block_number)};
+    const evmc_revision rev{evm_.revision()};
 
-    intx::uint128 g0{intrinsic_gas(txn, homestead, istanbul)};
+    const intx::uint128 g0{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
     CallResult vm_res{evm_.execute(txn, txn.gas_limit - g0.lo)};
 
     uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left)};
@@ -87,7 +85,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     state.add_to_balance(evm_.block().header.beneficiary, gas_used * txn.gas_price);
 
     evm_.state().destruct_suicides();
-    if (evm_.config().has_spurious_dragon(block_number)) {
+    if (rev >= EVMC_SPURIOUS_DRAGON) {
         evm_.state().destruct_touched_dead();
     }
 
@@ -138,16 +136,17 @@ std::pair<std::vector<Receipt>, ValidationResult> ExecutionProcessor::execute_bl
 }
 
 void ExecutionProcessor::apply_rewards() noexcept {
-    uint64_t block_number{evm_.block().header.number};
+    const evmc_revision rev{evm_.revision()};
     intx::uint256 block_reward;
-    if (evm_.config().has_constantinople(block_number)) {
+    if (rev >= EVMC_CONSTANTINOPLE) {
         block_reward = param::kConstantinopleBlockReward;
-    } else if (evm_.config().has_byzantium(block_number)) {
+    } else if (rev >= EVMC_BYZANTIUM) {
         block_reward = param::kByzantiumBlockReward;
     } else {
         block_reward = param::kFrontierBlockReward;
     }
 
+    const uint64_t block_number{evm_.block().header.number};
     intx::uint256 miner_reward{block_reward};
     for (const BlockHeader& ommer : evm_.block().ommers) {
         intx::uint256 ommer_reward{((8 + ommer.number - block_number) * block_reward) >> 3};

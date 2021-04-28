@@ -56,7 +56,7 @@ SILKWORM_EXPORT const silkworm::ChainConfig* lookup_config(uint64_t chain_id);
 SILKWORM_EXPORT silkworm::ChainConfig* new_config(uint64_t chain_id);
 SILKWORM_EXPORT void delete_config(silkworm::ChainConfig* x);
 
-SILKWORM_EXPORT void config_set_update_block(silkworm::ChainConfig* config, evmc_revision update, uint64_t block);
+SILKWORM_EXPORT void config_set_fork_block(silkworm::ChainConfig* config, evmc_revision fork, uint64_t block);
 
 SILKWORM_EXPORT void config_set_muir_glacier_block(silkworm::ChainConfig* config, uint64_t block);
 

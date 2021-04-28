@@ -28,7 +28,7 @@ std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& blo
                                                                 ExecutionStatePool* state_pool,
                                                                 evmc_vm* exo_evm) noexcept {
     const BlockHeader& header{block.header};
-    uint64_t block_num{header.number};
+    const uint64_t block_num{header.number};
 
     IntraBlockState state{buffer};
     ExecutionProcessor processor{block, state, config};
@@ -54,7 +54,8 @@ std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& blo
         return res;
     }
 
-    if (config.has_byzantium(block_num)) {
+    const evmc_revision rev{config.revision(block_num)};
+    if (rev >= EVMC_BYZANTIUM) {
         static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
         evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
         if (receipt_root != header.receipts_root) {

@@ -6,6 +6,8 @@
 
 #include "keccak.hpp"
 
+#include <string_view>
+
 #include "../support/attributes.h"
 
 namespace ethash {
@@ -278,50 +280,46 @@ __attribute__((constructor)) static void select_keccakf1600_implementation() {
 
 static inline ALWAYS_INLINE void keccak(uint64_t* out, size_t bits, const uint8_t* input, size_t input_size) {
     static const size_t word_size{sizeof(uint64_t)};
-    const size_t hash_size = bits / 8;
-    const size_t block_size = (1600 - bits * 2) / 8;
+    const size_t hash_size{bits / 8};
+    const size_t block_size{(1600 - bits * 2) / 8};
+    const size_t block_words{block_size / word_size};
 
-    size_t i;
-    uint64_t* state_iter;
-    uint64_t last_word = 0;
-    uint8_t* last_word_iter = (uint8_t*)&last_word;
+    std::basic_string_view<uint8_t> input_view{input, input_size};
 
-    uint64_t state[25] = {0};
+    uint64_t state[25]{0};
+    uint64_t* state_iterator{state};
+    uint64_t last_word{0};
+    uint8_t* last_word_iter = reinterpret_cast<uint8_t*>(&last_word);
 
-    while (input_size >= block_size) {
-        for (i = 0; i < (block_size / word_size); ++i) {
-            state[i] ^= load_le(input);
-            input += word_size;
+    // Consume all input data
+    while (input_view.size()) {
+
+        if (input_view.size() >= block_size) {
+            for (size_t i{0}; i < block_words; i++) {
+                state[i] ^= load_le(input_view.data());
+                input_view.remove_prefix(word_size);
+            }
+            keccakf1600_best(state);
+            continue;
         }
-
-        keccakf1600_best(state);
-
-        input_size -= block_size;
+        if (input_view.size() >= word_size) {
+            *state_iterator ^= load_le(input_view.data());
+            ++state_iterator;
+            input_view.remove_prefix(word_size);
+            continue;
+        }
+        std::memcpy(last_word_iter, input_view.data(), input_view.size());
+        last_word_iter += input_view.size();
+        break;
     }
 
-    state_iter = state;
-
-    while (input_size >= word_size) {
-        *state_iter ^= load_le(input);
-        ++state_iter;
-        input += word_size;
-        input_size -= word_size;
-    }
-
-    while (input_size > 0) {
-        *last_word_iter = *input;
-        ++last_word_iter;
-        ++input;
-        --input_size;
-    }
     *last_word_iter = 0x01;
-    *state_iter ^= to_le64(last_word);
-
-    state[(block_size / word_size) - 1] ^= 0x8000000000000000;
+    *state_iterator ^= to_le64(last_word);
+    state[block_words - 1] ^= 0x8000000000000000;
 
     keccakf1600_best(state);
 
-    for (i = 0; i < (hash_size / word_size); ++i) {
+    for (size_t i{0}; i < (hash_size / word_size); ++i) {
         out[i] = to_le64(state[i]);
     }
 }

@@ -279,10 +279,10 @@ __attribute__((constructor)) static void select_keccakf1600_implementation() {
 #endif
 
 static inline ALWAYS_INLINE void keccak(uint64_t* out, size_t bits, const uint8_t* input, size_t input_size) {
-    static const size_t word_size{sizeof(uint64_t)};
+    static const size_t word64_size{sizeof(uint64_t)};
     const size_t hash_size{bits / 8};
     const size_t block_size{(1600 - bits * 2) / 8};
-    const size_t block_words{block_size / word_size};
+    const size_t block_word64s{block_size / word64_size};
 
     std::basic_string_view<uint8_t> input_view{input, input_size};
 
@@ -295,17 +295,17 @@ static inline ALWAYS_INLINE void keccak(uint64_t* out, size_t bits, const uint8_
     while (input_view.size()) {
 
         if (input_view.size() >= block_size) {
-            for (size_t i{0}; i < block_words; i++) {
+            for (size_t i{0}; i < block_word64s; i++) {
                 state[i] ^= load_le(input_view.data());
-                input_view.remove_prefix(word_size);
+                input_view.remove_prefix(word64_size);
             }
             keccakf1600_best(state);
             continue;
         }
-        if (input_view.size() >= word_size) {
+        if (input_view.size() >= word64_size) {
             *state_iterator ^= load_le(input_view.data());
             ++state_iterator;
-            input_view.remove_prefix(word_size);
+            input_view.remove_prefix(word64_size);
             continue;
         }
         __builtin_memcpy(last_word_iter, input_view.data(), input_view.size());
@@ -315,11 +315,11 @@ static inline ALWAYS_INLINE void keccak(uint64_t* out, size_t bits, const uint8_
 
     *last_word_iter = 0x01;
     *state_iterator ^= to_le64(last_word);
-    state[block_words - 1] ^= 0x8000000000000000;
+    state[block_word64s - 1] ^= 0x8000000000000000;
 
     keccakf1600_best(state);
 
-    for (size_t i{0}; i < (hash_size / word_size); ++i) {
+    for (size_t i{0}; i < (hash_size / word64_size); ++i) {
         out[i] = to_le64(state[i]);
     }
 }

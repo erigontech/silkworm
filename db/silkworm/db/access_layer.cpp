@@ -21,8 +21,6 @@
 #include <boost/endian/conversion.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/common/cast.hpp>
-
 #include "bitmap.hpp"
 #include "tables.hpp"
 
@@ -368,65 +366,9 @@ std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
         return std::nullopt;
     }
 
-    return parse_chain_config(byte_ptr_cast(config_value->c_str()));
-}
-
-static inline void read_json_config_member(const nlohmann::json& json, const std::string& key,
-                                           std::optional<uint64_t>& target) {
-    if (json.contains(key) && json[key].is_number()) {
-        target.emplace(json[key].get<uint64_t>());
-    }
-}
-
-/*
-* Sample config
-{
-"byzantiumBlock":4370000,
-"chainId":1,
-"constantinopleBlock":7280000,
-"daoForkBlock":1920000,
-"daoForkSupport":true,
-"eip150Block":2463000,
-"eip150Hash":"0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0",
-"eip155Block":2675000,
-"eip158Block":2675000,
-"ethash":{},
-"homesteadBlock":1150000,
-"istanbulBlock":9069000,
-"muirGlacierBlock":9200000,
-"petersburgBlock":7280000
-}
-*/
-std::optional<ChainConfig> parse_chain_config(std::string_view json) {
     // https://github.com/nlohmann/json/issues/2204
-    auto config_json = nlohmann::json::parse(json, nullptr, false);
-
-    if (config_json == nlohmann::json::value_t::discarded || !config_json.contains("chainId") ||
-        !config_json["chainId"].is_number()) {
-        return std::nullopt;
-    }
-
-    ChainConfig config{};
-    config.chain_id = config_json["chainId"].get<uint64_t>();
-
-    read_json_config_member(config_json, "homesteadBlock", config.homestead_block);
-    read_json_config_member(config_json, "eip150Block", config.tangerine_whistle_block);
-
-    /** Quote @yperbasis
-     * "We can treat both eip155 & eip158 as synonyms for Spurious Dragon."
-     */
-    read_json_config_member(config_json, "eip155Block", config.spurious_dragon_block);
-    read_json_config_member(config_json, "eip158Block", config.spurious_dragon_block);
-
-    read_json_config_member(config_json, "byzantiumBlock", config.byzantium_block);
-    read_json_config_member(config_json, "constantinopleBlock", config.constantinople_block);
-    read_json_config_member(config_json, "petersburgBlock", config.petersburg_block);
-    read_json_config_member(config_json, "istanbulBlock", config.istanbul_block);
-    read_json_config_member(config_json, "muirGlacierBlock", config.muir_glacier_block);
-    read_json_config_member(config_json, "daoForkBlock", config.dao_block);
-    read_json_config_member(config_json, "berlinBlock", config.berlin_block);
-
-    return config;
+    const auto json = nlohmann::json::parse(*config_value, nullptr, false);
+    return ChainConfig::from_json(json);
 }
 
 }  // namespace silkworm::db

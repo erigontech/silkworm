@@ -90,34 +90,40 @@ static Bytes encode_path(ByteView path, bool terminating) {
     return res;
 }
 
-// RLP of a leaf or extension node
-static Bytes short_node_rlp(ByteView encoded_path, ByteView payload) {
-    Bytes rlp{};
+static Bytes leaf_node_rlp(ByteView path, ByteView value) {
+    Bytes encoded_path{encode_path(path, /*terminating=*/true)};
+    Bytes rlp;
     rlp::Header h;
     h.list = true;
-    h.payload_length = rlp::length(encoded_path) + rlp::length(payload);
+    h.payload_length = rlp::length(encoded_path) + rlp::length(value);
     rlp::encode_header(rlp, h);
     rlp::encode(rlp, encoded_path);
-    rlp::encode(rlp, payload);
+    rlp::encode(rlp, value);
     return rlp;
 }
 
-static Bytes leaf_node_rlp(ByteView path, ByteView value) {
-    return short_node_rlp(encode_path(path, /*terminating=*/true), value);
-}
-
 static Bytes extension_node_rlp(ByteView path, ByteView child_ref) {
-    return short_node_rlp(encode_path(path, /*terminating=*/false), child_ref);
+    Bytes encoded_path{encode_path(path, /*terminating=*/false)};
+    Bytes rlp;
+    rlp::Header h;
+    h.list = true;
+    h.payload_length = rlp::length(encoded_path) + child_ref.length();
+    rlp::encode_header(rlp, h);
+    rlp::encode(rlp, encoded_path);
+    rlp.append(child_ref);
+    return rlp;
 }
 
-static ByteView node_ref(ByteView rlp) {
+static Bytes node_ref(ByteView rlp) {
     if (rlp.length() < kHashLength) {
-        return rlp;
+        return Bytes{rlp};
     }
 
-    thread_local ethash::hash256 hash;
-    hash = keccak256(rlp);
-    return {hash.bytes, kHashLength};
+    Bytes rlp_wrapped_hash(kHashLength + 1, '\0');
+    rlp_wrapped_hash[0] = rlp::kEmptyStringCode + kHashLength;
+    const ethash::hash256 hash{keccak256(rlp)};
+    std::memcpy(&rlp_wrapped_hash[1], hash.bytes, kHashLength);
+    return rlp_wrapped_hash;
 }
 
 void HashBuilder::add(ByteView packed, ByteView value) {
@@ -139,10 +145,10 @@ evmc::bytes32 HashBuilder::root_hash() {
     key_.clear();
     value_.clear();
 
-    Bytes& node_ref{stack_.back()};
+    const Bytes& node_ref{stack_.back()};
     evmc::bytes32 res{};
-    if (node_ref.length() == kHashLength) {
-        std::memcpy(res.bytes, node_ref.data(), kHashLength);
+    if (node_ref.length() == kHashLength + 1) {
+        std::memcpy(res.bytes, &node_ref[1], kHashLength);
     } else {
         res = bit_cast<evmc::bytes32>(keccak256(node_ref));
     }
@@ -178,7 +184,7 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
 
         const ByteView short_node_key{curr.substr(remainder_start)};
         if (!build_extensions) {
-            stack_.emplace_back(node_ref(leaf_node_rlp(short_node_key, value)));
+            stack_.push_back(node_ref(leaf_node_rlp(short_node_key, value)));
         } else if (!short_node_key.empty()) {
             stack_.back() = node_ref(extension_node_rlp(short_node_key, stack_.back()));
         }
@@ -211,8 +217,8 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
 
                     std::vector<evmc::bytes32> hashes(child_hashes.size());
                     for (size_t i{0}; i < child_hashes.size(); ++i) {
-                        assert(child_hashes[i].size() == kHashLength);
-                        std::memcpy(hashes[i].bytes, child_hashes[i].data(), kHashLength);
+                        assert(child_hashes[i].size() == kHashLength + 1);
+                        std::memcpy(hashes[i].bytes, &child_hashes[i][1], kHashLength);
                     }
                     Node n{groups_[len], tree_masks_[len], hash_masks_[len], hashes};
 
@@ -248,11 +254,13 @@ std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_ma
 
     rlp::Header h;
     h.list = true;
-    h.payload_length = 17;
+    h.payload_length = 1;  // for the nil value added below
 
     for (size_t i{first_child_idx}, digit{0}; digit < 16; ++digit) {
         if (state_mask & (1u << digit)) {
             h.payload_length += stack_[i++].length();
+        } else {
+            h.payload_length += 1;
         }
     }
 
@@ -264,7 +272,7 @@ std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_ma
             if (hash_mask & (1u << digit)) {
                 child_hashes.push_back(stack_[i]);
             }
-            rlp::encode(rlp, stack_[i++]);
+            rlp.append(stack_[i++]);
         } else {
             rlp.push_back(rlp::kEmptyStringCode);
         }

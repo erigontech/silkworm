@@ -164,8 +164,10 @@ endif()
 if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
 endif()
+
 add_subdirectory(evmone/evmc)
-add_subdirectory(keccak)
+add_subdirectory(ethash)
+
 find_package(intx CONFIG REQUIRED)
 
 add_library(evmone evmone/lib/evmone/analysis.cpp
@@ -181,7 +183,7 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/opcodes_helpers.h)
 
 target_include_directories(evmone PUBLIC evmone/lib)
-target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions keccak)
+target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions ethash)
 
 if(MSVC)
   target_compile_options(evmone PRIVATE /EHsc)

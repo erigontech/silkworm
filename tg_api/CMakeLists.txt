@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,4 +17,5 @@
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
 add_library(silkworm_tg_api SHARED silkworm_tg_api.h silkworm_tg_api.cpp)
+target_include_directories(silkworm_tg_api PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(silkworm_tg_api PUBLIC lmdb PRIVATE silkworm_db Microsoft.GSL::GSL)

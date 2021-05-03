@@ -65,7 +65,7 @@ commands:
 jobs:
   linux-gcc-9:
     environment:
-      BUILD_TYPE: Release
+      BUILD_TYPE: Debug
       CLANG_COVERAGE: OFF
     machine:
       image: ubuntu-2004:202104-01

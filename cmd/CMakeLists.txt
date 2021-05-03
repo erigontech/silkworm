@@ -55,9 +55,9 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(dbtool dbtool.cpp)
   target_link_libraries(dbtool PRIVATE silkworm_db CLI11::CLI11)
 
-  add_executable(execute execute.cpp)
-  target_link_libraries(execute PRIVATE silkworm_db silkworm_tg_api CLI11::CLI11)
-  target_include_directories(execute PRIVATE ${CMAKE_SOURCE_DIR})
+  #add_executable(execute execute.cpp)
+  #target_link_libraries(execute PRIVATE silkworm_db silkworm_tg_api CLI11::CLI11)
+  #target_include_directories(execute PRIVATE ${CMAKE_SOURCE_DIR})
 
   add_executable(blockhashes blockhashes.cpp)
   target_link_libraries(blockhashes PRIVATE silkworm_db CLI11::CLI11)
@@ -91,13 +91,13 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(check_blockhashes PRIVATE silkworm_db CLI11::CLI11)
   target_include_directories(check_blockhashes PRIVATE ${CMAKE_SOURCE_DIR})
 
-  add_executable(extract_headers extract_headers.cpp)
-  target_link_libraries(extract_headers PRIVATE silkworm_db silkworm_tg_api CLI11::CLI11)
-  target_include_directories(extract_headers PRIVATE ${CMAKE_SOURCE_DIR})
+  #add_executable(extract_headers extract_headers.cpp)
+  #target_link_libraries(extract_headers PRIVATE silkworm_db silkworm_tg_api CLI11::CLI11)
+  #target_include_directories(extract_headers PRIVATE ${CMAKE_SOURCE_DIR})
 
-  add_executable(log_index log_index.cpp)
-  target_link_libraries(log_index PRIVATE silkworm_db cborcpp silkworm_tg_api CLI11::CLI11)
-  target_include_directories(log_index PRIVATE ${CMAKE_SOURCE_DIR})
+  #add_executable(log_index log_index.cpp)
+  #target_link_libraries(log_index PRIVATE silkworm_db cborcpp silkworm_tg_api CLI11::CLI11)
+  #target_include_directories(log_index PRIVATE ${CMAKE_SOURCE_DIR})
 
   # Ethereum Consensus Tests
   find_package(nlohmann_json CONFIG REQUIRED)

@@ -24,6 +24,7 @@
 #include <ethash/keccak.hpp>
 #include <evmone/analysis.hpp>
 #include <evmone/baseline.hpp>
+#include <evmone/execution.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
 
@@ -235,20 +236,20 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
 }
 
 evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code) noexcept {
-    static const evmone::code_analysis dummy_analysis;  // analysis isn't used in baseline interpreter
+    const evmone::JumpdestMap analysis{evmone::build_jumpdest_map(code.data(), code.size())};
 
-    std::unique_ptr<evmone::execution_state> state;
+    std::unique_ptr<evmone::AdvancedExecutionState> state;
     if (state_pool) {
         state = state_pool->acquire();
     } else {
-        state = std::make_unique<evmone::execution_state>();
+        state = std::make_unique<evmone::AdvancedExecutionState>();
     }
 
     EvmHost host{*this};
 
-    state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size(), dummy_analysis);
+    state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size());
 
-    evmc_result res{evmone::baseline_execute(*state)};
+    evmc_result res{evmone::baseline_execute(*state, analysis)};
 
     if (state_pool) {
         state_pool->release(std::move(state));
@@ -259,37 +260,31 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
 
 evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
                                                   std::optional<evmc::bytes32> code_hash) noexcept {
-    std::shared_ptr<evmone::code_analysis> analysis;
+    std::shared_ptr<evmone::AdvancedCodeAnalysis> analysis;
     if (code_hash && analysis_cache) {
         // cache contract code
         analysis = analysis_cache->get(*code_hash, rev);
         if (!analysis) {
-            analysis = std::make_shared<evmone::code_analysis>(evmone::analyze(rev, code.data(), code.size()));
+            analysis = std::make_shared<evmone::AdvancedCodeAnalysis>(evmone::analyze(rev, code.data(), code.size()));
             analysis_cache->put(*code_hash, analysis, rev);
         }
     } else {
         // don't cache deployment code
-        analysis = std::make_shared<evmone::code_analysis>(evmone::analyze(rev, code.data(), code.size()));
+        analysis = std::make_shared<evmone::AdvancedCodeAnalysis>(evmone::analyze(rev, code.data(), code.size()));
     }
 
-    std::unique_ptr<evmone::execution_state> state;
+    std::unique_ptr<evmone::AdvancedExecutionState> state;
     if (state_pool) {
         state = state_pool->acquire();
     } else {
-        state = std::make_unique<evmone::execution_state>();
+        state = std::make_unique<evmone::AdvancedExecutionState>();
     }
 
     EvmHost host{*this};
 
-    state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size(), *analysis);
+    state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size());
 
-    const auto* instruction{&state->analysis->instrs[0]};
-    while (instruction) {
-        instruction = instruction->fn(instruction, *state);
-    }
-
-    const uint8_t* output_data{state->output_size ? &state->memory[state->output_offset] : nullptr};
-    evmc_result res{evmc::make_result(state->status, state->gas_left, output_data, state->output_size)};
+    evmc_result res{evmone::execute(*state, *analysis)};
 
     if (state_pool) {
         state_pool->release(std::move(state));

@@ -29,15 +29,17 @@ ExecutionStatePool::ExecutionStatePool() {}
 
 ExecutionStatePool::~ExecutionStatePool() {}
 
-std::unique_ptr<evmone::execution_state> ExecutionStatePool::acquire() noexcept {
+std::unique_ptr<evmone::AdvancedExecutionState> ExecutionStatePool::acquire() noexcept {
     if (pool_.empty()) {
-        return std::make_unique<evmone::execution_state>();
+        return std::make_unique<evmone::AdvancedExecutionState>();
     }
-    std::unique_ptr<evmone::execution_state> obj{pool_.top().release()};
+    std::unique_ptr<evmone::AdvancedExecutionState> obj{pool_.top().release()};
     pool_.pop();
     return obj;
 }
 
-void ExecutionStatePool::release(std::unique_ptr<evmone::execution_state> obj) noexcept { pool_.push(std::move(obj)); }
+void ExecutionStatePool::release(std::unique_ptr<evmone::AdvancedExecutionState> obj) noexcept {
+    pool_.push(std::move(obj));
+}
 
 }  // namespace silkworm

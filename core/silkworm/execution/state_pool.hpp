@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_EXECUTION_STATE_POOL_H_
-#define SILKWORM_EXECUTION_STATE_POOL_H_
+#ifndef SILKWORM_EXECUTION_STATE_POOL_HPP_
+#define SILKWORM_EXECUTION_STATE_POOL_HPP_
 
 #include <memory>
 #include <stack>
 
 namespace evmone {
-struct execution_state;
+struct AdvancedExecutionState;
 }
 
 namespace silkworm {
@@ -35,14 +35,14 @@ class ExecutionStatePool {
     ExecutionStatePool(const ExecutionStatePool&) = delete;
     ExecutionStatePool& operator=(const ExecutionStatePool&) = delete;
 
-    std::unique_ptr<evmone::execution_state> acquire() noexcept;
+    std::unique_ptr<evmone::AdvancedExecutionState> acquire() noexcept;
 
-    void release(std::unique_ptr<evmone::execution_state> obj) noexcept;
+    void release(std::unique_ptr<evmone::AdvancedExecutionState> obj) noexcept;
 
   private:
-    std::stack<std::unique_ptr<evmone::execution_state>> pool_;
+    std::stack<std::unique_ptr<evmone::AdvancedExecutionState>> pool_;
 };
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_EXECUTION_STATE_POOL_H_
+#endif  // SILKWORM_EXECUTION_STATE_POOL_HPP_

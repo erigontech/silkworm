@@ -1,7 +1,7 @@
 [submodule "evmone"]
 	path = evmone
 	url = https://github.com/torquem-ch/evmone.git
-	branch = eip-2929
+	branch = execute_api
 [submodule "secp256k1"]
 	path = secp256k1
 	url = https://github.com/bitcoin-core/secp256k1.git

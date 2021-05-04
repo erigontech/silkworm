@@ -115,7 +115,7 @@ evmc::bytes32 HashBuilder::root_hash() {
     if (node_ref.length() == kHashLength) {
         std::memcpy(res.bytes, node_ref.data(), kHashLength);
     } else {
-        res = bit_cast<evmc::bytes32>(keccak256(node_ref));
+        res = bit_cast<evmc_bytes32>(keccak256(node_ref));
     }
     return res;
 }

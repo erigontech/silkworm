@@ -45,7 +45,7 @@ commands:
             - ~/.hunter
       - run:
           name: "Build"
-          command: cmake --build ~/build -j
+          command: cmake --build ~/build -j 1
 
   test:
     steps:
@@ -71,9 +71,7 @@ jobs:
       image: ubuntu-2004:202010-01
     steps:
       - checkout_with_submodules
-      - run:
-          name: "Build"
-          command: cmake --build ~/build -j 1
+      - build
       - test
 
   linux-clang-coverage:

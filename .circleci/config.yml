@@ -67,9 +67,9 @@ jobs:
     environment:
       BUILD_TYPE: Release
       CLANG_COVERAGE: OFF
-      CMAKE_BUILD_PARALLEL_LEVEL: 1
     machine:
       image: ubuntu-2004:202010-01
+    resource_class: large
     steps:
       - checkout_with_submodules
       - build
@@ -81,6 +81,7 @@ jobs:
       CLANG_COVERAGE: ON
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
+    resource_class: large
     steps:
       - checkout_with_submodules
       - build

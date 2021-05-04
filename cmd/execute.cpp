@@ -25,8 +25,7 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/execution/execution.hpp>
-
-#include "tg_api/silkworm_tg_api.h"
+#include <silkworm_tg_api.h>
 
 int main(int argc, char* argv[]) {
     using namespace silkworm;

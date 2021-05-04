@@ -45,7 +45,7 @@ commands:
             - ~/.hunter
       - run:
           name: "Build"
-          command: cmake --build ~/build -j 1
+          command: cmake --build ~/build -j
 
   test:
     steps:
@@ -67,6 +67,7 @@ jobs:
     environment:
       BUILD_TYPE: Release
       CLANG_COVERAGE: OFF
+      CMAKE_BUILD_PARALLEL_LEVEL: 1
     machine:
       image: ubuntu-2004:202010-01
     steps:

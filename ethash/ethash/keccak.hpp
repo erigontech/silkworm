@@ -6,25 +6,21 @@
 #ifndef ETHASH_KECCAK_HPP_
 #define ETHASH_KECCAK_HPP_
 
-#include "hash_types.hpp"
 #include <stddef.h>
+
+#include "hash_types.hpp"
 
 #if defined(_MSC_VER)
 #include <string.h>
 #define __builtin_memcpy memcpy
 #endif
 
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define to_le64(X) __builtin_bswap64(X)
-#else
-#define to_le64(X) X
-#endif
-
-
 namespace ethash {
 
 hash256 keccak256(const uint8_t* input, size_t input_size);
 hash256 keccak256(const hash256& input);
+hash512 keccak512(const uint8_t* input, size_t input_size);
+hash512 keccak512(const hash512& input);
 
 }  // namespace ethash
 

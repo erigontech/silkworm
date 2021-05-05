@@ -276,6 +276,25 @@ result hash(const epoch_context& context, const hash256& header, uint64_t nonce)
     return {detail::hash_final(seed, mix_hash), mix_hash};
 }
 
+bool verify_light(const hash256& header_hash, const hash256& mix_hash, uint64_t nonce,
+                  const hash256& boundary) noexcept {
+    const hash512 hash_seed{detail::hash_seed(header_hash, nonce)};
+    const hash256 hash_final{detail::hash_final(hash_seed, mix_hash)};
+    return is_less_or_equal(hash_final, boundary);
+}
+
+bool verify_full(const epoch_context& context, const hash256& header_hash, const hash256& mix_hash, uint64_t nonce,
+                 const hash256& boundary) noexcept {
+
+    const hash512 hash_seed{detail::hash_seed(header_hash, nonce)};
+    const hash256 hash_final{detail::hash_final(hash_seed, mix_hash)};
+    if (!is_less_or_equal(hash_final, boundary)) {
+        return false;
+    }
+    const hash256 expected_mix_hash = detail::hash_mix(context, hash_seed);
+    return is_equal(mix_hash, expected_mix_hash);
+}
+
 epoch_context_ptr create_epoch_context(int epoch_number) noexcept {
     return {detail::create_epoch_context(epoch_number), detail::destroy_epoch_context};
 }

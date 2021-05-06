@@ -47,6 +47,8 @@ class Node {
 
     const std::optional<evmc::bytes32>& root_hash() const { return root_hash_; }
 
+    void set_root_hash(std::optional<evmc::bytes32> root_hash);
+
   private:
     uint16_t state_mask_{0};
     uint16_t tree_mask_{0};
@@ -77,7 +79,6 @@ class HashBuilder {
     void add(ByteView key, ByteView value);
 
     // May only be called after all entries have been added.
-    // Not idempotent, may only be called once.
     evmc::bytes32 root_hash();
 
     HashCollector collector{nullptr};
@@ -87,6 +88,10 @@ class HashBuilder {
     void gen_struct_step(ByteView curr, ByteView succ, ByteView value);
 
     std::vector<Bytes> branch_ref(uint16_t state_mask, uint16_t hash_mask);
+
+    void finalize();
+
+    evmc::bytes32 root_hash(bool auto_finalize);
 
     Bytes key_;  // unpacked – one nibble per byte
     Bytes value_;

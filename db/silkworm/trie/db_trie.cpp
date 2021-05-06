@@ -44,8 +44,14 @@ void AccountAggregator::add(ByteView packed_key, const Account& a, const evmc::b
 
 evmc::bytes32 AccountAggregator::root() { return builder_.root_hash(); }
 
-StorageAggregator::StorageAggregator(etl::Collector&) {
-    // TODO[Issue 179] use storage_collector
+StorageAggregator::StorageAggregator(etl::Collector& storage_collector, Bytes acc_with_inc) {
+    builder_.collector = [acc_with_inc, &storage_collector](ByteView unpacked_key, const Node& node) {
+        etl::Entry e;
+        e.key = acc_with_inc;
+        e.key.append(unpacked_key);
+        e.value = marshal_node(node);
+        storage_collector.collect(e);
+    };
 }
 
 void StorageAggregator::add(ByteView packed_location, ByteView value) {
@@ -151,9 +157,9 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
             evmc::bytes32 storage_root{kEmptyRoot};
 
             if (account.incarnation) {
-                StorageAggregator storage_aggregator{storage_collector_};
-
                 const Bytes acc_with_inc{db::storage_prefix(a->key, account.incarnation)};
+                StorageAggregator storage_aggregator{storage_collector_, acc_with_inc};
+
                 for (storage_trie.seek_to_account(acc_with_inc);; storage_trie.next()) {
                     if (storage_trie.can_skip_state()) {
                         goto use_storage_trie;

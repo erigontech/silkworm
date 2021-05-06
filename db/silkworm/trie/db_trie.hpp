@@ -97,7 +97,7 @@ class StorageAggregator {
     StorageAggregator(const StorageAggregator&) = delete;
     StorageAggregator& operator=(const StorageAggregator&) = delete;
 
-    explicit StorageAggregator(etl::Collector& storage_collector);
+    explicit StorageAggregator(etl::Collector& storage_collector, Bytes acc_with_inc);
 
     // Entries must be added in the strictly increasing lexicographic order (by key).
     // See HashBuilder::add

@@ -48,6 +48,8 @@ Node::Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vec
     assert(std::bitset<16>(hash_mask_).count() == hashes_.size());
 }
 
+void Node::set_root_hash(std::optional<evmc::bytes32> root_hash) { root_hash_ = std::move(root_hash); }
+
 bool operator==(const Node& a, const Node& b) {
     return a.state_mask() == b.state_mask() && a.tree_mask() == b.tree_mask() && a.hash_mask() == b.hash_mask() &&
            a.hashes() == b.hashes() && a.root_hash() == b.root_hash();
@@ -136,14 +138,24 @@ void HashBuilder::add(ByteView packed, ByteView value) {
     value_ = value;
 }
 
-evmc::bytes32 HashBuilder::root_hash() {
-    if (key_.empty()) {
-        return kEmptyRoot;
+void HashBuilder::finalize() {
+    if (!key_.empty()) {
+        gen_struct_step(key_, {}, value_);
+        key_.clear();
+        value_.clear();
+    }
+}
+
+evmc::bytes32 HashBuilder::root_hash() { return root_hash(/*auto_finalize=*/true); }
+
+evmc::bytes32 HashBuilder::root_hash(bool auto_finalize) {
+    if (auto_finalize) {
+        finalize();
     }
 
-    gen_struct_step(key_, {}, value_);
-    key_.clear();
-    value_.clear();
+    if (stack_.empty()) {
+        return kEmptyRoot;
+    }
 
     const Bytes& node_ref{stack_.back()};
     evmc::bytes32 res{};
@@ -195,22 +207,17 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
         }
 
         // Close the immediately encompassing prefix group, if needed
-        if (!succ.empty() || prec_exists) {
-            // branch node
+        if (!succ.empty() || prec_exists) {  // branch node
             std::vector<Bytes> child_hashes{branch_ref(groups_[len], hash_masks_[len])};
 
             // See db/silkworm/trie/db_trie.hpp
             if (collector) {
                 if (len > 0) {
                     hash_masks_[len - 1] |= 1u << curr[len - 1];
-                    if (tree_masks_[len]) {
-                        tree_masks_[len - 1] |= 1u << curr[len - 1];
-                    }
                 }
 
-                bool send{tree_masks_[len] || hash_masks_[len]};  // store only if have useful info
-                send |= len == 1 && groups_[len];                 // first level of trie_account - store in any case
-                if (send) {
+                bool store_in_db_trie{tree_masks_[len] || hash_masks_[len]};
+                if (store_in_db_trie) {
                     if (len > 0) {
                         tree_masks_[len - 1] |= 1u << curr[len - 1];  // register myself in parent bitmap
                     }
@@ -221,6 +228,9 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
                         std::memcpy(hashes[i].bytes, &child_hashes[i][1], kHashLength);
                     }
                     Node n{groups_[len], tree_masks_[len], hash_masks_[len], hashes};
+                    if (len == 0) {
+                        n.set_root_hash(root_hash(/*auto_finalize=*/false));
+                    }
 
                     collector(curr.substr(0, len), n);
                 }

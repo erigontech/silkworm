@@ -186,23 +186,20 @@ TEST_CASE("Layout of account trie") {
     // Check storage trie
     // ----------------------------------------------------------------
 
-    // TODO[Issue 179] make the rest of the test work
-    /*
-        auto storage_trie{txn->open(db::table::kTrieOfStorage)};
+    auto storage_trie{txn->open(db::table::kTrieOfStorage)};
 
-        const auto marshalled_node3{storage_trie->get(storage_key)};
-        REQUIRE(marshalled_node3);
-        const Node node3{unmarshal_node(*marshalled_node3)};
+    const auto marshalled_node3{storage_trie->get(storage_key)};
+    REQUIRE(marshalled_node3);
+    const Node node3{unmarshal_node(*marshalled_node3)};
 
-        CHECK(0b1010 == node3.state_mask());
-        CHECK(0b0000 == node3.tree_mask());
-        CHECK(0b0010 == node3.hash_mask());
+    CHECK(0b1010 == node3.state_mask());
+    CHECK(0b0000 == node3.tree_mask());
+    CHECK(0b0010 == node3.hash_mask());
 
-        CHECK(node3.root_hash() == storage_root);
+    CHECK(node3.root_hash() == storage_root);
 
-        REQUIRE(node3.hashes().size() == 1);
-        CHECK(to_hex(node3.hashes()[0]) == "6a37be14be662e2278327442d451710915bf0ec444c8b588ad1698df00a6e2c7");
-    */
+    REQUIRE(node3.hashes().size() == 1);
+
     // TODO[Issue 179] check that there's nothing else in storage_trie
 }
 

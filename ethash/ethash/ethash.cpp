@@ -295,8 +295,25 @@ bool verify_full(const epoch_context& context, const hash256& header_hash, const
     return is_equal(mix_hash, expected_mix_hash);
 }
 
-epoch_context_ptr create_epoch_context(int epoch_number) noexcept {
+epoch_context_ptr create_epoch_context(uint32_t epoch_number) noexcept {
     return {detail::create_epoch_context(epoch_number), detail::destroy_epoch_context};
+}
+
+hash256 get_boundary_from_diff(const intx::uint256 difficulty) noexcept {
+
+    static intx::uint256 dividend{
+        intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")};
+
+    hash256 ret{};
+
+    if (difficulty > 1u) {
+        auto result = dividend / difficulty;
+        std::memcpy(ret.bytes, intx::as_bytes(result), 32);
+    } else {
+        std::memcpy(ret.bytes, intx::as_bytes(dividend), 32);
+    }
+    return ret;
+
 }
 
 }  // namespace ethash

@@ -11,6 +11,8 @@
 #include <memory>
 #include <optional>
 
+#include <intx/intx.hpp>
+
 #include "../../support/attributes.h"
 #include "keccak.hpp"
 
@@ -148,8 +150,16 @@ bool verify_light(const hash256& header_hash, const hash256& mix_hash, uint64_t 
 bool verify_full(const epoch_context& context, const hash256& header_hash, const hash256& mix_hash, uint64_t nonce,
                  const hash256& boundary) noexcept;
 
+
 using epoch_context_ptr = std::unique_ptr<epoch_context, decltype(&detail::destroy_epoch_context)>;
-epoch_context_ptr create_epoch_context(int epoch_number) noexcept;
+/**
+ * Creates an DAG context for given epoch number
+ * @param epoch_number
+ * @return              A unique_ptr to the context
+ */
+epoch_context_ptr create_epoch_context(uint32_t epoch_number) noexcept;
+
+hash256 get_boundary_from_diff(const intx::uint256 difficulty) noexcept;
 
 }  // namespace ethash
 

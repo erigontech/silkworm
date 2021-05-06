@@ -9,8 +9,9 @@
 #ifndef ETHASH_HASH_TYPES_HPP_
 #define ETHASH_HASH_TYPES_HPP_
 
-#include <cstring>
 #include <stdint.h>
+
+#include <cstring>
 
 #include "endianess.hpp"
 

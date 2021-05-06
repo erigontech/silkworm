@@ -25,25 +25,6 @@
 
 namespace silkworm::trie {
 
-AccountAggregator::AccountAggregator(etl::Collector& account_collector) {
-    builder_.collector = [&account_collector](ByteView unpacked_key, const Node& node) {
-        if (unpacked_key.empty()) {
-            return;
-        }
-
-        etl::Entry e;
-        e.key = unpacked_key;
-        e.value = marshal_node(node);
-        account_collector.collect(e);
-    };
-}
-
-void AccountAggregator::add(ByteView packed_key, const Account& a, const evmc::bytes32& storage_root) {
-    builder_.add(packed_key, a.rlp(storage_root));
-}
-
-evmc::bytes32 AccountAggregator::root() { return builder_.root_hash(); }
-
 StorageAggregator::StorageAggregator(etl::Collector& storage_collector, Bytes acc_with_inc) {
     builder_.collector = [acc_with_inc, &storage_collector](ByteView unpacked_key, const Node& node) {
         etl::Entry e;
@@ -110,7 +91,18 @@ bool StorageTrieCursor::can_skip_state() const {
 }
 
 DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
-    : txn_{txn}, aggregator_{account_collector}, storage_collector_{storage_collector} {}
+    : txn_{txn}, storage_collector_{storage_collector} {
+    hb_.collector = [&account_collector](ByteView unpacked_key, const Node& node) {
+        if (unpacked_key.empty()) {
+            return;
+        }
+
+        etl::Entry e;
+        e.key = unpacked_key;
+        e.value = marshal_node(node);
+        account_collector.collect(e);
+    };
+}
 
 // calculate_root algo:
 //	for iterateIHOfAccounts {
@@ -187,7 +179,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                 storage_root = storage_aggregator.root();
             }
 
-            aggregator_.add(a->key, account, storage_root);
+            hb_.add(a->key, account.rlp(storage_root));
         }
 
     use_account_trie:
@@ -198,7 +190,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
         // TODO[Issue 179] use account trie
     }
 
-    return aggregator_.root();
+    return hb_.root_hash();
 }
 
 Bytes marshal_node(const Node& n) {

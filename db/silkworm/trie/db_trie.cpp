@@ -74,7 +74,7 @@ bool StorageTrieCursor::can_skip_state() const {
 
 DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
     : txn_{txn}, storage_collector_{storage_collector} {
-    hb_.collector = [&account_collector](ByteView unpacked_key, const Node& node) {
+    hb_.node_collector = [&account_collector](ByteView unpacked_key, const Node& node) {
         if (unpacked_key.empty()) {
             return;
         }
@@ -134,7 +134,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                 const Bytes acc_with_inc{db::storage_prefix(a->key, account.incarnation)};
 
                 HashBuilder storage_hb;
-                storage_hb.collector = [&](ByteView unpacked_key, const Node& node) {
+                storage_hb.node_collector = [&](ByteView unpacked_key, const Node& node) {
                     etl::Entry e;
                     e.key = acc_with_inc;
                     e.key.append(unpacked_key);

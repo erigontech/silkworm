@@ -60,7 +60,7 @@ class Node {
 bool operator==(const Node& a, const Node& b);
 
 // TG HashCollector2
-using HashCollector = std::function<void(ByteView unpacked_key, const Node&)>;
+using NodeCollector = std::function<void(ByteView unpacked_key, const Node&)>;
 
 // Calculates root hash of a Modified Merkle Patricia Trie.
 // See Appendix D "Modified Merkle Patricia Trie" of the Yellow Paper
@@ -81,7 +81,7 @@ class HashBuilder {
     // May only be called after all entries have been added.
     evmc::bytes32 root_hash();
 
-    HashCollector collector{nullptr};
+    NodeCollector node_collector{nullptr};
 
   private:
     // See TG GenStructStep

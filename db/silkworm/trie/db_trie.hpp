@@ -73,25 +73,6 @@ the correct bit in tree_mask bitmap
 
 namespace silkworm::trie {
 
-class StorageAggregator {
-  public:
-    StorageAggregator(const StorageAggregator&) = delete;
-    StorageAggregator& operator=(const StorageAggregator&) = delete;
-
-    explicit StorageAggregator(etl::Collector& storage_collector, Bytes acc_with_inc);
-
-    // Entries must be added in the strictly increasing lexicographic order (by key).
-    // See HashBuilder::add
-    void add(ByteView packed_location, ByteView value);
-
-    // Not idempotent, may only be called once.
-    evmc::bytes32 root();
-
-  private:
-    HashBuilder builder_;
-    Bytes rlp_;
-};
-
 // TG AccTrieCursor
 class AccountTrieCursor {
   public:
@@ -142,6 +123,7 @@ class DbTrieLoader {
     lmdb::Transaction& txn_;
     HashBuilder hb_;
     etl::Collector& storage_collector_;
+    Bytes rlp_;
 };
 
 class WrongRoot : public std::runtime_error {

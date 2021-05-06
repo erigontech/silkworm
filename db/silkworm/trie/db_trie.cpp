@@ -25,24 +25,6 @@
 
 namespace silkworm::trie {
 
-StorageAggregator::StorageAggregator(etl::Collector& storage_collector, Bytes acc_with_inc) {
-    builder_.collector = [acc_with_inc, &storage_collector](ByteView unpacked_key, const Node& node) {
-        etl::Entry e;
-        e.key = acc_with_inc;
-        e.key.append(unpacked_key);
-        e.value = marshal_node(node);
-        storage_collector.collect(e);
-    };
-}
-
-void StorageAggregator::add(ByteView packed_location, ByteView value) {
-    rlp_.clear();
-    rlp::encode(rlp_, value);
-    builder_.add(packed_location, rlp_);
-}
-
-evmc::bytes32 StorageAggregator::root() { return builder_.root_hash(); }
-
 AccountTrieCursor::AccountTrieCursor(lmdb::Transaction&) {}
 
 Bytes AccountTrieCursor::first_uncovered_prefix() {
@@ -150,7 +132,15 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
 
             if (account.incarnation) {
                 const Bytes acc_with_inc{db::storage_prefix(a->key, account.incarnation)};
-                StorageAggregator storage_aggregator{storage_collector_, acc_with_inc};
+
+                HashBuilder storage_hb;
+                storage_hb.collector = [&](ByteView unpacked_key, const Node& node) {
+                    etl::Entry e;
+                    e.key = acc_with_inc;
+                    e.key.append(unpacked_key);
+                    e.value = marshal_node(node);
+                    storage_collector_.collect(e);
+                };
 
                 for (storage_trie.seek_to_account(acc_with_inc);; storage_trie.next()) {
                     if (storage_trie.can_skip_state()) {
@@ -165,7 +155,10 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                         if (storage_trie.key() && storage_trie.key() < unpacked_loc) {
                             break;
                         }
-                        storage_aggregator.add(packed_loc, value);
+
+                        rlp_.clear();
+                        rlp::encode(rlp_, value);
+                        storage_hb.add(packed_loc, rlp_);
                     }
 
                 use_storage_trie:
@@ -176,7 +169,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                     // TODO[Issue 179] use storage trie
                 }
 
-                storage_root = storage_aggregator.root();
+                storage_root = storage_hb.root_hash();
             }
 
             hb_.add(a->key, account.rlp(storage_root));

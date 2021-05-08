@@ -23,9 +23,9 @@
 
 namespace silkworm {
 
-evmc::bytes32 BlockHeader::hash() const {
+evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
     Bytes rlp;
-    rlp::encode(rlp, *this);
+    rlp::encode(rlp, *this, for_sealing);
     return bit_cast<evmc::bytes32>(keccak256(rlp));
 }
 
@@ -49,17 +49,26 @@ void Block::recover_senders() {
 
 namespace rlp {
 
-    static Header rlp_header(const BlockHeader& header) {
-        Header rlp_head{true, 6 * (kHashLength + 1)};
-        rlp_head.payload_length += kAddressLength + 1;  // beneficiary
-        rlp_head.payload_length += kBloomByteLength + length_of_length(kBloomByteLength);
-        rlp_head.payload_length += length(header.difficulty);
-        rlp_head.payload_length += length(header.number);
-        rlp_head.payload_length += length(header.gas_limit);
-        rlp_head.payload_length += length(header.gas_used);
-        rlp_head.payload_length += length(header.timestamp);
-        rlp_head.payload_length += length(header.extra_data);
-        rlp_head.payload_length += 8 + 1;  // nonce
+    // Computes the length of the RLP payload
+    static Header rlp_header(const BlockHeader& header, bool for_sealing = false) {
+        Header rlp_head{true, 0};
+        rlp_head.payload_length += kHashLength + 1;                                        // parent_hash
+        rlp_head.payload_length += kHashLength + 1;                                        // ommers_hash
+        rlp_head.payload_length += kAddressLength + 1;                                     // beneficiary
+        rlp_head.payload_length += kHashLength + 1;                                        // state_root
+        rlp_head.payload_length += kHashLength + 1;                                        // transactions_root
+        rlp_head.payload_length += kHashLength + 1;                                        // receipts_root
+        rlp_head.payload_length += kBloomByteLength + length_of_length(kBloomByteLength);  // logs_bloom
+        rlp_head.payload_length += length(header.difficulty);                              // difficulty
+        rlp_head.payload_length += length(header.number);                                  // block height
+        rlp_head.payload_length += length(header.gas_limit);                               // gas_limit
+        rlp_head.payload_length += length(header.gas_used);                                // gas_used
+        rlp_head.payload_length += length(header.timestamp);                               // timestamp
+        rlp_head.payload_length += length(header.extra_data);                              // extra_data
+        if (!for_sealing) {
+            rlp_head.payload_length += kHashLength + 1;  // mix_hash
+            rlp_head.payload_length += 8 + 1;            // nonce
+        }
         return rlp_head;
     }
 
@@ -68,8 +77,8 @@ namespace rlp {
         return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
     }
 
-    void encode(Bytes& to, const BlockHeader& header) {
-        encode_header(to, rlp_header(header));
+    void encode(Bytes& to, const BlockHeader& header, bool for_sealing) {
+        encode_header(to, rlp_header(header, for_sealing));
         encode(to, header.parent_hash.bytes);
         encode(to, header.ommers_hash.bytes);
         encode(to, header.beneficiary.bytes);
@@ -83,8 +92,10 @@ namespace rlp {
         encode(to, header.gas_used);
         encode(to, header.timestamp);
         encode(to, header.extra_data);
-        encode(to, header.mix_hash.bytes);
-        encode(to, header.nonce);
+        if (!for_sealing) {
+            encode(to, header.mix_hash.bytes);
+            encode(to, header.nonce);
+        }
     }
 
     template <>

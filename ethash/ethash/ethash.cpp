@@ -307,7 +307,7 @@ hash256 get_boundary_from_diff(const intx::uint256 difficulty) noexcept {
     hash256 ret{};
 
     if (difficulty > 1u) {
-        auto result = dividend / difficulty;
+        auto result{intx::bswap(dividend / difficulty)};
         std::memcpy(ret.bytes, intx::as_bytes(result), 32);
     } else {
         std::memcpy(ret.bytes, intx::as_bytes(dividend), 32);

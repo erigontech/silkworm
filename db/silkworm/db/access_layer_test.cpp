@@ -18,6 +18,7 @@
 
 #include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
+#include <ethash/ethash.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/common/chain_genesis.hpp>
@@ -432,6 +433,21 @@ namespace db {
 
         // Fill Header
         BlockHeader header;
+        auto parent_hash{from_hex(genesis_json["parentHash"].get<std::string>())};
+        if (parent_hash.has_value()) {
+            header.parent_hash = to_bytes32(*parent_hash);
+        }
+        header.ommers_hash = kEmptyListHash;
+        header.beneficiary = 0x0000000000000000000000000000000000000000_address;
+        header.state_root = state_buffer.state_root_hash();
+        header.transactions_root = kEmptyRoot;
+        header.receipts_root = kEmptyRoot;
+        auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
+        header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
+        header.number = 0;
+        header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
+        header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
+
         auto extra_data = from_hex(genesis_json["extraData"].get<std::string>());
         if (extra_data.has_value()) {
             header.extra_data = *extra_data;
@@ -439,24 +455,32 @@ namespace db {
 
         auto mix_data = from_hex(genesis_json["mixhash"].get<std::string>());
         CHECK((mix_data.has_value() && mix_data->size() == kHashLength));
-        std::memcpy(header.mix_hash.bytes, mix_data->data(), kHashLength);
+        header.mix_hash = to_bytes32(*mix_data);
 
-        header.beneficiary = 0x0000000000000000000000000000000000000000_address;
-        header.ommers_hash = kEmptyListHash;
-        header.state_root = state_buffer.state_root_hash();
-        header.transactions_root = kEmptyRoot;
-        header.receipts_root = kEmptyRoot;
-        auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
-        header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
-        header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
-
-        CHECK(header.gas_limit == 5000ull);
-
-        header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
         auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
-        std::memcpy(&header.nonce[0], &nonce, 8);
+        auto noncebe = ethash::be::uint64(nonce); // Swap endianess
+        std::memcpy(&header.nonce[0], &noncebe, 8);
 
-        // TODO - Validate ethash PoW provided nonce and mix_hash
+        // Verify our RLP encoding produces the same result
+        auto computed_hash{header.hash()};
+        auto expected_hash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
+        CHECK(to_hex(computed_hash) == to_hex(expected_hash));
+
+        // Validate ethash PoW provided nonce and mix_hash
+        auto seal_hash(header.hash(/*for_sealing =*/true));
+        ethash::hash256 sealh256{};
+        std::memcpy(sealh256.bytes, seal_hash.bytes, 32);
+        
+        auto boundary{ethash::get_boundary_from_diff(header.difficulty)};
+        auto epoch_context{ethash::create_epoch_context(0)};
+        auto result{ethash::hash(*epoch_context, sealh256, nonce)};
+
+        auto b{to_bytes32({boundary.bytes, 32})};
+        auto f{to_bytes32({result.final_hash.bytes, 32})};
+        auto m{to_bytes32({result.mix_hash.bytes, 32})};
+
+        CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
+
     }
 }  // namespace db
 }  // namespace silkworm

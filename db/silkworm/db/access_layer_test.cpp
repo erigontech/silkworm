@@ -475,10 +475,6 @@ namespace db {
         auto epoch_context{ethash::create_epoch_context(0)};
         auto result{ethash::hash(*epoch_context, sealh256, nonce)};
 
-        auto b{to_bytes32({boundary.bytes, 32})};
-        auto f{to_bytes32({result.final_hash.bytes, 32})};
-        auto m{to_bytes32({result.mix_hash.bytes, 32})};
-
         CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
 
     }

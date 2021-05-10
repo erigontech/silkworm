@@ -26,7 +26,7 @@ namespace silkworm {
 evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
     Bytes rlp;
     rlp::encode(rlp, *this, for_sealing);
-    return bit_cast<evmc::bytes32>(keccak256(rlp));
+    return bit_cast<evmc_bytes32>(keccak256(rlp));
 }
 
 bool operator==(const BlockHeader& a, const BlockHeader& b) {

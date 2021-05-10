@@ -466,16 +466,13 @@ namespace db {
         auto expected_hash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
         CHECK(to_hex(computed_hash) == to_hex(expected_hash));
 
-        // Validate ethash PoW provided nonce and mix_hash
-        auto seal_hash(header.hash(/*for_sealing =*/true));
-        ethash::hash256 sealh256{};
-        std::memcpy(sealh256.bytes, seal_hash.bytes, 32);
-        
-        auto boundary{ethash::get_boundary_from_diff(header.difficulty)};
-        auto epoch_context{ethash::create_epoch_context(0)};
-        auto result{ethash::hash(*epoch_context, sealh256, nonce)};
-
-        // TODO (Andrea) Why this fails ?
+        // TODO (Andrea) Why this fails for genesis ?
+        //auto seal_hash(header.hash(/*for_sealing =*/true));
+        //ethash::hash256 sealh256{};
+        //std::memcpy(sealh256.bytes, seal_hash.bytes, 32);
+        //auto boundary{ethash::get_boundary_from_diff(header.difficulty)};
+        //auto epoch_context{ethash::create_epoch_context(0)};
+        //auto result{ethash::hash(*epoch_context, sealh256, nonce)};
         // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
 
     }

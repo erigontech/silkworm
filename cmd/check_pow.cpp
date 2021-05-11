@@ -14,24 +14,17 @@
    limitations under the License.
 */
 
-#include <atomic>
 #include <csignal>
 #include <filesystem>
-#include <queue>
 #include <string>
-#include <thread>
 
 #include <CLI/CLI.hpp>
-#include <boost/endian.hpp>
-#include <boost/format.hpp>
 #include <boost/interprocess/mapped_region.hpp>
-#include <boost/signals2.hpp>
 #include <ethash/ethash.hpp>
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/util.hpp>

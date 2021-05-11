@@ -283,16 +283,29 @@ bool verify_light(const hash256& header_hash, const hash256& mix_hash, uint64_t 
     return is_less_or_equal(hash_final, boundary);
 }
 
-bool verify_full(const epoch_context& context, const hash256& header_hash, const hash256& mix_hash, uint64_t nonce,
-                 const hash256& boundary) noexcept {
-
+VerificationResult verify_full(const epoch_context& context, const hash256& header_hash, const hash256& mix_hash,
+                               uint64_t nonce, const hash256& boundary) noexcept {
     const hash512 hash_seed{detail::hash_seed(header_hash, nonce)};
     const hash256 hash_final{detail::hash_final(hash_seed, mix_hash)};
     if (!is_less_or_equal(hash_final, boundary)) {
-        return false;
+        return VerificationResult::kAboveTarget;
     }
     const hash256 expected_mix_hash = detail::hash_mix(context, hash_seed);
-    return is_equal(mix_hash, expected_mix_hash);
+    if (!is_equal(mix_hash, expected_mix_hash)) {
+        return VerificationResult::kMismatchingMix;
+    }
+    return VerificationResult::kOk;
+}
+
+VerificationResult verify_full(const uint64_t block_num, const hash256& header_hash, const hash256& mix_hash,
+                               uint64_t nonce, const hash256& boundary) noexcept {
+
+    static epoch_context_ptr epoch_context{nullptr, nullptr};
+    auto epoch_number{static_cast<uint32_t>(block_num / epoch_length)};
+    if (!epoch_context || epoch_context->epoch_number != epoch_number) {
+        epoch_context = create_epoch_context(epoch_number);
+    }
+    return verify_full(*epoch_context, header_hash, mix_hash, nonce, boundary);
 }
 
 epoch_context_ptr create_epoch_context(uint32_t epoch_number) noexcept {
@@ -300,7 +313,6 @@ epoch_context_ptr create_epoch_context(uint32_t epoch_number) noexcept {
 }
 
 hash256 get_boundary_from_diff(const intx::uint256 difficulty) noexcept {
-
     static intx::uint256 dividend{
         intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")};
 
@@ -313,7 +325,6 @@ hash256 get_boundary_from_diff(const intx::uint256 difficulty) noexcept {
         std::memcpy(ret.bytes, intx::as_bytes(dividend), 32);
     }
     return ret;
-
 }
 
 }  // namespace ethash

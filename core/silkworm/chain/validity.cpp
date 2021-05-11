@@ -15,10 +15,10 @@
 */
 
 #include "validity.hpp"
-
+#include <boost/endian.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/trie/vector_root.hpp>
-
+#include <ethash/ethash.hpp>
 #include "difficulty.hpp"
 #include "intrinsic_gas.hpp"
 
@@ -56,8 +56,6 @@ static std::optional<BlockHeader> get_parent(const StateBuffer& state, const Blo
 }
 
 ValidationResult validate_block_header(const BlockHeader& header, const StateBuffer& state, const ChainConfig& config) {
-    // TODO[Issue 144] Ethash PoW verification
-
     if (header.gas_used > header.gas_limit) {
         return ValidationResult::kGasAboveLimit;
     }
@@ -104,6 +102,19 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
         if (header.extra_data != kDaoExtraData) {
             return ValidationResult::kWrongDaoExtraData;
         }
+    }
+
+    // Ethash PoW verification
+    auto boundary256{ethash::get_boundary_from_diff(header.difficulty)};
+    auto seal_hash(header.hash(/*for_sealing =*/true));
+    ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
+    ethash::hash256 mixh256{};
+    std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
+
+    uint64_t nonce{boost::endian::load_big_u64(header.nonce.data())};
+    auto result{ethash::verify_full(header.number, sealh256, mixh256, nonce, boundary256)};
+    if (result != ethash::VerificationResult::kOk) {
+        return ValidationResult::kInvalidPoW;
     }
 
     return ValidationResult::kOk;

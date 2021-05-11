@@ -45,6 +45,12 @@ struct result {
     hash256 mix_hash;
 };
 
+enum class VerificationResult {
+    kOk,             // Verification ok
+    kAboveTarget,    // Final hash is above boundary
+    kMismatchingMix  // Provided mix_hash does not match computed
+};
+
 namespace detail {
 
     using lookup_fn = hash1024 (*)(const epoch_context&, uint32_t);
@@ -129,7 +135,7 @@ result hash(const epoch_context& context, const hash256& header, uint64_t nonce)
  * It does not traverse the memory hard part and
  * assumes mix_hash is valid
  * @param header_hash
- * @param mix_hash      
+ * @param mix_hash
  * @param nonce
  * @param boundary
  * @return              True / False
@@ -139,17 +145,27 @@ bool verify_light(const hash256& header_hash, const hash256& mix_hash, uint64_t 
 
 /**
  * Verifies the whole ethash outcome validating mix_hash and final_hash againts
- * the boundary. It does traverse the
- * memory hard part
+ * the boundary. It does traverse the memory hard part
  * @param header_hash
- * @param mix_hash      
+ * @param mix_hash
  * @param nonce
  * @param boundary
  * @return              True / False
  */
-bool verify_full(const epoch_context& context, const hash256& header_hash, const hash256& mix_hash, uint64_t nonce,
-                 const hash256& boundary) noexcept;
+VerificationResult verify_full(const epoch_context& context, const hash256& header_hash, const hash256& mix_hash,
+                               uint64_t nonce, const hash256& boundary) noexcept;
 
+/**
+ * Verifies the whole ethash outcome validating mix_hash and final_hash againts
+ * the boundary. It does traverse the memory hard part
+ * @param header_hash
+ * @param mix_hash
+ * @param nonce
+ * @param boundary
+ * @return              True / False
+ */
+VerificationResult verify_full(const uint64_t block_num, const hash256& header_hash, const hash256& mix_hash,
+                               uint64_t nonce, const hash256& boundary) noexcept;
 
 using epoch_context_ptr = std::unique_ptr<epoch_context, decltype(&detail::destroy_epoch_context)>;
 /**

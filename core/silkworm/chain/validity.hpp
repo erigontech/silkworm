@@ -41,7 +41,8 @@ enum class [[nodiscard]] ValidationResult{
     kInvalidTimestamp,   // Hs ≤ P(H)Hs
     kExtraDataTooLong,   // ‖Hx‖ > 32
     kWrongDaoExtraData,  // see EIP-779
-    kInvalidPoW,
+    kInvalidPoWTarget,
+    kInvalidPoWMix,
 
     // See [YP] Section 6.2 "Execution", Eq (58)
     kMissingSender,          // S(T) = ∅

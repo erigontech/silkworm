@@ -15,9 +15,12 @@
 */
 
 #include "validity.hpp"
+
+#include <ethash/ethash.hpp>
+
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/trie/vector_root.hpp>
-#include <ethash/ethash.hpp>
+
 #include "difficulty.hpp"
 #include "intrinsic_gas.hpp"
 
@@ -115,11 +118,15 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
     nonce = ethash::be::uint64(nonce);
 
     auto result{ethash::verify_full(header.number, sealh256, mixh256, nonce, boundary256)};
-    if (result != ethash::VerificationResult::kOk) {
-        return ValidationResult::kInvalidPoW;
+    switch (result) {
+        case ethash::VerificationResult::kAboveTarget:
+            return ValidationResult::kInvalidPoWTarget;
+        case ethash::VerificationResult::kMismatchingMix:
+            return ValidationResult::kInvalidPoWMix;
+        default:
+            return ValidationResult::kOk;
     }
 
-    return ValidationResult::kOk;
 }
 
 // See [YP] Section 11.1 "Ommer Validation"

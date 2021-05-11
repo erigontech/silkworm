@@ -87,26 +87,26 @@ DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_colle
 }
 
 // calculate_root algo:
-//	for iterateIHOfAccounts {
-//		if canSkipState
+//  for iterateIHOfAccounts {
+//      if canSkipState
 //          goto use_account_trie
 //
-//		for iterateAccounts from prevIH to currentIH {
-//			use(account)
-//			for iterateIHOfStorage within accountWithIncarnation{
-//				if canSkipState
-//					goto use_storage_trie
+//      for iterateAccounts from prevIH to currentIH {
+//          use(account)
+//          for iterateIHOfStorage within accountWithIncarnation{
+//              if canSkipState
+//                  goto use_storage_trie
 //
-//				for iterateStorage from prevIHOfStorage to currentIHOfStorage {
-//					use(storage)
-//				}
+//              for iterateStorage from prevIHOfStorage to currentIHOfStorage {
+//                  use(storage)
+//              }
 //            use_storage_trie:
-//				use(ihStorage)
-//			}
-//		}
+//              use(ihStorage)
+//          }
+//      }
 //    use_account_trie:
-//		use(AccTrie)
-//	}
+//      use(AccTrie)
+//  }
 evmc::bytes32 DbTrieLoader::calculate_root() {
     auto acc_state{txn_.open(db::table::kHashedAccounts)};
     auto storage_state{txn_.open(db::table::kHashedStorage)};

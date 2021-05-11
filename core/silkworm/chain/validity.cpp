@@ -15,7 +15,6 @@
 */
 
 #include "validity.hpp"
-#include <boost/endian.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/trie/vector_root.hpp>
 #include <ethash/ethash.hpp>
@@ -111,7 +110,10 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
     ethash::hash256 mixh256{};
     std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
 
-    uint64_t nonce{boost::endian::load_big_u64(header.nonce.data())};
+    uint64_t nonce{0};
+    std::memcpy(&nonce, header.nonce.data(), 8);
+    nonce = ethash::be::uint64(nonce);
+
     auto result{ethash::verify_full(header.number, sealh256, mixh256, nonce, boundary256)};
     if (result != ethash::VerificationResult::kOk) {
         return ValidationResult::kInvalidPoW;

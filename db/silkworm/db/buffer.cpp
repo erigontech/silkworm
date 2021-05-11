@@ -81,7 +81,8 @@ void Buffer::update_account_code(const evmc::address& address, uint64_t incarnat
     if (hash_to_code_.insert_or_assign(code_hash, code).second) {
         bump_batch_size(kHashLength, code.length());
     }
-    if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(address, incarnation), code_hash).second) {
+    if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(full_view(address), incarnation), code_hash)
+            .second) {
         bump_batch_size(kStoragePrefixLength, kHashLength);
     }
 }
@@ -127,10 +128,9 @@ evmc::bytes32 Buffer::account_storage_root(const evmc::address& address, uint64_
         storage_rlp[to_bytes32(full_view(hash.bytes))] = rlp;
     }
 
-    auto it{storage_rlp.cbegin()};
-    trie::HashBuilder hb{full_view(it->first), it->second};
-    for (++it; it != storage_rlp.cend(); ++it) {
-        hb.add(full_view(it->first), it->second);
+    trie::HashBuilder hb;
+    for (const auto& [hash, rlp] : storage_rlp) {
+        hb.add(full_view(hash), rlp);
     }
 
     return hb.root_hash();
@@ -164,8 +164,7 @@ void Buffer::write_to_state_table() {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             state_table->del(full_view(address));
             if (it->second.has_value()) {
-                bool omit_code_hash{false};
-                Bytes encoded{it->second->encode_for_storage(omit_code_hash)};
+                Bytes encoded{it->second->encode_for_storage()};
                 state_table->put(full_view(address), encoded);
             }
         }
@@ -173,7 +172,7 @@ void Buffer::write_to_state_table() {
         if (auto it{storage_.find(address)}; it != storage_.end()) {
             for (const auto& contract : it->second) {
                 uint64_t incarnation{contract.first};
-                Bytes prefix{storage_prefix(address, incarnation)};
+                Bytes prefix{storage_prefix(full_view(address), incarnation)};
 
                 const auto& contract_storage{contract.second};
 
@@ -293,10 +292,9 @@ evmc::bytes32 Buffer::state_root_hash() const {
         }
     }
 
-    auto it{account_rlp.cbegin()};
-    trie::HashBuilder hb{full_view(it->first), it->second};
-    for (++it; it != account_rlp.cend(); ++it) {
-        hb.add(full_view(it->first), it->second);
+    trie::HashBuilder hb;
+    for (const auto& [hash, rlp] : account_rlp) {
+        hb.add(full_view(hash), rlp);
     }
     return hb.root_hash();
 }

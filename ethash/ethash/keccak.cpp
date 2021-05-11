@@ -2,7 +2,7 @@
 // Copyright 2018-2019 Pawel Bylica.
 // Licensed under the Apache License, Version 2.0.
 
-// Modified by Andrea Lanfranchi for Silkworm 2021
+// Modified by Silkworm's authors 2021
 
 #include "keccak.hpp"
 
@@ -21,7 +21,7 @@ static inline ALWAYS_INLINE uint64_t load_le(const uint8_t* data) {
        restrictions with no performance penalty. */
     uint64_t word;
     __builtin_memcpy(&word, data, sizeof(word));
-    return to_le64(word);
+    return le::uint64(word);
 }
 
 /// Rotates the bits of x left by the count value specified by s.
@@ -314,13 +314,13 @@ static inline ALWAYS_INLINE void keccak(uint64_t* out, size_t bits, const uint8_
     }
 
     *last_word_iter = 0x01;
-    *state_iterator ^= to_le64(last_word);
+    *state_iterator ^= le::uint64(last_word);
     state[block_word64s - 1] ^= 0x8000000000000000;
 
     keccakf1600_best(state);
 
     for (size_t i{0}; i < (hash_size / word64_size); ++i) {
-        out[i] = to_le64(state[i]);
+        out[i] = le::uint64(state[i]);
     }
 }
 
@@ -331,5 +331,13 @@ hash256 keccak256(const uint8_t* input, size_t input_size) {
 }
 
 hash256 keccak256(const hash256& input) { return keccak256(input.bytes, sizeof(input)); }
+
+hash512 keccak512(const uint8_t* input, size_t input_size) {
+    hash512 out{};
+    keccak(out.word64s, 512, input, input_size);
+    return out;
+}
+
+hash512 keccak512(const hash512& input) { return keccak512(input.bytes, sizeof(input)); }
 
 }  // namespace ethash

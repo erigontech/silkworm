@@ -107,26 +107,29 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
     }
 
     // Ethash PoW verification
-    auto boundary256{ethash::get_boundary_from_diff(header.difficulty)};
-    auto seal_hash(header.hash(/*for_sealing =*/true));
-    ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
-    ethash::hash256 mixh256{};
-    std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
+    if (header.mix_hash) {
+        auto boundary256{ethash::get_boundary_from_diff(header.difficulty)};
+        auto seal_hash(header.hash(/*for_sealing =*/true));
+        ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
+        ethash::hash256 mixh256{};
+        std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
 
-    uint64_t nonce{0};
-    std::memcpy(&nonce, header.nonce.data(), 8);
-    nonce = ethash::be::uint64(nonce);
+        uint64_t nonce{0};
+        std::memcpy(&nonce, header.nonce.data(), 8);
+        nonce = ethash::be::uint64(nonce);
 
-    auto result{ethash::verify_full(header.number, sealh256, mixh256, nonce, boundary256)};
-    switch (result) {
-        case ethash::VerificationResult::kAboveTarget:
-            return ValidationResult::kInvalidPoWTarget;
-        case ethash::VerificationResult::kMismatchingMix:
-            return ValidationResult::kInvalidPoWMix;
-        default:
-            return ValidationResult::kOk;
+        auto result{ethash::verify_full(header.number, sealh256, mixh256, nonce, boundary256)};
+        switch (result) {
+            case ethash::VerificationResult::kAboveTarget:
+                return ValidationResult::kInvalidPoWTarget;
+            case ethash::VerificationResult::kMismatchingMix:
+                return ValidationResult::kInvalidPoWMix;
+            default:
+                return ValidationResult::kOk;
+        }
     }
 
+    return ValidationResult::kOk;
 }
 
 // See [YP] Section 11.1 "Ommer Validation"

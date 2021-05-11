@@ -24,6 +24,11 @@
 
 namespace silkworm {
 
+// Default incarnation for smart contracts is 1;
+// contracts that were previously destructed and then re-created will have an incarnation greater than 1.
+// The incarnation of non-contracts (externally owned accounts) is always 0.
+constexpr uint64_t kDefaultIncarnation{1};
+
 struct Account {
     uint64_t nonce{0};
     intx::uint256 balance;
@@ -31,7 +36,7 @@ struct Account {
     uint64_t incarnation{0};
 
     // Turbo-Geth (*Account)EncodeForStorage
-    Bytes encode_for_storage(bool omit_code_hash) const;
+    Bytes encode_for_storage(bool omit_code_hash = false) const;
 
     // Turbo-Geth (*Account)EncodingLengthForStorage
     size_t encoding_length_for_storage() const;

@@ -16,6 +16,7 @@
 
 #include "chaindb.hpp"
 
+#include <cassert>
 #include <filesystem>
 
 #include <boost/algorithm/string.hpp>
@@ -447,7 +448,7 @@ int Table::put(MDB_val* key, MDB_val* data, unsigned int flag) { return mdb_curs
 std::optional<ByteView> Table::get(ByteView key) {
     MDB_val key_val{db::to_mdb_val(key)};
     MDB_val data;
-    int rc{get(&key_val, &data, MDB_SET)};
+    const int rc{get(&key_val, &data, MDB_SET)};
     if (rc == MDB_NOTFOUND) {
         return std::nullopt;
     }
@@ -456,21 +457,58 @@ std::optional<ByteView> Table::get(ByteView key) {
 }
 
 std::optional<ByteView> Table::get(ByteView key, ByteView sub_key) {
-    MDB_val key_val{db::to_mdb_val(key)};
-    MDB_val data{db::to_mdb_val(sub_key)};
-    int rc{get(&key_val, &data, MDB_GET_BOTH_RANGE)};
+    MDB_val mdb_key{db::to_mdb_val(key)};
+    MDB_val mdb_val{db::to_mdb_val(sub_key)};
+    const int rc{get(&mdb_key, &mdb_val, MDB_GET_BOTH_RANGE)};
     if (rc == MDB_NOTFOUND) {
-        return {};
+        return std::nullopt;
     }
     err_handler(rc);
 
-    ByteView x{db::from_mdb_val(data)};
+    ByteView x{db::from_mdb_val(mdb_val)};
     if (!has_prefix(x, sub_key)) {
-        return {};
+        return std::nullopt;
     } else {
         x.remove_prefix(sub_key.length());
         return x;
     }
+}
+
+std::optional<ByteView> Table::seek_dup(ByteView key, ByteView lower_bound) {
+    assert(!lower_bound.empty());
+    MDB_val mdb_key{db::to_mdb_val(key)};
+    MDB_val mdb_val{db::to_mdb_val(lower_bound)};
+    const int rc{get(&mdb_key, &mdb_val, MDB_GET_BOTH_RANGE)};
+    if (rc == MDB_NOTFOUND) {
+        return std::nullopt;
+    }
+    err_handler(rc);
+    return db::from_mdb_val(mdb_val);
+}
+
+std::optional<db::Entry> Table::get_next() {
+    MDB_val mdb_key;
+    MDB_val mdb_val;
+    const int rc{get(&mdb_key, &mdb_val, MDB_NEXT)};
+    if (rc == MDB_NOTFOUND) {
+        return std::nullopt;
+    }
+    err_handler(rc);
+    db::Entry out;
+    out.key = db::from_mdb_val(mdb_key);
+    out.value = db::from_mdb_val(mdb_val);
+    return out;
+}
+
+std::optional<ByteView> Table::get_next_dup() {
+    MDB_val mdb_key;
+    MDB_val mdb_val;
+    const int rc{get(&mdb_key, &mdb_val, MDB_NEXT_DUP)};
+    if (rc == MDB_NOTFOUND) {
+        return std::nullopt;
+    }
+    err_handler(rc);
+    return db::from_mdb_val(mdb_val);
 }
 
 void Table::del(ByteView key) {
@@ -485,19 +523,19 @@ void Table::del(ByteView key, ByteView sub_key) {
     }
 }
 
-std::optional<db::Entry> Table::seek(ByteView prefix) {
-    MDB_val key_val{db::to_mdb_val(prefix)};
-    MDB_val data;
-    MDB_cursor_op op{prefix.empty() ? MDB_FIRST : MDB_SET_RANGE};
-    int rc{get(&key_val, &data, op)};
+std::optional<db::Entry> Table::seek(ByteView lower_bound) {
+    MDB_val mdb_key{db::to_mdb_val(lower_bound)};
+    MDB_val mdb_val;
+    const MDB_cursor_op op{lower_bound.empty() ? MDB_FIRST : MDB_SET_RANGE};
+    const int rc{get(&mdb_key, &mdb_val, op)};
     if (rc == MDB_NOTFOUND) {
-        return {};
+        return std::nullopt;
     }
     err_handler(rc);
 
     db::Entry entry;
-    entry.key = db::from_mdb_val(key_val);
-    entry.value = db::from_mdb_val(data);
+    entry.key = db::from_mdb_val(mdb_key);
+    entry.value = db::from_mdb_val(mdb_val);
     return entry;
 }
 

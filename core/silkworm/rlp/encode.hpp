@@ -73,7 +73,7 @@ namespace rlp {
     }
 
     void encode(Bytes& to, const BlockBody&);
-    void encode(Bytes& to, const BlockHeader&);
+    void encode(Bytes& to, const BlockHeader&, bool for_sealing = false);
     void encode(Bytes& to, const Log&);
     void encode(Bytes& to, const Receipt&);
     void encode(Bytes& to, const AccessListEntry&);

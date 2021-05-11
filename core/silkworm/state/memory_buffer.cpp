@@ -249,10 +249,9 @@ evmc::bytes32 MemoryBuffer::account_storage_root(const evmc::address& address, u
         storage_rlp[to_bytes32(full_view(hash.bytes))] = rlp;
     }
 
-    auto it{storage_rlp.cbegin()};
-    trie::HashBuilder hb{full_view(it->first), it->second};
-    for (++it; it != storage_rlp.cend(); ++it) {
-        hb.add(full_view(it->first), it->second);
+    trie::HashBuilder hb;
+    for (const auto& [hash, rlp] : storage_rlp) {
+        hb.add(full_view(hash), rlp);
     }
 
     return hb.root_hash();
@@ -270,10 +269,9 @@ evmc::bytes32 MemoryBuffer::state_root_hash() const {
         account_rlp[to_bytes32(full_view(hash.bytes))] = account.rlp(storage_root);
     }
 
-    auto it{account_rlp.cbegin()};
-    trie::HashBuilder hb{full_view(it->first), it->second};
-    for (++it; it != account_rlp.cend(); ++it) {
-        hb.add(full_view(it->first), it->second);
+    trie::HashBuilder hb;
+    for (const auto& [hash, rlp] : account_rlp) {
+        hb.add(full_view(hash), rlp);
     }
 
     return hb.root_hash();

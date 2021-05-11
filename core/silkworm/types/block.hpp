@@ -51,7 +51,7 @@ struct BlockHeader {
     evmc::bytes32 mix_hash{};
     std::array<uint8_t, 8> nonce{};
 
-    evmc::bytes32 hash() const;
+    evmc::bytes32 hash(bool for_sealing = false) const;
 
   private:
     friend rlp::DecodingResult rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to) noexcept;

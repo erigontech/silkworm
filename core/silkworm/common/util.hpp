@@ -25,10 +25,6 @@
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/cast.hpp>
 
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
-
 namespace silkworm {
 
 // If a given string is shorter than min_size,
@@ -89,15 +85,6 @@ inline bool has_prefix(ByteView s, ByteView prefix) { return s.substr(0, prefix.
 
 // The length of the longest common prefix of a and b.
 size_t prefix_length(ByteView a, ByteView b);
-
-// TODO[C++20] replace by std::popcount
-inline int popcount(unsigned x) {
-#ifdef _MSC_VER
-    return __popcnt(x);
-#else
-    return __builtin_popcount(x);
-#endif
-}
 
 inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
 

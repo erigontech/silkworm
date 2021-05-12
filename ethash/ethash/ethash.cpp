@@ -288,11 +288,11 @@ VerificationResult verify_full(const epoch_context& context, const hash256& head
     const hash512 hash_seed{detail::hash_seed(header_hash, nonce)};
     const hash256 hash_final{detail::hash_final(hash_seed, mix_hash)};
     if (!is_less_or_equal(hash_final, boundary)) {
-        return VerificationResult::kAboveTarget;
+        return VerificationResult::kInvalidNonce;
     }
     const hash256 expected_mix_hash = detail::hash_mix(context, hash_seed);
     if (!is_equal(mix_hash, expected_mix_hash)) {
-        return VerificationResult::kMismatchingMix;
+        return VerificationResult::kInvalidMixHash;
     }
     return VerificationResult::kOk;
 }

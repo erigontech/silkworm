@@ -47,8 +47,8 @@ struct result {
 
 enum class VerificationResult {
     kOk,             // Verification ok
-    kAboveTarget,    // Final hash is above boundary
-    kMismatchingMix  // Provided mix_hash does not match computed
+    kInvalidNonce,   // Produces a hash above target
+    kInvalidMixHash  // Provided mix_hash does not match with computed
 };
 
 namespace detail {

@@ -77,14 +77,12 @@ TEST_CASE("Execute two blocks") {
     ethash::hash256 code_hash{keccak256(contract_code)};
     CHECK(to_hex(contract_account->code_hash) == to_hex(full_view(code_hash.bytes)));
 
-    uint64_t incarnation{1};
-
     evmc::bytes32 storage_key0{};
-    evmc::bytes32 storage0{buffer.read_storage(contract_address, incarnation, storage_key0)};
+    evmc::bytes32 storage0{buffer.read_storage(contract_address, kDefaultIncarnation, storage_key0)};
     CHECK(to_hex(storage0) == "000000000000000000000000000000000000000000000000000000000000002a");
 
     evmc::bytes32 storage_key1{to_bytes32(*from_hex("01"))};
-    evmc::bytes32 storage1{buffer.read_storage(contract_address, incarnation, storage_key1)};
+    evmc::bytes32 storage1{buffer.read_storage(contract_address, kDefaultIncarnation, storage_key1)};
     CHECK(to_hex(storage1) == "00000000000000000000000000000000000000000000000000000000000001c9");
 
     std::optional<Account> miner_account{buffer.read_account(miner)};
@@ -108,7 +106,7 @@ TEST_CASE("Execute two blocks") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
 
-    storage0 = buffer.read_storage(contract_address, incarnation, storage_key0);
+    storage0 = buffer.read_storage(contract_address, kDefaultIncarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);
 
     miner_account = buffer.read_account(miner);

@@ -51,9 +51,9 @@ void Collector::flush_buffer() {
 
 size_t Collector::size() const { return size_; }
 
-void Collector::collect(Entry& entry) {
+void Collector::collect(const Entry& entry) {
     buffer_.put(entry);
-    size_++;
+    ++size_;
     if (buffer_.overflows()) {
         flush_buffer();
     }

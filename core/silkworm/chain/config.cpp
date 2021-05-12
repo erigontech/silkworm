@@ -36,6 +36,21 @@ nlohmann::json ChainConfig::to_json() const noexcept {
 
     ret["chainId"] = chain_id;
 
+    nlohmann::json empty_object(nlohmann::json::value_t::object);
+    switch (seal_engine) {
+        case silkworm::SealEngineType::kEthash:
+            ret.emplace("ethash", empty_object);
+            break;
+        case silkworm::SealEngineType::kClique:
+            ret.emplace("clique", empty_object);
+            break;
+        case silkworm::SealEngineType::kAuRA:
+            ret.emplace("aura", empty_object);
+            break;
+        default:
+            break;
+    }
+
     for (int i{0}; i < EVMC_MAX_REVISION; ++i) {
         member_to_json(ret, kJsonForkNames[i], fork_blocks[i]);
     }
@@ -53,6 +68,14 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
 
     ChainConfig config{};
     config.chain_id = json["chainId"].get<uint64_t>();
+
+    if (json.contains("ethash")) {
+        config.seal_engine = SealEngineType::kEthash;
+    } else if (json.contains("clique")) {
+        config.seal_engine = SealEngineType::kClique;
+    } else if (json.contains("aura")) {
+        config.seal_engine = SealEngineType::kAuRA;
+    }
 
     for (int i{0}; i < EVMC_MAX_REVISION; ++i) {
         read_json_config_member(json, kJsonForkNames[i], config.fork_blocks[i]);

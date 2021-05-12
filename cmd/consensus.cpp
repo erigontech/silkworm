@@ -70,10 +70,12 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
      }},
     {"Homestead",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
          },
@@ -81,6 +83,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"EIP150",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              0,  // tangerine_whistle_block
@@ -89,6 +92,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"EIP158",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              0,  // tangerine_whistle_block
@@ -98,6 +102,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Byzantium",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              0,  // tangerine_whistle_block
@@ -108,6 +113,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Constantinople",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              0,  // tangerine_whistle_block
@@ -119,6 +125,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"ConstantinopleFix",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              0,  // tangerine_whistle_block
@@ -131,6 +138,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Istanbul",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              0,  // tangerine_whistle_block
@@ -144,6 +152,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Berlin",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              0,  // tangerine_whistle_block
@@ -159,6 +168,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"FrontierToHomesteadAt5",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              5,  // homestead_block
          },
@@ -166,6 +176,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"HomesteadToEIP150At5",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              5,  // tangerine_whistle_block
@@ -174,6 +185,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"HomesteadToDaoAt5",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
          },
@@ -183,6 +195,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"EIP158ToByzantiumAt5",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              0,  // tangerine_whistle_block
@@ -193,6 +206,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"ByzantiumToConstantinopleFixAt5",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              0,  // tangerine_whistle_block
@@ -205,6 +219,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"EIP2384",
      {
          1,  // chain_id
+         SealEngineType::kNoProof,
          {
              0,  // homestead_block
              0,  // tangerine_whistle_block
@@ -384,13 +399,6 @@ bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
 Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfig>) {
-    std::string seal_engine{json_test["sealEngine"].get<std::string>()};
-    if (seal_engine != "NoProof") {
-        // TODO[Issue 144] Support Ethash sealEngine
-        std::cout << seal_engine << " seal engine is not supported yet" << std::endl;
-        return kSkipped;
-    }
-
     Bytes genesis_rlp{from_hex(json_test["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
@@ -398,7 +406,17 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
 
     MemoryBuffer state;
     std::string network{json_test["network"].get<std::string>()};
-    const ChainConfig& config{kNetworkConfig.at(network)};
+    ChainConfig config{kNetworkConfig.at(network)};
+
+    std::string seal_engine{json_test["sealEngine"].get<std::string>()};
+    if (seal_engine == "Ethash") {
+        config.seal_engine = SealEngineType::kEthash;
+    } else if (seal_engine != "NoProof") {
+        // TODO[Issue 144] Support Ethash sealEngine
+        std::cout << seal_engine << " seal engine is not supported yet" << std::endl;
+        return kSkipped;
+    }
+
     init_pre_state(json_test["pre"], state);
 
     Blockchain blockchain{state, config, genesis_block};

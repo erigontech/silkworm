@@ -107,7 +107,7 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
     }
 
     // Ethash PoW verification
-    if (header.mix_hash) {
+    if (config.seal_engine == SealEngineType::kEthash) {
         auto boundary256{ethash::get_boundary_from_diff(header.difficulty)};
         auto seal_hash(header.hash(/*for_sealing =*/true));
         ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
@@ -120,10 +120,9 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
 
         auto result{ethash::verify_full(header.number, sealh256, mixh256, nonce, boundary256)};
         switch (result) {
-            case ethash::VerificationResult::kAboveTarget:
-                return ValidationResult::kInvalidPoWTarget;
-            case ethash::VerificationResult::kMismatchingMix:
-                return ValidationResult::kInvalidPoWMix;
+            case ethash::VerificationResult::kInvalidNonce:
+            case ethash::VerificationResult::kInvalidMixHash:
+                return ValidationResult::kInvalidSeal;
             default:
                 return ValidationResult::kOk;
         }

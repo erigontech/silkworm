@@ -23,9 +23,10 @@
 
 namespace silkworm {
 
-// Fee schedule—see Appendix G of the Yellow Paper
+// Gas & refund fee schedule—see Appendix G of the Yellow Paper
 // https://ethereum.github.io/yellowpaper/paper.pdf
 namespace fee {
+
     constexpr uint64_t kGSLoadTangerineWhistle{200};
     constexpr uint64_t kGSLoadIstanbul{800};
     constexpr uint64_t kWarmStorageReadCost{100};         // EIP-2929
@@ -47,11 +48,10 @@ namespace fee {
     constexpr uint64_t kGTxDataNonZeroIstanbul{16};
     constexpr uint64_t kGTransaction{21'000};
 
-    constexpr uint64_t kGQuadDivisorEip198{20};
-    constexpr uint64_t kGQuadDivisorEip2565{3};
 }  // namespace fee
 
 namespace param {
+
     // https://eips.ethereum.org/EIPS/eip-170
     constexpr size_t kMaxCodeSize{0x6000};
 
@@ -59,9 +59,13 @@ namespace param {
     constexpr uint64_t kBlockRewardByzantium{3 * kEther};
     constexpr uint64_t kBlockRewardConstantinople{2 * kEther};
 
+    constexpr uint64_t kGQuadDivisorByzantium{20};  // EIP-198
+    constexpr uint64_t kGQuadDivisorBerlin{3};      // EIP-2565
+
     // https://eips.ethereum.org/EIPS/eip-3529
     constexpr uint64_t kMaxRefundQuotientFrontier{2};
     constexpr uint64_t kMaxRefundQuotientLondon{5};
+
 }  // namespace param
 
 }  // namespace silkworm

@@ -55,9 +55,9 @@ namespace param {
     // https://eips.ethereum.org/EIPS/eip-170
     constexpr size_t kMaxCodeSize{0x6000};
 
-    constexpr uint64_t kFrontierBlockReward{5 * kEther};
-    constexpr uint64_t kByzantiumBlockReward{3 * kEther};
-    constexpr uint64_t kConstantinopleBlockReward{2 * kEther};
+    constexpr uint64_t kBlockRewardFrontier{5 * kEther};
+    constexpr uint64_t kBlockRewardByzantium{3 * kEther};
+    constexpr uint64_t kBlockRewardConstantinople{2 * kEther};
 
     // https://eips.ethereum.org/EIPS/eip-3529
     constexpr uint64_t kMaxRefundQuotientFrontier{2};

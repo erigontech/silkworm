@@ -147,11 +147,11 @@ void ExecutionProcessor::apply_rewards() noexcept {
     const evmc_revision rev{evm_.revision()};
     intx::uint256 block_reward;
     if (rev >= EVMC_CONSTANTINOPLE) {
-        block_reward = param::kConstantinopleBlockReward;
+        block_reward = param::kBlockRewardConstantinople;
     } else if (rev >= EVMC_BYZANTIUM) {
-        block_reward = param::kByzantiumBlockReward;
+        block_reward = param::kBlockRewardByzantium;
     } else {
-        block_reward = param::kFrontierBlockReward;
+        block_reward = param::kBlockRewardFrontier;
     }
 
     const uint64_t block_number{evm_.block().header.number};

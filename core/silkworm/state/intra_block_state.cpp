@@ -20,7 +20,6 @@
 
 #include <ethash/keccak.hpp>
 
-#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/util.hpp>
 
@@ -365,9 +364,5 @@ void IntraBlockState::add_log(const Log& log) noexcept { logs_.push_back(log); }
 void IntraBlockState::add_refund(uint64_t addend) noexcept { refund_ += addend; }
 
 void IntraBlockState::subtract_refund(uint64_t subtrahend) noexcept { refund_ -= subtrahend; }
-
-uint64_t IntraBlockState::total_refund() const noexcept {
-    return refund_ + fee::kRSelfDestruct * self_destructs_.size();
-}
 
 }  // namespace silkworm

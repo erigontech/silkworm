@@ -107,7 +107,12 @@ uint64_t ExecutionProcessor::available_gas() const noexcept {
 }
 
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) noexcept {
-    uint64_t refund{std::min((txn.gas_limit - gas_left) / 2, evm_.state().total_refund())};
+    const evmc_revision rev{evm_.revision()};
+    uint64_t refund{evm_.state().get_refund()};
+    if (rev < EVMC_LONDON) {
+        refund += fee::kRSelfDestruct * evm_.state().number_of_self_destructs();
+    }
+    refund = std::min(refund, (txn.gas_limit - gas_left) / 2);
     gas_left += refund;
     evm_.state().add_to_balance(*txn.from, gas_left * txn.gas_price);
     return gas_left;

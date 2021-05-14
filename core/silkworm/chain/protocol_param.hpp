@@ -58,6 +58,10 @@ namespace param {
     constexpr uint64_t kFrontierBlockReward{5 * kEther};
     constexpr uint64_t kByzantiumBlockReward{3 * kEther};
     constexpr uint64_t kConstantinopleBlockReward{2 * kEther};
+
+    // https://eips.ethereum.org/EIPS/eip-3529
+    constexpr uint64_t kMaxRefundQuotientFrontier{2};
+    constexpr uint64_t kMaxRefundQuotientLondon{5};
 }  // namespace param
 
 }  // namespace silkworm

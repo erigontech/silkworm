@@ -112,7 +112,10 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
     if (rev < EVMC_LONDON) {
         refund += fee::kRSelfDestruct * evm_.state().number_of_self_destructs();
     }
-    refund = std::min(refund, (txn.gas_limit - gas_left) / 2);
+    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? param::kMaxRefundQuotientLondon
+                                                          : param::kMaxRefundQuotientFrontier};
+    const uint64_t max_refund{(txn.gas_limit - gas_left) / max_refund_quotient};
+    refund = std::min(refund, max_refund);
     gas_left += refund;
     evm_.state().add_to_balance(*txn.from, gas_left * txn.gas_price);
     return gas_left;

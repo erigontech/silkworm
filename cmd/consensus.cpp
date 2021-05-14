@@ -411,7 +411,9 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
     std::string seal_engine{json_test["sealEngine"].get<std::string>()};
     if (seal_engine == "Ethash") {
         config.seal_engine = SealEngineType::kEthash;
-    } else if (seal_engine != "NoProof") {
+    } else if (seal_engine == "NoProof") {
+        config.seal_engine = SealEngineType::kNoProof;
+    } else {
         std::cout << seal_engine << " seal engine is not supported yet" << std::endl;
         return kSkipped;
     }

@@ -175,6 +175,8 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/baseline.cpp
                    evmone/lib/evmone/baseline.hpp
                    evmone/lib/evmone/execution_state.hpp
+                   evmone/lib/evmone/execution.cpp
+                   evmone/lib/evmone/execution.hpp
                    evmone/lib/evmone/instruction_traits.hpp
                    evmone/lib/evmone/instructions_calls.cpp
                    evmone/lib/evmone/instructions.cpp

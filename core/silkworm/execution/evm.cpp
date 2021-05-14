@@ -236,7 +236,7 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
 }
 
 evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code) noexcept {
-    const evmone::JumpdestMap analysis{evmone::build_jumpdest_map(code.data(), code.size())};
+    const auto analysis{evmone::baseline::analyze(code.data(), code.size())};
 
     std::unique_ptr<evmone::AdvancedExecutionState> state;
     if (state_pool) {
@@ -249,7 +249,7 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
 
     state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size());
 
-    evmc_result res{evmone::baseline_execute(*state, analysis)};
+    evmc_result res{evmone::baseline::execute(*state, analysis)};
 
     if (state_pool) {
         state_pool->release(std::move(state));

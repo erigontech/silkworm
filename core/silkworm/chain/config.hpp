@@ -31,7 +31,7 @@ enum class SealEngineType {
     kNoProof,
     kEthash,
     kClique,
-    kAuRA
+    kAuRA,
 };
 
 struct ChainConfig {
@@ -46,6 +46,7 @@ struct ChainConfig {
         "istanbulBlock",        // EVMC_ISTANBUL
         // there's no evmc_revision for muirGlacierBlock
         "berlinBlock",  // EVMC_BERLIN
+        "londonBlock",  // EVMC_LONDON
     };
 
     // https://eips.ethereum.org/EIPS/eip-155
@@ -61,7 +62,6 @@ struct ChainConfig {
 
     // https://eips.ethereum.org/EIPS/eip-779
     std::optional<uint64_t> dao_block{std::nullopt};
-
 
     // Returns the revision level at given block number
     // In other words, on behalf of Json chain config data

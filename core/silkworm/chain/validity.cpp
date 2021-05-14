@@ -16,6 +16,8 @@
 
 #include "validity.hpp"
 
+#include <ethash/ethash.hpp>
+
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/trie/vector_root.hpp>
 
@@ -56,8 +58,6 @@ static std::optional<BlockHeader> get_parent(const StateBuffer& state, const Blo
 }
 
 ValidationResult validate_block_header(const BlockHeader& header, const StateBuffer& state, const ChainConfig& config) {
-    // TODO[Issue 144] Ethash PoW verification
-
     if (header.gas_used > header.gas_limit) {
         return ValidationResult::kGasAboveLimit;
     }
@@ -103,6 +103,28 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
         static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
         if (header.extra_data != kDaoExtraData) {
             return ValidationResult::kWrongDaoExtraData;
+        }
+    }
+
+    // Ethash PoW verification
+    if (config.seal_engine == SealEngineType::kEthash) {
+        auto boundary256{ethash::get_boundary_from_diff(header.difficulty)};
+        auto seal_hash(header.hash(/*for_sealing =*/true));
+        ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
+        ethash::hash256 mixh256{};
+        std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
+
+        uint64_t nonce{0};
+        std::memcpy(&nonce, header.nonce.data(), 8);
+        nonce = ethash::be::uint64(nonce);
+
+        auto result{ethash::verify_full(header.number, sealh256, mixh256, nonce, boundary256)};
+        switch (result) {
+            case ethash::VerificationResult::kInvalidNonce:
+            case ethash::VerificationResult::kInvalidMixHash:
+                return ValidationResult::kInvalidSeal;
+            default:
+                return ValidationResult::kOk;
         }
     }
 

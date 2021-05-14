@@ -101,7 +101,8 @@ TEST_CASE("JSON serialization") {
             "petersburgBlock":7280000,
             "istanbulBlock":9069000,
             "muirGlacierBlock":9200000,
-            "berlinBlock":12244000
+            "berlinBlock":12244000,
+            "ethash":{}
         })");
 
     const std::optional<ChainConfig> config{ChainConfig::from_json(mainnet_json)};

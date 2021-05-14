@@ -27,6 +27,13 @@
 
 namespace silkworm {
 
+enum class SealEngineType {
+    kNoProof,
+    kEthash,
+    kClique,
+    kAuRA
+};
+
 struct ChainConfig {
     static constexpr const char* kJsonForkNames[EVMC_MAX_REVISION]{
         "homesteadBlock",  // EVMC_HOMESTEAD
@@ -44,6 +51,8 @@ struct ChainConfig {
     // https://eips.ethereum.org/EIPS/eip-155
     uint64_t chain_id{0};
 
+    SealEngineType seal_engine{SealEngineType::kNoProof};
+
     // Block numbers of forks that have an evmc_revision value
     std::array<std::optional<uint64_t>, EVMC_MAX_REVISION> fork_blocks{};
 
@@ -52,6 +61,7 @@ struct ChainConfig {
 
     // https://eips.ethereum.org/EIPS/eip-779
     std::optional<uint64_t> dao_block{std::nullopt};
+
 
     // Returns the revision level at given block number
     // In other words, on behalf of Json chain config data
@@ -89,7 +99,7 @@ std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 
 constexpr ChainConfig kMainnetConfig{
     1,  // chain_id
-
+    SealEngineType::kEthash,
     {
         1'150'000,   // Homestead
         2'463'000,   // Tangerine Whistle
@@ -107,7 +117,7 @@ constexpr ChainConfig kMainnetConfig{
 
 constexpr ChainConfig kRopstenConfig{
     3,  // chain_id
-
+    SealEngineType::kEthash,
     {
         0,          // Homestead
         0,          // Tangerine Whistle
@@ -124,7 +134,7 @@ constexpr ChainConfig kRopstenConfig{
 
 constexpr ChainConfig kRinkebyConfig{
     4,  // chain_id
-
+    SealEngineType::kClique,
     {
         1,          // Homestead
         2,          // Tangerine Whistle
@@ -139,7 +149,7 @@ constexpr ChainConfig kRinkebyConfig{
 
 constexpr ChainConfig kGoerliConfig{
     5,  // chain_id
-
+    SealEngineType::kClique,
     {
         0,          // Homestead
         0,          // Tangerine Whistle

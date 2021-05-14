@@ -14,24 +14,17 @@
    limitations under the License.
 */
 
-#include <atomic>
 #include <csignal>
 #include <filesystem>
-#include <queue>
 #include <string>
-#include <thread>
 
 #include <CLI/CLI.hpp>
-#include <boost/endian.hpp>
-#include <boost/format.hpp>
 #include <boost/interprocess/mapped_region.hpp>
-#include <boost/signals2.hpp>
 #include <ethash/ethash.hpp>
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/util.hpp>
@@ -123,6 +116,14 @@ int main(int argc, char* argv[]) {
         // Open db and transaction
         auto lmdb_env{lmdb::get_env(db_config)};
         auto lmdb_txn{lmdb_env->begin_ro_transaction()};
+
+        auto config{db::read_chain_config(*lmdb_txn)};
+        if (!config.has_value()) {
+            throw std::runtime_error("Invalid chain config");
+        }
+        if (config->seal_engine != SealEngineType::kEthash) {
+            throw std::runtime_error("Not an Ethash PoW chain");
+        }
 
         auto max_headers_height{db::stages::get_stage_progress(*lmdb_txn, db::stages::kSendersKey)};
         options.block_to = std::min(options.block_to, static_cast<uint32_t>(max_headers_height));

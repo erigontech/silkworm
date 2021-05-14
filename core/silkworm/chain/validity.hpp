@@ -41,6 +41,7 @@ enum class [[nodiscard]] ValidationResult{
     kInvalidTimestamp,   // Hs ≤ P(H)Hs
     kExtraDataTooLong,   // ‖Hx‖ > 32
     kWrongDaoExtraData,  // see EIP-779
+    kInvalidSeal,        // Nonce or mix_hash
 
     // See [YP] Section 6.2 "Execution", Eq (58)
     kMissingSender,          // S(T) = ∅
@@ -67,8 +68,7 @@ enum class [[nodiscard]] ValidationResult{
 
 // Performs validation of a transaction that can be done prior to sender recovery and block execution.
 // May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedEip2718Type, or kOk.
-ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number,
-                                          const ChainConfig& config);
+ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config);
 
 // Performs validation of block header & body that can be done prior to sender recovery and execution.
 // See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",

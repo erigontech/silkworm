@@ -77,7 +77,7 @@ TEST_CASE("Config revision") {
     CHECK(kMainnetConfig.revision(12'243'999) == EVMC_ISTANBUL);
     CHECK(kMainnetConfig.revision(12'244'000) == EVMC_BERLIN);
     CHECK(kMainnetConfig.revision(12'244'001) == EVMC_BERLIN);
-    CHECK(kMainnetConfig.revision(100'000'000) == EVMC_MAX_REVISION);
+    CHECK(kMainnetConfig.revision(100'000'000) == EVMC_BERLIN);
 }
 
 TEST_CASE("JSON serialization") {

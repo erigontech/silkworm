@@ -63,11 +63,11 @@ enum class [[nodiscard]] ValidationResult{
 
     kWrongChainId,  // EIP-155
 
-    kUnsupportedEip2718Type,
+    kUnsupportedTransactionType,  // EIP-2718
 };
 
 // Performs validation of a transaction that can be done prior to sender recovery and block execution.
-// May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedEip2718Type, or kOk.
+// May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
 ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config);
 
 // Performs validation of block header & body that can be done prior to sender recovery and execution.

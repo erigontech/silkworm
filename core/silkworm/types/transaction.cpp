@@ -330,7 +330,7 @@ namespace rlp {
         from.remove_prefix(1);
 
         if (to.type != kEip2930TransactionType) {
-            return DecodingResult::kUnsupportedEip2718Type;
+            return DecodingResult::kUnsupportedTransactionType;
         }
 
         ByteView eip2718_view{from.substr(0, h.payload_length - 1)};

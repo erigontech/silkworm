@@ -36,7 +36,15 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     }
 
     if (txn.type) {
-        if (rev < EVMC_BERLIN || txn.type != kEip2930TransactionType) {
+        if (txn.type == kEip2930TransactionType) {
+            if (rev < EVMC_BERLIN) {
+                return ValidationResult::kUnsupportedTransactionType;
+            }
+        } else if (txn.type == kEip1559TransactionType) {
+            if (rev < EVMC_LONDON) {
+                return ValidationResult::kUnsupportedTransactionType;
+            }
+        } else {
             return ValidationResult::kUnsupportedTransactionType;
         }
     }

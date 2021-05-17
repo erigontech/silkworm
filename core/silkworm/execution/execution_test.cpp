@@ -54,7 +54,7 @@ TEST_CASE("Execute two blocks") {
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
     block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].gas_price = 20 * kGiga;
+    block.transactions[0].max_fee_per_gas = 20 * kGiga;
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     block.transactions[0].from = sender;

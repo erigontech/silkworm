@@ -41,7 +41,8 @@ TEST_CASE("Zero gas price") {
     Transaction txn{
         std::nullopt,  // type
         0,             // nonce
-        0,             // gas_price
+        0,             // max_priority_fee_per_gas
+        0,             // max_fee_per_gas
         764'017,       // gas_limit
         {},            // to
         0,             // value
@@ -150,7 +151,8 @@ TEST_CASE("No refund on error") {
     Transaction txn{
         std::nullopt,  // type
         nonce,         // nonce
-        59 * kGiga,    // gas_price
+        0,             // max_priority_fee_per_gas
+        59 * kGiga,    // max_fee_per_gas
         103'858,       // gas_limit
         {},            // to
         0,             // value
@@ -244,7 +246,8 @@ TEST_CASE("Self-destruct") {
     Transaction txn{
         std::nullopt,    // type
         0,               // nonce
-        20 * kGiga,      // gas_price
+        0,               // max_priority_fee_per_gas
+        20 * kGiga,      // max_fee_per_gas
         100'000,         // gas_limit
         caller_address,  // to
         0,               // value
@@ -295,7 +298,8 @@ TEST_CASE("Out of Gas during account re-creation") {
     Transaction txn{
         std::nullopt,  // type
         nonce,         // nonce
-        20 * kGiga,    // gas_price
+        0,             // max_priority_fee_per_gas
+        20 * kGiga,    // max_fee_per_gas
         690'000,       // gas_limit
         {},            // to
         0,             // value
@@ -406,7 +410,8 @@ TEST_CASE("Empty suicide beneficiary") {
     Transaction txn{
         std::nullopt,  // type
         0,             // nonce
-        30 * kGiga,    // gas_price
+        0,             // max_priority_fee_per_gas
+        30 * kGiga,    // max_fee_per_gas
         360'000,       // gas_limit
         {},            // to
         0,             // value

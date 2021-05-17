@@ -63,7 +63,8 @@ TEST_CASE("BlockBody RLP 2") {
     body.transactions.resize(2);
 
     body.transactions[0].nonce = 172339;
-    body.transactions[0].gas_price = 50 * kGiga;
+    body.transactions[0].max_priority_fee_per_gas = 50 * kGiga;
+    body.transactions[0].max_fee_per_gas = 50 * kGiga;
     body.transactions[0].gas_limit = 90'000;
     body.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
     body.transactions[0].value = 1'027'501'080 * kGiga;
@@ -74,8 +75,10 @@ TEST_CASE("BlockBody RLP 2") {
     body.transactions[0].s =
         intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
 
+    body.transactions[1].type = kEip1559TransactionType;
     body.transactions[1].nonce = 1;
-    body.transactions[1].gas_price = 50 * kGiga;
+    body.transactions[1].max_priority_fee_per_gas = 5 * kGiga;
+    body.transactions[1].max_fee_per_gas = 30 * kGiga;
     body.transactions[1].gas_limit = 1'000'000;
     body.transactions[1].to = {};
     body.transactions[1].value = 0;
@@ -94,7 +97,7 @@ TEST_CASE("BlockBody RLP 2") {
     body.ommers[0].transactions_root = kEmptyRoot;
     body.ommers[0].receipts_root = kEmptyRoot;
     body.ommers[0].difficulty = 12'555'442'155'599;
-    body.ommers[0].number = 1'000'013;
+    body.ommers[0].number = 13'000'013;
     body.ommers[0].gas_limit = 3'141'592;
     body.ommers[0].gas_used = 0;
     body.ommers[0].timestamp = 1455404305;

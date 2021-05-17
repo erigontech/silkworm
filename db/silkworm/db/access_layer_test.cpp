@@ -35,7 +35,8 @@ static BlockBody sample_block_body() {
     body.transactions.resize(2);
 
     body.transactions[0].nonce = 172339;
-    body.transactions[0].gas_price = 50 * kGiga;
+    body.transactions[0].max_priority_fee_per_gas = 50 * kGiga;
+    body.transactions[0].max_fee_per_gas = 50 * kGiga;
     body.transactions[0].gas_limit = 90'000;
     body.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
     body.transactions[0].value = 1'027'501'080 * kGiga;
@@ -46,8 +47,10 @@ static BlockBody sample_block_body() {
     body.transactions[0].s =
         intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
 
+    body.transactions[1].type = kEip1559TransactionType;
     body.transactions[1].nonce = 1;
-    body.transactions[1].gas_price = 50 * kGiga;
+    body.transactions[1].max_priority_fee_per_gas = 5 * kGiga;
+    body.transactions[1].max_fee_per_gas = 30 * kGiga;
     body.transactions[1].gas_limit = 1'000'000;
     body.transactions[1].to = {};
     body.transactions[1].value = 0;
@@ -66,7 +69,7 @@ static BlockBody sample_block_body() {
     body.ommers[0].transactions_root = kEmptyRoot;
     body.ommers[0].receipts_root = kEmptyRoot;
     body.ommers[0].difficulty = 12'555'442'155'599;
-    body.ommers[0].number = 1'000'013;
+    body.ommers[0].number = 13'000'013;
     body.ommers[0].gas_limit = 3'141'592;
     body.ommers[0].gas_used = 0;
     body.ommers[0].timestamp = 1455404305;
@@ -458,7 +461,7 @@ namespace db {
         header.mix_hash = to_bytes32(*mix_data);
 
         auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
-        auto noncebe = ethash::be::uint64(nonce); // Swap endianess
+        auto noncebe = ethash::be::uint64(nonce);  // Swap endianess
         std::memcpy(&header.nonce[0], &noncebe, 8);
 
         // Verify our RLP encoding produces the same result
@@ -467,14 +470,13 @@ namespace db {
         CHECK(to_hex(computed_hash) == to_hex(expected_hash));
 
         // TODO (Andrea) Why this fails for genesis ?
-        //auto seal_hash(header.hash(/*for_sealing =*/true));
-        //ethash::hash256 sealh256{};
-        //std::memcpy(sealh256.bytes, seal_hash.bytes, 32);
-        //auto boundary{ethash::get_boundary_from_diff(header.difficulty)};
-        //auto epoch_context{ethash::create_epoch_context(0)};
-        //auto result{ethash::hash(*epoch_context, sealh256, nonce)};
+        // auto seal_hash(header.hash(/*for_sealing =*/true));
+        // ethash::hash256 sealh256{};
+        // std::memcpy(sealh256.bytes, seal_hash.bytes, 32);
+        // auto boundary{ethash::get_boundary_from_diff(header.difficulty)};
+        // auto epoch_context{ethash::create_epoch_context(0)};
+        // auto result{ethash::hash(*epoch_context, sealh256, nonce)};
         // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
-
     }
 }  // namespace db
 }  // namespace silkworm

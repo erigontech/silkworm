@@ -38,7 +38,8 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
         return ValidationResult::kWrongNonce;
     }
 
-    intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.gas_price)};
+    // TODO[Issue 231] EIP-1559
+    intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
     intx::uint512 v0{gas_cost + txn.value};
 
     if (state.get_balance(*txn.from) < v0) {
@@ -60,7 +61,8 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     evm_.state().clear_journal_and_substate();
 
     state.access_account(*txn.from);
-    state.subtract_from_balance(*txn.from, txn.gas_limit * txn.gas_price);
+    // TODO[Issue 231] EIP-1559
+    state.subtract_from_balance(*txn.from, txn.gas_limit * txn.max_fee_per_gas);
     if (txn.to) {
         state.access_account(*txn.to);
         // EVM itself increments the nonce for contract creation
@@ -82,7 +84,8 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left)};
 
     // award the miner
-    state.add_to_balance(evm_.block().header.beneficiary, gas_used * txn.gas_price);
+    // TODO[Issue 231] EIP-1559
+    state.add_to_balance(evm_.block().header.beneficiary, gas_used * txn.max_fee_per_gas);
 
     evm_.state().destruct_suicides();
     if (rev >= EVMC_SPURIOUS_DRAGON) {
@@ -109,7 +112,8 @@ uint64_t ExecutionProcessor::available_gas() const noexcept {
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) noexcept {
     uint64_t refund{std::min((txn.gas_limit - gas_left) / 2, evm_.state().total_refund())};
     gas_left += refund;
-    evm_.state().add_to_balance(*txn.from, gas_left * txn.gas_price);
+    // TODO[Issue 231] EIP-1559
+    evm_.state().add_to_balance(*txn.from, gas_left * txn.max_fee_per_gas);
     return gas_left;
 }
 

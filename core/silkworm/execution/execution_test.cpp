@@ -87,8 +87,8 @@ TEST_CASE("Execute two blocks") {
 
     std::optional<Account> miner_account{buffer.read_account(miner)};
     REQUIRE(miner_account);
-    CHECK(miner_account->balance > 1 * param::kFrontierBlockReward);
-    CHECK(miner_account->balance < 2 * param::kFrontierBlockReward);
+    CHECK(miner_account->balance > 1 * param::kBlockRewardFrontier);
+    CHECK(miner_account->balance < 2 * param::kBlockRewardFrontier);
 
     // ---------------------------------------
     // Execute second block
@@ -111,6 +111,6 @@ TEST_CASE("Execute two blocks") {
 
     miner_account = buffer.read_account(miner);
     REQUIRE(miner_account);
-    CHECK(miner_account->balance > 2 * param::kFrontierBlockReward);
-    CHECK(miner_account->balance < 3 * param::kFrontierBlockReward);
+    CHECK(miner_account->balance > 2 * param::kBlockRewardFrontier);
+    CHECK(miner_account->balance < 3 * param::kBlockRewardFrontier);
 }

@@ -68,6 +68,8 @@ class IntraBlockState {
     void destruct_suicides();
     void destruct_touched_dead();
 
+    size_t number_of_self_destructs() const noexcept { return self_destructs_.size(); }
+
     intx::uint256 get_balance(const evmc::address& address) const noexcept;
     void set_balance(const evmc::address& address, const intx::uint256& value) noexcept;
     void add_to_balance(const evmc::address& address, const intx::uint256& addend) noexcept;
@@ -110,7 +112,7 @@ class IntraBlockState {
     void add_refund(uint64_t addend) noexcept;
     void subtract_refund(uint64_t subtrahend) noexcept;
 
-    uint64_t total_refund() const noexcept;
+    uint64_t get_refund() const noexcept { return refund_; }
 
   private:
     friend class state::CreateDelta;

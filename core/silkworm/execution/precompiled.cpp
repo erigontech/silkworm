@@ -164,9 +164,9 @@ uint64_t expmod_gas(ByteView input, evmc_revision rev) noexcept {
 
     intx::uint256 gas;
     if (rev < EVMC_BERLIN) {
-        gas = mult_complexity_eip198(max_length) * adjusted_exponent_len / fee::kGQuadDivisorEip198;
+        gas = mult_complexity_eip198(max_length) * adjusted_exponent_len / param::kGQuadDivisorByzantium;
     } else {
-        gas = mult_complexity_eip2565(max_length) * adjusted_exponent_len / fee::kGQuadDivisorEip2565;
+        gas = mult_complexity_eip2565(max_length) * adjusted_exponent_len / param::kGQuadDivisorBerlin;
     }
 
     if (intx::count_significant_words<uint64_t>(gas) > 1) {

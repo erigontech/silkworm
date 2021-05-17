@@ -107,7 +107,15 @@ uint64_t ExecutionProcessor::available_gas() const noexcept {
 }
 
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) noexcept {
-    uint64_t refund{std::min((txn.gas_limit - gas_left) / 2, evm_.state().total_refund())};
+    const evmc_revision rev{evm_.revision()};
+    uint64_t refund{evm_.state().get_refund()};
+    if (rev < EVMC_LONDON) {
+        refund += fee::kRSelfDestruct * evm_.state().number_of_self_destructs();
+    }
+    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? param::kMaxRefundQuotientLondon
+                                                          : param::kMaxRefundQuotientFrontier};
+    const uint64_t max_refund{(txn.gas_limit - gas_left) / max_refund_quotient};
+    refund = std::min(refund, max_refund);
     gas_left += refund;
     evm_.state().add_to_balance(*txn.from, gas_left * txn.gas_price);
     return gas_left;
@@ -139,11 +147,11 @@ void ExecutionProcessor::apply_rewards() noexcept {
     const evmc_revision rev{evm_.revision()};
     intx::uint256 block_reward;
     if (rev >= EVMC_CONSTANTINOPLE) {
-        block_reward = param::kConstantinopleBlockReward;
+        block_reward = param::kBlockRewardConstantinople;
     } else if (rev >= EVMC_BYZANTIUM) {
-        block_reward = param::kByzantiumBlockReward;
+        block_reward = param::kBlockRewardByzantium;
     } else {
-        block_reward = param::kFrontierBlockReward;
+        block_reward = param::kBlockRewardFrontier;
     }
 
     const uint64_t block_number{evm_.block().header.number};

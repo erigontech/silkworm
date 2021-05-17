@@ -343,7 +343,7 @@ evmc::bytes32 EvmHost::get_storage(const evmc::address& address, const evmc::byt
 
 evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evmc::bytes32& key,
                                          const evmc::bytes32& new_val) noexcept {
-    evmc::bytes32 current_val{evm_.state().get_current_storage(address, key)};
+    const evmc::bytes32 current_val{evm_.state().get_current_storage(address, key)};
 
     if (current_val == new_val) {
         return EVMC_STORAGE_UNCHANGED;
@@ -382,23 +382,27 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
     }
 
     // https://eips.ethereum.org/EIPS/eip-1283
-    evmc::bytes32 original_val{evm_.state().get_original_storage(address, key)};
+    const evmc::bytes32 original_val{evm_.state().get_original_storage(address, key)};
+
+    // https://eips.ethereum.org/EIPS/eip-3529
+    const uint64_t sstore_clears_refund{rev >= EVMC_LONDON ? sstore_reset_gas + fee::kAccessListStorageKeyCost
+                                                           : fee::kRSClear};
 
     if (original_val == current_val) {
         if (is_zero(original_val)) {
             return EVMC_STORAGE_ADDED;
         }
         if (is_zero(new_val)) {
-            evm_.state().add_refund(fee::kRSClear);
+            evm_.state().add_refund(sstore_clears_refund);
         }
         return EVMC_STORAGE_MODIFIED;
     } else {
         if (!is_zero(original_val)) {
             if (is_zero(current_val)) {
-                evm_.state().subtract_refund(fee::kRSClear);
+                evm_.state().subtract_refund(sstore_clears_refund);
             }
             if (is_zero(new_val)) {
-                evm_.state().add_refund(fee::kRSClear);
+                evm_.state().add_refund(sstore_clears_refund);
             }
         }
         if (original_val == new_val) {

@@ -19,7 +19,7 @@
 
 #include <stddef.h>
 
-#ifdef _WIN32 || defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 
 #include <Windows.h>
 #include <sysinfoapi.h>

@@ -472,8 +472,9 @@ evmc::result EvmHost::call(const evmc_message& message) noexcept {
 
 evmc_tx_context EvmHost::get_tx_context() const noexcept {
     evmc_tx_context context;
-    // TODO[Issue 231] effective_gas_price
-    intx::be::store(context.tx_gas_price.bytes, evm_.txn_->max_fee_per_gas);
+    const intx::uint256 base_fee_per_gas{evm_.block_.header.base_fee_per_gas.value_or(0)};
+    const intx::uint256 effective_gas_price{evm_.txn_->effective_gas_price(base_fee_per_gas)};
+    intx::be::store(context.tx_gas_price.bytes, effective_gas_price);
     context.tx_origin = *evm_.txn_->from;
     context.block_coinbase = evm_.block_.header.beneficiary;
     context.block_number = evm_.block_.header.number;

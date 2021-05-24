@@ -73,6 +73,9 @@ struct Transaction {
     //
     // Precondition: pre_validate_transaction must return kOk.
     void recover_sender();
+
+    intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
+    intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
 };
 
 bool operator==(const Transaction& a, const Transaction& b);

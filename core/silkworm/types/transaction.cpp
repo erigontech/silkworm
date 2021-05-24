@@ -388,4 +388,13 @@ void Transaction::recover_sender() {
     }
 }
 
+intx::uint256 Transaction::priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const {
+    assert(max_fee_per_gas >= base_fee_per_gas);
+    return std::min(max_priority_fee_per_gas, max_fee_per_gas - base_fee_per_gas);
+}
+
+intx::uint256 Transaction::effective_gas_price(const intx::uint256& base_fee_per_gas) const {
+    return priority_fee_per_gas(base_fee_per_gas) + base_fee_per_gas;
+}
+
 }  // namespace silkworm

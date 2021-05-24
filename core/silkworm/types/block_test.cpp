@@ -115,7 +115,7 @@ TEST_CASE("BlockBody RLP 2") {
     CHECK(decoded == body);
 }
 
-TEST_CASE("Invlaid Block RLP") {
+TEST_CASE("Invalid Block RLP") {
     // Consensus test RLP_InputList_TooManyElements_HEADER_DECODEINTO_BLOCK_EXTBLOCK_HEADER
     const char* rlp_hex{
         "0xf90260f90207a068a61c4a05db4913009de5666753258eb9306157680dc5da0d93656550c9257ea01dcc4de8dec75d7aab85b567b6cc"
@@ -135,7 +135,7 @@ TEST_CASE("Invlaid Block RLP") {
     ByteView view{rlp_bytes};
     Block block;
 
-    CHECK(rlp::decode(view, block) == rlp::DecodingResult::kListLengthMismatch);
+    CHECK(rlp::decode(view, block) != rlp::DecodingResult::kOk);
 }
 
 TEST_CASE("EIP-2718 Block RLP") {
@@ -170,6 +170,22 @@ TEST_CASE("EIP-2718 Block RLP") {
 
     CHECK(block.transactions[1].type == kEip2930TransactionType);
     CHECK(block.transactions[1].access_list.size() == 1);
+}
+
+TEST_CASE("EIP-1559 Header RLP") {
+    BlockHeader h;
+    h.number = 13'500'000;
+    h.base_fee_per_gas = 2'700'000'000;
+
+    Bytes rlp;
+    rlp::encode(rlp, h);
+
+    ByteView view{rlp};
+    BlockHeader decoded;
+    REQUIRE(rlp::decode(view, decoded) == rlp::DecodingResult::kOk);
+
+    CHECK(view.empty());
+    CHECK(decoded == h);
 }
 
 }  // namespace silkworm

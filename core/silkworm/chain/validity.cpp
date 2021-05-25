@@ -16,6 +16,8 @@
 
 #include "validity.hpp"
 
+#include <cassert>
+
 #include <ethash/ethash.hpp>
 
 #include <silkworm/crypto/ecdsa.hpp>
@@ -23,6 +25,7 @@
 
 #include "difficulty.hpp"
 #include "intrinsic_gas.hpp"
+#include "protocol_param.hpp"
 
 namespace silkworm {
 
@@ -65,6 +68,46 @@ static std::optional<BlockHeader> get_parent(const StateBuffer& state, const Blo
     return state.read_header(header.number - 1, header.parent_hash);
 }
 
+// https://eips.ethereum.org/EIPS/eip-1559
+static std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent,
+                                                              const ChainConfig& config) {
+    if (config.revision(header.number) < EVMC_LONDON) {
+        return std::nullopt;
+    }
+
+    if (header.number == config.revision_block(EVMC_LONDON)) {
+        return param::kInitialBaseFee;
+    }
+
+    const uint64_t parent_gas_target{parent.gas_limit / param::kElasticityMultiplier};
+
+    assert(parent.base_fee_per_gas.has_value());
+    const intx::uint256 parent_base_fee_per_gas{*parent.base_fee_per_gas};
+
+    if (parent.gas_used == parent_gas_target) {
+        return parent_base_fee_per_gas;
+    }
+
+    if (parent.gas_used > parent_gas_target) {
+        const intx::uint256 gas_used_delta{parent.gas_used - parent_gas_target};
+        intx::uint256 base_fee_per_gas_delta{parent_base_fee_per_gas * gas_used_delta / parent_gas_target /
+                                             param::kBaseFeeMaxChangeDenominator};
+        if (base_fee_per_gas_delta < 1) {
+            base_fee_per_gas_delta = 1;
+        }
+        return parent_base_fee_per_gas + base_fee_per_gas_delta;
+    } else {
+        const intx::uint256 gas_used_delta{parent_gas_target - parent.gas_used};
+        const intx::uint256 base_fee_per_gas_delta{parent_base_fee_per_gas * gas_used_delta / parent_gas_target /
+                                                   param::kBaseFeeMaxChangeDenominator};
+        if (parent_base_fee_per_gas > base_fee_per_gas_delta) {
+            return parent_base_fee_per_gas - base_fee_per_gas_delta;
+        } else {
+            return 0;
+        }
+    }
+}
+
 ValidationResult validate_block_header(const BlockHeader& header, const StateBuffer& state, const ChainConfig& config) {
     if (header.gas_used > header.gas_limit) {
         return ValidationResult::kGasAboveLimit;
@@ -84,7 +127,7 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
         return ValidationResult::kExtraDataTooLong;
     }
 
-    std::optional<BlockHeader> parent{get_parent(state, header)};
+    const std::optional<BlockHeader> parent{get_parent(state, header)};
     if (!parent) {
         return ValidationResult::kUnknownParent;
     }
@@ -93,15 +136,20 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
         return ValidationResult::kInvalidTimestamp;
     }
 
-    uint64_t gas_delta{header.gas_limit > parent->gas_limit ? header.gas_limit - parent->gas_limit
-                                                            : parent->gas_limit - header.gas_limit};
-    if (gas_delta >= parent->gas_limit / 1024) {
+    uint64_t parent_gas_limit{parent->gas_limit};
+    if (header.number == config.revision_block(EVMC_LONDON)) {
+        parent_gas_limit = parent->gas_limit * param::kElasticityMultiplier;  // EIP-1559
+    }
+
+    const uint64_t gas_delta{header.gas_limit > parent_gas_limit ? header.gas_limit - parent_gas_limit
+                                                                 : parent_gas_limit - header.gas_limit};
+    if (gas_delta >= parent_gas_limit / 1024) {
         return ValidationResult::kInvalidGasLimit;
     }
 
-    bool parent_has_uncles{parent->ommers_hash != kEmptyListHash};
-    intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent->difficulty,
-                                                  parent->timestamp, parent_has_uncles, config)};
+    const bool parent_has_uncles{parent->ommers_hash != kEmptyListHash};
+    const intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent->difficulty,
+                                                        parent->timestamp, parent_has_uncles, config)};
     if (difficulty != header.difficulty) {
         return ValidationResult::kWrongDifficulty;
     }
@@ -112,6 +160,10 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
         if (header.extra_data != kDaoExtraData) {
             return ValidationResult::kWrongDaoExtraData;
         }
+    }
+
+    if (header.base_fee_per_gas != expected_base_fee_per_gas(header, *parent, config)) {
+        return ValidationResult::kWrongBaseFee;
     }
 
     // Ethash PoW verification

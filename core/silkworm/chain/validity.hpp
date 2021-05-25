@@ -27,11 +27,7 @@ enum class [[nodiscard]] ValidationResult{
     kOk = 0,
 
     // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
-    kWrongStateRoot,
-    kWrongOmmersHash,
-    kWrongTransactionsRoot,
-    kWrongReceiptsRoot,
-    kWrongLogsBloom,
+    kWrongStateRoot, kWrongOmmersHash, kWrongTransactionsRoot, kWrongReceiptsRoot, kWrongLogsBloom,
 
     // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
     kUnknownParent,      // P(H) = ∅ ∨ Hi ≠ P(H)Hi + 1
@@ -41,6 +37,7 @@ enum class [[nodiscard]] ValidationResult{
     kInvalidTimestamp,   // Hs ≤ P(H)Hs
     kExtraDataTooLong,   // ‖Hx‖ > 32
     kWrongDaoExtraData,  // see EIP-779
+    kWrongBaseFee,       // see EIP-1559
     kInvalidSeal,        // Nonce or mix_hash
 
     // See [YP] Section 6.2 "Execution", Eq (58)

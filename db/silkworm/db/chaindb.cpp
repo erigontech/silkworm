@@ -19,8 +19,7 @@
 #include <cassert>
 #include <filesystem>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/interprocess/mapped_region.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 
 #include "chaindb.hpp"
 
@@ -62,7 +61,7 @@ Environment::Environment(const DatabaseConfig& config) {
 
     // Ensure map_size is multiple of host page_size
     if (data_map_size) {
-        size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
+        size_t host_page_size{os::get_syspagesize()};
         data_map_size = ((data_map_size + host_page_size - 1) / host_page_size) * host_page_size;
     }
 
@@ -157,7 +156,7 @@ int Environment::set_mapsize(size_t size) {
         if (size < actual_map_size) {
             throw std::runtime_error("Can't set a map_size lower than data file size.");
         }
-        size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
+        size_t host_page_size{os::get_syspagesize()};
         size = ((size + host_page_size - 1) / host_page_size) * host_page_size;
     }
     return mdb_env_set_mapsize(handle_, size);

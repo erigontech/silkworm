@@ -38,8 +38,9 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
         return ValidationResult::kWrongNonce;
     }
 
-    // TODO[Issue 231] EIP-1559
-    intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
+    const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
+    const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
+    intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, effective_gas_price)};
     intx::uint512 v0{gas_cost + txn.value};
 
     if (state.get_balance(*txn.from) < v0) {
@@ -61,8 +62,11 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     evm_.state().clear_journal_and_substate();
 
     state.access_account(*txn.from);
-    // TODO[Issue 231] EIP-1559
-    state.subtract_from_balance(*txn.from, txn.gas_limit * txn.max_fee_per_gas);
+
+    const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
+    const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
+    state.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
+
     if (txn.to) {
         state.access_account(*txn.to);
         // EVM itself increments the nonce for contract creation
@@ -84,8 +88,8 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left)};
 
     // award the miner
-    // TODO[Issue 231] EIP-1559
-    state.add_to_balance(evm_.block().header.beneficiary, gas_used * txn.max_fee_per_gas);
+    const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
+    state.add_to_balance(evm_.block().header.beneficiary, gas_used * priority_fee_per_gas);
 
     evm_.state().destruct_suicides();
     if (rev >= EVMC_SPURIOUS_DRAGON) {
@@ -120,8 +124,11 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
     const uint64_t max_refund{(txn.gas_limit - gas_left) / max_refund_quotient};
     refund = std::min(refund, max_refund);
     gas_left += refund;
-    // TODO[Issue 231] EIP-1559
-    evm_.state().add_to_balance(*txn.from, gas_left * txn.max_fee_per_gas);
+
+    const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
+    const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
+    evm_.state().add_to_balance(*txn.from, gas_left * effective_gas_price);
+
     return gas_left;
 }
 

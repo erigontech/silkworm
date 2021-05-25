@@ -17,6 +17,8 @@
 #ifndef SILKWORM_CHAIN_VALIDITY_HPP_
 #define SILKWORM_CHAIN_VALIDITY_HPP_
 
+#include <optional>
+
 #include <silkworm/state/buffer.hpp>
 #include <silkworm/types/block.hpp>
 
@@ -46,6 +48,7 @@ enum class [[nodiscard]] ValidationResult{
     kIntrinsicGas,           // g0 > Tg
     kInsufficientFunds,      // v0 > σ[S(T)]b
     kBlockGasLimitExceeded,  // Tg > BHl - l(BR)u
+    kMaxFeeLessThanBase,     // see EIP-1559
 
     // See [YP] Section 11.1 "Ommer Validation", Eq (157)
     kTooManyOmmers,       // ‖BU‖ > 2
@@ -65,7 +68,8 @@ enum class [[nodiscard]] ValidationResult{
 
 // Performs validation of a transaction that can be done prior to sender recovery and block execution.
 // May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
-ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config);
+ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
+                                          const std::optional<intx::uint256>& base_fee_per_gas);
 
 // Performs validation of block header & body that can be done prior to sender recovery and execution.
 // See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",

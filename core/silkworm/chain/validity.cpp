@@ -29,7 +29,8 @@
 
 namespace silkworm {
 
-ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config) {
+ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
+                                          const std::optional<intx::uint256>& base_fee_per_gas) {
     const evmc_revision rev{config.revision(block_number)};
 
     if (txn.chain_id) {
@@ -59,6 +60,10 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     const intx::uint128 g0{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
     if (txn.gas_limit < g0) {
         return ValidationResult::kIntrinsicGas;
+    }
+
+    if (base_fee_per_gas && txn.max_fee_per_gas < base_fee_per_gas) {
+        return ValidationResult::kMaxFeeLessThanBase;
     }
 
     return ValidationResult::kOk;
@@ -269,7 +274,8 @@ ValidationResult pre_validate_block(const Block& block, const StateBuffer& state
     }
 
     for (const Transaction& txn : block.transactions) {
-        if (ValidationResult err{pre_validate_transaction(txn, header.number, config)}; err != ValidationResult::kOk) {
+        ValidationResult err{pre_validate_transaction(txn, header.number, config, header.base_fee_per_gas)};
+        if (err != ValidationResult::kOk) {
             return err;
         }
     }

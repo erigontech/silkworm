@@ -544,7 +544,8 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 
         ChainConfig config{kNetworkConfig.at(entry.key())};
 
-        if (ValidationResult err{pre_validate_transaction(txn, /*block_number=*/0, config)};
+        if (ValidationResult err{
+                pre_validate_transaction(txn, /*block_number=*/0, config, /*base_fee_per_gas=*/std::nullopt)};
             err != ValidationResult::kOk) {
             if (valid) {
                 std::cout << "Validation error " << static_cast<int>(err) << std::endl;

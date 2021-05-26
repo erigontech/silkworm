@@ -22,11 +22,12 @@
 
 namespace silkworm {
 
-TEST_CASE("Transaction RLP") {
+TEST_CASE("Legacy Transaction RLP") {
     Transaction txn{
         std::nullopt,                                        // type
         12,                                                  // nonce
-        20000000000,                                         // gas_price
+        20000000000,                                         // max_priority_fee_per_gas
+        20000000000,                                         // max_fee_per_gas
         21000,                                               // gas_limit
         0x727fc6a68321b754475c668a6abfb6e9e71c169a_address,  // to
         10 * kEther,                                         // value
@@ -61,7 +62,44 @@ TEST_CASE("EIP-2930 Transaction RLP") {
     Transaction txn{
         kEip2930TransactionType,                             // type
         7,                                                   // nonce
-        30000000000,                                         // gas_price
+        30000000000,                                         // max_priority_fee_per_gas
+        30000000000,                                         // max_fee_per_gas
+        5748100,                                             // gas_limit
+        0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,  // to
+        2 * kEther,                                          // value
+        *from_hex("6ebaf477f83e051589c1188bcc6ddccd"),       // data
+        false,                                               // odd_y_parity
+        5,                                                   // chain_id
+        intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
+        intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
+        access_list,
+    };
+
+    Bytes encoded{};
+    rlp::encode(encoded, txn);
+
+    Transaction decoded;
+    ByteView view{encoded};
+    REQUIRE(rlp::decode<Transaction>(view, decoded) == rlp::DecodingResult::kOk);
+    CHECK(view.empty());
+    CHECK(decoded == txn);
+}
+
+TEST_CASE("EIP-1559 Transaction RLP") {
+    std::vector<AccessListEntry> access_list{
+        {0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae_address,
+         {
+             0x0000000000000000000000000000000000000000000000000000000000000003_bytes32,
+             0x0000000000000000000000000000000000000000000000000000000000000007_bytes32,
+         }},
+        {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
+    };
+
+    Transaction txn{
+        kEip1559TransactionType,                             // type
+        7,                                                   // nonce
+        10000000000,                                         // max_priority_fee_per_gas
+        30000000000,                                         // max_fee_per_gas
         5748100,                                             // gas_limit
         0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,  // to
         2 * kEther,                                          // value
@@ -89,7 +127,8 @@ TEST_CASE("Recover sender 1") {
     Transaction txn{
         std::nullopt,                                        // type
         0,                                                   // nonce
-        50'000 * kGiga,                                      // gas_price
+        50'000 * kGiga,                                      // max_priority_fee_per_gas
+        50'000 * kGiga,                                      // max_fee_per_gas
         21'000,                                              // gas_limit
         0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,  // to
         31337,                                               // value
@@ -110,7 +149,8 @@ TEST_CASE("Recover sender 2") {
     Transaction txn{
         std::nullopt,                                        // type
         1,                                                   // nonce
-        50'000 * kGiga,                                      // gas_price
+        50'000 * kGiga,                                      // max_priority_fee_per_gas
+        50'000 * kGiga,                                      // max_fee_per_gas
         21'750,                                              // gas_limit
         0xc9d4035f4a9226d50f79b73aafb5d874a1b6537e_address,  // to
         31337,                                               // value

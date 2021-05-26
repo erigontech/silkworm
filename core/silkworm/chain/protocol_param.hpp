@@ -66,6 +66,11 @@ namespace param {
     constexpr uint64_t kMaxRefundQuotientFrontier{2};
     constexpr uint64_t kMaxRefundQuotientLondon{5};
 
+    // https://eips.ethereum.org/EIPS/eip-1559
+    constexpr uint64_t kInitialBaseFee{1'000'000'000};
+    constexpr uint64_t kBaseFeeMaxChangeDenominator{8};
+    constexpr uint64_t kElasticityMultiplier{2};
+
 }  // namespace param
 
 }  // namespace silkworm

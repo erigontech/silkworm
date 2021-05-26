@@ -17,6 +17,8 @@
 #ifndef SILKWORM_CHAIN_VALIDITY_HPP_
 #define SILKWORM_CHAIN_VALIDITY_HPP_
 
+#include <optional>
+
 #include <silkworm/state/buffer.hpp>
 #include <silkworm/types/block.hpp>
 
@@ -27,11 +29,7 @@ enum class [[nodiscard]] ValidationResult{
     kOk = 0,
 
     // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
-    kWrongStateRoot,
-    kWrongOmmersHash,
-    kWrongTransactionsRoot,
-    kWrongReceiptsRoot,
-    kWrongLogsBloom,
+    kWrongStateRoot, kWrongOmmersHash, kWrongTransactionsRoot, kWrongReceiptsRoot, kWrongLogsBloom,
 
     // See [YP] Section 4.3.4 "Block Header Validity", Eq (50)
     kUnknownParent,      // P(H) = ∅ ∨ Hi ≠ P(H)Hi + 1
@@ -41,6 +39,7 @@ enum class [[nodiscard]] ValidationResult{
     kInvalidTimestamp,   // Hs ≤ P(H)Hs
     kExtraDataTooLong,   // ‖Hx‖ > 32
     kWrongDaoExtraData,  // see EIP-779
+    kWrongBaseFee,       // see EIP-1559
     kInvalidSeal,        // Nonce or mix_hash
 
     // See [YP] Section 6.2 "Execution", Eq (58)
@@ -49,6 +48,7 @@ enum class [[nodiscard]] ValidationResult{
     kIntrinsicGas,           // g0 > Tg
     kInsufficientFunds,      // v0 > σ[S(T)]b
     kBlockGasLimitExceeded,  // Tg > BHl - l(BR)u
+    kMaxFeeLessThanBase,     // see EIP-1559
 
     // See [YP] Section 11.1 "Ommer Validation", Eq (157)
     kTooManyOmmers,       // ‖BU‖ > 2
@@ -63,12 +63,13 @@ enum class [[nodiscard]] ValidationResult{
 
     kWrongChainId,  // EIP-155
 
-    kUnsupportedEip2718Type,
+    kUnsupportedTransactionType,  // EIP-2718
 };
 
 // Performs validation of a transaction that can be done prior to sender recovery and block execution.
-// May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedEip2718Type, or kOk.
-ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config);
+// May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
+ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
+                                          const std::optional<intx::uint256>& base_fee_per_gas);
 
 // Performs validation of block header & body that can be done prior to sender recovery and execution.
 // See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",

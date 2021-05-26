@@ -34,7 +34,8 @@ bool operator==(const BlockHeader& a, const BlockHeader& b) {
            a.state_root == b.state_root && a.transactions_root == b.transactions_root &&
            a.receipts_root == b.receipts_root && a.logs_bloom == b.logs_bloom && a.difficulty == b.difficulty &&
            a.number == b.number && a.gas_limit == b.gas_limit && a.gas_used == b.gas_used &&
-           a.timestamp == b.timestamp && a.extra_data == b.extra_data && a.mix_hash == b.mix_hash && a.nonce == b.nonce;
+           a.timestamp == b.timestamp && a.extra_data == b.extra_data && a.mix_hash == b.mix_hash &&
+           a.nonce == b.nonce && a.base_fee_per_gas == b.base_fee_per_gas;
 }
 
 bool operator==(const BlockBody& a, const BlockBody& b) {
@@ -69,6 +70,9 @@ namespace rlp {
             rlp_head.payload_length += kHashLength + 1;  // mix_hash
             rlp_head.payload_length += 8 + 1;            // nonce
         }
+        if (header.base_fee_per_gas.has_value()) {
+            rlp_head.payload_length += length(*header.base_fee_per_gas);
+        }
         return rlp_head;
     }
 
@@ -95,6 +99,9 @@ namespace rlp {
         if (!for_sealing) {
             encode(to, header.mix_hash.bytes);
             encode(to, header.nonce);
+        }
+        if (header.base_fee_per_gas.has_value()) {
+            encode(to, *header.base_fee_per_gas);
         }
     }
 
@@ -153,6 +160,15 @@ namespace rlp {
         }
         if (DecodingResult err{decode(from, to.nonce)}; err != DecodingResult::kOk) {
             return err;
+        }
+
+        to.base_fee_per_gas = std::nullopt;
+        if (from.length() > leftover) {
+            intx::uint256 base_fee_per_gas;
+            if (DecodingResult err{decode(from, base_fee_per_gas)}; err != DecodingResult::kOk) {
+                return err;
+            }
+            to.base_fee_per_gas = base_fee_per_gas;
         }
 
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;

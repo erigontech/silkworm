@@ -44,7 +44,7 @@ enum class [[nodiscard]] DecodingResult{
     kUnexpectedString,
     kUnexpectedList,
     kListLengthMismatch,
-    kUnsupportedEip2718Type,
+    kUnsupportedTransactionType,  // EIP-2718
 };
 
 // Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,

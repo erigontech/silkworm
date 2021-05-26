@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include <array>
+#include <optional>
 #include <vector>
 
 #include <intx/intx.hpp>
@@ -50,6 +51,8 @@ struct BlockHeader {
 
     evmc::bytes32 mix_hash{};
     std::array<uint8_t, 8> nonce{};
+
+    std::optional<intx::uint256> base_fee_per_gas{std::nullopt};  // EIP-1559
 
     evmc::bytes32 hash(bool for_sealing = false) const;
 

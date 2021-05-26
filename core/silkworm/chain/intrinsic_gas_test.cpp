@@ -35,7 +35,8 @@ TEST_CASE("EIP-2930 intrinsic gas") {
     Transaction txn{
         kEip2930TransactionType,                             // type
         7,                                                   // nonce
-        30000000000,                                         // gas_price
+        30000000000,                                         // max_priority_fee_per_gas
+        30000000000,                                         // max_fee_per_gas
         5748100,                                             // gas_limit
         0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,  // to
         2 * kEther,                                          // value

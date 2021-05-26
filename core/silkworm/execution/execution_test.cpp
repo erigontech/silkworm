@@ -54,7 +54,8 @@ TEST_CASE("Execute two blocks") {
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
     block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].gas_price = 20 * kGiga;
+    block.transactions[0].max_priority_fee_per_gas = 0;  // EIP-1559
+    block.transactions[0].max_fee_per_gas = 20 * kGiga;
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     block.transactions[0].from = sender;
@@ -87,8 +88,7 @@ TEST_CASE("Execute two blocks") {
 
     std::optional<Account> miner_account{buffer.read_account(miner)};
     REQUIRE(miner_account);
-    CHECK(miner_account->balance > 1 * param::kBlockRewardFrontier);
-    CHECK(miner_account->balance < 2 * param::kBlockRewardFrontier);
+    CHECK(miner_account->balance == param::kBlockRewardFrontier);
 
     // ---------------------------------------
     // Execute second block
@@ -103,6 +103,7 @@ TEST_CASE("Execute two blocks") {
     block.transactions[0].nonce = 1;
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
+    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
     CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
 

@@ -28,6 +28,7 @@
 namespace silkworm {
 
 static constexpr uint8_t kEip2930TransactionType{1};
+static constexpr uint8_t kEip1559TransactionType{2};
 
 // https://eips.ethereum.org/EIPS/eip-2930
 struct AccessListEntry {
@@ -46,7 +47,8 @@ struct Transaction {
     std::optional<uint8_t> type{std::nullopt};
 
     uint64_t nonce{0};
-    intx::uint256 gas_price{0};
+    intx::uint256 max_priority_fee_per_gas{0};
+    intx::uint256 max_fee_per_gas{0};
     uint64_t gas_limit{0};
     std::optional<evmc::address> to{std::nullopt};
     intx::uint256 value{0};
@@ -71,6 +73,9 @@ struct Transaction {
     //
     // Precondition: pre_validate_transaction must return kOk.
     void recover_sender();
+
+    intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
+    intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
 };
 
 bool operator==(const Transaction& a, const Transaction& b);

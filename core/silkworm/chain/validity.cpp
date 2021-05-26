@@ -33,7 +33,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
                                           const std::optional<intx::uint256>& base_fee_per_gas) {
     const evmc_revision rev{config.revision(block_number)};
 
-    if (txn.chain_id) {
+    if (txn.chain_id.has_value()) {
         if (rev < EVMC_SPURIOUS_DRAGON || txn.chain_id != config.chain_id) {
             return ValidationResult::kWrongChainId;
         }
@@ -53,6 +53,10 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
         }
     }
 
+    if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas) {
+        return ValidationResult::kMaxFeeLessThanBase;
+    }
+
     if (!ecdsa::is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
         return ValidationResult::kInvalidSignature;
     }
@@ -60,10 +64,6 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     const intx::uint128 g0{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
     if (txn.gas_limit < g0) {
         return ValidationResult::kIntrinsicGas;
-    }
-
-    if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas) {
-        return ValidationResult::kMaxFeeLessThanBase;
     }
 
     return ValidationResult::kOk;

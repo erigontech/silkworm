@@ -40,7 +40,7 @@ namespace silkworm {
 EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
     : block_{block}, state_{state}, config_{config}, evm1_{evmc_create_evmone()} {}
 
-EVM::~EVM() { delete evm1_; }
+EVM::~EVM() { evm1_->destroy(evm1_); }
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     txn_ = &txn;

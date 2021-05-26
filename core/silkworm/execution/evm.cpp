@@ -24,7 +24,9 @@
 #include <ethash/keccak.hpp>
 #include <evmone/analysis.hpp>
 #include <evmone/baseline.hpp>
+#include <evmone/evmone.h>
 #include <evmone/execution.hpp>
+#include <evmone/vm.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
 
@@ -36,7 +38,9 @@
 namespace silkworm {
 
 EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
-    : block_{block}, state_{state}, config_{config} {}
+    : block_{block}, state_{state}, config_{config}, evm1_{evmc_create_evmone()} {}
+
+EVM::~EVM() { delete evm1_; }
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
     txn_ = &txn;
@@ -236,6 +240,8 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
 }
 
 evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code) noexcept {
+    const auto vm{static_cast<evmone::VM*>(evm1_)};
+
     const auto analysis{evmone::baseline::analyze(code.data(), code.size())};
 
     std::unique_ptr<evmone::AdvancedExecutionState> state;
@@ -249,7 +255,7 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
 
     state->reset(msg, rev, host.get_interface(), host.to_context(), code.data(), code.size());
 
-    evmc_result res{evmone::baseline::execute(*state, analysis)};
+    evmc_result res{evmone::baseline::execute(*vm, *state, analysis)};
 
     if (state_pool) {
         state_pool->release(std::move(state));

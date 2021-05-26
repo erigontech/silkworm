@@ -106,7 +106,7 @@ namespace rlp {
         h.payload_length += length(txn.value);
         h.payload_length += length(txn.data);
 
-        if (txn.type) {
+        if (txn.type.has_value()) {
             assert(txn.type == kEip2930TransactionType || txn.type == kEip1559TransactionType);
             h.payload_length += length(txn.access_list);
         }
@@ -201,7 +201,7 @@ namespace rlp {
     }
 
     void encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_eip2718_into_array) {
-        if (txn.type) {
+        if (txn.type.has_value()) {
             eip2718_encode(to, txn, for_signing, wrap_eip2718_into_array);
         } else {
             legacy_encode(to, txn, for_signing);

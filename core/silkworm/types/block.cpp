@@ -70,7 +70,7 @@ namespace rlp {
             rlp_head.payload_length += kHashLength + 1;  // mix_hash
             rlp_head.payload_length += 8 + 1;            // nonce
         }
-        if (header.base_fee_per_gas) {
+        if (header.base_fee_per_gas.has_value()) {
             rlp_head.payload_length += length(*header.base_fee_per_gas);
         }
         return rlp_head;
@@ -100,7 +100,7 @@ namespace rlp {
             encode(to, header.mix_hash.bytes);
             encode(to, header.nonce);
         }
-        if (header.base_fee_per_gas) {
+        if (header.base_fee_per_gas.has_value()) {
             encode(to, *header.base_fee_per_gas);
         }
     }

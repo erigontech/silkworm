@@ -39,7 +39,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
         }
     }
 
-    if (txn.type) {
+    if (txn.type.has_value()) {
         if (txn.type == kEip2930TransactionType) {
             if (rev < EVMC_BERLIN) {
                 return ValidationResult::kUnsupportedTransactionType;
@@ -62,7 +62,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
         return ValidationResult::kIntrinsicGas;
     }
 
-    if (base_fee_per_gas && txn.max_fee_per_gas < base_fee_per_gas) {
+    if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas) {
         return ValidationResult::kMaxFeeLessThanBase;
     }
 

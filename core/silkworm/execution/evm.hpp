@@ -44,6 +44,8 @@ class EVM {
 
     EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept;
 
+    ~EVM();
+
     const Block& block() const noexcept { return block_; }
 
     const ChainConfig& config() const noexcept { return config_; }
@@ -85,6 +87,7 @@ class EVM {
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};
     std::stack<evmc::address> address_stack_{};
+    evmc_vm* evm1_{nullptr};
 };
 
 class EvmHost : public evmc::Host {

@@ -101,7 +101,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
     state_.subtract_from_balance(message.sender, value);
     state_.add_to_balance(contract_addr, value);
 
-    evmc_message deploy_message{
+    const evmc_message deploy_message{
         EVMC_CALL,       // kind
         0,               // flags
         message.depth,   // depth
@@ -116,10 +116,13 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
     res = execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/std::nullopt);
 
     if (res.status_code == EVMC_SUCCESS) {
-        size_t code_len{res.output_size};
-        uint64_t code_deploy_gas{code_len * fee::kGCodeDeposit};
+        const size_t code_len{res.output_size};
+        const uint64_t code_deploy_gas{code_len * fee::kGCodeDeposit};
 
-        if (rev >= EVMC_SPURIOUS_DRAGON && code_len > param::kMaxCodeSize) {
+        if (rev >= EVMC_LONDON && code_len > 0 && res.output_data[0] == 0xEF) {
+            // https://eips.ethereum.org/EIPS/eip-3541
+            res.status_code = EVMC_CONTRACT_VALIDATION_FAILURE;
+        } else if (rev >= EVMC_SPURIOUS_DRAGON && code_len > param::kMaxCodeSize) {
             // https://eips.ethereum.org/EIPS/eip-170
             res.status_code = EVMC_OUT_OF_GAS;
         } else if (res.gas_left >= 0 && static_cast<uint64_t>(res.gas_left) >= code_deploy_gas) {

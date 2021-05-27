@@ -104,6 +104,12 @@ std::optional<uint64_t> ChainConfig::revision_block(evmc_revision rev) const noe
     return fork_blocks.at(i);
 }
 
+void ChainConfig::set_revision_block(evmc_revision rev, std::optional<uint64_t> block) {
+    if (rev > 0) {  // Frontier block is always 0
+        fork_blocks[rev - 1] = block;
+    }
+}
+
 bool operator==(const ChainConfig& a, const ChainConfig& b) { return a.to_json() == b.to_json(); }
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }

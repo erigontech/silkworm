@@ -182,9 +182,13 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/instructions.cpp
                    evmone/lib/evmone/instructions.hpp
                    evmone/lib/evmone/limits.hpp
-                   evmone/lib/evmone/opcodes_helpers.h)
-
-target_include_directories(evmone PUBLIC evmone/lib)
+                   evmone/lib/evmone/opcodes_helpers.h
+                   evmone/lib/evmone/tracing.cpp
+                   evmone/lib/evmone/tracing.hpp
+                   evmone/lib/evmone/vm.cpp
+                   evmone/lib/evmone/vm.hpp)
+set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.8.0-dev")
+target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions ethash)
 
 if(MSVC)

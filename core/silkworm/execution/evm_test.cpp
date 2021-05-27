@@ -18,8 +18,8 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/util.hpp>
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 
 #include "address.hpp"
@@ -326,6 +326,37 @@ TEST_CASE("Contract overwrite") {
     CHECK(res.status == EVMC_INVALID_INSTRUCTION);
     CHECK(res.gas_left == 0);
     CHECK(res.data == Bytes{});
+}
+
+TEST_CASE("EIP-3541: Reject new contracts starting with the 0xEF byte") {
+    ChainConfig config{kMainnetConfig};
+    config.set_revision_block(EVMC_LONDON, 13'000'000);
+
+    Block block;
+    block.header.number = 13'500'000;
+
+    MemoryBuffer db;
+    IntraBlockState state{db};
+    EVM evm{block, state, config};
+
+    Transaction txn;
+    const uint64_t gas{50'000};
+
+    // https://eips.ethereum.org/EIPS/eip-3541#test-cases
+    txn.data = *from_hex("0x60ef60005360016000f3");
+    CHECK(evm.execute(txn, gas).status == EVMC_CONTRACT_VALIDATION_FAILURE);
+
+    txn.data = *from_hex("0x60ef60005360026000f3");
+    CHECK(evm.execute(txn, gas).status == EVMC_CONTRACT_VALIDATION_FAILURE);
+
+    txn.data = *from_hex("0x60ef60005360036000f3");
+    CHECK(evm.execute(txn, gas).status == EVMC_CONTRACT_VALIDATION_FAILURE);
+
+    txn.data = *from_hex("0x60ef60005360206000f3");
+    CHECK(evm.execute(txn, gas).status == EVMC_CONTRACT_VALIDATION_FAILURE);
+
+    txn.data = *from_hex("0x60fe60005360016000f3");
+    CHECK(evm.execute(txn, gas).status == EVMC_SUCCESS);
 }
 
 }  // namespace silkworm

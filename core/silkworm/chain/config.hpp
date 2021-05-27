@@ -73,6 +73,8 @@ struct ChainConfig {
     // it means the actual chain either does not support such revision
     std::optional<uint64_t> revision_block(evmc_revision rev) const noexcept;
 
+    void set_revision_block(evmc_revision rev, std::optional<uint64_t> block);
+
     nlohmann::json to_json() const noexcept;
 
     /*Sample JSON input:

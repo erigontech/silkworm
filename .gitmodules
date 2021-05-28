@@ -1,23 +1,22 @@
 [submodule "evmone"]
 	path = evmone
-	url = https://github.com/torquem-ch/evmone
-	branch = eip-3198
+	url = https://github.com/ethereum/evmone.git
 [submodule "secp256k1"]
 	path = secp256k1
-	url = https://github.com/bitcoin-core/secp256k1
+	url = https://github.com/bitcoin-core/secp256k1.git
 [submodule "libff"]
 	path = libff
-	url = https://github.com/torquem-ch/libff
+	url = https://github.com/torquem-ch/libff.git
 	branch = win
 [submodule "tests"]
 	path = tests
-	url = https://github.com/ethereum/tests
+	url = https://github.com/ethereum/tests.git
 [submodule "cbor-cpp"]
 	path = cbor-cpp
-	url = https://github.com/torquem-ch/cbor-cpp
+	url = https://github.com/torquem-ch/cbor-cpp.git
 [submodule "lmdb-go"]
 	path = lmdb-go
-	url = https://github.com/ledgerwatch/lmdb-go
+	url = https://github.com/ledgerwatch/lmdb-go.git
 [submodule "CRoaring"]
 	path = CRoaring
 	url = https://github.com/RoaringBitmap/CRoaring

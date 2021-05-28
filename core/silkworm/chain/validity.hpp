@@ -43,12 +43,13 @@ enum class [[nodiscard]] ValidationResult{
     kInvalidSeal,        // Nonce or mix_hash
 
     // See [YP] Section 6.2 "Execution", Eq (58)
-    kMissingSender,          // S(T) = ∅
-    kWrongNonce,             // Tn ≠ σ[S(T)]n
-    kIntrinsicGas,           // g0 > Tg
-    kInsufficientFunds,      // v0 > σ[S(T)]b
-    kBlockGasLimitExceeded,  // Tg > BHl - l(BR)u
-    kMaxFeeLessThanBase,     // see EIP-1559
+    kMissingSender,                 // S(T) = ∅
+    kWrongNonce,                    // Tn ≠ σ[S(T)]n
+    kIntrinsicGas,                  // g0 > Tg
+    kInsufficientFunds,             // v0 > σ[S(T)]b
+    kBlockGasLimitExceeded,         // Tg > BHl - l(BR)u
+    kMaxFeeLessThanBase,            // max_fee_per_gas < base_fee_per_gas (EIP-1559)
+    kMaxPriorityFeeGreaterThanMax,  // max_priority_fee_per_gas > max_fee_per_gas (EIP-1559)
 
     // See [YP] Section 11.1 "Ommer Validation", Eq (157)
     kTooManyOmmers,       // ‖BU‖ > 2

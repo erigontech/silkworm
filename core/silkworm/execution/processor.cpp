@@ -33,16 +33,14 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
     }
 
     const IntraBlockState& state{evm_.state()};
-    uint64_t nonce{state.get_nonce(*txn.from)};
+    const uint64_t nonce{state.get_nonce(*txn.from)};
     if (nonce != txn.nonce) {
         return ValidationResult::kWrongNonce;
     }
 
-    const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
-    const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
-    intx::uint512 gas_cost{intx::umul(intx::uint256{txn.gas_limit}, effective_gas_price)};
-    intx::uint512 v0{gas_cost + txn.value};
-
+    // https://github.com/ethereum/EIPs/pull/3594
+    const intx::uint512 max_gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
+    const intx::uint512 v0{max_gas_cost + txn.value};
     if (state.get_balance(*txn.from) < v0) {
         return ValidationResult::kInsufficientFunds;
     }

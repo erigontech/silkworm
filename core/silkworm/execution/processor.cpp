@@ -40,6 +40,7 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
 
     // https://github.com/ethereum/EIPs/pull/3594
     const intx::uint512 max_gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
+    // See YP, Eq (57) in Section 6.2 "Execution"
     const intx::uint512 v0{max_gas_cost + txn.value};
     if (state.get_balance(*txn.from) < v0) {
         return ValidationResult::kInsufficientFunds;

@@ -165,6 +165,23 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
          },
          0,  // muir_glacier_block
      }},
+    {"London",
+     {
+         1,  // chain_id
+         SealEngineType::kNoProof,
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+             0,  // constantinople_block
+             0,  // petersburg_block
+             0,  // istanbul_block
+             0,  // berlin_block
+             0,  // london_block
+         },
+         0,  // muir_glacier_block
+     }},
     {"FrontierToHomesteadAt5",
      {
          1,  // chain_id
@@ -215,6 +232,23 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
              5,  // constantinople_block
              5,  // petersburg_block
          },
+     }},
+    {"BerlinToLondonAt5",
+     {
+         1,  // chain_id
+         SealEngineType::kNoProof,
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+             0,  // constantinople_block
+             0,  // petersburg_block
+             0,  // istanbul_block
+             0,  // berlin_block
+             5,  // london_block
+         },
+         0,  // muir_glacier_block
      }},
     {"EIP2384",
      {

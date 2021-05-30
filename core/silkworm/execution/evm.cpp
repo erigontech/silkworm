@@ -480,17 +480,19 @@ evmc::result EvmHost::call(const evmc_message& message) noexcept {
 }
 
 evmc_tx_context EvmHost::get_tx_context() const noexcept {
+    const BlockHeader& header{evm_.block_.header};
     evmc_tx_context context;
-    const intx::uint256 base_fee_per_gas{evm_.block_.header.base_fee_per_gas.value_or(0)};
+    const intx::uint256 base_fee_per_gas{header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{evm_.txn_->effective_gas_price(base_fee_per_gas)};
     intx::be::store(context.tx_gas_price.bytes, effective_gas_price);
     context.tx_origin = *evm_.txn_->from;
-    context.block_coinbase = evm_.block_.header.beneficiary;
-    context.block_number = evm_.block_.header.number;
-    context.block_timestamp = evm_.block_.header.timestamp;
-    context.block_gas_limit = evm_.block_.header.gas_limit;
-    intx::be::store(context.block_difficulty.bytes, evm_.block_.header.difficulty);
+    context.block_coinbase = header.beneficiary;
+    context.block_number = header.number;
+    context.block_timestamp = header.timestamp;
+    context.block_gas_limit = header.gas_limit;
+    intx::be::store(context.block_difficulty.bytes, header.difficulty);
     intx::be::store(context.chain_id.bytes, intx::uint256{evm_.config().chain_id});
+    intx::be::store(context.block_base_fee.bytes, base_fee_per_gas);
     return context;
 }
 

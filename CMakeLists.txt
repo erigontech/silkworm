@@ -232,6 +232,7 @@ endif()
 add_subdirectory(core)
 
 if(NOT SILKWORM_CORE_ONLY)
+  option(MDBX_HUGE_TRANSACTIONS "" ON)
   add_subdirectory(libmdbx)
   add_subdirectory(db)
   add_subdirectory(tg_api)

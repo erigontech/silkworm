@@ -255,7 +255,7 @@ int main(int argc, char* argv[]) {
     bool full{false};
     bool incrementally{false};
     bool reset{false};
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
 
     app.add_flag("--full", full, "Start making lookups from block 0");

@@ -57,6 +57,11 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
         return ValidationResult::kMaxFeeLessThanBase;
     }
 
+    // https://github.com/ethereum/EIPs/pull/3594
+    if (txn.max_priority_fee_per_gas > txn.max_fee_per_gas) {
+        return ValidationResult::kMaxPriorityFeeGreaterThanMax;
+    }
+
     if (!ecdsa::is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
         return ValidationResult::kInvalidSignature;
     }

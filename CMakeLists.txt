@@ -209,6 +209,10 @@ if(MSVC)
   add_compile_options(/wd5030) # Silence warning C5030: unknown gnu/clang attribute
   add_compile_options(/W4)
 
+  # Required for proper detection of __cplusplus
+  # see https://docs.microsoft.com/en-us/cpp/build/reference/zc-cplusplus?view=msvc-160
+  add_compile_options(/Zc:__cplusplus)
+
   add_link_options(/ignore:4099)
 else()
   add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
@@ -228,6 +232,7 @@ endif()
 add_subdirectory(core)
 
 if(NOT SILKWORM_CORE_ONLY)
+  add_subdirectory(libmdbx)
   add_subdirectory(db)
   add_subdirectory(tg_api)
 endif()

@@ -20,6 +20,3 @@
 [submodule "CRoaring"]
 	path = CRoaring
 	url = https://github.com/RoaringBitmap/CRoaring
-[submodule "libmdbx"]
-	path = libmdbx
-	url = https://github.com/erthink/libmdbx.git

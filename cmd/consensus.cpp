@@ -63,13 +63,14 @@ static const std::vector<fs::path> kExcludedTests{
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 
-    // TODO(Andrew) investigate the failures
+    // https://github.com/ethereum/tests/issues/863
     kBlockchainDir / "TransitionTests" / "bcBerlinToLondon" / "BerlinToLondonTransition.json",
+
+    // TODO(Andrew) investigate the failures
     kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity" / "gasLimitTooLowExactBound.json",
     kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "gasLimit40m.json",
     kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "gasLimit20m.json",
     kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "badBlocks.json",
-    kBlockchainDir / "ValidBlocks" / "bcEIP1559" / "transFail.json",
 };
 
 constexpr size_t kColumnWidth{80};
@@ -536,11 +537,24 @@ struct [[nodiscard]] RunResults {
     }
 };
 
+static constexpr RunResults kSkippedTest{
+    0,  // passed
+    0,  // failed
+    1,  // skipped
+};
+
 RunResults run_test_file(const fs::path& file_path, Status (*runner)(const nlohmann::json&, std::optional<ChainConfig>),
-                         std::optional<ChainConfig> config = {}) {
+                         std::optional<ChainConfig> config = std::nullopt) {
     std::ifstream in{file_path.string()};
     nlohmann::json json;
-    in >> json;
+
+    try {
+        in >> json;
+    } catch (nlohmann::detail::parse_error& e) {
+        std::cerr << e.what() << "\n";
+        print_test_status(file_path.string(), kSkipped);
+        return kSkippedTest;
+    }
 
     RunResults res{};
 
@@ -675,12 +689,6 @@ int main(int argc, char* argv[]) {
             return -1;
         }
     }
-
-    static constexpr RunResults kSkippedTest{
-        0,  // passed
-        0,  // failed
-        1,  // skipped
-    };
 
     RunResults res{};
 

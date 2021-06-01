@@ -59,7 +59,7 @@ class Node {
 
 bool operator==(const Node& a, const Node& b);
 
-// TG HashCollector2
+// Erigon HashCollector2
 using NodeCollector = std::function<void(ByteView unpacked_key, const Node&)>;
 
 // Calculates root hash of a Modified Merkle Patricia Trie.
@@ -84,7 +84,7 @@ class HashBuilder {
     NodeCollector node_collector{nullptr};
 
   private:
-    // See TG GenStructStep
+    // See Erigon GenStructStep
     void gen_struct_step(ByteView curr, ByteView succ, ByteView value);
 
     std::vector<Bytes> branch_ref(uint16_t state_mask, uint16_t hash_mask);
@@ -102,7 +102,7 @@ class HashBuilder {
     std::vector<Bytes> stack_;  // node references: hashes or embedded RLPs
 };
 
-// TG DecompressNibbles
+// Erigon DecompressNibbles
 Bytes unpack_nibbles(ByteView packed);
 
 }  // namespace silkworm::trie

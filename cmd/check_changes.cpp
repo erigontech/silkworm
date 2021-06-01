@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and compares resulting change sets against DB"};
 
     std::string db_path{db::default_path()};
-    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
     uint64_t from{1};

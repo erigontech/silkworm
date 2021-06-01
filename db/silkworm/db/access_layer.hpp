@@ -18,7 +18,7 @@
 #define SILKWORM_DB_ACCESS_LAYER_HPP_
 
 // Database Access Layer
-// See TG core/rawdb/accessors_chain.go
+// See Erigon core/rawdb/accessors_chain.go
 
 #include <optional>
 #include <vector>
@@ -63,10 +63,10 @@ class MissingSenders : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
-// See TG StorageModeReceipts
+// See Erigon StorageModeReceipts
 constexpr const char* kStorageModeReceipts{"smReceipts"};
 
-// See TG GetStorageModeFromDB
+// See Erigon GetStorageModeFromDB
 bool read_storage_mode_receipts(lmdb::Transaction& txn);
 
 std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_number,
@@ -75,15 +75,15 @@ std::optional<BlockHeader> read_header(lmdb::Transaction& txn, uint64_t block_nu
 std::optional<BlockBody> read_body(lmdb::Transaction& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength],
                                    bool read_senders);
 
-// See TG ReadTd
+// See Erigon ReadTd
 std::optional<intx::uint256> read_total_difficulty(lmdb::Transaction& txn, uint64_t block_number,
                                                    const uint8_t (&hash)[kHashLength]);
 
-// See TG ReadBlockByNumber
+// See Erigon ReadBlockByNumber
 // might throw MissingSenders
 std::optional<BlockWithHash> read_block(lmdb::Transaction& txn, uint64_t block_number, bool read_senders);
 
-// See TG ReadSenders
+// See Erigon ReadSenders
 std::vector<evmc::address> read_senders(lmdb::Transaction& txn, int64_t block_number,
                                         const uint8_t (&hash)[kHashLength]);
 
@@ -111,7 +111,7 @@ StorageChanges read_storage_changes(lmdb::Transaction& txn, uint64_t block_numbe
 bool migration_happened(lmdb::Transaction& txn, const char* name);
 
 // Retrieves the chain_id for which database is populated
-// See TG chainConfig / chainConfigWithGenesis
+// See Erigon chainConfig / chainConfigWithGenesis
 std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn);
 
 }  // namespace silkworm::db

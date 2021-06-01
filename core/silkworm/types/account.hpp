@@ -35,10 +35,10 @@ struct Account {
     evmc::bytes32 code_hash{kEmptyHash};
     uint64_t incarnation{0};
 
-    // Turbo-Geth (*Account)EncodeForStorage
+    // Erigon (*Account)EncodeForStorage
     Bytes encode_for_storage(bool omit_code_hash = false) const;
 
-    // Turbo-Geth (*Account)EncodingLengthForStorage
+    // Erigon (*Account)EncodingLengthForStorage
     size_t encoding_length_for_storage() const;
 
     Bytes rlp(const evmc::bytes32& storage_root) const;
@@ -46,7 +46,7 @@ struct Account {
 
 bool operator==(const Account& a, const Account& b);
 
-// Turbo-Geth (*Account)DecodeForStorage
+// Erigon (*Account)DecodeForStorage
 [[nodiscard]] std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView encoded) noexcept;
 
 }  // namespace silkworm

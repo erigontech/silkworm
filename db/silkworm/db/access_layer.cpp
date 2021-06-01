@@ -52,7 +52,7 @@ std::optional<intx::uint256> read_total_difficulty(lmdb::Transaction& txn, uint6
     return td;
 }
 
-// TG ReadTransactions
+// Erigon ReadTransactions
 static std::vector<Transaction> read_transactions(lmdb::Transaction& txn, uint64_t base_id, uint64_t count) {
     if (!count) {
         return {};
@@ -172,7 +172,7 @@ std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code
     return Bytes{*val};
 }
 
-// TG FindByHistory for account
+// Erigon FindByHistory for account
 static std::optional<ByteView> historical_account(lmdb::Transaction& txn, const evmc::address& address,
                                                   uint64_t block_number) {
     auto history_table{txn.open(table::kAccountHistory)};
@@ -196,7 +196,7 @@ static std::optional<ByteView> historical_account(lmdb::Transaction& txn, const 
     return change_table->get(block_key(*change_block), full_view(address));
 }
 
-// TG FindByHistory for storage
+// Erigon FindByHistory for storage
 static std::optional<ByteView> historical_storage(lmdb::Transaction& txn, const evmc::address& address,
                                                   uint64_t incarnation, const evmc::bytes32& location,
                                                   uint64_t block_number) {

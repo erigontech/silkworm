@@ -25,6 +25,7 @@ see its package dbutils.
 #include <string>
 
 #include <absl/container/btree_map.h>
+#include "../libmdbx/mdbx.h++"
 #include <lmdb/lmdb.h>
 
 #include <silkworm/common/base.hpp>
@@ -83,6 +84,8 @@ inline ByteView from_mdb_val(const MDB_val val) {
     auto* ptr{static_cast<uint8_t*>(val.mv_data)};
     return {ptr, val.mv_size};
 }
+
+inline ByteView from_slice(const mdbx::slice slice) { return {slice.byte_ptr(), slice.length()}; }
 
 namespace detail {
 

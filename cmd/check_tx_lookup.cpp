@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
 
     std::string db_path{db::default_path()};
     size_t block_from;
-    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
     app.add_option("--from", block_from, "Initial block number to process (inclusive)", true)
         ->check(CLI::Range(1u, UINT32_MAX));
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
     if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
     }
     fs::path datadir(db_path);
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
                         continue;
                     }
 
-                    // TG stores block height as compact (no leading zeroes)
+                    // Erigon stores block height as compact (no leading zeroes)
                     auto lookup_block_data{left_pad(*lookup_data, sizeof(uint64_t), buffer)};
                     auto actual_block_number{boost::endian::load_big_u64(lookup_block_data.data())};
 
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
 
                 if (i != body.txn_count) {
                     SILKWORM_LOG(LogLevel::Error) << "Block " << block_number << " claims " << body.txn_count
-                                                      << " transactions but only " << i << " read" << std::endl;
+                                                  << " transactions but only " << i << " read" << std::endl;
                 }
             }
 

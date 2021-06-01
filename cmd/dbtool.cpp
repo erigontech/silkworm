@@ -774,7 +774,7 @@ int main(int argc, char* argv[]) {
     compact_options_t compact_opts{};    // Options for compact action
     copy_options_t copy_opts{};          // Options for copy action
 
-    CLI::App app_main("Turbo-Geth db tool");
+    CLI::App app_main("Erigon db tool");
 
     CLI::Range range32(1u, UINT32_MAX);
 
@@ -805,7 +805,7 @@ int main(int argc, char* argv[]) {
     app_compact.add_flag("--nobak", compact_opts.nobak, "Don't create a bak copy of original when replacing");
 
     // Copy
-    auto& app_copy = *app_main.add_subcommand("copy", "Copies an entire TG database or subset of tables");
+    auto& app_copy = *app_main.add_subcommand("copy", "Copies an entire Erigon database or subset of tables");
     app_copy.add_option("--targetdir", copy_opts.targetdir, "Working directory (must exist)", false)
         ->required()
         ->check(CLI::ExistingDirectory);

@@ -79,7 +79,7 @@ Bytes log_key(uint64_t block_number, uint32_t transaction_id) {
     return key;
 }
 
-// See Turbo-Geth DefaultDataDir
+// See Erigon DefaultDataDir
 std::string default_path() {
     std::string base_dir{};
 
@@ -101,14 +101,14 @@ std::string default_path() {
     }
 
 #ifdef _WIN32
-    base_dir += "/TurboGeth";
+    base_dir += "/Erigon";
 #elif __APPLE__
-    base_dir += "/Library/TurboGeth";
+    base_dir += "/Library/Erigon";
 #else
-    base_dir += "/.local/share/turbogeth";
+    base_dir += "/.local/share/erigon";
 #endif
 
-    return base_dir + "/tg/chaindata";
+    return base_dir + "/erigon/chaindata";
 }
 
 namespace detail {

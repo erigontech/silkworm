@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_LOG_CBOR_H_
-#define SILKWORM_TYPES_LOG_CBOR_H_
+#ifndef SILKWORM_TYPES_LOG_CBOR_HPP_
+#define SILKWORM_TYPES_LOG_CBOR_HPP_
 
 #include <silkworm/types/log.hpp>
 
 namespace silkworm {
 
-// TG-compatible CBOR encoding for storage.
+// Erigon-compatible CBOR encoding for storage.
 // See core/types/log.go
 Bytes cbor_encode(const std::vector<Log>& v);
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_LOG_CBOR_H_
+#endif  // SILKWORM_TYPES_LOG_CBOR_HPP_

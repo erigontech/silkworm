@@ -17,7 +17,7 @@
 #ifndef SILKWORM_TG_API_H_
 #define SILKWORM_TG_API_H_
 
-// C API exported by Silkworm to be used in Turbo-Geth.
+// C API exported by Silkworm to be used in Erigon.
 
 #include <stdbool.h>
 #include <stdint.h>

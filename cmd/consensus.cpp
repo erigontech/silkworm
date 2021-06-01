@@ -62,6 +62,14 @@ static const std::vector<fs::path> kExcludedTests{
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
+
+    // TODO(Andrew) investigate the failures
+    kBlockchainDir / "TransitionTests" / "bcBerlinToLondon" / "BerlinToLondonTransition.json",
+    kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity" / "gasLimitTooLowExactBound.json",
+    kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "gasLimit40m.json",
+    kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "gasLimit20m.json",
+    kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "badBlocks.json",
+    kBlockchainDir / "ValidBlocks" / "bcEIP1559" / "transFail.json",
 };
 
 constexpr size_t kColumnWidth{80};

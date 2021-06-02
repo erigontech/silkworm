@@ -43,20 +43,22 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
 EVM::~EVM() { evm1_->destroy(evm1_); }
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
+    assert(txn.from.has_value());  // sender must be recovered
+
     txn_ = &txn;
 
     bool contract_creation{!txn.to.has_value()};
 
     evmc_message message{
-        contract_creation ? EVMC_CREATE : EVMC_CALL,         // kind
-        0,                                                   // flags
-        0,                                                   // depth
-        static_cast<int64_t>(gas),                           // gas
-        contract_creation ? evmc::address{} : *txn.to,       // destination
-        txn.from.has_value() ? *txn.from : evmc::address{},  // sender
-        &txn.data[0],                                        // input_data
-        txn.data.size(),                                     // input_size
-        intx::be::store<evmc::uint256be>(txn.value),         // value
+        contract_creation ? EVMC_CREATE : EVMC_CALL,    // kind
+        0,                                              // flags
+        0,                                              // depth
+        static_cast<int64_t>(gas),                      // gas
+        contract_creation ? evmc::address{} : *txn.to,  // destination
+        *txn.from,                                      // sender
+        &txn.data[0],                                   // input_data
+        txn.data.size(),                                // input_size
+        intx::be::store<evmc::uint256be>(txn.value),    // value
     };
 
     evmc::result res{contract_creation ? create(message) : call(message)};

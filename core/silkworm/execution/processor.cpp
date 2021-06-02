@@ -60,6 +60,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     IntraBlockState& state{evm_.state()};
     evm_.state().clear_journal_and_substate();
 
+    assert(txn.from.has_value());
     state.access_account(*txn.from);
 
     const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};

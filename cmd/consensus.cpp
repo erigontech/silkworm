@@ -66,7 +66,7 @@ static const std::vector<fs::path> kExcludedTests{
     // https://github.com/ethereum/tests/issues/869
     kBlockchainDir / "GeneralStateTests" / "stEIP2930" / "coinbaseT01.json",
 
-    // TODO(Andrew) investigate the failures
+    // https://github.com/ethereum/tests/issues/865
     kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity" / "gasLimitTooLowExactBound.json",
     kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "gasLimit40m.json",
     kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "gasLimit20m.json",

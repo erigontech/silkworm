@@ -31,7 +31,7 @@
 namespace silkworm::db {
 
 void Buffer::bump_batch_size(size_t key_len, size_t value_len) {
-    // Approximately matches TG batch size logic in (m *mutation) Put
+    // Approximately matches Erigon's batch size logic in (m *mutation) Put
     static constexpr size_t kEntryOverhead{8};
     batch_size_ += kEntryOverhead + key_len + value_len;
 }
@@ -47,7 +47,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
     bool account_deleted{!current};
 
     if (equal && !account_deleted && !changed_storage_.contains(address)) {
-        // Follows the Turbo-Geth logic when to populate account changes.
+        // Follows the Erigon logic when to populate account changes.
         // See (ChangeSetWriter)UpdateAccountData & DeleteAccount.
         return;
     }
@@ -255,7 +255,7 @@ void Buffer::write_to_db() {
     }
 }
 
-// TG WriteReceipts in core/rawdb/accessors_chain.go
+// Erigon WriteReceipts in core/rawdb/accessors_chain.go
 void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) {
     for (uint32_t i{0}; i < receipts.size(); ++i) {
         if (receipts[i].logs.empty()) {

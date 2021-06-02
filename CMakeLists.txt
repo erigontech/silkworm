@@ -189,7 +189,7 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/vm.hpp)
 set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.8.0-dev")
 target_include_directories(evmone PUBLIC evmone/include evmone/lib)
-target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions ethash)
+target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex ethash)
 
 if(MSVC)
   target_compile_options(evmone PRIVATE /EHsc)

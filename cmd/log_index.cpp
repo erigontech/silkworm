@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
 
     std::string db_path{db::default_path()};
     bool full;
-    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
     app.add_flag("--full", full, "Start making history indexes from block 0");
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
     if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
     }
     fs::path datadir(db_path);

@@ -20,7 +20,7 @@
 #include <silkworm/db/chaindb.hpp>
 
 /*
-Part of the compatibility layer with the Turbo-Geth DB format;
+Part of the compatibility layer with the Erigon DB format;
 see its common/dbutils/bucket.go.
 */
 namespace silkworm::db::table {

@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
     using namespace silkworm;
 
     std::string db_path{db::default_path()};
-    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
     uint64_t from{1};
@@ -55,9 +55,9 @@ int main(int argc, char* argv[]) {
     }
     cfg_txn.release();
 
-    // Note: If TurboGeth is actively syncing its database (syncing), it is important not to create
+    // Note: If Erigon is actively syncing its database (syncing), it is important not to create
     // long-running datbase reads transactions even though that may make your processing faster.
-    // Uncomment the following line (and comment the line below) only if you're certain TG is not
+    // Uncomment the following line (and comment the line below) only if you're certain Erigon is not
     // running on the same machine.
     // std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
@@ -70,8 +70,8 @@ int main(int argc, char* argv[]) {
 
         for (uint64_t block_num{from}; block_num < to; ++block_num) {
             // Note: See the comment above. You may uncomment that line and comment the next line if you're certain
-            // that TG is not syncing on the same machine. If you use a long-running transaction by doing this, and
-            // you're mistaken (TG is syncing), the database file may 'grow quickly' as per the LMDB docs.
+            // that Erigon is not syncing on the same machine. If you use a long-running transaction by doing this, and
+            // you're mistaken (Erigon is syncing), the database file may 'grow quickly' as per the LMDB docs.
             std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
             // Read the block
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
             // There is one receipt per transaction
             assert(bh->block.transactions.size() == receipts.size());
 
-            // TG returns success in the receipt even for pre-Byzantium txs.
+            // Erigon returns success in the receipt even for pre-Byzantium txs.
             for (auto receipt : receipts) {
                 nTxs++;
                 nErrors += (!receipt.success);

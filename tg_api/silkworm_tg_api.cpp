@@ -53,14 +53,14 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
             return SilkwormStatusCode::kSilkwormIncompatibleDbFormat;
         }
 
-        // https://github.com/ledgerwatch/turbo-geth/pull/1342
+        // https://github.com/ledgerwatch/erigon/pull/1342
         if (!db::migration_happened(txn, "acc_change_set_dup_sort_18") ||
             !db::migration_happened(txn, "storage_change_set_dup_sort_22")) {
             SILKWORM_LOG(LogLevel::Error) << "Legacy change sets are not supported\n";
             return SilkwormStatusCode::kSilkwormIncompatibleDbFormat;
         }
 
-        // https://github.com/ledgerwatch/turbo-geth/pull/1358
+        // https://github.com/ledgerwatch/erigon/pull/1358
         if (!db::migration_happened(txn, "tx_table_4")) {
             SILKWORM_LOG(LogLevel::Error) << "Legacy stored transactions are not supported\n";
             return SilkwormStatusCode::kSilkwormIncompatibleDbFormat;

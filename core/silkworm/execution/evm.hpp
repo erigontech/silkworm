@@ -39,6 +39,7 @@ struct CallResult {
 
 class EVM {
   public:
+    // Not copyable nor movable
     EVM(const EVM&) = delete;
     EVM& operator=(const EVM&) = delete;
 
@@ -53,6 +54,7 @@ class EVM {
     IntraBlockState& state() noexcept { return state_; }
     const IntraBlockState& state() const noexcept { return state_; }
 
+    // Precondition: txn.from must be recovered
     CallResult execute(const Transaction& txn, uint64_t gas) noexcept;
 
     evmc_revision revision() const noexcept;

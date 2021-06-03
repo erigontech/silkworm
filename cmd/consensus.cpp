@@ -63,9 +63,6 @@ static const std::vector<fs::path> kExcludedTests{
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 
-    // https://github.com/ethereum/tests/issues/869
-    kBlockchainDir / "GeneralStateTests" / "stEIP2930" / "coinbaseT01.json",
-
     // https://github.com/ethereum/tests/issues/865
     kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity" / "gasLimitTooLowExactBound.json",
     kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "gasLimit40m.json",

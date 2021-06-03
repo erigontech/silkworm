@@ -224,7 +224,7 @@ class Transaction {
     Transaction& operator=(Transaction&& rhs) = delete;
 
     void abort(void);
-    int commit(void);
+    [[nodiscard]] int commit(void);
 };
 
 /**

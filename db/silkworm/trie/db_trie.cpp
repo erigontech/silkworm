@@ -241,7 +241,7 @@ Node unmarshal_node(ByteView v) {
     return {state_mask, tree_mask, hash_mask, hashes, root_hash};
 }
 
-void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc::bytes32* expected_root) {
+evmc::bytes32 regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc::bytes32* expected_root) {
     etl::Collector account_collector{tmp_dir};
     etl::Collector storage_collector{tmp_dir};
     DbTrieLoader loader{txn, account_collector, storage_collector};
@@ -255,6 +255,7 @@ void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc
     account_collector.load(account_tbl.get());
     auto storage_tbl{txn.open(db::table::kTrieOfStorage)};
     storage_collector.load(storage_tbl.get());
+    return root;
 }
 
 }  // namespace silkworm::trie

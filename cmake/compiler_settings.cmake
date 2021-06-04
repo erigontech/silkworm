@@ -14,21 +14,6 @@
    limitations under the License.
 ]]
 
-#
-# Removes the specified compile flag from the specified target.
-#   _target     - The target to remove the compile flag from
-#   _flag       - The compile flag to remove
-#
-# Pre: apply_global_cxx_flags_to_all_targets() must be invoked.
-#
-macro(remove_flag_from_target _target _flag)
-    get_target_property(_target_cxx_flags ${_target} COMPILE_OPTIONS)
-    if(_target_cxx_flags)
-        list(REMOVE_ITEM _target_cxx_flags ${_flag})
-        set_target_properties(${_target} PROPERTIES COMPILE_OPTIONS "${_target_cxx_flags}")
-    endif()
-endmacro()
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
   add_definitions(-D_WIN32_WINNT=0x0602)  # Min Windows 8

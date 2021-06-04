@@ -99,8 +99,6 @@ if(MSVC)
   target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
   target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26 USE_SCALAR_8X32)
 
-  REMOVE_FLAG_FROM_TARGET(secp256k1 /W3)
-  REMOVE_FLAG_FROM_TARGET(secp256k1 /W4)
   target_compile_options(secp256k1 PRIVATE /w) # Not much we can do about warnings
 
 else()
@@ -128,7 +126,10 @@ if(NOT SILKWORM_CORE_ONLY)
   # Roaring Bitmaps
   set(ENABLE_ROARING_TESTS OFF)
   option(ROARING_BUILD_STATIC "Build a static library" ON)
-  option(ROARING_LINK_STATIC "Link executables (tests, benchmarks) statically" ON)
+  if(NOT MSVC)
+    # Not supported on MSVC
+    option(ROARING_LINK_STATIC "Link executables (tests, benchmarks) statically" ON)
+  endif()
   add_subdirectory(CRoaring EXCLUDE_FROM_ALL)
 
   # CBOR
@@ -140,9 +141,9 @@ if(NOT SILKWORM_CORE_ONLY)
                   lmdb-go/lmdb/midl.c
                   lmdb-go/lmdb/midl.h)
   target_include_directories(lmdb PUBLIC lmdb-go)
-  REMOVE_FLAG_FROM_TARGET(lmdb /W3)
-  REMOVE_FLAG_FROM_TARGET(lmdb /W4)
-  target_compile_options(lmdb PRIVATE /w) # Not much we can do about warnings
+  if(MSVC)
+    target_compile_options(lmdb PRIVATE /w) # Not much we can do about warnings
+  endif()
 endif()
 
 # evmone with dependencies
@@ -176,9 +177,6 @@ target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex ethash)
 
 if(MSVC)
-  REMOVE_FLAG_FROM_TARGET(evmone /EHa)
-  REMOVE_FLAG_FROM_TARGET(evmone /W3)
-  REMOVE_FLAG_FROM_TARGET(evmone /W4)
   target_compile_options(evmone PRIVATE /EHsc /w)
 else()
   target_compile_options(evmone PRIVATE -fno-exceptions)

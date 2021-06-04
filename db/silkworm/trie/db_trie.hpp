@@ -139,7 +139,9 @@ Node unmarshal_node(ByteView v);
 
 // Erigon RegenerateIntermediateHashes
 // might throw WrongRoot
-void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc::bytes32* expected_root = nullptr);
+// returns the state root
+evmc::bytes32 regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir,
+                                  const evmc::bytes32* expected_root = nullptr);
 
 }  // namespace silkworm::trie
 

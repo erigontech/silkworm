@@ -91,6 +91,9 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(log_index log_index.cpp)
   target_link_libraries(log_index PRIVATE silkworm_db cborcpp CLI11::CLI11)
 
+  add_executable(trie trie.cpp)
+  target_link_libraries(trie PRIVATE silkworm_db CLI11::CLI11)
+
   # Ethereum Consensus Tests
   find_package(nlohmann_json CONFIG REQUIRED)
   add_executable(consensus consensus.cpp)

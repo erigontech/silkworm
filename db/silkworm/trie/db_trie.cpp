@@ -118,9 +118,9 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
             goto use_account_trie;
         }
 
-        for (auto a{acc_state->seek(acc_trie.first_uncovered_prefix())}; a; a = acc_state->get_next()) {
+        for (auto a{acc_state->seek(acc_trie.first_uncovered_prefix())}; a.has_value(); a = acc_state->get_next()) {
             const Bytes unpacked_key{unpack_nibbles(a->key)};
-            if (acc_trie.key() && acc_trie.key() < unpacked_key) {
+            if (acc_trie.key().has_value() && acc_trie.key().value() < unpacked_key) {
                 break;
             }
             const auto [account, err]{decode_account_from_storage(a->value)};
@@ -135,10 +135,8 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
 
                 HashBuilder storage_hb;
                 storage_hb.node_collector = [&](ByteView unpacked_key, const Node& node) {
-                    etl::Entry e;
-                    e.key = acc_with_inc;
+                    etl::Entry e{acc_with_inc, marshal_node(node)};
                     e.key.append(unpacked_key);
-                    e.value = marshal_node(node);
                     storage_collector_.collect(e);
                 };
 
@@ -147,12 +145,12 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                         goto use_storage_trie;
                     }
 
-                    for (auto s{storage_state->seek_dup(acc_with_inc, storage_trie.first_uncovered_prefix())}; s;
-                         s = storage_state->get_next_dup()) {
+                    for (auto s{storage_state->seek_dup(acc_with_inc, storage_trie.first_uncovered_prefix())};
+                         s.has_value(); s = storage_state->get_next_dup()) {
                         const ByteView packed_loc{s->substr(0, kHashLength)};
                         const ByteView value{s->substr(kHashLength)};
                         const Bytes unpacked_loc{unpack_nibbles(packed_loc)};
-                        if (storage_trie.key() && storage_trie.key() < unpacked_loc) {
+                        if (storage_trie.key().has_value() && storage_trie.key().value() < unpacked_loc) {
                             break;
                         }
 
@@ -162,7 +160,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                     }
 
                 use_storage_trie:
-                    if (!storage_trie.key()) {
+                    if (!storage_trie.key().has_value()) {
                         break;
                     }
 
@@ -176,7 +174,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
         }
 
     use_account_trie:
-        if (!acc_trie.key()) {
+        if (!acc_trie.key().has_value()) {
             break;
         }
 
@@ -187,10 +185,10 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
 }
 
 Bytes marshal_node(const Node& n) {
-    size_t buf_size{3 * 2 + n.hashes().size() * kHashLength};
-    if (n.root_hash()) {
-        buf_size += kHashLength;
-    }
+    size_t buf_size{/* 3 masks state/tree/hash 2 bytes each */ 6 +
+                    /* root hash */ (n.root_hash().has_value() ? kHashLength : 0u) +
+                    /* hashes */ n.hashes().size() * kHashLength};
+
     Bytes buf(buf_size, '\0');
     size_t pos{0};
 
@@ -203,7 +201,7 @@ Bytes marshal_node(const Node& n) {
     boost::endian::store_big_u16(&buf[pos], n.hash_mask());
     pos += 2;
 
-    if (n.root_hash()) {
+    if (n.root_hash().has_value()) {
         std::memcpy(&buf[pos], n.root_hash()->bytes, kHashLength);
         pos += kHashLength;
     }
@@ -217,6 +215,17 @@ Bytes marshal_node(const Node& n) {
 }
 
 Node unmarshal_node(ByteView v) {
+    if (v.length() < 6) {
+        // At least state/tree/hash masks need to be present
+        throw std::invalid_argument("unmarshal_node : input too short");
+    } else {
+        // Beyond the 6th byte the length must be a multiple of
+        // kHashLength
+        if ((v.length() - 6) % kHashLength) {
+            throw std::invalid_argument("unmarshal_node : input len is invalid");
+        }
+    }
+
     const auto state_mask{boost::endian::load_big_u16(v.data())};
     v.remove_prefix(2);
     const auto tree_mask{boost::endian::load_big_u16(v.data())};
@@ -241,7 +250,7 @@ Node unmarshal_node(ByteView v) {
     return {state_mask, tree_mask, hash_mask, hashes, root_hash};
 }
 
-void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc::bytes32* expected_root) {
+evmc::bytes32 regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc::bytes32* expected_root) {
     etl::Collector account_collector{tmp_dir};
     etl::Collector storage_collector{tmp_dir};
     DbTrieLoader loader{txn, account_collector, storage_collector};
@@ -255,6 +264,7 @@ void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc
     account_collector.load(account_tbl.get());
     auto storage_tbl{txn.open(db::table::kTrieOfStorage)};
     storage_collector.load(storage_tbl.get());
+    return root;
 }
 
 }  // namespace silkworm::trie

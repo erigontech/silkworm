@@ -185,9 +185,17 @@ else()
 endif()
 
 
-# We don't accept old-style-cast in silkworm
+# Compiler enforcements on Silkworm
 if(NOT MSVC)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
+  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-Wno-attributes)
+  endif()
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+    add_compile_options(-Wthread-safety)
+  endif()
 endif()
 
 # Silkworm itself

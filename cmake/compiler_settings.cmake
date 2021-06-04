@@ -31,7 +31,6 @@ endmacro()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
-
   add_definitions(-D_WIN32_WINNT=0x0602)  # Min Windows 8
   add_definitions(-DVC_EXTRALEAN)         # Process windows headers faster ...
   add_definitions(-DWIN32_LEAN_AND_MEAN)  # ... and prevent winsock mismatch with Boost's
@@ -75,16 +74,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
-  add_compile_options(-Wno-attributes)
-  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
-
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-g1)
   endif()
 
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
-
-  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
 
   if(SILKWORM_CLANG_COVERAGE)
     add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
@@ -93,11 +87,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
 
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-gline-tables-only)
-  endif()
-
-  if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
-    add_compile_options(-Wthread-safety)
   endif()
 
 else ()

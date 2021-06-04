@@ -77,9 +77,9 @@ std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_promote(Operation
 void promote_clean_state(lmdb::Transaction* txn, std::string etl_path) {
     SILKWORM_LOG(LogLevel::Info) << "Hashing state" << std::endl;
     auto source_table{txn->open(db::table::kPlainState)};
-    MDB_val mdb_key{db::to_mdb_val(Bytes(8, '\0'))};
+    MDB_val mdb_key;
     MDB_val mdb_data;
-    int rc{source_table->seek(&mdb_key, &mdb_data)};
+    int rc{source_table->get_first(&mdb_key, &mdb_data)};
     fs::create_directories(etl_path);
     etl::Collector collector_account(etl_path.c_str(), 512 * kMebi);
     etl::Collector collector_storage(etl_path.c_str(), 512 * kMebi);
@@ -124,9 +124,9 @@ void promote_clean_state(lmdb::Transaction* txn, std::string etl_path) {
 
 void promote_clean_code(lmdb::Transaction* txn, std::string etl_path) {
     auto source_table{txn->open(db::table::kPlainContractCode)};
-    MDB_val mdb_key{db::to_mdb_val(Bytes(8, '\0'))};
+    MDB_val mdb_key;
     MDB_val mdb_data;
-    int rc{source_table->seek(&mdb_key, &mdb_data)};
+    int rc{source_table->get_first(&mdb_key, &mdb_data)};
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.c_str(), 512 * kMebi);
     SILKWORM_LOG(LogLevel::Info) << "Hashing code keys" << std::endl;

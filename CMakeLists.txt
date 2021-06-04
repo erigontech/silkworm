@@ -94,16 +94,22 @@ set_target_properties(
 add_library(secp256k1 secp256k1/src/secp256k1.c)
 
 if(MSVC)
+
   target_link_libraries(secp256k1 PRIVATE gmp)
   target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
   target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26 USE_SCALAR_8X32)
 
+  REMOVE_FLAG_FROM_TARGET(secp256k1 /W3)
+  REMOVE_FLAG_FROM_TARGET(secp256k1 /W4)
   target_compile_options(secp256k1 PRIVATE /w) # Not much we can do about warnings
 
 else()
+
   target_compile_definitions(secp256k1 PUBLIC USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
   target_compile_definitions(secp256k1 PUBLIC USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
+
 endif()
+
 target_compile_definitions(secp256k1 PUBLIC ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
 target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_RECOVERY)
 target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE secp256k1/include)
@@ -134,6 +140,8 @@ if(NOT SILKWORM_CORE_ONLY)
                   lmdb-go/lmdb/midl.c
                   lmdb-go/lmdb/midl.h)
   target_include_directories(lmdb PUBLIC lmdb-go)
+  REMOVE_FLAG_FROM_TARGET(lmdb /W3)
+  REMOVE_FLAG_FROM_TARGET(lmdb /W4)
   target_compile_options(lmdb PRIVATE /w) # Not much we can do about warnings
 endif()
 
@@ -168,9 +176,18 @@ target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex ethash)
 
 if(MSVC)
-  target_compile_options(evmone PRIVATE /EHa- /EHsc /w)
+  REMOVE_FLAG_FROM_TARGET(evmone /EHa)
+  REMOVE_FLAG_FROM_TARGET(evmone /W3)
+  REMOVE_FLAG_FROM_TARGET(evmone /W4)
+  target_compile_options(evmone PRIVATE /EHsc /w)
 else()
   target_compile_options(evmone PRIVATE -fno-exceptions)
+endif()
+
+
+# We don't accept old-style-cast in silkworm
+if(NOT MSVC)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
 endif()
 
 # Silkworm itself

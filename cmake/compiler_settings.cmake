@@ -14,6 +14,21 @@
    limitations under the License.
 ]]
 
+#
+# Removes the specified compile flag from the specified target.
+#   _target     - The target to remove the compile flag from
+#   _flag       - The compile flag to remove
+#
+# Pre: apply_global_cxx_flags_to_all_targets() must be invoked.
+#
+macro(remove_flag_from_target _target _flag)
+    get_target_property(_target_cxx_flags ${_target} COMPILE_OPTIONS)
+    if(_target_cxx_flags)
+        list(REMOVE_ITEM _target_cxx_flags ${_flag})
+        set_target_properties(${_target} PROPERTIES COMPILE_OPTIONS "${_target_cxx_flags}")
+    endif()
+endmacro()
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 
@@ -58,7 +73,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
   add_compile_options(-Wno-attributes)
   add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
 
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-g1)
@@ -67,7 +81,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
 
   add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
 
   if(SILKWORM_CLANG_COVERAGE)
     add_compile_options(-fprofile-instr-generate -fcoverage-mapping)

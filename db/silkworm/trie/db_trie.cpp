@@ -185,7 +185,6 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
 }
 
 Bytes marshal_node(const Node& n) {
-
     size_t buf_size{/* 3 masks state/tree/hash 2 bytes each */ 6 +
                     /* root hash */ (n.root_hash().has_value() ? kHashLength : 0u) +
                     /* hashes */ n.hashes().size() * kHashLength};
@@ -216,10 +215,15 @@ Bytes marshal_node(const Node& n) {
 }
 
 Node unmarshal_node(ByteView v) {
-
     if (v.length() < 6) {
         // At least state/tree/hash masks need to be present
         throw std::invalid_argument("unmarshal_node : input too short");
+    } else {
+        // Beyond the 6th byte the length must be a multiple of
+        // kHashLength
+        if ((v.length() - 6) % kHashLength) {
+            throw std::invalid_argument("unmarshal_node : input len is invalid");
+        }
     }
 
     const auto state_mask{boost::endian::load_big_u16(v.data())};

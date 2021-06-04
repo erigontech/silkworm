@@ -98,7 +98,7 @@ if(MSVC)
   target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
   target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26 USE_SCALAR_8X32)
 
-  target_compile_options(secp256k1 PRIVATE /W4- /w) # Not much we can do about warnings
+  target_compile_options(secp256k1 PRIVATE /w) # Not much we can do about warnings
 
 else()
   target_compile_definitions(secp256k1 PUBLIC USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
@@ -134,7 +134,7 @@ if(NOT SILKWORM_CORE_ONLY)
                   lmdb-go/lmdb/midl.c
                   lmdb-go/lmdb/midl.h)
   target_include_directories(lmdb PUBLIC lmdb-go)
-  target_compile_options(lmdb PRIVATE /W4- /w) # Not much we can do about warnings
+  target_compile_options(lmdb PRIVATE /w) # Not much we can do about warnings
 endif()
 
 # evmone with dependencies
@@ -168,7 +168,7 @@ target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex ethash)
 
 if(MSVC)
-  target_compile_options(evmone PRIVATE /EHa- /EHsc /W4- /w)
+  target_compile_options(evmone PRIVATE /EHa- /EHsc /w)
 else()
   target_compile_options(evmone PRIVATE -fno-exceptions)
 endif()

@@ -404,7 +404,7 @@ class RecoveryFarm final {
                     // Get the last processed block and update stage height
                     MDB_val mdb_key{}, mdb_val{};
                     lmdb::err_handler(target_table->get_last(&mdb_key, &mdb_val));
-                    ByteView key_view{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
+                    ByteView key_view{db::from_mdb_val(mdb_key)};
                     auto last_processed_block{boost::endian::load_big_u64(&key_view[0])};
                     db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
 
@@ -734,7 +734,7 @@ class RecoveryFarm final {
 
             // Read all headers up to block_to included
             while (!rc) {
-                ByteView key_view{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
+                ByteView key_view{db::from_mdb_val(mdb_key)};
                 reached_block_num = boost::endian::load_big_u64(&key_view[0]);
                 if (reached_block_num != expected_block_num) {
                     SILKWORM_LOG(LogLevel::Error) << "Bad header hash sequence ! Expected " << expected_block_num

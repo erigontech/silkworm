@@ -55,6 +55,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   add_compile_options(/wd5030) # Silence warning C5030: unknown gnu/clang attribute
   add_compile_options(/W4)     # Display all other unsilenced warnings
 
+  # Required for proper detection of __cplusplus
+  # see https://docs.microsoft.com/en-us/cpp/build/reference/zc-cplusplus?view=msvc-160
+  add_compile_options(/Zc:__cplusplus)
+
   add_link_options(/ignore:4099)
 
   if(CMAKE_BUILD_TYPE MATCHES "Release")

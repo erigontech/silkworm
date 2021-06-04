@@ -25,6 +25,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
 
 using namespace silkworm;
@@ -76,18 +77,18 @@ std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_promote(Operation
 void promote_clean_state(lmdb::Transaction* txn, std::string etl_path) {
     SILKWORM_LOG(LogLevel::Info) << "Hashing state" << std::endl;
     auto source_table{txn->open(db::table::kPlainState)};
-    MDB_val mdb_key{db::to_mdb_val(Bytes(8, '\0'))};
+    MDB_val mdb_key;
     MDB_val mdb_data;
-    int rc{source_table->seek(&mdb_key, &mdb_data)};
+    int rc{source_table->get_first(&mdb_key, &mdb_data)};
     fs::create_directories(etl_path);
     etl::Collector collector_account(etl_path.c_str(), 512 * kMebi);
     etl::Collector collector_storage(etl_path.c_str(), 512 * kMebi);
     int percent{0};
     uint64_t next_start_byte{0};
     while (!rc) { /* Loop as long as we have no errors*/
-        Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
-        Bytes mdb_value_as_bytes{static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size};
-        if (static_cast<uint8_t>(mdb_key_as_bytes.at(0)) >= next_start_byte) {
+        Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
+        Bytes mdb_value_as_bytes{db::from_mdb_val(mdb_data)};
+        if (mdb_key_as_bytes.at(0) >= next_start_byte) {
             SILKWORM_LOG(LogLevel::Info) << "Progress: " << percent << "%" << std::endl;
             percent += 10;
             next_start_byte += 25;
@@ -123,15 +124,15 @@ void promote_clean_state(lmdb::Transaction* txn, std::string etl_path) {
 
 void promote_clean_code(lmdb::Transaction* txn, std::string etl_path) {
     auto source_table{txn->open(db::table::kPlainContractCode)};
-    MDB_val mdb_key{db::to_mdb_val(Bytes(8, '\0'))};
+    MDB_val mdb_key;
     MDB_val mdb_data;
-    int rc{source_table->seek(&mdb_key, &mdb_data)};
+    int rc{source_table->get_first(&mdb_key, &mdb_data)};
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.c_str(), 512 * kMebi);
     SILKWORM_LOG(LogLevel::Info) << "Hashing code keys" << std::endl;
     while (!rc) { /* Loop as long as we have no errors*/
-        Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
-        Bytes mdb_value_as_bytes{static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size};
+        Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
+        Bytes mdb_value_as_bytes{db::from_mdb_val(mdb_data)};
 
         Bytes new_key(kHashLength + db::kIncarnationLength, '\0');
         std::memcpy(&new_key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
@@ -188,8 +189,8 @@ void promote(lmdb::Transaction* txn, Operation operation) {
     int rc{changeset_table->seek(&mdb_key, &mdb_data)};
 
     while (!rc) {
-        Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
-        Bytes mdb_value_as_bytes{static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size};
+        Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
+        Bytes mdb_value_as_bytes{db::from_mdb_val(mdb_data)};
         Bytes db_key{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};
         if (operation == HashAccount) {
             // We get account and hash its key.
@@ -255,7 +256,7 @@ int main(int argc, char* argv[]) {
     bool full{false};
     bool incrementally{false};
     bool reset{false};
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Erigon", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
     app.add_flag("--full", full, "Start making lookups from block 0");

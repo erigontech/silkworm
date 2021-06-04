@@ -118,9 +118,9 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
             goto use_account_trie;
         }
 
-        for (auto a{acc_state->seek(acc_trie.first_uncovered_prefix())}; a; a = acc_state->get_next()) {
+        for (auto a{acc_state->seek(acc_trie.first_uncovered_prefix())}; a.has_value(); a = acc_state->get_next()) {
             const Bytes unpacked_key{unpack_nibbles(a->key)};
-            if (acc_trie.key() && acc_trie.key() < unpacked_key) {
+            if (acc_trie.key().has_value() && acc_trie.key().value() < unpacked_key) {
                 break;
             }
             const auto [account, err]{decode_account_from_storage(a->value)};
@@ -135,10 +135,8 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
 
                 HashBuilder storage_hb;
                 storage_hb.node_collector = [&](ByteView unpacked_key, const Node& node) {
-                    etl::Entry e;
-                    e.key = acc_with_inc;
+                    etl::Entry e{acc_with_inc, marshal_node(node)};
                     e.key.append(unpacked_key);
-                    e.value = marshal_node(node);
                     storage_collector_.collect(e);
                 };
 
@@ -147,12 +145,12 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                         goto use_storage_trie;
                     }
 
-                    for (auto s{storage_state->seek_dup(acc_with_inc, storage_trie.first_uncovered_prefix())}; s;
-                         s = storage_state->get_next_dup()) {
+                    for (auto s{storage_state->seek_dup(acc_with_inc, storage_trie.first_uncovered_prefix())};
+                         s.has_value(); s = storage_state->get_next_dup()) {
                         const ByteView packed_loc{s->substr(0, kHashLength)};
                         const ByteView value{s->substr(kHashLength)};
                         const Bytes unpacked_loc{unpack_nibbles(packed_loc)};
-                        if (storage_trie.key() && storage_trie.key() < unpacked_loc) {
+                        if (storage_trie.key().has_value() && storage_trie.key().value() < unpacked_loc) {
                             break;
                         }
 
@@ -162,7 +160,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                     }
 
                 use_storage_trie:
-                    if (!storage_trie.key()) {
+                    if (!storage_trie.key().has_value()) {
                         break;
                     }
 
@@ -176,7 +174,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
         }
 
     use_account_trie:
-        if (!acc_trie.key()) {
+        if (!acc_trie.key().has_value()) {
             break;
         }
 

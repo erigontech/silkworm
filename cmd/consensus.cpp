@@ -65,9 +65,6 @@ static const std::vector<fs::path> kExcludedTests{
 
     // https://github.com/ethereum/tests/issues/865
     kBlockchainDir / "InvalidBlocks" / "bcUncleHeaderValidity" / "gasLimitTooLowExactBound.json",
-    kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "gasLimit40m.json",
-    kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "gasLimit20m.json",
-    kBlockchainDir / "InvalidBlocks" / "bcEIP1559" / "badBlocks.json",
 };
 
 constexpr size_t kColumnWidth{80};

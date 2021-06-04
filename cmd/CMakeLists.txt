@@ -28,7 +28,7 @@ file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/cor
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
 target_link_libraries(core_test silkworm_core Catch2::Catch2)
 if(MSVC)
-  target_compile_options(core_test PRIVATE /EHsc)
+  target_compile_options(core_test PRIVATE /Ea- /EHsc)
 else()
   target_compile_options(core_test PRIVATE -fno-exceptions)
 endif()

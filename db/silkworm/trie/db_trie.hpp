@@ -73,7 +73,7 @@ the correct bit in tree_mask bitmap
 
 namespace silkworm::trie {
 
-// TG AccTrieCursor
+// Erigon AccTrieCursor
 class AccountTrieCursor {
   public:
     AccountTrieCursor(const AccountTrieCursor&) = delete;
@@ -90,7 +90,7 @@ class AccountTrieCursor {
     bool can_skip_state() const;
 };
 
-// TG StorageTrieCursor
+// Erigon StorageTrieCursor
 class StorageTrieCursor {
   public:
     StorageTrieCursor(const StorageTrieCursor&) = delete;
@@ -109,7 +109,7 @@ class StorageTrieCursor {
     bool can_skip_state() const;
 };
 
-// TG FlatDBTrieLoader
+// Erigon FlatDBTrieLoader
 class DbTrieLoader {
   public:
     DbTrieLoader(const DbTrieLoader&) = delete;
@@ -131,15 +131,17 @@ class WrongRoot : public std::runtime_error {
     WrongRoot() : std::runtime_error{"wrong trie root"} {}
 };
 
-// TG MarshalTrieNode
+// Erigon MarshalTrieNode
 Bytes marshal_node(const Node& n);
 
-// TG UnmarshalTrieNode
+// Erigon UnmarshalTrieNode
 Node unmarshal_node(ByteView v);
 
-// TG RegenerateIntermediateHashes
+// Erigon RegenerateIntermediateHashes
 // might throw WrongRoot
-void regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc::bytes32* expected_root = nullptr);
+// returns the state root
+evmc::bytes32 regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir,
+                                  const evmc::bytes32* expected_root = nullptr);
 
 }  // namespace silkworm::trie
 

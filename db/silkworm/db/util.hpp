@@ -18,7 +18,7 @@
 #define SILKWORM_DB_UTIL_HPP_
 
 /*
-Part of the compatibility layer with the Turbo-Geth DB format;
+Part of the compatibility layer with the Erigon DB format;
 see its package dbutils.
 */
 
@@ -49,25 +49,25 @@ using AccountChanges = absl::btree_map<evmc::address, Bytes>;
 // address -> incarnation -> location -> zeroless initial value
 using StorageChanges = absl::btree_map<evmc::address, absl::btree_map<uint64_t, absl::btree_map<evmc::bytes32, Bytes>>>;
 
-// Turbo-Geth GenerateStoragePrefix, PlainGenerateStoragePrefix
+// Erigon GenerateStoragePrefix, PlainGenerateStoragePrefix
 // address can be either plain account address (20 bytes) or hash thereof (32 bytes)
 Bytes storage_prefix(ByteView address, uint64_t incarnation);
 
-// Turbo-Geth CanonicalHeadersKey / ReceiptsKey
+// Erigon CanonicalHeadersKey / ReceiptsKey
 Bytes block_key(uint64_t block_number);
 
-// Turbo-Geth HeaderKey & BlockBodyKey
+// Erigon HeaderKey & BlockBodyKey
 Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation);
 
-// Turbo-Geth IndexChunkKey for account
+// Erigon IndexChunkKey for account
 Bytes account_history_key(const evmc::address& address, uint64_t block_number);
 
-// Turbo-Geth IndexChunkKey for storage
+// Erigon IndexChunkKey for storage
 Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, uint64_t block_number);
 
-// Turbo-Geth LogKey
+// Erigon LogKey
 Bytes log_key(uint64_t block_number, uint32_t transaction_id);
 
 // Default database path
@@ -89,7 +89,7 @@ inline ByteView from_slice(const mdbx::slice slice) { return {slice.byte_ptr(), 
 
 namespace detail {
 
-    // See TG BodyForStorage
+    // See Erigon BodyForStorage
     struct BlockBodyForStorage {
         uint64_t base_txn_id{0};
         uint64_t txn_count{0};

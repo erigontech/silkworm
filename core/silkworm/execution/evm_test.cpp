@@ -340,6 +340,7 @@ TEST_CASE("EIP-3541: Reject new contracts starting with the 0xEF byte") {
     EVM evm{block, state, config};
 
     Transaction txn;
+    txn.from = 0x1000000000000000000000000000000000000000_address;
     const uint64_t gas{50'000};
 
     // https://eips.ethereum.org/EIPS/eip-3541#test-cases

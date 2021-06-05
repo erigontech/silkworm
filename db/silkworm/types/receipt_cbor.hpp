@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_RECEIPT_CBOR_H_
-#define SILKWORM_TYPES_RECEIPT_CBOR_H_
+#ifndef SILKWORM_TYPES_RECEIPT_CBOR_HPP_
+#define SILKWORM_TYPES_RECEIPT_CBOR_HPP_
 
 #include <silkworm/types/receipt.hpp>
 
 namespace silkworm {
 
-// TG-compatible CBOR encoding for storage.
+// Erigon-compatible CBOR encoding for storage.
 // See core/types/receipt.go
 Bytes cbor_encode(const std::vector<Receipt>& v);
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_TYPES_RECEIPT_CBOR_H_
+#endif  // SILKWORM_TYPES_RECEIPT_CBOR_HPP_

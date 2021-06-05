@@ -43,6 +43,8 @@ EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) 
 EVM::~EVM() { evm1_->destroy(evm1_); }
 
 CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
+    assert(txn.from.has_value());  // sender must be recovered
+
     txn_ = &txn;
 
     bool contract_creation{!txn.to.has_value()};

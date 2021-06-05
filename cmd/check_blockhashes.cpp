@@ -32,14 +32,14 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
 
     std::string db_path{db::default_path()};
-    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
 
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
     if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
     }
 

@@ -24,6 +24,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
 
 using namespace silkworm;
@@ -50,12 +51,12 @@ void check(lmdb::Transaction* txn, Operation operation) {
     auto [source_config, target_config] = get_tables_for_checking(operation);
     auto source_table{txn->open(source_config)};
     auto target_table{txn->open(target_config)};
-    MDB_val mdb_key{db::to_mdb_val(Bytes(8, '\0'))};
+    MDB_val mdb_key;
     MDB_val mdb_data;
-    int rc{source_table->seek(&mdb_key, &mdb_data)};
+    int rc{source_table->get_first(&mdb_key, &mdb_data)};
     while (!rc) { /* Loop as long as we have no errors*/
-        Bytes mdb_key_as_bytes{static_cast<uint8_t*>(mdb_key.mv_data), mdb_key.mv_size};
-        Bytes expected_value{static_cast<uint8_t*>(mdb_data.mv_data), mdb_data.mv_size};
+        Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
+        Bytes expected_value{db::from_mdb_val(mdb_data)};
 
         if (operation == HashAccount) {
             // Account
@@ -129,7 +130,7 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Check Hashed state"};
 
     std::string db_path{db::default_path()};
-    app.add_option("-d,--datadir", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
     SILKWORM_LOG(LogLevel::Info) << "Checking HashState" << std::endl;
@@ -137,7 +138,7 @@ int main(int argc, char* argv[]) {
     // Check data.mdb exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
     if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
     }
     fs::path datadir(db_path);

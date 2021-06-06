@@ -15,6 +15,7 @@
 */
 
 #include "stagedsync.hpp"
+#include <filesystem>
 #include <boost/endian/conversion.hpp>
 
 #include <silkworm/common/log.hpp>

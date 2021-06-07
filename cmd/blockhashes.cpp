@@ -44,7 +44,8 @@ int main(int argc, char* argv[]) {
         db_config.set_readonly(false);
         std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
         std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
-        stagedsync::stage_blockhashes(db_path, txn.get());
+        auto result_code{stagedsync::stage_blockhashes(db_path, txn.get())};
+        check_stagedsync_error(result_code);
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;

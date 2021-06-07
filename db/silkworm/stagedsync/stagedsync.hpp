@@ -15,15 +15,21 @@
 */
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/chaindb.hpp>
+#include <silkworm/stagedsync/util.hpp>
+
+#ifndef SILKWORM_STAGEDSYNC_HPP_
+#define SILKWORM_STAGEDSYNC_HPP_
 
 namespace silkworm::stagedsync {
 
-void stage_blockhashes(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
-void stage_senders(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
-void stage_execution(lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
-void stage_hashstate(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
-void stage_history_index(std::string db_path, lmdb::Transaction* txn, bool storage, uint64_t from = UINT64_MAX);
-void stage_log_index(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
-void stage_tx_lookup(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
+StageResult stage_blockhashes(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
+StageResult stage_senders(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
+StageResult stage_execution(lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
+StageResult stage_hashstate(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
+StageResult stage_history_index(std::string db_path, lmdb::Transaction* txn, bool storage, uint64_t from = UINT64_MAX);
+StageResult stage_log_index(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
+StageResult stage_tx_lookup(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
 
 }
+
+#endif

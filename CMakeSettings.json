@@ -10,8 +10,20 @@
       "cmakeCommandArgs": "-Wno-dev",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "addressSanitizerEnabled": true,
-      "variables": []
+      "addressSanitizerEnabled": true
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Visual Studio 16 2019 Win64",
+      "configurationType": "Release",
+      "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\silkworm\\build\\${name}",
+      "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\silkworm\\install\\${name}",
+      "cmakeCommandArgs": "-Wno-dev",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [],
+      "addressSanitizerEnabled": true
     }
   ]
 }

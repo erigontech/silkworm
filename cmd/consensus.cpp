@@ -528,11 +528,24 @@ struct [[nodiscard]] RunResults {
     }
 };
 
+static constexpr RunResults kSkippedTest{
+    0,  // passed
+    0,  // failed
+    1,  // skipped
+};
+
 RunResults run_test_file(const fs::path& file_path, Status (*runner)(const nlohmann::json&, std::optional<ChainConfig>),
-                         std::optional<ChainConfig> config = {}) {
+                         std::optional<ChainConfig> config = std::nullopt) {
     std::ifstream in{file_path.string()};
     nlohmann::json json;
-    in >> json;
+
+    try {
+        in >> json;
+    } catch (nlohmann::detail::parse_error& e) {
+        std::cerr << e.what() << "\n";
+        print_test_status(file_path.string(), kSkipped);
+        return kSkippedTest;
+    }
 
     RunResults res{};
 
@@ -667,12 +680,6 @@ int main(int argc, char* argv[]) {
             return -1;
         }
     }
-
-    static constexpr RunResults kSkippedTest{
-        0,  // passed
-        0,  // failed
-        1,  // skipped
-    };
 
     RunResults res{};
 

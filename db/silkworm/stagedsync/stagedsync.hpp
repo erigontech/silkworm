@@ -16,20 +16,35 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/stagedsync/util.hpp>
+#include <vector>
 
 #ifndef SILKWORM_STAGEDSYNC_HPP_
 #define SILKWORM_STAGEDSYNC_HPP_
 
 namespace silkworm::stagedsync {
 
-StageResult stage_blockhashes(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
-StageResult stage_senders(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
-StageResult stage_execution(lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
-StageResult stage_hashstate(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
-StageResult stage_history_index(std::string db_path, lmdb::Transaction* txn, bool storage, uint64_t from = UINT64_MAX);
-StageResult stage_log_index(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
-StageResult stage_tx_lookup(std::string db_path, lmdb::Transaction* txn, uint64_t from = UINT64_MAX);
+typedef StageResult (*StageFunc)(std::string, lmdb::Transaction*);
+typedef StageResult (*UnwindFunc)(std::string, lmdb::Transaction*, uint64_t);
 
+struct Stage {
+    StageFunc stage_func;
+    UnwindFunc unwind_func;
+    uint64_t id;
+};
+
+// Stage functions
+StageResult stage_blockhashes(std::string db_path, lmdb::Transaction* txn);
+StageResult stage_senders(std::string db_path, lmdb::Transaction* txn);
+StageResult stage_execution(std::string db_path, lmdb::Transaction* txn);
+StageResult stage_hashstate(std::string db_path, lmdb::Transaction* txn);
+StageResult stage_account_history(std::string db_path, lmdb::Transaction* txn);
+StageResult stage_storage_history(std::string db_path, lmdb::Transaction* txn);
+StageResult stage_log_index(std::string db_path, lmdb::Transaction* txn);
+StageResult stage_tx_lookup(std::string db_path, lmdb::Transaction* txn);
+// Unwind Function
+// TODO
+
+std::vector<Stage> get_default_stages();
 }
 
 #endif

@@ -27,15 +27,6 @@ void check_stagedsync_error(StageResult code) {
         case StageResult::kStageInvalidHashLength:
             throw std::runtime_error("InvalidHashLength: Hash is not of length 32.");
             break;
-        case StageResult::kStageDecodingError:
-            throw std::runtime_error("RlpError: Invalid decoding operation.");
-            break;
-        case StageResult::kStageDatabaseError:
-            throw std::runtime_error("DatabaseError: Invalid interaction with database.");
-            break;
-        case StageResult::kStageUnknownError:
-            throw std::runtime_error("UnknownError: Something went wrong.");
-            break;
         default:
             break;
     }

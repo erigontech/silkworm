@@ -28,9 +28,6 @@ enum class [[nodiscard]] StageResult {
     kStageSuccess,
     kStageBadChainSequence,
     kStageInvalidHashLength,
-    kStageDatabaseError,
-    kStageDecodingError,
-    kStageUnknownError
 };
 
 void check_stagedsync_error(StageResult code);

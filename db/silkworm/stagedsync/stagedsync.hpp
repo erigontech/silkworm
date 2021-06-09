@@ -36,16 +36,17 @@ struct Stage {
 };
 
 // Stage functions
-StageResult stage_headers(lmdb::DatabaseConfig db_config);
-StageResult stage_blockhashes(lmdb::DatabaseConfig db_config);
-StageResult stage_bodies(lmdb::DatabaseConfig db_config);
-StageResult stage_senders(lmdb::DatabaseConfig db_config);
-StageResult stage_execution(lmdb::DatabaseConfig db_config);
-StageResult stage_hashstate(lmdb::DatabaseConfig db_config);
-StageResult stage_account_history(lmdb::DatabaseConfig db_config);
-StageResult stage_storage_history(lmdb::DatabaseConfig db_config);
-StageResult stage_log_index(lmdb::DatabaseConfig db_config);
-StageResult stage_tx_lookup(lmdb::DatabaseConfig db_config);
+StageResult stage_headers(lmdb::DatabaseConfig);
+StageResult stage_blockhashes(lmdb::DatabaseConfig);
+StageResult stage_bodies(lmdb::DatabaseConfig);
+StageResult stage_senders(lmdb::DatabaseConfig);
+StageResult stage_execution(lmdb::DatabaseConfig);
+StageResult stage_hashstate(lmdb::DatabaseConfig);
+StageResult stage_interhashes(lmdb::DatabaseConfig);
+StageResult stage_account_history(lmdb::DatabaseConfig);
+StageResult stage_storage_history(lmdb::DatabaseConfig);
+StageResult stage_log_index(lmdb::DatabaseConfig);
+StageResult stage_tx_lookup(lmdb::DatabaseConfig);
 // Unwind functions
 StageResult unwind_headers(lmdb::DatabaseConfig, uint64_t);
 StageResult unwind_blockhashes(lmdb::DatabaseConfig, uint64_t);
@@ -53,6 +54,7 @@ StageResult unwind_bodies(lmdb::DatabaseConfig, uint64_t);
 StageResult unwind_senders(lmdb::DatabaseConfig, uint64_t);
 StageResult unwind_execution(lmdb::DatabaseConfig, uint64_t);
 StageResult unwind_hashstate(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_interhashes(lmdb::DatabaseConfig, uint64_t);
 StageResult unwind_account_history(lmdb::DatabaseConfig, uint64_t);
 StageResult unwind_storage_history(lmdb::DatabaseConfig, uint64_t);
 StageResult unwind_log_index(lmdb::DatabaseConfig, uint64_t);

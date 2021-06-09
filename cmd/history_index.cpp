@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     db_config.set_readonly(false);
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
     std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
-    // We take data from header table and transform it and put it in blockhashes table
+
     lmdb::TableConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
 
@@ -63,8 +63,11 @@ int main(int argc, char *argv[]) {
         if (full) {
             db::stages::set_stage_progress(*txn, stage_key, 0);
             txn->open(index_config, MDB_CREATE)->clear();
-            lmdb::err_handler(txn->commit());
         }
+        
+        lmdb::err_handler(txn->commit());
+        env->close();
+        
         if (storage) {
             stagedsync::check_stagedsync_error(stagedsync::stage_storage_history(db_config));
         } else {

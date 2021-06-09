@@ -23,6 +23,9 @@
 
 namespace silkworm::stagedsync {
 
+extern bool write_receipts;
+constexpr size_t kBatchSize = 512 * kMebi;
+
 typedef StageResult (*StageFunc)(lmdb::DatabaseConfig);
 typedef StageResult (*UnwindFunc)(lmdb::DatabaseConfig, uint64_t);
 
@@ -43,7 +46,17 @@ StageResult stage_account_history(lmdb::DatabaseConfig db_config);
 StageResult stage_storage_history(lmdb::DatabaseConfig db_config);
 StageResult stage_log_index(lmdb::DatabaseConfig db_config);
 StageResult stage_tx_lookup(lmdb::DatabaseConfig db_config);
-// Unwind Function
+// Unwind functions
+StageResult unwind_headers(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_blockhashes(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_bodies(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_senders(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_execution(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_hashstate(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_account_history(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_storage_history(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_log_index(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_tx_lookup(lmdb::DatabaseConfig, uint64_t);
 // TODO
 
 std::vector<Stage> get_default_stages();

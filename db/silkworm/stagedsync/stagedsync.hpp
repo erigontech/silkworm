@@ -41,6 +41,24 @@ StageResult stage_blockhashes(lmdb::DatabaseConfig);
 StageResult stage_bodies(lmdb::DatabaseConfig);
 StageResult stage_senders(lmdb::DatabaseConfig);
 StageResult stage_execution(lmdb::DatabaseConfig);
+/* HashState Promotion Functions*/
+
+/*
+    * Operation is used to distinguish what bucket we want to generated
+    * HashAccount is for genenerating HashedAccountBucket
+    * HashStorage is for genenerating HashedStorageBucket
+    * Code generates hashed key => code_hash mapping
+
+*/
+enum class HashstateOperation {
+    HashAccount,
+    HashStorage,
+    Code,
+};
+void hashstate_promote(lmdb::Transaction*, HashstateOperation);
+void hashstate_promote_clean_code(lmdb::Transaction*, std::string);
+void hashstate_promote_clean_state(lmdb::Transaction*, std::string);
+/* **************************** */
 StageResult stage_hashstate(lmdb::DatabaseConfig);
 StageResult stage_interhashes(lmdb::DatabaseConfig);
 StageResult stage_account_history(lmdb::DatabaseConfig);

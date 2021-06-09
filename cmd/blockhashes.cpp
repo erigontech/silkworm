@@ -42,9 +42,7 @@ int main(int argc, char* argv[]) {
     try {
         lmdb::DatabaseConfig db_config{db_path};
         db_config.set_readonly(false);
-        std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-        std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
-        auto result_code{stagedsync::stage_blockhashes(db_path, txn.get())};
+        auto result_code{stagedsync::stage_blockhashes(db_config)};
         check_stagedsync_error(result_code);
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

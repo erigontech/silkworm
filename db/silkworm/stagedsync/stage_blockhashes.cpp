@@ -28,8 +28,10 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_blockhashes(std::string db_path, lmdb::Transaction* txn) {
-    fs::path datadir(db_path);
+StageResult stage_blockhashes(lmdb::DatabaseConfig db_config) {
+    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
+    std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
+    fs::path datadir(db_config.path);
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
@@ -52,8 +54,7 @@ StageResult stage_blockhashes(std::string db_path, lmdb::Transaction* txn) {
     while (!rc) {                                                     /* Loop as long as we have no errors*/
 
         if (mdb_data.mv_size != kHashLength) {
-            SILKWORM_LOG(LogLevel::Error) << "Invalid header hash for block " << expected_block_number  << std::endl;
-            return StageResult::kStageInvalidHashLength;
+            throw std::runtime_error("Invalid header hash for block " + std::to_string(expected_block_number));
         }
 
         // Ensure the reached block number is in proper sequence

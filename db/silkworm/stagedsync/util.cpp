@@ -24,8 +24,11 @@ void check_stagedsync_error(StageResult code) {
         case StageResult::kStageBadChainSequence:
             throw std::runtime_error("BadChainSequence: Chain is not in order.");
             break;
-        case StageResult::kStageInvalidHashLength:
-            throw std::runtime_error("InvalidHashLength: Hash is not of length 32.");
+        case StageResult::kStageInvalidRange:
+            throw std::runtime_error("InvalidRange: Starting block is in greater position than ending block.");
+            break;
+        case StageResult::kStageAborted:
+            throw std::runtime_error("Aborted: Stage was aborted.");
             break;
         default:
             break;

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,25 +14,12 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STAGEDSYNC_UTIL_HPP_
-#define SILKWORM_STAGEDSYNC_UTIL_HPP_
-
-/*
-Part of the compatibility layer with the Erigon DB format;
-see its package dbutils.
-*/
+#include "stagedsync.hpp"
 
 namespace silkworm::stagedsync {
 
-enum class [[nodiscard]] StageResult {
-    kStageSuccess,
-    kStageBadChainSequence,
-    kStageInvalidRange,
-    kStageAborted
-};
+StageResult stage_bodies(lmdb::DatabaseConfig) {
+    throw std::runtime_error("Not Implemented.");
+}
 
-void check_stagedsync_error(StageResult code);
-
-}  // namespace silkworm::db
-
-#endif  // SILKWORM_DB_UTIL_HPP_
+}

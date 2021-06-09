@@ -23,8 +23,8 @@
 
 namespace silkworm::stagedsync {
 
-typedef StageResult (*StageFunc)(std::string, lmdb::Transaction*);
-typedef StageResult (*UnwindFunc)(std::string, lmdb::Transaction*, uint64_t);
+typedef StageResult (*StageFunc)(lmdb::DatabaseConfig);
+typedef StageResult (*UnwindFunc)(lmdb::DatabaseConfig, uint64_t);
 
 struct Stage {
     StageFunc stage_func;
@@ -33,14 +33,16 @@ struct Stage {
 };
 
 // Stage functions
-StageResult stage_blockhashes(std::string db_path, lmdb::Transaction* txn);
-StageResult stage_senders(std::string db_path, lmdb::Transaction* txn);
-StageResult stage_execution(std::string db_path, lmdb::Transaction* txn);
-StageResult stage_hashstate(std::string db_path, lmdb::Transaction* txn);
-StageResult stage_account_history(std::string db_path, lmdb::Transaction* txn);
-StageResult stage_storage_history(std::string db_path, lmdb::Transaction* txn);
-StageResult stage_log_index(std::string db_path, lmdb::Transaction* txn);
-StageResult stage_tx_lookup(std::string db_path, lmdb::Transaction* txn);
+StageResult stage_headers(lmdb::DatabaseConfig db_config);
+StageResult stage_blockhashes(lmdb::DatabaseConfig db_config);
+StageResult stage_bodies(lmdb::DatabaseConfig db_config);
+StageResult stage_senders(lmdb::DatabaseConfig db_config);
+StageResult stage_execution(lmdb::DatabaseConfig db_config);
+StageResult stage_hashstate(lmdb::DatabaseConfig db_config);
+StageResult stage_account_history(lmdb::DatabaseConfig db_config);
+StageResult stage_storage_history(lmdb::DatabaseConfig db_config);
+StageResult stage_log_index(lmdb::DatabaseConfig db_config);
+StageResult stage_tx_lookup(lmdb::DatabaseConfig db_config);
 // Unwind Function
 // TODO
 

@@ -29,13 +29,11 @@
 
 namespace silkworm::stagedsync {
 
-bool write_receipts = true;
-
-StageResult execute(lmdb::Transaction* txn, ChainConfig config, uint64_t max_block, uint64_t* block_num) {
+StageResult execute(lmdb::Transaction* txn, ChainConfig config, uint64_t max_block, uint64_t* block_num, bool write_receipts) {
     db::Buffer buffer{txn};
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
-
+    
     for (; *block_num <= max_block; ++*block_num) {
         std::optional<BlockWithHash> bh{db::read_block(*txn, *block_num, /*read_senders=*/true)};
         if (!bh) {
@@ -73,6 +71,7 @@ StageResult stage_execution(lmdb::DatabaseConfig db_config) {
 
     uint64_t max_block{db::stages::get_stage_progress(*txn, db::stages::kBlockBodiesKey)};
     uint64_t block_num{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
+    bool write_receipts{db::read_storage_mode_receipts(*txn)};
 
     if (write_receipts && (!db::migration_happened(*txn, "receipts_cbor_encode") ||
                             !db::migration_happened(*txn, "receipts_store_logs_separately"))) {
@@ -91,7 +90,7 @@ StageResult stage_execution(lmdb::DatabaseConfig db_config) {
     }
 
     while (block_num <= max_block) {
-        auto execution_code{execute(txn.get(), *config, max_block, &block_num)};
+        auto execution_code{execute(txn.get(), *config, max_block, &block_num, write_receipts)};
         if (execution_code != StageResult::kStageSuccess) {
             return execution_code;
         }

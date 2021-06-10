@@ -14,7 +14,6 @@
    limitations under the License.
 */
 #include <silkworm/common/base.hpp>
-
 #ifndef SILKWORM_STAGEDSYNC_UTIL_HPP_
 #define SILKWORM_STAGEDSYNC_UTIL_HPP_
 
@@ -34,13 +33,8 @@ enum class [[nodiscard]] StageResult {
 
 void check_stagedsync_error(StageResult code);
 
- /*
- * Extract the incarnation from an encoded account object without fully decoding it.
- */
-uint64_t extract_incarnation(ByteView);
-
-// Return db formatted (key, value) pair
-std::pair<Bytes, Bytes> convert_to_db_format(Bytes& key, Bytes& value);
+// Convert changesets key and value pair to plain state format
+std::pair<Bytes, Bytes> convert_to_db_format(const Bytes& key, const Bytes& value);
 
 }  // namespace silkworm::db
 

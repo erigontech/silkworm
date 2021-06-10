@@ -23,7 +23,6 @@
 
 namespace silkworm::stagedsync {
 
-extern bool write_receipts;
 constexpr size_t kBatchSize = 512 * kMebi;
 
 typedef StageResult (*StageFunc)(lmdb::DatabaseConfig);

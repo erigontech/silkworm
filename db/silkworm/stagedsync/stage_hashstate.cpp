@@ -180,7 +180,8 @@ void hashstate_promote(lmdb::Transaction* txn, HashstateOperation operation) {
                 rc = changeset_table->get_next(&mdb_key, &mdb_data);
                 continue;
             }
-            auto incarnation{extract_incarnation(*encoded_account)};
+            auto [incarnation, err]{extract_incarnation(*encoded_account)};
+            rlp::err_handler(err);
             if (incarnation == 0) {
                 rc = changeset_table->get_next(&mdb_key, &mdb_data);
                 continue;

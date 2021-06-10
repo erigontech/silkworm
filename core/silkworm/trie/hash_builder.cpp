@@ -199,7 +199,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding, c
         if (!build_extensions) {
             stack_.push_back(node_ref(leaf_node_rlp(short_node_key, value)));
         } else if (!short_node_key.empty()) {  // extension node
-            if (from > 0) {
+            if (node_collector && from > 0) {
                 // See db/silkworm/trie/db_trie.hpp
                 const uint16_t flag = 1u << current[from - 1];
 
@@ -228,17 +228,17 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding, c
             std::vector<Bytes> child_hashes{branch_ref(groups_[len], hash_masks_[len])};
 
             // See db/silkworm/trie/db_trie.hpp
-            if (len > 0) {
-                hash_masks_[len - 1] |= 1u << current[len - 1];
-            }
-
-            bool store_in_db_trie{tree_masks_[len] || hash_masks_[len]};
-            if (store_in_db_trie) {
+            if (node_collector) {
                 if (len > 0) {
-                    tree_masks_[len - 1] |= 1u << current[len - 1];  // register myself in parent bitmap
+                    hash_masks_[len - 1] |= 1u << current[len - 1];
                 }
 
-                if (node_collector) {
+                bool store_in_db_trie{tree_masks_[len] || hash_masks_[len]};
+                if (store_in_db_trie) {
+                    if (len > 0) {
+                        tree_masks_[len - 1] |= 1u << current[len - 1];  // register myself in parent bitmap
+                    }
+
                     std::vector<evmc::bytes32> hashes(child_hashes.size());
                     for (size_t i{0}; i < child_hashes.size(); ++i) {
                         assert(child_hashes[i].size() == kHashLength + 1);

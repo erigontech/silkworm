@@ -121,14 +121,15 @@ constexpr ChainConfig kRopstenConfig{
     3,  // chain_id
     SealEngineType::kEthash,
     {
-        0,          // Homestead
-        0,          // Tangerine Whistle
-        10,         // Spurious Dragon
-        1'700'000,  // Byzantium
-        4'230'000,  // Constantinople
-        4'939'394,  // Petersburg
-        6'485'846,  // Istanbul
-        9'812'189,  // Berlin
+        0,           // Homestead
+        0,           // Tangerine Whistle
+        10,          // Spurious Dragon
+        1'700'000,   // Byzantium
+        4'230'000,   // Constantinople
+        4'939'394,   // Petersburg
+        6'485'846,   // Istanbul
+        9'812'189,   // Berlin
+        10'499'401,  // London
     },
 
     7'117'117,  // muir_glacier_block
@@ -146,6 +147,7 @@ constexpr ChainConfig kRinkebyConfig{
         4'321'234,  // Petersburg
         5'435'345,  // Istanbul
         8'290'928,  // Berlin
+        8'897'988,  // London
     },
 };
 
@@ -161,6 +163,7 @@ constexpr ChainConfig kGoerliConfig{
         0,          // Petersburg
         1'561'651,  // Istanbul
         4'460'644,  // Berlin
+        5'062'605,  // London
     },
 };
 

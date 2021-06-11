@@ -90,7 +90,7 @@ static evmc::bytes32 setup_storage(lmdb::Transaction& txn, ByteView storage_key)
     return storage_hb.root_hash();
 }
 
-TEST_CASE("Layout of account trie") {
+TEST_CASE("Account and storage trie") {
     const TemporaryDirectory tmp_dir1;
     const TemporaryDirectory tmp_dir2;
 
@@ -201,6 +201,65 @@ TEST_CASE("Layout of account trie") {
     REQUIRE(node3.hashes().size() == 1);
 
     // TODO[Issue 179] check that there's nothing else in storage_trie
+}
+
+TEST_CASE("Account trie around extension node") {
+    const Account a{0, 1 * kEther};
+
+    const std::vector<evmc::bytes32> keys{
+        0x30af561000000000000000000000000000000000000000000000000000000000_bytes32,
+        0x30af569000000000000000000000000000000000000000000000000000000000_bytes32,
+        0x30af650000000000000000000000000000000000000000000000000000000000_bytes32,
+        0x30af6f0000000000000000000000000000000000000000000000000000000000_bytes32,
+        0x30af8f0000000000000000000000000000000000000000000000000000000000_bytes32,
+        0x3100000000000000000000000000000000000000000000000000000000000000_bytes32,
+    };
+
+    const TemporaryDirectory tmp_dir1;
+    const TemporaryDirectory tmp_dir2;
+
+    lmdb::DatabaseConfig db_config{tmp_dir1.path(), 32 * kMebi};
+    db_config.set_readonly(false);
+    auto env{lmdb::get_env(db_config)};
+    auto txn{env->begin_rw_transaction()};
+    db::table::create_all(*txn);
+
+    auto hashed_accounts{txn->open(db::table::kHashedAccounts)};
+    HashBuilder hb;
+
+    for (const auto& key : keys) {
+        hashed_accounts->put(full_view(key), a.encode_for_storage());
+        hb.add(full_view(key), a.rlp(/*storage_root=*/kEmptyRoot));
+    }
+
+    const evmc::bytes32 expected_root{hb.root_hash()};
+    CHECK(regenerate_db_tries(*txn, tmp_dir2.path()) == expected_root);
+
+    auto account_trie{txn->open(db::table::kTrieOfAccounts)};
+
+    const auto marshalled_node1{account_trie->get(*from_hex("03"))};
+    REQUIRE(marshalled_node1);
+    const Node node1{unmarshal_node(*marshalled_node1)};
+
+    CHECK(0b11 == node1.state_mask());
+    CHECK(0b01 == node1.tree_mask());
+    CHECK(0b00 == node1.hash_mask());
+
+    CHECK(!node1.root_hash());
+    REQUIRE(node1.hashes().size() == 0);
+
+    const auto marshalled_node2{account_trie->get(*from_hex("03000a0f"))};
+    REQUIRE(marshalled_node2);
+    const Node node2{unmarshal_node(*marshalled_node2)};
+
+    CHECK(0b101100000 == node2.state_mask());
+    CHECK(0b000000000 == node2.tree_mask());
+    CHECK(0b001000000 == node2.hash_mask());
+
+    CHECK(!node2.root_hash());
+    REQUIRE(node2.hashes().size() == 1);
+
+    // TODO[Issue 179] check that there's nothing else in account_trie
 }
 
 }  // namespace silkworm::trie

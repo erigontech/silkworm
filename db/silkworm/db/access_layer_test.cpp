@@ -220,15 +220,15 @@ namespace db {
         mdbx::env_managed::create_parameters create{};
         mdbx::env::operate_parameters params{};
 
-        create.geometry.make_dynamic(0, 32 * mdbx::env::geometry::KiB);
+        create.geometry.make_dynamic(0, 32 * mdbx::env::geometry::MiB);
 
         params.options.disable_readahead = true;
         params.durability = mdbx::env::durability::lazy_weak_tail;
         params.max_maps = 128;
         std::filesystem::path dbpath(tmp_dir.path());
-        mdbx::env_managed env{dbpath, create, params};
+        mdbx::env_managed env(dbpath, create, params);
         mdbx::txn_managed txn{env.start_write()};
-
+        CHECK(txn.flags());
 
     }
 

@@ -84,6 +84,24 @@ size_t Account::encoding_length_for_storage() const {
     return len;
 }
 
+std::pair<uint64_t, rlp::DecodingResult> extract_incarnation(ByteView encoded) {
+    uint8_t field_set = encoded[0];
+    size_t pos{1};
+
+    if (field_set & 1) {
+        pos += encoded[pos++];
+    }
+    if (field_set & 2) {
+        pos += encoded[pos++];
+    }
+    if (field_set & 4) {
+        // Incarnation has been found.
+        uint8_t len = encoded[pos++];
+        return rlp::read_uint64(encoded.substr(pos, len));
+    }
+    return {0, rlp::DecodingResult::kOk};
+}
+
 std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView encoded) noexcept {
     Account a{};
     if (encoded.empty()) {

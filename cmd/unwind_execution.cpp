@@ -15,6 +15,7 @@
 */
 
 #include <iostream>
+#include <filesystem>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>

@@ -22,6 +22,7 @@
 #include <boost/algorithm/string/case_conv.hpp>
 
 #include "chaindb.hpp"
+#include "mdbx.hpp"
 
 namespace silkworm::lmdb {
 

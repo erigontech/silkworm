@@ -228,7 +228,7 @@ namespace db {
         std::filesystem::path dbpath(tmp_dir.path());
         mdbx::env_managed env(dbpath, create, params);
         mdbx::txn_managed txn{env.start_write()};
-        CHECK(txn.flags());
+        CHECK(env.is_pristine());
 
     }
 

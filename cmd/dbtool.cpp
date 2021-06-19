@@ -27,6 +27,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
@@ -101,6 +102,13 @@ struct dbTableEntry {
     size_t size(void) { return pages() * stat.ms_psize; }
 };
 
+struct dbTableEntry2 {
+    MDBX_dbi id{0};
+    std::string name{};
+    mdbx::txn::map_stat stat{};
+    size_t pages(void) { return stat.ms_branch_pages + stat.ms_leaf_pages + stat.ms_overflow_pages; }
+    size_t size(void) { return pages() * stat.ms_psize; }
+};
 struct dbTablesInfo {
     size_t mapsize{0};
     size_t filesize{0};
@@ -108,6 +116,15 @@ struct dbTablesInfo {
     size_t pages{0};
     size_t size{0};
     std::vector<dbTableEntry> tables{};
+};
+
+struct dbTablesInfo2 {
+    size_t mapsize{0};
+    size_t filesize{0};
+    size_t pageSize{0};
+    size_t pages{0};
+    size_t size{0};
+    std::vector<dbTableEntry2> tables{};
 };
 
 struct dbFreeEntry {
@@ -325,6 +342,49 @@ dbTablesInfo get_tablesInfo(std::shared_ptr<lmdb::Environment>& env) {
     return ret;
 }
 
+dbTablesInfo2 get_tablesInfo2(::mdbx::txn& txn) {
+
+    dbTablesInfo2 ret{};
+    dbTableEntry2* table;
+
+    ret.filesize = txn.env().get_info().mi_geo.current;
+
+    // Get info from the free database
+    ::mdbx::map_handle free_map{0};
+    table = new dbTableEntry2{free_map.dbi, "FREE_DBI"};
+    table->stat = txn.get_map_stat(free_map);
+    ret.pageSize += table->stat.ms_psize;
+    ret.pages += table->pages();
+    ret.size += table->size();
+    ret.tables.push_back(*table);
+
+    // Get info from the unnamed database
+    ::mdbx::map_handle main_map{1};
+    table = new dbTableEntry2{main_map.dbi, "MAIN_DBI"};
+    table->stat = txn.get_map_stat(main_map);
+    ret.pageSize += table->stat.ms_psize;
+    ret.pages += table->pages();
+    ret.size += table->size();
+    ret.tables.push_back(*table);
+
+    // Get all tables from the unnamed database
+    auto main_crs{txn.open_cursor(main_map)};
+    auto result{main_crs.to_first(/*throw_notfound =*/false)};
+    while (result) {
+
+        auto named_map{txn.open_map(result.key.string())};
+        table = new dbTableEntry2{named_map.dbi, result.key.string()};
+        table->stat = txn.get_map_stat(named_map);
+        ret.pageSize += table->stat.ms_psize;
+        ret.pages += table->pages();
+        ret.size += table->size();
+        ret.tables.push_back(*table);
+        result = main_crs.to_next(/*throw_notfound =*/false);
+    }
+
+    return ret;
+}
+
 int do_scan(db_options_t& db_opts) {
     static std::string fmt_hdr{" %3s %-24s %=50s %13s %13s %13s"};
 
@@ -484,6 +544,62 @@ int do_tables(db_options_t& db_opts) {
     }
 
     lmdb_env.reset();
+    return retvar;
+}
+
+int do_tables2(db_options_t& db_opts) {
+
+    static std::string fmt_hdr{" %3s %-24s %10s %2s %10s %10s %10s %12s"};
+    static std::string fmt_row{" %3i %-24s %10u %2u %10u %10u %10u %12u"};
+
+    int retvar{0};
+
+    try {
+
+        db::EnvConfig config{db_opts.datadir};
+        config.set_readonly(true);
+        auto env{silkworm::db::open_env(config)};
+        auto txn{env.start_read()};
+
+        auto tables{get_tablesInfo2(txn)};
+
+        std::cout << "\n Database tables    : " << tables.tables.size() << std::endl;
+        std::cout << " Database file size : " << tables.filesize << " \n" << std::endl;
+
+        if (tables.tables.size()) {
+
+            std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" %
+                          "Overflow" % "Size")
+                      << std::endl;
+            std::cout << (boost::format(fmt_hdr) % std::string(3, '-') % std::string(24, '-') % std::string(10, '-') %
+                          std::string(2, '-') % std::string(10, '-') % std::string(10, '-') % std::string(10, '-') %
+                          std::string(12, '-'))
+                      << std::endl;
+
+            for (auto item : tables.tables) {
+                std::cout << (boost::format(fmt_row) % item.id % item.name % item.stat.ms_entries % item.stat.ms_depth %
+                              item.stat.ms_branch_pages % item.stat.ms_leaf_pages % item.stat.ms_overflow_pages %
+                              item.size())
+                          << std::endl;
+            }
+
+        }
+
+        std::cout << "\n Size of file on disk (A) : " << (boost::format("%13u") % tables.filesize) << std::endl;
+        std::cout << " Data pages count         : " << (boost::format("%13u") % tables.pages) << std::endl;
+        std::cout << " Data pages size      (B) : " << (boost::format("%13u") % tables.size) << std::endl;
+        std::cout << " Free pages count         : " << (boost::format("%13u") % tables.tables[0].pages()) << std::endl;
+        std::cout << " Free pages size      (C) : " << (boost::format("%13u") % tables.tables[0].size()) << std::endl;
+        std::cout << " Available space          : "
+                  << (boost::format("%13u") % (tables.filesize - tables.size + tables.tables[0].size()))
+                  << " == A - B + C \n" << std::endl;
+
+
+    } catch (const std::exception& ex) {
+        retvar = -1;
+        std::cout << ex.what() << std::endl;
+    }
+
     return retvar;
 }
 
@@ -784,6 +900,8 @@ int main(int argc, char* argv[]) {
 
     // List tables and gives info about storage
     auto& app_tables = *app_main.add_subcommand("tables", "List tables info and db info");
+    auto& app_tables2 = *app_main.add_subcommand("tables2", "List tables info and db info");
+
     auto& app_scan = *app_main.add_subcommand("scan", "Scans tables for real sizes");
 
     // Provides detail of all free pages
@@ -886,6 +1004,8 @@ int main(int argc, char* argv[]) {
 
     if (app_tables) {
         return do_tables(db_opts);
+    } else if (app_tables2) {
+        return do_tables2(db_opts);
     } else if (app_scan) {
         return do_scan(db_opts);
     } else if (app_stages) {

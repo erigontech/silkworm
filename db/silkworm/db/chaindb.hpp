@@ -30,7 +30,6 @@
 #include <thread>
 #include <vector>
 
-#include "../libmdbx/mdbx.h++"
 #include <lmdb/lmdb.h>
 
 #include <silkworm/common/base.hpp>

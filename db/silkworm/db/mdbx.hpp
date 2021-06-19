@@ -17,11 +17,34 @@
 #ifndef SILKWORM_DB_MDBX_HPP_
 #define SILKWORM_DB_MDBX_HPP_
 
-#include <mdbx.h>
+#include <stdint.h>
 
-namespace silkworm::mdbx {
+#include <filesystem>
+#include <string>
 
+#include "../libmdbx/mdbx.h++"
 
-} // namespace silkworm::mdbx
+namespace silkworm::db {
 
-#endif // !SILKWORM_DB_MDBX_HPP_
+struct EnvConfig {
+    std::string path{};
+    uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_ACCEDE};  // Default flags
+    uint32_t max_tables{128};                                                   // Default max number of named tables
+    uint32_t max_readers{100};                                                  // Default max number of readers
+    void set_readonly(bool value);                                              // Sets/unsets readonly flag
+    void set_exclusive(bool value);                                             // Sets/unsets exclusive flag
+};
+
+struct MapConfig {
+    const char* name{nullptr};                                        // Name of the table (is key in MAIN_DBI)
+    const ::mdbx::key_mode key_mode{::mdbx::key_mode::usual};         // Key collation order
+    const ::mdbx::value_mode value_mode{::mdbx::value_mode::single};  // Data Storage
+};
+
+::mdbx::env_managed open_env(const EnvConfig& config);
+::mdbx::map_handle open_map(::mdbx::txn& tx, const MapConfig& config);
+::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
+
+}  // namespace silkworm::db
+
+#endif  // !SILKWORM_DB_MDBX_HPP_

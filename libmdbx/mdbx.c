@@ -24065,7 +24065,9 @@ int mdbx_cursor_eof(const MDBX_cursor *mc) {
   if (mc->mc_snum == 0)
     return MDBX_RESULT_TRUE;
 
-  if ((mc->mc_flags & C_EOF) &&
+  // See https://github.com/erthink/libmdbx/commit/5db855d728d30311947365eb4b6b3a37f2eea854
+  // will be inserted in master
+  if ((mc->mc_flags & C_EOF) ||
       mc->mc_ki[mc->mc_top] >= page_numkeys(mc->mc_pg[mc->mc_top]))
     return MDBX_RESULT_TRUE;
 

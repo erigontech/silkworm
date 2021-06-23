@@ -321,7 +321,7 @@ int do_scan(db_options_t& db_opts) {
         auto tablesInfo{get_tablesInfo(txn)};
 
         if (tablesInfo.tables.size()) {
-            std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Progress" % "Keys" % "Data" % "Size")
+            std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Progress" % "Keys" % "Data" % "Total")
                       << std::endl;
             std::cout << (boost::format(fmt_hdr) % std::string(3, '-') % std::string(24, '-') % std::string(50, '-') %
                           std::string(13, '-') % std::string(13, '-') % std::string(13, '-'))
@@ -359,10 +359,15 @@ int do_scan(db_options_t& db_opts) {
                     result = tbl_crs.to_next(/*throw_notfound =*/false);
                 }
 
+                if (!shouldStop) {
                 progress.set_current(item.stat.ms_entries);
                 std::cout << progress.print_interval('.') << std::flush;
-                std::cout << (boost::format(" %13u %13u %13u") % key_size % data_size % (key_size + data_size))
+                std::cout << (boost::format(" %13s %13s %13s") % human_size(key_size) % human_size(data_size) %
+                              human_size(key_size + data_size))
                           << std::flush;
+                } else {
+                    break;
+                }
             }
         }
 
@@ -452,11 +457,13 @@ int do_tables(db_options_t& db_opts) {
             }
         }
 
-        std::cout << "\n Database file size   (A) : " << (boost::format("%13s") % human_size(tables.filesize)) << std::endl;
+        std::cout << "\n Database file size   (A) : " << (boost::format("%13s") % human_size(tables.filesize))
+                  << std::endl;
         std::cout << " Data pages count         : " << (boost::format("%13u") % tables.pages) << std::endl;
         std::cout << " Data pages size      (B) : " << (boost::format("%13s") % human_size(tables.size)) << std::endl;
         std::cout << " Free pages count         : " << (boost::format("%13u") % tables.tables[0].pages()) << std::endl;
-        std::cout << " Free pages size      (C) : " << (boost::format("%13s") % human_size(tables.tables[0].size())) << std::endl;
+        std::cout << " Free pages size      (C) : " << (boost::format("%13s") % human_size(tables.tables[0].size()))
+                  << std::endl;
         std::cout << " Available space          : "
                   << (boost::format("%13s") % human_size(tables.filesize - tables.size + tables.tables[0].size()))
                   << " == A - B + C \n"

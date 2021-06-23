@@ -77,6 +77,9 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept;
 // human readable format with qualifiers. eg "256MB"
 std::optional<uint64_t> parse_size(const std::string& sizestr);
 
+// Converts a number of bytes in a human readable format
+std::string human_size(uint64_t bytes);
+
 // Compares two strings for equality with case insensitivity
 bool iequals(const std::string& a, const std::string& b);
 

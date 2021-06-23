@@ -26,6 +26,7 @@
 #include <boost/format.hpp>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -93,11 +94,11 @@ class Progress {
     uint32_t printed_bar_len_{0};
 };
 
-
 struct dbTableEntry {
     MDBX_dbi id{0};
     std::string name{};
-    mdbx::txn::map_stat stat{};
+    mdbx::txn::map_stat stat;
+    mdbx::map_handle::info info;
     size_t pages(void) { return stat.ms_branch_pages + stat.ms_leaf_pages + stat.ms_overflow_pages; }
     size_t size(void) { return pages() * stat.ms_psize; }
 };
@@ -166,18 +167,15 @@ void sig_handler(int signum) {
 }
 
 int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
-
     int retvar{0};
 
     try {
-
         db::EnvConfig config{db_opts.datadir};
         config.set_readonly(false);
         auto env{db::open_env(config)};
         auto txn{env.start_write()};
 
         for (const auto& tablename : app_opts.names) {
-
             mdbx::map_handle table_map;
             try {
                 table_map = txn.open_map(tablename);
@@ -245,7 +243,6 @@ int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
 }
 
 dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
-
     dbFreeInfo ret{};
 
     ::mdbx::map_handle free_map{0};
@@ -254,7 +251,7 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     auto result{free_crs.to_first(/*throw_notfound =*/false)};
     while (result) {
         size_t txId = *(static_cast<size_t*>(result.key.iov_base));
-        size_t pagesCount = *(static_cast<size_t*>(result.value.iov_base));
+        size_t pagesCount = 0; /* martian -> *(static_cast<size_t*>(result.value.iov_base)); */
         size_t pagesSize = pagesCount * free_stat.ms_psize;
         ret.pages += pagesCount;
         ret.size += pagesSize;
@@ -264,9 +261,7 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     return ret;
 }
 
-
 dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
-
     dbTablesInfo ret{};
     dbTableEntry* table;
 
@@ -274,8 +269,9 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
 
     // Get info from the free database
     ::mdbx::map_handle free_map{0};
-    table = new dbTableEntry{free_map.dbi, "FREE_DBI"};
-    table->stat = txn.get_map_stat(free_map);
+    auto stat = txn.get_map_stat(free_map);
+    auto info = txn.get_handle_info(free_map);
+    table = new dbTableEntry{free_map.dbi, "FREE_DBI", stat, info};
     ret.pageSize += table->stat.ms_psize;
     ret.pages += table->pages();
     ret.size += table->size();
@@ -283,7 +279,9 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
 
     // Get info from the unnamed database
     ::mdbx::map_handle main_map{1};
-    table = new dbTableEntry{main_map.dbi, "MAIN_DBI"};
+    stat = txn.get_map_stat(main_map);
+    info = txn.get_handle_info(main_map);
+    table = new dbTableEntry{main_map.dbi, "MAIN_DBI", stat, info};
     table->stat = txn.get_map_stat(main_map);
     ret.pageSize += table->stat.ms_psize;
     ret.pages += table->pages();
@@ -294,10 +292,11 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     auto main_crs{txn.open_cursor(main_map)};
     auto result{main_crs.to_first(/*throw_notfound =*/false)};
     while (result) {
-
         auto named_map{txn.open_map(result.key.string())};
-        table = new dbTableEntry{named_map.dbi, result.key.string()};
-        table->stat = txn.get_map_stat(named_map);
+        stat = txn.get_map_stat(named_map);
+        info = txn.get_handle_info(named_map);
+        table = new dbTableEntry{named_map.dbi, result.key.string(), stat, info};
+
         ret.pageSize += table->stat.ms_psize;
         ret.pages += table->pages();
         ret.size += table->size();
@@ -309,13 +308,11 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
 }
 
 int do_scan(db_options_t& db_opts) {
-
     static std::string fmt_hdr{" %3s %-24s %=50s %13s %13s %13s"};
 
     int retvar{0};
 
     try {
-
         db::EnvConfig config{db_opts.datadir};
         config.set_readonly(true);
         auto env{silkworm::db::open_env(config)};
@@ -331,7 +328,6 @@ int do_scan(db_options_t& db_opts) {
                       << std::flush;
 
             for (dbTableEntry item : tablesInfo.tables) {
-
                 mdbx::map_handle tbl_map;
 
                 std::cout << "\n" << (boost::format(" %3u %-24s ") % item.id % item.name) << std::flush;
@@ -384,19 +380,17 @@ int do_scan(db_options_t& db_opts) {
 }
 
 int do_stages(db_options_t& db_opts) {
-
     static std::string fmt_hdr{" %-24s %10s "};
     static std::string fmt_row{" %-24s %10u "};
 
     int retvar{0};
-    
-    try {
 
+    try {
         db::EnvConfig config{db_opts.datadir};
         config.set_readonly(true);
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
-        auto stages_map{txn.open_map("SyncStage")}; // TODO change to table config
+        auto stages_map{txn.open_map("SyncStage")};  // TODO change to table config
         auto stages_crs{txn.open_cursor(stages_map)};
 
         std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
@@ -423,14 +417,12 @@ int do_stages(db_options_t& db_opts) {
 }
 
 int do_tables(db_options_t& db_opts) {
-
-    static std::string fmt_hdr{" %3s %-24s %10s %2s %10s %10s %10s %12s"};
-    static std::string fmt_row{" %3i %-24s %10u %2u %10u %10u %10u %12u"};
+    static std::string fmt_hdr{" %3s %-24s %10s %2s %10s %10s %10s %12s %10s %10s"};
+    static std::string fmt_row{" %3i %-24s %10u %2u %10u %10u %10u %12s %10s %10s"};
 
     int retvar{0};
 
     try {
-
         db::EnvConfig config{db_opts.datadir};
         config.set_readonly(true);
         auto env{silkworm::db::open_env(config)};
@@ -438,37 +430,37 @@ int do_tables(db_options_t& db_opts) {
 
         auto tables{get_tablesInfo(txn)};
 
-        std::cout << "\n Database tables    : " << tables.tables.size() << std::endl;
-        std::cout << " Database file size : " << tables.filesize << " \n" << std::endl;
+        std::cout << "\n Database tables    : " << tables.tables.size() << std::endl << std::endl;
 
         if (tables.tables.size()) {
-
             std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" %
-                          "Overflow" % "Size")
+                          "Overflow" % "Size" % "Key" % "Value")
                       << std::endl;
             std::cout << (boost::format(fmt_hdr) % std::string(3, '-') % std::string(24, '-') % std::string(10, '-') %
                           std::string(2, '-') % std::string(10, '-') % std::string(10, '-') % std::string(10, '-') %
-                          std::string(12, '-'))
+                          std::string(12, '-') % std::string(10, '-') % std::string(10, '-'))
                       << std::endl;
 
             for (auto item : tables.tables) {
+                auto keymode = magic_enum::enum_name(item.info.key_mode());
+                auto valuemode = magic_enum::enum_name(item.info.value_mode());
+
                 std::cout << (boost::format(fmt_row) % item.id % item.name % item.stat.ms_entries % item.stat.ms_depth %
                               item.stat.ms_branch_pages % item.stat.ms_leaf_pages % item.stat.ms_overflow_pages %
-                              item.size())
+                              human_size(item.size()) % keymode % valuemode)
                           << std::endl;
             }
-
         }
 
-        std::cout << "\n Size of file on disk (A) : " << (boost::format("%13u") % tables.filesize) << std::endl;
+        std::cout << "\n Database file size   (A) : " << (boost::format("%13s") % human_size(tables.filesize)) << std::endl;
         std::cout << " Data pages count         : " << (boost::format("%13u") % tables.pages) << std::endl;
-        std::cout << " Data pages size      (B) : " << (boost::format("%13u") % tables.size) << std::endl;
+        std::cout << " Data pages size      (B) : " << (boost::format("%13s") % human_size(tables.size)) << std::endl;
         std::cout << " Free pages count         : " << (boost::format("%13u") % tables.tables[0].pages()) << std::endl;
-        std::cout << " Free pages size      (C) : " << (boost::format("%13u") % tables.tables[0].size()) << std::endl;
+        std::cout << " Free pages size      (C) : " << (boost::format("%13s") % human_size(tables.tables[0].size())) << std::endl;
         std::cout << " Available space          : "
-                  << (boost::format("%13u") % (tables.filesize - tables.size + tables.tables[0].size()))
-                  << " == A - B + C \n" << std::endl;
-
+                  << (boost::format("%13s") % human_size(tables.filesize - tables.size + tables.tables[0].size()))
+                  << " == A - B + C \n"
+                  << std::endl;
 
     } catch (const std::exception& ex) {
         retvar = -1;
@@ -479,14 +471,12 @@ int do_tables(db_options_t& db_opts) {
 }
 
 int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
-
     static std::string fmt_hdr{"%9s %9s %12s"};
     static std::string fmt_row{"%9u %9u %12u"};
 
     int retvar{0};
 
     try {
-
         db::EnvConfig config{db_opts.datadir};
         config.set_readonly(true);
         auto env{silkworm::db::open_env(config)};
@@ -518,11 +508,9 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
 }
 
 int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
-
     int retvar{0};
 
     try {
-
         db::EnvConfig config{db_opts.datadir};
         config.set_readonly(true);
         auto env{silkworm::db::open_env(config)};
@@ -582,169 +570,162 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
     return retvar;
 }
 
-//int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
-//    int retvar{0};
-//
-//    try {
-//
-//        // Source db
-//        db::EnvConfig src_config{db_opts.datadir};
-//        src_config.set_readonly(true);
-//        auto src_env{silkworm::db::open_env(src_config)};
-//        auto src_txn{src_env.start_read()};
-//
-//        // Target db
-//        db::EnvConfig tgt_config{app_opts.targetdir};
-//        tgt_config.set_readonly(false);
-//        auto tgt_env{silkworm::db::open_env(tgt_config)};
-//        auto tgt_txn{tgt_env.start_write()};
-//
-//        // Get free info and tables from both source and target environment
-//        auto src_tableInfo = get_tablesInfo(src_txn);
-//        auto tgt_tableInfo = get_tablesInfo(tgt_txn);
-//
-//        // Check source db has tables to copy besides the two system tables
-//        if (src_tableInfo.tables.size() < 3) {
-//            throw std::runtime_error("Source db has no tables to copy.");
-//        }
-//
-//        size_t bytesWritten{0};
-//        std::cout << boost::format(" %-24s %=50s") % "Table" % "Progress" << std::endl;
-//        std::cout << boost::format(" %-24s %=50s") % std::string(24, '-') % std::string(50, '-') << std::flush;
-//
-//        // Loop source tables
-//        for (auto& src_table : src_tableInfo.tables) {
-//
-//            if (shouldStop) break;
-//            std::cout << "\n " << boost::format("%-24s ") % src_table.name << std::flush;
-//
-//            // Is this a system table ?
-//            if (src_table.id < 2) {
-//                std::cout << "Skipped (SYSTEM TABLE)" << std::flush;
-//                continue;
-//            }
-//
-//            // Is this table present in the list user has provided ?
-//            if (app_opts.tables.size()) {
-//                auto it = std::find(app_opts.tables.begin(), app_opts.tables.end(), src_table.name);
-//                if (it == app_opts.tables.end()) {
-//                    std::cout << "Skipped (no match --tables)" << std::flush;
-//                    continue;
-//                }
-//            }
-//
-//            // Is this table present in the list user has excluded ?
-//            if (app_opts.xtables.size()) {
-//                auto it = std::find(app_opts.xtables.begin(), app_opts.xtables.end(), src_table.name);
-//                if (it != app_opts.xtables.end()) {
-//                    std::cout << "Skipped (match --xtables)" << std::flush;
-//                    continue;
-//                }
-//            }
-//
-//            // Is table empty ?
-//            if (!src_table.stat.ms_entries && app_opts.noempty) {
-//                std::cout << "Skipped (--noempty)" << std::flush;
-//                continue;
-//            }
-//
-//            // Is source table already present in target db ?
-//            bool exists_on_target{false};
-//            if (tgt_tableInfo.tables.size()) {
-//                auto it = std::find_if(tgt_tableInfo.tables.begin(), tgt_tableInfo.tables.end(),
-//                                       boost::bind(&dbTableEntry::name, _1) == src_table.name);
-//                if (it != tgt_tableInfo.tables.end()) exists_on_target = true;
-//            }
-//
-//            // Ready to copy
-//            auto src_table_map{src_txn.open_map(src_table.name)};
-//            auto src_table_crs{src_txn.open_cursor(src_table_map)};
-//
-//
-//            auto tgt_table_map{src_txn.create_map(src_table.name)};
-//
-//            std::unique_ptr<lmdb::Transaction> lmdb_src_txn{lmdb_src_env->begin_ro_transaction()};
-//            std::unique_ptr<lmdb::Table> lmdb_src_tbl{lmdb_src_txn->open(*src_config)};
-//            std::unique_ptr<lmdb::Transaction> lmdb_tgt_txn{lmdb_tgt_env->begin_rw_transaction()};
-//            std::unique_ptr<lmdb::Table> lmdb_tgt_tbl{
-//                lmdb_tgt_txn->open(*src_config, (exists_on_target ? 0u : MDB_CREATE))};
-//
-//            // If table exists on target and is populated and NOT --upsert then
-//            // skip with error
-//            if (exists_on_target) {
-//                MDB_stat stat{};
-//                lmdb::err_handler(lmdb_tgt_tbl->get_stat(&stat));
-//                if (stat.ms_entries && !app_opts.upsert) {
-//                    std::cout << "Skipped (already populated on target and --upsert was not set)" << std::flush;
-//                    continue;
-//                }
-//            }
-//
-//            // Copy Stuff
-//            unsigned int flags{0};
-//            if (!app_opts.upsert) {
-//                flags |= (((src_config->flags & MDB_DUPSORT) == MDB_DUPSORT) ? MDB_APPENDDUP : MDB_APPEND);
-//            }
-//
-//            // Loop source and write into target
-//            Progress progress{50};
-//            progress.set_task_count(src_table.stat.ms_entries);
-//            size_t batch_size{progress.get_increment_count()};
-//            bool batch_committed{false};
-//            MDB_val key, data;
-//            int rc{lmdb_src_tbl->get_first(&key, &data)};
-//            while (rc == MDB_SUCCESS) {
-//                lmdb::err_handler(lmdb_tgt_tbl->put(&key, &data, flags));
-//                bytesWritten += key.mv_size + data.mv_size;
-//                if (bytesWritten > app_opts.commitsize) {
-//                    lmdb_tgt_tbl.reset();
-//                    lmdb::err_handler(lmdb_tgt_txn->commit());
-//                    lmdb_tgt_txn.reset();
-//                    lmdb_tgt_txn = lmdb_tgt_env->begin_rw_transaction();
-//                    lmdb_tgt_tbl = lmdb_tgt_txn->open(*src_config);
-//                    batch_committed = true;
-//                    bytesWritten = 0;
-//                }
-//
-//                if (!--batch_size) {
-//                    progress.set_current(progress.get_current() + progress.get_increment_count());
-//                    std::cout << progress.print_interval(batch_committed ? 'W' : '.') << std::flush;
-//                    batch_committed = false;
-//                    batch_size = progress.get_increment_count();
-//                    if (shouldStop) break;
-//                }
-//
-//                rc = lmdb_src_tbl->get_next(&key, &data);
-//            }
-//            if (rc != MDB_NOTFOUND) lmdb::err_handler(rc);
-//            progress.set_current(src_table.stat.ms_entries);
-//            std::cout << progress.print_interval(batch_committed ? 'W' : '.') << std::flush;
-//
-//            // Close all
-//            lmdb_src_tbl.reset();
-//            lmdb_tgt_tbl.reset();
-//            lmdb_src_txn.reset();
-//            if (!shouldStop && bytesWritten) {
-//                lmdb::err_handler(lmdb_tgt_txn->commit());
-//            }
-//            lmdb_tgt_txn.reset();
-//
-//            // Recompute target data
-//            if (!shouldStop) {
-//                tgt_freeInfo = get_freeInfo(lmdb_tgt_env);
-//                tgt_tableInfo = get_tablesInfo(lmdb_tgt_env);
-//            }
-//        }
-//
-//        std::cout << "\n All done!" << std::endl;
-//
-//    } catch (const std::exception& ex) {
-//        std::cout << ex.what() << std::endl;
-//        retvar = -1;
-//    }
-//
-//    return retvar;
-//}
+int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
+    int retvar{0};
+
+    try {
+        // Source db
+        db::EnvConfig src_config{db_opts.datadir};
+        src_config.set_readonly(true);
+        auto src_env{silkworm::db::open_env(src_config)};
+        auto src_txn{src_env.start_read()};
+
+        // Target db
+        db::EnvConfig tgt_config{app_opts.targetdir};
+        tgt_config.set_readonly(false);
+        auto tgt_env{silkworm::db::open_env(tgt_config)};
+        auto tgt_txn{tgt_env.start_write()};
+
+        // Get free info and tables from both source and target environment
+        auto src_tableInfo = get_tablesInfo(src_txn);
+        auto tgt_tableInfo = get_tablesInfo(tgt_txn);
+
+        // Check source db has tables to copy besides the two system tables
+        if (src_tableInfo.tables.size() < 3) {
+            throw std::runtime_error("Source db has no tables to copy.");
+        }
+
+        size_t bytesWritten{0};
+        std::cout << boost::format(" %-24s %=50s") % "Table" % "Progress" << std::endl;
+        std::cout << boost::format(" %-24s %=50s") % std::string(24, '-') % std::string(50, '-') << std::flush;
+
+        // Loop source tables
+        for (auto& src_table : src_tableInfo.tables) {
+            if (shouldStop) break;
+            std::cout << "\n " << boost::format("%-24s ") % src_table.name << std::flush;
+
+            // Is this a system table ?
+            if (src_table.id < 2) {
+                std::cout << "Skipped (SYSTEM TABLE)" << std::flush;
+                continue;
+            }
+
+            // Is this table present in the list user has provided ?
+            if (app_opts.tables.size()) {
+                auto it = std::find(app_opts.tables.begin(), app_opts.tables.end(), src_table.name);
+                if (it == app_opts.tables.end()) {
+                    std::cout << "Skipped (no match --tables)" << std::flush;
+                    continue;
+                }
+            }
+
+            // Is this table present in the list user has excluded ?
+            if (app_opts.xtables.size()) {
+                auto it = std::find(app_opts.xtables.begin(), app_opts.xtables.end(), src_table.name);
+                if (it != app_opts.xtables.end()) {
+                    std::cout << "Skipped (match --xtables)" << std::flush;
+                    continue;
+                }
+            }
+
+            // Is table empty ?
+            if (!src_table.stat.ms_entries && app_opts.noempty) {
+                std::cout << "Skipped (--noempty)" << std::flush;
+                continue;
+            }
+
+            // Is source table already present in target db ?
+            bool exists_on_target{false};
+            bool populated_on_target{false};
+            if (tgt_tableInfo.tables.size()) {
+                auto it = std::find_if(tgt_tableInfo.tables.begin(), tgt_tableInfo.tables.end(),
+                                       boost::bind(&dbTableEntry::name, _1) == src_table.name);
+                if (it != tgt_tableInfo.tables.end()) {
+                    exists_on_target = true;
+                    populated_on_target = (it->stat.ms_entries > 0);
+                }
+            }
+
+            // Ready to copy
+            auto src_table_map{src_txn.open_map(src_table.name)};
+            auto src_table_info{src_txn.get_handle_info(src_table_map)};
+
+            // If table does not exist on target create it with same flags as
+            // origin table. Otherwise check the info match
+            mdbx::map_handle tgt_table_map;
+            if (!exists_on_target) {
+                tgt_table_map =
+                    tgt_txn.create_map(src_table.name, src_table_info.key_mode(), src_table_info.value_mode());
+            } else {
+                if (populated_on_target && !app_opts.upsert) {
+                    std::cout << "Skipped (already populated on target and --upsert was not set)" << std::flush;
+                    continue;
+                }
+                tgt_table_map = tgt_txn.open_map(src_table.name);
+                auto tgt_table_info{tgt_txn.get_handle_info(tgt_table_map)};
+                if (src_table_info.flags != tgt_table_info.flags) {
+                    std::cout << "Skipped (source and target have incompatible flags)" << std::flush;
+                    continue;
+                }
+            }
+
+            // Loop source and write into target
+            Progress progress{50};
+            progress.set_task_count(src_table.stat.ms_entries);
+            size_t batch_size{progress.get_increment_count()};
+            bool batch_committed{false};
+
+            auto src_table_crs{src_txn.open_cursor(src_table_map)};
+            auto tgt_table_crs{tgt_txn.open_cursor(tgt_table_map)};
+            MDBX_put_flags_t put_flags{MDBX_put_flags_t::MDBX_UPSERT};
+            if (!app_opts.upsert) {
+                put_flags = (src_table_info.flags & MDBX_DUPSORT) ? MDBX_put_flags_t::MDBX_APPENDDUP
+                                                                  : MDBX_put_flags_t::MDBX_APPEND;
+            }
+
+            auto data{src_table_crs.to_first(/*throw_notfound =*/false)};
+            while (data) {
+                tgt_table_crs.put(data.key, &data.value, put_flags);
+                bytesWritten += (data.key.length() + data.value.length());
+                if (bytesWritten > app_opts.commitsize) {
+                    tgt_table_crs.close();
+                    tgt_txn.commit();
+                    tgt_txn = tgt_env.start_write();
+                    tgt_table_map = tgt_txn.open_map(src_table.name);
+                    tgt_table_crs = tgt_txn.open_cursor(tgt_table_map);
+                    batch_committed = true;
+                    bytesWritten = 0;
+                }
+
+                if (!--batch_size) {
+                    progress.set_current(progress.get_current() + progress.get_increment_count());
+                    std::cout << progress.print_interval(batch_committed ? 'W' : '.') << std::flush;
+                    batch_committed = false;
+                    batch_size = progress.get_increment_count();
+                    if (shouldStop) break;
+                }
+
+                data = src_table_crs.to_next(/*throw_notfound =*/false);
+            }
+
+            progress.set_current(src_table.stat.ms_entries);
+            std::cout << progress.print_interval(batch_committed ? 'W' : '.') << std::flush;
+
+            // Close all
+            if (!shouldStop && bytesWritten) {
+                tgt_txn.commit();
+            }
+        }
+
+        std::cout << "\n All done!" << std::endl;
+
+    } catch (const std::exception& ex) {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    return retvar;
+}
 
 int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
@@ -826,7 +807,7 @@ int main(int argc, char* argv[]) {
                 return -1;
             }
         } else if (!copy_opts.create) {
-            std::cout << " mdbx.dat not found target directory. You may want to specify --create" << std::endl;
+            std::cout << " mdbx.dat not found in target directory. You may want to specify --create" << std::endl;
             return -1;
         }
 
@@ -851,8 +832,8 @@ int main(int argc, char* argv[]) {
         return do_clear(db_opts, clear_opts);
     } else if (app_compact) {
         return do_compact(db_opts, compact_opts);
-    //} else if (app_copy) {
-    //    return do_copy(db_opts, copy_opts);
+        //} else if (app_copy) {
+        //    return do_copy(db_opts, copy_opts);
     } else {
         std::cerr << "No command specified" << std::endl;
     }

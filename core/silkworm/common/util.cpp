@@ -204,6 +204,22 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
     return number;
 }
 
+std::string human_size(uint64_t bytes) {
+
+    static constexpr char* suffix[]{"B", "KB", "MB", "GB", "TB"};
+    static constexpr uint32_t items{sizeof(suffix) / sizeof(suffix[0])};
+    uint32_t index{0};
+    double value{static_cast<double>(bytes)};
+    while (value > kKibi) {
+        value /= kKibi;
+        ++index;
+    }
+    static char output[64];
+    sprintf(output, "%.02lf %s", value, suffix[index]);
+    return std::string(output);
+
+}
+
 size_t prefix_length(ByteView a, ByteView b) {
     size_t len{std::min(a.length(), b.length())};
     for (size_t i{0}; i < len; ++i) {

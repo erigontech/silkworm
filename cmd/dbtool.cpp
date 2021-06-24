@@ -282,7 +282,6 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     stat = txn.get_map_stat(main_map);
     info = txn.get_handle_info(main_map);
     table = new dbTableEntry{main_map.dbi, "MAIN_DBI", stat, info};
-    table->stat = txn.get_map_stat(main_map);
     ret.pageSize += table->stat.ms_psize;
     ret.pages += table->pages();
     ret.size += table->size();

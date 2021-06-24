@@ -19,7 +19,7 @@
 
 /* On trie_account & trie_storage DB tables
 
-state_mask (groups in HashBuilder) - mark prefixes existing in hashed_accounts (hashed_storage) table
+state_mask - mark prefixes existing in hashed_accounts (hashed_storage) table
 tree_mask - mark prefixes existing in trie_account (trie_storage) table
 hash_mask - mark prefixes whose hashes are saved in the current trie_account (trie_storage) record (actually only
 hashes of branch nodes can be saved)

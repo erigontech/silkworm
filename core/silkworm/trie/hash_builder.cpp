@@ -167,60 +167,76 @@ evmc::bytes32 HashBuilder::root_hash(bool auto_finalize) {
     return res;
 }
 
-// https://github.com/ledgerwatch/erigon/blob/master/docs/programmers_guide/guide.md#generating-the-structural-information-from-the-sequence-of-keys
-void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const ByteView value) {
+// https://github.com/ledgerwatch/erigon/blob/devel/docs/programmers_guide/guide.md#generating-the-structural-information-from-the-sequence-of-keys
+void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding, const ByteView value) {
     for (bool build_extensions{false};; build_extensions = true) {
-        const bool prec_exists{!groups_.empty()};
-        const size_t prec_len{groups_.empty() ? 0 : groups_.size() - 1};
-        const size_t succ_len{prefix_length(succ, curr)};
-        const size_t len{std::max(prec_len, succ_len)};
-        assert(len < curr.length());
+        const bool preceding_exists{!groups_.empty()};
+
+        // Calculate the prefix of the smallest prefix group containing current
+        const size_t preceding_len{groups_.empty() ? 0 : groups_.size() - 1};
+        const size_t common_prefix_len{prefix_length(succeeding, current)};
+        const size_t len{std::max(preceding_len, common_prefix_len)};
+        assert(len < current.length());
 
         // Add the digit immediately following the max common prefix
-        // and compute remainder's length
-        const uint8_t extra_digit{curr[len]};
+        const uint8_t extra_digit{current[len]};
         if (groups_.size() <= len) {
             groups_.resize(len + 1);
         }
         groups_[len] |= 1u << extra_digit;
 
-        size_t remainder_start{len};
-        if (!succ.empty() || prec_exists) {
-            ++remainder_start;
+        if (tree_masks_.size() < current.length()) {
+            tree_masks_.resize(current.length());
+            hash_masks_.resize(current.length());
         }
 
-        if (tree_masks_.size() < curr.length()) {
-            tree_masks_.resize(curr.length());
-            hash_masks_.resize(curr.length());
+        size_t from{len};
+        if (!succeeding.empty() || preceding_exists) {
+            ++from;
         }
 
-        const ByteView short_node_key{curr.substr(remainder_start)};
+        const ByteView short_node_key{current.substr(from)};
         if (!build_extensions) {
             stack_.push_back(node_ref(leaf_node_rlp(short_node_key, value)));
-        } else if (!short_node_key.empty()) {
-            // TODO[Issue 179] propagate tree_masks_ rootwards along extension nodes
+        } else if (!short_node_key.empty()) {  // extension node
+            if (node_collector && from > 0) {
+                // See db/silkworm/trie/db_trie.hpp
+                const uint16_t flag = 1u << current[from - 1];
+
+                // DB trie can't use hash of an extension node
+                hash_masks_[from - 1] &= ~flag;
+
+                if (tree_masks_[current.length() - 1]) {
+                    // Propagate tree_masks flag along the extension node
+                    tree_masks_[from - 1] |= flag;
+                }
+            }
+
             stack_.back() = node_ref(extension_node_rlp(short_node_key, stack_.back()));
+
+            hash_masks_.resize(from);
+            tree_masks_.resize(from);
         }
 
         // Check for the optional part
-        if (prec_len <= succ_len && !succ.empty()) {
+        if (preceding_len <= common_prefix_len && !succeeding.empty()) {
             return;
         }
 
         // Close the immediately encompassing prefix group, if needed
-        if (!succ.empty() || prec_exists) {  // branch node
+        if (!succeeding.empty() || preceding_exists) {  // branch node
             std::vector<Bytes> child_hashes{branch_ref(groups_[len], hash_masks_[len])};
 
             // See db/silkworm/trie/db_trie.hpp
             if (node_collector) {
                 if (len > 0) {
-                    hash_masks_[len - 1] |= 1u << curr[len - 1];
+                    hash_masks_[len - 1] |= 1u << current[len - 1];
                 }
 
                 bool store_in_db_trie{tree_masks_[len] || hash_masks_[len]};
                 if (store_in_db_trie) {
                     if (len > 0) {
-                        tree_masks_[len - 1] |= 1u << curr[len - 1];  // register myself in parent bitmap
+                        tree_masks_[len - 1] |= 1u << current[len - 1];  // register myself in parent bitmap
                     }
 
                     std::vector<evmc::bytes32> hashes(child_hashes.size());
@@ -233,7 +249,7 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
                         n.set_root_hash(root_hash(/*auto_finalize=*/false));
                     }
 
-                    node_collector(curr.substr(0, len), n);
+                    node_collector(current.substr(0, len), n);
                 }
             }
         }
@@ -242,13 +258,12 @@ void HashBuilder::gen_struct_step(ByteView curr, const ByteView succ, const Byte
         tree_masks_.resize(len);
         hash_masks_.resize(len);
 
-        // Check the end of recursion
-        if (prec_len == 0) {
+        if (preceding_len == 0) {
             return;
         }
 
-        // Identify preceding key for the buildExtensions invocation
-        curr = curr.substr(0, prec_len);
+        // Update current key for the build_extensions iteration
+        current = current.substr(0, preceding_len);
         while (!groups_.empty() && groups_.back() == 0) {
             groups_.pop_back();
         }

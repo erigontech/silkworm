@@ -10,7 +10,19 @@
       "cmakeCommandArgs": "-Wno-dev",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "addressSanitizerEnabled": true
+      "addressSanitizerEnabled": true,
+      "variables": [
+        {
+          "name": "GMP_LIBRARY",
+          "value": "C:/Users/Andrea/Documents/libgmp/lib/x64/gmp.lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "GMP_INCLUDE_DIR",
+          "value": "C:/Users/Andrea/Documents/libgmp/include",
+          "type": "PATH"
+        }
+      ]
     },
     {
       "name": "x64-Release",
@@ -22,7 +34,6 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ],
-      "variables": [],
       "addressSanitizerEnabled": true
     }
   ]

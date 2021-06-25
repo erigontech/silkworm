@@ -103,8 +103,9 @@ StageResult stage_execution(lmdb::DatabaseConfig db_config) {
     return StageResult::kStageSuccess;
 }
 
-void collect_for_unwind(Bytes key, Bytes value, etl::Collector& collector, lmdb::Table* plain_state_table, lmdb::Table* plain_code_table) {
+void collect_for_unwind(Bytes key, Bytes value, lmdb::Table* plain_state_table, lmdb::Table* plain_code_table) {
     if (key.size() == 20) {
+        plain_state_table->del(key);
         if (value.size() > 0) {
             auto address{key.substr(0, kAddressLength)};
             auto [account, err]{decode_account_from_storage(value)};
@@ -131,35 +132,34 @@ void collect_for_unwind(Bytes key, Bytes value, etl::Collector& collector, lmdb:
             }
 
             auto new_encoded_account{account.encode_for_storage(false)};
-            etl::Entry entry{key, new_encoded_account};
-            collector.collect(entry);
-        } else {
-            plain_state_table->del(key);
+            plain_state_table->put(key, new_encoded_account);
         }
         return;
     }
+    
+    auto location{key.substr(kAddressLength + db::kIncarnationLength)};
+    plain_state_table->del(key.substr(0, kAddressLength + db::kIncarnationLength), location);
     if (value.size() > 0) {
-        etl::Entry entry{key.substr(0, kAddressLength + db::kIncarnationLength + kHashLength), value};
-        collector.collect(entry);
-    } else {
-        plain_state_table->del(key.substr(0, kAddressLength + db::kIncarnationLength + kHashLength));
+        auto data{location.append(value)};
+        plain_state_table->put(key.substr(0, kAddressLength + db::kIncarnationLength), data);
     }
     return;
 }
 
-void walk_collect(lmdb::Table* source, lmdb::Table* plain_state_table, lmdb::Table* plain_code_table, etl::Collector& collector, uint64_t block_number, uint64_t unwind_to) {
+void walk_collect(lmdb::Table* source, lmdb::Table* plain_state_table, lmdb::Table* plain_code_table, uint64_t block_number, uint64_t unwind_to) {
     Bytes unwind_to_bytes(8, '\0');
     boost::endian::store_big_u64(&unwind_to_bytes[0], unwind_to+1);
     MDB_val mdb_key{db::to_mdb_val(unwind_to_bytes)};
     MDB_val mdb_data;
     int rc{source->seek(&mdb_key, &mdb_data)}; 
     while (!rc) {
+
         Bytes key(static_cast<unsigned char*>(mdb_key.mv_data), mdb_key.mv_size);
         Bytes value(static_cast<unsigned char*>(mdb_data.mv_data), mdb_data.mv_size);
         auto current_block{boost::endian::load_big_u64(&key[0])};
         if (current_block > block_number) break;
         auto [new_key, new_value]{convert_to_db_format(key, value)};
-        collect_for_unwind(new_key, new_value, collector, plain_state_table, plain_code_table);
+        collect_for_unwind(new_key, new_value, plain_state_table, plain_code_table);
         rc = source->get_next(&mdb_key, &mdb_data);
     }
     if (rc != MDB_NOTFOUND) {
@@ -170,6 +170,7 @@ void walk_collect(lmdb::Table* source, lmdb::Table* plain_state_table, lmdb::Tab
 void unwind_table_from(lmdb::Table* table, Bytes& starting_key) {
     MDB_val mdb_key{db::to_mdb_val(starting_key)};
     MDB_val mdb_data;
+
     int rc{table->seek(&mdb_key, &mdb_data)}; 
     while (!rc) {
         lmdb::err_handler(table->del_current());
@@ -182,12 +183,9 @@ void unwind_table_from(lmdb::Table* table, Bytes& starting_key) {
 
 StageResult unwind_execution(lmdb::DatabaseConfig db_config, uint64_t unwind_to) {
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
+    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
     // Compute etl temporary path
     fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
-    fs::create_directories(etl_path);
-    etl::Collector changes_collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
     bool write_receipts{db::read_storage_mode_receipts(*txn)};
 
     uint64_t block_number{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
@@ -200,14 +198,11 @@ StageResult unwind_execution(lmdb::DatabaseConfig db_config, uint64_t unwind_to)
     auto account_changeset_table{txn->open(db::table::kPlainAccountChangeSet)};
     auto storage_changeset_table{txn->open(db::table::kPlainStorageChangeSet)};
 
-    walk_collect(account_changeset_table.get(), plain_state_table.get(), plain_code_table.get(), changes_collector, block_number, unwind_to+1);
-    walk_collect(storage_changeset_table.get(), plain_state_table.get(), plain_code_table.get(), changes_collector, block_number, unwind_to+1);
+    walk_collect(account_changeset_table.get(), plain_state_table.get(), plain_code_table.get(), block_number, unwind_to);
+    walk_collect(storage_changeset_table.get(), plain_state_table.get(), plain_code_table.get(), block_number, unwind_to);
     // We set the cursor data
     Bytes unwind_to_bytes(8, '\0');
     boost::endian::store_big_u64(&unwind_to_bytes[0], unwind_to+1);
-
-    changes_collector.load(plain_state_table.get(), nullptr, MDB_DUPSORT,
-        /* log_every_percent = */ 10);
 
     // Truncate Changesets
     unwind_table_from(account_changeset_table.get(), unwind_to_bytes);

@@ -104,7 +104,7 @@ StageResult stage_execution(lmdb::DatabaseConfig db_config) {
 }
 
 void collect_for_unwind(Bytes key, Bytes value, lmdb::Table* plain_state_table, lmdb::Table* plain_code_table) {
-    if (key.size() == 20) {
+    if (key.size() == kAddressLength) {
         plain_state_table->del(key);
         if (value.size() > 0) {
             auto address{key.substr(0, kAddressLength)};
@@ -152,7 +152,7 @@ void walk_collect(lmdb::Table* source, lmdb::Table* plain_state_table, lmdb::Tab
     MDB_val mdb_key{db::to_mdb_val(unwind_to_bytes)};
     MDB_val mdb_data;
     int rc{source->seek(&mdb_key, &mdb_data)}; 
-    while (!rc) {
+    while (rc == MDB_SUCCESS) {
 
         Bytes key(static_cast<unsigned char*>(mdb_key.mv_data), mdb_key.mv_size);
         Bytes value(static_cast<unsigned char*>(mdb_data.mv_data), mdb_data.mv_size);
@@ -172,7 +172,7 @@ void unwind_table_from(lmdb::Table* table, Bytes& starting_key) {
     MDB_val mdb_data;
 
     int rc{table->seek(&mdb_key, &mdb_data)}; 
-    while (!rc) {
+    while (rc == MDB_SUCCESS) {
         lmdb::err_handler(table->del_current());
         rc = table->get_next(&mdb_key, &mdb_data);
     }

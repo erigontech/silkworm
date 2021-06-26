@@ -38,6 +38,8 @@ Bytes cbor_encode(const std::vector<Receipt>& v) {
         encoder.write_null();  // no PostState
         encoder.write_int(r.success ? 1u : 0u);
         encoder.write_int(static_cast<unsigned long long>(r.cumulative_gas_used));
+
+        // Bloom filter and logs are omitted, same as in Erigon
     }
 
     return Bytes{output.data(), output.size()};

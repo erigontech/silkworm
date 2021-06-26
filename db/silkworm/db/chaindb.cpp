@@ -633,8 +633,4 @@ std::shared_ptr<Environment> get_env(DatabaseConfig config) {
     return newitem;
 }
 
-/* Custom Key comparators */
-
-int cmp_fixed_len_key(const MDB_val* a, const MDB_val* b) { return memcmp(a->mv_data, b->mv_data, a->mv_size); }
-
 }  // namespace silkworm::lmdb

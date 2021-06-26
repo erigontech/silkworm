@@ -39,7 +39,7 @@ struct EnvConfig {
 struct MapConfig {
     const char* name{nullptr};                                        // Name of the table (is key in MAIN_DBI)
     const ::mdbx::key_mode key_mode{::mdbx::key_mode::usual};         // Key collation order
-    const ::mdbx::value_mode value_mode{::mdbx::value_mode::single};  // Data Storage
+    const ::mdbx::value_mode value_mode{::mdbx::value_mode::single};  // Data Storage Mode
 };
 
 ::mdbx::env_managed open_env(const EnvConfig& config);

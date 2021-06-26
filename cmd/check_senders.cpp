@@ -119,14 +119,14 @@ class RecoveryWorker final : public silkworm::Worker {
     boost::signals2::signal<void(RecoveryWorker* sender, uint32_t batch_id)> signal_completed;
 
   private:
-    const uint32_t id_;                                    // Current worker identifier
-    uint32_t batch_id_{0};                                 // Running batch identifier
-    std::unique_ptr<std::vector<package>> batch_;          // Batch to process
-    size_t data_size_;                                     // Size of the recovery data buffer
-    uint8_t* data_{nullptr};                               // Pointer to data where rsults are stored
+    const uint32_t id_;                                  // Current worker identifier
+    uint32_t batch_id_{0};                               // Running batch identifier
+    std::unique_ptr<std::vector<package>> batch_;        // Batch to process
+    size_t data_size_;                                   // Size of the recovery data buffer
+    uint8_t* data_{nullptr};                             // Pointer to data where rsults are stored
     std::vector<std::pair<uint64_t, iovec>> results_{};  // Results per block pointing to data area
-    std::string last_error_{};                             // Description of last error occurrence
-    std::atomic<Status> status_{Status::Idle};             // Status of worker
+    std::string last_error_{};                           // Description of last error occurrence
+    std::atomic<Status> status_{Status::Idle};           // Status of worker
 
     // Basic work loop (overrides Worker::work())
     void work() final {
@@ -170,7 +170,7 @@ class RecoveryWorker final : public silkworm::Worker {
             if (status_.load() == Status::Working) {
                 // Store results for last block
                 if (block_result_length) {
-                    iovec result{&data_[block_result_offset] ,block_result_length};
+                    iovec result{&data_[block_result_offset], block_result_length};
                     results_.push_back({block_num, result});
                 }
                 status_.store(Status::ResultsReady);
@@ -716,45 +716,38 @@ class RecoveryFarm final {
                                      << std::endl;
 
         try {
+
             // Locate starting canonical header selected
             uint64_t expected_block_num{height_from};
             uint64_t reached_block_num{0};
-            auto hashes_table{db_transaction_.open(db::table::kCanonicalHashes)};
-            auto header_key{db::block_key(expected_block_num)};
-            MDB_val mdb_key{db::to_mdb_val(header_key)}, mdb_data{};
 
-            int rc{hashes_table->seek_exact(&mdb_key, &mdb_data)};
-            if (rc) {
-                if (rc == MDB_NOTFOUND) {
-                    SILKWORM_LOG(LogLevel::Error) << "Header " << expected_block_num << " not found" << std::endl;
-                    return Status::HeaderNotFound;
-                }
-                lmdb::err_handler(rc);
+            auto canonical_hashes{
+                db_transaction_.open_cursor(db::open_map(db_transaction_, db::table::kCanonicalHashes))};
+
+            auto header_key{db::block_key(expected_block_num)};
+            auto header_data{
+                canonical_hashes.find({header_key.c_str(), header_key.length()}, /*throw_notfound = */ false)};
+            if (!header_data) {
+                SILKWORM_LOG(LogLevel::Error) << "Header " << expected_block_num << " not found" << std::endl;
+                return Status::HeaderNotFound;
             }
 
-            // Read all headers up to block_to included
-            while (!rc) {
-                ByteView key_view{db::from_mdb_val(mdb_key)};
-                reached_block_num = boost::endian::load_big_u64(&key_view[0]);
+            while (header_data) {
+                reached_block_num = boost::endian::load_big_u64(header_data.key.byte_ptr());
                 if (reached_block_num != expected_block_num) {
                     SILKWORM_LOG(LogLevel::Error) << "Bad header hash sequence ! Expected " << expected_block_num
                                                   << " got " << reached_block_num << std::endl;
                     return Status::BadHeaderSequence;
                 }
-
-                if (mdb_data.mv_size != kHashLength) {
+                if (header_data.value.size() != kHashLength) {
                     SILKWORM_LOG(LogLevel::Error) << "Bad header hash at height " << reached_block_num << std::endl;
                     return Status::BadHeaderHash;
                 }
 
                 // We have a canonical header hash in right sequence
-                headers_.push_back(to_bytes32(db::from_mdb_val(mdb_data)));
+                headers_.push_back(to_bytes32(db::from_iovec(header_data.value)));
                 expected_block_num++;
-                rc = hashes_table->get_next(&mdb_key, &mdb_data);
-            }
-
-            if (rc && rc != MDB_NOTFOUND) {
-                lmdb::err_handler(rc);
+                header_data = canonical_hashes.to_next(/*throw_notfound = */ false);
             }
 
             // If we've not reached block_to something is wrong
@@ -762,11 +755,12 @@ class RecoveryFarm final {
                 return Status::HeaderNotFound;
             }
 
+            canonical_hashes.close();
             return Status::Succeded;
 
-        } catch (const lmdb::exception& ex) {
+        } catch (const std::exception& ex) {
             SILKWORM_LOG(LogLevel::Error)
-                << "Load canonical headers : Unexpected database error :  " << ex.what() << std::endl;
+                << "Load canonical headers : Unexpected error :  " << ex.what() << std::endl;
             return Status::DatabaseError;
         }
     }

@@ -399,13 +399,6 @@ class Table {
 
 std::shared_ptr<Environment> get_env(DatabaseConfig config);
 
-/* Custom Key comparators */
-
-/** @brief Compares two keys lexically with strong assumption both keys are same size
- *
- */
-int cmp_fixed_len_key(const MDB_val* a, const MDB_val* b);
-
 }  // namespace silkworm::lmdb
 
 #endif  // SILKWORM_DB_CHAINDB_HPP_

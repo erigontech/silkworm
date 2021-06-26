@@ -352,7 +352,7 @@ bool migration_happened(lmdb::Transaction& txn, const char* name) {
     return tbl->get(byte_view_of_c_str(name)).has_value();
 }
 
-std::optional<ChainConfig> read_chain_config(lmdb::Transaction& txn) {
+std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
     auto headers_key{block_key(0)};
     auto mdb_key{to_mdb_val(headers_key)};
     auto genesis_hash{txn.get(db::table::kCanonicalHashes, &mdb_key)};

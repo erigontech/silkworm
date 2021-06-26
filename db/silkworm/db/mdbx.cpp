@@ -34,6 +34,14 @@ void EnvConfig::set_exclusive(bool value) {
     }
 }
 
+void EnvConfig::set_in_mem(bool value) {
+    if (value) {
+        flags |= MDBX_NOMETASYNC;
+    } else {
+        flags &= ~MDBX_NOMETASYNC;
+    }
+}
+
 ::mdbx::env_managed open_env(const EnvConfig& config) {
 
     if (config.path.empty()) {

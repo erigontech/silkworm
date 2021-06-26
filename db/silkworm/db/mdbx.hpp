@@ -33,6 +33,7 @@ struct EnvConfig {
     uint32_t max_readers{100};                                                  // Default max number of readers
     void set_readonly(bool value);                                              // Sets/unsets readonly flag
     void set_exclusive(bool value);                                             // Sets/unsets exclusive flag
+    void set_in_mem(bool value);                                                // Sets/unsets in memory
 };
 
 struct MapConfig {

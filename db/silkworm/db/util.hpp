@@ -25,11 +25,12 @@ see its package dbutils.
 #include <string>
 
 #include <absl/container/btree_map.h>
-#include "../libmdbx/mdbx.h++"
 #include <lmdb/lmdb.h>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/block.hpp>
+
+#include "../libmdbx/mdbx.h++"
 
 namespace silkworm::db {
 
@@ -83,6 +84,11 @@ inline MDB_val to_mdb_val(ByteView view) {
 inline ByteView from_mdb_val(const MDB_val val) {
     auto* ptr{static_cast<uint8_t*>(val.mv_data)};
     return {ptr, val.mv_size};
+}
+
+inline ByteView from_iovec(const iovec val) {
+    auto* ptr{static_cast<uint8_t*>(val.iov_base)};
+    return {ptr, val.iov_len};
 }
 
 inline ByteView from_slice(const mdbx::slice slice) { return {slice.byte_ptr(), slice.length()}; }

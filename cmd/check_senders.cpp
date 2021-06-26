@@ -34,6 +34,7 @@
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
@@ -46,7 +47,6 @@ std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
 
 struct app_options_t {
     std::string datadir{};                                      // Provided database path
-    uint64_t mapsize{0};                                        // Provided lmdb map size
     uint32_t max_workers{std::thread::hardware_concurrency()};  // Max number of threads
     size_t batch_size{1'000'000};                               // Number of work packages to serve a worker
     uint32_t block_from{1u};                                    // Initial block number to start from
@@ -107,7 +107,7 @@ class RecoveryWorker final : public silkworm::Worker {
     Status get_status(void) const { return status_.load(); };
 
     // Pull results from worker
-    bool pull_results(Status status, std::vector<std::pair<uint64_t, MDB_val>>& out) {
+    bool pull_results(Status status, std::vector<std::pair<uint64_t, iovec>>& out) {
         if (status_.compare_exchange_strong(status, Status::Idle)) {
             std::swap(out, results_);
             return true;
@@ -124,7 +124,7 @@ class RecoveryWorker final : public silkworm::Worker {
     std::unique_ptr<std::vector<package>> batch_;          // Batch to process
     size_t data_size_;                                     // Size of the recovery data buffer
     uint8_t* data_{nullptr};                               // Pointer to data where rsults are stored
-    std::vector<std::pair<uint64_t, MDB_val>> results_{};  // Results per block pointing to data area
+    std::vector<std::pair<uint64_t, iovec>> results_{};  // Results per block pointing to data area
     std::string last_error_{};                             // Description of last error occurrence
     std::atomic<Status> status_{Status::Idle};             // Status of worker
 
@@ -132,7 +132,7 @@ class RecoveryWorker final : public silkworm::Worker {
     void work() final {
         while (wait_for_kick()) {
             // Prefer swapping with a new vector instead of clear
-            std::vector<std::pair<uint64_t, MDB_val>>().swap(results_);
+            std::vector<std::pair<uint64_t, iovec>>().swap(results_);
 
             uint64_t block_num{(*batch_).front().block_num};
             size_t block_result_offset{0};
@@ -141,7 +141,7 @@ class RecoveryWorker final : public silkworm::Worker {
             for (auto const& package : (*batch_)) {
                 // On block switching store the results
                 if (block_num != package.block_num) {
-                    MDB_val result{block_result_length, &data_[block_result_offset]};
+                    iovec result{&data_[block_result_offset], block_result_length};
                     results_.push_back({block_num, result});
                     block_result_offset += block_result_length;
                     block_result_length = 0;
@@ -170,7 +170,7 @@ class RecoveryWorker final : public silkworm::Worker {
             if (status_.load() == Status::Working) {
                 // Store results for last block
                 if (block_result_length) {
-                    MDB_val result{block_result_length, &data_[block_result_offset]};
+                    iovec result{&data_[block_result_offset] ,block_result_length};
                     results_.push_back({block_num, result});
                 }
                 status_.store(Status::ResultsReady);
@@ -201,7 +201,7 @@ class RecoveryFarm final {
      * @param max_workers: max number of recovery threads to spawn
      * @param max_batch_size: max number of transaction to be sent a worker for recovery
      */
-    explicit RecoveryFarm(lmdb::Transaction& db_transaction, uint32_t max_workers, size_t max_batch_size,
+    explicit RecoveryFarm(mdbx::txn_managed& db_transaction, uint32_t max_workers, size_t max_batch_size,
                           etl::Collector& collector)
         : db_transaction_{db_transaction},
           max_workers_{max_workers},
@@ -516,7 +516,7 @@ class RecoveryFarm final {
         static std::string fmt_row{"%10u b %12u t"};
 
         Status ret{Status::Succeded};
-        std::vector<std::pair<uint64_t, MDB_val>> worker_results{};
+        std::vector<std::pair<uint64_t, iovec>> worker_results{};
         do {
             // Check we have results to pull
             std::unique_lock l(batches_completed_mtx);
@@ -548,12 +548,12 @@ class RecoveryFarm final {
                     ret = Status::WorkerStatusMismatch;
                     break;
                 } else {
-                    for (auto& [block_num, mdb_val] : worker_results) {
+                    for (auto& [block_num, data] : worker_results) {
                         total_processed_blocks_++;
-                        total_recovered_transactions_ += (mdb_val.mv_size / kAddressLength);
+                        total_recovered_transactions_ += (data.iov_len / kAddressLength);
 
                         auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
-                        Bytes etl_data(db::from_mdb_val(mdb_val));
+                        Bytes etl_data(db::from_iovec(data));
                         etl::Entry entry{etl_key, etl_data};
                         collector_.collect(entry);  // TODO check for errors (eg. disk full)
                         headers_it_2_++;
@@ -798,7 +798,7 @@ class RecoveryFarm final {
     }
 
     friend class RecoveryWorker;
-    lmdb::Transaction& db_transaction_;  // Database transaction
+    mdbx::txn_managed& db_transaction_;  // Database transaction
 
     /* Recovery workers */
     uint32_t max_workers_;                                    // Max number of workers/threads
@@ -836,9 +836,6 @@ int main(int argc, char* argv[]) {
     // Command line arguments
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
 
-    std::string mapSizeStr{"0"};
-    app.add_option("--lmdb.mapSize", mapSizeStr, "Lmdb map size", true);
-
     app.add_option("--workers", options.max_workers, "Max number of worker threads", true)
         ->check(CLI::Range(1u, std::thread::hardware_concurrency()));
 
@@ -864,16 +861,6 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
     }
 
-    auto lmdb_mapSize{parse_size(mapSizeStr)};
-    if (!lmdb_mapSize.has_value()) {
-        std::cerr << "Provided --lmdb.mapSize \"" << mapSizeStr << "\" is invalid" << std::endl;
-        return -1;
-    }
-    if (*lmdb_mapSize) {
-        // Adjust mapSize to a multiple of page_size
-        size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
-        options.mapsize = ((*lmdb_mapSize + host_page_size - 1) / host_page_size) * host_page_size;
-    }
     if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions
 
     signal(SIGINT, sig_handler);
@@ -903,9 +890,8 @@ int main(int argc, char* argv[]) {
         }
 
         // Set database parameters
-        lmdb::DatabaseConfig db_config{options.datadir};
+        db::EnvConfig db_config{options.datadir};
         db_config.set_readonly(false);
-        db_config.map_size = options.mapsize;
 
         // Compute etl temporary path
         fs::path etl_path(db_path.parent_path() / fs::path("etl-temp"));
@@ -913,11 +899,11 @@ int main(int argc, char* argv[]) {
         etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
         // Open db and transaction
-        auto lmdb_env{lmdb::get_env(db_config)};
-        auto lmdb_txn{lmdb_env->begin_rw_transaction()};
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
 
         // Create farm instance and do work
-        RecoveryFarm farm(*lmdb_txn, options.max_workers, options.batch_size, collector);
+        RecoveryFarm farm(txn, options.max_workers, options.batch_size, collector);
         RecoveryFarm::Status result{RecoveryFarm::Status::Succeded};
 
         if (app_recover) {
@@ -932,7 +918,7 @@ int main(int argc, char* argv[]) {
         } else {
             if (!options.dry) {
                 SILKWORM_LOG(LogLevel::Info) << "Committing" << std::endl;
-                lmdb::err_handler(lmdb_txn->commit());
+                txn.commit();
             } else {
                 SILKWORM_LOG(LogLevel::Info) << "Not committing (--dry)" << std::endl;
             }

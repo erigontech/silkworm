@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
         int rc{canonical_hashes_table->get_first(&mdb_key, &mdb_data)};
 
         // Check if each hash has the correct number according to the header table
-        while (!rc) {
+        while (rc == MDB_SUCCESS) {
             ByteView hash_key_view{db::from_mdb_val(mdb_key)};    // Height number
             ByteView hash_data_view{db::from_mdb_val(mdb_data)};  // Canonical Hash
             auto block_data_view{blockhashes_table->get(hash_data_view)};

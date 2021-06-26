@@ -54,7 +54,7 @@ void check(lmdb::Transaction* txn, Operation operation) {
     MDB_val mdb_key;
     MDB_val mdb_data;
     int rc{source_table->get_first(&mdb_key, &mdb_data)};
-    while (!rc) { /* Loop as long as we have no errors*/
+    while (rc == MDB_SUCCESS) { /* Loop as long as we have no errors*/
         Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
         Bytes expected_value{db::from_mdb_val(mdb_data)};
 

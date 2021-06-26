@@ -106,7 +106,7 @@ int Environment::get_flags(unsigned int* flags) {
 int Environment::get_mapsize(size_t* size) {
     MDB_envinfo info{};
     int rc{get_info(&info)};
-    if (!rc) {
+    if (rc == MDB_SUCCESS) {
         *size = info.me_mapsize;
     }
     return rc;

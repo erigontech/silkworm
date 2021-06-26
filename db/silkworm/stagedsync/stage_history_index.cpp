@@ -67,7 +67,7 @@ StageResult history_index_stage(lmdb::DatabaseConfig db_config, bool storage) {
     size_t allocated_space{0};
     uint64_t block_number{0};
     int rc{changeset_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
-    while (!rc) {                                        /* Loop as long as we have no errors*/
+    while (rc == MDB_SUCCESS) {                                        /* Loop as long as we have no errors*/
         std::string composite_key;
         if (storage) {
             char composite_key_array[kHashLength + kAddressLength];

@@ -20,64 +20,60 @@
 #include <silkworm/db/chaindb.hpp>
 
 /*
-Part of the compatibility layer with the Erigon DB format;
+Part of the compatibility layer with the Turbo-Geth DB format;
 see its common/dbutils/bucket.go.
 */
 namespace silkworm::db::table {
 
 /* Canonical tables */
 constexpr lmdb::TableConfig kMAIN_DBI{nullptr};
-constexpr lmdb::TableConfig kAccountHistory{"hAT"};
-constexpr lmdb::TableConfig kBlockBodies{"b"};
+constexpr lmdb::TableConfig kAccountHistory{"AccountHistory"};
+constexpr lmdb::TableConfig kBlockBodies{"BlockBody"};
 
-constexpr lmdb::TableConfig kCanonicalHashes{"canonical_headers", 0,
+constexpr lmdb::TableConfig kCanonicalHashes{"CanonicalHeader", 0,
                                              lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) -> header_hash
-constexpr lmdb::TableConfig kHeaders{"headers", 0,
+constexpr lmdb::TableConfig kHeaders{"Header", 0,
                                      lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) + hash -> header (RLP)
 constexpr lmdb::TableConfig kDifficulty{
-    "header_to_td", 0, lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) + hash -> total_difficulty (RLP)
+    "HeadersTotalDifficulty", 0, lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) + hash -> total_difficulty (RLP)
 
-constexpr lmdb::TableConfig kBlockReceipts{"r"};
-constexpr lmdb::TableConfig kBloomBitsIndex{"iB"};
-constexpr lmdb::TableConfig kBloomBits{"B"};
-constexpr lmdb::TableConfig kBodiesSnapshotInfo{"bSNINFO"};
-constexpr lmdb::TableConfig kCallFromIndex{"call_from_index"};
-constexpr lmdb::TableConfig kCallToIndex{"call_to_index"};
-constexpr lmdb::TableConfig kClique{"clique-"};
-constexpr lmdb::TableConfig kCode{"CODE"};
-constexpr lmdb::TableConfig kConfig{"ethereum-config-"};
-constexpr lmdb::TableConfig kContractCode{"contractCode"};
-constexpr lmdb::TableConfig kDatabaseInfo{"DBINFO"};
-constexpr lmdb::TableConfig kDatabaseVersion{"DatabaseVersion"};
-constexpr lmdb::TableConfig kEthTx{"eth_tx"};
-constexpr lmdb::TableConfig kFastTrieProgress{"TrieSync"};
-constexpr lmdb::TableConfig kHashedAccounts{"hashed_accounts"};
-constexpr lmdb::TableConfig kHashedStorage{"hashed_storage", MDB_DUPSORT};
+constexpr lmdb::TableConfig kBlockReceipts{"Receipt"};
+constexpr lmdb::TableConfig kBloomBitsIndex{"BloomBitsIndex"};
+constexpr lmdb::TableConfig kBloomBits{"BloomBits"};
+constexpr lmdb::TableConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
+constexpr lmdb::TableConfig kCallFromIndex{"CallFromIndex"};
+constexpr lmdb::TableConfig kCallToIndex{"CallToIndex"};
+constexpr lmdb::TableConfig kClique{"Clique"};
+constexpr lmdb::TableConfig kCode{"Code"};
+constexpr lmdb::TableConfig kConfig{"Config"};
+constexpr lmdb::TableConfig kContractCode{"HashedCodeHash"};
+constexpr lmdb::TableConfig kDatabaseInfo{"DbInfo"};
+constexpr lmdb::TableConfig kEthTx{"BlockTransaction"};
+constexpr lmdb::TableConfig kHashedAccounts{"HashedAccount"};
+constexpr lmdb::TableConfig kHashedStorage{"HashedStorage", MDB_DUPSORT};
 constexpr lmdb::TableConfig kHeadBlock{"LastBlock"};
-constexpr lmdb::TableConfig kHeadFastBlock{"LastFast"};
 constexpr lmdb::TableConfig kHeadHeader{"LastHeader"};
-constexpr lmdb::TableConfig kHeaderNumbers{"H"};
-constexpr lmdb::TableConfig kHeadersSnapshotInfo{"hSNINFO"};
-constexpr lmdb::TableConfig kIncarnationMap{"incarnationMap"};
-constexpr lmdb::TableConfig kLogAddressIndex{"log_address_index"};
-constexpr lmdb::TableConfig kLogTopicIndex{"log_topic_index"};
-constexpr lmdb::TableConfig kLogs{"log"};
-constexpr lmdb::TableConfig kMigrations{"migrations"};
-constexpr lmdb::TableConfig kPlainAccountChangeSet{"PLAIN-ACS", MDB_DUPSORT};
-constexpr lmdb::TableConfig kPlainContractCode{"PLAIN-contractCode"};
-constexpr lmdb::TableConfig kPlainState{"PLAIN-CST2", MDB_DUPSORT};
-constexpr lmdb::TableConfig kPlainStorageChangeSet{"PLAIN-SCS", MDB_DUPSORT};
-constexpr lmdb::TableConfig kPreimage{"secure-key-"};
-constexpr lmdb::TableConfig kSenders{"txSenders"};
-constexpr lmdb::TableConfig kSequence{"sequence"};
-constexpr lmdb::TableConfig kSnapshotInfo{"SNINFO"};
-constexpr lmdb::TableConfig kStateSnapshotInfo{"sSNINFO"};
-constexpr lmdb::TableConfig kStorageHistory{"hST"};
-constexpr lmdb::TableConfig kSyncStageProgress{"SSP2"};  // Progresss for stages
-constexpr lmdb::TableConfig kSyncStageUnwind{"SSU2"};    // Unwind point for stages
-constexpr lmdb::TableConfig kTrieOfAccounts{"trie_account"};
-constexpr lmdb::TableConfig kTrieOfStorage{"trie_storage"};
-constexpr lmdb::TableConfig kTxLookup{"l"};
+constexpr lmdb::TableConfig kHeaderNumbers{"HeaderNumber"};
+constexpr lmdb::TableConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
+constexpr lmdb::TableConfig kIncarnationMap{"IncarnationMap"};
+constexpr lmdb::TableConfig kLogAddressIndex{"LogAddressIndex"};
+constexpr lmdb::TableConfig kLogTopicIndex{"LogTopicIndex"};
+constexpr lmdb::TableConfig kLogs{"TransactionLog"};
+constexpr lmdb::TableConfig kMigrations{"Migration"};
+constexpr lmdb::TableConfig kPlainAccountChangeSet{"AccountChangeSet", MDB_DUPSORT};
+constexpr lmdb::TableConfig kPlainContractCode{"PlainCodeHash"};
+constexpr lmdb::TableConfig kPlainState{"PlainState", MDB_DUPSORT};
+constexpr lmdb::TableConfig kPlainStorageChangeSet{"StorageChangeSet", MDB_DUPSORT};
+constexpr lmdb::TableConfig kSenders{"TxSender"};
+constexpr lmdb::TableConfig kSequence{"Sequence"};
+constexpr lmdb::TableConfig kSnapshotInfo{"SnapshotInfo"};
+constexpr lmdb::TableConfig kStateSnapshotInfo{"StateSnapshotInfo"};
+constexpr lmdb::TableConfig kStorageHistory{"StorageHistory"};
+constexpr lmdb::TableConfig kSyncStageProgress{"SyncStage"};  // Progresss for stages
+constexpr lmdb::TableConfig kSyncStageUnwind{"SyncStageUnwind"};    // Unwind point for stages
+constexpr lmdb::TableConfig kTrieOfAccounts{"TrieAccount"};
+constexpr lmdb::TableConfig kTrieOfStorage{"TrieStorage"};
+constexpr lmdb::TableConfig kTxLookup{"BlockTransactionLookup"};
 
 constexpr lmdb::TableConfig kTables[]{
     kAccountHistory,
@@ -96,13 +92,10 @@ constexpr lmdb::TableConfig kTables[]{
     kConfig,
     kContractCode,
     kDatabaseInfo,
-    kDatabaseVersion,
     kEthTx,
-    kFastTrieProgress,
     kHashedAccounts,
     kHashedStorage,
     kHeadBlock,
-    kHeadFastBlock,
     kHeadHeader,
     kHeaderNumbers,
     kHeadersSnapshotInfo,
@@ -115,7 +108,6 @@ constexpr lmdb::TableConfig kTables[]{
     kPlainContractCode,
     kPlainState,
     kPlainStorageChangeSet,
-    kPreimage,
     kSenders,
     kSequence,
     kSnapshotInfo,

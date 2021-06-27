@@ -88,7 +88,7 @@ std::vector<evmc::address> read_senders(lmdb::Transaction& txn, int64_t block_nu
                                         const uint8_t (&hash)[kHashLength]);
 
 // Overload
-std::vector<Transaction> read_transactions(lmdb::Table& txn_table, uint64_t base_id, uint64_t count);
+std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count);
 
 std::optional<Bytes> read_code(lmdb::Transaction& txn, const evmc::bytes32& code_hash);
 

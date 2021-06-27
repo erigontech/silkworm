@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#include "stagedsync.hpp"
 #include <filesystem>
+
 #include <boost/endian/conversion.hpp>
 
 #include <silkworm/common/log.hpp>
@@ -24,13 +24,16 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 
+#include "stagedsync.hpp"
+
 namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_blockhashes(lmdb::DatabaseConfig db_config) {
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
+StageResult stage_blockhashes(db::EnvConfig db_config) {
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_read()};
+
     fs::path datadir(db_config.path);
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
     fs::create_directories(etl_path);
@@ -38,10 +41,10 @@ StageResult stage_blockhashes(lmdb::DatabaseConfig db_config) {
     uint32_t block_number{0};
 
     // We take data from header table and transform it and put it in blockhashes table
-    auto canonical_hashes_table{txn->open(db::table::kCanonicalHashes)};
-    auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};
+    auto canonical_hashes_table{db::open_cursor(txn, db::table::kCanonicalHashes)};
+    auto blockhashes_table{db::open_cursor(txn, db::table::kHeaderNumbers)};
 
-    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kBlockHashesKey)};
+    auto last_processed_block_number{db::stages::get_stage_progress(txn, db::stages::kBlockHashesKey)};
     auto expected_block_number{last_processed_block_number + 1};
     uint32_t blocks_processed_count{0};
 
@@ -64,7 +67,8 @@ StageResult stage_blockhashes(lmdb::DatabaseConfig db_config) {
             // Something wrong with db
             // Blocks are out of sequence for any reason
             // Should not happen but you never know
-            SILKWORM_LOG(LogLevel::Error) << "Bad headers sequence. Expected " << expected_block_number << " got " << reached_block_number << std::endl;
+            SILKWORM_LOG(LogLevel::Error) << "Bad headers sequence. Expected " << expected_block_number << " got "
+                                          << reached_block_number << std::endl;
             return StageResult::kStageBadChainSequence;
         }
 
@@ -91,14 +95,14 @@ StageResult stage_blockhashes(lmdb::DatabaseConfig db_config) {
         SILKWORM_LOG(LogLevel::Info) << "Started BlockHashes Loading" << std::endl;
 
         /*
-            * If we're on first sync then we shouldn't have any records in target
-            * table. For this reason we can apply MDB_APPEND to load as
-            * collector (with no transform) ensures collected entries
-            * are already sorted. If instead target table contains already
-            * some data the only option is to load in upsert mode as we
-            * cannot guarantee keys are sorted amongst different calls
-            * of this stage
-            */
+         * If we're on first sync then we shouldn't have any records in target
+         * table. For this reason we can apply MDB_APPEND to load as
+         * collector (with no transform) ensures collected entries
+         * are already sorted. If instead target table contains already
+         * some data the only option is to load in upsert mode as we
+         * cannot guarantee keys are sorted amongst different calls
+         * of this stage
+         */
         auto target_table{txn->open(db::table::kHeaderNumbers, MDB_CREATE)};
         size_t target_table_rcount{0};
         lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
@@ -120,8 +124,6 @@ StageResult stage_blockhashes(lmdb::DatabaseConfig db_config) {
     return StageResult::kStageSuccess;
 }
 
-StageResult unwind_blockhashes(lmdb::DatabaseConfig, uint64_t) {
-    throw std::runtime_error("Not Implemented.");
-}
+StageResult unwind_blockhashes(lmdb::DatabaseConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
 
-}
+}  // namespace silkworm::stagedsync

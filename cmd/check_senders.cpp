@@ -299,27 +299,25 @@ class RecoveryFarm final {
             uint64_t expected_block_num{height_from};  // Expected block number in sequence
 
             SILKWORM_LOG(LogLevel::Debug) << "Begin read block bodies ... " << std::endl;
-            auto bodies_table{db_transaction_.open(db::table::kBlockBodies)};
-            auto transactions_table{db_transaction_.open(db::table::kEthTx)};
+            auto bodies_table{db::open_cursor(db_transaction_, db::table::kBlockBodies)};
+            auto transactions_table{db::open_cursor(db_transaction_, db::table::kEthTx)};
 
             // Set to first block and read all in sequence
             auto block_key{db::block_key(expected_block_num, headers_it_1_->bytes)};
-            MDB_val mdb_key{db::to_mdb_val(block_key)}, mdb_data{};
-            int rc{bodies_table->seek_exact(&mdb_key, &mdb_data)};
-            if (rc) {
+            auto block_data{bodies_table.find({block_key.c_str(), block_key.length()}, false)};
+            if (!block_data) {
                 return Status::BlockNotFound;
             }
 
             // Initializes first batch
             init_batch();
 
-            while (!rc && !should_stop()) {
-                auto key_view{db::from_mdb_val(mdb_key)};
-                block_num = boost::endian::load_big_u64(key_view.data());
+            while (block_data && !should_stop()) {
+                block_num = boost::endian::load_big_u64(block_data.key.byte_ptr());
                 if (block_num < expected_block_num) {
                     // The same block height has been recorded
                     // but is not canonical;
-                    rc = bodies_table->get_next(&mdb_key, &mdb_data);
+                    block_data = bodies_table.to_next(/*throw_notfound = */ false);
                     continue;
                 } else if (block_num > expected_block_num) {
                     // We surpassed the expected block which means
@@ -330,18 +328,18 @@ class RecoveryFarm final {
                     return Status::BadBlockSequence;
                 }
 
-                if (memcmp(&key_view[8], headers_it_1_->bytes, 32) != 0) {
+                if (memcmp(block_data.key.safe_middle(8, 32).data(), headers_it_1_->bytes, 32) != 0) {
                     // We stumbled into a non canonical block (not matching header)
                     // move next and repeat
-                    rc = bodies_table->get_next(&mdb_key, &mdb_data);
+                    block_data = bodies_table.to_next(/*throw_notfound = */ false);
                     continue;
                 }
 
                 // Get the body and its transactions
-                auto body_rlp{db::from_mdb_val(mdb_data)};
+                auto body_rlp{db::from_iovec(block_data.value)};
                 auto block_body{db::detail::decode_stored_block_body(body_rlp)};
                 std::vector<Transaction> transactions{
-                    db::read_transactions(*transactions_table, block_body.base_txn_id, block_body.txn_count)};
+                    db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count)};
 
                 if (transactions.size()) {
                     if (((*batch_).size() + transactions.size()) > max_batch_size_) {
@@ -364,21 +362,17 @@ class RecoveryFarm final {
                 }
 
                 expected_block_num++;
-                rc = bodies_table->get_next(&mdb_key, &mdb_data);
+                block_data = bodies_table.to_next(/*throw_notfound = */ false);
             }
 
-            if (rc && rc != MDB_NOTFOUND) {
-                lmdb::err_handler(rc);
-            } else {
-                ret = dispatch_batch(/* renew = */ false);
-                if (ret != Status::Succeded) {
-                    throw std::runtime_error("Unable to dispatch work");
-                }
+            ret = dispatch_batch(/* renew = */ false);
+            if (ret != Status::Succeded) {
+                throw std::runtime_error("Unable to dispatch work");
             }
 
             SILKWORM_LOG(LogLevel::Debug) << "End   read block bodies ... " << std::endl;
 
-        } catch (const lmdb::exception& ex) {
+        } catch (const mdbx::exception& ex) {
             SILKWORM_LOG(LogLevel::Error) << "Senders' recovery : Database error " << ex.what() << std::endl;
             ret = Status::DatabaseError;
         } catch (const std::exception& ex) {
@@ -716,7 +710,6 @@ class RecoveryFarm final {
                                      << std::endl;
 
         try {
-
             // Locate starting canonical header selected
             uint64_t expected_block_num{height_from};
             uint64_t reached_block_num{0};
@@ -759,8 +752,7 @@ class RecoveryFarm final {
             return Status::Succeded;
 
         } catch (const std::exception& ex) {
-            SILKWORM_LOG(LogLevel::Error)
-                << "Load canonical headers : Unexpected error :  " << ex.what() << std::endl;
+            SILKWORM_LOG(LogLevel::Error) << "Load canonical headers : Unexpected error :  " << ex.what() << std::endl;
             return Status::DatabaseError;
         }
     }

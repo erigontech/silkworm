@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     try {
-        lmdb::DatabaseConfig db_config{db_path};
+        db::EnvConfig db_config{db_path};
         db_config.set_readonly(false);
         auto result_code{stagedsync::stage_blockhashes(db_config)};
         check_stagedsync_error(result_code);

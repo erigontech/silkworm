@@ -62,7 +62,7 @@ void hashstate_promote_clean_state(lmdb::Transaction* txn, std::string etl_path)
     etl::Collector collector_storage(etl_path.c_str(), 512 * kMebi);
     int percent{0};
     uint64_t next_start_byte{0};
-    while (!rc) { /* Loop as long as we have no errors*/
+    while (rc == MDB_SUCCESS) { /* Loop as long as we have no errors*/
         Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
         Bytes mdb_value_as_bytes{db::from_mdb_val(mdb_data)};
         if (mdb_key_as_bytes.at(0) >= next_start_byte) {
@@ -107,7 +107,7 @@ void hashstate_promote_clean_code(lmdb::Transaction* txn, std::string etl_path) 
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.c_str(), 512 * kMebi);
     SILKWORM_LOG(LogLevel::Info) << "Hashing code keys" << std::endl;
-    while (!rc) { /* Loop as long as we have no errors*/
+    while (rc == MDB_SUCCESS) { /* Loop as long as we have no errors*/
         Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
         Bytes mdb_value_as_bytes{db::from_mdb_val(mdb_data)};
 
@@ -143,7 +143,7 @@ void hashstate_promote(lmdb::Transaction* txn, HashstateOperation operation) {
     MDB_val mdb_data;
     int rc{changeset_table->seek(&mdb_key, &mdb_data)};
 
-    while (!rc) {
+    while (rc == MDB_SUCCESS) {
         Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
         Bytes mdb_value_as_bytes{db::from_mdb_val(mdb_data)};
         auto [db_key, _]{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};

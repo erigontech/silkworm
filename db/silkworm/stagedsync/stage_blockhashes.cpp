@@ -51,7 +51,7 @@ StageResult stage_blockhashes(lmdb::DatabaseConfig db_config) {
 
     SILKWORM_LOG(LogLevel::Info) << "Started BlockHashes Extraction" << std::endl;
     int rc{canonical_hashes_table->seek_exact(&mdb_key, &mdb_data)};  // Sets cursor to matching header
-    while (!rc) {                                                     /* Loop as long as we have no errors*/
+    while (rc == MDB_SUCCESS) {                                                     /* Loop as long as we have no errors*/
 
         if (mdb_data.mv_size != kHashLength) {
             throw std::runtime_error("Invalid header hash for block " + std::to_string(expected_block_number));

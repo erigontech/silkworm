@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
         MDB_val mdb_key, mdb_data;
         int rc{bodies_table->get_first(&mdb_key, &mdb_data)};
 
-        while (!rc) {
+        while (rc == MDB_SUCCESS) {
             ByteView block_key(db::from_mdb_val(mdb_key));
             auto block_number(boost::endian::load_big_u64(&block_key[0]));
             auto body_rlp{db::from_mdb_val(mdb_data)};

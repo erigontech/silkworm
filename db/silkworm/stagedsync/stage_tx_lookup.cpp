@@ -60,7 +60,7 @@ StageResult stage_tx_lookup(lmdb::DatabaseConfig db_config) {
     MDB_val mdb_data;
     SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Extraction" << std::endl;
     int rc{bodies_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
-    while (!rc) {                                     /* Loop as long as we have no errors*/
+    while (rc == MDB_SUCCESS) {                                     /* Loop as long as we have no errors*/
         auto body_rlp{db::from_mdb_val(mdb_data)};
         auto body{db::detail::decode_stored_block_body(body_rlp)};
         Bytes block_number_as_bytes(static_cast<unsigned char*>(mdb_key.mv_data), 8);

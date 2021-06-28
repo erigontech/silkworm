@@ -27,7 +27,7 @@ namespace silkworm::etl {
 constexpr size_t kOptimalBufferSize = 256 * kMebi;
 
 // Function pointer to process Load on before Load data into tables
-typedef void (*LoadFunc)(Entry, lmdb::Table*, unsigned int);
+typedef void (*LoadFunc)(Entry, mdbx::cursor&, MDBX_put_flags_t);
 
 // Collects data Extracted from db
 class Collector {
@@ -47,10 +47,10 @@ class Collector {
      *
      * @param table : The target db table
      * @param load_func : Pointer to function transforming collected entries. If NULL no transform is executed
-     * @param db_flags : Optional db_flags to apply when persisting to db
+     * @param flags : Optional whether to append or upsert (default)
      * @param log_every_percent : Emits a log line indicating progress every this percent increment in processed items
      */
-    void load(lmdb::Table* table, LoadFunc load_func = nullptr, unsigned int db_flags = 0,
+    void load(mdbx::cursor& target, LoadFunc load_func = nullptr, MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT,
               uint32_t log_every_percent = 100u);
 
     /** @brief Returns the number of actually collected items

@@ -11,18 +11,7 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "addressSanitizerEnabled": true,
-      "variables": [
-        {
-          "name": "GMP_LIBRARY",
-          "value": "C:/Users/Andrea/Documents/libgmp/lib/x64/gmp.lib",
-          "type": "FILEPATH"
-        },
-        {
-          "name": "GMP_INCLUDE_DIR",
-          "value": "C:/Users/Andrea/Documents/libgmp/include",
-          "type": "PATH"
-        }
-      ]
+      "variables": []
     },
     {
       "name": "x64-Release",

@@ -59,8 +59,7 @@ void Collector::collect(const Entry& entry) {
     }
 }
 
-void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned int db_flags,
-                     uint32_t log_every_percent) {
+void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t flags, uint32_t log_every_percent) {
     const auto overall_size{size()};  // Amount of work
 
     if (!overall_size) {
@@ -78,9 +77,9 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
 
         for (const auto& etl_entry : buffer_.entries()) {
             if (load_func) {
-                load_func(etl_entry, table, db_flags);
+                load_func(etl_entry, target, flags);
             } else {
-                table->put(etl_entry.key, etl_entry.value, db_flags);
+                target.put(db::to_slice(etl_entry.key), &db::to_slice(etl_entry.value), flags);
             }
 
             if (!--dummy_counter) {
@@ -121,9 +120,9 @@ void Collector::load(silkworm::lmdb::Table* table, LoadFunc load_func, unsigned 
 
         // Process linked pairs
         if (load_func) {
-            load_func(etl_entry, table, db_flags);
+            load_func(etl_entry, target, flags);
         } else {
-            table->put(etl_entry.key, etl_entry.value, db_flags);
+            target.put(db::to_slice(etl_entry.key), &db::to_slice(etl_entry.value), flags);
         }
 
         // Display progress

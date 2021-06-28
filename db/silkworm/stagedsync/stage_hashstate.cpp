@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include "stagedsync.hpp"
-
 #include <filesystem>
 #include <iostream>
 
@@ -29,6 +27,8 @@
 #include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
 
+#include "stagedsync.hpp"
+
 namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
@@ -37,7 +37,7 @@ namespace fs = std::filesystem;
  *  Convert get tables configuration pair for incremental promotion
  *  First configuration of the pair is the source and second configuration is the table to fill.
  */
-std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_promote(HashstateOperation operation) {
+std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateOperation operation) {
     switch (operation) {
         case HashstateOperation::HashAccount:
             return {db::table::kPlainAccountChangeSet, db::table::kHashedAccounts};
@@ -51,86 +51,91 @@ std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_promote(Hashstate
  *  If we havent done hashstate before(first sync), it is possible to just hash values from plainstates,
  *  This is way faster than using changeset because it uses less database reads.
  */
-void hashstate_promote_clean_state(lmdb::Transaction* txn, std::string etl_path) {
+void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
     SILKWORM_LOG(LogLevel::Info) << "Hashing state" << std::endl;
-    auto source_table{txn->open(db::table::kPlainState)};
-    MDB_val mdb_key;
-    MDB_val mdb_data;
-    int rc{source_table->get_first(&mdb_key, &mdb_data)};
+
     fs::create_directories(etl_path);
     etl::Collector collector_account(etl_path.c_str(), 512 * kMebi);
     etl::Collector collector_storage(etl_path.c_str(), 512 * kMebi);
+
+    auto src{db::open_cursor(txn, db::table::kPlainState)};
+    auto data{src.to_first(/*throw_notfound*/ false)};
     int percent{0};
     uint64_t next_start_byte{0};
-    while (!rc) { /* Loop as long as we have no errors*/
-        Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
-        Bytes mdb_value_as_bytes{db::from_mdb_val(mdb_data)};
-        if (mdb_key_as_bytes.at(0) >= next_start_byte) {
+
+    while (data) {
+        // TODO (Giulio) -- a byte >= uint64 ??
+        if (data.key.at(0) >= next_start_byte) {
             SILKWORM_LOG(LogLevel::Info) << "Progress: " << percent << "%" << std::endl;
             percent += 10;
             next_start_byte += 25;
         }
+
         // Account
-        if (mdb_key.mv_size == kAddressLength) {
-            etl::Entry entry{Bytes(keccak256(mdb_key_as_bytes).bytes, kHashLength), mdb_value_as_bytes};
+        if (data.key.length() == kAddressLength) {
+            etl::Entry entry{Bytes(keccak256(db::from_iovec(data.key)).bytes, kHashLength),
+                             Bytes(data.value.byte_ptr(), data.value.length())};
             collector_account.collect(entry);
         } else {
             Bytes new_key(kHashLength * 2 + db::kIncarnationLength, '\0');
-            std::memcpy(&new_key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
-            std::memcpy(&new_key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
-            std::memcpy(&new_key[kHashLength + db::kIncarnationLength],
-                        keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
-            etl::Entry entry{new_key, mdb_value_as_bytes};
+            uint32_t new_key_pos{0};
+
+            std::memcpy(&new_key[new_key_pos], keccak256(db::from_iovec(data.key).substr(0, kAddressLength)).bytes,
+                        kHashLength);
+            data.key.remove_prefix(kAddressLength);
+            new_key_pos += kAddressLength;
+
+            std::memcpy(&new_key[new_key_pos], data.key.iov_base, db::kIncarnationLength);
+            data.key.remove_prefix(db::kIncarnationLength);
+            new_key_pos += db::kIncarnationLength;
+
+            std::memcpy(&new_key[new_key_pos], keccak256(db::from_iovec(data.key)).bytes, kHashLength);
+            etl::Entry entry{new_key, Bytes(data.value.byte_ptr(), data.value.length())};
             collector_storage.collect(entry);
         }
-        rc = source_table->get_next(&mdb_key, &mdb_data);
-    }
 
-    if (rc && rc != MDB_NOTFOUND) { /* MDB_NOTFOUND is not actually an error rather eof */
-        lmdb::err_handler(rc);
+        data = src.to_next(/*throw_notfound*/ false);
     }
 
     SILKWORM_LOG(LogLevel::Info) << "Started Account Loading" << std::endl;
-    collector_account.load(txn->open(db::table::kHashedAccounts, MDB_CREATE).get(), nullptr, MDB_APPEND,
-                           /* log_every_percent = */ 10);
+    auto target{db::open_cursor(txn, db::table::kHashedAccounts)};
+    collector_account.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
 
     SILKWORM_LOG(LogLevel::Info) << "Started Storage Loading" << std::endl;
-    collector_storage.load(txn->open(db::table::kHashedStorage, MDB_CREATE).get(), nullptr, MDB_APPENDDUP,
-                           /* log_every_percent = */ 10);
+    target = db::open_cursor(txn, db::table::kHashedStorage);
+    collector_storage.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
 }
 
-void hashstate_promote_clean_code(lmdb::Transaction* txn, std::string etl_path) {
-    auto source_table{txn->open(db::table::kPlainContractCode)};
-    MDB_val mdb_key;
-    MDB_val mdb_data;
-    int rc{source_table->get_first(&mdb_key, &mdb_data)};
+void hashstate_promote_clean_code(mdbx::txn& txn, std::string etl_path) {
+
+    SILKWORM_LOG(LogLevel::Info) << "Hashing code keys" << std::endl;
+
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.c_str(), 512 * kMebi);
-    SILKWORM_LOG(LogLevel::Info) << "Hashing code keys" << std::endl;
-    while (!rc) { /* Loop as long as we have no errors*/
-        Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
-        Bytes mdb_value_as_bytes{db::from_mdb_val(mdb_data)};
+
+    auto tbl{db::open_cursor(txn,db::table::kPlainContractCode)};
+    auto data{tbl.to_first(/*throw_notfound*/ false)};
+    while (data) {
 
         Bytes new_key(kHashLength + db::kIncarnationLength, '\0');
-        std::memcpy(&new_key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
-        std::memcpy(&new_key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
-        etl::Entry entry{new_key, mdb_value_as_bytes};
+        std::memcpy(&new_key[0], keccak256(db::from_iovec(data.key.safe_middle(0, kAddressLength))).bytes, kHashLength);
+        std::memcpy(&new_key[kHashLength], data.key.safe_middle(kAddressLength, db::kIncarnationLength).iov_base, db::kIncarnationLength);
+        etl::Entry entry{new_key, Bytes(data.value.byte_ptr(), data.value.length())};
         collector.collect(entry);
-        rc = source_table->get_next(&mdb_key, &mdb_data);
+        data = tbl.to_next(/*throw_notfound*/ false);
     }
-    if (rc != MDB_NOTFOUND) {
-        lmdb::err_handler(rc);
-    }
+    tbl.close();
+
     SILKWORM_LOG(LogLevel::Info) << "Started Code Loading" << std::endl;
-    collector.load(txn->open(db::table::kContractCode, MDB_CREATE).get(), nullptr, MDB_APPEND,
-                   /* log_every_percent = */ 10);
+    tbl = db::open_cursor(txn, db::table::kContractCode);
+    collector.load(tbl, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
 }
 /*
  *  If we have done hashstate before(not first sync),
  *  We need to use changeset because we can use the progress system.
  *  Note: Standard Promotion is way slower than Clean Promotion
  */
-void hashstate_promote(lmdb::Transaction* txn, HashstateOperation operation) {
+void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     auto [changeset_config, target_config] = get_tables_for_promote(operation);
     auto changeset_table{txn->open(changeset_config)};
     auto plainstate_table{txn->open(db::table::kPlainState)};
@@ -210,7 +215,7 @@ StageResult stage_hashstate(lmdb::DatabaseConfig db_config) {
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
 
     std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+    std::unique_ptr<mdbx::txn> txn{env->begin_rw_transaction()};
 
     SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
@@ -228,14 +233,12 @@ StageResult stage_hashstate(lmdb::DatabaseConfig db_config) {
     }
     // Update progress height with last processed block
     db::stages::set_stage_progress(*txn, db::stages::kHashStateKey,
-                                    db::stages::get_stage_progress(*txn, db::stages::kExecutionKey));
+                                   db::stages::get_stage_progress(*txn, db::stages::kExecutionKey));
     lmdb::err_handler(txn->commit());
     txn.reset();
     SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
     return StageResult::kStageSuccess;
 }
 
-StageResult unwind_hashstate(lmdb::DatabaseConfig, uint64_t) {
-    throw std::runtime_error("Not Implemented.");
-}
-}
+StageResult unwind_hashstate(lmdb::DatabaseConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+}  // namespace silkworm::stagedsync

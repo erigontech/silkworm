@@ -388,21 +388,21 @@ class RecoveryFarm final {
             if (collector_.size() && !should_stop()) {
                 try {
                     // Prepare target table
-                    auto target_table = db_transaction_.open(db::table::kSenders, MDB_CREATE);
+                    auto target_table{db::open_cursor(db_transaction_, db::table::kSenders)};
                     SILKWORM_LOG(LogLevel::Info)
-                        << "ETL Load [2/2] : Loading data into " << target_table->get_name() << std::endl;
+                        << "ETL Load [2/2] : Loading data into " << db::table::kSenders.name << std::endl;
+
                     collector_.load(
-                        target_table.get(), nullptr, MDB_APPEND,
+                        target_table, nullptr, MDBX_put_flags_t::MDBX_APPEND,
                         /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 50 : 10));
 
                     // Get the last processed block and update stage height
-                    MDB_val mdb_key{}, mdb_val{};
-                    lmdb::err_handler(target_table->get_last(&mdb_key, &mdb_val));
-                    ByteView key_view{db::from_mdb_val(mdb_key)};
-                    auto last_processed_block{boost::endian::load_big_u64(&key_view[0])};
-                    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
-
-                } catch (const lmdb::exception& ex) {
+                    auto last{target_table.to_last(/*throw_notfound*/ false)};
+                    if (last) {
+                        auto last_processed_block{boost::endian::load_big_u64(last.key.byte_ptr())};
+                        db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
+                    }
+                } catch (const mdbx::exception& ex) {
                     SILKWORM_LOG(LogLevel::Error) << "Senders' recovery : Database error " << ex.what() << std::endl;
                     ret = Status::DatabaseError;
                 } catch (const std::exception& ex) {
@@ -423,35 +423,30 @@ class RecoveryFarm final {
         SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
         Status ret{Status::Succeded};
         try {
-            auto unwind_table{db_transaction_.open(db::table::kSenders, MDB_CREATE)};
-            size_t rcount{0};
-            lmdb::err_handler(unwind_table->get_rcount(&rcount));
+            auto src{db::open_cursor(db_transaction_, db::table::kSenders)};
+            auto rcount{db_transaction_.get_map_stat(src.map()).ms_entries};
             if (rcount) {
                 if (new_height <= 1) {
-                    lmdb::err_handler(unwind_table->clear());
+                    db_transaction_.clear_map(src.map());
                 } else {
                     Bytes key(40, '\0');
                     boost::endian::store_big_u64(&key[0], new_height + 1);  // New stage height is last processed
-                    MDB_val mdb_key{db::to_mdb_val(key)}, mdb_data{};
-                    lmdb::err_handler(unwind_table->seek(&mdb_key, &mdb_data));
-                    do {
-                        /* Delete all records sequentially */
-                        lmdb::err_handler(unwind_table->del_current());
-                        lmdb::err_handler(unwind_table->get_next(&mdb_key, &mdb_data));
+                    auto data{src.find(db::to_slice(key))};
+                    while (data) {
+                        src.erase();
+                        data = src.to_next(/*throw_notfound*/ false);
                         if (--rcount % 1'000 && should_stop()) {
                             ret = Status::WorkerAborted;
                             break;
                         }
-                    } while (true);
+                    }
                 }
             }
-        } catch (const lmdb::exception& ex) {
-            if (ex.err() != MDB_NOTFOUND) {
-                SILKWORM_LOG(LogLevel::Error)
-                    << "Senders Unwinding : Unexpected database error :  " << ex.what() << std::endl;
-                return Status::DatabaseError;
-            }
-        }
+        } catch (const mdbx::exception& ex) {
+            SILKWORM_LOG(LogLevel::Error)
+                << "Senders Unwinding : Unexpected database error :  " << ex.what() << std::endl;
+            return Status::DatabaseError;
+        };
 
         // Eventually update new stage height
         if (ret == Status::Succeded) {

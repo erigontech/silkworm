@@ -91,7 +91,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     // Initializes first batch
     init_batch();
 
-    while (!rc && !should_stop()) {
+    while (rc == MDB_SUCCESS && !should_stop()) {
         auto key_view{db::from_mdb_val(mdb_key)};
         block_num = boost::endian::load_big_u64(key_view.data());
         if (block_num < expected_block_num) {
@@ -425,7 +425,7 @@ StageResult RecoveryFarm::fill_canonical_headers(uint64_t height_from, uint64_t 
     }
 
     // Read all headers up to block_to included
-    while (!rc) {
+    while (rc == MDB_SUCCESS) {
         ByteView key_view{db::from_mdb_val(mdb_key)};
         reached_block_num = boost::endian::load_big_u64(&key_view[0]);
         if (reached_block_num != expected_block_num) {

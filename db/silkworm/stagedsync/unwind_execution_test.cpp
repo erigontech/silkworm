@@ -101,7 +101,27 @@ TEST_CASE("Unwind Execution") {
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
     CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 2);
+
+    // ---------------------------------------
+    // Execute third block
+    // ---------------------------------------
+
+    new_val = "000000000000000000000000000000000000000000000000000000000000003b";
+
+    block_number = 3;
+    block.header.number = block_number;
+    block.header.gas_used = 26'201;
+
+    block.transactions[0].nonce = 2;
+    block.transactions[0].value = 1000;
+
+    block.transactions[0].to = contract_address;
+    block.transactions[0].data = *from_hex(new_val);
+    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
+
+    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
+
+    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
     buffer.write_to_db();
     lmdb::err_handler(txn->commit());
     env->close();
@@ -122,6 +142,7 @@ TEST_CASE("Unwind Execution") {
     std::optional<Account> current_sender{buffer2.read_account(sender)};
     REQUIRE(current_sender);
     CHECK((*current_sender).balance == kEther);
+    CHECK((*current_sender).nonce == 1);
 
     ethash::hash256 code_hash{keccak256(contract_code)};
     CHECK(to_hex(contract_account->code_hash) == to_hex(full_view(code_hash.bytes)));

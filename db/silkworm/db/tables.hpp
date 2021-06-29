@@ -43,6 +43,7 @@ constexpr lmdb::TableConfig kBloomBits{"B"};
 constexpr lmdb::TableConfig kBodiesSnapshotInfo{"bSNINFO"};
 constexpr lmdb::TableConfig kCallFromIndex{"call_from_index"};
 constexpr lmdb::TableConfig kCallToIndex{"call_to_index"};
+constexpr lmdb::TableConfig kCallTraceSet{"call_trace_set", MDB_DUPSORT};
 constexpr lmdb::TableConfig kClique{"clique-"};
 constexpr lmdb::TableConfig kCode{"CODE"};
 constexpr lmdb::TableConfig kConfig{"ethereum-config-"};

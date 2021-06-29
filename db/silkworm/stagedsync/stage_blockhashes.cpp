@@ -68,7 +68,8 @@ StageResult stage_blockhashes(db::EnvConfig db_config) {
             return StageResult::kStageBadBlockHash;
         }
 
-        etl::Entry etl_entry{header_data.value, header_data.key};
+        etl::Entry etl_entry{Bytes(header_data.value.byte_ptr(), header_data.value.length()),
+                             Bytes(header_data.key.byte_ptr(), header_data.key.length())};
         collector.collect(etl_entry);
 
         // Save last processed block_number and expect next in sequence

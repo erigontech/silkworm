@@ -45,15 +45,13 @@ int main(int argc, char* argv[]) {
     }
 
     int retvar{0};
-    lmdb::DatabaseConfig db_config{db_path};
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-
-    std::unique_ptr<lmdb::Transaction> cfg_txn{env->begin_ro_transaction()};
-    auto chain_config{db::read_chain_config(*cfg_txn)};
+    db::EnvConfig db_config{db_path};
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_read()};
+    auto chain_config{db::read_chain_config(txn)};
     if (!chain_config) {
         throw std::runtime_error("Unable to retrieve chain config");
     }
-    cfg_txn.release();
 
     // Note: If Erigon is actively syncing its database (syncing), it is important not to create
     // long-running datbase reads transactions even though that may make your processing faster.
@@ -72,15 +70,15 @@ int main(int argc, char* argv[]) {
             // Note: See the comment above. You may uncomment that line and comment the next line if you're certain
             // that Erigon is not syncing on the same machine. If you use a long-running transaction by doing this, and
             // you're mistaken (Erigon is syncing), the database file may 'grow quickly' as per the LMDB docs.
-            std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
+            txn.renew_reading();
 
             // Read the block
-            std::optional<BlockWithHash> bh{db::read_block(*txn, block_num, /*read_senders=*/true)};
+            std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
             if (!bh) {
                 break;
             }
 
-            db::Buffer buffer{txn.get(), block_num};
+            db::Buffer buffer{txn, block_num};
 
             // Execute the block and retreive the receipts
             auto [receipts, err]{execute_block(bh->block, buffer, *chain_config, &analysis_cache, &state_pool)};
@@ -112,14 +110,7 @@ int main(int argc, char* argv[]) {
             // and will be reset. No need to explicitly clean up here.
         }
 
-    } catch (lmdb::exception& ex) {
-        // This handles specific lmdb errors
-        std::cout << ex.err() << " " << ex.what() << std::endl;
-        retvar = -1;
-
-    } catch (std::runtime_error& ex) {
-        // This handles runtime logic errors
-        // eg. trying to open two rw txns
+    } catch (std::exception& ex) {
         std::cout << ex.what() << std::endl;
         retvar = -1;
     }
@@ -127,7 +118,8 @@ int main(int argc, char* argv[]) {
     // Note: See notes above. Even though this will go out of scope and automatically clean up, you may
     // uncomment this if you're using the long-lived database transaction noted above.
     // txn.reset();
-    env.reset();
+    txn.abort();
+    env.close();
 
     return retvar;
 }

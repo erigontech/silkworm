@@ -36,7 +36,7 @@ namespace silkworm::db {
 
 class Buffer : public StateBuffer {
   public:
-    explicit Buffer(lmdb::Transaction* txn, std::optional<uint64_t> historical_block = std::nullopt)
+    explicit Buffer(mdbx::txn& txn, std::optional<uint64_t> historical_block = std::nullopt)
         : txn_{txn}, historical_block_{historical_block} {}
 
     /** @name Readers */
@@ -115,7 +115,7 @@ class Buffer : public StateBuffer {
 
     void bump_batch_size(size_t key_len, size_t value_len);
 
-    lmdb::Transaction* txn_{nullptr};
+    mdbx::txn& txn_;
     std::optional<uint64_t> historical_block_{};
 
     absl::btree_map<Bytes, BlockHeader> headers_{};

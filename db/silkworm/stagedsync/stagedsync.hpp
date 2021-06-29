@@ -25,8 +25,8 @@ namespace silkworm::stagedsync {
 
 constexpr size_t kBatchSize = 512 * kMebi;
 
-typedef StageResult (*StageFunc)(lmdb::DatabaseConfig);
-typedef StageResult (*UnwindFunc)(lmdb::DatabaseConfig, uint64_t);
+typedef StageResult (*StageFunc)(db::EnvConfig);
+typedef StageResult (*UnwindFunc)(db::EnvConfig, uint64_t);
 
 struct Stage {
     StageFunc stage_func;
@@ -35,11 +35,11 @@ struct Stage {
 };
 
 // Stage functions
-StageResult stage_headers(lmdb::DatabaseConfig);
-StageResult stage_blockhashes(lmdb::DatabaseConfig);
-StageResult stage_bodies(lmdb::DatabaseConfig);
-StageResult stage_senders(lmdb::DatabaseConfig);
-StageResult stage_execution(lmdb::DatabaseConfig);
+StageResult stage_headers(db::EnvConfig);
+StageResult stage_blockhashes(db::EnvConfig);
+StageResult stage_bodies(db::EnvConfig);
+StageResult stage_senders(db::EnvConfig);
+StageResult stage_execution(db::EnvConfig);
 /* HashState Promotion Functions*/
 
 /*
@@ -58,24 +58,24 @@ void hashstate_promote(lmdb::Transaction*, HashstateOperation);
 void hashstate_promote_clean_code(lmdb::Transaction*, std::string);
 void hashstate_promote_clean_state(lmdb::Transaction*, std::string);
 /* **************************** */
-StageResult stage_hashstate(lmdb::DatabaseConfig);
-StageResult stage_interhashes(lmdb::DatabaseConfig);
-StageResult stage_account_history(lmdb::DatabaseConfig);
-StageResult stage_storage_history(lmdb::DatabaseConfig);
-StageResult stage_log_index(lmdb::DatabaseConfig);
-StageResult stage_tx_lookup(lmdb::DatabaseConfig);
+StageResult stage_hashstate(db::EnvConfig);
+StageResult stage_interhashes(db::EnvConfig);
+StageResult stage_account_history(db::EnvConfig);
+StageResult stage_storage_history(db::EnvConfig);
+StageResult stage_log_index(db::EnvConfig);
+StageResult stage_tx_lookup(db::EnvConfig);
 // Unwind functions
-StageResult unwind_headers(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_blockhashes(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_bodies(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_senders(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_execution(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_hashstate(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_interhashes(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_account_history(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_storage_history(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_log_index(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_tx_lookup(lmdb::DatabaseConfig, uint64_t);
+StageResult unwind_headers(db::EnvConfig, uint64_t);
+StageResult unwind_blockhashes(db::EnvConfig, uint64_t);
+StageResult unwind_bodies(db::EnvConfig, uint64_t);
+StageResult unwind_senders(db::EnvConfig, uint64_t);
+StageResult unwind_execution(db::EnvConfig, uint64_t);
+StageResult unwind_hashstate(db::EnvConfig, uint64_t);
+StageResult unwind_interhashes(db::EnvConfig, uint64_t);
+StageResult unwind_account_history(db::EnvConfig, uint64_t);
+StageResult unwind_storage_history(db::EnvConfig, uint64_t);
+StageResult unwind_log_index(db::EnvConfig, uint64_t);
+StageResult unwind_tx_lookup(db::EnvConfig, uint64_t);
 // TODO
 
 std::vector<Stage> get_default_stages();

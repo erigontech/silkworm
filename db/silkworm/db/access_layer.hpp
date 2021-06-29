@@ -26,6 +26,7 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/chaindb.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>

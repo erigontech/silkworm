@@ -107,19 +107,18 @@ void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
 }
 
 void hashstate_promote_clean_code(mdbx::txn& txn, std::string etl_path) {
-
     SILKWORM_LOG(LogLevel::Info) << "Hashing code keys" << std::endl;
 
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.c_str(), 512 * kMebi);
 
-    auto tbl{db::open_cursor(txn,db::table::kPlainContractCode)};
+    auto tbl{db::open_cursor(txn, db::table::kPlainContractCode)};
     auto data{tbl.to_first(/*throw_notfound*/ false)};
     while (data) {
-
         Bytes new_key(kHashLength + db::kIncarnationLength, '\0');
         std::memcpy(&new_key[0], keccak256(db::from_iovec(data.key.safe_middle(0, kAddressLength))).bytes, kHashLength);
-        std::memcpy(&new_key[kHashLength], data.key.safe_middle(kAddressLength, db::kIncarnationLength).iov_base, db::kIncarnationLength);
+        std::memcpy(&new_key[kHashLength], data.key.safe_middle(kAddressLength, db::kIncarnationLength).iov_base,
+                    db::kIncarnationLength);
         etl::Entry entry{new_key, Bytes(data.value.byte_ptr(), data.value.length())};
         collector.collect(entry);
         data = tbl.to_next(/*throw_notfound*/ false);
@@ -137,105 +136,117 @@ void hashstate_promote_clean_code(mdbx::txn& txn, std::string etl_path) {
  */
 void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     auto [changeset_config, target_config] = get_tables_for_promote(operation);
-    auto changeset_table{txn->open(changeset_config)};
-    auto plainstate_table{txn->open(db::table::kPlainState)};
-    auto codehash_table{txn->open(db::table::kPlainContractCode)};
-    auto target_table{txn->open(target_config)};
-    auto start_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey) + 1};
+
+    auto changeset_table{db::open_cursor(txn, changeset_config)};
+    auto plainstate_table{db::open_cursor(txn, db::table::kPlainState)};
+    auto codehash_table{db::open_cursor(txn, db::table::kPlainContractCode)};
+    auto target_table{db::open_cursor(txn, target_config)};
+
+    auto start_block_number{db::stages::get_stage_progress(txn, db::stages::kHashStateKey) + 1};
+
     Bytes start_key(8, '\0');
     boost::endian::store_big_u64(&start_key[0], start_block_number);
-    MDB_val mdb_key{db::to_mdb_val(start_key)};
-    MDB_val mdb_data;
-    int rc{changeset_table->seek(&mdb_key, &mdb_data)};
+    auto changeset_data{changeset_table.find(db::to_slice(start_key), /*throw_notfound*/ false)};
 
-    while (!rc) {
-        Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
-        Bytes mdb_value_as_bytes{db::from_mdb_val(mdb_data)};
+    while (changeset_data) {
+
+        Bytes mdb_key_as_bytes{db::from_iovec(changeset_data.key)};
+        Bytes mdb_value_as_bytes{db::from_iovec(changeset_data.value)};
         auto [db_key, _]{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};
+
         if (operation == HashstateOperation::HashAccount) {
+
             // We get account and hash its key.
-            auto value{plainstate_table->get(db_key)};
-            if (value == std::nullopt) {
-                rc = changeset_table->get_next(&mdb_key, &mdb_data);
+            auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound*/ false)};
+            if (!plainstate_data) {
+                changeset_data = changeset_table.to_next(false);
                 continue;
             }
             // Hashing
             auto hash{keccak256(db_key)};
-            target_table->put(full_view(hash.bytes), *value, 0);
-            rc = changeset_table->get_next(&mdb_key, &mdb_data);
+            target_table.upsert(db::to_slice(hash.bytes), plainstate_data.value);
+            changeset_data = changeset_table.to_next(false);
+
         } else if (operation == HashstateOperation::HashStorage) {
+
             // We get storage value and hash its key.
             Bytes key(kHashLength * 2 + db::kIncarnationLength, '\0');
-            auto value{plainstate_table->get(db_key)};
-            if (value == std::nullopt) {
-                rc = changeset_table->get_next(&mdb_key, &mdb_data);
+            auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound*/ false)};
+            if (!plainstate_data) {
+                changeset_data = changeset_table.to_next(false);
                 continue;
             }
+
             // Hashing
             std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
             std::memcpy(&key[kHashLength + db::kIncarnationLength],
                         keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
-            target_table->put(key, *value, 0);
-            rc = changeset_table->get_next(&mdb_key, &mdb_data);
+
+            target_table.upsert(db::to_slice(key), plainstate_data.value);
+            changeset_data = changeset_table.to_next(false);
+
         } else {
+
             // get incarnation
-            auto encoded_account{plainstate_table->get(db_key)};
-            if (encoded_account == std::nullopt) {
-                rc = changeset_table->get_next(&mdb_key, &mdb_data);
+            auto encoded_account{plainstate_table.find(db::to_slice(db_key), false)};
+            if (!encoded_account) {
+                changeset_data = changeset_table.to_next(false);
                 continue;
             }
-            auto [incarnation, err]{extract_incarnation(*encoded_account)};
+            auto [incarnation, err]{extract_incarnation(db::from_iovec(encoded_account.value))};
             rlp::err_handler(err);
             if (incarnation == 0) {
-                rc = changeset_table->get_next(&mdb_key, &mdb_data);
+                changeset_data = changeset_table.to_next(false);
                 continue;
             }
+
             // get code hash
             Bytes plain_key(kAddressLength + db::kIncarnationLength, '\0');
             std::memcpy(&plain_key[0], &db_key[0], kAddressLength);
             boost::endian::store_big_u64(&plain_key[kAddressLength], incarnation);
-            auto code_hash{codehash_table->get(plain_key)};
-            if (code_hash == std::nullopt) {
-                rc = changeset_table->get_next(&mdb_key, &mdb_data);
+            auto code_hash{codehash_table.find(db::to_slice(plain_key), false)};
+            if (!code_hash) {
+                changeset_data = changeset_table.to_next(false);
                 continue;
             }
+
             // Hash and concatenate everything together
             Bytes key(kHashLength + db::kIncarnationLength, '\0');
             std::memcpy(&key[0], keccak256(plain_key.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &plain_key[kAddressLength], db::kIncarnationLength);
-            target_table->put(key, *code_hash, 0);
-            rc = changeset_table->get_next(&mdb_key, &mdb_data);
+            target_table.upsert(db::to_slice(key), code_hash.value);
+            changeset_data = changeset_table.to_next(false);
         }
     }
 }
 
-StageResult stage_hashstate(lmdb::DatabaseConfig db_config) {
+StageResult stage_hashstate(db::EnvConfig db_config) {
     fs::path datadir(db_config.path);
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
 
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<mdbx::txn> txn{env->begin_rw_transaction()};
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
 
     SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
-    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
+    auto last_processed_block_number{db::stages::get_stage_progress(txn, db::stages::kHashStateKey)};
     if (last_processed_block_number != 0) {
         SILKWORM_LOG(LogLevel::Info) << "Starting Account Hashing" << std::endl;
-        hashstate_promote(txn.get(), HashstateOperation::HashAccount);
+        hashstate_promote(txn, HashstateOperation::HashAccount);
         SILKWORM_LOG(LogLevel::Info) << "Starting Storage Hashing" << std::endl;
-        hashstate_promote(txn.get(), HashstateOperation::HashStorage);
+        hashstate_promote(txn, HashstateOperation::HashStorage);
         SILKWORM_LOG(LogLevel::Info) << "Hashing Code Keys" << std::endl;
-        hashstate_promote(txn.get(), HashstateOperation::Code);
+        hashstate_promote(txn, HashstateOperation::Code);
     } else {
-        hashstate_promote_clean_state(txn.get(), etl_path.string());
-        hashstate_promote_clean_code(txn.get(), etl_path.string());
+        hashstate_promote_clean_state(txn, etl_path.string());
+        hashstate_promote_clean_code(txn, etl_path.string());
     }
     // Update progress height with last processed block
-    db::stages::set_stage_progress(*txn, db::stages::kHashStateKey,
-                                   db::stages::get_stage_progress(*txn, db::stages::kExecutionKey));
-    lmdb::err_handler(txn->commit());
-    txn.reset();
+    db::stages::set_stage_progress(txn, db::stages::kHashStateKey,
+                                   db::stages::get_stage_progress(txn, db::stages::kExecutionKey));
+    txn.commit();
+
     SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
     return StageResult::kStageSuccess;
 }

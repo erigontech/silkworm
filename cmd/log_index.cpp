@@ -24,7 +24,6 @@
 #include <boost/endian/conversion.hpp>
 #include <cbor/decoder.h>
 
-#include <silkworm/stagedsync/stagedsync.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -32,6 +31,7 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
+#include <silkworm/stagedsync/stagedsync.hpp>
 
 using namespace silkworm;
 
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    fs::path db_file{fs::path(db_path) / fs::path("mdbx.dat")};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
@@ -61,22 +61,23 @@ int main(int argc, char *argv[]) {
     etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
     etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
 
-    lmdb::DatabaseConfig db_config{db_path};
+    db::EnvConfig db_config{db_path};
     db_config.set_readonly(false);
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
-    // We take data from header table and transform it and put it in blockhashes table
-    auto log_table{txn->open(db::table::kLogs)};
-    if (full) {
-        db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, 0);
-        txn->open(db::table::kLogTopicIndex, MDB_CREATE)->clear();
-        txn->open(db::table::kLogAddressIndex, MDB_CREATE)->clear();
-    }
-
-    lmdb::err_handler(txn->commit());
-    env->close();
 
     try {
+
+        if (full) {
+            auto env{db::open_env(db_config)};
+            auto txn{env.start_write()};
+            db::stages::set_stage_progress(txn, db::stages::kLogIndexKey, 0);
+            auto map{db::open_map(txn, db::table::kLogTopicIndex)};
+            txn.clear_map(map);
+            map = db::open_map(txn, db::table::kLogAddressIndex);
+            txn.clear_map(map);
+            txn.commit();
+            env.close();
+        }
+
         stagedsync::check_stagedsync_error(stagedsync::stage_log_index(db_config));
     } catch (const std::exception &ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

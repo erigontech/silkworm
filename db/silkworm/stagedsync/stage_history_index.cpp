@@ -13,8 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include "stagedsync.hpp"
-
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
@@ -31,76 +29,76 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 
+#include "stagedsync.hpp"
+
 namespace silkworm::stagedsync {
 
 constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
 
 namespace fs = std::filesystem;
 
-StageResult history_index_stage(lmdb::DatabaseConfig db_config, bool storage) {
+StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
     fs::path datadir(db_config.path);
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
+
     // We take data from header table and transform it and put it in blockhashes table
-    lmdb::TableConfig changeset_config =
-        storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
-    lmdb::TableConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
+    db::MapConfig changeset_config = storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
+    db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
-    auto changeset_table{txn->open(changeset_config)};
+
+    auto changeset_table{db::open_cursor(txn, changeset_config)};
     std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
 
-    auto last_processed_block_number{db::stages::get_stage_progress(*txn, stage_key)};
+    auto last_processed_block_number{db::stages::get_stage_progress(txn, stage_key)};
 
     // Extract
+    SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Extraction" << std::endl;
     Bytes start(8, '\0');
     boost::endian::store_big_u64(&start[0], last_processed_block_number);
-    MDB_val mdb_key{db::to_mdb_val(start)};
-    MDB_val mdb_data;
-
-    SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Extraction"
-                                    << std::endl;
 
     size_t allocated_space{0};
     uint64_t block_number{0};
-    int rc{changeset_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
-    while (!rc) {                                        /* Loop as long as we have no errors*/
-        std::string composite_key;
-        if (storage) {
-            char composite_key_array[kHashLength + kAddressLength];
-            std::memcpy(&composite_key_array[0], &static_cast<uint8_t *>(mdb_key.mv_data)[8], kAddressLength);
-            std::memcpy(&composite_key_array[kAddressLength], mdb_data.mv_data, kHashLength);
-            composite_key = std::string(composite_key_array);
-        } else {
-            composite_key = std::string(static_cast<char *>(mdb_data.mv_data), kAddressLength);
-        }
 
-        if (bitmaps.find(composite_key) == bitmaps.end()) {
-            bitmaps.emplace(composite_key, roaring::Roaring64Map());
-        }
-        block_number = boost::endian::load_big_u64(static_cast<uint8_t *>(mdb_key.mv_data));
-        bitmaps.at(composite_key).add(block_number);
-        allocated_space += 8;
-        if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
-            for (const auto &[key, bm] : bitmaps) {
-                Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-                bm.write(byte_ptr_cast(bitmap_bytes.data()));
-                etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
-                collector.collect(entry);
+    if (changeset_table.seek(db::to_slice(start))) {
+        auto data{changeset_table.current()};
+        while (data) {
+            std::string composite_key;
+            if (storage) {
+                char composite_key_array[kHashLength + kAddressLength];
+                auto data_key_view{db::from_iovec(data.key).substr(8)};
+                std::memcpy(&composite_key_array[0], data_key_view.data(), kAddressLength);
+                std::memcpy(&composite_key_array[kAddressLength], data.value.byte_ptr(), kHashLength);
+                composite_key = std::string(composite_key_array);
+            } else {
+                composite_key = std::string(data.value.char_ptr(), kAddressLength);
             }
-            SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
-            bitmaps.clear();
-            allocated_space = 0;
-        }
-        rc = changeset_table->get_next(&mdb_key, &mdb_data);
-    }
 
-    if (rc && rc != MDB_NOTFOUND) { /* MDB_NOTFOUND is not actually an error rather eof */
-        lmdb::err_handler(rc);
+            if (bitmaps.find(composite_key) == bitmaps.end()) {
+                bitmaps.emplace(composite_key, roaring::Roaring64Map());
+            }
+            block_number = boost::endian::load_big_u64(data.key.byte_ptr());
+            bitmaps.at(composite_key).add(block_number);
+            allocated_space += 8;
+            if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
+                for (const auto &[key, bm] : bitmaps) {
+                    Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
+                    bm.write(byte_ptr_cast(bitmap_bytes.data()));
+                    etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
+                    collector.collect(entry);
+                }
+                SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
+                bitmaps.clear();
+                allocated_space = 0;
+            }
+            data = changeset_table.to_next(/*throw_notfound*/ false);
+        }
     }
+    changeset_table.close();
 
     for (const auto &[key, bm] : bitmaps) {
         Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
@@ -111,25 +109,29 @@ StageResult history_index_stage(lmdb::DatabaseConfig db_config, bool storage) {
     bitmaps.clear();
 
     SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
+
     // Proceed only if we've done something
     if (collector.size()) {
         SILKWORM_LOG(LogLevel::Info) << "Started Loading" << std::endl;
 
-        unsigned int db_flags{last_processed_block_number ? 0u : MDB_APPEND};
+        MDBX_put_flags_t db_flags{last_processed_block_number ? MDBX_put_flags_t::MDBX_UPSERT
+                                                              : MDBX_put_flags_t::MDBX_APPEND};
 
         // Eventually load collected items WITH transform (may throw)
+        auto target{db::open_cursor(txn, index_config)};
         collector.load(
-            txn->open(index_config, MDB_CREATE).get(),
-            [](etl::Entry entry, lmdb::Table *history_index_table, unsigned int db_flags) {
+            target,
+            [](etl::Entry entry, mdbx::cursor& history_index_table, MDBX_put_flags_t db_flags) {
                 auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
+
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');
                 std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
                 boost::endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
-                auto previous_bitmap_bytes{history_index_table->get(last_chunk_index)};
-                if (previous_bitmap_bytes.has_value()) {
-                    bm |= roaring::Roaring64Map::readSafe(byte_ptr_cast(previous_bitmap_bytes->data()),
-                                                            previous_bitmap_bytes->size());
-                    db_flags = 0;
+                auto previous_bitmap_bytes{history_index_table.find(db::to_slice(last_chunk_index), false)};
+                if (previous_bitmap_bytes) {
+                    bm |= roaring::Roaring64Map::readSafe(previous_bitmap_bytes.value.char_ptr(),
+                                                          previous_bitmap_bytes.value.length());
+                    db_flags = MDBX_put_flags_t::MDBX_UPSERT;
                 }
                 while (bm.cardinality() > 0) {
                     auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
@@ -140,14 +142,14 @@ StageResult history_index_stage(lmdb::DatabaseConfig db_config, bool storage) {
                     boost::endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
                     Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
                     current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
-                    history_index_table->put(chunk_index, current_chunk_bytes, db_flags);
+                    history_index_table.put(db::to_slice(chunk_index), &db::to_slice(current_chunk_bytes), db_flags);
                 }
             },
             db_flags, /* log_every_percent = */ 20);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(*txn, stage_key, block_number);
-        lmdb::err_handler(txn->commit());
+        db::stages::set_stage_progress(txn, stage_key, block_number);
+        txn.commit();
 
     } else {
         SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
@@ -158,14 +160,10 @@ StageResult history_index_stage(lmdb::DatabaseConfig db_config, bool storage) {
     return StageResult::kStageSuccess;
 }
 
-StageResult stage_account_history(lmdb::DatabaseConfig db_config) { return history_index_stage(db_config, false); }
-StageResult stage_storage_history(lmdb::DatabaseConfig db_config) { return history_index_stage(db_config, true); }
+StageResult stage_account_history(db::EnvConfig db_config) { return history_index_stage(db_config, false); }
+StageResult stage_storage_history(db::EnvConfig db_config) { return history_index_stage(db_config, true); }
 
-StageResult unwind_account_history(lmdb::DatabaseConfig, uint64_t) {
-    throw std::runtime_error("Not Implemented.");
-}
+StageResult unwind_account_history(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
 
-StageResult unwind_storage_history(lmdb::DatabaseConfig, uint64_t) {
-    throw std::runtime_error("Not Implemented.");
-}
-}
+StageResult unwind_storage_history(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+}  // namespace silkworm::stagedsync

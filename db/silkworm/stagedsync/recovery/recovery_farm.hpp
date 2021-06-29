@@ -20,7 +20,7 @@
 #ifndef SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
 #define SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
 
-namespace silkworm::stagedsync::recovery{
+namespace silkworm::stagedsync::recovery {
 
 std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
 
@@ -40,8 +40,7 @@ class RecoveryFarm {
      * @param max_workers: max number of recovery threads to spawn
      * @param max_batch_size: max number of transaction to be sent a worker for recovery
      */
-    RecoveryFarm(lmdb::Transaction& db_transaction, uint32_t max_workers, size_t max_batch_size,
-                          etl::Collector& collector);
+    RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size_t max_batch_size, etl::Collector& collector);
     ~RecoveryFarm() = default;
 
     /**
@@ -113,7 +112,7 @@ class RecoveryFarm {
     void init_batch();
 
     friend class RecoveryWorker;
-    lmdb::Transaction& db_transaction_;  // Database transaction
+    mdbx::txn& db_transaction_;  // Database transaction
 
     /* Recovery workers */
     uint32_t max_workers_;                                    // Max number of workers/threads
@@ -142,5 +141,5 @@ class RecoveryFarm {
     uint64_t total_processed_blocks_{0};
 };
 
-}
+}  // namespace silkworm::stagedsync::recovery
 #endif

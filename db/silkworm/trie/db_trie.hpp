@@ -79,7 +79,7 @@ class AccountTrieCursor {
     AccountTrieCursor(const AccountTrieCursor&) = delete;
     AccountTrieCursor& operator=(const AccountTrieCursor&) = delete;
 
-    explicit AccountTrieCursor(lmdb::Transaction& txn);
+    explicit AccountTrieCursor(mdbx::txn& txn);
 
     Bytes first_uncovered_prefix();
 
@@ -96,7 +96,7 @@ class StorageTrieCursor {
     StorageTrieCursor(const StorageTrieCursor&) = delete;
     StorageTrieCursor& operator=(const StorageTrieCursor&) = delete;
 
-    explicit StorageTrieCursor(lmdb::Transaction& txn);
+    explicit StorageTrieCursor(mdbx::txn& txn);
 
     Bytes seek_to_account(ByteView hashed_address_with_incarnation);
 
@@ -115,12 +115,12 @@ class DbTrieLoader {
     DbTrieLoader(const DbTrieLoader&) = delete;
     DbTrieLoader& operator=(const DbTrieLoader&) = delete;
 
-    DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector, etl::Collector& storage_collector);
+    DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector);
 
     evmc::bytes32 calculate_root();
 
   private:
-    lmdb::Transaction& txn_;
+    mdbx::txn& txn_;
     HashBuilder hb_;
     etl::Collector& storage_collector_;
     Bytes rlp_;
@@ -140,7 +140,7 @@ Node unmarshal_node(ByteView v);
 // Erigon RegenerateIntermediateHashes
 // might throw WrongRoot
 // returns the state root
-evmc::bytes32 regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir,
+evmc::bytes32 regenerate_db_tries(mdbx::txn& txn, const char* tmp_dir,
                                   const evmc::bytes32* expected_root = nullptr);
 
 }  // namespace silkworm::trie

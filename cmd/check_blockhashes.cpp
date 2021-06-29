@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    fs::path db_file{fs::path(db_path) / fs::path("mdbx.dat")};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
@@ -46,33 +46,31 @@ int main(int argc, char* argv[]) {
     fs::path datadir(db_path);
 
     try {
-        lmdb::DatabaseConfig db_config{db_path};
-        std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-        std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
+        db::EnvConfig db_config{db_path};
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_read()};
 
-        auto canonical_hashes_table{txn->open(db::table::kCanonicalHashes)};
-        auto blockhashes_table{txn->open(db::table::kHeaderNumbers)};
+        auto canonical_hashes_table{db::open_cursor(txn, db::table::kCanonicalHashes)};
+        auto blockhashes_table{db::open_cursor(txn, db::table::kHeaderNumbers)};
         uint32_t scanned_headers{0};
 
-        MDB_val mdb_key, mdb_data;
         SILKWORM_LOG(LogLevel::Info) << "Checking Block Hashes..." << std::endl;
-        int rc{canonical_hashes_table->get_first(&mdb_key, &mdb_data)};
+        auto canonica_hashes_data{canonical_hashes_table.to_first()};
 
         // Check if each hash has the correct number according to the header table
-        while (!rc) {
-            ByteView hash_key_view{db::from_mdb_val(mdb_key)};    // Height number
-            ByteView hash_data_view{db::from_mdb_val(mdb_data)};  // Canonical Hash
-            auto block_data_view{blockhashes_table->get(hash_data_view)};
-
-            if (!block_data_view.has_value()) {
-                uint64_t hash_block_number = boost::endian::load_big_u64(hash_key_view.data());
+        while (canonica_hashes_data) {
+            ByteView hash_key_view{db::from_iovec(canonica_hashes_data.key)};     // Height number
+            ByteView hash_data_view{db::from_iovec(canonica_hashes_data.value)};  // Canonical Hash
+            auto block_hashes_data{blockhashes_table.find(canonica_hashes_data.value, /*throw_notfound*/ false)};
+            if (!block_hashes_data) {
+                uint64_t hash_block_number{boost::endian::load_big_u64(canonica_hashes_data.key.byte_ptr())};
                 SILKWORM_LOG(LogLevel::Error)
                     << "Hash " << to_hex(hash_data_view) << " (block " << hash_block_number << ") not found in "
                     << db::table::kHeaderNumbers.name << " table " << std::endl;
 
-            } else if (block_data_view->compare(hash_key_view) != 0) {
-                uint64_t hash_height = boost::endian::load_big_u64(hash_key_view.data());
-                uint64_t block_height = boost::endian::load_big_u64(block_data_view->data());
+            } else if (block_hashes_data.value != canonica_hashes_data.key) {
+                uint64_t hash_height = boost::endian::load_big_u64(canonica_hashes_data.key.byte_ptr());
+                uint64_t block_height = boost::endian::load_big_u64(block_hashes_data.value.byte_ptr());
                 SILKWORM_LOG(LogLevel::Error) << "Hash " << to_hex(hash_data_view) << " should match block "
                                               << hash_height << " but got " << block_height << std::endl;
             }
@@ -80,11 +78,7 @@ int main(int argc, char* argv[]) {
             if (++scanned_headers % 100000 == 0) {
                 SILKWORM_LOG(LogLevel::Info) << "Scanned headers " << scanned_headers << std::endl;
             }
-            rc = canonical_hashes_table->get_next(&mdb_key, &mdb_data);
-        }
-        if (rc && rc != MDB_NOTFOUND) {
-            // We might have stumbled into some IO error
-            lmdb::err_handler(rc);
+            canonica_hashes_data =canonical_hashes_table.to_next(/*throw_notfound*/ false);
         }
 
         SILKWORM_LOG(LogLevel::Info) << "Done!" << std::endl;

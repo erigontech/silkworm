@@ -29,6 +29,7 @@ The previous Generate Hashed State Stage must be performed prior to calling this
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/temp_dir.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/trie/db_trie.hpp>
@@ -47,7 +48,7 @@ int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
 
     // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    fs::path db_file{fs::path(db_path) / fs::path("mdbx.mdb")};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
@@ -56,18 +57,18 @@ int main(int argc, char* argv[]) {
     SILKWORM_LOG(LogLevel::Info) << "Regenerating account & storage tries. DB: " << db_file << std::endl;
 
     try {
-        lmdb::DatabaseConfig db_config{db_path};
+
+        db::EnvConfig db_config{db_path};
         db_config.set_readonly(false);
-        std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-        std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
 
         TemporaryDirectory temp_dir;
 
-        evmc::bytes32 state_root{trie::regenerate_db_tries(*txn, temp_dir.path())};
+        evmc::bytes32 state_root{trie::regenerate_db_tries(txn, temp_dir.path())};
 
         SILKWORM_LOG(LogLevel::Info) << "State root " << to_hex(state_root) << std::endl;
-
-        lmdb::err_handler(txn->commit());
+        txn.commit();
 
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

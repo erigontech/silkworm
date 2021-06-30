@@ -65,9 +65,7 @@ StageResult stage_storage_history(lmdb::DatabaseConfig);
 StageResult stage_log_index(lmdb::DatabaseConfig);
 StageResult stage_tx_lookup(lmdb::DatabaseConfig);
 // Unwind functions
-StageResult unwind_headers(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_blockhashes(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_bodies(lmdb::DatabaseConfig, uint64_t);
+StageResult no_unwind(lmdb::DatabaseConfig, uint64_t);
 StageResult unwind_senders(lmdb::DatabaseConfig, uint64_t);
 StageResult unwind_execution(lmdb::DatabaseConfig, uint64_t);
 StageResult unwind_hashstate(lmdb::DatabaseConfig, uint64_t);

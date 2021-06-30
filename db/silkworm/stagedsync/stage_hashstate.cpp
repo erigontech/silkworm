@@ -251,5 +251,5 @@ StageResult stage_hashstate(db::EnvConfig db_config) {
     return StageResult::kStageSuccess;
 }
 
-StageResult unwind_hashstate(lmdb::DatabaseConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+StageResult unwind_hashstate(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
 }  // namespace silkworm::stagedsync

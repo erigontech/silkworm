@@ -452,7 +452,7 @@ class RecoveryFarm final {
         if (ret == Status::Succeded) {
             try {
                 db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
-            } catch (const lmdb::exception& ex) {
+            } catch (const mdbx::exception& ex) {
                 SILKWORM_LOG(LogLevel::Error)
                     << "Senders Unwinding : Unexpected database error :  " << ex.what() << std::endl;
                 return Status::DatabaseError;

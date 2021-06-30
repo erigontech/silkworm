@@ -17,7 +17,8 @@
 #ifndef SILKWORM_DB_TABLES_HPP_
 #define SILKWORM_DB_TABLES_HPP_
 
-#include <silkworm/db/chaindb.hpp>
+#include <optional>
+
 #include <silkworm/db/mdbx.hpp>
 
 /*

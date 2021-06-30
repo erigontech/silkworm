@@ -25,7 +25,6 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/magic_enum.hpp>
-#include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/account.hpp>
@@ -70,8 +69,7 @@ constexpr const char* kStorageModeReceipts{"smReceipts"};
 // See Erigon GetStorageModeFromDB
 bool read_storage_mode_receipts(mdbx::txn& txn);
 
-std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number,
-                                       const uint8_t (&hash)[kHashLength]);
+std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 
 std::optional<BlockBody> read_body(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength],
                                    bool read_senders);
@@ -85,8 +83,7 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, uint64_t bloc
 std::optional<BlockWithHash> read_block(mdbx::txn& txn, uint64_t block_number, bool read_senders);
 
 // See Erigon ReadSenders
-std::vector<evmc::address> read_senders(mdbx::txn& txn, int64_t block_number,
-                                        const uint8_t (&hash)[kHashLength]);
+std::vector<evmc::address> read_senders(mdbx::txn& txn, int64_t block_number, const uint8_t (&hash)[kHashLength]);
 
 // Overload
 std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count);

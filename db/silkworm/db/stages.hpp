@@ -17,7 +17,6 @@
 #ifndef SILKWORM_DB_STAGES_HPP_
 #define SILKWORM_DB_STAGES_HPP_
 
-#include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
 
 /*

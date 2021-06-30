@@ -114,6 +114,6 @@ StageResult stage_blockhashes(db::EnvConfig db_config) {
     return StageResult::kStageSuccess;
 }
 
-StageResult unwind_blockhashes(lmdb::DatabaseConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+StageResult unwind_blockhashes(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
 
 }  // namespace silkworm::stagedsync

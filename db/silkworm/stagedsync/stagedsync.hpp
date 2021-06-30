@@ -14,7 +14,6 @@
    limitations under the License.
 */
 #include <silkworm/db/tables.hpp>
-#include <silkworm/db/chaindb.hpp>
 #include <silkworm/stagedsync/util.hpp>
 #include <vector>
 

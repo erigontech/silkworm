@@ -66,7 +66,6 @@ the correct bit in tree_mask bitmap
 #include <vector>
 
 #include <silkworm/common/base.hpp>
-#include <silkworm/db/chaindb.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/types/account.hpp>

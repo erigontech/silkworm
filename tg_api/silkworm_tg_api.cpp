@@ -30,7 +30,7 @@
 SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, uint64_t chain_id, uint64_t start_block,
                                                            uint64_t max_block, uint64_t batch_size, bool write_receipts,
                                                            uint64_t* last_executed_block,
-                                                           int* lmdb_error_code) SILKWORM_NOEXCEPT {
+                                                           int* db_error_code) SILKWORM_NOEXCEPT {
     
     using namespace silkworm;
 
@@ -101,12 +101,12 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, uint6
         buffer.write_to_db();
         return SilkwormStatusCode::kSilkwormSuccess;
 
-    } catch (const lmdb::exception& e) {
-        if (lmdb_error_code) {
-            *lmdb_error_code = e.err();
+    } catch (const mdbx::exception& e) {
+        if (db_error_code) {
+            *db_error_code = static_cast<int>(e.error().code());
         }
-        SILKWORM_LOG(LogLevel::Error) << "LMDB error " << e.what() << std::endl;
-        return SilkwormStatusCode::kSilkwormLmdbError;
+        SILKWORM_LOG(LogLevel::Error) << "DB error " << e.what() << std::endl;
+        return SilkwormStatusCode::kSilkwormDbError;
     } catch (const db::MissingSenders&) {
         SILKWORM_LOG(LogLevel::Error) << "Missing or incorrect senders at block " << block_num << std::endl;
         return SilkwormStatusCode::kSilkwormMissingSenders;

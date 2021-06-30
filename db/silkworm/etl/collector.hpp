@@ -14,8 +14,8 @@
 #ifndef SILKWORM_ETL_COLLECTOR_HPP_
 #define SILKWORM_ETL_COLLECTOR_HPP_
 
-#include <silkworm/db/chaindb.hpp>
 #include <silkworm/etl/buffer.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/etl/file_provider.hpp>
 #include <silkworm/etl/util.hpp>
 

@@ -230,11 +230,7 @@ int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
     } catch (std::logic_error& ex) {
         std::cout << ex.what() << std::endl;
         retvar = -1;
-    } catch (lmdb::exception& ex) {
-        // This handles specific lmdb errors
-        std::cout << ex.err() << " " << ex.what() << std::endl;
-        retvar = -1;
-    } catch (std::runtime_error& ex) {
+    } catch (std::exception& ex) {
         std::cout << ex.what() << std::endl;
         retvar = -1;
     }
@@ -372,9 +368,6 @@ int do_scan(db_options_t& db_opts) {
 
         std::cout << "\n\nDone !" << std::endl;
 
-    } catch (lmdb::exception& ex) {
-        std::cout << ex.err() << " " << ex.what() << std::endl;
-        retvar = -1;
     } catch (std::exception& ex) {
         std::cout << ex.what() << std::endl;
         retvar = -1;
@@ -409,9 +402,6 @@ int do_stages(db_options_t& db_opts) {
 
         std::cout << std::endl << std::endl;
 
-    } catch (lmdb::exception& ex) {
-        std::cout << ex.err() << " " << ex.what() << std::endl;
-        retvar = -1;
     } catch (std::exception& ex) {
         std::cout << ex.what() << std::endl;
         retvar = -1;
@@ -502,9 +492,6 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
         std::cout << "\n Free pages count     : " << boost::format("%13u") % freeInfo.pages << "\n"
                   << " Free pages size      : " << boost::format("%13u") % freeInfo.size << std::endl;
 
-    } catch (lmdb::exception& ex) {
-        std::cout << ex.err() << " " << ex.what() << std::endl;
-        retvar = -1;
     } catch (std::exception& ex) {
         std::cout << ex.what() << std::endl;
         retvar = -1;

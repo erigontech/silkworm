@@ -30,7 +30,6 @@ The previous Generate Hashed State Stage must be performed prior to calling this
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/mdbx.hpp>
-#include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/trie/db_trie.hpp>
 

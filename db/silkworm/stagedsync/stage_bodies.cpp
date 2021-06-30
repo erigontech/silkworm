@@ -18,11 +18,11 @@
 
 namespace silkworm::stagedsync {
 
-StageResult stage_bodies(lmdb::DatabaseConfig) {
+StageResult stage_bodies(db::EnvConfig) {
     throw std::runtime_error("Not Implemented.");
 }
 
-StageResult unwind_bodies(lmdb::DatabaseConfig, uint64_t) {
+StageResult unwind_bodies(db::EnvConfig, uint64_t) {
     throw std::runtime_error("Not Implemented.");
 }
 

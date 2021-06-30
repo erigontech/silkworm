@@ -44,7 +44,7 @@ enum SilkwormStatusCode {
     kSilkwormSuccess = 0,
     kSilkwormBlockNotFound = 1,
     kSilkwormUnknownChainId = 2,
-    kSilkwormLmdbError = 3,
+    kSilkwormDbError = 3,
     kSilkwormMissingSenders = 4,
     kSilkwormInvalidBlock = 5,
     kSilkwormDecodingError = 6,
@@ -76,7 +76,7 @@ enum SilkwormStatusCode {
 SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, uint64_t chain_id, uint64_t start_block,
                                                            uint64_t max_block, uint64_t batch_size, bool write_receipts,
                                                            uint64_t* last_executed_block,
-                                                           int* lmdb_error_code) SILKWORM_NOEXCEPT;
+                                                           int* db_error_code) SILKWORM_NOEXCEPT;
 
 #if __cplusplus
 }

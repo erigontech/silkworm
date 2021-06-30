@@ -19,6 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/util.hpp>
+#include <silkworm/types/transaction.hpp>
 
 namespace silkworm {
 
@@ -29,6 +30,7 @@ TEST_CASE("CBOR encoding of receipts") {
 
     v.resize(2);
 
+    v[0].type = std::nullopt;
     v[0].success = false;
     v[0].cumulative_gas_used = 0x32f05d;
     v[0].logs = {
@@ -44,13 +46,14 @@ TEST_CASE("CBOR encoding of receipts") {
         },
     };
 
+    v[1].type = kEip1559TransactionType;
     v[1].success = true;
     v[1].cumulative_gas_used = 0xbeadd0;
     v[1].logs = {};
 
     encoded = cbor_encode(v);
 
-    CHECK(to_hex(encoded) == "8283f6001a0032f05d83f6011a00beadd0");
+    CHECK(to_hex(encoded) == "828400f6001a0032f05d8402f6011a00beadd0");
 }
 
 }  // namespace silkworm

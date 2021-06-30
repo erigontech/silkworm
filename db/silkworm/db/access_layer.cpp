@@ -326,7 +326,6 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
     const Bytes block_prefix{block_key(block_num)};
 
     auto src{db::open_cursor(txn, table::kPlainStorageChangeSet)};
-    auto rec_count{txn.get_map_stat(src.map()).ms_entries};
 
     auto key_prefix{to_slice(block_prefix)};
     auto data{src.lower_bound(key_prefix, false)};

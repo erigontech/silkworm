@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    fs::path db_file{fs::path(db_path) / fs::path("mdbx.dat")};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
@@ -69,26 +69,24 @@ int main(int argc, char* argv[]) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
-    lmdb::DatabaseConfig db_config{db_path};
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
+    db::EnvConfig db_config{db_path};
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_read()};
 
-    auto bodies_table{txn->open(db::table::kBlockBodies)};
-    auto tx_lookup_table{txn->open(db::table::kTxLookup)};
-    auto transactions_table{txn->open(db::table::kEthTx)};
+    auto bodies_table{db::open_cursor(txn, db::table::kBlockBodies)};
+    auto tx_lookup_table{db::open_cursor(txn, db::table::kTxLookup)};
+    auto transactions_table{db::open_cursor(txn, db::table::kEthTx)};
+
     uint64_t expected_block_number{0};
     Bytes buffer{};  // To extract compacted data
 
     try {
         SILKWORM_LOG(LogLevel::Info) << "Checking Transaction Lookups..." << std::endl;
 
-        MDB_val mdb_key, mdb_data;
-        int rc{bodies_table->get_first(&mdb_key, &mdb_data)};
-
-        while (!rc) {
-            ByteView block_key(db::from_mdb_val(mdb_key));
-            auto block_number(boost::endian::load_big_u64(&block_key[0]));
-            auto body_rlp{db::from_mdb_val(mdb_data)};
+        auto bodies_data{bodies_table.to_first(false)};
+        while (bodies_data) {
+            auto block_number(boost::endian::load_big_u64(bodies_data.key.byte_ptr()));
+            auto body_rlp{db::from_iovec(bodies_data.value)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
 
             if (body.txn_count > 0) {
@@ -98,32 +96,35 @@ int main(int argc, char* argv[]) {
                 MDB_val tx_mdb_data;
 
                 uint64_t i{0};
-                for (int rc2{transactions_table->seek_exact(&tx_mdb_key, &tx_mdb_data)};
-                     rc2 == MDB_SUCCESS && i < body.txn_count;
-                     rc2 = transactions_table->get_next(&tx_mdb_key, &tx_mdb_data), ++i) {
-                    lmdb::err_handler(rc2);
-                    ByteView tx_rlp{db::from_mdb_val(tx_mdb_data)};
-                    auto hash{keccak256(tx_rlp)};
-                    auto hash_view{full_view(hash.bytes)};
-                    auto lookup_data(tx_lookup_table->get(hash_view));
-
-                    if (!lookup_data.has_value()) {
-                        /* We did not find the transaction */
+                auto transaction_data{transactions_table.find(db::to_slice(transaction_key), false)};
+                for (; i < body.txn_count && transaction_data.done == true;
+                     i++, transaction_data = transactions_table.to_next(false)) {
+                    if (!transaction_data) {
                         SILKWORM_LOG(LogLevel::Error)
                             << "Block " << block_number << " transaction " << i << " not found in "
-                            << db::table::kTxLookup.name << " table" << std::endl;
+                            << db::table::kEthTx.name << " table" << std::endl;
+                        continue;
+                    }
+
+                    ByteView transaction_rlp{db::from_iovec(transaction_data.value)};
+                    auto transaction_hash{keccak256(transaction_rlp)};
+                    auto transaction_view{full_view(transaction_hash.bytes)};
+                    auto lookup_data{tx_lookup_table.find(db::to_slice(transaction_view), false)};
+                    if (!lookup_data) {
+                        SILKWORM_LOG(LogLevel::Error) << "Block " << block_number << " transaction " << i
+                                                      << " with hash " << to_hex(transaction_view) << " not found in "
+                                                      << db::table::kTxLookup.name << " table" << std::endl;
                         continue;
                     }
 
                     // Erigon stores block height as compact (no leading zeroes)
-                    auto lookup_block_data{left_pad(*lookup_data, sizeof(uint64_t), buffer)};
-                    auto actual_block_number{boost::endian::load_big_u64(lookup_block_data.data())};
+                    auto lookup_block_value{left_pad(db::from_iovec(lookup_data.value), sizeof(uint64_t), buffer)};
+                    auto actual_block_number{boost::endian::load_big_u64(lookup_block_value.data())};
 
                     if (actual_block_number != expected_block_number) {
-                        std::cout << lookup_data->size() << "   " << to_hex(*lookup_data) << std::endl;
                         SILKWORM_LOG(LogLevel::Error)
-                            << "Mismatch: Expected block number for tx with hash: " << to_hex(hash_view) << " is "
-                            << expected_block_number << ", but got: " << actual_block_number << std::endl;
+                            << "Mismatch: Expected block number for tx with hash: " << to_hex(transaction_view)
+                            << " is " << expected_block_number << ", but got: " << actual_block_number << std::endl;
                     }
                 }
 
@@ -137,19 +138,17 @@ int main(int argc, char* argv[]) {
                 SILKWORM_LOG(LogLevel::Info) << "Scanned blocks " << expected_block_number << std::endl;
             }
 
-            if (!should_stop_) {
-                expected_block_number++;
-                rc = bodies_table->get_next(&mdb_key, &mdb_data);
-            } else {
+            if (should_stop_) {
                 break;
             }
-        }
 
-        if (rc != MDB_NOTFOUND) {
-            lmdb::err_handler(rc);
+            expected_block_number++;
+            bodies_data = bodies_table.to_next(false);
+
         }
 
         SILKWORM_LOG(LogLevel::Info) << "Check " << (should_stop_ ? "aborted" : "completed") << std::endl;
+
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;

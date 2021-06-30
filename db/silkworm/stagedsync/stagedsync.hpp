@@ -54,9 +54,9 @@ enum class HashstateOperation {
     HashStorage,
     Code,
 };
-void hashstate_promote(lmdb::Transaction*, HashstateOperation);
-void hashstate_promote_clean_code(lmdb::Transaction*, std::string);
-void hashstate_promote_clean_state(lmdb::Transaction*, std::string);
+void hashstate_promote(mdbx::txn&, HashstateOperation);
+void hashstate_promote_clean_code(mdbx::txn&, std::string);
+void hashstate_promote_clean_state(mdbx::txn&, std::string);
 /* **************************** */
 StageResult stage_hashstate(db::EnvConfig);
 StageResult stage_interhashes(db::EnvConfig);

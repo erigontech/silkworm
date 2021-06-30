@@ -17,6 +17,7 @@
 #include "access_layer.hpp"
 
 #include <cassert>
+#include <iostream>
 
 #include <boost/endian/conversion.hpp>
 #include <nlohmann/json.hpp>
@@ -72,7 +73,7 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
     boost::endian::store_big_u64(key.data(), base_id);
 
     uint64_t i{0};
-    for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count; data = txn_table.to_next(), ++i) {
+    for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count; data = txn_table.to_next(/*throw_notfound = */false), ++i) {
         ByteView value{from_iovec(data.value)};
         Transaction eth_txn;
         rlp::err_handler(rlp::decode(value, eth_txn));
@@ -301,19 +302,20 @@ std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::ad
 }
 
 AccountChanges read_account_changes(mdbx::txn& txn, uint64_t block_num) {
-
     AccountChanges changes;
 
     auto src{db::open_cursor(txn, table::kPlainAccountChangeSet)};
     auto key{block_key(block_num)};
-    auto data{src.find(to_slice(key), /*throw_notfound*/ false)};
-    while (data) {
-        assert(data.value.length() >= kAddressLength);
-        evmc::address address;
-        std::memcpy(address.bytes, data.value.iov_base, kAddressLength);
-        data.value.remove_prefix(kAddressLength);
-        changes[address] = Bytes{data.value.byte_ptr(), data.value.length()};
-    }
+
+        auto data{src.find(to_slice(key), /*throw_notfound*/ false)};
+        while (data) {
+            assert(data.value.length() >= kAddressLength);
+            evmc::address address;
+            std::memcpy(address.bytes, data.value.iov_base, kAddressLength);
+            data.value.remove_prefix(kAddressLength);
+            changes[address] = Bytes{data.value.byte_ptr(), data.value.length()};
+            data = src.to_current_next_multi(/*throw_not_found*/ false);
+        }
 
     return changes;
 }
@@ -323,15 +325,18 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
 
     const Bytes prefix{block_key(block_num)};
 
+    std::cout << " read_storage_changes " << std::endl;
+
     auto src{db::open_cursor(txn, table::kPlainStorageChangeSet)};
     auto prefix_key{to_slice(prefix)};
     if (src.seek(prefix_key)) {
+        std::cout << " Check seek " << std::endl;
         auto data{src.current(/*throw_notfound*/ false)};
         while (data) {
             if (!data.key.starts_with(prefix_key)) {
                 break;
             }
-
+            std::cout << " Check loop " << std::endl;
             data.key.remove_prefix(prefix.length());
             assert(data.key.length() == kStoragePrefixLength);
 

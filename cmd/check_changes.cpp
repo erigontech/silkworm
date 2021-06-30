@@ -66,29 +66,27 @@ int main(int argc, char* argv[]) {
     absl::Time t1{absl::Now()};
     std::cout << t1 << " Checking change sets in " << db_path << "\n";
 
-    lmdb::DatabaseConfig db_config{db_path};
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-
-    std::unique_ptr<lmdb::Transaction> cfg_txn{env->begin_ro_transaction()};
-    auto chain_config{db::read_chain_config(*cfg_txn)};
+    db::EnvConfig db_config{db_path};
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_read()};
+    auto chain_config{db::read_chain_config(txn)};
     if (!chain_config) {
         throw std::runtime_error("Unable to retrieve chain config");
     }
-    cfg_txn.release();
 
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
 
     uint64_t block_num{from};
     for (; block_num < to; ++block_num) {
-        std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-        std::optional<BlockWithHash> bh{db::read_block(*txn, block_num, /*read_senders=*/true)};
+        txn.renew_reading();
+        std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
         if (!bh) {
             break;
         }
 
-        db::Buffer buffer{txn.get(), block_num};
+        db::Buffer buffer{txn, block_num};
 
         ValidationResult err{execute_block(bh->block, buffer, *chain_config, &analysis_cache, &state_pool).second};
         if (err != ValidationResult::kOk) {
@@ -96,7 +94,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        db::AccountChanges db_account_changes{db::read_account_changes(*txn, block_num)};
+        db::AccountChanges db_account_changes{db::read_account_changes(txn, block_num)};
         const db::AccountChanges& calculated_account_changes{buffer.account_changes().at(block_num)};
         if (calculated_account_changes != db_account_changes) {
             bool mismatch{false};
@@ -127,7 +125,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        db::StorageChanges db_storage_changes{db::read_storage_changes(*txn, block_num)};
+        db::StorageChanges db_storage_changes{db::read_storage_changes(txn, block_num)};
         db::StorageChanges calculated_storage_changes{};
         if (buffer.storage_changes().contains(block_num)) {
             calculated_storage_changes = buffer.storage_changes().at(block_num);

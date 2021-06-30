@@ -52,24 +52,29 @@ void run_collector_test(LoadFunc load_func) {
     TemporaryDirectory etl_tmp_dir;
     // Initialize random seed
     srand(time(NULL));
+
     // Initialize temporary Database
-    lmdb::DatabaseConfig db_config{db_tmp_dir.path(), 32 * kMebi};
+    db::EnvConfig db_config{db_tmp_dir.path()};
     db_config.set_readonly(false);
-    auto env{lmdb::get_env(db_config)};
-    auto txn{env->begin_rw_transaction()};
+    db_config.set_in_mem(true);
+
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
+
     // Generate Test Entries
     auto set{generate_entry_set(1000)};                       // 1000 entries in total
     auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};  // 100 entries per file (16 bytes per entry)
-    db::table::create_all(*txn);
+    db::table::create_all(txn);
     // Collection
     for (auto entry : set) {
         collector.collect(entry);
     }
     // Check whether temporary files were generated
     CHECK(std::distance(fs::directory_iterator{etl_tmp_dir.path()}, fs::directory_iterator{}) == 10);
+
     // Load data
-    auto to{txn->open(db::table::kHeaderNumbers)};
-    collector.load(to.get(), load_func);
+    auto to{db::open_cursor(txn, db::table::kHeaderNumbers)};
+    collector.load(to, load_func);
     // Check wheter temporary files were cleaned
     CHECK(std::distance(fs::directory_iterator{etl_tmp_dir.path()}, fs::directory_iterator{}) == 0);
 }
@@ -77,9 +82,9 @@ void run_collector_test(LoadFunc load_func) {
 TEST_CASE("collect_and_default_load") { run_collector_test(nullptr); }
 
 TEST_CASE("collect_and_load") {
-    run_collector_test([](Entry entry, lmdb::Table* table, unsigned int) {
+    run_collector_test([](Entry entry, mdbx::cursor& table, MDBX_put_flags_t flags) {
         entry.key.at(0) = 1;
-        table->put(entry.key, entry.value);
+        table.upsert(db::to_slice(entry.key), db::to_slice(entry.value));
     });
 }
 

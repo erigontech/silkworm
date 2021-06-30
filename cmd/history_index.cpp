@@ -45,34 +45,32 @@ int main(int argc, char *argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    fs::path db_file{fs::path(db_path) / fs::path("mdbx.dat")};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
     }
 
-    lmdb::DatabaseConfig db_config{db_path};
+    db::EnvConfig db_config{db_path};
     db_config.set_readonly(false);
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
-    lmdb::TableConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
+    db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
 
     try {
         if (full) {
-            db::stages::set_stage_progress(*txn, stage_key, 0);
-            txn->open(index_config, MDB_CREATE)->clear();
+            auto env{db::open_env(db_config)};
+            auto txn{env.start_write()};
+            txn.clear_map(db::open_map(txn, index_config));
+            txn.commit();
         }
-        
-        lmdb::err_handler(txn->commit());
-        env->close();
         
         if (storage) {
             stagedsync::check_stagedsync_error(stagedsync::stage_storage_history(db_config));
         } else {
             stagedsync::check_stagedsync_error(stagedsync::stage_account_history(db_config)); 
         }
+
     } catch (const std::exception &ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;

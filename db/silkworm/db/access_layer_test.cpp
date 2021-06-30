@@ -341,6 +341,8 @@ namespace db {
         auto key4{storage_change_key(block_num3, addr4, incarnation4)};
         table.upsert(db::to_slice(key4), db::to_slice(data4));
 
+        CHECK(txn.get_map_stat(table.map()).ms_entries == 4);
+
         StorageChanges expected_changes1;
         expected_changes1[addr1][incarnation1][location1] = val1;
         expected_changes1[addr2][incarnation2][location2] = val2;

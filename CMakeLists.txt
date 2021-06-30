@@ -134,16 +134,7 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # CBOR
   add_subdirectory(cbor-cpp)
-
-  # LMDB
-  add_library(lmdb lmdb-go/lmdb/lmdb.h
-                  lmdb-go/lmdb/mdb.c
-                  lmdb-go/lmdb/midl.c
-                  lmdb-go/lmdb/midl.h)
-  target_include_directories(lmdb PUBLIC lmdb-go)
-  if(MSVC)
-    target_compile_options(lmdb PRIVATE /w) # Not much we can do about warnings
-  endif()
+    
 endif()
 
 # evmone with dependencies

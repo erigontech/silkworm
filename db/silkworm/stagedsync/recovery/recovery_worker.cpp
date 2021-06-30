@@ -40,7 +40,7 @@ uint32_t RecoveryWorker::get_batch_id() const { return batch_id_; };
 std::string RecoveryWorker::get_error(void) const { return last_error_; };
 RecoveryWorker::Status RecoveryWorker::get_status(void) const { return status_.load(); };
 
-bool RecoveryWorker::pull_results(Status status, std::vector<std::pair<uint64_t, MDB_val>>& out) {
+bool RecoveryWorker::pull_results(Status status, std::vector<std::pair<uint64_t, iovec>>& out) {
     if (status_.compare_exchange_strong(status, Status::Idle)) {
         std::swap(out, results_);
         return true;
@@ -51,7 +51,7 @@ bool RecoveryWorker::pull_results(Status status, std::vector<std::pair<uint64_t,
 void RecoveryWorker::work() {
     while (wait_for_kick()) {
         // Prefer swapping with a new vector instead of clear
-        std::vector<std::pair<uint64_t, MDB_val>>().swap(results_);
+        std::vector<std::pair<uint64_t, iovec>>().swap(results_);
 
         uint64_t block_num{(*batch_).front().block_num};
         size_t block_result_offset{0};
@@ -60,7 +60,7 @@ void RecoveryWorker::work() {
         for (auto const& package : (*batch_)) {
             // On block switching store the results
             if (block_num != package.block_num) {
-                MDB_val result{block_result_length, &data_[block_result_offset]};
+                iovec result{&data_[block_result_offset], block_result_length};
                 results_.push_back({block_num, result});
                 block_result_offset += block_result_length;
                 block_result_length = 0;
@@ -89,7 +89,7 @@ void RecoveryWorker::work() {
         if (status_.load() == Status::Working) {
             // Store results for last block
             if (block_result_length) {
-                MDB_val result{block_result_length, &data_[block_result_offset]};
+                iovec result{&data_[block_result_offset], block_result_length};
                 results_.push_back({block_num, result});
             }
             status_.store(Status::ResultsReady);

@@ -226,7 +226,7 @@ bool RecoveryFarm::bufferize_workers_results() {
     bool success{true};
     static std::string fmt_row{"%10u b %12u t"};
 
-    std::vector<std::pair<uint64_t, MDB_val>> worker_results{};
+    std::vector<std::pair<uint64_t, iovec>> worker_results{};
     do {
         // Check we have results to pull
         std::unique_lock l(batches_completed_mtx);
@@ -257,12 +257,12 @@ bool RecoveryFarm::bufferize_workers_results() {
                 success = false;
                 break;
             } else {
-                for (auto& [block_num, mdb_val] : worker_results) {
+                for (auto& [block_num, data] : worker_results) {
                     total_processed_blocks_++;
-                    total_recovered_transactions_ += (mdb_val.mv_size / kAddressLength);
+                    total_recovered_transactions_ += (data.iov_len / kAddressLength);
 
                     auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
-                    Bytes etl_data(db::from_mdb_val(mdb_val));
+                    Bytes etl_data(db::from_iovec(data));
                     etl::Entry entry{etl_key, etl_data};
                     collector_.collect(entry);  // TODO check for errors (eg. disk full)
                     headers_it_2_++;

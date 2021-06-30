@@ -92,8 +92,6 @@ int main(int argc, char* argv[]) {
             if (body.txn_count > 0) {
                 Bytes transaction_key(8, '\0');
                 boost::endian::store_big_u64(transaction_key.data(), body.base_txn_id);
-                MDB_val tx_mdb_key{db::to_mdb_val(transaction_key)};
-                MDB_val tx_mdb_data;
 
                 uint64_t i{0};
                 auto transaction_data{transactions_table.find(db::to_slice(transaction_key), false)};

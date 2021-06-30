@@ -127,8 +127,6 @@ int main(int argc, char* argv[]) {
             }
 
             auto block_key{db::block_key(block_num)};
-            auto mdb_key{db::to_mdb_val(block_key)};
-
             auto data{canonical_hashes.find(db::to_slice(block_key), /*throw_notfound*/ false)};
             if (!data) {
                 throw std::runtime_error("Can't retrieve canonical hash for block " + std::to_string(block_num));

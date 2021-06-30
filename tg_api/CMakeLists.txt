@@ -18,4 +18,4 @@ find_package(Microsoft.GSL CONFIG REQUIRED)
 
 add_library(silkworm_tg_api SHARED silkworm_tg_api.h silkworm_tg_api.cpp)
 target_include_directories(silkworm_tg_api PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(silkworm_tg_api PUBLIC lmdb PRIVATE silkworm_db Microsoft.GSL::GSL)
+target_link_libraries(silkworm_tg_api PUBLIC mdbx-static PRIVATE silkworm_db Microsoft.GSL::GSL)

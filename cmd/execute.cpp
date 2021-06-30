@@ -78,14 +78,14 @@ int main(int argc, char* argv[]) {
         uint64_t current_progress{previous_progress};
 
         for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-            int lmdb_error_code{MDB_SUCCESS};
+            int db_error_code{0};
             SilkwormStatusCode status{silkworm_execute_blocks(txn, chain_config->chain_id, block_number,
                                                               to_block, *batch_size, write_receipts, &current_progress,
-                                                              &lmdb_error_code)};
+                                                              &db_error_code)};
             if (status != SilkwormStatusCode::kSilkwormSuccess &&
                 status != SilkwormStatusCode::kSilkwormBlockNotFound) {
                 SILKWORM_LOG(LogLevel::Error) << "Error in silkworm_execute_blocks: " << magic_enum::enum_name(status)
-                                              << ", LMDB: " << lmdb_error_code << std::endl;
+                                              << ", DB: " << db_error_code << std::endl;
                 return magic_enum::enum_integer(status);
             }
 

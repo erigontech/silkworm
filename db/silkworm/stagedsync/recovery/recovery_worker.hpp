@@ -77,25 +77,25 @@ class RecoveryWorker final : public silkworm::Worker {
     Status get_status(void) const;
 
     // Pull results from worker
-    bool pull_results(Status status, std::vector<std::pair<uint64_t, MDB_val>>& out);
+    bool pull_results(Status status, std::vector<std::pair<uint64_t, iovec>>& out);
 
     // Signal to connected handlers the task has completed
     boost::signals2::signal<void(RecoveryWorker* sender, uint32_t batch_id)> signal_completed;
 
   private:
-    const uint32_t id_;                                    // Current worker identifier
-    uint32_t batch_id_{0};                                 // Running batch identifier
-    std::unique_ptr<std::vector<package>> batch_;          // Batch to process
-    size_t data_size_;                                     // Size of the recovery data buffer
-    uint8_t* data_{nullptr};                               // Pointer to data where rsults are stored
-    std::vector<std::pair<uint64_t, MDB_val>> results_{};  // Results per block pointing to data area
-    std::string last_error_{};                             // Description of last error occurrence
-    std::atomic<Status> status_{Status::Idle};             // Status of worker
+    const uint32_t id_;                                  // Current worker identifier
+    uint32_t batch_id_{0};                               // Running batch identifier
+    std::unique_ptr<std::vector<package>> batch_;        // Batch to process
+    size_t data_size_;                                   // Size of the recovery data buffer
+    uint8_t* data_{nullptr};                             // Pointer to data where rsults are stored
+    std::vector<std::pair<uint64_t, iovec>> results_{};  // Results per block pointing to data area
+    std::string last_error_{};                           // Description of last error occurrence
+    std::atomic<Status> status_{Status::Idle};           // Status of worker
 
     // Basic work loop (overrides Worker::work())
     void work() final;
 };
 
-}
+}  // namespace silkworm::stagedsync::recovery
 
 #endif

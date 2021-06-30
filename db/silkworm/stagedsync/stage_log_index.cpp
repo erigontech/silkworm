@@ -99,7 +99,7 @@ StageResult stage_log_index(lmdb::DatabaseConfig db_config) {
     listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps, &topics_allocated_space,
                                         &addrs_allocated_space);
     int rc{log_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
-    while (!rc) {                                  /* Loop as long as we have no errors*/
+    while (rc == MDB_SUCCESS) {                                  /* Loop as long as we have no errors*/
         block_number = boost::endian::load_big_u64(static_cast<uint8_t *>(mdb_key.mv_data));
         current_listener.set_block_number(block_number);
         cbor::input input(static_cast<uint8_t *>(mdb_data.mv_data), mdb_data.mv_size);

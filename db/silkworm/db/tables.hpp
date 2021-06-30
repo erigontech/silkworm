@@ -89,6 +89,7 @@ constexpr lmdb::TableConfig kTables[]{
     kBodiesSnapshotInfo,
     kCallFromIndex,
     kCallToIndex,
+    kCallTraceSet,
     kCanonicalHashes,
     kHeaders,
     kDifficulty,

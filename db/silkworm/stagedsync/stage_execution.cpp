@@ -152,8 +152,8 @@ void walk_collect(lmdb::Table& source, lmdb::Table& plain_state_table, lmdb::Tab
     int rc{source.get_last(&mdb_key, &mdb_data)};
     uint64_t block_number{0};
     while (rc == MDB_SUCCESS) {
-        Bytes key(static_cast<unsigned char*>(mdb_key.mv_data), mdb_key.mv_size);
-        Bytes value(static_cast<unsigned char*>(mdb_data.mv_data), mdb_data.mv_size);
+        Bytes key(db::from_mdb_val(mdb_key));
+        Bytes value(db::from_mdb_val(mdb_data));
 
         block_number = boost::endian::load_big_u64(&key[0]);
         if (block_number == unwind_to) break;
@@ -221,7 +221,7 @@ StageResult unwind_execution(lmdb::DatabaseConfig db_config, uint64_t unwind_to)
     Bytes unwind_to_bytes(8, '\0');
     boost::endian::store_big_u64(&unwind_to_bytes[0], unwind_to+1);
 
-    // Truncate Changesets
+    // Truncate Tables
     unwind_table_from(*account_changeset_table, unwind_to_bytes);
     unwind_table_from(*storage_changeset_table, unwind_to_bytes);
     unwind_table_from(*receipts_table, unwind_to_bytes);

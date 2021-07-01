@@ -157,6 +157,8 @@ add_subdirectory(ethash)
 
 add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/analysis.hpp
+                   evmone/lib/evmone/baseline_instruction_table.cpp
+                   evmone/lib/evmone/baseline_instruction_table.hpp
                    evmone/lib/evmone/baseline.cpp
                    evmone/lib/evmone/baseline.hpp
                    evmone/lib/evmone/execution_state.hpp
@@ -172,7 +174,7 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/tracing.hpp
                    evmone/lib/evmone/vm.cpp
                    evmone/lib/evmone/vm.hpp)
-set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.8.0-dev")
+set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.8.0")
 target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex ethash)
 

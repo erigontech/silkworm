@@ -85,7 +85,7 @@ void encode(Bytes& to, const intx::uint256& n) {
     if (n == 0) {
         to.push_back(kEmptyStringCode);
     } else if (n < kEmptyStringCode) {
-        to.push_back(intx::narrow_cast<uint8_t>(n));
+        to.push_back(static_cast<uint8_t>(n));
     } else {
         ByteView be{big_endian(n)};
         to.push_back(static_cast<uint8_t>(kEmptyStringCode + be.length()));

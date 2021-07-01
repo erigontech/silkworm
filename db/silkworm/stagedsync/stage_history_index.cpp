@@ -142,7 +142,9 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
                     boost::endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
                     Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
                     current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
-                    history_index_table.put(db::to_slice(chunk_index), &db::to_slice(current_chunk_bytes), db_flags);
+                    mdbx::slice k{db::to_slice(chunk_index)};
+                    mdbx::slice v{db::to_slice(current_chunk_bytes)};
+                    history_index_table.put(k, &v, db_flags);
                 }
             },
             db_flags, /* log_every_percent = */ 20);

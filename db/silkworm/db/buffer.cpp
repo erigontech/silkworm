@@ -210,7 +210,7 @@ void Buffer::write_to_db() {
 
     auto code_table{db::open_cursor(txn_,table::kCode)};
     for (const auto& entry : hash_to_code_) {
-        code_table.upsert(full_view(entry.first), to_slice(entry.second));
+        code_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }
 
     auto code_hash_table{db::open_cursor(txn_,table::kPlainContractCode)};

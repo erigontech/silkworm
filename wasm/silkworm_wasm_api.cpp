@@ -44,7 +44,7 @@ uint8_t* bytes_data(Bytes* str) { return str->data(); }
 
 size_t bytes_length(const Bytes* str) { return str->length(); }
 
-intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) { return new intx::uint256(a, b, c, d); }
+intx::uint256* new_uint256_le(uint64_t a, uint64_t b, uint64_t c, uint64_t d) { return new intx::uint256{a, b, c, d}; }
 
 void delete_uint256(intx::uint256* x) { delete x; }
 

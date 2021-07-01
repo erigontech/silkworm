@@ -17,6 +17,7 @@
 #include "stagedsync.hpp"
 
 #include <string>
+#include <filesystem>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
@@ -25,9 +26,12 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/db/stages.hpp>
-
+#include <silkworm/etl/collector.hpp>
+#include <boost/endian/conversion.hpp>
 
 namespace silkworm::stagedsync {
+
+namespace fs = std::filesystem;
 
 StageResult execute(lmdb::Transaction* txn, ChainConfig config, uint64_t max_block, uint64_t* block_num, bool write_receipts) {
     db::Buffer buffer{txn};
@@ -95,6 +99,137 @@ StageResult stage_execution(lmdb::DatabaseConfig db_config) {
             return execution_code;
         }
     };
+
+    return StageResult::kStageSuccess;
+}
+
+void collect_for_unwind(Bytes key, Bytes value, lmdb::Table& plain_state_table, lmdb::Table& plain_code_table) {
+    if (key.size() == kAddressLength) {
+        if (value.size() > 0) {
+            auto [account, err]{decode_account_from_storage(value)};
+            rlp::err_handler(err);
+            if (account.incarnation > 0 && account.code_hash == kEmptyHash) {
+                Bytes code_hash_key(kAddressLength + db::kIncarnationLength, '\0');
+                std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
+                boost::endian::store_big_u64(&code_hash_key[kAddressLength], account.incarnation);
+                auto new_code_hash{*plain_code_table.get(code_hash_key)};
+                std::memcpy(&account.code_hash.bytes[0], &new_code_hash[0], kHashLength);
+            
+            }
+            // cleaning up contract codes
+            auto state_account_encoded{plain_state_table.get(key)};
+            if (state_account_encoded != std::nullopt) {
+                auto [state_incarnation, err]{extract_incarnation(*state_account_encoded)};
+                rlp::err_handler(err);
+                // cleanup each code incarnation
+                for (uint64_t i = state_incarnation; i > account.incarnation && i > 0; --i) {
+                    Bytes key_hash(kAddressLength + 8,'\0');
+                    std::memcpy(&key_hash[0], key.data(), kAddressLength);
+                    boost::endian::store_big_u64(&key_hash[kAddressLength], i);
+                    plain_code_table.del(key_hash);
+                }
+            }
+            auto new_encoded_account{account.encode_for_storage(false)};
+            plain_state_table.del(key);
+            plain_state_table.put(key, new_encoded_account);
+        } else {
+            plain_state_table.del(key);
+        }
+        return;
+    }
+    auto location{key.substr(kAddressLength + db::kIncarnationLength)};
+    plain_state_table.del(key.substr(0, kAddressLength + db::kIncarnationLength), location);
+    if (value.size() > 0) {
+        auto data{location.append(value)};
+        plain_state_table.put(key.substr(0, kAddressLength + db::kIncarnationLength), data);
+    }
+    return;
+}
+
+void walk_collect(lmdb::Table& source, lmdb::Table& plain_state_table, lmdb::Table& plain_code_table, uint64_t unwind_to) {
+    MDB_val mdb_key;
+    MDB_val mdb_data;
+    int rc{source.get_last(&mdb_key, &mdb_data)};
+    uint64_t block_number{0};
+    while (rc == MDB_SUCCESS) {
+        Bytes key(db::from_mdb_val(mdb_key));
+        Bytes value(db::from_mdb_val(mdb_data));
+
+        block_number = boost::endian::load_big_u64(&key[0]);
+        if (block_number == unwind_to) break;
+        auto [new_key, new_value]{convert_to_db_format(key, value)};
+        collect_for_unwind(new_key, new_value, plain_state_table, plain_code_table);
+        rc = source.get_prev(&mdb_key, &mdb_data);
+    }
+    if (rc != MDB_NOTFOUND) {
+        lmdb::err_handler(rc);
+    }
+}
+
+void unwind_table_from(lmdb::Table& table, Bytes& starting_key) {
+    MDB_val mdb_key{db::to_mdb_val(starting_key)};
+    MDB_val mdb_data;
+
+    int rc{table.seek(&mdb_key, &mdb_data)}; 
+    while (rc == MDB_SUCCESS) {
+        lmdb::err_handler(table.del_current());
+        rc = table.get_next(&mdb_key, &mdb_data);
+    }
+    if (rc != MDB_NOTFOUND) {
+        lmdb::err_handler(rc);
+    }
+}
+
+StageResult unwind_execution(lmdb::DatabaseConfig db_config, uint64_t unwind_to) {
+    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
+    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+    // Compute etl temporary path
+    fs::path datadir(db_config.path);
+    uint64_t block_number{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
+
+
+    auto plain_state_table{txn->open(db::table::kPlainState, MDB_CREATE)};
+    auto plain_code_table{txn->open(db::table::kPlainContractCode, MDB_CREATE)};
+    auto account_changeset_table{txn->open(db::table::kPlainAccountChangeSet, MDB_CREATE)};
+    auto storage_changeset_table{txn->open(db::table::kPlainStorageChangeSet, MDB_CREATE)};
+    auto receipts_table{txn->open(db::table::kBlockReceipts, MDB_CREATE)};
+    auto log_table{txn->open(db::table::kLogs, MDB_CREATE)};
+    auto traces_table{txn->open(db::table::kCallTraceSet, MDB_CREATE)};
+
+    if (unwind_to == 0) {
+        plain_state_table->clear();
+        plain_code_table->clear();
+        account_changeset_table->clear();
+        storage_changeset_table->clear();
+        receipts_table->clear();
+        log_table->clear();
+        traces_table->clear();
+        db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 0);
+        lmdb::err_handler(txn->commit());
+        return StageResult::kStageSuccess;
+    }
+
+    if (unwind_to >= block_number) {
+        return StageResult::kStageSuccess;
+    }
+
+    SILKWORM_LOG(LogLevel::Info) << "Unwind Execution from " << block_number << " to " << unwind_to << std::endl;
+
+    walk_collect(*account_changeset_table, *plain_state_table, *plain_code_table, unwind_to);
+    walk_collect(*storage_changeset_table, *plain_state_table, *plain_code_table, unwind_to);
+    // We set the cursor data
+    Bytes unwind_to_bytes(8, '\0');
+    boost::endian::store_big_u64(&unwind_to_bytes[0], unwind_to+1);
+
+    // Truncate Tables
+    unwind_table_from(*account_changeset_table, unwind_to_bytes);
+    unwind_table_from(*storage_changeset_table, unwind_to_bytes);
+    unwind_table_from(*receipts_table, unwind_to_bytes);
+    unwind_table_from(*log_table, unwind_to_bytes);
+    unwind_table_from(*traces_table, unwind_to_bytes);
+    
+    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, unwind_to);
+    lmdb::err_handler(txn->commit());
 
     return StageResult::kStageSuccess;
 }

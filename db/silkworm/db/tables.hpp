@@ -43,6 +43,7 @@ constexpr lmdb::TableConfig kBloomBits{"BloomBits"};
 constexpr lmdb::TableConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
 constexpr lmdb::TableConfig kCallFromIndex{"CallFromIndex"};
 constexpr lmdb::TableConfig kCallToIndex{"CallToIndex"};
+constexpr lmdb::TableConfig kCallTraceSet{"CallTraceSet", MDB_DUPSORT};
 constexpr lmdb::TableConfig kClique{"Clique"};
 constexpr lmdb::TableConfig kCode{"Code"};
 constexpr lmdb::TableConfig kConfig{"Config"};
@@ -84,6 +85,7 @@ constexpr lmdb::TableConfig kTables[]{
     kBodiesSnapshotInfo,
     kCallFromIndex,
     kCallToIndex,
+    kCallTraceSet,
     kCanonicalHashes,
     kHeaders,
     kDifficulty,

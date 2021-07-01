@@ -42,6 +42,7 @@ constexpr db::MapConfig kBloomBits{"BloomBits"};
 constexpr db::MapConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
 constexpr db::MapConfig kCallFromIndex{"CallFromIndex"};
 constexpr db::MapConfig kCallToIndex{"CallToIndex"};
+constexpr db::MapConfig kCallTraceSet{"CallTraceSet", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
 constexpr db::MapConfig kClique{"Clique"};
 constexpr db::MapConfig kCode{"Code"};
 constexpr db::MapConfig kConfig{"Config"};

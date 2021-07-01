@@ -22,7 +22,7 @@
 namespace silkworm {
 
 // Erigon-compatible CBOR encoding for storage.
-// See core/types/receipt.go
+// See core/types/receipt.go and migrations/receipt_cbor.go
 Bytes cbor_encode(const std::vector<Receipt>& v);
 
 }  // namespace silkworm

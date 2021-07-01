@@ -83,6 +83,7 @@ constexpr db::MapConfig kTables[]{
     kBodiesSnapshotInfo,
     kCallFromIndex,
     kCallToIndex,
+    kCallTraceSet,
     kCanonicalHashes,
     kHeaders,
     kDifficulty,

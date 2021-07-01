@@ -22,7 +22,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "..\libmdbx\mdbx.h++"
+#include "./../libmdbx/mdbx.h++"
 
 #if defined _MSC_VER
 #define SILKWORM_EXPORT __declspec(dllexport)

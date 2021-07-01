@@ -55,11 +55,10 @@ int main(int argc, char* argv[]) {
         uint32_t scanned_headers{0};
 
         SILKWORM_LOG(LogLevel::Info) << "Checking Block Hashes..." << std::endl;
-        auto canonica_hashes_data{canonical_hashes_table.to_first()};
+        auto canonica_hashes_data{canonical_hashes_table.to_first(/*throw_notfound*/ false)};
 
         // Check if each hash has the correct number according to the header table
         while (canonica_hashes_data) {
-            ByteView hash_key_view{db::from_iovec(canonica_hashes_data.key)};     // Height number
             ByteView hash_data_view{db::from_iovec(canonica_hashes_data.value)};  // Canonical Hash
             auto block_hashes_data{blockhashes_table.find(canonica_hashes_data.value, /*throw_notfound*/ false)};
             if (!block_hashes_data) {
@@ -78,7 +77,7 @@ int main(int argc, char* argv[]) {
             if (++scanned_headers % 100000 == 0) {
                 SILKWORM_LOG(LogLevel::Info) << "Scanned headers " << scanned_headers << std::endl;
             }
-            canonica_hashes_data =canonical_hashes_table.to_next(/*throw_notfound*/ false);
+            canonica_hashes_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
         }
 
         SILKWORM_LOG(LogLevel::Info) << "Done!" << std::endl;

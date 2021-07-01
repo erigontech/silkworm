@@ -35,7 +35,8 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, co
     }
 
     BlockHeader header;
-    rlp::err_handler(rlp::decode(from_iovec(data.value), header));
+    ByteView header_view{from_iovec(data.value)};
+    rlp::err_handler(rlp::decode(header_view, header));
     return header;
 }
 

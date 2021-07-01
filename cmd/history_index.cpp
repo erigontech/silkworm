@@ -62,6 +62,7 @@ int main(int argc, char *argv[]) {
             auto env{db::open_env(db_config)};
             auto txn{env.start_write()};
             txn.clear_map(db::open_map(txn, index_config));
+            db::stages::set_stage_progress(txn, stage_key, 0);
             txn.commit();
         }
         

@@ -159,8 +159,8 @@ TEST_CASE("Account and storage trie") {
     auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
     auto key{*from_hex("0B")};
 
-    const auto marshalled_node1{account_trie.find(db::to_slice(key), false)};
-    REQUIRE(marshalled_node1);
+    const auto marshalled_node1{account_trie.lower_bound(db::to_slice(key), false)};
+    REQUIRE(marshalled_node1.done);
     const Node node1{unmarshal_node(db::from_iovec(marshalled_node1.value))};
 
     CHECK(0b1011 == node1.state_mask());
@@ -172,7 +172,7 @@ TEST_CASE("Account and storage trie") {
     REQUIRE(node1.hashes().size() == 2);
 
     key = *from_hex("0B00");
-    const auto marshalled_node2{account_trie.find(db::to_slice(key), false)};
+    const auto marshalled_node2{account_trie.lower_bound(db::to_slice(key), false)};
     REQUIRE(marshalled_node2);
     const Node node2{unmarshal_node(db::from_iovec(marshalled_node2.value))};
 

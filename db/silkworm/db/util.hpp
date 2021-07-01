@@ -78,7 +78,15 @@ inline ByteView from_iovec(const iovec val) {
     return {ptr, val.iov_len};
 }
 
-inline mdbx::slice to_slice(ByteView view) { return mdbx::slice(static_cast<const void*>(view.data()), view.length()); }
+inline mdbx::slice to_slice(ByteView value) { return mdbx::slice(static_cast<const void*>(value.data()), value.length()); }
+
+inline mdbx::slice to_slice(evmc::address value) {
+    return mdbx::slice(static_cast<const void*>(value.bytes), sizeof(evmc::address));
+}
+
+inline mdbx::slice to_slice(evmc::bytes32 value) {
+    return mdbx::slice(static_cast<const void*>(value.bytes), sizeof(evmc::bytes32));
+}
 
 inline ByteView from_slice(const mdbx::slice slice) { return {slice.byte_ptr(), slice.length()}; }
 

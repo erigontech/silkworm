@@ -205,7 +205,7 @@ void Buffer::write_to_db() {
     Bytes data(kIncarnationLength, '\0');
     for (const auto& entry : incarnations_) {
         boost::endian::store_big_u64(&data[0], entry.second);
-        incarnation_table.upsert(full_view(entry.first), to_slice(data));
+        incarnation_table.upsert(to_slice(entry.first), to_slice(data));
     }
 
     auto code_table{db::open_cursor(txn_,table::kCode)};

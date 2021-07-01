@@ -35,8 +35,8 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, co
     }
 
     BlockHeader header;
-    ByteView header_view{from_iovec(data.value)};
-    rlp::err_handler(rlp::decode(header_view, header));
+    ByteView data_view{from_iovec(data.value)};
+    rlp::err_handler(rlp::decode(data_view, header));
     return header;
 }
 
@@ -49,7 +49,8 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, uint64_t bloc
         return std::nullopt;
     }
     intx::uint256 td{0};
-    rlp::err_handler(rlp::decode(from_iovec(data.value), td));
+    ByteView data_view{from_iovec(data.value)};
+    rlp::err_handler(rlp::decode(data_view, td));
     return td;
 }
 
@@ -75,9 +76,9 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
     uint64_t i{0};
     for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count;
          data = txn_table.to_next(/*throw_notfound = */ false), ++i) {
-        ByteView value{from_iovec(data.value)};
+        ByteView data_view{from_iovec(data.value)};
         Transaction eth_txn;
-        rlp::err_handler(rlp::decode(value, eth_txn));
+        rlp::err_handler(rlp::decode(data_view, eth_txn));
         v.push_back(eth_txn);
     }
 
@@ -105,7 +106,8 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, uint64_t block_number, b
         return std::nullopt;
     }
 
-    rlp::err_handler(rlp::decode(from_iovec(data.value), bh.block.header));
+    ByteView data_view(from_iovec(data.value));
+    rlp::err_handler(rlp::decode(data_view, bh.block.header));
 
     // Read body
     std::optional<BlockBody> body{read_body(txn, block_number, bh.hash.bytes, read_senders)};
@@ -127,8 +129,8 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, uint64_t block_number, const 
     if (!data) {
         return std::nullopt;
     }
-
-    auto body{detail::decode_stored_block_body(from_iovec(data.value))};
+    ByteView data_view{from_iovec(data.value)};
+    auto body{detail::decode_stored_block_body(data_view)};
 
     BlockBody out;
     std::swap(out.ommers, body.ommers);

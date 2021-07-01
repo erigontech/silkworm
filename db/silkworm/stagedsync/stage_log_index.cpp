@@ -57,7 +57,10 @@ void loader_function(etl::Entry entry, mdbx::cursor &target_table, MDBX_put_flag
         boost::endian::store_big_u32(&chunk_index[entry.key.size()], suffix);
         Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
         current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
-        target_table.put(db::to_slice(chunk_index), &db::to_slice(current_chunk_bytes), db_flags);
+
+        mdbx::slice k{db::to_slice(chunk_index)};
+        mdbx::slice v{db::to_slice(current_chunk_bytes)};
+        target_table.put(k, &v, db_flags);
     }
 }
 

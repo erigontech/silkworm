@@ -73,11 +73,6 @@ Bytes log_key(uint64_t block_number, uint32_t transaction_id);
 // Default database path
 std::string default_path();
 
-inline ByteView from_iovec(const iovec val) {
-    auto* ptr{static_cast<uint8_t*>(val.iov_base)};
-    return {ptr, val.iov_len};
-}
-
 inline mdbx::slice to_slice(ByteView value) {
     return mdbx::slice(static_cast<const void*>(value.data()), value.length());
 }

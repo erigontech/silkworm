@@ -93,7 +93,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     init_batch();
     auto block_data{bodies_table.current()};
     while (block_data && !should_stop()) {
-        auto key_view{db::from_iovec(block_data.key)};
+        auto key_view{db::from_slice(block_data.key)};
         block_num = boost::endian::load_big_u64(block_data.key.byte_ptr());
         if (block_num < expected_block_num) {
             // The same block height has been recorded
@@ -117,7 +117,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
         }
 
         // Get the body and its transactions
-        auto body_rlp{db::from_iovec(block_data.value)};
+        auto body_rlp{db::from_slice(block_data.value)};
         auto block_body{db::detail::decode_stored_block_body(body_rlp)};
         std::vector<Transaction> transactions{
             db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count)};
@@ -262,7 +262,7 @@ bool RecoveryFarm::bufferize_workers_results() {
                     total_recovered_transactions_ += (data.iov_len / kAddressLength);
 
                     auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
-                    Bytes etl_data(db::from_iovec(data));
+                    Bytes etl_data(db::from_slice(data));
                     etl::Entry entry{etl_key, etl_data};
                     collector_.collect(entry);  // TODO check for errors (eg. disk full)
                     headers_it_2_++;
@@ -421,7 +421,7 @@ StageResult RecoveryFarm::fill_canonical_headers(uint64_t height_from, uint64_t 
         }
 
         // We have a canonical header hash in right sequence
-        headers_.push_back(to_bytes32(db::from_iovec(data.value)));
+        headers_.push_back(to_bytes32(db::from_slice(data.value)));
         expected_block_num++;
         data = hashes_table.to_next(false);
     }

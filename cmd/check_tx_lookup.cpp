@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
         auto bodies_data{bodies_table.to_first(false)};
         while (bodies_data) {
             auto block_number(boost::endian::load_big_u64(bodies_data.key.byte_ptr()));
-            auto body_rlp{db::from_iovec(bodies_data.value)};
+            auto body_rlp{db::from_slice(bodies_data.value)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
 
             if (body.txn_count > 0) {
@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
                         continue;
                     }
 
-                    ByteView transaction_rlp{db::from_iovec(transaction_data.value)};
+                    ByteView transaction_rlp{db::from_slice(transaction_data.value)};
                     auto transaction_hash{keccak256(transaction_rlp)};
                     auto transaction_view{full_view(transaction_hash.bytes)};
                     auto lookup_data{tx_lookup_table.find(db::to_slice(transaction_view), false)};
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
                     }
 
                     // Erigon stores block height as compact (no leading zeroes)
-                    auto lookup_block_value{left_pad(db::from_iovec(lookup_data.value), sizeof(uint64_t), buffer)};
+                    auto lookup_block_value{left_pad(db::from_slice(lookup_data.value), sizeof(uint64_t), buffer)};
                     auto actual_block_number{boost::endian::load_big_u64(lookup_block_value.data())};
 
                     if (actual_block_number != expected_block_number) {
@@ -142,7 +142,6 @@ int main(int argc, char* argv[]) {
 
             expected_block_number++;
             bodies_data = bodies_table.to_next(false);
-
         }
 
         SILKWORM_LOG(LogLevel::Info) << "Check " << (should_stop_ ? "aborted" : "completed") << std::endl;

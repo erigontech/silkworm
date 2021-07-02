@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
 
         // Check if each hash has the correct number according to the header table
         while (canonica_hashes_data) {
-            ByteView hash_data_view{db::from_iovec(canonica_hashes_data.value)};  // Canonical Hash
+            ByteView hash_data_view{db::from_slice(canonica_hashes_data.value)};  // Canonical Hash
             auto block_hashes_data{blockhashes_table.find(canonica_hashes_data.value, /*throw_notfound*/ false)};
             if (!block_hashes_data) {
                 uint64_t hash_block_number{boost::endian::load_big_u64(canonica_hashes_data.key.byte_ptr())};

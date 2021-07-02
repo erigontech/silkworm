@@ -161,7 +161,7 @@ TEST_CASE("Account and storage trie") {
 
     const auto marshalled_node1{account_trie.lower_bound(db::to_slice(key), false)};
     REQUIRE(marshalled_node1.done);
-    const Node node1{unmarshal_node(db::from_iovec(marshalled_node1.value))};
+    const Node node1{unmarshal_node(db::from_slice(marshalled_node1.value))};
 
     CHECK(0b1011 == node1.state_mask());
     CHECK(0b0001 == node1.tree_mask());
@@ -174,7 +174,7 @@ TEST_CASE("Account and storage trie") {
     key = *from_hex("0B00");
     const auto marshalled_node2{account_trie.lower_bound(db::to_slice(key), false)};
     REQUIRE(marshalled_node2);
-    const Node node2{unmarshal_node(db::from_iovec(marshalled_node2.value))};
+    const Node node2{unmarshal_node(db::from_slice(marshalled_node2.value))};
 
     CHECK(0b10001 == node2.state_mask());
     CHECK(0b00000 == node2.tree_mask());
@@ -194,7 +194,7 @@ TEST_CASE("Account and storage trie") {
 
     const auto marshalled_node3{storage_trie.find(db::to_slice(storage_key), false)};
     REQUIRE(marshalled_node3);
-    const Node node3{unmarshal_node(db::from_iovec(marshalled_node3.value))};
+    const Node node3{unmarshal_node(db::from_slice(marshalled_node3.value))};
 
     CHECK(0b1010 == node3.state_mask());
     CHECK(0b0000 == node3.tree_mask());
@@ -246,7 +246,7 @@ TEST_CASE("Account trie around extension node") {
     auto key{*from_hex("03")};
     const auto marshalled_node1{account_trie.find(db::to_slice(key), false)};
     REQUIRE(marshalled_node1);
-    const Node node1{unmarshal_node(db::from_iovec(marshalled_node1.value))};
+    const Node node1{unmarshal_node(db::from_slice(marshalled_node1.value))};
 
     CHECK(0b11 == node1.state_mask());
     CHECK(0b01 == node1.tree_mask());
@@ -258,7 +258,7 @@ TEST_CASE("Account trie around extension node") {
     key = *from_hex("03000a0f");
     const auto marshalled_node2{account_trie.find(db::to_slice(key), false)};
     REQUIRE(marshalled_node2);
-    const Node node2{unmarshal_node(db::from_iovec(marshalled_node2.value))};
+    const Node node2{unmarshal_node(db::from_slice(marshalled_node2.value))};
 
     CHECK(0b101100000 == node2.state_mask());
     CHECK(0b000000000 == node2.tree_mask());

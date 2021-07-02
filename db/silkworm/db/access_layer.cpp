@@ -35,7 +35,7 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, co
     }
 
     BlockHeader header;
-    ByteView data_view{from_iovec(data.value)};
+    ByteView data_view{from_slice(data.value)};
     rlp::err_handler(rlp::decode(data_view, header));
     return header;
 }
@@ -49,7 +49,7 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, uint64_t bloc
         return std::nullopt;
     }
     intx::uint256 td{0};
-    ByteView data_view{from_iovec(data.value)};
+    ByteView data_view{from_slice(data.value)};
     rlp::err_handler(rlp::decode(data_view, td));
     return td;
 }
@@ -76,7 +76,7 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
     uint64_t i{0};
     for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count;
          data = txn_table.to_next(/*throw_notfound = */ false), ++i) {
-        ByteView data_view{from_iovec(data.value)};
+        ByteView data_view{from_slice(data.value)};
         Transaction eth_txn;
         rlp::err_handler(rlp::decode(data_view, eth_txn));
         v.push_back(eth_txn);
@@ -106,7 +106,7 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, uint64_t block_number, b
         return std::nullopt;
     }
 
-    ByteView data_view(from_iovec(data.value));
+    ByteView data_view(from_slice(data.value));
     rlp::err_handler(rlp::decode(data_view, bh.block.header));
 
     // Read body
@@ -129,7 +129,7 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, uint64_t block_number, const 
     if (!data) {
         return std::nullopt;
     }
-    ByteView data_view{from_iovec(data.value)};
+    ByteView data_view{from_slice(data.value)};
     auto body{detail::decode_stored_block_body(data_view)};
 
     BlockBody out;
@@ -171,7 +171,7 @@ std::optional<Bytes> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash) {
     if (!data) {
         return std::nullopt;
     }
-    return Bytes{from_iovec(data.value)};
+    return Bytes{from_slice(data.value)};
 }
 
 // Erigon FindByHistory for account
@@ -182,7 +182,7 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
     if (!data) {
         return std::nullopt;
     }
-    db::Entry entry{from_iovec(data.key), from_iovec(data.value)};
+    db::Entry entry{from_slice(data.key), from_slice(data.value)};
     auto address_view{full_view(address)};
     if (!has_prefix(entry.key, address_view)) {
         return std::nullopt;
@@ -200,7 +200,7 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
     if (!data) {
         return std::nullopt;
     }
-    return {from_iovec(data.value)};
+    return {from_slice(data.value)};
 }
 
 // Erigon FindByHistory for storage
@@ -213,13 +213,13 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
     }
 
     auto data{src.current(false)};
-    auto k{from_iovec(data.key)};
+    auto k{from_slice(data.key)};
     if (k.substr(0, kAddressLength) != full_view(address) ||
         k.substr(kAddressLength, kHashLength) != full_view(location)) {
         return std::nullopt;
     }
 
-    auto bitmap{bitmap::read(from_iovec(data.value))};
+    auto bitmap{bitmap::read(from_slice(data.value))};
     auto change_block{bitmap::seek(bitmap, block_number)};
     if (!change_block) {
         return std::nullopt;
@@ -231,7 +231,7 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
     if (!data) {
         return std::nullopt;
     }
-    return {from_iovec(data.value)};
+    return {from_slice(data.value)};
 }
 
 std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address, std::optional<uint64_t> block_num) {
@@ -241,7 +241,7 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
     if (!encoded.has_value()) {
         auto src{db::open_cursor(txn, table::kPlainState)};
         if (auto data{src.find({address.bytes, sizeof(evmc::address)}, false)}; data.done) {
-            encoded.emplace(from_iovec(data.value));
+            encoded.emplace(from_slice(data.value));
         }
     }
     if (!encoded.has_value() || encoded->empty()) {
@@ -274,7 +274,7 @@ evmc::bytes32 read_storage(mdbx::txn& txn, const evmc::address& address, uint64_
         auto key{storage_prefix(full_view(address), incarnation)};
         if (auto data{src.find_multivalue(to_slice(key), mdbx::slice{location.bytes, sizeof(location)}, false)};
             data.done) {
-            val.emplace(from_iovec(data.value));
+            val.emplace(from_slice(data.value));
         } else {
             return {};
         }
@@ -333,7 +333,6 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
     auto key_prefix{to_slice(block_prefix)};
     auto data{src.lower_bound(key_prefix, false)};
     while (data) {
-
         if (!data.key.starts_with(key_prefix)) {
             break;
         }

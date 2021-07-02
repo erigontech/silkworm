@@ -336,7 +336,7 @@ class RecoveryFarm final {
                 }
 
                 // Get the body and its transactions
-                auto body_rlp{db::from_iovec(block_data.value)};
+                auto body_rlp{db::from_slice(block_data.value)};
                 auto block_body{db::detail::decode_stored_block_body(body_rlp)};
                 std::vector<Transaction> transactions{
                     db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count)};
@@ -542,7 +542,7 @@ class RecoveryFarm final {
                         total_recovered_transactions_ += (data.iov_len / kAddressLength);
 
                         auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
-                        Bytes etl_data(db::from_iovec(data));
+                        Bytes etl_data(db::from_slice(data));
                         etl::Entry entry{etl_key, etl_data};
                         collector_.collect(entry);  // TODO check for errors (eg. disk full)
                         headers_it_2_++;
@@ -733,7 +733,7 @@ class RecoveryFarm final {
                 }
 
                 // We have a canonical header hash in right sequence
-                headers_.push_back(to_bytes32(db::from_iovec(header_data.value)));
+                headers_.push_back(to_bytes32(db::from_slice(header_data.value)));
                 expected_block_num++;
                 header_data = canonical_hashes.to_next(/*throw_notfound = */ false);
             }

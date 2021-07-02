@@ -117,7 +117,7 @@ void collect_for_unwind(Bytes key, Bytes value, mdbx::cursor& plain_state_table,
             // cleaning up contract codes
             auto state_account_encoded{plain_state_table.find(db::to_slice(key), /*throw_notfound=*/false)};
             if (state_account_encoded) {
-                auto [state_incarnation, err]{extract_incarnation(db::from_iovec(state_account_encoded.value))};
+                auto [state_incarnation, err]{extract_incarnation(db::from_slice(state_account_encoded.value))};
                 rlp::err_handler(err);
                 // cleanup each code incarnation
                 for (uint64_t i = state_incarnation; i > account.incarnation && i > 0; --i) {
@@ -142,7 +142,7 @@ void collect_for_unwind(Bytes key, Bytes value, mdbx::cursor& plain_state_table,
         return;
     }
     auto location{key.substr(kAddressLength + db::kIncarnationLength)};
-    auto key1 {key.substr(0, kAddressLength + db::kIncarnationLength)};
+    auto key1{key.substr(0, kAddressLength + db::kIncarnationLength)};
     if (plain_state_table.find_multivalue(db::to_slice(key1), db::to_slice(location))) {
         plain_state_table.erase();
     }
@@ -155,12 +155,11 @@ void collect_for_unwind(Bytes key, Bytes value, mdbx::cursor& plain_state_table,
 
 void walk_collect(mdbx::cursor& source, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table,
                   uint64_t unwind_to) {
-
     uint64_t block_number{0};
     auto src_data{source.to_last(/*throw_notfound*/ false)};
     while (src_data) {
-        Bytes key(db::from_iovec(src_data.key));
-        Bytes value(db::from_iovec(src_data.value));
+        Bytes key(db::from_slice(src_data.key));
+        Bytes value(db::from_slice(src_data.value));
         block_number = boost::endian::load_big_u64(&key[0]);
         if (block_number == unwind_to) {
             break;
@@ -172,7 +171,6 @@ void walk_collect(mdbx::cursor& source, mdbx::cursor& plain_state_table, mdbx::c
 }
 
 void unwind_table_from(mdbx::cursor& table, Bytes& starting_key) {
-
     if (table.seek(db::to_slice(starting_key))) {
         table.erase();
         while (table.to_next(/*throw_notfound*/ false)) {
@@ -182,18 +180,17 @@ void unwind_table_from(mdbx::cursor& table, Bytes& starting_key) {
 }
 
 StageResult unwind_execution(db::EnvConfig db_config, uint64_t unwind_to) {
-
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
     uint64_t block_number{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};
 
-    auto plain_state_table{db::open_cursor(txn,db::table::kPlainState)};
-    auto plain_code_table{db::open_cursor(txn,db::table::kPlainContractCode)};
-    auto account_changeset_table{db::open_cursor(txn,db::table::kPlainAccountChangeSet)};
-    auto storage_changeset_table{db::open_cursor(txn,db::table::kPlainStorageChangeSet)};
-    auto receipts_table{db::open_cursor(txn,db::table::kBlockReceipts)};
-    auto log_table{db::open_cursor(txn,db::table::kLogs)};
-    auto traces_table{db::open_cursor(txn,db::table::kCallTraceSet)};
+    auto plain_state_table{db::open_cursor(txn, db::table::kPlainState)};
+    auto plain_code_table{db::open_cursor(txn, db::table::kPlainContractCode)};
+    auto account_changeset_table{db::open_cursor(txn, db::table::kPlainAccountChangeSet)};
+    auto storage_changeset_table{db::open_cursor(txn, db::table::kPlainStorageChangeSet)};
+    auto receipts_table{db::open_cursor(txn, db::table::kBlockReceipts)};
+    auto log_table{db::open_cursor(txn, db::table::kLogs)};
+    auto traces_table{db::open_cursor(txn, db::table::kCallTraceSet)};
 
     if (unwind_to == 0) {
         txn.clear_map(plain_state_table.map());

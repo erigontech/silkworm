@@ -73,14 +73,14 @@ void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
 
         // Account
         if (data.key.length() == kAddressLength) {
-            etl::Entry entry{Bytes(keccak256(db::from_iovec(data.key)).bytes, kHashLength),
+            etl::Entry entry{Bytes(keccak256(db::from_slice(data.key)).bytes, kHashLength),
                              Bytes(data.value.byte_ptr(), data.value.length())};
             collector_account.collect(entry);
         } else {
             Bytes new_key(kHashLength * 2 + db::kIncarnationLength, '\0');
             uint32_t new_key_pos{0};
 
-            std::memcpy(&new_key[new_key_pos], keccak256(db::from_iovec(data.key).substr(0, kAddressLength)).bytes,
+            std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.key).substr(0, kAddressLength)).bytes,
                         kHashLength);
             data.key.remove_prefix(kAddressLength);
             new_key_pos += kAddressLength;
@@ -89,7 +89,7 @@ void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
             data.key.remove_prefix(db::kIncarnationLength);
             new_key_pos += db::kIncarnationLength;
 
-            std::memcpy(&new_key[new_key_pos], keccak256(db::from_iovec(data.key)).bytes, kHashLength);
+            std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.key)).bytes, kHashLength);
             etl::Entry entry{new_key, Bytes(data.value.byte_ptr(), data.value.length())};
             collector_storage.collect(entry);
         }
@@ -116,7 +116,7 @@ void hashstate_promote_clean_code(mdbx::txn& txn, std::string etl_path) {
     auto data{tbl.to_first(/*throw_notfound*/ false)};
     while (data) {
         Bytes new_key(kHashLength + db::kIncarnationLength, '\0');
-        std::memcpy(&new_key[0], keccak256(db::from_iovec(data.key.safe_middle(0, kAddressLength))).bytes, kHashLength);
+        std::memcpy(&new_key[0], keccak256(db::from_slice(data.key.safe_middle(0, kAddressLength))).bytes, kHashLength);
         std::memcpy(&new_key[kHashLength], data.key.safe_middle(kAddressLength, db::kIncarnationLength).iov_base,
                     db::kIncarnationLength);
         etl::Entry entry{new_key, Bytes(data.value.byte_ptr(), data.value.length())};
@@ -149,13 +149,11 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     auto changeset_data{changeset_table.find(db::to_slice(start_key), /*throw_notfound*/ false)};
 
     while (changeset_data) {
-
-        Bytes mdb_key_as_bytes{db::from_iovec(changeset_data.key)};
-        Bytes mdb_value_as_bytes{db::from_iovec(changeset_data.value)};
+        Bytes mdb_key_as_bytes{db::from_slice(changeset_data.key)};
+        Bytes mdb_value_as_bytes{db::from_slice(changeset_data.value)};
         auto [db_key, _]{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};
 
         if (operation == HashstateOperation::HashAccount) {
-
             // We get account and hash its key.
             auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound*/ false)};
             if (!plainstate_data) {
@@ -168,7 +166,6 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             changeset_data = changeset_table.to_next(false);
 
         } else if (operation == HashstateOperation::HashStorage) {
-
             // We get storage value and hash its key.
             Bytes key(kHashLength * 2 + db::kIncarnationLength, '\0');
             auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound*/ false)};
@@ -187,14 +184,13 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             changeset_data = changeset_table.to_next(false);
 
         } else {
-
             // get incarnation
             auto encoded_account{plainstate_table.find(db::to_slice(db_key), false)};
             if (!encoded_account) {
                 changeset_data = changeset_table.to_next(false);
                 continue;
             }
-            auto [incarnation, err]{extract_incarnation(db::from_iovec(encoded_account.value))};
+            auto [incarnation, err]{extract_incarnation(db::from_slice(encoded_account.value))};
             rlp::err_handler(err);
             if (incarnation == 0) {
                 changeset_data = changeset_table.to_next(false);

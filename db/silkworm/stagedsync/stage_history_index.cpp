@@ -70,7 +70,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
             std::string composite_key;
             if (storage) {
                 char composite_key_array[kHashLength + kAddressLength];
-                auto data_key_view{db::from_iovec(data.key).substr(8)};
+                auto data_key_view{db::from_slice(data.key).substr(8)};
                 std::memcpy(&composite_key_array[0], data_key_view.data(), kAddressLength);
                 std::memcpy(&composite_key_array[kAddressLength], data.value.byte_ptr(), kHashLength);
                 composite_key = std::string(composite_key_array);
@@ -121,7 +121,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
         auto target{db::open_cursor(txn, index_config)};
         collector.load(
             target,
-            [](etl::Entry entry, mdbx::cursor& history_index_table, MDBX_put_flags_t db_flags) {
+            [](etl::Entry entry, mdbx::cursor &history_index_table, MDBX_put_flags_t db_flags) {
                 auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
 
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');

@@ -54,8 +54,7 @@ void check(mdbx::txn& txn, Operation operation) {
     auto data{source_table.to_first(/*throw_notfound*/ false)};
 
     while (data) { /* Loop as long as we have no errors*/
-        Bytes mdb_key_as_bytes{db::from_iovec(data.key)};
-        // Bytes expected_value{db::from_iovec(data.value)};
+        Bytes mdb_key_as_bytes{db::from_slice(data.key)};
 
         if (operation == HashAccount) {
             // Account
@@ -72,8 +71,8 @@ void check(mdbx::txn& txn, Operation operation) {
                 return;
             }
             if (actual_value.value != data.value) {
-                SILKWORM_LOG(LogLevel::Error) << "Expected: " << to_hex(db::from_iovec(data.value)) << ", Actual: << "
-                                              << to_hex(db::from_iovec(actual_value.value)) << std::endl;
+                SILKWORM_LOG(LogLevel::Error) << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
+                                              << to_hex(db::from_slice(actual_value.value)) << std::endl;
                 return;
             }
             data = source_table.to_next(false);
@@ -114,8 +113,8 @@ void check(mdbx::txn& txn, Operation operation) {
                 continue;
             }
             if (actual_value.value != data.value) {
-                SILKWORM_LOG(LogLevel::Error) << "Expected: " << to_hex(db::from_iovec(data.value)) << ", Actual: << "
-                                              << to_hex(db::from_iovec(actual_value.value)) << std::endl;
+                SILKWORM_LOG(LogLevel::Error) << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
+                                              << to_hex(db::from_slice(actual_value.value)) << std::endl;
                 return;
             }
             data = source_table.to_next(false);
@@ -142,7 +141,6 @@ int main(int argc, char* argv[]) {
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
 
     try {
-
         db::EnvConfig db_config{db_path};
         db_config.set_readonly(false);
         auto env{db::open_env(db_config)};

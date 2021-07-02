@@ -120,11 +120,11 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
 
         for (auto a{acc_state.lower_bound(db::to_slice(acc_trie.first_uncovered_prefix()), /*throw_notfound*/ false)};
              a.done == true; a = acc_state.to_next(/*throw_notfound*/ false)) {
-            const Bytes unpacked_key{unpack_nibbles(db::from_iovec(a.key))};
+            const Bytes unpacked_key{unpack_nibbles(db::from_slice(a.key))};
             if (acc_trie.key().has_value() && acc_trie.key().value() < unpacked_key) {
                 break;
             }
-            const auto [account, err]{decode_account_from_storage(db::from_iovec(a.value))};
+            const auto [account, err]{decode_account_from_storage(db::from_slice(a.value))};
             // TODO (Andrea) Throw exceptions not enums
             if (err != rlp::DecodingResult::kOk) {
                 throw err;
@@ -133,7 +133,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
             evmc::bytes32 storage_root{kEmptyRoot};
 
             if (account.incarnation) {
-                const Bytes acc_with_inc{db::storage_prefix(db::from_iovec(a.key), account.incarnation)};
+                const Bytes acc_with_inc{db::storage_prefix(db::from_slice(a.key), account.incarnation)};
                 HashBuilder storage_hb;
                 storage_hb.node_collector = [&](ByteView unpacked_key, const Node& node) {
                     etl::Entry e{acc_with_inc, marshal_node(node)};
@@ -149,8 +149,8 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                     for (auto s{storage_state.lower_bound_multivalue(
                              db::to_slice(acc_with_inc), db::to_slice(storage_trie.first_uncovered_prefix()), false)};
                          s.done == true; s = storage_state.to_current_next_multi(false)) {
-                        const ByteView packed_loc{db::from_iovec(s.value).substr(0, kHashLength)};
-                        const ByteView value{db::from_iovec(s.value).substr(kHashLength)};
+                        const ByteView packed_loc{db::from_slice(s.value).substr(0, kHashLength)};
+                        const ByteView value{db::from_slice(s.value).substr(kHashLength)};
                         const Bytes unpacked_loc{unpack_nibbles(packed_loc)};
                         if (storage_trie.key().has_value() && storage_trie.key().value() < unpacked_loc) {
                             break;
@@ -172,7 +172,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                 storage_root = storage_hb.root_hash();
             }
 
-            hb_.add(db::from_iovec(a.key), account.rlp(storage_root));
+            hb_.add(db::from_slice(a.key), account.rlp(storage_root));
         }
 
     use_account_trie:

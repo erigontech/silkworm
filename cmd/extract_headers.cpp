@@ -68,7 +68,7 @@ class Db {
             return std::nullopt;  // not found
         }
         assert(data.value.length() == kHashLength);
-        return Hash(db::from_iovec(data.value));  // copy
+        return Hash(db::from_slice(data.value));  // copy
     }
 
     Bytes head_header_key() {  // todo: add to db::util.h?
@@ -84,7 +84,7 @@ class Db {
             return std::nullopt;
         }
         assert(data.value.length() == kHashLength);
-        return Hash(db::from_iovec(data.value));
+        return Hash(db::from_slice(data.value));
     }
 
     std::optional<BlockHeader> read_header(BlockNum b, Hash h) { return db::read_header(txn, b, h.bytes); }
@@ -96,7 +96,7 @@ class Db {
         if (!data) {
             return std::nullopt;
         }
-        return db::from_iovec(data.value);
+        return db::from_slice(data.value);
     }
 
     Bytes header_numbers_key(Hash h) {  // todo: add to db::util.h?

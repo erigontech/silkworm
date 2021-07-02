@@ -13,7 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include "stagedsync.hpp"
 #include <filesystem>
 #include <iostream>
 
@@ -25,10 +24,11 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 
+#include "stagedsync.hpp"
+
 namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
-
 
 static Bytes compact(Bytes& b) {
     std::string::size_type offset{b.find_first_not_of(uint8_t{0})};
@@ -39,7 +39,6 @@ static Bytes compact(Bytes& b) {
 }
 
 StageResult stage_tx_lookup(db::EnvConfig db_config) {
-
     fs::path datadir(db_config.path);
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
     fs::create_directories(etl_path);
@@ -63,7 +62,7 @@ StageResult stage_tx_lookup(db::EnvConfig db_config) {
 
     auto bodies_data{bodies_table.find(db::to_slice(start), /*throw_notfound*/ false)};
     while (bodies_data) {
-        auto body_rlp{db::from_iovec(bodies_data.value)};
+        auto body_rlp{db::from_slice(bodies_data.value)};
         auto body{db::detail::decode_stored_block_body(body_rlp)};
         Bytes block_number_as_bytes(bodies_data.key.byte_ptr(), 8);
         auto lookup_block_data{compact(block_number_as_bytes)};
@@ -76,7 +75,7 @@ StageResult stage_tx_lookup(db::EnvConfig db_config) {
             uint64_t tx_count{0};
 
             while (tx_data && tx_count < body.txn_count) {
-                auto tx_view{db::from_iovec(tx_data.value)};
+                auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
                 etl::Entry entry{Bytes(hash.bytes, 32), Bytes(lookup_block_data.data(), lookup_block_data.size())};
                 collector.collect(entry);
@@ -93,7 +92,6 @@ StageResult stage_tx_lookup(db::EnvConfig db_config) {
         bodies_data = bodies_table.to_next(/*throw_notfound*/ false);
     }
 
-
     SILKWORM_LOG(LogLevel::Info) << "Entries Collected << " << collector.size() << std::endl;
 
     // Proceed only if we've done something
@@ -101,14 +99,14 @@ StageResult stage_tx_lookup(db::EnvConfig db_config) {
         SILKWORM_LOG(LogLevel::Info) << "Started tx Hashes Loading" << std::endl;
 
         /*
-            * If we're on first sync then we shouldn't have any records in target
-            * table. For this reason we can apply MDB_APPEND to load as
-            * collector (with no transform) ensures collected entries
-            * are already sorted. If instead target table contains already
-            * some data the only option is to load in upsert mode as we
-            * cannot guarantee keys are sorted amongst different calls
-            * of this stage
-            */
+         * If we're on first sync then we shouldn't have any records in target
+         * table. For this reason we can apply MDB_APPEND to load as
+         * collector (with no transform) ensures collected entries
+         * are already sorted. If instead target table contains already
+         * some data the only option is to load in upsert mode as we
+         * cannot guarantee keys are sorted amongst different calls
+         * of this stage
+         */
         auto target_table{db::open_cursor(txn, db::table::kTxLookup)};
         auto target_table_rcount{txn.get_map_stat(target_table.map()).ms_entries};
         MDBX_put_flags_t db_flags{target_table_rcount ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
@@ -129,7 +127,6 @@ StageResult stage_tx_lookup(db::EnvConfig db_config) {
     return StageResult::kStageSuccess;
 }
 
-StageResult unwind_tx_lookup() {
-    throw std::runtime_error("Not Implemented.");
-}
-}
+StageResult unwind_tx_lookup() { throw std::runtime_error("Not Implemented."); }
+
+}  // namespace silkworm::stagedsync

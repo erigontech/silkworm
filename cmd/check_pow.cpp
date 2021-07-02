@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
                 throw std::runtime_error("Can't retrieve canonical hash for block " + std::to_string(block_num));
             }
 
-            auto header_key{to_bytes32(db::from_iovec(data.value))};
+            auto header_key{to_bytes32(db::from_slice(data.value))};
             auto header{db::read_header(txn, block_num, header_key.bytes)};
             if (!header.has_value()) {
                 throw std::runtime_error("Can't retrieve header for block " + std::to_string(block_num));

@@ -270,7 +270,7 @@ evmc::bytes32 read_storage(mdbx::txn& txn, const evmc::address& address, uint64_
         val = find_value_suffix(src, key, full_view(location));
     }
 
-    if (!val) {
+    if (!val.has_value()) {
         return {};
     }
 

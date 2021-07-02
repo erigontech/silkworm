@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 - 2021 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,9 +13,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#include <vector>
+
 #include <silkworm/db/tables.hpp>
 #include <silkworm/stagedsync/util.hpp>
-#include <vector>
 
 #ifndef SILKWORM_STAGEDSYNC_HPP_
 #define SILKWORM_STAGEDSYNC_HPP_
@@ -64,9 +66,7 @@ StageResult stage_storage_history(db::EnvConfig);
 StageResult stage_log_index(db::EnvConfig);
 StageResult stage_tx_lookup(db::EnvConfig);
 // Unwind functions
-StageResult unwind_headers(db::EnvConfig, uint64_t);
-StageResult unwind_blockhashes(db::EnvConfig, uint64_t);
-StageResult unwind_bodies(db::EnvConfig, uint64_t);
+StageResult no_unwind(db::EnvConfig, uint64_t);
 StageResult unwind_senders(db::EnvConfig, uint64_t);
 StageResult unwind_execution(db::EnvConfig, uint64_t);
 StageResult unwind_hashstate(db::EnvConfig, uint64_t);
@@ -78,6 +78,7 @@ StageResult unwind_tx_lookup(db::EnvConfig, uint64_t);
 // TODO
 
 std::vector<Stage> get_default_stages();
-}
+
+}  // namespace silkworm::stagedsync
 
 #endif

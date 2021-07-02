@@ -23,7 +23,6 @@
 #include <string>
 
 #include <silkworm/common/base.hpp>
-#include <silkworm/common/os.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/util.hpp>
 

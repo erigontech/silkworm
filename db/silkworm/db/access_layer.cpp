@@ -226,11 +226,7 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
 
     src = db::open_cursor(txn, table::kPlainStorageChangeSet);
     key = storage_change_key(*change_block, address, incarnation);
-    data = src.find_multivalue(to_slice(key), mdbx::slice(location.bytes, 32), /*throw_notfound*/ false);
-    if (!data) {
-        return std::nullopt;
-    }
-    return {from_slice(data.value)};
+    return find_value_suffix(src, key, full_view(location));
 }
 
 std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address, std::optional<uint64_t> block_num) {
@@ -271,15 +267,15 @@ evmc::bytes32 read_storage(mdbx::txn& txn, const evmc::address& address, uint64_
     if (!val.has_value()) {
         auto src{db::open_cursor(txn, table::kPlainState)};
         auto key{storage_prefix(full_view(address), incarnation)};
-        if (auto data{src.find_multivalue(to_slice(key), mdbx::slice{location.bytes, sizeof(location)}, false)};
-            data.done) {
-            val.emplace(from_slice(data.value));
-        } else {
-            return {};
-        }
+        val = find_value_suffix(src, key, full_view(location));
+    }
+
+    if (!val) {
+        return {};
     }
 
     evmc::bytes32 res{};
+    assert(val->length() <= kHashLength);
     std::memcpy(res.bytes + kHashLength - val->length(), val->data(), val->length());
     return res;
 }

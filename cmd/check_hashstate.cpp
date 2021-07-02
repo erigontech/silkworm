@@ -36,7 +36,7 @@ enum Operation {
     Code,
 };
 
-std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_checking(Operation operation) {
+std::pair<db::MapConfig, db::MapConfig> get_tables_for_checking(Operation operation) {
     switch (operation) {
         case HashAccount:
             return {db::table::kPlainState, db::table::kHashedAccounts};
@@ -47,82 +47,78 @@ std::pair<lmdb::TableConfig, lmdb::TableConfig> get_tables_for_checking(Operatio
     }
 }
 
-void check(lmdb::Transaction* txn, Operation operation) {
+void check(mdbx::txn& txn, Operation operation) {
     auto [source_config, target_config] = get_tables_for_checking(operation);
-    auto source_table{txn->open(source_config)};
-    auto target_table{txn->open(target_config)};
-    MDB_val mdb_key;
-    MDB_val mdb_data;
-    int rc{source_table->get_first(&mdb_key, &mdb_data)};
-    while (rc == MDB_SUCCESS) { /* Loop as long as we have no errors*/
-        Bytes mdb_key_as_bytes{db::from_mdb_val(mdb_key)};
-        Bytes expected_value{db::from_mdb_val(mdb_data)};
+    auto source_table{db::open_cursor(txn, source_config)};
+    auto target_table{db::open_cursor(txn, target_config)};
+    auto data{source_table.to_first(/*throw_notfound*/ false)};
+
+    while (data) { /* Loop as long as we have no errors*/
+        Bytes mdb_key_as_bytes{db::from_slice(data.key)};
 
         if (operation == HashAccount) {
             // Account
-            if (mdb_key.mv_size != kAddressLength) {
-                rc = source_table->get_next(&mdb_key, &mdb_data);
+            if (data.key.length() != kAddressLength) {
+                data = source_table.to_next(false);
                 continue;
             }
             auto hash{keccak256(mdb_key_as_bytes)};
             auto key{full_view(hash.bytes)};
-            auto actual_value{target_table->get(key)};
-            if (actual_value == std::nullopt) {
+
+            auto actual_value{target_table.find(db::to_slice(key))};
+            if (!actual_value) {
                 SILKWORM_LOG(LogLevel::Error) << "key: " << to_hex(key) << ", does not exist." << std::endl;
                 return;
             }
-            if (actual_value->compare(expected_value) != 0) {
-                SILKWORM_LOG(LogLevel::Error)
-                    << "Expected: " << to_hex(expected_value) << ", Actual: << " << to_hex(*actual_value) << std::endl;
+            if (actual_value.value != data.value) {
+                SILKWORM_LOG(LogLevel::Error) << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
+                                              << to_hex(db::from_slice(actual_value.value)) << std::endl;
                 return;
             }
-            rc = source_table->get_next(&mdb_key, &mdb_data);
+            data = source_table.to_next(false);
+
         } else if (operation == HashStorage) {
             // Storage
-            if (mdb_key.mv_size == kAddressLength) {
-                rc = source_table->get_next(&mdb_key, &mdb_data);
+            if (data.key.length() != kAddressLength) {
+                data = source_table.to_next(false);
                 continue;
             }
+
             Bytes key(kHashLength * 2 + db::kIncarnationLength, '\0');
             std::memcpy(&key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
             std::memcpy(&key[kHashLength + db::kIncarnationLength],
                         keccak256(mdb_key_as_bytes.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
-            MDB_val mdb_key_hashed{db::to_mdb_val(key)};
-            MDB_val mdb_data_hashed{db::to_mdb_val(expected_value)};
-            rc = target_table->seek_exact(&mdb_key_hashed, &mdb_data_hashed);
-            if (rc != 0) {
+
+            auto target_data{target_table.find_multivalue(db::to_slice(key), data.value, /*throw_notfound*/ false)};
+            if (!target_data) {
                 SILKWORM_LOG(LogLevel::Error) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
                 return;
             }
-            rc = source_table->get_next(&mdb_key, &mdb_data);
+            data = source_table.to_next(false);
+
         } else {
             // Code
-            if (mdb_key.mv_size != kAddressLength + db::kIncarnationLength) {
-                rc = source_table->get_next(&mdb_key, &mdb_data);
+            if (data.key.length() != kAddressLength + db::kIncarnationLength) {
+                data = source_table.to_next(false);
                 continue;
             }
             Bytes key(kHashLength + db::kIncarnationLength, '\0');
             std::memcpy(&key[0], keccak256(mdb_key_as_bytes.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
-            auto actual_value{target_table->get(key)};
-            if (actual_value == std::nullopt) {
+            auto actual_value{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
+            if (!actual_value) {
                 SILKWORM_LOG(LogLevel::Error) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
-                rc = source_table->get_next(&mdb_key, &mdb_data);
+                data = source_table.to_next(false);
                 continue;
             }
-
-            if (actual_value->compare(expected_value) != 0) {
-                SILKWORM_LOG(LogLevel::Error)
-                    << "Expected: " << to_hex(expected_value) << ", Actual: << " << to_hex(*actual_value) << std::endl;
+            if (actual_value.value != data.value) {
+                SILKWORM_LOG(LogLevel::Error) << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
+                                              << to_hex(db::from_slice(actual_value.value)) << std::endl;
                 return;
             }
-            rc = source_table->get_next(&mdb_key, &mdb_data);
+            data = source_table.to_next(false);
         }
-    }
-
-    if (rc && rc != MDB_NOTFOUND) { /* MDB_NOTFOUND is not actually an error rather eof */
-        lmdb::err_handler(rc);
     }
 }
 
@@ -136,7 +132,7 @@ int main(int argc, char* argv[]) {
     SILKWORM_LOG(LogLevel::Info) << "Checking HashState" << std::endl;
 
     // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    fs::path db_file{fs::path(db_path) / fs::path("mdbx.dat")};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
@@ -144,18 +140,18 @@ int main(int argc, char* argv[]) {
     fs::path datadir(db_path);
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
 
-    lmdb::DatabaseConfig db_config{db_path};
-    db_config.set_readonly(false);
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
-
     try {
+        db::EnvConfig db_config{db_path};
+        db_config.set_readonly(false);
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+
         SILKWORM_LOG(LogLevel::Info) << "Checking Accounts" << std::endl;
-        check(txn.get(), HashAccount);
+        check(txn, HashAccount);
         SILKWORM_LOG(LogLevel::Info) << "Checking Storage" << std::endl;
-        check(txn.get(), HashStorage);
+        check(txn, HashStorage);
         SILKWORM_LOG(LogLevel::Info) << "Checking Code Keys" << std::endl;
-        check(txn.get(), Code);
+        check(txn, Code);
         SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

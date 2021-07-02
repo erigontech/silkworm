@@ -46,7 +46,7 @@ TEST_CASE("Node marshalling") {
     CHECK(unmarshal_node(b) == n);
 }
 
-static evmc::bytes32 setup_storage(lmdb::Transaction& txn, ByteView storage_key) {
+static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
     const auto loc1{0x1200000000000000000000000000000000000000000000000000000000000000_bytes32};
     const auto loc2{0x1400000000000000000000000000000000000000000000000000000000000000_bytes32};
     const auto loc3{0x3000000000000000000000000000000000000000000000000000000000E00000_bytes32};
@@ -57,20 +57,20 @@ static evmc::bytes32 setup_storage(lmdb::Transaction& txn, ByteView storage_key)
     const auto val3{*from_hex("0x127a89")};
     const auto val4{*from_hex("0x05")};
 
-    auto hashed_storage{txn.open(db::table::kHashedStorage)};
+    auto hashed_storage{db::open_cursor(txn, db::table::kHashedStorage)};
 
     Bytes data1{full_view(loc1)};
     data1.append(val1);
-    hashed_storage->put(storage_key, data1);
+    hashed_storage.upsert(db::to_slice(storage_key), db::to_slice(data1));
     Bytes data2{full_view(loc2)};
     data2.append(val2);
-    hashed_storage->put(storage_key, data2);
+    hashed_storage.upsert(db::to_slice(storage_key), db::to_slice(data2));
     Bytes data3{full_view(loc3)};
     data3.append(val3);
-    hashed_storage->put(storage_key, data3);
+    hashed_storage.upsert(db::to_slice(storage_key), db::to_slice(data3));
     Bytes data4{full_view(loc4)};
     data4.append(val4);
-    hashed_storage->put(storage_key, data4);
+    hashed_storage.upsert(db::to_slice(storage_key), db::to_slice(data4));
 
     HashBuilder storage_hb;
 
@@ -94,53 +94,55 @@ TEST_CASE("Account and storage trie") {
     const TemporaryDirectory tmp_dir1;
     const TemporaryDirectory tmp_dir2;
 
-    lmdb::DatabaseConfig db_config{tmp_dir1.path(), 32 * kMebi};
+    // Initialize temporary Database
+    db::EnvConfig db_config{tmp_dir1.path()};
     db_config.set_readonly(false);
-    auto env{lmdb::get_env(db_config)};
-    auto txn{env->begin_rw_transaction()};
-    db::table::create_all(*txn);
+    db_config.set_in_mem(true);
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
+    db::table::create_all(txn);
 
     // ----------------------------------------------------------------
     // Set up test accounts. See the big comment in db_trie.hpp
     // ----------------------------------------------------------------
 
-    auto hashed_accounts{txn->open(db::table::kHashedAccounts)};
+    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
 
     HashBuilder hb;
 
     const auto key1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a1{0, 3 * kEther};
-    hashed_accounts->put(full_view(key1), a1.encode_for_storage());
+    hashed_accounts.upsert(db::to_slice(key1), db::to_slice(a1.encode_for_storage()));
     hb.add(full_view(key1), a1.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key2{0xB040000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a2{0, 1 * kEther};
-    hashed_accounts->put(full_view(key2), a2.encode_for_storage());
+    hashed_accounts.upsert(db::to_slice(key2), db::to_slice(a2.encode_for_storage()));
     hb.add(full_view(key2), a2.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key3{0xB041000000000000000000000000000000000000000000000000000000000000_bytes32};
     const auto code_hash{0x5be74cad16203c4905c068b012a2e9fb6d19d036c410f16fd177f337541440dd_bytes32};
     const Account a3{0, 2 * kEther, code_hash, kDefaultIncarnation};
-    hashed_accounts->put(full_view(key3), a3.encode_for_storage());
+    hashed_accounts.upsert(db::to_slice(key3), db::to_slice(a3.encode_for_storage()));
 
     Bytes storage_key{db::storage_prefix(full_view(key3), kDefaultIncarnation)};
-    const evmc::bytes32 storage_root{setup_storage(*txn, storage_key)};
+    const evmc::bytes32 storage_root{setup_storage(txn, storage_key)};
 
     hb.add(full_view(key3), a3.rlp(storage_root));
 
     const auto key4{0xB100000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a4{0, 4 * kEther};
-    hashed_accounts->put(full_view(key4), a4.encode_for_storage());
+    hashed_accounts.upsert(db::to_slice(key4), db::to_slice(a4.encode_for_storage()));
     hb.add(full_view(key4), a4.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a5{0, 8 * kEther};
-    hashed_accounts->put(full_view(key5), a5.encode_for_storage());
+    hashed_accounts.upsert(db::to_slice(key5), db::to_slice(a5.encode_for_storage()));
     hb.add(full_view(key5), a5.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key6{0xB340000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a6{0, 1 * kEther};
-    hashed_accounts->put(full_view(key6), a6.encode_for_storage());
+    hashed_accounts.upsert(db::to_slice(key6), db::to_slice(a6.encode_for_storage()));
     hb.add(full_view(key6), a6.rlp(/*storage_root=*/kEmptyRoot));
 
     // ----------------------------------------------------------------
@@ -148,17 +150,18 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    regenerate_db_tries(*txn, tmp_dir2.path(), &expected_root);
+    regenerate_db_tries(txn, tmp_dir2.path(), &expected_root);
 
     // ----------------------------------------------------------------
     // Check account trie
     // ----------------------------------------------------------------
 
-    auto account_trie{txn->open(db::table::kTrieOfAccounts)};
+    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+    auto key{*from_hex("0B")};
 
-    const auto marshalled_node1{account_trie->get(*from_hex("0B"))};
-    REQUIRE(marshalled_node1);
-    const Node node1{unmarshal_node(*marshalled_node1)};
+    const auto marshalled_node1{account_trie.find(db::to_slice(key), false)};
+    REQUIRE(marshalled_node1.done);
+    const Node node1{unmarshal_node(db::from_slice(marshalled_node1.value))};
 
     CHECK(0b1011 == node1.state_mask());
     CHECK(0b0001 == node1.tree_mask());
@@ -168,9 +171,10 @@ TEST_CASE("Account and storage trie") {
 
     REQUIRE(node1.hashes().size() == 2);
 
-    const auto marshalled_node2{account_trie->get(*from_hex("0B00"))};
+    key = *from_hex("0B00");
+    const auto marshalled_node2{account_trie.find(db::to_slice(key), false)};
     REQUIRE(marshalled_node2);
-    const Node node2{unmarshal_node(*marshalled_node2)};
+    const Node node2{unmarshal_node(db::from_slice(marshalled_node2.value))};
 
     CHECK(0b10001 == node2.state_mask());
     CHECK(0b00000 == node2.tree_mask());
@@ -186,11 +190,11 @@ TEST_CASE("Account and storage trie") {
     // Check storage trie
     // ----------------------------------------------------------------
 
-    auto storage_trie{txn->open(db::table::kTrieOfStorage)};
+    auto storage_trie{db::open_cursor(txn, db::table::kTrieOfStorage)};
 
-    const auto marshalled_node3{storage_trie->get(storage_key)};
+    const auto marshalled_node3{storage_trie.find(db::to_slice(storage_key), false)};
     REQUIRE(marshalled_node3);
-    const Node node3{unmarshal_node(*marshalled_node3)};
+    const Node node3{unmarshal_node(db::from_slice(marshalled_node3.value))};
 
     CHECK(0b1010 == node3.state_mask());
     CHECK(0b0000 == node3.tree_mask());
@@ -218,28 +222,31 @@ TEST_CASE("Account trie around extension node") {
     const TemporaryDirectory tmp_dir1;
     const TemporaryDirectory tmp_dir2;
 
-    lmdb::DatabaseConfig db_config{tmp_dir1.path(), 32 * kMebi};
+    // Initialize temporary Database
+    db::EnvConfig db_config{tmp_dir1.path()};
     db_config.set_readonly(false);
-    auto env{lmdb::get_env(db_config)};
-    auto txn{env->begin_rw_transaction()};
-    db::table::create_all(*txn);
+    db_config.set_in_mem(true);
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
+    db::table::create_all(txn);
 
-    auto hashed_accounts{txn->open(db::table::kHashedAccounts)};
+    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
     HashBuilder hb;
 
     for (const auto& key : keys) {
-        hashed_accounts->put(full_view(key), a.encode_for_storage());
-        hb.add(full_view(key), a.rlp(/*storage_root=*/kEmptyRoot));
+        auto key_view{full_view(key)};
+        hashed_accounts.upsert(db::to_slice(key_view), db::to_slice(a.encode_for_storage()));
+        hb.add(key_view, a.rlp(/*storage_root=*/kEmptyRoot));
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    CHECK(regenerate_db_tries(*txn, tmp_dir2.path()) == expected_root);
+    CHECK(regenerate_db_tries(txn, tmp_dir2.path()) == expected_root);
 
-    auto account_trie{txn->open(db::table::kTrieOfAccounts)};
-
-    const auto marshalled_node1{account_trie->get(*from_hex("03"))};
+    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+    auto key{*from_hex("03")};
+    const auto marshalled_node1{account_trie.find(db::to_slice(key), false)};
     REQUIRE(marshalled_node1);
-    const Node node1{unmarshal_node(*marshalled_node1)};
+    const Node node1{unmarshal_node(db::from_slice(marshalled_node1.value))};
 
     CHECK(0b11 == node1.state_mask());
     CHECK(0b01 == node1.tree_mask());
@@ -248,9 +255,10 @@ TEST_CASE("Account trie around extension node") {
     CHECK(!node1.root_hash());
     REQUIRE(node1.hashes().size() == 0);
 
-    const auto marshalled_node2{account_trie->get(*from_hex("03000a0f"))};
+    key = *from_hex("03000a0f");
+    const auto marshalled_node2{account_trie.find(db::to_slice(key), false)};
     REQUIRE(marshalled_node2);
-    const Node node2{unmarshal_node(*marshalled_node2)};
+    const Node node2{unmarshal_node(db::from_slice(marshalled_node2.value))};
 
     CHECK(0b101100000 == node2.state_mask());
     CHECK(0b000000000 == node2.tree_mask());

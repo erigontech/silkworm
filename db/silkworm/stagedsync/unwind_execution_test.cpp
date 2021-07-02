@@ -39,10 +39,12 @@ TEST_CASE("Unwind Execution") {
     TemporaryDirectory db_tmp_dir;
 
     // Initialize temporary Database
-    lmdb::DatabaseConfig db_config{db_tmp_dir.path(), 32 * kMebi};
+    db::EnvConfig db_config{db_tmp_dir.path()};
     db_config.set_readonly(false);
-    auto env{lmdb::get_env(db_config)};
-    auto txn{env->begin_rw_transaction()};
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
+    db::table::create_all(txn);
+
     // ---------------------------------------
     // Prepare
     // ---------------------------------------
@@ -70,9 +72,8 @@ TEST_CASE("Unwind Execution") {
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     block.transactions[0].from = sender;
-    db::table::create_all(*txn);
 
-    db::Buffer buffer{txn.get()};
+    db::Buffer buffer{txn};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -121,19 +122,20 @@ TEST_CASE("Unwind Execution") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
 
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::set_stage_progress(txn, db::stages::kExecutionKey, 3);
     buffer.write_to_db();
-    lmdb::err_handler(txn->commit());
-    env->close();
+
+    txn.commit();
+    env.close();
 
     // ---------------------------------------
     // Unwind second block and checks if state is first block
     // ---------------------------------------
     CHECK(stagedsync::unwind_execution(db_config, 1) == stagedsync::StageResult::kStageSuccess);
 
-    auto env2{lmdb::get_env(db_config)};
-    auto txn2{env2->begin_rw_transaction()};
-    db::Buffer buffer2{txn2.get()};
+    auto env2{db::open_env(db_config)};
+    auto txn2{env2.start_write()};
+    db::Buffer buffer2{txn2};
 
     std::optional<Account> contract_account{buffer2.read_account(contract_address)};
     REQUIRE(contract_account);

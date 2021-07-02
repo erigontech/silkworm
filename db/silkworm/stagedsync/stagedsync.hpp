@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 - 2021 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,10 +13,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <silkworm/db/tables.hpp>
-#include <silkworm/db/chaindb.hpp>
-#include <silkworm/stagedsync/util.hpp>
+
 #include <vector>
+
+#include <silkworm/db/tables.hpp>
+#include <silkworm/stagedsync/util.hpp>
 
 #ifndef SILKWORM_STAGEDSYNC_HPP_
 #define SILKWORM_STAGEDSYNC_HPP_
@@ -25,8 +26,8 @@ namespace silkworm::stagedsync {
 
 constexpr size_t kBatchSize = 512 * kMebi;
 
-typedef StageResult (*StageFunc)(lmdb::DatabaseConfig);
-typedef StageResult (*UnwindFunc)(lmdb::DatabaseConfig, uint64_t);
+typedef StageResult (*StageFunc)(db::EnvConfig);
+typedef StageResult (*UnwindFunc)(db::EnvConfig, uint64_t);
 
 struct Stage {
     StageFunc stage_func;
@@ -35,11 +36,11 @@ struct Stage {
 };
 
 // Stage functions
-StageResult stage_headers(lmdb::DatabaseConfig);
-StageResult stage_blockhashes(lmdb::DatabaseConfig);
-StageResult stage_bodies(lmdb::DatabaseConfig);
-StageResult stage_senders(lmdb::DatabaseConfig);
-StageResult stage_execution(lmdb::DatabaseConfig);
+StageResult stage_headers(db::EnvConfig);
+StageResult stage_blockhashes(db::EnvConfig);
+StageResult stage_bodies(db::EnvConfig);
+StageResult stage_senders(db::EnvConfig);
+StageResult stage_execution(db::EnvConfig);
 /* HashState Promotion Functions*/
 
 /*
@@ -54,29 +55,30 @@ enum class HashstateOperation {
     HashStorage,
     Code,
 };
-void hashstate_promote(lmdb::Transaction*, HashstateOperation);
-void hashstate_promote_clean_code(lmdb::Transaction*, std::string);
-void hashstate_promote_clean_state(lmdb::Transaction*, std::string);
+void hashstate_promote(mdbx::txn&, HashstateOperation);
+void hashstate_promote_clean_code(mdbx::txn&, std::string);
+void hashstate_promote_clean_state(mdbx::txn&, std::string);
 /* **************************** */
-StageResult stage_hashstate(lmdb::DatabaseConfig);
-StageResult stage_interhashes(lmdb::DatabaseConfig);
-StageResult stage_account_history(lmdb::DatabaseConfig);
-StageResult stage_storage_history(lmdb::DatabaseConfig);
-StageResult stage_log_index(lmdb::DatabaseConfig);
-StageResult stage_tx_lookup(lmdb::DatabaseConfig);
+StageResult stage_hashstate(db::EnvConfig);
+StageResult stage_interhashes(db::EnvConfig);
+StageResult stage_account_history(db::EnvConfig);
+StageResult stage_storage_history(db::EnvConfig);
+StageResult stage_log_index(db::EnvConfig);
+StageResult stage_tx_lookup(db::EnvConfig);
 // Unwind functions
-StageResult no_unwind(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_senders(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_execution(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_hashstate(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_interhashes(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_account_history(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_storage_history(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_log_index(lmdb::DatabaseConfig, uint64_t);
-StageResult unwind_tx_lookup(lmdb::DatabaseConfig, uint64_t);
+StageResult no_unwind(db::EnvConfig, uint64_t);
+StageResult unwind_senders(db::EnvConfig, uint64_t);
+StageResult unwind_execution(db::EnvConfig, uint64_t);
+StageResult unwind_hashstate(db::EnvConfig, uint64_t);
+StageResult unwind_interhashes(db::EnvConfig, uint64_t);
+StageResult unwind_account_history(db::EnvConfig, uint64_t);
+StageResult unwind_storage_history(db::EnvConfig, uint64_t);
+StageResult unwind_log_index(db::EnvConfig, uint64_t);
+StageResult unwind_tx_lookup(db::EnvConfig, uint64_t);
 // TODO
 
 std::vector<Stage> get_default_stages();
-}
+
+}  // namespace silkworm::stagedsync
 
 #endif

@@ -26,6 +26,7 @@ namespace silkworm::stagedsync {
 
 enum class [[nodiscard]] StageResult {
     kStageSuccess,
+    kStageBadBlockHash,
     kStageBadChainSequence,
     kStageInvalidRange,
     kStageAborted

@@ -17,7 +17,6 @@
 #ifndef SILKWORM_DB_STAGES_HPP_
 #define SILKWORM_DB_STAGES_HPP_
 
-#include <silkworm/db/chaindb.hpp>
 #include <silkworm/db/tables.hpp>
 
 /*
@@ -55,21 +54,21 @@ constexpr const char* kAllStages[]{
     kTxPoolKey,    kFinishKey};
 
 // Gets the progress (block height) of any given stage
-uint64_t get_stage_progress(lmdb::Transaction& txn, const char* stage_name);
+uint64_t get_stage_progress(mdbx::txn& txn, const char* stage_name);
 
 // Sets the progress (block height) of any given stage
-void set_stage_progress(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num);
+void set_stage_progress(mdbx::txn& txn, const char* stage_name, uint64_t block_num);
 
 // Gets the invalidation point for the given stage
 // Invalidation point means that that stage needs to rollback to the invalidation
 // point and be redone
-uint64_t get_stage_unwind(lmdb::Transaction& txn, const char* stage_name);
+uint64_t get_stage_unwind(mdbx::txn& txn, const char* stage_name);
 
 // Sets the invalidation point for the given stage
-void set_stage_unwind(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num);
+void set_stage_unwind(mdbx::txn& txn, const char* stage_name, uint64_t block_num);
 
 // Clears the invalidation point for the given stage
-void clear_stage_unwind(lmdb::Transaction& txn, const char* stage_name);
+void clear_stage_unwind(mdbx::txn& txn, const char* stage_name);
 
 }  // namespace silkworm::db::stages
 

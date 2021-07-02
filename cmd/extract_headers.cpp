@@ -48,26 +48,27 @@ using Header = BlockHeader;
 using BlockNum = uint64_t;
 
 class Db {
-    std::shared_ptr<lmdb::Environment> env;
-    std::unique_ptr<lmdb::Transaction> txn;
+    mdbx::env_managed env;
+    mdbx::txn_managed txn;
 
   public:
     Db(std::string db_path) {
-        lmdb::DatabaseConfig db_config{db_path};
-        // db_config.set_readonly(false);
-        env = lmdb::get_env(db_config);
-        txn = env->begin_ro_transaction();
+        db::EnvConfig db_config{db_path};
+        db_config.set_readonly(true);
+        env = db::open_env(db_config);
+        txn = env.start_read();
     }
 
     std::optional<Hash> read_canonical_hash(BlockNum b) {  // throws db exceptions
-        auto hashes_table = txn->open(db::table::kCanonicalHashes);
+
+        auto hashes_table{db::open_cursor(txn, db::table::kCanonicalHashes)};
         // accessing this table with only b we will get the hash of the canonical block at height b
-        auto hash = hashes_table->get(db::block_key(b));
-        if (!hash.has_value()) {
+        auto data{hashes_table.find(db::to_slice(db::block_key(b)), /*throw_notfound*/ false)};
+        if (!data) {
             return std::nullopt;  // not found
         }
-        assert(hash->size() == kHashLength);
-        return hash.value();  // copy
+        assert(data.value.length() == kHashLength);
+        return Hash(db::from_slice(data.value));  // copy
     }
 
     Bytes head_header_key() {  // todo: add to db::util.h?
@@ -77,19 +78,25 @@ class Db {
     }
 
     std::optional<Hash> read_head_header_hash() {
-        auto head_header_table = txn->open(db::table::kHeadHeader);
-        std::optional<ByteView> hash = head_header_table->get(head_header_key());
-        if (!hash) return std::nullopt;  // not found
-        assert(hash->size() == kHashLength);
-        return hash.value();  // copy
+        auto head_header_table{db::open_cursor(txn, db::table::kHeadHeader)};
+        auto data{head_header_table.find(db::to_slice(head_header_key()), /*throw_notfound*/ false)};
+        if (!data) {
+            return std::nullopt;
+        }
+        assert(data.value.length() == kHashLength);
+        return Hash(db::from_slice(data.value));
     }
 
-    std::optional<BlockHeader> read_header(BlockNum b, Hash h) { return db::read_header(*txn, b, h.bytes); }
+    std::optional<BlockHeader> read_header(BlockNum b, Hash h) { return db::read_header(txn, b, h.bytes); }
 
     std::optional<ByteView> read_rlp_encoded_header(BlockNum b, Hash h) {
-        auto header_table = txn->open(db::table::kHeaders);
-        std::optional<ByteView> rlp = header_table->get(db::block_key(b, h.bytes));
-        return rlp;
+        auto header_table{db::open_cursor(txn, db::table::kHeaders)};
+        auto key{db::block_key(b, h.bytes)};
+        auto data{header_table.find(db::to_slice(key), /*throw_notfound*/ false)};
+        if (!data) {
+            return std::nullopt;
+        }
+        return db::from_slice(data.value);
     }
 
     Bytes header_numbers_key(Hash h) {  // todo: add to db::util.h?
@@ -97,10 +104,13 @@ class Db {
     }
 
     std::optional<BlockHeader> read_header(Hash h) {
-        auto blockhashes_table = txn->open(db::table::kHeaderNumbers);
-        auto encoded_block_num = blockhashes_table->get(header_numbers_key(h));
-        if (!encoded_block_num) return {};
-        BlockNum block_num = boost::endian::load_big_u64(encoded_block_num->data());
+        auto blockhashes_table{db::open_cursor(txn, db::table::kHeaderNumbers)};
+        auto key{header_numbers_key(h)};
+        auto data{blockhashes_table.find(db::to_slice(key), /*throw_notfound*/ false)};
+        if (!data) {
+            return std::nullopt;
+        }
+        auto block_num{boost::endian::load_big_u64(data.value.byte_ptr())};
         return read_header(block_num, h);
     }
 };

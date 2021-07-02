@@ -17,7 +17,9 @@
 #ifndef SILKWORM_DB_TABLES_HPP_
 #define SILKWORM_DB_TABLES_HPP_
 
-#include <silkworm/db/chaindb.hpp>
+#include <optional>
+
+#include <silkworm/db/mdbx.hpp>
 
 /*
 Part of the compatibility layer with the Turbo-Geth DB format;
@@ -26,57 +28,54 @@ see its common/dbutils/bucket.go.
 namespace silkworm::db::table {
 
 /* Canonical tables */
-constexpr lmdb::TableConfig kMAIN_DBI{nullptr};
-constexpr lmdb::TableConfig kAccountHistory{"AccountHistory"};
-constexpr lmdb::TableConfig kBlockBodies{"BlockBody"};
+constexpr db::MapConfig kMAIN_DBI{nullptr};
+constexpr db::MapConfig kAccountHistory{"AccountHistory"};
+constexpr db::MapConfig kBlockBodies{"BlockBody"};
 
-constexpr lmdb::TableConfig kCanonicalHashes{"CanonicalHeader", 0,
-                                             lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) -> header_hash
-constexpr lmdb::TableConfig kHeaders{"Header", 0,
-                                     lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) + hash -> header (RLP)
-constexpr lmdb::TableConfig kDifficulty{
-    "HeadersTotalDifficulty", 0, lmdb::cmp_fixed_len_key};  // block_num_u64 (BE) + hash -> total_difficulty (RLP)
+constexpr db::MapConfig kCanonicalHashes{"CanonicalHeader"};    // block_num_u64 (BE) -> header_hash
+constexpr db::MapConfig kHeaders{"Header"};                     // block_num_u64 (BE) + hash -> header (RLP)
+constexpr db::MapConfig kDifficulty{"HeadersTotalDifficulty"};  // block_num_u64 (BE) + hash -> total_difficulty (RLP)
 
-constexpr lmdb::TableConfig kBlockReceipts{"Receipt"};
-constexpr lmdb::TableConfig kBloomBitsIndex{"BloomBitsIndex"};
-constexpr lmdb::TableConfig kBloomBits{"BloomBits"};
-constexpr lmdb::TableConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
-constexpr lmdb::TableConfig kCallFromIndex{"CallFromIndex"};
-constexpr lmdb::TableConfig kCallToIndex{"CallToIndex"};
-constexpr lmdb::TableConfig kCallTraceSet{"CallTraceSet", MDB_DUPSORT};
-constexpr lmdb::TableConfig kClique{"Clique"};
-constexpr lmdb::TableConfig kCode{"Code"};
-constexpr lmdb::TableConfig kConfig{"Config"};
-constexpr lmdb::TableConfig kContractCode{"HashedCodeHash"};
-constexpr lmdb::TableConfig kDatabaseInfo{"DbInfo"};
-constexpr lmdb::TableConfig kEthTx{"BlockTransaction"};
-constexpr lmdb::TableConfig kHashedAccounts{"HashedAccount"};
-constexpr lmdb::TableConfig kHashedStorage{"HashedStorage", MDB_DUPSORT};
-constexpr lmdb::TableConfig kHeadBlock{"LastBlock"};
-constexpr lmdb::TableConfig kHeadHeader{"LastHeader"};
-constexpr lmdb::TableConfig kHeaderNumbers{"HeaderNumber"};
-constexpr lmdb::TableConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
-constexpr lmdb::TableConfig kIncarnationMap{"IncarnationMap"};
-constexpr lmdb::TableConfig kLogAddressIndex{"LogAddressIndex"};
-constexpr lmdb::TableConfig kLogTopicIndex{"LogTopicIndex"};
-constexpr lmdb::TableConfig kLogs{"TransactionLog"};
-constexpr lmdb::TableConfig kMigrations{"Migration"};
-constexpr lmdb::TableConfig kPlainAccountChangeSet{"AccountChangeSet", MDB_DUPSORT};
-constexpr lmdb::TableConfig kPlainContractCode{"PlainCodeHash"};
-constexpr lmdb::TableConfig kPlainState{"PlainState", MDB_DUPSORT};
-constexpr lmdb::TableConfig kPlainStorageChangeSet{"StorageChangeSet", MDB_DUPSORT};
-constexpr lmdb::TableConfig kSenders{"TxSender"};
-constexpr lmdb::TableConfig kSequence{"Sequence"};
-constexpr lmdb::TableConfig kSnapshotInfo{"SnapshotInfo"};
-constexpr lmdb::TableConfig kStateSnapshotInfo{"StateSnapshotInfo"};
-constexpr lmdb::TableConfig kStorageHistory{"StorageHistory"};
-constexpr lmdb::TableConfig kSyncStageProgress{"SyncStage"};  // Progresss for stages
-constexpr lmdb::TableConfig kSyncStageUnwind{"SyncStageUnwind"};    // Unwind point for stages
-constexpr lmdb::TableConfig kTrieOfAccounts{"TrieAccount"};
-constexpr lmdb::TableConfig kTrieOfStorage{"TrieStorage"};
-constexpr lmdb::TableConfig kTxLookup{"BlockTransactionLookup"};
+constexpr db::MapConfig kBlockReceipts{"Receipt"};
+constexpr db::MapConfig kBloomBitsIndex{"BloomBitsIndex"};
+constexpr db::MapConfig kBloomBits{"BloomBits"};
+constexpr db::MapConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
+constexpr db::MapConfig kCallFromIndex{"CallFromIndex"};
+constexpr db::MapConfig kCallToIndex{"CallToIndex"};
+constexpr db::MapConfig kCallTraceSet{"CallTraceSet", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
+constexpr db::MapConfig kClique{"Clique"};
+constexpr db::MapConfig kCode{"Code"};
+constexpr db::MapConfig kConfig{"Config"};
+constexpr db::MapConfig kContractCode{"HashedCodeHash"};
+constexpr db::MapConfig kDatabaseInfo{"DbInfo"};
+constexpr db::MapConfig kEthTx{"BlockTransaction"};
+constexpr db::MapConfig kHashedAccounts{"HashedAccount"};
+constexpr db::MapConfig kHashedStorage{"HashedStorage", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
+constexpr db::MapConfig kHeadBlock{"LastBlock"};
+constexpr db::MapConfig kHeadHeader{"LastHeader"};
+constexpr db::MapConfig kHeaderNumbers{"HeaderNumber"};
+constexpr db::MapConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
+constexpr db::MapConfig kIncarnationMap{"IncarnationMap"};
+constexpr db::MapConfig kLogAddressIndex{"LogAddressIndex"};
+constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
+constexpr db::MapConfig kLogs{"TransactionLog"};
+constexpr db::MapConfig kMigrations{"Migration"};
+constexpr db::MapConfig kPlainAccountChangeSet{"AccountChangeSet", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
+constexpr db::MapConfig kPlainContractCode{"PlainCodeHash"};
+constexpr db::MapConfig kPlainState{"PlainState", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
+constexpr db::MapConfig kPlainStorageChangeSet{"StorageChangeSet", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
+constexpr db::MapConfig kSenders{"TxSender"};
+constexpr db::MapConfig kSequence{"Sequence"};
+constexpr db::MapConfig kSnapshotInfo{"SnapshotInfo"};
+constexpr db::MapConfig kStateSnapshotInfo{"StateSnapshotInfo"};
+constexpr db::MapConfig kStorageHistory{"StorageHistory"};
+constexpr db::MapConfig kSyncStageProgress{"SyncStage"};      // Progresss for stages
+constexpr db::MapConfig kSyncStageUnwind{"SyncStageUnwind"};  // Unwind point for stages
+constexpr db::MapConfig kTrieOfAccounts{"TrieAccount"};
+constexpr db::MapConfig kTrieOfStorage{"TrieStorage"};
+constexpr db::MapConfig kTxLookup{"BlockTransactionLookup"};
 
-constexpr lmdb::TableConfig kTables[]{
+constexpr db::MapConfig kTables[]{
     kAccountHistory,
     kBlockBodies,
     kBlockReceipts,
@@ -123,10 +122,10 @@ constexpr lmdb::TableConfig kTables[]{
 };
 
 // Create all tables that do not yet exist.
-void create_all(lmdb::Transaction& txn);
+void create_all(mdbx::txn& txn);
 
 // Gets table config given its name
-std::optional<lmdb::TableConfig> get_config(std::string name);
+std::optional<db::MapConfig> get_config(std::string name);
 
 }  // namespace silkworm::db::table
 

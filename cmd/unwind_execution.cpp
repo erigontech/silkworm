@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
     }
     fs::path datadir(db_path);
 
-    lmdb::DatabaseConfig db_config{db_path};
+    db::EnvConfig db_config{db_path};
     db_config.set_readonly(false);
 
     try {

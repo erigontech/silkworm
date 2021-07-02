@@ -10,7 +10,8 @@
       "cmakeCommandArgs": "-Wno-dev",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "addressSanitizerEnabled": true
+      "addressSanitizerEnabled": true,
+      "variables": []
     },
     {
       "name": "x64-Release",
@@ -22,7 +23,6 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ],
-      "variables": [],
       "addressSanitizerEnabled": true
     }
   ]

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@
 
 namespace silkworm::db::table {
 
-void create_all(lmdb::Transaction& txn) {
+void create_all(mdbx::txn& txn) {
     for (const auto& config : kTables) {
-        txn.open(config, MDB_CREATE);
+        (void)txn.create_map(config.name, config.key_mode, config.value_mode);
     }
 }
 
-std::optional<lmdb::TableConfig> get_config(std::string name) {
+std::optional<db::MapConfig> get_config(std::string name) {
     for (auto config : kTables) {
         if (strcmp(config.name, name.c_str()) == 0) {
             return {config};

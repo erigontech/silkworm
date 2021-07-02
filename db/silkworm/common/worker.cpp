@@ -65,13 +65,13 @@ void Worker::kick() {
     kicked_cv_.notify_all();
 }
 
-bool Worker::wait_for_kick(uint32_t timeout) {
+bool Worker::wait_for_kick(uint32_t timeout_seconds) {
 
     while (true) {
         bool expected_kick_value{true};
         if (!kicked_.compare_exchange_strong(expected_kick_value, false)) {
             std::unique_lock l(kick_mtx_);
-            (void)kicked_cv_.wait_for(l, std::chrono::seconds(timeout));
+            (void)kicked_cv_.wait_for(l, std::chrono::seconds(timeout_seconds));
             continue;
         }
         break;

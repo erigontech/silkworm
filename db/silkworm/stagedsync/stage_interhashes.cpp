@@ -18,11 +18,11 @@
 
 namespace silkworm::stagedsync {
 
-StageResult stage_interhashes(lmdb::DatabaseConfig) {
+StageResult stage_interhashes(db::EnvConfig) {
     throw std::runtime_error("Not Implemented.");
 }
 
-StageResult unwind_interhashes(lmdb::DatabaseConfig, uint64_t) {
+StageResult unwind_interhashes(db::EnvConfig, uint64_t) {
     throw std::runtime_error("Not Implemented.");
 }
 

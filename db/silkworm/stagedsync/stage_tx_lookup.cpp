@@ -13,7 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include "stagedsync.hpp"
 #include <filesystem>
 #include <iostream>
 
@@ -25,10 +24,11 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 
+#include "stagedsync.hpp"
+
 namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
-
 
 static Bytes compact(Bytes& b) {
     std::string::size_type offset{b.find_first_not_of(uint8_t{0})};
@@ -38,61 +38,58 @@ static Bytes compact(Bytes& b) {
     return b;
 }
 
-StageResult stage_tx_lookup(lmdb::DatabaseConfig db_config) {
+StageResult stage_tx_lookup(db::EnvConfig db_config) {
     fs::path datadir(db_config.path);
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
-    // We take data from header table and transform it and put it in blockhashes table
-    auto bodies_table{txn->open(db::table::kBlockBodies)};
-    auto transactions_table{txn->open(db::table::kEthTx)};
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
 
-    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)};
+    auto last_processed_block_number{db::stages::get_stage_progress(txn, db::stages::kTxLookupKey)};
     uint64_t block_number{0};
+
+    // We take data from header table and transform it and put it in blockhashes table
+    auto bodies_table{db::open_cursor(txn, db::table::kBlockBodies)};
+    auto transactions_table{db::open_cursor(txn, db::table::kEthTx)};
 
     // Extract
     Bytes start(8, '\0');
     boost::endian::store_big_u64(&start[0], last_processed_block_number + 1);
-    MDB_val mdb_key{db::to_mdb_val(start)};
-    MDB_val mdb_data;
+
     SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Extraction" << std::endl;
-    int rc{bodies_table->seek(&mdb_key, &mdb_data)};  // Sets cursor to nearest key greater equal than this
-    while (rc == MDB_SUCCESS) {                                     /* Loop as long as we have no errors*/
-        auto body_rlp{db::from_mdb_val(mdb_data)};
+
+    auto bodies_data{bodies_table.find(db::to_slice(start), /*throw_notfound*/ false)};
+    while (bodies_data) {
+        auto body_rlp{db::from_slice(bodies_data.value)};
         auto body{db::detail::decode_stored_block_body(body_rlp)};
-        Bytes block_number_as_bytes(static_cast<unsigned char*>(mdb_key.mv_data), 8);
+        Bytes block_number_as_bytes(bodies_data.key.byte_ptr(), 8);
         auto lookup_block_data{compact(block_number_as_bytes)};
         block_number = boost::endian::load_big_u64(&block_number_as_bytes[0]);
-        if (body.txn_count > 0) {
-            Bytes transaction_key(8, '\0');
-            boost::endian::store_big_u64(transaction_key.data(), body.base_txn_id);
-            MDB_val tx_key_mdb{db::to_mdb_val(transaction_key)};
-            MDB_val tx_data_mdb{};
 
-            uint64_t i{0};
-            for (rc = transactions_table->seek_exact(&tx_key_mdb, &tx_data_mdb);
-                    rc != MDB_NOTFOUND && i < body.txn_count;
-                    rc = transactions_table->get_next(&tx_key_mdb, &tx_data_mdb), ++i) {
-                lmdb::err_handler(rc);
-                // Take transaction rlp, then hash it in order to get the transaction hash
-                ByteView tx_rlp{db::from_mdb_val(tx_data_mdb)};
-                auto hash{keccak256(tx_rlp)};
+        if (body.txn_count) {
+            Bytes tx_base_id(8, '\0');
+            boost::endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
+            auto tx_data{transactions_table.find(db::to_slice(tx_base_id), /*throw_notfound*/ false)};
+            uint64_t tx_count{0};
+
+            while (tx_data && tx_count < body.txn_count) {
+                auto tx_view{db::from_slice(tx_data.value)};
+                auto hash{keccak256(tx_view)};
                 etl::Entry entry{Bytes(hash.bytes, 32), Bytes(lookup_block_data.data(), lookup_block_data.size())};
                 collector.collect(entry);
+                ++tx_count;
+                tx_data = transactions_table.to_next(/*throw_notfound*/ false);
             }
         }
+
         // Save last processed block_number and expect next in sequence
         if (block_number % 100000 == 0) {
             SILKWORM_LOG(LogLevel::Info) << "Tx Lookup Extraction Progress << " << block_number << std::endl;
         }
-        rc = bodies_table->get_next(&mdb_key, &mdb_data);
-    }
 
-    if (rc && rc != MDB_NOTFOUND) { /* MDB_NOTFOUND is not actually an error rather eof */
-        lmdb::err_handler(rc);
+        bodies_data = bodies_table.to_next(/*throw_notfound*/ false);
     }
 
     SILKWORM_LOG(LogLevel::Info) << "Entries Collected << " << collector.size() << std::endl;
@@ -102,25 +99,24 @@ StageResult stage_tx_lookup(lmdb::DatabaseConfig db_config) {
         SILKWORM_LOG(LogLevel::Info) << "Started tx Hashes Loading" << std::endl;
 
         /*
-            * If we're on first sync then we shouldn't have any records in target
-            * table. For this reason we can apply MDB_APPEND to load as
-            * collector (with no transform) ensures collected entries
-            * are already sorted. If instead target table contains already
-            * some data the only option is to load in upsert mode as we
-            * cannot guarantee keys are sorted amongst different calls
-            * of this stage
-            */
-        auto target_table{txn->open(db::table::kTxLookup, MDB_CREATE)};
-        size_t target_table_rcount{0};
-        lmdb::err_handler(target_table->get_rcount(&target_table_rcount));
-        unsigned int db_flags{target_table_rcount ? 0u : MDB_APPEND};
+         * If we're on first sync then we shouldn't have any records in target
+         * table. For this reason we can apply MDB_APPEND to load as
+         * collector (with no transform) ensures collected entries
+         * are already sorted. If instead target table contains already
+         * some data the only option is to load in upsert mode as we
+         * cannot guarantee keys are sorted amongst different calls
+         * of this stage
+         */
+        auto target_table{db::open_cursor(txn, db::table::kTxLookup)};
+        auto target_table_rcount{txn.get_map_stat(target_table.map()).ms_entries};
+        MDBX_put_flags_t db_flags{target_table_rcount ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
 
         // Eventually load collected items with no transform (may throw)
-        collector.load(target_table.get(), nullptr, db_flags, /* log_every_percent = */ 10);
+        collector.load(target_table, nullptr, db_flags, /* log_every_percent = */ 10);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, block_number);
-        lmdb::err_handler(txn->commit());
+        db::stages::set_stage_progress(txn, db::stages::kTxLookupKey, block_number);
+        txn.commit();
 
     } else {
         SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
@@ -131,7 +127,6 @@ StageResult stage_tx_lookup(lmdb::DatabaseConfig db_config) {
     return StageResult::kStageSuccess;
 }
 
-StageResult unwind_tx_lookup() {
-    throw std::runtime_error("Not Implemented.");
-}
-}
+StageResult unwind_tx_lookup() { throw std::runtime_error("Not Implemented."); }
+
+}  // namespace silkworm::stagedsync

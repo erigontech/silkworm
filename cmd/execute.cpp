@@ -36,9 +36,6 @@ int main(int argc, char* argv[]) {
     app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
-    std::string map_size_str{};
-    CLI::Option* map_size_option{app.add_option("--lmdb.mapSize", map_size_str, "Lmdb map size")};
-
     uint64_t to_block{UINT64_MAX};
     app.add_option("--to", to_block, "Block execute up to");
 
@@ -50,17 +47,10 @@ int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
 
     // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    fs::path db_file{fs::path(db_path) / fs::path("mdbx.dat")};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
-    }
-
-    // Check provided map size is valid
-    auto map_size{parse_size(map_size_str)};
-    if (!map_size.has_value()) {
-        SILKWORM_LOG(LogLevel::Error) << "Invalid --lmdb.mapSize value provided : " << map_size_str << std::endl;
-        return -2;
     }
 
     auto batch_size{parse_size(batch_size_str)};
@@ -72,47 +62,44 @@ int main(int argc, char* argv[]) {
     SILKWORM_LOG(LogLevel::Info) << "Starting block execution. DB: " << db_file << std::endl;
 
     try {
-        lmdb::DatabaseConfig db_config{db_path};
-        if (*map_size_option) {
-            db_config.map_size = *map_size;
-        }
-        db_config.set_readonly(false);
-        std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-        std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
 
-        bool write_receipts{db::read_storage_mode_receipts(*txn)};
-        auto chain_config{db::read_chain_config(*txn)};
+        db::EnvConfig db_config{db_path};
+        db_config.set_readonly(false);
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+
+        bool write_receipts{db::read_storage_mode_receipts(txn)};
+        auto chain_config{db::read_chain_config(txn)};
         if (!chain_config.has_value()) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        uint64_t previous_progress{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
+        uint64_t previous_progress{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};
         uint64_t current_progress{previous_progress};
 
         for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-            int lmdb_error_code{MDB_SUCCESS};
-            SilkwormStatusCode status{silkworm_execute_blocks(*txn->handle(), chain_config->chain_id, block_number,
+            int db_error_code{0};
+            SilkwormStatusCode status{silkworm_execute_blocks(txn, chain_config->chain_id, block_number,
                                                               to_block, *batch_size, write_receipts, &current_progress,
-                                                              &lmdb_error_code)};
+                                                              &db_error_code)};
             if (status != SilkwormStatusCode::kSilkwormSuccess &&
                 status != SilkwormStatusCode::kSilkwormBlockNotFound) {
                 SILKWORM_LOG(LogLevel::Error) << "Error in silkworm_execute_blocks: " << magic_enum::enum_name(status)
-                                              << ", LMDB: " << lmdb_error_code << std::endl;
+                                              << ", DB: " << db_error_code << std::endl;
                 return magic_enum::enum_integer(status);
             }
 
             block_number = current_progress;
 
-            db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, current_progress);
-            lmdb::err_handler(txn->commit());
-            txn.reset();
+            db::stages::set_stage_progress(txn, db::stages::kExecutionKey, current_progress);
+            txn.commit();
 
             if (status == SilkwormStatusCode::kSilkwormBlockNotFound) {
                 break;
             }
 
             SILKWORM_LOG(LogLevel::Info) << "Blocks <= " << current_progress << " committed" << std::endl;
-            txn = env->begin_rw_transaction();
+            txn = env.start_write();
         }
 
         if (current_progress > previous_progress) {

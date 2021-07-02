@@ -134,16 +134,7 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # CBOR
   add_subdirectory(cbor-cpp)
-
-  # LMDB
-  add_library(lmdb lmdb-go/lmdb/lmdb.h
-                  lmdb-go/lmdb/mdb.c
-                  lmdb-go/lmdb/midl.c
-                  lmdb-go/lmdb/midl.h)
-  target_include_directories(lmdb PUBLIC lmdb-go)
-  if(MSVC)
-    target_compile_options(lmdb PRIVATE /w) # Not much we can do about warnings
-  endif()
+    
 endif()
 
 # evmone with dependencies
@@ -187,8 +178,7 @@ endif()
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
-  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers -Wimplicit-fallthrough)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
+  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-attributes)
   endif()
@@ -202,6 +192,8 @@ endif()
 add_subdirectory(core)
 
 if(NOT SILKWORM_CORE_ONLY)
+  option(MDBX_HUGE_TRANSACTIONS "" ON)
+  add_subdirectory(libmdbx)
   add_subdirectory(db)
   add_subdirectory(tg_api)
 endif()

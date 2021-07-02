@@ -18,7 +18,6 @@
 
 namespace silkworm::stagedsync {
 
-StageResult stage_bodies(lmdb::DatabaseConfig) {
-    throw std::runtime_error("Not Implemented.");
-}
-}
+StageResult stage_bodies(db::EnvConfig) { throw std::runtime_error("Not Implemented."); }
+
+}  // namespace silkworm::stagedsync

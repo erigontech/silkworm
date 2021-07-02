@@ -27,12 +27,11 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 
-SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uint64_t chain_id, uint64_t start_block,
+SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, uint64_t chain_id, uint64_t start_block,
                                                            uint64_t max_block, uint64_t batch_size, bool write_receipts,
                                                            uint64_t* last_executed_block,
-                                                           int* lmdb_error_code) SILKWORM_NOEXCEPT {
-    assert(mdb_txn);
-
+                                                           int* db_error_code) SILKWORM_NOEXCEPT {
+    
     using namespace silkworm;
 
     const ChainConfig* config{lookup_chain_config(chain_id)};
@@ -44,8 +43,6 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
     uint64_t block_num{start_block};
 
     try {
-        lmdb::Transaction txn{/*parent=*/nullptr, mdb_txn, /*flags=*/0};
-        auto cleanup{gsl::finally([&txn] { *txn.handle() = nullptr; })};  // avoid aborting mdb_txn
 
         if (write_receipts && (!db::migration_happened(txn, "receipts_cbor_encode") ||
                                !db::migration_happened(txn, "receipts_store_logs_separately"))) {
@@ -66,7 +63,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
             return SilkwormStatusCode::kSilkwormIncompatibleDbFormat;
         }
 
-        db::Buffer buffer{&txn};
+        db::Buffer buffer{txn};
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
 
@@ -104,12 +101,12 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(MDB_txn* mdb_txn, uin
         buffer.write_to_db();
         return SilkwormStatusCode::kSilkwormSuccess;
 
-    } catch (const lmdb::exception& e) {
-        if (lmdb_error_code) {
-            *lmdb_error_code = e.err();
+    } catch (const mdbx::exception& e) {
+        if (db_error_code) {
+            *db_error_code = static_cast<int>(e.error().code());
         }
-        SILKWORM_LOG(LogLevel::Error) << "LMDB error " << e.what() << std::endl;
-        return SilkwormStatusCode::kSilkwormLmdbError;
+        SILKWORM_LOG(LogLevel::Error) << "DB error " << e.what() << std::endl;
+        return SilkwormStatusCode::kSilkwormDbError;
     } catch (const db::MissingSenders&) {
         SILKWORM_LOG(LogLevel::Error) << "Missing or incorrect senders at block " << block_num << std::endl;
         return SilkwormStatusCode::kSilkwormMissingSenders;

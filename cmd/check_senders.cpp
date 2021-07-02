@@ -34,6 +34,7 @@
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
@@ -46,7 +47,6 @@ std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
 
 struct app_options_t {
     std::string datadir{};                                      // Provided database path
-    uint64_t mapsize{0};                                        // Provided lmdb map size
     uint32_t max_workers{std::thread::hardware_concurrency()};  // Max number of threads
     size_t batch_size{1'000'000};                               // Number of work packages to serve a worker
     uint32_t block_from{1u};                                    // Initial block number to start from
@@ -107,7 +107,7 @@ class RecoveryWorker final : public silkworm::Worker {
     Status get_status(void) const { return status_.load(); };
 
     // Pull results from worker
-    bool pull_results(Status status, std::vector<std::pair<uint64_t, MDB_val>>& out) {
+    bool pull_results(Status status, std::vector<std::pair<uint64_t, iovec>>& out) {
         if (status_.compare_exchange_strong(status, Status::Idle)) {
             std::swap(out, results_);
             return true;
@@ -119,20 +119,20 @@ class RecoveryWorker final : public silkworm::Worker {
     boost::signals2::signal<void(RecoveryWorker* sender, uint32_t batch_id)> signal_completed;
 
   private:
-    const uint32_t id_;                                    // Current worker identifier
-    uint32_t batch_id_{0};                                 // Running batch identifier
-    std::unique_ptr<std::vector<package>> batch_;          // Batch to process
-    size_t data_size_;                                     // Size of the recovery data buffer
-    uint8_t* data_{nullptr};                               // Pointer to data where rsults are stored
-    std::vector<std::pair<uint64_t, MDB_val>> results_{};  // Results per block pointing to data area
-    std::string last_error_{};                             // Description of last error occurrence
-    std::atomic<Status> status_{Status::Idle};             // Status of worker
+    const uint32_t id_;                                  // Current worker identifier
+    uint32_t batch_id_{0};                               // Running batch identifier
+    std::unique_ptr<std::vector<package>> batch_;        // Batch to process
+    size_t data_size_;                                   // Size of the recovery data buffer
+    uint8_t* data_{nullptr};                             // Pointer to data where rsults are stored
+    std::vector<std::pair<uint64_t, iovec>> results_{};  // Results per block pointing to data area
+    std::string last_error_{};                           // Description of last error occurrence
+    std::atomic<Status> status_{Status::Idle};           // Status of worker
 
     // Basic work loop (overrides Worker::work())
     void work() final {
         while (wait_for_kick()) {
             // Prefer swapping with a new vector instead of clear
-            std::vector<std::pair<uint64_t, MDB_val>>().swap(results_);
+            std::vector<std::pair<uint64_t, iovec>>().swap(results_);
 
             uint64_t block_num{(*batch_).front().block_num};
             size_t block_result_offset{0};
@@ -141,7 +141,7 @@ class RecoveryWorker final : public silkworm::Worker {
             for (auto const& package : (*batch_)) {
                 // On block switching store the results
                 if (block_num != package.block_num) {
-                    MDB_val result{block_result_length, &data_[block_result_offset]};
+                    iovec result{&data_[block_result_offset], block_result_length};
                     results_.push_back({block_num, result});
                     block_result_offset += block_result_length;
                     block_result_length = 0;
@@ -170,7 +170,7 @@ class RecoveryWorker final : public silkworm::Worker {
             if (status_.load() == Status::Working) {
                 // Store results for last block
                 if (block_result_length) {
-                    MDB_val result{block_result_length, &data_[block_result_offset]};
+                    iovec result{&data_[block_result_offset], block_result_length};
                     results_.push_back({block_num, result});
                 }
                 status_.store(Status::ResultsReady);
@@ -201,7 +201,7 @@ class RecoveryFarm final {
      * @param max_workers: max number of recovery threads to spawn
      * @param max_batch_size: max number of transaction to be sent a worker for recovery
      */
-    explicit RecoveryFarm(lmdb::Transaction& db_transaction, uint32_t max_workers, size_t max_batch_size,
+    explicit RecoveryFarm(mdbx::txn_managed& db_transaction, uint32_t max_workers, size_t max_batch_size,
                           etl::Collector& collector)
         : db_transaction_{db_transaction},
           max_workers_{max_workers},
@@ -299,27 +299,25 @@ class RecoveryFarm final {
             uint64_t expected_block_num{height_from};  // Expected block number in sequence
 
             SILKWORM_LOG(LogLevel::Debug) << "Begin read block bodies ... " << std::endl;
-            auto bodies_table{db_transaction_.open(db::table::kBlockBodies)};
-            auto transactions_table{db_transaction_.open(db::table::kEthTx)};
+            auto bodies_table{db::open_cursor(db_transaction_, db::table::kBlockBodies)};
+            auto transactions_table{db::open_cursor(db_transaction_, db::table::kEthTx)};
 
             // Set to first block and read all in sequence
             auto block_key{db::block_key(expected_block_num, headers_it_1_->bytes)};
-            MDB_val mdb_key{db::to_mdb_val(block_key)}, mdb_data{};
-            int rc{bodies_table->seek_exact(&mdb_key, &mdb_data)};
-            if (rc) {
+            auto block_data{bodies_table.find({block_key.c_str(), block_key.length()}, false)};
+            if (!block_data) {
                 return Status::BlockNotFound;
             }
 
             // Initializes first batch
             init_batch();
 
-            while (rc == MDB_SUCCESS && !should_stop()) {
-                auto key_view{db::from_mdb_val(mdb_key)};
-                block_num = boost::endian::load_big_u64(key_view.data());
+            while (block_data && !should_stop()) {
+                block_num = boost::endian::load_big_u64(block_data.key.byte_ptr());
                 if (block_num < expected_block_num) {
                     // The same block height has been recorded
                     // but is not canonical;
-                    rc = bodies_table->get_next(&mdb_key, &mdb_data);
+                    block_data = bodies_table.to_next(/*throw_notfound = */ false);
                     continue;
                 } else if (block_num > expected_block_num) {
                     // We surpassed the expected block which means
@@ -330,18 +328,18 @@ class RecoveryFarm final {
                     return Status::BadBlockSequence;
                 }
 
-                if (memcmp(&key_view[8], headers_it_1_->bytes, 32) != 0) {
+                if (memcmp(block_data.key.safe_middle(8, 32).data(), headers_it_1_->bytes, 32) != 0) {
                     // We stumbled into a non canonical block (not matching header)
                     // move next and repeat
-                    rc = bodies_table->get_next(&mdb_key, &mdb_data);
+                    block_data = bodies_table.to_next(/*throw_notfound = */ false);
                     continue;
                 }
 
                 // Get the body and its transactions
-                auto body_rlp{db::from_mdb_val(mdb_data)};
+                auto body_rlp{db::from_slice(block_data.value)};
                 auto block_body{db::detail::decode_stored_block_body(body_rlp)};
                 std::vector<Transaction> transactions{
-                    db::read_transactions(*transactions_table, block_body.base_txn_id, block_body.txn_count)};
+                    db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count)};
 
                 if (transactions.size()) {
                     if (((*batch_).size() + transactions.size()) > max_batch_size_) {
@@ -364,21 +362,17 @@ class RecoveryFarm final {
                 }
 
                 expected_block_num++;
-                rc = bodies_table->get_next(&mdb_key, &mdb_data);
+                block_data = bodies_table.to_next(/*throw_notfound = */ false);
             }
 
-            if (rc && rc != MDB_NOTFOUND) {
-                lmdb::err_handler(rc);
-            } else {
-                ret = dispatch_batch(/* renew = */ false);
-                if (ret != Status::Succeded) {
-                    throw std::runtime_error("Unable to dispatch work");
-                }
+            ret = dispatch_batch(/* renew = */ false);
+            if (ret != Status::Succeded) {
+                throw std::runtime_error("Unable to dispatch work");
             }
 
             SILKWORM_LOG(LogLevel::Debug) << "End   read block bodies ... " << std::endl;
 
-        } catch (const lmdb::exception& ex) {
+        } catch (const mdbx::exception& ex) {
             SILKWORM_LOG(LogLevel::Error) << "Senders' recovery : Database error " << ex.what() << std::endl;
             ret = Status::DatabaseError;
         } catch (const std::exception& ex) {
@@ -394,21 +388,21 @@ class RecoveryFarm final {
             if (collector_.size() && !should_stop()) {
                 try {
                     // Prepare target table
-                    auto target_table = db_transaction_.open(db::table::kSenders, MDB_CREATE);
+                    auto target_table{db::open_cursor(db_transaction_, db::table::kSenders)};
                     SILKWORM_LOG(LogLevel::Info)
-                        << "ETL Load [2/2] : Loading data into " << target_table->get_name() << std::endl;
+                        << "ETL Load [2/2] : Loading data into " << db::table::kSenders.name << std::endl;
+
                     collector_.load(
-                        target_table.get(), nullptr, MDB_APPEND,
+                        target_table, nullptr, MDBX_put_flags_t::MDBX_APPEND,
                         /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 50 : 10));
 
                     // Get the last processed block and update stage height
-                    MDB_val mdb_key{}, mdb_val{};
-                    lmdb::err_handler(target_table->get_last(&mdb_key, &mdb_val));
-                    ByteView key_view{db::from_mdb_val(mdb_key)};
-                    auto last_processed_block{boost::endian::load_big_u64(&key_view[0])};
-                    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
-
-                } catch (const lmdb::exception& ex) {
+                    auto last{target_table.to_last(/*throw_notfound*/ false)};
+                    if (last) {
+                        auto last_processed_block{boost::endian::load_big_u64(last.key.byte_ptr())};
+                        db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
+                    }
+                } catch (const mdbx::exception& ex) {
                     SILKWORM_LOG(LogLevel::Error) << "Senders' recovery : Database error " << ex.what() << std::endl;
                     ret = Status::DatabaseError;
                 } catch (const std::exception& ex) {
@@ -429,41 +423,36 @@ class RecoveryFarm final {
         SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
         Status ret{Status::Succeded};
         try {
-            auto unwind_table{db_transaction_.open(db::table::kSenders, MDB_CREATE)};
-            size_t rcount{0};
-            lmdb::err_handler(unwind_table->get_rcount(&rcount));
+            auto src{db::open_cursor(db_transaction_, db::table::kSenders)};
+            auto rcount{db_transaction_.get_map_stat(src.map()).ms_entries};
             if (rcount) {
                 if (new_height <= 1) {
-                    lmdb::err_handler(unwind_table->clear());
+                    db_transaction_.clear_map(src.map());
                 } else {
                     Bytes key(40, '\0');
                     boost::endian::store_big_u64(&key[0], new_height + 1);  // New stage height is last processed
-                    MDB_val mdb_key{db::to_mdb_val(key)}, mdb_data{};
-                    lmdb::err_handler(unwind_table->seek(&mdb_key, &mdb_data));
-                    do {
-                        /* Delete all records sequentially */
-                        lmdb::err_handler(unwind_table->del_current());
-                        lmdb::err_handler(unwind_table->get_next(&mdb_key, &mdb_data));
+                    auto data{src.find(db::to_slice(key))};
+                    while (data) {
+                        src.erase();
+                        data = src.to_next(/*throw_notfound*/ false);
                         if (--rcount % 1'000 && should_stop()) {
                             ret = Status::WorkerAborted;
                             break;
                         }
-                    } while (true);
+                    }
                 }
             }
-        } catch (const lmdb::exception& ex) {
-            if (ex.err() != MDB_NOTFOUND) {
-                SILKWORM_LOG(LogLevel::Error)
-                    << "Senders Unwinding : Unexpected database error :  " << ex.what() << std::endl;
-                return Status::DatabaseError;
-            }
-        }
+        } catch (const mdbx::exception& ex) {
+            SILKWORM_LOG(LogLevel::Error)
+                << "Senders Unwinding : Unexpected database error :  " << ex.what() << std::endl;
+            return Status::DatabaseError;
+        };
 
         // Eventually update new stage height
         if (ret == Status::Succeded) {
             try {
                 db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
-            } catch (const lmdb::exception& ex) {
+            } catch (const mdbx::exception& ex) {
                 SILKWORM_LOG(LogLevel::Error)
                     << "Senders Unwinding : Unexpected database error :  " << ex.what() << std::endl;
                 return Status::DatabaseError;
@@ -516,7 +505,7 @@ class RecoveryFarm final {
         static std::string fmt_row{"%10u b %12u t"};
 
         Status ret{Status::Succeded};
-        std::vector<std::pair<uint64_t, MDB_val>> worker_results{};
+        std::vector<std::pair<uint64_t, iovec>> worker_results{};
         do {
             // Check we have results to pull
             std::unique_lock l(batches_completed_mtx);
@@ -548,12 +537,12 @@ class RecoveryFarm final {
                     ret = Status::WorkerStatusMismatch;
                     break;
                 } else {
-                    for (auto& [block_num, mdb_val] : worker_results) {
+                    for (auto& [block_num, data] : worker_results) {
                         total_processed_blocks_++;
-                        total_recovered_transactions_ += (mdb_val.mv_size / kAddressLength);
+                        total_recovered_transactions_ += (data.iov_len / kAddressLength);
 
                         auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
-                        Bytes etl_data(db::from_mdb_val(mdb_val));
+                        Bytes etl_data(db::from_slice(data));
                         etl::Entry entry{etl_key, etl_data};
                         collector_.collect(entry);  // TODO check for errors (eg. disk full)
                         headers_it_2_++;
@@ -719,42 +708,34 @@ class RecoveryFarm final {
             // Locate starting canonical header selected
             uint64_t expected_block_num{height_from};
             uint64_t reached_block_num{0};
-            auto hashes_table{db_transaction_.open(db::table::kCanonicalHashes)};
-            auto header_key{db::block_key(expected_block_num)};
-            MDB_val mdb_key{db::to_mdb_val(header_key)}, mdb_data{};
 
-            int rc{hashes_table->seek_exact(&mdb_key, &mdb_data)};
-            if (rc) {
-                if (rc == MDB_NOTFOUND) {
-                    SILKWORM_LOG(LogLevel::Error) << "Header " << expected_block_num << " not found" << std::endl;
-                    return Status::HeaderNotFound;
-                }
-                lmdb::err_handler(rc);
+            auto canonical_hashes{
+                db_transaction_.open_cursor(db::open_map(db_transaction_, db::table::kCanonicalHashes))};
+
+            auto header_key{db::block_key(expected_block_num)};
+            auto header_data{
+                canonical_hashes.find({header_key.c_str(), header_key.length()}, /*throw_notfound = */ false)};
+            if (!header_data) {
+                SILKWORM_LOG(LogLevel::Error) << "Header " << expected_block_num << " not found" << std::endl;
+                return Status::HeaderNotFound;
             }
 
-            // Read all headers up to block_to included
-            while (rc == MDB_SUCCESS) {
-                ByteView key_view{db::from_mdb_val(mdb_key)};
-                reached_block_num = boost::endian::load_big_u64(&key_view[0]);
+            while (header_data) {
+                reached_block_num = boost::endian::load_big_u64(header_data.key.byte_ptr());
                 if (reached_block_num != expected_block_num) {
                     SILKWORM_LOG(LogLevel::Error) << "Bad header hash sequence ! Expected " << expected_block_num
                                                   << " got " << reached_block_num << std::endl;
                     return Status::BadHeaderSequence;
                 }
-
-                if (mdb_data.mv_size != kHashLength) {
+                if (header_data.value.size() != kHashLength) {
                     SILKWORM_LOG(LogLevel::Error) << "Bad header hash at height " << reached_block_num << std::endl;
                     return Status::BadHeaderHash;
                 }
 
                 // We have a canonical header hash in right sequence
-                headers_.push_back(to_bytes32(db::from_mdb_val(mdb_data)));
+                headers_.push_back(to_bytes32(db::from_slice(header_data.value)));
                 expected_block_num++;
-                rc = hashes_table->get_next(&mdb_key, &mdb_data);
-            }
-
-            if (rc && rc != MDB_NOTFOUND) {
-                lmdb::err_handler(rc);
+                header_data = canonical_hashes.to_next(/*throw_notfound = */ false);
             }
 
             // If we've not reached block_to something is wrong
@@ -762,11 +743,11 @@ class RecoveryFarm final {
                 return Status::HeaderNotFound;
             }
 
+            canonical_hashes.close();
             return Status::Succeded;
 
-        } catch (const lmdb::exception& ex) {
-            SILKWORM_LOG(LogLevel::Error)
-                << "Load canonical headers : Unexpected database error :  " << ex.what() << std::endl;
+        } catch (const std::exception& ex) {
+            SILKWORM_LOG(LogLevel::Error) << "Load canonical headers : Unexpected error :  " << ex.what() << std::endl;
             return Status::DatabaseError;
         }
     }
@@ -798,7 +779,7 @@ class RecoveryFarm final {
     }
 
     friend class RecoveryWorker;
-    lmdb::Transaction& db_transaction_;  // Database transaction
+    mdbx::txn_managed& db_transaction_;  // Database transaction
 
     /* Recovery workers */
     uint32_t max_workers_;                                    // Max number of workers/threads
@@ -836,9 +817,6 @@ int main(int argc, char* argv[]) {
     // Command line arguments
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
 
-    std::string mapSizeStr{"0"};
-    app.add_option("--lmdb.mapSize", mapSizeStr, "Lmdb map size", true);
-
     app.add_option("--workers", options.max_workers, "Max number of worker threads", true)
         ->check(CLI::Range(1u, std::thread::hardware_concurrency()));
 
@@ -864,16 +842,6 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
     }
 
-    auto lmdb_mapSize{parse_size(mapSizeStr)};
-    if (!lmdb_mapSize.has_value()) {
-        std::cerr << "Provided --lmdb.mapSize \"" << mapSizeStr << "\" is invalid" << std::endl;
-        return -1;
-    }
-    if (*lmdb_mapSize) {
-        // Adjust mapSize to a multiple of page_size
-        size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
-        options.mapsize = ((*lmdb_mapSize + host_page_size - 1) / host_page_size) * host_page_size;
-    }
     if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions
 
     signal(SIGINT, sig_handler);
@@ -887,7 +855,7 @@ int main(int argc, char* argv[]) {
                   << "Try --help for help" << std::endl;
         return -1;
     } else {
-        fs::path db_file = fs::path(db_path / fs::path("data.mdb"));
+        fs::path db_file = fs::path(db_path / fs::path("mdbx.dat"));
         if (!fs::exists(db_file) || !fs::file_size(db_file)) {
             std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
                       << "Try --help for help" << std::endl;
@@ -903,9 +871,8 @@ int main(int argc, char* argv[]) {
         }
 
         // Set database parameters
-        lmdb::DatabaseConfig db_config{options.datadir};
+        db::EnvConfig db_config{options.datadir};
         db_config.set_readonly(false);
-        db_config.map_size = options.mapsize;
 
         // Compute etl temporary path
         fs::path etl_path(db_path.parent_path() / fs::path("etl-temp"));
@@ -913,11 +880,11 @@ int main(int argc, char* argv[]) {
         etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
         // Open db and transaction
-        auto lmdb_env{lmdb::get_env(db_config)};
-        auto lmdb_txn{lmdb_env->begin_rw_transaction()};
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
 
         // Create farm instance and do work
-        RecoveryFarm farm(*lmdb_txn, options.max_workers, options.batch_size, collector);
+        RecoveryFarm farm(txn, options.max_workers, options.batch_size, collector);
         RecoveryFarm::Status result{RecoveryFarm::Status::Succeded};
 
         if (app_recover) {
@@ -932,7 +899,7 @@ int main(int argc, char* argv[]) {
         } else {
             if (!options.dry) {
                 SILKWORM_LOG(LogLevel::Info) << "Committing" << std::endl;
-                lmdb::err_handler(lmdb_txn->commit());
+                txn.commit();
             } else {
                 SILKWORM_LOG(LogLevel::Info) << "Not committing (--dry)" << std::endl;
             }

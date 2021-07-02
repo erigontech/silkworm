@@ -1,8 +1,24 @@
+/*
+   Copyright 2021 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #include "stagedsync.hpp"
 
-namespace silkworm::stagedsync{
+namespace silkworm::stagedsync {
 
-StageResult no_unwind(lmdb::DatabaseConfig, uint64_t) { return StageResult::kStageSuccess; }
+StageResult no_unwind(db::EnvConfig, uint64_t) { return StageResult::kStageSuccess; }
 
 std::vector<Stage> get_default_stages() {
     return std::vector<Stage>({{stage_headers, no_unwind, 1},
@@ -18,4 +34,4 @@ std::vector<Stage> get_default_stages() {
                                {stage_tx_lookup, unwind_tx_lookup, 11}});
 }
 
-}
+}  // namespace silkworm::stagedsync

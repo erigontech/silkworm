@@ -14,9 +14,6 @@
 [submodule "cbor-cpp"]
 	path = cbor-cpp
 	url = https://github.com/torquem-ch/cbor-cpp.git
-[submodule "lmdb-go"]
-	path = lmdb-go
-	url = https://github.com/ledgerwatch/lmdb-go.git
 [submodule "CRoaring"]
 	path = CRoaring
 	url = https://github.com/RoaringBitmap/CRoaring

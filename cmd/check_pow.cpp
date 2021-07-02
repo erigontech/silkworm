@@ -37,7 +37,6 @@ std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
 
 struct app_options_t {
     std::string datadir{};          // Provided database path
-    uint64_t mapsize{0};            // Provided lmdb map size
     uint32_t block_from{1u};        // Initial block number to start from
     uint32_t block_to{UINT32_MAX};  // Final block number to process
     bool debug{false};              // Whether to display some debug info
@@ -51,15 +50,12 @@ void sig_handler(int signum) {
 
 int main(int argc, char* argv[]) {
     // Init command line parser
-    CLI::App app("Senders recovery tool.");
+    CLI::App app("Check PoW.");
     app_options_t options{};
     options.datadir = db::default_path();  // Default chain data db path
 
     // Command line arguments
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
-
-    std::string mapSizeStr{"0"};
-    app.add_option("--lmdb.mapSize", mapSizeStr, "Lmdb map size", true);
 
     app.add_option("--from", options.block_from, "Initial block number to process (inclusive)", true)
         ->check(CLI::Range(1u, UINT32_MAX));
@@ -74,16 +70,6 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
     }
 
-    auto lmdb_mapSize{parse_size(mapSizeStr)};
-    if (!lmdb_mapSize.has_value()) {
-        std::cerr << "Provided --lmdb.mapSize \"" << mapSizeStr << "\" is invalid" << std::endl;
-        return -1;
-    }
-    if (*lmdb_mapSize) {
-        // Adjust mapSize to a multiple of page_size
-        size_t host_page_size{boost::interprocess::mapped_region::get_page_size()};
-        options.mapsize = ((*lmdb_mapSize + host_page_size - 1) / host_page_size) * host_page_size;
-    }
     if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions
 
     signal(SIGINT, sig_handler);
@@ -97,7 +83,7 @@ int main(int argc, char* argv[]) {
                   << "Try --help for help" << std::endl;
         return -1;
     } else {
-        fs::path db_file = fs::path(db_path / fs::path("data.mdb"));
+        fs::path db_file = fs::path(db_path / fs::path("mdbx.dat"));
         if (!fs::exists(db_file) || !fs::file_size(db_file)) {
             std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
                       << "Try --help for help" << std::endl;
@@ -109,15 +95,12 @@ int main(int argc, char* argv[]) {
     int rc{0};
     try {
         // Set database parameters
-        lmdb::DatabaseConfig db_config{options.datadir};
+        db::EnvConfig db_config{options.datadir};
         db_config.set_readonly(false);
-        db_config.map_size = options.mapsize;
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_read()};
 
-        // Open db and transaction
-        auto lmdb_env{lmdb::get_env(db_config)};
-        auto lmdb_txn{lmdb_env->begin_ro_transaction()};
-
-        auto config{db::read_chain_config(*lmdb_txn)};
+        auto config{db::read_chain_config(txn)};
         if (!config.has_value()) {
             throw std::runtime_error("Invalid chain config");
         }
@@ -125,13 +108,15 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Not an Ethash PoW chain");
         }
 
-        auto max_headers_height{db::stages::get_stage_progress(*lmdb_txn, db::stages::kSendersKey)};
+        auto max_headers_height{db::stages::get_stage_progress(txn, db::stages::kSendersKey)};
         options.block_to = std::min(options.block_to, static_cast<uint32_t>(max_headers_height));
 
         // Initialize epoch
         auto epoch_num{options.block_from / ethash::epoch_length};
         SILKWORM_LOG(LogLevel::Info) << "Initializing Light Cache for DAG epoch " << epoch_num << std::endl;
         auto epoch_context{ethash::create_epoch_context(epoch_num)};
+
+        auto canonical_hashes{db::open_cursor(txn, db::table::kCanonicalHashes)};
 
         // Loop blocks
         for (uint32_t block_num{options.block_from}; block_num <= options.block_to && !g_should_stop; block_num++) {
@@ -142,14 +127,13 @@ int main(int argc, char* argv[]) {
             }
 
             auto block_key{db::block_key(block_num)};
-            auto mdb_key{db::to_mdb_val(block_key)};
-            auto block_hash{lmdb_txn->get(db::table::kCanonicalHashes, &mdb_key)};
-            if (!block_hash.has_value()) {
+            auto data{canonical_hashes.find(db::to_slice(block_key), /*throw_notfound*/ false)};
+            if (!data) {
                 throw std::runtime_error("Can't retrieve canonical hash for block " + std::to_string(block_num));
             }
 
-            auto header_key{to_bytes32(block_hash.value())};
-            auto header{db::read_header(*lmdb_txn, block_num, header_key.bytes)};
+            auto header_key{to_bytes32(db::from_slice(data.value))};
+            auto header{db::read_header(txn, block_num, header_key.bytes)};
             if (!header.has_value()) {
                 throw std::runtime_error("Can't retrieve header for block " + std::to_string(block_num));
             }

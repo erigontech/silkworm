@@ -33,53 +33,54 @@ namespace {
         return false;
     }
 
-    uint64_t get_stage_data(lmdb::Transaction& txn, const char* stage_name, const lmdb::TableConfig& domain) {
+    uint64_t get_stage_data(mdbx::txn& txn, const char* stage_name, const db::MapConfig& domain) {
         if (!is_known_stage(stage_name)) {
             throw std::invalid_argument("Unknown stage name " + std::string(stage_name));
         }
-
-        MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};
-        auto data{txn.get(domain, &mdb_key)};
-        if (!data.has_value()) {
+        auto src{db::open_cursor(txn, domain)};
+        auto data{src.find({const_cast<char*>(stage_name), std::strlen(stage_name)}, /*throw_notfound*/ false)};
+        if (!data) {
             return 0;
-        } else if (data->size() != sizeof(uint64_t)) {
-            throw std::length_error("Expected 8 bytes of data got " + std::to_string((*data).size()));
+        } else if (data.value.size() != sizeof(uint64_t)) {
+            throw std::length_error("Expected 8 bytes of data got " + std::to_string(data.value.size()));
         }
-        return boost::endian::load_big_u64(data->c_str());
+        return boost::endian::load_big_u64(data.value.byte_ptr());
     }
 
-    void set_stage_data(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num,
-                        const lmdb::TableConfig& domain) {
+    void set_stage_data(mdbx::txn& txn, const char* stage_name, uint64_t block_num,
+                        const db::MapConfig& domain) {
         if (!is_known_stage(stage_name)) {
             throw std::invalid_argument("Unknown stage name");
         }
 
         Bytes stage_progress(sizeof(block_num), 0);
         boost::endian::store_big_u64(stage_progress.data(), block_num);
-        MDB_val mdb_key{std::strlen(stage_name), const_cast<char*>(stage_name)};
-        MDB_val mdb_data{db::to_mdb_val(stage_progress)};
-        lmdb::err_handler(txn.put(domain, &mdb_key, &mdb_data));
+        auto tgt{db::open_cursor(txn, domain)};
+        mdbx::slice key{const_cast<char*>(stage_name), std::strlen(stage_name)};
+        mdbx::slice value{db::to_slice(stage_progress)};
+        tgt.upsert(key, value);
+        tgt.close();
     }
 
 }  // namespace
 
-uint64_t get_stage_progress(lmdb::Transaction& txn, const char* stage_name) {
+uint64_t get_stage_progress(mdbx::txn& txn, const char* stage_name) {
     return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageProgress);
 }
 
-void set_stage_progress(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num) {
+void set_stage_progress(mdbx::txn& txn, const char* stage_name, uint64_t block_num) {
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageProgress);
 }
 
-uint64_t get_stage_unwind(lmdb::Transaction& txn, const char* stage_name) {
+uint64_t get_stage_unwind(mdbx::txn& txn, const char* stage_name) {
     return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageUnwind);
 }
 
-void set_stage_unwind(lmdb::Transaction& txn, const char* stage_name, uint64_t block_num) {
+void set_stage_unwind(mdbx::txn& txn, const char* stage_name, uint64_t block_num) {
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageUnwind);
 }
 
-void clear_stage_unwind(lmdb::Transaction& txn, const char* stage_name) {
+void clear_stage_unwind(mdbx::txn& txn, const char* stage_name) {
     set_stage_data(txn, stage_name, 0, silkworm::db::table::kSyncStageUnwind);
 }
 

@@ -25,10 +25,11 @@ see its package dbutils.
 #include <string>
 
 #include <absl/container/btree_map.h>
-#include <lmdb/lmdb.h>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/block.hpp>
+
+#include "../libmdbx/mdbx.h++"
 
 namespace silkworm::db {
 
@@ -72,17 +73,19 @@ Bytes log_key(uint64_t block_number, uint32_t transaction_id);
 // Default database path
 std::string default_path();
 
-inline MDB_val to_mdb_val(ByteView view) {
-    MDB_val val;
-    val.mv_data = const_cast<uint8_t*>(view.data());
-    val.mv_size = view.size();
-    return val;
+inline mdbx::slice to_slice(ByteView value) {
+    return mdbx::slice(static_cast<const void*>(value.data()), value.length());
 }
 
-inline ByteView from_mdb_val(const MDB_val val) {
-    auto* ptr{static_cast<uint8_t*>(val.mv_data)};
-    return {ptr, val.mv_size};
+inline mdbx::slice to_slice(const evmc::address& value) {
+    return mdbx::slice(static_cast<const void*>(value.bytes), sizeof(evmc::address));
 }
+
+inline mdbx::slice to_slice(const evmc::bytes32& value) {
+    return mdbx::slice(static_cast<const void*>(value.bytes), sizeof(evmc::bytes32));
+}
+
+inline ByteView from_slice(const mdbx::slice slice) { return {slice.byte_ptr(), slice.length()}; }
 
 namespace detail {
 

@@ -1,3 +1,4 @@
 ignore:
   - "**/*_test.cpp"
   - "cmd"
+  - libmdbx

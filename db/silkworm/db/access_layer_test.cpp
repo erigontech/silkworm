@@ -84,48 +84,48 @@ namespace db {
     TEST_CASE("read_stages") {
         TemporaryDirectory tmp_dir;
 
-        lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
+        db::EnvConfig db_config{tmp_dir.path()};
         db_config.set_readonly(false);
-        auto env{lmdb::get_env(db_config)};
-        auto txn{env->begin_rw_transaction()};
-        table::create_all(*txn);
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
 
         // Querying an non existent stage name should throe
-        CHECK_THROWS(stages::get_stage_progress(*txn, "NonExistentStage"));
-        CHECK_THROWS(stages::get_stage_unwind(*txn, "NonExistentStage"));
+        CHECK_THROWS(stages::get_stage_progress(txn, "NonExistentStage"));
+        CHECK_THROWS(stages::get_stage_unwind(txn, "NonExistentStage"));
 
         // Not valued stage should return 0
-        CHECK(stages::get_stage_progress(*txn, stages::kBlockBodiesKey) == 0);
-        CHECK(stages::get_stage_unwind(*txn, stages::kBlockBodiesKey) == 0);
+        CHECK(stages::get_stage_progress(txn, stages::kBlockBodiesKey) == 0);
+        CHECK(stages::get_stage_unwind(txn, stages::kBlockBodiesKey) == 0);
 
         // Value a stage progress and check returned value
         uint64_t block_num{0};
         uint64_t expected_block_num{123456};
-        CHECK_NOTHROW(stages::set_stage_progress(*txn, stages::kBlockBodiesKey, expected_block_num));
-        CHECK_NOTHROW(stages::set_stage_unwind(*txn, stages::kBlockBodiesKey, expected_block_num));
-        CHECK_NOTHROW(block_num = stages::get_stage_progress(*txn, stages::kBlockBodiesKey));
+        CHECK_NOTHROW(stages::set_stage_progress(txn, stages::kBlockBodiesKey, expected_block_num));
+        CHECK_NOTHROW(stages::set_stage_unwind(txn, stages::kBlockBodiesKey, expected_block_num));
+        CHECK_NOTHROW(block_num = stages::get_stage_progress(txn, stages::kBlockBodiesKey));
         CHECK(block_num == expected_block_num);
-        CHECK_NOTHROW(block_num = stages::get_stage_unwind(*txn, stages::kBlockBodiesKey));
+        CHECK_NOTHROW(block_num = stages::get_stage_unwind(txn, stages::kBlockBodiesKey));
         CHECK(block_num == expected_block_num);
-        CHECK_NOTHROW(stages::clear_stage_unwind(*txn, stages::kBlockBodiesKey));
-        CHECK(!stages::get_stage_unwind(*txn, stages::kBlockBodiesKey));
+        CHECK_NOTHROW(stages::clear_stage_unwind(txn, stages::kBlockBodiesKey));
+        CHECK(!stages::get_stage_unwind(txn, stages::kBlockBodiesKey));
 
         // Write voluntary wrong value in stage
         Bytes stage_progress(2, 0);
-        MDB_val mdb_key{std::strlen(stages::kBlockBodiesKey), const_cast<char*>(stages::kBlockBodiesKey)};
-        MDB_val mdb_data{db::to_mdb_val(stage_progress)};
-        CHECK_NOTHROW(lmdb::err_handler(txn->put(table::kSyncStageProgress, &mdb_key, &mdb_data)));
-        CHECK_THROWS(block_num = stages::get_stage_progress(*txn, stages::kBlockBodiesKey));
+        auto key{byte_view_of_c_str(stages::kBlockBodiesKey)};
+        auto map{db::open_cursor(txn, table::kSyncStageProgress)};
+        CHECK_NOTHROW(txn.upsert(map, to_slice(key), to_slice(stage_progress)));
+        CHECK_THROWS(block_num = stages::get_stage_progress(txn, stages::kBlockBodiesKey));
     }
 
     TEST_CASE("read_header") {
         TemporaryDirectory tmp_dir;
 
-        lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
+        db::EnvConfig db_config{tmp_dir.path()};
         db_config.set_readonly(false);
-        auto env{lmdb::get_env(db_config)};
-        auto txn{env->begin_rw_transaction()};
-        table::create_all(*txn);
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
 
         uint64_t block_num{11'054'435};
 
@@ -139,24 +139,25 @@ namespace db {
         rlp::encode(rlp, header);
         ethash::hash256 hash{keccak256(rlp)};
 
-        CHECK(!read_header(*txn, header.number, hash.bytes));
+        CHECK(!read_header(txn, header.number, hash.bytes));
 
         // Write canonical header hash + header rlp
-        auto canonical_hashes_table{txn->open(table::kCanonicalHashes)};
+        auto canonical_hashes_table{db::open_cursor(txn, table::kCanonicalHashes)};
         auto k{block_key(block_num)};
-        canonical_hashes_table->put(k, Bytes(hash.bytes, kHashLength));
+        Bytes v(hash.bytes, kHashLength);
+        canonical_hashes_table.upsert(to_slice(k), to_slice(v));
 
-        auto header_table{txn->open(table::kHeaders)};
+        auto header_table{db::open_cursor(txn, table::kHeaders)};
         Bytes key{block_key(header.number, hash.bytes)};
-        header_table->put(key, rlp);
+        header_table.upsert(to_slice(key), to_slice(rlp));
 
-        std::optional<BlockHeader> header_from_db{read_header(*txn, header.number, hash.bytes)};
+        std::optional<BlockHeader> header_from_db{read_header(txn, header.number, hash.bytes)};
         REQUIRE(header_from_db);
         CHECK(*header_from_db == header);
 
         SECTION("read_block") {
             bool read_senders{false};
-            CHECK(!read_block(*txn, block_num, read_senders));
+            CHECK(!read_block(txn, block_num, read_senders));
 
             BlockBody body{sample_block_body()};
 
@@ -165,19 +166,20 @@ namespace db {
             storage_body.txn_count = body.transactions.size();
             storage_body.ommers = body.ommers;
 
-            auto body_table{txn->open(table::kBlockBodies)};
-            body_table->put(key, storage_body.encode());
+            auto body_table{db::open_cursor(txn, table::kBlockBodies)};
+            auto body_data{storage_body.encode()};
+            body_table.upsert(to_slice(key), to_slice(body_data));
 
-            auto txn_table{txn->open(table::kEthTx)};
+            auto txn_table{db::open_cursor(txn, table::kEthTx)};
             Bytes txn_key(8, '\0');
             for (size_t i{0}; i < body.transactions.size(); ++i) {
                 boost::endian::store_big_u64(txn_key.data(), storage_body.base_txn_id + i);
                 rlp.clear();
                 rlp::encode(rlp, body.transactions[i]);
-                txn_table->put(txn_key, rlp);
+                txn_table.upsert(to_slice(txn_key), to_slice(rlp));
             }
 
-            std::optional<BlockWithHash> bh{read_block(*txn, block_num, read_senders)};
+            std::optional<BlockWithHash> bh{read_block(txn, block_num, read_senders)};
             REQUIRE(bh);
             CHECK(bh->block.header == header);
             CHECK(bh->block.ommers == body.ommers);
@@ -188,7 +190,7 @@ namespace db {
             CHECK(!bh->block.transactions[1].from);
 
             read_senders = true;
-            CHECK_THROWS_AS(read_block(*txn, block_num, read_senders), MissingSenders);
+            CHECK_THROWS_AS(read_block(txn, block_num, read_senders), MissingSenders);
 
             Bytes full_senders{
                 *from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"
@@ -196,12 +198,12 @@ namespace db {
             REQUIRE(full_senders.length() == 2 * kAddressLength);
 
             ByteView truncated_senders{full_senders.data(), kAddressLength};
-            auto sender_table{txn->open(table::kSenders)};
-            sender_table->put(key, truncated_senders);
-            CHECK_THROWS_AS(read_block(*txn, block_num, read_senders), MissingSenders);
+            auto sender_table{db::open_cursor(txn, table::kSenders)};
+            sender_table.upsert(to_slice(key), to_slice(truncated_senders));
+            CHECK_THROWS_AS(read_block(txn, block_num, read_senders), MissingSenders);
 
-            sender_table->put(key, full_senders);
-            bh = read_block(*txn, block_num, read_senders);
+            sender_table.upsert(to_slice(key), to_slice(full_senders));
+            bh = read_block(txn, block_num, read_senders);
             REQUIRE(bh);
             CHECK(bh->block.header == header);
             CHECK(bh->block.ommers == body.ommers);
@@ -216,21 +218,21 @@ namespace db {
     TEST_CASE("read_account_changes") {
         TemporaryDirectory tmp_dir;
 
-        lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
+        db::EnvConfig db_config{tmp_dir.path()};
         db_config.set_readonly(false);
-        auto env{lmdb::get_env(db_config)};
-        auto txn{env->begin_rw_transaction()};
-        table::create_all(*txn);
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
 
         uint64_t block_num1{42};
         uint64_t block_num2{49};
         uint64_t block_num3{50};
 
-        AccountChanges changes{read_account_changes(*txn, block_num1)};
+        AccountChanges changes{read_account_changes(txn, block_num1)};
         CHECK(changes.empty());
-        changes = read_account_changes(*txn, block_num2);
+        changes = read_account_changes(txn, block_num2);
         CHECK(changes.empty());
-        changes = read_account_changes(*txn, block_num3);
+        changes = read_account_changes(txn, block_num3);
         CHECK(changes.empty());
 
         auto addr1{0x63c696931d3d3fd7cd83472febd193488266660d_address};
@@ -243,56 +245,58 @@ namespace db {
         const char* val3{""};
         const char* val4{"9a31634956ec64b6865a"};
 
-        auto table{txn->open(table::kPlainAccountChangeSet)};
+        auto table{db::open_cursor(txn, table::kPlainAccountChangeSet)};
 
         Bytes data1{full_view(addr1)};
+        Bytes key1{block_key(block_num1)};
         data1.append(*from_hex(val1));
-        table->put(block_key(block_num1), data1);
+        table.upsert(to_slice(key1), to_slice(data1));
 
         Bytes data2{full_view(addr2)};
         data2.append(*from_hex(val2));
-        table->put(block_key(block_num1), data2);
+        table.upsert(to_slice(key1), to_slice(data2));
 
         Bytes data3{full_view(addr3)};
         data3.append(*from_hex(val3));
-        table->put(block_key(block_num1), data3);
+        table.upsert(to_slice(key1), to_slice(data3));
 
         Bytes data4{full_view(addr4)};
+        Bytes key2{block_key(block_num2)};
         data4.append(*from_hex(val4));
-        table->put(block_key(block_num2), data4);
+        table.upsert(to_slice(key2), to_slice(data4));
 
-        changes = read_account_changes(*txn, block_num1);
+        changes = read_account_changes(txn, block_num1);
         REQUIRE(changes.size() == 3);
         CHECK(to_hex(changes[addr1]) == val1);
         CHECK(to_hex(changes[addr2]) == val2);
         CHECK(to_hex(changes[addr3]) == val3);
 
-        changes = read_account_changes(*txn, block_num2);
+        changes = read_account_changes(txn, block_num2);
         REQUIRE(changes.size() == 1);
         CHECK(to_hex(changes[addr4]) == val4);
 
-        changes = read_account_changes(*txn, block_num3);
+        changes = read_account_changes(txn, block_num3);
         CHECK(changes.empty());
     }
 
     TEST_CASE("read_storage_changes") {
         TemporaryDirectory tmp_dir;
 
-        lmdb::DatabaseConfig db_config{tmp_dir.path(), 32 * kMebi};
+        db::EnvConfig db_config{tmp_dir.path()};
         db_config.set_readonly(false);
-        auto env{lmdb::get_env(db_config)};
-        auto txn{env->begin_rw_transaction()};
-        table::create_all(*txn);
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
 
         uint64_t block_num1{42};
         uint64_t block_num2{49};
         uint64_t block_num3{50};
 
-        StorageChanges db_changes{read_storage_changes(*txn, block_num1)};
+        StorageChanges db_changes{read_storage_changes(txn, block_num1)};
         CHECK(db_changes.empty());
-        db_changes = read_storage_changes(*txn, block_num2);
+        db_changes = read_storage_changes(txn, block_num2);
         CHECK(db_changes.empty());
-        db_changes = read_storage_changes(*txn, block_num3);
+        db_changes = read_storage_changes(txn, block_num3);
         CHECK(db_changes.empty());
 
         auto addr1{0x63c696931d3d3fd7cd83472febd193488266660d_address};
@@ -315,39 +319,47 @@ namespace db {
         uint64_t incarnation3{3};
         uint64_t incarnation4{1};
 
-        auto table{txn->open(table::kPlainStorageChangeSet)};
+        auto table{db::open_cursor(txn, table::kPlainStorageChangeSet)};
 
         Bytes data1{full_view(location1)};
         data1.append(val1);
-        table->put(storage_change_key(block_num1, addr1, incarnation1), data1);
+        auto key1{storage_change_key(block_num1, addr1, incarnation1)};
+        table.upsert(db::to_slice(key1), db::to_slice(data1));
 
         Bytes data2{full_view(location2)};
         data2.append(val2);
-        table->put(storage_change_key(block_num1, addr2, incarnation2), data2);
+        auto key2{storage_change_key(block_num1, addr2, incarnation2)};
+        table.upsert(db::to_slice(key2), db::to_slice(data2));
 
         Bytes data3{full_view(location3)};
         data3.append(val3);
-        table->put(storage_change_key(block_num1, addr3, incarnation3), data3);
+        auto key3{storage_change_key(block_num1, addr3, incarnation3)};
+        table.upsert(db::to_slice(key3), db::to_slice(data3));
 
         Bytes data4{full_view(location4)};
         data4.append(val4);
-        table->put(storage_change_key(block_num3, addr4, incarnation4), data4);
+        auto key4{storage_change_key(block_num3, addr4, incarnation4)};
+        table.upsert(db::to_slice(key4), db::to_slice(data4));
+
+        CHECK(txn.get_map_stat(table.map()).ms_entries == 4);
 
         StorageChanges expected_changes1;
         expected_changes1[addr1][incarnation1][location1] = val1;
         expected_changes1[addr2][incarnation2][location2] = val2;
         expected_changes1[addr3][incarnation3][location3] = val3;
 
-        db_changes = read_storage_changes(*txn, block_num1);
+        db_changes = read_storage_changes(txn, block_num1);
+        CHECK(db_changes.size() == expected_changes1.size());
         CHECK(db_changes == expected_changes1);
 
-        db_changes = read_storage_changes(*txn, block_num2);
+        db_changes = read_storage_changes(txn, block_num2);
         CHECK(db_changes.empty());
 
         StorageChanges expected_changes3;
         expected_changes3[addr4][incarnation4][location4] = val4;
 
-        db_changes = read_storage_changes(*txn, block_num3);
+        db_changes = read_storage_changes(txn, block_num3);
+        CHECK(db_changes.size() == expected_changes3.size());
         CHECK(db_changes == expected_changes3);
     }
 
@@ -383,11 +395,11 @@ namespace db {
     TEST_CASE("mainnet_genesis") {
         TemporaryDirectory tmp_dir;
 
-        lmdb::DatabaseConfig db_config{tmp_dir.path(), 1 * kMebi};
+        db::EnvConfig db_config{tmp_dir.path()};
         db_config.set_readonly(false);
-        auto env{lmdb::get_env(db_config)};
-        auto txn{env->begin_rw_transaction()};
-        table::create_all(*txn);
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
 
         // Parse genesis data
         std::string source_data;
@@ -402,7 +414,7 @@ namespace db {
         CHECK(genesis_json.contains("extraData"));
         CHECK((genesis_json.contains("alloc") && genesis_json["alloc"].is_object() && genesis_json["alloc"].size()));
 
-        db::Buffer state_buffer(txn.get());
+        db::Buffer state_buffer(txn);
         size_t expected_allocations{genesis_json["alloc"].size()};
 
         for (auto& item : genesis_json["alloc"].items()) {

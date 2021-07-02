@@ -25,7 +25,7 @@
 
 namespace silkworm::trie {
 
-AccountTrieCursor::AccountTrieCursor(lmdb::Transaction&) {}
+AccountTrieCursor::AccountTrieCursor(mdbx::txn&) {}
 
 Bytes AccountTrieCursor::first_uncovered_prefix() {
     // TODO[Issue 179] implement
@@ -46,7 +46,7 @@ bool AccountTrieCursor::can_skip_state() const {
     return false;
 }
 
-StorageTrieCursor::StorageTrieCursor(lmdb::Transaction&) {}
+StorageTrieCursor::StorageTrieCursor(mdbx::txn&) {}
 
 Bytes StorageTrieCursor::seek_to_account(ByteView) {
     // TODO[Issue 179] implement
@@ -72,7 +72,7 @@ bool StorageTrieCursor::can_skip_state() const {
     return false;
 }
 
-DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
+DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
     : txn_{txn}, storage_collector_{storage_collector} {
     hb_.node_collector = [&account_collector](ByteView unpacked_key, const Node& node) {
         if (unpacked_key.empty()) {
@@ -108,8 +108,8 @@ DbTrieLoader::DbTrieLoader(lmdb::Transaction& txn, etl::Collector& account_colle
 //      use(AccTrie)
 //  }
 evmc::bytes32 DbTrieLoader::calculate_root() {
-    auto acc_state{txn_.open(db::table::kHashedAccounts)};
-    auto storage_state{txn_.open(db::table::kHashedStorage)};
+    auto acc_state{db::open_cursor(txn_, db::table::kHashedAccounts)};
+    auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
 
     StorageTrieCursor storage_trie{txn_};
 
@@ -118,12 +118,14 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
             goto use_account_trie;
         }
 
-        for (auto a{acc_state->seek(acc_trie.first_uncovered_prefix())}; a.has_value(); a = acc_state->get_next()) {
-            const Bytes unpacked_key{unpack_nibbles(a->key)};
+        for (auto a{acc_state.lower_bound(db::to_slice(acc_trie.first_uncovered_prefix()), /*throw_notfound*/ false)};
+             a.done == true; a = acc_state.to_next(/*throw_notfound*/ false)) {
+            const Bytes unpacked_key{unpack_nibbles(db::from_slice(a.key))};
             if (acc_trie.key().has_value() && acc_trie.key().value() < unpacked_key) {
                 break;
             }
-            const auto [account, err]{decode_account_from_storage(a->value)};
+            const auto [account, err]{decode_account_from_storage(db::from_slice(a.value))};
+            // TODO (Andrea) Throw exceptions not enums
             if (err != rlp::DecodingResult::kOk) {
                 throw err;
             }
@@ -131,8 +133,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
             evmc::bytes32 storage_root{kEmptyRoot};
 
             if (account.incarnation) {
-                const Bytes acc_with_inc{db::storage_prefix(a->key, account.incarnation)};
-
+                const Bytes acc_with_inc{db::storage_prefix(db::from_slice(a.key), account.incarnation)};
                 HashBuilder storage_hb;
                 storage_hb.node_collector = [&](ByteView unpacked_key, const Node& node) {
                     etl::Entry e{acc_with_inc, marshal_node(node)};
@@ -145,10 +146,11 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                         goto use_storage_trie;
                     }
 
-                    for (auto s{storage_state->seek_dup(acc_with_inc, storage_trie.first_uncovered_prefix())};
-                         s.has_value(); s = storage_state->get_next_dup()) {
-                        const ByteView packed_loc{s->substr(0, kHashLength)};
-                        const ByteView value{s->substr(kHashLength)};
+                    for (auto s{storage_state.lower_bound_multivalue(
+                             db::to_slice(acc_with_inc), db::to_slice(storage_trie.first_uncovered_prefix()), false)};
+                         s.done == true; s = storage_state.to_current_next_multi(false)) {
+                        const ByteView packed_loc{db::from_slice(s.value).substr(0, kHashLength)};
+                        const ByteView value{db::from_slice(s.value).substr(kHashLength)};
                         const Bytes unpacked_loc{unpack_nibbles(packed_loc)};
                         if (storage_trie.key().has_value() && storage_trie.key().value() < unpacked_loc) {
                             break;
@@ -170,7 +172,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                 storage_root = storage_hb.root_hash();
             }
 
-            hb_.add(a->key, account.rlp(storage_root));
+            hb_.add(db::from_slice(a.key), account.rlp(storage_root));
         }
 
     use_account_trie:
@@ -250,7 +252,7 @@ Node unmarshal_node(ByteView v) {
     return {state_mask, tree_mask, hash_mask, hashes, root_hash};
 }
 
-evmc::bytes32 regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, const evmc::bytes32* expected_root) {
+evmc::bytes32 regenerate_db_tries(mdbx::txn& txn, const char* tmp_dir, const evmc::bytes32* expected_root) {
     etl::Collector account_collector{tmp_dir};
     etl::Collector storage_collector{tmp_dir};
     DbTrieLoader loader{txn, account_collector, storage_collector};
@@ -260,10 +262,14 @@ evmc::bytes32 regenerate_db_tries(lmdb::Transaction& txn, const char* tmp_dir, c
                                       << "\n";
         throw WrongRoot{};
     }
-    auto account_tbl{txn.open(db::table::kTrieOfAccounts)};
-    account_collector.load(account_tbl.get());
-    auto storage_tbl{txn.open(db::table::kTrieOfStorage)};
-    storage_collector.load(storage_tbl.get());
+    auto target{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+    account_collector.load(target);
+    target.close();
+
+    target = db::open_cursor(txn, db::table::kTrieOfStorage);
+    storage_collector.load(target);
+    target.close();
+
     return root;
 }
 

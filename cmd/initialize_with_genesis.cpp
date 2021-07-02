@@ -50,9 +50,6 @@ int main(int argc, char* argv[]) {
 
     std::string out;
     std::string genesis;
-    size_t map_size{
-        1 *
-        kMebi};  // As we're basically creating a new db set an initial map_size (Windows does not create it without)
 
     app.add_option("--out", out, "Path to new chaindata folder (must exist)", true)
         ->required()
@@ -73,8 +70,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Check destination directory
-    if (fs::exists(fs::path(out) / fs::path("data.mdb"))) {
-        std::cerr << "\nError : A data file (data.mdb) already exists in target folder" << std::endl;
+    if (fs::exists(fs::path(out) / fs::path("mdbx.dat"))) {
+        std::cerr << "\nError : A data file (mdbx.dat) already exists in target folder" << std::endl;
         return -1;
     }
 
@@ -155,16 +152,15 @@ int main(int argc, char* argv[]) {
     bool res{false};
     try {
         // Prime directories and DB
-        lmdb::DatabaseConfig db_config{out};
+        db::EnvConfig db_config{out};
         db_config.set_readonly(false);
-        db_config.map_size = map_size;
-        std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-        std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
-        db::table::create_all(*txn);
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        db::table::create_all(txn);
 
         // Initialize state_buffer for allocations (if any)
         // and get root_hash
-        db::Buffer state_buffer(txn.get());
+        db::Buffer state_buffer(txn);
 
         // Allocate accounts
         if (genesis_json.contains("alloc")) {
@@ -238,22 +234,27 @@ int main(int argc, char* argv[]) {
 
         Bytes key(8 + kHashLength, '\0');
         std::memcpy(&key[8], block_hash.bytes, kHashLength);
-        txn->open(db::table::kHeaders)->put(key, rlp_header);
-        txn->open(db::table::kCanonicalHashes)->put(block_key, full_view(block_hash.bytes));
+        db::open_cursor(txn, db::table::kHeaders).upsert(db::to_slice(key), db::to_slice(rlp_header));
+        db::open_cursor(txn, db::table::kCanonicalHashes)
+            .upsert(db::to_slice(key), db::to_slice(full_view(block_hash.bytes)));
 
         // Write body
-        txn->open(db::table::kBlockBodies)->put(key, Bytes(genesis_body, 4));
-        txn->open(db::table::kDifficulty)->put(key, intx::as_bytes(header.difficulty));
-        txn->open(db::table::kBlockReceipts)->put(key.substr(0, 8), Bytes(genesis_receipts, 1));
-        txn->open(db::table::kHeadHeader)->put(byte_view_of_c_str(kLastHeaderKey), full_view(block_hash.bytes));
-        txn->open(db::table::kHeaderNumbers)->put(full_view(block_hash.bytes), key.substr(0, 8));
+        db::open_cursor(txn, db::table::kBlockBodies).upsert(db::to_slice(key), db::to_slice(Bytes(genesis_body, 4)));
+        db::open_cursor(txn, db::table::kDifficulty)
+            .upsert(db::to_slice(key), db::to_slice(intx::as_bytes(header.difficulty)));
+        db::open_cursor(txn, db::table::kBlockReceipts)
+            .upsert(db::to_slice(key).safe_middle(0, 8), db::to_slice(Bytes(genesis_receipts, 1)));
+        db::open_cursor(txn, db::table::kHeadHeader)
+            .upsert(db::to_slice(byte_view_of_c_str(kLastHeaderKey)), db::to_slice(full_view(block_hash.bytes)));
+        db::open_cursor(txn, db::table::kHeaderNumbers)
+            .upsert(db::to_slice(full_view(block_hash.bytes)), db::to_slice(key.substr(0, 8)));
 
         // Write Chain Config
         auto config_data{genesis_json["config"].dump()};
-        txn->open(db::table::kConfig)->put(full_view(block_hash.bytes), byte_view_of_c_str(config_data.c_str()));
+        db::open_cursor(txn, db::table::kConfig)
+            .upsert(db::to_slice(full_view(block_hash.bytes)), db::to_slice(byte_view_of_c_str(config_data.c_str())));
 
-        lmdb::err_handler(txn->commit());
-        txn.reset();
+        txn.commit();
         res = true;
     } catch (const std::exception& ex) {
         std::cerr << "\nUnexpected error : " << ex.what() << std::endl;
@@ -262,8 +263,8 @@ int main(int argc, char* argv[]) {
     if (!res) {
         // Delete created db (if any)
         fs::path out_path(out);
-        fs::path out_file_path(out / fs::path("data.mdb"));
-        fs::path out_lock_path(out / fs::path("lock.mdb"));
+        fs::path out_file_path(out / fs::path("mdbx.dat"));
+        fs::path out_lock_path(out / fs::path("mdbx.lck"));
         if (fs::exists(out_file_path)) {
             fs::remove(out_file_path);
         }

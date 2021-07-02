@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    fs::path db_file{fs::path(db_path) / fs::path("mdbx.dat")};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;
@@ -52,42 +52,41 @@ int main(int argc, char* argv[]) {
     fs::path datadir(db_path);
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
 
-    lmdb::DatabaseConfig db_config{db_path};
+    db::EnvConfig db_config{db_path};
     db_config.set_readonly(false);
-    std::shared_ptr<lmdb::Environment> env{lmdb::get_env(db_config)};
-    std::unique_ptr<lmdb::Transaction> txn{env->begin_rw_transaction()};
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
 
     try {
         if (full || reset) {
-            txn->open(db::table::kHashedAccounts)->clear();
-            txn->open(db::table::kHashedStorage)->clear();
-            txn->open(db::table::kContractCode)->clear();
-            db::stages::set_stage_progress(*txn, db::stages::kHashStateKey, 0);
+            txn.clear_map(db::open_map(txn, db::table::kHashedAccounts));
+            txn.clear_map(db::open_map(txn, db::table::kHashedStorage));
+            txn.clear_map(db::open_map(txn, db::table::kContractCode));
+            db::stages::set_stage_progress(txn, db::stages::kHashStateKey, 0);
             if (reset) {
                 SILKWORM_LOG(LogLevel::Info) << "Reset Complete!" << std::endl;
-                lmdb::err_handler(txn->commit());
+                txn.commit();
                 return 0;
             }
         }
         SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
-        auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
+        auto last_processed_block_number{db::stages::get_stage_progress(txn, db::stages::kHashStateKey)};
         if (last_processed_block_number != 0 || incrementally) {
             SILKWORM_LOG(LogLevel::Info) << "Starting Account Hashing" << std::endl;
-            stagedsync::hashstate_promote(txn.get(), stagedsync::HashstateOperation::HashAccount);
+            stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::HashAccount);
             SILKWORM_LOG(LogLevel::Info) << "Starting Storage Hashing" << std::endl;
-            stagedsync::hashstate_promote(txn.get(), stagedsync::HashstateOperation::HashStorage);
+            stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::HashStorage);
             SILKWORM_LOG(LogLevel::Info) << "Hashing Code Keys" << std::endl;
-            stagedsync::hashstate_promote(txn.get(), stagedsync::HashstateOperation::Code);
+            stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::Code);
         } else {
-            stagedsync::hashstate_promote_clean_state(txn.get(), etl_path.string());
-            stagedsync::hashstate_promote_clean_code(txn.get(), etl_path.string());
+            stagedsync::hashstate_promote_clean_state(txn, etl_path.string());
+            stagedsync::hashstate_promote_clean_code(txn, etl_path.string());
         }
         // Update progress height with last processed block
-        db::stages::set_stage_progress(*txn, db::stages::kHashStateKey,
-                                       db::stages::get_stage_progress(*txn, db::stages::kExecutionKey));
-        lmdb::err_handler(txn->commit());
-        txn.reset();
+        db::stages::set_stage_progress(txn, db::stages::kHashStateKey,
+                                       db::stages::get_stage_progress(txn, db::stages::kExecutionKey));
+        txn.commit();
         SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

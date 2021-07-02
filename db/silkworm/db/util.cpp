@@ -81,16 +81,13 @@ Bytes log_key(uint64_t block_number, uint32_t transaction_id) {
 
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix) {
     auto data{table.lower_bound_multivalue(to_slice(key), to_slice(value_prefix), /*throw_notfound*/ false)};
-    if (!data) {
+    if (!data || !data.value.starts_with(to_slice(value_prefix))) {
         return std::nullopt;
     }
-    ByteView value{from_slice(data.value)};
-    if (!has_prefix(value, value_prefix)) {
-        return std::nullopt;
-    } else {
-        value.remove_prefix(value_prefix.length());
-        return value;
-    }
+
+    ByteView res{from_slice(data.value)};
+    res.remove_prefix(value_prefix.length());
+    return res;
 }
 
 // See Erigon DefaultDataDir

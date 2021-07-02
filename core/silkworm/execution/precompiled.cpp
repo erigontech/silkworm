@@ -98,18 +98,19 @@ uint64_t id_gas(ByteView input, evmc_revision) noexcept { return 15 + 3 * ((inpu
 std::optional<Bytes> id_run(ByteView input) noexcept { return Bytes{input}; }
 
 static intx::uint256 mult_complexity_eip198(const intx::uint256& x) noexcept {
+    const intx::uint256 x_squared{x * x};
     if (x <= 64) {
-        return sqr(x);
+        return x_squared;
     } else if (x <= 1024) {
-        return (sqr(x) >> 2) + 96 * x - 3072;
+        return (x_squared >> 2) + 96 * x - 3072;
     } else {
-        return (sqr(x) >> 4) + 480 * x - 199680;
+        return (x_squared >> 4) + 480 * x - 199680;
     }
 }
 
 static intx::uint256 mult_complexity_eip2565(const intx::uint256& max_length) noexcept {
-    intx::uint256 words{(max_length + 7) >> 3};  // ⌈max_length/8⌉
-    return sqr(words);
+    const intx::uint256 words{(max_length + 7) >> 3};  // ⌈max_length/8⌉
+    return words * words;
 }
 
 uint64_t expmod_gas(ByteView input, evmc_revision rev) noexcept {
@@ -126,14 +127,13 @@ uint64_t expmod_gas(ByteView input, evmc_revision rev) noexcept {
         return min_gas;
     }
 
-    if (intx::count_significant_words<uint64_t>(base_len256) > 1 ||
-        intx::count_significant_words<uint64_t>(exp_len256) > 1 ||
-        intx::count_significant_words<uint64_t>(mod_len256) > 1) {
+    if (intx::count_significant_words(base_len256) > 1 || intx::count_significant_words(exp_len256) > 1 ||
+        intx::count_significant_words(mod_len256) > 1) {
         return UINT64_MAX;
     }
 
-    uint64_t base_len64{intx::narrow_cast<uint64_t>(base_len256)};
-    uint64_t exp_len64{intx::narrow_cast<uint64_t>(exp_len256)};
+    uint64_t base_len64{static_cast<uint64_t>(base_len256)};
+    uint64_t exp_len64{static_cast<uint64_t>(exp_len256)};
 
     input.remove_prefix(3 * 32);
 
@@ -169,10 +169,10 @@ uint64_t expmod_gas(ByteView input, evmc_revision rev) noexcept {
         gas = mult_complexity_eip2565(max_length) * adjusted_exponent_len / param::kGQuadDivisorBerlin;
     }
 
-    if (intx::count_significant_words<uint64_t>(gas) > 1) {
+    if (intx::count_significant_words(gas) > 1) {
         return UINT64_MAX;
     } else {
-        return std::max(min_gas, intx::narrow_cast<uint64_t>(gas));
+        return std::max(min_gas, static_cast<uint64_t>(gas));
     }
 }
 

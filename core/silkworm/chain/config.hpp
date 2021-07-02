@@ -35,7 +35,7 @@ enum class SealEngineType {
 };
 
 struct ChainConfig {
-    static constexpr const char* kJsonForkNames[EVMC_MAX_REVISION]{
+    static constexpr const char* kJsonForkNames[]{
         "homesteadBlock",  // EVMC_HOMESTEAD
         // there's no evmc_revision for daoForkBlock
         "eip150Block",          // EVMC_TANGERINE_WHISTLE
@@ -45,9 +45,12 @@ struct ChainConfig {
         "petersburgBlock",      // EVMC_PETERSBURG
         "istanbulBlock",        // EVMC_ISTANBUL
         // there's no evmc_revision for muirGlacierBlock
-        "berlinBlock",  // EVMC_BERLIN
-        "londonBlock",  // EVMC_LONDON
+        "berlinBlock",    // EVMC_BERLIN
+        "londonBlock",    // EVMC_LONDON
+        "shanghaiBlock",  // EVMC_SHANGHAI
     };
+
+    static_assert(std::size(kJsonForkNames) == EVMC_MAX_REVISION);
 
     // https://eips.ethereum.org/EIPS/eip-155
     uint64_t chain_id{0};

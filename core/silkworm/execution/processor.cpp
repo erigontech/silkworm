@@ -16,6 +16,8 @@
 
 #include "processor.hpp"
 
+#include <cassert>
+
 #include <silkworm/chain/dao.hpp>
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
@@ -83,7 +85,9 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     const evmc_revision rev{evm_.revision()};
 
     const intx::uint128 g0{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};
-    const CallResult vm_res{evm_.execute(txn, txn.gas_limit - g0.lo)};
+    assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
+
+    const CallResult vm_res{evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0))};
 
     const uint64_t gas_used{txn.gas_limit - refund_gas(txn, vm_res.gas_left)};
 

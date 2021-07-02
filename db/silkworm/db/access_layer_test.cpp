@@ -112,7 +112,7 @@ namespace db {
 
         // Write voluntary wrong value in stage
         Bytes stage_progress(2, 0);
-        Bytes key(byte_ptr_cast(stages::kBlockBodiesKey), std::strlen(stages::kBlockBodiesKey));
+        auto key{byte_view_of_c_str(stages::kBlockBodiesKey)};
         auto map{db::open_cursor(txn, table::kSyncStageProgress)};
         CHECK_NOTHROW(txn.upsert(map, to_slice(key), to_slice(stage_progress)));
         CHECK_THROWS(block_num = stages::get_stage_progress(txn, stages::kBlockBodiesKey));
@@ -180,38 +180,38 @@ namespace db {
             }
 
             std::optional<BlockWithHash> bh{read_block(txn, block_num, read_senders)};
-            //REQUIRE(bh);
-            //CHECK(bh->block.header == header);
-            //CHECK(bh->block.ommers == body.ommers);
-            //CHECK(bh->block.transactions == body.transactions);
-            //CHECK(full_view(bh->hash) == full_view(hash.bytes));
+            REQUIRE(bh);
+            CHECK(bh->block.header == header);
+            CHECK(bh->block.ommers == body.ommers);
+            CHECK(bh->block.transactions == body.transactions);
+            CHECK(full_view(bh->hash) == full_view(hash.bytes));
 
-            //CHECK(!bh->block.transactions[0].from);
-            //CHECK(!bh->block.transactions[1].from);
+            CHECK(!bh->block.transactions[0].from);
+            CHECK(!bh->block.transactions[1].from);
 
-            //read_senders = true;
-            //CHECK_THROWS_AS(read_block(txn, block_num, read_senders), MissingSenders);
+            read_senders = true;
+            CHECK_THROWS_AS(read_block(txn, block_num, read_senders), MissingSenders);
 
-            //Bytes full_senders{
-            //    *from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"
-            //              "941591b6ca8e8dd05c69efdec02b77c72dac1496")};
-            //REQUIRE(full_senders.length() == 2 * kAddressLength);
+            Bytes full_senders{
+                *from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"
+                          "941591b6ca8e8dd05c69efdec02b77c72dac1496")};
+            REQUIRE(full_senders.length() == 2 * kAddressLength);
 
-            //ByteView truncated_senders{full_senders.data(), kAddressLength};
-            //auto sender_table{db::open_cursor(txn, table::kSenders)};
-            //sender_table.upsert(to_slice(key), to_slice(truncated_senders));
-            //CHECK_THROWS_AS(read_block(txn, block_num, read_senders), MissingSenders);
+            ByteView truncated_senders{full_senders.data(), kAddressLength};
+            auto sender_table{db::open_cursor(txn, table::kSenders)};
+            sender_table.upsert(to_slice(key), to_slice(truncated_senders));
+            CHECK_THROWS_AS(read_block(txn, block_num, read_senders), MissingSenders);
 
-            //sender_table.upsert(to_slice(key), to_slice(full_senders));
-            //bh = read_block(txn, block_num, read_senders);
-            //REQUIRE(bh);
-            //CHECK(bh->block.header == header);
-            //CHECK(bh->block.ommers == body.ommers);
-            //CHECK(bh->block.transactions == body.transactions);
-            //CHECK(full_view(bh->hash) == full_view(hash.bytes));
+            sender_table.upsert(to_slice(key), to_slice(full_senders));
+            bh = read_block(txn, block_num, read_senders);
+            REQUIRE(bh);
+            CHECK(bh->block.header == header);
+            CHECK(bh->block.ommers == body.ommers);
+            CHECK(bh->block.transactions == body.transactions);
+            CHECK(full_view(bh->hash) == full_view(hash.bytes));
 
-            //CHECK(bh->block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
-            //CHECK(bh->block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
+            CHECK(bh->block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
+            CHECK(bh->block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
         }
     }
 

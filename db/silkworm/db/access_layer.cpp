@@ -150,10 +150,9 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, uint64_t block_number, const 
 }
 
 std::vector<evmc::address> read_senders(mdbx::txn& txn, int64_t block_number, const uint8_t (&hash)[kHashLength]) {
-    // TODO (Andrea) - Isn't this deprecated ?
     std::vector<evmc::address> senders{};
 
-    auto src{db::open_cursor(txn, table::kBlockBodies)};
+    auto src{db::open_cursor(txn, table::kSenders)};
     auto key{block_key(block_number, hash)};
     auto data{src.find(to_slice(key), /*throw_notfound = */ false)};
     if (data) {

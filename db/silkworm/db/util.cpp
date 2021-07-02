@@ -86,7 +86,9 @@ std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, Byt
         return std::nullopt;
     }
 
-    return from_slice(data.value.substr(value_prefix.length()));
+    ByteView res{from_slice(data.value)};
+    res.remove_prefix(value_prefix.length());
+    return res;
 }
 
 // See Erigon DefaultDataDir

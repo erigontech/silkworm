@@ -148,7 +148,7 @@ struct compact_options_t {
 
 struct copy_options_t {
     std::string targetdir{};             // Target directory of database
-    bool create{false};                  // Whether or not new data.mdb have to be created
+    bool create{false};                  // Whether or not new data file have to be created
     bool noempty{false};                 // Omit copying a table when empty
     bool upsert{false};                  // Copy using upsert instead of append (reuses free pages if any)
     std::vector<std::string> tables{};   // A limited set of table names to copy
@@ -513,12 +513,12 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
         bool src_nosubdir{(src_flags & MDBX_NOSUBDIR) == MDBX_NOSUBDIR};
 
         fs::path src_path{db_opts.datadir};
-        if (!src_nosubdir) src_path /= fs::path{"mdbx.dat"};
+        if (!src_nosubdir) src_path /= fs::path{MDBX_DATANAME};
 
         // Ensure target working directory has enough free space
         // at least the size of origin db
         auto tgt_path = fs::path{app_opts.workdir};
-        if (!src_nosubdir) tgt_path /= fs::path{"mdbx.dat"};
+        if (!src_nosubdir) tgt_path /= fs::path{MDBX_DATANAME};
         auto target_space = fs::space(tgt_path.parent_path());
         if (target_space.free <= src_filesize) {
             throw std::runtime_error("Insufficient disk space on working directory");
@@ -542,7 +542,9 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
                 // Create a backup copy before replacing ?
                 if (!app_opts.nobak) {
                     std::cout << " Creating backup copy of origin database ..." << std::endl;
-                    fs::path src_path_bak{src_path.parent_path() / fs::path{"mdbx.dat.bak"}};
+                    std::string src_file_back{MDBX_DATANAME};
+					src_file_back.append(".bak");
+                    fs::path src_path_bak{src_path.parent_path() / fs::path{src_file_back}};
                     if (fs::exists(src_path_bak)) fs::remove(src_path_bak);
                     fs::rename(src_path, src_path_bak);
                 }
@@ -781,9 +783,9 @@ int main(int argc, char* argv[]) {
     // Cli args sanification for compact
     if (app_compact) {
         compact_opts.dir = fs::path(compact_opts.workdir);
-        compact_opts.file = (compact_opts.dir / fs::path("mdbx.dat"));
+        compact_opts.file = (compact_opts.dir / fs::path(MDBX_DATANAME));
         if (fs::exists(compact_opts.file)) {
-            std::cout << " An mdbx.dat file already present in workdir" << std::endl;
+            std::cout << " An " MDBX_DATANAME " file already present in workdir" << std::endl;
             return -1;
         }
     }
@@ -791,11 +793,11 @@ int main(int argc, char* argv[]) {
     // Cli args sanification for copy
     if (app_copy) {
         copy_opts.dir = fs::path(copy_opts.targetdir);
-        copy_opts.file = (copy_opts.dir / fs::path("data.mdb"));
+        copy_opts.file = (copy_opts.dir / fs::path(MDBX_DATANAME));
         if (fs::exists(copy_opts.file)) {
             copy_opts.filesize = fs::file_size(copy_opts.file);
             if (copy_opts.create) {
-                std::cout << " mdbx.dat file already present in target directory but you have set --create"
+                std::cout << MDBX_DATANAME " file already present in target directory but you have set --create"
                           << std::endl;
                 return -1;
             }

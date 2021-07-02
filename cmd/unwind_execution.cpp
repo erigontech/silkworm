@@ -44,8 +44,8 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG(LogLevel::Error) << "Specify valid unwinding point with --unwind-to" << std::endl;
         return -1;
     }
-    // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("data.mdb")};
+    // Check data file exists in provided directory
+    fs::path db_file{fs::path(db_path) / fs::path(MDBX_DATANAME)};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;

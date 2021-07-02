@@ -43,8 +43,8 @@ int main(int argc, char* argv[]) {
     app.add_flag("--reset", reset, "Reset HashState");
     CLI11_PARSE(app, argc, argv);
 
-    // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("mdbx.dat")};
+    // Check data file exists in provided directory
+    fs::path db_file{fs::path(db_path) / fs::path(MDBX_DATANAME)};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;

@@ -120,8 +120,4 @@ StageResult stage_blockhashes(lmdb::DatabaseConfig db_config) {
     return StageResult::kStageSuccess;
 }
 
-StageResult unwind_blockhashes(lmdb::DatabaseConfig, uint64_t) {
-    throw std::runtime_error("Not Implemented.");
-}
-
 }

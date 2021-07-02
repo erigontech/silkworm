@@ -131,8 +131,8 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
     SILKWORM_LOG(LogLevel::Info) << "Checking HashState" << std::endl;
 
-    // Check data.mdb exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path("mdbx.dat")};
+    // Check data file exists in provided directory
+    fs::path db_file{fs::path(db_path) / fs::path(MDBX_DATANAME)};
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
         return -1;

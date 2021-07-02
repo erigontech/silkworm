@@ -70,8 +70,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Check destination directory
-    if (fs::exists(fs::path(out) / fs::path("mdbx.dat"))) {
-        std::cerr << "\nError : A data file (mdbx.dat) already exists in target folder" << std::endl;
+    if (fs::exists(fs::path(out) / fs::path(MDBX_DATANAME))) {
+        std::cerr << "\nError : A data file " MDBX_DATANAME " already exists in target folder" << std::endl;
         return -1;
     }
 
@@ -263,8 +263,8 @@ int main(int argc, char* argv[]) {
     if (!res) {
         // Delete created db (if any)
         fs::path out_path(out);
-        fs::path out_file_path(out / fs::path("mdbx.dat"));
-        fs::path out_lock_path(out / fs::path("mdbx.lck"));
+        fs::path out_file_path(out / fs::path(MDBX_DATANAME));
+        fs::path out_lock_path(out / fs::path(MDBX_LOCKNAME));
         if (fs::exists(out_file_path)) {
             fs::remove(out_file_path);
         }

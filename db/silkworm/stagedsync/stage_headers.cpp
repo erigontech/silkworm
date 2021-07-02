@@ -22,8 +22,4 @@ StageResult stage_headers(lmdb::DatabaseConfig) {
     throw std::runtime_error("Not Implemented.");
 }
 
-StageResult unwind_headers(lmdb::DatabaseConfig, uint64_t) {
-    throw std::runtime_error("Not Implemented.");
-}
-
 }

@@ -46,14 +46,14 @@ using namespace silkworm;
 std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
 
 struct app_options_t {
-    std::string datadir{};                                      // Provided database path
-    uint32_t max_workers{std::thread::hardware_concurrency()};  // Max number of threads
-    size_t batch_size{1'000'000};                               // Number of work packages to serve a worker
-    uint32_t block_from{1u};                                    // Initial block number to start from
-    uint32_t block_to{UINT32_MAX};                              // Final block number to process
-    bool force{false};                                          // Whether to replay already processed blocks
-    bool dry{false};                                            // Runs in dry mode (no data is persisted on disk)
-    bool debug{false};                                          // Whether to display some debug info
+    std::string datadir{};                                          // Provided database path
+    uint32_t max_workers{std::thread::hardware_concurrency() - 1};  // Max number of threads
+    size_t batch_size{1'000'000};                                   // Number of work packages to serve a worker
+    uint32_t block_from{1u};                                        // Initial block number to start from
+    uint32_t block_to{UINT32_MAX};                                  // Final block number to process
+    bool force{false};                                              // Whether to replay already processed blocks
+    bool dry{false};                                                // Runs in dry mode (no data is persisted on disk)
+    bool debug{false};                                              // Whether to display some debug info
 };
 
 void sig_handler(int signum) {
@@ -431,11 +431,11 @@ class RecoveryFarm final {
                 } else {
                     Bytes key(40, '\0');
                     boost::endian::store_big_u64(&key[0], new_height + 1);  // New stage height is last processed
-                    auto data{src.find(db::to_slice(key))};
+                    auto data{src.lower_bound(db::to_slice(key), /*throw_notfound*/ false)};
                     while (data) {
                         src.erase();
                         data = src.to_next(/*throw_notfound*/ false);
-                        if (--rcount % 1'000 && should_stop()) {
+                        if (!(--rcount % 1'000) && should_stop()) {
                             ret = Status::WorkerAborted;
                             break;
                         }
@@ -818,7 +818,7 @@ int main(int argc, char* argv[]) {
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
 
     app.add_option("--workers", options.max_workers, "Max number of worker threads", true)
-        ->check(CLI::Range(1u, std::thread::hardware_concurrency()));
+        ->check(CLI::Range(1u, std::max(1u, std::thread::hardware_concurrency() - 1)));
 
     app.add_option("--from", options.block_from, "Initial block number to process (inclusive)", true)
         ->check(CLI::Range(1u, UINT32_MAX));

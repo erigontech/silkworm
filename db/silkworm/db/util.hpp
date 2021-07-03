@@ -38,11 +38,6 @@ static_assert(kIncarnationLength == sizeof(uint64_t));
 
 constexpr size_t kStoragePrefixLength{kAddressLength + kIncarnationLength};
 
-struct Entry {
-    ByteView key;
-    ByteView value;
-};
-
 // address -> storage-encoded initial value
 using AccountChanges = absl::btree_map<evmc::address, Bytes>;
 

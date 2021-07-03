@@ -181,13 +181,11 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
     if (!data) {
         return std::nullopt;
     }
-    db::Entry entry{from_slice(data.key), from_slice(data.value)};
-    auto address_view{full_view(address)};
-    if (!has_prefix(entry.key, address_view)) {
+    if (!data.key.starts_with(to_slice(address))) {
         return std::nullopt;
     }
 
-    auto bitmap{bitmap::read(entry.value)};
+    auto bitmap{bitmap::read(from_slice(data.value))};
     auto change_block{bitmap::seek(bitmap, block_number)};
     if (!change_block) {
         return std::nullopt;
@@ -195,7 +193,7 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
 
     src = db::open_cursor(txn, table::kPlainAccountChangeSet);
     key = block_key(*change_block);
-    data = src.find_multivalue(to_slice(key), to_slice(address_view), /*throw_notfound=*/false);
+    data = src.find_multivalue(to_slice(key), to_slice(address), /*throw_notfound=*/false);
     if (!data) {
         return std::nullopt;
     }

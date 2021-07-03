@@ -87,6 +87,11 @@ inline mdbx::slice to_slice(const evmc::bytes32& value) {
 
 inline ByteView from_slice(const mdbx::slice slice) { return {slice.byte_ptr(), slice.length()}; }
 
+// If there exists an entry in a multivalue table with a given key and a value starting with a given prefix,
+// return the suffix of the value.
+// Otherwise, return nullopt.
+std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix);
+
 namespace detail {
 
     // See Erigon BodyForStorage

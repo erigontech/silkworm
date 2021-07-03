@@ -215,6 +215,48 @@ namespace db {
         }
     }
 
+    TEST_CASE("read_storage") {
+        TemporaryDirectory tmp_dir;
+
+        db::EnvConfig db_config{tmp_dir.path()};
+        db_config.set_readonly(false);
+        db_config.set_in_mem(true);
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
+
+        auto table{db::open_cursor(txn, table::kPlainState)};
+
+        const auto addr{0xb000000000000000000000000000000000000008_address};
+        const Bytes key{storage_prefix(full_view(addr), kDefaultIncarnation)};
+
+        const auto loc1{0x000000000000000000000000000000000000a000000000000000000000000037_bytes32};
+        const auto loc2{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
+        const auto loc3{0xff00000000000000000000000000000000000000000000000000000000000017_bytes32};
+        const auto loc4{0x00000000000000000000000000000000000000000000000000000000000f3128_bytes32};
+
+        const auto val1{0x00000000000000000000000000000000000000000000000000000000c9b131a4_bytes32};
+        const auto val2{0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32};
+        const auto val3{0x4400000000000000000000000000000000000000000000000000000000000000_bytes32};
+
+        Bytes dat1{full_view(loc1)};
+        dat1.append(zeroless_view(val1));
+        table.upsert(to_slice(key), to_slice(dat1));
+
+        Bytes dat2{full_view(loc2)};
+        dat2.append(zeroless_view(val2));
+        table.upsert(to_slice(key), to_slice(dat2));
+
+        Bytes dat3{full_view(loc3)};
+        dat3.append(zeroless_view(val3));
+        table.upsert(to_slice(key), to_slice(dat3));
+
+        CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc1) == val1);
+        CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc2) == val2);
+        CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc3) == val3);
+        CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc4) == evmc::bytes32{});
+    }
+
     TEST_CASE("read_account_changes") {
         TemporaryDirectory tmp_dir;
 

@@ -79,6 +79,18 @@ Bytes log_key(uint64_t block_number, uint32_t transaction_id) {
     return key;
 }
 
+std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix) {
+    auto prefix_slice{to_slice(value_prefix)};
+    auto data{table.lower_bound_multivalue(to_slice(key), prefix_slice, /*throw_notfound*/ false)};
+    if (!data || !data.value.starts_with(prefix_slice)) {
+        return std::nullopt;
+    }
+
+    ByteView res{from_slice(data.value)};
+    res.remove_prefix(value_prefix.length());
+    return res;
+}
+
 // See Erigon DefaultDataDir
 std::string default_path() {
     std::string base_dir{};

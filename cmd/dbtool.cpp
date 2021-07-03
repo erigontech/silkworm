@@ -247,7 +247,7 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     auto result{free_crs.to_first(/*throw_notfound =*/false)};
     while (result) {
         size_t txId = *(static_cast<size_t*>(result.key.iov_base));
-        size_t pagesCount = 0; /* martian -> *(static_cast<size_t*>(result.value.iov_base)); */
+        size_t pagesCount = *(static_cast<uint32_t*>(result.value.iov_base));
         size_t pagesSize = pagesCount * free_stat.ms_psize;
         ret.pages += pagesCount;
         ret.size += pagesSize;
@@ -355,11 +355,11 @@ int do_scan(db_options_t& db_opts) {
                 }
 
                 if (!shouldStop) {
-                progress.set_current(item.stat.ms_entries);
-                std::cout << progress.print_interval('.') << std::flush;
-                std::cout << (boost::format(" %13s %13s %13s") % human_size(key_size) % human_size(data_size) %
-                              human_size(key_size + data_size))
-                          << std::flush;
+                    progress.set_current(item.stat.ms_entries);
+                    std::cout << progress.print_interval('.') << std::flush;
+                    std::cout << (boost::format(" %13s %13s %13s") % human_size(key_size) % human_size(data_size) %
+                                  human_size(key_size + data_size))
+                              << std::flush;
                 } else {
                     break;
                 }
@@ -423,6 +423,7 @@ int do_tables(db_options_t& db_opts) {
         auto txn{env.start_read()};
 
         auto tables{get_tablesInfo(txn)};
+        auto freeInfo{get_freeInfo(txn)};
 
         std::cout << "\n Database tables    : " << tables.tables.size() << std::endl << std::endl;
 
@@ -451,10 +452,9 @@ int do_tables(db_options_t& db_opts) {
         std::cout << " Data pages count         : " << (boost::format("%13u") % tables.pages) << std::endl;
         std::cout << " Data pages size      (B) : " << (boost::format("%13s") % human_size(tables.size)) << std::endl;
         std::cout << " Free pages count         : " << (boost::format("%13u") % tables.tables[0].pages()) << std::endl;
-        std::cout << " Free pages size      (C) : " << (boost::format("%13s") % human_size(tables.tables[0].size()))
-                  << std::endl;
-        std::cout << " Available space          : "
-                  << (boost::format("%13s") % human_size(tables.filesize - tables.size + tables.tables[0].size()))
+        std::cout << " Free pages size      (C) : " << (boost::format("%13s") % human_size(freeInfo.size)) << std::endl;
+        std::cout << " Reclaimable space        : "
+                  << (boost::format("%13s") % human_size(tables.filesize - tables.size + freeInfo.size))
                   << " == A - B + C \n"
                   << std::endl;
 
@@ -468,7 +468,7 @@ int do_tables(db_options_t& db_opts) {
 
 int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
     static std::string fmt_hdr{"%9s %9s %12s"};
-    static std::string fmt_row{"%9u %9u %12u"};
+    static std::string fmt_row{"%9u %9u %12s"};
 
     int retvar{0};
 
@@ -486,11 +486,11 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
             std::cout << (boost::format(fmt_hdr) % std::string(9, '-') % std::string(9, '-') % std::string(12, '-'))
                       << std::endl;
             for (auto& item : freeInfo.entries) {
-                std::cout << (boost::format(fmt_row) % item.id % item.pages % item.size) << std::endl;
+                std::cout << (boost::format(fmt_row) % item.id % item.pages % human_size(item.size)) << std::endl;
             }
         }
         std::cout << "\n Free pages count     : " << boost::format("%13u") % freeInfo.pages << "\n"
-                  << " Free pages size      : " << boost::format("%13u") % freeInfo.size << std::endl;
+                  << " Free pages size      : " << boost::format("%13s") % human_size(freeInfo.size) << std::endl;
 
     } catch (std::exception& ex) {
         std::cout << ex.what() << std::endl;
@@ -543,7 +543,7 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
                 if (!app_opts.nobak) {
                     std::cout << " Creating backup copy of origin database ..." << std::endl;
                     std::string src_file_back{MDBX_DATANAME};
-					src_file_back.append(".bak");
+                    src_file_back.append(".bak");
                     fs::path src_path_bak{src_path.parent_path() / fs::path{src_file_back}};
                     if (fs::exists(src_path_bak)) fs::remove(src_path_bak);
                     fs::rename(src_path, src_path_bak);

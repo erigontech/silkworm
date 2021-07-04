@@ -802,7 +802,7 @@ int main(int argc, char* argv[]) {
                 return -1;
             }
         } else if (!copy_opts.create) {
-            std::cout << " mdbx.dat not found in target directory. You may want to specify --create" << std::endl;
+            std::cout << MDBX_DATANAME " not found in target directory. You may want to specify --create" << std::endl;
             return -1;
         }
 
@@ -827,8 +827,8 @@ int main(int argc, char* argv[]) {
         return do_clear(db_opts, clear_opts);
     } else if (app_compact) {
         return do_compact(db_opts, compact_opts);
-        //} else if (app_copy) {
-        //    return do_copy(db_opts, copy_opts);
+    } else if (app_copy) {
+        return do_copy(db_opts, copy_opts);
     } else {
         std::cerr << "No command specified" << std::endl;
     }

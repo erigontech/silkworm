@@ -262,11 +262,9 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
 
     Bytes start_key(8, '\0');
     boost::endian::store_big_u64(&start_key[0], unwind_to+1);
-    // Always go here with fully synced node --NOTE for Andrea
-    if(!changeset_table.seek(db::to_slice(start_key))) {
-        return;
-    }
-    auto changeset_data{changeset_table.current()};
+
+    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
+
     while (changeset_data) {
         Bytes mdb_key_as_bytes{db::from_slice(changeset_data.key)};
         Bytes mdb_value_as_bytes{db::from_slice(changeset_data.value)};

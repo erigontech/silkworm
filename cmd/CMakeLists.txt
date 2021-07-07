@@ -64,6 +64,9 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(unwind_execution unwind_execution.cpp)
   target_link_libraries(unwind_execution PRIVATE silkworm_db CLI11::CLI11)
 
+  add_executable(unwind_hashstate unwind_hashstate.cpp)
+  target_link_libraries(unwind_hashstate PRIVATE silkworm_db CLI11::CLI11)
+
   add_executable(blockhashes blockhashes.cpp)
   target_link_libraries(blockhashes PRIVATE silkworm_db CLI11::CLI11)
   

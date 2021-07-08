@@ -43,25 +43,6 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, uint6
     uint64_t block_num{start_block};
 
     try {
-         // TODO (Andrea) Remove migrations check and verify db version
-        if (write_receipts && (!db::migration_happened(txn, "receipts_cbor_encode") ||
-                               !db::migration_happened(txn, "receipts_store_logs_separately"))) {
-            SILKWORM_LOG(LogLevel::Error) << "Legacy stored receipts are not supported\n";
-            return SilkwormStatusCode::kSilkwormIncompatibleDbFormat;
-        }
-
-        // https://github.com/ledgerwatch/erigon/pull/1342
-        if (!db::migration_happened(txn, "acc_change_set_dup_sort_18") ||
-            !db::migration_happened(txn, "storage_change_set_dup_sort_22")) {
-            SILKWORM_LOG(LogLevel::Error) << "Legacy change sets are not supported\n";
-            return SilkwormStatusCode::kSilkwormIncompatibleDbFormat;
-        }
-
-        // https://github.com/ledgerwatch/erigon/pull/1358
-        if (!db::migration_happened(txn, "tx_table_4")) {
-            SILKWORM_LOG(LogLevel::Error) << "Legacy stored transactions are not supported\n";
-            return SilkwormStatusCode::kSilkwormIncompatibleDbFormat;
-        }
 
         db::Buffer buffer{txn};
         AnalysisCache analysis_cache;

@@ -70,8 +70,10 @@ int main(int argc, char* argv[]) {
     }
 
     // Check destination directory
-    if (fs::exists(fs::path(out) / fs::path(MDBX_DATANAME))) {
-        std::cerr << "\nError : A data file " MDBX_DATANAME " already exists in target folder" << std::endl;
+    fs::path db_path{out};
+    auto db_file{db::get_datafile_path(db_path)};
+    if (fs::exists(fs::path(db_file))) {
+        std::cerr << "\nError : A data file " << db::kDb_data_file_name << " already exists in target folder" << std::endl;
         return -1;
     }
 
@@ -262,14 +264,12 @@ int main(int argc, char* argv[]) {
 
     if (!res) {
         // Delete created db (if any)
-        fs::path out_path(out);
-        fs::path out_file_path(out / fs::path(MDBX_DATANAME));
-        fs::path out_lock_path(out / fs::path(MDBX_LOCKNAME));
-        if (fs::exists(out_file_path)) {
-            fs::remove(out_file_path);
+        if (fs::exists(db_file)) {
+            fs::remove(db_file);
         }
-        if (fs::exists(out_lock_path)) {
-            fs::remove(out_lock_path);
+        auto db_lock{db::get_lockfile_path(db_path)};
+        if (fs::exists(db_lock)) {
+            fs::remove(db_lock);
         }
     } else {
         std::cout << "\nDatabase initialized" << std::endl;

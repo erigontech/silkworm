@@ -43,7 +43,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, uint6
     uint64_t block_num{start_block};
 
     try {
-
+         // TODO (Andrea) Remove migrations check and verify db version
         if (write_receipts && (!db::migration_happened(txn, "receipts_cbor_encode") ||
                                !db::migration_happened(txn, "receipts_store_logs_separately"))) {
             SILKWORM_LOG(LogLevel::Error) << "Legacy stored receipts are not supported\n";

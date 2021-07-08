@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
                   << "Try --help for help" << std::endl;
         return -1;
     } else {
-        fs::path db_file = fs::path(db_path / fs::path("mdbx.dat"));
+        auto db_file{db::get_datafile_path(db_path)};
         if (!fs::exists(db_file) || !fs::file_size(db_file)) {
             std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
                       << "Try --help for help" << std::endl;

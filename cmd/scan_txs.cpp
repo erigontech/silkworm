@@ -27,8 +27,8 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and scans txs for errored txs"};
     using namespace silkworm;
 
-    std::string db_path{db::default_path()};
-    app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
+    std::string chaindata{db::default_path()};
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
     uint64_t from{1};
@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
     }
 
     int retvar{0};
-    db::EnvConfig db_config{db_path};
+    db::EnvConfig db_config{chaindata};
     auto env{db::open_env(db_config)};
     auto txn{env.start_read()};
     auto chain_config{db::read_chain_config(txn)};

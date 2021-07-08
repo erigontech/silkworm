@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
     fs::path db_path{out};
     auto db_file{db::get_datafile_path(db_path)};
     if (fs::exists(fs::path(db_file))) {
-        std::cerr << "\nError : A data file " << db::kDb_data_file_name << " already exists in target folder" << std::endl;
+        std::cerr << "\nError : A data file " << db::kDbDataFileName << " already exists in target folder" << std::endl;
         return -1;
     }
 

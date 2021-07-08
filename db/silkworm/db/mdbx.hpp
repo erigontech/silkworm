@@ -30,8 +30,8 @@
 
 namespace silkworm::db {
 
-constexpr char* kDb_data_file_name{"mdbx.dat"};
-constexpr char* kDb_lock_file_name{"mdbx.lck"};
+constexpr std::string_view kDb_data_file_name{"mdbx.dat"};
+constexpr std::string_view kDb_lock_file_name{"mdbx.lck"};
 
 struct EnvConfig {
     std::string path{};

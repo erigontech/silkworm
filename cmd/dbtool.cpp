@@ -513,12 +513,12 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
         bool src_nosubdir{(src_flags & MDBX_NOSUBDIR) == MDBX_NOSUBDIR};
 
         fs::path src_path{db_opts.datadir};
-        if (!src_nosubdir) src_path /= fs::path{MDBX_DATANAME};
+        if (!src_nosubdir) src_path /= fs::path{db::kDbDataFileName};
 
         // Ensure target working directory has enough free space
         // at least the size of origin db
         auto tgt_path = fs::path{app_opts.workdir};
-        if (!src_nosubdir) tgt_path /= fs::path{MDBX_DATANAME};
+        if (!src_nosubdir) tgt_path /= fs::path{db::kDbDataFileName};
         auto target_space = fs::space(tgt_path.parent_path());
         if (target_space.free <= src_filesize) {
             throw std::runtime_error("Insufficient disk space on working directory");
@@ -542,7 +542,7 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
                 // Create a backup copy before replacing ?
                 if (!app_opts.nobak) {
                     std::cout << " Creating backup copy of origin database ..." << std::endl;
-                    std::string src_file_back{MDBX_DATANAME};
+                    std::string src_file_back{db::kDbDataFileName};
                     src_file_back.append(".bak");
                     fs::path src_path_bak{src_path.parent_path() / fs::path{src_file_back}};
                     if (fs::exists(src_path_bak)) fs::remove(src_path_bak);
@@ -744,6 +744,8 @@ int main(int argc, char* argv[]) {
 
     auto& app_scan = *app_main.add_subcommand("scan", "Scans tables for real sizes");
 
+    app_main.require_subcommand(1);  // One of the following subcommands is required
+
     // Provides detail of all free pages
     auto& app_freelist = *app_main.add_subcommand("freelist", "List free pages");
     app_freelist.add_flag("--detail", freelist_opts.details, "Gives detail for each FREE_DBI record");
@@ -783,9 +785,9 @@ int main(int argc, char* argv[]) {
     // Cli args sanification for compact
     if (app_compact) {
         compact_opts.dir = fs::path(compact_opts.workdir);
-        compact_opts.file = (compact_opts.dir / fs::path(MDBX_DATANAME));
+        compact_opts.file = (compact_opts.dir / fs::path(db::kDbDataFileName));
         if (fs::exists(compact_opts.file)) {
-            std::cout << " An " MDBX_DATANAME " file already present in workdir" << std::endl;
+            std::cout << " An " << db::kDbDataFileName << " file already present in workdir" << std::endl;
             return -1;
         }
     }
@@ -793,16 +795,17 @@ int main(int argc, char* argv[]) {
     // Cli args sanification for copy
     if (app_copy) {
         copy_opts.dir = fs::path(copy_opts.targetdir);
-        copy_opts.file = (copy_opts.dir / fs::path(MDBX_DATANAME));
+        copy_opts.file = (copy_opts.dir / fs::path(db::kDbDataFileName));
         if (fs::exists(copy_opts.file)) {
             copy_opts.filesize = fs::file_size(copy_opts.file);
             if (copy_opts.create) {
-                std::cout << MDBX_DATANAME " file already present in target directory but you have set --create"
-                          << std::endl;
+                std::cout << db::kDbDataFileName
+                          << " file already present in target directory but you have set --create" << std::endl;
                 return -1;
             }
         } else if (!copy_opts.create) {
-            std::cout << " mdbx.dat not found in target directory. You may want to specify --create" << std::endl;
+            std::cout << db::kDbDataFileName << " not found in target directory. You may want to specify --create"
+                      << std::endl;
             return -1;
         }
 
@@ -827,8 +830,8 @@ int main(int argc, char* argv[]) {
         return do_clear(db_opts, clear_opts);
     } else if (app_compact) {
         return do_compact(db_opts, compact_opts);
-        //} else if (app_copy) {
-        //    return do_copy(db_opts, copy_opts);
+    } else if (app_copy) {
+        return do_copy(db_opts, copy_opts);
     } else {
         std::cerr << "No command specified" << std::endl;
     }

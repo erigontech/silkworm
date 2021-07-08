@@ -30,6 +30,9 @@
 
 namespace silkworm::db {
 
+constexpr std::string_view kDbDataFileName{"mdbx.dat"};
+constexpr std::string_view kDbLockFileName{"mdbx.lck"};
+
 struct EnvConfig {
     std::string path{};
     uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_ACCEDE};  // Default flags
@@ -49,6 +52,14 @@ struct MapConfig {
 ::mdbx::env_managed open_env(const EnvConfig& config);
 ::mdbx::map_handle open_map(::mdbx::txn& tx, const MapConfig& config);
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
+
+static inline std::filesystem::path get_datafile_path(std::filesystem::path& base_path) noexcept {
+    return std::filesystem::path(base_path / std::filesystem::path(kDbDataFileName));
+}
+
+static inline std::filesystem::path get_lockfile_path(std::filesystem::path& base_path) noexcept {
+    return std::filesystem::path(base_path / std::filesystem::path(kDbLockFileName));
+}
 
 }  // namespace silkworm::db
 

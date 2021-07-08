@@ -47,7 +47,7 @@ std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
 
 struct app_options_t {
     std::string datadir{};                                          // Provided database path
-    uint32_t max_workers{std::thread::hardware_concurrency() - 1};  // Max number of threads
+    uint32_t max_workers{std::thread::hardware_concurrency() - 1};  // Max number of threads (1 thread is reserved for main)
     size_t batch_size{1'000'000};                                   // Number of work packages to serve a worker
     uint32_t block_from{1u};                                        // Initial block number to start from
     uint32_t block_to{UINT32_MAX};                                  // Final block number to process

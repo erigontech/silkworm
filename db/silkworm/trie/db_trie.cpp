@@ -22,6 +22,7 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/common/rlp_err.hpp>
 
 namespace silkworm::trie {
 
@@ -125,10 +126,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                 break;
             }
             const auto [account, err]{decode_account_from_storage(db::from_slice(a.value))};
-            // TODO (Andrea) Throw exceptions not enums
-            if (err != rlp::DecodingResult::kOk) {
-                throw err;
-            }
+            rlp::err_handler(err);
 
             evmc::bytes32 storage_root{kEmptyRoot};
 

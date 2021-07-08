@@ -37,6 +37,8 @@
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/block.hpp>
 
+#include "../db/silkworm/common/magic_enum.hpp"
+
 // See https://ethereum-tests.readthedocs.io
 
 using namespace silkworm;
@@ -283,7 +285,7 @@ static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
 
 static void check_rlp_err(rlp::DecodingResult err) {
     if (err != rlp::DecodingResult::kOk) {
-        throw err;
+        throw std::runtime_error(std::string(magic_enum::enum_name<rlp::DecodingResult>(err)));
     }
 }
 

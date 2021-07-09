@@ -26,6 +26,45 @@
 
 namespace silkworm::db {
 
+std::optional<DBSchemaVersion> get_schema_version(mdbx::txn& txn) noexcept {
+    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
+    auto key{to_slice(byte_view_of_c_str(kDbSchemaVersionKey))};
+    if (!src.seek(key)) {
+        return std::nullopt;
+    }
+
+    auto data{src.current()};
+    assert(data.value.length() == 12);
+    auto Major{boost::endian::load_big_u32(data.value.byte_ptr())};
+    data.value.remove_prefix(sizeof(uint32_t));
+    auto Minor{boost::endian::load_big_u32(data.value.byte_ptr())};
+    data.value.remove_prefix(sizeof(uint32_t));
+    auto Patch{boost::endian::load_big_u32(data.value.byte_ptr())};
+    return DBSchemaVersion{Major, Minor, Patch};
+}
+
+void set_schema_version(mdbx::txn& txn, DBSchemaVersion& schema_version) {
+    auto old_schema_version{get_schema_version(txn)};
+    if (old_schema_version.has_value()) {
+        if (schema_version == old_schema_version.value()) {
+            // Simply return. No changes
+            return;
+        }
+
+        if (schema_version < old_schema_version.value()) {
+            throw std::runtime_error("Cannot downgrade schema version");
+        }
+    }
+    Bytes value(12, '\0');
+    boost::endian::store_big_u32(&value[0], schema_version.Major);
+    boost::endian::store_big_u32(&value[4], schema_version.Minor);
+    boost::endian::store_big_u32(&value[8], schema_version.Patch);
+    auto k{to_slice(byte_view_of_c_str(kDbSchemaVersionKey))};
+    auto v{to_slice(value)};
+    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
+    src.upsert(k, v);
+}
+
 std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     auto src{db::open_cursor(txn, table::kHeaders)};
     auto key{block_key(block_number, hash)};

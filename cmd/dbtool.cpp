@@ -27,6 +27,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/magic_enum.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
@@ -500,6 +501,34 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
     return retvar;
 }
 
+int do_schema(db_options_t& db_opts) {
+    int retvar{0};
+    try {
+        db::EnvConfig config{db_opts.datadir};
+        config.set_readonly(true);
+        auto env{silkworm::db::open_env(config)};
+        auto txn{env.start_read()};
+
+        auto schema_version{db::get_schema_version(txn)};
+        if (!schema_version.has_value()) {
+            std::cout << "\n"
+                      << "Either not an Erigon db or no schema version found"
+                      << "\n"
+                      << std::endl;
+        } else {
+            std::cout << "\n"
+                      << "Erigon schema version " << schema_version->Major << "." << schema_version->Minor << "."
+                      << schema_version->Patch << "\n"
+                      << std::endl;
+        }
+    } catch (std::exception& ex) {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    return retvar;
+}
+
 int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
     int retvar{0};
 
@@ -777,6 +806,9 @@ int main(int argc, char* argv[]) {
     app_copy.add_option("--xtables", copy_opts.xtables, "Don't copy tables matching this list of names", true);
     app_copy.add_option("--commit", copy_opts.commitsize_str, "Commit every this size bytes", true);
 
+    // Schema
+    auto& app_schema = *app_main.add_subcommand("schema", "Reports the schema version of Erigon DB");
+
     // Stages tool
     // List stages keys and their heights
     auto& app_stages = *app_main.add_subcommand("stages", "List stages and their actual heights");
@@ -833,6 +865,8 @@ int main(int argc, char* argv[]) {
         return do_compact(db_opts, compact_opts);
     } else if (app_copy) {
         return do_copy(db_opts, copy_opts);
+    } else if (app_schema) {
+        return do_schema(db_opts);
     } else {
         std::cerr << "No command specified" << std::endl;
     }

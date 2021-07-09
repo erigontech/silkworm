@@ -20,7 +20,7 @@ namespace silkworm::db::table {
 
 void create_all(mdbx::txn& txn) {
     for (const auto& config : kTables) {
-        (void)txn.create_map(config.name, config.key_mode, config.value_mode);
+        (void)txn.create_map(config.name, config.key_mode, config.value_mode);  // Will throw if tx is RO
     }
 }
 

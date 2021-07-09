@@ -81,6 +81,38 @@ static BlockBody sample_block_body() {
 
 namespace db {
 
+    TEST_CASE("Schema Version") { TemporaryDirectory tmp_dir;
+
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.set_readonly(false);
+        db_config.set_in_mem(true);
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
+
+        auto version{db::get_schema_version(txn)};
+        CHECK(version.has_value() == false);
+
+        version = DBSchemaVersion{3, 0, 0};
+        CHECK_NOTHROW(db::set_schema_version(txn, version.value()));
+        version = db::get_schema_version(txn);
+        CHECK(version.has_value() == true);
+
+
+        CHECK_NOTHROW(txn.commit());
+        txn = env.start_write();
+
+        auto version2{db::get_schema_version(txn)};
+        CHECK(version.value() == version2.value());
+
+        version2 = DBSchemaVersion{2, 0, 0};
+        CHECK_THROWS(db::set_schema_version(txn, version2.value()));
+
+        version2 = DBSchemaVersion{3, 1, 0};
+        CHECK_NOTHROW(db::set_schema_version(txn, version2.value()));
+
+    }
+
     TEST_CASE("read_stages") {
         TemporaryDirectory tmp_dir;
 

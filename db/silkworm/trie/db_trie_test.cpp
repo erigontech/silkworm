@@ -95,7 +95,7 @@ TEST_CASE("Account and storage trie") {
     const TemporaryDirectory tmp_dir2;
 
     // Initialize temporary Database
-    db::EnvConfig db_config{tmp_dir1.path()};
+    db::EnvConfig db_config{tmp_dir1.path(), /*create*/ true};
     db_config.set_readonly(false);
     db_config.set_in_mem(true);
     auto env{db::open_env(db_config)};
@@ -223,7 +223,7 @@ TEST_CASE("Account trie around extension node") {
     const TemporaryDirectory tmp_dir2;
 
     // Initialize temporary Database
-    db::EnvConfig db_config{tmp_dir1.path()};
+    db::EnvConfig db_config{tmp_dir1.path(), /*create*/ true};
     db_config.set_readonly(false);
     db_config.set_in_mem(true);
     auto env{db::open_env(db_config)};

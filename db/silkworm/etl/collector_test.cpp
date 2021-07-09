@@ -54,7 +54,7 @@ void run_collector_test(LoadFunc load_func) {
     srand(time(NULL));
 
     // Initialize temporary Database
-    db::EnvConfig db_config{db_tmp_dir.path()};
+    db::EnvConfig db_config{db_tmp_dir.path(), /*create*/ true};
     db_config.set_readonly(false);
     db_config.set_in_mem(true);
 

@@ -84,7 +84,7 @@ namespace db {
     TEST_CASE("read_stages") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -121,7 +121,7 @@ namespace db {
     TEST_CASE("read_header") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -218,7 +218,7 @@ namespace db {
     TEST_CASE("read_storage") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         db_config.set_readonly(false);
         db_config.set_in_mem(true);
         auto env{db::open_env(db_config)};
@@ -260,7 +260,7 @@ namespace db {
     TEST_CASE("read_account_changes") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -324,7 +324,7 @@ namespace db {
     TEST_CASE("read_storage_changes") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -437,7 +437,7 @@ namespace db {
     TEST_CASE("mainnet_genesis") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};

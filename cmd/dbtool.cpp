@@ -387,7 +387,7 @@ int do_stages(db_options_t& db_opts) {
         config.set_readonly(true);
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
-        auto stages_map{txn.open_map("SyncStage")};  // TODO change to table config
+        auto stages_map{db::open_map(txn, db::table::kSyncStageProgress)};
         auto stages_crs{txn.open_cursor(stages_map)};
 
         std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
@@ -506,6 +506,7 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
     try {
         db::EnvConfig config{db_opts.datadir};
         config.set_readonly(true);
+
         auto env{silkworm::db::open_env(config)};
 
         size_t src_filesize{env.get_info().mi_geo.current};

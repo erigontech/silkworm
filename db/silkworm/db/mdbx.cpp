@@ -43,9 +43,24 @@ void EnvConfig::set_in_mem(bool value) {
 }
 
 ::mdbx::env_managed open_env(const EnvConfig& config) {
+    namespace fs = std::filesystem;
 
     if (config.path.empty()) {
         throw std::invalid_argument("Invalid argument : config.path");
+    }
+
+    // Check datafile exists if create is not set
+    fs::path db_path{config.path};
+    fs::path db_file{db::get_datafile_path(db_path)};
+    if (!config.create) {
+        if (!fs::exists(db_path) || !fs::is_directory(db_path) || fs::is_empty(db_path) || !fs::exists(db_file) ||
+            !fs::is_regular_file(db_file) || !fs::file_size(db_file)) {
+            throw std::runtime_error("Unable to locate " + db_file.string() + ". Must exist has been set");
+        }
+    } else {
+        if (!fs::create_directories(db_path)) {
+            throw std::runtime_error("Unable to create directory " + db_path.string() + ". Check your permissions");
+        }
     }
 
     ::mdbx::env_managed::create_parameters cp{};  // Default create parameters
@@ -68,4 +83,4 @@ void EnvConfig::set_in_mem(bool value) {
     return tx.open_cursor(open_map(tx, config));
 }
 
-}  // namespace silkworm::mdbx
+}  // namespace silkworm::db

@@ -125,23 +125,24 @@ void check(mdbx::txn& txn, Operation operation) {
 int main(int argc, char* argv[]) {
     CLI::App app{"Check Hashed state"};
 
-    std::string db_path{db::default_path()};
-    app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
+    std::string chaindata{db::default_path()};
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
     SILKWORM_LOG(LogLevel::Info) << "Checking HashState" << std::endl;
 
     // Check data file exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path(MDBX_DATANAME)};
-    if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
+    fs::path db_path{chaindata};
+    auto db_file{db::get_datafile_path(db_path)};
+    if (!fs::exists(db_file) || !fs::file_size(db_file)) {
+        std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
+                  << "Try --help for help" << std::endl;
         return -1;
     }
-    fs::path datadir(db_path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+    fs::path etl_path(db_path.parent_path() / fs::path("etl-temp"));
 
     try {
-        db::EnvConfig db_config{db_path};
+        db::EnvConfig db_config{db_path.string()};
         db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};

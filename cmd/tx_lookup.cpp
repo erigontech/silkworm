@@ -33,22 +33,24 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Generates Tc Hashes => BlockNumber mapping in database"};
 
-    std::string db_path{db::default_path()};
+    std::string chaindata{db::default_path()};
     bool full{false};
-    app.add_option("--chaindata", db_path, "Path to a database populated by Erigon", true)
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
     app.add_flag("--full", full, "Start making lookups from block 0");
     CLI11_PARSE(app, argc, argv);
 
     // Check data file exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path(MDBX_DATANAME)};
-    if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid Erigon data file in " << db_path << std::endl;
+    fs::path db_path{chaindata};
+    auto db_file{db::get_datafile_path(db_path)};
+    if (!fs::exists(db_file) || !fs::file_size(db_file)) {
+        std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
+                  << "Try --help for help" << std::endl;
         return -1;
     }
 
-    db::EnvConfig db_config{db_path};
+    db::EnvConfig db_config{db_path.string()};
     db_config.set_readonly(false);
 
     try {

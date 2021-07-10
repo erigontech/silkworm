@@ -45,10 +45,8 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    db::EnvConfig db_config{chaindata};
-    db_config.set_readonly(false);
-
     try {
+        db::EnvConfig db_config{chaindata};
         stagedsync::check_stagedsync_error(stagedsync::unwind_execution(db_config, unwind_to));
     } catch (const std::exception &ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

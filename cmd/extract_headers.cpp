@@ -54,7 +54,7 @@ class Db {
   public:
     Db(std::string db_path) {
         db::EnvConfig db_config{db_path};
-        db_config.set_readonly(true);
+        db_config.readonly = true;
         env = db::open_env(db_config);
         txn = env.start_read();
     }

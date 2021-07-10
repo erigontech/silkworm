@@ -55,8 +55,7 @@ void run_collector_test(LoadFunc load_func) {
 
     // Initialize temporary Database
     db::EnvConfig db_config{db_tmp_dir.path(), /*create*/ true};
-    db_config.set_readonly(false);
-    db_config.set_in_mem(true);
+    db_config.inmemory = true;
 
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};

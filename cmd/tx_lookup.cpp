@@ -44,8 +44,6 @@ int main(int argc, char* argv[]) {
     try {
 
         db::EnvConfig db_config{chaindata};
-        db_config.set_readonly(false);
-
         if (full) {
             auto env{db::open_env(db_config)};
             auto txn{env.start_write()};

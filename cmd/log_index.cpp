@@ -55,7 +55,6 @@ int main(int argc, char *argv[]) {
     etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
 
     db::EnvConfig db_config{chaindata};
-    db_config.set_readonly(false);
 
     try {
 

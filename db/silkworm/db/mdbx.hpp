@@ -35,13 +35,13 @@ constexpr std::string_view kDbLockFileName{"mdbx.lck"};
 
 struct EnvConfig {
     std::string path{};
-    bool create{false};  // Whether or not db file must be created
-    uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_ACCEDE};  // Default flags
-    uint32_t max_tables{128};                                                   // Default max number of named tables
-    uint32_t max_readers{100};                                                  // Default max number of readers
-    void set_readonly(bool value);   // Sets/unsets readonly flag
-    void set_exclusive(bool value);  // Sets/unsets exclusive flag
-    void set_in_mem(bool value);     // Sets/unsets in memory
+    bool create{false};         // Whether or not db file must be created
+    bool readonly{false};       // Whether or not db should be opened in RO mode
+    bool exclusive{false};      // Whether or not this process has exclusive access
+    bool inmemory{false};       // Whether or not this db is in memory
+    bool shared{false};         // Whether or not this process opens a db already opened by another process
+    uint32_t max_tables{128};   // Default max number of named tables
+    uint32_t max_readers{100};  // Default max number of readers
 };
 
 struct MapConfig {

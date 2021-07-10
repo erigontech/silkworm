@@ -46,8 +46,6 @@ int main(int argc, char *argv[]) {
 
 
     db::EnvConfig db_config{chaindata};
-    db_config.set_readonly(false);
-
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
 

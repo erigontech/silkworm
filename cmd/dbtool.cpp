@@ -172,7 +172,6 @@ int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(false);
         auto env{db::open_env(config)};
         auto txn{env.start_write()};
 
@@ -310,7 +309,7 @@ int do_scan(db_options_t& db_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -385,7 +384,7 @@ int do_stages(db_options_t& db_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
         auto stages_map{db::open_map(txn, db::table::kSyncStageProgress)};
@@ -419,7 +418,7 @@ int do_tables(db_options_t& db_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -475,7 +474,7 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -505,7 +504,7 @@ int do_schema(db_options_t& db_opts) {
     int retvar{0};
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -533,7 +532,7 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
 
         auto env{silkworm::db::open_env(config)};
 
@@ -600,13 +599,12 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
     try {
         // Source db
         db::EnvConfig src_config{db_opts.datadir};
-        src_config.set_readonly(true);
+        src_config.readonly = true;
         auto src_env{silkworm::db::open_env(src_config)};
         auto src_txn{src_env.start_read()};
 
         // Target db
         db::EnvConfig tgt_config{app_opts.targetdir};
-        tgt_config.set_readonly(false);
         auto tgt_env{silkworm::db::open_env(tgt_config)};
         auto tgt_txn{tgt_env.start_write()};
 

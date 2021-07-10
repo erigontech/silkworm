@@ -85,8 +85,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.set_readonly(false);
-        db_config.set_in_mem(true);
+        db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -116,7 +115,6 @@ namespace db {
 
         TemporaryDirectory tmp_dir;
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -152,7 +150,6 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -189,7 +186,6 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -286,8 +282,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.set_readonly(false);
-        db_config.set_in_mem(true);
+        db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -328,7 +323,6 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -392,7 +386,6 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -505,7 +498,6 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);

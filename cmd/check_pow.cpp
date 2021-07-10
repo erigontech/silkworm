@@ -80,7 +80,6 @@ int main(int argc, char* argv[]) {
     try {
         // Set database parameters
         db::EnvConfig db_config{options.datadir};
-        db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};
 

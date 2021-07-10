@@ -856,7 +856,6 @@ int main(int argc, char* argv[]) {
 
         // Set database parameters
         db::EnvConfig db_config{options.datadir};
-        db_config.set_readonly(false);
 
         // Compute etl temporary path
         fs::path etl_path(fs::path(options.datadir) / fs::path("etl-temp"));

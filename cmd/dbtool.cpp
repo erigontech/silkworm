@@ -517,8 +517,7 @@ int do_schema(db_options_t& db_opts) {
                       << std::endl;
         } else {
             std::cout << "\n"
-                      << "Erigon schema version " << schema_version->Major << "." << schema_version->Minor << "."
-                      << schema_version->Patch << "\n"
+                      << "Erigon schema version " << schema_version->to_string() << "\n"
                       << std::endl;
         }
     } catch (std::exception& ex) {

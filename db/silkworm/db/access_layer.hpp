@@ -37,37 +37,20 @@ class MissingSenders : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
-struct DBSchemaVersion {
-    uint32_t Major;
-    uint32_t Minor;
-    uint32_t Patch;
-    bool operator==(const DBSchemaVersion& other) const {
-        return Major == other.Major && Minor == other.Minor && Patch == other.Patch;
-    }
-    bool operator!=(const DBSchemaVersion& other) const { return !(this->operator==(other)); }
-    bool operator<(const DBSchemaVersion& other) const {
-        if (Major < other.Major) {
-            return true;
-        } else if (Major == other.Major) {
-            if (Minor < other.Minor) {
-                return true;
-            } else if (Minor == other.Minor) {
-                if (Patch < other.Patch) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-};
+// Pulls database schema version
+std::optional<version_t> get_schema_version(mdbx::txn& txn) noexcept;
 
-constexpr const char* kDbSchemaVersionKey{"dbVersion"};
+// Sets database schema version (throws on downgrade)
+void set_schema_version(mdbx::txn& txn, version_t& schema_version);
 
-std::optional<DBSchemaVersion> get_schema_version(mdbx::txn& txn) noexcept;
-void set_schema_version(mdbx::txn& txn, DBSchemaVersion& schema_version);
+// Gets storage mode from db
+storage_mode_t get_storage_mode(mdbx::txn& txn) noexcept;
 
-// See Erigon StorageModeReceipts
-constexpr const char* kStorageModeReceipts{"smReceipts"};
+// Writes storage mode to db
+void set_storage_mode(mdbx::txn& txn, storage_mode_t& val);
+
+// Parses storage mode from a string
+storage_mode_t parse_storage_mode(std::string& mode);
 
 // See Erigon GetStorageModeFromDB
 bool read_storage_mode_receipts(mdbx::txn& txn);

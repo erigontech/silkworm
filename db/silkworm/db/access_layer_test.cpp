@@ -127,7 +127,7 @@ namespace db {
 
         std::string mode_s1{};
         auto actual_mode1{db::parse_storage_mode(mode_s1)};
-        CHECK(actual_mode.to_string() == mode_s1);
+        CHECK(actual_mode1.to_string() == mode_s1);
 
         std::string mode_s2{"default"};
         auto actual_mode2{db::parse_storage_mode(mode_s2)};

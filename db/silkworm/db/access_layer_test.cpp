@@ -85,6 +85,7 @@ namespace db {
         // Empty dir
         std::string empty{};
         db::EnvConfig db_config{empty};
+        db_config.max_size = 64 * kMebi;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::invalid_argument);
 
         // Conflicting flags
@@ -103,32 +104,29 @@ namespace db {
         ::mdbx::env_managed env2;
         REQUIRE_THROWS(env2 = db::open_env(db_config));
 
-        // Close env and destroy tmp_dir
         env.close();
-        tmp_dir.~TemporaryDirectory();
 
         // Conflicting flags
-        tmp_dir = TemporaryDirectory();
-        db_config = db::EnvConfig{tmp_dir.path()};
+        TemporaryDirectory tmp_dir2;
+        db_config = db::EnvConfig{tmp_dir2.path()};
+        db_config.max_size = 64 * kMebi;
         db_config.create = true;
         db_config.readonly = true;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
 
         // Must open
         db_config.readonly = false;
-        db_config.inmemory = true;
         db_config.exclusive = true;
         REQUIRE_NOTHROW(env = db::open_env(db_config));
 
         env.close();
-        tmp_dir.~TemporaryDirectory();
     }
 
     TEST_CASE("Schema Version") {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.inmemory = true;
+        db_config.max_size = 64 * kMebi;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -157,6 +155,7 @@ namespace db {
     TEST_CASE("Storage Mode") {
         TemporaryDirectory tmp_dir;
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.max_size = 64 * kMebi;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -199,6 +198,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.max_size = 64 * kMebi;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -235,6 +235,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.max_size = 64 * kMebi;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -331,7 +332,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.inmemory = true;
+        db_config.max_size = 64 * kMebi;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -372,6 +373,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.max_size = 64 * kMebi;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -435,6 +437,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.max_size = 64 * kMebi;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -547,6 +550,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.max_size = 64 * kMebi;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);

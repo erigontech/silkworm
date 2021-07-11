@@ -38,10 +38,14 @@ struct EnvConfig {
     bool create{false};         // Whether or not db file must be created
     bool readonly{false};       // Whether or not db should be opened in RO mode
     bool exclusive{false};      // Whether or not this process has exclusive access
-    bool inmemory{false};       // Whether or not this db is in memory
     bool shared{false};         // Whether or not this process opens a db already opened by another process
     uint32_t max_tables{128};   // Default max number of named tables
     uint32_t max_readers{100};  // Default max number of readers
+
+    // Default maximum size of the DB.
+    // For better performance set it to a small value when you only need a small DB (e.g. in tests).
+    // This is especially important with AddressSanitizer.
+    size_t max_size{2 * kTebi};
 };
 
 struct MapConfig {

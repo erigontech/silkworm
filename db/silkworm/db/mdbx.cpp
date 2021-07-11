@@ -18,7 +18,6 @@
 
 namespace silkworm::db {
 
-
 ::mdbx::env_managed open_env(const EnvConfig& config) {
     namespace fs = std::filesystem;
 
@@ -61,9 +60,6 @@ namespace silkworm::db {
     if (config.readonly) {
         flags |= MDBX_RDONLY;
     }
-    if (config.inmemory) {
-        flags |= MDBX_NOMETASYNC;
-    }
     if (config.exclusive) {
         flags |= MDBX_EXCLUSIVE;
     }
@@ -73,14 +69,14 @@ namespace silkworm::db {
 
     ::mdbx::env_managed::create_parameters cp{};  // Default create parameters
     if (!(config.shared)) {
-        size_t max_map_size{config.inmemory ? 64 * kMebi : 2 * kTebi};
-        size_t growth_size{config.inmemory ? 2 * kMebi : 2 * kGibi};
+        const size_t max_map_size{config.max_size};
+        const size_t growth_size{config.max_size / 1024};
         cp.geometry.make_dynamic(0, max_map_size);
         cp.geometry.growth_step = growth_size;
         cp.geometry.pagesize = 4 * kKibi;
     }
 
-    ::mdbx::env::operate_parameters op{};         // Operational parameters
+    ::mdbx::env::operate_parameters op{};  // Operational parameters
     op.mode = op.mode_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.options = op.options_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.durability = op.durability_from_flags(static_cast<MDBX_env_flags_t>(flags));

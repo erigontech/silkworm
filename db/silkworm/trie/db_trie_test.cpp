@@ -96,7 +96,7 @@ TEST_CASE("Account and storage trie") {
 
     // Initialize temporary Database
     db::EnvConfig db_config{tmp_dir1.path(), /*create*/ true};
-    db_config.inmemory = true;
+    db_config.max_size = 64 * kMebi;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
     db::table::create_all(txn);
@@ -223,7 +223,7 @@ TEST_CASE("Account trie around extension node") {
 
     // Initialize temporary Database
     db::EnvConfig db_config{tmp_dir1.path(), /*create*/ true};
-    db_config.inmemory = true;
+    db_config.max_size = 64 * kMebi;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
     db::table::create_all(txn);

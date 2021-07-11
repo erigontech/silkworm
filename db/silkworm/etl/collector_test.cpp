@@ -55,7 +55,7 @@ void run_collector_test(LoadFunc load_func) {
 
     // Initialize temporary Database
     db::EnvConfig db_config{db_tmp_dir.path(), /*create*/ true};
-    db_config.inmemory = true;
+    db_config.max_size = 64 * kMebi;
 
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};

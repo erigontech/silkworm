@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Unwind Hashstate Stage"};
 
     std::string db_path{db::default_path()};
-    uint32_t unwind_to{0};
+    uint32_t unwind_to{UINT32_MAX};
     app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
     app.add_option("--unwind-to", unwind_to, "Specify unwinding point", false)->required()->check(CLI::Range(0u, UINT32_MAX));

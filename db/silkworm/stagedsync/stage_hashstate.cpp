@@ -261,7 +261,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     auto target_table{db::open_cursor(txn, target_config)};
 
     Bytes start_key(8, '\0');
-    boost::endian::store_big_u64(&start_key[0], unwind_to+1);
+    boost::endian::store_big_u64(&start_key[0], unwind_to + 1);
 
     auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
 
@@ -323,18 +323,33 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     }
 }
 
-StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) { 
+StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) {
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
 
-    SILKWORM_LOG(LogLevel::Info) << "Starting HashState Unwinding" << std::endl;
+    auto stage_height{db::stages::get_stage_progress(txn, db::stages::kHashStateKey)};
+    if (unwind_to >= stage_height) {
+        SILKWORM_LOG(LogLevel::Info) << "Stage progress is " << stage_height << " which is <= than requested unwind_to"
+                                     << std::endl;
+        return StageResult::kStageInvalidRange;
+    }
 
+    SILKWORM_LOG(LogLevel::Info) << "Unwinding HashState from " << stage_height << " to " << unwind_to << " ..."
+                                 << std::endl;
+
+    SILKWORM_LOG(LogLevel::Info) << "[1/3] Hashed accounts ... " << std::endl;
     hashstate_unwind(txn, unwind_to, HashstateOperation::HashAccount);
+
+    SILKWORM_LOG(LogLevel::Info) << "[2/3] Hashed storage ... " << std::endl;
     hashstate_unwind(txn, unwind_to, HashstateOperation::HashStorage);
+
+    SILKWORM_LOG(LogLevel::Info) << "[3/3] Code ... " << std::endl;
     hashstate_unwind(txn, unwind_to, HashstateOperation::Code);
-    std::cout << db::stages::get_stage_progress(txn, db::stages::kHashStateKey) << std::endl;
+
     // Update progress height with last processed block
     db::stages::set_stage_progress(txn, db::stages::kHashStateKey, unwind_to);
+
+    SILKWORM_LOG(LogLevel::Info) << "Committing ... " << std::endl;
     txn.commit();
 
     SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;

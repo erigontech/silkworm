@@ -35,24 +35,21 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Unwind Hashstate Stage"};
 
     std::string db_path{db::default_path()};
-    int64_t unwind_to{-1};
+    uint32_t unwind_to{0};
     app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
-    app.add_option("--unwind-to", unwind_to, "Specify unwinding point", false);
+    app.add_option("--unwind-to", unwind_to, "Specify unwinding point", false)->required()->check(CLI::Range(0u, UINT32_MAX));
+
     CLI11_PARSE(app, argc, argv);
-    if (unwind_to < 0) {
-        SILKWORM_LOG(LogLevel::Error) << "Specify valid unwinding point with --unwind-to" << std::endl;
-        return -1;
-    }
+
     // Check data file exists in provided directory
     fs::path db_file{fs::path(db_path) / fs::path(MDBX_DATANAME)};
-
     if (!fs::exists(db_file)) {
         SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
         return -1;
     }
-    fs::path datadir(db_path);
 
+    fs::path datadir(db_path);
     db::EnvConfig db_config{db_path};
     db_config.set_readonly(false);
 

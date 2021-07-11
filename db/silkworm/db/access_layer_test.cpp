@@ -112,7 +112,6 @@ namespace db {
     }
 
     TEST_CASE("Storage Mode") {
-
         TemporaryDirectory tmp_dir;
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         auto env{db::open_env(db_config)};
@@ -144,6 +143,11 @@ namespace db {
         txn = env.start_read();
         auto actual_mode5{db::get_storage_mode(txn)};
         CHECK(actual_mode4.to_string() == actual_mode5.to_string());
+
+        std::string mode_s6{"hrtce"};
+        auto actual_mode6{db::parse_storage_mode(mode_s6)};
+        CHECK(actual_mode4.to_string() == mode_s6);
+
     }
 
     TEST_CASE("read_stages") {
@@ -591,5 +595,6 @@ namespace db {
         // auto result{ethash::hash(*epoch_context, sealh256, nonce)};
         // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
     }
+
 }  // namespace db
 }  // namespace silkworm

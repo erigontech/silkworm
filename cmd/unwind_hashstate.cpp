@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
 
     fs::path datadir(db_path);
     db::EnvConfig db_config{db_path};
-    db_config.set_readonly(false);
+    db_config.readonly = false;
 
     try {
         stagedsync::check_stagedsync_error(stagedsync::unwind_hashstate(db_config, unwind_to));

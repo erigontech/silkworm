@@ -420,7 +420,7 @@ int do_stage_set(db_options_t& db_opts, stage_set_options_t set_opts) {
     int retvar{0};
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(false);
+        config.readonly = false;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_write()};
 

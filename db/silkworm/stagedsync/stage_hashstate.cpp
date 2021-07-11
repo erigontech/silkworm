@@ -270,7 +270,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
         if (operation == HashstateOperation::HashAccount) {
             // Hashing
             auto hash{keccak256(db_key)};
-            auto data{target_table.find(db::to_slice(hash.bytes))};
+            auto data{target_table.find(db::to_slice(hash.bytes), /*throw_notfound*/ false)};
             if (!data) {
                 throw std::runtime_error("Could not find hash: " + to_hex(hash.bytes));
             }
@@ -286,7 +286,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             std::memcpy(&key[kHashLength + db::kIncarnationLength],
                         keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
 
-            auto data{target_table.find(db::to_slice(key))};
+            auto data{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
             if (!data) {
                 throw std::runtime_error("Could not find storage data at: " + to_hex(key));
             }
@@ -311,7 +311,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             Bytes key(kHashLength + db::kIncarnationLength, '\0');
             std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
             boost::endian::store_big_u64(&key[kHashLength], incarnation);
-            auto data{target_table.find(db::to_slice(key))};
+            auto data{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
             if (!data) {
                 throw std::runtime_error("Could not find code at: " + to_hex(key));
             }

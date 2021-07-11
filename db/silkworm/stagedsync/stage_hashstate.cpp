@@ -263,7 +263,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     boost::endian::store_big_u64(&start_key[0], unwind_to + 1);
 
     auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
-
+    std::cout << bool(changeset_data) << std::endl;
     while (changeset_data) {
         Bytes mdb_key_as_bytes{db::from_slice(changeset_data.key)};
         Bytes mdb_value_as_bytes{db::from_slice(changeset_data.value)};

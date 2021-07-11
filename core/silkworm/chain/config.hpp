@@ -114,6 +114,7 @@ constexpr ChainConfig kMainnetConfig{
         7'280'000,   // Petersburg
         9'069'000,   // Istanbul
         12'244'000,  // Berlin
+        12'965'000,  // London
     },
 
     9'200'000,  // muir_glacier_block

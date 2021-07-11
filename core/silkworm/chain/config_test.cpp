@@ -39,6 +39,8 @@ TEST_CASE("Config revision") {
     CHECK(kMainnetConfig.revision_block(EVMC_PETERSBURG) == 7'280'000);
     CHECK(kMainnetConfig.revision_block(EVMC_ISTANBUL) == 9'069'000);
     CHECK(kMainnetConfig.revision_block(EVMC_BERLIN) == 12'244'000);
+    CHECK(kMainnetConfig.revision_block(EVMC_LONDON) == 12'965'000);
+    CHECK(kMainnetConfig.revision_block(EVMC_SHANGHAI) == std::nullopt);
 
     CHECK(kMainnetConfig.revision(0) == EVMC_FRONTIER);
     CHECK(kMainnetConfig.revision(1) == EVMC_FRONTIER);
@@ -77,7 +79,10 @@ TEST_CASE("Config revision") {
     CHECK(kMainnetConfig.revision(12'243'999) == EVMC_ISTANBUL);
     CHECK(kMainnetConfig.revision(12'244'000) == EVMC_BERLIN);
     CHECK(kMainnetConfig.revision(12'244'001) == EVMC_BERLIN);
-    CHECK(kMainnetConfig.revision(100'000'000) == EVMC_BERLIN);
+    CHECK(kMainnetConfig.revision(12'964'999) == EVMC_BERLIN);
+    CHECK(kMainnetConfig.revision(12'965'000) == EVMC_LONDON);
+    CHECK(kMainnetConfig.revision(12'965'001) == EVMC_LONDON);
+    CHECK(kMainnetConfig.revision(13'000'000) == EVMC_LONDON);
 }
 
 TEST_CASE("JSON serialization") {
@@ -102,6 +107,7 @@ TEST_CASE("JSON serialization") {
             "istanbulBlock":9069000,
             "muirGlacierBlock":9200000,
             "berlinBlock":12244000,
+            "londonBlock":12965000,
             "ethash":{}
         })");
 

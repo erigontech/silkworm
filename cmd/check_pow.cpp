@@ -75,28 +75,11 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-    // If database path is provided (and has passed CLI::ExistingDirectory validator
-    // check whether it is empty
-    fs::path db_path(options.datadir);
-    if (!fs::exists(db_path) || !fs::is_directory(db_path) || fs::is_empty(db_path)) {
-        std::cerr << "Invalid or empty --chaindata \"" << options.datadir << "\"" << std::endl
-                  << "Try --help for help" << std::endl;
-        return -1;
-    } else {
-        auto db_file{db::get_datafile_path(db_path)};
-        if (!fs::exists(db_file) || !fs::file_size(db_file)) {
-            std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
-                      << "Try --help for help" << std::endl;
-            return -1;
-        }
-    }
-
     // Invoke proper action
     int rc{0};
     try {
         // Set database parameters
         db::EnvConfig db_config{options.datadir};
-        db_config.set_readonly(false);
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};
 

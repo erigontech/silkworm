@@ -45,13 +45,6 @@ int main(int argc, char* argv[]) {
     }
 
     int retvar{0};
-    db::EnvConfig db_config{chaindata};
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_read()};
-    auto chain_config{db::read_chain_config(txn)};
-    if (!chain_config) {
-        throw std::runtime_error("Unable to retrieve chain config");
-    }
 
     // Note: If Erigon is actively syncing its database (syncing), it is important not to create
     // long-running datbase reads transactions even though that may make your processing faster.
@@ -63,6 +56,15 @@ int main(int argc, char* argv[]) {
     ExecutionStatePool state_pool;
 
     try {
+
+        db::EnvConfig db_config{chaindata};
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_read()};
+        auto chain_config{db::read_chain_config(txn)};
+        if (!chain_config) {
+            throw std::runtime_error("Unable to retrieve chain config");
+        }
+
         // counters
         uint64_t nTxs{0}, nErrors{0};
 
@@ -114,12 +116,6 @@ int main(int argc, char* argv[]) {
         std::cout << ex.what() << std::endl;
         retvar = -1;
     }
-
-    // Note: See notes above. Even though this will go out of scope and automatically clean up, you may
-    // uncomment this if you're using the long-lived database transaction noted above.
-    // txn.reset();
-    txn.abort();
-    env.close();
 
     return retvar;
 }

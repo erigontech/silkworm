@@ -23,8 +23,8 @@
 #include <boost/endian/conversion.hpp>
 #include <intx/int128.hpp>
 
+#include <silkworm/common/rlp_err.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::db {
@@ -138,24 +138,18 @@ namespace detail {
         return to;
     }
 
-    static void check_rlp_err(rlp::DecodingResult err) {
-        if (err != rlp::DecodingResult::kOk) {
-            throw err;
-        }
-    }
-
     BlockBodyForStorage decode_stored_block_body(ByteView& from) {
         auto [header, err]{rlp::decode_header(from)};
-        check_rlp_err(err);
+        rlp::err_handler(err);
         if (!header.list) {
-            throw rlp::DecodingResult::kUnexpectedString;
+            rlp::err_handler(rlp::DecodingResult::kUnexpectedString);
         }
         uint64_t leftover{from.length() - header.payload_length};
 
         BlockBodyForStorage to;
-        check_rlp_err(rlp::decode(from, to.base_txn_id));
-        check_rlp_err(rlp::decode(from, to.txn_count));
-        check_rlp_err(rlp::decode_vector(from, to.ommers));
+        rlp::err_handler(rlp::decode(from, to.base_txn_id));
+        rlp::err_handler(rlp::decode(from, to.txn_count));
+        rlp::err_handler(rlp::decode_vector(from, to.ommers));
 
         if (from.length() != leftover) {
             throw rlp::DecodingResult::kListLengthMismatch;

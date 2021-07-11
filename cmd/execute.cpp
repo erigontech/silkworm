@@ -46,27 +46,17 @@ int main(int argc, char* argv[]) {
 
     namespace fs = std::filesystem;
 
-    // Check data file exists in provided directory
-    std::filesystem::path db_path{chaindata};
-    auto db_file{db::get_datafile_path(db_path)};
-    if (!fs::exists(db_file) || !fs::file_size(db_file)) {
-        std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
-                  << "Try --help for help" << std::endl;
-        return -1;
-    }
-
     auto batch_size{parse_size(batch_size_str)};
     if (!batch_size.has_value()) {
         SILKWORM_LOG(LogLevel::Error) << "Invalid --batch value provided : " << batch_size_str << std::endl;
         return -3;
     }
 
-    SILKWORM_LOG(LogLevel::Info) << "Starting block execution. DB: " << db_file << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Starting block execution. DB: " << chaindata << std::endl;
 
     try {
 
-        db::EnvConfig db_config{db_path.string()};
-        db_config.set_readonly(false);
+        db::EnvConfig db_config{chaindata};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 

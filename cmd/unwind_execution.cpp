@@ -34,9 +34,9 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Unwind Execution Stage"};
 
-    std::string db_path{db::default_path()};
+    std::string chaindata{db::default_path()};
     int64_t unwind_to{-1};
-    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
     app.add_option("--unwind-to", unwind_to, "Specify unwinding point", false);
     CLI11_PARSE(app, argc, argv);
@@ -44,18 +44,9 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG(LogLevel::Error) << "Specify valid unwinding point with --unwind-to" << std::endl;
         return -1;
     }
-    // Check data file exists in provided directory
-    fs::path db_file{fs::path(db_path) / fs::path(MDBX_DATANAME)};
-    if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
-        return -1;
-    }
-    fs::path datadir(db_path);
-
-    db::EnvConfig db_config{db_path};
-    db_config.set_readonly(false);
 
     try {
+        db::EnvConfig db_config{chaindata};
         stagedsync::check_stagedsync_error(stagedsync::unwind_execution(db_config, unwind_to));
     } catch (const std::exception &ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

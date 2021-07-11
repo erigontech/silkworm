@@ -33,6 +33,108 @@ see its package dbutils.
 
 namespace silkworm::db {
 
+/* Ancillary entities */
+
+// Used to compare versions of entities (eg. DbSchema)
+struct version_t {
+    uint32_t Major;
+    uint32_t Minor;
+    uint32_t Patch;
+    std::string to_string() {
+        std::string ret{std::to_string(Major)};
+        ret.append("." + std::to_string(Minor));
+        ret.append("." + std::to_string(Patch));
+        return ret;
+    }
+    bool operator==(const version_t& other) const {
+        return Major == other.Major && Minor == other.Minor && Patch == other.Patch;
+    }
+    bool operator!=(const version_t& other) const { return !(this->operator==(other)); }
+    bool operator<(const version_t& other) const {
+        if (Major < other.Major) {
+            return true;
+        } else if (Major == other.Major) {
+            if (Minor < other.Minor) {
+                return true;
+            } else if (Minor == other.Minor) {
+                if (Patch < other.Patch) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    bool operator>(const version_t& other) const {
+        if (Major > other.Major) {
+            return true;
+        } else if (Major == other.Major) {
+            if (Minor > other.Minor) {
+                return true;
+            } else if (Minor == other.Minor) {
+                if (Patch > other.Patch) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    bool operator<=(const version_t& other) const { return this->operator==(other) || this->operator<(other); }
+    bool operator>=(const version_t& other) const { return this->operator==(other) || this->operator>(other); }
+};
+
+// Holds the storage mode set
+struct storage_mode_t {
+    bool Initialized;  // Whether or not db storage has been initialized
+    bool History;      // Whether or not History index is stored
+    bool Receipts;     // Whether or not Receipts are stored
+    bool TxIndex;      // Whether or not TxIndex is stored
+    bool CallTraces;   // Whether or not Call Traces are stored
+    bool TEVM;         // TODO - not yet supported in Silkworm
+    std::string to_string() const {
+        if (!Initialized) {
+            return "default";
+        }
+        std::string ret{};
+        if (History) {
+            ret.push_back('h');
+        }
+        if (Receipts) {
+            ret.push_back('r');
+        }
+        if (TxIndex) {
+            ret.push_back('t');
+        }
+        if (CallTraces) {
+            ret.push_back('c');
+        }
+        if (TEVM) {
+            ret.push_back('e');
+        }
+        return ret;
+    }
+
+    bool operator==(const storage_mode_t& other) const {
+        return History == other.History && Receipts == other.Receipts && TxIndex == other.TxIndex &&
+               CallTraces == other.CallTraces && TEVM == other.TEVM;
+    }
+};
+
+constexpr storage_mode_t kDefaultStorageMode{
+    /*Initialized*/ true, /*History*/ true,    /*Receipts*/ true,
+    /*TxIndex*/ true,     /*CallTraces*/ true, /*TEVM*/ false};
+
+/* Common Keys */
+
+// Key for DbInfo bucket storing db schema version
+constexpr const char* kDbSchemaVersionKey{"dbVersion"};
+
+// Keys for storage mode info from DbInfo bucket
+constexpr const char* kStorageModeHistoryKey{"smHistory"};
+constexpr const char* kStorageModeReceiptsKey{"smReceipts"};
+constexpr const char* kStorageModeTxIndexKey{"smTxIndex"};
+constexpr const char* kStorageModeCallTracesKey{"smCallTraces"};
+constexpr const char* kStorageModeTEVMKey{"smTEVM"};
+
 constexpr size_t kIncarnationLength{8};
 static_assert(kIncarnationLength == sizeof(uint64_t));
 

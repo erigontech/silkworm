@@ -15,12 +15,12 @@
 */
 
 #include <filesystem>
-#include <iostream>
 
 #include <CLI/CLI.hpp>
 #include <absl/container/flat_hash_set.h>
 #include <absl/time/time.h>
 
+#include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
@@ -64,88 +64,95 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     absl::Time t1{absl::Now()};
-    std::cout << t1 << " Checking change sets in " << chaindata << "\n";
 
-    db::EnvConfig db_config{chaindata};
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_read()};
-    auto chain_config{db::read_chain_config(txn)};
-    if (!chain_config) {
-        throw std::runtime_error("Unable to retrieve chain config");
-    }
-
-    AnalysisCache analysis_cache;
-    ExecutionStatePool state_pool;
+    SILKWORM_LOG(LogLevel::Info) << " Checking change sets in " << chaindata << "\n";
 
     uint64_t block_num{from};
-    for (; block_num < to; ++block_num) {
 
-        txn.renew_reading();
-        std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
-        if (!bh) {
-            break;
+    try {
+        db::EnvConfig db_config{chaindata};
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_read()};
+        auto chain_config{db::read_chain_config(txn)};
+        if (!chain_config) {
+            throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        db::Buffer buffer{txn, block_num};
+        AnalysisCache analysis_cache;
+        ExecutionStatePool state_pool;
 
-        ValidationResult err{execute_block(bh->block, buffer, *chain_config, &analysis_cache, &state_pool).second};
-        if (err != ValidationResult::kOk) {
-            std::cerr << "Failed to execute block " << block_num << "\n";
-            continue;
-        }
+        for (; block_num < to; ++block_num) {
+            txn.renew_reading();
+            std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
+            if (!bh) {
+                break;
+            }
 
-        db::AccountChanges db_account_changes{db::read_account_changes(txn, block_num)};
-        const db::AccountChanges& calculated_account_changes{buffer.account_changes().at(block_num)};
-        if (calculated_account_changes != db_account_changes) {
-            bool mismatch{false};
+            db::Buffer buffer{txn, block_num};
 
-            for (const auto& e : db_account_changes) {
-                if (!calculated_account_changes.contains(e.first)) {
-                    if (!kPhantomAccounts.contains(e.first)) {
-                        std::cerr << to_hex(e.first) << " is missing\n";
+            ValidationResult err{execute_block(bh->block, buffer, *chain_config, &analysis_cache, &state_pool).second};
+            if (err != ValidationResult::kOk) {
+                SILKWORM_LOG(LogLevel::Error) << "Failed to execute block " << block_num << std::endl;
+                continue;
+            }
+
+            db::AccountChanges db_account_changes{db::read_account_changes(txn, block_num)};
+            const db::AccountChanges& calculated_account_changes{buffer.account_changes().at(block_num)};
+            if (calculated_account_changes != db_account_changes) {
+                bool mismatch{false};
+
+                for (const auto& e : db_account_changes) {
+                    if (!calculated_account_changes.contains(e.first)) {
+                        if (!kPhantomAccounts.contains(e.first)) {
+                            SILKWORM_LOG(LogLevel::Error) << to_hex(e.first) << " is missing" << std::endl;
+                            mismatch = true;
+                        }
+                    } else if (Bytes val{calculated_account_changes.at(e.first)}; val != e.second) {
+                        SILKWORM_LOG(LogLevel::Error) << "Value mismatch for " << to_hex(e.first) << ":\n"
+                                                      << to_hex(val) << "\n"
+                                                      << "vs DB\n"
+                                                      << to_hex(e.second) << std::endl;
                         mismatch = true;
                     }
-                } else if (Bytes val{calculated_account_changes.at(e.first)}; val != e.second) {
-                    std::cerr << "Value mismatch for " << to_hex(e.first) << ":\n";
-                    std::cerr << to_hex(val) << "\n";
-                    std::cerr << "vs DB\n";
-                    std::cerr << to_hex(e.second) << "\n";
-                    mismatch = true;
+                }
+                for (const auto& e : calculated_account_changes) {
+                    if (!db_account_changes.contains(e.first)) {
+                        SILKWORM_LOG(LogLevel::Error) << to_hex(e.first) << " is not in DB" << std::endl;
+                        mismatch = true;
+                    }
+                }
+
+                if (mismatch) {
+                    SILKWORM_LOG(LogLevel::Error)
+                        << "Account change mismatch for block " << block_num << " 😲" << std::endl;
                 }
             }
-            for (const auto& e : calculated_account_changes) {
-                if (!db_account_changes.contains(e.first)) {
-                    std::cerr << to_hex(e.first) << " is not in DB\n";
-                    mismatch = true;
-                }
+
+            db::StorageChanges db_storage_changes{db::read_storage_changes(txn, block_num)};
+            db::StorageChanges calculated_storage_changes{};
+            if (buffer.storage_changes().contains(block_num)) {
+                calculated_storage_changes = buffer.storage_changes().at(block_num);
+            }
+            if (calculated_storage_changes != db_storage_changes) {
+                SILKWORM_LOG(LogLevel::Error) << "Storage change mismatch for block " << block_num << " 😲" << std::endl;
+                print_storage_changes(calculated_storage_changes);
+                std::cout << "vs\n";
+                print_storage_changes(db_storage_changes);
             }
 
-            if (mismatch) {
-                std::cerr << "Account change mismatch for block " << block_num << " 😲\n";
+            if (block_num % 1000 == 0) {
+                absl::Time t2{absl::Now()};
+                SILKWORM_LOG(LogLevel::Info) << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s"
+                          << std::endl;
+                t1 = t2;
             }
         }
-
-        db::StorageChanges db_storage_changes{db::read_storage_changes(txn, block_num)};
-        db::StorageChanges calculated_storage_changes{};
-        if (buffer.storage_changes().contains(block_num)) {
-            calculated_storage_changes = buffer.storage_changes().at(block_num);
-        }
-        if (calculated_storage_changes != db_storage_changes) {
-            std::cerr << "Storage change mismatch for block " << block_num << " 😲\n";
-            print_storage_changes(calculated_storage_changes);
-            std::cout << "vs\n";
-            print_storage_changes(db_storage_changes);
-        }
-
-        if (block_num % 1000 == 0) {
-            absl::Time t2{absl::Now()};
-            std::cout << t2 << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s"
-                      << std::endl;
-            t1 = t2;
-        }
+    } catch (const std::exception& ex) {
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        return -5;
     }
 
     t1 = absl::Now();
-    std::cout << t1 << " Blocks [" << from << "; " << block_num << ") have been checked\n";
+    SILKWORM_LOG(LogLevel::Info) << " Blocks [" << from << "; " << block_num << ") have been checked\n";
     return 0;
 }

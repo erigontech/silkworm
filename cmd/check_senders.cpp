@@ -847,22 +847,6 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-    // If database path is provided (and has passed CLI::ExistingDirectory validator
-    // check whether it is empty
-    fs::path db_path(options.datadir);
-    if (!fs::exists(db_path) || !fs::is_directory(db_path) || fs::is_empty(db_path)) {
-        std::cerr << "Invalid or empty --chaindata \"" << options.datadir << "\"" << std::endl
-                  << "Try --help for help" << std::endl;
-        return -1;
-    } else {
-        auto db_file{db::get_datafile_path(db_path)};
-        if (!fs::exists(db_file) || !fs::file_size(db_file)) {
-            std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
-                      << "Try --help for help" << std::endl;
-            return -1;
-        }
-    }
-
     // Invoke proper action
     int rc{0};
     try {
@@ -872,10 +856,9 @@ int main(int argc, char* argv[]) {
 
         // Set database parameters
         db::EnvConfig db_config{options.datadir};
-        db_config.set_readonly(false);
 
         // Compute etl temporary path
-        fs::path etl_path(db_path.parent_path() / fs::path("etl-temp"));
+        fs::path etl_path(fs::path(options.datadir) / fs::path("etl-temp"));
         fs::create_directories(etl_path);
         etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 

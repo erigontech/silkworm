@@ -26,6 +26,126 @@
 
 namespace silkworm::db {
 
+std::optional<version_t> get_schema_version(mdbx::txn& txn) noexcept {
+    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
+    auto key{to_slice(byte_view_of_c_str(kDbSchemaVersionKey))};
+    if (!src.seek(key)) {
+        return std::nullopt;
+    }
+
+    auto data{src.current()};
+    assert(data.value.length() == 12);
+    auto Major{boost::endian::load_big_u32(data.value.byte_ptr())};
+    data.value.remove_prefix(sizeof(uint32_t));
+    auto Minor{boost::endian::load_big_u32(data.value.byte_ptr())};
+    data.value.remove_prefix(sizeof(uint32_t));
+    auto Patch{boost::endian::load_big_u32(data.value.byte_ptr())};
+    return version_t{Major, Minor, Patch};
+}
+
+void set_schema_version(mdbx::txn& txn, version_t& schema_version) {
+    auto old_schema_version{get_schema_version(txn)};
+    if (old_schema_version.has_value()) {
+        if (schema_version == old_schema_version.value()) {
+            // Simply return. No changes
+            return;
+        }
+        if (schema_version < old_schema_version.value()) {
+            throw std::runtime_error("Cannot downgrade schema version");
+        }
+    }
+    Bytes value(12, '\0');
+    boost::endian::store_big_u32(&value[0], schema_version.Major);
+    boost::endian::store_big_u32(&value[4], schema_version.Minor);
+    boost::endian::store_big_u32(&value[8], schema_version.Patch);
+    auto k{to_slice(byte_view_of_c_str(kDbSchemaVersionKey))};
+    auto v{to_slice(value)};
+    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
+    src.upsert(k, v);
+}
+
+storage_mode_t get_storage_mode(mdbx::txn& txn) noexcept {
+    storage_mode_t ret{true};
+    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
+
+    // History
+    auto key{db::to_slice(byte_view_of_c_str(kStorageModeHistoryKey))};
+    auto data{src.find(key, /*throw_notfound*/ false)};
+    ret.History = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
+
+    // Receipts
+    key = db::to_slice(byte_view_of_c_str(kStorageModeReceiptsKey));
+    data = src.find(key, /*throw_notfound*/ false);
+    ret.Receipts = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
+
+    // TxIndex
+    key = db::to_slice(byte_view_of_c_str(kStorageModeTxIndexKey));
+    data = src.find(key, /*throw_notfound*/ false);
+    ret.TxIndex = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
+
+    // Call Traces
+    key = db::to_slice(byte_view_of_c_str(kStorageModeCallTracesKey));
+    data = src.find(key, /*throw_notfound*/ false);
+    ret.CallTraces = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
+
+    // TEVM
+    key = db::to_slice(byte_view_of_c_str(kStorageModeTEVMKey));
+    data = src.find(key, /*throw_notfound*/ false);
+    ret.TEVM = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
+
+    return ret;
+}
+
+void set_storage_mode(mdbx::txn& txn, storage_mode_t& val) {
+    auto target{db::open_cursor(txn, table::kDatabaseInfo)};
+    Bytes v_on(1, '\1');
+    Bytes v_off(2, '\0');
+
+    auto k{byte_view_of_c_str(kStorageModeHistoryKey)};
+    target.upsert(to_slice(k), to_slice(val.History ? v_on : v_off));
+
+    k = byte_view_of_c_str(kStorageModeReceiptsKey);
+    target.upsert(to_slice(k), to_slice(val.Receipts ? v_on : v_off));
+
+    k = byte_view_of_c_str(kStorageModeTxIndexKey);
+    target.upsert(to_slice(k), to_slice(val.TxIndex ? v_on : v_off));
+
+    k = byte_view_of_c_str(kStorageModeCallTracesKey);
+    target.upsert(to_slice(k), to_slice(val.CallTraces ? v_on : v_off));
+
+    k = byte_view_of_c_str(kStorageModeTEVMKey);
+    target.upsert(to_slice(k), to_slice(val.TEVM ? v_on : v_off));
+}
+
+storage_mode_t parse_storage_mode(std::string& mode) {
+    if (mode == "default") {
+        return kDefaultStorageMode;
+    }
+    storage_mode_t ret{/*Initialized*/ true};
+    for (auto& c : mode) {
+        switch (c) {
+            case 'h':
+                ret.History = true;
+                break;
+            case 'r':
+                ret.Receipts = true;
+                break;
+            case 't':
+                ret.TxIndex = true;
+                break;
+            case 'c':
+                ret.CallTraces = true;
+                break;
+            case 'e':
+                ret.TEVM = true;
+                break;
+            default:
+                throw std::invalid_argument("Invalid mode");
+        }
+    }
+    return ret;
+}
+
 std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     auto src{db::open_cursor(txn, table::kHeaders)};
     auto key{block_key(block_number, hash)};
@@ -350,9 +470,10 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
     return changes;
 }
 
+// TODO (Andrea) - Remove in favor of get_storage_mode
 bool read_storage_mode_receipts(mdbx::txn& txn) {
     auto src{db::open_cursor(txn, table::kDatabaseInfo)};
-    auto key{to_slice(byte_view_of_c_str(kStorageModeReceipts))};
+    auto key{to_slice(byte_view_of_c_str(kStorageModeReceiptsKey))};
     auto data{src.find(key, /*throw_notfound=*/false)};
     return (data.done && data.value.length() == 1 && static_cast<uint8_t>(data.value.at(0)) == 1);
 }

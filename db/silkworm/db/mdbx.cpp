@@ -47,11 +47,15 @@ namespace silkworm::db {
     }
 
     uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_SYNC_DURABLE};  // Default flags
+
     if (config.exclusive && config.shared) {
         throw std::runtime_error("Exlusive conflicts with Shared");
     }
     if (config.create && config.shared) {
         throw std::runtime_error("Create conflicts with Shared");
+    }
+    if (config.create && config.readonly) {
+        throw std::runtime_error("Create conflicts with Readonly");
     }
 
     if (config.readonly) {

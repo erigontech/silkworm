@@ -81,6 +81,49 @@ static BlockBody sample_block_body() {
 
 namespace db {
 
+    TEST_CASE("Db Opening") {
+        // Empty dir
+        std::string empty{};
+        db::EnvConfig db_config{empty};
+        REQUIRE_THROWS_AS(db::open_env(db_config), std::invalid_argument);
+
+        // Conflicting flags
+        TemporaryDirectory tmp_dir;
+        db_config.path = tmp_dir.path();
+        db_config.create = true;
+        db_config.shared = true;
+        REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
+
+        // Must open
+        db_config.shared = false;
+        ::mdbx::env_managed env;
+        REQUIRE_NOTHROW(env = db::open_env(db_config));
+
+        // Create in same path not allowed
+        ::mdbx::env_managed env2;
+        REQUIRE_THROWS(env2 = db::open_env(db_config));
+
+        // Close env and destroy tmp_dir
+        env.close();
+        tmp_dir.~TemporaryDirectory();
+
+        // Conflicting flags
+        tmp_dir = TemporaryDirectory();
+        db_config = db::EnvConfig{tmp_dir.path()};
+        db_config.create = true;
+        db_config.readonly = true;
+        REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
+
+        // Must open
+        db_config.readonly = false;
+        db_config.inmemory = true;
+        db_config.exclusive = true;
+        REQUIRE_NOTHROW(env = db::open_env(db_config));
+
+        env.close();
+        tmp_dir.~TemporaryDirectory();
+    }
+
     TEST_CASE("Schema Version") {
         TemporaryDirectory tmp_dir;
 
@@ -146,8 +189,7 @@ namespace db {
 
         std::string mode_s6{"hrtce"};
         auto actual_mode6{db::parse_storage_mode(mode_s6)};
-        CHECK(actual_mode4.to_string() == mode_s6);
-
+        CHECK(actual_mode6.to_string() == mode_s6);
     }
 
     TEST_CASE("read_stages") {

@@ -15,7 +15,6 @@
 */
 
 #include <filesystem>
-#include <iostream>
 
 #include <boost/endian/conversion.hpp>
 
@@ -324,9 +323,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
 }
 
 StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) {
-
     try {
-
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 
@@ -359,10 +356,8 @@ StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) {
         return StageResult::kStageSuccess;
 
     } catch (const std::exception& ex) {
-
         SILKWORM_LOG(LogLevel::Error) << "Unexpected error : " << ex.what() << std::endl;
         return StageResult::kStageAborted;
     }
-
 }
 }  // namespace silkworm::stagedsync

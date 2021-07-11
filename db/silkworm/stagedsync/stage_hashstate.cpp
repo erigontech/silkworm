@@ -263,7 +263,6 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     boost::endian::store_big_u64(&start_key[0], unwind_to + 1);
 
     auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
-    std::cout << bool(changeset_data) << std::endl;
     while (changeset_data) {
         Bytes mdb_key_as_bytes{db::from_slice(changeset_data.key)};
         Bytes mdb_value_as_bytes{db::from_slice(changeset_data.value)};
@@ -273,7 +272,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             auto hash{keccak256(db_key)};
             auto data{target_table.find(db::to_slice(hash.bytes))};
             if (!data) {
-                throw new std::runtime_error("Could not find hash: " + to_hex(hash.bytes));
+                throw std::runtime_error("Could not find hash: " + to_hex(hash.bytes));
             }
             target_table.erase();
             changeset_data = changeset_table.to_next(false);
@@ -289,7 +288,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
 
             auto data{target_table.find(db::to_slice(key))};
             if (!data) {
-                throw new std::runtime_error("Could not find storage data at: " + to_hex(key));
+                throw std::runtime_error("Could not find storage data at: " + to_hex(key));
             }
             target_table.erase();
             changeset_data = changeset_table.to_next(false);
@@ -314,7 +313,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             boost::endian::store_big_u64(&key[kHashLength], incarnation);
             auto data{target_table.find(db::to_slice(key))};
             if (!data) {
-                throw new std::runtime_error("Could not find code at: " + to_hex(key));
+                throw std::runtime_error("Could not find code at: " + to_hex(key));
             }
             target_table.erase();
             changeset_data = changeset_table.to_next(false);

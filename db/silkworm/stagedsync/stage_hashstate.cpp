@@ -329,9 +329,9 @@ StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) {
 
     auto stage_height{db::stages::get_stage_progress(txn, db::stages::kHashStateKey)};
     if (unwind_to >= stage_height) {
-        SILKWORM_LOG(LogLevel::Info) << "Stage progress is " << stage_height << " which is <= than requested unwind_to"
+        SILKWORM_LOG(LogLevel::Error) << "Stage progress is " << stage_height << " which is <= than requested unwind_to"
                                      << std::endl;
-        return StageResult::kStageInvalidRange;
+        return StageResult::kStageAborted;
     }
 
     SILKWORM_LOG(LogLevel::Info) << "Unwinding HashState from " << stage_height << " to " << unwind_to << " ..."

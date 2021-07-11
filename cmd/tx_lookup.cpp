@@ -41,20 +41,9 @@ int main(int argc, char* argv[]) {
     app.add_flag("--full", full, "Start making lookups from block 0");
     CLI11_PARSE(app, argc, argv);
 
-    // Check data file exists in provided directory
-    fs::path db_path{chaindata};
-    auto db_file{db::get_datafile_path(db_path)};
-    if (!fs::exists(db_file) || !fs::file_size(db_file)) {
-        std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
-                  << "Try --help for help" << std::endl;
-        return -1;
-    }
-
-    db::EnvConfig db_config{db_path.string()};
-    db_config.set_readonly(false);
-
     try {
 
+        db::EnvConfig db_config{chaindata};
         if (full) {
             auto env{db::open_env(db_config)};
             auto txn{env.start_write()};

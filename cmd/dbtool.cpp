@@ -27,6 +27,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/magic_enum.hpp>
+#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
@@ -177,7 +178,6 @@ int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(false);
         auto env{db::open_env(config)};
         auto txn{env.start_write()};
 
@@ -315,7 +315,7 @@ int do_scan(db_options_t& db_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -390,10 +390,10 @@ int do_stages(db_options_t& db_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
-        auto stages_map{txn.open_map("SyncStage")};  // TODO change to table config
+        auto stages_map{db::open_map(txn, db::table::kSyncStageProgress)};
         auto stages_crs{txn.open_cursor(stages_map)};
 
         std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
@@ -446,7 +446,7 @@ int do_tables(db_options_t& db_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -502,7 +502,7 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -528,12 +528,40 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
     return retvar;
 }
 
+int do_schema(db_options_t& db_opts) {
+    int retvar{0};
+    try {
+        db::EnvConfig config{db_opts.datadir};
+        config.readonly = true;
+        auto env{silkworm::db::open_env(config)};
+        auto txn{env.start_read()};
+
+        auto schema_version{db::get_schema_version(txn)};
+        if (!schema_version.has_value()) {
+            std::cout << "\n"
+                      << "Either not an Erigon db or no schema version found"
+                      << "\n"
+                      << std::endl;
+        } else {
+            std::cout << "\n"
+                      << "Erigon schema version " << schema_version->to_string() << "\n"
+                      << std::endl;
+        }
+    } catch (std::exception& ex) {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    return retvar;
+}
+
 int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
     int retvar{0};
 
     try {
         db::EnvConfig config{db_opts.datadir};
-        config.set_readonly(true);
+        config.readonly = true;
+
         auto env{silkworm::db::open_env(config)};
 
         size_t src_filesize{env.get_info().mi_geo.current};
@@ -599,13 +627,12 @@ int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
     try {
         // Source db
         db::EnvConfig src_config{db_opts.datadir};
-        src_config.set_readonly(true);
+        src_config.readonly = true;
         auto src_env{silkworm::db::open_env(src_config)};
         auto src_txn{src_env.start_read()};
 
         // Target db
         db::EnvConfig tgt_config{app_opts.targetdir};
-        tgt_config.set_readonly(false);
         auto tgt_env{silkworm::db::open_env(tgt_config)};
         auto tgt_txn{tgt_env.start_write()};
 
@@ -805,6 +832,9 @@ int main(int argc, char* argv[]) {
     app_copy.add_option("--xtables", copy_opts.xtables, "Don't copy tables matching this list of names", true);
     app_copy.add_option("--commit", copy_opts.commitsize_str, "Commit every this size bytes", true);
 
+    // Schema
+    auto& app_schema = *app_main.add_subcommand("schema", "Reports the schema version of Erigon DB");
+
     // Stages tool
     // List stages keys and their heights
     auto& app_stages = *app_main.add_subcommand("stages", "List stages and their actual heights");
@@ -869,6 +899,8 @@ int main(int argc, char* argv[]) {
         return do_compact(db_opts, compact_opts);
     } else if (app_copy) {
         return do_copy(db_opts, copy_opts);
+    } else if (app_schema) {
+        return do_schema(db_opts);
     } else {
         std::cerr << "No command specified" << std::endl;
     }

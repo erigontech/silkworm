@@ -81,11 +81,124 @@ static BlockBody sample_block_body() {
 
 namespace db {
 
+    TEST_CASE("Db Opening") {
+        // Empty dir
+        std::string empty{};
+        db::EnvConfig db_config{empty};
+        REQUIRE_THROWS_AS(db::open_env(db_config), std::invalid_argument);
+
+        // Conflicting flags
+        TemporaryDirectory tmp_dir;
+        db_config.path = tmp_dir.path();
+        db_config.create = true;
+        db_config.shared = true;
+        REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
+
+        // Must open
+        db_config.shared = false;
+        ::mdbx::env_managed env;
+        REQUIRE_NOTHROW(env = db::open_env(db_config));
+
+        // Create in same path not allowed
+        ::mdbx::env_managed env2;
+        REQUIRE_THROWS(env2 = db::open_env(db_config));
+
+        // Close env and destroy tmp_dir
+        env.close();
+        tmp_dir.~TemporaryDirectory();
+
+        // Conflicting flags
+        tmp_dir = TemporaryDirectory();
+        db_config = db::EnvConfig{tmp_dir.path()};
+        db_config.create = true;
+        db_config.readonly = true;
+        REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
+
+        // Must open
+        db_config.readonly = false;
+        db_config.inmemory = true;
+        db_config.exclusive = true;
+        REQUIRE_NOTHROW(env = db::open_env(db_config));
+
+        env.close();
+        tmp_dir.~TemporaryDirectory();
+    }
+
+    TEST_CASE("Schema Version") {
+        TemporaryDirectory tmp_dir;
+
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
+
+        auto version{db::get_schema_version(txn)};
+        CHECK(version.has_value() == false);
+
+        version = version_t{3, 0, 0};
+        CHECK_NOTHROW(db::set_schema_version(txn, version.value()));
+        version = db::get_schema_version(txn);
+        CHECK(version.has_value() == true);
+
+        CHECK_NOTHROW(txn.commit());
+        txn = env.start_write();
+
+        auto version2{db::get_schema_version(txn)};
+        CHECK(version.value() == version2.value());
+
+        version2 = version_t{2, 0, 0};
+        CHECK_THROWS(db::set_schema_version(txn, version2.value()));
+
+        version2 = version_t{3, 1, 0};
+        CHECK_NOTHROW(db::set_schema_version(txn, version2.value()));
+    }
+
+    TEST_CASE("Storage Mode") {
+        TemporaryDirectory tmp_dir;
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
+
+        storage_mode_t default_mode{};
+        CHECK(default_mode.to_string() == "default");
+
+        storage_mode_t expected_mode{true, false, false, false, false, false};
+        auto actual_mode{db::get_storage_mode(txn)};
+        CHECK(expected_mode == actual_mode);
+
+        std::string mode_s1{};
+        auto actual_mode1{db::parse_storage_mode(mode_s1)};
+        CHECK(actual_mode1.to_string() == mode_s1);
+
+        std::string mode_s2{"default"};
+        auto actual_mode2{db::parse_storage_mode(mode_s2)};
+        CHECK(actual_mode2.to_string() == kDefaultStorageMode.to_string());
+
+        std::string mode_s3{"x"};
+        CHECK_THROWS(db::parse_storage_mode(mode_s3));
+
+        std::string mode_s4{"hrc"};
+        auto actual_mode4{db::parse_storage_mode(mode_s4)};
+        CHECK(actual_mode4.to_string() == mode_s4);
+
+        db::set_storage_mode(txn, actual_mode4);
+        CHECK_NOTHROW(txn.commit());
+
+        txn = env.start_read();
+        auto actual_mode5{db::get_storage_mode(txn)};
+        CHECK(actual_mode4.to_string() == actual_mode5.to_string());
+
+        std::string mode_s6{"hrtce"};
+        auto actual_mode6{db::parse_storage_mode(mode_s6)};
+        CHECK(actual_mode6.to_string() == mode_s6);
+    }
+
     TEST_CASE("read_stages") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
-        db_config.set_readonly(false);
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -121,8 +234,7 @@ namespace db {
     TEST_CASE("read_header") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
-        db_config.set_readonly(false);
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -218,9 +330,8 @@ namespace db {
     TEST_CASE("read_storage") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
-        db_config.set_readonly(false);
-        db_config.set_in_mem(true);
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -260,8 +371,7 @@ namespace db {
     TEST_CASE("read_account_changes") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
-        db_config.set_readonly(false);
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -324,8 +434,7 @@ namespace db {
     TEST_CASE("read_storage_changes") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
-        db_config.set_readonly(false);
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -437,8 +546,7 @@ namespace db {
     TEST_CASE("mainnet_genesis") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path()};
-        db_config.set_readonly(false);
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -532,5 +640,6 @@ namespace db {
         // auto result{ethash::hash(*epoch_context, sealh256, nonce)};
         // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
     }
+
 }  // namespace db
 }  // namespace silkworm

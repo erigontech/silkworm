@@ -154,8 +154,7 @@ int main(int argc, char* argv[]) {
     bool res{false};
     try {
         // Prime directories and DB
-        db::EnvConfig db_config{out};
-        db_config.set_readonly(false);
+        db::EnvConfig db_config{out, /*create*/ true};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         db::table::create_all(txn);

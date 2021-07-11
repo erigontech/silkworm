@@ -43,19 +43,10 @@ int main(int argc, char* argv[]) {
     app.add_flag("--reset", reset, "Reset HashState");
     CLI11_PARSE(app, argc, argv);
 
-    // Check data file exists in provided directory
-    fs::path db_path(chaindata);
-    auto db_file{db::get_datafile_path(db_path)};
-    if (!fs::exists(db_file) || !fs::file_size(db_file)) {
-        std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
-                  << "Try --help for help" << std::endl;
-        return -1;
-    }
 
-    fs::path etl_path(db_path.parent_path() / fs::path("etl-temp"));
+    fs::path etl_path(fs::path(chaindata) / fs::path("etl-temp"));
 
-    db::EnvConfig db_config{db_path.string()};
-    db_config.set_readonly(false);
+    db::EnvConfig db_config{chaindata};
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
 

@@ -41,7 +41,6 @@ int main(int argc, char* argv[]) {
 
     try {
         db::EnvConfig db_config{chaindata};
-        db_config.set_readonly(false);
         auto result_code{stagedsync::stage_blockhashes(db_config)};
         check_stagedsync_error(result_code);
     } catch (const std::exception& ex) {

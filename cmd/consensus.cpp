@@ -37,6 +37,8 @@
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/block.hpp>
 
+#include "../db/silkworm/common/magic_enum.hpp"
+
 // See https://ethereum-tests.readthedocs.io
 
 using namespace silkworm;
@@ -283,7 +285,7 @@ static const std::map<std::string, silkworm::ChainConfig> kDifficultyConfig{
 
 static void check_rlp_err(rlp::DecodingResult err) {
     if (err != rlp::DecodingResult::kOk) {
-        throw err;
+        throw std::runtime_error(std::string(magic_enum::enum_name<rlp::DecodingResult>(err)));
     }
 }
 
@@ -323,7 +325,7 @@ void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
     }
 }
 
-enum Status { kPassed, kFailed, kSkipped };
+enum class Status { kPassed, kFailed, kSkipped };
 
 Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
     bool invalid{json_block.contains("expectException")};
@@ -331,39 +333,39 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
     std::optional<Bytes> rlp{from_hex(json_block["rlp"].get<std::string>())};
     if (!rlp) {
         if (invalid) {
-            return kPassed;
+            return Status::kPassed;
         }
         std::cout << "Failure to read hex" << std::endl;
-        return kFailed;
+        return Status::kFailed;
     }
 
     Block block;
     ByteView view{*rlp};
     if (rlp::decode(view, block) != rlp::DecodingResult::kOk || !view.empty()) {
         if (invalid) {
-            return kPassed;
+            return Status::kPassed;
         }
         std::cout << "Failure to decode RLP" << std::endl;
-        return kFailed;
+        return Status::kFailed;
     }
 
     bool check_state_root{invalid && json_block["expectException"].get<std::string>() == "InvalidStateRoot"};
 
     if (ValidationResult err{blockchain.insert_block(block, check_state_root)}; err != ValidationResult::kOk) {
         if (invalid) {
-            return kPassed;
+            return Status::kPassed;
         }
         std::cout << "Validation error " << static_cast<int>(err) << std::endl;
-        return kFailed;
+        return Status::kFailed;
     }
 
     if (invalid) {
         std::cout << "Invalid block executed successfully\n";
         std::cout << "Expected: " << json_block["expectException"] << std::endl;
-        return kFailed;
+        return Status::kFailed;
     }
 
-    return kPassed;
+    return Status::kPassed;
 }
 
 bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
@@ -449,7 +451,7 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
         config.seal_engine = SealEngineType::kNoProof;
     } else {
         std::cout << seal_engine << " seal engine is not supported yet" << std::endl;
-        return kSkipped;
+        return Status::kSkipped;
     }
 
     init_pre_state(json_test["pre"], state);
@@ -460,7 +462,7 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
 
     for (const auto& json_block : json_test["blocks"]) {
         Status status{run_block(json_block, blockchain)};
-        if (status != kPassed) {
+        if (status != Status::kPassed) {
             return status;
         }
     }
@@ -470,16 +472,16 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
         std::string expected_hex{json_test["postStateHash"].get<std::string>()};
         if (state_root != to_bytes32(from_hex(expected_hex).value())) {
             std::cout << "postStateHash mismatch:\n" << to_hex(state_root) << " != " << expected_hex << std::endl;
-            return kFailed;
+            return Status::kFailed;
         } else {
-            return kPassed;
+            return Status::kPassed;
         }
     }
 
     if (post_check(state, json_test["postState"])) {
-        return kPassed;
+        return Status::kPassed;
     } else {
-        return kFailed;
+        return Status::kFailed;
     }
 }
 
@@ -489,13 +491,13 @@ static void print_test_status(std::string_view key, Status status) {
         std::cout << '.';
     }
     switch (status) {
-        case kPassed:
+        case Status::kPassed:
             std::cout << "\033[0;32m  Passed\033[0m" << std::endl;
             break;
-        case kFailed:
+        case Status::kFailed:
             std::cout << "\033[1;31m  Failed\033[0m" << std::endl;
             break;
-        case kSkipped:
+        case Status::kSkipped:
             std::cout << " Skipped" << std::endl;
             break;
     }
@@ -515,13 +517,13 @@ struct [[nodiscard]] RunResults {
 
     void add(Status status) {
         switch (status) {
-            case kPassed:
+            case Status::kPassed:
                 ++passed;
                 break;
-            case kFailed:
+            case Status::kFailed:
                 ++failed;
                 break;
-            case kSkipped:
+            case Status::kSkipped:
                 ++skipped;
                 break;
         }
@@ -543,7 +545,7 @@ RunResults run_test_file(const fs::path& file_path, Status (*runner)(const nlohm
         in >> json;
     } catch (nlohmann::detail::parse_error& e) {
         std::cerr << e.what() << "\n";
-        print_test_status(file_path.string(), kSkipped);
+        print_test_status(file_path.string(), Status::kSkipped);
         return kSkippedTest;
     }
 
@@ -552,7 +554,7 @@ RunResults run_test_file(const fs::path& file_path, Status (*runner)(const nlohm
     for (const auto& test : json.items()) {
         Status status{runner(test.value(), config)};
         res.add(status);
-        if (status != kPassed) {
+        if (status != Status::kPassed) {
             print_test_status(test.key(), status);
         }
     }
@@ -583,7 +585,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         if (!decoded) {
             if (valid) {
                 std::cout << "Failed to decode valid transaction" << std::endl;
-                return kFailed;
+                return Status::kFailed;
             } else {
                 continue;
             }
@@ -596,7 +598,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
             err != ValidationResult::kOk) {
             if (valid) {
                 std::cout << "Validation error " << static_cast<int>(err) << std::endl;
-                return kFailed;
+                return Status::kFailed;
             } else {
                 continue;
             }
@@ -606,13 +608,13 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 
         if (valid && !txn.from.has_value()) {
             std::cout << "Failed to recover sender" << std::endl;
-            return kFailed;
+            return Status::kFailed;
         }
 
         if (!valid && txn.from.has_value()) {
             std::cout << entry.key() << "\n"
                       << "Sender recovered for invalid transaction" << std::endl;
-            return kFailed;
+            return Status::kFailed;
         }
 
         if (!valid) {
@@ -623,11 +625,11 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         if (to_hex(*txn.from) != expected) {
             std::cout << "Sender mismatch for " << entry.key() << ":\n"
                       << to_hex(*txn.from) << " != " << expected << std::endl;
-            return kFailed;
+            return Status::kFailed;
         }
     }
 
-    return kPassed;
+    return Status::kPassed;
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
@@ -647,11 +649,11 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
     intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp, parent_difficulty,
                                                              parent_timestamp, parent_has_uncles, *config)};
     if (calculated_difficulty == current_difficulty) {
-        return kPassed;
+        return Status::kPassed;
     } else {
         std::cout << "Difficulty mismatch for block " << block_number << "\n"
                   << hex(calculated_difficulty) << " != " << hex(current_difficulty) << std::endl;
-        return kFailed;
+        return Status::kFailed;
     }
 }
 

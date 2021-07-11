@@ -46,21 +46,11 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
 
-    // Check data file exists in provided directory
-    fs::path db_path{chaindata};
-    auto db_file{db::get_datafile_path(db_path)};
-    if (!fs::exists(db_file) || !fs::file_size(db_file)) {
-        std::cerr << "Invalid or empty data file \"" << db_file.string() << "\"" << std::endl
-                  << "Try --help for help" << std::endl;
-        return -1;
-    }
-
-    SILKWORM_LOG(LogLevel::Info) << "Regenerating account & storage tries. DB: " << db_file << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Regenerating account & storage tries. DB: " << chaindata << std::endl;
 
     try {
 
-        db::EnvConfig db_config{db_path.string()};
-        db_config.set_readonly(false);
+        db::EnvConfig db_config{chaindata};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 

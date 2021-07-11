@@ -39,8 +39,7 @@ TEST_CASE("Unwind Execution") {
     TemporaryDirectory db_tmp_dir;
 
     // Initialize temporary Database
-    db::EnvConfig db_config{db_tmp_dir.path()};
-    db_config.set_readonly(false);
+    db::EnvConfig db_config{db_tmp_dir.path(), /*create*/ true};
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
     db::table::create_all(txn);
@@ -131,6 +130,7 @@ TEST_CASE("Unwind Execution") {
     // ---------------------------------------
     // Unwind second block and checks if state is first block
     // ---------------------------------------
+    db_config.create = false; // We have already created it
     CHECK(stagedsync::unwind_execution(db_config, 1) == stagedsync::StageResult::kStageSuccess);
 
     auto env2{db::open_env(db_config)};

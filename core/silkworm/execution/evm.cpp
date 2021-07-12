@@ -154,7 +154,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
 evmc::result EVM::call(const evmc_message& message) noexcept {
     evmc::result res{EVMC_SUCCESS, message.gas, nullptr, 0};
 
-    auto value{intx::be::load<intx::uint256>(message.value)};
+    const auto value{intx::be::load<intx::uint256>(message.value)};
     if (message.kind != EVMC_DELEGATECALL && state_.get_balance(message.sender) < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
         return res;
@@ -173,7 +173,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         return res;
     }
 
-    auto snapshot{state_.take_snapshot()};
+    const auto snapshot{state_.take_snapshot()};
 
     if (message.kind == EVMC_CALL) {
         if (message.flags & EVMC_STATIC) {
@@ -187,14 +187,14 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     }
 
     if (precompiled) {
-        uint8_t num{code_address.bytes[kAddressLength - 1]};
+        const uint8_t num{code_address.bytes[kAddressLength - 1]};
         precompiled::Contract contract{precompiled::kContracts[num - 1]};
-        ByteView input{message.input_data, message.input_size};
-        int64_t gas = contract.gas(input, revision());
+        const ByteView input{message.input_data, message.input_size};
+        const int64_t gas = contract.gas(input, revision());
         if (gas < 0 || gas > message.gas) {
             res.status_code = EVMC_OUT_OF_GAS;
         } else {
-            std::optional<Bytes> output{contract.run(input)};
+            const std::optional<Bytes> output{contract.run(input)};
             if (output) {
                 res = {EVMC_SUCCESS, message.gas - gas, output->data(), output->size()};
             } else {
@@ -202,7 +202,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
             }
         }
     } else {
-        ByteView code{state_.get_code(code_address)};
+        const ByteView code{state_.get_code(code_address)};
         if (code.empty()) {
             return res;
         }

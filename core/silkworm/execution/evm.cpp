@@ -160,11 +160,16 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         return res;
     }
 
-    const bool precompiled{is_precompiled(message.destination)};
+    // See Section 8 "Message Call" of the Yellow Paper for the difference between code & recipient.
+    // destination in evmc_message can mean either code or recipent, depending on the context.
+    const evmc_address code_address{message.destination};
+    const evmc_address recipient_address{recipient_of_call_message(message)};
+
+    const bool precompiled{is_precompiled(code_address)};
     const evmc_revision rev{revision()};
 
     // https://eips.ethereum.org/EIPS/eip-161
-    if (value == 0 && rev >= EVMC_SPURIOUS_DRAGON && !state_.exists(message.destination) && !precompiled) {
+    if (value == 0 && rev >= EVMC_SPURIOUS_DRAGON && !precompiled && !state_.exists(code_address)) {
         return res;
     }
 
@@ -174,15 +179,15 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         if (message.flags & EVMC_STATIC) {
             // Match geth logic
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
-            state_.touch(message.destination);
+            state_.touch(recipient_address);
         } else {
             state_.subtract_from_balance(message.sender, value);
-            state_.add_to_balance(message.destination, value);
+            state_.add_to_balance(recipient_address, value);
         }
     }
 
     if (precompiled) {
-        uint8_t num{message.destination.bytes[kAddressLength - 1]};
+        uint8_t num{code_address.bytes[kAddressLength - 1]};
         precompiled::Contract contract{precompiled::kContracts[num - 1]};
         ByteView input{message.input_data, message.input_size};
         int64_t gas = contract.gas(input, revision());
@@ -197,19 +202,15 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
             }
         }
     } else {
-        ByteView code{state_.get_code(message.destination)};
+        ByteView code{state_.get_code(code_address)};
         if (code.empty()) {
             return res;
         }
 
-        evmc::bytes32 code_hash{state_.get_code_hash(message.destination)};
+        const evmc::bytes32 code_hash{state_.get_code_hash(code_address)};
 
         evmc_message msg{message};
-        if (msg.kind == EVMC_CALLCODE) {
-            msg.destination = msg.sender;
-        } else if (msg.kind == EVMC_DELEGATECALL) {
-            msg.destination = address_stack_.top();
-        }
+        msg.destination = recipient_address;
 
         res = execute(msg, code, code_hash);
     }
@@ -224,8 +225,22 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     return res;
 }
 
+evmc_address EVM::recipient_of_call_message(const evmc_message& message) noexcept {
+    if (message.kind == EVMC_CALLCODE) {
+        return message.sender;
+    } else if (message.kind == EVMC_DELEGATECALL) {
+        // An evmc_message contains only two addresses (sender and "destination").
+        // However, in case of DELEGATECALL we need 3 addresses (sender, recipient, and code),
+        // so we recover the missing 3rd address from the caller_stack_.
+        return caller_stack_.top();
+    } else {
+        assert(message.kind == EVMC_CALL);
+        return message.destination;
+    }
+}
+
 evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept {
-    address_stack_.push(msg.destination);
+    caller_stack_.push(msg.destination);
 
     const evmc_revision rev{revision()};
 
@@ -239,7 +254,7 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
         res = execute_with_baseline_interpreter(rev, msg, code);
     }
 
-    address_stack_.pop();
+    caller_stack_.pop();
 
     return evmc::result{res};
 }

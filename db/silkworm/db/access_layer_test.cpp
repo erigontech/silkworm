@@ -85,6 +85,7 @@ namespace db {
         // Empty dir
         std::string empty{};
         db::EnvConfig db_config{empty};
+        db_config.inmemory = true;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::invalid_argument);
 
         // Conflicting flags
@@ -110,11 +111,11 @@ namespace db {
         db_config = db::EnvConfig{tmp_dir2.path()};
         db_config.create = true;
         db_config.readonly = true;
+        db_config.inmemory = true;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
 
         // Must open
         db_config.readonly = false;
-        db_config.inmemory = true;
         db_config.exclusive = true;
         REQUIRE_NOTHROW(env = db::open_env(db_config));
 
@@ -154,6 +155,7 @@ namespace db {
     TEST_CASE("Storage Mode") {
         TemporaryDirectory tmp_dir;
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -196,6 +198,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -232,6 +235,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -369,6 +373,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -432,6 +437,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
@@ -544,6 +550,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);

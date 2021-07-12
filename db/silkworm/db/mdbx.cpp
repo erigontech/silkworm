@@ -87,7 +87,7 @@ namespace silkworm::db {
     op.max_maps = config.max_tables;
     op.max_readers = config.max_readers;
 
-    ::mdbx::env_managed ret{config.path, cp, op, config.shared};
+    ::mdbx::env_managed ret{db_path.native(), cp, op, config.shared};
     // TODO (Andrea) C++ bindings don't have setoptions
     return ret;
 }

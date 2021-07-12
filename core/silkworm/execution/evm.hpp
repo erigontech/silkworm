@@ -90,7 +90,7 @@ class EVM {
     const ChainConfig& config_;
     const Transaction* txn_{nullptr};
     std::vector<evmc::bytes32> block_hashes_{};
-    std::stack<evmc::address> caller_stack_{};
+    std::stack<evmc::address> address_stack_{};
     evmc_vm* evm1_{nullptr};
 };
 

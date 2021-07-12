@@ -230,9 +230,9 @@ evmc_address EVM::recipient_of_call_message(const evmc_message& message) noexcep
         return message.sender;
     } else if (message.kind == EVMC_DELEGATECALL) {
         // An evmc_message contains only two addresses (sender and "destination").
-        // However, in case of DELEGATECALL we need 3 addresses (sender, recipient, and code),
-        // so we recover the missing 3rd address from the caller_stack_.
-        return caller_stack_.top();
+        // However, in case of DELEGATECALL we need 3 addresses (sender, code, and recipient),
+        // so we recover the missing recipient address from the address_stack_.
+        return address_stack_.top();
     } else {
         assert(message.kind == EVMC_CALL);
         return message.destination;
@@ -240,7 +240,8 @@ evmc_address EVM::recipient_of_call_message(const evmc_message& message) noexcep
 }
 
 evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept {
-    caller_stack_.push(msg.destination);
+    // msg.destination here means recipient (what ADDRESS opcode would return)
+    address_stack_.push(msg.destination);
 
     const evmc_revision rev{revision()};
 
@@ -254,7 +255,7 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
         res = execute_with_baseline_interpreter(rev, msg, code);
     }
 
-    caller_stack_.pop();
+    address_stack_.pop();
 
     return evmc::result{res};
 }

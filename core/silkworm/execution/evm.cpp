@@ -161,7 +161,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     }
 
     // See Section 8 "Message Call" of the Yellow Paper for the difference between code & recipient.
-    // destination in evmc_message can mean either code or recipent, depending on the context.
+    // destination in evmc_message can mean either code or recipient, depending on the context.
     const evmc_address code_address{message.destination};
     const evmc_address recipient_address{recipient_of_call_message(message)};
 

@@ -88,8 +88,8 @@ namespace db {
         REQUIRE_THROWS_AS(db::open_env(db_config), std::invalid_argument);
 
         // Conflicting flags
-        TemporaryDirectory tmp_dir;
-        db_config.path = tmp_dir.path();
+        TemporaryDirectory tmp_dir1;
+        db_config.path = tmp_dir1.path();
         db_config.create = true;
         db_config.shared = true;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
@@ -103,13 +103,11 @@ namespace db {
         ::mdbx::env_managed env2;
         REQUIRE_THROWS(env2 = db::open_env(db_config));
 
-        // Close env and destroy tmp_dir
         env.close();
-        tmp_dir.~TemporaryDirectory();
 
         // Conflicting flags
-        tmp_dir = TemporaryDirectory();
-        db_config = db::EnvConfig{tmp_dir.path()};
+        TemporaryDirectory tmp_dir2;
+        db_config = db::EnvConfig{tmp_dir2.path()};
         db_config.create = true;
         db_config.readonly = true;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
@@ -121,7 +119,6 @@ namespace db {
         REQUIRE_NOTHROW(env = db::open_env(db_config));
 
         env.close();
-        tmp_dir.~TemporaryDirectory();
     }
 
     TEST_CASE("Schema Version") {

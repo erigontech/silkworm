@@ -162,7 +162,7 @@ struct copy_options_t {
     size_t filesize{0};                  // Size of target file if exists
 };
 
-struct stage_set_options_t {
+struct StageSetOptions {
     std::string name{};  // Name of the stage to set;
     uint32_t height{0};  // New height to set
 };
@@ -416,7 +416,7 @@ int do_stages(db_options_t& db_opts) {
     return retvar;
 }
 
-int do_stage_set(db_options_t& db_opts, stage_set_options_t set_opts) {
+int do_stage_set(db_options_t& db_opts, StageSetOptions set_opts) {
     int retvar{0};
     try {
         db::EnvConfig config{db_opts.datadir};
@@ -786,7 +786,7 @@ int main(int argc, char* argv[]) {
     clear_options_t clear_opts{};          // Options for clear action
     compact_options_t compact_opts{};      // Options for compact action
     copy_options_t copy_opts{};            // Options for copy action
-    stage_set_options_t stage_set_opts{};  // Options for stage set
+    StageSetOptions stage_set_opts{};  // Options for stage set
 
     CLI::App app_main("Erigon db tool");
 

@@ -14,24 +14,22 @@
    limitations under the License.
 */
 
-#include "stagedsync.hpp"
-
-#include <cstring>
-
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
-#include <iostream>
-#include <silkworm/execution/execution.hpp>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/db/buffer.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/execution/address.hpp>
+#include <silkworm/execution/execution.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
-#include <silkworm/common/temp_dir.hpp>
-#include <silkworm/db/buffer.hpp>
-#include <silkworm/db/stages.hpp>
+
+#include "stagedsync.hpp"
 
 TEST_CASE("Unwind Execution") {
     using namespace silkworm;
@@ -40,6 +38,7 @@ TEST_CASE("Unwind Execution") {
 
     // Initialize temporary Database
     db::EnvConfig db_config{db_tmp_dir.path(), /*create*/ true};
+    db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
     db::table::create_all(txn);
@@ -130,7 +129,7 @@ TEST_CASE("Unwind Execution") {
     // ---------------------------------------
     // Unwind second block and checks if state is first block
     // ---------------------------------------
-    db_config.create = false; // We have already created it
+    db_config.create = false;  // We have already created it
     CHECK(stagedsync::unwind_execution(db_config, 1) == stagedsync::StageResult::kStageSuccess);
 
     auto env2{db::open_env(db_config)};

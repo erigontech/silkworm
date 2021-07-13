@@ -47,19 +47,21 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
 
     txn_ = &txn;
 
-    bool contract_creation{!txn.to.has_value()};
+    const bool contract_creation{!txn.to.has_value()};
+    const evmc::address destination{contract_creation ? evmc::address{} : *txn.to};
 
     evmc_message message{
-        contract_creation ? EVMC_CREATE : EVMC_CALL,    // kind
-        0,                                              // flags
-        0,                                              // depth
-        static_cast<int64_t>(gas),                      // gas
-        contract_creation ? evmc::address{} : *txn.to,  // destination
-        contract_creation ? evmc::address{} : *txn.to,  // code_address
-        *txn.from,                                      // sender
-        &txn.data[0],                                   // input_data
-        txn.data.size(),                                // input_size
-        intx::be::store<evmc::uint256be>(txn.value),    // value
+        contract_creation ? EVMC_CREATE : EVMC_CALL,  // kind
+        0,                                            // flags
+        0,                                            // depth
+        static_cast<int64_t>(gas),                    // gas
+        destination,                                  // destination
+        *txn.from,                                    // sender
+        &txn.data[0],                                 // input_data
+        txn.data.size(),                              // input_size
+        intx::be::store<evmc::uint256be>(txn.value),  // value
+        {},                                           // create2_salt
+        destination,                                  // code_address
     };
 
     evmc::result res{contract_creation ? create(message) : call(message)};
@@ -114,7 +116,6 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
         message.depth,   // depth
         message.gas,     // gas
         contract_addr,   // destination
-        contract_addr,   // code_address
         message.sender,  // sender
         nullptr,         // input_data
         0,               // input_size

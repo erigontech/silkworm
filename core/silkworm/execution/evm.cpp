@@ -55,6 +55,7 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
         0,                                              // depth
         static_cast<int64_t>(gas),                      // gas
         contract_creation ? evmc::address{} : *txn.to,  // destination
+        contract_creation ? evmc::address{} : *txn.to,  // code_address
         *txn.from,                                      // sender
         &txn.data[0],                                   // input_data
         txn.data.size(),                                // input_size
@@ -113,6 +114,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
         message.depth,   // depth
         message.gas,     // gas
         contract_addr,   // destination
+        contract_addr,   // code_address
         message.sender,  // sender
         nullptr,         // input_data
         0,               // input_size
@@ -160,16 +162,11 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         return res;
     }
 
-    // See Section 8 "Message Call" of the Yellow Paper for the difference between code & recipient.
-    // destination in evmc_message can mean either code or recipient, depending on the context.
-    const evmc_address code_address{message.destination};
-    const evmc_address recipient_address{recipient_of_call_message(message)};
-
-    const bool precompiled{is_precompiled(code_address)};
+    const bool precompiled{is_precompiled(message.code_address)};
     const evmc_revision rev{revision()};
 
     // https://eips.ethereum.org/EIPS/eip-161
-    if (value == 0 && rev >= EVMC_SPURIOUS_DRAGON && !precompiled && !state_.exists(code_address)) {
+    if (value == 0 && rev >= EVMC_SPURIOUS_DRAGON && !precompiled && !state_.exists(message.code_address)) {
         return res;
     }
 
@@ -179,15 +176,15 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         if (message.flags & EVMC_STATIC) {
             // Match geth logic
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
-            state_.touch(recipient_address);
+            state_.touch(message.destination);
         } else {
             state_.subtract_from_balance(message.sender, value);
-            state_.add_to_balance(recipient_address, value);
+            state_.add_to_balance(message.destination, value);
         }
     }
 
     if (precompiled) {
-        const uint8_t num{code_address.bytes[kAddressLength - 1]};
+        const uint8_t num{message.code_address.bytes[kAddressLength - 1]};
         precompiled::Contract contract{precompiled::kContracts[num - 1]};
         const ByteView input{message.input_data, message.input_size};
         const int64_t gas = contract.gas(input, revision());
@@ -202,17 +199,14 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
             }
         }
     } else {
-        const ByteView code{state_.get_code(code_address)};
+        const ByteView code{state_.get_code(message.code_address)};
         if (code.empty()) {
             return res;
         }
 
-        const evmc::bytes32 code_hash{state_.get_code_hash(code_address)};
+        const evmc::bytes32 code_hash{state_.get_code_hash(message.code_address)};
 
-        evmc_message msg{message};
-        msg.destination = recipient_address;
-
-        res = execute(msg, code, code_hash);
+        res = execute(message, code, code_hash);
     }
 
     if (res.status_code != EVMC_SUCCESS) {
@@ -225,24 +219,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
     return res;
 }
 
-evmc_address EVM::recipient_of_call_message(const evmc_message& message) noexcept {
-    if (message.kind == EVMC_CALLCODE) {
-        return message.sender;
-    } else if (message.kind == EVMC_DELEGATECALL) {
-        // An evmc_message contains only two addresses (sender and "destination").
-        // However, in case of DELEGATECALL we need 3 addresses (sender, code, and recipient),
-        // so we recover the missing recipient address from the address_stack_.
-        return address_stack_.top();
-    } else {
-        assert(message.kind == EVMC_CALL);
-        return message.destination;
-    }
-}
-
 evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<evmc::bytes32> code_hash) noexcept {
-    // msg.destination here means recipient (what ADDRESS opcode would return)
-    address_stack_.push(msg.destination);
-
     const evmc_revision rev{revision()};
 
     evmc_result res;
@@ -254,8 +231,6 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     } else {
         res = execute_with_baseline_interpreter(rev, msg, code);
     }
-
-    address_stack_.pop();
 
     return evmc::result{res};
 }

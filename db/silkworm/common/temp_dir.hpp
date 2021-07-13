@@ -30,8 +30,9 @@ class TemporaryDirectory {
     TemporaryDirectory();
     ~TemporaryDirectory();
 
-    TemporaryDirectory(TemporaryDirectory&& other) = default;
-    TemporaryDirectory& operator=(TemporaryDirectory&& other) = default;
+    // Not copyable nor movable
+    TemporaryDirectory(const TemporaryDirectory&) = delete;
+    TemporaryDirectory& operator=(const TemporaryDirectory&) = delete;
 
     const char* path() const noexcept { return path_.c_str(); }
 

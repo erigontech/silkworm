@@ -144,7 +144,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     auto start_block_number{db::stages::get_stage_progress(txn, db::stages::kHashStateKey) + 1};
 
     Bytes start_key{db::block_key(start_block_number)};
-    auto changeset_data{changeset_table.find(db::to_slice(start_key), /*throw_notfound*/ false)};
+    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
 
     while (changeset_data) {
         Bytes mdb_key_as_bytes{db::from_slice(changeset_data.key)};
@@ -270,7 +270,8 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             auto hash{keccak256(db_key)};
             auto data{target_table.find(db::to_slice(hash.bytes), /*throw_notfound*/ false)};
             if (!data) {
-                throw std::runtime_error("Could not find hash: " + to_hex(hash.bytes));
+                changeset_data = changeset_table.to_next(false);
+                continue;
             }
             target_table.erase();
             changeset_data = changeset_table.to_next(false);
@@ -286,7 +287,8 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
 
             auto data{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
             if (!data) {
-                throw std::runtime_error("Could not find storage data at: " + to_hex(key));
+                changeset_data = changeset_table.to_next(false);
+                continue;
             }
             target_table.erase();
             changeset_data = changeset_table.to_next(false);
@@ -311,7 +313,8 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             boost::endian::store_big_u64(&key[kHashLength], incarnation);
             auto data{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
             if (!data) {
-                throw std::runtime_error("Could not find code at: " + to_hex(key));
+                changeset_data = changeset_table.to_next(false);
+                continue;
             }
             target_table.erase();
             changeset_data = changeset_table.to_next(false);

@@ -50,12 +50,11 @@ int main(int argc, char *argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    fs::path etl_path(fs::path(chaindata) / fs::path("etl-temp"));
-    fs::create_directories(etl_path);
-    etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
-    etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
-
-    db::EnvConfig db_config{chaindata};
+    auto data_dir{DataDirectory::from_chaindata(chaindata)};
+    data_dir.create_tree();
+    db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
+    etl::Collector topic_collector(data_dir.get_etl_path().string().c_str(), /* flush size */ 512 * kMebi);
+    etl::Collector address_collector(data_dir.get_etl_path().string().c_str(), /* flush size */ 512 * kMebi);
 
     try {
         if (full) {

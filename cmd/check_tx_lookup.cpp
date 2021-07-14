@@ -57,13 +57,14 @@ int main(int argc, char* argv[]) {
         ->check(CLI::ExistingDirectory);
     app.add_option("--from", block_from, "Initial block number to process (inclusive)", true)
         ->check(CLI::Range(1u, UINT32_MAX));
+
     CLI11_PARSE(app, argc, argv);
 
-    fs::path etl_path(fs::path(chaindata) / fs::path("etl-temp"));
-    fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+    auto data_dir{DataDirectory::from_chaindata(chaindata)};
+    data_dir.create_tree();
+    db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
+    etl::Collector collector(data_dir.get_etl_path().string().c_str(), /* flush size */ 512 * kMebi);
 
-    db::EnvConfig db_config{chaindata};
     auto env{db::open_env(db_config)};
     auto txn{env.start_read()};
 

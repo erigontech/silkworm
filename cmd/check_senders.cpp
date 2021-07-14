@@ -857,12 +857,11 @@ int main(int argc, char* argv[]) {
         }
 
         // Set database parameters
-        db::EnvConfig db_config{options.datadir};
+        DataDirectory data_dir{DataDirectory::from_chaindata(options.datadir)};
+        data_dir.create_tree();
 
-        // Compute etl temporary path
-        fs::path etl_path(fs::path(options.datadir) / fs::path("etl-temp"));
-        fs::create_directories(etl_path);
-        etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
+        etl::Collector collector(data_dir.get_etl_path().string().c_str(), /* flush size */ 512 * kMebi);
 
         // Open db and transaction
         auto env{db::open_env(db_config)};

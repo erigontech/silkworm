@@ -41,15 +41,8 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    // Check data file exists in provided directory
-    fs::path db_file{fs::path(db_path)};
-    if (!fs::exists(db_file)) {
-        SILKWORM_LOG(LogLevel::Error) << "Can't find a valid TG data file in " << db_path << std::endl;
-        return -1;
-    }
-
-    fs::path datadir(db_path);
-    db::EnvConfig db_config{db_path};
+    fs::path datadir{fs::path(db_path};
+    db::EnvConfig db_config{datadir};
     db_config.readonly = false;
 
     try {

@@ -20,6 +20,7 @@
 #include <absl/container/flat_hash_set.h>
 #include <absl/time/time.h>
 
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
@@ -51,7 +52,7 @@ static void print_storage_changes(const db::StorageChanges& s) {
 int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and compares resulting change sets against DB"};
 
-    std::string chaindata{db::default_path()};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
@@ -142,8 +143,8 @@ int main(int argc, char* argv[]) {
 
             if (block_num % 1000 == 0) {
                 absl::Time t2{absl::Now()};
-                SILKWORM_LOG(LogLevel::Info) << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1) << " s"
-                          << std::endl;
+                SILKWORM_LOG(LogLevel::Info) << " Checked blocks ≤ " << block_num << " in "
+                                             << absl::ToDoubleSeconds(t2 - t1) << " s" << std::endl;
                 t1 = t2;
             }
         }

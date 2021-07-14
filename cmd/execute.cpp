@@ -19,6 +19,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -32,7 +33,7 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
-    std::string chaindata{db::default_path()};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
@@ -55,7 +56,6 @@ int main(int argc, char* argv[]) {
     SILKWORM_LOG(LogLevel::Info) << "Starting block execution. DB: " << chaindata << std::endl;
 
     try {
-
         db::EnvConfig db_config{chaindata};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -71,8 +71,8 @@ int main(int argc, char* argv[]) {
 
         for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
             int db_error_code{0};
-            SilkwormStatusCode status{silkworm_execute_blocks(txn, chain_config->chain_id, block_number,
-                                                              to_block, *batch_size, write_receipts, &current_progress,
+            SilkwormStatusCode status{silkworm_execute_blocks(txn, chain_config->chain_id, block_number, to_block,
+                                                              *batch_size, write_receipts, &current_progress,
                                                               &db_error_code)};
             if (status != SilkwormStatusCode::kSilkwormSuccess &&
                 status != SilkwormStatusCode::kSilkwormBlockNotFound) {

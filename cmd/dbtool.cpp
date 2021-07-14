@@ -26,12 +26,14 @@
 #include <boost/format.hpp>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
+#include <silkworm/common/data_dir.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -126,7 +128,7 @@ struct dbFreeInfo {
 };
 
 struct db_options_t {
-    std::string datadir{silkworm::db::default_path()};  // Where data file is located
+    std::string datadir{DataDirectory{}.get_chaindata_path().string()};  // Where data file is located
 };
 
 struct freelist_options_t {

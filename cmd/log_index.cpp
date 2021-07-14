@@ -25,6 +25,7 @@
 #include <cbor/decoder.h>
 
 #include <silkworm/common/cast.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]) {
 
     CLI::App app{"Generates Log Index"};
 
-    std::string chaindata{db::default_path()};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     bool full{false};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
@@ -57,7 +58,6 @@ int main(int argc, char *argv[]) {
     db::EnvConfig db_config{chaindata};
 
     try {
-
         if (full) {
             auto env{db::open_env(db_config)};
             auto txn{env.start_write()};

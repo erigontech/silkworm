@@ -20,6 +20,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -33,7 +34,7 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Generates Tc Hashes => BlockNumber mapping in database"};
 
-    std::string chaindata{db::default_path()};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     bool full{false};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
@@ -42,7 +43,6 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     try {
-
         db::EnvConfig db_config{chaindata};
         if (full) {
             auto env{db::open_env(db_config)};

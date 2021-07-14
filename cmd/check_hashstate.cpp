@@ -20,6 +20,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -125,12 +126,11 @@ void check(mdbx::txn& txn, Operation operation) {
 int main(int argc, char* argv[]) {
     CLI::App app{"Check Hashed state"};
 
-    std::string chaindata{db::default_path()};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
     SILKWORM_LOG(LogLevel::Info) << "Checking HashState" << std::endl;
-
 
     try {
         db::EnvConfig db_config{chaindata};

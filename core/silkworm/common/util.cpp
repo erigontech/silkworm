@@ -151,16 +151,13 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
     return out;
 }
 
-inline bool case_insensitive_char_comparer(char a, char b) {
-    return(tolower(a) == tolower(b));
-}
+inline bool case_insensitive_char_comparer(char a, char b) { return (tolower(a) == tolower(b)); }
 
 bool iequals(const std::string& a, const std::string& b) {
     return (a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), case_insensitive_char_comparer));
 }
 
 std::optional<uint64_t> parse_size(const std::string& sizestr) {
-
     if (sizestr.empty()) {
         return 0ull;
     }
@@ -172,7 +169,7 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
     };
 
     std::string int_part, dec_part, suf_part;
-    uint64_t multiplier{1}; // Default for bytes (B|b)
+    uint64_t multiplier{1};  // Default for bytes (B|b)
 
     int_part = matches[1].str();
     if (!matches[2].str().empty()) {
@@ -205,7 +202,6 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
 }
 
 std::string human_size(uint64_t bytes) {
-
     static const char* suffix[]{"B", "KB", "MB", "GB", "TB"};
     static const uint32_t items{sizeof(suffix) / sizeof(suffix[0])};
     uint32_t index{0};
@@ -219,7 +215,6 @@ std::string human_size(uint64_t bytes) {
     static char output[64];
     sprintf(output, "%.02lf %s", value, suffix[index]);
     return std::string(output);
-
 }
 
 size_t prefix_length(ByteView a, ByteView b) {
@@ -231,4 +226,18 @@ size_t prefix_length(ByteView a, ByteView b) {
     }
     return len;
 }
+
+std::vector<std::string> split(std::string source, std::string delimiter) {
+    std::vector<std::string> res{};
+    if (delimiter.length() >= source.length()) {
+        return res;
+    }
+    size_t pos{0};
+    while ((pos = source.find(delimiter)) != std::string::npos) {
+        res.emplace_back(source.substr(0, pos));
+        source.erase(0, pos + delimiter.length());
+    }
+    return res;
+}
+
 }  // namespace silkworm

@@ -18,7 +18,6 @@
 
 namespace silkworm::db {
 
-
 ::mdbx::env_managed open_env(const EnvConfig& config) {
     namespace fs = std::filesystem;
 
@@ -28,6 +27,9 @@ namespace silkworm::db {
 
     // Check datafile exists if create is not set
     fs::path db_path{config.path};
+    if (db_path.has_filename()) {
+        db_path += std::filesystem::path::preferred_separator;  // Remove amibiguity. It hash to be a directory
+    }
     fs::path db_file{db::get_datafile_path(db_path)};
     if (!config.create) {
         if (!fs::exists(db_path) || !fs::is_directory(db_path) || fs::is_empty(db_path) || !fs::exists(db_file) ||
@@ -80,7 +82,7 @@ namespace silkworm::db {
         cp.geometry.pagesize = 4 * kKibi;
     }
 
-    ::mdbx::env::operate_parameters op{};         // Operational parameters
+    ::mdbx::env::operate_parameters op{};  // Operational parameters
     op.mode = op.mode_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.options = op.options_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.durability = op.durability_from_flags(static_cast<MDBX_env_flags_t>(flags));

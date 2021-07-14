@@ -20,7 +20,6 @@
 #include <boost/endian/conversion.hpp>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>

@@ -25,6 +25,7 @@
 
 #include <CLI/CLI.hpp>
 #include <evmc/loader.h>
+#include <magic_enum.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/chain/blockchain.hpp>
@@ -36,8 +37,6 @@
 #include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/block.hpp>
-
-#include "../db/silkworm/common/magic_enum.hpp"
 
 // See https://ethereum-tests.readthedocs.io
 

@@ -487,14 +487,13 @@ bool migration_happened(mdbx::txn& txn, const char* name) {
 
 std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
     auto src{db::open_cursor(txn, table::kCanonicalHashes)};
-    auto key{to_slice(block_key(0))};
-    auto data{src.find(key, /*throw_notfound=*/false)};
+    auto data{src.find(to_slice(block_key(0)), /*throw_notfound=*/false)};
     if (!data) {
         return std::nullopt;
     }
 
     src = db::open_cursor(txn, table::kConfig);
-    key = data.value;
+    const auto key{data.value};
     data = src.find(key, /*throw_notfound=*/false);
     if (!data) {
         return std::nullopt;

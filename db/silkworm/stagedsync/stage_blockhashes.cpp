@@ -53,7 +53,7 @@ StageResult stage_blockhashes(db::EnvConfig db_config) {
     auto header_key{db::block_key(expected_block_number)};
     auto header_data{canonical_hashes_table.find(db::to_slice(header_key), /*throw_notfound*/ false)};
     while (header_data) {
-        auto reached_block_number{boost::endian::load_big_u64(header_data.key.byte_ptr())};
+        auto reached_block_number{boost::endian::load_big_u64(static_cast<uint8_t*>(header_data.key.iov_base))};
         if (reached_block_number != expected_block_number) {
             // Something wrong with db
             // Blocks are out of sequence for any reason
@@ -68,8 +68,8 @@ StageResult stage_blockhashes(db::EnvConfig db_config) {
             return StageResult::kStageBadBlockHash;
         }
 
-        etl::Entry etl_entry{Bytes(header_data.value.byte_ptr(), header_data.value.length()),
-                             Bytes(header_data.key.byte_ptr(), header_data.key.length())};
+        etl::Entry etl_entry{Bytes(static_cast<uint8_t*>(header_data.value.iov_base), header_data.value.iov_len),
+                             Bytes(static_cast<uint8_t*>(header_data.key.iov_base), header_data.key.iov_len)};
         collector.collect(etl_entry);
 
         // Save last processed block_number and expect next in sequence

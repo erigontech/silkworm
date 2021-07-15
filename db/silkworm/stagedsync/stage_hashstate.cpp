@@ -72,7 +72,7 @@ void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
         // Account
         if (data.key.length() == kAddressLength) {
             etl::Entry entry{Bytes(keccak256(db::from_slice(data.key)).bytes, kHashLength),
-                             Bytes(data.value.byte_ptr(), data.value.length())};
+                             Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.length())};
             collector_account.collect(entry);
         } else {
             Bytes new_key(kHashLength * 2 + db::kIncarnationLength, '\0');
@@ -88,7 +88,7 @@ void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
             new_key_pos += db::kIncarnationLength;
 
             std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.key)).bytes, kHashLength);
-            etl::Entry entry{new_key, Bytes(data.value.byte_ptr(), data.value.length())};
+            etl::Entry entry{new_key, Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len)};
             collector_storage.collect(entry);
         }
 
@@ -117,7 +117,7 @@ void hashstate_promote_clean_code(mdbx::txn& txn, std::string etl_path) {
         std::memcpy(&new_key[0], keccak256(db::from_slice(data.key.safe_middle(0, kAddressLength))).bytes, kHashLength);
         std::memcpy(&new_key[kHashLength], data.key.safe_middle(kAddressLength, db::kIncarnationLength).iov_base,
                     db::kIncarnationLength);
-        etl::Entry entry{new_key, Bytes(data.value.byte_ptr(), data.value.length())};
+        etl::Entry entry{new_key, Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len)};
         collector.collect(entry);
         data = tbl.to_next(/*throw_notfound*/ false);
     }

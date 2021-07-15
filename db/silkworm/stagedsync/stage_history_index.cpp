@@ -81,7 +81,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
             if (bitmaps.find(composite_key) == bitmaps.end()) {
                 bitmaps.emplace(composite_key, roaring::Roaring64Map());
             }
-            block_number = boost::endian::load_big_u64(data.key.byte_ptr());
+            block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
             bitmaps.at(composite_key).add(block_number);
             allocated_space += 8;
             if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {

@@ -35,11 +35,11 @@ std::optional<version_t> get_schema_version(mdbx::txn& txn) noexcept {
 
     auto data{src.current()};
     assert(data.value.length() == 12);
-    auto Major{boost::endian::load_big_u32(data.value.byte_ptr())};
+    auto Major{boost::endian::load_big_u32(static_cast<unsigned char*>(data.value.iov_base))};
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Minor{boost::endian::load_big_u32(data.value.byte_ptr())};
+    auto Minor{boost::endian::load_big_u32(static_cast<unsigned char*>(data.value.iov_base))};
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Patch{boost::endian::load_big_u32(data.value.byte_ptr())};
+    auto Patch{boost::endian::load_big_u32(static_cast<unsigned char*>(data.value.iov_base))};
     return version_t{Major, Minor, Patch};
 }
 
@@ -412,7 +412,7 @@ std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::ad
     auto src{db::open_cursor(txn, table::kIncarnationMap)};
     if (auto data{src.find(mdbx::slice{address.bytes, sizeof(evmc::address)}, /*throw_notfound*/ false)}; data.done) {
         assert(data.value.length() == 8);
-        return boost::endian::load_big_u64(data.value.byte_ptr());
+        return boost::endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base));
     }
     return std::nullopt;
 }
@@ -429,7 +429,7 @@ AccountChanges read_account_changes(mdbx::txn& txn, uint64_t block_num) {
         evmc::address address;
         std::memcpy(address.bytes, data.value.iov_base, kAddressLength);
         data.value.remove_prefix(kAddressLength);
-        changes[address] = Bytes{data.value.byte_ptr(), data.value.length()};
+        changes[address] = Bytes{static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len};
         data = src.to_current_next_multi(/*throw_not_found*/ false);
     }
 
@@ -456,14 +456,14 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
         evmc::address address;
         std::memcpy(address.bytes, data.key.iov_base, kAddressLength);
         data.key.remove_prefix(kAddressLength);
-        uint64_t incarnation{boost::endian::load_big_u64(data.key.byte_ptr())};
+        uint64_t incarnation{boost::endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base))};
 
         assert(data.value.length() >= kHashLength);
         evmc::bytes32 location;
         std::memcpy(location.bytes, data.value.iov_base, kHashLength);
         data.value.remove_prefix(kHashLength);
 
-        changes[address][incarnation][location] = Bytes{data.value.byte_ptr(), data.value.length()};
+        changes[address][incarnation][location] = Bytes{static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len};
         data = src.to_next(/*throw_notfound=*/false);
     }
 

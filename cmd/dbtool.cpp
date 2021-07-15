@@ -24,10 +24,10 @@
 #include <boost/bind.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/format.hpp>
+#include <magic_enum.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/data_dir.hpp>
-#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/stages.hpp>

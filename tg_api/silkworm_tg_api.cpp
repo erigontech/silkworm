@@ -22,7 +22,6 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
@@ -31,7 +30,6 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, uint6
                                                            uint64_t max_block, uint64_t batch_size, bool write_receipts,
                                                            uint64_t* last_executed_block,
                                                            int* db_error_code) SILKWORM_NOEXCEPT {
-    
     using namespace silkworm;
 
     const ChainConfig* config{lookup_chain_config(chain_id)};
@@ -43,7 +41,6 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, uint6
     uint64_t block_num{start_block};
 
     try {
-
         db::Buffer buffer{txn};
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;

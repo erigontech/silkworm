@@ -33,6 +33,11 @@ namespace silkworm::db {
 constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 constexpr std::string_view kDbLockFileName{"mdbx.lck"};
 
+// Pointer to a processing function invoked by for_each
+// Return value true means the caller can process another record
+// Otherwise the caller must stop the loop
+using WalkFunc = std::function<bool(::mdbx::cursor::move_result&)>;
+
 struct EnvConfig {
     std::string path{};
     bool create{false};         // Whether or not db file must be created
@@ -61,6 +66,8 @@ static inline std::filesystem::path get_datafile_path(std::filesystem::path& bas
 static inline std::filesystem::path get_lockfile_path(std::filesystem::path& base_path) noexcept {
     return std::filesystem::path(base_path / std::filesystem::path(kDbLockFileName));
 }
+
+size_t for_each(::mdbx::cursor& cursor, WalkFunc func);
 
 }  // namespace silkworm::db
 

@@ -246,16 +246,23 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     ::mdbx::map_handle free_map{0};
     auto free_stat{txn.get_map_stat(free_map)};
     auto free_crs{txn.open_cursor(free_map)};
-    auto result{free_crs.to_first(/*throw_notfound =*/false)};
-    while (result) {
-        size_t txId = *(static_cast<size_t*>(result.key.iov_base));
-        size_t pagesCount = *(static_cast<uint32_t*>(result.value.iov_base));
+
+    auto& collect_func{[&ret, &free_stat](::mdbx::cursor::move_result& data) -> bool {
+
+        size_t txId = *(static_cast<size_t*>(data.key.iov_base));
+        size_t pagesCount = *(static_cast<uint32_t*>(data.value.iov_base));
         size_t pagesSize = pagesCount * free_stat.ms_psize;
         ret.pages += pagesCount;
         ret.size += pagesSize;
         ret.entries.push_back({txId, pagesCount, pagesSize});
-        result = free_crs.to_next(/*throw_notfound =*/false);
+        return true;
+
+    }};
+
+    if (free_crs.to_first(/*throw_notfound =*/false)) {
+        (void)db::for_each(free_crs, collect_func);
     }
+
     return ret;
 }
 

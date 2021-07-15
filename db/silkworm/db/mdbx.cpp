@@ -102,4 +102,20 @@ namespace silkworm::db {
     return tx.open_cursor(open_map(tx, config));
 }
 
+// Loops all records of a cursor from current position to eof
+// for each record the walk function is invoked
+size_t for_each(::mdbx::cursor& cursor, WalkFunc func) {
+    size_t ret{0};
+    if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
+        while (!cursor.eof()) {
+            if (!func(data)) {
+                break;
+            };
+            ret++;
+            cursor.to_next(/*throw_notfound=*/false);
+        }
+    }
+    return ret;
+}
+
 }  // namespace silkworm::db

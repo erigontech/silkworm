@@ -29,6 +29,7 @@
 #include <silkworm/common/magic_enum.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
@@ -159,6 +160,11 @@ struct copy_options_t {
     fs::path dir{};                      // Path to target data directory (i.e. workdir)
     fs::path file{};                     // Path to target data file
     size_t filesize{0};                  // Size of target file if exists
+};
+
+struct StageSetOptions {
+    std::string name{};  // Name of the stage to set;
+    uint32_t height{0};  // New height to set
 };
 
 void sig_handler(int signum) {
@@ -407,6 +413,28 @@ int do_stages(db_options_t& db_opts) {
         retvar = -1;
     }
 
+    return retvar;
+}
+
+int do_stage_set(db_options_t& db_opts, StageSetOptions set_opts) {
+    int retvar{0};
+    try {
+        db::EnvConfig config{db_opts.datadir};
+        config.readonly = false;
+        auto env{silkworm::db::open_env(config)};
+        auto txn{env.start_write()};
+
+        auto old_height{db::stages::get_stage_progress(txn, set_opts.name.c_str())};
+        db::stages::set_stage_progress(txn, set_opts.name.c_str(), set_opts.height);
+        txn.commit();
+
+        std::cout << "Stage " << set_opts.name << " touched from " << old_height << " to " << set_opts.height
+                  << std::endl;
+
+    } catch (const std::exception& ex) {
+        retvar = -1;
+        std::cout << ex.what() << std::endl;
+    }
     return retvar;
 }
 
@@ -753,11 +781,12 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-    db_options_t db_opts{};              // Common options for all actions
-    freelist_options_t freelist_opts{};  // Options for freelist action
-    clear_options_t clear_opts{};        // Options for clear action
-    compact_options_t compact_opts{};    // Options for compact action
-    copy_options_t copy_opts{};          // Options for copy action
+    db_options_t db_opts{};                // Common options for all actions
+    freelist_options_t freelist_opts{};    // Options for freelist action
+    clear_options_t clear_opts{};          // Options for clear action
+    compact_options_t compact_opts{};      // Options for compact action
+    copy_options_t copy_opts{};            // Options for copy action
+    StageSetOptions stage_set_opts{};  // Options for stage set
 
     CLI::App app_main("Erigon db tool");
 
@@ -810,6 +839,12 @@ int main(int argc, char* argv[]) {
     // List stages keys and their heights
     auto& app_stages = *app_main.add_subcommand("stages", "List stages and their actual heights");
 
+    auto& app_stage_set = *app_main.add_subcommand("stageset", "Sets a stage to a new height");
+    app_stage_set.add_option("--name", stage_set_opts.name, "Name of the stage to set", false)->required();
+    app_stage_set.add_option("--height", stage_set_opts.height, "New height for stage", false)
+        ->required()
+        ->check(CLI::Range(0u, UINT32_MAX));
+
     CLI11_PARSE(app_main, argc, argv);
 
     // Cli args sanification for compact
@@ -854,6 +889,8 @@ int main(int argc, char* argv[]) {
         return do_scan(db_opts);
     } else if (app_stages) {
         return do_stages(db_opts);
+    } else if (app_stage_set) {
+        return do_stage_set(db_opts, stage_set_opts);
     } else if (app_freelist) {
         return do_freelist(db_opts, freelist_opts);
     } else if (app_clear) {

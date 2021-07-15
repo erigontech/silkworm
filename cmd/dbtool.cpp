@@ -128,21 +128,21 @@ struct dbFreeInfo {
     std::vector<dbFreeEntry> entries{};
 };
 
-struct db_options_t {
+struct DbOptions {
     std::string datadir{DataDirectory{}.get_chaindata_path().string()};  // Where data file is located
 };
 
-struct freelist_options_t {
+struct FreeListOptions {
     bool details{false};  // Wheter or not print detailed list
 };
 
-struct clear_options_t {
+struct ClearOptions {
     std::vector<std::string> names{};  // Name of table(s) to clear
     bool drop{false};                  // Whether or not to drop table instead of clearing
     bool yes{false};                   // Assume yes to all requests of confirmation
 };
 
-struct compact_options_t {
+struct CompactOptions {
     std::string workdir{};  // Where compacted file should be located
     bool replace{false};    // Wheter or not compacted file shoudl replace original one
     bool nobak{false};      // Whether or not the original file should be renamed to bak
@@ -150,7 +150,7 @@ struct compact_options_t {
     fs::path file{};        // Path to target data file
 };
 
-struct copy_options_t {
+struct CopyOptions {
     std::string targetdir{};             // Target directory of database
     bool create{false};                  // Whether or not new data file have to be created
     bool noempty{false};                 // Omit copying a table when empty
@@ -175,7 +175,7 @@ void sig_handler(int signum) {
     shouldStop = true;
 }
 
-int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
+int do_clear(DbOptions& db_opts, ClearOptions& app_opts) {
     int retvar{0};
 
     try {
@@ -317,7 +317,7 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     return ret;
 }
 
-int do_scan(db_options_t& db_opts) {
+int do_scan(DbOptions& db_opts) {
     static std::string fmt_hdr{" %3s %-24s %=50s %13s %13s %13s"};
 
     int retvar{0};
@@ -391,7 +391,7 @@ int do_scan(db_options_t& db_opts) {
     return retvar;
 }
 
-int do_stages(db_options_t& db_opts) {
+int do_stages(DbOptions& db_opts) {
     static std::string fmt_hdr{" %-24s %10s "};
     static std::string fmt_row{" %-24s %10u "};
 
@@ -425,7 +425,7 @@ int do_stages(db_options_t& db_opts) {
     return retvar;
 }
 
-int do_stage_set(db_options_t& db_opts, StageSetOptions set_opts) {
+int do_stage_set(DbOptions& db_opts, StageSetOptions set_opts) {
     int retvar{0};
     try {
         db::EnvConfig config{db_opts.datadir};
@@ -447,7 +447,7 @@ int do_stage_set(db_options_t& db_opts, StageSetOptions set_opts) {
     return retvar;
 }
 
-int do_tables(db_options_t& db_opts) {
+int do_tables(DbOptions& db_opts) {
     static std::string fmt_hdr{" %3s %-24s %10s %2s %10s %10s %10s %12s %10s %10s"};
     static std::string fmt_row{" %3i %-24s %10u %2u %10u %10u %10u %12s %10s %10s"};
 
@@ -503,7 +503,7 @@ int do_tables(db_options_t& db_opts) {
     return retvar;
 }
 
-int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
+int do_freelist(DbOptions& db_opts, FreeListOptions& app_opts) {
     static std::string fmt_hdr{"%9s %9s %12s"};
     static std::string fmt_row{"%9u %9u %12s"};
 
@@ -537,7 +537,7 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
     return retvar;
 }
 
-int do_schema(db_options_t& db_opts) {
+int do_schema(DbOptions& db_opts) {
     int retvar{0};
     try {
         db::EnvConfig config{db_opts.datadir};
@@ -564,7 +564,7 @@ int do_schema(db_options_t& db_opts) {
     return retvar;
 }
 
-int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
+int do_compact(DbOptions& db_opts, CompactOptions& app_opts) {
     int retvar{0};
 
     try {
@@ -630,7 +630,7 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
     return retvar;
 }
 
-int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
+int do_copy(DbOptions& db_opts, CopyOptions& app_opts) {
     int retvar{0};
 
     try {
@@ -790,11 +790,11 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-    db_options_t db_opts{};                // Common options for all actions
-    freelist_options_t freelist_opts{};    // Options for freelist action
-    clear_options_t clear_opts{};          // Options for clear action
-    compact_options_t compact_opts{};      // Options for compact action
-    copy_options_t copy_opts{};            // Options for copy action
+    DbOptions db_opts{};                // Common options for all actions
+    FreeListOptions freelist_opts{};    // Options for freelist action
+    ClearOptions clear_opts{};          // Options for clear action
+    CompactOptions compact_opts{};      // Options for compact action
+    CopyOptions copy_opts{};            // Options for copy action
     StageSetOptions stage_set_opts{};  // Options for stage set
 
     CLI::App app_main("Erigon db tool");

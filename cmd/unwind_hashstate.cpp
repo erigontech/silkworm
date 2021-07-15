@@ -33,21 +33,22 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Unwind Hashstate Stage"};
 
-    std::string db_path{db::default_path()};
+    std::string chaindata{db::default_path()};
     uint32_t unwind_to{UINT32_MAX};
-    app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
-    app.add_option("--unwind-to", unwind_to, "Specify unwinding point", false)->required()->check(CLI::Range(0u, UINT32_MAX));
+    app.add_option("--unwind-to", unwind_to, "Specify unwinding point", false)
+        ->required()
+        ->check(CLI::Range(0u, UINT32_MAX));
 
     CLI11_PARSE(app, argc, argv);
 
-    fs::path datadir{fs::path(db_path};
-    db::EnvConfig db_config{datadir};
+    db::EnvConfig db_config{chaindata};
     db_config.readonly = false;
 
     try {
         stagedsync::check_stagedsync_error(stagedsync::unwind_hashstate(db_config, unwind_to));
-    } catch (const std::exception &ex) {
+    } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }

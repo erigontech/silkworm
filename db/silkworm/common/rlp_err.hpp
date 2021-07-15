@@ -17,7 +17,8 @@
 #ifndef SILKWORM_COMMON_RLP_ERR_HPP_
 #define SILKWORM_COMMON_RLP_ERR_HPP_
 
-#include <silkworm/common/magic_enum.hpp>
+#include <magic_enum.hpp>
+
 #include <silkworm/rlp/decode.hpp>
 
 namespace silkworm::rlp {

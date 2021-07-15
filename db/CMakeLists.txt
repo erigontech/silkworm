@@ -70,7 +70,8 @@ list(APPEND SILKWORM_DB_SRC "${CMAKE_CURRENT_BINARY_DIR}/silkworm/common/genesis
                             "${CMAKE_CURRENT_BINARY_DIR}/silkworm/common/genesis_rinkeby.cpp")
 
 add_library(silkworm_db ${SILKWORM_DB_SRC})
-target_include_directories(silkworm_db PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
+target_include_directories(silkworm_db PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${SILKWORM_MAIN_DIR}/magic_enum/include)
 
 set(SILKWORM_DB_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring nlohmann_json::nlohmann_json)
 set(SILKWORM_DB_PRIVATE_LIBS cborcpp)

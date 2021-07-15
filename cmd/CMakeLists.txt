@@ -105,6 +105,8 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(consensus consensus.cpp)
   target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
   target_link_libraries(consensus PRIVATE silkworm_core nlohmann_json::nlohmann_json evmc::loader CLI11::CLI11)
+  get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
+  target_include_directories(consensus PRIVATE ${SILKWORM_MAIN_DIR}/magic_enum/include)
 
   # Benchmarks
   find_package(benchmark CONFIG REQUIRED)

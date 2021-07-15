@@ -645,5 +645,32 @@ namespace db {
         // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
     }
 
+    TEST_CASE("read_chain_config") {
+        TemporaryDirectory tmp_dir;
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
+
+        const auto chain_config1{read_chain_config(txn)};
+        CHECK(chain_config1 == std::nullopt);
+
+        auto canonical_hashes{db::open_cursor(txn, table::kCanonicalHashes)};
+        const Bytes genesis_block_key{block_key(0)};
+        const auto ropsten_genesis_hash{0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d_bytes32};
+        canonical_hashes.upsert(to_slice(genesis_block_key), to_slice(ropsten_genesis_hash));
+
+        const auto chain_config2{read_chain_config(txn)};
+        CHECK(chain_config2 == std::nullopt);
+
+        auto config_table{db::open_cursor(txn, table::kConfig)};
+        const std::string ropsten_config_json{kRopstenConfig.to_json().dump()};
+        config_table.upsert(to_slice(ropsten_genesis_hash), to_slice(byte_view_of_c_str(ropsten_config_json.c_str())));
+
+        const auto chain_config3{read_chain_config(txn)};
+        CHECK(chain_config3 == kRopstenConfig);
+    }
+
 }  // namespace db
 }  // namespace silkworm

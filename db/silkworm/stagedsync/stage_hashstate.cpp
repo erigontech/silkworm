@@ -15,7 +15,6 @@
 */
 
 #include <filesystem>
-#include <iostream>
 
 #include <boost/endian/conversion.hpp>
 
@@ -61,7 +60,7 @@ void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
     auto src{db::open_cursor(txn, db::table::kPlainState)};
     auto data{src.to_first(/*throw_notfound*/ false)};
     int percent{0};
-    uint64_t next_start_byte{0};
+    uint8_t next_start_byte{0};
 
     while (data) {
         // TODO (Giulio) -- a byte >= uint64 ??
@@ -144,9 +143,8 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
 
     auto start_block_number{db::stages::get_stage_progress(txn, db::stages::kHashStateKey) + 1};
 
-    Bytes start_key(8, '\0');
-    boost::endian::store_big_u64(&start_key[0], start_block_number);
-    auto changeset_data{changeset_table.find(db::to_slice(start_key), /*throw_notfound*/ false)};
+    Bytes start_key{db::block_key(start_block_number)};
+    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
 
     while (changeset_data) {
         Bytes mdb_key_as_bytes{db::from_slice(changeset_data.key)};
@@ -247,5 +245,119 @@ StageResult stage_hashstate(db::EnvConfig db_config) {
     return StageResult::kStageSuccess;
 }
 
-StageResult unwind_hashstate(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+/*
+ *  If we have done hashstate before(not first sync),
+ *  We need to use changeset because we can use the progress system.
+ *  Note: Standard Promotion is way slower than Clean Promotion
+ */
+void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation operation) {
+    auto [changeset_config, target_config] = get_tables_for_promote(operation);
+
+    auto changeset_table{db::open_cursor(txn, changeset_config)};
+    auto plainstate_table{db::open_cursor(txn, db::table::kPlainState)};
+    auto codehash_table{db::open_cursor(txn, db::table::kPlainContractCode)};
+    auto target_table{db::open_cursor(txn, target_config)};
+
+    Bytes start_key{db::block_key(unwind_to + 1)};
+    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
+
+    while (changeset_data) {
+        Bytes mdb_key_as_bytes{db::from_slice(changeset_data.key)};
+        Bytes mdb_value_as_bytes{db::from_slice(changeset_data.value)};
+        auto [db_key, _]{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};
+        if (operation == HashstateOperation::HashAccount) {
+            // Hashing
+            auto hash{keccak256(db_key)};
+            auto data{target_table.find(db::to_slice(hash.bytes), /*throw_notfound*/ false)};
+            if (!data) {
+                changeset_data = changeset_table.to_next(false);
+                continue;
+            }
+            target_table.erase();
+            changeset_data = changeset_table.to_next(false);
+        } else if (operation == HashstateOperation::HashStorage) {
+            // We get storage value and hash its key.
+            Bytes key(kHashLength * 2 + db::kIncarnationLength, '\0');
+
+            // Hashing
+            std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
+            std::memcpy(&key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
+            std::memcpy(&key[kHashLength + db::kIncarnationLength],
+                        keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
+
+            auto data{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
+            if (!data) {
+                changeset_data = changeset_table.to_next(false);
+                continue;
+            }
+            target_table.erase();
+            changeset_data = changeset_table.to_next(false);
+
+        } else {
+            // get incarnation
+            auto encoded_account{plainstate_table.find(db::to_slice(db_key), false)};
+            if (!encoded_account) {
+                changeset_data = changeset_table.to_next(false);
+                continue;
+            }
+            auto [incarnation, err]{extract_incarnation(db::from_slice(encoded_account.value))};
+            rlp::err_handler(err);
+            if (incarnation == 0) {
+                changeset_data = changeset_table.to_next(false);
+                continue;
+            }
+
+            // Hash and concatenate everything together
+            Bytes key(kHashLength + db::kIncarnationLength, '\0');
+            std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
+            boost::endian::store_big_u64(&key[kHashLength], incarnation);
+            auto data{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
+            if (!data) {
+                changeset_data = changeset_table.to_next(false);
+                continue;
+            }
+            target_table.erase();
+            changeset_data = changeset_table.to_next(false);
+        }
+    }
+}
+
+StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) {
+    try {
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+
+        auto stage_height{db::stages::get_stage_progress(txn, db::stages::kHashStateKey)};
+        if (unwind_to >= stage_height) {
+            SILKWORM_LOG(LogLevel::Error)
+                << "Stage progress is " << stage_height << " which is <= than requested unwind_to" << std::endl;
+            return StageResult::kStageAborted;
+        }
+
+        SILKWORM_LOG(LogLevel::Info) << "Unwinding HashState from " << stage_height << " to " << unwind_to << " ..."
+                                     << std::endl;
+
+        SILKWORM_LOG(LogLevel::Info) << "[1/3] Hashed accounts ... " << std::endl;
+        hashstate_unwind(txn, unwind_to, HashstateOperation::HashAccount);
+
+        SILKWORM_LOG(LogLevel::Info) << "[2/3] Hashed storage ... " << std::endl;
+        hashstate_unwind(txn, unwind_to, HashstateOperation::HashStorage);
+
+        SILKWORM_LOG(LogLevel::Info) << "[3/3] Code ... " << std::endl;
+        hashstate_unwind(txn, unwind_to, HashstateOperation::Code);
+
+        // Update progress height with last processed block
+        db::stages::set_stage_progress(txn, db::stages::kHashStateKey, unwind_to);
+
+        SILKWORM_LOG(LogLevel::Info) << "Committing ... " << std::endl;
+        txn.commit();
+
+        SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
+        return StageResult::kStageSuccess;
+
+    } catch (const std::exception& ex) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected error : " << ex.what() << std::endl;
+        return StageResult::kStageAborted;
+    }
+}
 }  // namespace silkworm::stagedsync

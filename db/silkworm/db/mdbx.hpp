@@ -67,7 +67,11 @@ static inline std::filesystem::path get_lockfile_path(std::filesystem::path& bas
     return std::filesystem::path(base_path / std::filesystem::path(kDbLockFileName));
 }
 
+// Executes a function on each record up to cursor.eof()
 size_t for_each(::mdbx::cursor& cursor, WalkFunc func);
+
+// Executes a function on each record up to cursor.eof() or up to iterations (whichever the first)
+size_t for_count(::mdbx::cursor& cursor, WalkFunc func, size_t iterations);
 
 }  // namespace silkworm::db
 

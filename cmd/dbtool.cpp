@@ -34,7 +34,6 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
-#include <silkworm/common/data_dir.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -254,7 +253,6 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     auto free_crs{txn.open_cursor(free_map)};
 
     const auto& collect_func{[&ret, &free_stat](::mdbx::cursor::move_result data) -> bool {
-
         size_t txId = *(static_cast<size_t*>(data.key.iov_base));
         size_t pagesCount = *(static_cast<uint32_t*>(data.value.iov_base));
         size_t pagesSize = pagesCount * free_stat.ms_psize;
@@ -262,7 +260,6 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
         ret.size += pagesSize;
         ret.entries.push_back({txId, pagesCount, pagesSize});
         return true;
-
     }};
 
     if (free_crs.to_first(/*throw_notfound =*/false)) {
@@ -393,7 +390,7 @@ int do_scan(DbOptions& db_opts) {
 
 int do_stages(DbOptions& db_opts) {
     static std::string fmt_hdr{" %-24s %10s "};
-    static std::string fmt_row{" %-24s %10u "};
+    static std::string fmt_row{" %-24s %10u %-8s"};
 
     int retvar{0};
 
@@ -402,17 +399,23 @@ int do_stages(DbOptions& db_opts) {
         config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
-        auto stages_map{db::open_map(txn, db::table::kSyncStageProgress)};
-        auto stages_crs{txn.open_cursor(stages_map)};
+        auto crs{db::open_cursor(txn, db::table::kSyncStageProgress)};
 
-        std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
-        std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(10, '-')) << std::endl;
+        if (txn.get_map_stat(crs.map()).ms_entries) {
+            std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
+            std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(10, '-')) << std::endl;
 
-        auto result{stages_crs.to_first(/*throw_notfound =*/false)};
-        while (result) {
-            size_t height{boost::endian::load_big_u64(result.value.byte_ptr())};
-            std::cout << (boost::format(fmt_row) % result.key.string() % height) << std::endl;
-            result = stages_crs.to_next(/*throw_notfound =*/false);
+            auto result{crs.to_first(/*throw_notfound =*/false)};
+            while (result) {
+                size_t height{boost::endian::load_big_u64(result.value.byte_ptr())};
+                bool Known{db::stages::is_known_stage(result.key.char_ptr())};
+                std::cout << (boost::format(fmt_row) % result.key.string() % height %
+                              (Known ? std::string(8, ' ') : "Unknown"))
+                          << std::endl;
+                result = crs.to_next(/*throw_notfound =*/false);
+            }
+        } else {
+            std::cout << "\n There are no stages to list" << std::endl;
         }
 
         std::cout << std::endl << std::endl;
@@ -790,11 +793,11 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-    DbOptions db_opts{};                // Common options for all actions
-    FreeListOptions freelist_opts{};    // Options for freelist action
-    ClearOptions clear_opts{};          // Options for clear action
-    CompactOptions compact_opts{};      // Options for compact action
-    CopyOptions copy_opts{};            // Options for copy action
+    DbOptions db_opts{};               // Common options for all actions
+    FreeListOptions freelist_opts{};   // Options for freelist action
+    ClearOptions clear_opts{};         // Options for clear action
+    CompactOptions compact_opts{};     // Options for compact action
+    CopyOptions copy_opts{};           // Options for copy action
     StageSetOptions stage_set_opts{};  // Options for stage set
 
     CLI::App app_main("Erigon db tool");

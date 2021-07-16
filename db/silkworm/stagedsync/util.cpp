@@ -23,18 +23,9 @@
 namespace silkworm::stagedsync {
 
 void check_stagedsync_error(StageResult code) {
-    switch (code) {
-        case StageResult::kStageBadChainSequence:
-            throw std::runtime_error("BadChainSequence: Chain is not in order.");
-            break;
-        case StageResult::kStageInvalidRange:
-            throw std::runtime_error("InvalidRange: Starting block is in greater position than ending block.");
-            break;
-        case StageResult::kStageAborted:
-            throw std::runtime_error("Aborted: Stage was aborted.");
-            break;
-        default:
-            break;
+    if (code != StageResult::kStageSuccess) {
+        std::string error{magic_enum::enum_name<StageResult>(code)};
+        throw std::runtime_error(error);
     }
 }
 

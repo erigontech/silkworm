@@ -20,18 +20,18 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 
-#include <silkworm/stagedsync/stagedsync.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/stagedsync/stagedsync.hpp>
 
 using namespace silkworm;
 namespace fs = std::filesystem;
 
-
 int main(int argc, char* argv[]) {
     CLI::App app{"Generates Hashed state"};
 
-    std::string chaindata{db::default_path()};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     bool full{false};
     bool incrementally{false};
     bool reset{false};
@@ -42,7 +42,6 @@ int main(int argc, char* argv[]) {
     app.add_flag("--increment", incrementally, "Use incremental method");
     app.add_flag("--reset", reset, "Reset HashState");
     CLI11_PARSE(app, argc, argv);
-
 
     fs::path etl_path(fs::path(chaindata) / fs::path("etl-temp"));
 

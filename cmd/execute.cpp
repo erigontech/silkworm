@@ -20,6 +20,7 @@
 #include <boost/endian/conversion.hpp>
 #include <magic_enum.hpp>
 
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -32,7 +33,7 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
-    std::string chaindata{db::default_path()};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 

@@ -167,9 +167,6 @@ Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& loc
 // Erigon LogKey
 Bytes log_key(uint64_t block_number, uint32_t transaction_id);
 
-// Default database path
-std::string default_path();
-
 inline mdbx::slice to_slice(ByteView value) {
     return mdbx::slice(static_cast<const void*>(value.data()), value.length());
 }

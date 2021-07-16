@@ -22,17 +22,6 @@ namespace silkworm::db::stages {
 
 namespace {
 
-    bool is_known_stage(const char* name) {
-        if (strlen(name)) {
-            for (auto stage : kAllStages) {
-                if (strcmp(stage, name) == 0) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     uint64_t get_stage_data(mdbx::txn& txn, const char* stage_name, const db::MapConfig& domain) {
         if (!is_known_stage(stage_name)) {
             throw std::invalid_argument("Unknown stage name " + std::string(stage_name));
@@ -47,8 +36,7 @@ namespace {
         return boost::endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base));
     }
 
-    void set_stage_data(mdbx::txn& txn, const char* stage_name, uint64_t block_num,
-                        const db::MapConfig& domain) {
+    void set_stage_data(mdbx::txn& txn, const char* stage_name, uint64_t block_num, const db::MapConfig& domain) {
         if (!is_known_stage(stage_name)) {
             throw std::invalid_argument("Unknown stage name");
         }
@@ -82,6 +70,17 @@ void set_stage_unwind(mdbx::txn& txn, const char* stage_name, uint64_t block_num
 
 void clear_stage_unwind(mdbx::txn& txn, const char* stage_name) {
     set_stage_data(txn, stage_name, 0, silkworm::db::table::kSyncStageUnwind);
+}
+
+bool is_known_stage(const char* name) {
+    if (strlen(name)) {
+        for (auto stage : kAllStages) {
+            if (strcmp(stage, name) == 0) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 }  // namespace silkworm::db::stages

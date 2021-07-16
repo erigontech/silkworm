@@ -23,9 +23,10 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 
-#include <silkworm/stagedsync/stagedsync.hpp>
-#include <silkworm/db/stages.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/db/stages.hpp>
+#include <silkworm/stagedsync/stagedsync.hpp>
 
 using namespace silkworm;
 
@@ -34,7 +35,7 @@ int main(int argc, char *argv[]) {
 
     CLI::App app{"Generates History Indexes"};
 
-    std::string chaindata{db::default_path()};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     bool full{false}, storage{false};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
@@ -43,7 +44,6 @@ int main(int argc, char *argv[]) {
     app.add_flag("--storage", storage, "Do history of storages");
 
     CLI11_PARSE(app, argc, argv);
-
 
     db::EnvConfig db_config{chaindata};
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
@@ -57,11 +57,11 @@ int main(int argc, char *argv[]) {
             db::stages::set_stage_progress(txn, stage_key, 0);
             txn.commit();
         }
-        
+
         if (storage) {
             stagedsync::check_stagedsync_error(stagedsync::stage_storage_history(db_config));
         } else {
-            stagedsync::check_stagedsync_error(stagedsync::stage_account_history(db_config)); 
+            stagedsync::check_stagedsync_error(stagedsync::stage_account_history(db_config));
         }
 
     } catch (const std::exception &ex) {

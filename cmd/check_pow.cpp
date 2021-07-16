@@ -24,6 +24,7 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -52,7 +53,7 @@ int main(int argc, char* argv[]) {
     // Init command line parser
     CLI::App app("Check PoW.");
     app_options_t options{};
-    options.datadir = db::default_path();  // Default chain data db path
+    options.datadir = DataDirectory{}.get_chaindata_path().string();  // Default chain data db path
 
     // Command line arguments
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);

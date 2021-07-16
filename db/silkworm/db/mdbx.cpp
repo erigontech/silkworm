@@ -28,7 +28,7 @@ namespace silkworm::db {
     // Check datafile exists if create is not set
     fs::path db_path{config.path};
     if (db_path.has_filename()) {
-        db_path += std::filesystem::path::preferred_separator;  // Remove amibiguity. It hash to be a directory
+        db_path += std::filesystem::path::preferred_separator;  // Remove ambiguity. It has to be a directory
     }
     fs::path db_file{db::get_datafile_path(db_path)};
     if (!config.create) {

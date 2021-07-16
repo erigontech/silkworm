@@ -259,7 +259,6 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
 
     auto changeset_table{db::open_cursor(txn, changeset_config)};
     auto plainstate_table{db::open_cursor(txn, db::table::kPlainState)};
-    auto codehash_table{db::open_cursor(txn, db::table::kPlainContractCode)};
     auto target_table{db::open_cursor(txn, target_config)};
 
     Bytes start_key{db::block_key(unwind_to + 1)};

@@ -206,7 +206,7 @@ std::string human_size(uint64_t bytes) {
     static const uint32_t items{sizeof(suffix) / sizeof(suffix[0])};
     uint32_t index{0};
     double value{static_cast<double>(bytes)};
-    while (value > kKibi) {
+    while (value >= kKibi) {
         value /= kKibi;
         if (++index == (items - 1)) {
             break;
@@ -229,13 +229,18 @@ size_t prefix_length(ByteView a, ByteView b) {
 
 std::vector<std::string> split(std::string source, std::string delimiter) {
     std::vector<std::string> res{};
-    if (delimiter.length() >= source.length()) {
+    if (delimiter.length() >= source.length() || !delimiter.length()) {
+        res.emplace_back(source);
         return res;
     }
     size_t pos{0};
     while ((pos = source.find(delimiter)) != std::string::npos) {
         res.emplace_back(source.substr(0, pos));
         source.erase(0, pos + delimiter.length());
+    }
+    // Any residual part of input where delimiter is not found
+    if (source.length()) {
+        res.emplace_back(source);
     }
     return res;
 }

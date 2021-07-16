@@ -43,7 +43,8 @@ DataDirectory::DataDirectory(std::filesystem::path base_path, bool create)
             valid_ = true;
         }
     } else {
-        valid_ = std::filesystem::exists(base_path_) ? true : std::filesystem::create_directory(base_path_.native());
+        std::filesystem::create_directory(base_path_);
+        valid_ = std::filesystem::exists(base_path_);
     }
 }
 
@@ -73,6 +74,10 @@ DataDirectory DataDirectory::from_chaindata(std::filesystem::path chaindata_path
 
     if (tokens.size() <= 2) {
         throw std::runtime_error("Invalid base path");
+    }
+
+    if (!iequals(tokens.at(tokens.size() - 1), "chaindata") || !iequals(tokens.at(tokens.size() - 2), "erigon")) {
+        throw std::invalid_argument("Not a valid erigon chaindata path");
     }
 
     std::string base_path_str{};

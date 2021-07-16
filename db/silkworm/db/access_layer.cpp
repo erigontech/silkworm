@@ -35,11 +35,11 @@ std::optional<version_t> get_schema_version(mdbx::txn& txn) noexcept {
 
     auto data{src.current()};
     assert(data.value.length() == 12);
-    auto Major{boost::endian::load_big_u32(static_cast<unsigned char*>(data.value.iov_base))};
+    auto Major{boost::endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Minor{boost::endian::load_big_u32(static_cast<unsigned char*>(data.value.iov_base))};
+    auto Minor{boost::endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Patch{boost::endian::load_big_u32(static_cast<unsigned char*>(data.value.iov_base))};
+    auto Patch{boost::endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
     return version_t{Major, Minor, Patch};
 }
 

@@ -91,38 +91,6 @@ std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, Byt
     return res;
 }
 
-// See Erigon DefaultDataDir
-std::string default_path() {
-    std::string base_dir{};
-
-    const char* env{std::getenv("XDG_DATA_HOME")};
-    if (env) {
-        base_dir = env;
-    } else {
-#ifdef _WIN32
-        std::string env_name{"APPDATA"};
-#else
-        std::string env_name{"HOME"};
-#endif
-        env = std::getenv(env_name.c_str());
-        if (env) {
-            base_dir = env;
-        } else {
-            return base_dir;  // We actually don't know where to persist data
-        };
-    }
-
-#ifdef _WIN32
-    base_dir += "/Erigon";
-#elif __APPLE__
-    base_dir += "/Library/Erigon";
-#else
-    base_dir += "/.local/share/erigon";
-#endif
-
-    return base_dir + "/erigon/chaindata";
-}
-
 namespace detail {
     Bytes BlockBodyForStorage::encode() const {
         rlp::Header header{/*list=*/true, /*payload_length=*/0};

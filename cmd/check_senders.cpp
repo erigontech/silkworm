@@ -27,10 +27,11 @@
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/signals2.hpp>
 #include <ethash/keccak.hpp>
+#include <magic_enum.hpp>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/magic_enum.hpp>
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -46,14 +47,15 @@ using namespace silkworm;
 std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
 
 struct app_options_t {
-    std::string datadir{};                                          // Provided database path
-    uint32_t max_workers{std::thread::hardware_concurrency() - 1};  // Max number of threads (1 thread is reserved for main)
-    size_t batch_size{1'000'000};                                   // Number of work packages to serve a worker
-    uint32_t block_from{1u};                                        // Initial block number to start from
-    uint32_t block_to{UINT32_MAX};                                  // Final block number to process
-    bool force{false};                                              // Whether to replay already processed blocks
-    bool dry{false};                                                // Runs in dry mode (no data is persisted on disk)
-    bool debug{false};                                              // Whether to display some debug info
+    std::string datadir{};  // Provided database path
+    uint32_t max_workers{std::thread::hardware_concurrency() -
+                         1};        // Max number of threads (1 thread is reserved for main)
+    size_t batch_size{1'000'000};   // Number of work packages to serve a worker
+    uint32_t block_from{1u};        // Initial block number to start from
+    uint32_t block_to{UINT32_MAX};  // Final block number to process
+    bool force{false};              // Whether to replay already processed blocks
+    bool dry{false};                // Runs in dry mode (no data is persisted on disk)
+    bool debug{false};              // Whether to display some debug info
 };
 
 void sig_handler(int signum) {
@@ -812,7 +814,7 @@ int main(int argc, char* argv[]) {
     // Init command line parser
     CLI::App app("Senders recovery tool.");
     app_options_t options{};
-    options.datadir = db::default_path();  // Default chain data db path
+    options.datadir = DataDirectory{}.get_chaindata_path().string();  // Default chain data db path
 
     // Command line arguments
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
@@ -855,12 +857,11 @@ int main(int argc, char* argv[]) {
         }
 
         // Set database parameters
-        db::EnvConfig db_config{options.datadir};
+        DataDirectory data_dir{DataDirectory::from_chaindata(options.datadir)};
+        data_dir.create_tree();
 
-        // Compute etl temporary path
-        fs::path etl_path(fs::path(options.datadir) / fs::path("etl-temp"));
-        fs::create_directories(etl_path);
-        etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
+        etl::Collector collector(data_dir.get_etl_path().string().c_str(), /* flush size */ 512 * kMebi);
 
         // Open db and transaction
         auto env{db::open_env(db_config)};

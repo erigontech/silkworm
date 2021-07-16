@@ -16,12 +16,15 @@
 
 #include "access_layer.hpp"
 
+#include <fstream>
+
 #include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 #include <ethash/ethash.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/common/chain_genesis.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
 
@@ -81,6 +84,45 @@ static BlockBody sample_block_body() {
 
 namespace db {
 
+    TEST_CASE("DataDirectory") {
+        // Open and create default storage path
+        DataDirectory data_dir{/*create = */ true};
+        REQUIRE(data_dir.valid());
+        REQUIRE_NOTHROW(data_dir.create_tree());
+
+        // Eventually delete the created paths
+        std::filesystem::remove_all(data_dir.get_base_path());
+
+        TemporaryDirectory tmp_dir1;
+        std::filesystem::path fake_path{std::filesystem::path(tmp_dir1.path()) / "nonexistentpath"};
+        REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Does not exist
+        std::filesystem::create_directories(fake_path);
+        REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Not a valid chaindata path
+        fake_path /= "erigon";
+        fake_path /= "chaindata";
+        REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Valid chaindata path but does not exist yet
+        std::filesystem::create_directories(fake_path);
+        REQUIRE_NOTHROW((void)DataDirectory::from_chaindata(fake_path));  // Valid chaindata path and exist
+
+        DataDirectory data_dir2{DataDirectory::from_chaindata(fake_path)};
+        REQUIRE_NOTHROW(data_dir2.create_tree());
+
+        auto etl_path{data_dir2.get_etl_path()};
+        REQUIRE(std::filesystem::is_empty(etl_path));
+
+        // Drop a file into etl temp
+        {
+            std::string filename{etl_path.string() + "/fake.txt"};
+            std::ofstream f(filename.c_str());
+        }
+
+        REQUIRE(std::filesystem::is_empty(etl_path) == false);
+
+        data_dir2.clear_etl_temp();
+        REQUIRE(std::filesystem::is_empty(etl_path));
+
+    }
+
     TEST_CASE("Db Opening") {
         // Empty dir
         std::string empty{};
@@ -90,7 +132,11 @@ namespace db {
 
         // Conflicting flags
         TemporaryDirectory tmp_dir1;
-        db_config.path = tmp_dir1.path();
+        DataDirectory data_dir{std::string(tmp_dir1.path())};
+        REQUIRE_NOTHROW(data_dir.create_tree());
+        REQUIRE(std::filesystem::exists(data_dir.get_chaindata_path()));
+
+        db_config.path = data_dir.get_chaindata_path().string();
         db_config.create = true;
         db_config.shared = true;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
@@ -643,6 +689,33 @@ namespace db {
         // auto epoch_context{ethash::create_epoch_context(0)};
         // auto result{ethash::hash(*epoch_context, sealh256, nonce)};
         // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
+    }
+
+    TEST_CASE("read_chain_config") {
+        TemporaryDirectory tmp_dir;
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
+
+        const auto chain_config1{read_chain_config(txn)};
+        CHECK(chain_config1 == std::nullopt);
+
+        auto canonical_hashes{db::open_cursor(txn, table::kCanonicalHashes)};
+        const Bytes genesis_block_key{block_key(0)};
+        const auto ropsten_genesis_hash{0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d_bytes32};
+        canonical_hashes.upsert(to_slice(genesis_block_key), to_slice(ropsten_genesis_hash));
+
+        const auto chain_config2{read_chain_config(txn)};
+        CHECK(chain_config2 == std::nullopt);
+
+        auto config_table{db::open_cursor(txn, table::kConfig)};
+        const std::string ropsten_config_json{kRopstenConfig.to_json().dump()};
+        config_table.upsert(to_slice(ropsten_genesis_hash), to_slice(byte_view_of_c_str(ropsten_config_json.c_str())));
+
+        const auto chain_config3{read_chain_config(txn)};
+        CHECK(chain_config3 == kRopstenConfig);
     }
 
 }  // namespace db

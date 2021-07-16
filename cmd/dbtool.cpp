@@ -24,11 +24,13 @@
 #include <boost/bind.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/format.hpp>
+#include <magic_enum.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/common/magic_enum.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/types/block.hpp>
@@ -125,21 +127,21 @@ struct dbFreeInfo {
     std::vector<dbFreeEntry> entries{};
 };
 
-struct db_options_t {
-    std::string datadir{silkworm::db::default_path()};  // Where data file is located
+struct DbOptions {
+    std::string datadir{DataDirectory{}.get_chaindata_path().string()};  // Where data file is located
 };
 
-struct freelist_options_t {
+struct FreeListOptions {
     bool details{false};  // Wheter or not print detailed list
 };
 
-struct clear_options_t {
+struct ClearOptions {
     std::vector<std::string> names{};  // Name of table(s) to clear
     bool drop{false};                  // Whether or not to drop table instead of clearing
     bool yes{false};                   // Assume yes to all requests of confirmation
 };
 
-struct compact_options_t {
+struct CompactOptions {
     std::string workdir{};  // Where compacted file should be located
     bool replace{false};    // Wheter or not compacted file shoudl replace original one
     bool nobak{false};      // Whether or not the original file should be renamed to bak
@@ -147,7 +149,7 @@ struct compact_options_t {
     fs::path file{};        // Path to target data file
 };
 
-struct copy_options_t {
+struct CopyOptions {
     std::string targetdir{};             // Target directory of database
     bool create{false};                  // Whether or not new data file have to be created
     bool noempty{false};                 // Omit copying a table when empty
@@ -161,13 +163,18 @@ struct copy_options_t {
     size_t filesize{0};                  // Size of target file if exists
 };
 
+struct StageSetOptions {
+    std::string name{};  // Name of the stage to set;
+    uint32_t height{0};  // New height to set
+};
+
 void sig_handler(int signum) {
     (void)signum;
     std::cout << std::endl << "Request for termination intercepted. Stopping ..." << std::endl << std::endl;
     shouldStop = true;
 }
 
-int do_clear(db_options_t& db_opts, clear_options_t& app_opts) {
+int do_clear(DbOptions& db_opts, ClearOptions& app_opts) {
     int retvar{0};
 
     try {
@@ -244,16 +251,21 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     ::mdbx::map_handle free_map{0};
     auto free_stat{txn.get_map_stat(free_map)};
     auto free_crs{txn.open_cursor(free_map)};
-    auto result{free_crs.to_first(/*throw_notfound =*/false)};
-    while (result) {
-        size_t txId = *(static_cast<size_t*>(result.key.iov_base));
-        size_t pagesCount = *(static_cast<uint32_t*>(result.value.iov_base));
+
+    const auto& collect_func{[&ret, &free_stat](::mdbx::cursor::move_result data) -> bool {
+        size_t txId = *(static_cast<size_t*>(data.key.iov_base));
+        size_t pagesCount = *(static_cast<uint32_t*>(data.value.iov_base));
         size_t pagesSize = pagesCount * free_stat.ms_psize;
         ret.pages += pagesCount;
         ret.size += pagesSize;
         ret.entries.push_back({txId, pagesCount, pagesSize});
-        result = free_crs.to_next(/*throw_notfound =*/false);
+        return true;
+    }};
+
+    if (free_crs.to_first(/*throw_notfound =*/false)) {
+        (void)db::for_each(free_crs, collect_func);
     }
+
     return ret;
 }
 
@@ -302,7 +314,7 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     return ret;
 }
 
-int do_scan(db_options_t& db_opts) {
+int do_scan(DbOptions& db_opts) {
     static std::string fmt_hdr{" %3s %-24s %=50s %13s %13s %13s"};
 
     int retvar{0};
@@ -376,9 +388,9 @@ int do_scan(db_options_t& db_opts) {
     return retvar;
 }
 
-int do_stages(db_options_t& db_opts) {
+int do_stages(DbOptions& db_opts) {
     static std::string fmt_hdr{" %-24s %10s "};
-    static std::string fmt_row{" %-24s %10u "};
+    static std::string fmt_row{" %-24s %10u %-8s"};
 
     int retvar{0};
 
@@ -387,17 +399,23 @@ int do_stages(db_options_t& db_opts) {
         config.readonly = true;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
-        auto stages_map{db::open_map(txn, db::table::kSyncStageProgress)};
-        auto stages_crs{txn.open_cursor(stages_map)};
+        auto crs{db::open_cursor(txn, db::table::kSyncStageProgress)};
 
-        std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
-        std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(10, '-')) << std::endl;
+        if (txn.get_map_stat(crs.map()).ms_entries) {
+            std::cout << "\n" << (boost::format(fmt_hdr) % "Stage Name" % "Block") << std::endl;
+            std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(10, '-')) << std::endl;
 
-        auto result{stages_crs.to_first(/*throw_notfound =*/false)};
-        while (result) {
-            size_t height{boost::endian::load_big_u64(result.value.byte_ptr())};
-            std::cout << (boost::format(fmt_row) % result.key.string() % height) << std::endl;
-            result = stages_crs.to_next(/*throw_notfound =*/false);
+            auto result{crs.to_first(/*throw_notfound =*/false)};
+            while (result) {
+                size_t height{boost::endian::load_big_u64(result.value.byte_ptr())};
+                bool Known{db::stages::is_known_stage(result.key.char_ptr())};
+                std::cout << (boost::format(fmt_row) % result.key.string() % height %
+                              (Known ? std::string(8, ' ') : "Unknown"))
+                          << std::endl;
+                result = crs.to_next(/*throw_notfound =*/false);
+            }
+        } else {
+            std::cout << "\n There are no stages to list" << std::endl;
         }
 
         std::cout << std::endl << std::endl;
@@ -410,7 +428,29 @@ int do_stages(db_options_t& db_opts) {
     return retvar;
 }
 
-int do_tables(db_options_t& db_opts) {
+int do_stage_set(DbOptions& db_opts, StageSetOptions set_opts) {
+    int retvar{0};
+    try {
+        db::EnvConfig config{db_opts.datadir};
+        config.readonly = false;
+        auto env{silkworm::db::open_env(config)};
+        auto txn{env.start_write()};
+
+        auto old_height{db::stages::get_stage_progress(txn, set_opts.name.c_str())};
+        db::stages::set_stage_progress(txn, set_opts.name.c_str(), set_opts.height);
+        txn.commit();
+
+        std::cout << "Stage " << set_opts.name << " touched from " << old_height << " to " << set_opts.height
+                  << std::endl;
+
+    } catch (const std::exception& ex) {
+        retvar = -1;
+        std::cout << ex.what() << std::endl;
+    }
+    return retvar;
+}
+
+int do_tables(DbOptions& db_opts) {
     static std::string fmt_hdr{" %3s %-24s %10s %2s %10s %10s %10s %12s %10s %10s"};
     static std::string fmt_row{" %3i %-24s %10u %2u %10u %10u %10u %12s %10s %10s"};
 
@@ -466,7 +506,7 @@ int do_tables(db_options_t& db_opts) {
     return retvar;
 }
 
-int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
+int do_freelist(DbOptions& db_opts, FreeListOptions& app_opts) {
     static std::string fmt_hdr{"%9s %9s %12s"};
     static std::string fmt_row{"%9u %9u %12s"};
 
@@ -500,7 +540,7 @@ int do_freelist(db_options_t& db_opts, freelist_options_t& app_opts) {
     return retvar;
 }
 
-int do_schema(db_options_t& db_opts) {
+int do_schema(DbOptions& db_opts) {
     int retvar{0};
     try {
         db::EnvConfig config{db_opts.datadir};
@@ -527,7 +567,7 @@ int do_schema(db_options_t& db_opts) {
     return retvar;
 }
 
-int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
+int do_compact(DbOptions& db_opts, CompactOptions& app_opts) {
     int retvar{0};
 
     try {
@@ -593,7 +633,7 @@ int do_compact(db_options_t& db_opts, compact_options_t& app_opts) {
     return retvar;
 }
 
-int do_copy(db_options_t& db_opts, copy_options_t& app_opts) {
+int do_copy(DbOptions& db_opts, CopyOptions& app_opts) {
     int retvar{0};
 
     try {
@@ -753,11 +793,12 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-    db_options_t db_opts{};              // Common options for all actions
-    freelist_options_t freelist_opts{};  // Options for freelist action
-    clear_options_t clear_opts{};        // Options for clear action
-    compact_options_t compact_opts{};    // Options for compact action
-    copy_options_t copy_opts{};          // Options for copy action
+    DbOptions db_opts{};               // Common options for all actions
+    FreeListOptions freelist_opts{};   // Options for freelist action
+    ClearOptions clear_opts{};         // Options for clear action
+    CompactOptions compact_opts{};     // Options for compact action
+    CopyOptions copy_opts{};           // Options for copy action
+    StageSetOptions stage_set_opts{};  // Options for stage set
 
     CLI::App app_main("Erigon db tool");
 
@@ -810,6 +851,12 @@ int main(int argc, char* argv[]) {
     // List stages keys and their heights
     auto& app_stages = *app_main.add_subcommand("stages", "List stages and their actual heights");
 
+    auto& app_stage_set = *app_main.add_subcommand("stageset", "Sets a stage to a new height");
+    app_stage_set.add_option("--name", stage_set_opts.name, "Name of the stage to set", false)->required();
+    app_stage_set.add_option("--height", stage_set_opts.height, "New height for stage", false)
+        ->required()
+        ->check(CLI::Range(0u, UINT32_MAX));
+
     CLI11_PARSE(app_main, argc, argv);
 
     // Cli args sanification for compact
@@ -854,6 +901,8 @@ int main(int argc, char* argv[]) {
         return do_scan(db_opts);
     } else if (app_stages) {
         return do_stages(db_opts);
+    } else if (app_stage_set) {
+        return do_stage_set(db_opts, stage_set_opts);
     } else if (app_freelist) {
         return do_freelist(db_opts, freelist_opts);
     } else if (app_clear) {

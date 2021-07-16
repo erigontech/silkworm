@@ -70,6 +70,9 @@ void set_stage_unwind(mdbx::txn& txn, const char* stage_name, uint64_t block_num
 // Clears the invalidation point for the given stage
 void clear_stage_unwind(mdbx::txn& txn, const char* stage_name);
 
+// Returns whether or not the stage name is coded
+bool is_known_stage(const char* name);
+
 }  // namespace silkworm::db::stages
 
 #endif  // !SILKWORM_DB_STAGES_HPP_

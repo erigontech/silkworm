@@ -167,9 +167,6 @@ Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& loc
 // Erigon LogKey
 Bytes log_key(uint64_t block_number, uint32_t transaction_id);
 
-// Default database path
-std::string default_path();
-
 inline mdbx::slice to_slice(ByteView value) {
     return mdbx::slice(static_cast<const void*>(value.data()), value.length());
 }
@@ -182,7 +179,7 @@ inline mdbx::slice to_slice(const evmc::bytes32& value) {
     return mdbx::slice(static_cast<const void*>(value.bytes), sizeof(evmc::bytes32));
 }
 
-inline ByteView from_slice(const mdbx::slice slice) { return {slice.byte_ptr(), slice.length()}; }
+inline ByteView from_slice(const mdbx::slice slice) { return {static_cast<uint8_t*>(slice.iov_base), slice.iov_len}; }
 
 // If there exists an entry in a multivalue table with a given key and a value starting with a given prefix,
 // return the suffix of the value.

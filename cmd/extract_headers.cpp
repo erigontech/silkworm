@@ -23,6 +23,7 @@
 #include <boost/endian/conversion.hpp>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/tables.hpp>
@@ -181,7 +182,7 @@ int main(int argc, char* argv[]) {
         "Extract Headers. Hard-code historical headers, from block zero to the current block with a certain step"};
 
     string name = "last";
-    string db_path = db::default_path();
+    string db_path{DataDirectory{}.get_chaindata_path().string()};
     uint64_t block_step = 100'000u;
 
     app.add_option("-n,--name,name", name, "Name suffix of the output file", true);

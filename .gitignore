@@ -1,5 +1,6 @@
 build
 xcode
+.code-workspace
 .idea
 .vscode
 .vs

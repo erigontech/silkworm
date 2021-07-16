@@ -43,7 +43,7 @@ DataDirectory::DataDirectory(std::filesystem::path base_path, bool create)
             valid_ = true;
         }
     } else {
-        std::filesystem::create_directory(base_path_);
+        std::filesystem::create_directories(base_path_);
         valid_ = std::filesystem::exists(base_path_);
     }
 }

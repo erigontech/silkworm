@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Unwind Transaction Lookup Stage"};
 
-    std::string db_path{db::default_path()};
+    std::string db_path{DataDirectory{}.get_chaindata_path().string()};
     uint32_t unwind_to{UINT32_MAX};
     app.add_option("--chaindata", db_path, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);

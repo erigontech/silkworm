@@ -27,7 +27,8 @@ class DataDirectory {
     DataDirectory(std::filesystem::path base_path, bool create = false);
     DataDirectory(bool create = false)
         : DataDirectory::DataDirectory(DataDirectory::get_default_storage_path(), create){};
-
+    DataDirectory(std::string base_path_str, bool create = false)
+        : DataDirectory::DataDirectory(std::filesystem::path(base_path_str), create){};
     ~DataDirectory() = default;
 
     // Creates an instance of DataDirectory from chaindata path

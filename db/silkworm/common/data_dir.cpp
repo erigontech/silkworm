@@ -124,22 +124,20 @@ std::filesystem::path silkworm::DataDirectory::get_default_storage_path() {
 }
 
 void DataDirectory::create_tree() {
+    std::filesystem::create_directories(chaindata_path_);
+    std::filesystem::create_directories(nodes_path_);
+    std::filesystem::create_directories(etl_temp_path_);
+
     if (!std::filesystem::exists(chaindata_path_) || !std::filesystem::is_directory(chaindata_path_)) {
-        if (!std::filesystem::create_directories(chaindata_path_.native())) {
-            throw std::runtime_error("Can't create chaindata directory");
-        }
+        throw std::runtime_error("Can't create chaindata directory");
     }
 
     if (!std::filesystem::exists(nodes_path_) || !std::filesystem::is_directory(nodes_path_)) {
-        if (!std::filesystem::create_directories(nodes_path_.native())) {
-            throw std::runtime_error("Can't create nodes directory");
-        }
+        throw std::runtime_error("Can't create nodes directory");
     }
 
     if (!std::filesystem::exists(etl_temp_path_) || !std::filesystem::is_directory(etl_temp_path_)) {
-        if (!std::filesystem::create_directories(etl_temp_path_.native())) {
-            throw std::runtime_error("Can't create etl-temp directory");
-        }
+        throw std::runtime_error("Can't create etl-temp directory");
     }
 }
 

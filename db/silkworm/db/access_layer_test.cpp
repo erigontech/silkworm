@@ -22,6 +22,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/common/chain_genesis.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
 
@@ -90,7 +91,11 @@ namespace db {
 
         // Conflicting flags
         TemporaryDirectory tmp_dir1;
-        db_config.path = tmp_dir1.path();
+        DataDirectory data_dir{std::string(tmp_dir1.path())};
+        REQUIRE_NOTHROW(data_dir.create_tree());
+        REQUIRE(std::filesystem::exists(data_dir.get_chaindata_path()));
+
+        db_config.path = data_dir.get_chaindata_path().string();
         db_config.create = true;
         db_config.shared = true;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);

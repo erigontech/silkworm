@@ -16,8 +16,6 @@
 
 #include "util.hpp"
 
-#include <iostream>
-
 #include <catch2/catch.hpp>
 
 namespace silkworm {
@@ -148,7 +146,6 @@ TEST_CASE("parse_size") {
 }
 
 TEST_CASE("human_size") {
-
     uint64_t val{1 * kTebi};
     CHECK(human_size(val) == "1.00 TB");
 

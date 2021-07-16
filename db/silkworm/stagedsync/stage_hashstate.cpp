@@ -271,9 +271,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     switch (operation) {
         case silkworm::stagedsync::HashstateOperation::HashAccount:
             unwind_func = [&target_table](::mdbx::cursor::move_result data) -> bool {
-                Bytes mdb_key_as_bytes{db::from_slice(data.key)};
-                Bytes mdb_value_as_bytes{db::from_slice(data.value)};
-                auto [db_key, _]{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};
+                auto [db_key, _]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
                 auto hash{keccak256(db_key)};
                 if (target_table.seek(db::to_slice(hash.bytes))) {
                     target_table.erase();
@@ -283,9 +281,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             break;
         case silkworm::stagedsync::HashstateOperation::HashStorage:
             unwind_func = [&target_table](::mdbx::cursor::move_result data) -> bool {
-                Bytes mdb_key_as_bytes{db::from_slice(data.key)};
-                Bytes mdb_value_as_bytes{db::from_slice(data.value)};
-                auto [db_key, _]{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};
+                auto [db_key, _]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
 
                 // We get storage value and hash its key.
                 Bytes key(kHashLength * 2 + db::kIncarnationLength, '\0');
@@ -302,10 +298,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             break;
         case silkworm::stagedsync::HashstateOperation::Code:
             unwind_func = [&target_table, &plainstate_table](::mdbx::cursor::move_result data) -> bool {
-                Bytes mdb_key_as_bytes{db::from_slice(data.key)};
-                Bytes mdb_value_as_bytes{db::from_slice(data.value)};
-                auto [db_key, _]{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};
-
+                auto [db_key, _]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
                 // Get incarnation
                 auto encoded_account{plainstate_table.find(db::to_slice(db_key), false)};
                 if (encoded_account) {

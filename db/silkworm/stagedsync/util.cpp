@@ -14,15 +14,16 @@
    limitations under the License.
 */
 #include "util.hpp"
-#include <stdexcept>
+
 #include <memory>
+#include <stdexcept>
+
 #include <silkworm/db/access_layer.hpp>
 
 namespace silkworm::stagedsync {
 
 void check_stagedsync_error(StageResult code) {
-    switch (code)
-    {
+    switch (code) {
         case StageResult::kStageBadChainSequence:
             throw std::runtime_error("BadChainSequence: Chain is not in order.");
             break;
@@ -37,14 +38,16 @@ void check_stagedsync_error(StageResult code) {
     }
 }
 
-std::pair<Bytes, Bytes> convert_to_db_format(const Bytes& key, const Bytes& value) {
+std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView& value) {
     if (key.size() == 8) {
-        return {value.substr(0, kAddressLength), value.substr(kAddressLength)};
+        Bytes a(value.data(), kAddressLength);
+        Bytes b(value.substr(kAddressLength).data());
+        return {a, b};
     }
-    Bytes db_key(kHashLength + kAddressLength + db::kIncarnationLength, '\0');
-    std::memcpy(&db_key[0], &key[8], kAddressLength + db::kIncarnationLength);
-    std::memcpy(&db_key[kAddressLength + db::kIncarnationLength], &value[0], kHashLength);
-    return {db_key, value.substr(kHashLength)};
+    Bytes a(key.substr(8).data(), kAddressLength + db::kIncarnationLength);
+    a.append(value.data(), kHashLength);
+    Bytes b(value.substr(kHashLength));
+    return {a, b};
 }
 
-}  // namespace silkworm::db
+}  // namespace silkworm::stagedsync

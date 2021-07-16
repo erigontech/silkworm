@@ -94,7 +94,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     auto block_data{bodies_table.current()};
     while (block_data && !should_stop()) {
         auto key_view{db::from_slice(block_data.key)};
-        block_num = boost::endian::load_big_u64(block_data.key.byte_ptr());
+        block_num = boost::endian::load_big_u64(static_cast<uint8_t*>(block_data.key.iov_base));
         if (block_num < expected_block_num) {
             // The same block height has been recorded
             // but is not canonical;
@@ -157,7 +157,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
                             /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 50 : 10));
 
             // Get the last processed block and update stage height
-            auto last_processed_block{boost::endian::load_big_u64(target_table.to_last().key.byte_ptr())};
+            auto last_processed_block{boost::endian::load_big_u64(static_cast<uint8_t*>(target_table.to_last().key.iov_base))};
             db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
         }
     }
@@ -409,7 +409,7 @@ StageResult RecoveryFarm::fill_canonical_headers(uint64_t height_from, uint64_t 
 
     // Read all headers up to block_to included
     while (data) {
-        reached_block_num = boost::endian::load_big_u64(data.key.byte_ptr());
+        reached_block_num = boost::endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
         if (reached_block_num != expected_block_num) {
             SILKWORM_LOG(LogLevel::Error) << "Bad header hash sequence ! Expected " << expected_block_num << " got "
                                           << reached_block_num << std::endl;

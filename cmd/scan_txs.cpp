@@ -19,6 +19,7 @@
 
 #include <CLI/CLI.hpp>
 
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
@@ -27,7 +28,7 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and scans txs for errored txs"};
     using namespace silkworm;
 
-    std::string chaindata{db::default_path()};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
@@ -56,7 +57,6 @@ int main(int argc, char* argv[]) {
     ExecutionStatePool state_pool;
 
     try {
-
         db::EnvConfig db_config{chaindata};
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};

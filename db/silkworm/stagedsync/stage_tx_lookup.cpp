@@ -64,7 +64,7 @@ StageResult stage_tx_lookup(db::EnvConfig db_config) {
     while (bodies_data) {
         auto body_rlp{db::from_slice(bodies_data.value)};
         auto body{db::detail::decode_stored_block_body(body_rlp)};
-        Bytes block_number_as_bytes(bodies_data.key.byte_ptr(), 8);
+        Bytes block_number_as_bytes(static_cast<uint8_t*>(bodies_data.key.iov_base), 8);
         auto lookup_block_data{compact(block_number_as_bytes)};
         block_number = boost::endian::load_big_u64(&block_number_as_bytes[0]);
 

@@ -62,11 +62,11 @@ option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
 option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
 option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports" OFF)
 
-include(compiler_settings)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
 
-include(cmake/Hunter/core_packages.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/core_packages.cmake)
 if(NOT SILKWORM_CORE_ONLY)
-  include(cmake/Hunter/extra_packages.cmake)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
 endif()
 
 

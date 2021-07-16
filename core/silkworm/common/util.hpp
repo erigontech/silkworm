@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include <optional>
+#include <vector>
 
 #include <ethash/keccak.hpp>
 
@@ -87,6 +88,9 @@ bool iequals(const std::string& a, const std::string& b);
 size_t prefix_length(ByteView a, ByteView b);
 
 inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
+
+// Splits a string by delimiter and returns a vector of tokens
+std::vector<std::string> split(std::string source, std::string delimiter);
 
 }  // namespace silkworm
 

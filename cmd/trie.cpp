@@ -27,6 +27,7 @@ The previous Generate Hashed State Stage must be performed prior to calling this
 
 #include <CLI/CLI.hpp>
 
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/mdbx.hpp>
@@ -39,7 +40,7 @@ int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
     using namespace silkworm;
 
-    std::string chaindata{db::default_path()};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 

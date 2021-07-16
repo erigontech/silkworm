@@ -18,7 +18,6 @@
 
 namespace silkworm::db {
 
-
 ::mdbx::env_managed open_env(const EnvConfig& config) {
     namespace fs = std::filesystem;
 
@@ -28,6 +27,9 @@ namespace silkworm::db {
 
     // Check datafile exists if create is not set
     fs::path db_path{config.path};
+    if (db_path.has_filename()) {
+        db_path += std::filesystem::path::preferred_separator;  // Remove ambiguity. It has to be a directory
+    }
     fs::path db_file{db::get_datafile_path(db_path)};
     if (!config.create) {
         if (!fs::exists(db_path) || !fs::is_directory(db_path) || fs::is_empty(db_path) || !fs::exists(db_file) ||
@@ -80,14 +82,14 @@ namespace silkworm::db {
         cp.geometry.pagesize = 4 * kKibi;
     }
 
-    ::mdbx::env::operate_parameters op{};         // Operational parameters
+    ::mdbx::env::operate_parameters op{};  // Operational parameters
     op.mode = op.mode_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.options = op.options_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.durability = op.durability_from_flags(static_cast<MDBX_env_flags_t>(flags));
     op.max_maps = config.max_tables;
     op.max_readers = config.max_readers;
 
-    ::mdbx::env_managed ret{config.path, cp, op, config.shared};
+    ::mdbx::env_managed ret{db_path.native(), cp, op, config.shared};
     // TODO (Andrea) C++ bindings don't have setoptions
     return ret;
 }
@@ -98,6 +100,35 @@ namespace silkworm::db {
 
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config) {
     return tx.open_cursor(open_map(tx, config));
+}
+
+size_t for_each(::mdbx::cursor& cursor, WalkFunc func) {
+    size_t ret{0};
+    if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
+        while (!cursor.eof()) {
+            if (!func(data)) {
+                break;
+            };
+            ret++;
+            cursor.to_next(/*throw_notfound=*/false);
+        }
+    }
+    return ret;
+}
+
+size_t for_count(::mdbx::cursor& cursor, WalkFunc func, size_t iterations) {
+    size_t ret{0};
+    if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
+        while (iterations || !cursor.eof()) {
+            if (!func(data)) {
+                break;
+            };
+            ret++;
+            iterations--;
+            cursor.to_next(/*throw_notfound=*/false);
+        }
+    }
+    return ret;
 }
 
 }  // namespace silkworm::db

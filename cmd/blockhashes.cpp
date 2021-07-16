@@ -26,6 +26,7 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
+#include <silkworm/common/data_dir.hpp>
 
 using namespace silkworm;
 
@@ -33,8 +34,8 @@ int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
 
     CLI::App app{"Generates Blockhashes => BlockNumber mapping in database"};
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
 
-    std::string chaindata{db::default_path()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);

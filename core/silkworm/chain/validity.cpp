@@ -39,18 +39,16 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
         }
     }
 
-    if (txn.type.has_value()) {
-        if (txn.type == kEip2930TransactionType) {
-            if (rev < EVMC_BERLIN) {
-                return ValidationResult::kUnsupportedTransactionType;
-            }
-        } else if (txn.type == kEip1559TransactionType) {
-            if (rev < EVMC_LONDON) {
-                return ValidationResult::kUnsupportedTransactionType;
-            }
-        } else {
+    if (txn.type == Transaction::Type::kEip2930) {
+        if (rev < EVMC_BERLIN) {
             return ValidationResult::kUnsupportedTransactionType;
         }
+    } else if (txn.type == Transaction::Type::kEip1559) {
+        if (rev < EVMC_LONDON) {
+            return ValidationResult::kUnsupportedTransactionType;
+        }
+    } else if (txn.type != Transaction::Type::kLegacy) {
+        return ValidationResult::kUnsupportedTransactionType;
     }
 
     if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas) {

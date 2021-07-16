@@ -104,7 +104,7 @@ StageResult stage_log_index(db::EnvConfig db_config) {
     if (log_table.seek(db::to_slice(start))) {
         auto log_data{log_table.current()};
         while (log_data) {
-            block_number = boost::endian::load_big_u64(log_data.key.byte_ptr());
+            block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(log_data.key.iov_base));
             current_listener.set_block_number(block_number);
             cbor::input input(log_data.value.iov_base, log_data.value.iov_len);
             cbor::decoder decoder(input, current_listener);

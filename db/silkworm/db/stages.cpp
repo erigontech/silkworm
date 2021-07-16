@@ -33,7 +33,7 @@ namespace {
         } else if (data.value.size() != sizeof(uint64_t)) {
             throw std::length_error("Expected 8 bytes of data got " + std::to_string(data.value.size()));
         }
-        return boost::endian::load_big_u64(data.value.byte_ptr());
+        return boost::endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base));
     }
 
     void set_stage_data(mdbx::txn& txn, const char* stage_name, uint64_t block_num, const db::MapConfig& domain) {

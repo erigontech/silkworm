@@ -264,6 +264,9 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
 
     Bytes start_key{db::block_key(unwind_to + 1)};
     auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
+    if (!changeset_data) {
+        return;
+    }
 
     db::WalkFunc unwind_func;
     switch (operation) {

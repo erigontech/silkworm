@@ -25,6 +25,7 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
+#include <silkworm/common/data_dir.hpp>
 
 using namespace silkworm;
 

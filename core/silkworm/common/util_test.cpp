@@ -16,17 +16,42 @@
 
 #include "util.hpp"
 
+#include <iostream>
+
 #include <catch2/catch.hpp>
 
 namespace silkworm {
 
-TEST_CASE("Hex") {
+TEST_CASE("Split") {
+    std::string source{};
+    std::string delim{};
+    auto output{split(source, delim)};
+    CHECK((output.size() == 1 && output.at(0) == source));
 
+    source = "aabbcc";
+    output = split(source, delim);
+    CHECK((output.size() == 1 && output.at(0) == source));
+
+    delim = "b";
+    output = split(source, delim);
+    CHECK((output.size() == 3 && output.at(0) == "aa" && output.at(1).empty() == true && output.at(2) == "cc"));
+
+    delim = "bb";
+    output = split(source, delim);
+    CHECK((output.size() == 2 && output.at(0) == "aa" && output.at(1) == "cc"));
+
+    source = "aaaaa";
+    delim = "a";
+    output = split(source, delim);
+    CHECK(output.size() == 5);
+}
+
+TEST_CASE("Hex") {
     auto expected = from_hex("");
     CHECK((expected.has_value() == true && expected->size() == 0));
 
     expected = from_hex("0");
-    CHECK(expected.has_value() == false); 
+    CHECK(expected.has_value() == false);
 
     expected = from_hex("0x");
     CHECK((expected.has_value() == true && expected->size() == 0));
@@ -36,7 +61,6 @@ TEST_CASE("Hex") {
 
     expected = from_hex("0x0a");
     CHECK((expected.has_value() == true && expected->size() == 1 && expected->at(0) == 0x0a));
-
 }
 
 TEST_CASE("Padding") {
@@ -121,6 +145,21 @@ TEST_CASE("parse_size") {
     size = parse_size("0.5   TB");
     CHECK((size && *size == (kTebi * 0.5)));
     CHECK(!parse_size("ABBA"));
+}
+
+TEST_CASE("human_size") {
+
+    uint64_t val{1 * kTebi};
+    CHECK(human_size(val) == "1.00 TB");
+
+    val += 512 * kGibi;
+    CHECK(human_size(val) == "1.50 TB");
+
+    val = 128;
+    CHECK(human_size(val) == "128.00 B");
+
+    val = kKibi;
+    CHECK(human_size(val) == "1.00 KB");
 }
 
 }  // namespace silkworm

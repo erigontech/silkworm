@@ -41,8 +41,12 @@ std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateOperatio
             return {db::table::kPlainAccountChangeSet, db::table::kHashedAccounts};
         case HashstateOperation::HashStorage:
             return {db::table::kPlainStorageChangeSet, db::table::kHashedStorage};
-        default:
+        case HashstateOperation::Code:
             return {db::table::kPlainAccountChangeSet, db::table::kContractCode};
+        default:
+            std::string error{magic_enum::enum_name<HashstateOperation>(operation)};
+            error.append(": unknown operation");
+            throw std::runtime_error(error);
     }
 }
 /*

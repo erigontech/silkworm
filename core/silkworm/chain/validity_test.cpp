@@ -40,7 +40,7 @@ TEST_CASE("Validate transaction types") {
     const std::optional<intx::uint256> base_fee_per_gas{std::nullopt};
 
     Transaction txn;
-    txn.type = std::nullopt;  // legacy
+    txn.type = Transaction::Type::kLegacy;
     CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, kTestConfig, base_fee_per_gas) !=
           ValidationResult::kUnsupportedTransactionType);
     CHECK(pre_validate_transaction(txn, EVMC_BERLIN, kTestConfig, base_fee_per_gas) !=
@@ -48,7 +48,7 @@ TEST_CASE("Validate transaction types") {
     CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) !=
           ValidationResult::kUnsupportedTransactionType);
 
-    txn.type = 0;  // unsupported transaction type
+    txn.type = static_cast<Transaction::Type>(0x03);  // unsupported transaction type
     CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, kTestConfig, base_fee_per_gas) ==
           ValidationResult::kUnsupportedTransactionType);
     CHECK(pre_validate_transaction(txn, EVMC_BERLIN, kTestConfig, base_fee_per_gas) ==
@@ -56,7 +56,7 @@ TEST_CASE("Validate transaction types") {
     CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) ==
           ValidationResult::kUnsupportedTransactionType);
 
-    txn.type = kEip2930TransactionType;
+    txn.type = Transaction::Type::kEip2930;
     CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, kTestConfig, base_fee_per_gas) ==
           ValidationResult::kUnsupportedTransactionType);
     CHECK(pre_validate_transaction(txn, EVMC_BERLIN, kTestConfig, base_fee_per_gas) !=
@@ -64,7 +64,7 @@ TEST_CASE("Validate transaction types") {
     CHECK(pre_validate_transaction(txn, EVMC_LONDON, kTestConfig, base_fee_per_gas) !=
           ValidationResult::kUnsupportedTransactionType);
 
-    txn.type = kEip1559TransactionType;
+    txn.type = Transaction::Type::kEip1559;
     CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, kTestConfig, base_fee_per_gas) ==
           ValidationResult::kUnsupportedTransactionType);
     CHECK(pre_validate_transaction(txn, EVMC_BERLIN, kTestConfig, base_fee_per_gas) ==
@@ -77,7 +77,7 @@ TEST_CASE("Validate max_fee_per_gas") {
     const std::optional<intx::uint256> base_fee_per_gas{1'000'000'000};
 
     Transaction txn;
-    txn.type = kEip1559TransactionType;
+    txn.type = Transaction::Type::kEip1559;
 
     txn.max_priority_fee_per_gas = 500'000'000;
     txn.max_fee_per_gas = 700'000'000;

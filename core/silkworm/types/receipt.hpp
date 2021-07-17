@@ -21,11 +21,12 @@
 
 #include <silkworm/types/bloom.hpp>
 #include <silkworm/types/log.hpp>
+#include <silkworm/types/transaction.hpp>
 
 namespace silkworm {
 
 struct Receipt {
-    std::optional<uint8_t> type{std::nullopt};  // EIP-2718
+    Transaction::Type type{Transaction::Type::kLegacy};
     bool success{false};
     uint64_t cumulative_gas_used{0};
     Bloom bloom;

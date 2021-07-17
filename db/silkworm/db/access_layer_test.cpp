@@ -50,7 +50,7 @@ static BlockBody sample_block_body() {
     body.transactions[0].s =
         intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
 
-    body.transactions[1].type = kEip1559TransactionType;
+    body.transactions[1].type = Transaction::Type::kEip1559;
     body.transactions[1].nonce = 1;
     body.transactions[1].max_priority_fee_per_gas = 5 * kGiga;
     body.transactions[1].max_fee_per_gas = 30 * kGiga;
@@ -120,7 +120,6 @@ namespace db {
 
         data_dir2.clear_etl_temp();
         REQUIRE(std::filesystem::is_empty(etl_path));
-
     }
 
     TEST_CASE("Db Opening") {

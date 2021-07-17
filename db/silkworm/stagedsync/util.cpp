@@ -18,7 +18,9 @@
 #include <memory>
 #include <stdexcept>
 
-#include <silkworm/db/access_layer.hpp>
+#include <magic_enum.hpp>
+
+#include <silkworm/db/util.hpp>
 
 namespace silkworm::stagedsync {
 

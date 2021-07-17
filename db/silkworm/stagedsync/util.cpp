@@ -32,12 +32,12 @@ void check_stagedsync_error(StageResult code) {
 std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView& value) {
     if (key.size() == 8) {
         Bytes a(value.data(), kAddressLength);
-        Bytes b(value.substr(kAddressLength).data());
+        Bytes b(value.substr(kAddressLength).data(), value.size() - kAddressLength);
         return {a, b};
     }
     Bytes a(key.substr(8).data(), kAddressLength + db::kIncarnationLength);
     a.append(value.data(), kHashLength);
-    Bytes b(value.substr(kHashLength));
+    Bytes b(value.substr(kHashLength).data(), value.size() - kHashLength);
     return {a, b};
 }
 

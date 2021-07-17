@@ -92,12 +92,12 @@ namespace rlp {
     static Header rlp_header(const Transaction& txn, bool for_signing) {
         Header h{true, 0};
 
-        if (txn.type) {
+        if (txn.type != Transaction::Type::kLegacy) {
             h.payload_length += length(txn.chain_id.value_or(0));
         }
 
         h.payload_length += length(txn.nonce);
-        if (txn.type == kEip1559TransactionType) {
+        if (txn.type == Transaction::Type::kEip1559) {
             h.payload_length += length(txn.max_priority_fee_per_gas);
         }
         h.payload_length += length(txn.max_fee_per_gas);
@@ -106,20 +106,20 @@ namespace rlp {
         h.payload_length += length(txn.value);
         h.payload_length += length(txn.data);
 
-        if (txn.type.has_value()) {
-            assert(txn.type == kEip2930TransactionType || txn.type == kEip1559TransactionType);
+        if (txn.type != Transaction::Type::kLegacy) {
+            assert(txn.type == Transaction::Type::kEip2930 || txn.type == Transaction::Type::kEip1559);
             h.payload_length += length(txn.access_list);
         }
 
         if (!for_signing) {
-            if (txn.type) {
+            if (txn.type != Transaction::Type::kLegacy) {
                 h.payload_length += length(txn.odd_y_parity);
             } else {
                 h.payload_length += length(txn.v());
             }
             h.payload_length += length(txn.r);
             h.payload_length += length(txn.s);
-        } else if (!txn.type && txn.chain_id) {
+        } else if (txn.type == Transaction::Type::kLegacy && txn.chain_id) {
             h.payload_length += length(*txn.chain_id) + 2;
         }
 
@@ -129,7 +129,7 @@ namespace rlp {
     size_t length(const Transaction& txn) {
         Header rlp_head{rlp_header(txn, /*for_signing=*/false)};
         auto rlp_len{static_cast<size_t>(length_of_length(rlp_head.payload_length) + rlp_head.payload_length)};
-        if (txn.type) {
+        if (txn.type != Transaction::Type::kLegacy) {
             // EIP-2718 transactions are wrapped into byte array in block RLP
             return length_of_length(rlp_len + 1) + rlp_len + 1;
         } else {
@@ -163,7 +163,7 @@ namespace rlp {
     }
 
     static void eip2718_encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_into_array) {
-        assert(txn.type == kEip2930TransactionType || txn.type == kEip1559TransactionType);
+        assert(txn.type == Transaction::Type::kEip2930 || txn.type == Transaction::Type::kEip1559);
 
         Header rlp_head{rlp_header(txn, for_signing)};
 
@@ -172,14 +172,14 @@ namespace rlp {
             encode_header(to, {false, rlp_len + 1});
         }
 
-        to.push_back(*txn.type);
+        to.push_back(static_cast<uint8_t>(txn.type));
 
         encode_header(to, rlp_head);
 
         encode(to, txn.chain_id.value_or(0));
 
         encode(to, txn.nonce);
-        if (txn.type == kEip1559TransactionType) {
+        if (txn.type == Transaction::Type::kEip1559) {
             encode(to, txn.max_priority_fee_per_gas);
         }
         encode(to, txn.max_fee_per_gas);
@@ -201,10 +201,10 @@ namespace rlp {
     }
 
     void encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_eip2718_into_array) {
-        if (txn.type.has_value()) {
-            eip2718_encode(to, txn, for_signing, wrap_eip2718_into_array);
-        } else {
+        if (txn.type == Transaction::Type::kLegacy) {
             legacy_encode(to, txn, for_signing);
+        } else {
+            eip2718_encode(to, txn, for_signing, wrap_eip2718_into_array);
         }
     }
 
@@ -260,7 +260,7 @@ namespace rlp {
     }
 
     static DecodingResult eip2718_decode(ByteView& from, Transaction& to) noexcept {
-        assert(to.type == kEip2930TransactionType || to.type == kEip1559TransactionType);
+        assert(to.type == Transaction::Type::kEip2930 || to.type == Transaction::Type::kEip1559);
 
         auto [h, err]{decode_header(from)};
         if (err != DecodingResult::kOk) {
@@ -283,7 +283,7 @@ namespace rlp {
         if (DecodingResult err{decode(from, to.max_priority_fee_per_gas)}; err != DecodingResult::kOk) {
             return err;
         }
-        if (to.type == kEip2930TransactionType) {
+        if (to.type == Transaction::Type::kEip2930) {
             to.max_fee_per_gas = to.max_priority_fee_per_gas;
         } else if (DecodingResult err{decode(from, to.max_fee_per_gas)}; err != DecodingResult::kOk) {
             return err;
@@ -333,8 +333,7 @@ namespace rlp {
         }
 
         if (h.list) {
-            // legacy transcation
-            to.type = std::nullopt;
+            to.type = Transaction::Type::kLegacy;
             uint64_t leftover{from.length() - h.payload_length};
             if (DecodingResult err{legacy_decode(from, to)}; err != DecodingResult::kOk) {
                 return err;
@@ -346,10 +345,10 @@ namespace rlp {
             return DecodingResult::kInputTooShort;
         }
 
-        to.type = from[0];
+        to.type = static_cast<Transaction::Type>(from[0]);
         from.remove_prefix(1);
 
-        if (to.type != kEip2930TransactionType && to.type != kEip1559TransactionType) {
+        if (to.type != Transaction::Type::kEip2930 && to.type != Transaction::Type::kEip1559) {
             return DecodingResult::kUnsupportedTransactionType;
         }
 

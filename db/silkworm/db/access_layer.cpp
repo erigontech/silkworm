@@ -96,7 +96,7 @@ StorageMode get_storage_mode(mdbx::txn& txn) noexcept {
     return ret;
 }
 
-void set_storage_mode(mdbx::txn& txn, StorageMode& val) {
+void set_storage_mode(mdbx::txn& txn, const StorageMode& val) {
     auto target{db::open_cursor(txn, table::kDatabaseInfo)};
     Bytes v_on(1, '\1');
     Bytes v_off(2, '\0');

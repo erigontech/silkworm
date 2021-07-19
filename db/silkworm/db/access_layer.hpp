@@ -47,7 +47,7 @@ void set_schema_version(mdbx::txn& txn, version_t& schema_version);
 StorageMode get_storage_mode(mdbx::txn& txn) noexcept;
 
 // Writes storage mode to db
-void set_storage_mode(mdbx::txn& txn, StorageMode& val);
+void set_storage_mode(mdbx::txn& txn, const StorageMode& val);
 
 // Parses storage mode from a string
 StorageMode parse_storage_mode(std::string& mode);

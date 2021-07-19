@@ -64,10 +64,11 @@ void to_byte_array(fs::path& in, fs::path& out) {
     out_stream << "static const char " << var_name << "_data_internal[] = {" << std::endl;
 
     auto max{bytes.size()};
-    auto count{0u};
+    auto count{1u};
     for (auto& b : bytes) {
-        out_stream << "0x" << std::hex << static_cast<int>(b) << ((++count == max) ? "" : ",")
+        out_stream << "0x" << std::hex << static_cast<int>(b) << ((count == max) ? "" : ",")
                    << ((count % 16 == 0) ? "\n" : " ");
+        ++count;
     }
     out_stream << "};" << std::endl;
     out_stream << "const char* " << var_name << "_data(void){return &" << var_name << "_data_internal[0];}"

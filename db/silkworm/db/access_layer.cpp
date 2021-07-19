@@ -64,8 +64,8 @@ void set_schema_version(mdbx::txn& txn, version_t& schema_version) {
     src.upsert(k, v);
 }
 
-storage_mode_t get_storage_mode(mdbx::txn& txn) noexcept {
-    storage_mode_t ret{true};
+StorageMode get_storage_mode(mdbx::txn& txn) noexcept {
+    StorageMode ret{true};
     auto src{db::open_cursor(txn, table::kDatabaseInfo)};
 
     // History
@@ -96,7 +96,7 @@ storage_mode_t get_storage_mode(mdbx::txn& txn) noexcept {
     return ret;
 }
 
-void set_storage_mode(mdbx::txn& txn, storage_mode_t& val) {
+void set_storage_mode(mdbx::txn& txn, const StorageMode& val) {
     auto target{db::open_cursor(txn, table::kDatabaseInfo)};
     Bytes v_on(1, '\1');
     Bytes v_off(2, '\0');
@@ -117,11 +117,11 @@ void set_storage_mode(mdbx::txn& txn, storage_mode_t& val) {
     target.upsert(to_slice(k), to_slice(val.TEVM ? v_on : v_off));
 }
 
-storage_mode_t parse_storage_mode(std::string& mode) {
+StorageMode parse_storage_mode(std::string& mode) {
     if (mode == "default") {
         return kDefaultStorageMode;
     }
-    storage_mode_t ret{/*Initialized*/ true};
+    StorageMode ret{/*Initialized*/ true};
     for (auto& c : mode) {
         switch (c) {
             case 'h':
@@ -461,14 +461,6 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
     }
 
     return changes;
-}
-
-// TODO (Andrea) - Remove in favor of get_storage_mode
-bool read_storage_mode_receipts(mdbx::txn& txn) {
-    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
-    auto key{to_slice(byte_view_of_c_str(kStorageModeReceiptsKey))};
-    auto data{src.find(key, /*throw_notfound=*/false)};
-    return (data.done && data.value.length() == 1 && static_cast<uint8_t>(data.value.at(0)) == 1);
 }
 
 bool migration_happened(mdbx::txn& txn, const char* name) {

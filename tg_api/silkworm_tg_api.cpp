@@ -22,12 +22,11 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 
-SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, uint64_t chain_id, uint64_t start_block,
-                                                           uint64_t max_block, uint64_t batch_size, bool write_receipts,
+SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, const uint64_t chain_id, const uint64_t start_block,
+                                                           const uint64_t max_block, const uint64_t batch_size, const silkworm::db::StorageMode& storage_mode,
                                                            uint64_t* last_executed_block,
                                                            int* db_error_code) SILKWORM_NOEXCEPT {
     using namespace silkworm;
@@ -58,7 +57,7 @@ SILKWORM_EXPORT SilkwormStatusCode silkworm_execute_blocks(mdbx::txn& txn, uint6
                 return SilkwormStatusCode::kSilkwormInvalidBlock;
             }
 
-            if (write_receipts) {
+            if (storage_mode.Receipts) {
                 buffer.insert_receipts(block_num, receipts);
             }
 

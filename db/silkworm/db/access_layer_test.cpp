@@ -205,10 +205,10 @@ namespace db {
         auto txn{env.start_write()};
         table::create_all(txn);
 
-        storage_mode_t default_mode{};
+        StorageMode default_mode{};
         CHECK(default_mode.to_string() == "default");
 
-        storage_mode_t expected_mode{true, false, false, false, false, false};
+        StorageMode expected_mode{true, false, false, false, false, false};
         auto actual_mode{db::get_storage_mode(txn)};
         CHECK(expected_mode == actual_mode);
 

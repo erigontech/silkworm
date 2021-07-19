@@ -83,7 +83,7 @@ struct version_t {
 };
 
 // Holds the storage mode set
-struct storage_mode_t {
+struct StorageMode {
     bool Initialized;  // Whether or not db storage has been initialized
     bool History;      // Whether or not History index is stored
     bool Receipts;     // Whether or not Receipts are stored
@@ -113,13 +113,13 @@ struct storage_mode_t {
         return ret;
     }
 
-    bool operator==(const storage_mode_t& other) const {
+    bool operator==(const StorageMode& other) const {
         return History == other.History && Receipts == other.Receipts && TxIndex == other.TxIndex &&
                CallTraces == other.CallTraces && TEVM == other.TEVM;
     }
 };
 
-constexpr storage_mode_t kDefaultStorageMode{
+constexpr StorageMode kDefaultStorageMode{
     /*Initialized*/ true, /*History*/ true,    /*Receipts*/ true,
     /*TxIndex*/ true,     /*CallTraces*/ true, /*TEVM*/ false};
 

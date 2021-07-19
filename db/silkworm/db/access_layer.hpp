@@ -44,16 +44,13 @@ std::optional<version_t> get_schema_version(mdbx::txn& txn) noexcept;
 void set_schema_version(mdbx::txn& txn, version_t& schema_version);
 
 // Gets storage mode from db
-storage_mode_t get_storage_mode(mdbx::txn& txn) noexcept;
+StorageMode get_storage_mode(mdbx::txn& txn) noexcept;
 
 // Writes storage mode to db
-void set_storage_mode(mdbx::txn& txn, storage_mode_t& val);
+void set_storage_mode(mdbx::txn& txn, StorageMode& val);
 
 // Parses storage mode from a string
-storage_mode_t parse_storage_mode(std::string& mode);
-
-// See Erigon GetStorageModeFromDB
-bool read_storage_mode_receipts(mdbx::txn& txn);
+StorageMode parse_storage_mode(std::string& mode);
 
 std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 

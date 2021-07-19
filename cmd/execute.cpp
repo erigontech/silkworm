@@ -59,9 +59,8 @@ int main(int argc, char* argv[]) {
         db::EnvConfig db_config{chaindata};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
-
-        bool write_receipts{db::read_storage_mode_receipts(txn)};
-        auto chain_config{db::read_chain_config(txn)};
+        const auto chain_config{db::read_chain_config(txn)};
+        const auto storage_mode(db::get_storage_mode(txn));
         if (!chain_config.has_value()) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
@@ -72,7 +71,7 @@ int main(int argc, char* argv[]) {
         for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
             int db_error_code{0};
             SilkwormStatusCode status{silkworm_execute_blocks(txn, chain_config->chain_id, block_number, to_block,
-                                                              *batch_size, write_receipts, &current_progress,
+                                                              *batch_size, storage_mode, &current_progress,
                                                               &db_error_code)};
             if (status != SilkwormStatusCode::kSilkwormSuccess &&
                 status != SilkwormStatusCode::kSilkwormBlockNotFound) {

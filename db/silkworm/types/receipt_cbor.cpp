@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ Bytes cbor_encode(const std::vector<Receipt>& v) {
     for (const Receipt& r : v) {
         encoder.write_array(4);
 
-        encoder.write_int(r.type.value_or(0));
+        encoder.write_int(static_cast<unsigned>(r.type));
         encoder.write_null();  // no PostState
         encoder.write_int(r.success ? 1u : 0u);
         encoder.write_int(static_cast<unsigned long long>(r.cumulative_gas_used));

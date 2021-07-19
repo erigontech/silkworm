@@ -64,8 +64,8 @@ void set_schema_version(mdbx::txn& txn, version_t& schema_version) {
     src.upsert(k, v);
 }
 
-storage_mode_t get_storage_mode(mdbx::txn& txn) noexcept {
-    storage_mode_t ret{true};
+StorageMode get_storage_mode(mdbx::txn& txn) noexcept {
+    StorageMode ret{true};
     auto src{db::open_cursor(txn, table::kDatabaseInfo)};
 
     // History
@@ -96,7 +96,7 @@ storage_mode_t get_storage_mode(mdbx::txn& txn) noexcept {
     return ret;
 }
 
-void set_storage_mode(mdbx::txn& txn, storage_mode_t& val) {
+void set_storage_mode(mdbx::txn& txn, const StorageMode& val) {
     auto target{db::open_cursor(txn, table::kDatabaseInfo)};
     Bytes v_on(1, '\1');
     Bytes v_off(2, '\0');
@@ -117,11 +117,11 @@ void set_storage_mode(mdbx::txn& txn, storage_mode_t& val) {
     target.upsert(to_slice(k), to_slice(val.TEVM ? v_on : v_off));
 }
 
-storage_mode_t parse_storage_mode(std::string& mode) {
+StorageMode parse_storage_mode(std::string& mode) {
     if (mode == "default") {
         return kDefaultStorageMode;
     }
-    storage_mode_t ret{/*Initialized*/ true};
+    StorageMode ret{/*Initialized*/ true};
     for (auto& c : mode) {
         switch (c) {
             case 'h':
@@ -295,56 +295,49 @@ std::optional<Bytes> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash) {
 
 // Erigon FindByHistory for account
 static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::address& address, uint64_t block_number) {
-    auto src{db::open_cursor(txn, table::kCode)};
-    auto key{account_history_key(address, block_number)};
-    auto data{src.find(to_slice(key), /*throw_notfound=*/false)};
-    if (!data) {
-        return std::nullopt;
-    }
-    if (!data.key.starts_with(to_slice(address))) {
+    auto history_table{db::open_cursor(txn, table::kAccountHistory)};
+    const Bytes history_key{account_history_key(address, block_number)};
+    const auto data{history_table.lower_bound(to_slice(history_key), /*throw_notfound=*/false)};
+    if (!data || !data.key.starts_with(to_slice(address))) {
         return std::nullopt;
     }
 
-    auto bitmap{bitmap::read(from_slice(data.value))};
-    auto change_block{bitmap::seek(bitmap, block_number)};
+    const auto bitmap{bitmap::read(from_slice(data.value))};
+    const auto change_block{bitmap::seek(bitmap, block_number)};
     if (!change_block) {
         return std::nullopt;
     }
 
-    src = db::open_cursor(txn, table::kPlainAccountChangeSet);
-    key = block_key(*change_block);
-    data = src.find_multivalue(to_slice(key), to_slice(address), /*throw_notfound=*/false);
-    if (!data) {
-        return std::nullopt;
-    }
-    return {from_slice(data.value)};
+    auto change_set_table{db::open_cursor(txn, table::kPlainAccountChangeSet)};
+    const Bytes change_set_key{block_key(*change_block)};
+    return find_value_suffix(change_set_table, change_set_key, full_view(address));
 }
 
 // Erigon FindByHistory for storage
 static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::address& address, uint64_t incarnation,
                                                   const evmc::bytes32& location, uint64_t block_number) {
-    auto src{db::open_cursor(txn, table::kStorageHistory)};
-    auto key{storage_history_key(address, location, block_number)};
-    if (!src.seek(to_slice(key))) {
+    auto history_table{db::open_cursor(txn, table::kStorageHistory)};
+    const Bytes history_key{storage_history_key(address, location, block_number)};
+    const auto data{history_table.lower_bound(to_slice(history_key), /*throw_notfound=*/false)};
+    if (!data) {
         return std::nullopt;
     }
 
-    auto data{src.current(false)};
-    auto k{from_slice(data.key)};
+    const ByteView k{from_slice(data.key)};
     if (k.substr(0, kAddressLength) != full_view(address) ||
         k.substr(kAddressLength, kHashLength) != full_view(location)) {
         return std::nullopt;
     }
 
-    auto bitmap{bitmap::read(from_slice(data.value))};
-    auto change_block{bitmap::seek(bitmap, block_number)};
+    const auto bitmap{bitmap::read(from_slice(data.value))};
+    const auto change_block{bitmap::seek(bitmap, block_number)};
     if (!change_block) {
         return std::nullopt;
     }
 
-    src = db::open_cursor(txn, table::kPlainStorageChangeSet);
-    key = storage_change_key(*change_block, address, incarnation);
-    return find_value_suffix(src, key, full_view(location));
+    auto change_set_table{db::open_cursor(txn, table::kPlainStorageChangeSet)};
+    const Bytes change_set_key{storage_change_key(*change_block, address, incarnation)};
+    return find_value_suffix(change_set_table, change_set_key, full_view(location));
 }
 
 std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address, std::optional<uint64_t> block_num) {
@@ -399,7 +392,7 @@ evmc::bytes32 read_storage(mdbx::txn& txn, const evmc::address& address, uint64_
 }
 
 static std::optional<uint64_t> historical_previous_incarnation() {
-    // TODO(Andrew): implement properly
+    // TODO (Andrew) implement properly
     return std::nullopt;
 }
 
@@ -468,14 +461,6 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
     }
 
     return changes;
-}
-
-// TODO (Andrea) - Remove in favor of get_storage_mode
-bool read_storage_mode_receipts(mdbx::txn& txn) {
-    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
-    auto key{to_slice(byte_view_of_c_str(kStorageModeReceiptsKey))};
-    auto data{src.find(key, /*throw_notfound=*/false)};
-    return (data.done && data.value.length() == 1 && static_cast<uint8_t>(data.value.at(0)) == 1);
 }
 
 bool migration_happened(mdbx::txn& txn, const char* name) {

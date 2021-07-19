@@ -23,11 +23,14 @@
 #include <ethash/ethash.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/chain_genesis.hpp>
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/execution/execution.hpp>
 
+#include "bitmap.hpp"
 #include "stages.hpp"
 #include "tables.hpp"
 
@@ -50,7 +53,7 @@ static BlockBody sample_block_body() {
     body.transactions[0].s =
         intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
 
-    body.transactions[1].type = kEip1559TransactionType;
+    body.transactions[1].type = Transaction::Type::kEip1559;
     body.transactions[1].nonce = 1;
     body.transactions[1].max_priority_fee_per_gas = 5 * kGiga;
     body.transactions[1].max_fee_per_gas = 30 * kGiga;
@@ -120,7 +123,6 @@ namespace db {
 
         data_dir2.clear_etl_temp();
         REQUIRE(std::filesystem::is_empty(etl_path));
-
     }
 
     TEST_CASE("Db Opening") {
@@ -206,10 +208,10 @@ namespace db {
         auto txn{env.start_write()};
         table::create_all(txn);
 
-        storage_mode_t default_mode{};
+        StorageMode default_mode{};
         CHECK(default_mode.to_string() == "default");
 
-        storage_mode_t expected_mode{true, false, false, false, false, false};
+        StorageMode expected_mode{true, false, false, false, false, false};
         auto actual_mode{db::get_storage_mode(txn)};
         CHECK(expected_mode == actual_mode);
 
@@ -372,6 +374,58 @@ namespace db {
             CHECK(bh->block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
             CHECK(bh->block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
         }
+    }
+
+    TEST_CASE("read_account") {
+        TemporaryDirectory tmp_dir;
+        EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
+        auto env{open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
+
+        Buffer buffer{txn};
+
+        const auto miner_a{0x00000000000000000000000000000000000000aa_address};
+        const auto miner_b{0x00000000000000000000000000000000000000bb_address};
+
+        Block block1;
+        block1.header.number = 1;
+        block1.header.beneficiary = miner_a;
+        // miner_a gets one block reward
+        REQUIRE(execute_block(block1, buffer, kMainnetConfig).second == ValidationResult::kOk);
+
+        Block block2;
+        block2.header.number = 2;
+        block2.header.beneficiary = miner_b;
+        // miner_a gets nothing
+        REQUIRE(execute_block(block2, buffer, kMainnetConfig).second == ValidationResult::kOk);
+
+        Block block3;
+        block3.header.number = 3;
+        block3.header.beneficiary = miner_a;
+        // miner_a gets another block reward
+        REQUIRE(execute_block(block3, buffer, kMainnetConfig).second == ValidationResult::kOk);
+
+        buffer.write_to_db();
+
+        // TODO (Andrew) use stage_history_index instead
+        roaring::Roaring64Map bm;
+        // miner_a was changed at blocks 1 & 3
+        bm.add(1u);
+        bm.add(3u);
+        Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
+        bm.write(byte_ptr_cast(bitmap_bytes.data()));
+        auto history_table{db::open_cursor(txn, table::kAccountHistory)};
+        history_table.upsert(to_slice(account_history_key(miner_a, /*block_number=*/3)), to_slice(bitmap_bytes));
+
+        std::optional<Account> current_account{read_account(txn, miner_a)};
+        REQUIRE(current_account.has_value());
+        CHECK(current_account->balance == 2 * param::kBlockRewardFrontier);
+
+        std::optional<Account> historical_account{read_account(txn, miner_a, /*block_number=*/2)};
+        REQUIRE(historical_account.has_value());
+        CHECK(historical_account->balance == param::kBlockRewardFrontier);
     }
 
     TEST_CASE("read_storage") {

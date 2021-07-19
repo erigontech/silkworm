@@ -162,7 +162,7 @@ StageResult unwind_tx_lookup(db::EnvConfig db_config, uint64_t unwind_to) {
             while (tx_data && tx_count < body.txn_count) {
                 auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
-                if(lookup_table.seek(db::to_slice(hash.bytes)) {
+                if(lookup_table.seek(db::to_slice(hash.bytes))) {
                     lookup_table.erase();
                 }
                 ++tx_count;

@@ -31,7 +31,7 @@
 
 namespace silkworm::stagedsync {
 
-StageResult execute(mdbx::txn& txn, ChainConfig config, uint64_t max_block, uint64_t* block_num, bool write_receipts) {
+StageResult execute(mdbx::txn& txn, const ChainConfig& config, const uint64_t max_block, uint64_t* block_num, const db::StorageMode& storage_mode) {
     db::Buffer buffer{txn};
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
@@ -48,7 +48,7 @@ StageResult execute(mdbx::txn& txn, ChainConfig config, uint64_t max_block, uint
                                      std::to_string(*block_num));
         }
 
-        if (write_receipts) {
+        if (storage_mode.Receipts) {
             buffer.insert_receipts(*block_num, receipts);
         }
 
@@ -69,30 +69,14 @@ StageResult execute(mdbx::txn& txn, ChainConfig config, uint64_t max_block, uint
 StageResult stage_execution(db::EnvConfig db_config) {
     auto env{db::open_env(db_config)};
     auto txn{env.start_read()};
-    auto config{db::read_chain_config(txn)};
+    const auto chain_config{db::read_chain_config(txn)};
+    const auto storage_mode{db::get_storage_mode(txn)};
 
     uint64_t max_block{db::stages::get_stage_progress(txn, db::stages::kBlockBodiesKey)};
     uint64_t block_num{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};
-    bool write_receipts{db::read_storage_mode_receipts(txn)};
-
-    if (write_receipts && (!db::migration_happened(txn, "receipts_cbor_encode") ||
-                           !db::migration_happened(txn, "receipts_store_logs_separately"))) {
-        throw std::runtime_error("Legacy stored receipts are not supported");
-    }
-
-    // https://github.com/ledgerwatch/erigon/pull/1342
-    if (!db::migration_happened(txn, "acc_change_set_dup_sort_18") ||
-        !db::migration_happened(txn, "storage_change_set_dup_sort_22")) {
-        throw std::runtime_error("Legacy change sets are not supported");
-    }
-
-    // https://github.com/ledgerwatch/erigon/pull/1358
-    if (!db::migration_happened(txn, "tx_table_4")) {
-        throw std::runtime_error("Legacy stored transactions are not supported\n");
-    }
-
+    
     while (block_num <= max_block) {
-        auto execution_code{execute(txn, *config, max_block, &block_num, write_receipts)};
+        auto execution_code{execute(txn, chain_config.value(), max_block, &block_num, storage_mode)};
         if (execution_code != StageResult::kStageSuccess) {
             return execution_code;
         }

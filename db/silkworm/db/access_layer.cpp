@@ -298,10 +298,7 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
     auto history_table{db::open_cursor(txn, table::kAccountHistory)};
     const Bytes history_key{account_history_key(address, block_number)};
     const auto data{history_table.lower_bound(to_slice(history_key), /*throw_notfound=*/false)};
-    if (!data) {
-        return std::nullopt;
-    }
-    if (!data.key.starts_with(to_slice(address))) {
+    if (!data || !data.key.starts_with(to_slice(address))) {
         return std::nullopt;
     }
 

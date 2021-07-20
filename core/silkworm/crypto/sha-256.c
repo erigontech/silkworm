@@ -53,7 +53,7 @@ static inline uint32_t right_rot(uint32_t value, unsigned int count) {
 }
 
 static void init_buf_state(struct buffer_state *state, const void *input, size_t len) {
-    state->p = (const uint8_t *)input;
+    state->p = input;
     state->len = len;
     state->total_len = len;
     state->single_one_delivered = 0;
@@ -140,7 +140,9 @@ static void sha_256_generic(uint32_t h[8], const void *input, size_t len) {
         const uint8_t *p = chunk;
 
         /* Initialize working variables to current hash value: */
-        for (i = 0; i < 8; i++) ah[i] = h[i];
+        for (i = 0; i < 8; i++) {
+            ah[i] = h[i];
+        }
 
         /* Compression function main loop: */
         for (i = 0; i < 4; i++) {
@@ -192,7 +194,9 @@ static void sha_256_generic(uint32_t h[8], const void *input, size_t len) {
         }
 
         /* Add the compressed chunk to the current hash value: */
-        for (i = 0; i < 8; i++) h[i] += ah[i];
+        for (i = 0; i < 8; i++) {
+            h[i] += ah[i];
+        }
     }
 }
 
@@ -204,7 +208,7 @@ static void (*sha_256_best)(uint32_t h[8], const void *input, size_t len) = sha_
 /*   Written and place in public domain by Jeffrey Walton  */
 /*   Based on code from Intel, and by Sean Gulley for      */
 /*   the miTLS project.                                    */
-__attribute__((target("sha"))) static void sha_256_x86(uint32_t h[8], const void *input, size_t len) {
+__attribute__((target("sha,sse4.1"))) static void sha_256_x86(uint32_t h[8], const void *input, size_t len) {
     __m128i STATE0, STATE1;
     __m128i MSG, TMP;
     __m128i MSG0, MSG1, MSG2, MSG3;

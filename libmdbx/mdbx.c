@@ -12,7 +12,7 @@
  * <http://www.OpenLDAP.org/license.html>. */
 
 #define xMDBX_ALLOY 1
-#define MDBX_BUILD_SOURCERY ac282ddc58a7a50515fa63c5ec0951aca967a1d1c8b9f7d30fbeb8b1d7f368ed_v0_10_0_34_ga6c8c20
+#define MDBX_BUILD_SOURCERY 6b4ee7012216461f74ed5361ada3db569ecf1a2655e148dfe35431d05b01aa4c_v0_10_1_19_g5d4281f
 #ifdef MDBX_CONFIG_H
 #include MDBX_CONFIG_H
 #endif
@@ -1218,8 +1218,10 @@ MDBX_INTERNAL_FUNC int mdbx_mmap(const int flags, mdbx_mmap_t *map,
                                  const size_t must, const size_t limit,
                                  const unsigned options);
 MDBX_INTERNAL_FUNC int mdbx_munmap(mdbx_mmap_t *map);
-MDBX_INTERNAL_FUNC int mdbx_mresize(int flags, mdbx_mmap_t *map, size_t current,
-                                    size_t wanna, const bool may_move);
+#define MDBX_MRESIZE_MAY_MOVE 0x00000100
+#define MDBX_MRESIZE_MAY_UNMAP 0x00000200
+MDBX_INTERNAL_FUNC int mdbx_mresize(const int flags, mdbx_mmap_t *map,
+                                    size_t size, size_t limit);
 #if defined(_WIN32) || defined(_WIN64)
 typedef struct {
   unsigned limit, count;
@@ -2909,7 +2911,7 @@ struct MDBX_env {
   mdbx_thread_key_t me_txkey; /* thread-key for readers */
   char *me_pathname;          /* path to the DB files */
   void *me_pbuf;              /* scratch area for DUPSORT put() */
-  MDBX_txn *me_txn0;          /* prealloc'd write transaction */
+  MDBX_txn *me_txn0;          /* preallocated write transaction */
 
   MDBX_dbx *me_dbxs;    /* array of static DB info */
   uint16_t *me_dbflags; /* array of flags from MDBX_db.md_flags */
@@ -7034,7 +7036,8 @@ static int __must_check_result mdbx_page_split(MDBX_cursor *mc,
 
 static int __must_check_result mdbx_read_header(MDBX_env *env, MDBX_meta *meta,
                                                 uint64_t *filesize,
-                                                const int lck_exclusive);
+                                                const int lck_exclusive,
+                                                const mdbx_mode_t mode_bits);
 static int __must_check_result mdbx_sync_locked(MDBX_env *env, unsigned flags,
                                                 MDBX_meta *const pending);
 static int mdbx_env_close0(MDBX_env *env);
@@ -9298,16 +9301,6 @@ static __cold int mdbx_set_readahead(MDBX_env *env, const pgno_t edge,
 static __cold int mdbx_mapresize(MDBX_env *env, const pgno_t used_pgno,
                                  const pgno_t size_pgno,
                                  const pgno_t limit_pgno, const bool implicit) {
-  if ((env->me_flags & MDBX_WRITEMAP) && env->me_lck->mti_unsynced_pages.weak) {
-#if MDBX_ENABLE_PGOP_STAT
-    safe64_inc(&env->me_lck->mti_pgop_stat.wops, 1);
-#endif /* MDBX_ENABLE_PGOP_STAT */
-    int err = mdbx_msync(&env->me_dxb_mmap, 0,
-                         pgno_align2os_bytes(env, used_pgno), MDBX_SYNC_NONE);
-    if (unlikely(err != MDBX_SUCCESS))
-      return err;
-  }
-
   const size_t limit_bytes = pgno_align2os_bytes(env, limit_pgno);
   const size_t size_bytes = pgno_align2os_bytes(env, size_pgno);
   const size_t prev_size = env->me_dxb_mmap.current;
@@ -9325,6 +9318,8 @@ static __cold int mdbx_mapresize(MDBX_env *env, const pgno_t used_pgno,
   mdbx_assert(env, bytes2pgno(env, size_bytes) >= size_pgno);
   mdbx_assert(env, bytes2pgno(env, limit_bytes) >= limit_pgno);
 
+  unsigned mresize_flags =
+      env->me_flags & (MDBX_RDONLY | MDBX_WRITEMAP | MDBX_UTTERLY_NOSYNC);
 #if defined(_WIN32) || defined(_WIN64)
   /* Acquire guard in exclusive mode for:
    *   - to avoid collision between read and write txns around env->me_dbgeo;
@@ -9338,28 +9333,30 @@ static __cold int mdbx_mapresize(MDBX_env *env, const pgno_t used_pgno,
       size_bytes == env->me_dxb_mmap.filesize)
     goto bailout;
 
-  /* 1) Windows allows only extending a read-write section, but not a
-   *    corresponding mapped view. Therefore in other cases we must suspend
-   *    the local threads for safe remap.
-   * 2) At least on Windows 10 1803 the entire mapped section is unavailable
-   *    for short time during NtExtendSection() or VirtualAlloc() execution.
-   * 3) Under Wine runtime environment on Linux a section extending is not
-   *    supported. Therefore thread suspending is always required.
-   *
-   * THEREFORE LOCAL THREADS SUSPENDING IS ALWAYS REQUIRED! */
-  array_onstack.limit = ARRAY_LENGTH(array_onstack.handles);
-  array_onstack.count = 0;
-  suspended = &array_onstack;
-  rc = mdbx_suspend_threads_before_remap(env, &suspended);
-  if (rc != MDBX_SUCCESS) {
-    mdbx_error("failed suspend-for-remap: errcode %d", rc);
-    goto bailout;
+  if ((env->me_flags & MDBX_NOTLS) == 0) {
+    /* 1) Windows allows only extending a read-write section, but not a
+     *    corresponding mapped view. Therefore in other cases we must suspend
+     *    the local threads for safe remap.
+     * 2) At least on Windows 10 1803 the entire mapped section is unavailable
+     *    for short time during NtExtendSection() or VirtualAlloc() execution.
+     * 3) Under Wine runtime environment on Linux a section extending is not
+     *    supported.
+     *
+     * THEREFORE LOCAL THREADS SUSPENDING IS ALWAYS REQUIRED! */
+    array_onstack.limit = ARRAY_LENGTH(array_onstack.handles);
+    array_onstack.count = 0;
+    suspended = &array_onstack;
+    rc = mdbx_suspend_threads_before_remap(env, &suspended);
+    if (rc != MDBX_SUCCESS) {
+      mdbx_error("failed suspend-for-remap: errcode %d", rc);
+      goto bailout;
+    }
+    mresize_flags |= implicit ? MDBX_MRESIZE_MAY_UNMAP
+                              : MDBX_MRESIZE_MAY_UNMAP | MDBX_MRESIZE_MAY_MOVE;
   }
-  const bool mapping_can_be_moved = !implicit;
-#else /* Windows */
+#else  /* Windows */
   /* Acquire guard to avoid collision between read and write txns
    * around env->me_dbgeo */
-  bool mapping_can_be_moved = false;
   int rc = mdbx_fastmutex_acquire(&env->me_remap_guard);
   if (unlikely(rc != MDBX_SUCCESS))
     return rc;
@@ -9368,7 +9365,8 @@ static __cold int mdbx_mapresize(MDBX_env *env, const pgno_t used_pgno,
     goto bailout;
 
   MDBX_lockinfo *const lck = env->me_lck_mmap.lck;
-  if (limit_bytes != env->me_dxb_mmap.limit && lck && !implicit) {
+  if (limit_bytes != env->me_dxb_mmap.limit && !(env->me_flags & MDBX_NOTLS) &&
+      lck && !implicit) {
     int err = mdbx_rdt_lock(env) /* lock readers table until remap done */;
     if (unlikely(MDBX_IS_ERROR(err))) {
       rc = err;
@@ -9378,20 +9376,30 @@ static __cold int mdbx_mapresize(MDBX_env *env, const pgno_t used_pgno,
     /* looking for readers from this process */
     const unsigned snap_nreaders =
         atomic_load32(&lck->mti_numreaders, mo_AcquireRelease);
-    mapping_can_be_moved = true;
+    mresize_flags |= implicit ? MDBX_MRESIZE_MAY_UNMAP
+                              : MDBX_MRESIZE_MAY_UNMAP | MDBX_MRESIZE_MAY_MOVE;
     for (unsigned i = 0; i < snap_nreaders; ++i) {
       if (lck->mti_readers[i].mr_pid.weak == env->me_pid &&
           lck->mti_readers[i].mr_tid.weak != mdbx_thread_self()) {
         /* the base address of the mapping can't be changed since
          * the other reader thread from this process exists. */
         mdbx_rdt_unlock(env);
-        mapping_can_be_moved = false;
+        mresize_flags &= ~(MDBX_MRESIZE_MAY_UNMAP | MDBX_MRESIZE_MAY_MOVE);
         break;
       }
     }
   }
-
 #endif /* ! Windows */
+
+  if ((env->me_flags & MDBX_WRITEMAP) && env->me_lck->mti_unsynced_pages.weak) {
+#if MDBX_ENABLE_PGOP_STAT
+    safe64_inc(&env->me_lck->mti_pgop_stat.wops, 1);
+#endif /* MDBX_ENABLE_PGOP_STAT */
+    rc = mdbx_msync(&env->me_dxb_mmap, 0, pgno_align2os_bytes(env, used_pgno),
+                    MDBX_SYNC_NONE);
+    if (unlikely(rc != MDBX_SUCCESS))
+      goto bailout;
+  }
 
 #if MDBX_ENABLE_MADVISE
   if (size_bytes < prev_size) {
@@ -9430,8 +9438,7 @@ static __cold int mdbx_mapresize(MDBX_env *env, const pgno_t used_pgno,
   }
 #endif /* MDBX_ENABLE_MADVISE */
 
-  rc = mdbx_mresize(env->me_flags, &env->me_dxb_mmap, size_bytes, limit_bytes,
-                    mapping_can_be_moved);
+  rc = mdbx_mresize(mresize_flags, &env->me_dxb_mmap, size_bytes, limit_bytes);
 
 #if MDBX_ENABLE_MADVISE
   if (rc == MDBX_SUCCESS) {
@@ -9466,7 +9473,7 @@ bailout:
     }
 #endif /* MDBX_USE_VALGRIND */
   } else {
-    if (rc != MDBX_UNABLE_EXTEND_MAPSIZE) {
+    if (rc != MDBX_UNABLE_EXTEND_MAPSIZE && rc != MDBX_RESULT_TRUE) {
       mdbx_error("failed resize datafile/mapping: "
                  "present %" PRIuPTR " -> %" PRIuPTR ", "
                  "limit %" PRIuPTR " -> %" PRIuPTR ", errcode %d",
@@ -9494,7 +9501,8 @@ bailout:
       mdbx_free(suspended);
   }
 #else
-  if (env->me_lck_mmap.lck && mapping_can_be_moved)
+  if (env->me_lck_mmap.lck &&
+      (mresize_flags & (MDBX_MRESIZE_MAY_UNMAP | MDBX_MRESIZE_MAY_MOVE)) != 0)
     mdbx_rdt_unlock(env);
   int err = mdbx_fastmutex_release(&env->me_remap_guard);
 #endif /* Windows */
@@ -11039,12 +11047,13 @@ static int mdbx_txn_renew0(MDBX_txn *txn, const unsigned flags) {
     }
     if (txn->mt_flags & MDBX_TXN_RDONLY) {
 #if defined(_WIN32) || defined(_WIN64)
-      if ((size > env->me_dbgeo.lower && env->me_dbgeo.shrink) ||
-          (mdbx_RunningUnderWine() &&
-           /* under Wine acquisition of remap_guard is always required,
-            * since Wine don't support section extending,
-            * i.e. in both cases unmap+map are required. */
-           size < env->me_dbgeo.upper && env->me_dbgeo.grow)) {
+      if (((size > env->me_dbgeo.lower && env->me_dbgeo.shrink) ||
+           (mdbx_RunningUnderWine() &&
+            /* under Wine acquisition of remap_guard is always required,
+             * since Wine don't support section extending,
+             * i.e. in both cases unmap+map are required. */
+            size < env->me_dbgeo.upper && env->me_dbgeo.grow)) &&
+          /* avoid recursive use SRW */ (txn->mt_flags & MDBX_NOTLS) == 0) {
         txn->mt_flags |= MDBX_SHRINK_ALLOWED;
         mdbx_srwlock_AcquireShared(&env->me_remap_guard);
       }
@@ -13697,8 +13706,8 @@ mdbx_validate_meta(MDBX_env *env, MDBX_meta *const meta, uint64_t *filesize,
 /* Read the environment parameters of a DB environment
  * before mapping it into memory. */
 static __cold int mdbx_read_header(MDBX_env *env, MDBX_meta *dest,
-                                   uint64_t *filesize,
-                                   const int lck_exclusive) {
+                                   uint64_t *filesize, const int lck_exclusive,
+                                   const mdbx_mode_t mode_bits) {
   int rc = mdbx_filesize(env->me_lazy_fd, filesize);
   if (unlikely(rc != MDBX_SUCCESS))
     return rc;
@@ -13728,9 +13737,9 @@ static __cold int mdbx_read_header(MDBX_env *env, MDBX_meta *dest,
       int err = mdbx_pread(env->me_lazy_fd, buffer, MIN_PAGESIZE, offset);
       if (err != MDBX_SUCCESS) {
         if (err == MDBX_ENODATA && offset == 0 && loop_count == 0 &&
-            *filesize == 0 && (env->me_flags & MDBX_RDONLY) == 0)
-          mdbx_warning("read meta: empty file (%d, %s)", err,
-                       mdbx_strerror(err));
+            *filesize == 0 && mode_bits /* non-zero for DB creation */ != 0)
+          mdbx_notice("read meta: empty file (%d, %s)", err,
+                      mdbx_strerror(err));
         else
           mdbx_error("read meta[%u,%u]: %i, %s", offset, MIN_PAGESIZE, err,
                      mdbx_strerror(err));
@@ -14773,11 +14782,12 @@ __cold int mdbx_env_get_maxreaders(const MDBX_env *env, unsigned *readers) {
 #endif /* LIBMDBX_NO_EXPORTS_LEGACY_API */
 
 /* Further setup required for opening an MDBX environment */
-static __cold int mdbx_setup_dxb(MDBX_env *env, const int lck_rc) {
+static __cold int mdbx_setup_dxb(MDBX_env *env, const int lck_rc,
+                                 const mdbx_mode_t mode_bits) {
   uint64_t filesize_before;
   MDBX_meta meta;
   int rc = MDBX_RESULT_FALSE;
-  int err = mdbx_read_header(env, &meta, &filesize_before, lck_rc);
+  int err = mdbx_read_header(env, &meta, &filesize_before, lck_rc, mode_bits);
   if (unlikely(err != MDBX_SUCCESS)) {
     if (lck_rc != /* lck exclusive */ MDBX_RESULT_TRUE || err != MDBX_ENODATA ||
         (env->me_flags & MDBX_RDONLY) != 0 ||
@@ -14809,7 +14819,7 @@ static __cold int mdbx_setup_dxb(MDBX_env *env, const int lck_rc) {
       return err;
 
 #ifndef NDEBUG /* just for checking */
-    err = mdbx_read_header(env, &meta, &filesize_before, lck_rc);
+    err = mdbx_read_header(env, &meta, &filesize_before, lck_rc, mode_bits);
     if (unlikely(err != MDBX_SUCCESS))
       return err;
 #endif
@@ -14993,18 +15003,18 @@ static __cold int mdbx_setup_dxb(MDBX_env *env, const int lck_rc) {
   env->me_poison_edge = bytes2pgno(env, env->me_dxb_mmap.limit);
 #endif /* MDBX_USE_VALGRIND || __SANITIZE_ADDRESS__ */
 
-  const unsigned meta_clash_mask = mdbx_meta_eq_mask(env);
-  if (unlikely(meta_clash_mask)) {
-    if (/* not recovery mode */ env->me_stuck_meta < 0) {
-      mdbx_error("meta-pages are clashed: mask 0x%d", meta_clash_mask);
-      return MDBX_CORRUPTED;
-    } else {
-      mdbx_warning("ignore meta-pages clashing (mask 0x%d) in recovery mode",
-                   meta_clash_mask);
-    }
-  }
-
   while (likely(/* not recovery mode */ env->me_stuck_meta < 0)) {
+    const unsigned meta_clash_mask = mdbx_meta_eq_mask(env);
+    if (unlikely(meta_clash_mask)) {
+      if (/* not recovery mode */ env->me_stuck_meta < 0) {
+        mdbx_error("meta-pages are clashed: mask 0x%d", meta_clash_mask);
+        return MDBX_CORRUPTED;
+      } else {
+        mdbx_warning("ignore meta-pages clashing (mask 0x%d) in recovery mode",
+                     meta_clash_mask);
+      }
+    }
+
     MDBX_meta *const head = mdbx_meta_head(env);
     const txnid_t head_txnid = mdbx_meta_txnid_fluid(env, head);
     MDBX_meta *const steady = mdbx_meta_steady(env);
@@ -15764,8 +15774,11 @@ __cold int mdbx_env_open(MDBX_env *env, const char *pathname,
   if (unlikely(rc != MDBX_SUCCESS))
     return rc;
 
-  if (flags & ~ENV_USABLE_FLAGS)
+  if (unlikely(flags & ~ENV_USABLE_FLAGS))
     return MDBX_EINVAL;
+
+  if (flags & MDBX_RDONLY)
+    mode = 0;
 
   if (env->me_lazy_fd != INVALID_HANDLE_VALUE ||
       (env->me_flags & MDBX_ENV_ACTIVE) != 0 || env->me_map)
@@ -15914,7 +15927,7 @@ __cold int mdbx_env_open(MDBX_env *env, const char *pathname,
     }
   }
 
-  const int dxb_rc = mdbx_setup_dxb(env, lck_rc);
+  const int dxb_rc = mdbx_setup_dxb(env, lck_rc, mode);
   if (MDBX_IS_ERROR(dxb_rc)) {
     rc = dxb_rc;
     goto bailout;
@@ -24059,19 +24072,11 @@ int mdbx_cursor_eof(const MDBX_cursor *mc) {
     return (mc->mc_signature == MDBX_MC_READY4CLOSE) ? MDBX_EINVAL
                                                      : MDBX_EBADSIGN;
 
-  if ((mc->mc_flags & C_INITIALIZED) == 0)
-    return MDBX_RESULT_TRUE;
-
-  if (mc->mc_snum == 0)
-    return MDBX_RESULT_TRUE;
-
-  // See https://github.com/erthink/libmdbx/commit/5db855d728d30311947365eb4b6b3a37f2eea854
-  // will be inserted in master
-  if ((mc->mc_flags & C_EOF) ||
-      mc->mc_ki[mc->mc_top] >= page_numkeys(mc->mc_pg[mc->mc_top]))
-    return MDBX_RESULT_TRUE;
-
-  return MDBX_RESULT_FALSE;
+  return ((mc->mc_flags & (C_INITIALIZED | C_EOF)) == C_INITIALIZED &&
+          mc->mc_snum &&
+          mc->mc_ki[mc->mc_top] < page_numkeys(mc->mc_pg[mc->mc_top]))
+             ? MDBX_RESULT_FALSE
+             : MDBX_RESULT_TRUE;
 }
 
 //------------------------------------------------------------------------------
@@ -25390,7 +25395,7 @@ __dll_export
 #ifdef MDBX_BUILD_TIMESTAMP
     MDBX_BUILD_TIMESTAMP
 #else
-    __DATE__ " " __TIME__
+    "\"" __DATE__ " " __TIME__ "\""
 #endif /* MDBX_BUILD_TIMESTAMP */
 
     ,
@@ -27158,8 +27163,8 @@ MDBX_INTERNAL_FUNC int mdbx_munmap(mdbx_mmap_t *map) {
   return MDBX_SUCCESS;
 }
 
-MDBX_INTERNAL_FUNC int mdbx_mresize(int flags, mdbx_mmap_t *map, size_t size,
-                                    size_t limit, const bool may_move) {
+MDBX_INTERNAL_FUNC int mdbx_mresize(const int flags, mdbx_mmap_t *map,
+                                    size_t size, size_t limit) {
   assert(size <= limit);
 #if defined(_WIN32) || defined(_WIN64)
   assert(size != map->current || limit != map->limit || size < map->filesize);
@@ -27203,6 +27208,9 @@ MDBX_INTERNAL_FUNC int mdbx_mresize(int flags, mdbx_mmap_t *map, size_t size,
    *  - change size of mapped view;
    *  - extend read-only mapping;
    * Therefore we should unmap/map entire section. */
+  if ((flags & MDBX_MRESIZE_MAY_UNMAP) == 0)
+    return MDBX_RESULT_TRUE;
+
   status = NtUnmapViewOfSection(GetCurrentProcess(), map->address);
   if (!NT_SUCCESS(status))
     return ntstatus2errcode(status);
@@ -27238,7 +27246,7 @@ retry_file_and_section:
     if (status != (NTSTATUS) /* STATUS_CONFLICTING_ADDRESSES */ 0xC0000018)
       goto bailout_ntstatus /* no way to recovery */;
 
-    if (may_move)
+    if (flags & MDBX_MRESIZE_MAY_MOVE)
       /* the base address could be changed */
       map->address = NULL;
   }
@@ -27296,7 +27304,7 @@ retry_mapview:;
 
   if (!NT_SUCCESS(status)) {
     if (status == (NTSTATUS) /* STATUS_CONFLICTING_ADDRESSES */ 0xC0000018 &&
-        map->address && may_move) {
+        map->address && (flags & MDBX_MRESIZE_MAY_MOVE) != 0) {
       /* try remap at another base address */
       map->address = NULL;
       goto retry_mapview;
@@ -27307,7 +27315,7 @@ retry_mapview:;
     if (map->address && (size != map->current || limit != map->limit)) {
       /* try remap with previously size and limit,
        * but will return MDBX_UNABLE_EXTEND_MAPSIZE on success */
-      rc = MDBX_UNABLE_EXTEND_MAPSIZE;
+      rc = (limit > map->limit) ? MDBX_UNABLE_EXTEND_MAPSIZE : MDBX_RESULT_TRUE;
       size = map->current;
       ReservedSize = limit = map->limit;
       goto retry_file_and_section;
@@ -27331,7 +27339,8 @@ retry_mapview:;
   if (flags & MDBX_RDONLY) {
     map->current = (filesize > limit) ? limit : (size_t)filesize;
     if (map->current != size)
-      rc = MDBX_UNABLE_EXTEND_MAPSIZE;
+      rc =
+          (size > map->current) ? MDBX_UNABLE_EXTEND_MAPSIZE : MDBX_RESULT_TRUE;
   } else if (filesize != size) {
     rc = mdbx_ftruncate(map->fd, size);
     if (rc != MDBX_SUCCESS)
@@ -27354,7 +27363,8 @@ retry_mapview:;
   uint8_t *ptr = MAP_FAILED;
 
 #if defined(MREMAP_MAYMOVE)
-  ptr = mremap(map->address, map->limit, limit, may_move ? MREMAP_MAYMOVE : 0);
+  ptr = mremap(map->address, map->limit, limit,
+               (flags & MDBX_MRESIZE_MAY_MOVE) ? MREMAP_MAYMOVE : 0);
   if (ptr == MAP_FAILED) {
     const int err = errno;
     switch (err) {
@@ -27403,7 +27413,7 @@ retry_mapview:;
 
   if (ptr == MAP_FAILED) {
     /* unmap and map again whole region */
-    if (!may_move) {
+    if ((flags & MDBX_MRESIZE_MAY_UNMAP) == 0) {
       /* TODO: Perhaps here it is worth to implement suspend/resume threads
        * and perform unmap/map as like for Windows. */
       return MDBX_UNABLE_EXTEND_MAPSIZE;
@@ -27412,9 +27422,31 @@ retry_mapview:;
     if (unlikely(munmap(map->address, map->limit)))
       return errno;
 
-    ptr = mmap(map->address, limit, mmap_prot, mmap_flags, map->fd, 0);
+    ptr = mmap(map->address, limit, mmap_prot,
+               (flags & MDBX_MRESIZE_MAY_MOVE)
+                   ? mmap_flags
+                   : mmap_flags | (MAP_FIXED_NOREPLACE ? MAP_FIXED_NOREPLACE
+                                                       : MAP_FIXED),
+               map->fd, 0);
+    if (MAP_FIXED_NOREPLACE != 0 && MAP_FIXED_NOREPLACE != MAP_FIXED &&
+        unlikely(ptr == MAP_FAILED) && !(flags & MDBX_MRESIZE_MAY_MOVE) &&
+        errno == /* kernel don't support MAP_FIXED_NOREPLACE */ EINVAL)
+      ptr = mmap(map->address, limit, mmap_prot, mmap_flags | MAP_FIXED,
+                 map->fd, 0);
+
     if (unlikely(ptr == MAP_FAILED)) {
-      ptr = mmap(map->address, map->limit, mmap_prot, mmap_flags, map->fd, 0);
+      /* try to restore prev mapping */
+      ptr = mmap(map->address, map->limit, mmap_prot,
+                 (flags & MDBX_MRESIZE_MAY_MOVE)
+                     ? mmap_flags
+                     : mmap_flags | (MAP_FIXED_NOREPLACE ? MAP_FIXED_NOREPLACE
+                                                         : MAP_FIXED),
+                 map->fd, 0);
+      if (MAP_FIXED_NOREPLACE != 0 && MAP_FIXED_NOREPLACE != MAP_FIXED &&
+          unlikely(ptr == MAP_FAILED) && !(flags & MDBX_MRESIZE_MAY_MOVE) &&
+          errno == /* kernel don't support MAP_FIXED_NOREPLACE */ EINVAL)
+        ptr = mmap(map->address, map->limit, mmap_prot, mmap_flags | MAP_FIXED,
+                   map->fd, 0);
       if (unlikely(ptr == MAP_FAILED)) {
         VALGRIND_MAKE_MEM_NOACCESS(map->address, map->current);
         /* Unpoisoning is required for ASAN to avoid false-positive diagnostic
@@ -28171,10 +28203,10 @@ __dll_export
     const struct MDBX_version_info mdbx_version = {
         0,
         10,
-        0,
-        34,
-        {"2021-05-28T01:46:24+03:00", "da23506440bf341f805ee4ff2dc69320b7a40e48", "a6c8c20bd96a9ddb0f6594e8098392e8833eeeb5",
-         "v0.10.0-34-ga6c8c20"},
+        1,
+        19,
+        {"2021-06-26T18:54:00+03:00", "2ccb35eef236960b48f2ac653fce3c8699bc6836", "5d4281fbbe70bbd2ad37d451d66586aacfff07a8",
+         "v0.10.1-19-g5d4281f"},
         sourcery};
 
 __dll_export
@@ -28451,6 +28483,7 @@ static int suspend_and_append(mdbx_handle_array_t **array,
 
 MDBX_INTERNAL_FUNC int
 mdbx_suspend_threads_before_remap(MDBX_env *env, mdbx_handle_array_t **array) {
+  mdbx_assert(env, (env->me_flags & MDBX_NOTLS) == 0);
   const uintptr_t CurrentTid = GetCurrentThreadId();
   int rc;
   if (env->me_lck_mmap.lck) {
@@ -28468,12 +28501,6 @@ mdbx_suspend_threads_before_remap(MDBX_env *env, mdbx_handle_array_t **array) {
       if (reader->mr_tid.weak == CurrentTid ||
           reader->mr_tid.weak == WriteTxnOwner)
         goto skip_lck;
-      if (env->me_flags & MDBX_NOTLS) {
-        /* Skip duplicates in no-tls mode */
-        for (const MDBX_reader *scan = reader; --scan >= begin;)
-          if (scan->mr_tid.weak == reader->mr_tid.weak)
-            goto skip_lck;
-      }
 
       rc = suspend_and_append(array, (mdbx_tid_t)reader->mr_tid.weak);
       if (rc != MDBX_SUCCESS) {

@@ -29,7 +29,8 @@ INSTALL ?= install
 CC      ?= gcc
 CFLAGS_EXTRA ?=
 LD      ?= ld
-MDBX_BUILD_OPTIONS ?= -DNDEBUG=1
+MDBX_BUILD_OPTIONS ?=-DNDEBUG=1
+MDBX_BUILD_TIMESTAMP ?=$(shell date +%Y-%m-%dT%H:%M:%S%z)
 CFLAGS  ?= -std=gnu11 -O2 -g -Wall -Werror -Wextra -Wpedantic -ffunction-sections -fPIC -fvisibility=hidden -pthread -Wno-error=attributes $(CFLAGS_EXTRA)
 # -Wno-tautological-compare
 CXX     ?= g++
@@ -102,7 +103,8 @@ help:
 	@echo "  make bench-clean         - remove temp database(s) after benchmark"
 
 show-options:
-	@echo "  MDBX_BUILD_OPTIONS =$(MDBX_BUILD_OPTIONS)"
+	@echo "  MDBX_BUILD_OPTIONS   = $(MDBX_BUILD_OPTIONS)"
+	@echo "  MDBX_BUILD_TIMESTAMP = $(MDBX_BUILD_TIMESTAMP)"
 	@echo '## TIP: Use `make options` to listing available build options.'
 	@echo "  CFLAGS   =$(CFLAGS)"
 	@echo "  CXXFLAGS =$(CXXFLAGS)"
@@ -128,7 +130,8 @@ options:
 	@echo "  EXE_LDFLAGS  =$(EXE_LDFLAGS)"
 	@echo "  LIBS         =$(LIBS)"
 	@echo ""
-	@echo "  MDBX_BUILD_OPTIONS =$(MDBX_BUILD_OPTIONS)"
+	@echo "  MDBX_BUILD_OPTIONS   = $(MDBX_BUILD_OPTIONS)"
+	@echo "  MDBX_BUILD_TIMESTAMP = $(MDBX_BUILD_TIMESTAMP)"
 	@echo ""
 	@echo "## Assortment items for MDBX_BUILD_OPTIONS:"
 	@echo "##   Note that the defaults should already be correct for most platforms;"
@@ -165,11 +168,11 @@ MAN_SRCDIR := man1/
 
 config.h: mdbx.c $(lastword $(MAKEFILE_LIST))
 	@echo '  MAKE $@'
-	$(QUIET)(echo '#define MDBX_BUILD_TIMESTAMP "$(shell date +%Y-%m-%dT%H:%M:%S%z)"' \
+	$(QUIET)(echo '#define MDBX_BUILD_TIMESTAMP "$(MDBX_BUILD_TIMESTAMP)"' \
 	&& echo '#define MDBX_BUILD_FLAGS "$(CXXSTD) $(CFLAGS) $(LDFLAGS) $(LIBS)"' \
 	&& echo '#define MDBX_BUILD_COMPILER "$(shell (LC_ALL=C $(CC) --version || echo 'Please use GCC or CLANG compatible compiler') | head -1)"' \
 	&& echo '#define MDBX_BUILD_TARGET "$(shell set -o pipefail; (LC_ALL=C $(CC) -v 2>&1 | grep -i '^Target:' | cut -d ' ' -f 2- || (LC_ALL=C $(CC) --version | grep -qi e2k && echo E2K) || echo 'Please use GCC or CLANG compatible compiler') | head -1)"' \
-	) > $@
+	) >$@
 
 mdbx-dylib.o: config.h mdbx.c mdbx.h $(lastword $(MAKEFILE_LIST))
 	@echo '  CC $@'
@@ -194,11 +197,16 @@ mdbx_%:	mdbx_%.c libmdbx.a
 
 install: $(LIBRARIES) $(TOOLS) $(HEADERS)
 	@echo '  INSTALLING...'
-	$(INSTALL) -D -p $(EXE_INSTALL_FLAGS) -t $(DESTDIR)$(prefix)/bin$(suffix) $(TOOLS) && \
-	$(INSTALL) -D -p $(EXE_INSTALL_FLAGS) -t $(DESTDIR)$(prefix)/lib$(suffix) $(filter-out libmdbx.a,$(LIBRARIES)) && \
-	$(INSTALL) -D -p -t $(DESTDIR)$(prefix)/lib$(suffix) libmdbx.a && \
-	$(INSTALL) -D -p -m 444 -t $(DESTDIR)$(prefix)/include $(HEADERS) && \
-	$(INSTALL) -D -p -m 444 -t $(DESTDIR)$(mandir)/man1 $(addprefix $(MAN_SRCDIR), $(MANPAGES))
+	$(QUIET)mkdir -p $(DESTDIR)$(prefix)/bin$(suffix) && \
+		$(INSTALL) -p $(EXE_INSTALL_FLAGS) $(TOOLS) $(DESTDIR)$(prefix)/bin$(suffix)/ && \
+	mkdir -p $(DESTDIR)$(prefix)/lib$(suffix)/ && \
+		$(INSTALL) -p $(EXE_INSTALL_FLAGS) $(filter-out libmdbx.a,$(LIBRARIES)) $(DESTDIR)$(prefix)/lib$(suffix)/ && \
+	mkdir -p $(DESTDIR)$(prefix)/lib$(suffix)/ && \
+		$(INSTALL) -p libmdbx.a $(DESTDIR)$(prefix)/lib$(suffix)/ && \
+	mkdir -p $(DESTDIR)$(prefix)/include/ && \
+		$(INSTALL) -p -m 444 $(HEADERS) $(DESTDIR)$(prefix)/include/ && \
+	mkdir -p $(DESTDIR)$(mandir)/man1/ && \
+		$(INSTALL) -p -m 444 $(addprefix $(MAN_SRCDIR), $(MANPAGES)) $(DESTDIR)$(mandir)/man1/
 
 install-strip: EXE_INSTALL_FLAGS = -s
 install-strip: install

@@ -1,19 +1,48 @@
 ChangeLog
 ---------
 
+## v0.10.2 (in development)
+
 ### TODO
 
+ - [Move most of `mdbx_chk` functional to the library API](https://github.com/erthink/libmdbx/issues/204).
+ - [Replace SRW-lock on Windows to allow shrink DB with `MDBX_NOTLS` option](https://github.com/erthink/libmdbx/issues/210).
+ - [More flexible support of asynchronous runtime/framework(s)](https://github.com/erthink/libmdbx/issues/200).
+ - [Migration guide from LMDB to MDBX](https://github.com/erthink/libmdbx/issues/199).
  - [Get rid of dirty-pages list in MDBX_WRITEMAP mode](https://github.com/erthink/libmdbx/issues/193).
  - [Large/Overflow pages accounting for dirty-room](https://github.com/erthink/libmdbx/issues/192).
  - [C++ Buffer issue](https://github.com/erthink/libmdbx/issues/191).
- - Finalize C++ API (few typos and trivia bugs are still likely for now).
  - [Support for RAW devices](https://github.com/erthink/libmdbx/issues/124).
  - [Test framework issue](https://github.com/erthink/libmdbx/issues/127).
  - [Support MessagePack for Keys & Values](https://github.com/erthink/libmdbx/issues/115).
  - [Engage new terminology](https://github.com/erthink/libmdbx/issues/137).
- - Packages for [Astra Linux](https://astralinux.ru/), [ALT Linux](https://www.altlinux.org/), [ROSA Linux](https://www.rosalinux.ru/), Fedora/RHEL, Debian/Ubuntu.
+ - Finalize C++ API (few typos and trivia bugs are still likely for now).
+ - Packages for [Astra Linux](https://astralinux.ru/), [ALT Linux](https://www.altlinux.org/), [ROSA Linux](https://www.rosalinux.ru/), etc.
 
-## v0.10.1 (scheduled for 2020-06-01)
+Acknowledgements:
+
+ - [Alex Sharov](https://github.com/AskAlexSharov) for reporting and testing.
+ - [Andrea Lanfranchi](https://github.com/AndreaLanfranchi) for reporting bugs.
+
+New features:
+
+ - [Allow to predefine/override `MDBX_BUILD_TIMESTAMP` for builds reproducibility](https://github.com/erthink/libmdbx/issues/201).
+
+Backward compatibility break:
+
+ - Use file `VERSION.txt` for version information instead of `VERSION` to avoid collision with `#include <version>`.
+
+Fixes:
+
+ - Fixed excess meta-pages checks in case `mdbx_chk` is called to check the DB for a specific meta page and thus could prevent switching to the selected meta page, even if the check passed without errors.
+ - Fixed [recursive use of SRW-lock on Windows cause by `MDBX_NOTLS` option](https://github.com/erthink/libmdbx/issues/203).
+ - Fixed [log a warning during a new DB creation](https://github.com/erthink/libmdbx/issues/205).
+ - Fixed [false-negative `mdbx_cursor_eof()` result](https://github.com/erthink/libmdbx/issues/207).
+ - Fixed [`make install` with non-GNU `install` utility (OSX, BSD)](https://github.com/erthink/libmdbx/issues/208).
+ - Fixed [installation by `CMake` in special cases by complete use `GNUInstallDirs`'s variables](https://github.com/erthink/libmdbx/issues/209).
+
+
+## v0.10.1 at 2021-06-01
 
 Acknowledgements:
 

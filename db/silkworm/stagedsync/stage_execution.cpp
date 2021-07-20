@@ -31,7 +31,8 @@
 
 namespace silkworm::stagedsync {
 
-StageResult execute(mdbx::txn& txn, const ChainConfig& config, const uint64_t max_block, uint64_t* block_num, const db::StorageMode& storage_mode) {
+StageResult execute(mdbx::txn& txn, const ChainConfig& config, const uint64_t max_block, uint64_t* block_num,
+                    const db::StorageMode& storage_mode) {
     db::Buffer buffer{txn};
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
@@ -74,7 +75,7 @@ StageResult stage_execution(db::EnvConfig db_config) {
 
     uint64_t max_block{db::stages::get_stage_progress(txn, db::stages::kBlockBodiesKey)};
     uint64_t block_num{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};
-    
+
     while (block_num <= max_block) {
         auto execution_code{execute(txn, chain_config.value(), max_block, &block_num, storage_mode)};
         if (execution_code != StageResult::kStageSuccess) {
@@ -126,7 +127,7 @@ void collect_for_unwind(Bytes key, Bytes value, mdbx::cursor& plain_state_table,
     }
     auto location{key.substr(kAddressLength + db::kIncarnationLength)};
     auto key1{key.substr(0, kAddressLength + db::kIncarnationLength)};
-    if (plain_state_table.find_multivalue(db::to_slice(key1), db::to_slice(location))) {
+    if (db::find_value_suffix(plain_state_table, key1, location) != std::nullopt) {
         plain_state_table.erase();
     }
     if (value.size() > 0) {

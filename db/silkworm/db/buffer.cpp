@@ -136,16 +136,15 @@ evmc::bytes32 Buffer::account_storage_root(const evmc::address& address, uint64_
     return hb.root_hash();
 }
 
-static void upsert_storage_value(mdbx::cursor& state_table, ByteView storage_prefix, const evmc::bytes32& location,
+static void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, const evmc::bytes32& location,
                                  const evmc::bytes32& value) {
-    if (state_table.find_multivalue(to_slice(storage_prefix), to_slice(full_view(location)),
-                                    /*throw_notfound*/ false)) {
-        state_table.erase();
+    if (find_value_suffix(state_cursor, storage_prefix, full_view(location)) != std::nullopt) {
+        state_cursor.erase();
     }
     if (!is_zero(value)) {
         Bytes data{full_view(location)};
         data.append(zeroless_view(value));
-        state_table.upsert(to_slice(storage_prefix), to_slice(data));
+        state_cursor.upsert(to_slice(storage_prefix), to_slice(data));
     }
 }
 
@@ -165,7 +164,7 @@ void Buffer::write_to_state_table() {
 
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
-            if (state_table.find(to_slice(address), false)) {
+            if (state_table.seek(to_slice(address))) {
                 state_table.erase();
             }
             if (it->second.has_value()) {

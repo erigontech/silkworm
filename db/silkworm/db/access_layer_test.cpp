@@ -179,25 +179,25 @@ namespace db {
         auto txn{env.start_write()};
         table::create_all(txn);
 
-        auto version{db::get_schema_version(txn)};
+        auto version{db::read_schema_version(txn)};
         CHECK(version.has_value() == false);
 
-        version = version_t{3, 0, 0};
-        CHECK_NOTHROW(db::set_schema_version(txn, version.value()));
-        version = db::get_schema_version(txn);
+        version = VersionBase{3, 0, 0};
+        CHECK_NOTHROW(db::write_schema_version(txn, version.value()));
+        version = db::read_schema_version(txn);
         CHECK(version.has_value() == true);
 
         CHECK_NOTHROW(txn.commit());
         txn = env.start_write();
 
-        auto version2{db::get_schema_version(txn)};
+        auto version2{db::read_schema_version(txn)};
         CHECK(version.value() == version2.value());
 
-        version2 = version_t{2, 0, 0};
-        CHECK_THROWS(db::set_schema_version(txn, version2.value()));
+        version2 = VersionBase{2, 0, 0};
+        CHECK_THROWS(db::write_schema_version(txn, version2.value()));
 
-        version2 = version_t{3, 1, 0};
-        CHECK_NOTHROW(db::set_schema_version(txn, version2.value()));
+        version2 = VersionBase{3, 1, 0};
+        CHECK_NOTHROW(db::write_schema_version(txn, version2.value()));
     }
 
     TEST_CASE("Storage Mode") {
@@ -212,7 +212,7 @@ namespace db {
         CHECK(default_mode.to_string() == "default");
 
         StorageMode expected_mode{true, false, false, false, false, false};
-        auto actual_mode{db::get_storage_mode(txn)};
+        auto actual_mode{db::read_storage_mode(txn)};
         CHECK(expected_mode == actual_mode);
 
         std::string mode_s1{};
@@ -230,11 +230,11 @@ namespace db {
         auto actual_mode4{db::parse_storage_mode(mode_s4)};
         CHECK(actual_mode4.to_string() == mode_s4);
 
-        db::set_storage_mode(txn, actual_mode4);
+        db::write_storage_mode(txn, actual_mode4);
         CHECK_NOTHROW(txn.commit());
 
         txn = env.start_read();
-        auto actual_mode5{db::get_storage_mode(txn)};
+        auto actual_mode5{db::read_storage_mode(txn)};
         CHECK(actual_mode4.to_string() == actual_mode5.to_string());
 
         std::string mode_s6{"hrtce"};

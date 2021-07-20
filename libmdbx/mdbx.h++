@@ -1,4 +1,4 @@
-/// \file mdbx.h++
+﻿/// \file mdbx.h++
 /// \brief The libmdbx C++ API header file (preliminary).
 ///
 /// \author Copyright (c) 2020-2021, Leonid Yuriev <leo@yuriev.ru>.
@@ -14,12 +14,14 @@
 
 #pragma once
 
-#if (!defined(__cplusplus) || __cplusplus < 201103L) &&                        \
-    !(defined(                                                                 \
-          _MSC_VER) /* MSVC is mad and don't define __cplusplus properly */    \
-      && _MSC_VER == 1900)
-#error "C++11 or better is required"
-#endif
+#if !defined(__cplusplus) || __cplusplus < 201103L
+#if !defined(_MSC_VER) || _MSC_VER < 1900
+#error "C++11 compiler or better is required"
+#elif _MSC_VER >= 1910
+#error                                                                         \
+    "Please add ` /Zc:__cplusplus` to MSVC compiler options to enforce it conform ISO C++"
+#endif /* MSVC is mad and don't define __cplusplus properly */
+#endif /* __cplusplus < 201103L */
 
 #if (defined(_WIN32) || defined(_WIN64)) && MDBX_WITHOUT_MSVC_CRT
 #error                                                                         \

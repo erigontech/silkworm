@@ -14,7 +14,6 @@
    limitations under the License.
 ]]
 
-find_package(botan-2 CONFIG REQUIRED)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
@@ -31,7 +30,7 @@ add_library(silkworm_core ${SILKWORM_CORE_SRC})
 target_include_directories(silkworm_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(SILKWORM_CORE_PUBLIC_LIBS evmc intx::intx ethash ff Microsoft.GSL::GSL nlohmann_json)
-set(SILKWORM_CORE_PRIVATE_LIBS evmone secp256k1 gmp PkgConfig::botan-2)
+set(SILKWORM_CORE_PRIVATE_LIBS evmone secp256k1 gmp)
 
 if(NOT SILKWORM_WASM_API)
   hunter_add_package(abseil)

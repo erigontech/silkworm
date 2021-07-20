@@ -23,7 +23,6 @@
 #include <iterator>
 #include <limits>
 
-#include <botan-2/botan/sha2_32.h>
 #include <ethash/keccak.hpp>
 
 #pragma GCC diagnostic push
@@ -37,6 +36,7 @@
 #include <silkworm/crypto/blake2.h>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/crypto/rmd160.hpp>
+#include <silkworm/crypto/sha256.hpp>
 #include <silkworm/crypto/snark.hpp>
 
 namespace silkworm::precompiled {
@@ -80,9 +80,8 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
 uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * ((input.length() + 31) / 32); }
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
-    Botan::SHA_256 sha;
-    Botan::secure_vector<uint8_t> res{sha.process(input.data(), input.length())};
-    return Bytes{res.data(), res.size()};
+    crypto::SHA_256 sha;
+    return sha.process(input);
 }
 
 uint64_t rip160_gas(ByteView input, evmc_revision) noexcept { return 600 + 120 * ((input.length() + 31) / 32); }

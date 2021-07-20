@@ -164,7 +164,7 @@ void Buffer::write_to_state_table() {
 
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
-            if (state_table.find(to_slice(address), false)) {
+            if (state_table.seek(to_slice(address))) {
                 state_table.erase();
             }
             if (it->second.has_value()) {

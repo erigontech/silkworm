@@ -36,7 +36,7 @@
 #include <silkworm/crypto/blake2.h>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/crypto/rmd160.hpp>
-#include <silkworm/crypto/sha256.hpp>
+#include <silkworm/crypto/sha-256.h>
 #include <silkworm/crypto/snark.hpp>
 
 namespace silkworm::precompiled {
@@ -80,8 +80,9 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
 uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * ((input.length() + 31) / 32); }
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
-    crypto::SHA_256 sha;
-    return sha.process(input);
+    Bytes out(32, '\0');
+    calc_sha_256(out.data(), input.data(), input.length());
+    return out;
 }
 
 uint64_t rip160_gas(ByteView input, evmc_revision) noexcept { return 600 + 120 * ((input.length() + 31) / 32); }

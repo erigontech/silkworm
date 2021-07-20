@@ -38,16 +38,16 @@ class MissingSenders : public std::runtime_error {
 };
 
 // Pulls database schema version
-std::optional<version_t> get_schema_version(mdbx::txn& txn) noexcept;
+std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept;
 
-// Sets database schema version (throws on downgrade)
-void set_schema_version(mdbx::txn& txn, version_t& schema_version);
+// Writes database schema version (throws on downgrade)
+void write_schema_version(mdbx::txn& txn, VersionBase& schema_version);
 
 // Gets storage mode from db
-StorageMode get_storage_mode(mdbx::txn& txn) noexcept;
+StorageMode read_storage_mode(mdbx::txn& txn) noexcept;
 
 // Writes storage mode to db
-void set_storage_mode(mdbx::txn& txn, const StorageMode& val);
+void write_storage_mode(mdbx::txn& txn, const StorageMode& val);
 
 // Parses storage mode from a string
 StorageMode parse_storage_mode(std::string& mode);

@@ -58,6 +58,9 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(dbtool dbtool.cpp)
   target_link_libraries(dbtool PRIVATE silkworm_db CLI11::CLI11)
 
+  add_executable(genesistool genesistool.cpp)
+  target_link_libraries(genesistool PRIVATE CLI11::CLI11)
+
   add_executable(execute execute.cpp)
   target_link_libraries(execute PRIVATE silkworm_db silkworm_tg_api CLI11::CLI11)
 
@@ -66,6 +69,9 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(unwind_hashstate unwind_hashstate.cpp)
   target_link_libraries(unwind_hashstate PRIVATE silkworm_db CLI11::CLI11)
+
+  add_executable(unwind_tx_lookup unwind_tx_lookup.cpp)
+  target_link_libraries(unwind_tx_lookup PRIVATE silkworm_db CLI11::CLI11)
 
   add_executable(blockhashes blockhashes.cpp)
   target_link_libraries(blockhashes PRIVATE silkworm_db CLI11::CLI11)

@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         const auto chain_config{db::read_chain_config(txn)};
-        const auto storage_mode(db::get_storage_mode(txn));
+        const auto storage_mode(db::read_storage_mode(txn));
         if (!chain_config.has_value()) {
             throw std::runtime_error("Unable to retrieve chain config");
         }

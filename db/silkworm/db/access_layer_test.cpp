@@ -170,7 +170,18 @@ namespace db {
         env.close();
     }
 
-    TEST_CASE("Schema Version") {
+    TEST_CASE("VersionBase primitives") {
+        VersionBase v1{0, 0, 0};
+        VersionBase v2{0, 0, 1};
+        VersionBase v3{0, 0, 1};
+        CHECK(v1 != v2);
+        CHECK(v2 > v1);
+        CHECK(v2 >= v1);
+        CHECK(v1 <= v2);
+        CHECK(v2 == v3);
+    }
+
+    TEST_CASE("Read schema Version") {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};

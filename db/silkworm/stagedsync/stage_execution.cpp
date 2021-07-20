@@ -71,7 +71,7 @@ StageResult stage_execution(db::EnvConfig db_config) {
     auto env{db::open_env(db_config)};
     auto txn{env.start_read()};
     const auto chain_config{db::read_chain_config(txn)};
-    const auto storage_mode{db::get_storage_mode(txn)};
+    const auto storage_mode{db::read_storage_mode(txn)};
 
     uint64_t max_block{db::stages::get_stage_progress(txn, db::stages::kBlockBodiesKey)};
     uint64_t block_num{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};

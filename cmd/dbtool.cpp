@@ -548,7 +548,7 @@ int do_schema(DbOptions& db_opts) {
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
-        auto schema_version{db::get_schema_version(txn)};
+        auto schema_version{db::read_schema_version(txn)};
         if (!schema_version.has_value()) {
             std::cout << "\n"
                       << "Either not an Erigon db or no schema version found"

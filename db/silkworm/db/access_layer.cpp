@@ -26,7 +26,7 @@
 
 namespace silkworm::db {
 
-std::optional<version_t> get_schema_version(mdbx::txn& txn) noexcept {
+std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept {
     auto src{db::open_cursor(txn, table::kDatabaseInfo)};
     auto key{to_slice(byte_view_of_c_str(kDbSchemaVersionKey))};
     if (!src.seek(key)) {
@@ -40,11 +40,11 @@ std::optional<version_t> get_schema_version(mdbx::txn& txn) noexcept {
     auto Minor{boost::endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
     data.value.remove_prefix(sizeof(uint32_t));
     auto Patch{boost::endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
-    return version_t{Major, Minor, Patch};
+    return VersionBase{Major, Minor, Patch};
 }
 
-void set_schema_version(mdbx::txn& txn, version_t& schema_version) {
-    auto old_schema_version{get_schema_version(txn)};
+void write_schema_version(mdbx::txn& txn, VersionBase& schema_version) {
+    auto old_schema_version{read_schema_version(txn)};
     if (old_schema_version.has_value()) {
         if (schema_version == old_schema_version.value()) {
             // Simply return. No changes
@@ -64,7 +64,7 @@ void set_schema_version(mdbx::txn& txn, version_t& schema_version) {
     src.upsert(k, v);
 }
 
-StorageMode get_storage_mode(mdbx::txn& txn) noexcept {
+StorageMode read_storage_mode(mdbx::txn& txn) noexcept {
     StorageMode ret{true};
     auto src{db::open_cursor(txn, table::kDatabaseInfo)};
 
@@ -96,7 +96,7 @@ StorageMode get_storage_mode(mdbx::txn& txn) noexcept {
     return ret;
 }
 
-void set_storage_mode(mdbx::txn& txn, const StorageMode& val) {
+void write_storage_mode(mdbx::txn& txn, const StorageMode& val) {
     auto target{db::open_cursor(txn, table::kDatabaseInfo)};
     Bytes v_on(1, '\1');
     Bytes v_off(2, '\0');

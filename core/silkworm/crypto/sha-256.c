@@ -3,10 +3,10 @@
 
 #include "sha-256.h"
 
-#include <stdint.h>
 #include <string.h>
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && defined(__x86_64__)
+#include <cpuid.h>
 #include <x86intrin.h>
 #endif
 
@@ -403,14 +403,31 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86(uint32_t h[8], con
     _mm_storeu_si128((__m128i *)&h[4], STATE1);
 }
 
-__attribute__((constructor)) static void select_sha256_implementation() {
-    // Init CPU information.
-    // This is needed on macOS because of the bug: https://bugs.llvm.org/show_bug.cgi?id=48459.
-    __builtin_cpu_init();
+// https://stackoverflow.com/questions/6121792/how-to-check-if-a-cpu-supports-the-sse3-instruction-set
+void cpuid(int info[4], int InfoType) { __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]); }
 
-    // TODO (Andrew) if (__builtin_cpu_supports("sha")) {
-    sha_256_best = sha_256_x86;
-    // }
+__attribute__((constructor)) static void select_sha256_implementation() {
+    int info[4];
+    cpuid(info, 0);
+    int nIds = info[0];
+
+    cpuid(info, 0x80000000);
+
+    int hw_sse41 = 0;
+    int hw_sha = 0;
+
+    if (nIds >= 0x00000001) {
+        cpuid(info, 0x00000001);
+        hw_sse41 = (info[2] & ((int)1 << 19)) != 0;
+    }
+    if (nIds >= 0x00000007) {
+        cpuid(info, 0x00000007);
+        hw_sha = (info[1] & ((int)1 << 29)) != 0;
+    }
+
+    if (hw_sse41 && hw_sha) {
+        sha_256_best = sha_256_x86;
+    }
 }
 
 #endif

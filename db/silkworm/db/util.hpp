@@ -36,7 +36,7 @@ namespace silkworm::db {
 /* Ancillary entities */
 
 // Used to compare versions of entities (eg. DbSchema)
-struct version_t {
+struct VersionBase {
     uint32_t Major;
     uint32_t Minor;
     uint32_t Patch;
@@ -46,11 +46,11 @@ struct version_t {
         ret.append("." + std::to_string(Patch));
         return ret;
     }
-    bool operator==(const version_t& other) const {
+    bool operator==(const VersionBase& other) const {
         return Major == other.Major && Minor == other.Minor && Patch == other.Patch;
     }
-    bool operator!=(const version_t& other) const { return !(this->operator==(other)); }
-    bool operator<(const version_t& other) const {
+    bool operator!=(const VersionBase& other) const { return !(this->operator==(other)); }
+    bool operator<(const VersionBase& other) const {
         if (Major < other.Major) {
             return true;
         } else if (Major == other.Major) {
@@ -64,7 +64,7 @@ struct version_t {
         }
         return false;
     }
-    bool operator>(const version_t& other) const {
+    bool operator>(const VersionBase& other) const {
         if (Major > other.Major) {
             return true;
         } else if (Major == other.Major) {
@@ -78,8 +78,8 @@ struct version_t {
         }
         return false;
     }
-    bool operator<=(const version_t& other) const { return this->operator==(other) || this->operator<(other); }
-    bool operator>=(const version_t& other) const { return this->operator==(other) || this->operator>(other); }
+    bool operator<=(const VersionBase& other) const { return this->operator==(other) || this->operator<(other); }
+    bool operator>=(const VersionBase& other) const { return this->operator==(other) || this->operator>(other); }
 };
 
 // Holds the storage mode set

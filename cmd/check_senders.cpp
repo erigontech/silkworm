@@ -44,6 +44,11 @@
 
 using namespace silkworm;
 
+void sig_handler(int) {
+    std::cout << std::endl << " Got interrupt. Stopping ..." << std::endl << std::endl;
+    stagedsync::recovery::g_should_stop = true;
+}
+
 struct app_options_t {
     std::string datadir{};  // Provided database path
     uint32_t max_workers{std::thread::hardware_concurrency() -
@@ -114,6 +119,9 @@ int main(int argc, char* argv[]) {
         // Create farm instance and do work
         stagedsync::recovery::RecoveryFarm farm(txn, options.max_workers, options.batch_size, collector);
         stagedsync::StageResult result{stagedsync::StageResult::kStageSuccess};
+
+        signal(SIGINT, sig_handler);
+        signal(SIGTERM, sig_handler);
 
         if (app_recover) {
             result = farm.recover(options.block_from, options.block_to);

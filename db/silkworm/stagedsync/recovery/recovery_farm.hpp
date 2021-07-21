@@ -21,6 +21,7 @@
 #define SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
 
 namespace silkworm::stagedsync::recovery {
+extern bool g_should_stop;
 
 /**
  * @brief An orchestrator of RecoveryWorkers
@@ -58,7 +59,7 @@ class RecoveryFarm {
     /**
      * @brief Gets whether or not this class should stop working
      */
-    bool should_stop() { return should_stop_.load(); }
+    bool should_stop() { return should_stop_.load() || g_should_stop; }
 
     /**
      * @brief Forces each worker to stop

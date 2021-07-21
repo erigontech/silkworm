@@ -18,6 +18,8 @@
 
 namespace silkworm::stagedsync::recovery {
 
+bool g_should_stop = false;
+
 RecoveryFarm::RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size_t max_batch_size,
                            etl::Collector& collector)
     : db_transaction_{db_transaction},

@@ -3,6 +3,7 @@
 
 #include "sha-256.h"
 
+#include <stdbool.h>
 #include <string.h>
 
 #if defined(__GNUC__) && defined(__x86_64__)
@@ -10,12 +11,16 @@
 #include <x86intrin.h>
 #endif
 
+#if _MSC_VER
+#define ALWAYS_INLINE __forceinline
+#elif __has_attribute(always_inline)
+#define ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define ALWAYS_INLINE
+#endif
+
 #define CHUNK_SIZE 64
 #define TOTAL_LEN_LEN 8
-
-/*
- * ABOUT bool: this file does not use bool in order to be as pre-C99 compatible as possible.
- */
 
 /*
  * Comments from pseudo-code at https://en.wikipedia.org/wiki/SHA-2 are reproduced here.
@@ -40,8 +45,8 @@ struct buffer_state {
     const uint8_t *p;
     size_t len;
     size_t total_len;
-    int single_one_delivered; /* bool */
-    int total_len_delivered;  /* bool */
+    bool single_one_delivered;
+    bool total_len_delivered;
 };
 
 static inline uint32_t right_rot(uint32_t value, unsigned int count) {
@@ -56,23 +61,22 @@ static void init_buf_state(struct buffer_state *state, const void *input, size_t
     state->p = input;
     state->len = len;
     state->total_len = len;
-    state->single_one_delivered = 0;
-    state->total_len_delivered = 0;
+    state->single_one_delivered = false;
+    state->total_len_delivered = false;
 }
 
-/* Return value: bool */
-static int calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
+static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
     size_t space_in_chunk;
 
     if (state->total_len_delivered) {
-        return 0;
+        return false;
     }
 
     if (state->len >= CHUNK_SIZE) {
         memcpy(chunk, state->p, CHUNK_SIZE);
         state->p += CHUNK_SIZE;
         state->len -= CHUNK_SIZE;
-        return 1;
+        return true;
     }
 
     memcpy(chunk, state->p, state->len);
@@ -85,7 +89,7 @@ static int calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
     if (!state->single_one_delivered) {
         *chunk++ = 0x80;
         space_in_chunk -= 1;
-        state->single_one_delivered = 1;
+        state->single_one_delivered = true;
     }
 
     /*
@@ -108,15 +112,15 @@ static int calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
             chunk[i] = (uint8_t)len;
             len >>= 8;
         }
-        state->total_len_delivered = 1;
+        state->total_len_delivered = true;
     } else {
         memset(chunk, 0x00, space_in_chunk);
     }
 
-    return 1;
+    return true;
 }
 
-static void sha_256_generic(uint32_t h[8], const void *input, size_t len) {
+static inline ALWAYS_INLINE void sha_256_implementation(uint32_t h[8], const void *input, size_t len) {
     /*
      * Note 1: All integers (expect indexes) are 32-bit unsigned integers and addition is calculated modulo 2^32.
      * Note 2: For each round, there is one round constant k[i] and one entry in the message schedule array w[i], 0 = i
@@ -200,15 +204,22 @@ static void sha_256_generic(uint32_t h[8], const void *input, size_t len) {
     }
 }
 
+static void sha_256_generic(uint32_t h[8], const void *input, size_t len) { sha_256_implementation(h, input, len); }
+
 static void (*sha_256_best)(uint32_t h[8], const void *input, size_t len) = sha_256_generic;
 
 #if defined(__x86_64__) && __has_attribute(target)
 
+__attribute__((target("bmi,bmi2"))) static void sha_256_x86_bmi(uint32_t h[8], const void *input, size_t len) {
+    sha_256_implementation(h, input, len);
+}
+
+// The following function was adapted from https://github.com/noloader/SHA-Intrinsics
 /*   Intel SHA extensions using C intrinsics               */
 /*   Written and place in public domain by Jeffrey Walton  */
 /*   Based on code from Intel, and by Sean Gulley for      */
 /*   the miTLS project.                                    */
-__attribute__((target("sha,sse4.1"))) static void sha_256_x86(uint32_t h[8], const void *input, size_t len) {
+__attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8], const void *input, size_t len) {
     __m128i STATE0, STATE1;
     __m128i MSG, TMP;
     __m128i MSG0, MSG1, MSG2, MSG3;
@@ -413,8 +424,10 @@ __attribute__((constructor)) static void select_sha256_implementation() {
 
     cpuid(info, 0x80000000);
 
-    int hw_sse41 = 0;
-    int hw_sha = 0;
+    bool hw_sse41 = false;
+    bool hw_bmi1 = false;
+    bool hw_bmi2 = false;
+    bool hw_sha = false;
 
     if (nIds >= 0x00000001) {
         cpuid(info, 0x00000001);
@@ -422,11 +435,15 @@ __attribute__((constructor)) static void select_sha256_implementation() {
     }
     if (nIds >= 0x00000007) {
         cpuid(info, 0x00000007);
+        hw_bmi1 = (info[1] & ((int)1 << 3)) != 0;
+        hw_bmi2 = (info[1] & ((int)1 << 8)) != 0;
         hw_sha = (info[1] & ((int)1 << 29)) != 0;
     }
 
     if (hw_sse41 && hw_sha) {
-        sha_256_best = sha_256_x86;
+        sha_256_best = sha_256_x86_sha;
+    } else if (hw_bmi1 && hw_bmi2) {
+        sha_256_best = sha_256_x86_bmi;
     }
 }
 

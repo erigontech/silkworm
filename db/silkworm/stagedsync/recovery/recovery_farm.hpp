@@ -22,8 +22,6 @@
 
 namespace silkworm::stagedsync::recovery {
 
-std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
-
 /**
  * @brief An orchestrator of RecoveryWorkers
  */
@@ -60,7 +58,7 @@ class RecoveryFarm {
     /**
      * @brief Gets whether or not this class should stop working
      */
-    bool should_stop() { return should_stop_.load() || g_should_stop.load(); }
+    bool should_stop() { return should_stop_.load(); }
 
     /**
      * @brief Forces each worker to stop

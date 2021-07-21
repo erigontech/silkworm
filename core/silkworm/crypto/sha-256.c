@@ -440,8 +440,6 @@ __attribute__((constructor)) static void select_sha256_implementation() {
     cpuid(info, 0);
     int nIds = info[0];
 
-    cpuid(info, 0x80000000);
-
     bool hw_sse41 = false;
     bool hw_bmi1 = false;
     bool hw_bmi2 = false;

@@ -86,7 +86,8 @@ StageResult stage_execution(db::EnvConfig db_config) {
     return StageResult::kStageSuccess;
 }
 
-void collect_for_unwind(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table) {
+// Revert State for given address/storage location
+void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (value.size() > 0) {
             auto [account, err]{decode_account_from_storage(value)};
@@ -137,7 +138,8 @@ void collect_for_unwind(Bytes key, Bytes value, mdbx::cursor& plain_state_table,
     return;
 }
 
-void walk_collect(mdbx::cursor& source, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table,
+// For given changeset cursor/bucket it reverts the changes on states buckets
+void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table,
                   uint64_t unwind_to) {
     uint64_t block_number{0};
     auto src_data{source.to_last(/*throw_notfound*/ false)};
@@ -149,7 +151,7 @@ void walk_collect(mdbx::cursor& source, mdbx::cursor& plain_state_table, mdbx::c
             break;
         }
         auto [new_key, new_value]{convert_to_db_format(key, value)};
-        collect_for_unwind(new_key, new_value, plain_state_table, plain_code_table);
+        revert_state(new_key, new_value, plain_state_table, plain_code_table);
         src_data = source.to_previous(/*throw_notfound*/ false);
     }
 }
@@ -195,8 +197,8 @@ StageResult unwind_execution(db::EnvConfig db_config, uint64_t unwind_to) {
 
     SILKWORM_LOG(LogLevel::Info) << "Unwind Execution from " << block_number << " to " << unwind_to << std::endl;
 
-    walk_collect(account_changeset_table, plain_state_table, plain_code_table, unwind_to);
-    walk_collect(storage_changeset_table, plain_state_table, plain_code_table, unwind_to);
+    unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, unwind_to);
+    unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, unwind_to);
     // We set the cursor data
     Bytes unwind_to_bytes(8, '\0');
     boost::endian::store_big_u64(&unwind_to_bytes[0], unwind_to + 1);

@@ -77,7 +77,7 @@ namespace silkworm::db {
     if (!(config.shared)) {
         size_t max_map_size{config.inmemory ? 64 * kMebi : 2 * kTebi};
         size_t growth_size{config.inmemory ? 2 * kMebi : 2 * kGibi};
-        cp.geometry.make_dynamic(0, max_map_size);
+        cp.geometry.make_dynamic(mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
         cp.geometry.pagesize = 4 * kKibi;
     }

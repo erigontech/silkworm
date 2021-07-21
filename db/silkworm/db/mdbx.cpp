@@ -16,6 +16,8 @@
 
 #include "mdbx.hpp"
 
+#include "../libmdbx/mdbx.h"
+
 namespace silkworm::db {
 
 ::mdbx::env_managed open_env(const EnvConfig& config) {
@@ -77,7 +79,7 @@ namespace silkworm::db {
     if (!(config.shared)) {
         size_t max_map_size{config.inmemory ? 64 * kMebi : 2 * kTebi};
         size_t growth_size{config.inmemory ? 2 * kMebi : 2 * kGibi};
-        cp.geometry.make_dynamic(mdbx::env::geometry::default_value, max_map_size);
+        cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
         cp.geometry.pagesize = 4 * kKibi;
     }
@@ -90,7 +92,11 @@ namespace silkworm::db {
     op.max_readers = config.max_readers;
 
     ::mdbx::env_managed ret{db_path.native(), cp, op, config.shared};
-    // TODO (Andrea) C++ bindings don't have setoptions
+
+    // C++ bindings don't have setoptions
+    ::MDBX_env* c_handle{ret};
+    ::mdbx::error::success_or_throw(::mdbx_env_set_option(c_handle, MDBX_opt_rp_augment_limit, 32 * 1024 * 1024));
+
     return ret;
 }
 

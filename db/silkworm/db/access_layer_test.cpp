@@ -166,8 +166,43 @@ namespace db {
         db_config.readonly = false;
         db_config.exclusive = true;
         REQUIRE_NOTHROW(env = db::open_env(db_config));
-
         env.close();
+
+        // Check readers
+        db_config.create = false;
+        db_config.inmemory = false;
+        REQUIRE_NOTHROW(env = db::open_env(db_config));
+        env.close();
+    }
+
+    TEST_CASE("Methods for_each/for_count") {
+
+        TemporaryDirectory tmp_dir;
+        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db_config.inmemory = true;
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_write()};
+        table::create_all(txn);
+
+        ::mdbx::map_handle main_map{1};
+        auto main_stat{txn.get_map_stat(main_map)};
+        auto main_crs{txn.open_cursor(main_map)};
+        std::vector<std::string> table_names{};
+
+        const auto& walk_func{[&table_names](::mdbx::cursor::move_result data) -> bool {
+            table_names.push_back(data.key.string());
+            return true;
+        }};
+
+        main_crs.to_first();
+        db::for_each(main_crs, walk_func);
+        CHECK(table_names.size() == sizeof(db::table::kTables) / sizeof(db::table::kTables[0]));
+
+        main_crs.to_first();
+        size_t max_count = table_names.size() - 1;
+        table_names.clear();
+        db::for_count(main_crs, walk_func, max_count);
+        CHECK(table_names.size() == max_count);
     }
 
     TEST_CASE("VersionBase primitives") {

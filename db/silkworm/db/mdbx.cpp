@@ -93,11 +93,26 @@ namespace silkworm::db {
 
     ::mdbx::env_managed ret{db_path.native(), cp, op, config.shared};
 
+
     if (!config.shared) {
         // C++ bindings don't have setoptions
         ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_rp_augment_limit, 32 * kMebi));
-    }
+        if (!config.readonly) {
+            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_txn_dp_initial, 16 * kKibi));
+            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_dp_reserve_limit, 16 * kKibi));
 
+            uint64_t dirty_pages_limit{0};
+            ::mdbx::error::success_or_throw(::mdbx_env_get_option(ret, MDBX_opt_txn_dp_limit, &dirty_pages_limit));
+            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_txn_dp_limit, dirty_pages_limit * 2));
+
+		    // must be in the range from 12.5% (almost empty) to 50% (half empty)
+		    // which corresponds to the range from 8192 and to 32768 in units respectively
+            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_merge_threshold_16dot16_percent, 32768));
+        }
+    }
+    if (!config.inmemory) {
+        ret.check_readers();
+    }
     return ret;
 }
 
@@ -126,7 +141,7 @@ size_t for_each(::mdbx::cursor& cursor, WalkFunc func) {
 size_t for_count(::mdbx::cursor& cursor, WalkFunc func, size_t iterations) {
     size_t ret{0};
     if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
-        while (iterations || !cursor.eof()) {
+        while (iterations && !cursor.eof()) {
             if (!func(data)) {
                 break;
             };

@@ -20,6 +20,8 @@ namespace silkworm::stagedsync {
 
 StageResult no_unwind(db::EnvConfig, uint64_t) { return StageResult::kSuccess; }
 
+// Stages are not meant to have all the same parameters
+
 //std::vector<Stage> get_default_stages() {
 //    return std::vector<Stage>({{stage_headers, no_unwind, 1},
 //                               {stage_blockhashes, no_unwind, 2},

@@ -197,6 +197,7 @@ namespace db {
         main_crs.to_first();
         db::for_each(main_crs, walk_func);
         CHECK(table_names.size() == sizeof(db::table::kTables) / sizeof(db::table::kTables[0]));
+        CHECK(table_names.size() == main_stat.ms_entries);
 
         main_crs.to_first();
         size_t max_count = table_names.size() - 1;

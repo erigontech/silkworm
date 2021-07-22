@@ -32,58 +32,102 @@
 namespace silkworm::stagedsync {
 
 StageResult execute(mdbx::txn& txn, const ChainConfig& config, const uint64_t max_block, uint64_t* block_num,
-                    const db::StorageMode& storage_mode) {
+                    const db::StorageMode& storage_mode, size_t batch_size) {
     db::Buffer buffer{txn};
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
 
-    for (; *block_num <= max_block; ++*block_num) {
-        std::optional<BlockWithHash> bh{db::read_block(txn, *block_num, /*read_senders=*/true)};
-        if (!bh) {
-            return StageResult::kBadChainSequence;
-        }
+    try {
+        for (; *block_num <= max_block; ++*block_num) {
+            std::optional<BlockWithHash> bh{db::read_block(txn, *block_num, /*read_senders=*/true)};
+            if (!bh) {
+                return StageResult::kBadChainSequence;
+            }
 
-        auto [receipts, err]{execute_block(bh->block, buffer, config, &analysis_cache, &state_pool)};
-        if (err != ValidationResult::kOk) {
-            throw std::runtime_error("Validation error " + std::to_string(static_cast<int>(err)) + " at block " +
-                                     std::to_string(*block_num));
-        }
+            auto [receipts, err]{execute_block(bh->block, buffer, config, &analysis_cache, &state_pool)};
+            if (err != ValidationResult::kOk) {
+                SILKWORM_LOG(LogLevel::Error) << "Validation error " << magic_enum::enum_name<ValidationResult>(err)
+                                              << " at block " << block_num << std::endl;
+                return StageResult::kInvalidBlock;
+            }
 
-        if (storage_mode.Receipts) {
-            buffer.insert_receipts(*block_num, receipts);
-        }
+            if (storage_mode.Receipts) {
+                buffer.insert_receipts(*block_num, receipts);
+            }
 
-        if (*block_num % 1000 == 0) {
-            SILKWORM_LOG(LogLevel::Info) << "Blocks <= " << block_num << " executed" << std::endl;
-        }
+            if (buffer.current_batch_size() >= kDefaultBatchSize) {
+                buffer.write_to_db();
+                return StageResult::kSuccess;
+            }
+        };
 
-        if (buffer.current_batch_size() >= kBatchSize) {
-            buffer.write_to_db();
-            return StageResult::kSuccess;
-        }
-    };
+        buffer.write_to_db();
+        return StageResult::kSuccess;
 
-    buffer.write_to_db();
-    return StageResult::kSuccess;
+    } catch (const mdbx::exception& ex) {
+        SILKWORM_LOG(LogLevel::Error) << "DB error " << ex.what() << " at block " << *block_num << std::endl;
+        return StageResult::kDbError;
+    } catch (const db::MissingSenders&) {
+        SILKWORM_LOG(LogLevel::Error) << "Missing or incorrect senders at block " << *block_num << std::endl;
+        return StageResult::kMissingSenders;
+    } catch (const rlp::DecodingError& ex) {
+        SILKWORM_LOG(LogLevel::Error) << ex.what() << " at block " << *block_num << std::endl;
+        return StageResult::kDecodingError;
+    } catch (const std::exception& ex) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected error " << ex.what() << " at block " << *block_num << std::endl;
+        return StageResult::kUnexpectedError;
+    } catch (...) {
+        SILKWORM_LOG(LogLevel::Error) << "Unkown error at block " << *block_num << std::endl;
+        return StageResult::kUnknownError;
+    }
 }
 
-StageResult stage_execution(db::EnvConfig db_config) {
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_read()};
-    const auto chain_config{db::read_chain_config(txn)};
-    const auto storage_mode{db::read_storage_mode(txn)};
+StageResult stage_execution(db::EnvConfig db_config, std::optional<uint64_t> to_block, size_t batch_size) {
+    StageResult res{StageResult::kSuccess};
 
-    uint64_t max_block{db::stages::get_stage_progress(txn, db::stages::kBlockBodiesKey)};
-    uint64_t block_num{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};
+    try {
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_read()};
 
-    while (block_num <= max_block) {
-        auto execution_code{execute(txn, chain_config.value(), max_block, &block_num, storage_mode)};
-        if (execution_code != StageResult::kSuccess) {
-            return execution_code;
+        const auto chain_config{db::read_chain_config(txn)};
+        if (!chain_config.has_value()) {
+            return StageResult::kUnknownChainId;
         }
-    };
+        const auto storage_mode{db::read_storage_mode(txn)};
 
-    return StageResult::kSuccess;
+        uint64_t max_block{db::stages::get_stage_progress(txn, db::stages::kBlockBodiesKey)};
+        if (to_block.has_value()) {
+            max_block = std::min(max_block, to_block.value());
+        }
+        uint64_t block_num{db::stages::get_stage_progress(txn, db::stages::kExecutionKey) + 1};
+        if (block_num > max_block) {
+            SILKWORM_LOG(LogLevel::Error) << "Stage progress is " << (block_num - 1)
+                                          << " which is <= than requested block_to " << max_block << std::endl;
+            return StageResult::kInvalidRange;
+        }
+
+        while (block_num <= max_block) {
+            res = execute(txn, chain_config.value(), max_block, &block_num, storage_mode, batch_size);
+            if (res == StageResult::kSuccess) {
+                db::stages::set_stage_progress(txn, db::stages::kExecutionKey, block_num);
+                txn.commit();
+                txn = env.start_write();
+                SILKWORM_LOG(LogLevel::Info) << (block_num == max_block ? "All blocks" : "Blocks")
+                                             << " <= " << block_num << " committed" << std::endl;
+            } else {
+                break;
+            }
+        };
+
+    } catch (const mdbx::exception& ex) {
+        SILKWORM_LOG(LogLevel::Error) << "DB Error " << ex.what() << " in stage_execution" << std::endl;
+        return StageResult::kDbError;
+    } catch (const std::exception& ex) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected error " << ex.what() << " in stage execution " << std::endl;
+        return StageResult::kUnexpectedError;
+    }
+
+    return res;
 }
 
 // Revert State for given address/storage location
@@ -140,7 +184,7 @@ void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx:
 
 // For given changeset cursor/bucket it reverts the changes on states buckets
 void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table,
-                  uint64_t unwind_to) {
+                                 uint64_t unwind_to) {
     uint64_t block_number{0};
     auto src_data{source.to_last(/*throw_notfound*/ false)};
     while (src_data) {

@@ -32,7 +32,7 @@ StageResult stage_senders(db::EnvConfig db_config) {
     auto txn{env.start_write()};
 
     // Create farm instance and do work
-    recovery::RecoveryFarm farm(txn, std::thread::hardware_concurrency(), kBatchSize, collector);
+    recovery::RecoveryFarm farm(txn, std::thread::hardware_concurrency(), kDefaultBatchSize, collector);
     
     auto block_from{db::stages::get_stage_progress(txn, db::stages::kSendersKey)};
     auto block_to{db::stages::get_stage_progress(txn, db::stages::kHeadersKey)};
@@ -53,7 +53,7 @@ StageResult unwind_senders(db::EnvConfig db_config, uint64_t unwind_point) {
     auto txn{env.start_write()};
 
     // Create farm instance and do work
-    recovery::RecoveryFarm farm(txn, std::thread::hardware_concurrency(), kBatchSize, collector);
+    recovery::RecoveryFarm farm(txn, std::thread::hardware_concurrency(), kDefaultBatchSize, collector);
 
     return farm.unwind(unwind_point);
 }

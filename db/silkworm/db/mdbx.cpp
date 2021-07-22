@@ -141,7 +141,7 @@ size_t for_each(::mdbx::cursor& cursor, WalkFunc func) {
 size_t for_count(::mdbx::cursor& cursor, WalkFunc func, size_t iterations) {
     size_t ret{0};
     if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
-        while (iterations || !cursor.eof()) {
+        while (iterations && !cursor.eof()) {
             if (!func(data)) {
                 break;
             };

@@ -106,6 +106,15 @@ StageResult stage_execution(db::EnvConfig db_config, std::optional<uint64_t> to_
             return StageResult::kInvalidRange;
         }
 
+        // Execution needs senders hence we need to check whether or not sender's stage is
+        // at least at max_block as set above
+        uint64_t max_block_senders{db::stages::get_stage_progress(txn, db::stages::kSendersKey)};
+        if (max_block > max_block_senders) {
+            SILKWORM_LOG(LogLevel::Error) << "Sender's stage progress is " << (max_block_senders)
+                                          << " which is <= than requested block_to " << max_block << std::endl;
+            return StageResult::kMissingSenders;
+        }
+
         while (block_num <= max_block) {
             res = execute(txn, chain_config.value(), max_block, &block_num, storage_mode, batch_size);
             if (res == StageResult::kSuccess) {

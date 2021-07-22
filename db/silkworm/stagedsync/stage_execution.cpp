@@ -55,7 +55,7 @@ StageResult execute(mdbx::txn& txn, const ChainConfig& config, const uint64_t ma
                 buffer.insert_receipts(*block_num, receipts);
             }
 
-            if (buffer.current_batch_size() >= kDefaultBatchSize) {
+            if (buffer.current_batch_size() >= batch_size) {
                 buffer.write_to_db();
                 return StageResult::kSuccess;
             }

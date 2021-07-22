@@ -94,7 +94,7 @@ namespace silkworm::db {
     ::mdbx::env_managed ret{db_path.native(), cp, op, config.shared};
 
     // C++ bindings don't have setoptions
-    ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_rp_augment_limit, 32 * 1024 * 1024));
+    ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_rp_augment_limit, 32 * kMebi));
 
     return ret;
 }

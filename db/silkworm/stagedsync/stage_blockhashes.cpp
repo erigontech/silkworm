@@ -60,12 +60,12 @@ StageResult stage_blockhashes(db::EnvConfig db_config) {
             // Should not happen but you never know
             SILKWORM_LOG(LogLevel::Error) << "Bad headers sequence. Expected " << expected_block_number << " got "
                                           << reached_block_number << std::endl;
-            return StageResult::kStageBadChainSequence;
+            return StageResult::kBadChainSequence;
         }
 
         if (header_data.value.length() != kHashLength) {
             SILKWORM_LOG(LogLevel::Error) << "Bad header hash for block " << expected_block_number << std::endl;
-            return StageResult::kStageBadBlockHash;
+            return StageResult::kBadBlockHash;
         }
 
         etl::Entry etl_entry{Bytes(static_cast<uint8_t*>(header_data.value.iov_base), header_data.value.iov_len),
@@ -111,7 +111,7 @@ StageResult stage_blockhashes(db::EnvConfig db_config) {
 
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 
 }  // namespace silkworm::stagedsync

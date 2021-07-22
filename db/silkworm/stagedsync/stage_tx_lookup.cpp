@@ -124,7 +124,7 @@ StageResult stage_tx_lookup(db::EnvConfig db_config) {
 
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 
 StageResult unwind_tx_lookup(db::EnvConfig db_config, uint64_t unwind_to) {
@@ -134,7 +134,7 @@ StageResult unwind_tx_lookup(db::EnvConfig db_config, uint64_t unwind_to) {
     auto txn{env.start_write()};
 
     if (unwind_to >= db::stages::get_stage_progress(txn, db::stages::kTxLookupKey)) {
-        return StageResult::kStageSuccess;
+        return StageResult::kSuccess;
     }
     // We take data from header table and transform it and put it in blockhashes table
     auto bodies_table{db::open_cursor(txn, db::table::kBlockBodies)};
@@ -177,7 +177,7 @@ StageResult unwind_tx_lookup(db::EnvConfig db_config, uint64_t unwind_to) {
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
     db::stages::set_stage_progress(txn, db::stages::kTxLookupKey, unwind_to);
     txn.commit();
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 
 }  // namespace silkworm::stagedsync

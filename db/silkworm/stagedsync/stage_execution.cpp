@@ -40,7 +40,7 @@ StageResult execute(mdbx::txn& txn, const ChainConfig& config, const uint64_t ma
     for (; *block_num <= max_block; ++*block_num) {
         std::optional<BlockWithHash> bh{db::read_block(txn, *block_num, /*read_senders=*/true)};
         if (!bh) {
-            return StageResult::kStageBadChainSequence;
+            return StageResult::kBadChainSequence;
         }
 
         auto [receipts, err]{execute_block(bh->block, buffer, config, &analysis_cache, &state_pool)};
@@ -59,12 +59,12 @@ StageResult execute(mdbx::txn& txn, const ChainConfig& config, const uint64_t ma
 
         if (buffer.current_batch_size() >= kBatchSize) {
             buffer.write_to_db();
-            return StageResult::kStageSuccess;
+            return StageResult::kSuccess;
         }
     };
 
     buffer.write_to_db();
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 
 StageResult stage_execution(db::EnvConfig db_config) {
@@ -78,12 +78,12 @@ StageResult stage_execution(db::EnvConfig db_config) {
 
     while (block_num <= max_block) {
         auto execution_code{execute(txn, chain_config.value(), max_block, &block_num, storage_mode)};
-        if (execution_code != StageResult::kStageSuccess) {
+        if (execution_code != StageResult::kSuccess) {
             return execution_code;
         }
     };
 
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 
 // Revert State for given address/storage location
@@ -188,11 +188,11 @@ StageResult unwind_execution(db::EnvConfig db_config, uint64_t unwind_to) {
         txn.clear_map(traces_table.map());
         db::stages::set_stage_progress(txn, db::stages::kExecutionKey, 0);
         txn.commit();
-        return StageResult::kStageSuccess;
+        return StageResult::kSuccess;
     }
 
     if (unwind_to >= block_number) {
-        return StageResult::kStageSuccess;
+        return StageResult::kSuccess;
     }
 
     SILKWORM_LOG(LogLevel::Info) << "Unwind Execution from " << block_number << " to " << unwind_to << std::endl;
@@ -213,6 +213,6 @@ StageResult unwind_execution(db::EnvConfig db_config, uint64_t unwind_to) {
     db::stages::set_stage_progress(txn, db::stages::kExecutionKey, unwind_to);
     txn.commit();
 
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 }  // namespace silkworm::stagedsync

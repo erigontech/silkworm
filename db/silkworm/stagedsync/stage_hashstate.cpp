@@ -245,7 +245,7 @@ StageResult stage_hashstate(db::EnvConfig db_config) {
     txn.commit();
 
     SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 
 /*
@@ -335,7 +335,7 @@ StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) {
         if (unwind_to >= stage_height) {
             SILKWORM_LOG(LogLevel::Error)
                 << "Stage progress is " << stage_height << " which is <= than requested unwind_to" << std::endl;
-            return StageResult::kStageAborted;
+            return StageResult::kAborted;
         }
 
         SILKWORM_LOG(LogLevel::Info) << "Unwinding HashState from " << stage_height << " to " << unwind_to << " ..."
@@ -357,11 +357,11 @@ StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) {
         txn.commit();
 
         SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
-        return StageResult::kStageSuccess;
+        return StageResult::kSuccess;
 
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << "Unexpected error : " << ex.what() << std::endl;
-        return StageResult::kStageAborted;
+        return StageResult::kAborted;
     }
 }
 }  // namespace silkworm::stagedsync

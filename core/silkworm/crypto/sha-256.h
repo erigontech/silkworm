@@ -17,6 +17,7 @@
 #ifndef SILKWORM_CRYPTO_SHA_256_H_
 #define SILKWORM_CRYPTO_SHA_256_H_
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -24,7 +25,7 @@
 extern "C" {
 #endif
 
-void calc_sha_256(uint8_t hash[32], const void *input, size_t len);
+void calc_sha_256(uint8_t hash[32], const void *input, size_t len, bool use_cpu_extensions);
 
 #if defined(__cplusplus)
 }

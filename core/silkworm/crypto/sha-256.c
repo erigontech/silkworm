@@ -21,7 +21,6 @@
 
 #include "sha-256.h"
 
-#include <stdbool.h>
 #include <string.h>
 
 #if defined(__GNUC__) && defined(__x86_64__)
@@ -84,8 +83,6 @@ static void init_buf_state(struct buffer_state *state, const void *input, size_t
 }
 
 static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
-    size_t space_in_chunk;
-
     if (state->total_len_delivered) {
         return false;
     }
@@ -99,7 +96,7 @@ static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
 
     memcpy(chunk, state->p, state->len);
     chunk += state->len;
-    space_in_chunk = CHUNK_SIZE - state->len;
+    size_t space_in_chunk = CHUNK_SIZE - state->len;
     state->p += state->len;
     state->len = 0;
 
@@ -114,7 +111,7 @@ static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
      * Now:
      * - either there is enough space left for the total length, and we can conclude,
      * - or there is too little space left, and we have to pad the rest of this chunk with zeroes.
-     * In the latter case, we will conclude at the next invokation of this function.
+     * In the latter case, we will conclude at the next invocation of this function.
      */
     if (space_in_chunk >= TOTAL_LEN_LEN) {
         const size_t left = space_in_chunk - TOTAL_LEN_LEN;
@@ -152,24 +149,22 @@ static inline ALWAYS_INLINE void sha_256_implementation(uint32_t h[8], const voi
      *     the first word of the input message "abc" after padding is 0x61626380
      */
 
-    unsigned i, j;
-
-    /* 512-bit chunks is what we will operate on. */
-    uint8_t chunk[64];
-
     struct buffer_state state;
-
     init_buf_state(&state, input, len);
 
+    /* 512-bit chunks is what we will operate on. */
+    uint8_t chunk[CHUNK_SIZE];
+
     while (calc_chunk(chunk, &state)) {
+        unsigned i, j;
+
         uint32_t ah[8];
-
-        const uint8_t *p = chunk;
-
         /* Initialize working variables to current hash value: */
         for (i = 0; i < 8; i++) {
             ah[i] = h[i];
         }
+
+        const uint8_t *p = chunk;
 
         /* Compression function main loop: */
         for (i = 0; i < 4; i++) {
@@ -258,12 +253,11 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
     STATE0 = _mm_alignr_epi8(TMP, STATE1, 8);    /* ABEF */
     STATE1 = _mm_blend_epi16(STATE1, TMP, 0xF0); /* CDGH */
 
-    /* 512-bit chunks is what we will operate on. */
-    uint8_t chunk[64];
-
     struct buffer_state state;
-
     init_buf_state(&state, input, len);
+
+    /* 512-bit chunks is what we will operate on. */
+    uint8_t chunk[CHUNK_SIZE];
 
     while (calc_chunk(chunk, &state)) {
         /* Save current state */
@@ -478,14 +472,18 @@ __attribute__((constructor)) static void select_sha256_implementation() {
  *   for bit string lengths that are not multiples of eight, and it really operates on arrays of bytes.
  *   In particular, the len parameter is a number of bytes.
  */
-void calc_sha_256(uint8_t hash[32], const void *input, size_t len) {
+void calc_sha_256(uint8_t hash[32], const void *input, size_t len, bool use_cpu_extensions) {
     /*
      * Initialize hash values:
      * (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
      */
     uint32_t h[] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
 
-    sha_256_best(h, input, len);
+    if (use_cpu_extensions) {
+        sha_256_best(h, input, len);
+    } else {
+        sha_256_generic(h, input, len);
+    }
 
     /* Produce the final hash value (big-endian): */
     for (unsigned i = 0, j = 0; i < 8; i++) {

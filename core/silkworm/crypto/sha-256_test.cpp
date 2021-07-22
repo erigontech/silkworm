@@ -24,8 +24,24 @@ namespace silkworm::crypto {
 
 TEST_CASE("SHA256 of empty string") {
     uint8_t hash[32];
-    calc_sha_256(hash, nullptr, 0);
+    calc_sha_256(hash, nullptr, 0, /*use_cpu_extensions=*/false);
     CHECK(to_hex(full_view(hash)) == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+
+    calc_sha_256(hash, nullptr, 0, /*use_cpu_extensions=*/true);
+    CHECK(to_hex(full_view(hash)) == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+}
+
+TEST_CASE("SHA256 sample") {
+    Bytes input{
+        *from_hex("1234567812345678123456781234567812345678123456781234567812345678123456781234567812345678123456781234"
+                  "567812345678")};
+
+    uint8_t hash[32];
+    calc_sha_256(hash, input.data(), input.length(), /*use_cpu_extensions=*/false);
+    CHECK(to_hex(full_view(hash)) == "7303caef875be8c39b2c2f1905ea24adcc024bef6830a965fe05370f3170dc52");
+
+    calc_sha_256(hash, input.data(), input.length(), /*use_cpu_extensions=*/true);
+    CHECK(to_hex(full_view(hash)) == "7303caef875be8c39b2c2f1905ea24adcc024bef6830a965fe05370f3170dc52");
 }
 
 }  // namespace silkworm::crypto

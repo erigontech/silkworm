@@ -129,6 +129,7 @@ struct dbFreeInfo {
 
 struct DbOptions {
     std::string datadir{DataDirectory{}.get_chaindata_path().string()};  // Where data file is located
+    bool shared{false}; // Whether db has to be opened in shared mode
 };
 
 struct FreeListOptions {
@@ -806,6 +807,7 @@ int main(int argc, char* argv[]) {
 
     // Common CLI options
     app_main.add_option("--chaindata", db_opts.datadir, "Path to directory for mdbx.dat", false);
+    app_main.add_flag("--shared", db_opts.shared, "Open database in shared mode");
 
     // List tables and gives info about storage
     auto& app_tables = *app_main.add_subcommand("tables", "List tables info and db info");

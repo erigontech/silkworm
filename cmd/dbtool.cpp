@@ -180,6 +180,7 @@ int do_clear(DbOptions& db_opts, ClearOptions& app_opts) {
 
     try {
         db::EnvConfig config{db_opts.datadir};
+        config.shared = db_opts.shared;
         auto env{db::open_env(config)};
         auto txn{env.start_write()};
 
@@ -323,6 +324,7 @@ int do_scan(DbOptions& db_opts) {
     try {
         db::EnvConfig config{db_opts.datadir};
         config.readonly = true;
+        config.shared = db_opts.shared;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -398,6 +400,7 @@ int do_stages(DbOptions& db_opts) {
     try {
         db::EnvConfig config{db_opts.datadir};
         config.readonly = true;
+        config.shared = db_opts.shared;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
         auto crs{db::open_cursor(txn, db::table::kSyncStageProgress)};
@@ -434,6 +437,7 @@ int do_stage_set(DbOptions& db_opts, StageSetOptions set_opts) {
     try {
         db::EnvConfig config{db_opts.datadir};
         config.readonly = false;
+        config.shared = db_opts.shared;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_write()};
 
@@ -460,6 +464,7 @@ int do_tables(DbOptions& db_opts) {
     try {
         db::EnvConfig config{db_opts.datadir};
         config.readonly = true;
+        config.shared = db_opts.shared;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -516,6 +521,7 @@ int do_freelist(DbOptions& db_opts, FreeListOptions& app_opts) {
     try {
         db::EnvConfig config{db_opts.datadir};
         config.readonly = true;
+        config.shared = db_opts.shared;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -546,6 +552,7 @@ int do_schema(DbOptions& db_opts) {
     try {
         db::EnvConfig config{db_opts.datadir};
         config.readonly = true;
+        config.shared = db_opts.shared;
         auto env{silkworm::db::open_env(config)};
         auto txn{env.start_read()};
 
@@ -574,7 +581,7 @@ int do_compact(DbOptions& db_opts, CompactOptions& app_opts) {
     try {
         db::EnvConfig config{db_opts.datadir};
         config.readonly = true;
-
+        config.shared = db_opts.shared;
         auto env{silkworm::db::open_env(config)};
 
         size_t src_filesize{env.get_info().mi_geo.current};
@@ -641,6 +648,7 @@ int do_copy(DbOptions& db_opts, CopyOptions& app_opts) {
         // Source db
         db::EnvConfig src_config{db_opts.datadir};
         src_config.readonly = true;
+        src_config.shared = db_opts.shared;
         auto src_env{silkworm::db::open_env(src_config)};
         auto src_txn{src_env.start_read()};
 

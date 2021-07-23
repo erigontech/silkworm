@@ -41,7 +41,7 @@ namespace {
         ExecutionStatePool state_pool;
 
         try {
-            for (; block_num <= max_block; ++block_num) {
+            while (true) {
                 std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
                 if (!bh) {
                     return StageResult::kBadChainSequence;
@@ -58,15 +58,13 @@ namespace {
                     buffer.insert_receipts(block_num, receipts);
                 }
 
-                if (buffer.current_batch_size() >= batch_size) {
+                if (buffer.current_batch_size() >= batch_size || block_num >= max_block) {
                     buffer.write_to_db();
                     return StageResult::kSuccess;
                 }
-            };
 
-            buffer.write_to_db();
-            return StageResult::kSuccess;
-
+                ++block_num;
+            }
         } catch (const mdbx::exception& ex) {
             SILKWORM_LOG(LogLevel::Error) << "DB error " << ex.what() << " at block " << block_num << std::endl;
             return StageResult::kDbError;
@@ -119,7 +117,7 @@ StageResult stage_execution(db::EnvConfig db_config, std::optional<uint64_t> to_
             return StageResult::kMissingSenders;
         }
 
-        while (block_num <= max_block) {
+        for (; block_num <= max_block; ++block_num) {
             res = execute_batch_of_blocks(txn, chain_config.value(), max_block, storage_mode, batch_size, block_num);
             if (res == StageResult::kSuccess) {
                 db::stages::set_stage_progress(txn, db::stages::kExecutionKey, block_num);

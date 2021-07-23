@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -21,12 +23,14 @@
 
 #include <catch2/catch.hpp>
 
+#include "data_dir.hpp"
 #include "stopwatch.hpp"
+#include "temp_dir.hpp"
 
 namespace db {
+using namespace silkworm;
 
 TEST_CASE("Stop Watch") {
-
     using namespace std::chrono_literals;
     silkworm::StopWatch sw1{};
 
@@ -62,7 +66,44 @@ TEST_CASE("Stop Watch") {
     CHECK(sw1.format(200us) == "200us");
 
     CHECK(silkworm::StopWatch::format(918734032564785ns) == "10d 15h:12m:14.032s");
+}
 
+TEST_CASE("DataDirectory") {
+    // Open and create default storage path
+    DataDirectory data_dir{/*create = */ true};
+    REQUIRE(data_dir.valid());
+    REQUIRE_NOTHROW(data_dir.create_tree());
+
+    // Eventually delete the created paths
+    std::filesystem::remove_all(data_dir.get_base_path());
+
+    TemporaryDirectory tmp_dir1;
+    std::filesystem::path fake_path{std::filesystem::path(tmp_dir1.path()) / "nonexistentpath"};
+    REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Does not exist
+    std::filesystem::create_directories(fake_path);
+    REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Not a valid chaindata path
+    fake_path /= "erigon";
+    fake_path /= "chaindata";
+    REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Valid chaindata path but does not exist yet
+    std::filesystem::create_directories(fake_path);
+    REQUIRE_NOTHROW((void)DataDirectory::from_chaindata(fake_path));  // Valid chaindata path and exist
+
+    DataDirectory data_dir2{DataDirectory::from_chaindata(fake_path)};
+    REQUIRE_NOTHROW(data_dir2.create_tree());
+
+    auto etl_path{data_dir2.get_etl_path()};
+    REQUIRE(std::filesystem::is_empty(etl_path));
+
+    // Drop a file into etl temp
+    {
+        std::string filename{etl_path.string() + "/fake.txt"};
+        std::ofstream f(filename.c_str());
+    }
+
+    REQUIRE(std::filesystem::is_empty(etl_path) == false);
+
+    data_dir2.clear_etl_temp();
+    REQUIRE(std::filesystem::is_empty(etl_path));
 }
 
 }  // namespace db

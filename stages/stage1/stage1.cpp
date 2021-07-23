@@ -44,6 +44,16 @@ Stage1::~Stage1() {
     SILKWORM_LOG(LogLevel::Error) << "stage1 destroyed\n";
 }
 
+auto Stage1::wind([[maybe_unused]] BlockNum new_height) -> StageResult {
+    // todo: to implement in the next PR, this is only the code of the "reponder"
+    return StageResult::OK;
+}
+
+auto Stage1::unwind([[maybe_unused]] BlockNum new_height) -> StageResult {
+    // todo: to implement in the next PR, this is only the code of the "reponder"
+    return StageResult::OK;
+}
+
 void Stage1::receive_one_message() {
     // check the gRPC queue, and trigger gRPC processing (gRPC will create a message)
     auto executed_rpc = sentry_.receive_one_result();

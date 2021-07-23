@@ -29,7 +29,17 @@
 
 namespace silkworm {
 
+// abstract interface for all stages
 class Stage {
+  public:
+    enum StageResult {OK, ERROR};   // todo: improve
+
+    virtual StageResult wind(BlockNum new_height) = 0;
+    virtual StageResult unwind(BlockNum new_height) = 0;
+};
+
+// abstract interface for active components within stages
+class ActiveComponent {
   public:
     virtual void execution_loop() = 0;
 
@@ -39,7 +49,10 @@ class Stage {
     std::atomic<bool> exiting_{false};
 };
 
-class Stage1 : public Stage {
+// STAGE1
+class Stage1: public Stage,               // stage 1 is a stage...
+              public ActiveComponent {    // but also an active component that must run always
+
     ChainIdentity chain_identity_;
     DbTx db_;
     SentryClient sentry_;
@@ -54,6 +67,9 @@ class Stage1 : public Stage {
     SentryClient& sentry() {return sentry_;}
 
     void execution_loop() override;
+
+    StageResult wind(BlockNum new_height);
+    StageResult unwind(BlockNum new_height);
 
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;

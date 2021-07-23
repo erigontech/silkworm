@@ -21,6 +21,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -114,14 +115,19 @@ StageResult stage_execution(db::EnvConfig db_config, size_t batch_size) {
             return StageResult::kMissingSenders;
         }
 
+        StopWatch sw{};
+        (void)sw.start();
+
         for (; block_num <= max_block; ++block_num) {
             res = execute_batch_of_blocks(txn, chain_config.value(), max_block, storage_mode, batch_size, block_num);
             if (res == StageResult::kSuccess) {
                 db::stages::set_stage_progress(txn, db::stages::kExecutionKey, block_num);
                 txn.commit();
+                (void)sw.lap();
+                SILKWORM_LOG(LogLevel::Info)
+                    << (block_num == max_block ? "All blocks" : "Blocks") << " <= " << block_num << " committed"
+                    << " in " << sw.format(sw.laps().back().second) << std::endl;
                 txn = env.start_write();
-                SILKWORM_LOG(LogLevel::Info) << (block_num == max_block ? "All blocks" : "Blocks")
-                                             << " <= " << block_num << " committed" << std::endl;
             } else {
                 break;
             }

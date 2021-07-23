@@ -21,6 +21,7 @@
 
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
@@ -49,6 +50,9 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG(LogLevel::Info) << "Checking Block Hashes..." << std::endl;
         auto canonica_hashes_data{canonical_hashes_table.to_first(/*throw_notfound*/ false)};
 
+        StopWatch sw{};
+        auto start_time{sw.start()};
+
         // Check if each hash has the correct number according to the header table
         while (canonica_hashes_data) {
             ByteView hash_data_view{db::from_slice(canonica_hashes_data.value)};  // Canonical Hash
@@ -67,12 +71,14 @@ int main(int argc, char* argv[]) {
             }
 
             if (++scanned_headers % 100000 == 0) {
-                SILKWORM_LOG(LogLevel::Info) << "Scanned headers " << scanned_headers << std::endl;
+                auto [_, duration] = sw.lap();
+                SILKWORM_LOG(LogLevel::Info)
+                    << "Scanned headers " << scanned_headers << " in " << sw.format(duration) << std::endl;
             }
             canonica_hashes_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
         }
-
-        SILKWORM_LOG(LogLevel::Info) << "Done!" << std::endl;
+        auto [end_time, _] = sw.lap();
+        SILKWORM_LOG(LogLevel::Info) << "Done! " << sw.format(end_time - start_time) << std::endl;
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;

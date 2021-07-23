@@ -62,7 +62,7 @@ class StopWatch {
     /// </summary>
     /// <param name="origin">An origin timepoint</param>
     /// <returns>A Duration</returns>
-    Duration since(const TimePoint& origin) noexcept;
+    Duration since_start(const TimePoint& origin) noexcept;
 
     /// <summary>
     /// Stops the watch

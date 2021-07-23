@@ -42,7 +42,7 @@ std::pair<StopWatch::TimePoint, StopWatch::Duration> StopWatch::lap() noexcept {
     return laps_.back();
 }
 
-StopWatch::Duration StopWatch::since(const TimePoint& origin) noexcept {
+StopWatch::Duration StopWatch::since_start(const TimePoint& origin) noexcept {
     if (!started_) {
         return {};
     }

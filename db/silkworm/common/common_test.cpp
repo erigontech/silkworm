@@ -52,7 +52,7 @@ TEST_CASE("Stop Watch") {
     CHECK(duration2.count() >= 10 * 1000);
     CHECK(lap_time1 < lap_time2);
 
-    auto duration3 = sw1.since(lap_time2);
+    auto duration3 = sw1.since_start(lap_time2);
     CHECK(duration3.count() == (duration1.count() + duration2.count()));
 
     CHECK(sw1.laps().size() == 3);  // Start + 2 laps
@@ -67,6 +67,10 @@ TEST_CASE("Stop Watch") {
     CHECK(sw1.format(1200ms) == "1.200s");
     CHECK(sw1.format(1200us) == "1.200ms");
     CHECK(sw1.format(200us) == "200us");
+
+    sw1.reset();
+    CHECK(sw1.laps().size() == 0);  // No more laps
+    CHECK_FALSE(sw1);               // Not started
 
     CHECK(silkworm::StopWatch::format(918734032564785ns) == "10d 15h:12m:14.032s");
 }

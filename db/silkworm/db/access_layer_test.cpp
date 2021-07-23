@@ -29,6 +29,7 @@
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
+#include <silkworm/stagedsync/stagedsync.hpp>
 
 #include "bitmap.hpp"
 #include "stages.hpp"
@@ -170,13 +171,11 @@ namespace db {
 
         // Check readers
         db_config.create = false;
-        db_config.inmemory = false;
         REQUIRE_NOTHROW(env = db::open_env(db_config));
         env.close();
     }
 
     TEST_CASE("Methods for_each/for_count") {
-
         TemporaryDirectory tmp_dir;
         db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
         db_config.inmemory = true;
@@ -456,15 +455,7 @@ namespace db {
 
         buffer.write_to_db();
 
-        // TODO (Andrew) use stage_history_index instead
-        roaring::Roaring64Map bm;
-        // miner_a was changed at blocks 1 & 3
-        bm.add(1u);
-        bm.add(3u);
-        Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-        bm.write(byte_ptr_cast(bitmap_bytes.data()));
-        auto history_table{db::open_cursor(txn, table::kAccountHistory)};
-        history_table.upsert(to_slice(account_history_key(miner_a, /*block_number=*/3)), to_slice(bitmap_bytes));
+        REQUIRE(stagedsync::stage_account_history(db_config, &txn) == stagedsync::StageResult::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());

@@ -40,7 +40,8 @@ StageResult stage_headers(db::EnvConfig);
 StageResult stage_blockhashes(db::EnvConfig);
 StageResult stage_bodies(db::EnvConfig);
 StageResult stage_senders(db::EnvConfig);
-StageResult stage_execution(db::EnvConfig, std::optional<uint64_t> to_block = std::nullopt, size_t batch_size = kDefaultBatchSize);
+StageResult stage_execution(db::EnvConfig, std::optional<uint64_t> to_block = std::nullopt,
+                            size_t batch_size = kDefaultBatchSize);
 /* HashState Promotion Functions*/
 
 /*
@@ -55,14 +56,14 @@ enum class HashstateOperation {
     HashStorage,
     Code,
 };
-void hashstate_promote(mdbx::txn&, HashstateOperation);
-void hashstate_promote_clean_code(mdbx::txn&, std::string);
-void hashstate_promote_clean_state(mdbx::txn&, std::string);
+void hashstate_promote(mdbx::txn &, HashstateOperation);
+void hashstate_promote_clean_code(mdbx::txn &, std::string);
+void hashstate_promote_clean_state(mdbx::txn &, std::string);
 /* **************************** */
 StageResult stage_hashstate(db::EnvConfig);
 StageResult stage_interhashes(db::EnvConfig);
-StageResult stage_account_history(db::EnvConfig);
-StageResult stage_storage_history(db::EnvConfig);
+StageResult stage_account_history(db::EnvConfig, mdbx::txn *external_txn = nullptr);
+StageResult stage_storage_history(db::EnvConfig, mdbx::txn *external_txn = nullptr);
 StageResult stage_log_index(db::EnvConfig);
 StageResult stage_tx_lookup(db::EnvConfig);
 // Unwind functions

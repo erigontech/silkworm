@@ -46,7 +46,6 @@ StopWatch::Duration StopWatch::since(const TimePoint& origin) noexcept {
     if (!started_) {
         return {};
     }
-    const auto now{std::chrono::high_resolution_clock::now()};
     return Duration(origin - start_time_);
 }
 

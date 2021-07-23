@@ -58,6 +58,10 @@ namespace {
                     buffer.insert_receipts(block_num, receipts);
                 }
 
+                if (block_num % 1000 == 0) {
+                    SILKWORM_LOG(LogLevel::Debug) << "Blocks <= " << block_num << " executed" << std::endl;
+                }
+
                 if (buffer.current_batch_size() >= batch_size || block_num >= max_block) {
                     buffer.write_to_db();
                     return StageResult::kSuccess;

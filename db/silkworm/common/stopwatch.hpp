@@ -67,7 +67,7 @@ class StopWatch {
     /// <summary>
     /// Stops the watch
     /// </summary>
-    void stop() noexcept;
+    TimePoint stop() noexcept;
 
     /// <summary>
     /// Stops the watch and clears all counters
@@ -83,6 +83,8 @@ class StopWatch {
     /// Returns a human readable duration
     /// </summary>
     static std::string format(Duration duration);
+
+    explicit operator bool() const noexcept { return started_; }
 
   private:
     bool started_{false};

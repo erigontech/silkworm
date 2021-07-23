@@ -33,12 +33,15 @@ using namespace silkworm;
 TEST_CASE("Stop Watch") {
     using namespace std::chrono_literals;
     silkworm::StopWatch sw1{};
+    CHECK_FALSE(sw1);  // Not started
 
     auto [lap_time0, duration0] = sw1.lap();
     CHECK(duration0.count() == 0);
     CHECK(lap_time0 == silkworm::StopWatch::TimePoint());
 
     auto start_time = sw1.start();
+    CHECK(sw1);  // Started
+
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     auto [lap_time1, duration1] = sw1.lap();
     CHECK(duration1.count() >= 5 * 1000);

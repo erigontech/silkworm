@@ -50,10 +50,13 @@ StopWatch::Duration StopWatch::since(const TimePoint& origin) noexcept {
     return Duration(origin - start_time_);
 }
 
-void StopWatch::stop() noexcept {
+StopWatch::TimePoint StopWatch::stop() noexcept {
     if (started_) {
+        TimePoint res{lap().first};
         started_ = false;
+        return res;
     }
+    return {};
 }
 
 void StopWatch::reset() noexcept {

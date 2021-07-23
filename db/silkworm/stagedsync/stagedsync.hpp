@@ -40,7 +40,7 @@ StageResult stage_headers(db::EnvConfig);
 StageResult stage_blockhashes(db::EnvConfig);
 StageResult stage_bodies(db::EnvConfig);
 StageResult stage_senders(db::EnvConfig);
-StageResult stage_execution(db::EnvConfig, std::optional<uint64_t> to_block = std::nullopt, size_t batch_size = kDefaultBatchSize);
+StageResult stage_execution(db::EnvConfig);
 /* HashState Promotion Functions*/
 
 /*

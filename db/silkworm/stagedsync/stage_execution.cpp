@@ -82,7 +82,7 @@ StageResult execute(mdbx::txn& txn, const ChainConfig& config, const uint64_t ma
     }
 }
 
-StageResult stage_execution(db::EnvConfig db_config, std::optional<uint64_t> to_block, size_t batch_size) {
+StageResult stage_execution(db::EnvConfig db_config) {
     StageResult res{StageResult::kSuccess};
 
     try {
@@ -96,9 +96,6 @@ StageResult stage_execution(db::EnvConfig db_config, std::optional<uint64_t> to_
         const auto storage_mode{db::read_storage_mode(txn)};
 
         uint64_t max_block{db::stages::get_stage_progress(txn, db::stages::kBlockBodiesKey)};
-        if (to_block.has_value()) {
-            max_block = std::min(max_block, to_block.value());
-        }
         uint64_t block_num{db::stages::get_stage_progress(txn, db::stages::kExecutionKey) + 1};
         if (block_num > max_block) {
             SILKWORM_LOG(LogLevel::Error) << "Stage progress is " << (block_num - 1)
@@ -116,7 +113,7 @@ StageResult stage_execution(db::EnvConfig db_config, std::optional<uint64_t> to_
         }
 
         while (block_num <= max_block) {
-            res = execute(txn, chain_config.value(), max_block, &block_num, storage_mode, batch_size);
+            res = execute(txn, chain_config.value(), max_block, &block_num, storage_mode, kDefaultBatchSize);
             if (res == StageResult::kSuccess) {
                 db::stages::set_stage_progress(txn, db::stages::kExecutionKey, block_num);
                 txn.commit();

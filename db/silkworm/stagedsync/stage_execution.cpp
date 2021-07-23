@@ -84,7 +84,7 @@ namespace {
     }
 }  // namespace
 
-StageResult stage_execution(db::EnvConfig db_config, std::optional<uint64_t> to_block, size_t batch_size) {
+StageResult stage_execution(db::EnvConfig db_config, size_t batch_size) {
     StageResult res{StageResult::kSuccess};
 
     try {
@@ -98,9 +98,6 @@ StageResult stage_execution(db::EnvConfig db_config, std::optional<uint64_t> to_
         const auto storage_mode{db::read_storage_mode(txn)};
 
         uint64_t max_block{db::stages::get_stage_progress(txn, db::stages::kBlockBodiesKey)};
-        if (to_block.has_value()) {
-            max_block = std::min(max_block, to_block.value());
-        }
         uint64_t block_num{db::stages::get_stage_progress(txn, db::stages::kExecutionKey) + 1};
         if (block_num > max_block) {
             SILKWORM_LOG(LogLevel::Error) << "Stage progress is " << (block_num - 1)

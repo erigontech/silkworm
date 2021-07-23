@@ -36,15 +36,10 @@ int main(int argc, char* argv[]) {
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
-    uint64_t to_block{UINT64_MAX};
-    app.add_option("--to", to_block, "Block execute up to");
-
     std::string batch_size_str{"512MB"};
     app.add_option("--batch", batch_size_str, "Batch size of DB changes to accumulate before committing", true);
 
     CLI11_PARSE(app, argc, argv);
-
-    namespace fs = std::filesystem;
 
     auto batch_size{parse_size(batch_size_str)};
     if (!batch_size.has_value()) {
@@ -56,10 +51,10 @@ int main(int argc, char* argv[]) {
 
     db::EnvConfig db_config{chaindata};
     db_config.create = false;
-    auto res{silkworm::stagedsync::stage_execution(db_config, to_block, batch_size.value())};
-    if (res != silkworm::stagedsync::StageResult::kSuccess) {
-        SILKWORM_LOG(LogLevel::Info) << "Execution returned : "
-                                     << magic_enum::enum_name<silkworm::stagedsync::StageResult>(res) << std::endl;
+    auto res{stagedsync::stage_execution(db_config, batch_size.value())};
+    if (res != stagedsync::StageResult::kSuccess) {
+        SILKWORM_LOG(LogLevel::Info) << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res)
+                                     << std::endl;
     }
-    return magic_enum::enum_integer<silkworm::stagedsync::StageResult>(res);
+    return magic_enum::enum_integer<stagedsync::StageResult>(res);
 }

@@ -195,7 +195,6 @@ if(NOT SILKWORM_CORE_ONLY)
   option(MDBX_HUGE_TRANSACTIONS "" ON)
   add_subdirectory(libmdbx)
   add_subdirectory(db)
-  add_subdirectory(tg_api)
 endif()
 
 if(NOT SILKWORM_HAS_PARENT)

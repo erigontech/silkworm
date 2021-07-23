@@ -25,8 +25,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/execution/execution.hpp>
-#include <silkworm_tg_api.h>
+#include <silkworm/stagedsync/stagedsync.hpp>
 
 int main(int argc, char* argv[]) {
     using namespace silkworm;
@@ -55,55 +54,12 @@ int main(int argc, char* argv[]) {
 
     SILKWORM_LOG(LogLevel::Info) << "Starting block execution. DB: " << chaindata << std::endl;
 
-    try {
-        db::EnvConfig db_config{chaindata};
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        const auto chain_config{db::read_chain_config(txn)};
-        const auto storage_mode(db::read_storage_mode(txn));
-        if (!chain_config.has_value()) {
-            throw std::runtime_error("Unable to retrieve chain config");
-        }
-
-        uint64_t previous_progress{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};
-        uint64_t current_progress{previous_progress};
-
-        for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-            int db_error_code{0};
-            SilkwormStatusCode status{silkworm_execute_blocks(txn, chain_config->chain_id, block_number, to_block,
-                                                              *batch_size, storage_mode, &current_progress,
-                                                              &db_error_code)};
-            if (status != SilkwormStatusCode::kSilkwormSuccess &&
-                status != SilkwormStatusCode::kSilkwormBlockNotFound) {
-                SILKWORM_LOG(LogLevel::Error) << "Error in silkworm_execute_blocks: " << magic_enum::enum_name(status)
-                                              << ", DB: " << db_error_code << std::endl;
-                return magic_enum::enum_integer(status);
-            }
-
-            block_number = current_progress;
-
-            db::stages::set_stage_progress(txn, db::stages::kExecutionKey, current_progress);
-            txn.commit();
-
-            if (status == SilkwormStatusCode::kSilkwormBlockNotFound) {
-                break;
-            }
-
-            SILKWORM_LOG(LogLevel::Info) << "Blocks <= " << current_progress << " committed" << std::endl;
-            txn = env.start_write();
-        }
-
-        if (current_progress > previous_progress) {
-            SILKWORM_LOG(LogLevel::Info) << "All blocks <= " << current_progress << " executed and committed"
-                                         << std::endl;
-        } else {
-            SILKWORM_LOG(LogLevel::Warn) << "Nothing to execute" << std::endl;
-        }
-
-    } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
-        return -5;
+    db::EnvConfig db_config{chaindata};
+    db_config.create = false;
+    auto res{silkworm::stagedsync::stage_execution(db_config, to_block, batch_size.value())};
+    if (res != silkworm::stagedsync::StageResult::kSuccess) {
+        SILKWORM_LOG(LogLevel::Info) << "Execution returned : "
+                                     << magic_enum::enum_name<silkworm::stagedsync::StageResult>(res) << std::endl;
     }
-
-    return 0;
+    return magic_enum::enum_integer<silkworm::stagedsync::StageResult>(res);
 }

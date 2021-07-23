@@ -159,7 +159,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
 
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 
 StageResult stage_account_history(db::EnvConfig db_config) { return history_index_stage(db_config, false); }

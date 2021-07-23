@@ -46,7 +46,6 @@ class Hash : public evmc::bytes32 {
     static_assert(sizeof(evmc::bytes32) == 32);
 };
 
-using Header = BlockHeader;
 using BlockNum = uint64_t;
 using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 

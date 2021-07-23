@@ -24,7 +24,8 @@
 #include "SentryClient.hpp"
 #include "Singleton.hpp"
 #include "Types.hpp"
-#include "SelfExtendingChain.hpp"
+#include "ConcurrentContainers.hpp"
+#include "messages/Message.hpp"
 
 namespace silkworm {
 
@@ -42,23 +43,26 @@ class Stage1 : public Stage {
     ChainIdentity chain_identity_;
     DbTx db_;
     SentryClient sentry_;
-    SelfExtendingChain working_chain_;
 
   public:
-
     Stage1(ChainIdentity chain_identity, std::string db_path, std::string sentry_addr);
     Stage1(const Stage1&) = delete;
     Stage1(Stage1&&) = delete;
     ~Stage1();
 
     DbTx& db_tx() {return db_;}
-
     SentryClient& sentry() {return sentry_;}
-
-    SelfExtendingChain& working_chain() {return working_chain_;}
 
     void execution_loop() override;
 
+  private:
+    using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;
+
+    void send_status();
+    void send_message_subscription(MessageQueue& messages);
+
+    void receive_one_message();
+    void process_one_message(MessageQueue& messages);
 };
 
 #define STAGE1 non_owning::Singleton<Stage1>::instance()

@@ -84,7 +84,7 @@ namespace {
     }
 }  // namespace
 
-StageResult stage_execution(db::EnvConfig db_config) {
+StageResult stage_execution(db::EnvConfig db_config, size_t batch_size) {
     StageResult res{StageResult::kSuccess};
 
     try {
@@ -115,8 +115,7 @@ StageResult stage_execution(db::EnvConfig db_config) {
         }
 
         for (; block_num <= max_block; ++block_num) {
-            res = execute_batch_of_blocks(txn, chain_config.value(), max_block, storage_mode, kDefaultBatchSize,
-                                          block_num);
+            res = execute_batch_of_blocks(txn, chain_config.value(), max_block, storage_mode, batch_size, block_num);
             if (res == StageResult::kSuccess) {
                 db::stages::set_stage_progress(txn, db::stages::kExecutionKey, block_num);
                 txn.commit();

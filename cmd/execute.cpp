@@ -36,13 +36,22 @@ int main(int argc, char* argv[]) {
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
+    std::string batch_size_str{"512MB"};
+    app.add_option("--batch", batch_size_str, "Batch size of DB changes to accumulate before committing", true);
+
     CLI11_PARSE(app, argc, argv);
+
+    auto batch_size{parse_size(batch_size_str)};
+    if (!batch_size.has_value()) {
+        SILKWORM_LOG(LogLevel::Error) << "Invalid --batch value provided : " << batch_size_str << std::endl;
+        return -3;
+    }
 
     SILKWORM_LOG(LogLevel::Info) << "Starting block execution. DB: " << chaindata << std::endl;
 
     db::EnvConfig db_config{chaindata};
     db_config.create = false;
-    auto res{stagedsync::stage_execution(db_config)};
+    auto res{stagedsync::stage_execution(db_config, batch_size.value())};
     if (res != stagedsync::StageResult::kSuccess) {
         SILKWORM_LOG(LogLevel::Info) << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res)
                                      << std::endl;

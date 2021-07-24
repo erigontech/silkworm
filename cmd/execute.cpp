@@ -49,6 +49,8 @@ int main(int argc, char* argv[]) {
 
     SILKWORM_LOG(LogLevel::Info) << "Starting block execution. DB: " << chaindata << std::endl;
 
+    SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
+
     db::EnvConfig db_config{chaindata};
     db_config.create = false;
     auto res{stagedsync::stage_execution(db_config, batch_size.value())};

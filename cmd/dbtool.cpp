@@ -411,7 +411,7 @@ int do_stages(DbOptions& db_opts) {
 
             auto result{crs.to_first(/*throw_notfound =*/false)};
             while (result) {
-                size_t height{boost::endian::load_big_u64(result.value.byte_ptr())};
+                size_t height{boost::endian::load_big_u64(static_cast<uint8_t*>(result.value.iov_base))};
                 bool Known{db::stages::is_known_stage(result.key.char_ptr())};
                 std::cout << (boost::format(fmt_row) % result.key.string() % height %
                               (Known ? std::string(8, ' ') : "Unknown"))

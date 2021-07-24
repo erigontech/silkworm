@@ -153,7 +153,7 @@ void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx:
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
                 boost::endian::store_big_u64(&code_hash_key[kAddressLength], account.incarnation);
                 auto new_code_hash{plain_code_table.find(db::to_slice(code_hash_key))};
-                std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.byte_ptr(), kHashLength);
+                std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.iov_base, kHashLength);
             }
             // cleaning up contract codes
             auto state_account_encoded{plain_state_table.find(db::to_slice(key), /*throw_notfound=*/false)};

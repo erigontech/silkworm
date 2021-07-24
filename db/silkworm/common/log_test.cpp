@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 - 2021 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ namespace silkworm {
 
 namespace {
     std::ostringstream stream1, stream2;
-    const std::string kInfix(R"(\[\d\d-\d\d|\d\d:\d\d:\d\d\.\d{3}\] )");
+    const std::string kInfix(R"(\[\d\d-\d\d\|\d\d:\d\d:\d\d\.\d{3}\] )");
 
     bool test_log(std::string prefix, std::string infix, std::string suffix) {
         std::string string1(stream1.str());
@@ -36,7 +36,9 @@ namespace {
         stream1.str("");
         stream2.clear();
         stream2.str("");
-        if (string1 != string2) return false;
+        if (string1 != string2) {
+            return false;
+        }
 
         const std::string pattern = prefix + infix + suffix;
         const std::regex rx(pattern);

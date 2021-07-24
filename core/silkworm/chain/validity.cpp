@@ -20,6 +20,7 @@
 
 #include <ethash/ethash.hpp>
 
+#include <silkworm/common/endian.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/trie/vector_root.hpp>
 
@@ -176,24 +177,19 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
 
     // Ethash PoW verification
     if (config.seal_engine == SealEngineType::kEthash) {
-        auto boundary256{ethash::get_boundary_from_diff(header.difficulty)};
+
+        auto epoch_number{header.number / ethash::epoch_length};
+        auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_number))};
+
+        auto boundary256{header.boundary()};
         auto seal_hash(header.hash(/*for_sealing =*/true));
         ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
         ethash::hash256 mixh256{};
         std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
 
-        uint64_t nonce{0};
-        std::memcpy(&nonce, header.nonce.data(), 8);
-        nonce = ethash::be::uint64(nonce);
-
-        auto result{ethash::verify_full(header.number, sealh256, mixh256, nonce, boundary256)};
-        switch (result) {
-            case ethash::VerificationResult::kInvalidNonce:
-            case ethash::VerificationResult::kInvalidMixHash:
-                return ValidationResult::kInvalidSeal;
-            default:
-                return ValidationResult::kOk;
-        }
+        uint64_t nonce{endian::load_big_u64(header.nonce.data())};
+        return ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256) ? ValidationResult::kOk
+                                                                                     : ValidationResult::kInvalidSeal;
     }
 
     return ValidationResult::kOk;

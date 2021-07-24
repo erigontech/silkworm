@@ -142,9 +142,10 @@ if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
 endif()
 
-find_package(intx CONFIG REQUIRED) # Required from here below
+find_package(intx CONFIG REQUIRED)   # Required from here below
+find_package(ethash CONFIG REQUIRED) # Required from here below
+
 add_subdirectory(evmone/evmc)
-add_subdirectory(ethash)
 
 add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/analysis.hpp

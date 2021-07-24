@@ -7,7 +7,7 @@
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\silkworm\\build\\${name}",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\silkworm\\install\\${name}",
-      "cmakeCommandArgs": "-Wno-dev -DSILKWORM_CORE_ONLY:BOOL=ON",
+      "cmakeCommandArgs": "-Wno-dev -DSILKWORM_CORE_ONLY:BOOL=OFF",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "addressSanitizerEnabled": true

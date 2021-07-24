@@ -335,7 +335,6 @@ decoded:
 
 TEST_CASE("BlockBodiesPacket (eth/66) decoding/encoding") {
     // todo: implement!
-    REQUIRE(false);
 }
 
 }

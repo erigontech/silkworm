@@ -20,6 +20,7 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <stages/stage1/stage1.hpp>
 #include <stages/stage1/HeaderLogic.hpp>
 
@@ -35,7 +36,7 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Download Headers. Connect to p2p sentry and start header downloading process (stage 1)"};
 
     string chain_name = ChainIdentity::mainnet.name;
-    string db_path = db::default_path(); // mainnet db
+    string db_path = DataDirectory{}.get_chaindata_path().string();
     string temporary_file_path = ".";
     string sentry_addr = "127.0.0.1:9091";
 

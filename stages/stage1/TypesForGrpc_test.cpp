@@ -30,7 +30,7 @@ TEST_CASE("H256/512 to/from conversions") {
     }
 
     SECTION( "H256 to/from number" ) {
-        intx::uint256 orig_big{intx::uint128(UINT64_MAX, 67890), intx::uint128(12345, UINT64_MAX)};
+        intx::uint256 orig_big{int64_t{789}, int64_t{567}, int64_t{345}, int64_t{123}};
         intx::uint256 transf_big = uint256_from_H256(*to_H256(orig_big));
 
         REQUIRE(orig_big == transf_big);

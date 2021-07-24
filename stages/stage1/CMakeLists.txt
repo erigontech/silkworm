@@ -47,7 +47,6 @@ set_source_files_properties("${CMAKE_SOURCE_DIR}/interfaces/types.pb.cc" PROPERT
 # see https://samthursfield.wordpress.com/2015/11/21/cmake-dependencies-between-targets-and-files-and-custom-commands/
 
 target_link_libraries(silkworm_stage1 PUBLIC silkworm_db
-                                             silkworm_tg_api
                                              CLI11::CLI11
                                              gRPC::grpc++
                                              protobuf::libprotobuf)

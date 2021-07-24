@@ -16,6 +16,7 @@
 #include "stage1.hpp"
 
 #include <chrono>
+#include <thread>
 
 #include <silkworm/common/log.hpp>
 

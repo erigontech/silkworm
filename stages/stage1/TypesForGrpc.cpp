@@ -18,18 +18,69 @@
 
 namespace silkworm {
 
+// helpers
+
+constexpr uint64_t& lo(intx::uint128& x) {
+    return x[0];
+}
+
+constexpr uint64_t lo(const intx::uint128& x) {
+    return x[0];
+}
+
+constexpr uint64_t& hi(intx::uint128& x) {
+    return x[1];
+}
+
+constexpr uint64_t hi(const intx::uint128& x) {
+    return x[1];
+}
+
+constexpr uint64_t& lo_lo(intx::uint256& x) {
+    return x[0];
+}
+
+constexpr uint64_t lo_lo(const intx::uint256& x) {
+    return x[0];
+}
+
+constexpr uint64_t& lo_hi(intx::uint256& x) {
+    return x[1];
+}
+
+constexpr uint64_t lo_hi(const intx::uint256& x) {
+    return x[1];
+}
+
+constexpr uint64_t& hi_lo(intx::uint256& x) {
+    return x[2];
+}
+
+constexpr uint64_t hi_lo(const intx::uint256& x) {
+    return x[2];
+}
+
+constexpr uint64_t& hi_hi(intx::uint256& x) {
+    return x[3];
+}
+
+constexpr uint64_t hi_hi(const intx::uint256& x) {
+    return x[3];
+}
+
+// implementation
 std::unique_ptr<types::H256> to_H256(const intx::uint256& orig) {
-    using types::H128, types::H256, intx::hi_half, intx::lo_half;
+    using types::H128, types::H256;
 
     auto dest = std::make_unique<H256>();
 
     H128* hi = new H128{};
     H128* lo = new H128{};
 
-    hi->set_hi(orig.hi.hi);
-    hi->set_lo(orig.hi.lo);
-    lo->set_hi(orig.lo.hi);
-    lo->set_lo(orig.lo.lo);
+    hi->set_hi(hi_hi(orig));
+    hi->set_lo(hi_lo(orig));
+    lo->set_hi(lo_hi(orig));
+    lo->set_lo(lo_lo(orig));
 
     dest->set_allocated_hi(hi);  // take ownership
     dest->set_allocated_lo(lo);  // take ownership
@@ -38,13 +89,13 @@ std::unique_ptr<types::H256> to_H256(const intx::uint256& orig) {
 }
 
 intx::uint256 uint256_from_H256(const types::H256& orig) {
-    using types::H128, types::H256, intx::hi_half, intx::lo_half;
+    using types::H128, types::H256;
 
     intx::uint256 dest;
-    dest.hi.hi = orig.hi().hi();
-    dest.hi.lo = orig.hi().lo();
-    dest.lo.hi = orig.lo().hi();
-    dest.lo.lo = orig.lo().lo();
+    hi_hi(dest) = orig.hi().hi();
+    hi_lo(dest) = orig.hi().lo();
+    lo_hi(dest) = orig.lo().hi();
+    lo_lo(dest) = orig.lo().lo();
 
     return dest;
 }

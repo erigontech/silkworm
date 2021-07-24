@@ -25,24 +25,24 @@
 using namespace silkworm;
 
 class DbTx {
-    std::shared_ptr<lmdb::Environment> env;
-    std::unique_ptr<lmdb::Transaction> txn;
+    mdbx::env_managed env;
+    mdbx::txn_managed txn;
 
   public:
     explicit DbTx(std::string db_path) {
-        lmdb::DatabaseConfig db_config{db_path};
-        //db_config.set_readonly(false);
-        env = lmdb::get_env(db_config);
-        txn = env->begin_ro_transaction();
+        db::EnvConfig db_config{db_path};
+        db_config.readonly = true;
+        env = db::open_env(db_config);
+        txn = env.start_read();
     }
 
     std::optional<Hash> read_canonical_hash(BlockNum b) {  // throws db exceptions // todo: add to db::access_layer.hpp?
-        auto hashes_table = txn->open(db::table::kCanonicalHashes);
+        auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
         // accessing this table with only b we will get the hash of the canonical block at height b
-        std::optional<ByteView> hash = hashes_table->get(db::block_key(b));
-        if (!hash) return std::nullopt; // not found
-        assert(hash->size() == kHashLength);
-        return hash.value(); // copy
+        auto data = hashes_table.find(db::to_slice(db::block_key(b)), /*throw_notfound*/ false);
+        if (!data) return std::nullopt;  // not found
+        assert(data.value.length() == kHashLength);
+        return Hash(db::from_slice(data.value));  // copy
     }
 
     static Bytes head_header_key() { // todo: add to db::util.h?
@@ -52,15 +52,15 @@ class DbTx {
     }
 
     std::optional<Hash> read_head_header_hash() { // todo: add to db::access_layer.hpp?
-        auto head_header_table = txn->open(db::table::kHeadHeader);
-        std::optional<ByteView> hash = head_header_table->get(head_header_key());
-        if (!hash) return std::nullopt; // not found
-        assert(hash->size() == kHashLength);
-        return hash.value(); // copy
+        auto head_header_table = db::open_cursor(txn, db::table::kHeadHeader);
+        auto data = head_header_table.find(db::to_slice(head_header_key()), /*throw_notfound*/ false);
+        if (!data) return std::nullopt;
+        assert(data.value.length() == kHashLength);
+        return Hash(db::from_slice(data.value));
     }
 
     std::optional<BlockHeader> read_header(BlockNum b, Hash h)  {
-        return db::read_header(*txn, b, h.bytes);
+        return db::read_header(txn, b, h.bytes);
     }
 
     std::optional<BlockHeader> read_canonical_header(BlockNum b)  { // also known as read-header-by-number
@@ -70,9 +70,11 @@ class DbTx {
     }
 
     std::optional<ByteView> read_rlp_encoded_header(BlockNum b, Hash h)  {
-        auto header_table = txn->open(db::table::kHeaders);
-        std::optional<ByteView> rlp = header_table->get(db::block_key(b, h.bytes));
-        return rlp;
+        auto header_table = db::open_cursor(txn, db::table::kHeaders);
+        auto key = db::block_key(b, h.bytes);
+        auto data = header_table.find(db::to_slice(key), /*throw_notfound*/ false);
+        if (!data) return std::nullopt;
+        return db::from_slice(data.value);
     }
 
     static Bytes header_numbers_key(Hash h) { // todo: add to db::util.h?
@@ -80,10 +82,11 @@ class DbTx {
     }
 
     std::optional<BlockNum> read_block_num(Hash h) { // todo: add to db::access_layer.hpp?
-        auto blockhashes_table = txn->open(db::table::kHeaderNumbers);
-        auto encoded_block_num = blockhashes_table->get(header_numbers_key(h));
-        if (!encoded_block_num) return {};
-        BlockNum block_num = boost::endian::load_big_u64(encoded_block_num->data());
+        auto blockhashes_table = db::open_cursor(txn, db::table::kHeaderNumbers);
+        auto key = header_numbers_key(h);
+        auto data = blockhashes_table.find(db::to_slice(key), /*throw_notfound*/ false);
+        if (!data) return std::nullopt;
+        auto block_num = boost::endian::load_big_u64(static_cast<const unsigned char*>(data.value.data()));
         return block_num;
     }
 
@@ -97,15 +100,15 @@ class DbTx {
         auto block_num = read_block_num(h);
         if (!block_num) return {};
         bool read_senders = false;
-        return db::read_body(*txn, *block_num, h.bytes, read_senders);
+        return db::read_body(txn, *block_num, h.bytes, read_senders);
     }
 
     std::optional<intx::uint256> read_total_difficulty(BlockNum b, Hash h) {
-        return db::read_total_difficulty(*txn, b, h.bytes);
+        return db::read_total_difficulty(txn, b, h.bytes);
     }
 
     BlockNum stage_progress(const char* stage_name) {
-        return db::stages::get_stage_progress(*txn, stage_name);
+        return db::stages::get_stage_progress(txn, stage_name);
     }
 };
 

@@ -37,10 +37,10 @@ void log_set_streams_(std::ostream& o1, std::ostream& o2) { log_streams_.set_str
 std::mutex log_::log_mtx_;
 
 std::ostream& log_::header_(LogLevel level) {
-    log_streams_ << kLogTags_[static_cast<int>(level)]
-                << "[" << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "] ";
+    log_streams_ << kLogTags_[static_cast<int>(level)] << "["
+                 << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "]";
     if (log_thread_enabled_) {
-        log_streams_ << std::this_thread::get_id() << " ";
+        log_streams_ << " " << std::this_thread::get_id();
     }
     return log_streams_;
 }

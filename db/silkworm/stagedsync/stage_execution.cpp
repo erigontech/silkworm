@@ -58,6 +58,10 @@ namespace {
                     buffer.insert_receipts(block_num, receipts);
                 }
 
+                if (block_num % 1000 == 0) {
+                    SILKWORM_LOG(LogLevel::Debug) << "Blocks <= " << block_num << " executed" << std::endl;
+                }
+
                 if (buffer.current_batch_size() >= batch_size || block_num >= max_block) {
                     buffer.write_to_db();
                     return StageResult::kSuccess;
@@ -89,7 +93,7 @@ StageResult stage_execution(db::EnvConfig db_config, size_t batch_size) {
 
     try {
         auto env{db::open_env(db_config)};
-        auto txn{env.start_read()};
+        auto txn{env.start_write()};
 
         const auto chain_config{db::read_chain_config(txn)};
         if (!chain_config.has_value()) {

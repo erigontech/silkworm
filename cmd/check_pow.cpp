@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
 
         // Loop blocks
         for (uint32_t block_num{options.block_from}; block_num <= options.block_to && !g_should_stop; block_num++) {
-            if (epoch_context->epoch_number != (block_num / ethash::epoch_length)) {
+            if (epoch_context->epoch_number != static_cast<int>(block_num / ethash::epoch_length)) {
                 epoch_num = (block_num / ethash::epoch_length);
                 SILKWORM_LOG(LogLevel::Info) << "Initializing Light Cache for DAG epoch " << epoch_num << std::endl;
                 epoch_context = ethash::create_epoch_context(epoch_num);

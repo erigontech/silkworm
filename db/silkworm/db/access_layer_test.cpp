@@ -733,8 +733,7 @@ namespace db {
         header.mix_hash = to_bytes32(*mix_data);
 
         auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
-        auto noncebe = ethash::be::uint64(nonce);  // Swap endianess
-        std::memcpy(&header.nonce[0], &noncebe, 8);
+        boost::endian::store_big_u64(header.nonce.data(), nonce);
 
         // Verify our RLP encoding produces the same result
         auto computed_hash{header.hash()};

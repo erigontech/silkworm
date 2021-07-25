@@ -29,6 +29,21 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
     return bit_cast<evmc_bytes32>(keccak256(rlp));
 }
 
+ethash::hash256 BlockHeader::boundary() const {
+    static intx::uint256 dividend{
+        intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")};
+
+    ethash::hash256 ret{};
+
+    if (difficulty > 1u) {
+        auto result{intx::bswap(dividend / difficulty)};
+        std::memcpy(ret.bytes, intx::as_bytes(result), 32);
+    } else {
+        std::memcpy(ret.bytes, intx::as_bytes(dividend), 32);
+    }
+    return ret;
+}
+
 bool operator==(const BlockHeader& a, const BlockHeader& b) {
     return a.parent_hash == b.parent_hash && a.ommers_hash == b.ommers_hash && a.beneficiary == b.beneficiary &&
            a.state_root == b.state_root && a.transactions_root == b.transactions_root &&

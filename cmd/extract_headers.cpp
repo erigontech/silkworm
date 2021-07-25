@@ -111,7 +111,7 @@ class Db {
         if (!data) {
             return std::nullopt;
         }
-        auto block_num{boost::endian::load_big_u64(data.value.byte_ptr())};
+        auto block_num{boost::endian::load_big_u64(static_cast<uint8_t *>(data.value.iov_base))};
         return read_header(block_num, h);
     }
 };

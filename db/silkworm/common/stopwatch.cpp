@@ -19,6 +19,10 @@
 namespace silkworm {
 
 StopWatch::TimePoint StopWatch::start() noexcept {
+    if (started_) {
+        return start_time_;
+    }
+    
     started_ = true;
     if (start_time_ == TimePoint()) {
         start_time_ = std::chrono::high_resolution_clock::now();

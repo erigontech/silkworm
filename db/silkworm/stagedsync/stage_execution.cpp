@@ -21,6 +21,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -118,14 +119,19 @@ StageResult stage_execution(db::EnvConfig db_config, size_t batch_size) {
             return StageResult::kMissingSenders;
         }
 
+        StopWatch sw{};
+        (void)sw.start();
+
         for (; block_num <= max_block; ++block_num) {
             res = execute_batch_of_blocks(txn, chain_config.value(), max_block, storage_mode, batch_size, block_num);
             if (res == StageResult::kSuccess) {
                 db::stages::set_stage_progress(txn, db::stages::kExecutionKey, block_num);
                 txn.commit();
+                (void)sw.lap();
+                SILKWORM_LOG(LogLevel::Info)
+                    << (block_num == max_block ? "All blocks" : "Blocks") << " <= " << block_num << " committed"
+                    << " in " << sw.format(sw.laps().back().second) << std::endl;
                 txn = env.start_write();
-                SILKWORM_LOG(LogLevel::Info) << (block_num == max_block ? "All blocks" : "Blocks")
-                                             << " <= " << block_num << " committed" << std::endl;
             } else {
                 break;
             }
@@ -153,7 +159,7 @@ void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx:
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
                 boost::endian::store_big_u64(&code_hash_key[kAddressLength], account.incarnation);
                 auto new_code_hash{plain_code_table.find(db::to_slice(code_hash_key))};
-                std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.byte_ptr(), kHashLength);
+                std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.iov_base, kHashLength);
             }
             // cleaning up contract codes
             auto state_account_encoded{plain_state_table.find(db::to_slice(key), /*throw_notfound=*/false)};

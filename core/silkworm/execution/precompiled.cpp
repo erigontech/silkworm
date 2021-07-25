@@ -81,7 +81,7 @@ uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * (
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
     Bytes out(32, '\0');
-    calc_sha_256(out.data(), input.data(), input.length());
+    calc_sha_256(out.data(), input.data(), input.length(), /*use_cpu_extensions=*/true);
     return out;
 }
 

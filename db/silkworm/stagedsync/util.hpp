@@ -25,11 +25,18 @@ see its package dbutils.
 namespace silkworm::stagedsync {
 
 enum class [[nodiscard]] StageResult {
-    kStageSuccess,
-    kStageBadBlockHash,
-    kStageBadChainSequence,
-    kStageInvalidRange,
-    kStageAborted
+    kSuccess,
+    kUnknownChainId,
+    kBadBlockHash,
+    kBadChainSequence,
+    kInvalidRange,
+    kInvalidBlock,
+    kMissingSenders,
+    kDecodingError,
+    kUnexpectedError,
+    kUnknownError,
+    kDbError,
+    kAborted
 };
 
 void check_stagedsync_error(StageResult code);

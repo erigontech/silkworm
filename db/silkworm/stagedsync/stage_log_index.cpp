@@ -153,7 +153,7 @@ StageResult stage_log_index(db::EnvConfig db_config) {
     txn.commit();
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 
 StageResult unwind_log_index(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }

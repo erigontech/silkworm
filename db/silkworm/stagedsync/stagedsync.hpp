@@ -24,7 +24,7 @@
 
 namespace silkworm::stagedsync {
 
-constexpr size_t kBatchSize = 512 * kMebi;
+constexpr size_t kDefaultBatchSize = 512 * kMebi;
 
 typedef StageResult (*StageFunc)(db::EnvConfig);
 typedef StageResult (*UnwindFunc)(db::EnvConfig, uint64_t);
@@ -40,7 +40,9 @@ StageResult stage_headers(db::EnvConfig);
 StageResult stage_blockhashes(db::EnvConfig);
 StageResult stage_bodies(db::EnvConfig);
 StageResult stage_senders(db::EnvConfig);
-StageResult stage_execution(db::EnvConfig);
+StageResult stage_execution(db::EnvConfig, size_t batch_size);
+inline StageResult stage_execution(db::EnvConfig db_config) { return stage_execution(db_config, kDefaultBatchSize); }
+
 /* HashState Promotion Functions*/
 
 /*

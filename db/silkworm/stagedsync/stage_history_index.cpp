@@ -72,7 +72,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
                 char composite_key_array[kHashLength + kAddressLength];
                 auto data_key_view{db::from_slice(data.key).substr(8)};
                 std::memcpy(&composite_key_array[0], data_key_view.data(), kAddressLength);
-                std::memcpy(&composite_key_array[kAddressLength], data.value.byte_ptr(), kHashLength);
+                std::memcpy(&composite_key_array[kAddressLength], data.value.iov_base, kHashLength);
                 composite_key = std::string(composite_key_array);
             } else {
                 composite_key = std::string(data.value.char_ptr(), kAddressLength);
@@ -159,7 +159,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
 
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 
 StageResult stage_account_history(db::EnvConfig db_config) { return history_index_stage(db_config, false); }

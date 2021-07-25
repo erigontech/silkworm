@@ -30,7 +30,7 @@ RecoveryFarm::RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size
 };
 
 StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
-    auto ret{StageResult::kStageSuccess};
+    auto ret{StageResult::kSuccess};
 
     auto config{db::read_chain_config(db_transaction_)};
     if (!config.has_value()) {
@@ -51,27 +51,27 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
         height_to = blocks_stage_height;
         if (height_to < height_from) {
             // We actually don't need to recover anything
-            return StageResult::kStageSuccess;
+            return StageResult::kSuccess;
         }
     }
 
     if (height_from > height_to) {
-        return StageResult::kStageInvalidRange;
+        return StageResult::kInvalidRange;
     }
 
     // Load canonical headers
-    auto ret_status{StageResult::kStageSuccess};
+    auto ret_status{StageResult::kSuccess};
     uint64_t headers_count{height_to - height_from + 1};
     headers_.reserve(headers_count);
     ret_status = fill_canonical_headers(height_from, height_to);
-    if (ret_status != StageResult::kStageSuccess) {
+    if (ret_status != StageResult::kSuccess) {
         return ret_status;
     }
 
     SILKWORM_LOG(LogLevel::Info) << "Collected " << headers_.size() << " canonical headers" << std::endl;
     if (headers_.size() != headers_count) {
         SILKWORM_LOG(LogLevel::Error) << "A total of " << headers_count << " was expected" << std::endl;
-        return StageResult::kStageBadChainSequence;
+        return StageResult::kBadChainSequence;
     }
 
     headers_it_1_ = headers_.begin();
@@ -88,7 +88,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     // Set to first block and read all in sequence
     auto block_key{db::block_key(expected_block_num, headers_it_1_->bytes)};
     if (!bodies_table.seek(db::to_slice(block_key))) {
-        return StageResult::kStageBadChainSequence;
+        return StageResult::kBadChainSequence;
     }
 
     // Initializes first batch
@@ -108,7 +108,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
             // in sequence
             SILKWORM_LOG(LogLevel::Error) << "Senders' recovery : Bad block sequence expected " << expected_block_num
                                           << " got " << block_num << std::endl;
-            return StageResult::kStageBadChainSequence;
+            return StageResult::kBadChainSequence;
         }
 
         if (memcmp(&key_view[8], headers_it_1_->bytes, 32) != 0) {
@@ -170,7 +170,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
 
 StageResult RecoveryFarm::unwind(uint64_t new_height) {
     SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
-    auto ret{StageResult::kStageSuccess};
+    auto ret{StageResult::kSuccess};
     auto unwind_table{db::open_cursor(db_transaction_, db::table::kSenders)};
     size_t rcount{db_transaction_.get_map_stat(unwind_table.map()).ms_entries};
     if (rcount) {
@@ -184,7 +184,7 @@ StageResult RecoveryFarm::unwind(uint64_t new_height) {
                 while (unwind_table.to_next(false)) {
                     unwind_table.erase();
                     if (--rcount % 1'000 && should_stop()) {
-                        ret = StageResult::kStageAborted;
+                        ret = StageResult::kAborted;
                         break;
                     }
                 }
@@ -193,7 +193,7 @@ StageResult RecoveryFarm::unwind(uint64_t new_height) {
     }
 
     // Eventually update new stage height
-    if (ret == StageResult::kStageSuccess) {
+    if (ret == StageResult::kSuccess) {
         db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
     }
     return ret;
@@ -406,7 +406,7 @@ StageResult RecoveryFarm::fill_canonical_headers(uint64_t height_from, uint64_t 
 
     if (!data) {
         SILKWORM_LOG(LogLevel::Error) << "Header " << expected_block_num << " not found" << std::endl;
-        return StageResult::kStageBadChainSequence;
+        return StageResult::kBadChainSequence;
     }
 
     // Read all headers up to block_to included
@@ -415,7 +415,7 @@ StageResult RecoveryFarm::fill_canonical_headers(uint64_t height_from, uint64_t 
         if (reached_block_num != expected_block_num) {
             SILKWORM_LOG(LogLevel::Error) << "Bad header hash sequence ! Expected " << expected_block_num << " got "
                                           << reached_block_num << std::endl;
-            return StageResult::kStageBadChainSequence;
+            return StageResult::kBadChainSequence;
         }
 
         if (data.value.length() != kHashLength) {
@@ -430,10 +430,10 @@ StageResult RecoveryFarm::fill_canonical_headers(uint64_t height_from, uint64_t 
 
     // If we've not reached block_to something is wrong
     if (reached_block_num != height_to) {
-        return StageResult::kStageBadChainSequence;
+        return StageResult::kBadChainSequence;
     }
 
-    return StageResult::kStageSuccess;
+    return StageResult::kSuccess;
 }
 
 void RecoveryFarm::worker_completed_handler(RecoveryWorker* sender, uint32_t batch_id) {

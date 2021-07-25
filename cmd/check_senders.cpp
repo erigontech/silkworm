@@ -39,8 +39,8 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/types/block.hpp>
 #include <silkworm/stagedsync/recovery/recovery_farm.hpp>
+#include <silkworm/types/block.hpp>
 
 using namespace silkworm;
 
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
 
         // Create farm instance and do work
         stagedsync::recovery::RecoveryFarm farm(txn, options.max_workers, options.batch_size, collector);
-        stagedsync::StageResult result{stagedsync::StageResult::kStageSuccess};
+        stagedsync::StageResult result{stagedsync::StageResult::kSuccess};
 
         signal(SIGINT, sig_handler);
         signal(SIGTERM, sig_handler);

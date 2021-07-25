@@ -23,6 +23,7 @@
 #include <optional>
 #include <vector>
 
+#include <ethash/hash_types.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/chain/config.hpp>
@@ -55,6 +56,7 @@ struct BlockHeader {
     std::optional<intx::uint256> base_fee_per_gas{std::nullopt};  // EIP-1559
 
     evmc::bytes32 hash(bool for_sealing = false) const;
+    ethash::hash256 boundary() const;
 
   private:
     friend rlp::DecodingResult rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to) noexcept;

@@ -20,6 +20,6 @@
 
 TEST_CASE("Check Staged Sync error") {
     using namespace silkworm;
-    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::StageResult::kStageSuccess));
-    REQUIRE_THROWS_AS(stagedsync::check_stagedsync_error(stagedsync::StageResult::kStageAborted), std::runtime_error);
+    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::StageResult::kSuccess));
+    REQUIRE_THROWS_AS(stagedsync::check_stagedsync_error(stagedsync::StageResult::kAborted), std::runtime_error);
 }

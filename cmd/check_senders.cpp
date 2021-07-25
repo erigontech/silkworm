@@ -60,7 +60,6 @@ struct app_options_t {
     size_t batch_size{1'000'000};   // Number of work packages to serve a worker
     uint32_t block_from{1u};        // Initial block number to start from
     uint32_t block_to{UINT32_MAX};  // Final block number to process
-    bool force{false};              // Whether to replay already processed blocks
     bool dry{false};                // Runs in dry mode (no data is persisted on disk)
     bool debug{false};              // Whether to display some debug info
 };
@@ -87,7 +86,6 @@ int main(int argc, char* argv[]) {
         ->check(CLI::Range(1'000u, 10'000'000u));
 
     app.add_flag("--debug", options.debug, "May print some debug/trace info.");
-    app.add_flag("--force", options.force, "Force reprocessing of blocks");
     app.add_flag("--dry", options.dry, "Runs the full cycle but nothing is persisted");
 
     app.require_subcommand(1);  // One of the following subcommands is required

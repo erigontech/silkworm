@@ -315,7 +315,7 @@ class RecoveryFarm final {
             init_batch();
 
             while (block_data && !should_stop()) {
-                block_num = boost::endian::load_big_u64(block_data.key.byte_ptr());
+                block_num = boost::endian::load_big_u64(static_cast<uint8_t*>(block_data.key.iov_base));
                 if (block_num < expected_block_num) {
                     // The same block height has been recorded
                     // but is not canonical;
@@ -401,7 +401,8 @@ class RecoveryFarm final {
                     // Get the last processed block and update stage height
                     auto last{target_table.to_last(/*throw_notfound*/ false)};
                     if (last) {
-                        auto last_processed_block{boost::endian::load_big_u64(last.key.byte_ptr())};
+                        auto last_processed_block{
+                            boost::endian::load_big_u64(static_cast<uint8_t*>(last.key.iov_base))};
                         db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
                     }
                 } catch (const mdbx::exception& ex) {
@@ -723,7 +724,7 @@ class RecoveryFarm final {
             }
 
             while (header_data) {
-                reached_block_num = boost::endian::load_big_u64(header_data.key.byte_ptr());
+                reached_block_num = boost::endian::load_big_u64(static_cast<uint8_t*>(header_data.key.iov_base));
                 if (reached_block_num != expected_block_num) {
                     SILKWORM_LOG(LogLevel::Error) << "Bad header hash sequence ! Expected " << expected_block_num
                                                   << " got " << reached_block_num << std::endl;

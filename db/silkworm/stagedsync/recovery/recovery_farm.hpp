@@ -14,14 +14,15 @@
    limitations under the License.
 */
 
-#include <silkworm/stagedsync/recovery/recovery_worker.hpp>
-#include <silkworm/stagedsync/util.hpp>
-
 #ifndef SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
 #define SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
 
+#include <atomic>
+
+#include <silkworm/stagedsync/recovery/recovery_worker.hpp>
+#include <silkworm/stagedsync/util.hpp>
+
 namespace silkworm::stagedsync::recovery {
-extern bool g_should_stop;
 
 /**
  * @brief An orchestrator of RecoveryWorkers
@@ -55,11 +56,13 @@ class RecoveryFarm {
      */
     StageResult unwind(uint64_t new_height);
 
+    void stop() { should_stop_.store(true); }
+
   private:
     /**
      * @brief Gets whether or not this class should stop working
      */
-    bool should_stop() { return should_stop_.load() || g_should_stop; }
+    bool should_stop() { return should_stop_.load(); }
 
     /**
      * @brief Forces each worker to stop
@@ -141,4 +144,5 @@ class RecoveryFarm {
 };
 
 }  // namespace silkworm::stagedsync::recovery
-#endif
+
+#endif  // SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_

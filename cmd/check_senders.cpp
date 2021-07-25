@@ -44,9 +44,13 @@
 
 using namespace silkworm;
 
+std::unique_ptr<stagedsync::recovery::RecoveryFarm> farm;
+
 void sig_handler(int) {
     std::cout << std::endl << " Got interrupt. Stopping ..." << std::endl << std::endl;
-    stagedsync::recovery::g_should_stop = true;
+    if (farm) {
+        farm->stop();
+    }
 }
 
 struct app_options_t {
@@ -117,16 +121,17 @@ int main(int argc, char* argv[]) {
         auto txn{env.start_write()};
 
         // Create farm instance and do work
-        stagedsync::recovery::RecoveryFarm farm(txn, options.max_workers, options.batch_size, collector);
+        farm = std::make_unique<stagedsync::recovery::RecoveryFarm>(txn, options.max_workers, options.batch_size,
+                                                                    collector);
         stagedsync::StageResult result{stagedsync::StageResult::kSuccess};
 
         signal(SIGINT, sig_handler);
         signal(SIGTERM, sig_handler);
 
         if (app_recover) {
-            result = farm.recover(options.block_from, options.block_to);
+            result = farm->recover(options.block_from, options.block_to);
         } else {
-            result = farm.unwind(options.block_from);
+            result = farm->unwind(options.block_from);
         }
 
         if (rc = static_cast<int>(result), rc) {

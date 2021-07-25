@@ -18,8 +18,6 @@
 
 namespace silkworm::stagedsync::recovery {
 
-bool g_should_stop = false;
-
 RecoveryFarm::RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size_t max_batch_size,
                            etl::Collector& collector)
     : db_transaction_{db_transaction},
@@ -27,7 +25,7 @@ RecoveryFarm::RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size
       max_batch_size_{max_batch_size},
       collector_{collector} {
     workers_.reserve(max_workers);
-};
+}
 
 StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     auto ret{StageResult::kSuccess};
@@ -159,12 +157,13 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
                             /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 50 : 10));
 
             // Get the last processed block and update stage height
-            auto last_processed_block{boost::endian::load_big_u64(static_cast<uint8_t*>(target_table.to_last().key.iov_base))};
+            auto last_processed_block{
+                boost::endian::load_big_u64(static_cast<uint8_t*>(target_table.to_last().key.iov_base))};
             db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
         }
     }
 
-    stop_all_workers(true);
+    stop_all_workers(/*wait=*/true);
     return ret;
 }
 

@@ -65,8 +65,7 @@ static StageResult history_index_stage(db::EnvConfig db_config, mdbx::txn *exter
 
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Extraction" << std::endl;
-    Bytes start(8, '\0');
-    boost::endian::store_big_u64(&start[0], last_processed_block_number);
+    Bytes start{db::block_key(last_processed_block_number + 1)};
 
     size_t allocated_space{0};
     uint64_t block_number{0};

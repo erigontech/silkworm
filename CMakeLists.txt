@@ -195,6 +195,7 @@ add_subdirectory(core)
 if(NOT SILKWORM_CORE_ONLY)
   option(MDBX_HUGE_TRANSACTIONS "" ON)
   add_subdirectory(libmdbx)
+  target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libmdbx)
   add_subdirectory(db)
 endif()
 

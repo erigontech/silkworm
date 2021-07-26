@@ -130,7 +130,6 @@ namespace db {
 
         // Check readers
         db_config.create = false;
-        db_config.inmemory = false;
         REQUIRE_NOTHROW(env = db::open_env(db_config));
         env.close();
     }
@@ -149,7 +148,7 @@ namespace db {
         std::vector<std::string> table_names{};
 
         const auto& walk_func{[&table_names](::mdbx::cursor::move_result data) -> bool {
-            table_names.push_back(data.key.string());
+            table_names.push_back(data.key.as_string());
             return true;
         }};
 

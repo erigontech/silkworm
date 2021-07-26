@@ -127,11 +127,6 @@ namespace db {
         db_config.exclusive = true;
         REQUIRE_NOTHROW(env = db::open_env(db_config));
         env.close();
-
-        // Check readers
-        db_config.create = false;
-        REQUIRE_NOTHROW(env = db::open_env(db_config));
-        env.close();
     }
 
     TEST_CASE("Methods for_each/for_count") {

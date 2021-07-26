@@ -65,11 +65,13 @@ TEST_CASE("Execute two blocks") {
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
 
+    std::vector<Receipt> receipts;
+
     // ---------------------------------------
     // Execute first block
     // ---------------------------------------
 
-    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
 
     auto contract_address{create_address(sender, /*nonce=*/0)};
     std::optional<Account> contract_account{buffer.read_account(contract_address)};
@@ -105,7 +107,7 @@ TEST_CASE("Execute two blocks") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
 
     storage0 = buffer.read_storage(contract_address, kDefaultIncarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);

@@ -76,10 +76,12 @@ TEST_CASE("Unwind Execution") {
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
 
+    std::vector<Receipt> receipts;
+
     // ---------------------------------------
     // Execute first block
     // ---------------------------------------
-    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
     auto contract_address{create_address(sender, /*nonce=*/0)};
 
     // ---------------------------------------
@@ -99,7 +101,7 @@ TEST_CASE("Unwind Execution") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
 
     // ---------------------------------------
     // Execute third block
@@ -118,7 +120,7 @@ TEST_CASE("Unwind Execution") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
 
     db::stages::set_stage_progress(txn, db::stages::kExecutionKey, 3);
     buffer.write_to_db();

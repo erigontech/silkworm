@@ -55,6 +55,7 @@ int main(int argc, char* argv[]) {
 
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
+    std::vector<Receipt> receipts;
 
     try {
         db::EnvConfig db_config{chaindata};
@@ -83,7 +84,7 @@ int main(int argc, char* argv[]) {
             db::Buffer buffer{txn, block_num};
 
             // Execute the block and retreive the receipts
-            auto [receipts, err]{execute_block(bh->block, buffer, *chain_config, &analysis_cache, &state_pool)};
+            auto err{execute_block(bh->block, buffer, *chain_config, receipts, &analysis_cache, &state_pool)};
             if (err != ValidationResult::kOk) {
                 std::cerr << "Validation error " << static_cast<int>(err) << " at block " << block_num << "\n";
             }

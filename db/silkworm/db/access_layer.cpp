@@ -283,14 +283,14 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, int64_t block_number, co
     return senders;
 }
 
-std::optional<Bytes> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash) {
+std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash) {
     auto src{db::open_cursor(txn, table::kCode)};
     auto key{to_slice(full_view(code_hash))};
     auto data{src.find(key, /*throw_notfound=*/false)};
     if (!data) {
         return std::nullopt;
     }
-    return Bytes{from_slice(data.value)};
+    return from_slice(data.value);
 }
 
 // Erigon FindByHistory for account

@@ -34,7 +34,7 @@ std::optional<Account> MemoryBuffer::read_account(const evmc::address& address) 
     return it->second;
 }
 
-Bytes MemoryBuffer::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView MemoryBuffer::read_code(const evmc::bytes32& code_hash) const noexcept {
     auto it{code_.find(code_hash)};
     if (it == code_.end()) {
         return {};
@@ -172,7 +172,9 @@ void MemoryBuffer::update_account(const evmc::address& address, std::optional<Ac
 }
 
 void MemoryBuffer::update_account_code(const evmc::address&, uint64_t, const evmc::bytes32& code_hash, ByteView code) {
-    code_[code_hash] = code;
+    // Don't overwrite already existing code so that views of it
+    // that were previously returned by read_code() are still valid.
+    code_.try_emplace(code_hash, code);
 }
 
 void MemoryBuffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,

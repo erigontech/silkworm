@@ -38,21 +38,28 @@ static Bytes compact(Bytes& b) {
     return b;
 }
 
-StageResult stage_tx_lookup(db::EnvConfig db_config) {
+StageResult stage_tx_lookup(db::EnvConfig db_config, mdbx::txn* external_txn) {
     fs::path datadir(db_config.path);
     fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
+    mdbx::txn_managed managed_txn;
+    mdbx::txn* txn;
+    if (external_txn == nullptr) {
+        auto env{db::open_env(db_config)};
+        managed_txn = env.start_write();
+        txn = &managed_txn;
+    } else {
+        txn = external_txn;
+    }
 
-    auto last_processed_block_number{db::stages::get_stage_progress(txn, db::stages::kTxLookupKey)};
+    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)};
     uint64_t block_number{0};
 
     // We take data from header table and transform it and put it in blockhashes table
-    auto bodies_table{db::open_cursor(txn, db::table::kBlockBodies)};
-    auto transactions_table{db::open_cursor(txn, db::table::kEthTx)};
+    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transactions_table{db::open_cursor(*txn, db::table::kEthTx)};
 
     // Extract
     Bytes start(8, '\0');
@@ -107,16 +114,19 @@ StageResult stage_tx_lookup(db::EnvConfig db_config) {
          * cannot guarantee keys are sorted amongst different calls
          * of this stage
          */
-        auto target_table{db::open_cursor(txn, db::table::kTxLookup)};
-        auto target_table_rcount{txn.get_map_stat(target_table.map()).ms_entries};
+        auto target_table{db::open_cursor(*txn, db::table::kTxLookup)};
+        auto target_table_rcount{txn->get_map_stat(target_table.map()).ms_entries};
         MDBX_put_flags_t db_flags{target_table_rcount ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
 
         // Eventually load collected items with no transform (may throw)
         collector.load(target_table, nullptr, db_flags, /* log_every_percent = */ 10);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(txn, db::stages::kTxLookupKey, block_number);
-        txn.commit();
+        db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, block_number);
+
+        if (external_txn == nullptr) {
+            managed_txn.commit();
+        }
 
     } else {
         SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
@@ -127,26 +137,34 @@ StageResult stage_tx_lookup(db::EnvConfig db_config) {
     return StageResult::kSuccess;
 }
 
-StageResult unwind_tx_lookup(db::EnvConfig db_config, uint64_t unwind_to) {
+StageResult unwind_tx_lookup(db::EnvConfig db_config, uint64_t unwind_to, mdbx::txn* external_txn) {
     fs::path datadir(db_config.path);
 
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
+    mdbx::txn_managed managed_txn;
+    mdbx::txn* txn;
+    if (external_txn == nullptr) {
+        auto env{db::open_env(db_config)};
+        managed_txn = env.start_write();
+        txn = &managed_txn;
+    } else {
+        txn = external_txn;
+    }
 
-    if (unwind_to >= db::stages::get_stage_progress(txn, db::stages::kTxLookupKey)) {
+    if (unwind_to >= db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)) {
         return StageResult::kSuccess;
     }
     // We take data from header table and transform it and put it in blockhashes table
-    auto bodies_table{db::open_cursor(txn, db::table::kBlockBodies)};
-    auto transactions_table{db::open_cursor(txn, db::table::kEthTx)};
-    auto lookup_table{db::open_cursor(txn, db::table::kTxLookup)};
+    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transactions_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
 
     // Extract
     Bytes start(8, '\0');
     boost::endian::store_big_u64(&start[0], unwind_to + 1);
 
-    SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Unwind, from: " << db::stages::get_stage_progress(txn, db::stages::kTxLookupKey)
-        <<  " to: " << unwind_to << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Unwind, from: "
+                                 << db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)
+                                 << " to: " << unwind_to << std::endl;
 
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
     while (bodies_data) {
@@ -162,7 +180,7 @@ StageResult unwind_tx_lookup(db::EnvConfig db_config, uint64_t unwind_to) {
             while (tx_data && tx_count < body.txn_count) {
                 auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
-                if(lookup_table.seek(db::to_slice(hash.bytes))) {
+                if (lookup_table.seek(db::to_slice(hash.bytes))) {
                     lookup_table.erase();
                 }
                 ++tx_count;
@@ -173,10 +191,13 @@ StageResult unwind_tx_lookup(db::EnvConfig db_config, uint64_t unwind_to) {
         bodies_data = bodies_table.to_next(/*throw_notfound*/ false);
     }
 
-
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
-    db::stages::set_stage_progress(txn, db::stages::kTxLookupKey, unwind_to);
-    txn.commit();
+    db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, unwind_to);
+
+    if (external_txn == nullptr) {
+        managed_txn.commit();
+    }
+
     return StageResult::kSuccess;
 }
 

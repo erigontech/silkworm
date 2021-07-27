@@ -18,7 +18,7 @@
 
 namespace silkworm::stagedsync {
 
-StageResult no_unwind(db::EnvConfig, uint64_t) { return StageResult::kSuccess; }
+StageResult no_unwind(db::EnvConfig, uint64_t, mdbx::txn*) { return StageResult::kSuccess; }
 
 std::vector<Stage> get_default_stages() {
     return {
@@ -28,7 +28,7 @@ std::vector<Stage> get_default_stages() {
         {stage_senders, unwind_senders, 4},
         {stage_execution, unwind_execution, 5},
         {stage_hashstate, unwind_hashstate, 6},
-        {stage_interhashes, unwind_hashstate, 7},
+        {stage_interhashes, unwind_interhashes, 7},
         {stage_account_history, unwind_account_history, 8},
         {stage_storage_history, unwind_storage_history, 9},
         {stage_log_index, unwind_log_index, 10},

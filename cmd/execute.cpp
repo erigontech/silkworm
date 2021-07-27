@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
 
     db::EnvConfig db_config{chaindata};
     db_config.create = false;
-    auto res{stagedsync::stage_execution(db_config, batch_size.value())};
+    auto res{stagedsync::stage_execution(db_config, /*external_txn=*/nullptr, batch_size.value())};
     if (res != stagedsync::StageResult::kSuccess) {
         SILKWORM_LOG(LogLevel::Info) << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res)
                                      << std::endl;

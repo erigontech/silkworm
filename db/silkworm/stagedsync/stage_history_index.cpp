@@ -177,7 +177,12 @@ StageResult stage_storage_history(db::EnvConfig db_config, mdbx::txn *external_t
     return history_index_stage(db_config, external_txn, true);
 }
 
-StageResult unwind_account_history(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+StageResult unwind_account_history(db::EnvConfig, mdbx::txn *, uint64_t) {
+    throw std::runtime_error("Not Implemented.");
+}
 
-StageResult unwind_storage_history(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+StageResult unwind_storage_history(db::EnvConfig, mdbx::txn *, uint64_t) {
+    throw std::runtime_error("Not Implemented.");
+}
+
 }  // namespace silkworm::stagedsync

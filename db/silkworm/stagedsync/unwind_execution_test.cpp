@@ -123,18 +123,13 @@ TEST_CASE("Unwind Execution") {
     db::stages::set_stage_progress(txn, db::stages::kExecutionKey, 3);
     buffer.write_to_db();
 
-    txn.commit();
-    env.close();
-
     // ---------------------------------------
     // Unwind second block and checks if state is first block
     // ---------------------------------------
     db_config.create = false;  // We have already created it
-    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_execution(db_config, 1)));
+    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_execution(db_config, 1, &txn)));
 
-    auto env2{db::open_env(db_config)};
-    auto txn2{env2.start_write()};
-    db::Buffer buffer2{txn2};
+    db::Buffer buffer2{txn};
 
     std::optional<Account> contract_account{buffer2.read_account(contract_address)};
     REQUIRE(contract_account);

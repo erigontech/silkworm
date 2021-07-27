@@ -18,6 +18,6 @@
 
 namespace silkworm::stagedsync {
 
-StageResult stage_headers(db::EnvConfig) { throw std::runtime_error("Not Implemented."); }
+StageResult stage_headers(db::EnvConfig, mdbx::txn*) { throw std::runtime_error("Not Implemented."); }
 
 }  // namespace silkworm::stagedsync

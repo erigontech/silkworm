@@ -25,11 +25,10 @@ see its package dbutils.
 #include <string>
 
 #include <absl/container/btree_map.h>
+#include <mdbx.h++>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/block.hpp>
-
-#include "../libmdbx/mdbx.h++"
 
 namespace silkworm::db {
 
@@ -121,7 +120,8 @@ struct StorageMode {
 
 constexpr StorageMode kDefaultStorageMode{
     /*Initialized*/ true, /*History*/ true,    /*Receipts*/ true,
-    /*TxIndex*/ true,     /*CallTraces*/ true, /*TEVM*/ false};
+    /*TxIndex*/ true,     /*CallTraces*/ true, /*TEVM*/ false,
+};
 
 /* Common Keys */
 

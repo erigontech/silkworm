@@ -32,8 +32,16 @@ hunter_config(
 )
 
 hunter_config(
-    Microsoft.GSL
-    VERSION 3.1.0
-    URL https://github.com/microsoft/GSL/archive/v3.1.0.tar.gz
-    SHA1 3f2891a46595806563e7a0e25bb7ecbb30776445
+  Microsoft.GSL
+  VERSION 3.1.0
+  URL https://github.com/microsoft/GSL/archive/v3.1.0.tar.gz
+  SHA1 3f2891a46595806563e7a0e25bb7ecbb30776445
+)
+
+hunter_config(
+  ethash
+  VERSION 0.7.0
+  URL https://github.com/chfast/ethash/archive/v0.7.0.tar.gz
+  SHA1 83768c203c98dff1829f038fde98a7226e1edd98
+  CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
 )

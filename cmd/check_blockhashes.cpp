@@ -21,6 +21,7 @@
 
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
@@ -49,30 +50,36 @@ int main(int argc, char* argv[]) {
         SILKWORM_LOG(LogLevel::Info) << "Checking Block Hashes..." << std::endl;
         auto canonica_hashes_data{canonical_hashes_table.to_first(/*throw_notfound*/ false)};
 
+        StopWatch sw{};
+        auto start_time{sw.start()};
+
         // Check if each hash has the correct number according to the header table
         while (canonica_hashes_data) {
             ByteView hash_data_view{db::from_slice(canonica_hashes_data.value)};  // Canonical Hash
             auto block_hashes_data{blockhashes_table.find(canonica_hashes_data.value, /*throw_notfound*/ false)};
             if (!block_hashes_data) {
-                uint64_t hash_block_number{boost::endian::load_big_u64(canonica_hashes_data.key.byte_ptr())};
+                uint64_t hash_block_number{
+                    boost::endian::load_big_u64(static_cast<uint8_t*>(canonica_hashes_data.key.iov_base))};
                 SILKWORM_LOG(LogLevel::Error)
                     << "Hash " << to_hex(hash_data_view) << " (block " << hash_block_number << ") not found in "
                     << db::table::kHeaderNumbers.name << " table " << std::endl;
 
             } else if (block_hashes_data.value != canonica_hashes_data.key) {
-                uint64_t hash_height = boost::endian::load_big_u64(canonica_hashes_data.key.byte_ptr());
-                uint64_t block_height = boost::endian::load_big_u64(block_hashes_data.value.byte_ptr());
+                uint64_t hash_height = boost::endian::load_big_u64(static_cast<uint8_t*>(canonica_hashes_data.key.iov_base));
+                uint64_t block_height = boost::endian::load_big_u64(static_cast<uint8_t*>(block_hashes_data.value.iov_base));
                 SILKWORM_LOG(LogLevel::Error) << "Hash " << to_hex(hash_data_view) << " should match block "
                                               << hash_height << " but got " << block_height << std::endl;
             }
 
             if (++scanned_headers % 100000 == 0) {
-                SILKWORM_LOG(LogLevel::Info) << "Scanned headers " << scanned_headers << std::endl;
+                auto [_, duration] = sw.lap();
+                SILKWORM_LOG(LogLevel::Info)
+                    << "Scanned headers " << scanned_headers << " in " << sw.format(duration) << std::endl;
             }
             canonica_hashes_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
         }
-
-        SILKWORM_LOG(LogLevel::Info) << "Done!" << std::endl;
+        auto [end_time, _] = sw.lap();
+        SILKWORM_LOG(LogLevel::Info) << "Done! " << sw.format(end_time - start_time) << std::endl;
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;

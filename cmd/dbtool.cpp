@@ -129,7 +129,7 @@ struct dbFreeInfo {
 
 struct DbOptions {
     std::string datadir{DataDirectory{}.get_chaindata_path().string()};  // Where data file is located
-    bool shared{false}; // Whether db has to be opened in shared mode
+    bool shared{false};                                                  // Whether db has to be opened in shared mode
 };
 
 struct FreeListOptions {
@@ -301,10 +301,10 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     auto main_crs{txn.open_cursor(main_map)};
     auto result{main_crs.to_first(/*throw_notfound =*/false)};
     while (result) {
-        auto named_map{txn.open_map(result.key.string())};
+        auto named_map{txn.open_map(result.key.as_string())};
         stat = txn.get_map_stat(named_map);
         info = txn.get_handle_info(named_map);
-        table = new dbTableEntry{named_map.dbi, result.key.string(), stat, info};
+        table = new dbTableEntry{named_map.dbi, result.key.as_string(), stat, info};
 
         ret.pageSize += table->stat.ms_psize;
         ret.pages += table->pages();
@@ -411,9 +411,9 @@ int do_stages(DbOptions& db_opts) {
 
             auto result{crs.to_first(/*throw_notfound =*/false)};
             while (result) {
-                size_t height{boost::endian::load_big_u64(result.value.byte_ptr())};
+                size_t height{boost::endian::load_big_u64(static_cast<uint8_t*>(result.value.iov_base))};
                 bool Known{db::stages::is_known_stage(result.key.char_ptr())};
-                std::cout << (boost::format(fmt_row) % result.key.string() % height %
+                std::cout << (boost::format(fmt_row) % result.key.as_string() % height %
                               (Known ? std::string(8, ' ') : "Unknown"))
                           << std::endl;
                 result = crs.to_next(/*throw_notfound =*/false);

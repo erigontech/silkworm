@@ -16,8 +16,6 @@
 
 #include "access_layer.hpp"
 
-#include <fstream>
-
 #include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 #include <ethash/ethash.hpp>
@@ -88,44 +86,6 @@ static BlockBody sample_block_body() {
 
 namespace db {
 
-    TEST_CASE("DataDirectory") {
-        // Open and create default storage path
-        DataDirectory data_dir{/*create = */ true};
-        REQUIRE(data_dir.valid());
-        REQUIRE_NOTHROW(data_dir.create_tree());
-
-        // Eventually delete the created paths
-        std::filesystem::remove_all(data_dir.get_base_path());
-
-        TemporaryDirectory tmp_dir1;
-        std::filesystem::path fake_path{std::filesystem::path(tmp_dir1.path()) / "nonexistentpath"};
-        REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Does not exist
-        std::filesystem::create_directories(fake_path);
-        REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Not a valid chaindata path
-        fake_path /= "erigon";
-        fake_path /= "chaindata";
-        REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Valid chaindata path but does not exist yet
-        std::filesystem::create_directories(fake_path);
-        REQUIRE_NOTHROW((void)DataDirectory::from_chaindata(fake_path));  // Valid chaindata path and exist
-
-        DataDirectory data_dir2{DataDirectory::from_chaindata(fake_path)};
-        REQUIRE_NOTHROW(data_dir2.create_tree());
-
-        auto etl_path{data_dir2.get_etl_path()};
-        REQUIRE(std::filesystem::is_empty(etl_path));
-
-        // Drop a file into etl temp
-        {
-            std::string filename{etl_path.string() + "/fake.txt"};
-            std::ofstream f(filename.c_str());
-        }
-
-        REQUIRE(std::filesystem::is_empty(etl_path) == false);
-
-        data_dir2.clear_etl_temp();
-        REQUIRE(std::filesystem::is_empty(etl_path));
-    }
-
     TEST_CASE("Db Opening") {
         // Empty dir
         std::string empty{};
@@ -168,11 +128,6 @@ namespace db {
         db_config.exclusive = true;
         REQUIRE_NOTHROW(env = db::open_env(db_config));
         env.close();
-
-        // Check readers
-        db_config.create = false;
-        REQUIRE_NOTHROW(env = db::open_env(db_config));
-        env.close();
     }
 
     TEST_CASE("Methods for_each/for_count") {
@@ -189,7 +144,7 @@ namespace db {
         std::vector<std::string> table_names{};
 
         const auto& walk_func{[&table_names](::mdbx::cursor::move_result data) -> bool {
-            table_names.push_back(data.key.string());
+            table_names.push_back(data.key.as_string());
             return true;
         }};
 
@@ -765,8 +720,7 @@ namespace db {
         header.mix_hash = to_bytes32(*mix_data);
 
         auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
-        auto noncebe = ethash::be::uint64(nonce);  // Swap endianess
-        std::memcpy(&header.nonce[0], &noncebe, 8);
+        boost::endian::store_big_u64(header.nonce.data(), nonce);
 
         // Verify our RLP encoding produces the same result
         auto computed_hash{header.hash()};

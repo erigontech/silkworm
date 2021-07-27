@@ -142,9 +142,10 @@ if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
 endif()
 
-find_package(intx CONFIG REQUIRED) # Required from here below
+find_package(intx CONFIG REQUIRED)   # Required from here below
+find_package(ethash CONFIG REQUIRED) # Required from here below
+
 add_subdirectory(evmone/evmc)
-add_subdirectory(ethash)
 
 add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/analysis.hpp
@@ -167,7 +168,7 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/vm.hpp)
 set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.8.0")
 target_include_directories(evmone PUBLIC evmone/include evmone/lib)
-target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex ethash)
+target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex)
 
 if(MSVC)
   target_compile_options(evmone PRIVATE /EHsc /w)
@@ -192,8 +193,9 @@ endif()
 add_subdirectory(core)
 
 if(NOT SILKWORM_CORE_ONLY)
-  option(MDBX_HUGE_TRANSACTIONS "" ON)
+  set(MDBX_ENABLE_TESTS OFF)
   add_subdirectory(libmdbx)
+  target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libmdbx)
   add_subdirectory(db)
 endif()
 

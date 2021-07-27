@@ -1,5 +1,3 @@
 ignore:
   - "**/*_test.cpp"
   - "cmd"
-  - "libmdbx"
-  - "ethash/ethash"

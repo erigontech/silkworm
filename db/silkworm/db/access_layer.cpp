@@ -485,7 +485,7 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
     }
 
     // https://github.com/nlohmann/json/issues/2204
-    const auto json = nlohmann::json::parse(data.value.string(), nullptr, false);
+    const auto json = nlohmann::json::parse(data.value.as_string(), nullptr, false);
     return ChainConfig::from_json(json);
 }
 

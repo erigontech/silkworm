@@ -182,10 +182,15 @@ StageResult history_index_unwind(db::EnvConfig db_config, uint64_t unwind_to, bo
             // get bimap data of current element
             auto bitmap_data{db::from_slice(data.value)};
             auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
+            // Get maximum from key to prevent useless readings
+            if (boost::endian::load_big_u64(&key[key.size() - 8]) <= unwind_to) {
+                data = index_table.to_next(/*throw_notfound*/ false);
+                continue;
+            }
             // check if unwind can be applied
             if (bm.minimum() > unwind_to) {
                 index_table.erase(/* whole_multivalue = */ false);
-            } else if(bm.maximum() > unwind_to) {
+            } else {
                 // Erase elements that are > unwind_to
                 bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(0, unwind_to - 1, 1));
                 Bytes new_bitmap_bytes(bm.getSizeInBytes(), '\0');

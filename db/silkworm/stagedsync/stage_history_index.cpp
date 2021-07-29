@@ -169,15 +169,14 @@ StageResult history_index_unwind(db::EnvConfig db_config, uint64_t unwind_to, bo
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
-
     if (unwind_to >= db::stages::get_stage_progress(txn, stage_key)) {
-        return StageResult::kStageSuccess;
+        return StageResult::kSuccess;
     }
     auto index_table{db::open_cursor(txn, index_config)};
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Unwind" << std::endl;
 
-    if (index_table.get_first()) {
+    if (index_table.to_first()) {
         auto data{index_table.current()};
         while (data) {
             // get bimap data of current element
@@ -185,14 +184,14 @@ StageResult history_index_unwind(db::EnvConfig db_config, uint64_t unwind_to, bo
             auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
             // check if unwind can be applied
             if (bm.minimum() > unwind_to) {
-                index_table.erase();
+                index_table.erase(/* whole_multivalue = */ false);
             } else if(bm.maximum() > unwind_to) {
                 // Erase elements that are > unwind_to
                 bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(0, unwind_to - 1, 1));
                 Bytes new_bitmap_bytes(bm.getSizeInBytes(), '\0');
                 bm.write(byte_ptr_cast(&new_bitmap_bytes[0]));
                 // replace with new index
-                plain_state_table.erase();
+                index_table.erase(/* whole_multivalue = */ false);
                 index_table.upsert(data.key, db::to_slice(new_bitmap_bytes));
             }
             data = index_table.to_next(/*throw_notfound*/ false);
@@ -200,7 +199,7 @@ StageResult history_index_unwind(db::EnvConfig db_config, uint64_t unwind_to, bo
     }
 
     txn.commit();
-    db::stages::set_stage_progress(txn, stage_key, unwind_to)
+    db::stages::set_stage_progress(txn, stage_key, unwind_to);
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
     return StageResult::kSuccess;
@@ -208,7 +207,7 @@ StageResult history_index_unwind(db::EnvConfig db_config, uint64_t unwind_to, bo
 
 StageResult stage_account_history(db::EnvConfig db_config) { return history_index_stage(db_config, false); }
 StageResult stage_storage_history(db::EnvConfig db_config) { return history_index_stage(db_config, true); }
-StageResult unwind_account_history(db::EnvConfig db_config, uint64_t unwind_to) { history_index_unwind(db_config, false, unwind_to); }
-StageResult unwind_storage_history(db::EnvConfig db_config, uint64_t unwind_to) { history_index_unwind(db_config, true, unwind_to); }
+StageResult unwind_account_history(db::EnvConfig db_config, uint64_t unwind_to) { return history_index_unwind(db_config, false, unwind_to); }
+StageResult unwind_storage_history(db::EnvConfig db_config, uint64_t unwind_to) { return history_index_unwind(db_config, true, unwind_to); }
 
 }  // namespace silkworm::stagedsync

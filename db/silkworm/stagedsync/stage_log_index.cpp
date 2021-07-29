@@ -156,6 +156,53 @@ StageResult stage_log_index(db::EnvConfig db_config) {
     return StageResult::kSuccess;
 }
 
-StageResult unwind_log_index(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+StageResult unwind_log_index(db::EnvConfig db_config, uint64_t unwind_to, bool topics) {
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
 
+    // We take data from header table and transform it and put it in blockhashes table
+    if (unwind_to >= db::stages::get_stage_progress(txn, db::stages::kLogIndexKey)) {
+        return StageResult::kSuccess;
+    }
+    auto index_table{topics? db::open_cursor(txn, db::table::kLogTopicIndex): db::open_cursor(txn, db::table::kLogAddressIndex)};
+
+    if (index_table.to_first()) {
+        auto data{index_table.current()};
+        while (data) {
+            // get bimap data of current element
+            auto bitmap_data{db::from_slice(data.value)};
+            auto bm{roaring::Roaring::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
+            // check if unwind can be applied
+            if (bm.minimum() > unwind_to) {
+                index_table.erase(/* whole_multivalue = */ false);
+            } else if(bm.maximum() > unwind_to) {
+                // Erase elements that are > unwind_to
+                bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(0, unwind_to - 1, 1));
+                Bytes new_bitmap_bytes(bm.getSizeInBytes(), '\0');
+                bm.write(byte_ptr_cast(&new_bitmap_bytes[0]));
+                // replace with new index
+                index_table.erase(/* whole_multivalue = */ false);
+                index_table.upsert(data.key, db::to_slice(new_bitmap_bytes));
+            }
+            data = index_table.to_next(/*throw_notfound*/ false);
+        }
+    }
+
+    txn.commit();
+    db::stages::set_stage_progress(txn, db::stages::kLogIndexKey, unwind_to);
+    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+
+    return StageResult::kSuccess;
+} 
+
+
+StageResult unwind_log_index(db::EnvConfig db_config, uint64_t unwind_to) {
+    SILKWORM_LOG(LogLevel::Info) << "Started Topic Index Unwind" << std::endl;
+    auto result{unwind_log_index(db_config, unwind_to, true)};
+    if (result != StageResult::kSuccess) {
+        return result;
+    }
+    SILKWORM_LOG(LogLevel::Info) << "Started Address Index Unwind" << std::endl;
+    return unwind_log_index(db_config, unwind_to, false);
+}
 }  // namespace silkworm::stagedsync

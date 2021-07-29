@@ -73,6 +73,9 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(unwind_history_index unwind_history_index.cpp)
   target_link_libraries(unwind_history_index PRIVATE silkworm_db CLI11::CLI11)
 
+  add_executable(unwind_log_index unwind_log_index.cpp)
+  target_link_libraries(unwind_log_index PRIVATE silkworm_db CLI11::CLI11)
+
   add_executable(blockhashes blockhashes.cpp)
   target_link_libraries(blockhashes PRIVATE silkworm_db CLI11::CLI11)
   

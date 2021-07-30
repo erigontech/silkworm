@@ -37,10 +37,13 @@ namespace silkworm::db {
             throw std::runtime_error("Unable to locate " + db_file.string() + ". Must exist has been set");
         }
     } else {
+        // Strangely create_directories occasionally returns false on macOS,
+        // despite having created the directors successfully.
+        // As a workand, we first call fs::create_directories and then fs::exists
+        fs::create_directories(db_path);
+
         if (!fs::exists(db_path)) {
-            if (!fs::create_directories(db_path)) {
-                throw std::runtime_error("Unable to create directory " + db_path.string() + ". Check your permissions");
-            }
+            throw std::runtime_error("Unable to create directory " + db_path.string() + ". Check your permissions");
         } else {
             if (fs::exists(db_file)) {
                 throw std::runtime_error("File " + db_file.string() + " already exists but create was set");

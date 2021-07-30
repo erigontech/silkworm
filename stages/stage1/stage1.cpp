@@ -47,12 +47,12 @@ Stage1::~Stage1() {
 
 auto Stage1::wind([[maybe_unused]] BlockNum new_height) -> StageResult {
     // todo: to implement in the next PR, this is only the code of the "reponder"
-    return StageResult::OK;
+    return StageResult::kOk;
 }
 
 auto Stage1::unwind([[maybe_unused]] BlockNum new_height) -> StageResult {
     // todo: to implement in the next PR, this is only the code of the "reponder"
-    return StageResult::OK;
+    return StageResult::kOk;
 }
 
 void Stage1::receive_one_message() {

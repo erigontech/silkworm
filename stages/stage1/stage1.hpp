@@ -32,7 +32,7 @@ namespace silkworm {
 // abstract interface for all stages
 class Stage {
   public:
-    enum StageResult {OK, ERROR};   // todo: improve
+    enum StageResult {kOk, kError};   // todo: improve
 
     virtual StageResult wind(BlockNum new_height) = 0;
     virtual StageResult unwind(BlockNum new_height) = 0;

@@ -38,7 +38,7 @@ namespace silkworm::db {
         }
     } else {
         // Strangely create_directories occasionally returns false on macOS,
-        // despite having created the directors successfully.
+        // despite having created the directories successfully.
         // As a workand, we first call fs::create_directories and then fs::exists
         fs::create_directories(db_path);
 

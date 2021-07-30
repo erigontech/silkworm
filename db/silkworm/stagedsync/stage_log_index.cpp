@@ -153,6 +153,8 @@ StageResult stage_log_index(TransactionManager &txn, const std::filesystem::path
     return StageResult::kSuccess;
 }
 
-StageResult unwind_log_index(db::EnvConfig, mdbx::txn *, uint64_t) { throw std::runtime_error("Not Implemented."); }
+StageResult unwind_log_index(TransactionManager &, const std::filesystem::path &, uint64_t) {
+    throw std::runtime_error("Not Implemented.");
+}
 
 }  // namespace silkworm::stagedsync

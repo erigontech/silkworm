@@ -77,7 +77,7 @@ TEST_CASE("Stop Watch") {
 
 TEST_CASE("DataDirectory") {
     // Open and create default storage path
-    DataDirectory data_dir{/*create = */ true};
+    DataDirectory data_dir{DataDirectory::get_default_storage_path(), /*create = */ true};
     REQUIRE(data_dir.valid());
     REQUIRE_NOTHROW(data_dir.create_tree());
 

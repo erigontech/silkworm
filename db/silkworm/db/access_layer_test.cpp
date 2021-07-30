@@ -379,7 +379,8 @@ namespace db {
 
     TEST_CASE("read_account") {
         TemporaryDirectory tmp_dir;
-        EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        DataDirectory data_dir{tmp_dir.path(), /*create=*/true};
+        EnvConfig db_config{data_dir.get_chaindata_path(), /*create*/ true};
         db_config.inmemory = true;
         auto env{open_env(db_config)};
         auto txn{env.start_write()};
@@ -410,7 +411,8 @@ namespace db {
 
         buffer.write_to_db();
 
-        REQUIRE(stagedsync::stage_account_history(db_config, &txn) == stagedsync::StageResult::kSuccess);
+        stagedsync::TransactionManager tm{txn};
+        REQUIRE(stagedsync::stage_account_history(tm, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());

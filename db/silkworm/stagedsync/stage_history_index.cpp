@@ -37,21 +37,9 @@ constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
 
 namespace fs = std::filesystem;
 
-static StageResult history_index_stage(db::EnvConfig db_config, mdbx::txn *external_txn, bool storage) {
-    fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+static StageResult history_index_stage(TransactionManager &txn, const std::filesystem::path &etl_path, bool storage) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
-
-    mdbx::txn_managed managed_txn;
-    mdbx::txn *txn;
-    if (external_txn == nullptr) {
-        auto env{db::open_env(db_config)};
-        managed_txn = env.start_write();
-        txn = &managed_txn;
-    } else {
-        txn = external_txn;
-    }
 
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig changeset_config = storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
@@ -157,9 +145,7 @@ static StageResult history_index_stage(db::EnvConfig db_config, mdbx::txn *exter
 
         // Update progress height with last processed block
         db::stages::set_stage_progress(*txn, stage_key, block_number);
-        if (external_txn == nullptr) {
-            managed_txn.commit();
-        }
+        txn.commit();
 
     } else {
         SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
@@ -170,18 +156,18 @@ static StageResult history_index_stage(db::EnvConfig db_config, mdbx::txn *exter
     return StageResult::kSuccess;
 }
 
-StageResult stage_account_history(db::EnvConfig db_config, mdbx::txn *external_txn) {
-    return history_index_stage(db_config, external_txn, false);
+StageResult stage_account_history(TransactionManager &txn, const std::filesystem::path &etl_path) {
+    return history_index_stage(txn, etl_path, false);
 }
-StageResult stage_storage_history(db::EnvConfig db_config, mdbx::txn *external_txn) {
-    return history_index_stage(db_config, external_txn, true);
+StageResult stage_storage_history(TransactionManager &txn, const std::filesystem::path &etl_path) {
+    return history_index_stage(txn, etl_path, true);
 }
 
-StageResult unwind_account_history(db::EnvConfig, mdbx::txn *, uint64_t) {
+StageResult unwind_account_history(TransactionManager &, const std::filesystem::path &, uint64_t) {
     throw std::runtime_error("Not Implemented.");
 }
 
-StageResult unwind_storage_history(db::EnvConfig, mdbx::txn *, uint64_t) {
+StageResult unwind_storage_history(TransactionManager &, const std::filesystem::path &, uint64_t) {
     throw std::runtime_error("Not Implemented.");
 }
 

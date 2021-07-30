@@ -22,23 +22,9 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_senders(db::EnvConfig db_config, mdbx::txn *external_txn) {
-    fs::path datadir(db_config.path);
-    // Compute etl temporary path
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+StageResult stage_senders(TransactionManager &txn, const std::filesystem::path &etl_path) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
-
-    // Open db and transaction
-    mdbx::txn_managed managed_txn;
-    mdbx::txn *txn;
-    if (external_txn == nullptr) {
-        auto env{db::open_env(db_config)};
-        managed_txn = env.start_write();
-        txn = &managed_txn;
-    } else {
-        txn = external_txn;
-    }
 
     // Create farm instance and do work
     recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultBatchSize, collector);
@@ -52,30 +38,14 @@ StageResult stage_senders(db::EnvConfig db_config, mdbx::txn *external_txn) {
         return res;
     }
 
-    if (external_txn == nullptr) {
-        managed_txn.commit();
-    }
+    txn.commit();
 
     return res;
 }
 
-StageResult unwind_senders(db::EnvConfig db_config, uint64_t unwind_point, mdbx::txn *external_txn) {
-    fs::path datadir(db_config.path);
-    // Compute etl temporary path
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+StageResult unwind_senders(TransactionManager &txn, const std::filesystem::path &etl_path, uint64_t unwind_point) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
-
-    // Open db and transaction
-    mdbx::txn_managed managed_txn;
-    mdbx::txn *txn;
-    if (external_txn == nullptr) {
-        auto env{db::open_env(db_config)};
-        managed_txn = env.start_write();
-        txn = &managed_txn;
-    } else {
-        txn = external_txn;
-    }
 
     // Create farm instance and do work
     recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultBatchSize, collector);
@@ -86,9 +56,7 @@ StageResult unwind_senders(db::EnvConfig db_config, uint64_t unwind_point, mdbx:
         return res;
     }
 
-    if (external_txn == nullptr) {
-        managed_txn.commit();
-    }
+    txn.commit();
 
     return res;
 }

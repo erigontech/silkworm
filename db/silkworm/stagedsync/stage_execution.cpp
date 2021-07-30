@@ -89,21 +89,10 @@ namespace {
     }
 }  // namespace
 
-StageResult stage_execution(db::EnvConfig db_config, mdbx::txn* external_txn, size_t batch_size) {
+StageResult stage_execution(TransactionManager& txn, const std::filesystem::path&, size_t batch_size) {
     StageResult res{StageResult::kSuccess};
 
     try {
-        mdbx::txn_managed managed_txn;
-        mdbx::txn* txn;
-        std::optional<mdbx::env_managed> env;
-        if (external_txn == nullptr) {
-            env = db::open_env(db_config);
-            managed_txn = env->start_write();
-            txn = &managed_txn;
-        } else {
-            txn = external_txn;
-        }
-
         const auto chain_config{db::read_chain_config(*txn)};
         if (!chain_config.has_value()) {
             return StageResult::kUnknownChainId;
@@ -138,21 +127,13 @@ StageResult stage_execution(db::EnvConfig db_config, mdbx::txn* external_txn, si
 
             db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, block_num);
 
-            if (external_txn == nullptr) {
-                managed_txn.commit();
-            }
+            txn.commit();
 
             (void)sw.lap();
             SILKWORM_LOG(LogLevel::Info) << (block_num == max_block ? "All blocks" : "Blocks") << " <= " << block_num
                                          << " committed"
                                          << " in " << sw.format(sw.laps().back().second) << std::endl;
-
-            if (external_txn == nullptr) {
-                managed_txn = env->start_write();
-                txn = &managed_txn;
-            }
         }
-
     } catch (const mdbx::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << "DB Error " << ex.what() << " in stage_execution" << std::endl;
         return StageResult::kDbError;
@@ -243,17 +224,7 @@ static void unwind_table_from(mdbx::cursor& table, Bytes& starting_key) {
     }
 }
 
-StageResult unwind_execution(db::EnvConfig db_config, uint64_t unwind_to, mdbx::txn* external_txn) {
-    mdbx::txn_managed managed_txn;
-    mdbx::txn* txn;
-    if (external_txn == nullptr) {
-        auto env{db::open_env(db_config)};
-        managed_txn = env.start_write();
-        txn = &managed_txn;
-    } else {
-        txn = external_txn;
-    }
-
+StageResult unwind_execution(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
     uint64_t block_number{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
 
     auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
@@ -273,9 +244,7 @@ StageResult unwind_execution(db::EnvConfig db_config, uint64_t unwind_to, mdbx::
         txn->clear_map(log_table.map());
         txn->clear_map(traces_table.map());
         db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 0);
-        if (external_txn == nullptr) {
-            managed_txn.commit();
-        }
+        txn.commit();
         return StageResult::kSuccess;
     }
 
@@ -299,9 +268,7 @@ StageResult unwind_execution(db::EnvConfig db_config, uint64_t unwind_to, mdbx::
     unwind_table_from(traces_table, unwind_to_bytes);
 
     db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, unwind_to);
-    if (external_txn == nullptr) {
-        managed_txn.commit();
-    }
+    txn.commit();
 
     return StageResult::kSuccess;
 }

@@ -18,8 +18,12 @@
 
 namespace silkworm::stagedsync {
 
-StageResult stage_interhashes(db::EnvConfig, mdbx::txn*) { throw std::runtime_error("Not Implemented."); }
+StageResult stage_interhashes(TransactionManager &, const std::filesystem::path &) {
+    throw std::runtime_error("Not Implemented.");
+}
 
-StageResult unwind_interhashes(db::EnvConfig, mdbx::txn*, uint64_t) { throw std::runtime_error("Not Implemented."); }
+StageResult unwind_interhashes(TransactionManager &, const std::filesystem::path &, uint64_t) {
+    throw std::runtime_error("Not Implemented.");
+}
 
 }  // namespace silkworm::stagedsync

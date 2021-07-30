@@ -220,20 +220,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     }
 }
 
-StageResult stage_hashstate(db::EnvConfig db_config, mdbx::txn* external_txn) {
-    fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
-
-    mdbx::txn_managed managed_txn;
-    mdbx::txn* txn;
-    if (external_txn == nullptr) {
-        auto env{db::open_env(db_config)};
-        managed_txn = env.start_write();
-        txn = &managed_txn;
-    } else {
-        txn = external_txn;
-    }
-
+StageResult stage_hashstate(TransactionManager& txn, const std::filesystem::path& etl_path) {
     SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
@@ -251,9 +238,7 @@ StageResult stage_hashstate(db::EnvConfig db_config, mdbx::txn* external_txn) {
     // Update progress height with last processed block
     db::stages::set_stage_progress(*txn, db::stages::kHashStateKey,
                                    db::stages::get_stage_progress(*txn, db::stages::kExecutionKey));
-    if (external_txn == nullptr) {
-        managed_txn.commit();
-    }
+    txn.commit();
 
     SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
     return StageResult::kSuccess;
@@ -335,18 +320,8 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     (void)db::for_each(changeset_table, unwind_func);
 }
 
-StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to, mdbx::txn* external_txn) {
+StageResult unwind_hashstate(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
     try {
-        mdbx::txn_managed managed_txn;
-        mdbx::txn* txn;
-        if (external_txn == nullptr) {
-            auto env{db::open_env(db_config)};
-            managed_txn = env.start_write();
-            txn = &managed_txn;
-        } else {
-            txn = external_txn;
-        }
-
         auto stage_height{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
         if (unwind_to >= stage_height) {
             SILKWORM_LOG(LogLevel::Error)
@@ -370,9 +345,7 @@ StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to, mdbx::
         db::stages::set_stage_progress(*txn, db::stages::kHashStateKey, unwind_to);
 
         SILKWORM_LOG(LogLevel::Info) << "Committing ... " << std::endl;
-        if (external_txn == nullptr) {
-            managed_txn.commit();
-        }
+        txn.commit();
 
         SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
         return StageResult::kSuccess;

@@ -30,19 +30,7 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_blockhashes(db::EnvConfig db_config, mdbx::txn *external_txn) {
-    mdbx::txn_managed managed_txn;
-    mdbx::txn *txn;
-    if (external_txn == nullptr) {
-        auto env{db::open_env(db_config)};
-        managed_txn = env.start_write();
-        txn = &managed_txn;
-    } else {
-        txn = external_txn;
-    }
-
-    fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+StageResult stage_blockhashes(TransactionManager &txn, const std::filesystem::path &etl_path) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
     uint32_t block_number{0};
@@ -111,9 +99,7 @@ StageResult stage_blockhashes(db::EnvConfig db_config, mdbx::txn *external_txn) 
         // Update progress height with last processed block
         db::stages::set_stage_progress(*txn, db::stages::kBlockHashesKey, block_number);
 
-        if (external_txn == nullptr) {
-            managed_txn.commit();
-        }
+        txn.commit();
 
     } else {
         SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;

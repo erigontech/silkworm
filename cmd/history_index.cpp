@@ -50,18 +50,21 @@ int main(int argc, char *argv[]) {
     const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
 
     try {
+        auto env{db::open_env(db_config)};
+
         if (full) {
-            auto env{db::open_env(db_config)};
             auto txn{env.start_write()};
             txn.clear_map(db::open_map(txn, index_config));
             db::stages::set_stage_progress(txn, stage_key, 0);
             txn.commit();
         }
 
+        stagedsync::TransactionManager tm{env};
+        DataDirectory data_dir{DataDirectory::from_chaindata(chaindata)};
         if (storage) {
-            stagedsync::check_stagedsync_error(stagedsync::stage_storage_history(db_config));
+            stagedsync::check_stagedsync_error(stagedsync::stage_storage_history(tm, data_dir.get_etl_path()));
         } else {
-            stagedsync::check_stagedsync_error(stagedsync::stage_account_history(db_config));
+            stagedsync::check_stagedsync_error(stagedsync::stage_account_history(tm, data_dir.get_etl_path()));
         }
 
     } catch (const std::exception &ex) {

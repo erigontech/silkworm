@@ -74,22 +74,10 @@ static void flush_bitmaps(etl::Collector &collector, std::unordered_map<std::str
     map.clear();
 }
 
-StageResult stage_log_index(db::EnvConfig db_config, mdbx::txn *external_txn) {
-    fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+StageResult stage_log_index(TransactionManager &txn, const std::filesystem::path &etl_path) {
     fs::create_directories(etl_path);
     etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
     etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
-
-    mdbx::txn_managed managed_txn;
-    mdbx::txn *txn;
-    if (external_txn == nullptr) {
-        auto env{db::open_env(db_config)};
-        managed_txn = env.start_write();
-        txn = &managed_txn;
-    } else {
-        txn = external_txn;
-    }
 
     // We take data from header table and transform it and put it in blockhashes table
     auto log_table{db::open_cursor(*txn, db::table::kLogs)};
@@ -158,9 +146,7 @@ StageResult stage_log_index(db::EnvConfig db_config, mdbx::txn *external_txn) {
     // Update progress height with last processed block
     db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, block_number);
 
-    if (external_txn == nullptr) {
-        managed_txn.commit();
-    }
+    txn.commit();
 
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 

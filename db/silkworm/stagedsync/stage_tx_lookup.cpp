@@ -38,21 +38,9 @@ static Bytes compact(Bytes& b) {
     return b;
 }
 
-StageResult stage_tx_lookup(db::EnvConfig db_config, mdbx::txn* external_txn) {
-    fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path& etl_path) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
-
-    mdbx::txn_managed managed_txn;
-    mdbx::txn* txn;
-    if (external_txn == nullptr) {
-        auto env{db::open_env(db_config)};
-        managed_txn = env.start_write();
-        txn = &managed_txn;
-    } else {
-        txn = external_txn;
-    }
 
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)};
     uint64_t block_number{0};
@@ -124,9 +112,7 @@ StageResult stage_tx_lookup(db::EnvConfig db_config, mdbx::txn* external_txn) {
         // Update progress height with last processed block
         db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, block_number);
 
-        if (external_txn == nullptr) {
-            managed_txn.commit();
-        }
+        txn.commit();
 
     } else {
         SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
@@ -137,19 +123,7 @@ StageResult stage_tx_lookup(db::EnvConfig db_config, mdbx::txn* external_txn) {
     return StageResult::kSuccess;
 }
 
-StageResult unwind_tx_lookup(db::EnvConfig db_config, uint64_t unwind_to, mdbx::txn* external_txn) {
-    fs::path datadir(db_config.path);
-
-    mdbx::txn_managed managed_txn;
-    mdbx::txn* txn;
-    if (external_txn == nullptr) {
-        auto env{db::open_env(db_config)};
-        managed_txn = env.start_write();
-        txn = &managed_txn;
-    } else {
-        txn = external_txn;
-    }
-
+StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
     if (unwind_to >= db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)) {
         return StageResult::kSuccess;
     }
@@ -194,9 +168,7 @@ StageResult unwind_tx_lookup(db::EnvConfig db_config, uint64_t unwind_to, mdbx::
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
     db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, unwind_to);
 
-    if (external_txn == nullptr) {
-        managed_txn.commit();
-    }
+    txn.commit();
 
     return StageResult::kSuccess;
 }

@@ -66,10 +66,10 @@ class Stage1: public Stage,               // stage 1 is a stage...
     DbTx& db_tx() {return db_;}
     SentryClient& sentry() {return sentry_;}
 
-    void execution_loop() override;
+    void execution_loop() override final;
 
-    StageResult wind(BlockNum new_height);
-    StageResult unwind(BlockNum new_height);
+    StageResult wind(BlockNum new_height) override final;
+    StageResult unwind(BlockNum new_height) override final;
 
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;

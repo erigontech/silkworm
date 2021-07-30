@@ -71,7 +71,7 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, int64_t block_number, co
 // Overload
 std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count);
 
-std::optional<Bytes> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash);
+std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash);
 
 // Reads current or historical (if block_number is specified) account.
 std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address,

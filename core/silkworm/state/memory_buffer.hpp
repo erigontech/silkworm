@@ -29,7 +29,7 @@ class MemoryBuffer : public StateBuffer {
   public:
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
-    Bytes read_code(const evmc::bytes32& code_hash) const noexcept override;
+    ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
 
     evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
                                const evmc::bytes32& location) const noexcept override;

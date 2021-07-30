@@ -39,7 +39,7 @@ class StateBuffer {
 
     virtual std::optional<Account> read_account(const evmc::address& address) const noexcept = 0;
 
-    virtual Bytes read_code(const evmc::bytes32& code_hash) const noexcept = 0;
+    virtual ByteView read_code(const evmc::bytes32& code_hash) const noexcept = 0;
 
     virtual evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
                                        const evmc::bytes32& location) const noexcept = 0;

@@ -14,8 +14,14 @@
    limitations under the License.
 ]]
 
-hunter_config(Boost VERSION 1.72.0-p1)    # <-- Highest available on hunter
-hunter_config(abseil VERSION 20200923.2)  # <-- Required for C++20
+hunter_config(Boost VERSION 1.72.0-p1)
+
+hunter_config(
+    abseil
+    VERSION 20210324.2
+    URL https://github.com/abseil/abseil-cpp/archive/20210324.2.tar.gz
+    SHA1 2d46ae096bfbdab19de1d65079b95e0fae9efe2e
+)
 
 hunter_config(
   Catch

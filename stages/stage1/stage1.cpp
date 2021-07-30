@@ -88,7 +88,7 @@ void Stage1::process_one_message(MessageQueue& messages) {
     for(auto& rpc: rpc_bundle) {
         SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*message) << " with " << rpc->name() << "\n";
 
-        rpc->on_receive_reply([message, rpc, &messages](auto&) { // copy message and rpc to retain their lifetime (shared_ptr) [avoid rpc passing using make_shared_from_this in AsyncCall]
+        rpc->on_receive_reply([message, rpc](auto&) { // copy message and rpc to retain their lifetime (shared_ptr) [avoid rpc passing using make_shared_from_this in AsyncCall]
           SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*message) << ": " << result(rpc) << "\n";
         });
 

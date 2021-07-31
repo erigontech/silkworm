@@ -380,7 +380,7 @@ namespace db {
     TEST_CASE("read_account") {
         TemporaryDirectory tmp_dir;
         DataDirectory data_dir{tmp_dir.path(), /*create=*/true};
-        EnvConfig db_config{data_dir.get_chaindata_path(), /*create*/ true};
+        EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{open_env(db_config)};
         auto txn{env.start_write()};

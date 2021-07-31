@@ -71,8 +71,8 @@ int main(int argc, char* argv[]) {
             stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::Code);
         } else {
             auto data_dir{DataDirectory::from_chaindata(chaindata)};
-            stagedsync::hashstate_promote_clean_state(txn, data_dir.get_etl_path());
-            stagedsync::hashstate_promote_clean_code(txn, data_dir.get_etl_path());
+            stagedsync::hashstate_promote_clean_state(txn, data_dir.get_etl_path().string());
+            stagedsync::hashstate_promote_clean_code(txn, data_dir.get_etl_path().string());
         }
         // Update progress height with last processed block
         db::stages::set_stage_progress(txn, db::stages::kHashStateKey,

@@ -39,7 +39,7 @@ TEST_CASE("Unwind Execution") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};

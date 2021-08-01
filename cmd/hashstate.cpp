@@ -43,7 +43,9 @@ int main(int argc, char* argv[]) {
     app.add_flag("--reset", reset, "Reset HashState");
     CLI11_PARSE(app, argc, argv);
 
-    db::EnvConfig db_config{chaindata};
+    auto data_dir{DataDirectory::from_chaindata(chaindata)};
+    data_dir.create_tree();
+    db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
 
@@ -70,7 +72,6 @@ int main(int argc, char* argv[]) {
             SILKWORM_LOG(LogLevel::Info) << "Hashing Code Keys" << std::endl;
             stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::Code);
         } else {
-            auto data_dir{DataDirectory::from_chaindata(chaindata)};
             stagedsync::hashstate_promote_clean_state(txn, data_dir.get_etl_path().string());
             stagedsync::hashstate_promote_clean_code(txn, data_dir.get_etl_path().string());
         }

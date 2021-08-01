@@ -45,7 +45,9 @@ int main(int argc, char *argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    db::EnvConfig db_config{chaindata};
+    auto data_dir{DataDirectory::from_chaindata(chaindata)};
+    data_dir.create_tree();
+    db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
 
@@ -60,7 +62,6 @@ int main(int argc, char *argv[]) {
         }
 
         stagedsync::TransactionManager tm{env};
-        DataDirectory data_dir{DataDirectory::from_chaindata(chaindata)};
         if (storage) {
             stagedsync::check_stagedsync_error(stagedsync::stage_storage_history(tm, data_dir.get_etl_path()));
         } else {

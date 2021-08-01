@@ -41,10 +41,11 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     try {
-        db::EnvConfig db_config{chaindata};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.create_tree();
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
         auto env{db::open_env(db_config)};
         stagedsync::TransactionManager tm{env};
-        auto data_dir{DataDirectory::from_chaindata(chaindata)};
         auto result_code{stagedsync::stage_blockhashes(tm, data_dir.get_etl_path())};
         check_stagedsync_error(result_code);
     } catch (const std::exception& ex) {

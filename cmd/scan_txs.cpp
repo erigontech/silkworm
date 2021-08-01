@@ -57,7 +57,9 @@ int main(int argc, char* argv[]) {
     ExecutionStatePool state_pool;
 
     try {
-        db::EnvConfig db_config{chaindata};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.create_tree();
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};
         auto chain_config{db::read_chain_config(txn)};

@@ -111,7 +111,7 @@ class Db {
         if (!data) {
             return std::nullopt;
         }
-        auto block_num{boost::endian::load_big_u64(static_cast<uint8_t *>(data.value.iov_base))};
+        auto block_num{boost::endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base))};
         return read_header(block_num, h);
     }
 };
@@ -182,19 +182,21 @@ int main(int argc, char* argv[]) {
         "Extract Headers. Hard-code historical headers, from block zero to the current block with a certain step"};
 
     string name = "last";
-    string db_path{DataDirectory{}.get_chaindata_path().string()};
+    string chaindata{DataDirectory{}.get_chaindata_path().string()};
     uint64_t block_step = 100'000u;
 
     app.add_option("-n,--name,name", name, "Name suffix of the output file", true);
     // also accepted as a positional
-    app.add_option("--chaindata", db_path, "Path to the chain database", true)->check(CLI::ExistingDirectory);
+    app.add_option("--chaindata", chaindata, "Path to the chain database", true)->check(CLI::ExistingDirectory);
     app.add_option("-s,--step", block_step, "Block step", true)->check(CLI::Range(uint64_t{1}, UINT64_MAX));
 
     CLI11_PARSE(app, argc, argv);
 
     // Main loop
     try {
-        Db db{db_path};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.create_tree();
+        Db db{data_dir.get_chaindata_path().string()};
 
         string file_name = "hard_coded_headers_" + name + ".h";
         HeaderListFile output{file_name};

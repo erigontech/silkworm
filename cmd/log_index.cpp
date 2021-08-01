@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.create_tree();
-    db::EnvConfig db_config{chaindata};
+    db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
 
     try {
         auto env{db::open_env(db_config)};

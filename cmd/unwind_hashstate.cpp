@@ -44,9 +44,9 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     try {
-        DataDirectory data_dir{DataDirectory::from_chaindata(chaindata)};
-        db::EnvConfig db_config{chaindata};
-        db_config.readonly = false;
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.create_tree();
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
         auto env{db::open_env(db_config)};
         stagedsync::TransactionManager tm{env};
         stagedsync::check_stagedsync_error(stagedsync::unwind_hashstate(tm, data_dir.get_etl_path(), unwind_to));

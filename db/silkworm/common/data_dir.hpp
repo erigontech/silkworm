@@ -23,7 +23,9 @@ namespace silkworm {
 
 class DataDirectory {
   public:
-    explicit DataDirectory(const std::filesystem::path& base_path = get_default_storage_path(), bool create = false);
+    explicit DataDirectory(const std::filesystem::path& base_path, bool create = false);
+    explicit DataDirectory(bool create = false)
+        : DataDirectory::DataDirectory(DataDirectory::get_default_storage_path(), create){};
 
     // Creates an instance of DataDirectory from chaindata path
     static DataDirectory from_chaindata(std::filesystem::path chaindata_path);

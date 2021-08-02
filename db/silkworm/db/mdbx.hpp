@@ -59,11 +59,11 @@ struct MapConfig {
 ::mdbx::map_handle open_map(::mdbx::txn& tx, const MapConfig& config);
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
 
-static inline std::filesystem::path get_datafile_path(std::filesystem::path& base_path) noexcept {
+static inline std::filesystem::path get_datafile_path(const std::filesystem::path& base_path) noexcept {
     return std::filesystem::path(base_path / std::filesystem::path(kDbDataFileName));
 }
 
-static inline std::filesystem::path get_lockfile_path(std::filesystem::path& base_path) noexcept {
+static inline std::filesystem::path get_lockfile_path(const std::filesystem::path& base_path) noexcept {
     return std::filesystem::path(base_path / std::filesystem::path(kDbLockFileName));
 }
 

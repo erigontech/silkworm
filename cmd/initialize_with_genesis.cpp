@@ -26,6 +26,7 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/chain_genesis.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -48,10 +49,10 @@ int main(int argc, char* argv[]) {
     int chain_id{-1};
     CLI::App app{"Initializes database with genesis json file"};
 
-    std::string out;
+    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     std::string genesis;
 
-    app.add_option("--out", out, "Path to new chaindata folder (must exist)", true)
+    app.add_option("--out", chaindata, "Path to new chaindata folder (must exist)", true)
         ->required()
         ->check(CLI::ExistingDirectory);
 
@@ -66,14 +67,6 @@ int main(int argc, char* argv[]) {
     // Either --chainId or --genesis are mandatory
     if (!genesis_opt->count() && !chain_id_opt->count()) {
         std::cerr << "\nError: Provide either a custom --genesis file or a known --chainid" << std::endl;
-        return -1;
-    }
-
-    // Check destination directory
-    fs::path db_path{out};
-    auto db_file{db::get_datafile_path(db_path)};
-    if (fs::exists(fs::path(db_file))) {
-        std::cerr << "\nError : A data file " << db::kDbDataFileName << " already exists in target folder" << std::endl;
         return -1;
     }
 
@@ -151,10 +144,13 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    auto data_dir{DataDirectory::from_chaindata(chaindata)};
+    data_dir.create_tree();
+
     bool res{false};
     try {
         // Prime directories and DB
-        db::EnvConfig db_config{out, /*create*/ true};
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
         db::table::create_all(txn);
@@ -263,10 +259,11 @@ int main(int argc, char* argv[]) {
 
     if (!res) {
         // Delete created db (if any)
+        auto db_file{db::get_datafile_path(data_dir.get_chaindata_path())};
         if (fs::exists(db_file)) {
             fs::remove(db_file);
         }
-        auto db_lock{db::get_lockfile_path(db_path)};
+        auto db_lock{db::get_lockfile_path(data_dir.get_chaindata_path())};
         if (fs::exists(db_lock)) {
             fs::remove(db_lock);
         }

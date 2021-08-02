@@ -14,15 +14,19 @@
    limitations under the License.
 */
 
-#include <unordered_map>
+#ifndef SILKWORM_DB_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
+#define SILKWORM_DB_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
+
 #include <string>
+#include <unordered_map>
+
 #include <cbor/decoder.h>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/bitmap.hpp>
 
 namespace silkworm::stagedsync {
-    
+
 class listener_log_index : public cbor::listener {
   public:
     listener_log_index(uint64_t block_number, std::unordered_map<std::string, roaring::Roaring> *topics_map,
@@ -90,4 +94,7 @@ class listener_log_index : public cbor::listener {
     uint64_t *allocated_topics_;
     uint64_t *allocated_addrs_;
 };
-}
+
+}  // namespace silkworm::stagedsync
+
+#endif  // SILKWORM_DB_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_

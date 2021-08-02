@@ -18,18 +18,16 @@
 #define SILKWORM_COMMON_DATA_DIR_HPP_
 
 #include <filesystem>
-#include <string>
 
 namespace silkworm {
 
 class DataDirectory {
   public:
-    DataDirectory(std::filesystem::path base_path, bool create = false);
-    DataDirectory(bool create = false)
-        : DataDirectory::DataDirectory(DataDirectory::get_default_storage_path(), create){};
-    DataDirectory(std::string base_path_str, bool create = false)
-        : DataDirectory::DataDirectory(std::filesystem::path(base_path_str), create){};
-    ~DataDirectory() = default;
+    explicit DataDirectory(const std::filesystem::path& base_path, bool create = false);
+    explicit DataDirectory(bool create = false)
+        : DataDirectory::DataDirectory(DataDirectory::get_default_storage_path(), create) {}
+    explicit DataDirectory(const char* base_path, bool create = false)
+        : DataDirectory::DataDirectory(std::filesystem::path(base_path), create) {}
 
     // Creates an instance of DataDirectory from chaindata path
     static DataDirectory from_chaindata(std::filesystem::path chaindata_path);

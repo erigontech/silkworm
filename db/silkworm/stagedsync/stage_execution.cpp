@@ -89,21 +89,18 @@ namespace {
     }
 }  // namespace
 
-StageResult stage_execution(db::EnvConfig db_config, size_t batch_size) {
+StageResult stage_execution(TransactionManager& txn, const std::filesystem::path&, size_t batch_size) {
     StageResult res{StageResult::kSuccess};
 
     try {
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-
-        const auto chain_config{db::read_chain_config(txn)};
+        const auto chain_config{db::read_chain_config(*txn)};
         if (!chain_config.has_value()) {
             return StageResult::kUnknownChainId;
         }
-        const auto storage_mode{db::read_storage_mode(txn)};
+        const auto storage_mode{db::read_storage_mode(*txn)};
 
-        uint64_t max_block{db::stages::get_stage_progress(txn, db::stages::kBlockBodiesKey)};
-        uint64_t block_num{db::stages::get_stage_progress(txn, db::stages::kExecutionKey) + 1};
+        uint64_t max_block{db::stages::get_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+        uint64_t block_num{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey) + 1};
         if (block_num > max_block) {
             SILKWORM_LOG(LogLevel::Error) << "Stage progress is " << (block_num - 1)
                                           << " which is <= than requested block_to " << max_block << std::endl;
@@ -112,7 +109,7 @@ StageResult stage_execution(db::EnvConfig db_config, size_t batch_size) {
 
         // Execution needs senders hence we need to check whether or not sender's stage is
         // at least at max_block as set above
-        uint64_t max_block_senders{db::stages::get_stage_progress(txn, db::stages::kSendersKey)};
+        uint64_t max_block_senders{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
         if (max_block > max_block_senders) {
             SILKWORM_LOG(LogLevel::Error) << "Sender's stage progress is " << (max_block_senders)
                                           << " which is <= than requested block_to " << max_block << std::endl;
@@ -123,20 +120,20 @@ StageResult stage_execution(db::EnvConfig db_config, size_t batch_size) {
         (void)sw.start();
 
         for (; block_num <= max_block; ++block_num) {
-            res = execute_batch_of_blocks(txn, chain_config.value(), max_block, storage_mode, batch_size, block_num);
-            if (res == StageResult::kSuccess) {
-                db::stages::set_stage_progress(txn, db::stages::kExecutionKey, block_num);
-                txn.commit();
-                (void)sw.lap();
-                SILKWORM_LOG(LogLevel::Info)
-                    << (block_num == max_block ? "All blocks" : "Blocks") << " <= " << block_num << " committed"
-                    << " in " << sw.format(sw.laps().back().second) << std::endl;
-                txn = env.start_write();
-            } else {
-                break;
+            res = execute_batch_of_blocks(*txn, chain_config.value(), max_block, storage_mode, batch_size, block_num);
+            if (res != StageResult::kSuccess) {
+                return res;
             }
-        };
 
+            db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, block_num);
+
+            txn.commit();
+
+            (void)sw.lap();
+            SILKWORM_LOG(LogLevel::Info) << (block_num == max_block ? "All blocks" : "Blocks") << " <= " << block_num
+                                         << " committed"
+                                         << " in " << sw.format(sw.laps().back().second) << std::endl;
+        }
     } catch (const mdbx::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << "DB Error " << ex.what() << " in stage_execution" << std::endl;
         return StageResult::kDbError;
@@ -149,7 +146,7 @@ StageResult stage_execution(db::EnvConfig db_config, size_t batch_size) {
 }
 
 // Revert State for given address/storage location
-void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table) {
+static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (value.size() > 0) {
             auto [account, err]{decode_account_from_storage(value)};
@@ -201,8 +198,8 @@ void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx:
 }
 
 // For given changeset cursor/bucket it reverts the changes on states buckets
-void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table,
-                                 uint64_t unwind_to) {
+static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table,
+                                        mdbx::cursor& plain_code_table, uint64_t unwind_to) {
     uint64_t block_number{0};
     auto src_data{source.to_last(/*throw_notfound*/ false)};
     while (src_data) {
@@ -218,7 +215,7 @@ void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state
     }
 }
 
-void unwind_table_from(mdbx::cursor& table, Bytes& starting_key) {
+static void unwind_table_from(mdbx::cursor& table, Bytes& starting_key) {
     if (table.seek(db::to_slice(starting_key))) {
         table.erase();
         while (table.to_next(/*throw_notfound*/ false)) {
@@ -227,28 +224,26 @@ void unwind_table_from(mdbx::cursor& table, Bytes& starting_key) {
     }
 }
 
-StageResult unwind_execution(db::EnvConfig db_config, uint64_t unwind_to) {
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    uint64_t block_number{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};
+StageResult unwind_execution(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
+    uint64_t block_number{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
 
-    auto plain_state_table{db::open_cursor(txn, db::table::kPlainState)};
-    auto plain_code_table{db::open_cursor(txn, db::table::kPlainContractCode)};
-    auto account_changeset_table{db::open_cursor(txn, db::table::kPlainAccountChangeSet)};
-    auto storage_changeset_table{db::open_cursor(txn, db::table::kPlainStorageChangeSet)};
-    auto receipts_table{db::open_cursor(txn, db::table::kBlockReceipts)};
-    auto log_table{db::open_cursor(txn, db::table::kLogs)};
-    auto traces_table{db::open_cursor(txn, db::table::kCallTraceSet)};
+    auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
+    auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
+    auto account_changeset_table{db::open_cursor(*txn, db::table::kPlainAccountChangeSet)};
+    auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};
+    auto receipts_table{db::open_cursor(*txn, db::table::kBlockReceipts)};
+    auto log_table{db::open_cursor(*txn, db::table::kLogs)};
+    auto traces_table{db::open_cursor(*txn, db::table::kCallTraceSet)};
 
     if (unwind_to == 0) {
-        txn.clear_map(plain_state_table.map());
-        txn.clear_map(plain_code_table.map());
-        txn.clear_map(account_changeset_table.map());
-        txn.clear_map(storage_changeset_table.map());
-        txn.clear_map(receipts_table.map());
-        txn.clear_map(log_table.map());
-        txn.clear_map(traces_table.map());
-        db::stages::set_stage_progress(txn, db::stages::kExecutionKey, 0);
+        txn->clear_map(plain_state_table.map());
+        txn->clear_map(plain_code_table.map());
+        txn->clear_map(account_changeset_table.map());
+        txn->clear_map(storage_changeset_table.map());
+        txn->clear_map(receipts_table.map());
+        txn->clear_map(log_table.map());
+        txn->clear_map(traces_table.map());
+        db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 0);
         txn.commit();
         return StageResult::kSuccess;
     }
@@ -272,7 +267,7 @@ StageResult unwind_execution(db::EnvConfig db_config, uint64_t unwind_to) {
     unwind_table_from(log_table, unwind_to_bytes);
     unwind_table_from(traces_table, unwind_to_bytes);
 
-    db::stages::set_stage_progress(txn, db::stages::kExecutionKey, unwind_to);
+    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, unwind_to);
     txn.commit();
 
     return StageResult::kSuccess;

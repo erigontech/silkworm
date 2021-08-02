@@ -39,7 +39,9 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     try {
-        db::EnvConfig db_config{chaindata};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.create_tree();
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};
 
@@ -65,8 +67,10 @@ int main(int argc, char* argv[]) {
                     << db::table::kHeaderNumbers.name << " table " << std::endl;
 
             } else if (block_hashes_data.value != canonica_hashes_data.key) {
-                uint64_t hash_height = boost::endian::load_big_u64(static_cast<uint8_t*>(canonica_hashes_data.key.iov_base));
-                uint64_t block_height = boost::endian::load_big_u64(static_cast<uint8_t*>(block_hashes_data.value.iov_base));
+                uint64_t hash_height =
+                    boost::endian::load_big_u64(static_cast<uint8_t*>(canonica_hashes_data.key.iov_base));
+                uint64_t block_height =
+                    boost::endian::load_big_u64(static_cast<uint8_t*>(block_hashes_data.value.iov_base));
                 SILKWORM_LOG(LogLevel::Error) << "Hash " << to_hex(hash_data_view) << " should match block "
                                               << hash_height << " but got " << block_height << std::endl;
             }

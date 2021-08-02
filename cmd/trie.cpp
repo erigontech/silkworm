@@ -46,12 +46,12 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-
     SILKWORM_LOG(LogLevel::Info) << "Regenerating account & storage tries. DB: " << chaindata << std::endl;
 
     try {
-
-        db::EnvConfig db_config{chaindata};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.create_tree();
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 

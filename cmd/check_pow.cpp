@@ -79,6 +79,10 @@ int main(int argc, char* argv[]) {
     // Invoke proper action
     int rc{0};
     try {
+        auto data_dir{DataDirectory::from_chaindata(options.datadir)};
+        data_dir.create_tree();
+        options.datadir = data_dir.get_chaindata_path().string();
+
         // Set database parameters
         db::EnvConfig db_config{options.datadir};
         auto env{db::open_env(db_config)};

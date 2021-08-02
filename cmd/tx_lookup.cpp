@@ -43,19 +43,22 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     try {
-        db::EnvConfig db_config{chaindata};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.create_tree();
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
+        auto env{db::open_env(db_config)};
+
         if (full) {
-            auto env{db::open_env(db_config)};
             auto txn{env.start_write()};
 
             auto tx_map{db::open_map(txn, db::table::kTxLookup)};
             txn.clear_map(tx_map);
             db::stages::set_stage_progress(txn, db::stages::kTxLookupKey, 0);
             txn.commit();
-            env.close();
         }
 
-        stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(db_config));
+        stagedsync::TransactionManager tm{env};
+        stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(tm, data_dir.get_etl_path()));
 
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

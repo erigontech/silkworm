@@ -20,13 +20,13 @@
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
 
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
-#include <silkworm/common/data_dir.hpp>
 
 using namespace silkworm;
 
@@ -41,8 +41,12 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     try {
-        db::EnvConfig db_config{chaindata};
-        auto result_code{stagedsync::stage_blockhashes(db_config)};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.create_tree();
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
+        auto env{db::open_env(db_config)};
+        stagedsync::TransactionManager tm{env};
+        auto result_code{stagedsync::stage_blockhashes(tm, data_dir.get_etl_path())};
         check_stagedsync_error(result_code);
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

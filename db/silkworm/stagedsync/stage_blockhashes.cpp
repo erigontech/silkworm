@@ -30,20 +30,15 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_blockhashes(db::EnvConfig db_config) {
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_read()};
-
-    fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+StageResult stage_blockhashes(TransactionManager &txn, const std::filesystem::path &etl_path) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
     uint32_t block_number{0};
 
     // We take data from header table and transform it and put it in blockhashes table
-    auto canonical_hashes_table{db::open_cursor(txn, db::table::kCanonicalHashes)};
+    auto canonical_hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
 
-    auto last_processed_block_number{db::stages::get_stage_progress(txn, db::stages::kBlockHashesKey)};
+    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kBlockHashesKey)};
     auto expected_block_number{last_processed_block_number + 1};
     uint32_t blocks_processed_count{0};
 
@@ -53,7 +48,7 @@ StageResult stage_blockhashes(db::EnvConfig db_config) {
     auto header_key{db::block_key(expected_block_number)};
     auto header_data{canonical_hashes_table.find(db::to_slice(header_key), /*throw_notfound*/ false)};
     while (header_data) {
-        auto reached_block_number{boost::endian::load_big_u64(static_cast<uint8_t*>(header_data.key.iov_base))};
+        auto reached_block_number{boost::endian::load_big_u64(static_cast<uint8_t *>(header_data.key.iov_base))};
         if (reached_block_number != expected_block_number) {
             // Something wrong with db
             // Blocks are out of sequence for any reason
@@ -68,8 +63,8 @@ StageResult stage_blockhashes(db::EnvConfig db_config) {
             return StageResult::kBadBlockHash;
         }
 
-        etl::Entry etl_entry{Bytes(static_cast<uint8_t*>(header_data.value.iov_base), header_data.value.iov_len),
-                             Bytes(static_cast<uint8_t*>(header_data.key.iov_base), header_data.key.iov_len)};
+        etl::Entry etl_entry{Bytes(static_cast<uint8_t *>(header_data.value.iov_base), header_data.value.iov_len),
+                             Bytes(static_cast<uint8_t *>(header_data.key.iov_base), header_data.key.iov_len)};
         collector.collect(etl_entry);
 
         // Save last processed block_number and expect next in sequence
@@ -94,15 +89,16 @@ StageResult stage_blockhashes(db::EnvConfig db_config) {
          * cannot guarantee keys are sorted amongst different calls
          * of this stage
          */
-        auto target_table{db::open_cursor(txn, db::table::kHeaderNumbers)};
-        auto target_table_rcount{txn.get_map_stat(target_table.map()).ms_entries};
+        auto target_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
+        auto target_table_rcount{txn->get_map_stat(target_table.map()).ms_entries};
         MDBX_put_flags_t db_flags{target_table_rcount ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
 
         // Eventually load collected items with no transform (may throw)
         collector.load(target_table, nullptr, db_flags, /* log_every_percent = */ 10);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(txn, db::stages::kBlockHashesKey, block_number);
+        db::stages::set_stage_progress(*txn, db::stages::kBlockHashesKey, block_number);
+
         txn.commit();
 
     } else {

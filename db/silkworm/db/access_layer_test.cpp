@@ -27,6 +27,7 @@
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
+#include <silkworm/stagedsync/stagedsync.hpp>
 
 #include "bitmap.hpp"
 #include "stages.hpp"
@@ -378,7 +379,8 @@ namespace db {
 
     TEST_CASE("read_account") {
         TemporaryDirectory tmp_dir;
-        EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        DataDirectory data_dir{tmp_dir.path(), /*create=*/true};
+        EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{open_env(db_config)};
         auto txn{env.start_write()};
@@ -410,15 +412,8 @@ namespace db {
 
         buffer.write_to_db();
 
-        // TODO (Andrew) use stage_history_index instead
-        roaring::Roaring64Map bm;
-        // miner_a was changed at blocks 1 & 3
-        bm.add(1u);
-        bm.add(3u);
-        Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-        bm.write(byte_ptr_cast(bitmap_bytes.data()));
-        auto history_table{db::open_cursor(txn, table::kAccountHistory)};
-        history_table.upsert(to_slice(account_history_key(miner_a, /*block_number=*/3)), to_slice(bitmap_bytes));
+        stagedsync::TransactionManager tm{txn};
+        REQUIRE(stagedsync::stage_account_history(tm, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());

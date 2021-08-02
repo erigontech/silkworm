@@ -51,9 +51,13 @@ int main(int argc, char* argv[]) {
 
     SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
 
-    db::EnvConfig db_config{chaindata};
+    auto data_dir{DataDirectory::from_chaindata(chaindata)};
+    data_dir.create_tree();
+    db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
     db_config.create = false;
-    auto res{stagedsync::stage_execution(db_config, batch_size.value())};
+    auto env{db::open_env(db_config)};
+    stagedsync::TransactionManager tm{env};
+    auto res{stagedsync::stage_execution(tm, data_dir.get_etl_path(), batch_size.value())};
     if (res != stagedsync::StageResult::kSuccess) {
         SILKWORM_LOG(LogLevel::Info) << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res)
                                      << std::endl;

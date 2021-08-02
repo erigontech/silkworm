@@ -37,29 +37,23 @@ constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
 
 namespace fs = std::filesystem;
 
-StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
-    fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+static StageResult history_index_stage(TransactionManager &txn, const std::filesystem::path &etl_path, bool storage) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
-
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
 
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig changeset_config = storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
 
-    auto changeset_table{db::open_cursor(txn, changeset_config)};
+    auto changeset_table{db::open_cursor(*txn, changeset_config)};
     std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
 
-    auto last_processed_block_number{db::stages::get_stage_progress(txn, stage_key)};
+    auto last_processed_block_number{db::stages::get_stage_progress(*txn, stage_key)};
 
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Extraction" << std::endl;
-    Bytes start(8, '\0');
-    boost::endian::store_big_u64(&start[0], last_processed_block_number);
+    Bytes start{db::block_key(last_processed_block_number + 1)};
 
     size_t allocated_space{0};
     uint64_t block_number{0};
@@ -81,7 +75,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
             if (bitmaps.find(composite_key) == bitmaps.end()) {
                 bitmaps.emplace(composite_key, roaring::Roaring64Map());
             }
-            block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
+            block_number = boost::endian::load_big_u64(static_cast<uint8_t *>(data.key.iov_base));
             bitmaps.at(composite_key).add(block_number);
             allocated_space += 8;
             if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
@@ -118,7 +112,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
                                                               : MDBX_put_flags_t::MDBX_APPEND};
 
         // Eventually load collected items WITH transform (may throw)
-        auto target{db::open_cursor(txn, index_config)};
+        auto target{db::open_cursor(*txn, index_config)};
         collector.load(
             target,
             [](etl::Entry entry, mdbx::cursor &history_index_table, MDBX_put_flags_t db_flags) {
@@ -150,7 +144,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
             db_flags, /* log_every_percent = */ 20);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(txn, stage_key, block_number);
+        db::stages::set_stage_progress(*txn, stage_key, block_number);
         txn.commit();
 
     } else {
@@ -162,10 +156,19 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
     return StageResult::kSuccess;
 }
 
-StageResult stage_account_history(db::EnvConfig db_config) { return history_index_stage(db_config, false); }
-StageResult stage_storage_history(db::EnvConfig db_config) { return history_index_stage(db_config, true); }
+StageResult stage_account_history(TransactionManager &txn, const std::filesystem::path &etl_path) {
+    return history_index_stage(txn, etl_path, false);
+}
+StageResult stage_storage_history(TransactionManager &txn, const std::filesystem::path &etl_path) {
+    return history_index_stage(txn, etl_path, true);
+}
 
-StageResult unwind_account_history(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+StageResult unwind_account_history(TransactionManager &, const std::filesystem::path &, uint64_t) {
+    throw std::runtime_error("Not Implemented.");
+}
 
-StageResult unwind_storage_history(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+StageResult unwind_storage_history(TransactionManager &, const std::filesystem::path &, uint64_t) {
+    throw std::runtime_error("Not Implemented.");
+}
+
 }  // namespace silkworm::stagedsync

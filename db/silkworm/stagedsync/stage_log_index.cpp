@@ -38,7 +38,7 @@ namespace fs = std::filesystem;
 
 constexpr size_t kBitmapBufferSizeLimit = 512 * kMebi;
 
-void loader_function(etl::Entry entry, mdbx::cursor &target_table, MDBX_put_flags_t db_flags) {
+static void loader_function(etl::Entry entry, mdbx::cursor &target_table, MDBX_put_flags_t db_flags) {
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
     Bytes last_chunk_index(entry.key.size() + 4, '\0');
     std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
@@ -64,7 +64,7 @@ void loader_function(etl::Entry entry, mdbx::cursor &target_table, MDBX_put_flag
     }
 }
 
-void flush_bitmaps(etl::Collector &collector, std::unordered_map<std::string, roaring::Roaring> &map) {
+static void flush_bitmaps(etl::Collector &collector, std::unordered_map<std::string, roaring::Roaring> &map) {
     for (const auto &[key, bm] : map) {
         Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
         bm.write(byte_ptr_cast(bitmap_bytes.data()));
@@ -74,19 +74,14 @@ void flush_bitmaps(etl::Collector &collector, std::unordered_map<std::string, ro
     map.clear();
 }
 
-StageResult stage_log_index(db::EnvConfig db_config) {
-    fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+StageResult stage_log_index(TransactionManager &txn, const std::filesystem::path &etl_path) {
     fs::create_directories(etl_path);
     etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
     etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
 
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-
     // We take data from header table and transform it and put it in blockhashes table
-    auto log_table{db::open_cursor(txn, db::table::kLogs)};
-    auto last_processed_block_number{db::stages::get_stage_progress(txn, db::stages::kLogIndexKey)};
+    auto log_table{db::open_cursor(*txn, db::table::kLogs)};
+    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)};
 
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started Log Index Extraction" << std::endl;
@@ -104,7 +99,7 @@ StageResult stage_log_index(db::EnvConfig db_config) {
     if (log_table.seek(db::to_slice(start))) {
         auto log_data{log_table.current()};
         while (log_data) {
-            block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(log_data.key.iov_base));
+            block_number = boost::endian::load_big_u64(static_cast<uint8_t *>(log_data.key.iov_base));
             current_listener.set_block_number(block_number);
             cbor::input input(log_data.value.iov_base, log_data.value.iov_len);
             cbor::decoder decoder(input, current_listener);
@@ -138,24 +133,28 @@ StageResult stage_log_index(db::EnvConfig db_config) {
                                                           : MDBX_put_flags_t::MDBX_APPEND};
 
     // Eventually load collected items WITH transform (may throw)
-    auto target{db::open_cursor(txn, db::table::kLogTopicIndex)};
+    auto target{db::open_cursor(*txn, db::table::kLogTopicIndex)};
 
     topic_collector.load(target, loader_function, db_flags,
                          /* log_every_percent = */ 10);
     target.close();
-    target = db::open_cursor(txn, db::table::kLogAddressIndex);
+    target = db::open_cursor(*txn, db::table::kLogAddressIndex);
     SILKWORM_LOG(LogLevel::Info) << "Started Address Loading" << std::endl;
     addresses_collector.load(target, loader_function, db_flags,
                              /* log_every_percent = */ 10);
 
     // Update progress height with last processed block
-    db::stages::set_stage_progress(txn, db::stages::kLogIndexKey, block_number);
+    db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, block_number);
+
     txn.commit();
+
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
     return StageResult::kSuccess;
 }
 
-StageResult unwind_log_index(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+StageResult unwind_log_index(TransactionManager &, const std::filesystem::path &, uint64_t) {
+    throw std::runtime_error("Not Implemented.");
+}
 
 }  // namespace silkworm::stagedsync

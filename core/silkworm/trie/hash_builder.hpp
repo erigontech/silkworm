@@ -25,7 +25,7 @@
 
 namespace silkworm::trie {
 
-// See db/silkworm/trie/db_trie.hpp
+// See db/silkworm/trie/intermediate_hashes.hpp
 //
 // Presumed invariants:
 // 1) tree_mask ⊆ state_mask

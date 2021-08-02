@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "db_trie.hpp"
+#include "intermediate_hashes.hpp"
 
 #include <bitset>
 
@@ -102,7 +102,7 @@ TEST_CASE("Account and storage trie") {
     db::table::create_all(txn);
 
     // ----------------------------------------------------------------
-    // Set up test accounts. See the big comment in db_trie.hpp
+    // Set up test accounts. See the big comment in intermediate_hashes.hpp
     // ----------------------------------------------------------------
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
@@ -149,7 +149,7 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    regenerate_db_tries(txn, tmp_dir2.path(), &expected_root);
+    regenerate_intermediate_hashes(txn, tmp_dir2.path(), &expected_root);
 
     // ----------------------------------------------------------------
     // Check account trie
@@ -238,7 +238,7 @@ TEST_CASE("Account trie around extension node") {
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    CHECK(regenerate_db_tries(txn, tmp_dir2.path()) == expected_root);
+    CHECK(regenerate_intermediate_hashes(txn, tmp_dir2.path()) == expected_root);
 
     auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
     auto key{*from_hex("03")};

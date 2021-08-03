@@ -252,7 +252,7 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     } else if (code_hash != std::nullopt && advanced_analysis_cache != nullptr) {
         res = execute_with_default_interpreter(rev, msg, code, code_hash);
     } else {
-        // for one-off execution baseline interpeter is generally faster
+        // for one-off execution baseline interpreter is generally faster
         res = execute_with_baseline_interpreter(rev, msg, code);
     }
 

@@ -120,31 +120,37 @@ namespace silkworm::db {
     return tx.open_cursor(open_map(tx, config));
 }
 
-size_t for_each(::mdbx::cursor& cursor, WalkFunc func) {
+size_t for_each(::mdbx::cursor& cursor, WalkFunc walker) {
     size_t ret{0};
-    if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
-        while (!cursor.eof()) {
-            if (!func(data)) {
-                break;
-            };
-            ret++;
-            cursor.to_next(/*throw_notfound=*/false);
+    while (!cursor.eof()) {
+        auto data{cursor.current(/*throw_notfound=*/false)};
+        if (!data) {
+            break;
         }
+        const bool go_on{walker(data)};
+        if (!go_on) {
+            break;
+        }
+        ++ret;
+        cursor.to_next(/*throw_notfound=*/false);
     }
     return ret;
 }
 
-size_t for_count(::mdbx::cursor& cursor, WalkFunc func, size_t iterations) {
+size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t max_count) {
     size_t ret{0};
-    if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
-        while (iterations && !cursor.eof()) {
-            if (!func(data)) {
-                break;
-            };
-            ret++;
-            iterations--;
-            cursor.to_next(/*throw_notfound=*/false);
+    while (max_count && !cursor.eof()) {
+        auto data{cursor.current(/*throw_notfound=*/false)};
+        if (!data) {
+            break;
         }
+        const bool go_on{walker(data)};
+        if (!go_on) {
+            break;
+        }
+        ++ret;
+        --max_count;
+        cursor.to_next(/*throw_notfound=*/false);
     }
     return ret;
 }

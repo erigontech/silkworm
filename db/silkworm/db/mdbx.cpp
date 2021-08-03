@@ -120,31 +120,48 @@ namespace silkworm::db {
     return tx.open_cursor(open_map(tx, config));
 }
 
-size_t for_each(::mdbx::cursor& cursor, WalkFunc func) {
+size_t for_each(::mdbx::cursor& cursor, WalkFunc walker) {
     size_t ret{0};
-    if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
-        while (!cursor.eof()) {
-            if (!func(data)) {
-                break;
-            };
-            ret++;
-            cursor.to_next(/*throw_notfound=*/false);
+
+    if (cursor.eof()) {
+        // eof determines if cursor is positioned
+        // at end of bucket data as well as it's
+        // not positioned at all
+        return ret;
+    }
+
+    auto data{cursor.current()};
+    while (data.done) {
+        const bool go_on{walker(data)};
+        if (!go_on) {
+            break;
         }
+        ++ret;
+        data = cursor.to_next(/*throw_notfound=*/false);
     }
     return ret;
 }
 
-size_t for_count(::mdbx::cursor& cursor, WalkFunc func, size_t iterations) {
+size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count) {
     size_t ret{0};
-    if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
-        while (iterations && !cursor.eof()) {
-            if (!func(data)) {
-                break;
-            };
-            ret++;
-            iterations--;
-            cursor.to_next(/*throw_notfound=*/false);
+
+    if (cursor.eof()) {
+        // eof determines if cursor is positioned
+        // at end of bucket data as well as it's
+        // not positioned at all
+        return ret;
+    }
+
+    auto data{cursor.current()};
+    while (count && data.done) {
+
+        const bool go_on{walker(data)};
+        if (!go_on) {
+            break;
         }
+        ++ret;
+        --count;
+        data = cursor.to_next(/*throw_notfound=*/false);
     }
     return ret;
 }

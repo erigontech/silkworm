@@ -22,11 +22,9 @@
 
 namespace silkworm {
 
-std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& block, StateBuffer& buffer,
-                                                                const ChainConfig& config,
-                                                                AnalysisCache* analysis_cache,
-                                                                ExecutionStatePool* state_pool,
-                                                                evmc_vm* exo_evm) noexcept {
+ValidationResult execute_block(const Block& block, StateBuffer& buffer, const ChainConfig& config,
+                               std::vector<Receipt>& receipts, AnalysisCache* analysis_cache,
+                               ExecutionStatePool* state_pool, evmc_vm* exo_evm) noexcept {
     const BlockHeader& header{block.header};
     const uint64_t block_num{header.number};
 
@@ -36,11 +34,7 @@ std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& blo
     processor.evm().state_pool = state_pool;
     processor.evm().exo_evm = exo_evm;
 
-    std::pair<std::vector<Receipt>, ValidationResult> res{processor.execute_block()};
-
-    const auto& receipts{res.first};
-    auto& err{res.second};
-    if (err != ValidationResult::kOk) {
+    if (const ValidationResult res{processor.execute_block(receipts)}; res != ValidationResult::kOk) {
         return res;
     }
 
@@ -50,8 +44,7 @@ std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& blo
     }
 
     if (gas_used != header.gas_used) {
-        err = ValidationResult::kWrongBlockGas;
-        return res;
+        return ValidationResult::kWrongBlockGas;
     }
 
     const evmc_revision rev{config.revision(block_num)};
@@ -59,8 +52,7 @@ std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& blo
         static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
         evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
         if (receipt_root != header.receipts_root) {
-            err = ValidationResult::kWrongReceiptsRoot;
-            return res;
+            return ValidationResult::kWrongReceiptsRoot;
         }
     }
 
@@ -69,13 +61,12 @@ std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& blo
         join(bloom, receipt.bloom);
     }
     if (bloom != header.logs_bloom) {
-        err = ValidationResult::kWrongLogsBloom;
-        return res;
+        return ValidationResult::kWrongLogsBloom;
     }
 
     processor.evm().state().write_to_db(block_num);
 
-    return res;
+    return ValidationResult::kOk;
 }
 
 }  // namespace silkworm

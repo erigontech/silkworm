@@ -137,9 +137,9 @@ size_t for_each(::mdbx::cursor& cursor, WalkFunc walker) {
     return ret;
 }
 
-size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t max_count) {
+size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count) {
     size_t ret{0};
-    while (max_count && !cursor.eof()) {
+    while (count && !cursor.eof()) {
         auto data{cursor.current(/*throw_notfound=*/false)};
         if (!data) {
             break;
@@ -149,7 +149,7 @@ size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t max_count) {
             break;
         }
         ++ret;
-        --max_count;
+        --count;
         cursor.to_next(/*throw_notfound=*/false);
     }
     return ret;

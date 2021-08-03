@@ -49,7 +49,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig changeset_config = storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
-    const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
+    const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
 
     auto changeset_table{db::open_cursor(txn, changeset_config)};
     std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
@@ -150,6 +150,7 @@ StageResult history_index_stage(db::EnvConfig db_config, bool storage) {
             db_flags, /* log_every_percent = */ 20);
 
         // Update progress height with last processed block
+        std::cout << block_number << std::endl;
         db::stages::set_stage_progress(txn, stage_key, block_number);
         txn.commit();
 
@@ -168,7 +169,8 @@ StageResult history_index_unwind(db::EnvConfig db_config, uint64_t unwind_to, bo
 
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
-    const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
+    const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
+    std::cout << db::stages::get_stage_progress(txn, stage_key);
     if (unwind_to >= db::stages::get_stage_progress(txn, stage_key)) {
         return StageResult::kSuccess;
     }
@@ -179,7 +181,8 @@ StageResult history_index_unwind(db::EnvConfig db_config, uint64_t unwind_to, bo
     if (index_table.to_first()) {
         auto data{index_table.current()};
         while (data) {
-            // get bimap data of current element
+            // Get bitmap data of current element
+            auto key{db::from_slice(data.value)};
             auto bitmap_data{db::from_slice(data.value)};
             auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
             // Get maximum from key to prevent useless readings
@@ -203,8 +206,8 @@ StageResult history_index_unwind(db::EnvConfig db_config, uint64_t unwind_to, bo
         }
     }
 
-    txn.commit();
     db::stages::set_stage_progress(txn, stage_key, unwind_to);
+    txn.commit();
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
     return StageResult::kSuccess;

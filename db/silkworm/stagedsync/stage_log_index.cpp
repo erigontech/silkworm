@@ -169,7 +169,7 @@ StageResult unwind_log_index(db::EnvConfig db_config, uint64_t unwind_to, bool t
     if (index_table.to_first()) {
         auto data{index_table.current()};
         while (data) {
-            // get bimap data of current element
+            // Get bitmap data of current element
             auto key{db::from_slice(data.value)};
             auto bitmap_data{db::from_slice(data.value)};
             // Get maximum from key to prevent useless readings

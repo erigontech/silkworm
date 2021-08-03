@@ -122,35 +122,46 @@ namespace silkworm::db {
 
 size_t for_each(::mdbx::cursor& cursor, WalkFunc walker) {
     size_t ret{0};
-    while (!cursor.eof()) {
-        auto data{cursor.current(/*throw_notfound=*/false)};
-        if (!data) {
-            break;
-        }
+
+    if (cursor.eof()) {
+        // eof determines if cursor is positioned
+        // at end of bucket data as well as it's
+        // not positioned at all
+        return ret;
+    }
+
+    auto data{cursor.current()};
+    while (data.done) {
         const bool go_on{walker(data)};
         if (!go_on) {
             break;
         }
         ++ret;
-        cursor.to_next(/*throw_notfound=*/false);
+        data = cursor.to_next(/*throw_notfound=*/false);
     }
     return ret;
 }
 
 size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count) {
     size_t ret{0};
-    while (count && !cursor.eof()) {
-        auto data{cursor.current(/*throw_notfound=*/false)};
-        if (!data) {
-            break;
-        }
+
+    if (cursor.eof()) {
+        // eof determines if cursor is positioned
+        // at end of bucket data as well as it's
+        // not positioned at all
+        return ret;
+    }
+
+    auto data{cursor.current()};
+    while (count && data.done) {
+
         const bool go_on{walker(data)};
         if (!go_on) {
             break;
         }
         ++ret;
         --count;
-        cursor.to_next(/*throw_notfound=*/false);
+        data = cursor.to_next(/*throw_notfound=*/false);
     }
     return ret;
 }

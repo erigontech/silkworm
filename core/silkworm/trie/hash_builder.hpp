@@ -36,6 +36,7 @@ class Node {
     Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vector<evmc::bytes32> hashes,
          std::optional<evmc::bytes32> root_hash = std::nullopt);
 
+    // copyable
     Node(const Node& other) = default;
     Node& operator=(const Node& other) = default;
 

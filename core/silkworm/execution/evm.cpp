@@ -249,9 +249,10 @@ evmc::result EVM::execute(const evmc_message& msg, ByteView code, std::optional<
     if (exo_evm) {
         EvmHost host{*this};
         res = exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
-    } else if (analysis_cache) {
+    } else if (code_hash != std::nullopt && advanced_analysis_cache != nullptr) {
         res = execute_with_default_interpreter(rev, msg, code, code_hash);
     } else {
+        // for one-off execution baseline interpeter is generally faster
         res = execute_with_baseline_interpreter(rev, msg, code);
     }
 
@@ -287,17 +288,12 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
 
 evmc_result EVM::execute_with_default_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
                                                   std::optional<evmc::bytes32> code_hash) noexcept {
-    std::shared_ptr<evmone::AdvancedCodeAnalysis> analysis;
-    if (code_hash && analysis_cache) {
-        // cache contract code
-        analysis = analysis_cache->get(*code_hash, rev);
-        if (!analysis) {
-            analysis = std::make_shared<evmone::AdvancedCodeAnalysis>(evmone::analyze(rev, code.data(), code.size()));
-            analysis_cache->put(*code_hash, analysis, rev);
-        }
-    } else {
-        // don't cache deployment code
+    assert(code_hash != std::nullopt && advanced_analysis_cache != nullptr);
+
+    std::shared_ptr<evmone::AdvancedCodeAnalysis> analysis{advanced_analysis_cache->get(*code_hash, rev)};
+    if (!analysis) {
         analysis = std::make_shared<evmone::AdvancedCodeAnalysis>(evmone::analyze(rev, code.data(), code.size()));
+        advanced_analysis_cache->put(*code_hash, analysis, rev);
     }
 
     std::unique_ptr<evmone::AdvancedExecutionState> state;

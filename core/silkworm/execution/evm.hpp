@@ -59,7 +59,8 @@ class EVM {
 
     evmc_revision revision() const noexcept;
 
-    AnalysisCache* analysis_cache{nullptr};  // use for better performance
+    // Point to a cache instance in order to enable execution with evmone advanced rather than baseline interpreter
+    AnalysisCache* advanced_analysis_cache{nullptr};
 
     ExecutionStatePool* state_pool{nullptr};  // use for better performance
 

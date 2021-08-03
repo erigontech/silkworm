@@ -17,29 +17,28 @@
 #include "mdbx.hpp"
 
 #include <map>
-#include <string_view>
 
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/temp_dir.hpp>
 
 static const std::map<std::string, std::string> kGeneticCode{
-    {"AAA", "Lysine"},        {"AAC", "Asparagine"},    {"AAG", "Lysine"},       {"AAU", "Asparagine"},
-    {"ACA", "Threonine"},     {"ACC", "Threonine"},     {"ACG", "Threonine"},    {"ACU", "Threonine"},
-    {"AGA", "Arginine"},      {"AGC", "Serine"},        {"AGG", "Arginine"},     {"AGU", "Serine"},
-    {"AUA", "Isoleucine"},    {"AUC", "Isoleucine"},    {"AUG", "Methionine"},   {"AUU", "Isoleucine"},
-    {"CAA", "Glutamine"},     {"CAC", "Histidine"},     {"CAG", "Glutamine"},    {"CAU", "Histidine"},
-    {"CCA", "Proline"},       {"CCC", "Proline"},       {"CCG", "Proline"},      {"CCU", "Proline"},
-    {"CGA", "Arginine"},      {"CGC", "Arginine"},      {"CGG", "Arginine"},     {"CGU", "Arginine"},
-    {"CUA", "Leucine"},       {"CUC", "Leucine"},       {"CUG", "Leucine"},      {"CUU", "Leucine"},
-    {"GAA", "Glutamic acid"}, {"GAC", "Aspartic acid"}, {"GAG", "Glutamic aci"}, {"GAU", "Aspartic acid"},
-    {"GCA", "Alanine"},       {"GCC", "Alanine"},       {"GCG", "Alanine"},      {"GCU", "Alanine"},
-    {"GGA", "Glycine"},       {"GGC", "Glycine"},       {"GGG", "Glycine"},      {"GGU", "Glycine"},
-    {"GUA", "Valine"},        {"GUC", "Valine"},        {"GUG", "Valine"},       {"GUU", "Valine"},
-    {"UAA", "Stop"},          {"UAC", "Tyrosine"},      {"UAG", "Stop"},         {"UAU", "Tyrosine"},
-    {"UCA", "Serine"},        {"UCC", "Serine"},        {"UCG", "Serine"},       {"UCU", "Serine"},
-    {"UGA", "Stop"},          {"UGC", "Cysteine"},      {"UGG", "Tryptophan"},   {"UGU", "Cysteine"},
-    {"UUA", "Leucine"},       {"UUC", "Phenylalanine"}, {"UUG", "Leucine"},      {"UUU", "Phenylalanine"},
+    {"AAA", "Lysine"},        {"AAC", "Asparagine"},    {"AAG", "Lysine"},        {"AAU", "Asparagine"},
+    {"ACA", "Threonine"},     {"ACC", "Threonine"},     {"ACG", "Threonine"},     {"ACU", "Threonine"},
+    {"AGA", "Arginine"},      {"AGC", "Serine"},        {"AGG", "Arginine"},      {"AGU", "Serine"},
+    {"AUA", "Isoleucine"},    {"AUC", "Isoleucine"},    {"AUG", "Methionine"},    {"AUU", "Isoleucine"},
+    {"CAA", "Glutamine"},     {"CAC", "Histidine"},     {"CAG", "Glutamine"},     {"CAU", "Histidine"},
+    {"CCA", "Proline"},       {"CCC", "Proline"},       {"CCG", "Proline"},       {"CCU", "Proline"},
+    {"CGA", "Arginine"},      {"CGC", "Arginine"},      {"CGG", "Arginine"},      {"CGU", "Arginine"},
+    {"CUA", "Leucine"},       {"CUC", "Leucine"},       {"CUG", "Leucine"},       {"CUU", "Leucine"},
+    {"GAA", "Glutamic acid"}, {"GAC", "Aspartic acid"}, {"GAG", "Glutamic acid"}, {"GAU", "Aspartic acid"},
+    {"GCA", "Alanine"},       {"GCC", "Alanine"},       {"GCG", "Alanine"},       {"GCU", "Alanine"},
+    {"GGA", "Glycine"},       {"GGC", "Glycine"},       {"GGG", "Glycine"},       {"GGU", "Glycine"},
+    {"GUA", "Valine"},        {"GUC", "Valine"},        {"GUG", "Valine"},        {"GUU", "Valine"},
+    {"UAA", "Stop"},          {"UAC", "Tyrosine"},      {"UAG", "Stop"},          {"UAU", "Tyrosine"},
+    {"UCA", "Serine"},        {"UCC", "Serine"},        {"UCG", "Serine"},        {"UCU", "Serine"},
+    {"UGA", "Stop"},          {"UGC", "Cysteine"},      {"UGG", "Tryptophan"},    {"UGU", "Cysteine"},
+    {"UUA", "Leucine"},       {"UUC", "Phenylalanine"}, {"UUG", "Leucine"},       {"UUU", "Phenylalanine"},
 };
 
 namespace silkworm::db {

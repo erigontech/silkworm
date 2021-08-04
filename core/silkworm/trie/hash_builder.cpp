@@ -200,7 +200,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding, c
             stack_.push_back(node_ref(leaf_node_rlp(short_node_key, value)));
         } else if (!short_node_key.empty()) {  // extension node
             if (node_collector && from > 0) {
-                // See db/silkworm/trie/db_trie.hpp
+                // See db/silkworm/trie/intermediate_hashes.hpp
                 const uint16_t flag = 1u << current[from - 1];
 
                 // DB trie can't use hash of an extension node
@@ -227,14 +227,14 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding, c
         if (!succeeding.empty() || preceding_exists) {  // branch node
             std::vector<Bytes> child_hashes{branch_ref(groups_[len], hash_masks_[len])};
 
-            // See db/silkworm/trie/db_trie.hpp
+            // See db/silkworm/trie/intermediate_hashes.hpp
             if (node_collector) {
                 if (len > 0) {
                     hash_masks_[len - 1] |= 1u << current[len - 1];
                 }
 
-                bool store_in_db_trie{tree_masks_[len] || hash_masks_[len]};
-                if (store_in_db_trie) {
+                bool store_in_intermediate_hashes{tree_masks_[len] || hash_masks_[len]};
+                if (store_in_intermediate_hashes) {
                     if (len > 0) {
                         tree_masks_[len - 1] |= 1u << current[len - 1];  // register myself in parent bitmap
                     }

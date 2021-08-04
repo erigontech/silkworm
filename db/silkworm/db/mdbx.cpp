@@ -154,7 +154,6 @@ size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count) {
 
     auto data{cursor.current()};
     while (count && data.done) {
-
         const bool go_on{walker(data)};
         if (!go_on) {
             break;

@@ -24,10 +24,21 @@
 #include <string.h>
 
 #if defined(__GNUC__) && defined(__x86_64__)
+
 #include <cpuid.h>
 #include <x86intrin.h>
+
 #elif defined(__aarch64__)
+
 #include <arm_neon.h>
+
+#if defined(__linux__)
+#include <asm/hwcap.h>
+#include <sys/auxv.h>
+#elif defined(__APPLE__)
+#include <sys/sysctl.h>
+#endif
+
 #endif
 
 #if _MSC_VER
@@ -637,8 +648,21 @@ static void sha_256_arm_v8(uint32_t h[8], const void *input, size_t len) {
 }
 
 __attribute__((constructor)) static void select_sha256_implementation() {
-    // TODO (Andrey) check that Cryptography Extension are supported on the CPU
-    sha_256_best = sha_256_arm_v8;
+#if defined(__linux__)
+    if ((getauxval(AT_HWCAP) & HWCAP_SHA2) != 0) {
+        sha_256_best = sha_256_arm_v8;
+    }
+#elif defined(__APPLE__)
+    int64_t hw_cap = 0;
+    size_t size = sizeof(hw_cap);
+
+    if (sysctlbyname("hw.optional.armv8_2_sha3", &hw_cap, &size, NULL, 0) == 0) {
+        // Use SHA3 as proxy for SHA2 (sysctl hw doesn't list SHA2 for Apple M1)
+        if (hw_cap == 1) {
+            sha_256_best = sha_256_arm_v8;
+        }
+    }
+#endif
 }
 
 #endif

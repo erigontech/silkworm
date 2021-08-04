@@ -22,7 +22,7 @@
 namespace silkworm {
 
 
-std::vector<BlockHeader> HeaderLogic::recoverByHash(Hash origin, uint64_t amount, uint64_t skip, bool reverse) {
+std::vector<BlockHeader> HeaderLogic::recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse) {
     using std::optional;
     uint64_t max_non_canonical = 100;
 
@@ -60,7 +60,7 @@ std::vector<BlockHeader> HeaderLogic::recoverByHash(Hash origin, uint64_t amount
                     unknown = true;
                 else {
                     Hash nextHash = header->hash();
-                    auto [expOldHash, _ ] = getAncestor(db, nextHash, next, skip+1, max_non_canonical);
+                    auto [expOldHash, _ ] = get_ancestor(db, nextHash, next, skip + 1, max_non_canonical);
                     if (expOldHash == hash) {
                         hash = nextHash;
                         block_num = next;
@@ -75,7 +75,7 @@ std::vector<BlockHeader> HeaderLogic::recoverByHash(Hash origin, uint64_t amount
             if (ancestor == 0)
                 unknown = true;
             else
-                std::tie(hash, block_num) = getAncestor(db, hash, block_num, ancestor, max_non_canonical);
+                std::tie(hash, block_num) = get_ancestor(db, hash, block_num, ancestor, max_non_canonical);
         }
 
         // end todo: understand
@@ -92,7 +92,7 @@ std::vector<BlockHeader> HeaderLogic::recoverByHash(Hash origin, uint64_t amount
     return headers;
 }
 
-std::vector<BlockHeader> HeaderLogic::recoverByNumber(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse) {
+std::vector<BlockHeader> HeaderLogic::recover_by_number(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse) {
     using std::optional;
 
     DbTx& db = STAGE1.db_tx(); // todo: use singleton, is there a better way? HeaderLogic singleton?
@@ -135,7 +135,7 @@ std::tuple<Hash,BigInt> HeaderLogic::head_hash_and_total_difficulty(DbTx& db) {
     return {*head_hash, *head_td};
 }
 
-std::tuple<Hash,BlockNum> HeaderLogic::getAncestor(DbTx& db, Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical) {
+std::tuple<Hash,BlockNum> HeaderLogic::get_ancestor(DbTx& db, Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical) {
     if (ancestor > blockNum)
         return {Hash{},0};
 

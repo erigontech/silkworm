@@ -32,15 +32,15 @@ class HeaderLogic {     // todo: modularize this!
     static const long max_headers_serve = 1024;              // Amount of block headers to be fetched per retrieval request
 
     // Headers
-    static std::vector<BlockHeader> recoverByHash(Hash origin, uint64_t amount, uint64_t skip, bool reverse);
-    static std::vector<BlockHeader> recoverByNumber(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse);
+    static std::vector<BlockHeader> recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse);
+    static std::vector<BlockHeader> recover_by_number(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse);
 
     // Node current status
     static BlockNum                head_height(DbTx& db);
     static std::tuple<Hash,BigInt> head_hash_and_total_difficulty(DbTx& db);
 
     // Ancestor
-    static std::tuple<Hash,BlockNum> getAncestor(DbTx& db, Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical);
+    static std::tuple<Hash,BlockNum> get_ancestor(DbTx& db, Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical);
 };
 
 }

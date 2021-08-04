@@ -40,11 +40,11 @@ InboundMessage::reply_calls_t InboundGetBlockHeaders::execute() {
     BlockHeadersPacket66 reply;
     reply.requestId = packet_.requestId;
     if (holds_alternative<Hash>(packet_.request.origin))
-        reply.request = HeaderLogic::recoverByHash(get<Hash>(packet_.request.origin),
-            packet_.request.amount, packet_.request.skip, packet_.request.reverse);
+        reply.request = HeaderLogic::recover_by_hash(get<Hash>(packet_.request.origin), packet_.request.amount,
+                                                     packet_.request.skip, packet_.request.reverse);
     else
-        reply.request = HeaderLogic::recoverByNumber(get<BlockNum>(packet_.request.origin),
-            packet_.request.amount, packet_.request.skip, packet_.request.reverse);
+        reply.request = HeaderLogic::recover_by_number(get<BlockNum>(packet_.request.origin), packet_.request.amount,
+                                                       packet_.request.skip, packet_.request.reverse);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, reply);

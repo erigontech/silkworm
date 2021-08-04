@@ -23,7 +23,7 @@
 
 #include <string.h>
 
-#if defined(__GNUC__) && defined(__x86_64__)
+#if defined(__x86_64__)
 
 #include <cpuid.h>
 #include <x86intrin.h>
@@ -37,9 +37,9 @@
 #include <sys/auxv.h>
 #elif defined(__APPLE__)
 #include <sys/sysctl.h>
-#endif
+#endif  // defined(__linux__), defined(__APPLE__)
 
-#endif
+#endif  // defined(__x86_64__), defined(__aarch64__)
 
 #if _MSC_VER
 #define ALWAYS_INLINE __forceinline
@@ -241,7 +241,7 @@ static void sha_256_generic(uint32_t h[8], const void *input, size_t len) { sha_
 
 static void (*sha_256_best)(uint32_t h[8], const void *input, size_t len) = sha_256_generic;
 
-#if defined(__x86_64__) && __has_attribute(target)
+#if defined(__x86_64__)
 
 __attribute__((target("bmi,bmi2"))) static void sha_256_x86_bmi(uint32_t h[8], const void *input, size_t len) {
     sha_256_implementation(h, input, len);
@@ -662,10 +662,10 @@ __attribute__((constructor)) static void select_sha256_implementation() {
             sha_256_best = sha_256_arm_v8;
         }
     }
-#endif
+#endif  // defined(__linux__), defined(__APPLE__)
 }
 
-#endif
+#endif  // defined(__x86_64__), defined(__aarch64__)
 
 /*
  * Limitations:

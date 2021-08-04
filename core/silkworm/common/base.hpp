@@ -60,10 +60,10 @@ constexpr uint64_t kTebi{1024 * kGibi};
 constexpr uint64_t kGiga{1'000'000'000};   // = 10^9
 constexpr uint64_t kEther{kGiga * kGiga};  // = 10^18
 
-constexpr uint64_t operator"" _Kibi(uint64_t x) { return x * kKibi; }
-constexpr uint64_t operator"" _Mebi(uint64_t x) { return x * kMebi; }
-constexpr uint64_t operator"" _Gibi(uint64_t x) { return x * kGibi; }
-constexpr uint64_t operator"" _Tebi(uint64_t x) { return x * kTebi; }
+constexpr uint64_t operator"" _Kibi(unsigned long long x) { return x * kKibi; }
+constexpr uint64_t operator"" _Mebi(unsigned long long x) { return x * kMebi; }
+constexpr uint64_t operator"" _Gibi(unsigned long long x) { return x * kGibi; }
+constexpr uint64_t operator"" _Tebi(unsigned long long x) { return x * kTebi; }
 
 }  // namespace silkworm
 

@@ -83,6 +83,7 @@ int main(int argc, char* argv[]) {
 
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
+        std::vector<Receipt> receipts;
 
         for (; block_num < to; ++block_num) {
             txn.renew_reading();
@@ -93,7 +94,8 @@ int main(int argc, char* argv[]) {
 
             db::Buffer buffer{txn, block_num};
 
-            ValidationResult err{execute_block(bh->block, buffer, *chain_config, &analysis_cache, &state_pool).second};
+            ValidationResult err{
+                execute_block(bh->block, buffer, *chain_config, receipts, &analysis_cache, &state_pool)};
             if (err != ValidationResult::kOk) {
                 SILKWORM_LOG(LogLevel::Error) << "Failed to execute block " << block_num << std::endl;
                 continue;

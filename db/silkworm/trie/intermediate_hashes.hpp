@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TRIE_DB_TRIE_HPP_
-#define SILKWORM_TRIE_DB_TRIE_HPP_
+#ifndef SILKWORM_TRIE_INTERMEDIATE_HASHES_HPP_
+#define SILKWORM_TRIE_INTERMEDIATE_HASHES_HPP_
 
 /* On trie_account & trie_storage DB tables
 
@@ -139,9 +139,9 @@ Node unmarshal_node(ByteView v);
 // Erigon RegenerateIntermediateHashes
 // might throw WrongRoot
 // returns the state root
-evmc::bytes32 regenerate_db_tries(mdbx::txn& txn, const char* tmp_dir,
-                                  const evmc::bytes32* expected_root = nullptr);
+evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
+                                             const evmc::bytes32* expected_root = nullptr);
 
 }  // namespace silkworm::trie
 
-#endif  // SILKWORM_TRIE_DB_TRIE_HPP_
+#endif  // SILKWORM_TRIE_INTERMEDIATE_HASHES_HPP_

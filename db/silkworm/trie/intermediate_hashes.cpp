@@ -14,15 +14,15 @@
    limitations under the License.
 */
 
-#include "db_trie.hpp"
+#include "intermediate_hashes.hpp"
 
 #include <bitset>
 
 #include <boost/endian/conversion.hpp>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/common/rlp_err.hpp>
+#include <silkworm/db/tables.hpp>
 
 namespace silkworm::trie {
 
@@ -250,9 +250,9 @@ Node unmarshal_node(ByteView v) {
     return {state_mask, tree_mask, hash_mask, hashes, root_hash};
 }
 
-evmc::bytes32 regenerate_db_tries(mdbx::txn& txn, const char* tmp_dir, const evmc::bytes32* expected_root) {
-    etl::Collector account_collector{tmp_dir};
-    etl::Collector storage_collector{tmp_dir};
+evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir, const evmc::bytes32* expected_root) {
+    etl::Collector account_collector{etl_dir};
+    etl::Collector storage_collector{etl_dir};
     DbTrieLoader loader{txn, account_collector, storage_collector};
     const evmc::bytes32 root{loader.calculate_root()};
     if (expected_root && root != *expected_root) {

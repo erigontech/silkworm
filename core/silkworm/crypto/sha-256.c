@@ -26,6 +26,8 @@
 #if defined(__GNUC__) && defined(__x86_64__)
 #include <cpuid.h>
 #include <x86intrin.h>
+#elif defined(__aarch64__)
+#include <arm_neon.h>
 #endif
 
 #if _MSC_VER
@@ -97,7 +99,9 @@ static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
     memcpy(chunk, state->p, state->len);
     chunk += state->len;
     size_t space_in_chunk = CHUNK_SIZE - state->len;
-    state->p += state->len;
+    if (state->len) {  // avoid adding 0 to nullptr
+        state->p += state->len;
+    }
     state->len = 0;
 
     /* If we are here, space_in_chunk is one at minimum. */
@@ -232,7 +236,7 @@ __attribute__((target("bmi,bmi2"))) static void sha_256_x86_bmi(uint32_t h[8], c
     sha_256_implementation(h, input, len);
 }
 
-// The following function was adapted from https://github.com/noloader/SHA-Intrinsics
+// The following function was adapted from https://github.com/noloader/SHA-Intrinsics/blob/master/sha256-x86.c
 /*   Intel SHA extensions using C intrinsics               */
 /*   Written and place in public domain by Jeffrey Walton  */
 /*   Based on code from Intel, and by Sean Gulley for      */
@@ -460,6 +464,181 @@ __attribute__((constructor)) static void select_sha256_implementation() {
     } else if (hw_bmi1 && hw_bmi2) {
         sha_256_best = sha_256_x86_bmi;
     }
+}
+
+#elif defined(__aarch64__)
+
+// The following function was adapted from https://github.com/noloader/SHA-Intrinsics/blob/master/sha256-arm.c
+/* sha256-arm.c - ARMv8 SHA extensions using C intrinsics     */
+/*   Written and placed in public domain by Jeffrey Walton    */
+/*   Based on code from ARM, and by Johannes Schneiders, Skip */
+/*   Hovsmith and Barry O'Rourke for the mbedTLS project.     */
+static void sha_256_arm_v8(uint32_t h[8], const void *input, size_t len) {
+    uint32x4_t STATE0, STATE1, ABEF_SAVE, CDGH_SAVE;
+    uint32x4_t MSG0, MSG1, MSG2, MSG3;
+    uint32x4_t TMP0, TMP1, TMP2;
+
+    /* Load state */
+    STATE0 = vld1q_u32(&h[0]);
+    STATE1 = vld1q_u32(&h[4]);
+
+    struct buffer_state state;
+    init_buf_state(&state, input, len);
+
+    /* 512-bit chunks is what we will operate on. */
+    uint8_t chunk[CHUNK_SIZE];
+
+    while (calc_chunk(chunk, &state)) {
+        /* Save state */
+        ABEF_SAVE = STATE0;
+        CDGH_SAVE = STATE1;
+
+        /* Load message */
+        MSG0 = vld1q_u32((const uint32_t *)(chunk + 0));
+        MSG1 = vld1q_u32((const uint32_t *)(chunk + 16));
+        MSG2 = vld1q_u32((const uint32_t *)(chunk + 32));
+        MSG3 = vld1q_u32((const uint32_t *)(chunk + 48));
+
+        /* Reverse for little endian */
+        MSG0 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG0)));
+        MSG1 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG1)));
+        MSG2 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG2)));
+        MSG3 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG3)));
+
+        TMP0 = vaddq_u32(MSG0, vld1q_u32(&k[0x00]));
+
+        /* Rounds 0-3 */
+        MSG0 = vsha256su0q_u32(MSG0, MSG1);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG1, vld1q_u32(&k[0x04]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG0 = vsha256su1q_u32(MSG0, MSG2, MSG3);
+
+        /* Rounds 4-7 */
+        MSG1 = vsha256su0q_u32(MSG1, MSG2);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG2, vld1q_u32(&k[0x08]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG1 = vsha256su1q_u32(MSG1, MSG3, MSG0);
+
+        /* Rounds 8-11 */
+        MSG2 = vsha256su0q_u32(MSG2, MSG3);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG3, vld1q_u32(&k[0x0c]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG2 = vsha256su1q_u32(MSG2, MSG0, MSG1);
+
+        /* Rounds 12-15 */
+        MSG3 = vsha256su0q_u32(MSG3, MSG0);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG0, vld1q_u32(&k[0x10]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG3 = vsha256su1q_u32(MSG3, MSG1, MSG2);
+
+        /* Rounds 16-19 */
+        MSG0 = vsha256su0q_u32(MSG0, MSG1);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG1, vld1q_u32(&k[0x14]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG0 = vsha256su1q_u32(MSG0, MSG2, MSG3);
+
+        /* Rounds 20-23 */
+        MSG1 = vsha256su0q_u32(MSG1, MSG2);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG2, vld1q_u32(&k[0x18]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG1 = vsha256su1q_u32(MSG1, MSG3, MSG0);
+
+        /* Rounds 24-27 */
+        MSG2 = vsha256su0q_u32(MSG2, MSG3);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG3, vld1q_u32(&k[0x1c]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG2 = vsha256su1q_u32(MSG2, MSG0, MSG1);
+
+        /* Rounds 28-31 */
+        MSG3 = vsha256su0q_u32(MSG3, MSG0);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG0, vld1q_u32(&k[0x20]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG3 = vsha256su1q_u32(MSG3, MSG1, MSG2);
+
+        /* Rounds 32-35 */
+        MSG0 = vsha256su0q_u32(MSG0, MSG1);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG1, vld1q_u32(&k[0x24]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG0 = vsha256su1q_u32(MSG0, MSG2, MSG3);
+
+        /* Rounds 36-39 */
+        MSG1 = vsha256su0q_u32(MSG1, MSG2);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG2, vld1q_u32(&k[0x28]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG1 = vsha256su1q_u32(MSG1, MSG3, MSG0);
+
+        /* Rounds 40-43 */
+        MSG2 = vsha256su0q_u32(MSG2, MSG3);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG3, vld1q_u32(&k[0x2c]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG2 = vsha256su1q_u32(MSG2, MSG0, MSG1);
+
+        /* Rounds 44-47 */
+        MSG3 = vsha256su0q_u32(MSG3, MSG0);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG0, vld1q_u32(&k[0x30]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG3 = vsha256su1q_u32(MSG3, MSG1, MSG2);
+
+        /* Rounds 48-51 */
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG1, vld1q_u32(&k[0x34]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+
+        /* Rounds 52-55 */
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG2, vld1q_u32(&k[0x38]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+
+        /* Rounds 56-59 */
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG3, vld1q_u32(&k[0x3c]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+
+        /* Rounds 60-63 */
+        TMP2 = STATE0;
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+
+        /* Combine state */
+        STATE0 = vaddq_u32(STATE0, ABEF_SAVE);
+        STATE1 = vaddq_u32(STATE1, CDGH_SAVE);
+    }
+
+    /* Save state */
+    vst1q_u32(&h[0], STATE0);
+    vst1q_u32(&h[4], STATE1);
+}
+
+__attribute__((constructor)) static void select_sha256_implementation() {
+    // TODO (Andrey) check that Cryptography Extension are supported on the CPU
+    sha_256_best = sha_256_arm_v8;
 }
 
 #endif

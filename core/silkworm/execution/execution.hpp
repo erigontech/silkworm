@@ -34,16 +34,17 @@ namespace silkworm {
  * Transaction senders must be already populated.
  * kPlainState DB table (+auxilary tables) should match the Ethereum state at the begining of the block.
  *
+ * Another precondition: pre_validate_block(block) must return kOk.
+ *
  * Warning: This method does not verify state root;
  * pre-Byzantium receipt root isn't validated either.
  *
  * For better performance use AnalysisCache & ExecutionStatePool.
  */
-[[nodiscard]] std::pair<std::vector<Receipt>, ValidationResult> execute_block(const Block& block, StateBuffer& buffer,
-                                                                              const ChainConfig& config,
-                                                                              AnalysisCache* analysis_cache = nullptr,
-                                                                              ExecutionStatePool* state_pool = nullptr,
-                                                                              evmc_vm* exo_evm = nullptr) noexcept;
+[[nodiscard]] ValidationResult execute_block(const Block& block, StateBuffer& buffer, const ChainConfig& config,
+                                             std::vector<Receipt>& out, AnalysisCache* analysis_cache = nullptr,
+                                             ExecutionStatePool* state_pool = nullptr,
+                                             evmc_vm* exo_evm = nullptr) noexcept;
 
 }  // namespace silkworm
 

@@ -78,7 +78,9 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
 
 void Buffer::update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
                                  ByteView code) {
-    if (hash_to_code_.insert_or_assign(code_hash, code).second) {
+    // Don't overwrite already existing code so that views of it
+    // that were previously returned by read_code() are still valid.
+    if (hash_to_code_.try_emplace(code_hash, code).second) {
         bump_batch_size(kHashLength, code.length());
     }
     if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(full_view(address), incarnation), code_hash)
@@ -354,11 +356,11 @@ std::optional<Account> Buffer::read_account(const evmc::address& address) const 
     return db::read_account(txn_, address, historical_block_);
 }
 
-Bytes Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView Buffer::read_code(const evmc::bytes32& code_hash) const noexcept {
     if (auto it{hash_to_code_.find(code_hash)}; it != hash_to_code_.end()) {
         return it->second;
     }
-    std::optional<Bytes> code{db::read_code(txn_, code_hash)};
+    std::optional<ByteView> code{db::read_code(txn_, code_hash)};
     if (code.has_value()) {
         return *code;
     } else {

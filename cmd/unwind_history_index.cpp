@@ -37,24 +37,25 @@ int main(int argc, char *argv[]) {
 
     std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
     bool storage{false};
-    uint64_t unwind_to;
+    uint64_t unwind_to{0};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
-
+    app.add_option("--unwind-to", unwind_to, "Unwind to");
     app.add_flag("--storage", storage, "Do history of storages");
-    app.add_flag("--unwind-to", unwind_to, "Unwind point");
 
     CLI11_PARSE(app, argc, argv);
 
-    db::EnvConfig db_config{chaindata};
-
+    auto data_dir{DataDirectory::from_chaindata(chaindata)};
+    data_dir.create_tree();
+    db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
     try {
+        auto env{db::open_env(db_config)};
+        stagedsync::TransactionManager tm{env};
         if (storage) {
-            stagedsync::check_stagedsync_error(stagedsync::unwind_storage_history(db_config, unwind_to));
+            stagedsync::check_stagedsync_error(stagedsync::unwind_storage_history(tm, data_dir.get_etl_path(), unwind_to));
         } else {
-            stagedsync::check_stagedsync_error(stagedsync::unwind_account_history(db_config, unwind_to));
+            stagedsync::check_stagedsync_error(stagedsync::unwind_account_history(tm, data_dir.get_etl_path(), unwind_to));
         }
-
     } catch (const std::exception &ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;

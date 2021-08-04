@@ -19,7 +19,6 @@
 
 #include <stdint.h>
 
-#include <utility>
 #include <vector>
 
 #include <silkworm/chain/validity.hpp>
@@ -46,7 +45,8 @@ class ExecutionProcessor {
     Receipt execute_transaction(const Transaction& txn) noexcept;
 
     /// Execute the block, but do not write to the DB yet
-    [[nodiscard]] std::pair<std::vector<Receipt>, ValidationResult> execute_block() noexcept;
+    /// precondition: pre_validate_block(block) must return kOk
+    [[nodiscard]] ValidationResult execute_block(std::vector<Receipt>& out) noexcept;
 
     uint64_t cumulative_gas_used() const noexcept { return cumulative_gas_used_; }
 

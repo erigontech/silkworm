@@ -20,7 +20,7 @@
 
 namespace silkworm {
 
-DataDirectory::DataDirectory(std::filesystem::path base_path, bool create)
+DataDirectory::DataDirectory(const std::filesystem::path& base_path, bool create)
     : base_path_{base_path},
       chaindata_path_{base_path / "erigon" / "chaindata"},
       nodes_path_{base_path / "nodes"},

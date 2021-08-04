@@ -19,6 +19,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -34,10 +35,11 @@
 TEST_CASE("Unwind Execution") {
     using namespace silkworm;
 
-    TemporaryDirectory db_tmp_dir;
+    TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{db_tmp_dir.path(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
@@ -76,10 +78,12 @@ TEST_CASE("Unwind Execution") {
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
 
+    std::vector<Receipt> receipts;
+
     // ---------------------------------------
     // Execute first block
     // ---------------------------------------
-    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
     auto contract_address{create_address(sender, /*nonce=*/0)};
 
     // ---------------------------------------
@@ -99,7 +103,7 @@ TEST_CASE("Unwind Execution") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
 
     // ---------------------------------------
     // Execute third block
@@ -118,23 +122,18 @@ TEST_CASE("Unwind Execution") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig).second == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
 
     db::stages::set_stage_progress(txn, db::stages::kExecutionKey, 3);
     buffer.write_to_db();
 
-    txn.commit();
-    env.close();
-
     // ---------------------------------------
     // Unwind second block and checks if state is first block
     // ---------------------------------------
-    db_config.create = false;  // We have already created it
-    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_execution(db_config, 1)));
+    stagedsync::TransactionManager tm{txn};
+    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_execution(tm, data_dir.get_etl_path(), 1)));
 
-    auto env2{db::open_env(db_config)};
-    auto txn2{env2.start_write()};
-    db::Buffer buffer2{txn2};
+    db::Buffer buffer2{txn};
 
     std::optional<Account> contract_account{buffer2.read_account(contract_address)};
     REQUIRE(contract_account);

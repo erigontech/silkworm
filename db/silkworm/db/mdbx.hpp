@@ -33,9 +33,9 @@ namespace silkworm::db {
 constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 constexpr std::string_view kDbLockFileName{"mdbx.lck"};
 
-// Pointer to a processing function invoked by for_each
-// Return value true means the caller can process another record
-// Otherwise the caller must stop the loop
+// Pointer to a processing function invoked by for_each & for_count.
+// Return value true means the caller can process another record.
+// Otherwise the caller must stop the loop.
 using WalkFunc = std::function<bool(::mdbx::cursor::move_result&)>;
 
 struct EnvConfig {
@@ -59,19 +59,21 @@ struct MapConfig {
 ::mdbx::map_handle open_map(::mdbx::txn& tx, const MapConfig& config);
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
 
-static inline std::filesystem::path get_datafile_path(std::filesystem::path& base_path) noexcept {
+static inline std::filesystem::path get_datafile_path(const std::filesystem::path& base_path) noexcept {
     return std::filesystem::path(base_path / std::filesystem::path(kDbDataFileName));
 }
 
-static inline std::filesystem::path get_lockfile_path(std::filesystem::path& base_path) noexcept {
+static inline std::filesystem::path get_lockfile_path(const std::filesystem::path& base_path) noexcept {
     return std::filesystem::path(base_path / std::filesystem::path(kDbLockFileName));
 }
 
-// Executes a function on each record up to cursor.eof()
+// Executes a function on each record up to cursor.eof().
+// To start from the beginning, point the cursor to the first entry by calling to_first().
 size_t for_each(::mdbx::cursor& cursor, WalkFunc func);
 
-// Executes a function on each record up to cursor.eof() or up to iterations (whichever the first)
-size_t for_count(::mdbx::cursor& cursor, WalkFunc func, size_t iterations);
+// Executes a function on each record up to cursor.eof() or up to max_count (whichever the first).
+// To start from the beginning, point the cursor to the first entry by calling to_first().
+size_t for_count(::mdbx::cursor& cursor, WalkFunc func, size_t max_count);
 
 }  // namespace silkworm::db
 

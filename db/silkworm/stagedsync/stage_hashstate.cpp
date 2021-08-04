@@ -35,7 +35,7 @@ namespace fs = std::filesystem;
  *  Convert get tables configuration pair for incremental promotion
  *  First configuration of the pair is the source and second configuration is the table to fill.
  */
-std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateOperation operation) {
+static std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateOperation operation) {
     switch (operation) {
         case HashstateOperation::HashAccount:
             return {db::table::kPlainAccountChangeSet, db::table::kHashedAccounts};
@@ -49,8 +49,9 @@ std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateOperatio
             throw std::runtime_error(error);
     }
 }
+
 /*
- *  If we havent done hashstate before(first sync), it is possible to just hash values from plainstates,
+ *  If we haven't done hashstate before(first sync), it is possible to just hash values from plainstates,
  *  This is way faster than using changeset because it uses less database reads.
  */
 void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
@@ -131,6 +132,7 @@ void hashstate_promote_clean_code(mdbx::txn& txn, std::string etl_path) {
     tbl = db::open_cursor(txn, db::table::kContractCode);
     collector.load(tbl, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
 }
+
 /*
  *  If we have done hashstate before(not first sync),
  *  We need to use changeset because we can use the progress system.
@@ -218,30 +220,24 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     }
 }
 
-StageResult stage_hashstate(db::EnvConfig db_config) {
-    fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
-
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-
+StageResult stage_hashstate(TransactionManager& txn, const std::filesystem::path& etl_path) {
     SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
-    auto last_processed_block_number{db::stages::get_stage_progress(txn, db::stages::kHashStateKey)};
+    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
     if (last_processed_block_number != 0) {
         SILKWORM_LOG(LogLevel::Info) << "Starting Account Hashing" << std::endl;
-        hashstate_promote(txn, HashstateOperation::HashAccount);
+        hashstate_promote(*txn, HashstateOperation::HashAccount);
         SILKWORM_LOG(LogLevel::Info) << "Starting Storage Hashing" << std::endl;
-        hashstate_promote(txn, HashstateOperation::HashStorage);
+        hashstate_promote(*txn, HashstateOperation::HashStorage);
         SILKWORM_LOG(LogLevel::Info) << "Hashing Code Keys" << std::endl;
-        hashstate_promote(txn, HashstateOperation::Code);
+        hashstate_promote(*txn, HashstateOperation::Code);
     } else {
-        hashstate_promote_clean_state(txn, etl_path.string());
-        hashstate_promote_clean_code(txn, etl_path.string());
+        hashstate_promote_clean_state(*txn, etl_path.string());
+        hashstate_promote_clean_code(*txn, etl_path.string());
     }
     // Update progress height with last processed block
-    db::stages::set_stage_progress(txn, db::stages::kHashStateKey,
-                                   db::stages::get_stage_progress(txn, db::stages::kExecutionKey));
+    db::stages::set_stage_progress(*txn, db::stages::kHashStateKey,
+                                   db::stages::get_stage_progress(*txn, db::stages::kExecutionKey));
     txn.commit();
 
     SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
@@ -254,7 +250,6 @@ StageResult stage_hashstate(db::EnvConfig db_config) {
  *  Note: Standard Promotion is way slower than Clean Promotion
  */
 void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation operation) {
-
     auto [changeset_config, target_config] = get_tables_for_promote(operation);
 
     auto changeset_table{db::open_cursor(txn, changeset_config)};
@@ -323,15 +318,11 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     }
 
     (void)db::for_each(changeset_table, unwind_func);
-
 }
 
-StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) {
+StageResult unwind_hashstate(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
     try {
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-
-        auto stage_height{db::stages::get_stage_progress(txn, db::stages::kHashStateKey)};
+        auto stage_height{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
         if (unwind_to >= stage_height) {
             SILKWORM_LOG(LogLevel::Error)
                 << "Stage progress is " << stage_height << " which is <= than requested unwind_to" << std::endl;
@@ -342,16 +333,16 @@ StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) {
                                      << std::endl;
 
         SILKWORM_LOG(LogLevel::Info) << "[1/3] Hashed accounts ... " << std::endl;
-        hashstate_unwind(txn, unwind_to, HashstateOperation::HashAccount);
+        hashstate_unwind(*txn, unwind_to, HashstateOperation::HashAccount);
 
         SILKWORM_LOG(LogLevel::Info) << "[2/3] Hashed storage ... " << std::endl;
-        hashstate_unwind(txn, unwind_to, HashstateOperation::HashStorage);
+        hashstate_unwind(*txn, unwind_to, HashstateOperation::HashStorage);
 
         SILKWORM_LOG(LogLevel::Info) << "[3/3] Code ... " << std::endl;
-        hashstate_unwind(txn, unwind_to, HashstateOperation::Code);
+        hashstate_unwind(*txn, unwind_to, HashstateOperation::Code);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(txn, db::stages::kHashStateKey, unwind_to);
+        db::stages::set_stage_progress(*txn, db::stages::kHashStateKey, unwind_to);
 
         SILKWORM_LOG(LogLevel::Info) << "Committing ... " << std::endl;
         txn.commit();
@@ -364,4 +355,5 @@ StageResult unwind_hashstate(db::EnvConfig db_config, uint64_t unwind_to) {
         return StageResult::kAborted;
     }
 }
+
 }  // namespace silkworm::stagedsync

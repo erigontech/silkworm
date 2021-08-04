@@ -156,10 +156,12 @@ static StageResult history_index_stage(TransactionManager &txn, const std::files
     return StageResult::kSuccess;
 }
 
-StageResult history_index_unwind(TransactionManager &txn, uint64_t unwind_to, bool storage) {
+StageResult history_index_unwind(TransactionManager &txn, const std::filesystem::path &etl_path, uint64_t unwind_to, bool storage) {
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
+    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+
     auto index_table{db::open_cursor(*txn, index_config)};
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Unwind" << std::endl;
@@ -168,6 +170,7 @@ StageResult history_index_unwind(TransactionManager &txn, uint64_t unwind_to, bo
         auto data{index_table.current()};
         while (data) {
             // Get bitmap data of current element
+            auto key{db::from_slice(data.key)};
             auto bitmap_data{db::from_slice(data.value)};
             auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
             // Check wheter we should skip the current bitmap
@@ -176,22 +179,26 @@ StageResult history_index_unwind(TransactionManager &txn, uint64_t unwind_to, bo
                 continue;
             }
             // check if unwind can be applied
-            if (bm.minimum() > unwind_to) {
-                index_table.erase(/* whole_multivalue = */ false);
-            } else {
+            if (bm.minimum() <= unwind_to) {
                 // Erase elements that are > unwind_to
                 bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(0, unwind_to - 1, 1));
-                Bytes new_bitmap_bytes(bm.getSizeInBytes(), '\0');
-                bm.write(byte_ptr_cast(&new_bitmap_bytes[0]));
+                Bytes new_bitmap(bm.getSizeInBytes(), '\0');
+                bm.write(byte_ptr_cast(&new_bitmap[0]));
+                // generates new key
+                Bytes new_key(key.size(), '\0');
+                std::memcpy(&new_key[0], key.data(), key.size());
+                boost::endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
                 // replace with new index
-                index_table.erase(/* whole_multivalue = */ false);
-                index_table.upsert(data.key, db::to_slice(new_bitmap_bytes));
+                etl::Entry entry{new_key ,new_bitmap};
+                collector.collect(entry);
             }
+            index_table.erase(/* whole_multivalue = */ true);
             data = index_table.to_next(/*throw_notfound*/ false);
         }
     }
 
     db::stages::set_stage_progress(*txn, stage_key, unwind_to);
+    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
     txn.commit();
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
@@ -206,12 +213,12 @@ StageResult stage_storage_history(TransactionManager &txn, const std::filesystem
     return history_index_stage(txn, etl_path, true);
 }
 
-StageResult unwind_account_history(TransactionManager &txn, const std::filesystem::path &, uint64_t unwind_to) {
-    return history_index_unwind(txn, unwind_to, false);
+StageResult unwind_account_history(TransactionManager &txn, const std::filesystem::path &etl_path, uint64_t unwind_to) {
+    return history_index_unwind(txn, etl_path, unwind_to, false);
 }
 
-StageResult unwind_storage_history(TransactionManager &txn, const std::filesystem::path &, uint64_t unwind_to) {
-    return history_index_unwind(txn, unwind_to, true);
+StageResult unwind_storage_history(TransactionManager &txn, const std::filesystem::path &etl_path, uint64_t unwind_to) {
+    return history_index_unwind(txn, etl_path, unwind_to, true);
 }
 
 }  // namespace silkworm::stagedsync

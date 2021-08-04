@@ -46,7 +46,7 @@ StageResult stage_blockhashes(TransactionManager &txn, const std::filesystem::pa
     SILKWORM_LOG(LogLevel::Info) << "Started BlockHashes Extraction" << std::endl;
 
     auto header_key{db::block_key(expected_block_number)};
-    auto header_data{canonical_hashes_table.find(db::to_slice(header_key), /*throw_notfound*/ false)};
+    auto header_data{canonical_hashes_table.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
     while (header_data) {
         auto reached_block_number{boost::endian::load_big_u64(static_cast<uint8_t *>(header_data.key.iov_base))};
         if (reached_block_number != expected_block_number) {
@@ -70,7 +70,7 @@ StageResult stage_blockhashes(TransactionManager &txn, const std::filesystem::pa
         // Save last processed block_number and expect next in sequence
         ++blocks_processed_count;
         block_number = expected_block_number++;
-        canonical_hashes_table.to_next(/*throw_notfound*/ false);
+        header_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
     }
     canonical_hashes_table.close();
 
@@ -105,6 +105,28 @@ StageResult stage_blockhashes(TransactionManager &txn, const std::filesystem::pa
         SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
     }
 
+    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+
+    return StageResult::kSuccess;
+}
+
+StageResult unwind_blockhashes(TransactionManager &txn, const std::filesystem::path &, uint64_t unwind_to) {
+
+    // We take data from header table and transform it and put it in blockhashes table
+    auto canonical_hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+    auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
+    // Extract
+    SILKWORM_LOG(LogLevel::Info) << "Started BlockHashes Extraction" << std::endl;
+
+    auto header_key{db::block_key(unwind_to+1)};
+    auto header_data{canonical_hashes_table.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
+    while (header_data) {
+        if(blockhashes_table.seek(header_data.value)) {
+            blockhashes_table.erase(true);
+        }
+        header_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
+    }
+    txn.commit();
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
     return StageResult::kSuccess;

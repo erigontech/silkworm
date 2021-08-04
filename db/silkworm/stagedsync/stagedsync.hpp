@@ -76,6 +76,7 @@ StageResult stage_tx_lookup(TransactionManager &, const std::filesystem::path &e
 
 // Unwind functions
 StageResult no_unwind(TransactionManager &, const std::filesystem::path &etl_path, uint64_t unwind_to);
+StageResult unwind_blockhashes(TransactionManager &txn, const std::filesystem::path &, uint64_t unwind_to);
 StageResult unwind_senders(TransactionManager &, const std::filesystem::path &etl_path, uint64_t unwind_to);
 StageResult unwind_execution(TransactionManager &, const std::filesystem::path &etl_path, uint64_t unwind_to);
 StageResult unwind_hashstate(TransactionManager &, const std::filesystem::path &etl_path, uint64_t unwind_to);

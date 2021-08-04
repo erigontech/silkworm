@@ -17,7 +17,7 @@
 #ifndef SILKWORM_BLOCKHEADERSPACKET_HPP
 #define SILKWORM_BLOCKHEADERSPACKET_HPP
 
-#include "stages/stage1/Types.hpp"
+#include <silkworm/downloader/Types.hpp>
 #include <algorithm>
 
 namespace silkworm {
@@ -34,14 +34,16 @@ namespace rlp {
     // size_t length(const BlockHeadersPacket& from)           implemented by  rlp::length<T>(const std::vector<T>& v)
 
     // void encode(Bytes& to, const BlockHeadersPacket& from)  implemented by  rlp::encode(Bytes& to, const std::vector<T>& v)
-
+    template <>
     rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept;
 
     // ... length(const BlockHeadersPacket66& from)            implemented by template <Eth66Packet T> size_t length(const T& from)
 
     // ... encode(Bytes& to, const BlockHeadersPacket66& from) implemented by template <Eth66Packet T> void encode(Bytes& to, const T& from)
 
-    // ... decode(ByteView& from, BlockHeadersPacket66& to)    implemented by template <Eth66Packet T> rlp::DecodingResult decode(ByteView& from, T& to)
+    // ... decode(ByteView& from, BlockHeadersPacket66& to)    implemented by template <Eth66Packet T> rlp::DecodingResult decode(ByteView& from, T& to) --> No, it requires a c++20 compiler
+    template <>
+    rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept;
 
 }
 

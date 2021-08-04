@@ -14,22 +14,23 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENDMESSAGEBYID_HPP
-#define SILKWORM_SENDMESSAGEBYID_HPP
+#ifndef SILKWORM_RECEIVEMESSAGES_HPP
+#define SILKWORM_RECEIVEMESSAGES_HPP
 
-#include "stages/stage1/SentryClient.hpp"
+#include <silkworm/downloader/SentryClient.hpp>
 
 namespace silkworm::rpc {
 
-class SendMessageById: public rpc::AsyncUnaryCall<sentry::Sentry, sentry::SendMessageByIdRequest, sentry::SentPeers> {
+class ReceiveMessages: public rpc::AsyncOutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
   public:
-    SendMessageById(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message);
+    ReceiveMessages();
 
     using SentryRpc::on_receive_reply;
 
-    static auto make(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message)
-        {return std::make_shared<SendMessageById>(peerId, std::move(message));}
+    static std::shared_ptr<ReceiveMessages> make() {return std::make_shared<ReceiveMessages>();}
 };
 
 }
-#endif  // SILKWORM_SENDMESSAGEBYID_HPP
+
+
+#endif  // SILKWORM_RECEIVEMESSAGES_HPP

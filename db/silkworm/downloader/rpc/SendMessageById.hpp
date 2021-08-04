@@ -14,23 +14,22 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
-#define SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
+#ifndef SILKWORM_SENDMESSAGEBYID_HPP
+#define SILKWORM_SENDMESSAGEBYID_HPP
 
-#include "stages/stage1/SentryClient.hpp"
+#include <silkworm/downloader/SentryClient.hpp>
 
 namespace silkworm::rpc {
 
-class SendMessageByMinBlock: public rpc::AsyncUnaryCall<sentry::Sentry, sentry::SendMessageByMinBlockRequest, sentry::SentPeers> {
+class SendMessageById: public rpc::AsyncUnaryCall<sentry::Sentry, sentry::SendMessageByIdRequest, sentry::SentPeers> {
   public:
-    SendMessageByMinBlock(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message);
+    SendMessageById(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message);
 
     using SentryRpc::on_receive_reply;
 
-    static auto make(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message)
-    {return std::make_shared<SendMessageByMinBlock>(min_block, std::move(message));}
+    static auto make(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message)
+        {return std::make_shared<SendMessageById>(peerId, std::move(message));}
 };
 
 }
-
-#endif  // SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
+#endif  // SILKWORM_SENDMESSAGEBYID_HPP

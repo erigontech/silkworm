@@ -64,6 +64,7 @@ namespace rlp {
         return rlp_head_len + rlp_head.payload_length;
     }
 
+    template <>
     inline rlp::DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to) noexcept {
         using namespace rlp;
 
@@ -97,7 +98,9 @@ namespace rlp {
 
     // ... encode(Bytes& to, const GetBlockHeadersPacket66& from) implemented by template <Eth66Packet T> void encode(Bytes& to, const T& from)
 
-    // ... decode(ByteView& from, GetBlockHeadersPacket66& to)    implemented by template <Eth66Packet T> rlp::DecodingResult decode(ByteView& from, T& to)
+    // ... decode(ByteView& from, GetBlockHeadersPacket66& to)    implemented by template <Eth66Packet T> rlp::DecodingResult decode(ByteView& from, T& to) --> No, it requires a c++20 compiler
+    template <>
+    rlp::DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to) noexcept;
 
 } // rlp namespace
 

@@ -17,7 +17,7 @@
 #ifndef SILKWORM_PEERMINBLOCK_HPP
 #define SILKWORM_PEERMINBLOCK_HPP
 
-#include "stages/stage1/SentryClient.hpp"
+#include <silkworm/downloader/SentryClient.hpp>
 
 namespace silkworm::rpc {
 

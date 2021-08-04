@@ -15,9 +15,10 @@
 */
 
 // types
-#include "stages/stage1/Types.hpp"
+#include <silkworm/downloader/Types.hpp>
 #include "BlockBodiesPacket.hpp"
 #include "BlockHeadersPacket.hpp"
+#include "GetBlockHeadersPacket.hpp"
 #include "GetBlockBodiesPacket.hpp"
 #include "NewBlockHashesPacket.hpp"
 
@@ -32,20 +33,44 @@ namespace silkworm::rlp {
         return rlp::decode(from, dynamic_cast<evmc::bytes32&>(to));
     }
 
+    template <>
     rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket& to) noexcept {
         return rlp::decode_vec(from, to);  // decode_vec
     }
 
+    template <>
     rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept {
         return rlp::decode_vec(from, to); //decode_vec
     }
 
+    template <>
     rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket& to) noexcept {
         return rlp::decode_vec(from, to); //decode_vec
     }
 
+    template <>
     rlp::DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept {
         return rlp::decode_vec(from, to); // decode_vec
+    }
+
+    template <>
+    rlp::DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to) noexcept {
+        return rlp::decode_eth66(from, to);
+    }
+
+    template <>
+    rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket66& to) noexcept {
+        return rlp::decode_eth66(from, to);
+    }
+
+    template <>
+    rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept {
+        return rlp::decode_eth66(from, to);
+    }
+
+    template <>
+    rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept {
+        return rlp::decode_eth66(from, to);
     }
 }
 

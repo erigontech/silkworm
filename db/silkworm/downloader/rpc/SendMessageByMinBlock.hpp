@@ -14,23 +14,23 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RECEIVEMESSAGES_HPP
-#define SILKWORM_RECEIVEMESSAGES_HPP
+#ifndef SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
+#define SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
 
-#include "stages/stage1/SentryClient.hpp"
+#include <silkworm/downloader/SentryClient.hpp>
 
 namespace silkworm::rpc {
 
-class ReceiveMessages: public rpc::AsyncOutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
+class SendMessageByMinBlock: public rpc::AsyncUnaryCall<sentry::Sentry, sentry::SendMessageByMinBlockRequest, sentry::SentPeers> {
   public:
-    ReceiveMessages();
+    SendMessageByMinBlock(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message);
 
     using SentryRpc::on_receive_reply;
 
-    static std::shared_ptr<ReceiveMessages> make() {return std::make_shared<ReceiveMessages>();}
+    static auto make(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message)
+    {return std::make_shared<SendMessageByMinBlock>(min_block, std::move(message));}
 };
 
 }
 
-
-#endif  // SILKWORM_RECEIVEMESSAGES_HPP
+#endif  // SILKWORM_SENDMESSAGEBYMINBLOCK_HPP

@@ -22,7 +22,7 @@
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
-#include "stages/stage1/Types.hpp"
+#include <silkworm/downloader/Types.hpp>
 #include "RLPError.hpp"
 
 namespace silkworm {

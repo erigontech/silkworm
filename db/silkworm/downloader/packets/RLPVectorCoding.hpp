@@ -17,15 +17,15 @@
 #ifndef SILKWORM_RLPVECTOR_HPP
 #define SILKWORM_RLPVECTOR_HPP
 
-#include "stages/stage1/Types.hpp"
+#include <silkworm/downloader/Types.hpp>
 
 /*
  * decode a generic vector
  *
- * This is a forward declaration. Please note that the implementation need to know how to decode concrete T elements,
- * so headers organization is critical. For this reason it is hard to use the decode_vector() func defined in core
- * module because it is in a header with other decode(T) functions and it is not possible to insert other decode(T) in
- * the middle. So we use this trick.
+ * Please note that the implementation need to know how to decode concrete T elements, so headers organization is critical.
+ * For this reason it is hard to use the decode_vector() func defined in silkworm/core/rlp module because it is in a header
+ * with other decode(concrete-type) functions so it is not possible to insert other decode(concrete-type) in the middle.
+ * So we use this file in this module.
  */
 namespace silkworm::rlp {
     template <class T>

@@ -208,5 +208,3 @@ if(SILKWORM_WASM_API)
 endif()
 
 add_subdirectory(interfaces)
-
-add_subdirectory(stages/stage1)

@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 #include <silkworm/chain/config.hpp>
-#include "stages/stage1/SentryClient.hpp"
-#include "stages/stage1/Types.hpp"
+#include <silkworm/downloader/SentryClient.hpp>
+#include <silkworm/downloader/Types.hpp>
 
 namespace silkworm::rpc {
 

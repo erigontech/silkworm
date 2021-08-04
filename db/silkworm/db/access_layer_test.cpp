@@ -683,7 +683,7 @@ namespace db {
                                             std::to_string(kAddressLength) + " bytes");
             }
 
-            evmc::address account_address = to_address(*address_bytes);
+            evmc::address account_address = silkworm::to_address(*address_bytes);
             auto balance_str{item.value()["balance"].get<std::string>()};
             Account account{0, intx::from_string<intx::uint256>(balance_str)};
             state_buffer.update_account(account_address, std::nullopt, account);

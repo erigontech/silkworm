@@ -17,7 +17,7 @@
 
 
 // types
-#include "stages/stage1/Types.hpp"
+#include <silkworm/downloader/Types.hpp>
 #include "BlockBodiesPacket.hpp"
 #include "BlockHeadersPacket.hpp"
 #include "GetBlockBodiesPacket.hpp"

@@ -17,8 +17,8 @@
 #ifndef SILKWORM_MESSAGE_HPP
 #define SILKWORM_MESSAGE_HPP
 
-#include "stages/stage1/SentryClient.hpp"
-#include "stages/stage1/Types.hpp"
+#include <silkworm/downloader/SentryClient.hpp>
+#include <silkworm/downloader/Types.hpp>
 
 
 namespace silkworm {

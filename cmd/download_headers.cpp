@@ -21,8 +21,8 @@
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/data_dir.hpp>
-#include <stages/stage1/stage1.hpp>
-#include <stages/stage1/HeaderLogic.hpp>
+#include <silkworm/downloader/stage1.hpp>
+#include <silkworm/downloader/HeaderLogic.hpp>
 
 using namespace silkworm;
 

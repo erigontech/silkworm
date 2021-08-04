@@ -17,7 +17,7 @@
 #ifndef SILKWORM_NEWBLOCKHASHPACKET_HPP
 #define SILKWORM_NEWBLOCKHASHPACKET_HPP
 
-#include "stages/stage1/Types.hpp"
+#include <silkworm/downloader/Types.hpp>
 
 namespace silkworm {
 
@@ -48,6 +48,7 @@ namespace rlp {
         return rlp_head_len + rlp_head.payload_length;
     }
 
+    template <>
     inline rlp::DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
 
         auto [rlp_head, err]{decode_header(from)};
@@ -77,6 +78,7 @@ namespace rlp {
 
     size_t length(const NewBlockHashesPacket& from);
 
+    template <>
     rlp::DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept;
 
 }

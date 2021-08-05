@@ -17,6 +17,8 @@
 #ifndef SILKWORM_DB_STAGEDSYNC_STAGEDSYNC_HPP_
 #define SILKWORM_DB_STAGEDSYNC_STAGEDSYNC_HPP_
 
+// See https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md
+
 #include <filesystem>
 #include <vector>
 

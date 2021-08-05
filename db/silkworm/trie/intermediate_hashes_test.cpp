@@ -277,4 +277,8 @@ TEST_CASE("Account trie around extension node") {
     REQUIRE(node2.hashes().size() == 1);
 }
 
+TEST_CASE("Account incremental trie") {
+    // TODO[Issue 179] implement
+}
+
 }  // namespace silkworm::trie

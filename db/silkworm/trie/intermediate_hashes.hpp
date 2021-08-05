@@ -142,6 +142,12 @@ Node unmarshal_node(ByteView v);
 evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
                                              const evmc::bytes32* expected_root = nullptr);
 
+// Erigon incrementIntermediateHashes
+// might throw WrongRoot
+// returns the state root
+evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
+                                            const evmc::bytes32* expected_root = nullptr);
+
 }  // namespace silkworm::trie
 
 #endif  // SILKWORM_TRIE_INTERMEDIATE_HASHES_HPP_

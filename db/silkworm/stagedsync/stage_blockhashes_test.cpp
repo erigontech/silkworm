@@ -44,6 +44,7 @@ TEST_CASE("Stage Block Hashes") {
 
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
+    CHECK_NOTHROW(data_dir.create_tree());
 
     // Initialize temporary Database
     db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
@@ -65,7 +66,7 @@ TEST_CASE("Stage Block Hashes") {
     canonical_table.insert(db::to_slice(expected_block_number_2), db::to_slice(hash_2));
     txn.commit();
     // Execute checks
-    stagedsync::check_stagedsync_error(stagedsync::stage_blockhashes(txn, tmp_dir.path()));
+    CHECK(stagedsync::stage_blockhashes(txn, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
     // Hopefully not Post-Mortem checks
     auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
 
@@ -83,6 +84,7 @@ TEST_CASE("Unwind Block Hashes") {
 
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
+    CHECK_NOTHROW(data_dir.create_tree());
 
     // Initialize temporary Database
     db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
@@ -104,8 +106,8 @@ TEST_CASE("Unwind Block Hashes") {
     canonical_table.insert(db::to_slice(expected_block_number_2), db::to_slice(hash_2));
     txn.commit();
     // Execute checks
-    stagedsync::check_stagedsync_error(stagedsync::stage_blockhashes(txn, tmp_dir.path()));
-    stagedsync::check_stagedsync_error(stagedsync::unwind_blockhashes(txn, tmp_dir.path(), 1));
+    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::stage_blockhashes(txn, data_dir.get_etl_path())));
+    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_blockhashes(txn, data_dir.get_etl_path(), 1)));
     // Hopefully not Post-Mortem checks
     auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
 

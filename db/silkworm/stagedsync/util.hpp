@@ -13,9 +13,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <silkworm/common/base.hpp>
+
 #ifndef SILKWORM_STAGEDSYNC_UTIL_HPP_
 #define SILKWORM_STAGEDSYNC_UTIL_HPP_
+
+#include <silkworm/common/base.hpp>
 
 /*
 Part of the compatibility layer with the Erigon DB format;
@@ -44,6 +46,6 @@ void check_stagedsync_error(StageResult code);
 // Convert changesets key and value pair to plain state format
 std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView& value);
 
-}  // namespace silkworm::db
+}  // namespace silkworm::stagedsync
 
-#endif  // SILKWORM_DB_UTIL_HPP_
+#endif  // SILKWORM_STAGEDSYNC_UTIL_HPP_

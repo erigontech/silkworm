@@ -31,7 +31,7 @@ TEST_CASE("cut_left") {
     while (bitmap.cardinality() != 0) {
         bitmap_chunks.push_back(cut_left(bitmap, kBitmapChunkLimit));
     }
-    for (const auto &chunk : bitmap_chunks) {
+    for (const auto& chunk : bitmap_chunks) {
         actual |= chunk;
     }
     CHECK(actual == expected);

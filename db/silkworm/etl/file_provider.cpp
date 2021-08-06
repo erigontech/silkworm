@@ -29,7 +29,7 @@ FileProvider::FileProvider(std::string file_name, size_t id) : id_{id}, file_nam
 
 FileProvider::~FileProvider(void) { reset(); }
 
-void FileProvider::flush(Buffer &buffer) {
+void FileProvider::flush(Buffer& buffer) {
     head_t head{};
 
     // Check we have enough space to store all data
@@ -48,7 +48,7 @@ void FileProvider::flush(Buffer &buffer) {
         throw etl_error(strerror(errno));
     };
 
-    for (const auto &entry : entries) {
+    for (const auto& entry : entries) {
         head.lengths[0] = entry.key.size();
         head.lengths[1] = entry.value.size();
         if (!file_.write(byte_ptr_cast(head.bytes), 8) ||

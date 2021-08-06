@@ -35,7 +35,7 @@
 
 using namespace silkworm;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
 
     CLI::App app{"Generates Log Index"};
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
         auto env{db::open_env(db_config)};
         stagedsync::TransactionManager tm{env};
         stagedsync::check_stagedsync_error(stagedsync::unwind_log_index(tm, data_dir.get_etl_path(), unwind_to));
-    } catch (const std::exception &ex) {
+    } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }

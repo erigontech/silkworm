@@ -38,7 +38,7 @@ namespace fs = std::filesystem;
 
 constexpr size_t kBitmapBufferSizeLimit = 512 * kMebi;
 
-static void loader_function(etl::Entry entry, mdbx::cursor &target_table, MDBX_put_flags_t db_flags) {
+static void loader_function(etl::Entry entry, mdbx::cursor& target_table, MDBX_put_flags_t db_flags) {
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
     Bytes last_chunk_index(entry.key.size() + 4, '\0');
     std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
@@ -64,8 +64,8 @@ static void loader_function(etl::Entry entry, mdbx::cursor &target_table, MDBX_p
     }
 }
 
-static void flush_bitmaps(etl::Collector &collector, std::unordered_map<std::string, roaring::Roaring> &map) {
-    for (const auto &[key, bm] : map) {
+static void flush_bitmaps(etl::Collector& collector, std::unordered_map<std::string, roaring::Roaring>& map) {
+    for (const auto& [key, bm] : map) {
         Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
         bm.write(byte_ptr_cast(bitmap_bytes.data()));
         etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
@@ -74,7 +74,7 @@ static void flush_bitmaps(etl::Collector &collector, std::unordered_map<std::str
     map.clear();
 }
 
-StageResult stage_log_index(TransactionManager &txn, const std::filesystem::path &etl_path) {
+StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path& etl_path) {
     fs::create_directories(etl_path);
     etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
     etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
@@ -99,7 +99,7 @@ StageResult stage_log_index(TransactionManager &txn, const std::filesystem::path
     if (log_table.lower_bound(db::to_slice(start))) {
         auto log_data{log_table.current()};
         while (log_data) {
-            block_number = boost::endian::load_big_u64(static_cast<uint8_t *>(log_data.key.iov_base));
+            block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(log_data.key.iov_base));
             current_listener.set_block_number(block_number);
             cbor::input input(log_data.value.iov_base, log_data.value.iov_len);
             cbor::decoder decoder(input, current_listener);
@@ -153,11 +153,10 @@ StageResult stage_log_index(TransactionManager &txn, const std::filesystem::path
     return StageResult::kSuccess;
 }
 
-static StageResult unwind_log_index(TransactionManager& txn, etl::Collector &collector, uint64_t unwind_to, bool topics) {
-    auto index_table{topics ? 
-        db::open_cursor(*txn, db::table::kLogTopicIndex): 
-        db::open_cursor(*txn, db::table::kLogAddressIndex)
-    };
+static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t unwind_to,
+                                    bool topics) {
+    auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
+                            : db::open_cursor(*txn, db::table::kLogAddressIndex)};
     if (unwind_to >= db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)) {
         return StageResult::kSuccess;
     }
@@ -170,7 +169,7 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector &col
             auto bitmap_data{db::from_slice(data.value)};
 
             auto bm{roaring::Roaring::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-            // Check for keys that can be skipped     
+            // Check for keys that can be skipped
             if (bm.maximum() <= unwind_to) {
                 data = index_table.to_next(/*throw_notfound*/ false);
                 continue;
@@ -198,13 +197,12 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector &col
     txn.commit();
 
     return StageResult::kSuccess;
-} 
+}
 
-
-StageResult unwind_log_index(TransactionManager &txn, const std::filesystem::path & etl_path, uint64_t unwind_to) {
+StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
     etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
-    
+
     SILKWORM_LOG(LogLevel::Info) << "Started Topic Index Unwind" << std::endl;
     auto result{unwind_log_index(txn, topic_collector, unwind_to, true)};
     if (result != StageResult::kSuccess) {
@@ -219,4 +217,5 @@ StageResult unwind_log_index(TransactionManager &txn, const std::filesystem::pat
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
     return StageResult::kSuccess;
 }
+
 }  // namespace silkworm::stagedsync

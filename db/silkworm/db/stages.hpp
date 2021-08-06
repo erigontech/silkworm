@@ -49,9 +49,21 @@ constexpr const char* kMiningFinishKey{"MiningFinish"};               // Mining 
 // clang-format on
 
 constexpr const char* kAllStages[]{
-    kHeadersKey,   kBlockHashesKey,    kBlockBodiesKey,         kSendersKey,  kExecutionKey,  kIntermediateHashesKey,
-    kHashStateKey, kAccountHistoryIndexKey, kStorageHistoryIndexKey, kLogIndexKey, kCallTracesKey, kTxLookupKey,
-    kTxPoolKey,    kFinishKey};
+    kHeadersKey,
+    kBlockHashesKey,
+    kBlockBodiesKey,
+    kSendersKey,
+    kExecutionKey,
+    kIntermediateHashesKey,
+    kHashStateKey,
+    kAccountHistoryIndexKey,
+    kStorageHistoryIndexKey,
+    kLogIndexKey,
+    kCallTracesKey,
+    kTxLookupKey,
+    kTxPoolKey,
+    kFinishKey,
+};
 
 // Gets the progress (block height) of any given stage
 uint64_t get_stage_progress(mdbx::txn& txn, const char* stage_name);

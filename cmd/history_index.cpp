@@ -30,7 +30,7 @@
 
 using namespace silkworm;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
 
     CLI::App app{"Generates History Indexes"};
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     data_dir.create_tree();
     db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
-    const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
+    const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
 
     try {
         auto env{db::open_env(db_config)};
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
             stagedsync::check_stagedsync_error(stagedsync::stage_account_history(tm, data_dir.get_etl_path()));
         }
 
-    } catch (const std::exception &ex) {
+    } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }

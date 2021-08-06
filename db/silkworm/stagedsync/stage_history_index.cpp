@@ -37,14 +37,14 @@ constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
 
 namespace fs = std::filesystem;
 
-static StageResult history_index_stage(TransactionManager &txn, const std::filesystem::path &etl_path, bool storage) {
+static StageResult history_index_stage(TransactionManager& txn, const std::filesystem::path& etl_path, bool storage) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig changeset_config = storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
-    const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
+    const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
 
     auto changeset_table{db::open_cursor(*txn, changeset_config)};
     std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
@@ -52,7 +52,8 @@ static StageResult history_index_stage(TransactionManager &txn, const std::files
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, stage_key)};
 
     // Extract
-    SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Extraction. From: " << last_processed_block_number << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account")
+                                 << " Index Extraction. From: " << last_processed_block_number << std::endl;
     Bytes start{db::block_key(last_processed_block_number + 1)};
 
     size_t allocated_space{0};
@@ -75,11 +76,11 @@ static StageResult history_index_stage(TransactionManager &txn, const std::files
             if (bitmaps.find(composite_key) == bitmaps.end()) {
                 bitmaps.emplace(composite_key, roaring::Roaring64Map());
             }
-            block_number = boost::endian::load_big_u64(static_cast<uint8_t *>(data.key.iov_base));
+            block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
             bitmaps.at(composite_key).add(block_number);
             allocated_space += 8;
             if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
-                for (const auto &[key, bm] : bitmaps) {
+                for (const auto& [key, bm] : bitmaps) {
                     Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
                     bm.write(byte_ptr_cast(bitmap_bytes.data()));
                     etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
@@ -94,7 +95,7 @@ static StageResult history_index_stage(TransactionManager &txn, const std::files
     }
     changeset_table.close();
 
-    for (const auto &[key, bm] : bitmaps) {
+    for (const auto& [key, bm] : bitmaps) {
         Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
         bm.write(byte_ptr_cast(bitmap_bytes.data()));
         etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
@@ -115,7 +116,7 @@ static StageResult history_index_stage(TransactionManager &txn, const std::files
         auto target{db::open_cursor(*txn, index_config)};
         collector.load(
             target,
-            [](etl::Entry entry, mdbx::cursor &history_index_table, MDBX_put_flags_t db_flags) {
+            [](etl::Entry entry, mdbx::cursor& history_index_table, MDBX_put_flags_t db_flags) {
                 auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
 
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');
@@ -156,17 +157,18 @@ static StageResult history_index_stage(TransactionManager &txn, const std::files
     return StageResult::kSuccess;
 }
 
-StageResult history_index_unwind(TransactionManager &txn, const std::filesystem::path &etl_path, uint64_t unwind_to, bool storage) {
+StageResult history_index_unwind(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to,
+                                 bool storage) {
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
-    const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
+    const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
     auto index_table{db::open_cursor(*txn, index_config)};
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Unwind" << std::endl;
 
-    if (index_table.to_first(/* throw_notfound = */false)) {
+    if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
         while (data) {
             // Get bitmap data of current element
@@ -189,7 +191,7 @@ StageResult history_index_unwind(TransactionManager &txn, const std::filesystem:
                 std::memcpy(&new_key[0], key.data(), key.size());
                 boost::endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
                 // replace with new index
-                etl::Entry entry{new_key ,new_bitmap};
+                etl::Entry entry{new_key, new_bitmap};
                 collector.collect(entry);
             }
             index_table.erase(/* whole_multivalue = */ true);
@@ -205,19 +207,18 @@ StageResult history_index_unwind(TransactionManager &txn, const std::filesystem:
     return StageResult::kSuccess;
 }
 
-
-StageResult stage_account_history(TransactionManager &txn, const std::filesystem::path &etl_path) {
+StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
     return history_index_stage(txn, etl_path, false);
 }
-StageResult stage_storage_history(TransactionManager &txn, const std::filesystem::path &etl_path) {
+StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
     return history_index_stage(txn, etl_path, true);
 }
 
-StageResult unwind_account_history(TransactionManager &txn, const std::filesystem::path &etl_path, uint64_t unwind_to) {
+StageResult unwind_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     return history_index_unwind(txn, etl_path, unwind_to, false);
 }
 
-StageResult unwind_storage_history(TransactionManager &txn, const std::filesystem::path &etl_path, uint64_t unwind_to) {
+StageResult unwind_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     return history_index_unwind(txn, etl_path, unwind_to, true);
 }
 

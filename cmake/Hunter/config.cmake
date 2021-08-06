@@ -52,7 +52,7 @@ hunter_config(
   CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
 )
 
-hunter_config(Protobuf VERSION 3.12.4-p1)  # <-- Last working version (greater seems to have networking issues)
+hunter_config(Protobuf VERSION 3.14.0-4a09d77-p0)
 
 hunter_config(
   gRPC

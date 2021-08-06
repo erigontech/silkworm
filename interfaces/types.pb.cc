@@ -46,7 +46,6 @@ static void InitDefaultsscc_info_H128_types_2eproto() {
     new (ptr) ::types::H128();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::types::H128::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_H128_types_2eproto =
@@ -60,7 +59,6 @@ static void InitDefaultsscc_info_H160_types_2eproto() {
     new (ptr) ::types::H160();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::types::H160::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H160_types_2eproto =
@@ -75,7 +73,6 @@ static void InitDefaultsscc_info_H256_types_2eproto() {
     new (ptr) ::types::H256();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::types::H256::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H256_types_2eproto =
@@ -90,7 +87,6 @@ static void InitDefaultsscc_info_H512_types_2eproto() {
     new (ptr) ::types::H512();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::types::H512::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H512_types_2eproto =
@@ -105,7 +101,6 @@ static void InitDefaultsscc_info_VersionReply_types_2eproto() {
     new (ptr) ::types::VersionReply();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::types::VersionReply::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_VersionReply_types_2eproto =
@@ -209,8 +204,6 @@ namespace types {
 
 // ===================================================================
 
-void H128::InitAsDefaultInstance() {
-}
 class H128::_Internal {
  public:
 };
@@ -231,8 +224,9 @@ H128::H128(const H128& from)
 }
 
 void H128::SharedCtor() {
-  ::memset(&hi_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&lo_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&hi_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&lo_) -
       reinterpret_cast<char*>(&hi_)) + sizeof(lo_));
 }
 
@@ -275,7 +269,6 @@ void H128::Clear() {
 
 const char* H128::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -440,10 +433,6 @@ void H128::InternalSwap(H128* other) {
 
 // ===================================================================
 
-void H160::InitAsDefaultInstance() {
-  ::types::_H160_default_instance_._instance.get_mutable()->hi_ = const_cast< ::types::H128*>(
-      ::types::H128::internal_default_instance());
-}
 class H160::_Internal {
  public:
   static const ::types::H128& hi(const H160* msg);
@@ -473,8 +462,9 @@ H160::H160(const H160& from)
 
 void H160::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_H160_types_2eproto.base);
-  ::memset(&hi_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&lo_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&hi_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&lo_) -
       reinterpret_cast<char*>(&hi_)) + sizeof(lo_));
 }
 
@@ -520,7 +510,6 @@ void H160::Clear() {
 
 const char* H160::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -687,12 +676,6 @@ void H160::InternalSwap(H160* other) {
 
 // ===================================================================
 
-void H256::InitAsDefaultInstance() {
-  ::types::_H256_default_instance_._instance.get_mutable()->hi_ = const_cast< ::types::H128*>(
-      ::types::H128::internal_default_instance());
-  ::types::_H256_default_instance_._instance.get_mutable()->lo_ = const_cast< ::types::H128*>(
-      ::types::H128::internal_default_instance());
-}
 class H256::_Internal {
  public:
   static const ::types::H128& hi(const H256* msg);
@@ -731,8 +714,9 @@ H256::H256(const H256& from)
 
 void H256::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_H256_types_2eproto.base);
-  ::memset(&hi_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&lo_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&hi_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&lo_) -
       reinterpret_cast<char*>(&hi_)) + sizeof(lo_));
 }
 
@@ -782,7 +766,6 @@ void H256::Clear() {
 
 const char* H256::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -951,12 +934,6 @@ void H256::InternalSwap(H256* other) {
 
 // ===================================================================
 
-void H512::InitAsDefaultInstance() {
-  ::types::_H512_default_instance_._instance.get_mutable()->hi_ = const_cast< ::types::H256*>(
-      ::types::H256::internal_default_instance());
-  ::types::_H512_default_instance_._instance.get_mutable()->lo_ = const_cast< ::types::H256*>(
-      ::types::H256::internal_default_instance());
-}
 class H512::_Internal {
  public:
   static const ::types::H256& hi(const H512* msg);
@@ -995,8 +972,9 @@ H512::H512(const H512& from)
 
 void H512::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_H512_types_2eproto.base);
-  ::memset(&hi_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&lo_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&hi_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&lo_) -
       reinterpret_cast<char*>(&hi_)) + sizeof(lo_));
 }
 
@@ -1046,7 +1024,6 @@ void H512::Clear() {
 
 const char* H512::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -1215,8 +1192,6 @@ void H512::InternalSwap(H512* other) {
 
 // ===================================================================
 
-void VersionReply::InitAsDefaultInstance() {
-}
 class VersionReply::_Internal {
  public:
 };
@@ -1237,8 +1212,9 @@ VersionReply::VersionReply(const VersionReply& from)
 }
 
 void VersionReply::SharedCtor() {
-  ::memset(&major_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&patch_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&major_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&patch_) -
       reinterpret_cast<char*>(&major_)) + sizeof(patch_));
 }
 
@@ -1281,7 +1257,6 @@ void VersionReply::Clear() {
 
 const char* VersionReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);

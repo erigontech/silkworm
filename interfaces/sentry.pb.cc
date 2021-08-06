@@ -76,7 +76,6 @@ static void InitDefaultsscc_info_Forks_sentry_2eproto() {
     new (ptr) ::sentry::Forks();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::Forks::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_Forks_sentry_2eproto =
@@ -91,7 +90,6 @@ static void InitDefaultsscc_info_InboundMessage_sentry_2eproto() {
     new (ptr) ::sentry::InboundMessage();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::InboundMessage::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_InboundMessage_sentry_2eproto =
@@ -106,7 +104,6 @@ static void InitDefaultsscc_info_MessagesRequest_sentry_2eproto() {
     new (ptr) ::sentry::MessagesRequest();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::MessagesRequest::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_MessagesRequest_sentry_2eproto =
@@ -120,7 +117,6 @@ static void InitDefaultsscc_info_OutboundMessageData_sentry_2eproto() {
     new (ptr) ::sentry::OutboundMessageData();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::OutboundMessageData::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_OutboundMessageData_sentry_2eproto =
@@ -134,7 +130,6 @@ static void InitDefaultsscc_info_PeerMinBlockRequest_sentry_2eproto() {
     new (ptr) ::sentry::PeerMinBlockRequest();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::PeerMinBlockRequest::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PeerMinBlockRequest_sentry_2eproto =
@@ -149,7 +144,6 @@ static void InitDefaultsscc_info_PenalizePeerRequest_sentry_2eproto() {
     new (ptr) ::sentry::PenalizePeerRequest();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::PenalizePeerRequest::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PenalizePeerRequest_sentry_2eproto =
@@ -164,7 +158,6 @@ static void InitDefaultsscc_info_SendMessageByIdRequest_sentry_2eproto() {
     new (ptr) ::sentry::SendMessageByIdRequest();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::SendMessageByIdRequest::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_SendMessageByIdRequest_sentry_2eproto =
@@ -180,7 +173,6 @@ static void InitDefaultsscc_info_SendMessageByMinBlockRequest_sentry_2eproto() {
     new (ptr) ::sentry::SendMessageByMinBlockRequest();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::SendMessageByMinBlockRequest::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_SendMessageByMinBlockRequest_sentry_2eproto =
@@ -195,7 +187,6 @@ static void InitDefaultsscc_info_SendMessageToRandomPeersRequest_sentry_2eproto(
     new (ptr) ::sentry::SendMessageToRandomPeersRequest();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::SendMessageToRandomPeersRequest::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_SendMessageToRandomPeersRequest_sentry_2eproto =
@@ -210,7 +201,6 @@ static void InitDefaultsscc_info_SentPeers_sentry_2eproto() {
     new (ptr) ::sentry::SentPeers();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::SentPeers::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_SentPeers_sentry_2eproto =
@@ -225,7 +215,6 @@ static void InitDefaultsscc_info_SetStatusReply_sentry_2eproto() {
     new (ptr) ::sentry::SetStatusReply();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::SetStatusReply::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_SetStatusReply_sentry_2eproto =
@@ -239,7 +228,6 @@ static void InitDefaultsscc_info_StatusData_sentry_2eproto() {
     new (ptr) ::sentry::StatusData();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::sentry::StatusData::InitAsDefaultInstance();
 }
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_StatusData_sentry_2eproto =
@@ -533,8 +521,6 @@ bool Protocol_IsValid(int value) {
 
 // ===================================================================
 
-void OutboundMessageData::InitAsDefaultInstance() {
-}
 class OutboundMessageData::_Internal {
  public:
 };
@@ -550,7 +536,7 @@ OutboundMessageData::OutboundMessageData(const OutboundMessageData& from)
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   data_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_data().empty()) {
-    data_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_data(),
+    data_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_data(), 
       GetArena());
   }
   id_ = from.id_;
@@ -595,14 +581,13 @@ void OutboundMessageData::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  data_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  data_.ClearToEmpty();
   id_ = 0;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* OutboundMessageData::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -765,10 +750,6 @@ void OutboundMessageData::InternalSwap(OutboundMessageData* other) {
 
 // ===================================================================
 
-void SendMessageByMinBlockRequest::InitAsDefaultInstance() {
-  ::sentry::_SendMessageByMinBlockRequest_default_instance_._instance.get_mutable()->data_ = const_cast< ::sentry::OutboundMessageData*>(
-      ::sentry::OutboundMessageData::internal_default_instance());
-}
 class SendMessageByMinBlockRequest::_Internal {
  public:
   static const ::sentry::OutboundMessageData& data(const SendMessageByMinBlockRequest* msg);
@@ -798,8 +779,9 @@ SendMessageByMinBlockRequest::SendMessageByMinBlockRequest(const SendMessageByMi
 
 void SendMessageByMinBlockRequest::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SendMessageByMinBlockRequest_sentry_2eproto.base);
-  ::memset(&data_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&min_block_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&data_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&min_block_) -
       reinterpret_cast<char*>(&data_)) + sizeof(min_block_));
 }
 
@@ -845,7 +827,6 @@ void SendMessageByMinBlockRequest::Clear() {
 
 const char* SendMessageByMinBlockRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -1012,12 +993,6 @@ void SendMessageByMinBlockRequest::InternalSwap(SendMessageByMinBlockRequest* ot
 
 // ===================================================================
 
-void SendMessageByIdRequest::InitAsDefaultInstance() {
-  ::sentry::_SendMessageByIdRequest_default_instance_._instance.get_mutable()->data_ = const_cast< ::sentry::OutboundMessageData*>(
-      ::sentry::OutboundMessageData::internal_default_instance());
-  ::sentry::_SendMessageByIdRequest_default_instance_._instance.get_mutable()->peer_id_ = const_cast< ::types::H512*>(
-      ::types::H512::internal_default_instance());
-}
 class SendMessageByIdRequest::_Internal {
  public:
   static const ::sentry::OutboundMessageData& data(const SendMessageByIdRequest* msg);
@@ -1062,8 +1037,9 @@ SendMessageByIdRequest::SendMessageByIdRequest(const SendMessageByIdRequest& fro
 
 void SendMessageByIdRequest::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SendMessageByIdRequest_sentry_2eproto.base);
-  ::memset(&data_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&peer_id_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&data_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&peer_id_) -
       reinterpret_cast<char*>(&data_)) + sizeof(peer_id_));
 }
 
@@ -1113,7 +1089,6 @@ void SendMessageByIdRequest::Clear() {
 
 const char* SendMessageByIdRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -1282,10 +1257,6 @@ void SendMessageByIdRequest::InternalSwap(SendMessageByIdRequest* other) {
 
 // ===================================================================
 
-void SendMessageToRandomPeersRequest::InitAsDefaultInstance() {
-  ::sentry::_SendMessageToRandomPeersRequest_default_instance_._instance.get_mutable()->data_ = const_cast< ::sentry::OutboundMessageData*>(
-      ::sentry::OutboundMessageData::internal_default_instance());
-}
 class SendMessageToRandomPeersRequest::_Internal {
  public:
   static const ::sentry::OutboundMessageData& data(const SendMessageToRandomPeersRequest* msg);
@@ -1315,8 +1286,9 @@ SendMessageToRandomPeersRequest::SendMessageToRandomPeersRequest(const SendMessa
 
 void SendMessageToRandomPeersRequest::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SendMessageToRandomPeersRequest_sentry_2eproto.base);
-  ::memset(&data_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&max_peers_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&data_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&max_peers_) -
       reinterpret_cast<char*>(&data_)) + sizeof(max_peers_));
 }
 
@@ -1362,7 +1334,6 @@ void SendMessageToRandomPeersRequest::Clear() {
 
 const char* SendMessageToRandomPeersRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -1529,8 +1500,6 @@ void SendMessageToRandomPeersRequest::InternalSwap(SendMessageToRandomPeersReque
 
 // ===================================================================
 
-void SentPeers::InitAsDefaultInstance() {
-}
 class SentPeers::_Internal {
  public:
 };
@@ -1593,7 +1562,6 @@ void SentPeers::Clear() {
 
 const char* SentPeers::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -1735,10 +1703,6 @@ void SentPeers::InternalSwap(SentPeers* other) {
 
 // ===================================================================
 
-void PenalizePeerRequest::InitAsDefaultInstance() {
-  ::sentry::_PenalizePeerRequest_default_instance_._instance.get_mutable()->peer_id_ = const_cast< ::types::H512*>(
-      ::types::H512::internal_default_instance());
-}
 class PenalizePeerRequest::_Internal {
  public:
   static const ::types::H512& peer_id(const PenalizePeerRequest* msg);
@@ -1774,8 +1738,9 @@ PenalizePeerRequest::PenalizePeerRequest(const PenalizePeerRequest& from)
 
 void PenalizePeerRequest::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_PenalizePeerRequest_sentry_2eproto.base);
-  ::memset(&peer_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&penalty_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&peer_id_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&penalty_) -
       reinterpret_cast<char*>(&peer_id_)) + sizeof(penalty_));
 }
 
@@ -1821,7 +1786,6 @@ void PenalizePeerRequest::Clear() {
 
 const char* PenalizePeerRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -1989,10 +1953,6 @@ void PenalizePeerRequest::InternalSwap(PenalizePeerRequest* other) {
 
 // ===================================================================
 
-void PeerMinBlockRequest::InitAsDefaultInstance() {
-  ::sentry::_PeerMinBlockRequest_default_instance_._instance.get_mutable()->peer_id_ = const_cast< ::types::H512*>(
-      ::types::H512::internal_default_instance());
-}
 class PeerMinBlockRequest::_Internal {
  public:
   static const ::types::H512& peer_id(const PeerMinBlockRequest* msg);
@@ -2028,8 +1988,9 @@ PeerMinBlockRequest::PeerMinBlockRequest(const PeerMinBlockRequest& from)
 
 void PeerMinBlockRequest::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_PeerMinBlockRequest_sentry_2eproto.base);
-  ::memset(&peer_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&min_block_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&peer_id_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&min_block_) -
       reinterpret_cast<char*>(&peer_id_)) + sizeof(min_block_));
 }
 
@@ -2075,7 +2036,6 @@ void PeerMinBlockRequest::Clear() {
 
 const char* PeerMinBlockRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -2242,10 +2202,6 @@ void PeerMinBlockRequest::InternalSwap(PeerMinBlockRequest* other) {
 
 // ===================================================================
 
-void InboundMessage::InitAsDefaultInstance() {
-  ::sentry::_InboundMessage_default_instance_._instance.get_mutable()->peer_id_ = const_cast< ::types::H512*>(
-      ::types::H512::internal_default_instance());
-}
 class InboundMessage::_Internal {
  public:
   static const ::types::H512& peer_id(const InboundMessage* msg);
@@ -2272,7 +2228,7 @@ InboundMessage::InboundMessage(const InboundMessage& from)
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   data_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_data().empty()) {
-    data_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_data(),
+    data_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_data(), 
       GetArena());
   }
   if (from._internal_has_peer_id()) {
@@ -2287,8 +2243,9 @@ InboundMessage::InboundMessage(const InboundMessage& from)
 void InboundMessage::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_InboundMessage_sentry_2eproto.base);
   data_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  ::memset(&peer_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&id_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&peer_id_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&id_) -
       reinterpret_cast<char*>(&peer_id_)) + sizeof(id_));
 }
 
@@ -2325,7 +2282,7 @@ void InboundMessage::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  data_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  data_.ClearToEmpty();
   if (GetArena() == nullptr && peer_id_ != nullptr) {
     delete peer_id_;
   }
@@ -2336,7 +2293,6 @@ void InboundMessage::Clear() {
 
 const char* InboundMessage::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -2529,10 +2485,6 @@ void InboundMessage::InternalSwap(InboundMessage* other) {
 
 // ===================================================================
 
-void Forks::InitAsDefaultInstance() {
-  ::sentry::_Forks_default_instance_._instance.get_mutable()->genesis_ = const_cast< ::types::H256*>(
-      ::types::H256::internal_default_instance());
-}
 class Forks::_Internal {
  public:
   static const ::types::H256& genesis(const Forks* msg);
@@ -2614,7 +2566,6 @@ void Forks::Clear() {
 
 const char* Forks::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -2789,14 +2740,6 @@ void Forks::InternalSwap(Forks* other) {
 
 // ===================================================================
 
-void StatusData::InitAsDefaultInstance() {
-  ::sentry::_StatusData_default_instance_._instance.get_mutable()->total_difficulty_ = const_cast< ::types::H256*>(
-      ::types::H256::internal_default_instance());
-  ::sentry::_StatusData_default_instance_._instance.get_mutable()->best_hash_ = const_cast< ::types::H256*>(
-      ::types::H256::internal_default_instance());
-  ::sentry::_StatusData_default_instance_._instance.get_mutable()->fork_data_ = const_cast< ::sentry::Forks*>(
-      ::sentry::Forks::internal_default_instance());
-}
 class StatusData::_Internal {
  public:
   static const ::types::H256& total_difficulty(const StatusData* msg);
@@ -2860,8 +2803,9 @@ StatusData::StatusData(const StatusData& from)
 
 void StatusData::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_StatusData_sentry_2eproto.base);
-  ::memset(&total_difficulty_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&max_block_) -
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&total_difficulty_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&max_block_) -
       reinterpret_cast<char*>(&total_difficulty_)) + sizeof(max_block_));
 }
 
@@ -2919,7 +2863,6 @@ void StatusData::Clear() {
 
 const char* StatusData::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -3159,8 +3102,6 @@ void StatusData::InternalSwap(StatusData* other) {
 
 // ===================================================================
 
-void SetStatusReply::InitAsDefaultInstance() {
-}
 class SetStatusReply::_Internal {
  public:
 };
@@ -3219,7 +3160,6 @@ void SetStatusReply::Clear() {
 
 const char* SetStatusReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -3357,8 +3297,6 @@ void SetStatusReply::InternalSwap(SetStatusReply* other) {
 
 // ===================================================================
 
-void MessagesRequest::InitAsDefaultInstance() {
-}
 class MessagesRequest::_Internal {
  public:
 };
@@ -3417,7 +3355,6 @@ void MessagesRequest::Clear() {
 
 const char* MessagesRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);

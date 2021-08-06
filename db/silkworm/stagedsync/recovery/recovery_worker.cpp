@@ -25,8 +25,7 @@ RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id), data_si
     if (!data_) {
         throw std::runtime_error("Memory allocation failed");
     }
-};
-
+}
 
 void RecoveryWorker::set_work(uint32_t batch_id, std::unique_ptr<std::vector<package>> batch) {
     batch_ = std::move(batch);
@@ -44,9 +43,9 @@ bool RecoveryWorker::pull_results(Status status, std::vector<std::pair<uint64_t,
     if (status_.compare_exchange_strong(status, Status::Idle)) {
         std::swap(out, results_);
         return true;
-    };
+    }
     return false;
-};
+}
 
 void RecoveryWorker::work() {
     while (wait_for_kick()) {
@@ -101,5 +100,6 @@ void RecoveryWorker::work() {
     }
 
     std::free(data_);
-};
-};
+}
+
+}  // namespace silkworm::stagedsync::recovery

@@ -19,15 +19,13 @@
 #define SILKWORM_STOPWATCH_HPP_
 
 #include <chrono>
-#include <optional>
-
+#include <iomanip>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
-
 #include <utility>
 #include <vector>
-#include <iomanip>
 
 namespace silkworm {
 /// <summary>
@@ -92,6 +90,6 @@ class StopWatch {
     std::vector<std::pair<TimePoint, Duration>> laps_{};
 };
 
-
 }  // namespace silkworm
+
 #endif  // !SILKWORM_STOPWATCH_HPP_

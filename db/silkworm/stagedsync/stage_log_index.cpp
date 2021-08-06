@@ -153,7 +153,7 @@ StageResult stage_log_index(TransactionManager &txn, const std::filesystem::path
     return StageResult::kSuccess;
 }
 
-StageResult unwind_log_index(TransactionManager& txn, etl::Collector &collector, uint64_t unwind_to, bool topics) {
+static StageResult unwind_log_index(TransactionManager& txn, etl::Collector &collector, uint64_t unwind_to, bool topics) {
     auto index_table{topics ? 
         db::open_cursor(*txn, db::table::kLogTopicIndex): 
         db::open_cursor(*txn, db::table::kLogAddressIndex)

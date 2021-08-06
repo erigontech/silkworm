@@ -19,27 +19,29 @@ find_package(Boost CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 
+get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
+
 file(GLOB_RECURSE SILKWORM_DB_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
 list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp$")
 
-add_library(silkworm_db
-        ${SILKWORM_DB_SRC}
-        "${CMAKE_SOURCE_DIR}/interfaces/sentry.grpc.pb.cc"
-        "${CMAKE_SOURCE_DIR}/interfaces/sentry.pb.cc"
-        "${CMAKE_SOURCE_DIR}/interfaces/types.pb.cc")
+set(SILKWORM_INTERFACE_SRC
+        ${SILKWORM_MAIN_DIR}/interfaces/sentry.grpc.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/sentry.grpc.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/sentry.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/sentry.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/types.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/types.pb.h)
+
+add_library(silkworm_db ${SILKWORM_DB_SRC} ${SILKWORM_INTERFACE_SRC})
 
 add_dependencies(silkworm_db generate_sentry_grpc)
 
-set_source_files_properties("${CMAKE_SOURCE_DIR}/interfaces/sentry.grpc.pb.cc" PROPERTIES GENERATED TRUE)
-set_source_files_properties("${CMAKE_SOURCE_DIR}/interfaces/sentry.pb.cc" PROPERTIES GENERATED TRUE)
-set_source_files_properties("${CMAKE_SOURCE_DIR}/interfaces/types.pb.cc" PROPERTIES GENERATED TRUE)
+set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
 
-get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
 target_include_directories(silkworm_db PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_SOURCE_DIR}
-        "${SILKWORM_MAIN_DIR}/magic_enum/include"
-        "${SILKWORM_MAIN_DIR}/interfaces")
+        ${SILKWORM_MAIN_DIR}
+        ${SILKWORM_MAIN_DIR}/magic_enum/include)
 
 set(SILKWORM_DB_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring
         nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf)

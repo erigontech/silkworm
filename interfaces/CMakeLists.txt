@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020 The SilkRpc Authors
+   Copyright 2020-2021 The SilkRpc Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -45,11 +45,9 @@ set(TYPES_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/types.pb.h")
 add_custom_command(
         OUTPUT "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
         COMMAND ${PROTOBUF_PROTOC}
-        ARGS --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
-        --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
-        -I "${TYPES_PROTO_PATH}"
-        --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}"
-        "${TYPES_PROTO}"
+        ARGS --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
+          -I "${TYPES_PROTO_PATH}"
+          "${TYPES_PROTO}"
         DEPENDS "${TYPES_PROTO}"
 )
 

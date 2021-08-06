@@ -25,8 +25,10 @@ namespace silkworm::etl {
 namespace fs = std::filesystem;
 
 Collector::~Collector() {
-    file_providers_.clear();  // Will ensure all files (if any) have been orderly closed and deleted before we remove
-                              // the working dir
+    file_providers_.clear();  // Will ensure all files (if any) have been orderly closed and deleted
+    if (work_path_managed_ && fs::exists(work_path_)) {
+        fs::remove_all(work_path_);
+    }
 }
 
 void Collector::flush_buffer() {
@@ -35,8 +37,8 @@ void Collector::flush_buffer() {
         buffer_.sort();
 
         /* Build a unique file name to pass FileProvider */
-        fs::path new_file_path{fs::path(work_path_) / fs::path(std::to_string(unique_id_) + "-" +
-                                                               std::to_string(file_providers_.size()) + ".bin")};
+        fs::path new_file_path{
+            work_path_ / fs::path(std::to_string(unique_id_) + "-" + std::to_string(file_providers_.size()) + ".bin")};
 
         file_providers_.emplace_back(new FileProvider(new_file_path.string(), file_providers_.size()));
         file_providers_.back()->flush(buffer_);
@@ -152,20 +154,26 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
     size_ = 0;  // We have consumed all items
 }
 
-std::string Collector::set_work_path(const char* provided_work_path) {
-    // If something provided ensure exists as a directory
-    if (provided_work_path) {
-        fs::path path(provided_work_path);
-        if (!fs::exists(path) || !fs::is_directory(path)) {
-            throw etl_error("Non existent working directory");
-        }
-        return path.string();
-    }
+std::filesystem::path Collector::set_work_path(const std::optional<std::filesystem::path>& provided_work_path) {
+    fs::path res;
 
-    // No path provided so we need to get a unique temporary directory
-    // to prevent different instances of collector to clash each other
-    // with same filenames
-    return create_temporary_directory().string();
+    // If something provided ensure exists as a directory
+    if (provided_work_path.has_value()) {
+        if (fs::exists(provided_work_path.value()) && !fs::is_directory(provided_work_path.value())) {
+            throw etl_error("Invalid collector directory name");
+        }
+        res = provided_work_path.value();
+    } else {
+        // No path provided so we need to get a unique temporary directory
+        // to prevent different instances of collector to clash each other
+        // with same filenames
+        res = create_temporary_directory();
+    }
+    if (res.has_filename()) {
+        res += std::filesystem::path::preferred_separator;
+    }
+    fs::create_directories(res);
+    return res;
 }
 
 }  // namespace silkworm::etl

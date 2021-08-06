@@ -193,6 +193,8 @@ endif()
 add_subdirectory(core)
 
 if(NOT SILKWORM_CORE_ONLY)
+  add_subdirectory(interfaces)
+
   set(MDBX_ENABLE_TESTS OFF)
   add_subdirectory(libmdbx)
   target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libmdbx)
@@ -206,5 +208,3 @@ endif()
 if(SILKWORM_WASM_API)
   add_subdirectory(wasm)
 endif()
-
-add_subdirectory(interfaces)

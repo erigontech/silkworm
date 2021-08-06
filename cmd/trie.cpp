@@ -32,7 +32,7 @@ The previous Generate Hashed State Stage must be performed prior to calling this
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/trie/db_trie.hpp>
+#include <silkworm/trie/intermediate_hashes.hpp>
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Generate account & storage tries in the DB and compute the state root"};
@@ -46,18 +46,18 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-
     SILKWORM_LOG(LogLevel::Info) << "Regenerating account & storage tries. DB: " << chaindata << std::endl;
 
     try {
-
-        db::EnvConfig db_config{chaindata};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.create_tree();
+        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 
         TemporaryDirectory temp_dir;
 
-        evmc::bytes32 state_root{trie::regenerate_db_tries(txn, temp_dir.path())};
+        evmc::bytes32 state_root{trie::regenerate_intermediate_hashes(txn, temp_dir.path())};
 
         SILKWORM_LOG(LogLevel::Info) << "State root " << to_hex(state_root) << std::endl;
         txn.commit();

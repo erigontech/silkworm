@@ -136,8 +136,9 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
     return gas_left;
 }
 
-std::pair<std::vector<Receipt>, ValidationResult> ExecutionProcessor::execute_block() noexcept {
-    std::vector<Receipt> receipts{};
+ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipts) noexcept {
+    receipts.clear();
+    receipts.reserve(evm_.block().transactions.size());
 
     uint64_t block_num{evm_.block().header.number};
     if (block_num == evm_.config().dao_block) {
@@ -146,16 +147,16 @@ std::pair<std::vector<Receipt>, ValidationResult> ExecutionProcessor::execute_bl
 
     cumulative_gas_used_ = 0;
     for (const Transaction& txn : evm_.block().transactions) {
-        ValidationResult err{validate_transaction(txn)};
+        const ValidationResult err{validate_transaction(txn)};
         if (err != ValidationResult::kOk) {
-            return {receipts, err};
+            return err;
         }
         receipts.push_back(execute_transaction(txn));
     }
 
     apply_rewards();
 
-    return {receipts, ValidationResult::kOk};
+    return ValidationResult::kOk;
 }
 
 void ExecutionProcessor::apply_rewards() noexcept {

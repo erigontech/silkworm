@@ -23,10 +23,23 @@
 
 #include <string.h>
 
-#if defined(__GNUC__) && defined(__x86_64__)
+#if defined(__x86_64__)
+
 #include <cpuid.h>
 #include <x86intrin.h>
-#endif
+
+#elif defined(__aarch64__)
+
+#include <arm_neon.h>
+
+#if defined(__linux__)
+#include <asm/hwcap.h>
+#include <sys/auxv.h>
+#elif defined(__APPLE__)
+#include <sys/sysctl.h>
+#endif  // defined(__linux__), defined(__APPLE__)
+
+#endif  // defined(__x86_64__), defined(__aarch64__)
 
 #if _MSC_VER
 #define ALWAYS_INLINE __forceinline
@@ -59,7 +72,7 @@ static const uint32_t k[] = {
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
 struct buffer_state {
-    const uint8_t *p;
+    const uint8_t* p;
     size_t len;
     size_t total_len;
     bool single_one_delivered;
@@ -74,7 +87,7 @@ static inline uint32_t right_rot(uint32_t value, unsigned int count) {
     return value >> count | value << (32 - count);
 }
 
-static void init_buf_state(struct buffer_state *state, const void *input, size_t len) {
+static void init_buf_state(struct buffer_state* state, const void* input, size_t len) {
     state->p = input;
     state->len = len;
     state->total_len = len;
@@ -82,7 +95,7 @@ static void init_buf_state(struct buffer_state *state, const void *input, size_t
     state->total_len_delivered = false;
 }
 
-static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
+static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state* state) {
     if (state->total_len_delivered) {
         return false;
     }
@@ -97,7 +110,9 @@ static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
     memcpy(chunk, state->p, state->len);
     chunk += state->len;
     size_t space_in_chunk = CHUNK_SIZE - state->len;
-    state->p += state->len;
+    if (state->len) {  // avoid adding 0 to nullptr
+        state->p += state->len;
+    }
     state->len = 0;
 
     /* If we are here, space_in_chunk is one at minimum. */
@@ -135,7 +150,7 @@ static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state *state) {
     return true;
 }
 
-static inline ALWAYS_INLINE void sha_256_implementation(uint32_t h[8], const void *input, size_t len) {
+static inline ALWAYS_INLINE void sha_256_implementation(uint32_t h[8], const void* input, size_t len) {
     /*
      * Note 1: All integers (expect indexes) are 32-bit unsigned integers and addition is calculated modulo 2^32.
      *
@@ -164,7 +179,7 @@ static inline ALWAYS_INLINE void sha_256_implementation(uint32_t h[8], const voi
             ah[i] = h[i];
         }
 
-        const uint8_t *p = chunk;
+        const uint8_t* p = chunk;
 
         /* Compression function main loop: */
         for (i = 0; i < 4; i++) {
@@ -222,22 +237,22 @@ static inline ALWAYS_INLINE void sha_256_implementation(uint32_t h[8], const voi
     }
 }
 
-static void sha_256_generic(uint32_t h[8], const void *input, size_t len) { sha_256_implementation(h, input, len); }
+static void sha_256_generic(uint32_t h[8], const void* input, size_t len) { sha_256_implementation(h, input, len); }
 
-static void (*sha_256_best)(uint32_t h[8], const void *input, size_t len) = sha_256_generic;
+static void (*sha_256_best)(uint32_t h[8], const void* input, size_t len) = sha_256_generic;
 
-#if defined(__x86_64__) && __has_attribute(target)
+#if defined(__x86_64__)
 
-__attribute__((target("bmi,bmi2"))) static void sha_256_x86_bmi(uint32_t h[8], const void *input, size_t len) {
+__attribute__((target("bmi,bmi2"))) static void sha_256_x86_bmi(uint32_t h[8], const void* input, size_t len) {
     sha_256_implementation(h, input, len);
 }
 
-// The following function was adapted from https://github.com/noloader/SHA-Intrinsics
+// The following function was adapted from https://github.com/noloader/SHA-Intrinsics/blob/master/sha256-x86.c
 /*   Intel SHA extensions using C intrinsics               */
 /*   Written and place in public domain by Jeffrey Walton  */
 /*   Based on code from Intel, and by Sean Gulley for      */
 /*   the miTLS project.                                    */
-__attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8], const void *input, size_t len) {
+__attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8], const void* input, size_t len) {
     __m128i STATE0, STATE1;
     __m128i MSG, TMP;
     __m128i MSG0, MSG1, MSG2, MSG3;
@@ -245,8 +260,8 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
     const __m128i MASK = _mm_set_epi64x(0x0c0d0e0f08090a0bULL, 0x0405060700010203ULL);
 
     /* Load initial values */
-    TMP = _mm_loadu_si128((const __m128i *)&h[0]);
-    STATE1 = _mm_loadu_si128((const __m128i *)&h[4]);
+    TMP = _mm_loadu_si128((const __m128i*)&h[0]);
+    STATE1 = _mm_loadu_si128((const __m128i*)&h[4]);
 
     TMP = _mm_shuffle_epi32(TMP, 0xB1);          /* CDAB */
     STATE1 = _mm_shuffle_epi32(STATE1, 0x1B);    /* EFGH */
@@ -265,7 +280,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         CDGH_SAVE = STATE1;
 
         /* Rounds 0-3 */
-        MSG = _mm_loadu_si128((const __m128i *)(chunk + 0));
+        MSG = _mm_loadu_si128((const __m128i*)(chunk + 0));
         MSG0 = _mm_shuffle_epi8(MSG, MASK);
         MSG = _mm_add_epi32(MSG0, _mm_set_epi64x(0xE9B5DBA5B5C0FBCFULL, 0x71374491428A2F98ULL));
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
@@ -273,7 +288,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         STATE0 = _mm_sha256rnds2_epu32(STATE0, STATE1, MSG);
 
         /* Rounds 4-7 */
-        MSG1 = _mm_loadu_si128((const __m128i *)(chunk + 16));
+        MSG1 = _mm_loadu_si128((const __m128i*)(chunk + 16));
         MSG1 = _mm_shuffle_epi8(MSG1, MASK);
         MSG = _mm_add_epi32(MSG1, _mm_set_epi64x(0xAB1C5ED5923F82A4ULL, 0x59F111F13956C25BULL));
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
@@ -282,7 +297,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG0 = _mm_sha256msg1_epu32(MSG0, MSG1);
 
         /* Rounds 8-11 */
-        MSG2 = _mm_loadu_si128((const __m128i *)(chunk + 32));
+        MSG2 = _mm_loadu_si128((const __m128i*)(chunk + 32));
         MSG2 = _mm_shuffle_epi8(MSG2, MASK);
         MSG = _mm_add_epi32(MSG2, _mm_set_epi64x(0x550C7DC3243185BEULL, 0x12835B01D807AA98ULL));
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
@@ -291,7 +306,7 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
         MSG1 = _mm_sha256msg1_epu32(MSG1, MSG2);
 
         /* Rounds 12-15 */
-        MSG3 = _mm_loadu_si128((const __m128i *)(chunk + 48));
+        MSG3 = _mm_loadu_si128((const __m128i*)(chunk + 48));
         MSG3 = _mm_shuffle_epi8(MSG3, MASK);
         MSG = _mm_add_epi32(MSG3, _mm_set_epi64x(0xC19BF1749BDC06A7ULL, 0x80DEB1FE72BE5D74ULL));
         STATE1 = _mm_sha256rnds2_epu32(STATE1, STATE0, MSG);
@@ -427,8 +442,8 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
     STATE1 = _mm_alignr_epi8(STATE1, TMP, 8);    /* ABEF */
 
     /* Save state */
-    _mm_storeu_si128((__m128i *)&h[0], STATE0);
-    _mm_storeu_si128((__m128i *)&h[4], STATE1);
+    _mm_storeu_si128((__m128i*)&h[0], STATE0);
+    _mm_storeu_si128((__m128i*)&h[4], STATE1);
 }
 
 // https://stackoverflow.com/questions/6121792/how-to-check-if-a-cpu-supports-the-sse3-instruction-set
@@ -462,7 +477,195 @@ __attribute__((constructor)) static void select_sha256_implementation() {
     }
 }
 
-#endif
+#elif defined(__aarch64__)
+
+// The following function was adapted from https://github.com/noloader/SHA-Intrinsics/blob/master/sha256-arm.c
+/* sha256-arm.c - ARMv8 SHA extensions using C intrinsics     */
+/*   Written and placed in public domain by Jeffrey Walton    */
+/*   Based on code from ARM, and by Johannes Schneiders, Skip */
+/*   Hovsmith and Barry O'Rourke for the mbedTLS project.     */
+static void sha_256_arm_v8(uint32_t h[8], const void* input, size_t len) {
+    uint32x4_t STATE0, STATE1, ABEF_SAVE, CDGH_SAVE;
+    uint32x4_t MSG0, MSG1, MSG2, MSG3;
+    uint32x4_t TMP0, TMP1, TMP2;
+
+    /* Load state */
+    STATE0 = vld1q_u32(&h[0]);
+    STATE1 = vld1q_u32(&h[4]);
+
+    struct buffer_state state;
+    init_buf_state(&state, input, len);
+
+    /* 512-bit chunks is what we will operate on. */
+    uint8_t chunk[CHUNK_SIZE];
+
+    while (calc_chunk(chunk, &state)) {
+        /* Save state */
+        ABEF_SAVE = STATE0;
+        CDGH_SAVE = STATE1;
+
+        /* Load message */
+        MSG0 = vld1q_u32((const uint32_t*)(chunk + 0));
+        MSG1 = vld1q_u32((const uint32_t*)(chunk + 16));
+        MSG2 = vld1q_u32((const uint32_t*)(chunk + 32));
+        MSG3 = vld1q_u32((const uint32_t*)(chunk + 48));
+
+        /* Reverse for little endian */
+        MSG0 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG0)));
+        MSG1 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG1)));
+        MSG2 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG2)));
+        MSG3 = vreinterpretq_u32_u8(vrev32q_u8(vreinterpretq_u8_u32(MSG3)));
+
+        TMP0 = vaddq_u32(MSG0, vld1q_u32(&k[0x00]));
+
+        /* Rounds 0-3 */
+        MSG0 = vsha256su0q_u32(MSG0, MSG1);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG1, vld1q_u32(&k[0x04]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG0 = vsha256su1q_u32(MSG0, MSG2, MSG3);
+
+        /* Rounds 4-7 */
+        MSG1 = vsha256su0q_u32(MSG1, MSG2);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG2, vld1q_u32(&k[0x08]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG1 = vsha256su1q_u32(MSG1, MSG3, MSG0);
+
+        /* Rounds 8-11 */
+        MSG2 = vsha256su0q_u32(MSG2, MSG3);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG3, vld1q_u32(&k[0x0c]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG2 = vsha256su1q_u32(MSG2, MSG0, MSG1);
+
+        /* Rounds 12-15 */
+        MSG3 = vsha256su0q_u32(MSG3, MSG0);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG0, vld1q_u32(&k[0x10]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG3 = vsha256su1q_u32(MSG3, MSG1, MSG2);
+
+        /* Rounds 16-19 */
+        MSG0 = vsha256su0q_u32(MSG0, MSG1);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG1, vld1q_u32(&k[0x14]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG0 = vsha256su1q_u32(MSG0, MSG2, MSG3);
+
+        /* Rounds 20-23 */
+        MSG1 = vsha256su0q_u32(MSG1, MSG2);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG2, vld1q_u32(&k[0x18]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG1 = vsha256su1q_u32(MSG1, MSG3, MSG0);
+
+        /* Rounds 24-27 */
+        MSG2 = vsha256su0q_u32(MSG2, MSG3);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG3, vld1q_u32(&k[0x1c]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG2 = vsha256su1q_u32(MSG2, MSG0, MSG1);
+
+        /* Rounds 28-31 */
+        MSG3 = vsha256su0q_u32(MSG3, MSG0);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG0, vld1q_u32(&k[0x20]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG3 = vsha256su1q_u32(MSG3, MSG1, MSG2);
+
+        /* Rounds 32-35 */
+        MSG0 = vsha256su0q_u32(MSG0, MSG1);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG1, vld1q_u32(&k[0x24]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG0 = vsha256su1q_u32(MSG0, MSG2, MSG3);
+
+        /* Rounds 36-39 */
+        MSG1 = vsha256su0q_u32(MSG1, MSG2);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG2, vld1q_u32(&k[0x28]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG1 = vsha256su1q_u32(MSG1, MSG3, MSG0);
+
+        /* Rounds 40-43 */
+        MSG2 = vsha256su0q_u32(MSG2, MSG3);
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG3, vld1q_u32(&k[0x2c]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+        MSG2 = vsha256su1q_u32(MSG2, MSG0, MSG1);
+
+        /* Rounds 44-47 */
+        MSG3 = vsha256su0q_u32(MSG3, MSG0);
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG0, vld1q_u32(&k[0x30]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+        MSG3 = vsha256su1q_u32(MSG3, MSG1, MSG2);
+
+        /* Rounds 48-51 */
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG1, vld1q_u32(&k[0x34]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+
+        /* Rounds 52-55 */
+        TMP2 = STATE0;
+        TMP0 = vaddq_u32(MSG2, vld1q_u32(&k[0x38]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+
+        /* Rounds 56-59 */
+        TMP2 = STATE0;
+        TMP1 = vaddq_u32(MSG3, vld1q_u32(&k[0x3c]));
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP0);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP0);
+
+        /* Rounds 60-63 */
+        TMP2 = STATE0;
+        STATE0 = vsha256hq_u32(STATE0, STATE1, TMP1);
+        STATE1 = vsha256h2q_u32(STATE1, TMP2, TMP1);
+
+        /* Combine state */
+        STATE0 = vaddq_u32(STATE0, ABEF_SAVE);
+        STATE1 = vaddq_u32(STATE1, CDGH_SAVE);
+    }
+
+    /* Save state */
+    vst1q_u32(&h[0], STATE0);
+    vst1q_u32(&h[4], STATE1);
+}
+
+__attribute__((constructor)) static void select_sha256_implementation() {
+#if defined(__linux__)
+    if ((getauxval(AT_HWCAP) & HWCAP_SHA2) != 0) {
+        sha_256_best = sha_256_arm_v8;
+    }
+#elif defined(__APPLE__)
+    int64_t hw_cap = 0;
+    size_t size = sizeof(hw_cap);
+
+    if (sysctlbyname("hw.optional.armv8_2_sha3", &hw_cap, &size, NULL, 0) == 0) {
+        // Use SHA3 as proxy for SHA2 (sysctl hw doesn't list SHA2 for Apple M1)
+        if (hw_cap == 1) {
+            sha_256_best = sha_256_arm_v8;
+        }
+    }
+#endif  // defined(__linux__), defined(__APPLE__)
+}
+
+#endif  // defined(__x86_64__), defined(__aarch64__)
 
 /*
  * Limitations:
@@ -472,7 +675,7 @@ __attribute__((constructor)) static void select_sha256_implementation() {
  *   for bit string lengths that are not multiples of eight, and it really operates on arrays of bytes.
  *   In particular, the len parameter is a number of bytes.
  */
-void calc_sha_256(uint8_t hash[32], const void *input, size_t len, bool use_cpu_extensions) {
+void calc_sha_256(uint8_t hash[32], const void* input, size_t len, bool use_cpu_extensions) {
     /*
      * Initialize hash values:
      * (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):

@@ -36,7 +36,7 @@
 
 using namespace silkworm;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
 
     CLI::App app{"Generates Log Index"};
@@ -53,12 +53,11 @@ int main(int argc, char *argv[]) {
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.create_tree();
     db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
-    etl::Collector topic_collector(data_dir.get_etl_path().string().c_str(), /* flush size */ 512 * kMebi);
-    etl::Collector address_collector(data_dir.get_etl_path().string().c_str(), /* flush size */ 512 * kMebi);
 
     try {
+        auto env{db::open_env(db_config)};
+
         if (full) {
-            auto env{db::open_env(db_config)};
             auto txn{env.start_write()};
             db::stages::set_stage_progress(txn, db::stages::kLogIndexKey, 0);
             auto map{db::open_map(txn, db::table::kLogTopicIndex)};
@@ -66,11 +65,11 @@ int main(int argc, char *argv[]) {
             map = db::open_map(txn, db::table::kLogAddressIndex);
             txn.clear_map(map);
             txn.commit();
-            env.close();
         }
 
-        stagedsync::check_stagedsync_error(stagedsync::stage_log_index(db_config));
-    } catch (const std::exception &ex) {
+        stagedsync::TransactionManager tm{env};
+        stagedsync::check_stagedsync_error(stagedsync::stage_log_index(tm, data_dir.get_etl_path()));
+    } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }

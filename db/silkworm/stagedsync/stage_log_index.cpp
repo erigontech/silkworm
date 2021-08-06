@@ -38,7 +38,7 @@ namespace fs = std::filesystem;
 
 constexpr size_t kBitmapBufferSizeLimit = 512 * kMebi;
 
-void loader_function(etl::Entry entry, mdbx::cursor &target_table, MDBX_put_flags_t db_flags) {
+static void loader_function(etl::Entry entry, mdbx::cursor& target_table, MDBX_put_flags_t db_flags) {
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
     Bytes last_chunk_index(entry.key.size() + 4, '\0');
     std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
@@ -64,8 +64,8 @@ void loader_function(etl::Entry entry, mdbx::cursor &target_table, MDBX_put_flag
     }
 }
 
-void flush_bitmaps(etl::Collector &collector, std::unordered_map<std::string, roaring::Roaring> &map) {
-    for (const auto &[key, bm] : map) {
+static void flush_bitmaps(etl::Collector& collector, std::unordered_map<std::string, roaring::Roaring>& map) {
+    for (const auto& [key, bm] : map) {
         Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
         bm.write(byte_ptr_cast(bitmap_bytes.data()));
         etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
@@ -74,19 +74,14 @@ void flush_bitmaps(etl::Collector &collector, std::unordered_map<std::string, ro
     map.clear();
 }
 
-StageResult stage_log_index(db::EnvConfig db_config) {
-    fs::path datadir(db_config.path);
-    fs::path etl_path(datadir.parent_path() / fs::path("etl-temp"));
+StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path& etl_path) {
     fs::create_directories(etl_path);
     etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
     etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
 
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-
     // We take data from header table and transform it and put it in blockhashes table
-    auto log_table{db::open_cursor(txn, db::table::kLogs)};
-    auto last_processed_block_number{db::stages::get_stage_progress(txn, db::stages::kLogIndexKey)};
+    auto log_table{db::open_cursor(*txn, db::table::kLogs)};
+    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)};
 
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started Log Index Extraction" << std::endl;
@@ -101,7 +96,7 @@ StageResult stage_log_index(db::EnvConfig db_config) {
     listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps, &topics_allocated_space,
                                         &addrs_allocated_space);
 
-    if (log_table.seek(db::to_slice(start))) {
+    if (log_table.lower_bound(db::to_slice(start))) {
         auto log_data{log_table.current()};
         while (log_data) {
             block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(log_data.key.iov_base));
@@ -138,24 +133,89 @@ StageResult stage_log_index(db::EnvConfig db_config) {
                                                           : MDBX_put_flags_t::MDBX_APPEND};
 
     // Eventually load collected items WITH transform (may throw)
-    auto target{db::open_cursor(txn, db::table::kLogTopicIndex)};
+    auto target{db::open_cursor(*txn, db::table::kLogTopicIndex)};
 
     topic_collector.load(target, loader_function, db_flags,
                          /* log_every_percent = */ 10);
     target.close();
-    target = db::open_cursor(txn, db::table::kLogAddressIndex);
+    target = db::open_cursor(*txn, db::table::kLogAddressIndex);
     SILKWORM_LOG(LogLevel::Info) << "Started Address Loading" << std::endl;
     addresses_collector.load(target, loader_function, db_flags,
                              /* log_every_percent = */ 10);
 
     // Update progress height with last processed block
-    db::stages::set_stage_progress(txn, db::stages::kLogIndexKey, block_number);
+    db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, block_number);
+
     txn.commit();
+
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
     return StageResult::kSuccess;
 }
 
-StageResult unwind_log_index(db::EnvConfig, uint64_t) { throw std::runtime_error("Not Implemented."); }
+static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t unwind_to,
+                                    bool topics) {
+    auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
+                            : db::open_cursor(*txn, db::table::kLogAddressIndex)};
+    if (unwind_to >= db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)) {
+        return StageResult::kSuccess;
+    }
+    // Latest bitmap
+    if (index_table.to_first(/*throw_notfound*/ false)) {
+        auto data{index_table.current()};
+        while (data) {
+            // Get bitmap data of current element
+            auto key{db::from_slice(data.key)};
+            auto bitmap_data{db::from_slice(data.value)};
+
+            auto bm{roaring::Roaring::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
+            // Check for keys that can be skipped
+            if (bm.maximum() <= unwind_to) {
+                data = index_table.to_next(/*throw_notfound*/ false);
+                continue;
+            }
+            // adjust bitmaps
+            if (bm.minimum() <= unwind_to) {
+                // Erase elements that are > unwind_to
+                bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(0, unwind_to - 1, 1));
+                auto new_bitmap{Bytes(bm.getSizeInBytes(), '\0')};
+                bm.write(byte_ptr_cast(&new_bitmap[0]));
+                // make new key
+                Bytes new_key(key.size(), '\0');
+                std::memcpy(&new_key[0], key.data(), key.size());
+                boost::endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
+                // collect higher bitmap
+                etl::Entry entry{new_key, new_bitmap};
+                collector.collect(entry);
+            }
+            // erase index
+            index_table.erase(true);
+            data = index_table.to_next(/*throw_notfound*/ false);
+        }
+    }
+    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
+    txn.commit();
+
+    return StageResult::kSuccess;
+}
+
+StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
+    etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
+    etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
+
+    SILKWORM_LOG(LogLevel::Info) << "Started Topic Index Unwind" << std::endl;
+    auto result{unwind_log_index(txn, topic_collector, unwind_to, true)};
+    if (result != StageResult::kSuccess) {
+        return result;
+    }
+    SILKWORM_LOG(LogLevel::Info) << "Started Address Index Unwind" << std::endl;
+    result = unwind_log_index(txn, addresses_collector, unwind_to, false);
+    if (result != StageResult::kSuccess) {
+        return result;
+    }
+    db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, unwind_to);
+    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+    return StageResult::kSuccess;
+}
 
 }  // namespace silkworm::stagedsync

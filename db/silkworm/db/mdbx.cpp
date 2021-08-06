@@ -38,9 +38,7 @@ namespace silkworm::db {
         }
     } else {
         if (!fs::exists(db_path)) {
-            if (!fs::create_directories(db_path)) {
-                throw std::runtime_error("Unable to create directory " + db_path.string() + ". Check your permissions");
-            }
+            fs::create_directories(db_path);
         } else {
             if (fs::exists(db_file)) {
                 throw std::runtime_error("File " + db_file.string() + " already exists but create was set");
@@ -75,11 +73,11 @@ namespace silkworm::db {
 
     ::mdbx::env_managed::create_parameters cp{};  // Default create parameters
     if (!(config.shared)) {
-        size_t max_map_size{config.inmemory ? 64 * kMebi : 2 * kTebi};
-        size_t growth_size{config.inmemory ? 2 * kMebi : 2 * kGibi};
+        size_t max_map_size{config.inmemory ? 64_Mebi : 2_Tebi};
+        size_t growth_size{config.inmemory ? 2_Mebi : 2_Gibi};
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
-        cp.geometry.pagesize = 4 * kKibi;
+        cp.geometry.pagesize = 4_Kibi;
     }
 
     ::mdbx::env::operate_parameters op{};  // Operational parameters
@@ -93,10 +91,10 @@ namespace silkworm::db {
 
     if (!config.shared) {
         // C++ bindings don't have setoptions
-        ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_rp_augment_limit, 32 * kMebi));
+        ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_rp_augment_limit, 32_Mebi));
         if (!config.readonly) {
-            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_txn_dp_initial, 16 * kKibi));
-            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_dp_reserve_limit, 16 * kKibi));
+            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_txn_dp_initial, 16_Kibi));
+            ::mdbx::error::success_or_throw(::mdbx_env_set_option(ret, MDBX_opt_dp_reserve_limit, 16_Kibi));
 
             uint64_t dirty_pages_limit{0};
             ::mdbx::error::success_or_throw(::mdbx_env_get_option(ret, MDBX_opt_txn_dp_limit, &dirty_pages_limit));
@@ -105,7 +103,7 @@ namespace silkworm::db {
             // must be in the range from 12.5% (almost empty) to 50% (half empty)
             // which corresponds to the range from 8192 and to 32768 in units respectively
             ::mdbx::error::success_or_throw(
-                ::mdbx_env_set_option(ret, MDBX_opt_merge_threshold_16dot16_percent, 32768));
+                ::mdbx_env_set_option(ret, MDBX_opt_merge_threshold_16dot16_percent, 32_Kibi));
         }
     }
     if (!config.inmemory) {
@@ -122,31 +120,47 @@ namespace silkworm::db {
     return tx.open_cursor(open_map(tx, config));
 }
 
-size_t for_each(::mdbx::cursor& cursor, WalkFunc func) {
+size_t for_each(::mdbx::cursor& cursor, WalkFunc walker) {
     size_t ret{0};
-    if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
-        while (!cursor.eof()) {
-            if (!func(data)) {
-                break;
-            };
-            ret++;
-            cursor.to_next(/*throw_notfound=*/false);
+
+    if (cursor.eof()) {
+        // eof determines if cursor is positioned
+        // at end of bucket data as well as it's
+        // not positioned at all
+        return ret;
+    }
+
+    auto data{cursor.current()};
+    while (data.done) {
+        const bool go_on{walker(data)};
+        if (!go_on) {
+            break;
         }
+        ++ret;
+        data = cursor.to_next(/*throw_notfound=*/false);
     }
     return ret;
 }
 
-size_t for_count(::mdbx::cursor& cursor, WalkFunc func, size_t iterations) {
+size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count) {
     size_t ret{0};
-    if (auto data{cursor.current(/*throw_notfound=*/false)}; data.done) {
-        while (iterations && !cursor.eof()) {
-            if (!func(data)) {
-                break;
-            };
-            ret++;
-            iterations--;
-            cursor.to_next(/*throw_notfound=*/false);
+
+    if (cursor.eof()) {
+        // eof determines if cursor is positioned
+        // at end of bucket data as well as it's
+        // not positioned at all
+        return ret;
+    }
+
+    auto data{cursor.current()};
+    while (count && data.done) {
+        const bool go_on{walker(data)};
+        if (!go_on) {
+            break;
         }
+        ++ret;
+        --count;
+        data = cursor.to_next(/*throw_notfound=*/false);
     }
     return ret;
 }

@@ -14,8 +14,8 @@
 #ifndef SILKWORM_ETL_COLLECTOR_HPP_
 #define SILKWORM_ETL_COLLECTOR_HPP_
 
-#include <silkworm/etl/buffer.hpp>
 #include <silkworm/db/mdbx.hpp>
+#include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/file_provider.hpp>
 #include <silkworm/etl/util.hpp>
 
@@ -50,8 +50,8 @@ class Collector {
      * @param flags : Optional whether to append or upsert (default)
      * @param log_every_percent : Emits a log line indicating progress every this percent increment in processed items
      */
-    void load(mdbx::cursor& target, LoadFunc load_func = nullptr, MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT,
-              uint32_t log_every_percent = 100u);
+    void load(mdbx::cursor& target, LoadFunc load_func = nullptr,
+              MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT, uint32_t log_every_percent = 100u);
 
     /** @brief Returns the number of actually collected items
      */

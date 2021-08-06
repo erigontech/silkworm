@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-void calc_sha_256(uint8_t hash[32], const void *input, size_t len, bool use_cpu_extensions);
+void calc_sha_256(uint8_t hash[32], const void* input, size_t len, bool use_cpu_extensions);
 
 #if defined(__cplusplus)
 }

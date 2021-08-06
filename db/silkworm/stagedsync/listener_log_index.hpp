@@ -14,20 +14,24 @@
    limitations under the License.
 */
 
-#include <unordered_map>
+#ifndef SILKWORM_DB_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
+#define SILKWORM_DB_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
+
 #include <string>
+#include <unordered_map>
+
 #include <cbor/decoder.h>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/bitmap.hpp>
 
 namespace silkworm::stagedsync {
-    
+
 class listener_log_index : public cbor::listener {
   public:
-    listener_log_index(uint64_t block_number, std::unordered_map<std::string, roaring::Roaring> *topics_map,
-                       std::unordered_map<std::string, roaring::Roaring> *addrs_map, uint64_t *allocated_topics,
-                       uint64_t *allocated_addrs_)
+    listener_log_index(uint64_t block_number, std::unordered_map<std::string, roaring::Roaring>* topics_map,
+                       std::unordered_map<std::string, roaring::Roaring>* addrs_map, uint64_t* allocated_topics,
+                       uint64_t* allocated_addrs_)
         : block_number_(block_number),
           topics_map_(topics_map),
           addrs_map_(addrs_map),
@@ -36,7 +40,7 @@ class listener_log_index : public cbor::listener {
 
     void on_integer(int) override{};
 
-    void on_bytes(unsigned char *data, int size) override {
+    void on_bytes(unsigned char* data, int size) override {
         std::string key(byte_ptr_cast(data), size);
         if (size == kHashLength) {
             if (topics_map_->find(key) == topics_map_->end()) {
@@ -53,7 +57,7 @@ class listener_log_index : public cbor::listener {
         }
     }
 
-    void on_string(std::string &) override{};
+    void on_string(std::string&) override{};
 
     void on_array(int) override {}
 
@@ -69,7 +73,7 @@ class listener_log_index : public cbor::listener {
 
     void on_undefined() override{};
 
-    void on_error(const char *) override{};
+    void on_error(const char*) override{};
 
     void on_extra_integer(unsigned long long, int) override{};
 
@@ -85,9 +89,12 @@ class listener_log_index : public cbor::listener {
 
   private:
     uint64_t block_number_;
-    std::unordered_map<std::string, roaring::Roaring> *topics_map_;
-    std::unordered_map<std::string, roaring::Roaring> *addrs_map_;
-    uint64_t *allocated_topics_;
-    uint64_t *allocated_addrs_;
+    std::unordered_map<std::string, roaring::Roaring>* topics_map_;
+    std::unordered_map<std::string, roaring::Roaring>* addrs_map_;
+    uint64_t* allocated_topics_;
+    uint64_t* allocated_addrs_;
 };
-}
+
+}  // namespace silkworm::stagedsync
+
+#endif  // SILKWORM_DB_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_

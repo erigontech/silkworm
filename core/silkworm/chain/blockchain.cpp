@@ -89,10 +89,12 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
 }
 
 ValidationResult Blockchain::execute_block(const Block& block, bool check_state_root) {
-    std::pair<std::vector<Receipt>, ValidationResult> res{
-        silkworm::execute_block(block, state_, config_, /*analysis_cache=*/nullptr, state_pool, exo_evm)};
-    if (res.second != ValidationResult::kOk) {
-        return res.second;
+    std::vector<Receipt> receipts;
+
+    const ValidationResult res{
+        silkworm::execute_block(block, state_, config_, receipts, /*analysis_cache=*/nullptr, state_pool, exo_evm)};
+    if (res != ValidationResult::kOk) {
+        return res;
     }
 
     if (check_state_root) {

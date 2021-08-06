@@ -98,88 +98,46 @@ class Sentry final {
      public:
       virtual ~experimental_async_interface() {}
       virtual void PenalizePeer(::grpc::ClientContext* context, const ::sentry::PenalizePeerRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void PenalizePeer(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) = 0;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       virtual void PenalizePeer(::grpc::ClientContext* context, const ::sentry::PenalizePeerRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       #else
       virtual void PenalizePeer(::grpc::ClientContext* context, const ::sentry::PenalizePeerRequest* request, ::google::protobuf::Empty* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void PenalizePeer(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void PenalizePeer(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
       virtual void PeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void PeerMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) = 0;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       virtual void PeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       #else
       virtual void PeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void PeerMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void PeerMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
       virtual void SendMessageByMinBlock(::grpc::ClientContext* context, const ::sentry::SendMessageByMinBlockRequest* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void SendMessageByMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) = 0;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       virtual void SendMessageByMinBlock(::grpc::ClientContext* context, const ::sentry::SendMessageByMinBlockRequest* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       #else
       virtual void SendMessageByMinBlock(::grpc::ClientContext* context, const ::sentry::SendMessageByMinBlockRequest* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void SendMessageByMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void SendMessageByMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
       virtual void SendMessageById(::grpc::ClientContext* context, const ::sentry::SendMessageByIdRequest* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void SendMessageById(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) = 0;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       virtual void SendMessageById(::grpc::ClientContext* context, const ::sentry::SendMessageByIdRequest* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       #else
       virtual void SendMessageById(::grpc::ClientContext* context, const ::sentry::SendMessageByIdRequest* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void SendMessageById(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void SendMessageById(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
       virtual void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::sentry::SendMessageToRandomPeersRequest* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) = 0;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       virtual void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::sentry::SendMessageToRandomPeersRequest* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       #else
       virtual void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::sentry::SendMessageToRandomPeersRequest* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
       virtual void SendMessageToAll(::grpc::ClientContext* context, const ::sentry::OutboundMessageData* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void SendMessageToAll(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) = 0;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       virtual void SendMessageToAll(::grpc::ClientContext* context, const ::sentry::OutboundMessageData* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       #else
       virtual void SendMessageToAll(::grpc::ClientContext* context, const ::sentry::OutboundMessageData* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void SendMessageToAll(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void SendMessageToAll(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
       virtual void SetStatus(::grpc::ClientContext* context, const ::sentry::StatusData* request, ::sentry::SetStatusReply* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void SetStatus(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SetStatusReply* response, std::function<void(::grpc::Status)>) = 0;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       virtual void SetStatus(::grpc::ClientContext* context, const ::sentry::StatusData* request, ::sentry::SetStatusReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       #else
       virtual void SetStatus(::grpc::ClientContext* context, const ::sentry::StatusData* request, ::sentry::SetStatusReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void SetStatus(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SetStatusReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void SetStatus(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SetStatusReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
       #endif
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       virtual void Messages(::grpc::ClientContext* context, ::sentry::MessagesRequest* request, ::grpc::ClientReadReactor< ::sentry::InboundMessage>* reactor) = 0;
@@ -278,88 +236,46 @@ class Sentry final {
       public StubInterface::experimental_async_interface {
      public:
       void PenalizePeer(::grpc::ClientContext* context, const ::sentry::PenalizePeerRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) override;
-      void PenalizePeer(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) override;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void PenalizePeer(::grpc::ClientContext* context, const ::sentry::PenalizePeerRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
       #else
       void PenalizePeer(::grpc::ClientContext* context, const ::sentry::PenalizePeerRequest* request, ::google::protobuf::Empty* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void PenalizePeer(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void PenalizePeer(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
       void PeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) override;
-      void PeerMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) override;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void PeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
       #else
       void PeerMinBlock(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest* request, ::google::protobuf::Empty* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void PeerMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void PeerMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::google::protobuf::Empty* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
       void SendMessageByMinBlock(::grpc::ClientContext* context, const ::sentry::SendMessageByMinBlockRequest* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) override;
-      void SendMessageByMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) override;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void SendMessageByMinBlock(::grpc::ClientContext* context, const ::sentry::SendMessageByMinBlockRequest* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) override;
       #else
       void SendMessageByMinBlock(::grpc::ClientContext* context, const ::sentry::SendMessageByMinBlockRequest* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void SendMessageByMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void SendMessageByMinBlock(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
       void SendMessageById(::grpc::ClientContext* context, const ::sentry::SendMessageByIdRequest* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) override;
-      void SendMessageById(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) override;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void SendMessageById(::grpc::ClientContext* context, const ::sentry::SendMessageByIdRequest* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) override;
       #else
       void SendMessageById(::grpc::ClientContext* context, const ::sentry::SendMessageByIdRequest* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void SendMessageById(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void SendMessageById(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
       void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::sentry::SendMessageToRandomPeersRequest* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) override;
-      void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) override;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::sentry::SendMessageToRandomPeersRequest* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) override;
       #else
       void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::sentry::SendMessageToRandomPeersRequest* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void SendMessageToRandomPeers(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
       void SendMessageToAll(::grpc::ClientContext* context, const ::sentry::OutboundMessageData* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) override;
-      void SendMessageToAll(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, std::function<void(::grpc::Status)>) override;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void SendMessageToAll(::grpc::ClientContext* context, const ::sentry::OutboundMessageData* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) override;
       #else
       void SendMessageToAll(::grpc::ClientContext* context, const ::sentry::OutboundMessageData* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
       #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void SendMessageToAll(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void SendMessageToAll(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SentPeers* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
       void SetStatus(::grpc::ClientContext* context, const ::sentry::StatusData* request, ::sentry::SetStatusReply* response, std::function<void(::grpc::Status)>) override;
-      void SetStatus(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SetStatusReply* response, std::function<void(::grpc::Status)>) override;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void SetStatus(::grpc::ClientContext* context, const ::sentry::StatusData* request, ::sentry::SetStatusReply* response, ::grpc::ClientUnaryReactor* reactor) override;
       #else
       void SetStatus(::grpc::ClientContext* context, const ::sentry::StatusData* request, ::sentry::SetStatusReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void SetStatus(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SetStatusReply* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void SetStatus(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::sentry::SetStatusReply* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
       #endif
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void Messages(::grpc::ClientContext* context, ::sentry::MessagesRequest* request, ::grpc::ClientReadReactor< ::sentry::InboundMessage>* reactor) override;
@@ -591,7 +507,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodCallback(0,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::sentry::PenalizePeerRequest, ::google::protobuf::Empty>(
+          new ::grpc::internal::CallbackUnaryHandler< ::sentry::PenalizePeerRequest, ::google::protobuf::Empty>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -606,7 +522,7 @@ class Sentry final {
     #else
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(0);
     #endif
-      static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::sentry::PenalizePeerRequest, ::google::protobuf::Empty>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::PenalizePeerRequest, ::google::protobuf::Empty>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_PenalizePeer() override {
@@ -638,7 +554,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodCallback(1,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::sentry::PeerMinBlockRequest, ::google::protobuf::Empty>(
+          new ::grpc::internal::CallbackUnaryHandler< ::sentry::PeerMinBlockRequest, ::google::protobuf::Empty>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -653,7 +569,7 @@ class Sentry final {
     #else
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(1);
     #endif
-      static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::sentry::PeerMinBlockRequest, ::google::protobuf::Empty>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::PeerMinBlockRequest, ::google::protobuf::Empty>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_PeerMinBlock() override {
@@ -685,7 +601,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodCallback(2,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers>(
+          new ::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -700,7 +616,7 @@ class Sentry final {
     #else
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(2);
     #endif
-      static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_SendMessageByMinBlock() override {
@@ -732,7 +648,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodCallback(3,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::sentry::SendMessageByIdRequest, ::sentry::SentPeers>(
+          new ::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageByIdRequest, ::sentry::SentPeers>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -747,7 +663,7 @@ class Sentry final {
     #else
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(3);
     #endif
-      static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::sentry::SendMessageByIdRequest, ::sentry::SentPeers>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageByIdRequest, ::sentry::SentPeers>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_SendMessageById() override {
@@ -779,7 +695,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodCallback(4,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers>(
+          new ::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -794,7 +710,7 @@ class Sentry final {
     #else
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(4);
     #endif
-      static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_SendMessageToRandomPeers() override {
@@ -826,7 +742,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodCallback(5,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::sentry::OutboundMessageData, ::sentry::SentPeers>(
+          new ::grpc::internal::CallbackUnaryHandler< ::sentry::OutboundMessageData, ::sentry::SentPeers>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -841,7 +757,7 @@ class Sentry final {
     #else
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(5);
     #endif
-      static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::sentry::OutboundMessageData, ::sentry::SentPeers>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::OutboundMessageData, ::sentry::SentPeers>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_SendMessageToAll() override {
@@ -873,7 +789,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodCallback(6,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::sentry::StatusData, ::sentry::SetStatusReply>(
+          new ::grpc::internal::CallbackUnaryHandler< ::sentry::StatusData, ::sentry::SetStatusReply>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -888,7 +804,7 @@ class Sentry final {
     #else
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(6);
     #endif
-      static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::sentry::StatusData, ::sentry::SetStatusReply>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::sentry::StatusData, ::sentry::SetStatusReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~ExperimentalWithCallbackMethod_SetStatus() override {
@@ -920,7 +836,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodCallback(7,
-          new ::grpc_impl::internal::CallbackServerStreamingHandler< ::sentry::MessagesRequest, ::sentry::InboundMessage>(
+          new ::grpc::internal::CallbackServerStreamingHandler< ::sentry::MessagesRequest, ::sentry::InboundMessage>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -1259,7 +1175,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodRawCallback(0,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -1297,7 +1213,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodRawCallback(1,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -1335,7 +1251,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodRawCallback(2,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -1373,7 +1289,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodRawCallback(3,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -1411,7 +1327,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodRawCallback(4,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -1449,7 +1365,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodRawCallback(5,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -1487,7 +1403,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodRawCallback(6,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -1525,7 +1441,7 @@ class Sentry final {
       ::grpc::Service::experimental().
     #endif
         MarkMethodRawCallback(7,
-          new ::grpc_impl::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+          new ::grpc::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
@@ -1560,8 +1476,8 @@ class Sentry final {
       ::grpc::Service::MarkMethodStreamed(0,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::PenalizePeerRequest, ::google::protobuf::Empty>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerUnaryStreamer<
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
                      ::sentry::PenalizePeerRequest, ::google::protobuf::Empty>* streamer) {
                        return this->StreamedPenalizePeer(context,
                          streamer);
@@ -1587,8 +1503,8 @@ class Sentry final {
       ::grpc::Service::MarkMethodStreamed(1,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::PeerMinBlockRequest, ::google::protobuf::Empty>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerUnaryStreamer<
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
                      ::sentry::PeerMinBlockRequest, ::google::protobuf::Empty>* streamer) {
                        return this->StreamedPeerMinBlock(context,
                          streamer);
@@ -1614,8 +1530,8 @@ class Sentry final {
       ::grpc::Service::MarkMethodStreamed(2,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerUnaryStreamer<
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
                      ::sentry::SendMessageByMinBlockRequest, ::sentry::SentPeers>* streamer) {
                        return this->StreamedSendMessageByMinBlock(context,
                          streamer);
@@ -1641,8 +1557,8 @@ class Sentry final {
       ::grpc::Service::MarkMethodStreamed(3,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::SendMessageByIdRequest, ::sentry::SentPeers>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerUnaryStreamer<
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
                      ::sentry::SendMessageByIdRequest, ::sentry::SentPeers>* streamer) {
                        return this->StreamedSendMessageById(context,
                          streamer);
@@ -1668,8 +1584,8 @@ class Sentry final {
       ::grpc::Service::MarkMethodStreamed(4,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerUnaryStreamer<
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
                      ::sentry::SendMessageToRandomPeersRequest, ::sentry::SentPeers>* streamer) {
                        return this->StreamedSendMessageToRandomPeers(context,
                          streamer);
@@ -1695,8 +1611,8 @@ class Sentry final {
       ::grpc::Service::MarkMethodStreamed(5,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::OutboundMessageData, ::sentry::SentPeers>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerUnaryStreamer<
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
                      ::sentry::OutboundMessageData, ::sentry::SentPeers>* streamer) {
                        return this->StreamedSendMessageToAll(context,
                          streamer);
@@ -1722,8 +1638,8 @@ class Sentry final {
       ::grpc::Service::MarkMethodStreamed(6,
         new ::grpc::internal::StreamedUnaryHandler<
           ::sentry::StatusData, ::sentry::SetStatusReply>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerUnaryStreamer<
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
                      ::sentry::StatusData, ::sentry::SetStatusReply>* streamer) {
                        return this->StreamedSetStatus(context,
                          streamer);
@@ -1750,8 +1666,8 @@ class Sentry final {
       ::grpc::Service::MarkMethodStreamed(7,
         new ::grpc::internal::SplitServerStreamingHandler<
           ::sentry::MessagesRequest, ::sentry::InboundMessage>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerSplitStreamer<
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerSplitStreamer<
                      ::sentry::MessagesRequest, ::sentry::InboundMessage>* streamer) {
                        return this->StreamedMessages(context,
                          streamer);

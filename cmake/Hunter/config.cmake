@@ -56,6 +56,6 @@ hunter_config(Protobuf VERSION 3.12.4-p1)  # <-- Last working version (greater s
 
 hunter_config(
   gRPC
-  VERSION 1.31.0-p0
+  VERSION 1.34.0-p0
   CMAKE_ARGS gRPC_BUILD_TESTS=OFF gRPC_BUILD_CODEGEN=ON gRPC_BUILD_CSHARP_EXT=OFF
 )      # <-- Last working version (greater seems to have networking issues)

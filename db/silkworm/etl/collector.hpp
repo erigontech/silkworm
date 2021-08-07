@@ -14,8 +14,8 @@
 #ifndef SILKWORM_ETL_COLLECTOR_HPP_
 #define SILKWORM_ETL_COLLECTOR_HPP_
 
-#include <silkworm/etl/buffer.hpp>
 #include <silkworm/db/mdbx.hpp>
+#include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/file_provider.hpp>
 #include <silkworm/etl/util.hpp>
 
@@ -24,7 +24,7 @@
 
 namespace silkworm::etl {
 
-constexpr size_t kOptimalBufferSize = 256 * kMebi;
+constexpr size_t kOptimalBufferSize = 256_Mebi;
 
 // Function pointer to process Load on before Load data into tables
 typedef void (*LoadFunc)(Entry, mdbx::cursor&, MDBX_put_flags_t);
@@ -36,8 +36,10 @@ class Collector {
     Collector(const Collector&) = delete;
     Collector& operator=(const Collector&) = delete;
 
-    explicit Collector(const char* work_path = nullptr, size_t optimal_size = kOptimalBufferSize)
-        : work_path_{set_work_path(work_path)}, buffer_{optimal_size} {}
+    explicit Collector(const std::filesystem::path work_path, size_t optimal_size = kOptimalBufferSize)
+        : work_path_managed_{false}, work_path_{set_work_path(work_path)}, buffer_{optimal_size} {}
+    explicit Collector(size_t optimal_size = kOptimalBufferSize)
+        : work_path_managed_{true}, work_path_{set_work_path(std::nullopt)}, buffer_{optimal_size} {}
 
     ~Collector();
 
@@ -50,18 +52,19 @@ class Collector {
      * @param flags : Optional whether to append or upsert (default)
      * @param log_every_percent : Emits a log line indicating progress every this percent increment in processed items
      */
-    void load(mdbx::cursor& target, LoadFunc load_func = nullptr, MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT,
-              uint32_t log_every_percent = 100u);
+    void load(mdbx::cursor& target, LoadFunc load_func = nullptr,
+              MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT, uint32_t log_every_percent = 100u);
 
     /** @brief Returns the number of actually collected items
      */
     size_t size() const;
 
   private:
-    std::string set_work_path(const char* provided_work_path);
+    std::filesystem::path set_work_path(const std::optional<std::filesystem::path>& provided_work_path);
     void flush_buffer();  // Write buffer to file
 
-    std::string work_path_;
+    bool work_path_managed_;
+    std::filesystem::path work_path_;
     Buffer buffer_;
 
     /*

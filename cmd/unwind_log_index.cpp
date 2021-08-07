@@ -22,7 +22,6 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <cbor/decoder.h>
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/data_dir.hpp>
@@ -42,11 +41,10 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Generates Log Index"};
 
     std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
-    bool full{false};
+    uint64_t unwind_to{0};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
-
-    app.add_flag("--full", full, "Start making history indexes from block 0");
+    app.add_option("--unwind-to", unwind_to, "Unwind point");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -56,19 +54,8 @@ int main(int argc, char* argv[]) {
 
     try {
         auto env{db::open_env(db_config)};
-
-        if (full) {
-            auto txn{env.start_write()};
-            db::stages::set_stage_progress(txn, db::stages::kLogIndexKey, 0);
-            auto map{db::open_map(txn, db::table::kLogTopicIndex)};
-            txn.clear_map(map);
-            map = db::open_map(txn, db::table::kLogAddressIndex);
-            txn.clear_map(map);
-            txn.commit();
-        }
-
         stagedsync::TransactionManager tm{env};
-        stagedsync::check_stagedsync_error(stagedsync::stage_log_index(tm, data_dir.get_etl_path()));
+        stagedsync::check_stagedsync_error(stagedsync::unwind_log_index(tm, data_dir.get_etl_path(), unwind_to));
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;

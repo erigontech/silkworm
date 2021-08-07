@@ -30,9 +30,9 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_blockhashes(TransactionManager &txn, const std::filesystem::path &etl_path) {
+StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::path& etl_path) {
     fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512_Mebi);
     uint32_t block_number{0};
 
     // We take data from header table and transform it and put it in blockhashes table
@@ -46,9 +46,9 @@ StageResult stage_blockhashes(TransactionManager &txn, const std::filesystem::pa
     SILKWORM_LOG(LogLevel::Info) << "Started BlockHashes Extraction" << std::endl;
 
     auto header_key{db::block_key(expected_block_number)};
-    auto header_data{canonical_hashes_table.find(db::to_slice(header_key), /*throw_notfound*/ false)};
+    auto header_data{canonical_hashes_table.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
     while (header_data) {
-        auto reached_block_number{boost::endian::load_big_u64(static_cast<uint8_t *>(header_data.key.iov_base))};
+        auto reached_block_number{boost::endian::load_big_u64(static_cast<uint8_t*>(header_data.key.iov_base))};
         if (reached_block_number != expected_block_number) {
             // Something wrong with db
             // Blocks are out of sequence for any reason
@@ -63,14 +63,14 @@ StageResult stage_blockhashes(TransactionManager &txn, const std::filesystem::pa
             return StageResult::kBadBlockHash;
         }
 
-        etl::Entry etl_entry{Bytes(static_cast<uint8_t *>(header_data.value.iov_base), header_data.value.iov_len),
-                             Bytes(static_cast<uint8_t *>(header_data.key.iov_base), header_data.key.iov_len)};
+        etl::Entry etl_entry{Bytes(static_cast<uint8_t*>(header_data.value.iov_base), header_data.value.iov_len),
+                             Bytes(static_cast<uint8_t*>(header_data.key.iov_base), header_data.key.iov_len)};
         collector.collect(etl_entry);
 
         // Save last processed block_number and expect next in sequence
         ++blocks_processed_count;
         block_number = expected_block_number++;
-        canonical_hashes_table.to_next(/*throw_notfound*/ false);
+        header_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
     }
     canonical_hashes_table.close();
 
@@ -105,6 +105,27 @@ StageResult stage_blockhashes(TransactionManager &txn, const std::filesystem::pa
         SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
     }
 
+    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+
+    return StageResult::kSuccess;
+}
+
+StageResult unwind_blockhashes(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
+    // We take data from header table and transform it and put it in blockhashes table
+    auto canonical_hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+    auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
+    // Extract
+    SILKWORM_LOG(LogLevel::Info) << "Started BlockHashes Extraction" << std::endl;
+
+    auto header_key{db::block_key(unwind_to + 1)};
+    auto header_data{canonical_hashes_table.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
+    while (header_data) {
+        if (blockhashes_table.seek(header_data.value)) {
+            blockhashes_table.erase(true);
+        }
+        header_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
+    }
+    txn.commit();
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
 
     return StageResult::kSuccess;

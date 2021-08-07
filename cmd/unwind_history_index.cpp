@@ -16,22 +16,16 @@
 
 #include <filesystem>
 #include <iomanip>
+#include <iostream>
 #include <string>
-#include <thread>
 #include <unordered_map>
 
 #include <CLI/CLI.hpp>
 #include <boost/endian/conversion.hpp>
-#include <cbor/decoder.h>
 
-#include <silkworm/common/cast.hpp>
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
 using namespace silkworm;
@@ -39,36 +33,31 @@ using namespace silkworm;
 int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
 
-    CLI::App app{"Generates Log Index"};
+    CLI::App app{"Unwind History Indexes"};
 
     std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
-    bool full{false};
+    bool storage{false};
+    uint64_t unwind_to{0};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
-
-    app.add_flag("--full", full, "Start making history indexes from block 0");
+    app.add_option("--unwind-to", unwind_to, "Unwind to");
+    app.add_flag("--storage", storage, "Do history of storages");
 
     CLI11_PARSE(app, argc, argv);
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.create_tree();
     db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
-
     try {
         auto env{db::open_env(db_config)};
-
-        if (full) {
-            auto txn{env.start_write()};
-            db::stages::set_stage_progress(txn, db::stages::kLogIndexKey, 0);
-            auto map{db::open_map(txn, db::table::kLogTopicIndex)};
-            txn.clear_map(map);
-            map = db::open_map(txn, db::table::kLogAddressIndex);
-            txn.clear_map(map);
-            txn.commit();
-        }
-
         stagedsync::TransactionManager tm{env};
-        stagedsync::check_stagedsync_error(stagedsync::stage_log_index(tm, data_dir.get_etl_path()));
+        if (storage) {
+            stagedsync::check_stagedsync_error(
+                stagedsync::unwind_storage_history(tm, data_dir.get_etl_path(), unwind_to));
+        } else {
+            stagedsync::check_stagedsync_error(
+                stagedsync::unwind_account_history(tm, data_dir.get_etl_path(), unwind_to));
+        }
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;

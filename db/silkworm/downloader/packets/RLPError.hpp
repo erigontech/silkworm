@@ -1,5 +1,5 @@
-#[[
-   Copyright 2020-2021 The Silkworm Authors
+/*
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,11 +12,19 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-hunter_add_package(abseil)
-hunter_add_package(benchmark)
-hunter_add_package(Boost)
-hunter_add_package(CLI11)
-hunter_add_package(gRPC)
-hunter_add_package(Protobuf)
+#ifndef SILKWORM_RLPERROR_HPP
+#define SILKWORM_RLPERROR_HPP
+
+namespace silkworm::rlp {
+
+    class rlp_error : public std::runtime_error {
+      public:
+        rlp_error() : std::runtime_error("rlp encoding/decoding error") {}
+        rlp_error(const std::string& description) : std::runtime_error(description) {}
+    };
+
+}
+
+#endif  // SILKWORM_RLPERROR_HPP

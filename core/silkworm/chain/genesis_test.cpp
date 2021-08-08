@@ -25,6 +25,7 @@
 #include <silkworm/state/memory_buffer.hpp>
 
 #include "config.hpp"
+#include "identity.hpp"
 
 namespace silkworm {
 
@@ -124,8 +125,7 @@ TEST_CASE("mainnet_genesis") {
 
     // Verify our RLP encoding produces the same result
     auto computed_hash{header.hash()};
-    auto expected_hash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
-    CHECK(to_hex(computed_hash) == to_hex(expected_hash));
+    CHECK(to_hex(computed_hash) == to_hex(ChainIdentity::mainnet.genesis_hash));
 
     // TODO (Andrea) Why this fails for genesis ?
     // auto seal_hash(header.hash(/*for_sealing =*/true));

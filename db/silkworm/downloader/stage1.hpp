@@ -19,12 +19,13 @@
 #include <atomic>
 #include <chrono>
 
-#include "ChainIdentity.hpp"
+#include <silkworm/chain/identity.hpp>
+
+#include "ConcurrentContainers.hpp"
 #include "DbTx.hpp"
 #include "SentryClient.hpp"
 #include "Singleton.hpp"
 #include "Types.hpp"
-#include "ConcurrentContainers.hpp"
 #include "messages/Message.hpp"
 
 namespace silkworm {
@@ -32,7 +33,7 @@ namespace silkworm {
 // abstract interface for all stages
 class Stage {
   public:
-    enum StageResult {kOk, kError};   // todo: improve
+    enum StageResult { kOk, kError };  // todo: improve
 
     virtual StageResult wind(BlockNum new_height) = 0;
     virtual StageResult unwind(BlockNum new_height) = 0;
@@ -50,8 +51,8 @@ class ActiveComponent {
 };
 
 // STAGE1
-class Stage1: public Stage,               // stage 1 is a stage...
-              public ActiveComponent {    // but also an active component that must run always
+class Stage1 : public Stage,             // stage 1 is a stage...
+               public ActiveComponent {  // but also an active component that must run always
 
     ChainIdentity chain_identity_;
     DbTx db_;
@@ -63,8 +64,8 @@ class Stage1: public Stage,               // stage 1 is a stage...
     Stage1(Stage1&&) = delete;
     ~Stage1();
 
-    DbTx& db_tx() {return db_;}
-    SentryClient& sentry() {return sentry_;}
+    DbTx& db_tx() { return db_; }
+    SentryClient& sentry() { return sentry_; }
 
     void execution_loop() override final;
 

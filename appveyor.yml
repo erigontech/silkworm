@@ -41,5 +41,5 @@ build:
 test_script:
   - cd Build
   - cmd\Release\core_test.exe
-  - cmd\Release\db_test.exe
+  - cmd\Release\node_test.exe
   - cmd\Release\consensus.exe

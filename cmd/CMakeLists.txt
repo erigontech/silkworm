@@ -37,83 +37,83 @@ if(NOT SILKWORM_CORE_ONLY)
 
   find_package(absl CONFIG REQUIRED)
 
-  file(GLOB_RECURSE SILKWORM_DB_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/db/silkworm/*_test.cpp")
-  add_executable(db_test unit_test.cpp ${SILKWORM_DB_TESTS})
-  target_link_libraries(db_test silkworm_db Catch2::Catch2)
+  file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/node/silkworm/*_test.cpp")
+  add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
+  target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
   add_executable(check_changes check_changes.cpp)
-  target_link_libraries(check_changes PRIVATE silkworm_db CLI11::CLI11 absl::time)
+  target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
   add_executable(scan_txs scan_txs.cpp)
-  target_link_libraries(scan_txs PRIVATE silkworm_db CLI11::CLI11 absl::time)
+  target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
   find_package(CLI11 CONFIG REQUIRED)
 
   add_executable(check_senders check_senders.cpp)
-  target_link_libraries(check_senders PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(check_senders PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(check_pow check_pow.cpp)
-  target_link_libraries(check_pow PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(check_pow PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(dbtool dbtool.cpp)
-  target_link_libraries(dbtool PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(dbtool PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(genesistool genesistool.cpp)
   target_link_libraries(genesistool PRIVATE CLI11::CLI11)
 
   add_executable(execute execute.cpp)
-  target_link_libraries(execute PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(execute PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(unwind_execution unwind_execution.cpp)
-  target_link_libraries(unwind_execution PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(unwind_execution PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(unwind_hashstate unwind_hashstate.cpp)
-  target_link_libraries(unwind_hashstate PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(unwind_hashstate PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(unwind_tx_lookup unwind_tx_lookup.cpp)
-  target_link_libraries(unwind_tx_lookup PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(unwind_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(unwind_history_index unwind_history_index.cpp)
-  target_link_libraries(unwind_history_index PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(unwind_history_index PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(unwind_log_index unwind_log_index.cpp)
-  target_link_libraries(unwind_log_index PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(unwind_log_index PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(blockhashes blockhashes.cpp)
-  target_link_libraries(blockhashes PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(blockhashes PRIVATE silkworm_node CLI11::CLI11)
   
   add_executable(hashstate hashstate.cpp)
-  target_link_libraries(hashstate PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(hashstate PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(check_hashstate check_hashstate.cpp)
-  target_link_libraries(check_hashstate PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(tx_lookup tx_lookup.cpp)
-  target_link_libraries(tx_lookup PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(check_tx_lookup check_tx_lookup.cpp)
-  target_link_libraries(check_tx_lookup PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(history_index history_index.cpp)
-  target_link_libraries(history_index PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(history_index PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(initialize_with_genesis initialize_with_genesis.cpp)
-  target_link_libraries(initialize_with_genesis PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(initialize_with_genesis PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(check_blockhashes check_blockhashes.cpp)
-  target_link_libraries(check_blockhashes PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(extract_headers extract_headers.cpp)
-  target_link_libraries(extract_headers PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(extract_headers PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(log_index log_index.cpp)
-  target_link_libraries(log_index PRIVATE silkworm_db cborcpp CLI11::CLI11)
+  target_link_libraries(log_index PRIVATE silkworm_node cborcpp CLI11::CLI11)
 
   add_executable(trie trie.cpp)
-  target_link_libraries(trie PRIVATE silkworm_db CLI11::CLI11)
+  target_link_libraries(trie PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(download_headers download_headers.cpp)
-  target_link_libraries(download_headers PRIVATE silkworm_db silkworm_core CLI11::CLI11)
+  target_link_libraries(download_headers PRIVATE silkworm_node silkworm_core CLI11::CLI11)
   target_include_directories(download_headers PRIVATE ${CMAKE_SOURCE_DIR})
 
   # Ethereum Consensus Tests

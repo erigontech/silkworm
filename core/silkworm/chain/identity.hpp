@@ -14,26 +14,26 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAINIDENTITY_HPP
-#define SILKWORM_CHAINIDENTITY_HPP
+#ifndef SILKWORM_CORE_CHAIN_IDENTITY_HPP_
+#define SILKWORM_CORE_CHAIN_IDENTITY_HPP_
 
 #include <silkworm/chain/config.hpp>
-#include "Types.hpp"
+#include <silkworm/common/base.hpp>
 
 namespace silkworm {
 
 // EIP-2124 based chain identity scheme (networkId + genesis + forks)
 struct ChainIdentity {
-
     std::string name;
     ChainConfig chain;
-    Hash genesis_hash;
+    evmc::bytes32 genesis_hash;
 
-    std::vector<BlockNum> distinct_fork_numbers(); // helper method
+    std::vector<BlockNum> distinct_fork_numbers();  // helper method
 
     static ChainIdentity mainnet;
     static ChainIdentity goerli;
 };
 
-}
-#endif  // SILKWORM_CHAINIDENTITY_HPP
+}  // namespace silkworm
+
+#endif  // SILKWORM_CORE_CHAIN_IDENTITY_HPP_

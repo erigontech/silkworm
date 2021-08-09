@@ -16,14 +16,16 @@
 #ifndef SILKWORM_TYPES_HPP
 #define SILKWORM_TYPES_HPP
 
+#include <chrono>
+#include <iomanip>
+
+#include <boost/endian/conversion.hpp>
+
 #include <silkworm/common/util.hpp>
-#include <silkworm/types/transaction.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/types/block.hpp>
-#include <boost/endian/conversion.hpp>
-#include <iomanip>
-#include <chrono>
+#include <silkworm/types/transaction.hpp>
 
 namespace silkworm {
 
@@ -46,7 +48,6 @@ class Hash : public evmc::bytes32 {
     static_assert(sizeof(evmc::bytes32) == 32);
 };
 
-using BlockNum = uint64_t;
 using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 
 // using Bytes = std::basic_string<uint8_t>; already defined elsewhere
@@ -84,11 +85,16 @@ namespace rlp {
     void encode(Bytes& to, const Hash& h);
     rlp::DecodingResult decode(ByteView& from, Hash& to) noexcept;
 
-    template <class T> void encode_vec(Bytes& to, const std::vector<T>& v);
-    template <class T> size_t length_vec(const std::vector<T>& v);
-    template <class T> DecodingResult decode_vec(ByteView& from, std::vector<T>& to);
-}
+    template <class T>
+    void encode_vec(Bytes& to, const std::vector<T>& v);
 
-}
+    template <class T>
+    size_t length_vec(const std::vector<T>& v);
+
+    template <class T>
+    DecodingResult decode_vec(ByteView& from, std::vector<T>& to);
+}  // namespace rlp
+
+}  // namespace silkworm
 
 #endif  // SILKWORM_TYPES_HPP

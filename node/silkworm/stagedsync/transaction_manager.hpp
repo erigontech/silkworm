@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_STAGEDSYNC_TRANSACTION_MANAGER_HPP_
-#define SILKWORM_DB_STAGEDSYNC_TRANSACTION_MANAGER_HPP_
+#ifndef SILKWORM_STAGEDSYNC_TRANSACTION_MANAGER_HPP_
+#define SILKWORM_STAGEDSYNC_TRANSACTION_MANAGER_HPP_
 
 #include <mdbx.h++>
 
@@ -60,4 +60,4 @@ class TransactionManager {
 
 }  // namespace silkworm::stagedsync
 
-#endif  // SILKWORM_DB_STAGEDSYNC_TRANSACTION_MANAGER_HPP_
+#endif  // SILKWORM_STAGEDSYNC_TRANSACTION_MANAGER_HPP_

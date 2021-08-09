@@ -32,7 +32,7 @@ before_build:
   - git submodule sync
   - git submodule update --init --recursive
   - SET INCLUDE=C:\Tools\vcpkg\installed\x64-windows\include;%INCLUDE%
-  - SET PATH=C:\Tools\vcpkg\installed\x64-windows\bin;%PATH%
+  - SET PATH=C:\Tools\vcpkg\installed\x64-windows\bin;C:\Strawberry\perl\bin;%PATH%
   - cmake -H. -Bbuild -Wno-dev
 
 build:
@@ -41,5 +41,5 @@ build:
 test_script:
   - cd Build
   - cmd\Release\core_test.exe
-  - cmd\Release\db_test.exe
+  - cmd\Release\node_test.exe
   - cmd\Release\consensus.exe

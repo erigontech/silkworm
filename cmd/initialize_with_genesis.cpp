@@ -24,8 +24,8 @@
 #include <boost/endian/conversion.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/chain/genesis.h>
 #include <silkworm/common/base.hpp>
-#include <silkworm/common/chain_genesis.hpp>
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>

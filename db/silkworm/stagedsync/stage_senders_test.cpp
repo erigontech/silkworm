@@ -66,6 +66,7 @@ TEST_CASE("Stage Senders") {
     // Push first block
     // ---------------------------------------
     Bytes body_rlp{};
+    block.transactions.resize(1);
     rlp::encode(body_rlp, block);
     bodies_table.upsert(db::to_slice(db::block_key(0, hash_0.bytes)), db::to_slice(body_rlp));
 

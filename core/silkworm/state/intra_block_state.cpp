@@ -316,11 +316,12 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
 
     for (const auto& [address, obj] : objects_) {
         db_.update_account(address, obj.initial, obj.current);
-        if (!obj.current) {
+        if (!obj.current.has_value()) {
             continue;
         }
         const auto& code_hash{obj.current->code_hash};
-        if (code_hash != kEmptyHash && (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
+        if (code_hash != kEmptyHash &&
+            (!obj.initial.has_value() || obj.initial->incarnation != obj.current->incarnation)) {
             if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
                 db_.update_account_code(address, obj.current->incarnation, code_hash, it->second);
             }

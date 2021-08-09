@@ -92,8 +92,13 @@ TEST_CASE("Stage Senders") {
     rlp::encode(body_rlp, block);
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_2.bytes)), db::to_slice(body_rlp));
 
+    std::string genesis_data;
+    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    auto config_data{genesis_json["config"].dump()};
+
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(hash_0.bytes), db::to_slice(byte_view_of_c_str(genesis_mainnet_data())));
+    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), db::to_slice(byte_view_of_c_str(config_data.c_str())));
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
@@ -165,8 +170,13 @@ TEST_CASE("Unwind Senders") {
     rlp::encode(body_rlp, block);
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_2.bytes)), db::to_slice(body_rlp));
 
+    std::string genesis_data;
+    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    auto config_data{genesis_json["config"].dump()};
+
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(hash_0.bytes), db::to_slice(byte_view_of_c_str(genesis_mainnet_data())));
+    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), db::to_slice(byte_view_of_c_str(config_data.c_str())));
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));

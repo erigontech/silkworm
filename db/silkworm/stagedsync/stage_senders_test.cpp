@@ -30,7 +30,7 @@
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
-#include <silkworm/common/chain_genesis.hpp>
+#include <silkworm/chain/genesis.h>
 
 using namespace evmc::literals;
 

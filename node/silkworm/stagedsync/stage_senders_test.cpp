@@ -105,7 +105,7 @@ TEST_CASE("Stage Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_2));
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.get_etl_path())); 
+    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.get_etl_path()))); 
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
 
@@ -183,8 +183,8 @@ TEST_CASE("Unwind Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_2));
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.get_etl_path())); 
-    stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, data_dir.get_etl_path(), 1)); 
+    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.get_etl_path()))); 
+    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, data_dir.get_etl_path(), 1))); 
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
 

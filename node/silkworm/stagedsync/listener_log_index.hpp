@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
-#define SILKWORM_DB_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
+#ifndef SILKWORM_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
+#define SILKWORM_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
 
 #include <string>
 #include <unordered_map>
@@ -97,4 +97,4 @@ class listener_log_index : public cbor::listener {
 
 }  // namespace silkworm::stagedsync
 
-#endif  // SILKWORM_DB_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_
+#endif  // SILKWORM_STAGEDSYNC_LISTENER_LOG_INDEX_HPP_

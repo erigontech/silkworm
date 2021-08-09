@@ -127,8 +127,6 @@ class Buffer : public StateBuffer {
 
     absl::flat_hash_map<evmc::address, std::optional<Account>> accounts_;
 
-    evmc::bytes32 account_storage_root(const evmc::address& address, uint64_t incarnation) const;
-
     // address -> incarnation -> location -> value
     absl::flat_hash_map<evmc::address, absl::btree_map<uint64_t, absl::flat_hash_map<evmc::bytes32, evmc::bytes32>>>
         storage_;

@@ -17,7 +17,6 @@
 #include "access_layer.hpp"
 
 #include <cassert>
-#include <iostream>
 
 #include <boost/endian/conversion.hpp>
 #include <nlohmann/json.hpp>
@@ -475,7 +474,6 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
     auto src{db::open_cursor(txn, table::kCanonicalHashes)};
     auto data{src.find(to_slice(block_key(0)), /*throw_notfound=*/false)};
     if (!data) {
-        std::cout << "lol" << std::endl;
         return std::nullopt;
     }
 

@@ -55,6 +55,7 @@ TEST_CASE("Stage Senders") {
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
 
     Block block{};
+    block.transactions.resize(1);
 
     auto sender_0{0xb685342b8c54347aad148e1f22eff3eb3eb29390_address};
     auto sender_1{0xb685342b8c54347aad148e1f22eff3eb3eb29389_address};
@@ -66,7 +67,6 @@ TEST_CASE("Stage Senders") {
     // Push first block
     // ---------------------------------------
     Bytes body_rlp{};
-    block.transactions.resize(1);
     rlp::encode(body_rlp, block);
     bodies_table.upsert(db::to_slice(db::block_key(0, hash_0.bytes)), db::to_slice(body_rlp));
 

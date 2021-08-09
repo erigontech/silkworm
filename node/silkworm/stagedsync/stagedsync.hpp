@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DB_STAGEDSYNC_STAGEDSYNC_HPP_
-#define SILKWORM_DB_STAGEDSYNC_STAGEDSYNC_HPP_
+#ifndef SILKWORM_STAGEDSYNC_STAGEDSYNC_HPP_
+#define SILKWORM_STAGEDSYNC_STAGEDSYNC_HPP_
 
 #include <filesystem>
 #include <vector>
@@ -90,4 +90,4 @@ std::vector<Stage> get_default_stages();
 
 }  // namespace silkworm::stagedsync
 
-#endif  // SILKWORM_DB_STAGEDSYNC_STAGEDSYNC_HPP_
+#endif  // SILKWORM_STAGEDSYNC_STAGEDSYNC_HPP_

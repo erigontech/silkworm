@@ -65,81 +65,61 @@ as compiler intrinsics to swap bytes in 32-bit and 64-bit integers respectively.
 
 namespace silkworm::endian {
 
-// Similar to boost::endian::load_big_u32
-inline uint32_t load_big_u32(uint8_t const* bytes) noexcept {
-    uint32_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-#if SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
-    return x;
-#elif SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-    return SILKWORM_BSWAP32(x);
+#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
+struct le {
+    static inline uint32_t uint32(uint32_t value) noexcept { return value; }
+    static inline uint64_t uint64(uint64_t value) noexcept { return value; }
+};
+struct be {
+    static inline uint32_t uint32(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
+    static inline uint64_t uint64(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+};
+#elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
+struct le {
+    static inline uint32_t uint32(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
+    static inline uint64_t uint64(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+};
+struct be {
+    static inline uint32_t uint32(uint32_t value) noexcept { return value; }
+    static inline uint64_t uint64(uint64_t value) noexcept { return value; }
+};
 #else
 #error "byte order not supported"
 #endif
+
+// Similar to boost::endian::load_big_u32
+inline uint32_t load_big_u32(const uint8_t* bytes) noexcept {
+    uint32_t x{*reinterpret_cast<const uint32_t*>(bytes)};
+    return be::uint32(x);
 }
 
 // Similar to boost::endian::load_big_u64
-inline uint64_t load_big_u64(uint8_t const* bytes) noexcept {
-    uint64_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-#if SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
-    return x;
-#elif SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-    return SILKWORM_BSWAP64(x);
-#else
-#error "byte order not supported"
-#endif
+inline uint64_t load_big_u64(const uint8_t* bytes) noexcept {
+    uint64_t x{*reinterpret_cast<const uint64_t*>(bytes)};
+    return be::uint64(x);
 }
 
 // Similar to boost::endian::load_little_u32
-inline uint32_t load_little_u32(uint8_t const* bytes) noexcept {
-    uint32_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-    return x;
-#elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
-    return SILKWORM_BSWAP32(x);
-#else
-#error "byte order not supported"
-#endif
+inline uint32_t load_little_u32(const uint8_t* bytes) noexcept {
+    uint32_t x{*reinterpret_cast<const uint32_t*>(bytes)};
+    return le::uint32(x);
 }
 
 // Similar to boost::endian::load_little_u64
-inline uint64_t load_little_u64(uint8_t const* bytes) noexcept {
-    uint64_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-    return x;
-#elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
-    return SILKWORM_BSWAP64(x);
-#else
-#error "byte order not supported"
-#endif
+inline uint64_t load_little_u64(const uint8_t* bytes) noexcept {
+    uint64_t x{*reinterpret_cast<const uint64_t*>(bytes)};
+    return le::uint64(x);
 }
 
 // Similar to boost::endian::store_big_u32
-inline void store_big_u32(uint8_t* bytes, uint32_t value) {
-    uint32_t x;
-#if SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
-    x = value;
-#elif SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-    x = SILKWORM_BSWAP32(value);
-#else
-#error "byte order not supported"
-#endif
+inline void store_big_u32(uint8_t* bytes, const uint32_t value) {
+    uint32_t x{be::uint32(value)};
     std::memcpy(bytes, &x, sizeof(x));
 }
 
 // Similar to boost::endian::store_big_u64
-inline void store_big_u64(uint8_t* bytes, uint64_t value) {
-    uint64_t x;
-#if SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
-    x = value;
-#elif SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-    x = SILKWORM_BSWAP64(value);
-#else
-#error "byte order not supported"
-#endif
+inline void store_big_u64(uint8_t* bytes, const uint64_t value) {
+    uint64_t x{be::uint64(value)};
     std::memcpy(bytes, &x, sizeof(x));
 }
 

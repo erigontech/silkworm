@@ -34,7 +34,7 @@ constexpr const char* kSendersKey{"Senders"};                         // "From" 
 constexpr const char* kExecutionKey{"Execution"};                     // Executing each block w/o building a trie
 constexpr const char* kIntermediateHashesKey{"IntermediateHashes"};   // Generate intermediate hashes, calculate the state root hash
 constexpr const char* kHashStateKey{"HashState"};                     // Apply Keccak256 to all the keys in the state
-constexpr const char* kAccountHistoryKey{"AccountHistoryIndex"};      // Generating history index for accounts
+constexpr const char* kAccountHistoryIndexKey{"AccountHistoryIndex"};      // Generating history index for accounts
 constexpr const char* kStorageHistoryIndexKey{"StorageHistoryIndex"}; // Generating history index for storage
 constexpr const char* kLogIndexKey{"LogIndex"};                       // Generating logs index (from receipts)
 constexpr const char* kCallTracesKey{"CallTraces"};                   // Generating call traces index
@@ -49,9 +49,21 @@ constexpr const char* kMiningFinishKey{"MiningFinish"};               // Mining 
 // clang-format on
 
 constexpr const char* kAllStages[]{
-    kHeadersKey,   kBlockHashesKey,    kBlockBodiesKey,         kSendersKey,  kExecutionKey,  kIntermediateHashesKey,
-    kHashStateKey, kAccountHistoryKey, kStorageHistoryIndexKey, kLogIndexKey, kCallTracesKey, kTxLookupKey,
-    kTxPoolKey,    kFinishKey};
+    kHeadersKey,
+    kBlockHashesKey,
+    kBlockBodiesKey,
+    kSendersKey,
+    kExecutionKey,
+    kIntermediateHashesKey,
+    kHashStateKey,
+    kAccountHistoryIndexKey,
+    kStorageHistoryIndexKey,
+    kLogIndexKey,
+    kCallTracesKey,
+    kTxLookupKey,
+    kTxPoolKey,
+    kFinishKey,
+};
 
 // Gets the progress (block height) of any given stage
 uint64_t get_stage_progress(mdbx::txn& txn, const char* stage_name);

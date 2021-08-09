@@ -51,3 +51,11 @@ hunter_config(
   SHA1 83768c203c98dff1829f038fde98a7226e1edd98
   CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
 )
+
+hunter_config(Protobuf VERSION 3.14.0-4a09d77-p0)
+
+hunter_config(
+  gRPC
+  VERSION 1.31.0-p0
+  CMAKE_ARGS gRPC_BUILD_TESTS=OFF gRPC_BUILD_CODEGEN=ON gRPC_BUILD_CSHARP_EXT=OFF
+)      # <-- Last working version (greater seems to have networking issues)

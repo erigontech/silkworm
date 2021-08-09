@@ -17,15 +17,34 @@
 find_package(absl CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(gRPC CONFIG REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_DB_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
+get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
+
+file(GLOB_RECURSE SILKWORM_DB_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
 list(FILTER SILKWORM_DB_SRC EXCLUDE REGEX "_test\.cpp$")
 
-add_library(silkworm_db ${SILKWORM_DB_SRC})
-get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
-target_include_directories(silkworm_db PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${SILKWORM_MAIN_DIR}/magic_enum/include)
+set(SILKWORM_INTERFACE_SRC
+        ${SILKWORM_MAIN_DIR}/interfaces/sentry.grpc.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/sentry.grpc.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/sentry.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/sentry.pb.h
+        ${SILKWORM_MAIN_DIR}/interfaces/types.pb.cc
+        ${SILKWORM_MAIN_DIR}/interfaces/types.pb.h)
 
-set(SILKWORM_DB_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring nlohmann_json::nlohmann_json)
+add_library(silkworm_db ${SILKWORM_DB_SRC} ${SILKWORM_INTERFACE_SRC})
+
+add_dependencies(silkworm_db generate_sentry_grpc)
+
+set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
+
+target_include_directories(silkworm_db PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${SILKWORM_MAIN_DIR}
+        ${SILKWORM_MAIN_DIR}/magic_enum/include)
+
+set(SILKWORM_DB_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring
+        nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf)
 set(SILKWORM_DB_PRIVATE_LIBS cborcpp)
 
 if(MSVC)

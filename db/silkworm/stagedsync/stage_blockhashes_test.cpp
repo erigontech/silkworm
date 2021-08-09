@@ -16,6 +16,7 @@
 
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
+#include <evmc/evmc.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
@@ -31,7 +32,6 @@
 #include <silkworm/types/block.hpp>
 
 #include "stagedsync.hpp"
-#include <evmc/evmc.hpp>
 
 using namespace evmc::literals;
 

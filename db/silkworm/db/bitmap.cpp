@@ -24,7 +24,7 @@ roaring::Roaring64Map read(ByteView serialized) {
     return roaring::Roaring64Map::readSafe(byte_ptr_cast(serialized.data()), serialized.size());
 }
 
-std::optional<uint64_t> seek(const roaring::Roaring64Map &bitmap, uint64_t n) {
+std::optional<uint64_t> seek(const roaring::Roaring64Map& bitmap, uint64_t n) {
     auto it{bitmap.begin()};
     if (it.move(n)) {
         return *it;
@@ -32,7 +32,7 @@ std::optional<uint64_t> seek(const roaring::Roaring64Map &bitmap, uint64_t n) {
     return std::nullopt;
 }
 
-roaring::Roaring64Map cut_left(roaring::Roaring64Map &bm, uint64_t size_limit) {
+roaring::Roaring64Map cut_left(roaring::Roaring64Map& bm, uint64_t size_limit) {
     if (bm.getSizeInBytes() <= size_limit) {
         roaring::Roaring64Map res(
             roaring::api::roaring_bitmap_from_range(bm.minimum(), bm.maximum() + 1, 1));  // With range
@@ -68,7 +68,7 @@ roaring::Roaring64Map cut_left(roaring::Roaring64Map &bm, uint64_t size_limit) {
     return res;
 }
 
-roaring::Roaring cut_left(roaring::Roaring &bm, uint64_t size_limit) {
+roaring::Roaring cut_left(roaring::Roaring& bm, uint64_t size_limit) {
     if (bm.getSizeInBytes() <= size_limit) {
         roaring::Roaring res(roaring::api::roaring_bitmap_from_range(bm.minimum(), bm.maximum() + 1, 1));  // With range
         res &= bm;

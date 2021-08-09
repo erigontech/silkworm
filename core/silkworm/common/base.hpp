@@ -38,6 +38,8 @@ using Bytes = std::basic_string<uint8_t>;
 
 using ByteView = std::basic_string_view<uint8_t>;
 
+using BlockNum = uint64_t;
+
 constexpr size_t kAddressLength{20};
 
 constexpr size_t kHashLength{32};

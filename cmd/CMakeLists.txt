@@ -73,6 +73,12 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(unwind_tx_lookup unwind_tx_lookup.cpp)
   target_link_libraries(unwind_tx_lookup PRIVATE silkworm_db CLI11::CLI11)
 
+  add_executable(unwind_history_index unwind_history_index.cpp)
+  target_link_libraries(unwind_history_index PRIVATE silkworm_db CLI11::CLI11)
+
+  add_executable(unwind_log_index unwind_log_index.cpp)
+  target_link_libraries(unwind_log_index PRIVATE silkworm_db CLI11::CLI11)
+
   add_executable(blockhashes blockhashes.cpp)
   target_link_libraries(blockhashes PRIVATE silkworm_db CLI11::CLI11)
   
@@ -105,6 +111,10 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(trie trie.cpp)
   target_link_libraries(trie PRIVATE silkworm_db CLI11::CLI11)
+
+  add_executable(download_headers download_headers.cpp)
+  target_link_libraries(download_headers PRIVATE silkworm_db silkworm_core CLI11::CLI11)
+  target_include_directories(download_headers PRIVATE ${CMAKE_SOURCE_DIR})
 
   # Ethereum Consensus Tests
   find_package(nlohmann_json CONFIG REQUIRED)

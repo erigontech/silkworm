@@ -19,10 +19,8 @@
 #include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 #include <ethash/ethash.hpp>
-#include <nlohmann/json.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/chain_genesis.hpp>
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
@@ -611,133 +609,6 @@ namespace db {
         db_changes = read_storage_changes(txn, block_num3);
         CHECK(db_changes.size() == expected_changes3.size());
         CHECK(db_changes == expected_changes3);
-    }
-
-    TEST_CASE("genesis config") {
-        std::string source_genesis(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-
-        auto genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
-        CHECK(genesis_json != nlohmann::json::value_t::discarded);
-        CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
-        auto config = ChainConfig::from_json(genesis_json["config"]);
-        CHECK(config.has_value());
-        CHECK(config.value() == kMainnetConfig);
-
-        source_genesis.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
-
-        genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
-        CHECK(genesis_json != nlohmann::json::value_t::discarded);
-        CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
-        config = ChainConfig::from_json(genesis_json["config"]);
-        CHECK(config.has_value());
-        CHECK(config.value() == kGoerliConfig);
-
-        source_genesis.assign(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
-
-        genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
-        CHECK(genesis_json != nlohmann::json::value_t::discarded);
-        CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
-        config = ChainConfig::from_json(genesis_json["config"]);
-        CHECK(config.has_value());
-        CHECK(config.value() == kRinkebyConfig);
-    }
-
-    TEST_CASE("mainnet_genesis") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
-
-        // Parse genesis data
-        std::string source_data;
-        source_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-        auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
-        CHECK(genesis_json != nlohmann::json::value_t::discarded);
-
-        CHECK(genesis_json.contains("difficulty"));
-        CHECK(genesis_json.contains("nonce"));
-        CHECK(genesis_json.contains("gasLimit"));
-        CHECK(genesis_json.contains("timestamp"));
-        CHECK(genesis_json.contains("extraData"));
-        CHECK((genesis_json.contains("alloc") && genesis_json["alloc"].is_object() && genesis_json["alloc"].size()));
-
-        db::Buffer state_buffer(txn);
-        size_t expected_allocations{genesis_json["alloc"].size()};
-
-        for (auto& item : genesis_json["alloc"].items()) {
-            if (!item.value().is_object() || !item.value().contains("balance") ||
-                !item.value()["balance"].is_string()) {
-                throw std::invalid_argument("alloc address " + item.key() + " has badly formatted allocation");
-            }
-
-            auto address_bytes{from_hex(item.key())};
-            if (address_bytes == std::nullopt || address_bytes.value().length() != kAddressLength) {
-                throw std::invalid_argument("alloc address " + item.key() + " is not valid. Either not hex or not " +
-                                            std::to_string(kAddressLength) + " bytes");
-            }
-
-            evmc::address account_address = to_address(*address_bytes);
-            auto balance_str{item.value()["balance"].get<std::string>()};
-            Account account{0, intx::from_string<intx::uint256>(balance_str)};
-            state_buffer.update_account(account_address, std::nullopt, account);
-        }
-
-        auto applied_allocations{static_cast<size_t>(state_buffer.account_changes().at(0).size())};
-        CHECK(applied_allocations == expected_allocations);
-
-        SECTION("state_root") {
-            auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
-            auto actual_state_root{state_buffer.state_root_hash()};
-            auto a = full_view(expected_state_root);
-            auto b = full_view(actual_state_root);
-            CHECK(to_hex(a) == to_hex(b));
-        }
-
-        // Fill Header
-        BlockHeader header;
-        auto parent_hash{from_hex(genesis_json["parentHash"].get<std::string>())};
-        if (parent_hash.has_value()) {
-            header.parent_hash = to_bytes32(*parent_hash);
-        }
-        header.ommers_hash = kEmptyListHash;
-        header.beneficiary = 0x0000000000000000000000000000000000000000_address;
-        header.state_root = state_buffer.state_root_hash();
-        header.transactions_root = kEmptyRoot;
-        header.receipts_root = kEmptyRoot;
-        auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
-        header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
-        header.number = 0;
-        header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
-        header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
-
-        auto extra_data = from_hex(genesis_json["extraData"].get<std::string>());
-        if (extra_data.has_value()) {
-            header.extra_data = *extra_data;
-        }
-
-        auto mix_data = from_hex(genesis_json["mixhash"].get<std::string>());
-        CHECK((mix_data.has_value() && mix_data->size() == kHashLength));
-        header.mix_hash = to_bytes32(*mix_data);
-
-        auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
-        boost::endian::store_big_u64(header.nonce.data(), nonce);
-
-        // Verify our RLP encoding produces the same result
-        auto computed_hash{header.hash()};
-        auto expected_hash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
-        CHECK(to_hex(computed_hash) == to_hex(expected_hash));
-
-        // TODO (Andrea) Why this fails for genesis ?
-        // auto seal_hash(header.hash(/*for_sealing =*/true));
-        // ethash::hash256 sealh256{};
-        // std::memcpy(sealh256.bytes, seal_hash.bytes, 32);
-        // auto boundary{ethash::get_boundary_from_diff(header.difficulty)};
-        // auto epoch_context{ethash::create_epoch_context(0)};
-        // auto result{ethash::hash(*epoch_context, sealh256, nonce)};
-        // CHECK(ethash::is_less_or_equal(result.final_hash, boundary));
     }
 
     TEST_CASE("read_chain_config") {

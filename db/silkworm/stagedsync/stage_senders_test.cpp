@@ -132,6 +132,7 @@ TEST_CASE("Unwind Senders") {
     auto sender_1{0xb685342b8c54347aad148e1f22eff3eb3eb29389_address};
     auto sender_2{0xb685342b8c54347aad148e1f22eff3eb3eb29388_address};
 
+    block.transactions.resize(1);
     block.transactions[0].from = sender_0;
 
     // ---------------------------------------

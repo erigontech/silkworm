@@ -17,8 +17,8 @@
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
-#include <silkworm/rlp/encode.hpp>
 #include <silkworm/chain/config.hpp>
+#include <silkworm/chain/genesis.h>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/temp_dir.hpp>
@@ -30,7 +30,6 @@
 #include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
-#include <silkworm/chain/genesis.h>
 
 using namespace evmc::literals;
 
@@ -40,11 +39,9 @@ constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31dd
 constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
 constexpr evmc::bytes32 hash_2{0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
 
-TEST_CASE("Stage Senders") {
 using namespace silkworm;
 
 static std::vector<Transaction> sample_transactions() {
-
     std::vector<Transaction> transactions;
     transactions.resize(2);
 
@@ -79,88 +76,6 @@ static std::vector<Transaction> sample_transactions() {
 }
 
 TEST_CASE("Stage Senders") {
-
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
-    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
-
-    db::detail::BlockBodyForStorage block{};
-    auto transactions{sample_transactions()};
-    block.base_txn_id = 1;
-    block.txn_count = 1;
-
-    auto sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
-
-    block.transactions[0].from = sender_0;
-
-    // ---------------------------------------
-    // Push first block
-    // ---------------------------------------
-    Bytes tx_rlp{};
-    rlp::encode(tx_rlp, transactions[0]);
-
-    transaction_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
-    bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
-
-    // ---------------------------------------
-    // Push second block
-    // ---------------------------------------
-
-
-    block.base_txn_id = 2;
-
-    rlp::encode(tx_rlp, transactions[1]);
-    transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
-    bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
-
-    // ---------------------------------------
-    // Push third block
-    // ---------------------------------------
-
-
-    block.base_txn_id = 0;
-    block.txn_count = 0;
-
-    bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
-
-    std::string genesis_data;
-    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    auto config_data{genesis_json["config"].dump()};
-
-    auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), db::to_slice(byte_view_of_c_str(config_data.c_str())));
-
-    auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-    canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
-    canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
-    canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
-    canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
-
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path())); 
-
-    auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
-    auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
-    auto got_sender_1{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(2))).value)};
-    auto expected_sender{ByteView(sender.bytes, kAddressLength)};
-
-    REQUIRE(got_sender_0.compare(expected_sender) == 0);
-    REQUIRE(got_sender_1.compare(expected_sender) == 0);
-    REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(3)), false));
-}
-
-TEST_CASE("Unwind Senders") {
-    using namespace silkworm;
-
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
 
@@ -193,7 +108,6 @@ TEST_CASE("Unwind Senders") {
     // Push second block
     // ---------------------------------------
 
-
     block.base_txn_id = 2;
 
     rlp::encode(tx_rlp, transactions[1]);
@@ -203,7 +117,6 @@ TEST_CASE("Unwind Senders") {
     // ---------------------------------------
     // Push third block
     // ---------------------------------------
-
 
     block.base_txn_id = 0;
     block.txn_count = 0;
@@ -226,7 +139,82 @@ TEST_CASE("Unwind Senders") {
     db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
     stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
-    stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, tmp_dir.path(), 1)); 
+
+    auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
+    auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
+    auto got_sender_1{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(2))).value)};
+    auto expected_sender{ByteView(sender.bytes, kAddressLength)};
+
+    REQUIRE(got_sender_0.compare(expected_sender) == 0);
+    REQUIRE(got_sender_1.compare(expected_sender) == 0);
+    REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(3)), false));
+}
+
+TEST_CASE("Unwind Senders") {
+    TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
+
+    // Initialize temporary Database
+    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db_config.inmemory = true;
+    auto env{db::open_env(db_config)};
+    stagedsync::TransactionManager txn{env};
+    db::table::create_all(*txn);
+    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
+
+    db::detail::BlockBodyForStorage block{};
+    auto transactions{sample_transactions()};
+    block.base_txn_id = 1;
+    block.txn_count = 1;
+
+    auto sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
+
+    // ---------------------------------------
+    // Push first block
+    // ---------------------------------------
+    Bytes tx_rlp{};
+    rlp::encode(tx_rlp, transactions[0]);
+
+    transaction_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
+    bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
+
+    // ---------------------------------------
+    // Push second block
+    // ---------------------------------------
+
+    block.base_txn_id = 2;
+
+    rlp::encode(tx_rlp, transactions[1]);
+    transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
+    bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
+
+    // ---------------------------------------
+    // Push third block
+    // ---------------------------------------
+
+    block.base_txn_id = 0;
+    block.txn_count = 0;
+
+    bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
+
+    std::string genesis_data;
+    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    auto config_data{genesis_json["config"].dump()};
+
+    auto config_table{db::open_cursor(*txn, db::table::kConfig)};
+    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), db::to_slice(byte_view_of_c_str(config_data.c_str())));
+
+    auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+    canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
+    canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
+    canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
+    canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
+    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
+
+    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
+    stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, tmp_dir.path(), 1));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};

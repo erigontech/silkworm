@@ -127,7 +127,9 @@ class IntraBlockState {
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key, bool original) const noexcept;
 
-    state::Object* get_object(const evmc::address& address) const noexcept;
+    const state::Object* get_object(const evmc::address& address) const noexcept;
+    state::Object* get_object(const evmc::address& address) noexcept;
+
     state::Object& get_or_create_object(const evmc::address& address) noexcept;
 
     StateBuffer& db_;

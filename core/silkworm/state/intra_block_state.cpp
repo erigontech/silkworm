@@ -25,7 +25,7 @@
 
 namespace silkworm {
 
-state::Object* IntraBlockState::get_object(const evmc::address& address) const noexcept {
+const state::Object* IntraBlockState::get_object(const evmc::address& address) const noexcept {
     auto it{objects_.find(address)};
     if (it != objects_.end()) {
         return &it->second;
@@ -40,6 +40,11 @@ state::Object* IntraBlockState::get_object(const evmc::address& address) const n
     obj.initial = *account;
     obj.current = *account;
     return &obj;
+}
+
+state::Object* IntraBlockState::get_object(const evmc::address& address) noexcept {
+    const auto& self{*this};
+    return const_cast<state::Object*>(self.get_object(address));
 }
 
 state::Object& IntraBlockState::get_or_create_object(const evmc::address& address) noexcept {

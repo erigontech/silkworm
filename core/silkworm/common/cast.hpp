@@ -20,6 +20,7 @@
 // Utilities for type casting
 
 #include <cstring>
+#include <string_view>
 #include <type_traits>
 
 #include <silkworm/common/base.hpp>
@@ -42,6 +43,8 @@ bit_cast(const From& src) noexcept {
     std::memcpy(&dst, &src, sizeof(To));
     return dst;
 }
+
+inline ByteView string_view_to_byte_view(std::string_view sv) { return {byte_ptr_cast(sv.data()), sv.length()}; }
 
 }  // namespace silkworm
 

@@ -17,9 +17,8 @@
 #include <filesystem>
 #include <string>
 
-#include <boost/endian/conversion.hpp>
-
 #include <silkworm/chain/config.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -153,7 +152,7 @@ static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table
             if (account.incarnation > 0 && account.code_hash == kEmptyHash) {
                 Bytes code_hash_key(kAddressLength + db::kIncarnationLength, '\0');
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
-                boost::endian::store_big_u64(&code_hash_key[kAddressLength], account.incarnation);
+                endian::store_big_u64(&code_hash_key[kAddressLength], account.incarnation);
                 auto new_code_hash{plain_code_table.find(db::to_slice(code_hash_key))};
                 std::memcpy(&account.code_hash.bytes[0], new_code_hash.value.iov_base, kHashLength);
             }
@@ -166,7 +165,7 @@ static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table
                 for (uint64_t i = state_incarnation; i > account.incarnation && i > 0; --i) {
                     Bytes key_hash(kAddressLength + 8, '\0');
                     std::memcpy(&key_hash[0], key.data(), kAddressLength);
-                    boost::endian::store_big_u64(&key_hash[kAddressLength], i);
+                    endian::store_big_u64(&key_hash[kAddressLength], i);
                     if (plain_code_table.seek(db::to_slice(key_hash))) {
                         plain_code_table.erase();
                     }
@@ -204,7 +203,7 @@ static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plai
     while (src_data) {
         Bytes key(db::from_slice(src_data.key));
         Bytes value(db::from_slice(src_data.value));
-        block_number = boost::endian::load_big_u64(&key[0]);
+        block_number = endian::load_big_u64(&key[0]);
         if (block_number == unwind_to) {
             break;
         }
@@ -257,7 +256,7 @@ StageResult unwind_execution(TransactionManager& txn, const std::filesystem::pat
     unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, unwind_to);
     // We set the cursor data
     Bytes unwind_to_bytes(8, '\0');
-    boost::endian::store_big_u64(&unwind_to_bytes[0], unwind_to + 1);
+    endian::store_big_u64(&unwind_to_bytes[0], unwind_to + 1);
 
     // Truncate Tables
     unwind_table_from(account_changeset_table, unwind_to_bytes);

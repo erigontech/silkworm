@@ -19,10 +19,10 @@
 #include <iostream>
 
 #include <CLI/CLI.hpp>
-#include <boost/endian/conversion.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
@@ -80,13 +80,13 @@ int main(int argc, char* argv[]) {
 
         auto bodies_data{bodies_table.to_first(false)};
         while (bodies_data) {
-            auto block_number(boost::endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.iov_base)));
+            auto block_number(endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.iov_base)));
             auto body_rlp{db::from_slice(bodies_data.value)};
             auto body{db::detail::decode_stored_block_body(body_rlp)};
 
             if (body.txn_count > 0) {
                 Bytes transaction_key(8, '\0');
-                boost::endian::store_big_u64(transaction_key.data(), body.base_txn_id);
+                endian::store_big_u64(transaction_key.data(), body.base_txn_id);
 
                 uint64_t i{0};
                 auto transaction_data{transactions_table.find(db::to_slice(transaction_key), false)};
@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
 
                     // Erigon stores block height as compact (no leading zeroes)
                     auto lookup_block_value{left_pad(db::from_slice(lookup_data.value), sizeof(uint64_t), buffer)};
-                    auto actual_block_number{boost::endian::load_big_u64(lookup_block_value.data())};
+                    auto actual_block_number{endian::load_big_u64(lookup_block_value.data())};
 
                     if (actual_block_number != expected_block_number) {
                         SILKWORM_LOG(LogLevel::Error)

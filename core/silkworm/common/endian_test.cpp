@@ -20,6 +20,21 @@
 
 namespace silkworm::endian {
 
+TEST_CASE("16-bit Endian") {
+    uint8_t bytes[2];
+    uint16_t value{0x1234};
+
+    store_big_u16(bytes, value);
+    CHECK(bytes[0] == 0x12);
+    CHECK(bytes[1] == 0x34);
+
+    uint16_t be{load_big_u16(bytes)};
+    CHECK(be == value);
+
+    uint16_t le{load_little_u16(bytes)};
+    CHECK(le == 0x3412);
+}
+
 TEST_CASE("32-bit Endian") {
     uint8_t bytes[4];
     uint32_t value{0x12345678};

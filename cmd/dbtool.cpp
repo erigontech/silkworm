@@ -22,12 +22,12 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/bind.hpp>
-#include <boost/endian/conversion.hpp>
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/stages.hpp>
@@ -411,7 +411,7 @@ int do_stages(DbOptions& db_opts) {
 
             auto result{crs.to_first(/*throw_notfound =*/false)};
             while (result) {
-                size_t height{boost::endian::load_big_u64(static_cast<uint8_t*>(result.value.iov_base))};
+                size_t height{endian::load_big_u64(static_cast<uint8_t*>(result.value.iov_base))};
                 bool Known{db::stages::is_known_stage(result.key.char_ptr())};
                 std::cout << (boost::format(fmt_row) % result.key.as_string() % height %
                               (Known ? std::string(8, ' ') : "Unknown"))

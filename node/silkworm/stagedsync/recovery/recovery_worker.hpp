@@ -21,7 +21,6 @@
 #include <string>
 #include <thread>
 
-#include <CLI/CLI.hpp>
 #include <boost/signals2.hpp>
 #include <ethash/keccak.hpp>
 

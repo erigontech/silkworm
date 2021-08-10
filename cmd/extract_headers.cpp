@@ -20,10 +20,10 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/beast/core/detail/base64.hpp>
-#include <boost/endian/conversion.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/tables.hpp>
@@ -111,7 +111,7 @@ class Db {
         if (!data) {
             return std::nullopt;
         }
-        auto block_num{boost::endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base))};
+        auto block_num{endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base))};
         return read_header(block_num, h);
     }
 };

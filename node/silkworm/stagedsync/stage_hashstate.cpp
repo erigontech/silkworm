@@ -16,8 +16,7 @@
 
 #include <filesystem>
 
-#include <boost/endian/conversion.hpp>
-
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -203,7 +202,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             // get code hash
             Bytes plain_key(kAddressLength + db::kIncarnationLength, '\0');
             std::memcpy(&plain_key[0], &db_key[0], kAddressLength);
-            boost::endian::store_big_u64(&plain_key[kAddressLength], incarnation);
+            endian::store_big_u64(&plain_key[kAddressLength], incarnation);
             auto code_hash{codehash_table.find(db::to_slice(plain_key), false)};
             if (!code_hash) {
                 changeset_data = changeset_table.to_next(false);
@@ -302,7 +301,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
                     if (incarnation) {
                         Bytes key(kHashLength + db::kIncarnationLength, '\0');
                         std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
-                        boost::endian::store_big_u64(&key[kHashLength], incarnation);
+                        endian::store_big_u64(&key[kHashLength], incarnation);
                         if (target_table.seek(db::to_slice(key))) {
                             target_table.erase();
                         }

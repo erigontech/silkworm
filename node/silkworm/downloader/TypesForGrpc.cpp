@@ -16,57 +16,35 @@
 
 #include "TypesForGrpc.hpp"
 
+#include <silkworm/common/endian.hpp>
+
 namespace silkworm {
 
 // helpers
 
-constexpr uint64_t& lo(intx::uint128& x) {
-    return x[0];
-}
+constexpr uint64_t& lo(intx::uint128& x) { return x[0]; }
 
-constexpr uint64_t lo(const intx::uint128& x) {
-    return x[0];
-}
+constexpr uint64_t lo(const intx::uint128& x) { return x[0]; }
 
-constexpr uint64_t& hi(intx::uint128& x) {
-    return x[1];
-}
+constexpr uint64_t& hi(intx::uint128& x) { return x[1]; }
 
-constexpr uint64_t hi(const intx::uint128& x) {
-    return x[1];
-}
+constexpr uint64_t hi(const intx::uint128& x) { return x[1]; }
 
-constexpr uint64_t& lo_lo(intx::uint256& x) {
-    return x[0];
-}
+constexpr uint64_t& lo_lo(intx::uint256& x) { return x[0]; }
 
-constexpr uint64_t lo_lo(const intx::uint256& x) {
-    return x[0];
-}
+constexpr uint64_t lo_lo(const intx::uint256& x) { return x[0]; }
 
-constexpr uint64_t& lo_hi(intx::uint256& x) {
-    return x[1];
-}
+constexpr uint64_t& lo_hi(intx::uint256& x) { return x[1]; }
 
-constexpr uint64_t lo_hi(const intx::uint256& x) {
-    return x[1];
-}
+constexpr uint64_t lo_hi(const intx::uint256& x) { return x[1]; }
 
-constexpr uint64_t& hi_lo(intx::uint256& x) {
-    return x[2];
-}
+constexpr uint64_t& hi_lo(intx::uint256& x) { return x[2]; }
 
-constexpr uint64_t hi_lo(const intx::uint256& x) {
-    return x[2];
-}
+constexpr uint64_t hi_lo(const intx::uint256& x) { return x[2]; }
 
-constexpr uint64_t& hi_hi(intx::uint256& x) {
-    return x[3];
-}
+constexpr uint64_t& hi_hi(intx::uint256& x) { return x[3]; }
 
-constexpr uint64_t hi_hi(const intx::uint256& x) {
-    return x[3];
-}
+constexpr uint64_t hi_hi(const intx::uint256& x) { return x[3]; }
 
 // implementation
 std::unique_ptr<types::H256> to_H256(const intx::uint256& orig) {
@@ -119,17 +97,16 @@ std::unique_ptr<types::H256> to_H256(const Hash& orig) {
 }
 
 Hash hash_from_H256(const types::H256& orig) {
-
     uint64_t hi_hi = orig.hi().hi();
     uint64_t hi_lo = orig.hi().lo();
     uint64_t lo_hi = orig.lo().hi();
     uint64_t lo_lo = orig.lo().lo();
 
     Hash dest;
-    boost::endian::store_big_u64(dest.bytes + 0, hi_hi);
-    boost::endian::store_big_u64(dest.bytes + 8, hi_lo);
-    boost::endian::store_big_u64(dest.bytes + 16, lo_hi);
-    boost::endian::store_big_u64(dest.bytes + 24, lo_lo);
+    endian::store_big_u64(dest.bytes + 0, hi_hi);
+    endian::store_big_u64(dest.bytes + 8, hi_lo);
+    endian::store_big_u64(dest.bytes + 16, lo_hi);
+    endian::store_big_u64(dest.bytes + 24, lo_lo);
 
     return dest;
 }
@@ -146,8 +123,8 @@ std::unique_ptr<types::H512> to_H512(const std::string& orig) {
     H128* lo_hi = new H128{};
     H128* lo_lo = new H128{};
 
-    hi_hi->set_hi(load64be(data +  0));
-    hi_hi->set_lo(load64be(data +  8));
+    hi_hi->set_hi(load64be(data + 0));
+    hi_hi->set_lo(load64be(data + 8));
     hi_lo->set_hi(load64be(data + 16));
     hi_lo->set_lo(load64be(data + 24));
     lo_hi->set_hi(load64be(data + 32));
@@ -170,7 +147,6 @@ std::unique_ptr<types::H512> to_H512(const std::string& orig) {
 }
 
 std::string string_from_H512(const types::H512& orig) {
-
     uint64_t hi_hi_hi = orig.hi().hi().hi();
     uint64_t hi_hi_lo = orig.hi().hi().lo();
     uint64_t hi_lo_hi = orig.hi().lo().hi();
@@ -180,18 +156,18 @@ std::string string_from_H512(const types::H512& orig) {
     uint64_t lo_lo_hi = orig.lo().lo().hi();
     uint64_t lo_lo_lo = orig.lo().lo().lo();
 
-    std::string dest(64,0);
+    std::string dest(64, 0);
     auto data = reinterpret_cast<uint8_t*>(dest.data());
-    boost::endian::store_big_u64(data +  0, hi_hi_hi);
-    boost::endian::store_big_u64(data +  8, hi_hi_lo);
-    boost::endian::store_big_u64(data + 16, hi_lo_hi);
-    boost::endian::store_big_u64(data + 24, hi_lo_lo);
-    boost::endian::store_big_u64(data + 32, lo_hi_hi);
-    boost::endian::store_big_u64(data + 40, lo_hi_lo);
-    boost::endian::store_big_u64(data + 48, lo_lo_hi);
-    boost::endian::store_big_u64(data + 56, lo_lo_lo);
+    endian::store_big_u64(data + 0, hi_hi_hi);
+    endian::store_big_u64(data + 8, hi_hi_lo);
+    endian::store_big_u64(data + 16, hi_lo_hi);
+    endian::store_big_u64(data + 24, hi_lo_lo);
+    endian::store_big_u64(data + 32, lo_hi_hi);
+    endian::store_big_u64(data + 40, lo_hi_lo);
+    endian::store_big_u64(data + 48, lo_lo_hi);
+    endian::store_big_u64(data + 56, lo_lo_lo);
 
     return dest;
 }
 
-}   // namespace
+}  // namespace silkworm

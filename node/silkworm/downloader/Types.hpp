@@ -13,12 +13,13 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
 #ifndef SILKWORM_TYPES_HPP
 #define SILKWORM_TYPES_HPP
 
 #include <chrono>
 #include <iomanip>
+
+#include <boost/endian/conversion.hpp>
 
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>

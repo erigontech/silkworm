@@ -21,6 +21,7 @@
 #include <unordered_map>
 
 #include <CLI/CLI.hpp>
+#include <boost/endian/conversion.hpp>
 #include <cbor/decoder.h>
 
 #include <silkworm/common/cast.hpp>

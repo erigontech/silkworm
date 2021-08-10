@@ -33,15 +33,14 @@ SILKWORM_BYTE_ORDER
 SILKWORM_BYTE_ORDER is equal to SILKWORM_BIG_ENDIAN for big-endian architectures
 and to SILKWORM_LITTLE_ENDIAN for little-endian ones (most current architectures).
 
-In addition, SILKWORM_BSWAP16, SILKWORM_BSWAP32, and SILKWORM_BSWAP64 macros are defined
-as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers respectively.
+In addition, SILKWORM_BSWAP32 & SILKWORM_BSWAP64 macros are defined
+as compiler intrinsics to swap bytes in 32-bit and 64-bit integers respectively.
 */
 
 #ifdef _WIN32
 
 #include <intrin.h>
 
-#define SILKWORM_BSWAP16 _byteswap_ushort
 #define SILKWORM_BSWAP32 _byteswap_ulong
 #define SILKWORM_BSWAP64 _byteswap_uint64
 
@@ -52,7 +51,6 @@ as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers resp
 
 #elif defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && defined(__ORDER_BIG_ENDIAN__)
 
-#define SILKWORM_BSWAP16 __builtin_bswap16
 #define SILKWORM_BSWAP32 __builtin_bswap32
 #define SILKWORM_BSWAP64 __builtin_bswap64
 
@@ -69,23 +67,19 @@ namespace silkworm::endian {
 
 #if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
 struct le {
-    static inline uint16_t uint16(uint16_t value) noexcept { return value; }
     static inline uint32_t uint32(uint32_t value) noexcept { return value; }
     static inline uint64_t uint64(uint64_t value) noexcept { return value; }
 };
 struct be {
-    static inline uint16_t uint16(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
     static inline uint32_t uint32(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
     static inline uint64_t uint64(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
 };
 #elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
 struct le {
-    static inline uint16_t uint16(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
     static inline uint32_t uint32(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
     static inline uint64_t uint64(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
 };
 struct be {
-    static inline uint16_t uint16(uint16_t value) noexcept { return value; }
     static inline uint32_t uint32(uint32_t value) noexcept { return value; }
     static inline uint64_t uint64(uint64_t value) noexcept { return value; }
 };
@@ -93,52 +87,28 @@ struct be {
 #error "byte order not supported"
 #endif
 
-// Similar to boost::endian::load_big_u16
-inline uint16_t load_big_u16(const uint8_t* bytes) noexcept {
-    uint16_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-    return be::uint16(x);
-}
-
 // Similar to boost::endian::load_big_u32
 inline uint32_t load_big_u32(const uint8_t* bytes) noexcept {
-    uint32_t x;
-    std::memcpy(&x, bytes, sizeof(x));
+    uint32_t x{*reinterpret_cast<const uint32_t*>(bytes)};
     return be::uint32(x);
 }
 
 // Similar to boost::endian::load_big_u64
 inline uint64_t load_big_u64(const uint8_t* bytes) noexcept {
-    uint64_t x;
-    std::memcpy(&x, bytes, sizeof(x));
+    uint64_t x{*reinterpret_cast<const uint64_t*>(bytes)};
     return be::uint64(x);
-}
-
-// Similar to boost::endian::load_little_u16
-inline uint16_t load_little_u16(const uint8_t* bytes) noexcept {
-    uint16_t x;
-    std::memcpy(&x, bytes, sizeof(x));
-    return le::uint16(x);
 }
 
 // Similar to boost::endian::load_little_u32
 inline uint32_t load_little_u32(const uint8_t* bytes) noexcept {
-    uint32_t x;
-    std::memcpy(&x, bytes, sizeof(x));
+    uint32_t x{*reinterpret_cast<const uint32_t*>(bytes)};
     return le::uint32(x);
 }
 
 // Similar to boost::endian::load_little_u64
 inline uint64_t load_little_u64(const uint8_t* bytes) noexcept {
-    uint64_t x;
-    std::memcpy(&x, bytes, sizeof(x));
+    uint64_t x{*reinterpret_cast<const uint64_t*>(bytes)};
     return le::uint64(x);
-}
-
-// Similar to boost::endian::store_big_u16
-inline void store_big_u16(uint8_t* bytes, const uint16_t value) {
-    uint16_t x{be::uint16(value)};
-    std::memcpy(bytes, &x, sizeof(x));
 }
 
 // Similar to boost::endian::store_big_u32

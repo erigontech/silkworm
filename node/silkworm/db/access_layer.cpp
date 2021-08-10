@@ -17,11 +17,9 @@
 #include "access_layer.hpp"
 
 #include <cassert>
-#include <iostream>
 
+#include <boost/endian/conversion.hpp>
 #include <nlohmann/json.hpp>
-
-#include <silkworm/common/endian.hpp>
 
 #include "bitmap.hpp"
 #include "tables.hpp"
@@ -37,11 +35,11 @@ std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept {
 
     auto data{src.current()};
     assert(data.value.length() == 12);
-    auto Major{endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
+    auto Major{boost::endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Minor{endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
+    auto Minor{boost::endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
     data.value.remove_prefix(sizeof(uint32_t));
-    auto Patch{endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
+    auto Patch{boost::endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
     return VersionBase{Major, Minor, Patch};
 }
 
@@ -57,9 +55,9 @@ void write_schema_version(mdbx::txn& txn, VersionBase& schema_version) {
         }
     }
     Bytes value(12, '\0');
-    endian::store_big_u32(&value[0], schema_version.Major);
-    endian::store_big_u32(&value[4], schema_version.Minor);
-    endian::store_big_u32(&value[8], schema_version.Patch);
+    boost::endian::store_big_u32(&value[0], schema_version.Major);
+    boost::endian::store_big_u32(&value[4], schema_version.Minor);
+    boost::endian::store_big_u32(&value[8], schema_version.Patch);
     auto k{to_slice(byte_view_of_c_str(kDbSchemaVersionKey))};
     auto v{to_slice(value)};
     auto src{db::open_cursor(txn, table::kDatabaseInfo)};
@@ -193,7 +191,7 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
     v.reserve(count);
 
     Bytes key(8, '\0');
-    endian::store_big_u64(key.data(), base_id);
+    boost::endian::store_big_u64(key.data(), base_id);
 
     uint64_t i{0};
     for (auto data{txn_table.find(to_slice(key), false)}; data.done && i < count;
@@ -407,7 +405,7 @@ std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::ad
     auto src{db::open_cursor(txn, table::kIncarnationMap)};
     if (auto data{src.find(mdbx::slice{address.bytes, sizeof(evmc::address)}, /*throw_notfound*/ false)}; data.done) {
         assert(data.value.length() == 8);
-        return endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base));
+        return boost::endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base));
     }
     return std::nullopt;
 }
@@ -451,7 +449,7 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
         evmc::address address;
         std::memcpy(address.bytes, data.key.iov_base, kAddressLength);
         data.key.remove_prefix(kAddressLength);
-        uint64_t incarnation{endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base))};
+        uint64_t incarnation{boost::endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base))};
 
         assert(data.value.length() >= kHashLength);
         evmc::bytes32 location;

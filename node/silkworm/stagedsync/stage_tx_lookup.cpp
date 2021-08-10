@@ -13,11 +13,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
 #include <filesystem>
 #include <iostream>
 
-#include <silkworm/common/endian.hpp>
+#include <boost/endian/conversion.hpp>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -51,7 +51,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
 
     // Extract
     Bytes start(8, '\0');
-    endian::store_big_u64(&start[0], last_processed_block_number + 1);
+    boost::endian::store_big_u64(&start[0], last_processed_block_number + 1);
 
     SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Extraction" << std::endl;
 
@@ -61,11 +61,11 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
         auto body{db::detail::decode_stored_block_body(body_rlp)};
         Bytes block_number_as_bytes(static_cast<uint8_t*>(bodies_data.key.iov_base), 8);
         auto lookup_block_data{compact(block_number_as_bytes)};
-        block_number = endian::load_big_u64(&block_number_as_bytes[0]);
+        block_number = boost::endian::load_big_u64(&block_number_as_bytes[0]);
 
         if (body.txn_count) {
             Bytes tx_base_id(8, '\0');
-            endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
+            boost::endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
             auto tx_data{transactions_table.lower_bound(db::to_slice(tx_base_id), /*throw_notfound*/ false)};
             uint64_t tx_count{0};
 
@@ -134,7 +134,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
 
     // Extract
     Bytes start(8, '\0');
-    endian::store_big_u64(&start[0], unwind_to + 1);
+    boost::endian::store_big_u64(&start[0], unwind_to + 1);
 
     SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Unwind, from: "
                                  << db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)
@@ -147,7 +147,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
 
         if (body.txn_count) {
             Bytes tx_base_id(8, '\0');
-            endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
+            boost::endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
             auto tx_data{transactions_table.lower_bound(db::to_slice(tx_base_id), /*throw_notfound*/ false)};
             uint64_t tx_count{0};
 

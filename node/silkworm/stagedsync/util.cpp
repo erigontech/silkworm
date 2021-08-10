@@ -43,13 +43,4 @@ std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView
     return {a, b};
 }
 
-void unwind_table_from(mdbx::cursor& table, Bytes& starting_key) {
-    if (table.lower_bound(db::to_slice(starting_key), false)) {
-        table.erase();
-        while (table.to_next(/*throw_notfound*/ false)) {
-            table.erase();
-        }
-    }
-}
-
 }  // namespace silkworm::stagedsync

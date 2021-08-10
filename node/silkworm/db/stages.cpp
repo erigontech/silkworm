@@ -16,7 +16,7 @@
 
 #include "stages.hpp"
 
-#include <silkworm/common/endian.hpp>
+#include <boost/endian/conversion.hpp>
 
 namespace silkworm::db::stages {
 
@@ -33,7 +33,7 @@ namespace {
         } else if (data.value.size() != sizeof(uint64_t)) {
             throw std::length_error("Expected 8 bytes of data got " + std::to_string(data.value.size()));
         }
-        return endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base));
+        return boost::endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base));
     }
 
     void set_stage_data(mdbx::txn& txn, const char* stage_name, uint64_t block_num, const db::MapConfig& domain) {
@@ -42,7 +42,7 @@ namespace {
         }
 
         Bytes stage_progress(sizeof(block_num), 0);
-        endian::store_big_u64(stage_progress.data(), block_num);
+        boost::endian::store_big_u64(stage_progress.data(), block_num);
         auto tgt{db::open_cursor(txn, domain)};
         mdbx::slice key{const_cast<char*>(stage_name), std::strlen(stage_name)};
         mdbx::slice value{db::to_slice(stage_progress)};

@@ -21,6 +21,7 @@
 #include <unordered_map>
 
 #include <CLI/CLI.hpp>
+#include <boost/endian/conversion.hpp>
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/data_dir.hpp>

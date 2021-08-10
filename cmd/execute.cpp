@@ -17,6 +17,7 @@
 #include <filesystem>
 
 #include <CLI/CLI.hpp>
+#include <boost/endian/conversion.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/common/data_dir.hpp>

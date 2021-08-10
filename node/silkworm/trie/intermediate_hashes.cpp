@@ -18,7 +18,8 @@
 
 #include <bitset>
 
-#include <silkworm/common/endian.hpp>
+#include <boost/endian/conversion.hpp>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/db/tables.hpp>
@@ -191,13 +192,13 @@ Bytes marshal_node(const Node& n) {
     Bytes buf(buf_size, '\0');
     size_t pos{0};
 
-    endian::store_big_u16(&buf[pos], n.state_mask());
+    boost::endian::store_big_u16(&buf[pos], n.state_mask());
     pos += 2;
 
-    endian::store_big_u16(&buf[pos], n.tree_mask());
+    boost::endian::store_big_u16(&buf[pos], n.tree_mask());
     pos += 2;
 
-    endian::store_big_u16(&buf[pos], n.hash_mask());
+    boost::endian::store_big_u16(&buf[pos], n.hash_mask());
     pos += 2;
 
     if (n.root_hash().has_value()) {
@@ -225,11 +226,11 @@ Node unmarshal_node(ByteView v) {
         }
     }
 
-    const auto state_mask{endian::load_big_u16(v.data())};
+    const auto state_mask{boost::endian::load_big_u16(v.data())};
     v.remove_prefix(2);
-    const auto tree_mask{endian::load_big_u16(v.data())};
+    const auto tree_mask{boost::endian::load_big_u16(v.data())};
     v.remove_prefix(2);
-    const auto hash_mask{endian::load_big_u16(v.data())};
+    const auto hash_mask{boost::endian::load_big_u16(v.data())};
     v.remove_prefix(2);
 
     std::optional<evmc::bytes32> root_hash{std::nullopt};

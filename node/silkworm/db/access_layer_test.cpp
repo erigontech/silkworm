@@ -16,12 +16,12 @@
 
 #include "access_layer.hpp"
 
+#include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 #include <ethash/ethash.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/data_dir.hpp>
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
@@ -333,7 +333,7 @@ namespace db {
             auto txn_table{db::open_cursor(txn, table::kEthTx)};
             Bytes txn_key(8, '\0');
             for (size_t i{0}; i < body.transactions.size(); ++i) {
-                endian::store_big_u64(txn_key.data(), storage_body.base_txn_id + i);
+                boost::endian::store_big_u64(txn_key.data(), storage_body.base_txn_id + i);
                 rlp.clear();
                 rlp::encode(rlp, body.transactions[i]);
                 txn_table.upsert(to_slice(txn_key), to_slice(rlp));

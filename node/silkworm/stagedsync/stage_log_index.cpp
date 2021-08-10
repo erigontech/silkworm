@@ -13,15 +13,15 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
 #include <filesystem>
 #include <iomanip>
 #include <string>
 #include <thread>
 #include <unordered_map>
 
+#include <boost/endian/conversion.hpp>
+
 #include <silkworm/common/cast.hpp>
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
@@ -42,7 +42,7 @@ static void loader_function(etl::Entry entry, mdbx::cursor& target_table, MDBX_p
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
     Bytes last_chunk_index(entry.key.size() + 4, '\0');
     std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
-    endian::store_big_u32(&last_chunk_index[entry.key.size()], UINT32_MAX);
+    boost::endian::store_big_u32(&last_chunk_index[entry.key.size()], UINT32_MAX);
     auto previous_bitmap_bytes{target_table.find(db::to_slice(last_chunk_index), false)};
     if (previous_bitmap_bytes) {
         bm |= roaring::Roaring::readSafe(previous_bitmap_bytes.value.char_ptr(), previous_bitmap_bytes.value.length());
@@ -54,7 +54,7 @@ static void loader_function(etl::Entry entry, mdbx::cursor& target_table, MDBX_p
         Bytes chunk_index(entry.key.size() + 4, '\0');
         std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
         uint64_t suffix{bm.cardinality() == 0 ? UINT32_MAX : current_chunk.maximum()};
-        endian::store_big_u32(&chunk_index[entry.key.size()], suffix);
+        boost::endian::store_big_u32(&chunk_index[entry.key.size()], suffix);
         Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
         current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
 
@@ -86,7 +86,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started Log Index Extraction" << std::endl;
     Bytes start(8, '\0');
-    endian::store_big_u64(&start[0], last_processed_block_number);
+    boost::endian::store_big_u64(&start[0], last_processed_block_number);
 
     uint64_t block_number{0};
     uint64_t topics_allocated_space{0};
@@ -99,7 +99,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     if (log_table.lower_bound(db::to_slice(start))) {
         auto log_data{log_table.current()};
         while (log_data) {
-            block_number = endian::load_big_u64(static_cast<uint8_t*>(log_data.key.iov_base));
+            block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(log_data.key.iov_base));
             current_listener.set_block_number(block_number);
             cbor::input input(log_data.value.iov_base, log_data.value.iov_len);
             cbor::decoder decoder(input, current_listener);
@@ -183,7 +183,7 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
                 // make new key
                 Bytes new_key(key.size(), '\0');
                 std::memcpy(&new_key[0], key.data(), key.size());
-                endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
+                boost::endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
                 // collect higher bitmap
                 etl::Entry entry{new_key, new_bitmap};
                 collector.collect(entry);

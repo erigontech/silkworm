@@ -21,6 +21,7 @@
 #include <iostream>
 
 #include <CLI/CLI.hpp>
+#include <boost/endian/conversion.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/chain/genesis.h>

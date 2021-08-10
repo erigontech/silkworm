@@ -19,12 +19,12 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
+#include <boost/endian/conversion.hpp>
 #include <ethash/ethash.hpp>
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/data_dir.hpp>
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
             }
 
             // Verify Proof of Work
-            uint64_t nonce{endian::load_big_u64(header->nonce.data())};
+            uint64_t nonce{boost::endian::load_big_u64(header->nonce.data())};
 
             auto boundary256{header->boundary()};
             auto seal_hash(header->hash(/*for_sealing =*/true));

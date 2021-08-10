@@ -22,9 +22,6 @@
 #include <thread>
 
 #include <CLI/CLI.hpp>
-#include <boost/endian.hpp>
-#include <boost/format.hpp>
-#include <boost/interprocess/mapped_region.hpp>
 #include <boost/signals2.hpp>
 #include <ethash/keccak.hpp>
 

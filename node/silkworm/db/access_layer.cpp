@@ -17,6 +17,7 @@
 #include "access_layer.hpp"
 
 #include <cassert>
+#include <iostream>
 
 #include <boost/endian/conversion.hpp>
 #include <nlohmann/json.hpp>

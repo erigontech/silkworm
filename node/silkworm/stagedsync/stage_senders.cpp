@@ -30,7 +30,7 @@ StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& 
     recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultBatchSize, collector);
 
     auto block_from{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
-    auto block_to{db::stages::get_stage_progress(*txn, db::stages::kHeadersKey)};
+    auto block_to{db::stages::get_stage_progress(*txn, db::stages::kBlockBodiesKey)};
 
     const StageResult res{farm.recover(block_from, block_to)};
 

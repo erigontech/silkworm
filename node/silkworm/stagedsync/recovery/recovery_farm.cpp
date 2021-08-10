@@ -16,6 +16,10 @@
 
 #include "recovery_farm.hpp"
 
+#include <boost/format.hpp>
+
+#include <silkworm/common/endian.hpp>
+
 namespace silkworm::stagedsync::recovery {
 
 RecoveryFarm::RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size_t max_batch_size,
@@ -45,6 +49,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     }
 
     auto blocks_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kBlockBodiesKey)};
+
     if (height_to > blocks_stage_height) {
         height_to = blocks_stage_height;
         if (height_to < height_from) {
@@ -82,7 +87,6 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     SILKWORM_LOG(LogLevel::Debug) << "Begin read block bodies ... " << std::endl;
     auto bodies_table{db::open_cursor(db_transaction_, db::table::kBlockBodies)};
     auto transactions_table{db::open_cursor(db_transaction_, db::table::kEthTx)};
-
     // Set to first block and read all in sequence
     auto block_key{db::block_key(expected_block_num, headers_it_1_->bytes)};
     if (!bodies_table.seek(db::to_slice(block_key))) {
@@ -94,7 +98,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     auto block_data{bodies_table.current()};
     while (block_data && !should_stop()) {
         auto key_view{db::from_slice(block_data.key)};
-        block_num = boost::endian::load_big_u64(static_cast<uint8_t*>(block_data.key.iov_base));
+        block_num = endian::load_big_u64(static_cast<uint8_t*>(block_data.key.iov_base));
         if (block_num < expected_block_num) {
             // The same block height has been recorded
             // but is not canonical;
@@ -119,9 +123,11 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
         // Get the body and its transactions
         auto body_rlp{db::from_slice(block_data.value)};
         auto block_body{db::detail::decode_stored_block_body(body_rlp)};
+ 
+
         std::vector<Transaction> transactions{
             db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count)};
-
+       
         if (transactions.size()) {
             if (((*batch_).size() + transactions.size()) > max_batch_size_) {
                 dispatch_batch(true);
@@ -135,7 +141,6 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
             // We'd go beyond collected canonical headers
             break;
         }
-
         expected_block_num++;
         block_data = bodies_table.to_next(false);
     }
@@ -157,8 +162,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
                             /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 50 : 10));
 
             // Get the last processed block and update stage height
-            auto last_processed_block{
-                boost::endian::load_big_u64(static_cast<uint8_t*>(target_table.to_last().key.iov_base))};
+            auto last_processed_block{endian::load_big_u64(static_cast<uint8_t*>(target_table.to_last().key.iov_base))};
             db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
         }
     }
@@ -169,33 +173,13 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
 
 StageResult RecoveryFarm::unwind(uint64_t new_height) {
     SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
-    auto ret{StageResult::kSuccess};
     auto unwind_table{db::open_cursor(db_transaction_, db::table::kSenders)};
-    size_t rcount{db_transaction_.get_map_stat(unwind_table.map()).ms_entries};
-    if (rcount) {
-        if (new_height <= 1) {
-            db_transaction_.clear_map(unwind_table.map());
-        } else {
-            Bytes key(40, '\0');
-            boost::endian::store_big_u64(&key[0], new_height + 1);  // New stage height is last processed
-            if (unwind_table.seek(db::to_slice(key))) {
-                unwind_table.erase();
-                while (unwind_table.to_next(false)) {
-                    unwind_table.erase();
-                    if (--rcount % 1'000 && should_stop()) {
-                        ret = StageResult::kAborted;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
+    auto unwind_bytes_point{db::block_key(new_height+1)};
+    unwind_table_from(unwind_table, unwind_bytes_point);
     // Eventually update new stage height
-    if (ret == StageResult::kSuccess) {
-        db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
-    }
-    return ret;
+    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
+    
+    return StageResult::kSuccess;
 }
 
 void RecoveryFarm::stop_all_workers(bool wait) {
@@ -410,7 +394,7 @@ StageResult RecoveryFarm::fill_canonical_headers(uint64_t height_from, uint64_t 
 
     // Read all headers up to block_to included
     while (data) {
-        reached_block_num = boost::endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
+        reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
         if (reached_block_num != expected_block_num) {
             SILKWORM_LOG(LogLevel::Error) << "Bad header hash sequence ! Expected " << expected_block_num << " got "
                                           << reached_block_num << std::endl;

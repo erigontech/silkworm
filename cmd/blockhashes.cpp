@@ -18,7 +18,6 @@
 #include <iostream>
 
 #include <CLI/CLI.hpp>
-#include <boost/endian/conversion.hpp>
 
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/log.hpp>

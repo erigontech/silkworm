@@ -16,8 +16,7 @@
 
 #include <filesystem>
 
-#include <boost/endian/conversion.hpp>
-
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -48,7 +47,7 @@ StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::pa
     auto header_key{db::block_key(expected_block_number)};
     auto header_data{canonical_hashes_table.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
     while (header_data) {
-        auto reached_block_number{boost::endian::load_big_u64(static_cast<uint8_t*>(header_data.key.iov_base))};
+        auto reached_block_number{endian::load_big_u64(static_cast<uint8_t*>(header_data.key.iov_base))};
         if (reached_block_number != expected_block_number) {
             // Something wrong with db
             // Blocks are out of sequence for any reason

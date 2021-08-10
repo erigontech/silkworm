@@ -13,15 +13,15 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <unordered_map>
 
-#include <boost/endian/conversion.hpp>
-
 #include <silkworm/common/cast.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
@@ -76,7 +76,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
             if (bitmaps.find(composite_key) == bitmaps.end()) {
                 bitmaps.emplace(composite_key, roaring::Roaring64Map());
             }
-            block_number = boost::endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
+            block_number = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
             bitmaps.at(composite_key).add(block_number);
             allocated_space += 8;
             if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
@@ -121,7 +121,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
 
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');
                 std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
-                boost::endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
+                endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
                 auto previous_bitmap_bytes{history_index_table.find(db::to_slice(last_chunk_index), false)};
                 if (previous_bitmap_bytes) {
                     bm |= roaring::Roaring64Map::readSafe(previous_bitmap_bytes.value.char_ptr(),
@@ -134,7 +134,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
                     Bytes chunk_index(entry.key.size() + 8, '\0');
                     std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
                     uint64_t suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
-                    boost::endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
+                    endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
                     Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
                     current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
                     mdbx::slice k{db::to_slice(chunk_index)};
@@ -189,7 +189,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
                 // generates new key
                 Bytes new_key(key.size(), '\0');
                 std::memcpy(&new_key[0], key.data(), key.size());
-                boost::endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
+                endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
                 // replace with new index
                 etl::Entry entry{new_key, new_bitmap};
                 collector.collect(entry);

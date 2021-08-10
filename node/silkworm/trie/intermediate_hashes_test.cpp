@@ -18,7 +18,6 @@
 
 #include <bitset>
 
-#include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/temp_dir.hpp>

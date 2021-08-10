@@ -41,7 +41,44 @@ constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6
 constexpr evmc::bytes32 hash_2{0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
 
 TEST_CASE("Stage Senders") {
-    using namespace silkworm;
+using namespace silkworm;
+
+static std::vector<Transaction> sample_transactions() {
+
+    std::vector<Transaction> transactions;
+    transactions.resize(2);
+
+    transactions[0].nonce = 172339;
+    transactions[0].max_priority_fee_per_gas = 50 * kGiga;
+    transactions[0].max_fee_per_gas = 50 * kGiga;
+    transactions[0].gas_limit = 90'000;
+    transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
+    transactions[0].value = 1'027'501'080 * kGiga;
+    transactions[0].data = {};
+    transactions[0].set_v(27);
+    transactions[0].r =
+        intx::from_string<intx::uint256>("0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353");
+    transactions[0].s =
+        intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
+
+    transactions[1].type = Transaction::Type::kEip1559;
+    transactions[1].nonce = 1;
+    transactions[1].max_priority_fee_per_gas = 5 * kGiga;
+    transactions[1].max_fee_per_gas = 30 * kGiga;
+    transactions[1].gas_limit = 1'000'000;
+    transactions[1].to = {};
+    transactions[1].value = 0;
+    transactions[1].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
+    transactions[1].set_v(37);
+    transactions[1].r =
+        intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
+    transactions[1].s =
+        intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
+
+    return transactions;
+}
+
+TEST_CASE("Stage Senders") {
 
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
@@ -53,44 +90,46 @@ TEST_CASE("Stage Senders") {
     stagedsync::TransactionManager txn{env};
     db::table::create_all(*txn);
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
-    Block block{};
-    block.transactions.resize(1);
+    db::detail::BlockBodyForStorage block{};
+    auto transactions{sample_transactions()};
+    block.base_txn_id = 1;
+    block.txn_count = 1;
 
-    auto sender_0{0xb685342b8c54347aad148e1f22eff3eb3eb29390_address};
-    auto sender_1{0xb685342b8c54347aad148e1f22eff3eb3eb29389_address};
-    auto sender_2{0xb685342b8c54347aad148e1f22eff3eb3eb29388_address};
+    auto sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
 
     block.transactions[0].from = sender_0;
 
     // ---------------------------------------
     // Push first block
     // ---------------------------------------
-    Bytes body_rlp{};
-    rlp::encode(body_rlp, block);
-    bodies_table.upsert(db::to_slice(db::block_key(0, hash_0.bytes)), db::to_slice(body_rlp));
+    Bytes tx_rlp{};
+    rlp::encode(tx_rlp, transactions[0]);
+
+    transaction_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
+    bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
 
     // ---------------------------------------
     // Push second block
     // ---------------------------------------
 
 
-    block.transactions[0].from = sender_1;
+    block.base_txn_id = 2;
 
-    body_rlp = Bytes{};
-    rlp::encode(body_rlp, block);
-    bodies_table.upsert(db::to_slice(db::block_key(1, hash_1.bytes)), db::to_slice(body_rlp));
+    rlp::encode(tx_rlp, transactions[1]);
+    transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
+    bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
 
     // ---------------------------------------
     // Push third block
     // ---------------------------------------
 
 
-    block.transactions[0].from = sender_2;
+    block.base_txn_id = 0;
+    block.txn_count = 0;
 
-    body_rlp = Bytes{};
-    rlp::encode(body_rlp, block);
-    bodies_table.upsert(db::to_slice(db::block_key(2, hash_2.bytes)), db::to_slice(body_rlp));
+    bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
     std::string genesis_data;
     genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
@@ -102,20 +141,21 @@ TEST_CASE("Stage Senders") {
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
-    canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_1));
-    canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_2));
+    canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
+    canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
+    canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
+    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.get_etl_path()))); 
+    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path())); 
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
+    auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
+    auto got_sender_1{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(2))).value)};
+    auto expected_sender{ByteView(sender.bytes, kAddressLength)};
 
-    auto got_sender_0{db::from_slice(sender_table.find(db::to_slice(db::block_key(0, hash_0.bytes))).value)};
-    auto got_sender_1{db::from_slice(sender_table.find(db::to_slice(db::block_key(1, hash_1.bytes))).value)};
-    auto got_sender_2{db::from_slice(sender_table.find(db::to_slice(db::block_key(2, hash_2.bytes))).value)};
-
-    REQUIRE(got_sender_0.compare(ByteView(sender_0.bytes)) == 0);
-    REQUIRE(got_sender_1.compare(ByteView(sender_1.bytes)) == 0);
-    REQUIRE(got_sender_2.compare(ByteView(sender_2.bytes)) == 0);
+    REQUIRE(got_sender_0.compare(expected_sender) == 0);
+    REQUIRE(got_sender_1.compare(expected_sender) == 0);
+    REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(3)), false));
 }
 
 TEST_CASE("Unwind Senders") {
@@ -131,44 +171,44 @@ TEST_CASE("Unwind Senders") {
     stagedsync::TransactionManager txn{env};
     db::table::create_all(*txn);
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
-    Block block{};
+    db::detail::BlockBodyForStorage block{};
+    auto transactions{sample_transactions()};
+    block.base_txn_id = 1;
+    block.txn_count = 1;
 
-    auto sender_0{0xb685342b8c54347aad148e1f22eff3eb3eb29390_address};
-    auto sender_1{0xb685342b8c54347aad148e1f22eff3eb3eb29389_address};
-    auto sender_2{0xb685342b8c54347aad148e1f22eff3eb3eb29388_address};
-
-    block.transactions.resize(1);
-    block.transactions[0].from = sender_0;
+    auto sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
 
     // ---------------------------------------
     // Push first block
     // ---------------------------------------
-    Bytes body_rlp{};
-    rlp::encode(body_rlp, block);
-    bodies_table.upsert(db::to_slice(db::block_key(0, hash_0.bytes)), db::to_slice(body_rlp));
+    Bytes tx_rlp{};
+    rlp::encode(tx_rlp, transactions[0]);
+
+    transaction_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
+    bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
 
     // ---------------------------------------
     // Push second block
     // ---------------------------------------
 
 
-    block.transactions[0].from = sender_1;
+    block.base_txn_id = 2;
 
-    body_rlp = Bytes{};
-    rlp::encode(body_rlp, block);
-    bodies_table.upsert(db::to_slice(db::block_key(1, hash_1.bytes)), db::to_slice(body_rlp));
+    rlp::encode(tx_rlp, transactions[1]);
+    transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
+    bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
 
     // ---------------------------------------
     // Push third block
     // ---------------------------------------
 
 
-    block.transactions[0].from = sender_2;
+    block.base_txn_id = 0;
+    block.txn_count = 0;
 
-    body_rlp = Bytes{};
-    rlp::encode(body_rlp, block);
-    bodies_table.upsert(db::to_slice(db::block_key(2, hash_2.bytes)), db::to_slice(body_rlp));
+    bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
     std::string genesis_data;
     genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
@@ -180,18 +220,20 @@ TEST_CASE("Unwind Senders") {
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
-    canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_1));
-    canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_2));
+    canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
+    canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
+    canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
+    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.get_etl_path()))); 
-    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, data_dir.get_etl_path(), 1))); 
+    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
+    stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, tmp_dir.path(), 1)); 
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
+    auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
 
-    auto got_sender_0{db::from_slice(sender_table.find(db::to_slice(db::block_key(0, hash_0.bytes))).value)};
-    auto got_sender_1{db::from_slice(sender_table.find(db::to_slice(db::block_key(1, hash_1.bytes))).value)};
+    auto expected_sender{ByteView(sender.bytes, kAddressLength)};
 
-    REQUIRE(got_sender_0.compare(ByteView(sender_0.bytes)) == 0);
-    REQUIRE(got_sender_1.compare(ByteView(sender_1.bytes)) == 0);
-    REQUIRE(!sender_table.seek(db::to_slice(db::block_key(2, hash_2.bytes))));
+    REQUIRE(got_sender_0.compare(expected_sender) == 0);
+    REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(2)), false));
+    REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(3)), false));
 }

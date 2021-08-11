@@ -15,36 +15,38 @@
 */
 
 #include "InboundGetBlockBodies.hpp"
-#include <silkworm/downloader/rpc/SendMessageById.hpp>
+
+#include <silkworm/common/cast.hpp>
 #include <silkworm/downloader/BodyLogic.hpp>
 #include <silkworm/downloader/packets/BlockBodiesPacket.hpp>
 #include <silkworm/downloader/packets/RLPError.hpp>
+#include <silkworm/downloader/rpc/SendMessageById.hpp>
 #include <silkworm/downloader/stage1.hpp>
 
 namespace silkworm {
 
-
-InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg): InboundMessage() {
-    if (msg.id() != sentry::MessageId::GET_BLOCK_BODIES_66)
+InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg) : InboundMessage() {
+    if (msg.id() != sentry::MessageId::GET_BLOCK_BODIES_66) {
         throw std::logic_error("InboundGetBlockBodies received wrong InboundMessage");
+    }
 
     peerId_ = string_from_H512(msg.peer_id());
 
-    ByteView data = byte_view_of_string(msg.data()); // copy for consumption
+    ByteView data = string_view_to_byte_view(msg.data());
     rlp::DecodingResult err = rlp::decode(data, packet_);
-    if (err != rlp::DecodingResult::kOk)
+    if (err != rlp::DecodingResult::kOk) {
         throw rlp::rlp_error("rlp decoding error decoding GetBlockBodies");
+    }
 }
-
 
 /*
  // ReplyBlockBodiesRLP is the eth/66 version of SendBlockBodiesRLP.
 func (p *Peer) ReplyBlockBodiesRLP(id uint64, bodies []rlp.RawValue) error {
-	// Not packed into BlockBodiesPacket to avoid RLP decoding
-	return p2p.Send(p.rw, BlockBodiesMsg, BlockBodiesRLPPacket66{
-		RequestId:            id,
-		BlockBodiesRLPPacket: bodies,
-	})
+        // Not packed into BlockBodiesPacket to avoid RLP decoding
+        return p2p.Send(p.rw, BlockBodiesMsg, BlockBodiesRLPPacket66{
+                RequestId:            id,
+                BlockBodiesRLPPacket: bodies,
+        })
 }
  */
 InboundMessage::reply_calls_t InboundGetBlockBodies::execute() {
@@ -59,10 +61,9 @@ InboundMessage::reply_calls_t InboundGetBlockBodies::execute() {
 
     auto msg_reply = std::make_unique<sentry::OutboundMessageData>();
     msg_reply->set_id(sentry::MessageId::BLOCK_BODIES_66);
-    msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length()); // copy
+    msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     return {std::make_shared<rpc::SendMessageById>(peerId_, std::move(msg_reply))};
-
 }
 
 void InboundGetBlockBodies::handle_completion(SentryRpc& reply) {
@@ -70,9 +71,7 @@ void InboundGetBlockBodies::handle_completion(SentryRpc& reply) {
     // todo: use specific_reply...
 }
 
-uint64_t InboundGetBlockBodies::reqId() const {
-    return packet_.requestId;
-}
+uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }
 
 std::string InboundGetBlockBodies::content() const {
     std::stringstream content;
@@ -80,4 +79,4 @@ std::string InboundGetBlockBodies::content() const {
     return content.str();
 }
 
-}
+}  // namespace silkworm

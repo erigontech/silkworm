@@ -175,7 +175,7 @@ StageResult RecoveryFarm::unwind(uint64_t new_height) {
     SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
     auto unwind_table{db::open_cursor(db_transaction_, db::table::kSenders)};
     auto unwind_bytes_point{db::block_key(new_height+1)};
-    unwind_table_from(unwind_table, unwind_bytes_point);
+    truncate_table_from(unwind_table, unwind_bytes_point);
     // Eventually update new stage height
     db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
     

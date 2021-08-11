@@ -129,7 +129,7 @@ TEST_CASE("Stage Senders") {
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), db::to_slice(byte_view_of_c_str(config_data.c_str())));
+    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
@@ -204,7 +204,7 @@ TEST_CASE("Unwind Senders") {
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), db::to_slice(byte_view_of_c_str(config_data.c_str())));
+    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));

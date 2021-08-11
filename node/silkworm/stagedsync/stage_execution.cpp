@@ -250,11 +250,11 @@ StageResult unwind_execution(TransactionManager& txn, const std::filesystem::pat
     endian::store_big_u64(&unwind_to_bytes[0], unwind_to + 1);
 
     // Truncate Tables
-    unwind_table_from(account_changeset_table, unwind_to_bytes);
-    unwind_table_from(storage_changeset_table, unwind_to_bytes);
-    unwind_table_from(receipts_table, unwind_to_bytes);
-    unwind_table_from(log_table, unwind_to_bytes);
-    unwind_table_from(traces_table, unwind_to_bytes);
+    truncate_table_from(account_changeset_table, unwind_to_bytes);
+    truncate_table_from(storage_changeset_table, unwind_to_bytes);
+    truncate_table_from(receipts_table, unwind_to_bytes);
+    truncate_table_from(log_table, unwind_to_bytes);
+    truncate_table_from(traces_table, unwind_to_bytes);
 
     db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, unwind_to);
     txn.commit();

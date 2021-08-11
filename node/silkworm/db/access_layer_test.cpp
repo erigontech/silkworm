@@ -272,9 +272,8 @@ namespace db {
 
         // Write voluntary wrong value in stage
         Bytes stage_progress(2, 0);
-        auto key{byte_view_of_c_str(stages::kBlockBodiesKey)};
         auto map{db::open_cursor(txn, table::kSyncStageProgress)};
-        CHECK_NOTHROW(txn.upsert(map, to_slice(key), to_slice(stage_progress)));
+        CHECK_NOTHROW(txn.upsert(map, mdbx::slice{stages::kBlockBodiesKey}, to_slice(stage_progress)));
         CHECK_THROWS(block_num = stages::get_stage_progress(txn, stages::kBlockBodiesKey));
     }
 
@@ -632,7 +631,7 @@ namespace db {
 
         auto config_table{db::open_cursor(txn, table::kConfig)};
         const std::string ropsten_config_json{kRopstenConfig.to_json().dump()};
-        config_table.upsert(to_slice(ropsten_genesis_hash), to_slice(byte_view_of_c_str(ropsten_config_json.c_str())));
+        config_table.upsert(to_slice(ropsten_genesis_hash), mdbx::slice{ropsten_config_json.c_str()});
 
         const auto chain_config3{read_chain_config(txn)};
         CHECK(chain_config3 == kRopstenConfig);

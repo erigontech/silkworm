@@ -29,8 +29,7 @@ namespace silkworm::db {
 
 std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept {
     auto src{db::open_cursor(txn, table::kDatabaseInfo)};
-    auto key{to_slice(byte_view_of_c_str(kDbSchemaVersionKey))};
-    if (!src.seek(key)) {
+    if (!src.seek(mdbx::slice{kDbSchemaVersionKey})) {
         return std::nullopt;
     }
 
@@ -59,10 +58,8 @@ void write_schema_version(mdbx::txn& txn, VersionBase& schema_version) {
     endian::store_big_u32(&value[0], schema_version.Major);
     endian::store_big_u32(&value[4], schema_version.Minor);
     endian::store_big_u32(&value[8], schema_version.Patch);
-    auto k{to_slice(byte_view_of_c_str(kDbSchemaVersionKey))};
-    auto v{to_slice(value)};
     auto src{db::open_cursor(txn, table::kDatabaseInfo)};
-    src.upsert(k, v);
+    src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
 StorageMode read_storage_mode(mdbx::txn& txn) noexcept {
@@ -70,28 +67,23 @@ StorageMode read_storage_mode(mdbx::txn& txn) noexcept {
     auto src{db::open_cursor(txn, table::kDatabaseInfo)};
 
     // History
-    auto key{db::to_slice(byte_view_of_c_str(kStorageModeHistoryKey))};
-    auto data{src.find(key, /*throw_notfound*/ false)};
+    auto data{src.find(mdbx::slice{kStorageModeHistoryKey}, /*throw_notfound*/ false)};
     ret.History = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
 
     // Receipts
-    key = db::to_slice(byte_view_of_c_str(kStorageModeReceiptsKey));
-    data = src.find(key, /*throw_notfound*/ false);
+    data = src.find(mdbx::slice{kStorageModeReceiptsKey}, /*throw_notfound*/ false);
     ret.Receipts = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
 
     // TxIndex
-    key = db::to_slice(byte_view_of_c_str(kStorageModeTxIndexKey));
-    data = src.find(key, /*throw_notfound*/ false);
+    data = src.find(mdbx::slice{kStorageModeTxIndexKey}, /*throw_notfound*/ false);
     ret.TxIndex = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
 
     // Call Traces
-    key = db::to_slice(byte_view_of_c_str(kStorageModeCallTracesKey));
-    data = src.find(key, /*throw_notfound*/ false);
+    data = src.find(mdbx::slice{kStorageModeCallTracesKey}, /*throw_notfound*/ false);
     ret.CallTraces = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
 
     // TEVM
-    key = db::to_slice(byte_view_of_c_str(kStorageModeTEVMKey));
-    data = src.find(key, /*throw_notfound*/ false);
+    data = src.find(mdbx::slice{kStorageModeTEVMKey}, /*throw_notfound*/ false);
     ret.TEVM = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
 
     return ret;
@@ -102,20 +94,11 @@ void write_storage_mode(mdbx::txn& txn, const StorageMode& val) {
     Bytes v_on(1, '\1');
     Bytes v_off(2, '\0');
 
-    auto k{byte_view_of_c_str(kStorageModeHistoryKey)};
-    target.upsert(to_slice(k), to_slice(val.History ? v_on : v_off));
-
-    k = byte_view_of_c_str(kStorageModeReceiptsKey);
-    target.upsert(to_slice(k), to_slice(val.Receipts ? v_on : v_off));
-
-    k = byte_view_of_c_str(kStorageModeTxIndexKey);
-    target.upsert(to_slice(k), to_slice(val.TxIndex ? v_on : v_off));
-
-    k = byte_view_of_c_str(kStorageModeCallTracesKey);
-    target.upsert(to_slice(k), to_slice(val.CallTraces ? v_on : v_off));
-
-    k = byte_view_of_c_str(kStorageModeTEVMKey);
-    target.upsert(to_slice(k), to_slice(val.TEVM ? v_on : v_off));
+    target.upsert(mdbx::slice{kStorageModeHistoryKey}, to_slice(val.History ? v_on : v_off));
+    target.upsert(mdbx::slice{kStorageModeReceiptsKey}, to_slice(val.Receipts ? v_on : v_off));
+    target.upsert(mdbx::slice{kStorageModeTxIndexKey}, to_slice(val.TxIndex ? v_on : v_off));
+    target.upsert(mdbx::slice{kStorageModeCallTracesKey}, to_slice(val.CallTraces ? v_on : v_off));
+    target.upsert(mdbx::slice{kStorageModeTEVMKey}, to_slice(val.TEVM ? v_on : v_off));
 }
 
 StorageMode parse_storage_mode(std::string& mode) {
@@ -466,9 +449,8 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
 
 bool migration_happened(mdbx::txn& txn, const char* name) {
     auto src{db::open_cursor(txn, table::kMigrations)};
-    auto key{to_slice(byte_view_of_c_str(name))};
-    auto data{src.find(key, /*throw_notfound=*/false)};
-    return (data.done == true);
+    auto data{src.find(mdbx::slice{name}, /*throw_notfound=*/false)};
+    return data.done;
 }
 
 std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {

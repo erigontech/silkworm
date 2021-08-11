@@ -18,6 +18,7 @@
 #define SILKWORM_STAGEDSYNC_UTIL_HPP_
 
 #include <silkworm/common/base.hpp>
+#include <mdbx.h++>
 
 /*
 Part of the compatibility layer with the Erigon DB format;
@@ -43,6 +44,7 @@ enum class [[nodiscard]] StageResult {
 
 void check_stagedsync_error(StageResult code);
 
+void truncate_table_from(mdbx::cursor& table, Bytes& starting_key);
 // Convert changesets key and value pair to plain state format
 std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView& value);
 

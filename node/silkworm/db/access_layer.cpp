@@ -17,7 +17,6 @@
 #include "access_layer.hpp"
 
 #include <cassert>
-
 #include <nlohmann/json.hpp>
 
 #include <silkworm/common/endian.hpp>

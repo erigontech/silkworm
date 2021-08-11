@@ -241,14 +241,14 @@ int main(int argc, char* argv[]) {
         db::open_cursor(txn, db::table::kBlockReceipts)
             .upsert(db::to_slice(key).safe_middle(0, 8), db::to_slice(Bytes(genesis_receipts, 1)));
         db::open_cursor(txn, db::table::kHeadHeader)
-            .upsert(db::to_slice(byte_view_of_c_str(kLastHeaderKey)), db::to_slice(full_view(block_hash.bytes)));
+            .upsert(mdbx::slice{kLastHeaderKey}, db::to_slice(full_view(block_hash.bytes)));
         db::open_cursor(txn, db::table::kHeaderNumbers)
             .upsert(db::to_slice(full_view(block_hash.bytes)), db::to_slice(key.substr(0, 8)));
 
         // Write Chain Config
         auto config_data{genesis_json["config"].dump()};
         db::open_cursor(txn, db::table::kConfig)
-            .upsert(db::to_slice(full_view(block_hash.bytes)), db::to_slice(byte_view_of_c_str(config_data.c_str())));
+            .upsert(db::to_slice(full_view(block_hash.bytes)), mdbx::slice{config_data.c_str()});
 
         txn.commit();
         res = true;

@@ -25,14 +25,14 @@
 
 namespace silkworm {
 
-state::Object* IntraBlockState::get_object(const evmc::address& address) const noexcept {
+const state::Object* IntraBlockState::get_object(const evmc::address& address) const noexcept {
     auto it{objects_.find(address)};
     if (it != objects_.end()) {
         return &it->second;
     }
 
     std::optional<Account> account{db_.read_account(address)};
-    if (!account) {
+    if (account == std::nullopt) {
         return nullptr;
     }
 
@@ -42,14 +42,19 @@ state::Object* IntraBlockState::get_object(const evmc::address& address) const n
     return &obj;
 }
 
+state::Object* IntraBlockState::get_object(const evmc::address& address) noexcept {
+    const auto& self{*this};
+    return const_cast<state::Object*>(self.get_object(address));
+}
+
 state::Object& IntraBlockState::get_or_create_object(const evmc::address& address) noexcept {
     auto* obj{get_object(address)};
 
-    if (!obj) {
+    if (obj == nullptr) {
         journal_.emplace_back(new state::CreateDelta{address});
         obj = &objects_[address];
         obj->current = Account{};
-    } else if (!obj->current) {
+    } else if (obj->current == std::nullopt) {
         journal_.emplace_back(new state::UpdateDelta{address, *obj});
         obj->current = Account{};
     }
@@ -59,12 +64,12 @@ state::Object& IntraBlockState::get_or_create_object(const evmc::address& addres
 
 bool IntraBlockState::exists(const evmc::address& address) const noexcept {
     auto* obj{get_object(address)};
-    return obj && obj->current;
+    return obj != nullptr && obj->current != std::nullopt;
 }
 
 bool IntraBlockState::is_dead(const evmc::address& address) const noexcept {
     auto* obj{get_object(address)};
-    if (!obj || !obj->current) {
+    if (obj == nullptr || obj->current == std::nullopt) {
         return true;
     }
     return obj->current->code_hash == kEmptyHash && obj->current->nonce == 0 && obj->current->balance == 0;

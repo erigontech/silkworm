@@ -49,6 +49,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     }
 
     auto blocks_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kBlockBodiesKey)};
+
     if (height_to > blocks_stage_height) {
         height_to = blocks_stage_height;
         if (height_to < height_from) {
@@ -86,7 +87,6 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     SILKWORM_LOG(LogLevel::Debug) << "Begin read block bodies ... " << std::endl;
     auto bodies_table{db::open_cursor(db_transaction_, db::table::kBlockBodies)};
     auto transactions_table{db::open_cursor(db_transaction_, db::table::kEthTx)};
-
     // Set to first block and read all in sequence
     auto block_key{db::block_key(expected_block_num, headers_it_1_->bytes)};
     if (!bodies_table.seek(db::to_slice(block_key))) {
@@ -123,9 +123,11 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
         // Get the body and its transactions
         auto body_rlp{db::from_slice(block_data.value)};
         auto block_body{db::detail::decode_stored_block_body(body_rlp)};
+ 
+
         std::vector<Transaction> transactions{
             db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count)};
-
+       
         if (transactions.size()) {
             if (((*batch_).size() + transactions.size()) > max_batch_size_) {
                 dispatch_batch(true);
@@ -139,7 +141,6 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
             // We'd go beyond collected canonical headers
             break;
         }
-
         expected_block_num++;
         block_data = bodies_table.to_next(false);
     }
@@ -172,33 +173,13 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
 
 StageResult RecoveryFarm::unwind(uint64_t new_height) {
     SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
-    auto ret{StageResult::kSuccess};
     auto unwind_table{db::open_cursor(db_transaction_, db::table::kSenders)};
-    size_t rcount{db_transaction_.get_map_stat(unwind_table.map()).ms_entries};
-    if (rcount) {
-        if (new_height <= 1) {
-            db_transaction_.clear_map(unwind_table.map());
-        } else {
-            Bytes key(40, '\0');
-            endian::store_big_u64(&key[0], new_height + 1);  // New stage height is last processed
-            if (unwind_table.seek(db::to_slice(key))) {
-                unwind_table.erase();
-                while (unwind_table.to_next(false)) {
-                    unwind_table.erase();
-                    if (--rcount % 1'000 && should_stop()) {
-                        ret = StageResult::kAborted;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
+    auto unwind_bytes_point{db::block_key(new_height+1)};
+    truncate_table_from(unwind_table, unwind_bytes_point);
     // Eventually update new stage height
-    if (ret == StageResult::kSuccess) {
-        db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
-    }
-    return ret;
+    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
+    
+    return StageResult::kSuccess;
 }
 
 void RecoveryFarm::stop_all_workers(bool wait) {

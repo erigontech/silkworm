@@ -138,7 +138,7 @@ TEST_CASE("Stage Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
+    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.get_etl_path()));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};

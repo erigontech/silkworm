@@ -27,7 +27,7 @@ StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& 
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
     // Create farm instance and do work
-    recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultBatchSize, collector);
+    recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultRecoverySenderBatch, collector);
 
     auto block_from{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
     auto block_to{db::stages::get_stage_progress(*txn, db::stages::kBlockBodiesKey)};

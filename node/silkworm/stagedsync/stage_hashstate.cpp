@@ -179,6 +179,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             // Hashing
             std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
+            
             std::memcpy(&key[kHashLength + db::kIncarnationLength],
                         keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
 

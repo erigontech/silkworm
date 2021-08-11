@@ -432,6 +432,43 @@ int do_stages(DbOptions& db_opts) {
     return retvar;
 }
 
+int do_migrations(DbOptions& db_opts) {
+    static std::string fmt_hdr{" %-24s"};
+    static std::string fmt_row{" %-24s"};
+
+    int retvar{0};
+
+    try {
+        db::EnvConfig config{db_opts.datadir};
+        config.readonly = true;
+        config.shared = db_opts.shared;
+        auto env{silkworm::db::open_env(config)};
+        auto txn{env.start_read()};
+        auto crs{db::open_cursor(txn, db::table::kMigrations)};
+
+        if (txn.get_map_stat(crs.map()).ms_entries) {
+            std::cout << "\n" << (boost::format(fmt_hdr) % "Migration Name") << std::endl;
+            std::cout << (boost::format(fmt_hdr) % std::string(24, '-')) << std::endl;
+
+            auto result{crs.to_first(/*throw_notfound =*/false)};
+            while (result) {
+                std::cout << (boost::format(fmt_row) % result.key.as_string()) << std::endl;
+                result = crs.to_next(/*throw_notfound =*/false);
+            }
+        } else {
+            std::cout << "\n There are no migrations to list" << std::endl;
+        }
+
+        std::cout << std::endl << std::endl;
+
+    } catch (std::exception& ex) {
+        std::cout << ex.what() << std::endl;
+        retvar = -1;
+    }
+
+    return retvar;
+}
+
 int do_stage_set(DbOptions& db_opts, StageSetOptions set_opts) {
     int retvar{0};
     try {
@@ -867,6 +904,10 @@ int main(int argc, char* argv[]) {
         ->required()
         ->check(CLI::Range(0u, UINT32_MAX));
 
+    // Migrations tool
+    // List migration keys
+    auto& app_migrations = *app_main.add_subcommand("migrations", "List migrations");
+
     CLI11_PARSE(app_main, argc, argv);
 
     // Cli args sanification for compact
@@ -909,6 +950,8 @@ int main(int argc, char* argv[]) {
         return do_tables(db_opts);
     } else if (app_scan) {
         return do_scan(db_opts);
+    } else if (app_migrations) {
+        return do_migrations(db_opts);
     } else if (app_stages) {
         return do_stages(db_opts);
     } else if (app_stage_set) {

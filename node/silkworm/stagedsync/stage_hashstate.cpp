@@ -179,7 +179,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             // Hashing
             std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
-            
+
             std::memcpy(&key[kHashLength + db::kIncarnationLength],
                         keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
 
@@ -268,7 +268,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             unwind_func = [&target_table](::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, _]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
                 auto hash{keccak256(db_key)};
-                if (target_table.seek(db::to_slice(hash.bytes))) {
+                if (target_table.seek(mdbx::slice{hash.bytes, kHashLength})) {
                     target_table.erase();
                 }
                 return true;

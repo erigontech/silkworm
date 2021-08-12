@@ -19,11 +19,11 @@
 namespace silkworm::stagedsync {
 
 StageResult stage_interhashes(TransactionManager&, const std::filesystem::path&) {
-    throw std::runtime_error("Not Implemented.");
+    throw std::runtime_error(__FUNCTION__ " not yet implemented");
 }
 
 StageResult unwind_interhashes(TransactionManager&, const std::filesystem::path&, uint64_t) {
-    throw std::runtime_error("Not Implemented.");
+    throw std::runtime_error(__FUNCTION__ " not yet implemented");
 }
 
 }  // namespace silkworm::stagedsync

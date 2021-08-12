@@ -97,9 +97,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(history_index history_index.cpp)
   target_link_libraries(history_index PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(initialize_with_genesis initialize_with_genesis.cpp)
-  target_link_libraries(initialize_with_genesis PRIVATE silkworm_node CLI11::CLI11)
-
   add_executable(check_blockhashes check_blockhashes.cpp)
   target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
 

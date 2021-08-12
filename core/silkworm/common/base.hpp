@@ -47,9 +47,6 @@ class ByteView : public std::basic_string_view<uint8_t> {
 
     constexpr ByteView(const uint8_t* data, size_type length) : std::basic_string_view<uint8_t>{data, length} {}
 
-    template <std::size_t N>
-    constexpr ByteView(uint8_t (&arr)[N]) : std::basic_string_view<uint8_t>{arr, N} {}
-
     constexpr ByteView(const uint8_t*) = delete;  // provide explicit length instead
 
     constexpr ByteView(std::nullptr_t) = delete;

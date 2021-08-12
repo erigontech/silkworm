@@ -64,7 +64,6 @@ void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
     auto data{src.to_first(/*throw_notfound*/ false)};
     int percent{0};
     uint8_t next_start_byte{0};
-
     while (data) {
         // TODO (Giulio) -- a byte >= uint64 ??
         if (data.key.at(0) >= next_start_byte) {
@@ -75,7 +74,8 @@ void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
 
         // Account
         if (data.key.length() == kAddressLength) {
-            etl::Entry entry{Bytes(keccak256(db::from_slice(data.key)).bytes, kHashLength),
+            auto hash{keccak256(db::from_slice(data.key))};
+            etl::Entry entry{Bytes(hash.bytes, kHashLength),
                              Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.length())};
             collector_account.collect(entry);
         } else {
@@ -265,28 +265,38 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     db::WalkFunc unwind_func;
     switch (operation) {
         case silkworm::stagedsync::HashstateOperation::HashAccount:
-            unwind_func = [&target_table](::mdbx::cursor::move_result data) -> bool {
+            unwind_func = [&target_table, &plainstate_table](::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, _]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
+                auto new_data{plainstate_table.find(db::to_slice(db_key), false)};
                 auto hash{keccak256(db_key)};
+
                 if (target_table.seek(mdbx::slice{hash.bytes, kHashLength})) {
                     target_table.erase();
+                }
+                if (new_data) {
+                    target_table.upsert(mdbx::slice{hash.bytes, kHashLength}, new_data.value);
                 }
                 return true;
             };
             break;
         case silkworm::stagedsync::HashstateOperation::HashStorage:
-            unwind_func = [&target_table](::mdbx::cursor::move_result data) -> bool {
+            unwind_func = [&target_table, &plainstate_table](::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, _]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
 
                 // We get storage value and hash its key.
-                Bytes key(kHashLength * 2 + db::kIncarnationLength, '\0');
+                Bytes hashed_key(kHashLength * 2 + db::kIncarnationLength, '\0');
                 // Hashing
-                std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
-                std::memcpy(&key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
-                std::memcpy(&key[kHashLength + db::kIncarnationLength],
+                std::memcpy(&hashed_key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
+                std::memcpy(&hashed_key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
+                std::memcpy(&hashed_key[kHashLength + db::kIncarnationLength],
                             keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
-                if (target_table.seek(db::to_slice(key))) {
+                
+                auto new_data{plainstate_table.find(db::to_slice(db_key), false)};
+                if (target_table.seek(db::to_slice(hashed_key))) {
                     target_table.erase();
+                }
+                if (new_data) {
+                    target_table.upsert(db::to_slice(hashed_key), new_data.value);
                 }
                 return true;
             };

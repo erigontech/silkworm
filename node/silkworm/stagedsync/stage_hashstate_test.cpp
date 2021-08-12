@@ -16,6 +16,7 @@
 
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
+#include <iostream>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
@@ -129,7 +130,6 @@ TEST_CASE("Stage Hashstate") {
     CHECK(stagedsync::stage_hashstate(txn, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
 
     auto hashed_address_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
-
     auto address_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
 
     CHECK(hashed_address_table.seek(db::to_slice(address_keccak)));

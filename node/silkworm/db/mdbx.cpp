@@ -120,6 +120,17 @@ namespace silkworm::db {
     return tx.open_cursor(open_map(tx, config));
 }
 
+bool has_map(::mdbx::txn& tx, const char* map_name) {
+    try {
+        ::mdbx::map_handle main_map{1};
+        auto main_crs{tx.open_cursor(main_map)};
+        auto found{main_crs.seek(::mdbx::slice(map_name))};
+        return found;
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
 size_t for_each(::mdbx::cursor& cursor, WalkFunc walker) {
     size_t ret{0};
 

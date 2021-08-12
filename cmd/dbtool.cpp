@@ -898,8 +898,9 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
 
     // Write body
     db::open_cursor(txn, db::table::kBlockBodies).upsert(db::to_slice(key), db::to_slice(rlp_body));
-    db::open_cursor(txn, db::table::kDifficulty)
-        .upsert(db::to_slice(key), db::to_slice(intx::as_bytes(header.difficulty)));
+    uint8_t difficulty_le[32];  // TODO (Andrew) Double check that difficulty is stored as little-endian
+    intx::le::store(difficulty_le, header.difficulty);
+    db::open_cursor(txn, db::table::kDifficulty).upsert(db::to_slice(key), mdbx::slice{difficulty_le, 32});
     db::open_cursor(txn, db::table::kBlockReceipts)
         .upsert(db::to_slice(key).safe_middle(0, 8), db::to_slice(Bytes(genesis_null_receipts, 1)));
     db::open_cursor(txn, db::table::kHeadHeader)

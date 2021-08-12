@@ -164,7 +164,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             }
             // Hashing
             auto hash{keccak256(db_key)};
-            target_table.upsert(db::to_slice(hash.bytes), plainstate_data.value);
+            target_table.upsert(mdbx::slice{hash.bytes, kHashLength}, plainstate_data.value);
             changeset_data = changeset_table.to_next(false);
 
         } else if (operation == HashstateOperation::HashStorage) {
@@ -267,7 +267,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             unwind_func = [&target_table](::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, _]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
                 auto hash{keccak256(db_key)};
-                if (target_table.seek(db::to_slice(hash.bytes))) {
+                if (target_table.seek(mdbx::slice{hash.bytes, kHashLength})) {
                     target_table.erase();
                 }
                 return true;

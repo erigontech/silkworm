@@ -36,7 +36,21 @@ using namespace evmc::literals;
 
 using Bytes = std::basic_string<uint8_t>;
 
-using ByteView = std::basic_string_view<uint8_t>;
+class ByteView : public std::basic_string_view<uint8_t> {
+  public:
+    constexpr ByteView() noexcept = default;
+
+    constexpr ByteView(const std::basic_string_view<uint8_t>& other)
+        : std::basic_string_view<uint8_t>{other.data(), other.length()} {}
+
+    ByteView(const Bytes& str) : std::basic_string_view<uint8_t>{str.data(), str.length()} {}
+
+    constexpr ByteView(const uint8_t* data, size_type length) : std::basic_string_view<uint8_t>{data, length} {}
+
+    constexpr ByteView(const uint8_t*) = delete;  // provide explicit length instead
+
+    constexpr ByteView(std::nullptr_t) = delete;
+};
 
 using BlockNum = uint64_t;
 

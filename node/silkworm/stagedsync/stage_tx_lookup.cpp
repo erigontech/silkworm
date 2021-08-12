@@ -154,7 +154,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
             while (tx_data && tx_count < body.txn_count) {
                 auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
-                if (lookup_table.seek(db::to_slice(hash.bytes))) {
+                if (lookup_table.seek(mdbx::slice{hash.bytes, kHashLength})) {
                     lookup_table.erase();
                 }
                 ++tx_count;

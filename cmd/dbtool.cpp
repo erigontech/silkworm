@@ -398,27 +398,25 @@ void do_migrations(db::EnvConfig& config) {
     }
 }
 
-int do_stage_set(DbOptions& db_opts, StageSetOptions set_opts) {
-    int retvar{0};
-    try {
-        db::EnvConfig config{db_opts.datadir};
-        config.readonly = false;
-        config.shared = db_opts.shared;
-        auto env{silkworm::db::open_env(config)};
-        auto txn{env.start_write()};
-
-        auto old_height{db::stages::get_stage_progress(txn, set_opts.name.c_str())};
-        db::stages::set_stage_progress(txn, set_opts.name.c_str(), set_opts.height);
-        txn.commit();
-
-        std::cout << "Stage " << set_opts.name << " touched from " << old_height << " to " << set_opts.height
-                  << std::endl;
-
-    } catch (const std::exception& ex) {
-        retvar = -1;
-        std::cout << ex.what() << std::endl;
+void do_stage_set(db::EnvConfig& config, std::string stage_name, uint32_t new_height, bool dry) {
+    config.readonly = false;
+    auto env{silkworm::db::open_env(config)};
+    auto txn{env.start_write()};
+    if (!db::stages::is_known_stage(stage_name.c_str())) {
+        throw std::runtime_error("Stage name " + stage_name + " is not known");
     }
-    return retvar;
+    if (!db::has_map(txn, silkworm::db::table::kSyncStageProgress.name)) {
+        throw std::runtime_error("Either non Silkworm db or table " +
+                                 std::string(silkworm::db::table::kSyncStageProgress.name) + " not found");
+    }
+    auto old_height{db::stages::get_stage_progress(txn, stage_name.c_str())};
+    db::stages::set_stage_progress(txn, stage_name.c_str(), new_height);
+    if (!dry) {
+        txn.commit();
+    }
+
+    std::cout << "\n Stage " << stage_name << " touched from " << old_height << " to " << new_height << "\n"
+              << std::endl;
 }
 
 void do_tables(db::EnvConfig& config) {
@@ -566,8 +564,8 @@ void do_compact(db::EnvConfig& config, std::string work_dir, bool replace, bool 
     }
 }
 
-int do_copy(db::EnvConfig& src_config, std::string& target_dir, bool create, bool noempty,
-            std::vector<std::string>& names, std::vector<std::string>& xnames, bool dry) {
+void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, bool noempty,
+             std::vector<std::string>& names, std::vector<std::string>& xnames, bool dry) {
     fs::path target_path{target_dir};
     if (target_path.has_filename()) {
         target_path += fs::path::preferred_separator;
@@ -757,8 +755,8 @@ int main(int argc, char* argv[]) {
     app_main.require_subcommand(1);  // At least 1 subcommand is required
 
     /*
-    * Database options (path required)
-    */
+     * Database options (path required)
+     */
     auto db_opts = app_main.add_option_group("Db", "Database options");
     db_opts->get_formatter()->column_width(35);
     auto shared_opt = db_opts->add_flag("--shared", "Open database in shared mode");
@@ -771,15 +769,15 @@ int main(int argc, char* argv[]) {
     auto datadir_opt = db_opts_paths->add_option("--datadir", "Path to data directory")->excludes(chaindata_opt);
 
     /*
-    * Common opts and flags
-    */
+     * Common opts and flags
+     */
 
     auto app_yes_opt = app_main.add_flag("-Y,--yes", "Assume yes to all requests of confirmation");
     auto app_dry_opt = app_main.add_flag("--dry", "Don't commit to db. Only simulate");
 
     /*
-    * Subcommands
-    */
+     * Subcommands
+     */
 
     // List tables and gives info about storage
     auto cmd_tables = app_main.add_subcommand("tables", "List db and tables info");
@@ -821,19 +819,17 @@ int main(int argc, char* argv[]) {
     cmd_copy->add_option("--xtables", cmd_copy_xnames, "Don't copy tables matching this list of names", true);
 
     // Stages tool
-    auto& app_stage_set = *app_main.add_subcommand("stageset", "Sets a stage to a new height");
-    app_stage_set.add_option("--name", stage_set_opts.name, "Name of the stage to set", false)->required();
-    app_stage_set.add_option("--height", stage_set_opts.height, "New height for stage", false)
-        ->required()
-        ->check(CLI::Range(0u, UINT32_MAX));
+    auto cmd_stageset = app_main.add_subcommand("stage-set", "Sets a stage to a new height");
+    auto cmd_stageset_name_opt = cmd_stageset->add_option("--name", "Name of the stage to set")->required();
+    auto cmd_stageset_height_opt =
+        cmd_stageset->add_option("--height", "Name of the stage to set")->required()->check(CLI::Range(0u, UINT32_MAX));
 
     /*
-    * Parse arguments and validate
-    */
+     * Parse arguments and validate
+     */
     CLI11_PARSE(app_main, argc, argv);
 
     try {
-
         // Set origin data_dir
         DataDirectory data_dir;
         if (*chaindata_opt) {
@@ -884,14 +880,17 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_copy) {
             do_copy(src_config, cmd_copy_targetdir_opt->as<std::string>(), *cmd_copy_target_create_opt,
                     *cmd_copy_target_noempty_opt, cmd_copy_names, cmd_copy_xnames, *app_dry_opt);
+        } else if (*cmd_stageset) {
+            do_stage_set(src_config, cmd_stageset_name_opt->as<std::string>(), cmd_stageset_height_opt->as<uint32_t>(),
+                         *app_dry_opt);
         };
 
         return 0;
 
     } catch (const std::exception& ex) {
-        std::cerr << "\nUnexpected error : " << ex.what() << std::endl;
+        std::cerr << "\nUnexpected error : " << ex.what() << "\n" << std::endl;
     } catch (...) {
-        std::cerr << "\nUnexpected undefined error" << std::endl;
+        std::cerr << "\nUnexpected undefined error\n" << std::endl;
     }
 
     return -1;

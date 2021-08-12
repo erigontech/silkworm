@@ -255,6 +255,8 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     auto changeset_table{db::open_cursor(txn, changeset_config)};
     auto plainstate_table{db::open_cursor(txn, db::table::kPlainState)};
     auto target_table{db::open_cursor(txn, target_config)};
+    auto code_table{db::open_cursor(txn, db::table::kContractCode)};
+    auto contract_code_table{db::open_cursor(txn, db::table::kPlainContractCode)};
 
     Bytes start_key{db::block_key(unwind_to + 1)};
     auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
@@ -265,24 +267,50 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     db::WalkFunc unwind_func;
     switch (operation) {
         case silkworm::stagedsync::HashstateOperation::HashAccount:
-            unwind_func = [&target_table, &plainstate_table](::mdbx::cursor::move_result data) -> bool {
-                auto [db_key, _]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
-                auto new_data{plainstate_table.find(db::to_slice(db_key), false)};
+            unwind_func = [&target_table, &code_table](::mdbx::cursor::move_result data) -> bool {
+                auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
+                
                 auto hash{keccak256(db_key)};
+                auto new_key{mdbx::slice{hash.bytes, kHashLength}};
+                if (db_value.size() == 0) {
+                    if (target_table.seek(new_key)) {
+                        target_table.erase();
+                    }
+                    return true;
+                }
+                auto [acc, err]{decode_account_from_storage(db_value)};
+                rlp::err_handler(err);
 
-                if (target_table.seek(mdbx::slice{hash.bytes, kHashLength})) {
+                if (acc.incarnation <= 0 || acc.code_hash != kEmptyHash) {
+                    if (target_table.seek(new_key)) {
+                        target_table.erase();
+                    }
+                    target_table.upsert(new_key, db::to_slice(db_value));
+                    return true;
+                }
+
+                Bytes code_key(kHashLength + db::kIncarnationLength, '\0');
+                std::memcpy(&code_key[0], hash.bytes, kHashLength);
+                std::memcpy(&code_key[kHashLength], db::block_key(acc.incarnation).data(), db::kIncarnationLength);
+
+                auto code_hash_data{code_table.find(db::to_slice(code_key), false)};
+
+                if (code_hash_data) {
+                    std::memcpy(acc.code_hash.bytes, code_hash_data.value.data(), kHashLength);
+                }
+
+                auto new_value(acc.encode_for_storage());
+
+                if (target_table.seek(new_key)) {
                     target_table.erase();
                 }
-                if (new_data) {
-                    target_table.upsert(mdbx::slice{hash.bytes, kHashLength}, new_data.value);
-                }
+                target_table.upsert(new_key, db::to_slice(new_value));
                 return true;
             };
             break;
         case silkworm::stagedsync::HashstateOperation::HashStorage:
-            unwind_func = [&target_table, &plainstate_table](::mdbx::cursor::move_result data) -> bool {
-                auto [db_key, _]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
-
+            unwind_func = [&target_table](::mdbx::cursor::move_result data) -> bool {
+                auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
                 // We get storage value and hash its key.
                 Bytes hashed_key(kHashLength * 2 + db::kIncarnationLength, '\0');
                 // Hashing
@@ -291,33 +319,39 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
                 std::memcpy(&hashed_key[kHashLength + db::kIncarnationLength],
                             keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
                 
-                auto new_data{plainstate_table.find(db::to_slice(db_key), false)};
                 if (target_table.seek(db::to_slice(hashed_key))) {
                     target_table.erase();
                 }
-                if (new_data) {
-                    target_table.upsert(db::to_slice(hashed_key), new_data.value);
+                if (db_value.size() > 0) {
+                    target_table.upsert(db::to_slice(hashed_key), db::to_slice(db_value));
                 }
                 return true;
             };
             break;
         case silkworm::stagedsync::HashstateOperation::Code:
-            unwind_func = [&target_table, &plainstate_table](::mdbx::cursor::move_result data) -> bool {
-                auto [db_key, _]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
-                // Get incarnation
-                auto encoded_account{plainstate_table.find(db::to_slice(db_key), false)};
-                if (encoded_account) {
-                    auto [incarnation, err]{extract_incarnation(db::from_slice(encoded_account.value))};
-                    rlp::err_handler(err);
-                    if (incarnation) {
-                        Bytes key(kHashLength + db::kIncarnationLength, '\0');
-                        std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
-                        endian::store_big_u64(&key[kHashLength], incarnation);
-                        if (target_table.seek(db::to_slice(key))) {
-                            target_table.erase();
-                        }
-                    }
+            unwind_func = [&target_table, &contract_code_table](::mdbx::cursor::move_result data) -> bool {
+                auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
+                if (db_value.size() == 0) {
+                    return true;
                 }
+                auto [incarnation, err]{extract_incarnation(db_value)};
+                rlp::err_handler(err);
+                if (incarnation == 0) {
+                    return true;
+                }
+                // Get incarnation
+                auto plain_storage_key{db::storage_prefix(db_key, incarnation)};
+                auto code_hash_data{contract_code_table.find(db::to_slice(plain_storage_key))};
+
+                auto address_hash{keccak256(db_key)};
+                Bytes hashed_key(kHashLength + db::kIncarnationLength, '\0');
+                std::memcpy(&hashed_key[0], address_hash.bytes, kHashLength);
+                std::memcpy(&hashed_key[kHashLength], db::block_key(incarnation).data(), db::kIncarnationLength);
+                if (target_table.seek(db::to_slice(hashed_key))) {
+                    target_table.erase();
+                }
+                
+                target_table.upsert(db::to_slice(hashed_key), code_hash_data.value);
                 return true;
             };
             break;

@@ -164,7 +164,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             }
             // Hashing
             auto hash{keccak256(db_key)};
-            target_table.upsert(db::to_slice(hash.bytes), plainstate_data.value);
+            target_table.upsert(mdbx::slice{hash.bytes, kHashLength}, plainstate_data.value);
             changeset_data = changeset_table.to_next(false);
 
         } else if (operation == HashstateOperation::HashStorage) {

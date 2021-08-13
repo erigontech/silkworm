@@ -67,6 +67,7 @@ cmd/execute -d <path-to-chaindata>
 * `.\vcpkg\vcpkg install mpir:x64-windows`
 * Add <VCPKG_ROOT>\installed\x64-windows\include to your `INCLUDE` environment variable.
 * Add <VCPKG_ROOT>\installed\x64-windows\bin to your `PATH` environment variable.
+* install [perl](https://strawberryperl.com/) (needed for OpenSSL build process)
 * Open Visual Studio and select File -> CMake...
 * Browse the folder where you have cloned this repository and select the file CMakeLists.txt
 * Let CMake cache generation complete (it may take several minutes)

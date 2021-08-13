@@ -740,6 +740,17 @@ void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, boo
     std::cout << "\n All done!" << std::endl;
 }
 
+/**
+ * \brief Initializes a silkworm db.
+ *
+ * Can parse a custom genesis file in json format or import data from known chain configs
+ *
+ * \param DataDir data_dir : hold data directory info about db paths
+ * \param json_file : a string representing the path where to load custom json from
+ * \param uint32_t chain_id : an identifier for a known chain
+ * \param bool dry : whether or not commit data or run in simulation
+ *  
+ */
 void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t chain_id, bool dry) {
     // Check datadir does not exist
     if (fs::exists(data_dir.get_base_path())) {
@@ -755,7 +766,7 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
     if (!json_file.empty()) {
         std::ifstream ifs(json_file);
         source_data = std::string((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-    } else {
+    } else if (chain_id != 0) {
         switch (chain_id) {
             case 1:
                 assert(sizeof_genesis_mainnet_data() != 0);
@@ -773,6 +784,8 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
                 // TODO Configs for ETC and Ropsten
                 throw std::runtime_error("Unknown chain id: " + std::to_string(chain_id));
         }
+    } else {
+        throw std::invalid_argument("Either json file or chainid must be provided");
     }
 
     // Parse Json data
@@ -856,7 +869,6 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
         std::map<evmc::bytes32, Bytes> account_rlp;
         auto state_table{db::open_cursor(txn, db::table::kPlainState)};
         for (const auto& [address, account] : state_buffer.accounts()) {
-
             auto address_view{full_view(address)};
 
             // Store account plain state
@@ -880,7 +892,7 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
 
     auto extra_data = from_hex(genesis_json["extraData"].get<std::string>());
     if (extra_data.has_value()) {
-        header.extra_data = *extra_data;
+        header.extra_data = extra_data.value();
     }
 
     if (genesis_json.contains("mixhash")) {
@@ -909,15 +921,15 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
     auto block_key{db::block_key(0)};
     const uint8_t genesis_null_receipts[] = {0xf6};  // <- cbor encoded
 
-    Bytes rlp_header, rlp_body;
+    Bytes rlp_header;
     rlp::encode(rlp_header, header);
-    rlp::encode(rlp_body, BlockBody{});
+    Bytes rlp_body{195, 128, 128, 192};
 
     Bytes key(8 + kHashLength, '\0');
     std::memcpy(&key[8], block_hash.bytes, kHashLength);
     db::open_cursor(txn, db::table::kHeaders).upsert(db::to_slice(key), db::to_slice(rlp_header));
     db::open_cursor(txn, db::table::kCanonicalHashes)
-        .upsert(db::to_slice(key), db::to_slice(full_view(block_hash.bytes)));
+        .upsert(db::to_slice(block_key), db::to_slice(full_view(block_hash.bytes)));
 
     // Write body
     db::open_cursor(txn, db::table::kBlockBodies).upsert(db::to_slice(key), db::to_slice(rlp_body));
@@ -936,11 +948,26 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
     db::open_cursor(txn, db::table::kConfig)
         .upsert(db::to_slice(full_view(block_hash.bytes)), mdbx::slice{config_data.c_str()});
 
+    // Set schema version
+    silkworm::db::VersionBase v{3, 0, 0};
+    db::write_schema_version(txn, v);
+
     if (!dry) {
         txn.commit();
     } else {
         txn.abort();
     }
+}
+
+void do_chainconfig(db::EnvConfig& config) {
+    auto env{silkworm::db::open_env(config)};
+    auto txn{env.start_read()};
+    auto chain_config{db::read_chain_config(txn)};
+    if (!chain_config.has_value()) {
+        throw std::runtime_error("Not an initialized Silkworm db");
+    }
+
+    std::cout << "\n Chain config : \n" << chain_config.value().to_json().dump() << "\n" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -1031,6 +1058,9 @@ int main(int argc, char* argv[]) {
                                          ->excludes(cmd_initgenesis_json_opt)
                                          ->transform(CLI::Transformer(genesis_map, CLI::ignore_case));
 
+    // Read chain config held in db (if any)
+    auto cmd_chainconfig = app_main.add_subcommand("chain-config", "Prints chain config held in database");
+
     /*
      * Parse arguments and validate
      */
@@ -1101,6 +1131,8 @@ int main(int argc, char* argv[]) {
                           << std::endl;
                 fs::remove_all(data_dir.get_base_path());
             }
+        } else if (*cmd_chainconfig) {
+            do_chainconfig(src_config);
         };
 
         return 0;

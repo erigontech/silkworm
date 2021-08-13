@@ -44,8 +44,9 @@ int main(int argc, char* argv[]) {
 
         std::array<size_t, 256> histogram{};
 
-        auto code_table{db::open_cursor(txn, db::table::kCode)};
-        db::for_each(code_table, [&histogram](mdbx::cursor::move_result& entry) {
+        auto code_cursor{db::open_cursor(txn, db::table::kCode)};
+        code_cursor.to_first();
+        db::for_each(code_cursor, [&histogram](mdbx::cursor::move_result& entry) {
             if (entry.value.length() > 0) {
                 uint8_t first_byte{entry.value.at(0)};
                 ++histogram[first_byte];

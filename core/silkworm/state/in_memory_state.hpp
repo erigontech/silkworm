@@ -20,12 +20,12 @@
 #include <unordered_map>
 #include <vector>
 
-#include <silkworm/state/buffer.hpp>
+#include <silkworm/state/state.hpp>
 
 namespace silkworm {
 
 /// InMemoryState holds the entire state in memory.
-class InMemoryState : public StateBuffer {
+class InMemoryState : public State {
   public:
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 

@@ -159,7 +159,7 @@ size_t state_storage_size(const InMemoryState* state, const uint8_t* address, co
     return state->storage_size(address_from_ptr(address), account->incarnation);
 }
 
-Account* state_read_account_new(const StateBuffer* state, const uint8_t* address) {
+Account* state_read_account_new(const State* state, const uint8_t* address) {
     std::optional<Account> account{state->read_account(address_from_ptr(address))};
     if (!account) {
         return nullptr;
@@ -170,13 +170,13 @@ Account* state_read_account_new(const StateBuffer* state, const uint8_t* address
     return out;
 }
 
-Bytes* state_read_code_new(const StateBuffer* state, const uint8_t* code_hash) {
+Bytes* state_read_code_new(const State* state, const uint8_t* code_hash) {
     auto out{new Bytes};
     *out = state->read_code(bytes32_from_ptr(code_hash));
     return out;
 }
 
-Bytes* state_read_storage_new(const StateBuffer* state, const uint8_t* address, const Account* account,
+Bytes* state_read_storage_new(const State* state, const uint8_t* address, const Account* account,
                               const Bytes* location) {
     evmc::bytes32 value{state->read_storage(address_from_ptr(address), account->incarnation, to_bytes32(*location))};
     auto out{new Bytes};
@@ -184,7 +184,7 @@ Bytes* state_read_storage_new(const StateBuffer* state, const uint8_t* address, 
     return out;
 }
 
-void state_update_account(StateBuffer* state, const uint8_t* address, const Account* current_ptr) {
+void state_update_account(State* state, const uint8_t* address, const Account* current_ptr) {
     std::optional<Account> current_opt;
     if (current_ptr) {
         current_opt = *current_ptr;
@@ -192,17 +192,17 @@ void state_update_account(StateBuffer* state, const uint8_t* address, const Acco
     state->update_account(address_from_ptr(address), /* initial=*/std::nullopt, current_opt);
 }
 
-void state_update_code(StateBuffer* state, const uint8_t* address, const Account* account, const Bytes* code) {
+void state_update_code(State* state, const uint8_t* address, const Account* account, const Bytes* code) {
     state->update_account_code(address_from_ptr(address), account->incarnation, account->code_hash, *code);
 }
 
-void state_update_storage(StateBuffer* state, const uint8_t* address, const Account* account, const Bytes* location,
+void state_update_storage(State* state, const uint8_t* address, const Account* account, const Bytes* location,
                           const Bytes* value) {
     state->update_storage(address_from_ptr(address), account->incarnation, to_bytes32(*location), /*initial=*/{},
                           to_bytes32(*value));
 }
 
-Blockchain* new_blockchain(StateBuffer* state, const ChainConfig* config, const Block* genesis_block) {
+Blockchain* new_blockchain(State* state, const ChainConfig* config, const Block* genesis_block) {
     return new Blockchain{*state, *config, *genesis_block};
 }
 

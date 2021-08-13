@@ -292,7 +292,7 @@ ExecutionStatePool state_pool;
 evmc_vm* evm{nullptr};
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
-void init_pre_state(const nlohmann::json& pre, StateBuffer& state) {
+void init_pre_state(const nlohmann::json& pre, State& state) {
     for (const auto& entry : pre.items()) {
         evmc::address address{to_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};

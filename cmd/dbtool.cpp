@@ -32,11 +32,12 @@
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/buffer.hpp>
 #include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
+#include <silkworm/state/memory_buffer.hpp>
+#include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/types/block.hpp>
 
 namespace fs = std::filesystem;
@@ -817,7 +818,8 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
 
     // Initialize state_buffer for allocations (if any)
     // and get root_hash
-    db::Buffer state_buffer(txn);
+    MemoryBuffer state_buffer{};
+    evmc::bytes32 state_root_hash{kEmptyRoot};
 
     // Allocate accounts
     if (genesis_json.contains("alloc")) {
@@ -849,7 +851,28 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
             throw std::logic_error("Allocations mismatch. Check uniqueness of accounts");
         }
 
-        state_buffer.write_to_db();
+        // Write allocations to db - no changes only accounts
+        // Also compute state_root_hash in a single pass
+        std::map<evmc::bytes32, Bytes> account_rlp;
+        auto state_table{db::open_cursor(txn, db::table::kPlainState)};
+        for (const auto& [address, account] : state_buffer.accounts()) {
+
+            auto address_view{full_view(address)};
+
+            // Store account plain state
+            Bytes encoded{account.encode_for_storage()};
+            state_table.upsert(db::to_slice(address_view), db::to_slice(encoded));
+
+            // First pass for state_root_hash
+            ethash::hash256 hash{keccak256(address_view)};
+            account_rlp[to_bytes32(full_view(hash.bytes))] = account.rlp(kEmptyRoot);
+        }
+
+        trie::HashBuilder hb;
+        for (const auto& [hash, rlp] : account_rlp) {
+            hb.add(full_view(hash), rlp);
+        }
+        state_root_hash = hb.root_hash();
     }
 
     // Fill Header
@@ -869,7 +892,7 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
     }
 
     header.ommers_hash = kEmptyListHash;
-    header.state_root = state_buffer.state_root_hash();
+    header.state_root = state_root_hash;
     header.transactions_root = kEmptyRoot;
     header.receipts_root = kEmptyRoot;
 
@@ -1074,7 +1097,8 @@ int main(int argc, char* argv[]) {
             do_init_genesis(data_dir, cmd_initgenesis_json_opt->as<std::string>(),
                             *cmd_initgenesis_chain_opt ? cmd_initgenesis_chain_opt->as<uint32_t>() : 0u, *app_dry_opt);
             if (*app_dry_opt) {
-                std::cout << "\nGenesis initialization succeeded. Due to --dry flag no data is persisted\n" << std::endl;
+                std::cout << "\nGenesis initialization succeeded. Due to --dry flag no data is persisted\n"
+                          << std::endl;
                 fs::remove_all(data_dir.get_base_path());
             }
         };

@@ -30,7 +30,9 @@
 namespace silkworm {
 
 TEST_CASE("genesis config") {
-    std::string source_genesis(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+
+    std::string source_genesis;
+    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kMainnetId), source_genesis);
 
     auto genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json != nlohmann::json::value_t::discarded);
@@ -39,8 +41,8 @@ TEST_CASE("genesis config") {
     CHECK(config.has_value());
     CHECK(config.value() == kMainnetConfig);
 
-    source_genesis.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
-
+    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kGoerliId), source_genesis);
+    
     genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json != nlohmann::json::value_t::discarded);
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
@@ -48,7 +50,7 @@ TEST_CASE("genesis config") {
     CHECK(config.has_value());
     CHECK(config.value() == kGoerliConfig);
 
-    source_genesis.assign(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
+    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kRinkebyId), source_genesis);
 
     genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json != nlohmann::json::value_t::discarded);
@@ -56,12 +58,16 @@ TEST_CASE("genesis config") {
     config = ChainConfig::from_json(genesis_json["config"]);
     CHECK(config.has_value());
     CHECK(config.value() == kRinkebyConfig);
+
+    CHECK_THROWS(read_genesis_data(/* chain_id */ 1'000'000, source_genesis));
+
 }
 
 TEST_CASE("mainnet_genesis") {
     // Parse genesis data
     std::string source_data;
-    source_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kMainnetId), source_data);
+
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json != nlohmann::json::value_t::discarded);
 

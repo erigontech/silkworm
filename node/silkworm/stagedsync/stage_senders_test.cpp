@@ -124,7 +124,8 @@ TEST_CASE("Stage Senders") {
     bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
     std::string genesis_data;
-    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kMainnetId), genesis_data);
+
     auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     auto config_data{genesis_json["config"].dump()};
 
@@ -199,7 +200,8 @@ TEST_CASE("Unwind Senders") {
     bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
     std::string genesis_data;
-    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kMainnetId), genesis_data);
+
     auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     auto config_data{genesis_json["config"].dump()};
 

@@ -19,13 +19,21 @@
 
 #include <stddef.h>
 
-extern const char* genesis_mainnet_data(void);
-extern size_t sizeof_genesis_mainnet_data(void);
+#include <string>
 
-extern const char* genesis_goerli_data(void);
-extern size_t sizeof_genesis_goerli_data(void);
+namespace silkworm {
 
-extern const char* genesis_rinkeby_data(void);
-extern size_t sizeof_genesis_rinkeby_data(void);
+enum class KnownChainIds {
+    kMainnetId = 1,
+    kRinkebyId = 4,
+    kGoerliId = 5
+};
+
+/*
+    * \brief Assigns genesis data for known chain_id to data vector
+    */
+void read_genesis_data(unsigned int chain_id, std::string& data);
+
+}  // namespace silkworm
 
 #endif  // SILKWORM_CORE_CHAIN_GENESIS_H_

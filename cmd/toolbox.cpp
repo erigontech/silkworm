@@ -767,23 +767,7 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
         std::ifstream ifs(json_file);
         source_data = std::string((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
     } else if (chain_id != 0) {
-        switch (chain_id) {
-            case 1:
-                assert(sizeof_genesis_mainnet_data() != 0);
-                source_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-                break;
-            case 4:
-                assert(sizeof_genesis_rinkeby_data() != 0);
-                source_data.assign(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
-                break;
-            case 5:
-                assert(sizeof_genesis_goerli_data() != 0);
-                source_data.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
-                break;
-            default:
-                // TODO Configs for ETC and Ropsten
-                throw std::runtime_error("Unknown chain id: " + std::to_string(chain_id));
-        }
+        read_genesis_data(chain_id, source_data);
     } else {
         throw std::invalid_argument("Either json file or chainid must be provided");
     }

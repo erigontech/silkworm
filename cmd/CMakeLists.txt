@@ -55,8 +55,8 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(check_pow check_pow.cpp)
   target_link_libraries(check_pow PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(dbtool dbtool.cpp)
-  target_link_libraries(dbtool PRIVATE silkworm_node CLI11::CLI11)
+  add_executable(toolbox toolbox.cpp)
+  target_link_libraries(toolbox PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(genesistool genesistool.cpp)
   target_link_libraries(genesistool PRIVATE CLI11::CLI11)

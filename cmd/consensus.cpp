@@ -34,8 +34,8 @@
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
+#include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/state/intra_block_state.hpp>
-#include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/block.hpp>
 
 // See https://ethereum-tests.readthedocs.io
@@ -367,7 +367,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
     return Status::kPassed;
 }
 
-bool post_check(const MemoryBuffer& state, const nlohmann::json& expected) {
+bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
     if (state.number_of_accounts() != expected.size()) {
         std::cout << "Account number mismatch: " << state.number_of_accounts() << " != " << expected.size()
                   << std::endl;
@@ -439,7 +439,7 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
     Block genesis_block;
     check_rlp_err(rlp::decode(genesis_view, genesis_block));
 
-    MemoryBuffer state;
+    InMemoryState state;
     std::string network{json_test["network"].get<std::string>()};
     ChainConfig config{kNetworkConfig.at(network)};
 

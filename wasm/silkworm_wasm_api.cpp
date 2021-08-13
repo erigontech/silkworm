@@ -138,11 +138,11 @@ uint8_t* header_state_root(BlockHeader* header) { return header->state_root.byte
 
 void block_recover_senders(Block* b) { b->recover_senders(); }
 
-MemoryBuffer* new_state() { return new MemoryBuffer; }
+InMemoryState* new_state() { return new InMemoryState; }
 
-void delete_state(MemoryBuffer* x) { delete x; }
+void delete_state(InMemoryState* x) { delete x; }
 
-uint8_t* state_root_hash_new(const MemoryBuffer* state) {
+uint8_t* state_root_hash_new(const InMemoryState* state) {
     evmc::bytes32 root_hash{state->state_root_hash()};
     void* out{new_buffer(kHashLength)};
     std::memcpy(out, root_hash.bytes, kHashLength);
@@ -153,9 +153,9 @@ static evmc::address address_from_ptr(const uint8_t* ptr) { return to_address({p
 
 static evmc::bytes32 bytes32_from_ptr(const uint8_t* ptr) { return to_bytes32({ptr, kHashLength}); }
 
-size_t state_number_of_accounts(const MemoryBuffer* state) { return state->number_of_accounts(); }
+size_t state_number_of_accounts(const InMemoryState* state) { return state->number_of_accounts(); }
 
-size_t state_storage_size(const MemoryBuffer* state, const uint8_t* address, const Account* account) {
+size_t state_storage_size(const InMemoryState* state, const uint8_t* address, const Account* account) {
     return state->storage_size(address_from_ptr(address), account->incarnation);
 }
 

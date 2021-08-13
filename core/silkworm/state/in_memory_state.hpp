@@ -24,7 +24,7 @@
 
 namespace silkworm {
 
-/// InMemoryState holds all state in memory.
+/// InMemoryState holds the entire state in memory.
 class InMemoryState : public StateBuffer {
   public:
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;

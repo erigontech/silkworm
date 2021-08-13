@@ -38,7 +38,14 @@ std::mutex log_::log_mtx_;
 
 std::ostream& log_::header_(LogLevel level) {
     log_streams_ << kLogTags_[static_cast<int>(level)] << "["
+#if defined(_WIN32)
+        // abseil installed with vcpkg is built with C++11 support, so it takes absl::string_view as 1st param
+        // but this file is compiled with c++17, and abseil headers include a function proto taking a std::string_view which is not in vcpkg libs
+        // error LNK2019: unresolved external symbol "class std::basic_string<... > __cdecl absl::lts_20210324::FormatTime(class std::basic_string_view, ...
+                 << absl::FormatTime(absl::Now(), absl::LocalTimeZone()) << "]";
+#else
                  << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "]";
+#endif
     if (log_thread_enabled_) {
         log_streams_ << " " << std::this_thread::get_id();
     }

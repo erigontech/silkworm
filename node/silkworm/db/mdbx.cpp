@@ -34,7 +34,7 @@ namespace silkworm::db {
     if (!config.create) {
         if (!fs::exists(db_path) || !fs::is_directory(db_path) || fs::is_empty(db_path) || !fs::exists(db_file) ||
             !fs::is_regular_file(db_file) || !fs::file_size(db_file)) {
-            throw std::runtime_error("Unable to locate " + db_file.string() + ". Must exist has been set");
+            throw std::runtime_error("Unable to locate " + db_file.string() + ", which is required to exist");
         }
     } else {
         if (!fs::exists(db_path)) {

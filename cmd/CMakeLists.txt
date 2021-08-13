@@ -129,4 +129,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(benchmark_precompile benchmark_precompile.cpp)
   target_link_libraries(benchmark_precompile silkworm_core benchmark::benchmark)
 
+  add_subdirectory(hack)
+
 endif(NOT SILKWORM_CORE_ONLY)

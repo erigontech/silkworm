@@ -22,14 +22,14 @@
 
 namespace silkworm {
 
-ValidationResult execute_block(const Block& block, StateBuffer& buffer, const ChainConfig& config,
+ValidationResult execute_block(const Block& block, State& state, const ChainConfig& config,
                                std::vector<Receipt>& receipts, AnalysisCache* analysis_cache,
                                ExecutionStatePool* state_pool, evmc_vm* exo_evm) noexcept {
     const BlockHeader& header{block.header};
     const uint64_t block_num{header.number};
 
-    IntraBlockState state{buffer};
-    ExecutionProcessor processor{block, state, config};
+    IntraBlockState ibs{state};
+    ExecutionProcessor processor{block, ibs, config};
     processor.evm().advanced_analysis_cache = analysis_cache;
     processor.evm().state_pool = state_pool;
     processor.evm().exo_evm = exo_evm;

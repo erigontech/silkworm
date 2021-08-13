@@ -20,7 +20,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/state/memory_buffer.hpp>
+#include <silkworm/state/in_memory_state.hpp>
 
 #include "address.hpp"
 #include "execution.hpp"
@@ -102,7 +102,7 @@ TEST_CASE("Zero gas price") {
                   "815060009055506001016108fd565b5090565b50505b505056"),
     };
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     ExecutionProcessor processor{block, state, kMainnetConfig};
 
@@ -144,7 +144,7 @@ TEST_CASE("No refund on error") {
     23     BALANCE
     */
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     ExecutionProcessor processor{block, state, kMainnetConfig};
 
@@ -235,7 +235,7 @@ TEST_CASE("Self-destruct") {
     38     CALL
     */
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     ExecutionProcessor processor{block, state, kMainnetConfig};
 
@@ -287,7 +287,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     uint64_t nonce{0};
     evmc::address address{create_address(caller, nonce)};
 
-    MemoryBuffer buffer;
+    InMemoryState buffer;
 
     // Some funds were previously transferred to the address:
     // https://etherscan.io/address/0x78c65b078353a8c4ce58fb4b5acaac6042d591d5
@@ -425,7 +425,7 @@ TEST_CASE("Empty suicide beneficiary") {
     };
     txn.from = caller;
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     state.add_to_balance(caller, kEther);
 

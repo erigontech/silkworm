@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include <iostream>
-
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
@@ -246,7 +244,6 @@ TEST_CASE("Unwind Hashstate") {
     auto account_encoded{db::from_slice(hashed_address_table.current().value)};
 
     auto [acc, _]{decode_account_from_storage(account_encoded)};
-    std::cout << to_hex(account_encoded) << std::endl;
     CHECK(acc.nonce == 2);
     CHECK(acc.balance < kEther);  // Slightly less due to fees
     CHECK(db::stages::get_stage_progress(*txn, db::stages::kHashStateKey) == 1);

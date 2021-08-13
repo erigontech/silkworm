@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CORE_CHAIN_GENESIS_H_
-#define SILKWORM_CORE_CHAIN_GENESIS_H_
+#ifndef SILKWORM_CORE_CHAIN_GENESIS_HPP_
+#define SILKWORM_CORE_CHAIN_GENESIS_HPP_
 
 #include <stddef.h>
 

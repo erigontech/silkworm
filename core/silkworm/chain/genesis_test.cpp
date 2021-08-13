@@ -15,7 +15,7 @@
    limitations under the License.
 */
 
-#include "genesis.h"
+#include "genesis.hpp"
 
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>

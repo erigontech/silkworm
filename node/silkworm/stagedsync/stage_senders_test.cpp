@@ -18,7 +18,7 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/chain/genesis.h>
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/temp_dir.hpp>

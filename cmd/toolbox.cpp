@@ -28,7 +28,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/chain/genesis.h>
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -960,14 +960,15 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
 }
 
 void do_chainconfig(db::EnvConfig& config) {
+
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_read()};
     auto chain_config{db::read_chain_config(txn)};
     if (!chain_config.has_value()) {
-        throw std::runtime_error("Not an initialized Silkworm db");
+        throw std::runtime_error("Not an initialized Silkworm db or unknown/custom chain ");
     }
-
-    std::cout << "\n Chain config : \n" << chain_config.value().to_json().dump() << "\n" << std::endl;
+    const auto& chain{chain_config.value()};
+    std::cout << "\n Chain id "<< chain.chain_id << "\n Config (json) : \n" << chain.to_json().dump() << "\n" << std::endl;
 }
 
 int main(int argc, char* argv[]) {

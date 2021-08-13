@@ -19,7 +19,7 @@
 
 #include <optional>
 
-#include <silkworm/state/buffer.hpp>
+#include <silkworm/state/state.hpp>
 #include <silkworm/types/block.hpp>
 
 namespace silkworm {
@@ -80,11 +80,11 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
 // See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
 // and 11.1 "Ommer Validation".
 // Shouldn't be used for genesis block.
-ValidationResult pre_validate_block(const Block& block, const StateBuffer& state, const ChainConfig& config);
+ValidationResult pre_validate_block(const Block& block, const State& state, const ChainConfig& config);
 
 // See [YP] Section 4.3.4 "Block Header Validity".
 // Shouldn't be used for genesis block.
-ValidationResult validate_block_header(const BlockHeader& header, const StateBuffer& state, const ChainConfig& config);
+ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config);
 
 }  // namespace silkworm
 

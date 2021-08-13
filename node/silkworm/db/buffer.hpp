@@ -26,7 +26,7 @@
 #include <absl/container/flat_hash_set.h>
 
 #include <silkworm/db/util.hpp>
-#include <silkworm/state/buffer.hpp>
+#include <silkworm/state/state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
@@ -34,7 +34,7 @@
 
 namespace silkworm::db {
 
-class Buffer : public StateBuffer {
+class Buffer : public State {
   public:
     // txn must be valid (its handle != nullptr)
     explicit Buffer(mdbx::txn& txn, std::optional<uint64_t> historical_block = std::nullopt)

@@ -22,7 +22,7 @@
 
 namespace silkworm {
 
-Blockchain::Blockchain(StateBuffer& state, const ChainConfig& config, const Block& genesis_block)
+Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& genesis_block)
     : state_{state}, config_{config} {
     evmc::bytes32 hash{genesis_block.header.hash()};
     state_.insert_block(genesis_block, hash);

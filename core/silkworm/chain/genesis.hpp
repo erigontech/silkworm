@@ -17,23 +17,16 @@
 #ifndef SILKWORM_CORE_CHAIN_GENESIS_HPP_
 #define SILKWORM_CORE_CHAIN_GENESIS_HPP_
 
-#include <stddef.h>
-
 #include <string>
 
 namespace silkworm {
 
-enum class KnownChainIds {
-    kMainnetId = 1,
-    kRinkebyId = 4,
-    kGoerliId = 5
-};
-
 /*
-    * \brief Assigns genesis data for known chain_id to data vector
-    */
-void read_genesis_data(unsigned int chain_id, std::string& data);
+* \brief Returns genesis data given a known chain_id.
+* If id is not recognized returns an invalid json string
+*/
+std::string read_genesis_data(unsigned int chain_id);
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_CORE_CHAIN_GENESIS_H_
+#endif  // SILKWORM_CORE_CHAIN_GENESIS_HPP_

@@ -31,45 +31,45 @@ namespace silkworm {
 
 TEST_CASE("genesis config") {
 
-    std::string source_genesis;
-    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kMainnetId), source_genesis);
+    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
 
-    auto genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
-    CHECK(genesis_json != nlohmann::json::value_t::discarded);
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
     auto config = ChainConfig::from_json(genesis_json["config"]);
     CHECK(config.has_value());
     CHECK(config.value() == kMainnetConfig);
 
-    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kGoerliId), source_genesis);
-    
-    genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
-    CHECK(genesis_json != nlohmann::json::value_t::discarded);
+    genesis_data = read_genesis_data(kGoerliConfig.chain_id);
+    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
+
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
     config = ChainConfig::from_json(genesis_json["config"]);
     CHECK(config.has_value());
     CHECK(config.value() == kGoerliConfig);
 
-    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kRinkebyId), source_genesis);
+    genesis_data = read_genesis_data(kRinkebyConfig.chain_id);
+    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
 
-    genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
-    CHECK(genesis_json != nlohmann::json::value_t::discarded);
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
     config = ChainConfig::from_json(genesis_json["config"]);
     CHECK(config.has_value());
     CHECK(config.value() == kRinkebyConfig);
 
-    CHECK_THROWS(read_genesis_data(/* chain_id */ 1'000'000, source_genesis));
+    genesis_data = read_genesis_data(1'000);
+    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK(genesis_json.is_discarded());
 
 }
 
 TEST_CASE("mainnet_genesis") {
-    // Parse genesis data
-    std::string source_data;
-    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kMainnetId), source_data);
 
-    auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
-    CHECK(genesis_json != nlohmann::json::value_t::discarded);
+    // Parse genesis data
+    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
 
     CHECK(genesis_json.contains("difficulty"));
     CHECK(genesis_json.contains("nonce"));

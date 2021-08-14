@@ -123,10 +123,11 @@ TEST_CASE("Stage Senders") {
 
     bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
-    std::string genesis_data;
-    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kMainnetId), genesis_data);
+    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
+    CHECK(genesis_json.contains("config"));
 
-    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
@@ -199,10 +200,10 @@ TEST_CASE("Unwind Senders") {
 
     bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
-    std::string genesis_data;
-    read_genesis_data(static_cast<uint32_t>(KnownChainIds::kMainnetId), genesis_data);
-
-    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
+    CHECK(genesis_json.contains("config"));
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};

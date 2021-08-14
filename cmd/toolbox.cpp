@@ -749,7 +749,7 @@ void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, boo
  * \param json_file : a string representing the path where to load custom json from
  * \param uint32_t chain_id : an identifier for a known chain
  * \param bool dry : whether or not commit data or run in simulation
- *  
+ *
  */
 void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t chain_id, bool dry) {
     // Check datadir does not exist
@@ -767,9 +767,9 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
         std::ifstream ifs(json_file);
         source_data = std::string((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
     } else if (chain_id != 0) {
-        read_genesis_data(chain_id, source_data);
+        source_data = read_genesis_data(chain_id);
     } else {
-        throw std::invalid_argument("Either json file or chainid must be provided");
+        throw std::invalid_argument("Either json file or chain_id must be provided");
     }
 
     // Parse Json data
@@ -944,7 +944,6 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
 }
 
 void do_chainconfig(db::EnvConfig& config) {
-
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_read()};
     auto chain_config{db::read_chain_config(txn)};
@@ -952,7 +951,9 @@ void do_chainconfig(db::EnvConfig& config) {
         throw std::runtime_error("Not an initialized Silkworm db or unknown/custom chain ");
     }
     const auto& chain{chain_config.value()};
-    std::cout << "\n Chain id "<< chain.chain_id << "\n Config (json) : \n" << chain.to_json().dump() << "\n" << std::endl;
+    std::cout << "\n Chain id " << chain.chain_id << "\n Config (json) : \n"
+              << chain.to_json().dump() << "\n"
+              << std::endl;
 }
 
 int main(int argc, char* argv[]) {

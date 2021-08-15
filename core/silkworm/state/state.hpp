@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_BUFFER_HPP_
-#define SILKWORM_STATE_BUFFER_HPP_
+#ifndef SILKWORM_STATE_STATE_HPP_
+#define SILKWORM_STATE_STATE_HPP_
 
 #include <optional>
 
@@ -25,14 +25,14 @@
 
 namespace silkworm {
 
-class StateBuffer {
+class State {
   public:
-    StateBuffer() = default;
+    State() = default;
 
-    StateBuffer(const StateBuffer&) = delete;
-    StateBuffer& operator=(const StateBuffer&) = delete;
+    State(const State&) = delete;
+    State& operator=(const State&) = delete;
 
-    virtual ~StateBuffer() = default;
+    virtual ~State() = default;
 
     /** @name Readers */
     ///@{
@@ -98,4 +98,4 @@ class StateBuffer {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_STATE_BUFFER_HPP_
+#endif  // SILKWORM_STATE_STATE_HPP_

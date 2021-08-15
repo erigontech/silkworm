@@ -16,24 +16,21 @@
 
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
-#include <iostream>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
-#include <silkworm/types/account.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/execution/address.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/state/memory_buffer.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
 #include "stagedsync.hpp"
-using namespace evmc::literals;
 
+using namespace evmc::literals;
 
 TEST_CASE("Stage Hashstate") {
     using namespace silkworm;
@@ -135,7 +132,6 @@ TEST_CASE("Stage Hashstate") {
     auto address_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
     CHECK(hashed_address_table.seek(db::to_slice(address_keccak)));
     auto account_encoded{db::from_slice(hashed_address_table.current().value)};
-
 
     auto [acc, _]{decode_account_from_storage(account_encoded)};
     CHECK(acc.nonce == 3);
@@ -248,9 +244,7 @@ TEST_CASE("Unwind Hashstate") {
     auto account_encoded{db::from_slice(hashed_address_table.current().value)};
 
     auto [acc, _]{decode_account_from_storage(account_encoded)};
-    std::cout << to_hex(account_encoded) << std::endl;
     CHECK(acc.nonce == 2);
-    CHECK(acc.balance < kEther); // Slightly less due to fees
+    CHECK(acc.balance < kEther);  // Slightly less due to fees
     CHECK(db::stages::get_stage_progress(*txn, db::stages::kHashStateKey) == 1);
 }
-

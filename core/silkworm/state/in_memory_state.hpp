@@ -14,18 +14,18 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_STATE_MEMORY_BUFFER_HPP_
-#define SILKWORM_STATE_MEMORY_BUFFER_HPP_
+#ifndef SILKWORM_STATE_IN_MEMORY_STATE_HPP_
+#define SILKWORM_STATE_IN_MEMORY_STATE_HPP_
 
 #include <unordered_map>
 #include <vector>
 
-#include <silkworm/state/buffer.hpp>
+#include <silkworm/state/state.hpp>
 
 namespace silkworm {
 
-/// MemoryBuffer holds all state in memory.
-class MemoryBuffer : public StateBuffer {
+/// InMemoryState holds the entire state in memory.
+class InMemoryState : public State {
   public:
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -116,4 +116,4 @@ class MemoryBuffer : public StateBuffer {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_STATE_MEMORY_BUFFER_HPP_
+#endif  // SILKWORM_STATE_IN_MEMORY_STATE_HPP_

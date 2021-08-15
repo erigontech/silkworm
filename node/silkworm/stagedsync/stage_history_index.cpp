@@ -98,6 +98,8 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     for (const auto& [key, bm] : bitmaps) {
         Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
         bm.write(byte_ptr_cast(bitmap_bytes.data()));
+        if (storage)
+        std::cout << to_hex(Bytes(byte_ptr_cast(key.c_str()))) << std::endl;
         etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
         collector.collect(entry);
     }

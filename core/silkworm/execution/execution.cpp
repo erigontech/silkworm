@@ -16,8 +16,6 @@
 
 #include "execution.hpp"
 
-#include <silkworm/trie/vector_root.hpp>
-
 #include "processor.hpp"
 
 namespace silkworm {
@@ -25,48 +23,13 @@ namespace silkworm {
 ValidationResult execute_block(const Block& block, State& state, const ChainConfig& config,
                                std::vector<Receipt>& receipts, AnalysisCache* analysis_cache,
                                ExecutionStatePool* state_pool, evmc_vm* exo_evm) noexcept {
-    const BlockHeader& header{block.header};
-    const uint64_t block_num{header.number};
-
     IntraBlockState ibs{state};
     ExecutionProcessor processor{block, ibs, config};
     processor.evm().advanced_analysis_cache = analysis_cache;
     processor.evm().state_pool = state_pool;
     processor.evm().exo_evm = exo_evm;
 
-    if (const ValidationResult res{processor.execute_block(receipts)}; res != ValidationResult::kOk) {
-        return res;
-    }
-
-    uint64_t gas_used{0};
-    if (!receipts.empty()) {
-        gas_used = receipts.back().cumulative_gas_used;
-    }
-
-    if (gas_used != header.gas_used) {
-        return ValidationResult::kWrongBlockGas;
-    }
-
-    const evmc_revision rev{config.revision(block_num)};
-    if (rev >= EVMC_BYZANTIUM) {
-        static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
-        evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
-        if (receipt_root != header.receipts_root) {
-            return ValidationResult::kWrongReceiptsRoot;
-        }
-    }
-
-    Bloom bloom{};  // zero initialization
-    for (const Receipt& receipt : receipts) {
-        join(bloom, receipt.bloom);
-    }
-    if (bloom != header.logs_bloom) {
-        return ValidationResult::kWrongLogsBloom;
-    }
-
-    processor.evm().state().write_to_db(block_num);
-
-    return ValidationResult::kOk;
+    return processor.execute_and_write_block(receipts);
 }
 
 }  // namespace silkworm

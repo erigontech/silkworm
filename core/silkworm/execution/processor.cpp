@@ -21,6 +21,7 @@
 #include <silkworm/chain/dao.hpp>
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/trie/vector_root.hpp>
 
 #include "execution.hpp"
 
@@ -136,7 +137,7 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
     return gas_left;
 }
 
-ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipts) noexcept {
+ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept {
     receipts.clear();
     receipts.reserve(evm_.block().transactions.size());
 
@@ -155,6 +156,38 @@ ValidationResult ExecutionProcessor::execute_block(std::vector<Receipt>& receipt
     }
 
     apply_rewards();
+
+    return ValidationResult::kOk;
+}
+
+ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt>& receipts) noexcept {
+    if (const ValidationResult res{execute_block_no_post_validation(receipts)}; res != ValidationResult::kOk) {
+        return res;
+    }
+
+    const auto& header{evm_.block().header};
+
+    if (cumulative_gas_used() != header.gas_used) {
+        return ValidationResult::kWrongBlockGas;
+    }
+
+    if (evm_.revision() >= EVMC_BYZANTIUM) {
+        static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+        evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
+        if (receipt_root != header.receipts_root) {
+            return ValidationResult::kWrongReceiptsRoot;
+        }
+    }
+
+    Bloom bloom{};  // zero initialization
+    for (const Receipt& receipt : receipts) {
+        join(bloom, receipt.bloom);
+    }
+    if (bloom != header.logs_bloom) {
+        return ValidationResult::kWrongLogsBloom;
+    }
+
+    evm().state().write_to_db(header.number);
 
     return ValidationResult::kOk;
 }

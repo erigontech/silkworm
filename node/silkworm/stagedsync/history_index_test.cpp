@@ -140,12 +140,22 @@ TEST_CASE("Stage History indexs (Account + Storage)") {
     // Bitmaps computation of accounts
     auto bitmap_address_sender{roaring::Roaring64Map::readSafe(byte_ptr_cast(db::from_slice(bitmap_address_sender_bytes).data()), bitmap_address_sender_bytes.size())};
     auto bitmap_address_contract{roaring::Roaring64Map::readSafe(byte_ptr_cast(db::from_slice(bitmap_address_contract_bytes).data()), bitmap_address_contract_bytes.size())};
-   // Checks on account's bitmaps
-   CHECK(bitmap_address_sender.cardinality() == 3);
-   CHECK(bitmap_address_contract.cardinality() == 3);
-   CHECK(bitmap_address_sender.toString() == "{1,2,3}");
-   CHECK(bitmap_address_contract.toString() == "{1,2,3}");
+    // Checks on account's bitmaps
+    CHECK(bitmap_address_sender.cardinality() == 3);
+    CHECK(bitmap_address_contract.cardinality() == 3);
+    CHECK(bitmap_address_sender.toString() == "{1,2,3}");
+    CHECK(bitmap_address_contract.toString() == "{1,2,3}");
+    // The location is the first so it's at 0
+    evmc::bytes32 location{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
+    // Composite: Address + Location
+    Bytes composite(kAddressLength + kHashLength, '\0');
+    std::memcpy(&composite[0], contract_address.bytes, kAddressLength);
+    std::memcpy(&composite[kHashLength], location.bytes, kHashLength);
     // Storage retrieving from Databse
-    // auto bitmap_address_sender_bytes{account_history_table.lower_bound(db::to_slice(sender)).value};
-    // auto bitmap_address_contract_bytes{account_history_table.lower_bound(db::to_slice(contract_address)).value};
+    auto bitmap_storage_contract_bytes{storage_history_table.lower_bound(db::to_slice(composite)).value};
+    // Bitmaps computing for storage
+    auto bitmap_storage_contract{roaring::Roaring64Map::readSafe(byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size())};
+    // Checks on storage's bitmaps
+    CHECK(bitmap_storage_contract.cardinality() == 2);
+    CHECK(bitmap_storage_contract.toString() == "{2,3}");
 }

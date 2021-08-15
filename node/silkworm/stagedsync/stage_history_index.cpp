@@ -64,11 +64,10 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         while (data) {
             std::string composite_key;
             if (storage) {
-                char composite_key_array[kHashLength + kAddressLength];
+                composite_key.resize(kAddressLength + kHashLength);
                 auto data_key_view{db::from_slice(data.key).substr(8)};
-                std::memcpy(&composite_key_array[0], data_key_view.data(), kAddressLength);
-                std::memcpy(&composite_key_array[kAddressLength], data.value.iov_base, kHashLength);
-                composite_key = std::string(composite_key_array);
+                std::memcpy(&composite_key[0], &data_key_view[0], kAddressLength);
+                std::memcpy(&composite_key[kAddressLength], &data_key_view[kAddressLength+db::kIncarnationLength], kHashLength);
             } else {
                 composite_key = std::string(data.value.char_ptr(), kAddressLength);
             }
@@ -98,8 +97,6 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     for (const auto& [key, bm] : bitmaps) {
         Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
         bm.write(byte_ptr_cast(bitmap_bytes.data()));
-        if (storage)
-        std::cout << to_hex(Bytes(byte_ptr_cast(key.c_str()))) << std::endl;
         etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
         collector.collect(entry);
     }

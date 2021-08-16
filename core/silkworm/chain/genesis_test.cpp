@@ -31,7 +31,7 @@ namespace silkworm {
 
 TEST_CASE("genesis config") {
 
-    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
 
@@ -40,7 +40,7 @@ TEST_CASE("genesis config") {
     CHECK(config.has_value());
     CHECK(config.value() == kMainnetConfig);
 
-    genesis_data = read_genesis_data(kGoerliConfig.chain_id);
+    genesis_data = read_genesis_data(static_cast<uint32_t>(kGoerliConfig.chain_id));
     genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
 
@@ -49,7 +49,7 @@ TEST_CASE("genesis config") {
     CHECK(config.has_value());
     CHECK(config.value() == kGoerliConfig);
 
-    genesis_data = read_genesis_data(kRinkebyConfig.chain_id);
+    genesis_data = read_genesis_data(static_cast<uint32_t>(kRinkebyConfig.chain_id));
     genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
 
@@ -58,7 +58,7 @@ TEST_CASE("genesis config") {
     CHECK(config.has_value());
     CHECK(config.value() == kRinkebyConfig);
 
-    genesis_data = read_genesis_data(1'000);
+    genesis_data = read_genesis_data(1'000u);
     genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json.is_discarded());
 
@@ -67,7 +67,7 @@ TEST_CASE("genesis config") {
 TEST_CASE("mainnet_genesis") {
 
     // Parse genesis data
-    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
 

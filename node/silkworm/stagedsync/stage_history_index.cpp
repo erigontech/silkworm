@@ -182,7 +182,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
             // check if unwind can be applied
             if (bm.minimum() <= unwind_to) {
                 // Erase elements that are > unwind_to
-                bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(0, unwind_to - 1, 1));
+                bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(0, unwind_to + 1, 1));
                 Bytes new_bitmap(bm.getSizeInBytes(), '\0');
                 bm.write(byte_ptr_cast(&new_bitmap[0]));
                 // generates new key

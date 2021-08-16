@@ -956,6 +956,67 @@ void do_chainconfig(db::EnvConfig& config) {
               << std::endl;
 }
 
+void do_first_byte_analysis(db::EnvConfig& config) {
+    static std::string fmt_hdr{" %-24s %=50s "};
+
+    auto env{silkworm::db::open_env(config)};
+    auto txn{env.start_read()};
+
+    std::cout << "\n" << (boost::format(fmt_hdr) % "Table name" % "%") << std::endl;
+    std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(50, '-')) << std::endl;
+    std::cout << (boost::format(" %-24s ") % db::table::kCode.name) << std::flush;
+
+    std::unordered_map<uint8_t, size_t> histogram;
+    auto code_cursor{db::open_cursor(txn, db::table::kCode)};
+
+    Progress progress{50};
+    size_t total_entries{txn.get_map_stat(code_cursor.map()).ms_entries};
+    progress.set_task_count(total_entries);
+    size_t batch_size{progress.get_increment_count()};
+
+    code_cursor.to_first();
+    db::for_each(code_cursor, [&histogram, &batch_size, &progress](mdbx::cursor::move_result& entry) {
+        if (entry.value.length() > 0) {
+            uint8_t first_byte{entry.value.at(0)};
+            ++histogram[first_byte];
+        }
+        if (!--batch_size) {
+            progress.set_current(progress.get_current() + progress.get_increment_count());
+            std::cout << progress.print_interval('.') << std::flush;
+            batch_size = progress.get_increment_count();
+        }
+        return true;
+    });
+
+    BlockNum last_block{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};
+    progress.set_current(total_entries);
+    std::cout << progress.print_interval('.') << std::endl;
+
+    std::cout << "\n Last block : " << last_block << "\n Contracts  : " << total_entries << "\n" << std::endl;
+
+    // Sort histogram by usage (from most used to less used)
+    std::vector<std::pair<uint8_t, size_t>> histogram_sorted;
+    std::copy(histogram.begin(), histogram.end(),
+              std::back_inserter<std::vector<std::pair<uint8_t, size_t>>>(histogram_sorted));
+    std::sort(histogram_sorted.begin(), histogram_sorted.end(),
+              [](std::pair<uint8_t, size_t>& a, std::pair<uint8_t, size_t>& b) -> bool {
+                  if (a.second == b.second) {
+                      return a.first < b.first;
+                  }
+                  return a.second > b.second;
+              });
+
+    if (histogram_sorted.size()) {
+        std::cout << (boost::format(" %-4s %8s") % "Byte" % "Count") << "\n"
+                  << (boost::format(" %-4s %8s") % std::string(4, '-') % std::string(8, '-')) << std::endl;
+        for (const auto& [byte_code, usage_count] : histogram_sorted) {
+            std::cout << (boost::format(" 0x%02x %8u") % static_cast<int>(byte_code) % usage_count) << std::endl;
+        }
+    }
+
+    std::cout << "\n" << std::endl;
+}
+
 int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
@@ -1047,6 +1108,10 @@ int main(int argc, char* argv[]) {
     // Read chain config held in db (if any)
     auto cmd_chainconfig = app_main.add_subcommand("chain-config", "Prints chain config held in database");
 
+    // Do first byte analytics on deployed contract codes
+    auto cmd_first_byte_analysis = app_main.add_subcommand(
+        "first-byte-analysis", "Prints an histogram analysis of first byte for deployed contracts");
+
     /*
      * Parse arguments and validate
      */
@@ -1119,6 +1184,8 @@ int main(int argc, char* argv[]) {
             }
         } else if (*cmd_chainconfig) {
             do_chainconfig(src_config);
+        } else if (*cmd_first_byte_analysis) {
+            do_first_byte_analysis(src_config);
         };
 
         return 0;

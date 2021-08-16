@@ -36,7 +36,7 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/state/memory_buffer.hpp>
+#include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/types/block.hpp>
 
@@ -815,7 +815,7 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
 
     // Initialize state_buffer for allocations (if any)
     // and get root_hash
-    MemoryBuffer state_buffer{};
+    InMemoryState state_buffer{};
     evmc::bytes32 state_root_hash{kEmptyRoot};
 
     // Allocate accounts

@@ -24,9 +24,9 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/hash_maps.hpp>
-#include <silkworm/state/buffer.hpp>
 #include <silkworm/state/delta.hpp>
 #include <silkworm/state/object.hpp>
+#include <silkworm/state/state.hpp>
 #include <silkworm/types/log.hpp>
 
 namespace silkworm {
@@ -51,9 +51,9 @@ class IntraBlockState {
     IntraBlockState(const IntraBlockState&) = delete;
     IntraBlockState& operator=(const IntraBlockState&) = delete;
 
-    explicit IntraBlockState(StateBuffer& db) noexcept : db_{db} {}
+    explicit IntraBlockState(State& db) noexcept : db_{db} {}
 
-    StateBuffer& db() { return db_; }
+    State& db() { return db_; }
 
     bool exists(const evmc::address& address) const noexcept;
 
@@ -132,7 +132,7 @@ class IntraBlockState {
 
     state::Object& get_or_create_object(const evmc::address& address) noexcept;
 
-    StateBuffer& db_;
+    State& db_;
 
     mutable FlatHashMap<evmc::address, state::Object> objects_;
     mutable FlatHashMap<evmc::address, state::Storage> storage_;

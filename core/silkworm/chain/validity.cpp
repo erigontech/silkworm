@@ -73,7 +73,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     return ValidationResult::kOk;
 }
 
-static std::optional<BlockHeader> get_parent(const StateBuffer& state, const BlockHeader& header) {
+static std::optional<BlockHeader> get_parent(const State& state, const BlockHeader& header) {
     return state.read_header(header.number - 1, header.parent_hash);
 }
 
@@ -117,7 +117,7 @@ static std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader&
     }
 }
 
-ValidationResult validate_block_header(const BlockHeader& header, const StateBuffer& state, const ChainConfig& config) {
+ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) {
     if (header.gas_used > header.gas_limit) {
         return ValidationResult::kGasAboveLimit;
     }
@@ -177,7 +177,6 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
 
     // Ethash PoW verification
     if (config.seal_engine == SealEngineType::kEthash) {
-
         auto epoch_number{header.number / ethash::epoch_length};
         auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_number))};
 
@@ -197,7 +196,7 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
 
 // See [YP] Section 11.1 "Ommer Validation"
 static bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                   const evmc::bytes32& mainline_hash, unsigned n, const StateBuffer& state,
+                   const evmc::bytes32& mainline_hash, unsigned n, const State& state,
                    std::vector<BlockHeader>& old_ommers) {
     if (n == 0 || branch_header == mainline_header) {
         return false;
@@ -224,7 +223,7 @@ static bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline
     return is_kin(branch_header, *mainline_parent, mainline_header.parent_hash, n - 1, state, old_ommers);
 }
 
-ValidationResult pre_validate_block(const Block& block, const StateBuffer& state, const ChainConfig& config) {
+ValidationResult pre_validate_block(const Block& block, const State& state, const ChainConfig& config) {
     const BlockHeader& header{block.header};
 
     if (ValidationResult err{validate_block_header(header, state, config)}; err != ValidationResult::kOk) {

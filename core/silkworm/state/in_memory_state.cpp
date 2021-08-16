@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "memory_buffer.hpp"
+#include "in_memory_state.hpp"
 
 #include <map>
 
@@ -26,7 +26,7 @@
 
 namespace silkworm {
 
-std::optional<Account> MemoryBuffer::read_account(const evmc::address& address) const noexcept {
+std::optional<Account> InMemoryState::read_account(const evmc::address& address) const noexcept {
     auto it{accounts_.find(address)};
     if (it == accounts_.end()) {
         return std::nullopt;
@@ -34,7 +34,7 @@ std::optional<Account> MemoryBuffer::read_account(const evmc::address& address) 
     return it->second;
 }
 
-ByteView MemoryBuffer::read_code(const evmc::bytes32& code_hash) const noexcept {
+ByteView InMemoryState::read_code(const evmc::bytes32& code_hash) const noexcept {
     auto it{code_.find(code_hash)};
     if (it == code_.end()) {
         return {};
@@ -42,8 +42,8 @@ ByteView MemoryBuffer::read_code(const evmc::bytes32& code_hash) const noexcept 
     return it->second;
 }
 
-evmc::bytes32 MemoryBuffer::read_storage(const evmc::address& address, uint64_t incarnation,
-                                         const evmc::bytes32& location) const noexcept {
+evmc::bytes32 InMemoryState::read_storage(const evmc::address& address, uint64_t incarnation,
+                                          const evmc::bytes32& location) const noexcept {
     auto it1{storage_.find(address)};
     if (it1 == storage_.end()) {
         return {};
@@ -59,7 +59,7 @@ evmc::bytes32 MemoryBuffer::read_storage(const evmc::address& address, uint64_t 
     return it3->second;
 }
 
-uint64_t MemoryBuffer::previous_incarnation(const evmc::address& address) const noexcept {
+uint64_t InMemoryState::previous_incarnation(const evmc::address& address) const noexcept {
     auto it{prev_incarnations_.find(address)};
     if (it == prev_incarnations_.end()) {
         return 0;
@@ -67,8 +67,8 @@ uint64_t MemoryBuffer::previous_incarnation(const evmc::address& address) const 
     return it->second;
 }
 
-std::optional<BlockHeader> MemoryBuffer::read_header(uint64_t block_number,
-                                                     const evmc::bytes32& block_hash) const noexcept {
+std::optional<BlockHeader> InMemoryState::read_header(uint64_t block_number,
+                                                      const evmc::bytes32& block_hash) const noexcept {
     if (block_number >= headers_.size()) {
         return std::nullopt;
     }
@@ -80,8 +80,8 @@ std::optional<BlockHeader> MemoryBuffer::read_header(uint64_t block_number,
     return it->second;
 }
 
-std::optional<BlockBody> MemoryBuffer::read_body(uint64_t block_number,
-                                                 const evmc::bytes32& block_hash) const noexcept {
+std::optional<BlockBody> InMemoryState::read_body(uint64_t block_number,
+                                                  const evmc::bytes32& block_hash) const noexcept {
     if (block_number >= bodies_.size()) {
         return std::nullopt;
     }
@@ -93,8 +93,8 @@ std::optional<BlockBody> MemoryBuffer::read_body(uint64_t block_number,
     return it->second;
 }
 
-std::optional<intx::uint256> MemoryBuffer::total_difficulty(uint64_t block_number,
-                                                            const evmc::bytes32& block_hash) const noexcept {
+std::optional<intx::uint256> InMemoryState::total_difficulty(uint64_t block_number,
+                                                             const evmc::bytes32& block_hash) const noexcept {
     if (block_number >= difficulty_.size()) {
         return std::nullopt;
     }
@@ -106,9 +106,9 @@ std::optional<intx::uint256> MemoryBuffer::total_difficulty(uint64_t block_numbe
     return it->second;
 }
 
-uint64_t MemoryBuffer::current_canonical_block() const { return canonical_hashes_.size() - 1; }
+uint64_t InMemoryState::current_canonical_block() const { return canonical_hashes_.size() - 1; }
 
-std::optional<evmc::bytes32> MemoryBuffer::canonical_hash(uint64_t block_number) const {
+std::optional<evmc::bytes32> InMemoryState::canonical_hash(uint64_t block_number) const {
     if (block_number >= canonical_hashes_.size()) {
         return std::nullopt;
     }
@@ -116,7 +116,7 @@ std::optional<evmc::bytes32> MemoryBuffer::canonical_hash(uint64_t block_number)
     return canonical_hashes_[block_number];
 }
 
-void MemoryBuffer::insert_block(const Block& block, const evmc::bytes32& hash) {
+void InMemoryState::insert_block(const Block& block, const evmc::bytes32& hash) {
     uint64_t block_number{block.header.number};
 
     if (headers_.size() <= block_number) {
@@ -140,25 +140,25 @@ void MemoryBuffer::insert_block(const Block& block, const evmc::bytes32& hash) {
     difficulty_[block_number][hash] += block.header.difficulty;
 }
 
-void MemoryBuffer::canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) {
+void InMemoryState::canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) {
     if (canonical_hashes_.size() <= block_number) {
         canonical_hashes_.resize(block_number + 1);
     }
     canonical_hashes_[block_number] = block_hash;
 }
 
-void MemoryBuffer::decanonize_block(uint64_t block_number) { canonical_hashes_.resize(block_number); }
+void InMemoryState::decanonize_block(uint64_t block_number) { canonical_hashes_.resize(block_number); }
 
-void MemoryBuffer::insert_receipts(uint64_t, const std::vector<Receipt>&) {}
+void InMemoryState::insert_receipts(uint64_t, const std::vector<Receipt>&) {}
 
-void MemoryBuffer::begin_block(uint64_t block_number) {
+void InMemoryState::begin_block(uint64_t block_number) {
     block_number_ = block_number;
     account_changes_.erase(block_number);
     storage_changes_.erase(block_number);
 }
 
-void MemoryBuffer::update_account(const evmc::address& address, std::optional<Account> initial,
-                                  std::optional<Account> current) {
+void InMemoryState::update_account(const evmc::address& address, std::optional<Account> initial,
+                                   std::optional<Account> current) {
     account_changes_[block_number_][address] = initial;
 
     if (current.has_value()) {
@@ -171,14 +171,14 @@ void MemoryBuffer::update_account(const evmc::address& address, std::optional<Ac
     }
 }
 
-void MemoryBuffer::update_account_code(const evmc::address&, uint64_t, const evmc::bytes32& code_hash, ByteView code) {
+void InMemoryState::update_account_code(const evmc::address&, uint64_t, const evmc::bytes32& code_hash, ByteView code) {
     // Don't overwrite already existing code so that views of it
     // that were previously returned by read_code() are still valid.
     code_.try_emplace(code_hash, code);
 }
 
-void MemoryBuffer::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
-                                  const evmc::bytes32& initial, const evmc::bytes32& current) {
+void InMemoryState::update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
+                                   const evmc::bytes32& initial, const evmc::bytes32& current) {
     storage_changes_[block_number_][address][incarnation][location] = initial;
 
     if (is_zero(current)) {
@@ -188,7 +188,7 @@ void MemoryBuffer::update_storage(const evmc::address& address, uint64_t incarna
     }
 }
 
-void MemoryBuffer::unwind_state_changes(uint64_t block_number) {
+void InMemoryState::unwind_state_changes(uint64_t block_number) {
     for (const auto& [address, account] : account_changes_[block_number]) {
         if (account) {
             accounts_[address] = *account;
@@ -210,9 +210,9 @@ void MemoryBuffer::unwind_state_changes(uint64_t block_number) {
     }
 }
 
-size_t MemoryBuffer::number_of_accounts() const { return accounts_.size(); }
+size_t InMemoryState::number_of_accounts() const { return accounts_.size(); }
 
-size_t MemoryBuffer::storage_size(const evmc::address& address, uint64_t incarnation) const {
+size_t InMemoryState::storage_size(const evmc::address& address, uint64_t incarnation) const {
     auto it1{storage_.find(address)};
     if (it1 == storage_.end()) {
         return 0;
@@ -226,7 +226,7 @@ size_t MemoryBuffer::storage_size(const evmc::address& address, uint64_t incarna
 }
 
 // https://eth.wiki/fundamentals/patricia-tree#storage-trie
-evmc::bytes32 MemoryBuffer::account_storage_root(const evmc::address& address, uint64_t incarnation) const {
+evmc::bytes32 InMemoryState::account_storage_root(const evmc::address& address, uint64_t incarnation) const {
     auto it1{storage_.find(address)};
     if (it1 == storage_.end()) {
         return kEmptyRoot;
@@ -259,7 +259,7 @@ evmc::bytes32 MemoryBuffer::account_storage_root(const evmc::address& address, u
     return hb.root_hash();
 }
 
-evmc::bytes32 MemoryBuffer::state_root_hash() const {
+evmc::bytes32 InMemoryState::state_root_hash() const {
     if (accounts_.empty()) {
         return kEmptyRoot;
     }

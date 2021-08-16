@@ -173,7 +173,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 10 * kMebi); // We do not unwind by many blocks usually
 
     auto index_table{db::open_cursor(*txn, index_config)};
     // Extract

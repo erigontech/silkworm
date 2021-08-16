@@ -18,7 +18,7 @@
 
 #include <cassert>
 
-#include <silkworm/execution/execution.hpp>
+#include <silkworm/execution/processor.hpp>
 
 namespace silkworm {
 
@@ -89,11 +89,12 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
 }
 
 ValidationResult Blockchain::execute_block(const Block& block, bool check_state_root) {
-    std::vector<Receipt> receipts;
+    IntraBlockState ibs{state_};
+    ExecutionProcessor processor{block, ibs, config_};
+    processor.evm().state_pool = state_pool;
+    processor.evm().exo_evm = exo_evm;
 
-    const ValidationResult res{
-        silkworm::execute_block(block, state_, config_, receipts, /*analysis_cache=*/nullptr, state_pool, exo_evm)};
-    if (res != ValidationResult::kOk) {
+    if (const auto res{processor.execute_and_write_block(receipts_)}; res != ValidationResult::kOk) {
         return res;
     }
 

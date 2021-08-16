@@ -25,7 +25,7 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/execution/execution.hpp>
+#include <silkworm/execution/processor.hpp>
 
 #include "stagedsync.hpp"
 
@@ -47,9 +47,13 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
                 return StageResult::kBadChainSequence;
             }
 
-            auto err{execute_block(bh->block, buffer, config, receipts, &analysis_cache, &state_pool)};
-            if (err != ValidationResult::kOk) {
-                SILKWORM_LOG(LogLevel::Error) << "Validation error " << magic_enum::enum_name<ValidationResult>(err)
+            IntraBlockState ibs{buffer};
+            ExecutionProcessor processor{bh->block, ibs, config};
+            processor.evm().advanced_analysis_cache = &analysis_cache;
+            processor.evm().state_pool = &state_pool;
+
+            if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
+                SILKWORM_LOG(LogLevel::Error) << "Validation error " << magic_enum::enum_name<ValidationResult>(res)
                                               << " at block " << block_num << std::endl;
                 return StageResult::kInvalidBlock;
             }

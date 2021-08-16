@@ -31,7 +31,6 @@
 #include <silkworm/chain/protocol_param.hpp>
 
 #include "address.hpp"
-#include "execution.hpp"
 #include "precompiled.hpp"
 #include "state_pool.hpp"
 

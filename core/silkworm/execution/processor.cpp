@@ -23,8 +23,6 @@
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/trie/vector_root.hpp>
 
-#include "execution.hpp"
-
 namespace silkworm {
 
 ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config)

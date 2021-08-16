@@ -384,7 +384,6 @@ namespace db {
         table::create_all(txn);
 
         Buffer buffer{txn};
-        std::vector<Receipt> receipts;
 
         const auto miner_a{0x00000000000000000000000000000000000000aa_address};
         const auto miner_b{0x00000000000000000000000000000000000000bb_address};
@@ -393,19 +392,19 @@ namespace db {
         block1.header.number = 1;
         block1.header.beneficiary = miner_a;
         // miner_a gets one block reward
-        REQUIRE(execute_block(block1, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+        REQUIRE(execute_block(block1, buffer, kMainnetConfig) == ValidationResult::kOk);
 
         Block block2;
         block2.header.number = 2;
         block2.header.beneficiary = miner_b;
         // miner_a gets nothing
-        REQUIRE(execute_block(block2, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+        REQUIRE(execute_block(block2, buffer, kMainnetConfig) == ValidationResult::kOk);
 
         Block block3;
         block3.header.number = 3;
         block3.header.beneficiary = miner_a;
         // miner_a gets another block reward
-        REQUIRE(execute_block(block3, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+        REQUIRE(execute_block(block3, buffer, kMainnetConfig) == ValidationResult::kOk);
 
         buffer.write_to_db();
 

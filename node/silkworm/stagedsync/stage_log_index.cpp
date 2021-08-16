@@ -177,7 +177,7 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
             // adjust bitmaps
             if (bm.minimum() <= unwind_to) {
                 // Erase elements that are > unwind_to
-                bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(0, unwind_to - 1, 1));
+                bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(0, unwind_to + 1, 1));
                 auto new_bitmap{Bytes(bm.getSizeInBytes(), '\0')};
                 bm.write(byte_ptr_cast(&new_bitmap[0]));
                 // make new key

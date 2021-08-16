@@ -22,7 +22,7 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/state/memory_buffer.hpp>
+#include <silkworm/state/in_memory_state.hpp>
 
 #include "config.hpp"
 #include "identity.hpp"
@@ -72,7 +72,7 @@ TEST_CASE("mainnet_genesis") {
     CHECK(genesis_json.contains("extraData"));
     CHECK((genesis_json.contains("alloc") && genesis_json["alloc"].is_object() && genesis_json["alloc"].size()));
 
-    MemoryBuffer state_buffer;
+    InMemoryState state;
 
     for (auto& item : genesis_json["alloc"].items()) {
         REQUIRE((item.value().is_object() && item.value().contains("balance") && item.value()["balance"].is_string()));
@@ -83,12 +83,12 @@ TEST_CASE("mainnet_genesis") {
         evmc::address account_address = silkworm::to_address(*address_bytes);
         auto balance_str{item.value()["balance"].get<std::string>()};
         Account account{0, intx::from_string<intx::uint256>(balance_str)};
-        state_buffer.update_account(account_address, std::nullopt, account);
+        state.update_account(account_address, std::nullopt, account);
     }
 
     SECTION("state_root") {
         auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
-        auto actual_state_root{state_buffer.state_root_hash()};
+        auto actual_state_root{state.state_root_hash()};
         auto a = full_view(expected_state_root);
         auto b = full_view(actual_state_root);
         CHECK(to_hex(a) == to_hex(b));
@@ -102,7 +102,7 @@ TEST_CASE("mainnet_genesis") {
     }
     header.ommers_hash = kEmptyListHash;
     header.beneficiary = 0x0000000000000000000000000000000000000000_address;
-    header.state_root = state_buffer.state_root_hash();
+    header.state_root = state.state_root_hash();
     header.transactions_root = kEmptyRoot;
     header.receipts_root = kEmptyRoot;
     auto difficulty_str{genesis_json["difficulty"].get<std::string>()};

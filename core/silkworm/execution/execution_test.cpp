@@ -25,7 +25,7 @@
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/execution/address.hpp>
 #include <silkworm/rlp/encode.hpp>
-#include <silkworm/state/memory_buffer.hpp>
+#include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
@@ -60,10 +60,10 @@ TEST_CASE("Execute two blocks") {
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     block.transactions[0].from = sender;
 
-    MemoryBuffer buffer;
+    InMemoryState state;
     Account sender_account{};
     sender_account.balance = kEther;
-    buffer.update_account(sender, std::nullopt, sender_account);
+    state.update_account(sender, std::nullopt, sender_account);
 
     std::vector<Receipt> receipts;
 
@@ -71,24 +71,24 @@ TEST_CASE("Execute two blocks") {
     // Execute first block
     // ---------------------------------------
 
-    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+    CHECK(execute_block(block, state, kMainnetConfig, receipts) == ValidationResult::kOk);
 
     auto contract_address{create_address(sender, /*nonce=*/0)};
-    std::optional<Account> contract_account{buffer.read_account(contract_address)};
+    std::optional<Account> contract_account{state.read_account(contract_address)};
     REQUIRE(contract_account);
 
     ethash::hash256 code_hash{keccak256(contract_code)};
     CHECK(to_hex(contract_account->code_hash) == to_hex(full_view(code_hash.bytes)));
 
     evmc::bytes32 storage_key0{};
-    evmc::bytes32 storage0{buffer.read_storage(contract_address, kDefaultIncarnation, storage_key0)};
+    evmc::bytes32 storage0{state.read_storage(contract_address, kDefaultIncarnation, storage_key0)};
     CHECK(to_hex(storage0) == "000000000000000000000000000000000000000000000000000000000000002a");
 
     evmc::bytes32 storage_key1{to_bytes32(*from_hex("01"))};
-    evmc::bytes32 storage1{buffer.read_storage(contract_address, kDefaultIncarnation, storage_key1)};
+    evmc::bytes32 storage1{state.read_storage(contract_address, kDefaultIncarnation, storage_key1)};
     CHECK(to_hex(storage1) == "00000000000000000000000000000000000000000000000000000000000001c9");
 
-    std::optional<Account> miner_account{buffer.read_account(miner)};
+    std::optional<Account> miner_account{state.read_account(miner)};
     REQUIRE(miner_account);
     CHECK(miner_account->balance == param::kBlockRewardFrontier);
 
@@ -107,12 +107,12 @@ TEST_CASE("Execute two blocks") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+    CHECK(execute_block(block, state, kMainnetConfig, receipts) == ValidationResult::kOk);
 
-    storage0 = buffer.read_storage(contract_address, kDefaultIncarnation, storage_key0);
+    storage0 = state.read_storage(contract_address, kDefaultIncarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);
 
-    miner_account = buffer.read_account(miner);
+    miner_account = state.read_account(miner);
     REQUIRE(miner_account);
     CHECK(miner_account->balance > 2 * param::kBlockRewardFrontier);
     CHECK(miner_account->balance < 3 * param::kBlockRewardFrontier);

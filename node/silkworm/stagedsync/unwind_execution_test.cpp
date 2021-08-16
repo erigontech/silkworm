@@ -41,8 +41,8 @@ TEST_CASE("Unwind Execution") {
     db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
+    stagedsync::TransactionManager txn{env};
+    db::table::create_all(*txn);
 
     // ---------------------------------------
     // Prepare
@@ -72,7 +72,7 @@ TEST_CASE("Unwind Execution") {
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{txn};
+    db::Buffer buffer{*txn};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -123,16 +123,15 @@ TEST_CASE("Unwind Execution") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
 
-    db::stages::set_stage_progress(txn, db::stages::kExecutionKey, 3);
+    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
     buffer.write_to_db();
 
     // ---------------------------------------
     // Unwind second block and checks if state is first block
     // ---------------------------------------
-    stagedsync::TransactionManager tm{txn};
-    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_execution(tm, data_dir.get_etl_path(), 1)));
+    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_execution(txn, data_dir.get_etl_path(), 1)));
 
-    db::Buffer buffer2{txn};
+    db::Buffer buffer2{*txn};
 
     std::optional<Account> contract_account{buffer2.read_account(contract_address)};
     REQUIRE(contract_account);

@@ -108,7 +108,6 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     }
     // Wipe out useless memory
     bitmaps.clear();
-    bitmaps.shrink_to_fit();
 
     SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
 

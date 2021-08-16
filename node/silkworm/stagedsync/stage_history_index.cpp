@@ -178,7 +178,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     auto index_table{db::open_cursor(*txn, index_config)};
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Unwind" << std::endl;
-
+    std::vector<mdbx::slice> keys_to_be_deleted;
     if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
         while (data) {
@@ -205,12 +205,17 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
                 etl::Entry entry{new_key, new_bitmap};
                 collector.collect(entry);
             }
-            index_table.erase(/* whole_multivalue = */ true);
+            keys_to_be_deleted.push_back(data.key);
             data = index_table.to_next(/*throw_notfound*/ false);
         }
     }
 
     db::stages::set_stage_progress(*txn, stage_key, unwind_to);
+    for (auto slice: keys_to_be_deleted) {
+        if (index_table.seek(slice)) {
+            index_table.erase(true);
+        }
+    }
     collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
     txn.commit();
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;

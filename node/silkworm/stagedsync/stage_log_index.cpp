@@ -79,7 +79,6 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
     etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
 
-    // We take data from header table and transform it and put it in blockhashes table
     auto log_table{db::open_cursor(*txn, db::table::kLogs)};
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)};
 
@@ -91,19 +90,23 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     uint64_t block_number{0};
     uint64_t topics_allocated_space{0};
     uint64_t addrs_allocated_space{0};
+    // Two bitmaps to fill: topics and addresses
     std::unordered_map<std::string, roaring::Roaring> topic_bitmaps;
     std::unordered_map<std::string, roaring::Roaring> addresses_bitmaps;
+    // CBOR decoder
     listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps, &topics_allocated_space,
                                         &addrs_allocated_space);
 
     if (log_table.lower_bound(db::to_slice(start))) {
         auto log_data{log_table.current()};
         while (log_data) {
+            // Decode CBOR and distribute it to the 2 bitmaps
             block_number = endian::load_big_u64(static_cast<uint8_t*>(log_data.key.iov_base));
             current_listener.set_block_number(block_number);
             cbor::input input(log_data.value.iov_base, log_data.value.iov_len);
             cbor::decoder decoder(input, current_listener);
             decoder.run();
+            // Flushes
             if (topics_allocated_space > kBitmapBufferSizeLimit) {
                 flush_bitmaps(topic_collector, topic_bitmaps);
                 SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
@@ -121,7 +124,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     }
 
     log_table.close();
-
+    // Flush once it is done
     flush_bitmaps(topic_collector, topic_bitmaps);
     flush_bitmaps(addresses_collector, addresses_bitmaps);
 

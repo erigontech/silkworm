@@ -35,7 +35,7 @@
 
 using namespace evmc::literals;
 
-TEST_CASE("Stage History indexs (Account + Storage)") {
+TEST_CASE("Stage History indexes") {
     using namespace silkworm;
 
     TemporaryDirectory tmp_dir;
@@ -160,7 +160,7 @@ TEST_CASE("Stage History indexs (Account + Storage)") {
     CHECK(bitmap_storage_contract.toString() == "{2,3}");
 }
 
-TEST_CASE("Unwind History indexs (Account + Storage)") {
+TEST_CASE("Unwind History indexes") {
     using namespace silkworm;
 
     TemporaryDirectory tmp_dir;

@@ -216,10 +216,10 @@ TEST_CASE("Account and storage trie") {
         const Account a4b{0, 5 * kEther};
         hashed_accounts.upsert(db::to_slice(key4b), db::to_slice(a4b.encode_for_storage()));
 
-        // TODO: hashed change set
-        // TODO: call increment_intermediate_hashes
-        // TODO: CHECK(0b1101 == node1.hash_mask());
-        // TODO: check the new hash
+        // TODO[Issue 179] add to change set
+        // TODO[Issue 179] call increment_intermediate_hashes
+        // TODO[Issue 179] CHECK(0b1101 == node1.hash_mask());
+        // TODO[Issue 179] check the new hash
     }
 }
 

@@ -107,6 +107,9 @@ DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, et
 //    use_account_trie:
 //      use(AccTrie)
 //  }
+//
+// See also
+// https://github.com/ledgerwatch/erigon/blob/devel/docs/programmers_guide/guide.md#merkle-trie-root-calculation
 evmc::bytes32 DbTrieLoader::calculate_root() {
     auto acc_state{db::open_cursor(txn_, db::table::kHashedAccounts)};
     auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};

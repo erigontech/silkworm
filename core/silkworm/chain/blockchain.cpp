@@ -89,8 +89,7 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
 }
 
 ValidationResult Blockchain::execute_block(const Block& block, bool check_state_root) {
-    IntraBlockState ibs{state_};
-    ExecutionProcessor processor{block, ibs, config_};
+    ExecutionProcessor processor{block, state_, config_};
     processor.evm().state_pool = state_pool;
     processor.evm().exo_evm = exo_evm;
 

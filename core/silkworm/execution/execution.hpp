@@ -43,8 +43,7 @@ namespace silkworm {
  */
 [[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& config) noexcept {
-    IntraBlockState ibs{state};
-    ExecutionProcessor processor{block, ibs, config};
+    ExecutionProcessor processor{block, state, config};
     std::vector<Receipt> receipts;
     return processor.execute_and_write_block(receipts);
 }

@@ -94,8 +94,7 @@ int main(int argc, char* argv[]) {
 
             db::Buffer buffer{txn, block_num};
 
-            IntraBlockState ibs{buffer};
-            ExecutionProcessor processor{bh->block, ibs, *chain_config};
+            ExecutionProcessor processor{bh->block, buffer, *chain_config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 

@@ -102,8 +102,7 @@ TEST_CASE("Zero gas price") {
                   "815060009055506001016108fd565b5090565b50505b505056"),
     };
 
-    InMemoryState db;
-    IntraBlockState state{db};
+    InMemoryState state;
     ExecutionProcessor processor{block, state, kMainnetConfig};
 
     CHECK(processor.validate_transaction(txn) == ValidationResult::kMissingSender);
@@ -144,8 +143,7 @@ TEST_CASE("No refund on error") {
     23     BALANCE
     */
 
-    InMemoryState db;
-    IntraBlockState state{db};
+    InMemoryState state;
     ExecutionProcessor processor{block, state, kMainnetConfig};
 
     Transaction txn{
@@ -159,8 +157,8 @@ TEST_CASE("No refund on error") {
         code,                        // data
     };
 
-    state.add_to_balance(caller, kEther);
-    state.set_nonce(caller, nonce);
+    processor.evm().state().add_to_balance(caller, kEther);
+    processor.evm().state().set_nonce(caller, nonce);
     txn.from = caller;
 
     Receipt receipt1{processor.execute_transaction(txn)};
@@ -235,13 +233,12 @@ TEST_CASE("Self-destruct") {
     38     CALL
     */
 
-    InMemoryState db;
-    IntraBlockState state{db};
+    InMemoryState state;
     ExecutionProcessor processor{block, state, kMainnetConfig};
 
-    state.add_to_balance(caller_address, kEther);
-    state.set_code(caller_address, caller_code);
-    state.set_code(suicidal_address, suicidal_code);
+    processor.evm().state().add_to_balance(caller_address, kEther);
+    processor.evm().state().set_code(caller_address, caller_code);
+    processor.evm().state().set_code(suicidal_address, suicidal_code);
 
     Transaction txn{
         Transaction::Type::kLegacy,  // type
@@ -260,7 +257,7 @@ TEST_CASE("Self-destruct") {
     Receipt receipt1{processor.execute_transaction(txn)};
     CHECK(receipt1.success);
 
-    CHECK(!state.exists(suicidal_address));
+    CHECK(!processor.evm().state().exists(suicidal_address));
 
     // Now the contract is self-destructed, this is a simple value transfer
     txn.nonce = 1;
@@ -270,8 +267,8 @@ TEST_CASE("Self-destruct") {
     Receipt receipt2{processor.execute_transaction(txn)};
     CHECK(receipt2.success);
 
-    CHECK(state.exists(suicidal_address));
-    CHECK(state.get_balance(suicidal_address) == 0);
+    CHECK(processor.evm().state().exists(suicidal_address));
+    CHECK(processor.evm().state().get_balance(suicidal_address) == 0);
 
     CHECK(receipt2.cumulative_gas_used == receipt1.cumulative_gas_used + fee::kGTransaction);
 }
@@ -287,13 +284,13 @@ TEST_CASE("Out of Gas during account re-creation") {
     uint64_t nonce{0};
     evmc::address address{create_address(caller, nonce)};
 
-    InMemoryState buffer;
+    InMemoryState state;
 
     // Some funds were previously transferred to the address:
     // https://etherscan.io/address/0x78c65b078353a8c4ce58fb4b5acaac6042d591d5
     Account account{};
     account.balance = 66'252'368 * kGiga;
-    buffer.update_account(address, std::nullopt, account);
+    state.update_account(address, /*initial=*/std::nullopt, account);
 
     Transaction txn{
         Transaction::Type::kLegacy,  // type
@@ -383,19 +380,17 @@ TEST_CASE("Out of Gas during account re-creation") {
     };
     txn.from = caller;
 
-    IntraBlockState state{buffer};
-    state.add_to_balance(caller, kEther);
-
     ExecutionProcessor processor{block, state, kMainnetConfig};
+    processor.evm().state().add_to_balance(caller, kEther);
 
     Receipt receipt{processor.execute_transaction(txn)};
     // out of gas
     CHECK(!receipt.success);
 
-    state.write_to_db(block_number);
+    processor.evm().state().write_to_db(block_number);
 
     // only the caller and the miner should change
-    CHECK(buffer.read_account(address) == account);
+    CHECK(state.read_account(address) == account);
 }
 
 TEST_CASE("Empty suicide beneficiary") {
@@ -425,19 +420,18 @@ TEST_CASE("Empty suicide beneficiary") {
     };
     txn.from = caller;
 
-    InMemoryState db;
-    IntraBlockState state{db};
-    state.add_to_balance(caller, kEther);
+    InMemoryState state;
 
     ExecutionProcessor processor{block, state, kMainnetConfig};
+    processor.evm().state().add_to_balance(caller, kEther);
 
     Receipt receipt{processor.execute_transaction(txn)};
     CHECK(receipt.success);
 
-    state.write_to_db(block_number);
+    processor.evm().state().write_to_db(block_number);
 
     // suicide_beneficiary should've been touched and deleted
-    CHECK(!db.read_account(suicide_beneficiary).has_value());
+    CHECK(!state.read_account(suicide_beneficiary).has_value());
 }
 
 }  // namespace silkworm

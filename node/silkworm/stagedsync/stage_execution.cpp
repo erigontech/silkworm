@@ -47,8 +47,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
                 return StageResult::kBadChainSequence;
             }
 
-            IntraBlockState ibs{buffer};
-            ExecutionProcessor processor{bh->block, ibs, config};
+            ExecutionProcessor processor{bh->block, buffer, config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 

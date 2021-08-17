@@ -85,8 +85,7 @@ int main(int argc, char* argv[]) {
 
             db::Buffer buffer{txn, block_num};
 
-            IntraBlockState ibs{buffer};
-            ExecutionProcessor processor{bh->block, ibs, *chain_config};
+            ExecutionProcessor processor{bh->block, buffer, *chain_config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
@@ -105,11 +104,11 @@ int main(int argc, char* argv[]) {
             }
 
             // Report and reset counters
-            if (!(block_num % 50000)) {
+            if ((block_num % 50000) == 0) {
                 std::cout << block_num << "," << nTxs << "," << nErrors << std::endl;
                 nTxs = nErrors = 0;
 
-            } else if (!(block_num % 100)) {
+            } else if ((block_num % 100) == 0) {
                 // report progress
                 std::cerr << block_num << "\r";
                 std::cerr.flush();

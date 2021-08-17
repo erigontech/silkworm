@@ -36,7 +36,7 @@
 using namespace evmc::literals;
 using namespace silkworm;
 
-TEST_CASE("Stage Histories") {
+TEST_CASE("Stage History") {
 
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};

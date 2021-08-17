@@ -150,7 +150,7 @@ TEST_CASE("Stage History") {
     // Composite: Address + Location
     Bytes composite(kAddressLength + kHashLength, '\0');
     std::memcpy(&composite[0], contract_address.bytes, kAddressLength);
-    std::memcpy(&composite[kHashLength], location.bytes, kHashLength);
+    std::memcpy(&composite[kAddressLength], location.bytes, kHashLength);
     // Storage retrieving from Databse
     auto bitmap_storage_contract_bytes{storage_history_table.lower_bound(db::to_slice(composite)).value};
     // Bitmaps computing for storage

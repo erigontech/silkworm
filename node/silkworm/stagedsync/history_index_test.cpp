@@ -1,5 +1,5 @@
 /*
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
-#include <iostream>
-#include <silkworm/common/cast.hpp>
-#include <silkworm/db/bitmap.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/temp_dir.hpp>
+#include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/execution/address.hpp>
@@ -37,7 +36,6 @@ using namespace evmc::literals;
 using namespace silkworm;
 
 TEST_CASE("Stage History") {
-
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
 
@@ -81,12 +79,10 @@ TEST_CASE("Stage History") {
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
 
-    std::vector<Receipt> receipts;
-
     // ---------------------------------------
     // Execute first block
     // ---------------------------------------
-    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     auto contract_address{create_address(sender, /*nonce=*/0)};
 
     // ---------------------------------------
@@ -106,7 +102,7 @@ TEST_CASE("Stage History") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
 
     // ---------------------------------------
     // Execute third block
@@ -125,7 +121,7 @@ TEST_CASE("Stage History") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
     db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
 
@@ -138,8 +134,10 @@ TEST_CASE("Stage History") {
     auto bitmap_address_sender_bytes{account_history_table.lower_bound(db::to_slice(sender)).value};
     auto bitmap_address_contract_bytes{account_history_table.lower_bound(db::to_slice(contract_address)).value};
     // Bitmaps computation of accounts
-    auto bitmap_address_sender{roaring::Roaring64Map::readSafe(byte_ptr_cast(db::from_slice(bitmap_address_sender_bytes).data()), bitmap_address_sender_bytes.size())};
-    auto bitmap_address_contract{roaring::Roaring64Map::readSafe(byte_ptr_cast(db::from_slice(bitmap_address_contract_bytes).data()), bitmap_address_contract_bytes.size())};
+    auto bitmap_address_sender{roaring::Roaring64Map::readSafe(
+        byte_ptr_cast(db::from_slice(bitmap_address_sender_bytes).data()), bitmap_address_sender_bytes.size())};
+    auto bitmap_address_contract{roaring::Roaring64Map::readSafe(
+        byte_ptr_cast(db::from_slice(bitmap_address_contract_bytes).data()), bitmap_address_contract_bytes.size())};
     // Checks on account's bitmaps
     CHECK(bitmap_address_sender.cardinality() == 3);
     CHECK(bitmap_address_contract.cardinality() == 3);
@@ -154,7 +152,8 @@ TEST_CASE("Stage History") {
     // Storage retrieving from Databse
     auto bitmap_storage_contract_bytes{storage_history_table.lower_bound(db::to_slice(composite)).value};
     // Bitmaps computing for storage
-    auto bitmap_storage_contract{roaring::Roaring64Map::readSafe(byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size())};
+    auto bitmap_storage_contract{roaring::Roaring64Map::readSafe(
+        byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size())};
     // Checks on storage's bitmaps
     CHECK(bitmap_storage_contract.cardinality() == 2);
     CHECK(bitmap_storage_contract.toString() == "{2,3}");
@@ -168,8 +167,10 @@ TEST_CASE("Stage History") {
     bitmap_address_sender_bytes = account_history_table.lower_bound(db::to_slice(sender)).value;
     bitmap_address_contract_bytes = account_history_table.lower_bound(db::to_slice(contract_address)).value;
     // Bitmaps computation of accounts
-    bitmap_address_sender = roaring::Roaring64Map::readSafe(byte_ptr_cast(db::from_slice(bitmap_address_sender_bytes).data()), bitmap_address_sender_bytes.size());
-    bitmap_address_contract = roaring::Roaring64Map::readSafe(byte_ptr_cast(db::from_slice(bitmap_address_contract_bytes).data()), bitmap_address_contract_bytes.size());
+    bitmap_address_sender = roaring::Roaring64Map::readSafe(
+        byte_ptr_cast(db::from_slice(bitmap_address_sender_bytes).data()), bitmap_address_sender_bytes.size());
+    bitmap_address_contract = roaring::Roaring64Map::readSafe(
+        byte_ptr_cast(db::from_slice(bitmap_address_contract_bytes).data()), bitmap_address_contract_bytes.size());
     // Checks on account's bitmaps
     CHECK(bitmap_address_sender.cardinality() == 2);
     CHECK(bitmap_address_contract.cardinality() == 2);
@@ -178,7 +179,8 @@ TEST_CASE("Stage History") {
     // Storage retrieving from Databse
     bitmap_storage_contract_bytes = storage_history_table.lower_bound(db::to_slice(composite)).value;
     // Bitmaps computing for storage
-    bitmap_storage_contract = roaring::Roaring64Map::readSafe(byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size());
+    bitmap_storage_contract = roaring::Roaring64Map::readSafe(
+        byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size());
     // Checks on storage's bitmaps
     CHECK(bitmap_storage_contract.cardinality() == 1);
     CHECK(bitmap_storage_contract.toString() == "{2}");

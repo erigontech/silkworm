@@ -128,10 +128,10 @@ TEST_CASE("Account and storage trie") {
 
     hb.add(full_view(key3), a3.rlp(storage_root));
 
-    const auto key4{0xB100000000000000000000000000000000000000000000000000000000000000_bytes32};
-    const Account a4{0, 4 * kEther};
-    hashed_accounts.upsert(db::to_slice(key4), db::to_slice(a4.encode_for_storage()));
-    hb.add(full_view(key4), a4.rlp(/*storage_root=*/kEmptyRoot));
+    const auto key4a{0xB1A0000000000000000000000000000000000000000000000000000000000000_bytes32};
+    const Account a4a{0, 4 * kEther};
+    hashed_accounts.upsert(db::to_slice(key4a), db::to_slice(a4a.encode_for_storage()));
+    hb.add(full_view(key4a), a4a.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a5{0, 8 * kEther};
@@ -208,6 +208,19 @@ TEST_CASE("Account and storage trie") {
     CHECK(node3.root_hash() == storage_root);
 
     REQUIRE(node3.hashes().size() == 1);
+
+    node_map.clear();
+
+    SECTION("Incremental trie") {
+        const auto key4b{0xB1B0000000000000000000000000000000000000000000000000000000000000_bytes32};
+        const Account a4b{0, 5 * kEther};
+        hashed_accounts.upsert(db::to_slice(key4b), db::to_slice(a4b.encode_for_storage()));
+
+        // TODO: hashed change set
+        // TODO: call increment_intermediate_hashes
+        // TODO: CHECK(0b1101 == node1.hash_mask());
+        // TODO: check the new hash
+    }
 }
 
 TEST_CASE("Account trie around extension node") {
@@ -274,10 +287,6 @@ TEST_CASE("Account trie around extension node") {
 
     CHECK(!node2.root_hash());
     REQUIRE(node2.hashes().size() == 1);
-}
-
-TEST_CASE("Account incremental trie") {
-    // TODO[Issue 179] implement
 }
 
 }  // namespace silkworm::trie

@@ -116,9 +116,10 @@ TEST_CASE("Stage Transaction Lookups") {
     stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(txn, data_dir.get_etl_path()));
 
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
+    // Retrieve numbers associated with hashes
     auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_1.bytes))).value)};
     auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_2.bytes))).value)};
-
+    // Keys must be compact and equivalent to block number
     REQUIRE(got_block_0.compare(ByteView({1})) == 0);
     REQUIRE(got_block_1.compare(ByteView({2})) == 0);
 }
@@ -167,8 +168,9 @@ TEST_CASE("Unwind Transaction Lookups") {
     stagedsync::check_stagedsync_error(stagedsync::unwind_tx_lookup(txn, data_dir.get_etl_path(), 1));
 
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
+    // Unwind block should be still there
     auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_1.bytes))).value)};
-
     REQUIRE(got_block_0.compare(ByteView({1})) == 0);
+    // Block 2 must be absent due to unwind
     CHECK(!lookup_table.seek(db::to_slice(full_view(tx_hash_2.bytes))));
 }

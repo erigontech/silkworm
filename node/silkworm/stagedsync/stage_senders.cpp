@@ -61,4 +61,13 @@ StageResult unwind_senders(TransactionManager& txn, const std::filesystem::path&
     return res;
 }
 
+StageResult prune_senders(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_size) {
+    auto current_block{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
+    auto new_tail{db::block_key(current_block - prune_size - 1)};
+    auto unwind_table{db::open_cursor(*txn, db::table::kSenders)};
+    
+    truncate_table_from(unwind_table, new_tail, /* reverse = */ true);
+    return StageResult::kSuccess;
+}
+
 }  // namespace silkworm::stagedsync

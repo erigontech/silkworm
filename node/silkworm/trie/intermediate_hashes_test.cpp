@@ -16,8 +16,6 @@
 
 #include "intermediate_hashes.hpp"
 
-#include <bitset>
-
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/temp_dir.hpp>
@@ -26,24 +24,6 @@
 #include <silkworm/types/account.hpp>
 
 namespace silkworm::trie {
-
-TEST_CASE("Node marshalling") {
-    Node n{/*state_mask*/ 0xf607,
-           /*tree_mask*/ 0x0005,
-           /*hash_mask*/ 0x4004,
-           /*hashes*/
-           {
-               0x90d53cd810cc5d4243766cd4451e7b9d14b736a1148b26b3baac7617f617d321_bytes32,
-               0xcc35c964dda53ba6c0b87798073a9628dbc9cd26b5cce88eb69655a9c609caf1_bytes32,
-           },
-           /*root_hash*/ 0xaaaabbbb0006767767776fffffeee44444000005567645600000000eeddddddd_bytes32};
-
-    REQUIRE(std::bitset<16>(n.hash_mask()).count() == n.hashes().size());
-
-    Bytes b{marshal_node(n)};
-
-    CHECK(unmarshal_node(b) == n);
-}
 
 static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
     const auto loc1{0x1200000000000000000000000000000000000000000000000000000000000000_bytes32};
@@ -156,7 +136,7 @@ TEST_CASE("Account and storage trie") {
 
     std::map<Bytes, Node> node_map;
     const auto save_nodes{[&node_map](mdbx::cursor::move_result& entry) {
-        const Node node{unmarshal_node(db::from_slice(entry.value))};
+        const Node node{*unmarshal_node(db::from_slice(entry.value))};
         node_map.emplace(db::from_slice(entry.key), node);
         return true;
     }};
@@ -259,7 +239,7 @@ TEST_CASE("Account trie around extension node") {
 
     std::map<Bytes, Node> node_map;
     const auto save_nodes{[&node_map](mdbx::cursor::move_result& entry) {
-        const Node node{unmarshal_node(db::from_slice(entry.value))};
+        const Node node{*unmarshal_node(db::from_slice(entry.value))};
         node_map.emplace(db::from_slice(entry.key), node);
         return true;
     }};

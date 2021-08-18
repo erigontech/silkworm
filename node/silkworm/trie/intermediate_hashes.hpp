@@ -130,12 +130,6 @@ class WrongRoot : public std::runtime_error {
     WrongRoot() : std::runtime_error{"wrong trie root"} {}
 };
 
-// Erigon MarshalTrieNode
-Bytes marshal_node(const Node& n);
-
-// Erigon UnmarshalTrieNode
-Node unmarshal_node(ByteView v);
-
 // Erigon RegenerateIntermediateHashes
 // might throw WrongRoot
 // returns the state root

@@ -40,7 +40,7 @@ struct YParityAndChainId {
 // Calculates Y parity from signature's v.
 // Unless v ∈ {27, 28}, chain_id will be returned as well.
 // See https://eips.ethereum.org/EIPS/eip-155.
-YParityAndChainId v_to_y_parity_and_chain_id(const intx::uint256& v);
+std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256& v);
 
 // https://eips.ethereum.org/EIPS/eip-155
 intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id);

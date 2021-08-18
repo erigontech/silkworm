@@ -24,26 +24,26 @@ namespace silkworm::trie {
 
 TEST_CASE("Prefix set") {
     PrefixSet ps;
-    CHECK(!ps.contains(byte_view_of_c_str("")));
-    CHECK(!ps.contains(byte_view_of_c_str("a")));
+    CHECK(!ps.contains(string_view_to_byte_view("")));
+    CHECK(!ps.contains(string_view_to_byte_view("a")));
 
-    ps.insert(byte_view_of_c_str("abc"));
-    ps.insert(byte_view_of_c_str("fg"));
-    ps.insert(byte_view_of_c_str("abc"));  // duplicate
-    ps.insert(byte_view_of_c_str("ab"));
+    ps.insert(string_view_to_byte_view("abc"));
+    ps.insert(string_view_to_byte_view("fg"));
+    ps.insert(string_view_to_byte_view("abc"));  // duplicate
+    ps.insert(string_view_to_byte_view("ab"));
 
-    CHECK(ps.contains(byte_view_of_c_str("")));
-    CHECK(ps.contains(byte_view_of_c_str("a")));
-    CHECK(!ps.contains(byte_view_of_c_str("aac")));
-    CHECK(ps.contains(byte_view_of_c_str("ab")));
-    CHECK(ps.contains(byte_view_of_c_str("abc")));
-    CHECK(!ps.contains(byte_view_of_c_str("abcd")));
-    CHECK(!ps.contains(byte_view_of_c_str("b")));
-    CHECK(ps.contains(byte_view_of_c_str("f")));
-    CHECK(ps.contains(byte_view_of_c_str("fg")));
-    CHECK(!ps.contains(byte_view_of_c_str("fgk")));
-    CHECK(!ps.contains(byte_view_of_c_str("fy")));
-    CHECK(!ps.contains(byte_view_of_c_str("yyz")));
+    CHECK(ps.contains(string_view_to_byte_view("")));
+    CHECK(ps.contains(string_view_to_byte_view("a")));
+    CHECK(!ps.contains(string_view_to_byte_view("aac")));
+    CHECK(ps.contains(string_view_to_byte_view("ab")));
+    CHECK(ps.contains(string_view_to_byte_view("abc")));
+    CHECK(!ps.contains(string_view_to_byte_view("abcd")));
+    CHECK(!ps.contains(string_view_to_byte_view("b")));
+    CHECK(ps.contains(string_view_to_byte_view("f")));
+    CHECK(ps.contains(string_view_to_byte_view("fg")));
+    CHECK(!ps.contains(string_view_to_byte_view("fgk")));
+    CHECK(!ps.contains(string_view_to_byte_view("fy")));
+    CHECK(!ps.contains(string_view_to_byte_view("yyz")));
 }
 
 }  // namespace silkworm::trie

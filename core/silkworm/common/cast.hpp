@@ -46,6 +46,8 @@ bit_cast(const From& src) noexcept {
 
 inline ByteView string_view_to_byte_view(std::string_view sv) { return {byte_ptr_cast(sv.data()), sv.length()}; }
 
+inline ByteView byte_view_of_c_str(const char* str) { return {byte_ptr_cast(str), std::strlen(str)}; }
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_COMMON_CAST_HPP_

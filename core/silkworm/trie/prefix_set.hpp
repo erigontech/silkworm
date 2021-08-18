@@ -28,12 +28,21 @@ namespace silkworm::trie {
 /// Corresponds to RetainList in Erigon.
 class PrefixSet {
   public:
+    /// Constructs an empty set.
+    PrefixSet() = default;
+
     // copyable
     PrefixSet(const PrefixSet& other) = default;
     PrefixSet& operator=(const PrefixSet& other) = default;
 
+    void insert(ByteView key);
+
+    bool contains(ByteView prefix) const;
+
   private:
-    std::vector<Bytes> s_;
+    mutable std::vector<Bytes> keys_;
+    mutable bool sorted_{false};
+    mutable size_t index_{0};
 };
 
 }  // namespace silkworm::trie

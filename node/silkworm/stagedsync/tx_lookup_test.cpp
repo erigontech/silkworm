@@ -17,7 +17,6 @@
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
-#include <iostream>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/genesis.h>
 #include <silkworm/chain/protocol_param.hpp>
@@ -51,7 +50,7 @@ static std::vector<Transaction> sample_transactions() {
     transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
     transactions[0].value = 1'027'501'080 * kGiga;
     transactions[0].data = {};
-    transactions[0].set_v(27);
+    CHECK(transactions[0].set_v(27));
     transactions[0].r =
         intx::from_string<intx::uint256>("0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353");
     transactions[0].s =
@@ -65,7 +64,7 @@ static std::vector<Transaction> sample_transactions() {
     transactions[1].to = {};
     transactions[1].value = 0;
     transactions[1].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
-    transactions[1].set_v(37);
+    CHECK(transactions[1].set_v(37));
     transactions[1].r =
         intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
     transactions[1].s =

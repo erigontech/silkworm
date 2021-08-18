@@ -16,8 +16,6 @@
 
 #include "intermediate_hashes.hpp"
 
-#include <bitset>
-
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/db/tables.hpp>

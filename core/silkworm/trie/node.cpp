@@ -16,6 +16,8 @@
 
 #include "node.hpp"
 
+#include <bitset>
+
 #include <silkworm/common/endian.hpp>
 
 namespace silkworm::trie {

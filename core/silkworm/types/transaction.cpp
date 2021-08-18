@@ -43,10 +43,14 @@ bool operator==(const Transaction& a, const Transaction& b) {
 intx::uint256 Transaction::v() const { return ecdsa::y_parity_and_chain_id_to_v(odd_y_parity, chain_id); }
 
 // https://eips.ethereum.org/EIPS/eip-155
-void Transaction::set_v(const intx::uint256& v) {
-    ecdsa::YParityAndChainId y{ecdsa::v_to_y_parity_and_chain_id(v)};
-    odd_y_parity = y.odd;
-    chain_id = y.chain_id;
+bool Transaction::set_v(const intx::uint256& v) {
+    const std::optional<ecdsa::YParityAndChainId> parity_and_id{ecdsa::v_to_y_parity_and_chain_id(v)};
+    if (parity_and_id == std::nullopt) {
+        return false;
+    }
+    odd_y_parity = parity_and_id->odd;
+    chain_id = parity_and_id->chain_id;
+    return true;
 }
 
 namespace rlp {
@@ -247,7 +251,9 @@ namespace rlp {
         if (DecodingResult err{decode(from, v)}; err != DecodingResult::kOk) {
             return err;
         }
-        to.set_v(v);
+        if (!to.set_v(v)) {
+            return DecodingResult::kInvalidVInSignature;
+        }
 
         if (DecodingResult err{decode(from, to.r)}; err != DecodingResult::kOk) {
             return err;

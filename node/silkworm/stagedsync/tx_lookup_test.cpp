@@ -36,7 +36,6 @@ using namespace evmc::literals;
 
 constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
 constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
-constexpr evmc::bytes32 hash_2{0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
 
 using namespace silkworm;
 
@@ -74,7 +73,7 @@ static std::vector<Transaction> sample_transactions() {
     return transactions;
 }
 
-TEST_CASE("Stage Senders") {
+TEST_CASE("Stage Transaction Lookups") {
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
 
@@ -91,14 +90,12 @@ TEST_CASE("Stage Senders") {
     auto transactions{sample_transactions()};
     block.base_txn_id = 1;
     block.txn_count = 1;
-
-    auto sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
-
     // ---------------------------------------
     // Push first block
     // ---------------------------------------
     Bytes tx_rlp{};
     rlp::encode(tx_rlp, transactions[0]);
+    auto tx_hash_1{keccak256(tx_rlp)};
 
     transaction_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
@@ -110,46 +107,23 @@ TEST_CASE("Stage Senders") {
     block.base_txn_id = 2;
 
     rlp::encode(tx_rlp, transactions[1]);
+    auto tx_hash_2{keccak256(tx_rlp)};
+
     transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
 
-    // ---------------------------------------
-    // Push third block
-    // ---------------------------------------
+    stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(txn, data_dir.get_etl_path()));
 
-    block.base_txn_id = 0;
-    block.txn_count = 0;
-
-    bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
-
-    std::string genesis_data;
-    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    auto config_data{genesis_json["config"].dump()};
-
-    auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
-
-    auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-    canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
-    canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
-    canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
-    canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
-
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.get_etl_path()));
-
-    auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
-    auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
-    auto got_sender_1{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(2))).value)};
-    auto expected_sender{ByteView(sender.bytes, kAddressLength)};
-
-    REQUIRE(got_sender_0.compare(expected_sender) == 0);
-    REQUIRE(got_sender_1.compare(expected_sender) == 0);
-    REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(3)), false));
+    auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
+    // Retrieve numbers associated with hashes
+    auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_1.bytes))).value)};
+    auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_2.bytes))).value)};
+    // Keys must be compact and equivalent to block number
+    REQUIRE(got_block_0.compare(ByteView({1})) == 0);
+    REQUIRE(got_block_1.compare(ByteView({2})) == 0);
 }
 
-TEST_CASE("Unwind Senders") {
+TEST_CASE("Unwind Transaction Lookups") {
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
 
@@ -167,13 +141,12 @@ TEST_CASE("Unwind Senders") {
     block.base_txn_id = 1;
     block.txn_count = 1;
 
-    auto sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
-
     // ---------------------------------------
     // Push first block
     // ---------------------------------------
     Bytes tx_rlp{};
     rlp::encode(tx_rlp, transactions[0]);
+    auto tx_hash_1{keccak256(tx_rlp)};
 
     transaction_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
@@ -185,42 +158,18 @@ TEST_CASE("Unwind Senders") {
     block.base_txn_id = 2;
 
     rlp::encode(tx_rlp, transactions[1]);
+    auto tx_hash_2{keccak256(tx_rlp)};
+
     transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
 
-    // ---------------------------------------
-    // Push third block
-    // ---------------------------------------
+    stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(txn, data_dir.get_etl_path()));
+    stagedsync::check_stagedsync_error(stagedsync::unwind_tx_lookup(txn, data_dir.get_etl_path(), 1));
 
-    block.base_txn_id = 0;
-    block.txn_count = 0;
-
-    bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
-
-    std::string genesis_data;
-    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
-    auto config_data{genesis_json["config"].dump()};
-
-    auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
-
-    auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-    canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
-    canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
-    canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
-    canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
-
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
-    stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, tmp_dir.path(), 1));
-
-    auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
-    auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
-
-    auto expected_sender{ByteView(sender.bytes, kAddressLength)};
-
-    REQUIRE(got_sender_0.compare(expected_sender) == 0);
-    REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(2)), false));
-    REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(3)), false));
+    auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
+    // Unwind block should be still there
+    auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_1.bytes))).value)};
+    REQUIRE(got_block_0.compare(ByteView({1})) == 0);
+    // Block 2 must be absent due to unwind
+    CHECK(!lookup_table.seek(db::to_slice(full_view(tx_hash_2.bytes))));
 }

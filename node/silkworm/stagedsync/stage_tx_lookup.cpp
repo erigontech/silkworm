@@ -30,6 +30,7 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
+// Minimize size in database
 static Bytes compact(Bytes& b) {
     std::string::size_type offset{b.find_first_not_of(uint8_t{0})};
     if (offset != std::string::npos) {
@@ -45,11 +46,10 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)};
     uint64_t block_number{0};
 
-    // We take data from header table and transform it and put it in blockhashes table
+    // We take number from bodies table, and hash from transaction table
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transactions_table{db::open_cursor(*txn, db::table::kEthTx)};
 
-    // Extract
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], last_processed_block_number + 1);
 
@@ -60,9 +60,10 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
         auto body_rlp{db::from_slice(bodies_data.value)};
         auto body{db::detail::decode_stored_block_body(body_rlp)};
         Bytes block_number_as_bytes(static_cast<uint8_t*>(bodies_data.key.iov_base), 8);
+        // we compact block number
         auto lookup_block_data{compact(block_number_as_bytes)};
         block_number = endian::load_big_u64(&block_number_as_bytes[0]);
-
+        // Iterate over transactions in current block
         if (body.txn_count) {
             Bytes tx_base_id(8, '\0');
             endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
@@ -70,8 +71,10 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
             uint64_t tx_count{0};
 
             while (tx_data && tx_count < body.txn_count) {
+                // Hash transaction rlp
                 auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
+                // Collect hash => compacted block number mapping
                 etl::Entry entry{Bytes(hash.bytes, 32), Bytes(lookup_block_data.data(), lookup_block_data.size())};
                 collector.collect(entry);
                 ++tx_count;

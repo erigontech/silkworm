@@ -44,7 +44,7 @@ std::vector<Stage> get_pruned_node_stages() {
         {stage_bodies,          no_unwind,              no_prune,              3},
         {stage_senders,         unwind_senders,         prune_senders,         4},
         {stage_execution,       unwind_execution,       prune_execution,       5},
-        {stage_hashstate,       unwind_hashstate,       prune_hashstate,       6},
+        {stage_hashstate,       unwind_hashstate,       no_prune,              6},
         {stage_interhashes,     unwind_interhashes,     no_prune,              7},
         {stage_account_history, unwind_account_history, prune_account_history, 8},
         {stage_storage_history, unwind_storage_history, prune_storage_history, 9},
@@ -60,7 +60,7 @@ std::vector<Stage> get_miner_mode_stages() {
         {stage_bodies,          no_unwind,              no_prune,        3},
         {stage_senders,         unwind_senders,         prune_senders,   4},
         {stage_execution,       unwind_execution,       prune_execution, 5},
-        {stage_hashstate,       unwind_hashstate,       prune_hashstate, 6},
+        {stage_hashstate,       unwind_hashstate,       no_prune,        6},
         {stage_interhashes,     unwind_interhashes,     no_prune,        7},
     };
 }

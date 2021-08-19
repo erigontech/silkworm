@@ -85,10 +85,13 @@ int main(int argc, char* argv[]) {
 
             db::Buffer buffer{txn, block_num};
 
+            ExecutionProcessor processor{bh->block, buffer, *chain_config};
+            processor.evm().advanced_analysis_cache = &analysis_cache;
+            processor.evm().state_pool = &state_pool;
+
             // Execute the block and retreive the receipts
-            auto err{execute_block(bh->block, buffer, *chain_config, receipts, &analysis_cache, &state_pool)};
-            if (err != ValidationResult::kOk) {
-                std::cerr << "Validation error " << static_cast<int>(err) << " at block " << block_num << "\n";
+            if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
+                std::cerr << "Validation error " << static_cast<int>(res) << " at block " << block_num << "\n";
             }
 
             // There is one receipt per transaction
@@ -101,11 +104,11 @@ int main(int argc, char* argv[]) {
             }
 
             // Report and reset counters
-            if (!(block_num % 50000)) {
+            if ((block_num % 50000) == 0) {
                 std::cout << block_num << "," << nTxs << "," << nErrors << std::endl;
                 nTxs = nErrors = 0;
 
-            } else if (!(block_num % 100)) {
+            } else if ((block_num % 100) == 0) {
                 // report progress
                 std::cerr << block_num << "\r";
                 std::cerr.flush();

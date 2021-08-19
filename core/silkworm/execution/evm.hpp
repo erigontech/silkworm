@@ -81,7 +81,7 @@ class EVM {
                                                   ByteView code) noexcept;
 
     evmc_result execute_with_default_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
-                                                 std::optional<evmc::bytes32> code_hash) noexcept;
+                                                 const evmc::bytes32& code_hash) noexcept;
 
     uint8_t number_of_precompiles() const noexcept;
     bool is_precompiled(const evmc::address& contract) const noexcept;

@@ -44,7 +44,7 @@ enum class [[nodiscard]] StageResult {
 
 void check_stagedsync_error(StageResult code);
 
-void truncate_table_from(mdbx::cursor& table, Bytes& starting_key);
+void truncate_table_from(mdbx::cursor& table, Bytes& starting_key, bool reverse = false);
 // Convert changesets key and value pair to plain state format
 std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView& value);
 

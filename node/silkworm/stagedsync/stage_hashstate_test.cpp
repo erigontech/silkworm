@@ -67,10 +67,12 @@ TEST_CASE("Stage Hashstate") {
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
     block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].max_priority_fee_per_gas = 0;  // EIP-1559
-    block.transactions[0].max_fee_per_gas = 20 * kGiga;
+    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
+    block.transactions[0].max_fee_per_gas = block.transactions[0].max_priority_fee_per_gas;
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+    block.transactions[0].r = 1;  // dummy
+    block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
     db::Buffer buffer{*txn};
@@ -99,7 +101,6 @@ TEST_CASE("Stage Hashstate") {
 
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
 
@@ -118,7 +119,6 @@ TEST_CASE("Stage Hashstate") {
 
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
@@ -172,10 +172,12 @@ TEST_CASE("Unwind Hashstate") {
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
     block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].max_priority_fee_per_gas = 0;  // EIP-1559
-    block.transactions[0].max_fee_per_gas = 20 * kGiga;
+    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
+    block.transactions[0].max_fee_per_gas = block.transactions[0].max_priority_fee_per_gas;
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+    block.transactions[0].r = 1;  // dummy
+    block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
     db::Buffer buffer{*txn};
@@ -204,7 +206,6 @@ TEST_CASE("Unwind Hashstate") {
 
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
 
@@ -223,7 +224,6 @@ TEST_CASE("Unwind Hashstate") {
 
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();

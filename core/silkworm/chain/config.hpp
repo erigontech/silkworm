@@ -171,6 +171,13 @@ constexpr ChainConfig kGoerliConfig{
     },
 };
 
+/// Enables London from genesis. Used in tests.
+constexpr ChainConfig kLondonTestConfig{
+    1,  // chain_id
+    SealEngineType::kNoProof,
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+};
+
 inline const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept {
     switch (chain_id) {
         case kMainnetConfig.chain_id:

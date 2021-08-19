@@ -24,7 +24,7 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/types/log_cbor.hpp>
 #include <silkworm/types/receipt_cbor.hpp>
-
+#include <silkworm/common/endian.hpp>
 #include "access_layer.hpp"
 #include "tables.hpp"
 
@@ -164,7 +164,7 @@ void Buffer::write_to_state_table() {
     }
 }
 
-void Buffer::write_to_db() {
+void Buffer::write_to_db(uint64_t prune_from) {
     write_to_state_table();
 
     auto incarnation_table{db::open_cursor(txn_, table::kIncarnationMap)};
@@ -188,6 +188,8 @@ void Buffer::write_to_db() {
     Bytes change_key;
     for (const auto& block_entry : account_changes_) {
         uint64_t block_num{block_entry.first};
+        // If we do not need historical data, we do not put changesets
+        if (block_num < prune_from) continue;
         change_key = block_key(block_num);
         for (const auto& account_entry : block_entry.second) {
             data = full_view(account_entry.first);
@@ -199,6 +201,9 @@ void Buffer::write_to_db() {
     auto storage_change_table{db::open_cursor(txn_, table::kPlainStorageChangeSet)};
     for (const auto& block_entry : storage_changes_) {
         uint64_t block_num{block_entry.first};
+        // If we do not need historical data, we do not put changesets
+        if (block_num < prune_from) continue;
+
         for (const auto& address_entry : block_entry.second) {
             const evmc::address& address{address_entry.first};
             for (const auto& incarnation_entry : address_entry.second) {
@@ -215,6 +220,9 @@ void Buffer::write_to_db() {
 
     auto receipt_table{db::open_cursor(txn_, table::kBlockReceipts)};
     for (const auto& entry : receipts_) {
+        auto block_num{endian::load_big_u64(&entry.first[0])};
+        // If we do not need historical data, we do not put changesets
+        if (block_num < prune_from) continue;
         receipt_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }
 

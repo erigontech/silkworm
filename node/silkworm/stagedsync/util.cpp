@@ -44,7 +44,11 @@ std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView
 }
 
 void truncate_table_from(mdbx::cursor& table, Bytes& starting_key, bool reverse) {
-    if (table.lower_bound(db::to_slice(starting_key), false)) {
+    auto current{table.lower_bound(db::to_slice(starting_key), false)};
+    if (reverse) {
+        current = table.to_previous(false);
+    }
+    if (current) {
         table.erase();
         while (reverse? table.to_previous(false) : table.to_next(false)) {
             table.erase();

@@ -29,7 +29,6 @@
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
-#include <iostream>
 
 using namespace evmc::literals;
 

@@ -33,7 +33,7 @@ constexpr size_t kDefaultRecoverySenderBatch = 50'000;  // This a number of tran
 
 typedef StageResult (*StageFunc)(TransactionManager&, const std::filesystem::path& etl_path);
 typedef StageResult (*UnwindFunc)(TransactionManager&, const std::filesystem::path& etl_path, uint64_t unwind_to );
-typedef StageResult (*PruneFunc)(TransactionManager&, const std::filesystem::path& etl_path,  uint64_t prune_size);
+typedef StageResult (*PruneFunc)(TransactionManager&, const std::filesystem::path& etl_path,  uint64_t prune_from);
 
 struct Stage {
     StageFunc   stage_func;
@@ -91,14 +91,13 @@ StageResult unwind_storage_history(TransactionManager& txn, const std::filesyste
 StageResult unwind_log_index      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_tx_lookup      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 // Prune functions
-StageResult no_prune             (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_size);
-StageResult prune_senders        (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_size);
-StageResult prune_execution      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_size);
-StageResult prune_hashstate      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_size);
-StageResult prune_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_size);
-StageResult prune_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_size);
-StageResult prune_log_index      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_size);
-StageResult prune_tx_lookup      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_size);
+StageResult no_prune             (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
+StageResult prune_senders        (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
+StageResult prune_execution      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
+StageResult prune_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
+StageResult prune_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
+StageResult prune_log_index      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
+StageResult prune_tx_lookup      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 
 std::vector<Stage> get_archive_node_stages();
 std::vector<Stage> get_pruned_node_stages ();

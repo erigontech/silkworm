@@ -21,6 +21,7 @@
 
 #include <silkworm/chain/identity.hpp>
 
+#include "ActiveComponent.hpp"
 #include "ConcurrentContainers.hpp"
 #include "DbTx.hpp"
 #include "SentryClient.hpp"
@@ -30,47 +31,23 @@
 
 namespace silkworm {
 
-// abstract interface for all stages
-class Stage {
-  public:
-    enum StageResult { kOk, kError };  // todo: improve
 
-    virtual StageResult wind(BlockNum new_height) = 0;
-    virtual StageResult unwind(BlockNum new_height) = 0;
-};
-
-// abstract interface for active components within stages
-class ActiveComponent {
-  public:
-    virtual void execution_loop() = 0;
-
-    void need_exit() { exiting_.store(true); }
-
-  protected:
-    std::atomic<bool> exiting_{false};
-};
-
-// STAGE1
-class Stage1 : public Stage,             // stage 1 is a stage...
-               public ActiveComponent {  // but also an active component that must run always
+class BlockProvider : public ActiveComponent {  // but also an active component that must run always
 
     ChainIdentity chain_identity_;
     DbTx db_;
-    SentryClient sentry_;
+    SentryClient& sentry_;
 
   public:
-    Stage1(ChainIdentity chain_identity, std::string db_path, std::string sentry_addr);
-    Stage1(const Stage1&) = delete;
-    Stage1(Stage1&&) = delete;
-    ~Stage1();
+    BlockProvider(SentryClient& sentry, ChainIdentity chain_identity, std::string db_path);
+    BlockProvider(const BlockProvider&) = delete; // not copyable
+    BlockProvider(BlockProvider&&) = delete; // nor movable
+    ~BlockProvider();
 
     DbTx& db_tx() { return db_; }
     SentryClient& sentry() { return sentry_; }
 
-    void execution_loop() override final;
-
-    StageResult wind(BlockNum new_height) override final;
-    StageResult unwind(BlockNum new_height) override final;
+    void execution_loop() override;
 
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;
@@ -78,11 +55,8 @@ class Stage1 : public Stage,             // stage 1 is a stage...
     void send_status();
     void send_message_subscription(MessageQueue& messages);
 
-    void receive_one_message();
     void process_one_message(MessageQueue& messages);
 };
-
-#define STAGE1 non_owning::Singleton<Stage1>::instance()
 
 }  // namespace silkworm
 

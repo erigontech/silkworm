@@ -19,12 +19,16 @@
 
 namespace silkworm {
 
-std::vector<BlockBody> BodyLogic::recover(DbTx& db, std::vector<Hash> request) {
+BodyRetrieval::BodyRetrieval(DbTx& db): db_(db) {
+
+}
+
+std::vector<BlockBody> BodyRetrieval::recover(std::vector<Hash> request) {
     std::vector<BlockBody> response;
     size_t bytes = 0;
     for(size_t i = 0; i <= request.size(); ++i) {
         Hash& hash = request[i];
-        auto body = db.read_body(hash);
+        auto body = db_.read_body(hash);
         if (!body) continue;
         response.push_back(*body);
         bytes += rlp::length(*body);

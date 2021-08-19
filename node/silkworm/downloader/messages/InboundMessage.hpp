@@ -18,12 +18,16 @@
 #define SILKWORM_INBOUNDMESSAGE_HPP
 
 #include <memory>
-#include "Message.hpp"
+
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
+#include <silkworm/downloader/DbTx.hpp>
+
+#include "Message.hpp"
+
+
 namespace silkworm {
-class OutboundMessage;
 
 
 class InboundMessage : public Message {
@@ -32,10 +36,12 @@ class InboundMessage : public Message {
     using reply_calls_t = rpc_bundle_t;
 
     reply_calls_t execute() override = 0;
-
-    static std::shared_ptr<InboundMessage> make(const sentry::InboundMessage& msg);
 };
 
+class InboundBlockRequestMessage : public InboundMessage {
+  public:
+    static std::shared_ptr<InboundMessage> make_from_raw_message(const sentry::InboundMessage& msg, DbTx& db);
+};
 
 std::ostream& operator<<(std::ostream&, const silkworm::InboundMessage&);
 

@@ -23,6 +23,7 @@
 #include <silkworm/chain/validity.hpp>
 #include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/state.hpp>
+#include <silkworm/types/receipt.hpp>
 
 namespace silkworm {
 
@@ -54,6 +55,7 @@ class Blockchain {
     State& state_;
     const ChainConfig& config_;
     std::unordered_map<evmc::bytes32, ValidationResult> bad_blocks_;
+    std::vector<Receipt> receipts_;
 };
 
 }  // namespace silkworm

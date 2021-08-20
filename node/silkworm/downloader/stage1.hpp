@@ -36,10 +36,10 @@ class BlockProvider : public ActiveComponent {  // but also an active component 
 
     ChainIdentity chain_identity_;
     DbTx db_;
-    SentryClient& sentry_;
+    ActiveSentryClient& sentry_;
 
   public:
-    BlockProvider(SentryClient& sentry, ChainIdentity chain_identity, std::string db_path);
+    BlockProvider(ActiveSentryClient& sentry, ChainIdentity chain_identity, std::string db_path);
     BlockProvider(const BlockProvider&) = delete; // not copyable
     BlockProvider(BlockProvider&&) = delete; // nor movable
     ~BlockProvider();

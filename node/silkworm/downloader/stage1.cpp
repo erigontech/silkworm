@@ -30,11 +30,10 @@
 
 namespace silkworm {
 
-// logs
-std::string result(std::shared_ptr<SentryRpc> rpc);
+std::string result(std::shared_ptr<SentryRpc> rpc);  // for logging purposes
 
-// impl
-BlockProvider::BlockProvider(SentryClient& sentry, ChainIdentity chain_identity, std::string db_path):
+
+BlockProvider::BlockProvider(ActiveSentryClient& sentry, ChainIdentity chain_identity, std::string db_path):
     chain_identity_(std::move(chain_identity)),
     db_{db_path},
     sentry_{sentry}
@@ -53,6 +52,7 @@ void BlockProvider::send_status() {
     set_status->on_receive_reply([&, set_status](auto& call) {
       if (!call.status().ok()) {
           exiting_ = true;
+          sentry_.need_exit();
           SILKWORM_LOG(LogLevel::Critical)
               << "BlockProvider failed to set status to the remote sentry, cause:'" << call.status().error_message() << "', exiting...\n";
           return;
@@ -87,6 +87,7 @@ void BlockProvider::send_message_subscription(MessageQueue& messages) {
       else {
           // this call is a long running call, if it terminates there was an error on the link with the sentry
           exiting_ = true;
+          sentry_.need_exit();
           SILKWORM_LOG(LogLevel::Critical)
               << "BlockProvider receiving messages stream interrupted, cause:'" << call.status().error_message() << "', exiting...\n";
       }
@@ -113,7 +114,7 @@ void BlockProvider::process_one_message(MessageQueue& messages) {
 
     // send remote rpcs if the message need them as result of processing
     for(auto& rpc: rpc_bundle) {
-        SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*message) << " with " << rpc->name() << "\n";
+        SILKWORM_LOG(LogLevel::Info) << "BlockProvider replying to " << identify(*message) << " with " << rpc->name() << "\n";
 
         rpc->on_receive_reply([message, rpc](auto&) { // copy message and rpc to retain their lifetime (shared_ptr) [avoid rpc passing using make_shared_from_this in AsyncCall]
             SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*message) << ": " << result(rpc) << "\n";
@@ -128,7 +129,7 @@ void BlockProvider::execution_loop() {
     using namespace std::chrono_literals;
 
     // set status
-    send_status();
+    send_status(); // todo: use a future to wait the result and decide if break or continue, erase the following line
     std::this_thread::sleep_for(3s); // wait for connection setup before submit other requests
 
     // thread safe queue where receive messages from sentry thread
@@ -139,13 +140,14 @@ void BlockProvider::execution_loop() {
 
     // message processing
     try {
-        while (!exiting_) {
+        while (!exiting_ && !sentry_.exiting()) {
             process_one_message(messages);  // pop a message from the queue and process it
         }
     }
     catch(const std::exception& e) {
         SILKWORM_LOG(LogLevel::Error) << "BlockProvider execution_loop exiting due to exception: " << e.what() << "\n";
         exiting_ = true;
+        sentry_.need_exit();
     }
 
     SILKWORM_LOG(LogLevel::Info) << "BlockProvider execution_loop exiting...\n";

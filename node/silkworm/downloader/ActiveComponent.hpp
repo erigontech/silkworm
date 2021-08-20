@@ -35,6 +35,8 @@ class ActiveComponent {
 
     void need_exit() { exiting_.store(true); }
 
+    bool exiting() { return exiting_.load(); }
+
   protected:
     std::atomic<bool> exiting_{false};
 };

@@ -29,6 +29,9 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, State& state, const C
     : state_{state}, evm_{block, state_, config} {}
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
+    assert(pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
+                                    evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
+
     if (!txn.from.has_value()) {
         return ValidationResult::kMissingSender;
     }
@@ -57,6 +60,8 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
 }
 
 Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept {
+    assert(validate_transaction(txn) == ValidationResult::kOk);
+
     state_.clear_journal_and_substate();
 
     assert(txn.from.has_value());

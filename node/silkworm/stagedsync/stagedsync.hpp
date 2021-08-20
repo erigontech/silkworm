@@ -45,9 +45,9 @@ StageResult stage_headers    (TransactionManager& txn, const std::filesystem::pa
 StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::path& etl_path);
 StageResult stage_bodies     (TransactionManager& txn, const std::filesystem::path& etl_path);
 StageResult stage_senders    (TransactionManager& txn, const std::filesystem::path& etl_path);
-StageResult stage_execution  (TransactionManager& txn, const std::filesystem::path& etl_path, size_t batch_size);
+StageResult stage_execution  (TransactionManager& txn, const std::filesystem::path& etl_path, size_t batch_size, uint64_t prune_from);
 inline StageResult stage_execution(TransactionManager& txn, const std::filesystem::path& etl_path) {
-    return stage_execution(txn, etl_path, kDefaultBatchSize);
+    return stage_execution(txn, etl_path, kDefaultBatchSize, 0);
 }
 
 /* HashState Promotion Functions*/

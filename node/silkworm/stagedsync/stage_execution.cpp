@@ -272,11 +272,13 @@ StageResult prune_execution(TransactionManager& txn, const std::filesystem::path
     auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};
     auto receipts_table{db::open_cursor(*txn, db::table::kBlockReceipts)};
     auto traces_table{db::open_cursor(*txn, db::table::kCallTraceSet)};
+    auto log_table{db::open_cursor(*txn, db::table::kLogs)};
     // Truncate Tables
     truncate_table_from(account_changeset_table, new_tail, /* reverse = */ true);
     truncate_table_from(storage_changeset_table, new_tail, /* reverse = */ true);
     truncate_table_from(receipts_table, new_tail, /* reverse = */ true);
     truncate_table_from(traces_table, new_tail, /* reverse = */ true);
+    truncate_table_from(log_table, new_tail, /* reverse = */ true);
 
     txn.commit();
 

@@ -62,7 +62,7 @@ StageResult unwind_senders(TransactionManager& txn, const std::filesystem::path&
 }
 
 StageResult prune_senders(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
-    auto new_tail{db::block_key(prune_from - 1)};
+    auto new_tail{db::block_key(prune_from)};
     auto unwind_table{db::open_cursor(*txn, db::table::kSenders)};
     truncate_table_from(unwind_table, new_tail, /* reverse = */ true);
     return StageResult::kSuccess;

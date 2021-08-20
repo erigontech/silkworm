@@ -46,7 +46,7 @@ std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView
 /*
  * Truncate a table by starting from a certain key, either up or down.
  * If reverse is set to false, then every key either higher or equal than starting key will be erased.
- * If reverse is set to true, then every key either lower than starting key will be erased.
+ * If reverse is set to true, then every key either lower(not equal) than starting key will be erased.
  * NOTE: since no upper_bound function is implemented in cursor, whenever reverse is set to true,
  * we pass starting_key+1 and then go to previous entry
 */

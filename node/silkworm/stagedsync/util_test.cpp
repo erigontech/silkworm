@@ -13,10 +13,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+#include "util.hpp"
+
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
-#include <silkworm/trie/vector_root.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/data_dir.hpp>
@@ -26,13 +28,10 @@
 #include <silkworm/execution/address.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/rlp/encode.hpp>
+#include <silkworm/stagedsync/transaction_manager.hpp>
+#include <silkworm/trie/vector_root.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
-#include <silkworm/stagedsync/transaction_manager.hpp>
-
-#include "util.hpp"
-
-#include <catch2/catch.hpp>
 
 using namespace silkworm;
 
@@ -47,13 +46,12 @@ TEST_CASE("Check Truncate tables, reverse = true") {
     stagedsync::TransactionManager txn{env};
     db::table::create_all(*txn);
 
-    auto value{db::to_slice(db::block_key(0))}; // Same value for each entry
+    Bytes value{db::block_key(0)};  // Same value for each entry
     // Cursor to be opened does not matter
-    auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)}; 
-    
-    for (int i = 100; i >= 0; i--)
-    {
-        account_history_table.upsert(db::to_slice(db::block_key(i)), value);
+    auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)};
+
+    for (int i = 100; i >= 0; i--) {
+        account_history_table.upsert(db::to_slice(db::block_key(i)), db::to_slice(value));
     }
     // Check if works if cut in half
     auto cut_point{db::block_key(50)};
@@ -75,13 +73,12 @@ TEST_CASE("Check Truncate tables, reverse = false") {
     stagedsync::TransactionManager txn{env};
     db::table::create_all(*txn);
 
-    auto value{db::to_slice(db::block_key(0))}; // Same value for each entry
+    Bytes value{db::block_key(0)};  // Same value for each entry
     // Cursor to be opened does not matter
-    auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)}; 
-    
-    for (int i = 100; i >= 0; i--)
-    {
-        account_history_table.upsert(db::to_slice(db::block_key(i)), value);
+    auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)};
+
+    for (int i = 100; i >= 0; i--) {
+        account_history_table.upsert(db::to_slice(db::block_key(i)), db::to_slice(value));
     }
     // Check if works if cut in half
     auto cut_point{db::block_key(50)};

@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include <assert.h>
-
 #include <csignal>
 #include <filesystem>
 #include <iostream>
@@ -32,13 +30,9 @@
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
-#include <silkworm/types/block.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -47,23 +41,25 @@ bool shouldStop{false};
 
 class Progress {
   public:
-    Progress(uint32_t width) : bar_width_{width}, percent_step_{100u / width} {};
+    explicit Progress(uint32_t width) : bar_width_{width}, percent_step_{100u / width} {};
     ~Progress() = default;
 
-    // Return current percentage
-    uint32_t percent(void) {
-        if (!max_counter_) return 100;
-        if (!current_counter_) return 0;
+    /// Returns current progress percent
+    [[nodiscard]] uint32_t percent() const {
+        if (!max_counter_) {
+            return 100;
+        }
+        if (!current_counter_) {
+            return 0;
+        }
         return static_cast<uint32_t>(current_counter_ * 100 / max_counter_);
     }
 
-    void step(void) { current_counter_++; }
+    void step() { current_counter_++; }
     void set_current(size_t count) { current_counter_ = std::max(count, current_counter_); }
-    size_t get_current(void) { return current_counter_; }
+    [[nodiscard]] size_t get_current() const { return current_counter_; }
+    [[nodiscard]] size_t get_increment_count() const { return (max_counter_ / bar_width_); }
 
-    size_t get_increment_count(void) { return (max_counter_ / bar_width_); }
-
-    // Resets everything to zero
     void reset() {
         current_counter_ = 0;
         printed_bar_len_ = 0;
@@ -73,7 +69,7 @@ class Progress {
         max_counter_ = iterations;
     }
 
-    // Prints progress ticks
+    /// Prints progress ticks
     std::string print_interval(char c = '.') {
         uint32_t percentage{std::min(percent(), 100u)};
         uint32_t numChars{percentage / percent_step_};
@@ -85,10 +81,12 @@ class Progress {
         return ret;
     }
 
-    std::string print_progress(char c = '.') {
+    [[maybe_unused]] [[nodiscard]] std::string print_progress(char c = '.') const {
         uint32_t percentage{percent()};
         uint32_t numChars{percentage / percent_step_};
-        if (!numChars) return "";
+        if (!numChars) {
+            return "";
+        }
         std::string ret(numChars, c);
         return ret;
     }
@@ -98,7 +96,6 @@ class Progress {
     uint32_t percent_step_;
     size_t max_counter_{0};
     size_t current_counter_{0};
-
     uint32_t printed_bar_len_{0};
 };
 
@@ -107,8 +104,8 @@ struct dbTableEntry {
     std::string name{};
     mdbx::txn::map_stat stat;
     mdbx::map_handle::info info;
-    size_t pages(void) { return stat.ms_branch_pages + stat.ms_leaf_pages + stat.ms_overflow_pages; }
-    size_t size(void) { return pages() * stat.ms_psize; }
+    [[nodiscard]] size_t pages() const { return stat.ms_branch_pages + stat.ms_leaf_pages + stat.ms_overflow_pages; }
+    [[nodiscard]] size_t size() const { return pages() * stat.ms_psize; }
 };
 
 struct dbTablesInfo {
@@ -138,7 +135,8 @@ void sig_handler(int signum) {
     shouldStop = true;
 }
 
-void do_clear(db::EnvConfig& config, bool dry, bool always_yes, std::vector<std::string> table_names, bool drop) {
+void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,
+              bool drop) {
     config.readonly = false;
     auto env{db::open_env(config)};
     auto txn{env.start_write()};
@@ -172,7 +170,7 @@ void do_clear(db::EnvConfig& config, bool dry, bool always_yes, std::vector<std:
                 std::cin.clear();
                 if (std::regex_search(user_input, matches, pattern, std::regex_constants::match_default)) {
                     break;
-                };
+                }
             } while (true);
 
             if (matches[2].length()) {
@@ -266,7 +264,7 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     return ret;
 }
 
-void do_scan(db::EnvConfig config) {
+void do_scan(const db::EnvConfig& config) {
     static std::string fmt_hdr{" %3s %-24s %=50s %13s %13s %13s"};
 
     auto env{silkworm::db::open_env(config)};
@@ -276,7 +274,7 @@ void do_scan(db::EnvConfig config) {
 
     std::cout << "\n Database tables    : " << tablesInfo.tables.size() << "\n" << std::endl;
 
-    if (tablesInfo.tables.size()) {
+    if (!tablesInfo.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Progress" % "Keys" % "Data" % "Total")
                   << std::endl;
         std::cout << (boost::format(fmt_hdr) % std::string(3, '-') % std::string(24, '-') % std::string(50, '-') %
@@ -292,7 +290,7 @@ void do_scan(db::EnvConfig config) {
                 tbl_map = mdbx::map_handle(item.id);
             } else {
                 tbl_map = txn.open_map(item.name);
-            };
+            }
 
             size_t key_size{0};
             size_t data_size{0};
@@ -421,12 +419,12 @@ void do_tables(db::EnvConfig& config) {
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_read()};
 
-    auto tables{get_tablesInfo(txn)};
-    auto freeInfo{get_freeInfo(txn)};
+    auto dbTablesInfo{get_tablesInfo(txn)};
+    auto dbFreeInfo{get_freeInfo(txn)};
 
-    std::cout << "\n Database tables    : " << tables.tables.size() << "\n" << std::endl;
+    std::cout << "\n Database dbTablesInfo    : " << dbTablesInfo.tables.size() << "\n" << std::endl;
 
-    if (tables.tables.size()) {
+    if (!dbTablesInfo.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" % "Overflow" %
                       "Size" % "Key" % "Value")
                   << std::endl;
@@ -435,24 +433,24 @@ void do_tables(db::EnvConfig& config) {
                       std::string(12, '-') % std::string(10, '-') % std::string(10, '-'))
                   << std::endl;
 
-        for (auto item : tables.tables) {
-            auto keymode = magic_enum::enum_name(item.info.key_mode());
-            auto valuemode = magic_enum::enum_name(item.info.value_mode());
-
+        for (auto& item : dbTablesInfo.tables) {
+            auto keyMode = magic_enum::enum_name(item.info.key_mode());
+            auto valueMode = magic_enum::enum_name(item.info.value_mode());
             std::cout << (boost::format(fmt_row) % item.id % item.name % item.stat.ms_entries % item.stat.ms_depth %
                           item.stat.ms_branch_pages % item.stat.ms_leaf_pages % item.stat.ms_overflow_pages %
-                          human_size(item.size()) % keymode % valuemode)
+                          human_size(item.size()) % keyMode % valueMode)
                       << std::endl;
         }
     }
 
-    std::cout << "\n Database file size   (A) : " << (boost::format("%13s") % human_size(tables.filesize)) << std::endl;
-    std::cout << " Data pages count         : " << (boost::format("%13u") % tables.pages) << std::endl;
-    std::cout << " Data pages size      (B) : " << (boost::format("%13s") % human_size(tables.size)) << std::endl;
-    std::cout << " Free pages count         : " << (boost::format("%13u") % tables.tables[0].pages()) << std::endl;
-    std::cout << " Free pages size      (C) : " << (boost::format("%13s") % human_size(freeInfo.size)) << std::endl;
-    std::cout << " Reclaimable space        : "
-              << (boost::format("%13s") % human_size(tables.filesize - tables.size + freeInfo.size))
+    std::cout << "\n "
+              << " Database file size   (A) : " << (boost::format("%13s") % human_size(dbTablesInfo.filesize)) << "\n"
+              << " Data pages count         : " << (boost::format("%13u") % dbTablesInfo.pages) << "\n"
+              << " Data pages size      (B) : " << (boost::format("%13s") % human_size(dbTablesInfo.size)) << "\n"
+              << " Free pages count         : " << (boost::format("%13u") % dbTablesInfo.tables[0].pages()) << "\n"
+              << " Free pages size      (C) : " << (boost::format("%13s") % human_size(dbFreeInfo.size)) << "\n"
+              << " Reclaimable space        : "
+              << (boost::format("%13s") % human_size(dbTablesInfo.filesize - dbTablesInfo.size + dbFreeInfo.size))
               << " == A - B + C \n"
               << std::endl;
 }
@@ -464,19 +462,18 @@ void do_freelist(db::EnvConfig& config, bool detail) {
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_read()};
 
-    auto freeInfo{get_freeInfo(txn)};
-
-    if (freeInfo.entries.size() && detail) {
-        std::cout << std::endl;
-        std::cout << (boost::format(fmt_hdr) % "TxId" % "Pages" % "Size") << std::endl;
-        std::cout << (boost::format(fmt_hdr) % std::string(9, '-') % std::string(9, '-') % std::string(12, '-'))
+    auto dbFreeInfo{get_freeInfo(txn)};
+    if (!dbFreeInfo.entries.empty() && detail) {
+        std::cout << "\n"
+                  << (boost::format(fmt_hdr) % "TxId" % "Pages" % "Size") << "\n"
+                  << (boost::format(fmt_hdr) % std::string(9, '-') % std::string(9, '-') % std::string(12, '-'))
                   << std::endl;
-        for (auto& item : freeInfo.entries) {
+        for (auto& item : dbFreeInfo.entries) {
             std::cout << (boost::format(fmt_row) % item.id % item.pages % human_size(item.size)) << std::endl;
         }
     }
-    std::cout << "\n Free pages count     : " << boost::format("%13u") % freeInfo.pages << "\n"
-              << " Free pages size      : " << boost::format("%13s") % human_size(freeInfo.size) << "\n"
+    std::cout << "\n Free pages count     : " << boost::format("%13u") % dbFreeInfo.pages << "\n"
+              << " Free pages size      : " << boost::format("%13s") % human_size(dbFreeInfo.size) << "\n"
               << std::endl;
 }
 
@@ -619,7 +616,7 @@ void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, boo
         }
 
         // Is this table present in the list user has provided ?
-        if (names.size()) {
+        if (!names.empty()) {
             auto it = std::find(names.begin(), names.end(), src_table.name);
             if (it == names.end()) {
                 std::cout << "Skipped (no match --tables)" << std::flush;
@@ -628,7 +625,7 @@ void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, boo
         }
 
         // Is this table present in the list user has excluded ?
-        if (xnames.size()) {
+        if (!xnames.empty()) {
             auto it = std::find(xnames.begin(), xnames.end(), src_table.name);
             if (it != xnames.end()) {
                 std::cout << "Skipped (match --xtables)" << std::flush;
@@ -645,9 +642,9 @@ void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, boo
         // Is source table already present in target db ?
         bool exists_on_target{false};
         bool populated_on_target{false};
-        if (tgt_tableInfo.tables.size()) {
+        if (!tgt_tableInfo.tables.empty()) {
             auto it = std::find_if(tgt_tableInfo.tables.begin(), tgt_tableInfo.tables.end(),
-                                   boost::bind(&dbTableEntry::name, _1) == src_table.name);
+                                   [&src_table](dbTableEntry& item) -> bool { return item.name == src_table.name; });
             if (it != tgt_tableInfo.tables.end()) {
                 exists_on_target = true;
                 populated_on_target = (it->stat.ms_entries > 0);
@@ -659,7 +656,7 @@ void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, boo
         auto src_table_info{src_txn.get_handle_info(src_table_map)};
 
         // If table does not exist on target create it with same flags as
-        // origin table. Otherwise check the info match
+        // origin table. Check the info match otherwise.
         mdbx::map_handle tgt_table_map;
         if (!exists_on_target) {
             tgt_table_map = tgt_txn.create_map(src_table.name, src_table_info.key_mode(), src_table_info.value_mode());
@@ -897,7 +894,7 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
     header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
     header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
 
-    auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
+    auto nonce = std::stoull(genesis_json["nonce"].get<std::string>(), nullptr, 0);
     std::memcpy(&header.nonce[0], &nonce, 8);
 
     // Write header
@@ -962,9 +959,10 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_read()};
 
-    std::cout << "\n" << (boost::format(fmt_hdr) % "Table name" % "%") << std::endl;
-    std::cout << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(50, '-')) << std::endl;
-    std::cout << (boost::format(" %-24s ") % db::table::kCode.name) << std::flush;
+    std::cout << "\n"
+              << (boost::format(fmt_hdr) % "Table name" % "%") << "\n"
+              << (boost::format(fmt_hdr) % std::string(24, '-') % std::string(50, '-')) << "\n"
+              << (boost::format(" %-24s ") % db::table::kCode.name) << std::flush;
 
     std::unordered_map<uint8_t, size_t> histogram;
     auto code_cursor{db::open_cursor(txn, db::table::kCode)};
@@ -1000,13 +998,10 @@ void do_first_byte_analysis(db::EnvConfig& config) {
               std::back_inserter<std::vector<std::pair<uint8_t, size_t>>>(histogram_sorted));
     std::sort(histogram_sorted.begin(), histogram_sorted.end(),
               [](std::pair<uint8_t, size_t>& a, std::pair<uint8_t, size_t>& b) -> bool {
-                  if (a.second == b.second) {
-                      return a.first < b.first;
-                  }
-                  return a.second > b.second;
+                  return a.second == b.second ? a.first < b.first : a.second > b.second;
               });
 
-    if (histogram_sorted.size()) {
+    if (!histogram_sorted.empty()) {
         std::cout << (boost::format(" %-4s %8s") % "Byte" % "Count") << "\n"
                   << (boost::format(" %-4s %8s") % std::string(4, '-') % std::string(8, '-')) << std::endl;
         for (const auto& [byte_code, usage_count] : histogram_sorted) {
@@ -1199,7 +1194,7 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_extract_headers) {
             do_extract_headers(src_config, cmd_extract_headers_file_opt->as<std::string>(),
                                cmd_extract_headers_step_opt->as<uint32_t>());
-        };
+        }
 
         return 0;
 

@@ -1017,6 +1017,8 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     std::cout << "\n" << std::endl;
 }
 
+void do_extract_headers(db::EnvConfig& config, std::string file_name, uint32_t step) {}
+
 int main(int argc, char* argv[]) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
@@ -1112,6 +1114,14 @@ int main(int argc, char* argv[]) {
     auto cmd_first_byte_analysis = app_main.add_subcommand(
         "first-byte-analysis", "Prints an histogram analysis of first byte for deployed contracts");
 
+    // Extract a list of historical headers in given file
+    auto cmd_extract_headers = app_main.add_subcommand(
+        "extract-headers", "Hard-code historical headers, from block zero to the highest available");
+    auto cmd_extract_headers_file_opt = cmd_extract_headers->add_flag("--file", "Output file")->required();
+    auto cmd_extract_headers_step_opt = cmd_extract_headers->add_flag("--step", "Step every this number of blocks")
+                                            ->default_val("100000")
+                                            ->check(CLI::Range(1u, UINT32_MAX));
+
     /*
      * Parse arguments and validate
      */
@@ -1186,6 +1196,9 @@ int main(int argc, char* argv[]) {
             do_chainconfig(src_config);
         } else if (*cmd_first_byte_analysis) {
             do_first_byte_analysis(src_config);
+        } else if (*cmd_extract_headers) {
+            do_extract_headers(src_config, cmd_extract_headers_file_opt->as<std::string>(),
+                               cmd_extract_headers_step_opt->as<uint32_t>());
         };
 
         return 0;

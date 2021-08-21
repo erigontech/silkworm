@@ -14,9 +14,6 @@
    limitations under the License.
 */
 
-#include <filesystem>
-#include <iomanip>
-#include <iostream>
 #include <string>
 #include <unordered_map>
 
@@ -26,7 +23,6 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 
 #include "stagedsync.hpp"

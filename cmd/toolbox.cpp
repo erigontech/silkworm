@@ -1041,7 +1041,7 @@ void do_extract_headers(db::EnvConfig& config, std::string file_name, uint32_t s
         }
         /// Print all bytes of hash into stream
         auto value_bytes{static_cast<uint8_t*>(data.value.iov_base)};
-        for (int i = 0; i < data.value.length(); ++i) {
+        for (size_t i{0}; i < data.value.length(); ++i) {
             out_stream << "0x" << std::hex << static_cast<uint32_t>(value_bytes[i]) << ",";
         }
         out_stream << "\n";  // Close line

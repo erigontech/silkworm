@@ -46,6 +46,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
             etl::Entry entry{Bytes(byte_ptr_cast(bitmap_key.c_str()), bitmap_key.size()), bitmap_bytes};
             collector.collect(entry);
         }
+        bitmaps.clear();
     };
 
     // We take data from changesets and turn it to indexes, so from [Block Number => Location] to [Location => Block
@@ -91,9 +92,8 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         // Flush to ETL
         if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
             flush_bitmaps_to_etl();
-            SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
-            bitmaps.clear();
             allocated_space = 0;
+            SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
         }
         data = changeset_table.to_next(/*throw_notfound*/ false);
     }
@@ -101,9 +101,6 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     if (allocated_space != 0) {
         flush_bitmaps_to_etl();
     }
-
-    // Wipe out useless memory
-    bitmaps.clear();
 
     SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
 

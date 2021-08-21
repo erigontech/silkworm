@@ -22,7 +22,7 @@ namespace silkworm {
 
 DataDirectory::DataDirectory(const std::filesystem::path& base_path, bool create)
     : base_path_{base_path},
-      chaindata_path_{base_path / "erigon" / "chaindata"},
+      chaindata_path_{base_path / "chaindata"},
       nodes_path_{base_path / "nodes"},
       etl_temp_path_{base_path / "etl-temp"} {
     if (base_path_.has_filename()) {
@@ -48,40 +48,36 @@ DataDirectory::DataDirectory(const std::filesystem::path& base_path, bool create
     }
 }
 
-DataDirectory DataDirectory::from_chaindata(std::filesystem::path chaindata_path) {
-    if (!std::filesystem::exists(chaindata_path) || !std::filesystem::is_directory(chaindata_path)) {
+DataDirectory DataDirectory::from_chaindata(const std::filesystem::path& chaindata_path) {
+    if (chaindata_path.empty() || !std::filesystem::exists(chaindata_path) ||
+        !std::filesystem::is_directory(chaindata_path)) {
         throw std::invalid_argument("Bad or not existent chaindata directory");
     }
-    if (chaindata_path.has_filename()) {
-        chaindata_path += std::filesystem::path::preferred_separator;
-    }
+    /// Ensure we treat path as absolute
+    auto chaindata_path_absolute{std::filesystem::absolute(chaindata_path)};
 
-    // Chaindata must be at least 3 levels deep
+    /// Chaindata must be at least 2 levels deep
     /*
 <datadir>
-├───crashreports
-├───erigon
-│   ├───chaindata <--
-│   └───nodes
+├───chaindata
 ├───etl-temp
 └───nodes
     ├───eth65
     └───eth66
     */
 
-    std::string delimiter{std::filesystem::path::preferred_separator};
-    auto tokens{silkworm::split(chaindata_path.string(), delimiter)};
-
-    if (tokens.size() <= 2) {
-        throw std::runtime_error("Invalid base path");
+    if (std::filesystem::equivalent(chaindata_path, chaindata_path.root_path())) {
+        throw std::invalid_argument("Chaindata directory can't be root");
     }
 
-    if (!iequals(tokens.at(tokens.size() - 1), "chaindata") || !iequals(tokens.at(tokens.size() - 2), "erigon")) {
-        throw std::invalid_argument("Not a valid erigon chaindata path");
+    std::string delimiter{std::filesystem::path::preferred_separator};
+    auto tokens{silkworm::split(chaindata_path.string(), delimiter)};
+    if (tokens.empty() || !iequals(tokens.at(tokens.size() - 1), "chaindata")) {
+        throw std::invalid_argument("Not a valid Silkworm chaindata path");
     }
 
     std::string base_path_str{};
-    for (size_t i = 0; i < tokens.size() - 2; i++) {
+    for (size_t i = 0; i < tokens.size() - 1; i++) {
         base_path_str += tokens.at(i) + delimiter;
     }
 
@@ -112,14 +108,14 @@ std::filesystem::path silkworm::DataDirectory::get_default_storage_path() {
 
     std::filesystem::path base_dir_path{base_dir_str};
 #ifdef _WIN32
-    base_dir_path /= "Erigon";
+    base_dir_path /= "Silkworm";
 #elif __APPLE__
     base_dir_path /= "Library";
-    base_dir_path /= "Erigon";
+    base_dir_path /= "Silkworm";
 #else
     base_dir_path /= ".local";
     base_dir_path /= "share";
-    base_dir_path /= "erigon";
+    base_dir_path /= "silkworm";
 #endif
 
     if (base_dir_path.has_filename()) {

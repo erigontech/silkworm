@@ -98,7 +98,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
     flush_buffer();
 
     // Define a priority queue based on smallest available key
-    auto key_comparer = [](std::pair<Entry, int> left, std::pair<Entry, int> right) {
+    auto key_comparer = [](const std::pair<Entry, int> &left, const std::pair<Entry, int> &right) {
         return right.first < left.first;
     };
     std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>, decltype(key_comparer)> queue(
@@ -109,7 +109,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
     for (auto& file_provider : file_providers_) {
         auto item{file_provider->read_entry()};
         if (item.has_value()) {
-            queue.push(*item);
+            queue.push(std::move(*item));
         }
     }
 
@@ -146,7 +146,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
         // Add next item to the queue only if it has
         // meaningful data
         if (next.has_value()) {
-            queue.push(*next);
+            queue.push(std::move(*next));
         } else {
             file_provider.reset();
         }

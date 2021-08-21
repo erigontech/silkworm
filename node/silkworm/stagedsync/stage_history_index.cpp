@@ -35,7 +35,18 @@ namespace fs = std::filesystem;
 
 static StageResult history_index_stage(TransactionManager& txn, const std::filesystem::path& etl_path, bool storage) {
     fs::create_directories(etl_path);
+
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+    std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
+
+    auto flush_bitmaps_to_etl = [&collector, &bitmaps] {
+        for (const auto& [bitmap_key, bitmap] : bitmaps) {
+            Bytes bitmap_bytes(bitmap.getSizeInBytes(), '\0');
+            bitmap.write(byte_ptr_cast(bitmap_bytes.data()));
+            etl::Entry entry{Bytes(byte_ptr_cast(bitmap_key.c_str()), bitmap_key.size()), bitmap_bytes};
+            collector.collect(entry);
+        }
+    };
 
     // We take data from changesets and turn it to indexes, so from [Block Number => Location] to [Location => Block
     // Number]
@@ -44,8 +55,6 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
 
     auto changeset_table{db::open_cursor(*txn, changeset_config)};
-    std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
-
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, stage_key)};
 
     // Extract
@@ -81,12 +90,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         allocated_space += 8;
         // Flush to ETL
         if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
-            for (const auto& [key, bm] : bitmaps) {
-                Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-                bm.write(byte_ptr_cast(bitmap_bytes.data()));
-                etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
-                collector.collect(entry);
-            }
+            flush_bitmaps_to_etl();
             SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
             bitmaps.clear();
             allocated_space = 0;
@@ -94,14 +98,10 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         data = changeset_table.to_next(/*throw_notfound*/ false);
     }
     changeset_table.close();
-
-    // Flush remainings to ETL
-    for (const auto& [key, bm] : bitmaps) {
-        Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-        bm.write(byte_ptr_cast(bitmap_bytes.data()));
-        etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
-        collector.collect(entry);
+    if (allocated_space != 0) {
+        flush_bitmaps_to_etl();
     }
+    
     // Wipe out useless memory
     bitmaps.clear();
 

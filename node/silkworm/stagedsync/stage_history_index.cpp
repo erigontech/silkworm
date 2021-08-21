@@ -56,11 +56,11 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
 
     auto changeset_table{db::open_cursor(*txn, changeset_config)};
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, stage_key)};
+    Bytes start{db::block_key(++last_processed_block_number + 1)};
 
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account")
-                                 << " Index Extraction. From: " << last_processed_block_number << std::endl;
-    Bytes start{db::block_key(last_processed_block_number + 1)};
+                                 << " Index Extraction. From: " << (last_processed_block_number + 1) << std::endl;
 
     size_t allocated_space{0};
     uint64_t block_number{0};
@@ -70,7 +70,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         auto key{db::from_slice(data.key)};
         auto value{db::from_slice(data.value)};
         auto [db_key, _]{convert_to_db_format(key, value)};
-        // Make the composite key accordingly wheter we are dealing with storages or accounts
+        // Make the composite key accordingly whether we are dealing with storages or accounts
         if (storage) {
             // Storage: Address + Location
             composite_key.resize(kAddressLength + kHashLength);
@@ -101,7 +101,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     if (allocated_space != 0) {
         flush_bitmaps_to_etl();
     }
-    
+
     // Wipe out useless memory
     bitmaps.clear();
 

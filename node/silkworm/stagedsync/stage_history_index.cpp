@@ -56,7 +56,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
 
     auto changeset_table{db::open_cursor(*txn, changeset_config)};
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, stage_key)};
-    Bytes start{db::block_key(++last_processed_block_number + 1)};
+    Bytes start{db::block_key(last_processed_block_number + 1)};
 
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account")

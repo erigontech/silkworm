@@ -100,9 +100,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(check_blockhashes check_blockhashes.cpp)
   target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(extract_headers extract_headers.cpp)
-  target_link_libraries(extract_headers PRIVATE silkworm_node CLI11::CLI11)
-
   add_executable(log_index log_index.cpp)
   target_link_libraries(log_index PRIVATE silkworm_node cborcpp CLI11::CLI11)
 

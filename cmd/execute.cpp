@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
     db_config.create = false;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager tm{env};
-    auto res{stagedsync::stage_execution(tm, data_dir.get_etl_path(), batch_size.value())};
+    auto res{stagedsync::stage_execution(tm, data_dir.get_etl_path(), batch_size.value(), 0)};
     if (res != stagedsync::StageResult::kSuccess) {
         SILKWORM_LOG(LogLevel::Info) << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res)
                                      << std::endl;

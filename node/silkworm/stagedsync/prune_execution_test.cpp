@@ -17,6 +17,7 @@
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
+#include <silkworm/trie/vector_root.hpp>
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/data_dir.hpp>
@@ -25,14 +26,13 @@
 #include <silkworm/db/stages.hpp>
 #include <silkworm/execution/address.hpp>
 #include <silkworm/execution/execution.hpp>
+#include <silkworm/rlp/encode.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
 #include "stagedsync.hpp"
 
-using namespace evmc::literals;
-
-TEST_CASE("Stage Hashstate") {
+TEST_CASE("Prune Execution without prune function") {
     using namespace silkworm;
 
     TemporaryDirectory tmp_dir;
@@ -56,7 +56,13 @@ TEST_CASE("Stage Hashstate") {
     block.header.number = block_number;
     block.header.beneficiary = miner;
     block.header.gas_limit = 100'000;
-    block.header.gas_used = 63'820;
+    block.header.gas_used = 98'824;
+
+    static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+    std::vector<Receipt> receipts{
+        {Transaction::Type::kEip1559, true, block.header.gas_used, {}, {}},
+    };
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
     // This contract initially sets its 0th storage to 0x2a
     // and its 1st storage to 0x01c9.
@@ -67,8 +73,9 @@ TEST_CASE("Stage Hashstate") {
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
     block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
-    block.transactions[0].max_fee_per_gas = block.transactions[0].max_priority_fee_per_gas;
+    block.transactions[0].type = Transaction::Type::kEip1559;
+    block.transactions[0].max_priority_fee_per_gas = 0;
+    block.transactions[0].max_fee_per_gas = 20 * kGiga;
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     block.transactions[0].r = 1;  // dummy
@@ -83,7 +90,7 @@ TEST_CASE("Stage Hashstate") {
     // ---------------------------------------
     // Execute first block
     // ---------------------------------------
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
     auto contract_address{create_address(sender, /*nonce=*/0)};
 
     // ---------------------------------------
@@ -94,15 +101,18 @@ TEST_CASE("Stage Hashstate") {
 
     block_number = 2;
     block.header.number = block_number;
-    block.header.gas_used = 26'201;
+    block.header.gas_used = 26'149;
+    receipts[0].cumulative_gas_used = block.header.gas_used;
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
     block.transactions[0].nonce = 1;
     block.transactions[0].value = 1000;
 
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
+    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
 
     // ---------------------------------------
     // Execute third block
@@ -112,32 +122,27 @@ TEST_CASE("Stage Hashstate") {
 
     block_number = 3;
     block.header.number = block_number;
-    block.header.gas_used = 26'201;
 
     block.transactions[0].nonce = 2;
-    block.transactions[0].value = 1000;
-
-    block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
 
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
-    buffer.write_to_db();
+    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
+
     db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    // We keep chain from Block 2 onwards (Aka, we delete block 1 changesets and receipts)
+    buffer.write_to_db(2);
 
-    CHECK(stagedsync::stage_hashstate(txn, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
+    auto account_changeset_table{db::open_cursor(*txn, db::table::kPlainAccountChangeSet)};
+    auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};
+    // Check wheter we start from Block 2 and not block 1
+    auto account_changeset_tail{db::from_slice(account_changeset_table.to_first().key)};
+    auto storage_changeset_tail{db::from_slice(storage_changeset_table.to_first().key)};
 
-    auto hashed_address_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
-    auto address_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
-    CHECK(hashed_address_table.seek(db::to_slice(address_keccak)));
-    auto account_encoded{db::from_slice(hashed_address_table.current().value)};
-
-    auto [acc, _]{decode_account_from_storage(account_encoded)};
-    CHECK(acc.nonce == 3);
-    CHECK(acc.balance < kEther);
-    CHECK(db::stages::get_stage_progress(*txn, db::stages::kHashStateKey) == 3);
+    CHECK(account_changeset_tail.substr(0, 8).compare(db::block_key(2)) == 0);
+    CHECK(storage_changeset_tail.substr(0, 8).compare(db::block_key(2)) == 0);
 }
 
-TEST_CASE("Unwind Hashstate") {
+TEST_CASE("Prune Execution with prune function") {
     using namespace silkworm;
 
     TemporaryDirectory tmp_dir;
@@ -161,7 +166,13 @@ TEST_CASE("Unwind Hashstate") {
     block.header.number = block_number;
     block.header.beneficiary = miner;
     block.header.gas_limit = 100'000;
-    block.header.gas_used = 63'820;
+    block.header.gas_used = 98'824;
+
+    static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+    std::vector<Receipt> receipts{
+        {Transaction::Type::kEip1559, true, block.header.gas_used, {}, {}},
+    };
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
     // This contract initially sets its 0th storage to 0x2a
     // and its 1st storage to 0x01c9.
@@ -172,8 +183,9 @@ TEST_CASE("Unwind Hashstate") {
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
     block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
-    block.transactions[0].max_fee_per_gas = block.transactions[0].max_priority_fee_per_gas;
+    block.transactions[0].type = Transaction::Type::kEip1559;
+    block.transactions[0].max_priority_fee_per_gas = 0;
+    block.transactions[0].max_fee_per_gas = 20 * kGiga;
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
     block.transactions[0].r = 1;  // dummy
@@ -188,7 +200,7 @@ TEST_CASE("Unwind Hashstate") {
     // ---------------------------------------
     // Execute first block
     // ---------------------------------------
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
     auto contract_address{create_address(sender, /*nonce=*/0)};
 
     // ---------------------------------------
@@ -199,15 +211,18 @@ TEST_CASE("Unwind Hashstate") {
 
     block_number = 2;
     block.header.number = block_number;
-    block.header.gas_used = 26'201;
+    block.header.gas_used = 26'149;
+    receipts[0].cumulative_gas_used = block.header.gas_used;
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
     block.transactions[0].nonce = 1;
     block.transactions[0].value = 1000;
 
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
+    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
 
     // ---------------------------------------
     // Execute third block
@@ -217,30 +232,23 @@ TEST_CASE("Unwind Hashstate") {
 
     block_number = 3;
     block.header.number = block_number;
-    block.header.gas_used = 26'201;
 
     block.transactions[0].nonce = 2;
-    block.transactions[0].value = 1000;
-
-    block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
 
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
-    buffer.write_to_db();
+    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
+
     db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    buffer.write_to_db();
+    // We prune from block 2. Thus we delete block 1
+    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::prune_execution(txn, data_dir.get_etl_path(), 2)));
 
-    CHECK(stagedsync::stage_hashstate(txn, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::unwind_hashstate(txn, data_dir.get_etl_path(), 1) == stagedsync::StageResult::kSuccess);
+    auto account_changeset_table{db::open_cursor(*txn, db::table::kPlainAccountChangeSet)};
+    auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};
+    // Check wheter we start from Block 2 and not block 1
+    auto account_changeset_tail{db::from_slice(account_changeset_table.to_first().key)};
+    auto storage_changeset_tail{db::from_slice(storage_changeset_table.to_first().key)};
 
-    auto hashed_address_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
-
-    auto address_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
-
-    CHECK(hashed_address_table.seek(db::to_slice(address_keccak)));
-    auto account_encoded{db::from_slice(hashed_address_table.current().value)};
-
-    auto [acc, _]{decode_account_from_storage(account_encoded)};
-    CHECK(acc.nonce == 2);
-    CHECK(acc.balance < kEther);  // Slightly less due to fees
-    CHECK(db::stages::get_stage_progress(*txn, db::stages::kHashStateKey) == 1);
+    CHECK(account_changeset_tail.substr(0, 8).compare(db::block_key(2)) == 0);
+    CHECK(storage_changeset_tail.substr(0, 8).compare(db::block_key(2)) == 0);
 }

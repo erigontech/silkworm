@@ -26,6 +26,7 @@
 #include <silkworm/execution/address.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/rlp/encode.hpp>
+#include <silkworm/trie/vector_root.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
@@ -41,8 +42,8 @@ TEST_CASE("Unwind Execution") {
     db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
+    stagedsync::TransactionManager txn{env};
+    db::table::create_all(*txn);
 
     // ---------------------------------------
     // Prepare
@@ -55,7 +56,13 @@ TEST_CASE("Unwind Execution") {
     block.header.number = block_number;
     block.header.beneficiary = miner;
     block.header.gas_limit = 100'000;
-    block.header.gas_used = 63'820;
+    block.header.gas_used = 98'824;
+
+    static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+    std::vector<Receipt> receipts{
+        {Transaction::Type::kEip1559, true, block.header.gas_used, {}, {}},
+    };
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
     // This contract initially sets its 0th storage to 0x2a
     // and its 1st storage to 0x01c9.
@@ -66,23 +73,24 @@ TEST_CASE("Unwind Execution") {
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
     block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].max_priority_fee_per_gas = 0;  // EIP-1559
+    block.transactions[0].type = Transaction::Type::kEip1559;
+    block.transactions[0].max_priority_fee_per_gas = 0;
     block.transactions[0].max_fee_per_gas = 20 * kGiga;
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+    block.transactions[0].r = 1;  // dummy
+    block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{txn};
+    db::Buffer buffer{*txn};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
 
-    std::vector<Receipt> receipts;
-
     // ---------------------------------------
     // Execute first block
     // ---------------------------------------
-    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
     auto contract_address{create_address(sender, /*nonce=*/0)};
 
     // ---------------------------------------
@@ -93,7 +101,9 @@ TEST_CASE("Unwind Execution") {
 
     block_number = 2;
     block.header.number = block_number;
-    block.header.gas_used = 26'201;
+    block.header.gas_used = 26'149;
+    receipts[0].cumulative_gas_used = block.header.gas_used;
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
     block.transactions[0].nonce = 1;
     block.transactions[0].value = 1000;
@@ -102,7 +112,7 @@ TEST_CASE("Unwind Execution") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
 
     // ---------------------------------------
     // Execute third block
@@ -112,34 +122,28 @@ TEST_CASE("Unwind Execution") {
 
     block_number = 3;
     block.header.number = block_number;
-    block.header.gas_used = 26'201;
 
     block.transactions[0].nonce = 2;
-    block.transactions[0].value = 1000;
-
-    block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
 
-    db::stages::set_stage_progress(txn, db::stages::kExecutionKey, 3);
+    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
     buffer.write_to_db();
 
     // ---------------------------------------
     // Unwind second block and checks if state is first block
     // ---------------------------------------
-    stagedsync::TransactionManager tm{txn};
-    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_execution(tm, data_dir.get_etl_path(), 1)));
+    REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_execution(txn, data_dir.get_etl_path(), 1)));
 
-    db::Buffer buffer2{txn};
+    db::Buffer buffer2{*txn};
 
     std::optional<Account> contract_account{buffer2.read_account(contract_address)};
     REQUIRE(contract_account);
     CHECK((*contract_account).balance == 0);
 
     std::optional<Account> current_sender{buffer2.read_account(sender)};
-    REQUIRE(current_sender);
+    REQUIRE(current_sender != std::nullopt);
     CHECK((*current_sender).balance == kEther);
     CHECK((*current_sender).nonce == 1);
 

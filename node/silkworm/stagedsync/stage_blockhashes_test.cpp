@@ -25,7 +25,6 @@
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/execution/address.hpp>
-#include <silkworm/execution/execution.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>

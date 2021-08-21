@@ -72,7 +72,7 @@ DataDirectory DataDirectory::from_chaindata(const std::filesystem::path& chainda
 
     std::string delimiter{std::filesystem::path::preferred_separator};
     auto tokens{silkworm::split(chaindata_path.string(), delimiter)};
-    if (tokens.empty() || !iequals(tokens.at(tokens.size() - 1), "chaindata")) {
+    if (tokens.empty() || !iequals(tokens.back(), "chaindata")) {
         throw std::invalid_argument("Not a valid Silkworm chaindata path");
     }
 

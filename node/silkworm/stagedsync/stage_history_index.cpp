@@ -63,13 +63,15 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         auto data{changeset_table.current()};
         while (data) {
             std::string composite_key;
+            auto key{db::from_slice(data.key)};
+            auto value{db::from_slice(data.value)};
+            auto [db_key, _] {convert_to_db_format(key, value)};
             // Make the composite key accordingly wheter we are dealing with storages or accounts
             if (storage) {
                 // Storage: Address + Location
                 composite_key.resize(kAddressLength + kHashLength);
-                auto data_key_view{db::from_slice(data.key).substr(8)};
-                std::memcpy(&composite_key[0], &data_key_view[0], kAddressLength);
-                std::memcpy(&composite_key[kAddressLength], &data_key_view[kAddressLength+db::kIncarnationLength], kHashLength);
+                std::memcpy(&composite_key[0], &db_key[0], kAddressLength);
+                std::memcpy(&composite_key[kAddressLength], &db_key[kAddressLength+db::kIncarnationLength], kHashLength);
             } else {
                 // Account: Address
                 composite_key = std::string(data.value.char_ptr(), kAddressLength);

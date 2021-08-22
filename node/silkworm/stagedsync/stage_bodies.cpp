@@ -18,7 +18,7 @@
 
 namespace silkworm::stagedsync {
 
-StageResult stage_bodies(TransactionManager&, const std::filesystem::path&) {
+StageResult stage_bodies(TransactionManager&, const std::filesystem::path&, uint64_t) {
     throw std::runtime_error("Not Implemented.");
 }
 

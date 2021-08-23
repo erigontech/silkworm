@@ -217,6 +217,53 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     return StageResult::kSuccess;
 }
 
+StageResult history_index_prune(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from,
+                                 bool storage) {
+    db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
+    const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
+    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 10 * kMebi); // We do not prune many blocks usually
+
+    auto last_processed_block{db::stages::get_stage_progress(*txn, stage_key)};
+
+    auto index_table{db::open_cursor(*txn, index_config)};
+    if (index_table.to_first(/* throw_notfound = */ false)) {
+        auto data{index_table.current()};
+        while (data) {
+            // Get bitmap data of current element
+            auto key{db::from_slice(data.key)};
+            auto bitmap_data{db::from_slice(data.value)};
+            auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
+            // Check wheter we should skip the current bitmap
+            if (bm.minimum() >= prune_from) {
+                data = index_table.to_next(/*throw_notfound*/ false);
+                continue;
+            }
+            // check if prune can be applied
+            if (bm.maximum() >= prune_from) {
+                // Erase elements that are below prune_from
+                bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block, 1));
+                Bytes new_bitmap(bm.getSizeInBytes(), '\0');
+                bm.write(byte_ptr_cast(&new_bitmap[0]));
+                // generates new key
+                Bytes new_key(key.size(), '\0');
+                std::memcpy(&new_key[0], key.data(), key.size());
+                endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
+                // replace with new index
+                etl::Entry entry{new_key, new_bitmap};
+                collector.collect(entry);
+            }
+            index_table.erase(/* whole_multivalue = */ true);
+            data = index_table.to_next(/*throw_notfound*/ false);
+        }
+    }
+
+    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
+    txn.commit();
+    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+
+    return StageResult::kSuccess;
+}
+
 StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
     return history_index_stage(txn, etl_path, false);
 }
@@ -231,5 +278,13 @@ StageResult unwind_account_history(TransactionManager& txn, const std::filesyste
 StageResult unwind_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     return history_index_unwind(txn, etl_path, unwind_to, true);
 }
+
+StageResult prune_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+    return history_index_prune(txn, etl_path, prune_from, false);
+}
+StageResult prune_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+    return history_index_prune(txn, etl_path, prune_from, true);
+}
+
 
 }  // namespace silkworm::stagedsync

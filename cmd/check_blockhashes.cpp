@@ -18,7 +18,7 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
@@ -33,15 +33,15 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Check Blockhashes => BlockNumber mapping in database"};
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
 
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
-        data_dir.create_tree();
-        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
+        data_dir.deploy();
+        db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};
 

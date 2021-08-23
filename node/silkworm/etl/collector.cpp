@@ -18,7 +18,7 @@
 #include <queue>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 
 namespace silkworm::etl {
 
@@ -164,10 +164,10 @@ std::filesystem::path Collector::set_work_path(const std::optional<std::filesyst
         }
         res = provided_work_path.value();
     } else {
-        // No path provided so we need to get a unique temporary directory
+        // No path provided we need to get a unique temporary directory
         // to prevent different instances of collector to clash each other
         // with same filenames
-        res = create_temporary_directory();
+        res = TemporaryDirectory::get_unique_temporary_path();
     }
     if (res.has_filename()) {
         res += std::filesystem::path::preferred_separator;

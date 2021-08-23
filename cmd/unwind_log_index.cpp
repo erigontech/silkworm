@@ -14,22 +14,12 @@
    limitations under the License.
 */
 
-#include <filesystem>
-#include <iomanip>
-#include <string>
-#include <thread>
-#include <unordered_map>
-
 #include <CLI/CLI.hpp>
 
-#include <silkworm/common/cast.hpp>
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
 using namespace silkworm;
@@ -39,7 +29,7 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Generates Log Index"};
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     uint64_t unwind_to{0};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
@@ -48,13 +38,13 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
-    data_dir.create_tree();
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
+    data_dir.deploy();
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
 
     try {
         auto env{db::open_env(db_config)};
         stagedsync::TransactionManager tm{env};
-        stagedsync::check_stagedsync_error(stagedsync::unwind_log_index(tm, data_dir.get_etl_path(), unwind_to));
+        stagedsync::check_stagedsync_error(stagedsync::unwind_log_index(tm, data_dir.etl().path(), unwind_to));
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;

@@ -20,7 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/trie/hash_builder.hpp>
 #include <silkworm/types/account.hpp>
@@ -94,7 +94,7 @@ TEST_CASE("Account and storage trie") {
     const TemporaryDirectory tmp_dir2;
 
     // Initialize temporary Database
-    db::EnvConfig db_config{tmp_dir1.path(), /*create*/ true};
+    db::EnvConfig db_config{tmp_dir1.path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
@@ -148,7 +148,7 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    regenerate_intermediate_hashes(txn, tmp_dir2.path(), &expected_root);
+    regenerate_intermediate_hashes(txn, tmp_dir2.path().string().c_str(), &expected_root);
 
     // ----------------------------------------------------------------
     // Check account trie
@@ -226,7 +226,7 @@ TEST_CASE("Account trie around extension node") {
     const TemporaryDirectory tmp_dir2;
 
     // Initialize temporary Database
-    db::EnvConfig db_config{tmp_dir1.path(), /*create*/ true};
+    db::EnvConfig db_config{tmp_dir1.path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
@@ -242,7 +242,7 @@ TEST_CASE("Account trie around extension node") {
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    CHECK(regenerate_intermediate_hashes(txn, tmp_dir2.path()) == expected_root);
+    CHECK(regenerate_intermediate_hashes(txn, tmp_dir2.path().string().c_str()) == expected_root);
 
     std::map<Bytes, Node> node_map;
     const auto save_nodes{[&node_map](mdbx::cursor::move_result& entry) {

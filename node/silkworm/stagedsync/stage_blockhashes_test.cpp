@@ -20,14 +20,9 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/data_dir.hpp>
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/execution/address.hpp>
-#include <silkworm/rlp/encode.hpp>
-#include <silkworm/types/account.hpp>
-#include <silkworm/types/block.hpp>
 
 #include "stagedsync.hpp"
 
@@ -42,10 +37,10 @@ TEST_CASE("Stage Block Hashes") {
 
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
-    CHECK_NOTHROW(data_dir.create_tree());
+    CHECK_NOTHROW(data_dir.deploy());
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -64,7 +59,7 @@ TEST_CASE("Stage Block Hashes") {
     canonical_table.insert(db::to_slice(expected_block_number_2), db::to_slice(hash_2));
     txn.commit();
     // Execute checks
-    CHECK(stagedsync::stage_blockhashes(txn, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_blockhashes(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
     // Hopefully not Post-Mortem checks
     auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
 
@@ -82,10 +77,10 @@ TEST_CASE("Unwind Block Hashes") {
 
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
-    CHECK_NOTHROW(data_dir.create_tree());
+    CHECK_NOTHROW(data_dir.deploy());
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -104,8 +99,8 @@ TEST_CASE("Unwind Block Hashes") {
     canonical_table.insert(db::to_slice(expected_block_number_2), db::to_slice(hash_2));
     txn.commit();
     // Execute checks
-    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::stage_blockhashes(txn, data_dir.get_etl_path())));
-    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_blockhashes(txn, data_dir.get_etl_path(), 1)));
+    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::stage_blockhashes(txn, data_dir.etl().path())));
+    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_blockhashes(txn, data_dir.etl().path(), 1)));
     // Hopefully not Post-Mortem checks
     auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
 

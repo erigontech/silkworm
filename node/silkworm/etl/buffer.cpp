@@ -29,7 +29,7 @@ void Buffer::sort() { std::sort(buffer_.begin(), buffer_.end()); }
 
 size_t Buffer::size() const noexcept { return size_; }
 
-    gsl::span<const Entry> Buffer::entries() const noexcept { return {buffer_.data(), buffer.size(); }
+    gsl::span<const Entry> Buffer::entries() const noexcept { return {buffer_.data(), buffer_.size(); }
 
 void Buffer::clear() noexcept {
     buffer.resize(0);

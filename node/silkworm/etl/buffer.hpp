@@ -36,7 +36,11 @@ class Buffer {
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
-    explicit Buffer(size_t optimal_size) : optimal_size_(optimal_size), buffer_(kInitialBufferCapacity) {}
+    explicit Buffer(size_t optimal_size) : 
+        optimal_size_(optimal_size)
+    {
+        buffer_.reserve(kInitialBufferCapacity);
+    }
 
     void put(const Entry& entry);     // Add a new entry to the buffer
     void clear() noexcept;            // Set the buffer to contain 0 entries
@@ -49,7 +53,6 @@ class Buffer {
     size_t optimal_size_;
     size_t size_ = 0;
 
-    size_t length_ = 0;          // number of entries
     std::vector<Entry> buffer_;  // buffer for holding entries
 };
 

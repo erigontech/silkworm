@@ -22,25 +22,17 @@ namespace silkworm::etl {
 
 void Buffer::put(const Entry& entry) {
     size_ += entry.size();
-
-    assert(length_ <= buffer_.size());
-    if (length_ == buffer_.size()) {
-        buffer_.push_back(entry);
-    } else {
-        buffer_[length_] = entry;
-    }
-
-    ++length_;
+    buffer_.push_back(entry);
 }
 
-void Buffer::sort() { std::sort(buffer_.data(), buffer_.data() + length_); }
+void Buffer::sort() { std::sort(buffer_.begin(), buffer_.end()); }
 
 size_t Buffer::size() const noexcept { return size_; }
 
-gsl::span<const Entry> Buffer::entries() const noexcept { return {buffer_.data(), length_}; }
+    gsl::span<const Entry> Buffer::entries() const noexcept { return {buffer_.data(), buffer.size(); }
 
 void Buffer::clear() noexcept {
-    length_ = 0;
+    buffer.resize(0);
     size_ = 0;
 }
 

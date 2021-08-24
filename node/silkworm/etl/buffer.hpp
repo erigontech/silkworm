@@ -36,18 +36,46 @@ class Buffer {
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
-    explicit Buffer(size_t optimal_size) : 
-        optimal_size_(optimal_size)
-    {
+    explicit Buffer(size_t optimal_size) : optimal_size_(optimal_size) {
         buffer_.reserve(kInitialBufferCapacity);
     }
 
-    void put(const Entry& entry);     // Add a new entry to the buffer
-    void clear() noexcept;            // Set the buffer to contain 0 entries
-    bool overflows() const noexcept;  // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
-    void sort();                      // Sort buffer in increasing order by key comparison
-    size_t size() const noexcept;     // Actual size of accounted data
-    const std::vector<Entry>& entries() const noexcept;
+    void put(const Entry& entry) {
+        // Add a new entry to the buffer
+        size_ += entry.size();
+        buffer_.push_back(entry);
+    }
+
+    void put(Entry&& entry) {
+        // Add a new entry to the buffer
+        size_ += entry.size();
+        buffer_.push_back(std::move(entry));
+    }
+
+    void clear() noexcept { 
+        // Set the buffer to contain 0 entries
+        buffer_.resize(0);
+        size_ = 0;
+    }
+
+    bool overflows() const noexcept {
+        // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
+        return size_ >= optimal_size_; 
+    }
+
+    void sort() {
+        // Sort buffer in increasing order by key comparison
+        std::sort(buffer_.begin(), buffer_.end()); 
+    }
+
+    size_t size() const noexcept {
+        // Actual size of accounted data
+        return size_; 
+    }
+
+    const std::vector<Entry>& entries() const noexcept {
+        return buffer_; 
+    }
 
   private:
     size_t optimal_size_;

@@ -20,22 +20,5 @@
 
 namespace silkworm::etl {
 
-void Buffer::put(const Entry& entry) {
-    size_ += entry.size();
-    buffer_.push_back(entry);
-}
-
-void Buffer::sort() { std::sort(buffer_.begin(), buffer_.end()); }
-
-size_t Buffer::size() const noexcept { return size_; }
-
-const std::vector<Entry>& Buffer::entries() const noexcept { return buffer_; }
-
-void Buffer::clear() noexcept {
-    buffer_.resize(0);
-    size_ = 0;
-}
-
-bool Buffer::overflows() const noexcept { return size_ >= optimal_size_; }
 
 }  // namespace silkworm::etl

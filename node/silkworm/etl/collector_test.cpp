@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/db/tables.hpp>
 
 namespace silkworm::etl {
@@ -54,7 +54,7 @@ void run_collector_test(LoadFunc load_func) {
     srand(time(NULL));
 
     // Initialize temporary Database
-    db::EnvConfig db_config{db_tmp_dir.path(), /*create*/ true};
+    db::EnvConfig db_config{db_tmp_dir.path().string(), /*create*/ true};
     db_config.inmemory = true;
 
     auto env{db::open_env(db_config)};

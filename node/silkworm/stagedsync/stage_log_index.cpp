@@ -15,7 +15,6 @@
 */
 
 #include <filesystem>
-#include <iomanip>
 #include <string>
 #include <unordered_map>
 
@@ -34,7 +33,7 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-constexpr size_t kBitmapBufferSizeLimit = 512 * kMebi;
+constexpr size_t kBitmapBufferSizeLimit = 512_Mebi;
 
 static void loader_function(etl::Entry entry, mdbx::cursor& target_table, MDBX_put_flags_t db_flags) {
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
@@ -201,8 +200,8 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
 }
 
 StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
-    etl::Collector topic_collector(etl_path, /* flush size */ 256 * kMebi);
-    etl::Collector addresses_collector(etl_path, /* flush size */ 256 * kMebi);
+    etl::Collector topic_collector(etl_path, /* flush size */ 256_Mebi);
+    etl::Collector addresses_collector(etl_path, /* flush size */ 256_Mebi);
 
     SILKWORM_LOG(LogLevel::Info) << "Started Topic Index Unwind" << std::endl;
     auto result{unwind_log_index(txn, topic_collector, unwind_to, true)};

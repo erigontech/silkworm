@@ -29,7 +29,7 @@
 
 namespace silkworm::stagedsync {
 
-constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
+constexpr size_t kBitmapBufferSizeLimit = 256_Mebi;
 
 namespace fs = std::filesystem;
 

@@ -20,8 +20,6 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
 
 #include "stagedsync.hpp"
@@ -53,12 +51,12 @@ static std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateO
  *  If we haven't done hashstate before(first sync), it is possible to just hash values from plainstates,
  *  This is way faster than using changeset because it uses less database reads.
  */
-void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
+void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
     SILKWORM_LOG(LogLevel::Info) << "Hashing state" << std::endl;
 
     fs::create_directories(etl_path);
-    etl::Collector collector_account(etl_path.c_str(), 512 * kMebi);
-    etl::Collector collector_storage(etl_path.c_str(), 512 * kMebi);
+    etl::Collector collector_account(etl_path, 512_Mebi);
+    etl::Collector collector_storage(etl_path, 512_Mebi);
 
     auto src{db::open_cursor(txn, db::table::kPlainState)};
     auto data{src.to_first(/*throw_notfound*/ false)};
@@ -108,11 +106,11 @@ void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
     collector_storage.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
 }
 
-void hashstate_promote_clean_code(mdbx::txn& txn, std::string etl_path) {
+void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
     SILKWORM_LOG(LogLevel::Info) << "Hashing code keys" << std::endl;
 
     fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.c_str(), 512 * kMebi);
+    etl::Collector collector(etl_path, 512_Mebi);
 
     auto tbl{db::open_cursor(txn, db::table::kPlainContractCode)};
     auto data{tbl.to_first(/*throw_notfound*/ false)};

@@ -26,7 +26,7 @@
 
 namespace silkworm::stagedsync {
 
-constexpr size_t kDefaultBatchSize = 512 * kMebi;
+constexpr size_t kDefaultBatchSize = 512_Mebi;
 constexpr size_t kDefaultRecoverySenderBatch = 50'000;  // This a number of transactions not number of bytes
 
 typedef StageResult (*StageFunc)(TransactionManager&, const std::filesystem::path& etl_path);
@@ -66,8 +66,8 @@ enum class HashstateOperation {
 };
 
 void hashstate_promote(mdbx::txn&, HashstateOperation);
-void hashstate_promote_clean_code(mdbx::txn&, std::string);
-void hashstate_promote_clean_state(mdbx::txn&, std::string);
+void hashstate_promote_clean_code(mdbx::txn& txn, const std::filesystem::path& etl_path);
+void hashstate_promote_clean_state(mdbx::txn& txn, const std::filesystem::path& etl_path);
 
 /* **************************** */
 StageResult stage_hashstate      (TransactionManager& txn, const std::filesystem::path& etl_path);

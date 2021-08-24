@@ -161,12 +161,12 @@ void InMemoryState::update_account(const evmc::address& address, std::optional<A
                                    std::optional<Account> current) {
     account_changes_[block_number_][address] = initial;
 
-    if (current) {
-        accounts_[address] = *current;
+    if (current.has_value()) {
+        accounts_[address] = current.value();
     } else {
         accounts_.erase(address);
-        if (initial) {
-            prev_incarnations_[address] = initial->incarnation;
+        if (initial.has_value()) {
+            prev_incarnations_[address] = initial.value().incarnation;
         }
     }
 }

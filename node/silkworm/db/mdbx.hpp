@@ -59,6 +59,8 @@ struct MapConfig {
 ::mdbx::map_handle open_map(::mdbx::txn& tx, const MapConfig& config);
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config);
 
+bool has_map(::mdbx::txn& tx, const char* map_name);  // Checks the provided map name exist
+
 static inline std::filesystem::path get_datafile_path(const std::filesystem::path& base_path) noexcept {
     return std::filesystem::path(base_path / std::filesystem::path(kDbDataFileName));
 }

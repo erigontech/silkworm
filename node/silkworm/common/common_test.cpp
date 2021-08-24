@@ -86,10 +86,11 @@ TEST_CASE("DataDirectory") {
 
     TemporaryDirectory tmp_dir1;
     std::filesystem::path fake_path{std::filesystem::path(tmp_dir1.path()) / "nonexistentpath"};
-    REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Does not exist
+    std::filesystem::path fake_path_root{fake_path.root_path()};
+    REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));       // Does not exist
+    REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path_root));  // Can't be root
     std::filesystem::create_directories(fake_path);
     REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Not a valid chaindata path
-    fake_path /= "erigon";
     fake_path /= "chaindata";
     REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Valid chaindata path but does not exist yet
     std::filesystem::create_directories(fake_path);

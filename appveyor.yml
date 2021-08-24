@@ -14,10 +14,18 @@
 
 image: Visual Studio 2019
 platform: x64
-configuration: Debug
+configuration:
+  - Debug
+  - Release
+
+matrix:
+  fast_finish: true
 
 environment:
   APPVEYOR_SAVE_CACHE_ON_ERROR: true
+  matrix:
+    - SILKWORM_BUILD_TYPE: Debug
+    - SILKWORM_BUILD_TYPE: Release
 
 install:
   - cd c:\Tools\vcpkg
@@ -33,13 +41,27 @@ before_build:
   - git submodule update --init --recursive
   - SET INCLUDE=C:\Tools\vcpkg\installed\x64-windows\include;%INCLUDE%
   - SET PATH=C:\Tools\vcpkg\installed\x64-windows\bin;C:\Strawberry\perl\bin;%PATH%
-  - cmake -H. -Bbuild -Wno-dev -DCMAKE_BUILD_TYPE="Debug"
+  - cmake -H. -Bbuild -Wno-dev -DCMAKE_BUILD_TYPE=%SILKWORM_BUILD_TYPE%
 
 build:
   project: build\silkworm.sln
 
-test_script:
-  - cd Build
-  - cmd\Debug\core_test.exe
-  - cmd\Debug\node_test.exe
-  - cmd\Debug\consensus.exe
+for:
+  -
+    matrix:
+      only:
+        - Configuration: Debug
+    test_script:
+      - cd Build
+      - cmd\%SILKWORM_BUILD_TYPE%\core_test.exe
+      - cmd\%SILKWORM_BUILD_TYPE%\node_test.exe
+
+  -
+    matrix:
+      only:
+        - Configuration: Debug
+    test_script:
+      - cd Build
+      - cmd\%SILKWORM_BUILD_TYPE%\core_test.exe
+      - cmd\%SILKWORM_BUILD_TYPE%\node_test.exe
+      - cmd\%SILKWORM_BUILD_TYPE%\consensus.exe

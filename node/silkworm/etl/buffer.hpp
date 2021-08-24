@@ -47,7 +47,7 @@ class Buffer {
     bool overflows() const noexcept;  // Whether or not accounted size overflows optimal_size_ (i.e. time to flush)
     void sort();                      // Sort buffer in increasing order by key comparison
     size_t size() const noexcept;     // Actual size of accounted data
-    gsl::span<const Entry> entries() const noexcept;
+    const std::vector<Entry>& entries() const noexcept;
 
   private:
     size_t optimal_size_;

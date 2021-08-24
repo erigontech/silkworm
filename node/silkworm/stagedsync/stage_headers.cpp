@@ -19,7 +19,7 @@
 namespace silkworm::stagedsync {
 
 StageResult stage_headers(TransactionManager&, const std::filesystem::path&) {
-    throw std::runtime_error("Not Implemented.");
+    throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented"));
 }
 
 }  // namespace silkworm::stagedsync

@@ -62,7 +62,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
 }
 
 std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) noexcept {
-    if (json == nlohmann::json::value_t::discarded || !json.contains("chainId") || !json["chainId"].is_number()) {
+    if (json.is_discarded() || !json.contains("chainId") || !json["chainId"].is_number()) {
         return std::nullopt;
     }
 

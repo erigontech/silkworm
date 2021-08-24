@@ -251,13 +251,12 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     auto [changeset_config, target_config] = get_tables_for_promote(operation);
 
     auto changeset_table{db::open_cursor(txn, changeset_config)};
-    auto plainstate_table{db::open_cursor(txn, db::table::kPlainState)};
     auto target_table{db::open_cursor(txn, target_config)};
     auto code_table{db::open_cursor(txn, db::table::kContractCode)};
     auto contract_code_table{db::open_cursor(txn, db::table::kPlainContractCode)};
 
     Bytes start_key{db::block_key(unwind_to + 1)};
-    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
+    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/ false)};
     if (!changeset_data) {
         return;
     }

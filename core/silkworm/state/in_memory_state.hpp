@@ -26,6 +26,14 @@ namespace silkworm {
 
 /// InMemoryState holds the entire state in memory.
 class InMemoryState : public State {
+  private:
+    // address -> initial value
+    using AccountChanges = std::unordered_map<evmc::address, std::optional<Account>>;
+
+    // address -> incarnation -> location -> initial value
+    using StorageChanges =
+        std::unordered_map<evmc::address,
+                           std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, evmc::bytes32>>>;
   public:
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -75,15 +83,10 @@ class InMemoryState : public State {
 
     size_t storage_size(const evmc::address& address, uint64_t incarnation) const;
 
+    const std::unordered_map<uint64_t, AccountChanges>& account_changes() const { return account_changes_; }
+    const std::unordered_map<evmc::address, Account>& accounts() const { return accounts_; }
+
   private:
-    // address -> initial value
-    using AccountChanges = std::unordered_map<evmc::address, std::optional<Account>>;
-
-    // address -> incarnation -> location -> initial value
-    using StorageChanges =
-        std::unordered_map<evmc::address,
-                           std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, evmc::bytes32>>>;
-
     evmc::bytes32 account_storage_root(const evmc::address& address, uint64_t incarnation) const;
 
     std::unordered_map<evmc::address, Account> accounts_;

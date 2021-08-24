@@ -14,16 +14,12 @@
    limitations under the License.
 */
 
-#include <filesystem>
-
 #include <CLI/CLI.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
 int main(int argc, char* argv[]) {

@@ -15,13 +15,11 @@
 */
 
 #include <filesystem>
-#include <iostream>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 
 #include "stagedsync.hpp"
@@ -41,7 +39,7 @@ static Bytes compact(Bytes& b) {
 
 StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path& etl_path) {
     fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+    etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
 
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)};
     uint64_t block_number{0};

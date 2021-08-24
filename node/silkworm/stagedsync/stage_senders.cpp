@@ -24,7 +24,7 @@ namespace fs = std::filesystem;
 
 StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& etl_path) {
     fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+    etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
 
     // Create farm instance and do work
     recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultRecoverySenderBatch, collector);
@@ -45,7 +45,7 @@ StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& 
 
 StageResult unwind_senders(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_point) {
     fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+    etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
 
     // Create farm instance and do work
     recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultBatchSize, collector);

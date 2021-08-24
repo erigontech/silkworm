@@ -17,7 +17,6 @@
 #include <filesystem>
 #include <iomanip>
 #include <string>
-#include <thread>
 #include <unordered_map>
 
 #include <silkworm/common/cast.hpp>
@@ -26,7 +25,6 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/listener_log_index.hpp>
 
@@ -76,8 +74,8 @@ static void flush_bitmaps(etl::Collector& collector, std::unordered_map<std::str
 
 StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path& etl_path) {
     fs::create_directories(etl_path);
-    etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
-    etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
+    etl::Collector topic_collector(etl_path, /* flush size */ 256_Mebi);
+    etl::Collector addresses_collector(etl_path, /* flush size */ 256_Mebi);
 
     auto log_table{db::open_cursor(*txn, db::table::kLogs)};
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)};
@@ -89,13 +87,13 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
 
     uint64_t block_number{0};
     uint64_t topics_allocated_space{0};
-    uint64_t addrs_allocated_space{0};
+    uint64_t addresses_allocated_space{0};
     // Two bitmaps to fill: topics and addresses
     std::unordered_map<std::string, roaring::Roaring> topic_bitmaps;
     std::unordered_map<std::string, roaring::Roaring> addresses_bitmaps;
     // CBOR decoder
     listener_log_index current_listener(block_number, &topic_bitmaps, &addresses_bitmaps, &topics_allocated_space,
-                                        &addrs_allocated_space);
+                                        &addresses_allocated_space);
 
     if (log_table.lower_bound(db::to_slice(start))) {
         auto log_data{log_table.current()};
@@ -113,10 +111,10 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
                 topics_allocated_space = 0;
             }
 
-            if (addrs_allocated_space > kBitmapBufferSizeLimit) {
+            if (addresses_allocated_space > kBitmapBufferSizeLimit) {
                 flush_bitmaps(addresses_collector, addresses_bitmaps);
                 SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
-                addrs_allocated_space = 0;
+                addresses_allocated_space = 0;
             }
 
             log_data = log_table.to_next(/*throw_notfound*/ false);
@@ -203,8 +201,8 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
 }
 
 StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
-    etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
-    etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
+    etl::Collector topic_collector(etl_path, /* flush size */ 256 * kMebi);
+    etl::Collector addresses_collector(etl_path, /* flush size */ 256 * kMebi);
 
     SILKWORM_LOG(LogLevel::Info) << "Started Topic Index Unwind" << std::endl;
     auto result{unwind_log_index(txn, topic_collector, unwind_to, true)};

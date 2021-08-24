@@ -31,7 +31,7 @@ namespace fs = std::filesystem;
 
 StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::path& etl_path) {
     fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512_Mebi);
+    etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
     uint32_t block_number{0};
 
     // We take data from header table and transform it and put it in blockhashes table

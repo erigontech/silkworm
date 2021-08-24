@@ -150,7 +150,7 @@ TEST_CASE("Stage History") {
     auto bitmap_storage_contract_bytes{storage_history_table.lower_bound(db::to_slice(composite)).value};
     // Bitmaps computing for storage
     auto bitmap_storage_contract{roaring::Roaring64Map::readSafe(
-        byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size())};
+    byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size())};
     // Checks on storage's bitmaps
     CHECK(bitmap_storage_contract.cardinality() == 3);
     CHECK(bitmap_storage_contract.toString() == "{1,2,3}");

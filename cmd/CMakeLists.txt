@@ -44,8 +44,8 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
-  add_executable(buffer buffer.cpp)
-  target_link_libraries(buffer PRIVATE silkworm_node CLI11::CLI11 absl::time)
+  add_executable(bench_buffer bench_buffer.cpp)
+  target_link_libraries(bench_buffer PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
   add_executable(scan_txs scan_txs.cpp)
   target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)

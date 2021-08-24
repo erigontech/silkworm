@@ -79,7 +79,7 @@ DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, et
         etl::Entry e;
         e.key = unpacked_key;
         e.value = marshal_node(node);
-        account_collector.collect(e);
+        account_collector.collect(std::move(e));
     };
 }
 
@@ -135,7 +135,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                 storage_hb.node_collector = [&](ByteView unpacked_key, const Node& node) {
                     etl::Entry e{acc_with_inc, marshal_node(node)};
                     e.key.append(unpacked_key);
-                    storage_collector_.collect(e);
+                    storage_collector_.collect(std::move(e));
                 };
 
                 for (storage_trie.seek_to_account(acc_with_inc);; storage_trie.next()) {

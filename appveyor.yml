@@ -23,9 +23,6 @@ matrix:
 
 environment:
   APPVEYOR_SAVE_CACHE_ON_ERROR: true
-  matrix:
-    - SILKWORM_BUILD_TYPE: Debug
-    - SILKWORM_BUILD_TYPE: Release
 
 install:
   - cd c:\Tools\vcpkg
@@ -41,7 +38,7 @@ before_build:
   - git submodule update --init --recursive
   - SET INCLUDE=C:\Tools\vcpkg\installed\x64-windows\include;%INCLUDE%
   - SET PATH=C:\Tools\vcpkg\installed\x64-windows\bin;C:\Strawberry\perl\bin;%PATH%
-  - cmake -H. -Bbuild -Wno-dev -DCMAKE_BUILD_TYPE=%SILKWORM_BUILD_TYPE%
+  - cmake -H. -Bbuild -Wno-dev -DCMAKE_BUILD_TYPE=%CONFIGURATION%
 
 build:
   project: build\silkworm.sln
@@ -53,8 +50,8 @@ for:
         - Configuration: Debug
     test_script:
       - cd Build
-      - cmd\%SILKWORM_BUILD_TYPE%\core_test.exe
-      - cmd\%SILKWORM_BUILD_TYPE%\node_test.exe
+      - cmd\%CONFIGURATION%\core_test.exe
+      - cmd\%CONFIGURATION%\node_test.exe
 
   -
     matrix:
@@ -62,6 +59,6 @@ for:
         - Configuration: Debug
     test_script:
       - cd Build
-      - cmd\%SILKWORM_BUILD_TYPE%\core_test.exe
-      - cmd\%SILKWORM_BUILD_TYPE%\node_test.exe
-      - cmd\%SILKWORM_BUILD_TYPE%\consensus.exe
+      - cmd\%CONFIGURATION%\core_test.exe
+      - cmd\%CONFIGURATION%\node_test.exe
+      - cmd\%CONFIGURATION%\consensus.exe

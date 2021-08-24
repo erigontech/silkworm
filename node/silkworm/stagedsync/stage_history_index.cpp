@@ -14,9 +14,6 @@
    limitations under the License.
 */
 
-#include <filesystem>
-#include <iomanip>
-#include <iostream>
 #include <string>
 #include <unordered_map>
 
@@ -26,7 +23,6 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 
 #include "stagedsync.hpp"
@@ -39,75 +35,72 @@ namespace fs = std::filesystem;
 
 static StageResult history_index_stage(TransactionManager& txn, const std::filesystem::path& etl_path, bool storage) {
     fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
-    // We take data from changesets and turn it to indexes, so from [Block Number => Location] to [Location => Block Number]
+    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+    std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
+
+    auto flush_bitmaps_to_etl = [&collector, &bitmaps] {
+        for (const auto& [bitmap_key, bitmap] : bitmaps) {
+            Bytes bitmap_bytes(bitmap.getSizeInBytes(), '\0');
+            bitmap.write(byte_ptr_cast(bitmap_bytes.data()));
+            etl::Entry entry{Bytes(byte_ptr_cast(bitmap_key.c_str()), bitmap_key.size()), bitmap_bytes};
+            collector.collect(entry);
+        }
+        bitmaps.clear();
+    };
+
+    // We take data from changesets and turn it to indexes, so from [Block Number => Location] to [Location => Block
+    // Number]
     db::MapConfig changeset_config = storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
 
     auto changeset_table{db::open_cursor(*txn, changeset_config)};
-    std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
-
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, stage_key)};
+    Bytes start{db::block_key(last_processed_block_number + 1)};
 
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account")
-                                 << " Index Extraction. From: " << last_processed_block_number << std::endl;
-    Bytes start{db::block_key(last_processed_block_number + 1)};
+                                 << " Index Extraction. From: " << (last_processed_block_number + 1) << std::endl;
 
     size_t allocated_space{0};
     uint64_t block_number{0};
-
-    if (changeset_table.lower_bound(db::to_slice(start))) {
-        auto data{changeset_table.current()};
-        while (data) {
-            std::string composite_key;
-            // Make the composite key accordingly wheter we are dealing with storages or accounts
-            if (storage) {
-                // Storage: Address + Location
-                composite_key.resize(kAddressLength + kHashLength);
-                auto data_key_view{db::from_slice(data.key).substr(8)};
-                std::memcpy(&composite_key[0], &data_key_view[0], kAddressLength);
-                std::memcpy(&composite_key[kAddressLength], &data_key_view[kAddressLength+db::kIncarnationLength], kHashLength);
-            } else {
-                // Account: Address
-                composite_key = std::string(data.value.char_ptr(), kAddressLength);
-            }
-            // Initialize composite key if needed
-            if (bitmaps.find(composite_key) == bitmaps.end()) {
-                bitmaps.emplace(composite_key, roaring::Roaring64Map());
-            }
-            // Add block number to the bitmap of current key
-            block_number = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
-            bitmaps.at(composite_key).add(block_number);
-            allocated_space += 8;
-            // Flush to ETL
-            if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
-                for (const auto& [key, bm] : bitmaps) {
-                    Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-                    bm.write(byte_ptr_cast(bitmap_bytes.data()));
-                    etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
-                    collector.collect(entry);
-                }
-                SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
-                bitmaps.clear();
-                allocated_space = 0;
-            }
-            data = changeset_table.to_next(/*throw_notfound*/ false);
+    auto data{changeset_table.lower_bound(db::to_slice(start))};
+    while (data) {
+        std::string composite_key;
+        auto key{db::from_slice(data.key)};
+        auto value{db::from_slice(data.value)};
+        auto [db_key, _]{convert_to_db_format(key, value)};
+        // Make the composite key accordingly whether we are dealing with storages or accounts
+        if (storage) {
+            // Storage: Address + Location
+            composite_key.resize(kAddressLength + kHashLength);
+            std::memcpy(&composite_key[0], &db_key[0], kAddressLength);
+            std::memcpy(&composite_key[kAddressLength], &db_key[kAddressLength + db::kIncarnationLength], kHashLength);
+        } else {
+            // Account: Address
+            composite_key = std::string(data.value.char_ptr(), kAddressLength);
         }
+        // Initialize composite key if needed
+        if (bitmaps.find(composite_key) == bitmaps.end()) {
+            bitmaps.emplace(composite_key, roaring::Roaring64Map());
+        }
+        // Add block number to the bitmap of current key
+        block_number = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
+        bitmaps.at(composite_key).add(block_number);
+        allocated_space += 8;
+        // Flush to ETL
+        if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
+            flush_bitmaps_to_etl();
+            allocated_space = 0;
+            SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
+        }
+        data = changeset_table.to_next(/*throw_notfound*/ false);
     }
     changeset_table.close();
-
-    // Flush remainings to ETL
-    for (const auto& [key, bm] : bitmaps) {
-        Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-        bm.write(byte_ptr_cast(bitmap_bytes.data()));
-        etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
-        collector.collect(entry);
+    if (allocated_space != 0) {
+        flush_bitmaps_to_etl();
     }
-    // Wipe out useless memory
-    bitmaps.clear();
 
     SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
 
@@ -173,7 +166,8 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 10 * kMebi); // We do not unwind by many blocks usually
+    etl::Collector collector(etl_path.string().c_str(),
+                             /* flush size */ 10 * kMebi);  // We do not unwind by many blocks usually
 
     auto index_table{db::open_cursor(*txn, index_config)};
     // Extract

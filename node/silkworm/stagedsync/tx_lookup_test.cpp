@@ -18,12 +18,9 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/chain/genesis.h>
-#include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/data_dir.hpp>
 #include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
-#include <silkworm/db/stages.hpp>
 #include <silkworm/execution/address.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/rlp/encode.hpp>

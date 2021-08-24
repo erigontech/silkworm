@@ -56,7 +56,7 @@ for:
   -
     matrix:
       only:
-        - Configuration: Debug
+        - Configuration: Release
     test_script:
       - cd Build
       - cmd\%CONFIGURATION%\core_test.exe

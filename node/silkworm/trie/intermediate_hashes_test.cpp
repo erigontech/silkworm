@@ -20,8 +20,6 @@
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/trie/hash_builder.hpp>
-#include <silkworm/types/account.hpp>
 
 namespace silkworm::trie {
 
@@ -257,7 +255,7 @@ TEST_CASE("Account trie around extension node") {
     CHECK(0b00 == node1.hash_mask());
 
     CHECK(!node1.root_hash());
-    REQUIRE(node1.hashes().size() == 0);
+    REQUIRE(node1.hashes().empty());
 
     const Node node2{node_map.at(*from_hex("03000a0f"))};
 

@@ -200,16 +200,17 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
 }
 
 StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
-    etl::Collector topic_collector(etl_path, /* flush size */ 256_Mebi);
-    etl::Collector addresses_collector(etl_path, /* flush size */ 256_Mebi);
+    etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
 
     SILKWORM_LOG(LogLevel::Info) << "Started Topic Index Unwind" << std::endl;
-    auto result{unwind_log_index(txn, topic_collector, unwind_to, true)};
+    auto result{unwind_log_index(txn, collector, unwind_to, true)};
+    collector.clear();
     if (result != StageResult::kSuccess) {
         return result;
     }
     SILKWORM_LOG(LogLevel::Info) << "Started Address Index Unwind" << std::endl;
-    result = unwind_log_index(txn, addresses_collector, unwind_to, false);
+    result = unwind_log_index(txn, collector, unwind_to, false);
+    collector.clear();
     if (result != StageResult::kSuccess) {
         return result;
     }

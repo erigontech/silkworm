@@ -165,29 +165,28 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
         auto key{db::from_slice(data.key)};
         auto bitmap_data{db::from_slice(data.value)};
 
-            auto bm{roaring::Roaring::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-            // Check for keys that can be skipped
-            if (bm.maximum() <= unwind_to) {
-                data = index_table.to_next(/*throw_notfound*/ false);
-                continue;
-            }
-            // adjust bitmaps
-            if (bm.minimum() <= unwind_to) {
-                // Erase elements that are > unwind_to
-                bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(0, unwind_to + 1, 1));
-                auto new_bitmap{Bytes(bm.getSizeInBytes(), '\0')};
-                bm.write(byte_ptr_cast(&new_bitmap[0]));
-                // make new key
-                Bytes new_key(key.size(), '\0');
-                std::memcpy(&new_key[0], key.data(), key.size());
-                endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
-                // collect higher bitmap
-                collector.collect(etl::Entry{new_key, new_bitmap});
-            }
-            // erase index
-            index_table.erase(true);
+        auto bm{roaring::Roaring::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
+        // Check for keys that can be skipped
+        if (bm.maximum() <= unwind_to) {
             data = index_table.to_next(/*throw_notfound*/ false);
+            continue;
         }
+        // adjust bitmaps
+        if (bm.minimum() <= unwind_to) {
+            // Erase elements that are > unwind_to
+            bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(0, unwind_to + 1, 1));
+            auto new_bitmap{Bytes(bm.getSizeInBytes(), '\0')};
+            bm.write(byte_ptr_cast(&new_bitmap[0]));
+            // make new key
+            Bytes new_key(key.size(), '\0');
+            std::memcpy(&new_key[0], key.data(), key.size());
+            endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
+            // collect higher bitmap
+            collector.collect(etl::Entry{new_key, new_bitmap});
+        }
+        // erase index
+        index_table.erase(true);
+        data = index_table.to_next(/*throw_notfound*/ false);
     }
 
     collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);

@@ -21,7 +21,7 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/util.hpp>
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Check Tx Hashes => BlockNumber mapping in database"};
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     size_t block_from;
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
@@ -61,9 +61,9 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
-    data_dir.create_tree();
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
-    etl::Collector collector(data_dir.get_etl_path().string().c_str(), /* flush size */ 512 * kMebi);
+    data_dir.deploy();
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    etl::Collector collector(data_dir.etl().path().string().c_str(), /* flush size */ 512 * kMebi);
 
     auto env{db::open_env(db_config)};
     auto txn{env.start_read()};

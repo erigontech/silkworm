@@ -29,14 +29,14 @@
 
 namespace silkworm::stagedsync {
 
-constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
+constexpr size_t kBitmapBufferSizeLimit = 256_Mebi;
 
 namespace fs = std::filesystem;
 
 static StageResult history_index_stage(TransactionManager& txn, const std::filesystem::path& etl_path, bool storage) {
     fs::create_directories(etl_path);
 
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+    etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
     std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
 
     auto flush_bitmaps_to_etl = [&collector, &bitmaps] {
@@ -165,8 +165,8 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
-    etl::Collector collector(etl_path.string().c_str(),
-                             /* flush size */ 10 * kMebi);  // We do not unwind by many blocks usually
+    etl::Collector collector(etl_path,
+                             /* flush size */ 10_Mebi);  // We do not unwind by many blocks usually
 
     auto index_table{db::open_cursor(*txn, index_config)};
     // Extract
@@ -256,10 +256,10 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
     return StageResult::kSuccess;
 }
 
-StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, false);
 }
-StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, true);
 }
 

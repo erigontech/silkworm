@@ -26,7 +26,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
     // Init command line parser
     CLI::App app("Senders recovery tool.");
     app_options_t options{};
-    options.datadir = DataDirectory{}.get_chaindata_path().string();  // Default chain data db path
+    options.datadir = DataDirectory{}.chaindata().path().string();  // Default chain data db path
 
     // Command line arguments
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
@@ -105,10 +105,10 @@ int main(int argc, char* argv[]) {
 
         // Set database parameters
         DataDirectory data_dir{DataDirectory::from_chaindata(options.datadir)};
-        data_dir.create_tree();
+        data_dir.deploy();
 
-        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
-        etl::Collector collector(data_dir.get_etl_path().string().c_str(), /* flush size */ 512 * kMebi);
+        db::EnvConfig db_config{data_dir.chaindata().path().string()};
+        etl::Collector collector(data_dir.etl().path().string().c_str(), /* flush size */ 512 * kMebi);
 
         // Open db and transaction
         auto env{db::open_env(db_config)};

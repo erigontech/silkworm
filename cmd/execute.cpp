@@ -14,16 +14,12 @@
    limitations under the License.
 */
 
-#include <filesystem>
-
 #include <CLI/CLI.hpp>
 #include <magic_enum.hpp>
 
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
 int main(int argc, char* argv[]) {
@@ -31,7 +27,7 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
@@ -51,12 +47,12 @@ int main(int argc, char* argv[]) {
     SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
-    data_dir.create_tree();
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
+    data_dir.deploy();
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = false;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager tm{env};
-    auto res{stagedsync::stage_execution(tm, data_dir.get_etl_path(), batch_size.value(), 0)};
+    auto res{stagedsync::stage_execution(tm, data_dir.etl().path(), batch_size.value(), 0)};
     if (res != stagedsync::StageResult::kSuccess) {
         SILKWORM_LOG(LogLevel::Info) << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res)
                                      << std::endl;

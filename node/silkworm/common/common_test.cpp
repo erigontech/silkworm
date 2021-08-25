@@ -87,6 +87,15 @@ TEST_CASE("DataDirectory") {
         REQUIRE(data_dir.exists() == false);
     }
 
+    {
+        DataDirectory data_dir{{}, false};
+        REQUIRE(data_dir.is_pristine() == false);
+        REQUIRE(data_dir.exists() == false);
+        REQUIRE_NOTHROW(data_dir.clear());
+        REQUIRE_NOTHROW(data_dir.deploy());
+    }
+
+
     TemporaryDirectory tmp_dir1;
     std::filesystem::path fake_path{tmp_dir1.path() / "nonexistentpath"};
     std::filesystem::path fake_path_root{fake_path.root_path()};
@@ -114,7 +123,8 @@ TEST_CASE("DataDirectory") {
             f << "Some fake text" << std::flush;
             f.close();
         }
-
+        std::filesystem::path etl_subpath{data_dir.etl().path() / "subdir"};
+        std::filesystem::create_directories(etl_subpath);
         REQUIRE(data_dir.etl().is_pristine() == false);
         REQUIRE(data_dir.etl().size() != 0);
         data_dir.etl().clear();

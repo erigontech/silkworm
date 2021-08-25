@@ -235,7 +235,7 @@ static void etl_benchmark(const std::string& label, LoadFunc load_func, const st
         srand(time(NULL));
 
         // Initialize temporary Database
-        db::EnvConfig db_config{db_tmp_dir.path(), /*create*/ true};
+        db::EnvConfig db_config{db_tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
 
         auto env{db::open_env(db_config)};

@@ -16,8 +16,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
-#include <sstream>
 #include <string>
 #include <thread>
 
@@ -94,7 +92,6 @@ TEST_CASE("DataDirectory") {
         REQUIRE(data_dir.exists() == true);
         REQUIRE_NOTHROW(data_dir.deploy());
     }
-
 
     TemporaryDirectory tmp_dir1;
     std::filesystem::path fake_path{tmp_dir1.path() / "nonexistentpath"};

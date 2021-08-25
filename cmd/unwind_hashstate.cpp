@@ -14,16 +14,12 @@
    limitations under the License.
 */
 
-#include <filesystem>
-
 #include <CLI/CLI.hpp>
 
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
 using namespace silkworm;
@@ -33,7 +29,7 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Unwind Hashstate Stage"};
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     uint32_t unwind_to{UINT32_MAX};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Turbo-Geth", true)
         ->check(CLI::ExistingDirectory);
@@ -45,11 +41,11 @@ int main(int argc, char* argv[]) {
 
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
-        data_dir.create_tree();
-        db::EnvConfig db_config{data_dir.get_chaindata_path().string()};
+        data_dir.deploy();
+        db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
         stagedsync::TransactionManager tm{env};
-        stagedsync::check_stagedsync_error(stagedsync::unwind_hashstate(tm, data_dir.get_etl_path(), unwind_to));
+        stagedsync::check_stagedsync_error(stagedsync::unwind_hashstate(tm, data_dir.etl().path(), unwind_to));
 
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

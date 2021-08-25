@@ -30,7 +30,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/genesis.hpp>
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -39,7 +39,6 @@
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/tables.hpp>
 #include <silkworm/common/log.hpp>
 

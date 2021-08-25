@@ -73,7 +73,7 @@ static void flush_bitmaps(etl::Collector& collector, std::unordered_map<std::str
     map.clear();
 }
 
-StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     fs::create_directories(etl_path);
     etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
     etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);

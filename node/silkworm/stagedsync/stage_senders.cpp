@@ -22,7 +22,7 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 

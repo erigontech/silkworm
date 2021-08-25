@@ -29,7 +29,7 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512_Mebi);
     uint32_t block_number{0};
@@ -39,6 +39,10 @@ StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::pa
 
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kBlockHashesKey)};
     auto expected_block_number{last_processed_block_number + 1};
+    // Just ignore everything that comes before prune_from
+    if (expected_block_number < prune_from) {
+        expected_block_number = prune_from;
+    }
     uint32_t blocks_processed_count{0};
 
     // Extract

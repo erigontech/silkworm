@@ -209,10 +209,10 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     return StageResult::kSuccess;
 }
 
-StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, false);
 }
-StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, true);
 }
 

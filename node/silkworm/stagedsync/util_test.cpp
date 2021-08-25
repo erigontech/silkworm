@@ -17,21 +17,14 @@
 #include "util.hpp"
 
 #include <catch2/catch.hpp>
-#include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/data_dir.hpp>
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/execution/address.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/rlp/encode.hpp>
 #include <silkworm/stagedsync/transaction_manager.hpp>
-#include <silkworm/trie/vector_root.hpp>
-#include <silkworm/types/account.hpp>
-#include <silkworm/types/block.hpp>
 
 using namespace silkworm;
 
@@ -40,7 +33,7 @@ TEST_CASE("Check Truncate tables, reverse = true") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -53,11 +46,11 @@ TEST_CASE("Check Truncate tables, reverse = true") {
     for (int i = 100; i >= 0; i--) {
         account_history_table.upsert(db::to_slice(db::block_key(i)), db::to_slice(value));
     }
-    // Check if works if cut in half
+    // Check if works when cut in half
     auto cut_point{db::block_key(50)};
     stagedsync::truncate_table_from(account_history_table, cut_point, true);
     CHECK(db::from_slice(account_history_table.to_first().key).compare(db::block_key(50)) == 0);
-    // Check if works if same arguments
+    // Check if works when same arguments
     stagedsync::truncate_table_from(account_history_table, cut_point, true);
     CHECK(db::from_slice(account_history_table.to_first().key).compare(db::block_key(50)) == 0);
 }
@@ -67,7 +60,7 @@ TEST_CASE("Check Truncate tables, reverse = false") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -80,11 +73,11 @@ TEST_CASE("Check Truncate tables, reverse = false") {
     for (int i = 100; i >= 0; i--) {
         account_history_table.upsert(db::to_slice(db::block_key(i)), db::to_slice(value));
     }
-    // Check if works if cut in half
+    // Check if works when cut in half
     auto cut_point{db::block_key(50)};
     stagedsync::truncate_table_from(account_history_table, cut_point, false);
     CHECK(db::from_slice(account_history_table.to_last().key).compare(db::block_key(49)) == 0);
-    // Check if works if same arguments
+    // Check if works when same arguments
     stagedsync::truncate_table_from(account_history_table, cut_point, false);
     CHECK(db::from_slice(account_history_table.to_last().key).compare(db::block_key(49)) == 0);
 }

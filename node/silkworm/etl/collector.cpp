@@ -17,15 +17,15 @@
 #include <iomanip>
 #include <queue>
 
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/temp_dir.hpp>
 
 namespace silkworm::etl {
 
 namespace fs = std::filesystem;
 
 Collector::~Collector() {
-    file_providers_.clear();  // Will ensure all files (if any) have been orderly closed and deleted
+    clear();  // Will ensure all files (if any) have been orderly closed and deleted
     if (work_path_managed_ && fs::exists(work_path_)) {
         fs::remove_all(work_path_);
     }
@@ -46,8 +46,6 @@ void Collector::flush_buffer() {
         SILKWORM_LOG(LogLevel::Info) << "Buffer Flushed" << std::endl;
     }
 }
-
-size_t Collector::size() const { return size_; }
 
 void Collector::collect(const Entry& entry) {
     buffer_.put(entry);
@@ -106,7 +104,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
     flush_buffer();
 
     // Define a priority queue based on smallest available key
-    auto key_comparer = [](const std::pair<Entry, int> &left, const std::pair<Entry, int> &right) {
+    auto key_comparer = [](const std::pair<Entry, int>& left, const std::pair<Entry, int>& right) {
         return right.first < left.first;
     };
     std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>, decltype(key_comparer)> queue(
@@ -172,10 +170,10 @@ std::filesystem::path Collector::set_work_path(const std::optional<std::filesyst
         }
         res = provided_work_path.value();
     } else {
-        // No path provided so we need to get a unique temporary directory
+        // No path provided we need to get a unique temporary directory
         // to prevent different instances of collector to clash each other
         // with same filenames
-        res = create_temporary_directory();
+        res = TemporaryDirectory::get_unique_temporary_path();
     }
     if (res.has_filename()) {
         res += std::filesystem::path::preferred_separator;

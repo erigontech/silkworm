@@ -13,16 +13,16 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <iostream>
 #include <chrono>
+#include <iostream>
 #include <string>
 
 #include <CLI/CLI.hpp>
 
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/data_dir.hpp>
-#include <silkworm/downloader/stage1.hpp>
 #include <silkworm/downloader/HeaderLogic.hpp>
+#include <silkworm/downloader/stage1.hpp>
 
 using namespace silkworm;
 
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Download Headers. Connect to p2p sentry and start header downloading process (stage 1)"};
 
     string chain_name = ChainIdentity::mainnet.name;
-    string db_path = DataDirectory{}.get_chaindata_path().string();
+    string db_path = DataDirectory{}.chaindata().path().string();
     string temporary_file_path = ".";
     string sentry_addr = "127.0.0.1:9091";
 

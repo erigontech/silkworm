@@ -44,6 +44,9 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
+  add_executable(bench_buffer bench_buffer.cpp)
+  target_link_libraries(bench_buffer PRIVATE silkworm_node CLI11::CLI11 absl::time)
+
   add_executable(scan_txs scan_txs.cpp)
   target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
@@ -55,8 +58,8 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(check_pow check_pow.cpp)
   target_link_libraries(check_pow PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(dbtool dbtool.cpp)
-  target_link_libraries(dbtool PRIVATE silkworm_node CLI11::CLI11)
+  add_executable(toolbox toolbox.cpp)
+  target_link_libraries(toolbox PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(genesistool genesistool.cpp)
   target_link_libraries(genesistool PRIVATE CLI11::CLI11)
@@ -97,14 +100,8 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(history_index history_index.cpp)
   target_link_libraries(history_index PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(initialize_with_genesis initialize_with_genesis.cpp)
-  target_link_libraries(initialize_with_genesis PRIVATE silkworm_node CLI11::CLI11)
-
   add_executable(check_blockhashes check_blockhashes.cpp)
   target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
-
-  add_executable(extract_headers extract_headers.cpp)
-  target_link_libraries(extract_headers PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(log_index log_index.cpp)
   target_link_libraries(log_index PRIVATE silkworm_node cborcpp CLI11::CLI11)

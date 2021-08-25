@@ -155,8 +155,8 @@ TEST_CASE("Stage History") {
     auto bitmap_storage_contract{roaring::Roaring64Map::readSafe(
     byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size())};
     // Checks on storage's bitmaps
-    CHECK(bitmap_storage_contract.cardinality() == 2);
-    CHECK(bitmap_storage_contract.toString() == "{2,3}");
+    CHECK(bitmap_storage_contract.cardinality() == 3);
+    CHECK(bitmap_storage_contract.toString() == "{1,2,3}");
 
     CHECK(stagedsync::unwind_account_history(txn, data_dir.get_etl_path(), 2) == stagedsync::StageResult::kSuccess);
     CHECK(stagedsync::unwind_storage_history(txn, data_dir.get_etl_path(), 2) == stagedsync::StageResult::kSuccess);
@@ -182,8 +182,8 @@ TEST_CASE("Stage History") {
     bitmap_storage_contract = roaring::Roaring64Map::readSafe(
         byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size());
     // Checks on storage's bitmaps
-    CHECK(bitmap_storage_contract.cardinality() == 1);
-    CHECK(bitmap_storage_contract.toString() == "{2}");
+    CHECK(bitmap_storage_contract.cardinality() == 2);
+    CHECK(bitmap_storage_contract.toString() == "{1,2}");
 }
 
 TEST_CASE("Prune History Index") {

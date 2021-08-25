@@ -44,6 +44,7 @@ class Collector {
     ~Collector();
 
     void collect(const Entry& entry);  // Store key-value pair in memory or on disk
+    void collect(Entry&& entry);       // Store key-value pair in memory or on disk
 
     /** @brief Loads and optionally transforms collected entries into db
      *

@@ -43,22 +43,8 @@ before_build:
 build:
   project: build\silkworm.sln
 
-for:
-  -
-    matrix:
-      only:
-        - Configuration: Debug
-    test_script:
-      - cd Build
-      - cmd\%CONFIGURATION%\core_test.exe
-      - cmd\%CONFIGURATION%\node_test.exe
-
-  -
-    matrix:
-      only:
-        - Configuration: Release
-    test_script:
-      - cd Build
-      - cmd\%CONFIGURATION%\core_test.exe
-      - cmd\%CONFIGURATION%\node_test.exe
-      - cmd\%CONFIGURATION%\consensus.exe
+test_script:
+  - cd Build
+  - cmd\%CONFIGURATION%\core_test.exe
+  - cmd\%CONFIGURATION%\node_test.exe
+  - IF "%CONFIGURATION%" == "Release" cmd\%CONFIGURATION%\consensus.exe

@@ -43,8 +43,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         for (const auto& [bitmap_key, bitmap] : bitmaps) {
             Bytes bitmap_bytes(bitmap.getSizeInBytes(), '\0');
             bitmap.write(byte_ptr_cast(bitmap_bytes.data()));
-            etl::Entry entry{Bytes(byte_ptr_cast(bitmap_key.c_str()), bitmap_key.size()), bitmap_bytes};
-            collector.collect(entry);
+            collector.collect(etl::Entry{Bytes(byte_ptr_cast(bitmap_key.c_str()), bitmap_key.size()), bitmap_bytes});
         }
         bitmaps.clear();
     };
@@ -195,8 +194,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
                 std::memcpy(&new_key[0], key.data(), key.size());
                 endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
                 // replace with new index
-                etl::Entry entry{new_key, new_bitmap};
-                collector.collect(entry);
+                collector.collect(etl::Entry{new_key, new_bitmap});
             }
             index_table.erase(/* whole_multivalue = */ true);
             data = index_table.to_next(/*throw_notfound*/ false);
@@ -211,10 +209,10 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     return StageResult::kSuccess;
 }
 
-StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, false);
 }
-StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, true);
 }
 

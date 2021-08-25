@@ -55,6 +55,14 @@ void Collector::collect(const Entry& entry) {
     }
 }
 
+void Collector::collect(Entry&& entry) {
+    buffer_.put(std::move(entry));
+    ++size_;
+    if (buffer_.overflows()) {
+        flush_buffer();
+    }
+}
+
 void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t flags, uint32_t log_every_percent) {
     const auto overall_size{size()};  // Amount of work
 

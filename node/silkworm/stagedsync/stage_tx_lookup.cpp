@@ -37,23 +37,31 @@ static Bytes compact(Bytes& b) {
     return b;
 }
 
-StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
 
-    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)};
-    uint64_t block_number{0};
+    auto expected_block_number{db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey) + 1};
 
     // We take number from bodies table, and hash from transaction table
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transactions_table{db::open_cursor(*txn, db::table::kEthTx)};
 
+    if (expected_block_number < prune_from) {
+        expected_block_number = prune_from;
+    }
+
     Bytes start(8, '\0');
-    endian::store_big_u64(&start[0], last_processed_block_number + 1);
+    endian::store_big_u64(&start[0], expected_block_number);
 
     SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Extraction" << std::endl;
 
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
+
+    auto body_rlp{db::from_slice(bodies_data.value)};
+    auto body{db::detail::decode_stored_block_body(body_rlp)};
+    auto block_number{0};
+
     while (bodies_data) {
         auto body_rlp{db::from_slice(bodies_data.value)};
         auto body{db::detail::decode_stored_block_body(body_rlp)};

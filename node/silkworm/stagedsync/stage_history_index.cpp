@@ -233,7 +233,7 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
             // check if prune can be applied
             if (bm.maximum() >= prune_from) {
                 // Erase elements that are below prune_from
-                bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block, 1));
+                bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
                 Bytes new_bitmap(bm.getSizeInBytes(), '\0');
                 bm.write(byte_ptr_cast(&new_bitmap[0]));
                 // generates new key

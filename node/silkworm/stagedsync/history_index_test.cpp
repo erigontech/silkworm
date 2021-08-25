@@ -278,7 +278,7 @@ TEST_CASE("Prune History Index") {
 
     CHECK(stagedsync::stage_account_history(txn, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
     CHECK(stagedsync::stage_storage_history(txn, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
-
+    // Prune from second block thus only, so we delete block 1
     CHECK(stagedsync::prune_account_history(txn, data_dir.get_etl_path(), 2) == stagedsync::StageResult::kSuccess);
     CHECK(stagedsync::prune_storage_history(txn, data_dir.get_etl_path(), 2) == stagedsync::StageResult::kSuccess);
 
@@ -309,6 +309,6 @@ TEST_CASE("Prune History Index") {
     auto bitmap_storage_contract{roaring::Roaring64Map::readSafe(
         byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size())};
     // Checks on storage's bitmaps
-    CHECK(bitmap_storage_contract.cardinality() == 1);
-    CHECK(bitmap_storage_contract.toString() == "{2, 3}");
+    CHECK(bitmap_storage_contract.cardinality() == 2);
+    CHECK(bitmap_storage_contract.toString() == "{2,3}");
 }

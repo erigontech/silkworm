@@ -68,13 +68,12 @@ static void flush_bitmaps(etl::Collector& collector, std::unordered_map<std::str
     for (const auto& [key, bm] : map) {
         Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
         bm.write(byte_ptr_cast(bitmap_bytes.data()));
-        etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
-        collector.collect(entry);
+        collector.collect(etl::Entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes});
     }
     map.clear();
 }
 
-StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     fs::create_directories(etl_path);
     etl::Collector topic_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
     etl::Collector addresses_collector(etl_path.string().c_str(), /* flush size */ 256 * kMebi);
@@ -188,8 +187,7 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
                 std::memcpy(&new_key[0], key.data(), key.size());
                 endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
                 // collect higher bitmap
-                etl::Entry entry{new_key, new_bitmap};
-                collector.collect(entry);
+                collector.collect(etl::Entry{new_key, new_bitmap});
             }
             // erase index
             index_table.erase(true);

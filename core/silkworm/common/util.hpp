@@ -81,6 +81,9 @@ std::string human_size(uint64_t bytes);
 // Compares two strings for equality with case insensitivity
 bool iequals(const std::string& a, const std::string& b);
 
+// TODO[C++20] replace by starts_with
+inline bool has_prefix(ByteView s, ByteView prefix) { return s.substr(0, prefix.size()) == prefix; }
+
 // The length of the longest common prefix of a and b.
 size_t prefix_length(ByteView a, ByteView b);
 

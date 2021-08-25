@@ -220,7 +220,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     }
 }
 
-StageResult stage_hashstate(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_hashstate(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};

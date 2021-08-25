@@ -47,7 +47,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     return pairs;
 }
 
-void run_collector_test(LoadFunc load_func) {
+    void run_collector_test(LoadFunc load_func, bool do_copy = true) {
     TemporaryDirectory db_tmp_dir;
     TemporaryDirectory etl_tmp_dir;
     // Initialize random seed
@@ -65,8 +65,11 @@ void run_collector_test(LoadFunc load_func) {
     auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};  // 100 entries per file (16 bytes per entry)
     db::table::create_all(txn);
     // Collection
-    for (auto entry : set) {
-        collector.collect(entry);
+    for (auto&& entry : set) {
+        if (do_copy)
+            collector.collect(entry); // copy is slower... do only if entry is reused afterwards
+        else
+            collector.collect(std::move(entry));
     }
     // Check whether temporary files were generated
     CHECK(std::distance(fs::directory_iterator{etl_tmp_dir.path()}, fs::directory_iterator{}) == 10);
@@ -79,6 +82,8 @@ void run_collector_test(LoadFunc load_func) {
 }
 
 TEST_CASE("collect_and_default_load") { run_collector_test(nullptr); }
+
+TEST_CASE("collect_and_default_load_move") { run_collector_test(nullptr, false); }
 
 TEST_CASE("collect_and_load") {
     run_collector_test([](Entry entry, mdbx::cursor& table, MDBX_put_flags_t flags) {

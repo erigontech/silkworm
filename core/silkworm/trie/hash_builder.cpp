@@ -28,32 +28,7 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode.hpp>
 
-static void assert_subset(uint16_t sub, uint16_t sup) {
-    auto intersection{sub & sup};
-    assert(intersection == sub);
-    (void)intersection;
-}
-
 namespace silkworm::trie {
-
-Node::Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vector<evmc::bytes32> hashes,
-           std::optional<evmc::bytes32> root_hash)
-    : state_mask_{state_mask},
-      tree_mask_{tree_mask},
-      hash_mask_{hash_mask},
-      hashes_{std::move(hashes)},
-      root_hash_{std::move(root_hash)} {
-    assert_subset(tree_mask_, state_mask_);
-    assert_subset(hash_mask_, state_mask_);
-    assert(std::bitset<16>(hash_mask_).count() == hashes_.size());
-}
-
-void Node::set_root_hash(std::optional<evmc::bytes32> root_hash) { root_hash_ = std::move(root_hash); }
-
-bool operator==(const Node& a, const Node& b) {
-    return a.state_mask() == b.state_mask() && a.tree_mask() == b.tree_mask() && a.hash_mask() == b.hash_mask() &&
-           a.hashes() == b.hashes() && a.root_hash() == b.root_hash();
-}
 
 Bytes unpack_nibbles(ByteView packed) {
     Bytes out(2 * packed.length(), '\0');
@@ -200,7 +175,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding, c
             stack_.push_back(node_ref(leaf_node_rlp(short_node_key, value)));
         } else if (!short_node_key.empty()) {  // extension node
             if (node_collector && from > 0) {
-                // See db/silkworm/trie/intermediate_hashes.hpp
+                // See node/silkworm/trie/intermediate_hashes.hpp
                 const uint16_t flag = 1u << current[from - 1];
 
                 // DB trie can't use hash of an extension node
@@ -227,7 +202,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding, c
         if (!succeeding.empty() || preceding_exists) {  // branch node
             std::vector<Bytes> child_hashes{branch_ref(groups_[len], hash_masks_[len])};
 
-            // See db/silkworm/trie/intermediate_hashes.hpp
+            // See node/silkworm/trie/intermediate_hashes.hpp
             if (node_collector) {
                 if (len > 0) {
                     hash_masks_[len - 1] |= 1u << current[len - 1];

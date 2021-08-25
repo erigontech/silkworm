@@ -88,10 +88,10 @@ TEST_CASE("DataDirectory") {
     }
 
     {
-        DataDirectory data_dir{{}, false};
+        // Open datadir from current process running path
+        DataDirectory data_dir{std::filesystem::path(), false};
         REQUIRE(data_dir.is_pristine() == false);
-        REQUIRE(data_dir.exists() == false);
-        REQUIRE_NOTHROW(data_dir.clear());
+        REQUIRE(data_dir.exists() == true);
         REQUIRE_NOTHROW(data_dir.deploy());
     }
 

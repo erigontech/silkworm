@@ -92,7 +92,7 @@ class TemporaryDirectory : public Directory {
 class DataDirectory : public Directory {
   public:
     //! \brief Creates an instance of Silkworm's data directory given an initial base path
-    //! \param [in] base_path : the starting path
+    //! \param [in] base_path : the actual path of base directory
     //! \param [in] create : whether the directory itself and the underlying tree should be created
     explicit DataDirectory(const std::filesystem::path& base_path, bool create = false)
         : Directory(base_path, create),
@@ -130,14 +130,14 @@ class DataDirectory : public Directory {
     void deploy();
 
     //! \brief DataDirectory can't be cleared
-    void clear() const override final { throw std::runtime_error("Can't clear a DataDirectory"); }
+    void clear() const final { throw std::runtime_error("Can't clear a DataDirectory"); }
 
-    //! \brief Returns the "chaindata" directory
-    const Directory& chaindata() const { return chaindata_; }
-    //! \brief Returns the "etl" directory
-    const Directory& etl() const { return etl_; }
-    //! \brief Returns the "nodes" directory
-    const Directory& nodes() const { return nodes_; }
+    //! \brief Returns the "chaindata" directory (where chain database is stored)
+    [[nodiscard]] const Directory& chaindata() const { return chaindata_; }
+    //! \brief Returns the "etl" directory (where temporary etl files are stored)
+    [[nodiscard]] const Directory& etl() const { return etl_; }
+    //! \brief Returns the "nodes" directory (where discovery nodes info are stored)
+    [[nodiscard]] const Directory& nodes() const { return nodes_; }
 
   private:
     Directory chaindata_;  // Database storage

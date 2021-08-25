@@ -28,7 +28,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/genesis.hpp>
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -751,12 +751,12 @@ void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, boo
  */
 void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t chain_id, bool dry) {
     // Check datadir does not exist
-    if (fs::exists(data_dir.get_base_path())) {
+    if (data_dir.exists()) {
         throw std::runtime_error("Provided data directory already exist");
     }
 
     // Ensure data directory tree is built
-    data_dir.create_tree();
+    data_dir.deploy();
 
     // Retrieve source data either from provided json file
     // or from embedded sources
@@ -806,7 +806,7 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
     }
 
     // Prime database
-    db::EnvConfig config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig config{data_dir.chaindata().path().string(), /*create*/ true};
     auto env{db::open_env(config)};
     auto txn{env.start_write()};
     db::table::create_all(txn);
@@ -892,8 +892,8 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
 
     auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
     header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
-    header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
-    header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
+    header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>(), nullptr, 0);
+    header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>(), nullptr, 0);
 
     auto nonce = std::stoull(genesis_json["nonce"].get<std::string>(), nullptr, 0);
     std::memcpy(&header.nonce[0], &nonce, 8);
@@ -1162,33 +1162,34 @@ int main(int argc, char* argv[]) {
      */
     CLI11_PARSE(app_main, argc, argv);
 
-    try {
-        // Set origin data_dir
-        DataDirectory data_dir;
+    auto data_dir_factory = [&chaindata_opt, &datadir_opt]() -> DataDirectory {
         if (*chaindata_opt) {
             fs::path p{chaindata_opt->as<std::string>()};
-            data_dir = DataDirectory::from_chaindata(p);
-        } else {
-            fs::path p{datadir_opt->as<std::string>()};
-            data_dir = DataDirectory(p);
+            return DataDirectory::from_chaindata(p);
         }
+        fs::path p{datadir_opt->as<std::string>()};
+        return DataDirectory(p, false);
+    };
+
+    try {
+        // Set origin data_dir
+        DataDirectory data_dir{data_dir_factory()};
 
         if (!*cmd_initgenesis) {
-            if (!fs::exists(data_dir.get_chaindata_path()) || !fs::is_directory(data_dir.get_chaindata_path()) ||
-                fs::is_empty(data_dir.get_chaindata_path())) {
-                std::cerr << "\n Directory " << data_dir.get_chaindata_path() << " does not exist or is empty"
+            if (!data_dir.chaindata().exists() || data_dir.is_pristine()) {
+                std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not exist or is empty"
                           << std::endl;
                 return -1;
             }
-            auto mdbx_path{db::get_datafile_path(data_dir.get_chaindata_path())};
+            auto mdbx_path{db::get_datafile_path(data_dir.chaindata().path())};
             if (!fs::exists(mdbx_path) || !fs::is_regular_file(mdbx_path)) {
-                std::cerr << "\n Directory " << data_dir.get_chaindata_path() << " does not contain "
+                std::cerr << "\n Directory " << data_dir.chaindata().path().string() << " does not contain "
                           << db::kDbDataFileName << std::endl;
                 return -1;
             }
         }
 
-        db::EnvConfig src_config{data_dir.get_chaindata_path().string()};
+        db::EnvConfig src_config{data_dir.chaindata().path().string()};
         src_config.shared = *shared_opt;
         src_config.exclusive = *exclusive_opt;
         src_config.readonly = true;
@@ -1225,7 +1226,7 @@ int main(int argc, char* argv[]) {
             if (*app_dry_opt) {
                 std::cout << "\nGenesis initialization succeeded. Due to --dry flag no data is persisted\n"
                           << std::endl;
-                fs::remove_all(data_dir.get_base_path());
+                fs::remove_all(data_dir.path());
             }
         } else if (*cmd_chainconfig) {
             do_chainconfig(src_config);

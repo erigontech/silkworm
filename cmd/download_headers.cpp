@@ -20,8 +20,8 @@
 
 #include <CLI/CLI.hpp>
 
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/data_dir.hpp>
 
 #include <silkworm/downloader/HeaderLogic.hpp>
 #include <silkworm/downloader/SentryClient.hpp>

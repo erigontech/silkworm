@@ -153,12 +153,8 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
         // Add next item to the queue only if it has
         // meaningful data
         if (next.has_value()) {
-            if (queue.front().first < next->first) {
-                queue.push_back(std::move(*next));
-            } else {
             queue.push_back(std::move(*next));
             push_heap(queue.begin(), queue.end(), key_comparer); 
-            }
         } else {
             file_provider.reset();
         }

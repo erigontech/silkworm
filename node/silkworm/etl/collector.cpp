@@ -107,21 +107,21 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
     auto key_comparer = [](const std::pair<Entry, int>& left, const std::pair<Entry, int>& right) {
         return right.first < left.first;
     };
-    std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>, decltype(key_comparer)> queue(
-        key_comparer);
+    std::vector<std::pair<Entry, int>> queue;
 
     // Read one "record" from each data_provider and let the queue
     // sort them. On top of the queue the smallest key
     for (auto& file_provider : file_providers_) {
         auto item{file_provider->read_entry()};
         if (item.has_value()) {
-            queue.push(std::move(*item));
+            queue.push_back(std::move(*item));
         }
     }
+    make_heap(queue.begin(), queue.end(), key_comparer); 
 
     // Process the queue from smallest to largest key
     while (queue.size()) {
-        auto& [etl_entry, provider_index]{queue.top()};           // Pick smallest key by reference
+        auto& [etl_entry, provider_index]{queue.front()};         // Pick smallest key by reference
         auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
 
         // Process linked pairs
@@ -147,12 +147,18 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
 
         // At this point `current` has been processed.
         // We can remove it from the queue
-        queue.pop();
+        pop_heap(queue.begin(), queue.end(), key_comparer); 
+        queue.pop_back();
 
         // Add next item to the queue only if it has
         // meaningful data
         if (next.has_value()) {
-            queue.push(std::move(*next));
+            if (queue.front().first < next->first) {
+                queue.push_back(std::move(*next));
+            } else {
+            queue.push_back(std::move(*next));
+            push_heap(queue.begin(), queue.end(), key_comparer); 
+            }
         } else {
             file_provider.reset();
         }

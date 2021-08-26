@@ -62,8 +62,10 @@ struct Transaction {
 
     std::optional<evmc::address> from{std::nullopt};  // sender recovered from the signature
 
-    intx::uint256 v() const;             // EIP-155
-    void set_v(const intx::uint256& v);  // EIP-155
+    intx::uint256 v() const;  // EIP-155
+
+    // Returns false is v is not acceptable (v != 27 && v != 28 && v < 35, see EIP-155)
+    [[nodiscard]] bool set_v(const intx::uint256& v);
 
     // Populates the from field with recovered sender.
     // See Yellow Paper, Appendix F "Signing Transactions",

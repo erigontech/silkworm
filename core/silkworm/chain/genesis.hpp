@@ -14,18 +14,19 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CORE_CHAIN_GENESIS_H_
-#define SILKWORM_CORE_CHAIN_GENESIS_H_
+#ifndef SILKWORM_CORE_CHAIN_GENESIS_HPP_
+#define SILKWORM_CORE_CHAIN_GENESIS_HPP_
 
-#include <stddef.h>
+#include <string>
 
-extern const char* genesis_mainnet_data(void);
-extern size_t sizeof_genesis_mainnet_data(void);
+namespace silkworm {
 
-extern const char* genesis_goerli_data(void);
-extern size_t sizeof_genesis_goerli_data(void);
+/*
+* \brief Returns genesis data given a known chain_id.
+* If id is not recognized returns an invalid json string
+*/
+std::string read_genesis_data(unsigned int chain_id);
 
-extern const char* genesis_rinkeby_data(void);
-extern size_t sizeof_genesis_rinkeby_data(void);
+}  // namespace silkworm
 
-#endif  // SILKWORM_CORE_CHAIN_GENESIS_H_
+#endif  // SILKWORM_CORE_CHAIN_GENESIS_HPP_

@@ -43,10 +43,19 @@ std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView
     return {a, b};
 }
 
-void truncate_table_from(mdbx::cursor& table, Bytes& starting_key) {
-    if (table.lower_bound(db::to_slice(starting_key), false)) {
+/*
+ * Truncate a table by starting from a certain key, either up or down.
+ * If reverse is set to false, then every key either higher or equal than starting key will be erased.
+ * If reverse is set to true, then every key either lower(not equal) than starting key will be erased.
+*/
+void truncate_table_from(mdbx::cursor& table, Bytes& starting_key, bool reverse) {
+    auto current{table.lower_bound(db::to_slice(starting_key), false)};
+    if (reverse) {
+        current = table.to_previous(false);
+    }
+    if (current) {
         table.erase();
-        while (table.to_next(/*throw_notfound*/ false)) {
+        while (reverse? table.to_previous(false) : table.to_next(false)) {
             table.erase();
         }
     }

@@ -30,12 +30,15 @@ intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uin
     }
 }
 
-YParityAndChainId v_to_y_parity_and_chain_id(const intx::uint256& v) {
+std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256& v) {
     YParityAndChainId res{};
     if (v == 27 || v == 28) {
         // pre EIP-155
         res.odd = v == 28;
         res.chain_id = std::nullopt;
+    } else if (v < 35) {
+        // EIP-155 implies v >= 35
+        return std::nullopt;
     } else {
         // https://eips.ethereum.org/EIPS/eip-155
         // Find chain_id and y_parity ∈ {0, 1} such that

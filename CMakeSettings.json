@@ -10,7 +10,7 @@
       "cmakeCommandArgs": "-Wno-dev -DSILKWORM_CORE_ONLY:BOOL=OFF",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "addressSanitizerEnabled": true
+      "addressSanitizerEnabled": false
     },
     {
       "name": "x64-Release",
@@ -22,7 +22,7 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ],
-      "addressSanitizerEnabled": true
+      "addressSanitizerEnabled": false
     }
   ]
 }

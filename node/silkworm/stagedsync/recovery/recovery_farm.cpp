@@ -248,8 +248,7 @@ bool RecoveryFarm::bufferize_workers_results() {
 
                     auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
                     Bytes etl_data(db::from_slice(data));
-                    etl::Entry entry{etl_key, etl_data};
-                    collector_.collect(entry);  // TODO check for errors (eg. disk full)
+                    collector_.collect(etl::Entry{etl_key, etl_data});  // TODO check for errors (eg. disk full)
                     headers_it_2_++;
                 }
                 SILKWORM_LOG(LogLevel::Info)

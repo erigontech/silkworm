@@ -15,14 +15,14 @@
    limitations under the License.
 */
 
-#include "genesis.h"
+#include "genesis.hpp"
 
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/state/memory_buffer.hpp>
+#include <silkworm/state/in_memory_state.hpp>
 
 #include "config.hpp"
 #include "identity.hpp"
@@ -30,40 +30,46 @@
 namespace silkworm {
 
 TEST_CASE("genesis config") {
-    std::string source_genesis(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
 
-    auto genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
-    CHECK(genesis_json != nlohmann::json::value_t::discarded);
+    std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
+
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
     auto config = ChainConfig::from_json(genesis_json["config"]);
     CHECK(config.has_value());
     CHECK(config.value() == kMainnetConfig);
 
-    source_genesis.assign(genesis_goerli_data(), sizeof_genesis_goerli_data());
+    genesis_data = read_genesis_data(static_cast<uint32_t>(kGoerliConfig.chain_id));
+    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
 
-    genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
-    CHECK(genesis_json != nlohmann::json::value_t::discarded);
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
     config = ChainConfig::from_json(genesis_json["config"]);
     CHECK(config.has_value());
     CHECK(config.value() == kGoerliConfig);
 
-    source_genesis.assign(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
+    genesis_data = read_genesis_data(static_cast<uint32_t>(kRinkebyConfig.chain_id));
+    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
 
-    genesis_json = nlohmann::json::parse(source_genesis, nullptr, /* allow_exceptions = */ false);
-    CHECK(genesis_json != nlohmann::json::value_t::discarded);
     CHECK((genesis_json.contains("config") && genesis_json["config"].is_object()));
     config = ChainConfig::from_json(genesis_json["config"]);
     CHECK(config.has_value());
     CHECK(config.value() == kRinkebyConfig);
+
+    genesis_data = read_genesis_data(1'000u);
+    genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK(genesis_json.is_discarded());
+
 }
 
 TEST_CASE("mainnet_genesis") {
+
     // Parse genesis data
-    std::string source_data;
-    source_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-    auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
-    CHECK(genesis_json != nlohmann::json::value_t::discarded);
+    std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
 
     CHECK(genesis_json.contains("difficulty"));
     CHECK(genesis_json.contains("nonce"));
@@ -72,7 +78,7 @@ TEST_CASE("mainnet_genesis") {
     CHECK(genesis_json.contains("extraData"));
     CHECK((genesis_json.contains("alloc") && genesis_json["alloc"].is_object() && genesis_json["alloc"].size()));
 
-    MemoryBuffer state_buffer;
+    InMemoryState state;
 
     for (auto& item : genesis_json["alloc"].items()) {
         REQUIRE((item.value().is_object() && item.value().contains("balance") && item.value()["balance"].is_string()));
@@ -83,12 +89,12 @@ TEST_CASE("mainnet_genesis") {
         evmc::address account_address = silkworm::to_address(*address_bytes);
         auto balance_str{item.value()["balance"].get<std::string>()};
         Account account{0, intx::from_string<intx::uint256>(balance_str)};
-        state_buffer.update_account(account_address, std::nullopt, account);
+        state.update_account(account_address, std::nullopt, account);
     }
 
     SECTION("state_root") {
         auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
-        auto actual_state_root{state_buffer.state_root_hash()};
+        auto actual_state_root{state.state_root_hash()};
         auto a = full_view(expected_state_root);
         auto b = full_view(actual_state_root);
         CHECK(to_hex(a) == to_hex(b));
@@ -102,7 +108,7 @@ TEST_CASE("mainnet_genesis") {
     }
     header.ommers_hash = kEmptyListHash;
     header.beneficiary = 0x0000000000000000000000000000000000000000_address;
-    header.state_root = state_buffer.state_root_hash();
+    header.state_root = state.state_root_hash();
     header.transactions_root = kEmptyRoot;
     header.receipts_root = kEmptyRoot;
     auto difficulty_str{genesis_json["difficulty"].get<std::string>()};

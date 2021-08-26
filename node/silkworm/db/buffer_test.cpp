@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 
 #include "tables.hpp"
 
@@ -26,7 +26,7 @@ namespace silkworm::db {
 
 TEST_CASE("Storage update") {
     TemporaryDirectory tmp_dir;
-    EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+    EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{open_env(db_config)};
     auto txn{env.start_write()};
@@ -58,7 +58,7 @@ TEST_CASE("Storage update") {
 
     // Update only location A
     buffer.update_storage(address, kDefaultIncarnation, location_a,
-                          /*initial=*/value_a1, /*curren=*/value_a2);
+                          /*initial=*/value_a1, /*current=*/value_a2);
     buffer.write_to_db();
 
     // Location A should have the new value

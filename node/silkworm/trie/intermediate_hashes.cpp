@@ -16,9 +16,6 @@
 
 #include "intermediate_hashes.hpp"
 
-#include <bitset>
-
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/db/tables.hpp>
@@ -82,7 +79,7 @@ DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, et
         etl::Entry e;
         e.key = unpacked_key;
         e.value = marshal_node(node);
-        account_collector.collect(e);
+        account_collector.collect(std::move(e));
     };
 }
 
@@ -107,6 +104,9 @@ DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, et
 //    use_account_trie:
 //      use(AccTrie)
 //  }
+//
+// See also
+// https://github.com/ledgerwatch/erigon/blob/devel/docs/programmers_guide/guide.md#merkle-trie-root-calculation
 evmc::bytes32 DbTrieLoader::calculate_root() {
     auto acc_state{db::open_cursor(txn_, db::table::kHashedAccounts)};
     auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
@@ -135,7 +135,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                 storage_hb.node_collector = [&](ByteView unpacked_key, const Node& node) {
                     etl::Entry e{acc_with_inc, marshal_node(node)};
                     e.key.append(unpacked_key);
-                    storage_collector_.collect(e);
+                    storage_collector_.collect(std::move(e));
                 };
 
                 for (storage_trie.seek_to_account(acc_with_inc);; storage_trie.next()) {
@@ -183,72 +183,6 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
     return hb_.root_hash();
 }
 
-Bytes marshal_node(const Node& n) {
-    size_t buf_size{/* 3 masks state/tree/hash 2 bytes each */ 6 +
-                    /* root hash */ (n.root_hash().has_value() ? kHashLength : 0u) +
-                    /* hashes */ n.hashes().size() * kHashLength};
-
-    Bytes buf(buf_size, '\0');
-    size_t pos{0};
-
-    endian::store_big_u16(&buf[pos], n.state_mask());
-    pos += 2;
-
-    endian::store_big_u16(&buf[pos], n.tree_mask());
-    pos += 2;
-
-    endian::store_big_u16(&buf[pos], n.hash_mask());
-    pos += 2;
-
-    if (n.root_hash().has_value()) {
-        std::memcpy(&buf[pos], n.root_hash()->bytes, kHashLength);
-        pos += kHashLength;
-    }
-
-    for (const auto& hash : n.hashes()) {
-        std::memcpy(&buf[pos], hash.bytes, kHashLength);
-        pos += kHashLength;
-    }
-
-    return buf;
-}
-
-Node unmarshal_node(ByteView v) {
-    if (v.length() < 6) {
-        // At least state/tree/hash masks need to be present
-        throw std::invalid_argument("unmarshal_node : input too short");
-    } else {
-        // Beyond the 6th byte the length must be a multiple of
-        // kHashLength
-        if ((v.length() - 6) % kHashLength) {
-            throw std::invalid_argument("unmarshal_node : input len is invalid");
-        }
-    }
-
-    const auto state_mask{endian::load_big_u16(v.data())};
-    v.remove_prefix(2);
-    const auto tree_mask{endian::load_big_u16(v.data())};
-    v.remove_prefix(2);
-    const auto hash_mask{endian::load_big_u16(v.data())};
-    v.remove_prefix(2);
-
-    std::optional<evmc::bytes32> root_hash{std::nullopt};
-    if (std::bitset<16>(hash_mask).count() + 1 == v.length() / kHashLength) {
-        root_hash = evmc::bytes32{};
-        std::memcpy(root_hash->bytes, v.data(), kHashLength);
-        v.remove_prefix(kHashLength);
-    }
-
-    const size_t num_hashes{v.length() / kHashLength};
-    std::vector<evmc::bytes32> hashes(num_hashes);
-    for (size_t i{0}; i < num_hashes; ++i) {
-        std::memcpy(hashes[i].bytes, v.data(), kHashLength);
-        v.remove_prefix(kHashLength);
-    }
-
-    return {state_mask, tree_mask, hash_mask, hashes, root_hash};
-}
-
 evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir, const evmc::bytes32* expected_root) {
     etl::Collector account_collector{etl_dir};
     etl::Collector storage_collector{etl_dir};
@@ -268,6 +202,11 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir
     target.close();
 
     return root;
+}
+
+evmc::bytes32 increment_intermediate_hashes(mdbx::txn&, const char*, const evmc::bytes32*) {
+    // TODO[Issue 179] implement
+    throw WrongRoot{};
 }
 
 }  // namespace silkworm::trie

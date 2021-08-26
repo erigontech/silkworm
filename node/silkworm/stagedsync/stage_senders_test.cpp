@@ -18,18 +18,11 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/chain/genesis.h>
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/data_dir.hpp>
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/execution/address.hpp>
-#include <silkworm/execution/execution.hpp>
-#include <silkworm/rlp/encode.hpp>
-#include <silkworm/state/memory_buffer.hpp>
-#include <silkworm/types/account.hpp>
-#include <silkworm/types/block.hpp>
 
 using namespace evmc::literals;
 
@@ -52,7 +45,7 @@ static std::vector<Transaction> sample_transactions() {
     transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
     transactions[0].value = 1'027'501'080 * kGiga;
     transactions[0].data = {};
-    transactions[0].set_v(27);
+    CHECK(transactions[0].set_v(27));
     transactions[0].r =
         intx::from_string<intx::uint256>("0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353");
     transactions[0].s =
@@ -66,7 +59,7 @@ static std::vector<Transaction> sample_transactions() {
     transactions[1].to = {};
     transactions[1].value = 0;
     transactions[1].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
-    transactions[1].set_v(37);
+    CHECK(transactions[1].set_v(37));
     transactions[1].r =
         intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
     transactions[1].s =
@@ -80,7 +73,7 @@ TEST_CASE("Stage Senders") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -123,9 +116,11 @@ TEST_CASE("Stage Senders") {
 
     bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
-    std::string genesis_data;
-    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
+    CHECK(genesis_json.contains("config"));
+
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
@@ -138,7 +133,7 @@ TEST_CASE("Stage Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.get_etl_path()));
+    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.etl().path()));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
@@ -155,7 +150,7 @@ TEST_CASE("Unwind Senders") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -198,9 +193,10 @@ TEST_CASE("Unwind Senders") {
 
     bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
-    std::string genesis_data;
-    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
+    CHECK(genesis_json.contains("config"));
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
@@ -223,5 +219,82 @@ TEST_CASE("Unwind Senders") {
 
     REQUIRE(got_sender_0.compare(expected_sender) == 0);
     REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(2)), false));
+    REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(3)), false));
+}
+
+TEST_CASE("Prune Senders") {
+    TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
+
+    // Initialize temporary Database
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
+    db_config.inmemory = true;
+    auto env{db::open_env(db_config)};
+    stagedsync::TransactionManager txn{env};
+    db::table::create_all(*txn);
+    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
+
+    db::detail::BlockBodyForStorage block{};
+    auto transactions{sample_transactions()};
+    block.base_txn_id = 1;
+    block.txn_count = 1;
+
+    auto sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
+
+    // ---------------------------------------
+    // Push first block
+    // ---------------------------------------
+    Bytes tx_rlp{};
+    rlp::encode(tx_rlp, transactions[0]);
+
+    transaction_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
+    bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
+
+    // ---------------------------------------
+    // Push second block
+    // ---------------------------------------
+
+    block.base_txn_id = 2;
+
+    rlp::encode(tx_rlp, transactions[1]);
+    transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
+    bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
+
+    // ---------------------------------------
+    // Push third block
+    // ---------------------------------------
+
+    block.base_txn_id = 0;
+    block.txn_count = 0;
+
+    bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
+
+    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    auto config_data{genesis_json["config"].dump()};
+
+    auto config_table{db::open_cursor(*txn, db::table::kConfig)};
+    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
+
+    auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
+    canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
+    canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
+    canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
+    canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
+    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
+
+    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
+    // We prune from Block 2, thus deleting block 1
+    stagedsync::check_stagedsync_error(stagedsync::prune_senders(txn, tmp_dir.path(), 2));
+
+    auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
+    auto got_sender_1{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(2))).value)};
+    auto got_start_key{db::from_slice(sender_table.to_first().key).substr(0, 8)};
+
+    auto expected_sender{ByteView(sender.bytes, kAddressLength)};
+
+    REQUIRE(got_sender_1.compare(expected_sender) == 0);
+    REQUIRE(got_start_key.compare(db::block_key(2)) == 0);
     REQUIRE(!sender_table.lower_bound(db::to_slice(db::block_key(3)), false));
 }

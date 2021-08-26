@@ -18,11 +18,11 @@
 
 #include <cassert>
 
-#include <silkworm/execution/execution.hpp>
+#include <silkworm/execution/processor.hpp>
 
 namespace silkworm {
 
-Blockchain::Blockchain(StateBuffer& state, const ChainConfig& config, const Block& genesis_block)
+Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& genesis_block)
     : state_{state}, config_{config} {
     evmc::bytes32 hash{genesis_block.header.hash()};
     state_.insert_block(genesis_block, hash);
@@ -89,11 +89,11 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
 }
 
 ValidationResult Blockchain::execute_block(const Block& block, bool check_state_root) {
-    std::vector<Receipt> receipts;
+    ExecutionProcessor processor{block, state_, config_};
+    processor.evm().state_pool = state_pool;
+    processor.evm().exo_evm = exo_evm;
 
-    const ValidationResult res{
-        silkworm::execute_block(block, state_, config_, receipts, /*analysis_cache=*/nullptr, state_pool, exo_evm)};
-    if (res != ValidationResult::kOk) {
+    if (const auto res{processor.execute_and_write_block(receipts_)}; res != ValidationResult::kOk) {
         return res;
     }
 

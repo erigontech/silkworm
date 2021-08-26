@@ -17,34 +17,36 @@
 #ifndef SILKWORM_EXECUTION_EXECUTION_HPP_
 #define SILKWORM_EXECUTION_EXECUTION_HPP_
 
-#include <stdexcept>
+#include <vector>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/validity.hpp>
-#include <silkworm/execution/analysis_cache.hpp>
-#include <silkworm/execution/state_pool.hpp>
-#include <silkworm/state/buffer.hpp>
+#include <silkworm/execution/processor.hpp>
+#include <silkworm/state/state.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
 
 namespace silkworm {
 
-/** @brief Executes a given block and writes resulting changes into the database.
+/** @brief Executes a given block and writes resulting changes into the state.
  *
- * Transaction senders must be already populated.
- * kPlainState DB table (+auxilary tables) should match the Ethereum state at the begining of the block.
- *
- * Another precondition: pre_validate_block(block) must return kOk.
+ * Preconditions:
+ *  pre_validate_block(block) must return kOk;
+ *  transaction senders must be already populated.
  *
  * Warning: This method does not verify state root;
  * pre-Byzantium receipt root isn't validated either.
  *
- * For better performance use AnalysisCache & ExecutionStatePool.
+ * For better performance use ExecutionProcessor directly and set EVM state_pool & advanced_analysis_cache.
+ *
+ * @param state The Ethereum state at the begining of the block.
  */
-[[nodiscard]] ValidationResult execute_block(const Block& block, StateBuffer& buffer, const ChainConfig& config,
-                                             std::vector<Receipt>& out, AnalysisCache* analysis_cache = nullptr,
-                                             ExecutionStatePool* state_pool = nullptr,
-                                             evmc_vm* exo_evm = nullptr) noexcept;
+[[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
+                                                    const ChainConfig& config) noexcept {
+    ExecutionProcessor processor{block, state, config};
+    std::vector<Receipt> receipts;
+    return processor.execute_and_write_block(receipts);
+}
 
 }  // namespace silkworm
 

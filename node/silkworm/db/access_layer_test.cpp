@@ -17,19 +17,15 @@
 #include "access_layer.hpp"
 
 #include <catch2/catch.hpp>
-#include <ethash/ethash.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
-#include "bitmap.hpp"
 #include "stages.hpp"
-#include "tables.hpp"
 
 namespace silkworm {
 
@@ -44,7 +40,7 @@ static BlockBody sample_block_body() {
     body.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
     body.transactions[0].value = 1'027'501'080 * kGiga;
     body.transactions[0].data = {};
-    body.transactions[0].set_v(27);
+    CHECK(body.transactions[0].set_v(27));
     body.transactions[0].r =
         intx::from_string<intx::uint256>("0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353");
     body.transactions[0].s =
@@ -58,7 +54,7 @@ static BlockBody sample_block_body() {
     body.transactions[1].to = {};
     body.transactions[1].value = 0;
     body.transactions[1].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
-    body.transactions[1].set_v(37);
+    CHECK(body.transactions[1].set_v(37));
     body.transactions[1].r =
         intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
     body.transactions[1].s =
@@ -93,11 +89,11 @@ namespace db {
 
         // Conflicting flags
         TemporaryDirectory tmp_dir1;
-        DataDirectory data_dir{std::string(tmp_dir1.path())};
-        REQUIRE_NOTHROW(data_dir.create_tree());
-        REQUIRE(std::filesystem::exists(data_dir.get_chaindata_path()));
+        DataDirectory data_dir{tmp_dir1.path()};
+        REQUIRE_NOTHROW(data_dir.deploy());
+        REQUIRE(data_dir.exists());
 
-        db_config.path = data_dir.get_chaindata_path().string();
+        db_config.path = data_dir.chaindata().path().string();
         db_config.create = true;
         db_config.shared = true;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
@@ -115,7 +111,7 @@ namespace db {
 
         // Conflicting flags
         TemporaryDirectory tmp_dir2;
-        db_config = db::EnvConfig{tmp_dir2.path()};
+        db_config = db::EnvConfig{tmp_dir2.path().string()};
         db_config.create = true;
         db_config.readonly = true;
         db_config.inmemory = true;
@@ -130,7 +126,7 @@ namespace db {
 
     TEST_CASE("Methods for_each/for_count") {
         TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -172,7 +168,7 @@ namespace db {
     TEST_CASE("Read schema Version") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -201,7 +197,7 @@ namespace db {
 
     TEST_CASE("Storage Mode") {
         TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -244,7 +240,7 @@ namespace db {
     TEST_CASE("read_stages") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -280,7 +276,7 @@ namespace db {
     TEST_CASE("read_header") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -377,14 +373,13 @@ namespace db {
     TEST_CASE("read_account") {
         TemporaryDirectory tmp_dir;
         DataDirectory data_dir{tmp_dir.path(), /*create=*/true};
-        EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+        EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{open_env(db_config)};
         auto txn{env.start_write()};
         table::create_all(txn);
 
         Buffer buffer{txn};
-        std::vector<Receipt> receipts;
 
         const auto miner_a{0x00000000000000000000000000000000000000aa_address};
         const auto miner_b{0x00000000000000000000000000000000000000bb_address};
@@ -393,24 +388,24 @@ namespace db {
         block1.header.number = 1;
         block1.header.beneficiary = miner_a;
         // miner_a gets one block reward
-        REQUIRE(execute_block(block1, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+        REQUIRE(execute_block(block1, buffer, kMainnetConfig) == ValidationResult::kOk);
 
         Block block2;
         block2.header.number = 2;
         block2.header.beneficiary = miner_b;
         // miner_a gets nothing
-        REQUIRE(execute_block(block2, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+        REQUIRE(execute_block(block2, buffer, kMainnetConfig) == ValidationResult::kOk);
 
         Block block3;
         block3.header.number = 3;
         block3.header.beneficiary = miner_a;
         // miner_a gets another block reward
-        REQUIRE(execute_block(block3, buffer, kMainnetConfig, receipts) == ValidationResult::kOk);
+        REQUIRE(execute_block(block3, buffer, kMainnetConfig) == ValidationResult::kOk);
 
         buffer.write_to_db();
 
         stagedsync::TransactionManager tm{txn};
-        REQUIRE(stagedsync::stage_account_history(tm, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stagedsync::stage_account_history(tm, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());
@@ -424,7 +419,7 @@ namespace db {
     TEST_CASE("read_storage") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -465,7 +460,7 @@ namespace db {
     TEST_CASE("read_account_changes") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -529,7 +524,7 @@ namespace db {
     TEST_CASE("read_storage_changes") {
         TemporaryDirectory tmp_dir;
 
-        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
@@ -612,7 +607,7 @@ namespace db {
 
     TEST_CASE("read_chain_config") {
         TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};

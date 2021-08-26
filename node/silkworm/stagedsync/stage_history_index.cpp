@@ -14,9 +14,6 @@
    limitations under the License.
 */
 
-#include <filesystem>
-#include <iomanip>
-#include <iostream>
 #include <string>
 #include <unordered_map>
 
@@ -26,82 +23,83 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/etl/collector.hpp>
 
 #include "stagedsync.hpp"
 
 namespace silkworm::stagedsync {
 
-constexpr size_t kBitmapBufferSizeLimit = 256 * kMebi;
+constexpr size_t kBitmapBufferSizeLimit = 256_Mebi;
 
 namespace fs = std::filesystem;
 
 static StageResult history_index_stage(TransactionManager& txn, const std::filesystem::path& etl_path, bool storage) {
     fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
 
-    // We take data from header table and transform it and put it in blockhashes table
+    etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
+    std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
+
+    auto flush_bitmaps_to_etl = [&collector, &bitmaps] {
+        for (const auto& [bitmap_key, bitmap] : bitmaps) {
+            Bytes bitmap_bytes(bitmap.getSizeInBytes(), '\0');
+            bitmap.write(byte_ptr_cast(bitmap_bytes.data()));
+            collector.collect(etl::Entry{Bytes(byte_ptr_cast(bitmap_key.c_str()), bitmap_key.size()), bitmap_bytes});
+        }
+        bitmaps.clear();
+    };
+
+    // We take data from changesets and turn it to indexes, so from [Block Number => Location] to [Location => Block
+    // Number]
     db::MapConfig changeset_config = storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
 
     auto changeset_table{db::open_cursor(*txn, changeset_config)};
-    std::unordered_map<std::string, roaring::Roaring64Map> bitmaps;
-
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, stage_key)};
+    Bytes start{db::block_key(last_processed_block_number + 1)};
 
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account")
-                                 << " Index Extraction. From: " << last_processed_block_number << std::endl;
-    Bytes start{db::block_key(last_processed_block_number + 1)};
+                                 << " Index Extraction. From: " << (last_processed_block_number + 1) << std::endl;
 
     size_t allocated_space{0};
     uint64_t block_number{0};
-
-    if (changeset_table.lower_bound(db::to_slice(start))) {
-        auto data{changeset_table.current()};
-        while (data) {
-            std::string composite_key;
-            if (storage) {
-                char composite_key_array[kHashLength + kAddressLength];
-                auto data_key_view{db::from_slice(data.key).substr(8)};
-                std::memcpy(&composite_key_array[0], data_key_view.data(), kAddressLength);
-                std::memcpy(&composite_key_array[kAddressLength], data.value.iov_base, kHashLength);
-                composite_key = std::string(composite_key_array);
-            } else {
-                composite_key = std::string(data.value.char_ptr(), kAddressLength);
-            }
-
-            if (bitmaps.find(composite_key) == bitmaps.end()) {
-                bitmaps.emplace(composite_key, roaring::Roaring64Map());
-            }
-            block_number = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
-            bitmaps.at(composite_key).add(block_number);
-            allocated_space += 8;
-            if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
-                for (const auto& [key, bm] : bitmaps) {
-                    Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-                    bm.write(byte_ptr_cast(bitmap_bytes.data()));
-                    etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
-                    collector.collect(entry);
-                }
-                SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
-                bitmaps.clear();
-                allocated_space = 0;
-            }
-            data = changeset_table.to_next(/*throw_notfound*/ false);
+    auto data{changeset_table.lower_bound(db::to_slice(start))};
+    while (data) {
+        std::string composite_key;
+        auto key{db::from_slice(data.key)};
+        auto value{db::from_slice(data.value)};
+        auto [db_key, _]{convert_to_db_format(key, value)};
+        // Make the composite key accordingly whether we are dealing with storages or accounts
+        if (storage) {
+            // Storage: Address + Location
+            composite_key.resize(kAddressLength + kHashLength);
+            std::memcpy(&composite_key[0], &db_key[0], kAddressLength);
+            std::memcpy(&composite_key[kAddressLength], &db_key[kAddressLength + db::kIncarnationLength], kHashLength);
+        } else {
+            // Account: Address
+            composite_key = std::string(data.value.char_ptr(), kAddressLength);
         }
+        // Initialize composite key if needed
+        if (bitmaps.find(composite_key) == bitmaps.end()) {
+            bitmaps.emplace(composite_key, roaring::Roaring64Map());
+        }
+        // Add block number to the bitmap of current key
+        block_number = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
+        bitmaps.at(composite_key).add(block_number);
+        allocated_space += 8;
+        // Flush to ETL
+        if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
+            flush_bitmaps_to_etl();
+            allocated_space = 0;
+            SILKWORM_LOG(LogLevel::Info) << "Current Block: " << block_number << std::endl;
+        }
+        data = changeset_table.to_next(/*throw_notfound*/ false);
     }
     changeset_table.close();
-
-    for (const auto& [key, bm] : bitmaps) {
-        Bytes bitmap_bytes(bm.getSizeInBytes(), '\0');
-        bm.write(byte_ptr_cast(bitmap_bytes.data()));
-        etl::Entry entry{Bytes(byte_ptr_cast(key.c_str()), key.size()), bitmap_bytes};
-        collector.collect(entry);
+    if (allocated_space != 0) {
+        flush_bitmaps_to_etl();
     }
-    bitmaps.clear();
 
     SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
 
@@ -118,23 +116,28 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
             target,
             [](etl::Entry entry, mdbx::cursor& history_index_table, MDBX_put_flags_t db_flags) {
                 auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
-
+                // Check wheter we still need to rework the previous entry
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');
                 std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
                 endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
                 auto previous_bitmap_bytes{history_index_table.find(db::to_slice(last_chunk_index), false)};
+                // If we have an unfinished bitmpa for the current location then continue working on it
                 if (previous_bitmap_bytes) {
+                    // Merge previous and current bitmap
                     bm |= roaring::Roaring64Map::readSafe(previous_bitmap_bytes.value.char_ptr(),
                                                           previous_bitmap_bytes.value.length());
                     db_flags = MDBX_put_flags_t::MDBX_UPSERT;
                 }
                 while (bm.cardinality() > 0) {
+                    // Divide in different bitmaps of different (chunks) and push all of them individually
                     auto current_chunk{db::bitmap::cut_left(bm, db::bitmap::kBitmapChunkLimit)};
-                    // make chunk index
+                    // Make chunk index (Location + Suffix )
                     Bytes chunk_index(entry.key.size() + 8, '\0');
                     std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
+                    // Suffix is either the maximum Block Number of the bitmap or if it's the last chunk: UINT64_MAX
                     uint64_t suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
                     endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
+                    // Push chunk to database
                     Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
                     current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
                     mdbx::slice k{db::to_slice(chunk_index)};
@@ -162,12 +165,12 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 512 * kMebi);
+    etl::Collector collector(etl_path,
+                             /* flush size */ 10_Mebi);  // We do not unwind by many blocks usually
 
     auto index_table{db::open_cursor(*txn, index_config)};
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started " << (storage ? "Storage" : "Account") << " Index Unwind" << std::endl;
-
     if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
         while (data) {
@@ -183,7 +186,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
             // check if unwind can be applied
             if (bm.minimum() <= unwind_to) {
                 // Erase elements that are > unwind_to
-                bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(0, unwind_to - 1, 1));
+                bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(0, unwind_to + 1, 1));
                 Bytes new_bitmap(bm.getSizeInBytes(), '\0');
                 bm.write(byte_ptr_cast(&new_bitmap[0]));
                 // generates new key
@@ -191,8 +194,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
                 std::memcpy(&new_key[0], key.data(), key.size());
                 endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
                 // replace with new index
-                etl::Entry entry{new_key, new_bitmap};
-                collector.collect(entry);
+                collector.collect(etl::Entry{new_key, new_bitmap});
             }
             index_table.erase(/* whole_multivalue = */ true);
             data = index_table.to_next(/*throw_notfound*/ false);
@@ -207,10 +209,10 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     return StageResult::kSuccess;
 }
 
-StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, false);
 }
-StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, true);
 }
 

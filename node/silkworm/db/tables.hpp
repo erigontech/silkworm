@@ -27,6 +27,8 @@ see its common/dbutils/bucket.go.
 */
 namespace silkworm::db::table {
 
+constexpr const char* kLastHeaderKey = "LastHeader";
+
 /* Canonical tables */
 constexpr db::MapConfig kMAIN_DBI{nullptr};
 constexpr db::MapConfig kAccountHistory{"AccountHistory"};

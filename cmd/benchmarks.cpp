@@ -236,12 +236,11 @@ static void etl_benchmark(const std::string& label, LoadFunc load_func, const st
 
         // Initialize temporary Database
         db::EnvConfig db_config{db_tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
 
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 
-        auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};  // 100 entries per file (16 bytes per entry)
+        auto collector{Collector(etl_tmp_dir.path(), kOptimalBufferSize)};
         db::table::create_all(txn);
 
         // Collection
@@ -286,7 +285,7 @@ void etl_load() {
     SILKWORM_LOG_VERBOSITY(LogLevel::None);
 
     //size_t kDataSetSize{1_Gibi};
-    size_t kDataSetSize{4096};
+    size_t kDataSetSize{409600};
     std::vector<Entry> entries { generate_entry_set(kDataSetSize) };
     
     // first test with default load

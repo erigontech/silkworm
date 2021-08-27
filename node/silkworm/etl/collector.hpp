@@ -32,7 +32,6 @@ typedef void (*LoadFunc)(Entry, mdbx::cursor&, MDBX_put_flags_t);
 // Collects data Extracted from db
 class Collector {
   public:
-
     // Not copyable nor movable
     Collector(const Collector&) = delete;
     Collector& operator=(const Collector&) = delete;
@@ -57,10 +56,11 @@ class Collector {
     void load(mdbx::cursor& target, LoadFunc load_func = nullptr,
               MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT, uint32_t log_every_percent = 100u);
 
+    void load_serialized(mdbx::cursor& target, LoadFunc load_func = nullptr,
+                         MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT, uint32_t log_every_percent = 100u);
+
     //! \brief Returns the number of actually collected items
-    size_t size() const {
-        return size_;
-    }
+    size_t size() const { return size_; }
 
     //! \brief Clears contents of collector and reset
     void clear() {

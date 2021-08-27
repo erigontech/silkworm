@@ -117,7 +117,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
             queue.push_back(std::move(*item));
         }
     }
-    make_heap(queue.begin(), queue.end(), key_comparer); 
+    make_heap(queue.begin(), queue.end(), key_comparer);
 
     // Process the queue from smallest to largest key
     while (queue.size()) {
@@ -147,17 +147,87 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
 
         // At this point `current` has been processed.
         // We can remove it from the queue
-        pop_heap(queue.begin(), queue.end(), key_comparer); 
+        pop_heap(queue.begin(), queue.end(), key_comparer);
         queue.pop_back();
 
         // Add next item to the queue only if it has
         // meaningful data
         if (next.has_value()) {
             queue.push_back(std::move(*next));
-            push_heap(queue.begin(), queue.end(), key_comparer); 
+            push_heap(queue.begin(), queue.end(), key_comparer);
         } else {
             file_provider.reset();
         }
+    }
+    size_ = 0;  // We have consumed all items
+}
+
+void Collector::load_serialized(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t flags,
+                                uint32_t log_every_percent) {
+    const auto overall_size{size()};  // Amount of work
+
+    if (!overall_size) {
+        SILKWORM_LOG(LogLevel::Info) << "ETL Load called without data to process" << std::endl;
+        return;
+    }
+
+    const uint32_t progress_step{log_every_percent ? std::min(log_every_percent, 100u) : 100u};
+    const size_t progress_increment_count{overall_size / (100 / progress_step)};
+    size_t dummy_counter{progress_increment_count};
+    uint32_t actual_progress{0};
+
+    if (file_providers_.empty()) {
+        buffer_.sort();
+
+        for (const auto& etl_entry : buffer_.entries()) {
+            if (load_func) {
+                load_func(etl_entry, target, flags);
+            } else {
+                mdbx::slice k{db::to_slice(etl_entry.key)};
+                mdbx::slice v{db::to_slice(etl_entry.value)};
+                target.put(k, &v, flags);
+            }
+
+            if (!--dummy_counter) {
+                actual_progress += progress_step;
+                dummy_counter = progress_increment_count;
+                SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
+                                             << " << " << actual_progress << "%" << std::endl;
+            }
+        }
+
+        buffer_.clear();
+        return;
+    }
+
+    // Flush not overflown buffer data to file
+    flush_buffer();
+
+    // Read all items which are already known to be
+    // sorted in file AND across files
+    for (auto& file_provider : file_providers_) {
+        auto item{file_provider->read_entry()};
+        while (item.has_value()) {
+            auto& etl_entry = item.value().first;
+            // Process linked pairs
+            if (load_func) {
+                load_func(etl_entry, target, flags);
+            } else {
+                mdbx::slice k{db::to_slice(etl_entry.key)};
+                mdbx::slice v{db::to_slice(etl_entry.value)};
+                target.put(k, &v, flags);
+            }
+
+            // Display progress
+            if (!--dummy_counter) {
+                actual_progress += progress_step;
+                dummy_counter = progress_increment_count;
+                SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
+                                             << " << " << actual_progress << "%" << std::endl;
+            }
+            item = file_provider->read_entry();
+        }
+        file_provider.reset();
     }
     size_ = 0;  // We have consumed all items
 }

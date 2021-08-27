@@ -18,10 +18,10 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <regex>
-#include <string>
-#include <set>
 #include <random>
+#include <regex>
+#include <set>
+#include <string>
 
 #include <CLI/CLI.hpp>
 #include <boost/bind.hpp>
@@ -32,16 +32,15 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/log.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/state/in_memory_state.hpp>
-#include <silkworm/trie/hash_builder.hpp>
-#include <silkworm/common/stopwatch.hpp>
+#include <silkworm/db/tables.hpp>
 #include <silkworm/etl/buffer.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/common/log.hpp>
-
+#include <silkworm/state/in_memory_state.hpp>
+#include <silkworm/trie/hash_builder.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -88,7 +87,7 @@ void etl_buffer_unordered() {
         for (const auto& item : base_buffer.entries()) {
             buffer.put(item);
         }
-        //buffer.sort();
+        // buffer.sort();
         auto loop1_timings{sw.lap()};
         sw.reset();
         std::cout << " [Buffer-Default copy build] Done in " << sw.format(loop1_timings.second);
@@ -99,21 +98,21 @@ void etl_buffer_unordered() {
         for (const auto& item : base_buffer2.entries()) {
             buffer.put(item);
         }
-        //buffer.sort();
+        // buffer.sort();
         auto loop2_timings{sw.lap()};
         sw.reset();
         std::cout << " [Buffer-Default copy build] Done in " << sw.format(loop2_timings.second) << "\n" << std::endl;
     }
 
-    // Push all items in buffer default (nove)
+    // Push all items in buffer default (move)
     {
         etl::Buffer buffer(kDataSetSize);
         std::cout << "\n [Buffer-Default] First loop ..." << std::endl;
         sw.start();
-        for (auto&& item : (std::vector<etl::Entry> &)base_buffer.entries()) {
+        for (auto&& item : (std::vector<etl::Entry>&)base_buffer.entries()) {
             buffer.put(std::move(item));
         }
-        //buffer.sort();
+        // buffer.sort();
         auto loop1_timings{sw.lap()};
         sw.reset();
         std::cout << " [Buffer-Default move build] Done in " << sw.format(loop1_timings.second);
@@ -121,10 +120,10 @@ void etl_buffer_unordered() {
         buffer.clear();
         std::cout << "\n [Buffer-Default] Second loop ..." << std::endl;
         sw.start();
-        for (auto&& item : (std::vector<etl::Entry> &)base_buffer2.entries()) {
+        for (auto&& item : (std::vector<etl::Entry>&)base_buffer2.entries()) {
             buffer.put(std::move(item));
         }
-        //buffer.sort();
+        // buffer.sort();
         auto loop2_timings{sw.lap()};
         sw.reset();
         std::cout << " [Buffer-Default move build] Done in " << sw.format(loop2_timings.second) << "\n" << std::endl;
@@ -141,8 +140,7 @@ void etl_buffer_ordered() {
     std::cout << "\n Feeding buffer base ..." << std::endl;
     sw.start();
     while (!base_buffer.overflows()) {
-        auto key{random_bytes()};
-        endian::store_big_u64(&key[0], entry_count++);
+        auto key{db::block_key(entry_count++)};
         etl::Entry item{key, random_bytes()};
         etl::Entry item2(item);
         base_buffer.put(std::move(item));
@@ -161,7 +159,7 @@ void etl_buffer_ordered() {
         for (const auto& item : base_buffer.entries()) {
             buffer.put(item);
         }
-        //buffer.sort();
+        // buffer.sort();
         auto loop1_timings{sw.lap()};
         sw.reset();
         std::cout << " [Buffer-Default copy build] Done in " << sw.format(loop1_timings.second);
@@ -172,21 +170,21 @@ void etl_buffer_ordered() {
         for (const auto& item : base_buffer2.entries()) {
             buffer.put(item);
         }
-        //buffer.sort();
+        // buffer.sort();
         auto loop2_timings{sw.lap()};
         sw.reset();
         std::cout << " [Buffer-Default copy build] Done in " << sw.format(loop2_timings.second) << "\n" << std::endl;
     }
 
-    // Push all items in buffer default (nove)
+    // Push all items in buffer default (move)
     {
         etl::Buffer buffer(kDataSetSize);
         std::cout << "\n [Buffer-Default] First loop ..." << std::endl;
         sw.start();
-        for (auto&& item : (std::vector<etl::Entry> &)base_buffer.entries()) {
+        for (auto&& item : (std::vector<etl::Entry>&)base_buffer.entries()) {
             buffer.put(std::move(item));
         }
-        //buffer.sort();
+        // buffer.sort();
         auto loop1_timings{sw.lap()};
         sw.reset();
         std::cout << " [Buffer-Default move build] Done in " << sw.format(loop1_timings.second);
@@ -194,37 +192,30 @@ void etl_buffer_ordered() {
         buffer.clear();
         std::cout << "\n [Buffer-Default] Second loop ..." << std::endl;
         sw.start();
-        for (auto&& item : (std::vector<etl::Entry> &)base_buffer2.entries()) {
+        for (auto&& item : (std::vector<etl::Entry>&)base_buffer2.entries()) {
             buffer.put(std::move(item));
         }
-        //buffer.sort();
+        // buffer.sort();
         auto loop2_timings{sw.lap()};
         sw.reset();
         std::cout << " [Buffer-Default move build] Done in " << sw.format(loop2_timings.second) << "\n" << std::endl;
     }
 }
 
-static std::vector<Entry> generate_entry_set(size_t size) 
-{
+static std::vector<Entry> generate_entry_set(size_t size) {
     std::vector<Entry> entries;
-    std::set<Bytes>    keys;
+    size_t accrued_size{0};
 
-    while (entries.size() < size) {
-        etl::Entry entry{random_bytes(), random_bytes()};
-
-        if (keys.count(entry.key)) {
-            // we want unique keys
-            continue;
-        }
-            
-        keys.insert(entry.key);
+    while (accrued_size < size) {
+        etl::Entry entry{db::block_key(entries.size()), random_bytes()};
+        accrued_size += entry.size();
         entries.push_back(std::move(entry));
     }
     return entries;
 }
 
-static void etl_benchmark(const std::string& label, LoadFunc load_func, const std::vector<Entry> &entries) 
-{
+static void etl_benchmark(const std::string& label, LoadFunc load_func, const std::vector<Entry>& entries,
+                          bool serialized = false) {
     auto do_bench = [&]() {
         StopWatch sw;
         sw.start();
@@ -240,7 +231,7 @@ static void etl_benchmark(const std::string& label, LoadFunc load_func, const st
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 
-        auto collector{Collector(etl_tmp_dir.path(), kOptimalBufferSize)};
+        auto collector{Collector(etl_tmp_dir.path(), kOptimalBufferSize / 8)};  // Generate 16 dumped files
         db::table::create_all(txn);
 
         // Collection
@@ -248,11 +239,15 @@ static void etl_benchmark(const std::string& label, LoadFunc load_func, const st
             collector.collect(entry);
         }
         // Check whether temporary files were generated
-        //assert(std::distance(fs::directory_iterator{etl_tmp_dir.path()}, fs::directory_iterator{}) == 10);
+        // assert(std::distance(fs::directory_iterator{etl_tmp_dir.path()}, fs::directory_iterator{}) == 10);
 
         // Load data
         auto to{db::open_cursor(txn, db::table::kHeaderNumbers)};
-        collector.load(to, load_func);
+        if (!serialized) {
+            collector.load(to, load_func, MDBX_APPEND);
+        } else {
+            collector.load_serialized(to, load_func, MDBX_APPEND);
+        }
 
         auto feed_time = sw.lap();
         sw.reset();
@@ -262,32 +257,37 @@ static void etl_benchmark(const std::string& label, LoadFunc load_func, const st
     std::cout << label << " done in " << res1 << std::endl;
 }
 
-static void bench_collector_load(const std::string &load_desc, 
-                                 LoadFunc load_func, 
-                                 std::vector<Entry> entries) // copy by design
+static void bench_collector_load(const std::string& load_desc, LoadFunc load_func,
+                                 std::vector<Entry> entries)  // copy by design
 {
+    std::cout << "Testing a dataset of " << entries.size() << " with a total size of " << human_size(kDataSetSize)
+              << std::endl;
+
     // bench collector with entries in random order
     // -------------------------------------------
     etl_benchmark(load_desc + "random", load_func, entries);
 
     // bench collector with entries sorted in increasing order
     // ------------------------------------------------------
-    std::sort(entries.begin(), entries.end());
+    // std::sort(entries.begin(), entries.end());
     etl_benchmark(load_desc + "sorted increasing", load_func, entries);
+
+    // bench collector with entries sorted in increasing order
+    // and load serialized from files
+    // ------------------------------------------------------
+    etl_benchmark(load_desc + "sorted increasing - serialized", load_func, entries, true);
 
     // bench collector with entries sorted in decreasing order
     // ------------------------------------------------------
-    std::sort(entries.begin(), entries.end(), [](const Entry &a, const Entry &b) -> bool { return b < a; });
+    std::sort(entries.begin(), entries.end(), [](const Entry& a, const Entry& b) -> bool { return b < a; });
     etl_benchmark(load_desc + "sorted decreasing", load_func, entries);
 }
 
 void etl_load() {
     SILKWORM_LOG_VERBOSITY(LogLevel::None);
 
-    //size_t kDataSetSize{1_Gibi};
-    size_t kDataSetSize{409600};
-    std::vector<Entry> entries { generate_entry_set(kDataSetSize) };
-    
+    std::vector<Entry> entries{generate_entry_set(kDataSetSize)};
+
     // first test with default load
     // ----------------------------
     bench_collector_load("default load: ", nullptr, entries);
@@ -296,15 +296,16 @@ void etl_load() {
     // ---------------------------
     auto load_fn = [](Entry entry, mdbx::cursor& table, MDBX_put_flags_t flags) {
         (void)flags;
-        entry.key.at(0) = 1;
-        table.upsert(db::to_slice(entry.key), db::to_slice(entry.value));
+        entry.value.at(0) = 1;  // Don't tamper with key so they're still sorted in db
+        mdbx::slice k{db::to_slice(entry.key)};
+        mdbx::slice v{db::to_slice(entry.value)};
+        table.put(k, &v, flags);
     };
 
     bench_collector_load("custom load: ", load_fn, entries);
 }
 
 int main(int argc, char* argv[]) {
-
     CLI::App app_main("Silkworm db tool");
     app_main.require_subcommand(1);  // At least 1 subcommand is required
     // List tables and gives info about storage
@@ -321,7 +322,7 @@ int main(int argc, char* argv[]) {
         etl_buffer_unordered();
     } else if (*benchmark_etl_buffer_ordered) {
         etl_buffer_ordered();
-    } else if(*benchmark_etl_load) {
+    } else if (*benchmark_etl_load) {
         etl_load();
     }
     return 0;

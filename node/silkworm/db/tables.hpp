@@ -71,7 +71,7 @@ constexpr db::MapConfig kSequence{"Sequence"};
 constexpr db::MapConfig kSnapshotInfo{"SnapshotInfo"};
 constexpr db::MapConfig kStateSnapshotInfo{"StateSnapshotInfo"};
 constexpr db::MapConfig kStorageHistory{"StorageHistory"};
-constexpr db::MapConfig kSyncStageProgress{"SyncStage"};      // Progresss for stages
+constexpr db::MapConfig kSyncStageProgress{"SyncStage"};      // Progress for stages
 constexpr db::MapConfig kSyncStageUnwind{"SyncStageUnwind"};  // Unwind point for stages
 constexpr db::MapConfig kTrieOfAccounts{"TrieAccount"};
 constexpr db::MapConfig kTrieOfStorage{"TrieStorage"};

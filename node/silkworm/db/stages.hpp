@@ -20,7 +20,7 @@
 #include <silkworm/db/tables.hpp>
 
 /*
-List of stages keys stored into SSP2 table
+List of stages keys stored into SyncStage table
 */
 
 namespace silkworm::db::stages {
@@ -32,15 +32,16 @@ constexpr const char* kBlockHashesKey{"BlockHashes"};                 // Headers
 constexpr const char* kBlockBodiesKey{"Bodies"};                      // Block bodies are downloaded, TxHash and UncleHash are getting verified
 constexpr const char* kSendersKey{"Senders"};                         // "From" recovered from signatures
 constexpr const char* kExecutionKey{"Execution"};                     // Executing each block w/o building a trie
+constexpr const char* kTranslationKey{"Translation"};                 // Translation each marked for translation contract (from EVM to TEVM)
 constexpr const char* kIntermediateHashesKey{"IntermediateHashes"};   // Generate intermediate hashes, calculate the state root hash
 constexpr const char* kHashStateKey{"HashState"};                     // Apply Keccak256 to all the keys in the state
-constexpr const char* kAccountHistoryIndexKey{"AccountHistoryIndex"};      // Generating history index for accounts
+constexpr const char* kAccountHistoryIndexKey{"AccountHistoryIndex"}; // Generating history index for accounts
 constexpr const char* kStorageHistoryIndexKey{"StorageHistoryIndex"}; // Generating history index for storage
 constexpr const char* kLogIndexKey{"LogIndex"};                       // Generating logs index (from receipts)
 constexpr const char* kCallTracesKey{"CallTraces"};                   // Generating call traces index
 constexpr const char* kTxLookupKey{"TxLookup"};                       // Generating transactions lookup index
 constexpr const char* kTxPoolKey{"TxPool"};                           // Starts Backend
-constexpr const char* kFinishKey{"Finish"};                           // Nominal stage after all other stages
+constexpr const char* kFinishKey{"Finish"};                           // Nominal stage after all above listed stages
 
 constexpr const char* kMiningCreateBlockKey{"MiningCreateBlock"};     // Create block for mining
 constexpr const char* kMiningExecutionKey{"MiningExecution"};         // Execute mining
@@ -54,6 +55,7 @@ constexpr const char* kAllStages[]{
     kBlockBodiesKey,
     kSendersKey,
     kExecutionKey,
+    kTranslationKey,
     kIntermediateHashesKey,
     kHashStateKey,
     kAccountHistoryIndexKey,
@@ -72,7 +74,7 @@ uint64_t get_stage_progress(mdbx::txn& txn, const char* stage_name);
 void set_stage_progress(mdbx::txn& txn, const char* stage_name, uint64_t block_num);
 
 // Gets the invalidation point for the given stage
-// Invalidation point means that that stage needs to rollback to the invalidation
+// Invalidation point means that that stage needs to roll back to the invalidation
 // point and be redone
 uint64_t get_stage_unwind(mdbx::txn& txn, const char* stage_name);
 
@@ -82,7 +84,7 @@ void set_stage_unwind(mdbx::txn& txn, const char* stage_name, uint64_t block_num
 // Clears the invalidation point for the given stage
 void clear_stage_unwind(mdbx::txn& txn, const char* stage_name);
 
-// Returns whether or not the stage name is coded
+// Returns whether the stage name is coded
 bool is_known_stage(const char* name);
 
 }  // namespace silkworm::db::stages

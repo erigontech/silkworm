@@ -131,7 +131,7 @@ TEST_CASE("Stage Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
     stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.etl().path()));
 
@@ -207,7 +207,7 @@ TEST_CASE("Unwind Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
     stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
     stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, tmp_dir.path(), 1));
@@ -282,7 +282,7 @@ TEST_CASE("Prune Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
     stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
     // We prune from Block 2, thus deleting block 1

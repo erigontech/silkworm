@@ -41,7 +41,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
 
-    auto expected_block_number{db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey) + 1};
+    auto expected_block_number{db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey) + 1};
 
     // We take number from bodies table, and hash from transaction table
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
@@ -119,7 +119,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
         collector.load(target_table, nullptr, db_flags, /* log_every_percent = */ 10);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, block_number);
+        db::stages::write_stage_progress(*txn, db::stages::kTxLookupKey, block_number);
 
         txn.commit();
 
@@ -133,7 +133,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
 }
 
 StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
-    if (unwind_to >= db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)) {
+    if (unwind_to >= db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey)) {
         return StageResult::kSuccess;
     }
     // We take data from header table and transform it and put it in blockhashes table
@@ -146,7 +146,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
     endian::store_big_u64(&start[0], unwind_to + 1);
 
     SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Unwind, from: "
-                                 << db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)
+                                 << db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey)
                                  << " to: " << unwind_to << std::endl;
 
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
@@ -175,7 +175,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
     }
 
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
-    db::stages::set_stage_progress(*txn, db::stages::kTxLookupKey, unwind_to);
+    db::stages::write_stage_progress(*txn, db::stages::kTxLookupKey, unwind_to);
 
     txn.commit();
 

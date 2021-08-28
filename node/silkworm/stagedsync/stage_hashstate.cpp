@@ -143,7 +143,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     auto codehash_table{db::open_cursor(txn, db::table::kPlainContractCode)};
     auto target_table{db::open_cursor(txn, target_config)};
 
-    auto start_block_number{db::stages::get_stage_progress(txn, db::stages::kHashStateKey) + 1};
+    auto start_block_number{db::stages::read_stage_progress(txn, db::stages::kHashStateKey) + 1};
 
     Bytes start_key{db::block_key(start_block_number)};
     auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
@@ -221,7 +221,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
 StageResult stage_hashstate(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
-    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
+    auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
     if (last_processed_block_number != 0) {
         SILKWORM_LOG(LogLevel::Info) << "Starting Account Hashing" << std::endl;
         hashstate_promote(*txn, HashstateOperation::HashAccount);
@@ -234,8 +234,8 @@ StageResult stage_hashstate(TransactionManager& txn, const std::filesystem::path
         hashstate_promote_clean_code(*txn, etl_path.string());
     }
     // Update progress height with last processed block
-    db::stages::set_stage_progress(*txn, db::stages::kHashStateKey,
-                                   db::stages::get_stage_progress(*txn, db::stages::kExecutionKey));
+    db::stages::write_stage_progress(*txn, db::stages::kHashStateKey,
+                                   db::stages::read_stage_progress(*txn, db::stages::kExecutionKey));
     txn.commit();
 
     SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
@@ -363,7 +363,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
 
 StageResult unwind_hashstate(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
     try {
-        auto stage_height{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
+        auto stage_height{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
         if (unwind_to >= stage_height) {
             SILKWORM_LOG(LogLevel::Error)
                 << "Stage progress is " << stage_height << " which is <= than requested unwind_to" << std::endl;
@@ -383,7 +383,7 @@ StageResult unwind_hashstate(TransactionManager& txn, const std::filesystem::pat
         hashstate_unwind(*txn, unwind_to, HashstateOperation::Code);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(*txn, db::stages::kHashStateKey, unwind_to);
+        db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, unwind_to);
 
         SILKWORM_LOG(LogLevel::Info) << "Committing ... " << std::endl;
         txn.commit();

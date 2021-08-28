@@ -116,7 +116,7 @@ class DbTx {
         return db::read_total_difficulty(txn, b, h.bytes);
     }
 
-    BlockNum stage_progress(const char* stage_name) { return db::stages::get_stage_progress(txn, stage_name); }
+    BlockNum stage_progress(const char* stage_name) { return db::stages::read_stage_progress(txn, stage_name); }
 };
 
 #endif  // SILKWORM_DBTX_HPP

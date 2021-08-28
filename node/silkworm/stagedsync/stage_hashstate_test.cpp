@@ -119,7 +119,7 @@ TEST_CASE("Stage Hashstate") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
 
     CHECK(stagedsync::stage_hashstate(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
 
@@ -131,7 +131,7 @@ TEST_CASE("Stage Hashstate") {
     auto [acc, _]{decode_account_from_storage(account_encoded)};
     CHECK(acc.nonce == 3);
     CHECK(acc.balance < kEther);
-    CHECK(db::stages::get_stage_progress(*txn, db::stages::kHashStateKey) == 3);
+    CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 3);
 }
 
 TEST_CASE("Unwind Hashstate") {
@@ -224,7 +224,7 @@ TEST_CASE("Unwind Hashstate") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
 
     CHECK(stagedsync::stage_hashstate(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
     CHECK(stagedsync::unwind_hashstate(txn, data_dir.etl().path(), 1) == stagedsync::StageResult::kSuccess);
@@ -239,5 +239,5 @@ TEST_CASE("Unwind Hashstate") {
     auto [acc, _]{decode_account_from_storage(account_encoded)};
     CHECK(acc.nonce == 2);
     CHECK(acc.balance < kEther);  // Slightly less due to fees
-    CHECK(db::stages::get_stage_progress(*txn, db::stages::kHashStateKey) == 1);
+    CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 1);
 }

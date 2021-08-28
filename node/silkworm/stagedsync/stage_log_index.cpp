@@ -76,7 +76,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     etl::Collector addresses_collector(etl_path, /* flush size */ 256_Mebi);
 
     auto log_table{db::open_cursor(*txn, db::table::kLogs)};
-    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)};
+    auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)};
 
     // Extract
     SILKWORM_LOG(LogLevel::Info) << "Started Log Index Extraction" << std::endl;
@@ -141,7 +141,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
                              /* log_every_percent = */ 10);
 
     // Update progress height with last processed block
-    db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, block_number);
+    db::stages::write_stage_progress(*txn, db::stages::kLogIndexKey, block_number);
 
     txn.commit();
 
@@ -154,7 +154,7 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
                                     bool topics) {
     auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
                             : db::open_cursor(*txn, db::table::kLogAddressIndex)};
-    if (unwind_to >= db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)) {
+    if (unwind_to >= db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)) {
         return StageResult::kSuccess;
     }
 
@@ -210,7 +210,7 @@ StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::pat
     if (result != StageResult::kSuccess) {
         return result;
     }
-    db::stages::set_stage_progress(*txn, db::stages::kLogIndexKey, unwind_to);
+    db::stages::write_stage_progress(*txn, db::stages::kLogIndexKey, unwind_to);
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
     return StageResult::kSuccess;
 }

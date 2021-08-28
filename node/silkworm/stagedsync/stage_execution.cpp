@@ -100,8 +100,8 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
         }
         const auto storage_mode{db::read_storage_mode(*txn)};
 
-        uint64_t max_block{db::stages::get_stage_progress(*txn, db::stages::kBlockBodiesKey)};
-        uint64_t block_num{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey) + 1};
+        uint64_t max_block{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+        uint64_t block_num{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey) + 1};
         if (block_num > max_block) {
             SILKWORM_LOG(LogLevel::Error) << "Stage progress is " << (block_num - 1)
                                           << " which is <= than requested block_to " << max_block << std::endl;
@@ -110,7 +110,7 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
 
         // Execution needs senders hence we need to check whether or not sender's stage is
         // at least at max_block as set above
-        uint64_t max_block_senders{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
+        uint64_t max_block_senders{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
         if (max_block > max_block_senders) {
             SILKWORM_LOG(LogLevel::Error) << "Sender's stage progress is " << (max_block_senders)
                                           << " which is <= than requested block_to " << max_block << std::endl;
@@ -126,7 +126,7 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
                 return res;
             }
 
-            db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, block_num);
+            db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block_num);
 
             txn.commit();
 
@@ -217,7 +217,7 @@ static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plai
 }
 
 StageResult unwind_execution(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
-    uint64_t block_number{db::stages::get_stage_progress(*txn, db::stages::kExecutionKey)};
+    uint64_t block_number{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
 
     auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
     auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
@@ -235,7 +235,7 @@ StageResult unwind_execution(TransactionManager& txn, const std::filesystem::pat
         txn->clear_map(receipts_table.map());
         txn->clear_map(log_table.map());
         txn->clear_map(traces_table.map());
-        db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 0);
+        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 0);
         txn.commit();
         return StageResult::kSuccess;
     }
@@ -259,7 +259,7 @@ StageResult unwind_execution(TransactionManager& txn, const std::filesystem::pat
     truncate_table_from(log_table, unwind_to_bytes);
     truncate_table_from(traces_table, unwind_to_bytes);
 
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, unwind_to);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, unwind_to);
     txn.commit();
 
     return StageResult::kSuccess;

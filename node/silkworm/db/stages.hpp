@@ -49,6 +49,7 @@ constexpr const char* kMiningFinishKey{"MiningFinish"};               // Mining 
 
 // clang-format on
 
+//! \brief List of all known stages
 constexpr const char* kAllStages[]{
     kHeadersKey,
     kBlockHashesKey,
@@ -67,25 +68,52 @@ constexpr const char* kAllStages[]{
     kFinishKey,
 };
 
-// Gets the progress (block height) of any given stage
-uint64_t get_stage_progress(mdbx::txn& txn, const char* stage_name);
+//! \brief Reads from db the progress (block height) of the provided stage name
+//! \param [in] txn : a reference to a ro/rw db transaction
+//! \param [in] stage_name : the name of the requested stage (must be known see kAllStages[])
+//! \return The actual chain height (BlockNum) the stage has reached
+BlockNum read_stage_progress(mdbx::txn& txn, const char* stage_name);
 
-// Sets the progress (block height) of any given stage
-void set_stage_progress(mdbx::txn& txn, const char* stage_name, uint64_t block_num);
+//! \brief Reads from db the prune progress (block height) of the provided stage name
+//! \param [in] txn : a reference to a ro/rw db transaction
+//! \param [in] stage_name : the name of the requested stage (must be known see kAllStages[])
+//! \return The actual chain height (BlockNum) the stage has pruned its data up to
+//! \remarks A pruned height X means the stage has deleted data up to block X
+BlockNum read_stage_prune_progress(mdbx::txn& txn, const char* stage_name);
 
-// Gets the invalidation point for the given stage
-// Invalidation point means that that stage needs to roll back to the invalidation
-// point and be redone
-uint64_t get_stage_unwind(mdbx::txn& txn, const char* stage_name);
+//! \brief Writes into db the progress (block height) for the provided stage name
+//! \param [in] txn : a reference to a rw db transaction
+//! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
+//! \param [in] block_num : the actual chain height (BlockNum) the stage must record
+void write_stage_progress(mdbx::txn& txn, const char* stage_name, BlockNum block_num);
 
-// Sets the invalidation point for the given stage
-void set_stage_unwind(mdbx::txn& txn, const char* stage_name, uint64_t block_num);
+//! \brief Writes into db the prune progress (block height) for the provided stage name
+//! \param [in] txn : a reference to a rw db transaction
+//! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
+//! \param [in] block_num : the actual chain height (BlockNum) the stage must record
+//! \remarks A pruned height X means the stage has deleted data up to block X
+void write_stage_prune_progress(mdbx::txn& txn, const char* stage_name, BlockNum block_num);
 
-// Clears the invalidation point for the given stage
-void clear_stage_unwind(mdbx::txn& txn, const char* stage_name);
+//! \brief Reads from db the invalidation point (block height) of provided stage name. Invalidation point means that
+//! that stage needs to roll back to the invalidation point and re-execute its work for subsequent blocks (if any)
+//! \param [in] txn : a reference to a ro/rw db transaction
+//! \param [in] stage_name : the name of the requested stage (must be known see kAllStages[])
+//! \return The invalidation point
+//! \remarks An invalidation point == 0 means there is no invalidation point. BlockNum 0 is the genesis and you can't
+//! unwind it
+BlockNum read_stage_unwind(mdbx::txn& txn, const char* stage_name);
 
-// Returns whether the stage name is coded
-bool is_known_stage(const char* name);
+//! \brief Writes into db the invalidation point (block height) for the provided stage name
+//! \param [in] txn : a reference to a rw db transaction
+//! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
+//! \param [in] block_num : the actual chain invalidation point (BlockNum) the stage must record. If omitted the value
+//! defaults to 0 which means to clear any previously recorded invalidation point.
+void write_stage_unwind(mdbx::txn& txn, const char* stage_name, BlockNum block_num = 0);
+
+//! \brief Whether the provided stage name is known to Silkworm
+//! \param [in] stage_name : The name of the stage to check for
+//! \return Whether it exists in kAllStages[]
+bool is_known_stage(const char* stage_name);
 
 }  // namespace silkworm::db::stages
 

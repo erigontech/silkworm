@@ -37,7 +37,7 @@ StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::pa
     // We take data from header table and transform it and put it in blockhashes table
     auto canonical_hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
 
-    auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kBlockHashesKey)};
+    auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kBlockHashesKey)};
     auto expected_block_number{last_processed_block_number + 1};
     // Just ignore everything that comes before prune_from
     if (expected_block_number < prune_from) {
@@ -99,7 +99,7 @@ StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::pa
         collector.load(target_table, nullptr, db_flags, /* log_every_percent = */ 10);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(*txn, db::stages::kBlockHashesKey, block_number);
+        db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, block_number);
 
         txn.commit();
 

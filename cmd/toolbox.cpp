@@ -353,7 +353,15 @@ void do_stages(db::EnvConfig& config) {
         auto result{crs.to_first(/*throw_notfound =*/false)};
         while (result) {
             size_t height{endian::load_big_u64(static_cast<uint8_t*>(result.value.iov_base))};
-            bool Known{db::stages::is_known_stage(result.key.char_ptr())};
+
+            // Handle "prune_" stages
+            size_t offset{0};
+            static const char* prune_prefix = "prune_";
+            if (std::memcmp(result.key.iov_base, prune_prefix, 6) == 0) {
+                offset = 6;
+            }
+            
+            bool Known{db::stages::is_known_stage(result.key.char_ptr() + offset)};
             std::cout << (boost::format(fmt_row) % result.key.as_string() % height %
                           (Known ? std::string(8, ' ') : "Unknown"))
                       << std::endl;
@@ -422,8 +430,8 @@ void do_stage_set(db::EnvConfig& config, std::string stage_name, uint32_t new_he
         throw std::runtime_error("Either non Silkworm db or table " +
                                  std::string(silkworm::db::table::kSyncStageProgress.name) + " not found");
     }
-    auto old_height{db::stages::get_stage_progress(txn, stage_name.c_str())};
-    db::stages::set_stage_progress(txn, stage_name.c_str(), new_height);
+    auto old_height{db::stages::read_stage_progress(txn, stage_name.c_str())};
+    db::stages::write_stage_progress(txn, stage_name.c_str(), new_height);
     if (!dry) {
         txn.commit();
     }
@@ -1006,7 +1014,7 @@ void do_first_byte_analysis(db::EnvConfig& config) {
         return true;
     });
 
-    BlockNum last_block{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};
+    BlockNum last_block{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
     progress.set_current(total_entries);
     std::cout << progress.print_interval('.') << std::endl;
 
@@ -1049,7 +1057,7 @@ void do_extract_headers(db::EnvConfig& config, std::string file_name, uint32_t s
                << "static const char headers_data_internal[] = {\n";
 
     BlockNum block_num{0};
-    BlockNum block_max{silkworm::db::stages::get_stage_progress(txn, db::stages::kHeadersKey)};
+    BlockNum block_max{silkworm::db::stages::read_stage_progress(txn, db::stages::kHeadersKey)};
 
     auto hashes_table{db::open_cursor(txn, db::table::kCanonicalHashes)};
     for (; block_num <= block_max; block_num += step) {

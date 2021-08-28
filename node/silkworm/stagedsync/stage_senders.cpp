@@ -29,8 +29,8 @@ StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& 
     // Create farm instance and do work
     recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultRecoverySenderBatch, collector);
 
-    auto block_from{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
-    auto block_to{db::stages::get_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+    auto block_from{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
+    auto block_to{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
 
     const StageResult res{farm.recover(block_from, block_to)};
 

@@ -55,7 +55,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
 
     auto changeset_table{db::open_cursor(*txn, changeset_config)};
-    auto last_processed_block_number{db::stages::get_stage_progress(*txn, stage_key)};
+    auto last_processed_block_number{db::stages::read_stage_progress(*txn, stage_key)};
     Bytes start{db::block_key(last_processed_block_number + 1)};
 
     // Extract
@@ -148,7 +148,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
             db_flags, /* log_every_percent = */ 20);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(*txn, stage_key, block_number);
+        db::stages::write_stage_progress(*txn, stage_key, block_number);
         txn.commit();
 
     } else {
@@ -201,7 +201,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
         }
     }
 
-    db::stages::set_stage_progress(*txn, stage_key, unwind_to);
+    db::stages::write_stage_progress(*txn, stage_key, unwind_to);
     collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
     txn.commit();
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;

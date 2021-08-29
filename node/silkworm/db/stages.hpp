@@ -78,7 +78,7 @@ BlockNum read_stage_progress(mdbx::txn& txn, const char* stage_name);
 //! \param [in] txn : a reference to a ro/rw db transaction
 //! \param [in] stage_name : the name of the requested stage (must be known see kAllStages[])
 //! \return The actual chain height (BlockNum) the stage has pruned its data up to
-//! \remarks A pruned height X means the stage has deleted data up to block X
+//! \remarks A pruned height X means the prune stage function has run up to this block
 BlockNum read_stage_prune_progress(mdbx::txn& txn, const char* stage_name);
 
 //! \brief Writes into db the progress (block height) for the provided stage name
@@ -91,7 +91,7 @@ void write_stage_progress(mdbx::txn& txn, const char* stage_name, BlockNum block
 //! \param [in] txn : a reference to a rw db transaction
 //! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
 //! \param [in] block_num : the actual chain height (BlockNum) the stage must record
-//! \remarks A pruned height X means the stage has deleted data up to block X
+//! \remarks A pruned height X means the prune stage function has run up to this block
 void write_stage_prune_progress(mdbx::txn& txn, const char* stage_name, BlockNum block_num);
 
 //! \brief Reads from db the invalidation point (block height) of provided stage name. Invalidation point means that

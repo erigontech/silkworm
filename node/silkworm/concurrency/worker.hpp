@@ -41,7 +41,7 @@ class Worker {
     void stop(bool wait = false);  // Stops worker thread (optionally wait for complete stop)
     void kick();                   // Kicks worker thread if waiting
 
-    // Whether this worker/thread has received a stopping request
+    // Whether this worker/thread has received a stop request
     bool is_stopping() const { return state_.load() == WorkerState::kStopping; }
 
     // Retrieves current state of thread

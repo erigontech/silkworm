@@ -14,10 +14,10 @@
    limitations under the License.
 */
 
-#include <atomic>
+#ifndef SILKWORM_CONCURRENCY_ACTIVE_COMPONENT_HPP_
+#define SILKWORM_CONCURRENCY_ACTIVE_COMPONENT_HPP_
 
-#ifndef SILKWORM_ACTIVECOMPONENT_H
-#define SILKWORM_ACTIVECOMPONENT_H
+#include <atomic>
 
 namespace silkworm {
 
@@ -28,19 +28,18 @@ namespace silkworm {
  * Here we prefer not to provide a thread facility and let the user provide one more suitable to the context,
  * so perhaps a better name is LongRunningComponent.
  */
-
 class ActiveComponent {
   public:
     virtual void execution_loop() = 0;
 
-    void need_exit() { exiting_.store(true); }
+    void stop() { stopping_.store(true); }
 
-    bool exiting() { return exiting_.load(); }
+    bool is_stopping() const { return stopping_.load(); }
 
   protected:
-    std::atomic<bool> exiting_{false};
+    std::atomic<bool> stopping_{false};
 };
 
-} // namespace silkworm
+}  // namespace silkworm
 
-#endif  // SILKWORM_ACTIVECOMPONENT_H
+#endif  // SILKWORM_CONCURRENCY_ACTIVE_COMPONENT_HPP_

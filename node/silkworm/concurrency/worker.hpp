@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_WORKER_HPP_
-#define SILKWORM_WORKER_HPP_
+#ifndef SILKWORM_CONCURRENCY_WORKER_HPP_
+#define SILKWORM_CONCURRENCY_WORKER_HPP_
 
 #include <atomic>
 #include <condition_variable>
@@ -41,7 +41,7 @@ class Worker {
     void kick();                   // Kicks worker thread if waiting
 
     // Whether or not this worker/thread should stop
-    bool should_stop() { return state_.load() == WorkerState::kStopping; }
+    bool is_stopping() const { return state_.load() == WorkerState::kStopping; }
 
     // Retrieves current state of thread
     WorkerState get_state() { return state_.load(); }
@@ -65,6 +65,7 @@ class Worker {
     std::unique_ptr<std::thread> thread_{nullptr};
     virtual void work() = 0;  // Derived classes must override
 };
+
 }  // namespace silkworm
 
-#endif  // SILKWORM_WORKER_HPP_
+#endif  // SILKWORM_CONCURRENCY_WORKER_HPP_

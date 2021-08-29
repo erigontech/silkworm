@@ -130,17 +130,17 @@ class WrongRoot : public std::runtime_error {
     WrongRoot() : std::runtime_error{"wrong trie root"} {}
 };
 
-// Erigon MarshalTrieNode
-Bytes marshal_node(const Node& n);
-
-// Erigon UnmarshalTrieNode
-Node unmarshal_node(ByteView v);
-
 // Erigon RegenerateIntermediateHashes
 // might throw WrongRoot
 // returns the state root
 evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
                                              const evmc::bytes32* expected_root = nullptr);
+
+// Erigon incrementIntermediateHashes
+// might throw WrongRoot
+// returns the state root
+evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
+                                            const evmc::bytes32* expected_root = nullptr);
 
 }  // namespace silkworm::trie
 

@@ -20,8 +20,6 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
 
 #include "stagedsync.hpp"
@@ -53,12 +51,12 @@ static std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateO
  *  If we haven't done hashstate before(first sync), it is possible to just hash values from plainstates,
  *  This is way faster than using changeset because it uses less database reads.
  */
-void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
+void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
     SILKWORM_LOG(LogLevel::Info) << "Hashing state" << std::endl;
 
     fs::create_directories(etl_path);
-    etl::Collector collector_account(etl_path.c_str(), 512 * kMebi);
-    etl::Collector collector_storage(etl_path.c_str(), 512 * kMebi);
+    etl::Collector collector_account(etl_path, 512_Mebi);
+    etl::Collector collector_storage(etl_path, 512_Mebi);
 
     auto src{db::open_cursor(txn, db::table::kPlainState)};
     auto data{src.to_first(/*throw_notfound*/ false)};
@@ -108,11 +106,11 @@ void hashstate_promote_clean_state(mdbx::txn& txn, std::string etl_path) {
     collector_storage.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
 }
 
-void hashstate_promote_clean_code(mdbx::txn& txn, std::string etl_path) {
+void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
     SILKWORM_LOG(LogLevel::Info) << "Hashing code keys" << std::endl;
 
     fs::create_directories(etl_path);
-    etl::Collector collector(etl_path.c_str(), 512 * kMebi);
+    etl::Collector collector(etl_path, 512_Mebi);
 
     auto tbl{db::open_cursor(txn, db::table::kPlainContractCode)};
     auto data{tbl.to_first(/*throw_notfound*/ false)};
@@ -220,7 +218,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     }
 }
 
-StageResult stage_hashstate(TransactionManager& txn, const std::filesystem::path& etl_path) {
+StageResult stage_hashstate(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
@@ -253,13 +251,12 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     auto [changeset_config, target_config] = get_tables_for_promote(operation);
 
     auto changeset_table{db::open_cursor(txn, changeset_config)};
-    auto plainstate_table{db::open_cursor(txn, db::table::kPlainState)};
     auto target_table{db::open_cursor(txn, target_config)};
     auto code_table{db::open_cursor(txn, db::table::kContractCode)};
     auto contract_code_table{db::open_cursor(txn, db::table::kPlainContractCode)};
 
     Bytes start_key{db::block_key(unwind_to + 1)};
-    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
+    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/ false)};
     if (!changeset_data) {
         return;
     }

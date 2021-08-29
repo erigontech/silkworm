@@ -20,7 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 
 static const std::map<std::string, std::string> kGeneticCode{
     {"AAA", "Lysine"},        {"AAC", "Asparagine"},    {"AAG", "Lysine"},        {"AAU", "Asparagine"},
@@ -45,7 +45,7 @@ namespace silkworm::db {
 
 TEST_CASE("for_each") {
     const TemporaryDirectory tmp_dir;
-    db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+    db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
@@ -103,7 +103,7 @@ TEST_CASE("for_each") {
 
 TEST_CASE("for_count") {
     const TemporaryDirectory tmp_dir;
-    db::EnvConfig db_config{tmp_dir.path(), /*create*/ true};
+    db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};

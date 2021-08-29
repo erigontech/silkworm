@@ -19,31 +19,39 @@
 #include <interfaces/sentry.grpc.pb.h>
 #include "TypesForGrpc.hpp"
 #include "gRPCAsyncClient.hpp"
+#include "ActiveComponent.hpp"
 
 namespace silkworm {
 
+/*
+ * SentryClient is a client to the external Sentry
+ * It connects to the Sentry, send rpc and receive reply.
+ */
+
+// An rpc
 using SentryRpc = rpc::AsyncCall<sentry::Sentry>;
 
-class SentryClient: public rpc::AsyncClient<sentry::Sentry> {
+// The client
+class SentryClient : public rpc::AsyncClient<sentry::Sentry> {
   public:
     using base_t = rpc::AsyncClient<sentry::Sentry>;
 
-    explicit SentryClient(std::string sentry_addr):
-        base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials()))
-    {}
+    explicit SentryClient(std::string sentry_addr);
 
-    /*
-    grpc::grpc_connectivity_state state() {
-        return channel_->GetState(true);
-    }
-    */
+    void exec_remotely(std::shared_ptr<SentryRpc> rpc);
 
-    void exec_remotely(std::shared_ptr<SentryRpc> rpc) {
-        base_t::exec_remotely(rpc);
-    }
+    std::shared_ptr<SentryRpc> receive_one_reply();  // wait for a single rpc reply, to call repeatedly
 
+    // grpc::grpc_connectivity_state state() { return channel_->GetState(true); }
+};
+
+// A SentryClient with an infinite loop to receive rpc forever
+class ActiveSentryClient : public SentryClient, public ActiveComponent {
+  public:
+    using SentryClient::SentryClient;   // use parent constructor
+
+    virtual void execution_loop();
 };
 
 }
-
 #endif  // SILKWORM_SENTRYCLIENT_HPP

@@ -19,14 +19,11 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/data_dir.hpp>
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/execution/address.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/types/account.hpp>
-#include <silkworm/types/block.hpp>
 
 #include "stagedsync.hpp"
 
@@ -39,7 +36,7 @@ TEST_CASE("Stage Hashstate") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -67,10 +64,12 @@ TEST_CASE("Stage Hashstate") {
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
     block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].max_priority_fee_per_gas = 0;  // EIP-1559
-    block.transactions[0].max_fee_per_gas = 20 * kGiga;
+    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
+    block.transactions[0].max_fee_per_gas = block.transactions[0].max_priority_fee_per_gas;
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+    block.transactions[0].r = 1;  // dummy
+    block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
     db::Buffer buffer{*txn};
@@ -99,7 +98,6 @@ TEST_CASE("Stage Hashstate") {
 
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
 
@@ -118,13 +116,12 @@ TEST_CASE("Stage Hashstate") {
 
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
     db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
 
-    CHECK(stagedsync::stage_hashstate(txn, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_hashstate(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
 
     auto hashed_address_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
     auto address_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
@@ -144,7 +141,7 @@ TEST_CASE("Unwind Hashstate") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -172,10 +169,12 @@ TEST_CASE("Unwind Hashstate") {
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
     block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].max_priority_fee_per_gas = 0;  // EIP-1559
-    block.transactions[0].max_fee_per_gas = 20 * kGiga;
+    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
+    block.transactions[0].max_fee_per_gas = block.transactions[0].max_priority_fee_per_gas;
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+    block.transactions[0].r = 1;  // dummy
+    block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
     db::Buffer buffer{*txn};
@@ -204,7 +203,6 @@ TEST_CASE("Unwind Hashstate") {
 
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
 
@@ -223,14 +221,13 @@ TEST_CASE("Unwind Hashstate") {
 
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
     db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
 
-    CHECK(stagedsync::stage_hashstate(txn, data_dir.get_etl_path()) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::unwind_hashstate(txn, data_dir.get_etl_path(), 1) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_hashstate(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::unwind_hashstate(txn, data_dir.etl().path(), 1) == stagedsync::StageResult::kSuccess);
 
     auto hashed_address_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
 

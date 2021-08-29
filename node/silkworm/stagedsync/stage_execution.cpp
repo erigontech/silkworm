@@ -34,7 +34,7 @@ namespace silkworm::stagedsync {
 // block_num is input-output
 static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& config, const uint64_t max_block,
                                            const db::StorageMode& storage_mode, const size_t batch_size,
-                                           uint64_t& block_num) noexcept {
+                                           uint64_t& block_num, uint64_t prune_from) noexcept {
     try {
         db::Buffer buffer{txn};
         AnalysisCache analysis_cache;
@@ -66,7 +66,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
             }
 
             if (buffer.current_batch_size() >= batch_size || block_num >= max_block) {
-                buffer.write_to_db();
+                buffer.write_to_db(prune_from);
                 return StageResult::kSuccess;
             }
 
@@ -90,7 +90,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
     }
 }
 
-StageResult stage_execution(TransactionManager& txn, const std::filesystem::path&, size_t batch_size) {
+StageResult stage_execution(TransactionManager& txn, const std::filesystem::path&, size_t batch_size, uint64_t prune_from) {
     StageResult res{StageResult::kSuccess};
 
     try {
@@ -121,7 +121,7 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
         (void)sw.start();
 
         for (; block_num <= max_block; ++block_num) {
-            res = execute_batch_of_blocks(*txn, chain_config.value(), max_block, storage_mode, batch_size, block_num);
+            res = execute_batch_of_blocks(*txn, chain_config.value(), max_block, storage_mode, batch_size, block_num, prune_from);
             if (res != StageResult::kSuccess) {
                 return res;
             }
@@ -264,4 +264,25 @@ StageResult unwind_execution(TransactionManager& txn, const std::filesystem::pat
 
     return StageResult::kSuccess;
 }
+
+StageResult prune_execution(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
+    auto new_tail{db::block_key(prune_from)};
+
+    auto account_changeset_table{db::open_cursor(*txn, db::table::kPlainAccountChangeSet)};
+    auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};
+    auto receipts_table{db::open_cursor(*txn, db::table::kBlockReceipts)};
+    auto traces_table{db::open_cursor(*txn, db::table::kCallTraceSet)};
+    auto log_table{db::open_cursor(*txn, db::table::kLogs)};
+    // Truncate Tables
+    truncate_table_from(account_changeset_table, new_tail, /* reverse = */ true);
+    truncate_table_from(storage_changeset_table, new_tail, /* reverse = */ true);
+    truncate_table_from(receipts_table, new_tail, /* reverse = */ true);
+    truncate_table_from(traces_table, new_tail, /* reverse = */ true);
+    truncate_table_from(log_table, new_tail, /* reverse = */ true);
+
+    txn.commit();
+
+    return StageResult::kSuccess;
+}
+
 }  // namespace silkworm::stagedsync

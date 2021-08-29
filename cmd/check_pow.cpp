@@ -23,7 +23,7 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
     // Init command line parser
     CLI::App app("Check PoW.");
     app_options_t options{};
-    options.datadir = DataDirectory{}.get_chaindata_path().string();  // Default chain data db path
+    options.datadir = DataDirectory{}.chaindata().path().string();  // Default chain data db path
 
     // Command line arguments
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
@@ -80,8 +80,8 @@ int main(int argc, char* argv[]) {
     int rc{0};
     try {
         auto data_dir{DataDirectory::from_chaindata(options.datadir)};
-        data_dir.create_tree();
-        options.datadir = data_dir.get_chaindata_path().string();
+        data_dir.deploy();
+        options.datadir = data_dir.chaindata().path().string();
 
         // Set database parameters
         db::EnvConfig db_config{options.datadir};

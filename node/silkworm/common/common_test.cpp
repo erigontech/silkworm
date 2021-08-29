@@ -16,16 +16,13 @@
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
-#include <sstream>
 #include <string>
 #include <thread>
 
 #include <catch2/catch.hpp>
 
-#include "data_dir.hpp"
+#include "directories.hpp"
 #include "stopwatch.hpp"
-#include "temp_dir.hpp"
 
 namespace db {
 using namespace silkworm;
@@ -76,41 +73,60 @@ TEST_CASE("Stop Watch") {
 }
 
 TEST_CASE("DataDirectory") {
-    // Open and create default storage path
-    DataDirectory data_dir{/*create = */ true};
-    REQUIRE(data_dir.valid());
-    REQUIRE_NOTHROW(data_dir.create_tree());
+    {
+        // Open and create default storage path
+        DataDirectory data_dir{/*create = */ true};
+        REQUIRE(data_dir.exists());
+        REQUIRE_NOTHROW(data_dir.deploy());
+        REQUIRE_THROWS(data_dir.clear());
 
-    // Eventually delete the created paths
-    std::filesystem::remove_all(data_dir.get_base_path());
+        // Eventually delete the created paths
+        std::filesystem::remove_all(data_dir.path());
+        REQUIRE(data_dir.exists() == false);
+    }
+
+    {
+        // Open datadir from current process running path
+        DataDirectory data_dir{std::filesystem::path(), false};
+        REQUIRE(data_dir.is_pristine() == false);
+        REQUIRE(data_dir.exists() == true);
+        REQUIRE_NOTHROW(data_dir.deploy());
+    }
 
     TemporaryDirectory tmp_dir1;
-    std::filesystem::path fake_path{std::filesystem::path(tmp_dir1.path()) / "nonexistentpath"};
-    REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Does not exist
+    std::filesystem::path fake_path{tmp_dir1.path() / "nonexistentpath"};
+    std::filesystem::path fake_path_root{fake_path.root_path()};
+    REQUIRE_THROWS((void)DataDirectory::from_chaindata({}));                               // Can't be empty
+    REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));                        // Does not exist
+    REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path_root));                   // Can't be root
+    REQUIRE_THROWS((void)DataDirectory::from_chaindata(std::filesystem::current_path()));  // Can't be current path
+
     std::filesystem::create_directories(fake_path);
     REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Not a valid chaindata path
-    fake_path /= "erigon";
     fake_path /= "chaindata";
     REQUIRE_THROWS((void)DataDirectory::from_chaindata(fake_path));  // Valid chaindata path but does not exist yet
     std::filesystem::create_directories(fake_path);
     REQUIRE_NOTHROW((void)DataDirectory::from_chaindata(fake_path));  // Valid chaindata path and exist
 
-    DataDirectory data_dir2{DataDirectory::from_chaindata(fake_path)};
-    REQUIRE_NOTHROW(data_dir2.create_tree());
-
-    auto etl_path{data_dir2.get_etl_path()};
-    REQUIRE(std::filesystem::is_empty(etl_path));
-
-    // Drop a file into etl temp
     {
-        std::string filename{etl_path.string() + "/fake.txt"};
-        std::ofstream f(filename.c_str());
+        DataDirectory data_dir{DataDirectory::from_chaindata(fake_path)};
+        REQUIRE_NOTHROW(data_dir.deploy());
+        REQUIRE(data_dir.etl().is_pristine());
+
+        // Drop a file into etl temp
+        {
+            std::string filename{data_dir.etl().path().string() + "/fake.txt"};
+            std::ofstream f(filename.c_str());
+            f << "Some fake text" << std::flush;
+            f.close();
+        }
+        std::filesystem::path etl_subpath{data_dir.etl().path() / "subdir"};
+        std::filesystem::create_directories(etl_subpath);
+        REQUIRE(data_dir.etl().is_pristine() == false);
+        REQUIRE(data_dir.etl().size() != 0);
+        data_dir.etl().clear();
+        REQUIRE(data_dir.etl().is_pristine() == true);
     }
-
-    REQUIRE(std::filesystem::is_empty(etl_path) == false);
-
-    data_dir2.clear_etl_temp();
-    REQUIRE(std::filesystem::is_empty(etl_path));
 }
 
 }  // namespace db

@@ -18,16 +18,11 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/chain/genesis.h>
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/data_dir.hpp>
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/execution/address.hpp>
-#include <silkworm/rlp/encode.hpp>
-#include <silkworm/types/account.hpp>
-#include <silkworm/types/block.hpp>
 
 using namespace evmc::literals;
 
@@ -78,7 +73,7 @@ TEST_CASE("Stage Senders") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -121,9 +116,11 @@ TEST_CASE("Stage Senders") {
 
     bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
-    std::string genesis_data;
-    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
+    CHECK(genesis_json.contains("config"));
+
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
@@ -136,7 +133,7 @@ TEST_CASE("Stage Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.get_etl_path()));
+    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.etl().path()));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
@@ -153,7 +150,7 @@ TEST_CASE("Unwind Senders") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -196,9 +193,10 @@ TEST_CASE("Unwind Senders") {
 
     bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
-    std::string genesis_data;
-    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-    auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
+    nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
+    CHECK_FALSE(genesis_json.is_discarded());
+    CHECK(genesis_json.contains("config"));
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
@@ -229,7 +227,7 @@ TEST_CASE("Prune Senders") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -272,8 +270,7 @@ TEST_CASE("Prune Senders") {
 
     bodies_table.upsert(db::to_slice(db::block_key(3, hash_2.bytes)), db::to_slice(block.encode()));
 
-    std::string genesis_data;
-    genesis_data.assign(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
+    std::string genesis_data = read_genesis_data(kMainnetConfig.chain_id);
     auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     auto config_data{genesis_json["config"].dump()};
 

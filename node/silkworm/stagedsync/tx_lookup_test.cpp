@@ -18,17 +18,9 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/chain/genesis.h>
-#include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/data_dir.hpp>
-#include <silkworm/common/temp_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/db/buffer.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/execution/address.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/rlp/encode.hpp>
-#include <silkworm/types/account.hpp>
-#include <silkworm/types/block.hpp>
 
 using namespace evmc::literals;
 
@@ -78,7 +70,7 @@ TEST_CASE("Stage Transaction Lookups") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -112,7 +104,7 @@ TEST_CASE("Stage Transaction Lookups") {
     transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(txn, data_dir.get_etl_path()));
+    stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(txn, data_dir.etl().path()));
 
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
     // Retrieve numbers associated with hashes
@@ -128,7 +120,7 @@ TEST_CASE("Unwind Transaction Lookups") {
     DataDirectory data_dir{tmp_dir.path()};
 
     // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.get_chaindata_path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager txn{env};
@@ -163,8 +155,8 @@ TEST_CASE("Unwind Transaction Lookups") {
     transaction_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(txn, data_dir.get_etl_path()));
-    stagedsync::check_stagedsync_error(stagedsync::unwind_tx_lookup(txn, data_dir.get_etl_path(), 1));
+    stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(txn, data_dir.etl().path()));
+    stagedsync::check_stagedsync_error(stagedsync::unwind_tx_lookup(txn, data_dir.etl().path(), 1));
 
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
     // Unwind block should be still there

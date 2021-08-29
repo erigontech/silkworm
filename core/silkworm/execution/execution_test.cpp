@@ -26,6 +26,7 @@
 #include <silkworm/execution/address.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/state/in_memory_state.hpp>
+#include <silkworm/trie/vector_root.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
@@ -43,7 +44,13 @@ TEST_CASE("Execute two blocks") {
     block.header.number = block_number;
     block.header.beneficiary = miner;
     block.header.gas_limit = 100'000;
-    block.header.gas_used = 63'820;
+    block.header.gas_used = 98'824;
+
+    static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+    std::vector<Receipt> receipts{
+        {Transaction::Type::kEip1559, true, block.header.gas_used, {}, {}},
+    };
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
     // This contract initially sets its 0th storage to 0x2a
     // and its 1st storage to 0x01c9.
@@ -54,10 +61,13 @@ TEST_CASE("Execute two blocks") {
     block.transactions.resize(1);
     block.transactions[0].data = deployment_code;
     block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].max_priority_fee_per_gas = 0;  // EIP-1559
+    block.transactions[0].type = Transaction::Type::kEip1559;
+    block.transactions[0].max_priority_fee_per_gas = 0;
     block.transactions[0].max_fee_per_gas = 20 * kGiga;
 
     auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
+    block.transactions[0].r = 1;  // dummy
+    block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
     InMemoryState state;
@@ -69,11 +79,11 @@ TEST_CASE("Execute two blocks") {
     // Execute first block
     // ---------------------------------------
 
-    CHECK(execute_block(block, state, kMainnetConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, state, kLondonTestConfig) == ValidationResult::kOk);
 
     auto contract_address{create_address(sender, /*nonce=*/0)};
     std::optional<Account> contract_account{state.read_account(contract_address)};
-    REQUIRE(contract_account);
+    REQUIRE(contract_account != std::nullopt);
 
     ethash::hash256 code_hash{keccak256(contract_code)};
     CHECK(to_hex(contract_account->code_hash) == to_hex(full_view(code_hash.bytes)));
@@ -88,7 +98,7 @@ TEST_CASE("Execute two blocks") {
 
     std::optional<Account> miner_account{state.read_account(miner)};
     REQUIRE(miner_account);
-    CHECK(miner_account->balance == param::kBlockRewardFrontier);
+    CHECK(miner_account->balance == param::kBlockRewardConstantinople);
 
     // ---------------------------------------
     // Execute second block
@@ -98,20 +108,22 @@ TEST_CASE("Execute two blocks") {
 
     block_number = 2;
     block.header.number = block_number;
-    block.header.gas_used = 26'201;
+    block.header.gas_used = 26'149;
+    receipts[0].cumulative_gas_used = block.header.gas_used;
+    block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
     block.transactions[0].nonce = 1;
     block.transactions[0].to = contract_address;
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    CHECK(execute_block(block, state, kMainnetConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, state, kLondonTestConfig) == ValidationResult::kOk);
 
     storage0 = state.read_storage(contract_address, kDefaultIncarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);
 
     miner_account = state.read_account(miner);
-    REQUIRE(miner_account);
-    CHECK(miner_account->balance > 2 * param::kBlockRewardFrontier);
-    CHECK(miner_account->balance < 3 * param::kBlockRewardFrontier);
+    REQUIRE(miner_account != std::nullopt);
+    CHECK(miner_account->balance > 2 * param::kBlockRewardConstantinople);
+    CHECK(miner_account->balance < 3 * param::kBlockRewardConstantinople);
 }

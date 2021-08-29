@@ -34,7 +34,7 @@ namespace silkworm::db {
     if (!config.create) {
         if (!fs::exists(db_path) || !fs::is_directory(db_path) || fs::is_empty(db_path) || !fs::exists(db_file) ||
             !fs::is_regular_file(db_file) || !fs::file_size(db_file)) {
-            throw std::runtime_error("Unable to locate " + db_file.string() + ". Must exist has been set");
+            throw std::runtime_error("Unable to locate " + db_file.string() + ", which is required to exist");
         }
     } else {
         if (!fs::exists(db_path)) {
@@ -118,6 +118,17 @@ namespace silkworm::db {
 
 ::mdbx::cursor_managed open_cursor(::mdbx::txn& tx, const MapConfig& config) {
     return tx.open_cursor(open_map(tx, config));
+}
+
+bool has_map(::mdbx::txn& tx, const char* map_name) {
+    try {
+        ::mdbx::map_handle main_map{1};
+        auto main_crs{tx.open_cursor(main_map)};
+        auto found{main_crs.seek(::mdbx::slice(map_name))};
+        return found;
+    } catch (const std::exception&) {
+        return false;
+    }
 }
 
 size_t for_each(::mdbx::cursor& cursor, WalkFunc walker) {

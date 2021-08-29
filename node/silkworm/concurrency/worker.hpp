@@ -24,6 +24,7 @@
 
 namespace silkworm {
 
+// If you only need stoppability, use ActiveComponent instead.
 class Worker {
   public:
     enum class WorkerState { kStopped, kStarting, kStarted, kStopping };

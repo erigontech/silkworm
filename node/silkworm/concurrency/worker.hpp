@@ -31,7 +31,7 @@ class Worker {
 
     Worker() = default;
 
-    /* Not moveable / copyable */
+    /* Not movable nor copyable */
     Worker(Worker const&) = delete;
     Worker& operator=(Worker const&) = delete;
 
@@ -41,7 +41,7 @@ class Worker {
     void stop(bool wait = false);  // Stops worker thread (optionally wait for complete stop)
     void kick();                   // Kicks worker thread if waiting
 
-    // Whether or not this worker/thread should stop
+    // Whether this worker/thread has received a stopping request
     bool is_stopping() const { return state_.load() == WorkerState::kStopping; }
 
     // Retrieves current state of thread
@@ -54,10 +54,10 @@ class Worker {
      * Returns True if the kick has been received and should go ahead
      * otherwise False (i.e. the thread has been asked to stop)
      *
-     * @param timeout: Timeout for conditional variable wait (seconds)
+     * @param [in] timeout: Timeout for conditional variable wait (seconds). Defaults to 1 second
      */
     bool wait_for_kick(uint32_t timeout_seconds = 1);  // Puts a thread in non-busy wait for data to process
-    std::atomic_bool kicked_{false};                   // Whether or not the kick has been received
+    std::atomic_bool kicked_{false};                   // Whether the kick has been received
     std::condition_variable kicked_cv_{};              // Condition variable to wait for kick
     std::mutex kick_mtx_{};                            // Mutex for conditional wait of kick
 

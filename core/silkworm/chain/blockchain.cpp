@@ -143,7 +143,10 @@ std::vector<BlockWithHash> Blockchain::intermediate_chain(uint64_t block_number,
         BlockWithHash& x{chain[block_number - canonical_ancestor - 1]};
 
         std::optional<BlockBody> body{state_.read_body(block_number, hash)};
+        assert(body != std::nullopt);
         std::optional<BlockHeader> header{state_.read_header(block_number, hash)};
+        assert(header != std::nullopt);
+
         x.block.header = *header;
         x.block.transactions = body->transactions;
         x.block.ommers = body->ommers;

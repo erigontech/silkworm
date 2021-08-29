@@ -23,7 +23,7 @@
 
 namespace silkworm {
 
-InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg) : InboundMessage() {
+InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg, DbTx& db) : InboundMessage(), db_(db) {
     if (msg.id() != sentry::MessageId::GET_BLOCK_HEADERS_66) {
         throw std::logic_error("InboundGetBlockHeaders received wrong InboundMessage");
     }
@@ -40,13 +40,15 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg
 InboundMessage::reply_calls_t InboundGetBlockHeaders::execute() {
     using namespace std;
 
+    HeaderRetrieval header_retrieval(db_);
+
     BlockHeadersPacket66 reply;
     reply.requestId = packet_.requestId;
     if (holds_alternative<Hash>(packet_.request.origin)) {
-        reply.request = HeaderLogic::recover_by_hash(get<Hash>(packet_.request.origin), packet_.request.amount,
+        reply.request = header_retrieval.recover_by_hash(get<Hash>(packet_.request.origin), packet_.request.amount,
                                                      packet_.request.skip, packet_.request.reverse);
     } else {
-        reply.request = HeaderLogic::recover_by_number(get<BlockNum>(packet_.request.origin), packet_.request.amount,
+        reply.request = header_retrieval.recover_by_number(get<BlockNum>(packet_.request.origin), packet_.request.amount,
                                                        packet_.request.skip, packet_.request.reverse);
     }
 

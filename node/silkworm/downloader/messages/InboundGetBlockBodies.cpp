@@ -25,7 +25,7 @@
 
 namespace silkworm {
 
-InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg) : InboundMessage() {
+InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, DbTx& db) : InboundMessage(), db_(db) {
     if (msg.id() != sentry::MessageId::GET_BLOCK_BODIES_66) {
         throw std::logic_error("InboundGetBlockBodies received wrong InboundMessage");
     }
@@ -52,9 +52,11 @@ func (p *Peer) ReplyBlockBodiesRLP(id uint64, bodies []rlp.RawValue) error {
 InboundMessage::reply_calls_t InboundGetBlockBodies::execute() {
     using namespace std;
 
+    BodyRetrieval body_retrieval(db_);
+
     BlockBodiesPacket66 reply;
     reply.requestId = packet_.requestId;
-    reply.request = BodyLogic::recover(STAGE1.db_tx(), packet_.request);
+    reply.request = body_retrieval.recover(packet_.request);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, reply);

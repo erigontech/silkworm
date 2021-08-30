@@ -27,10 +27,17 @@
 
 namespace silkworm {
 
+/// Reference implementation of Ethereum blockchain logic.
+/// Used for running consensus tests; the real node will use staged sync instead
+/// (https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md)
 class Blockchain {
   public:
+    /// Creates a new instance of Blockchain.
+    /// In the begining the state must have the genesis allocation.
+    /// Later on the state may only be modified by the created instance of Blockchain.
     Blockchain(State& state, const ChainConfig& config, const Block& genesis_block);
 
+    // Not copyable nor movable
     Blockchain(const Blockchain&) = delete;
     Blockchain& operator=(const Blockchain&) = delete;
 

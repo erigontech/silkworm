@@ -25,6 +25,10 @@ RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id), data_si
     if (!data_) {
         throw std::runtime_error("Memory allocation failed");
     }
+    context_ = ecdsa::create_context();
+    if (!context_) {
+        throw std::runtime_error("Could not create elliptic curve context");
+    }
 }
 
 void RecoveryWorker::set_work(uint32_t batch_id, std::unique_ptr<std::vector<package>> batch) {
@@ -70,8 +74,8 @@ void RecoveryWorker::work() {
                 }
             }
 
-            std::optional<Bytes> recovered{
-                ecdsa::recover(full_view(package.hash.bytes), full_view(package.signature), package.odd_y_parity)};
+            std::optional<Bytes> recovered{ecdsa::recover(context_, full_view(package.hash.bytes),
+                                                          full_view(package.signature), package.odd_y_parity)};
 
             if (recovered.has_value() && recovered->at(0) == 4u) {
                 auto keyHash{ethash::keccak256(recovered->data() + 1, recovered->length() - 1)};
@@ -100,6 +104,7 @@ void RecoveryWorker::work() {
     }
 
     std::free(data_);
+    std::free(context_);
 }
 
 }  // namespace silkworm::stagedsync::recovery

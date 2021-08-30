@@ -14,28 +14,21 @@
    limitations under the License.
 */
 
+#pragma once
+#ifndef SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
+#define SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
+
 #include <atomic>
 #include <csignal>
-#include <filesystem>
 #include <queue>
 #include <string>
-#include <thread>
 
 #include <boost/signals2.hpp>
 #include <ethash/keccak.hpp>
 
-#include <silkworm/chain/config.hpp>
-#include <silkworm/common/log.hpp>
 #include <silkworm/concurrency/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/stages.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/etl/collector.hpp>
-#include <silkworm/types/block.hpp>
-
-#ifndef SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
-#define SILKWORM_STAGEDSYNC_RECOVERY_WORKER_HPP_
 
 namespace silkworm::stagedsync::recovery {
 
@@ -79,10 +72,11 @@ class RecoveryWorker final : public silkworm::Worker {
 
   private:
     const uint32_t id_;                                  // Current worker identifier
+    size_t data_size_;                                   // Size of the recovery data buffer
     uint32_t batch_id_{0};                               // Running batch identifier
     std::unique_ptr<std::vector<Package>> batch_;        // Batch to process
-    size_t data_size_;                                   // Size of the recovery data buffer
     uint8_t* data_{nullptr};                             // Pointer to data where rsults are stored
+    secp256k1_context* context_;                         // Elliptic curve context;
     std::vector<std::pair<uint64_t, iovec>> results_{};  // Results per block pointing to data area
     std::string last_error_{};                           // Description of last error occurrence
     std::atomic<Status> status_{Status::Idle};           // Status of worker

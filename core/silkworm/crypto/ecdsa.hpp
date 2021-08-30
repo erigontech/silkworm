@@ -22,6 +22,7 @@
 #include <optional>
 
 #include <intx/intx.hpp>
+#include <secp256k1_recovery.h>
 
 #include <silkworm/common/base.hpp>
 
@@ -37,21 +38,45 @@ struct YParityAndChainId {
     std::optional<intx::uint256> chain_id{std::nullopt};  // EIP-155
 };
 
-// Calculates Y parity from signature's v.
-// Unless v ∈ {27, 28}, chain_id will be returned as well.
-// See https://eips.ethereum.org/EIPS/eip-155.
+//! \brief Calculates Y parity from signature's V.
+//! \param [in] v : signature V
+//! \return Y parity and eventually chain Id
+//! \remarks chain_id is always returned unless v ∈ {27, 28}
+//! \see https://eips.ethereum.org/EIPS/eip-155.
 std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256& v);
 
-// https://eips.ethereum.org/EIPS/eip-155
+//! \see https://eips.ethereum.org/EIPS/eip-155
 intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id);
 
 // Verifies whether the signature values are valid with
 // the given chain rules.
+//! Verifies whether the signature values are valid with the provided chain rules
+//! \param [in] r : signature's r
+//! \param [in] s : signature's s
+//! \param [in] homestead : whether the chain has homestead rules
+//! \return True or false
 bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead);
 
-// Tries recover the public key used for message signing
+//! \brief Creates a secp2561 context
+//! \param [in] flags : creation flags
+//! \return A raw pointer to context
+//! \remarks Each thread should have its own context
+secp256k1_context* create_context(int flags = SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+
+//! \brief Tries recover the public key used for message signing
+//! \param [in] message : the signed message
+//! \param [in] signature : the signature
+//! \param [in] odd_y_parity : whether y parity is odd
+//! \remarks An ecdsa recovery context is statically initialized
 std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity);
 
+//! \brief Tries recover the public key used for message signing
+//! \param [in] context : a pointer to ecdsa recovery context
+//! \param [in] message : the signed message
+//! \param [in] signature : the signature
+//! \param [in] odd_y_parity : whether y parity is odd
+//! \remarks An ecdsa recovery context is statically initialized
+std::optional<Bytes> recover(secp256k1_context* context, ByteView message, ByteView signature, bool odd_y_parity);
 }  // namespace silkworm::ecdsa
 
 #endif  // SILKWORM_CRYPTO_ECDSA_HPP_

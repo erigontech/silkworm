@@ -21,8 +21,8 @@
 namespace silkworm::ecdsa {
 
 intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) {
-    if (chain_id) {
-        return *chain_id * 2 + 35 + odd;
+    if (chain_id.has_value()) {
+        return chain_id.value() * 2 + 35 + odd;
     } else {
         return odd ? 28 : 27;
     }
@@ -49,6 +49,8 @@ std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256&
     return res;
 }
 
+secp256k1_context* create_context(int flags) { return secp256k1_context_create(flags); }
+
 bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) {
     if (r == 0 || s == 0) {
         return false;
@@ -64,8 +66,11 @@ bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool hom
 }
 
 std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity) {
-    static secp256k1_context* context{secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)};
-
+    static secp256k1_context* context{create_context()};
+    return recover(context, message, signature, odd_y_parity);
+}
+std::optional<Bytes> ecdsa::recover(secp256k1_context* context, ByteView message, ByteView signature,
+                                    bool odd_y_parity) {
     if (message.length() != 32 || signature.length() != 64) {
         return std::nullopt;
     }

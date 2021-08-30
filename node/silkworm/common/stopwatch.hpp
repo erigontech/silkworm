@@ -28,66 +28,53 @@
 #include <vector>
 
 namespace silkworm {
-/// <summary>
-/// This class mimimcs the behavior of a stopwatch to measure timings of operations
-/// </summary>
+
+//! \brief StopWatch class mimics the behavior of a stopwatch to measure timings of operations
 class StopWatch {
   public:
     typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
     typedef std::chrono::nanoseconds Duration;
 
-    /// <summary>
-    /// Creates a new instance
-    /// </summary>
+    //! Constructor
     StopWatch() = default;
     ~StopWatch() = default;
 
-    /// <summary>
-    /// Starts the clock
-    /// </summary>
-    /// <returns>The TimePoint it was started on</returns>
+    //! \brief Start the clock
+    //! \return The TimePoint it was started
     TimePoint start() noexcept;
 
-    /// <summary>
-    /// Records a lap time
-    /// </summary>
-    /// <returns>A pair of TimePoint and Duration</returns>
+    //! \brief Fixes a lap time
+    //! \return A std::pair<TimePoint,Duration> where Duration measures the interval between this TimePoint and the
+    //! previous one which might be another lap or the start
     std::pair<TimePoint, Duration> lap() noexcept;
 
-    /// <summary>
-    /// Computes the duration amongst the start time and the
-    /// provided timepoint
-    /// </summary>
-    /// <param name="origin">An origin timepoint</param>
-    /// <returns>A Duration</returns>
+    //! \brief Computes the Duration between provided TimePoint and the TimePoint recorded at clock start
+    //! \param [in] origin : The TimePoint we want to record the Duration to
+    //! \return A Duration
     Duration since_start(const TimePoint& origin) noexcept;
 
-    /// <summary>
-    /// Stops the watch
-    /// </summary>
+    //! \brief Stops the clock
+    //! \return The TimePoint it was stopped
     TimePoint stop() noexcept;
 
-    /// <summary>
-    /// Stops the watch and clears all counters
-    /// </summary>
+    //! \brief Reset all counters
+    //! \remarks If the clock is ticking it is also stopped
     void reset() noexcept;
 
-    /// <summary>
-    /// Returns the vector of laptimes
-    /// </summary>
+    //! Returns all the recorded laptimes
+    //! \return A vector
     const std::vector<std::pair<TimePoint, Duration>>& laps() const { return laps_; }
 
-    /// <summary>
-    /// Returns a human readable duration
-    /// </summary>
+    //! \brief Produces a string with a duration in a human readable format
     static std::string format(Duration duration);
 
+    //! \brief Whether the clock is started
     explicit operator bool() const noexcept { return started_; }
 
   private:
-    bool started_{false};
-    TimePoint start_time_{};
-    std::vector<std::pair<TimePoint, Duration>> laps_{};
+    bool started_{false};                                 // Records started/stopped state
+    TimePoint start_time_{};                              // Initial start time
+    std::vector<std::pair<TimePoint, Duration>> laps_{};  // Collected laptimes
 };
 
 }  // namespace silkworm

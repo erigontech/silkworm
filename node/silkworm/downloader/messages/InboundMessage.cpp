@@ -22,15 +22,15 @@
 
 namespace silkworm {
 
-std::shared_ptr<InboundMessage> InboundMessage::make(const sentry::InboundMessage& raw_message) {
+std::shared_ptr<InboundMessage> InboundBlockRequestMessage::make_from_raw_message(const sentry::InboundMessage& raw_message, DbTx& db) {
     std::shared_ptr<InboundMessage> message;
     if (raw_message.id() == sentry::MessageId::GET_BLOCK_HEADERS_66)
-        message = std::make_shared<InboundGetBlockHeaders>(raw_message);
+        message = std::make_shared<InboundGetBlockHeaders>(raw_message, db);
     else if (raw_message.id() == sentry::MessageId::GET_BLOCK_BODIES_66)
-        message = std::make_shared<InboundGetBlockBodies>(raw_message);
+        message = std::make_shared<InboundGetBlockBodies>(raw_message, db);
     else
         SILKWORM_LOG(LogLevel::Warn)
-            << "InboundMessage " << sentry::MessageId_Name(raw_message.id()) << " received but not implemented yet\n";
+            << "InboundMessage " << sentry::MessageId_Name(raw_message.id()) << " received but ignored\n";
     return message;
 }
 

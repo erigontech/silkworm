@@ -16,12 +16,15 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include <CLI/CLI.hpp>
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
+
 #include <silkworm/downloader/HeaderLogic.hpp>
+#include <silkworm/downloader/SentryClient.hpp>
 #include <silkworm/downloader/stage1.hpp>
 
 using namespace silkworm;
@@ -68,17 +71,34 @@ int main(int argc, char* argv[]) {
              << "   genesis-hash: " << chain_identity.genesis_hash << "\n"
              << "   hard-forks: " << chain_identity.distinct_fork_numbers().size() << "\n";
 
-        // Stage1
-        Stage1 stage1{chain_identity, db_path, sentry_addr};
-        non_owning::Singleton<Stage1>::instance(&stage1);
+        // Sentry client - connects to sentry
+        ActiveSentryClient sentry{sentry_addr};
+        std::thread rpc_handling( [&sentry]() {
+            sentry.execution_loop();
+        });
+
+        // Block provider - provides headers and bodies to external peers
+        BlockProvider block_provider{sentry, chain_identity, db_path};
+        std::thread msg_processing( [&block_provider]() {
+            block_provider.execution_loop();
+        });
+
+        // Stage1 - Header downloader - example code
+        //HeaderDownload_Stage header_downloader{sentry, chain_identity, db_path};
+        //header_downloader.wind(block_number);
 
         // Node current status
-        auto [head_hash, head_td] = HeaderLogic::head_hash_and_total_difficulty(stage1.db_tx());
+        HeaderRetrieval headers(block_provider.db_tx());
+        auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
         cout << "   head_hash = " << head_hash.to_hex() << "\n";
         cout << "   head_td   = " << intx::to_string(head_td) << "\n\n" << std::flush;
 
-        // Stage1 main loop
-        stage1.execution_loop();    // blocking
+        // Wait for user termination request
+        std::cin.get();  // wait for user press "enter"
+        sentry.need_exit(); // signal exiting
+        block_provider.need_exit(); // signal exiting
+        rpc_handling.join(); // wait thread termination
+        msg_processing.join(); // wait thread termination
 
         return 0;
     }

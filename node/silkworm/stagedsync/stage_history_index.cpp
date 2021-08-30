@@ -239,7 +239,6 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
                 // generates new key
                 Bytes new_key(key.size(), '\0');
                 std::memcpy(&new_key[0], key.data(), key.size());
-                endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
                 // replace with new index
                 etl::Entry entry{new_key, new_bitmap};
                 collector.collect(entry);

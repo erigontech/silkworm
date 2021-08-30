@@ -31,7 +31,7 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 
-#include "Types.hpp"
+#include "types.hpp"
 
 //#define UNUSED(x) (void)(x) - Replaced by [[maybe_unused]]
 

@@ -14,12 +14,14 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPESFORGRPC_HPP
-#define SILKWORM_TYPESFORGRPC_HPP
+#ifndef SILKWORM_TYPES_FOR_GRPC_HPP
+#define SILKWORM_TYPES_FOR_GRPC_HPP
 
-#include "Types.hpp"
-#include <interfaces/types.pb.h>
 #include <memory>
+
+#include <interfaces/types.pb.h>
+
+#include "silkworm/downloader/internals/types.hpp"
 
 namespace silkworm {
 
@@ -32,4 +34,4 @@ Hash          hash_from_H256(const types::H256& orig);
 std::string   string_from_H512(const types::H512& orig);
 
 }   // namespace
-#endif  // SILKWORM_TYPESFORGRPC_HPP
+#endif  // SILKWORM_TYPES_FOR_GRPC_HPP

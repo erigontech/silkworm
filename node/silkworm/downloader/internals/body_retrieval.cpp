@@ -14,8 +14,9 @@
    limitations under the License.
 */
 
-#include "BodyLogic.hpp"
 #include <silkworm/types/block.hpp>
+
+#include "body_retrieval.hpp"
 
 namespace silkworm {
 

@@ -17,7 +17,7 @@
 #ifndef SILKWORM_RLPVECTOR_HPP
 #define SILKWORM_RLPVECTOR_HPP
 
-#include <silkworm/downloader/Types.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 
 /*
  * decode a generic vector

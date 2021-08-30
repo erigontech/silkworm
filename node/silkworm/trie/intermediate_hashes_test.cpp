@@ -68,11 +68,12 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
 }
 
 TEST_CASE("Account and storage trie") {
-    const TemporaryDirectory tmp_dir1;
-    const TemporaryDirectory tmp_dir2;
+    const TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
+    data_dir.deploy();
 
     // Initialize temporary Database
-    db::EnvConfig db_config{tmp_dir1.path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
@@ -126,7 +127,7 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    regenerate_intermediate_hashes(txn, tmp_dir2.path().string().c_str(), &expected_root);
+    regenerate_intermediate_hashes(txn, data_dir.etl().path().c_str(), &expected_root);
 
     // ----------------------------------------------------------------
     // Check account trie
@@ -195,7 +196,7 @@ TEST_CASE("Account and storage trie") {
         hashed_accounts.upsert(db::to_slice(key4b), db::to_slice(a4b.encode_for_storage()));
 
         // TODO[Issue 179] add to change set
-        // TODO[Issue 179] call increment_intermediate_hashes
+        // TODO[Issue 179] increment_intermediate_hashes(txn, data_dir.etl().path().c_str(), /*to=*/1);
         // TODO[Issue 179] CHECK(0b1101 == node1.hash_mask());
         // TODO[Issue 179] check the new hash
     }
@@ -213,11 +214,12 @@ TEST_CASE("Account trie around extension node") {
         0x3100000000000000000000000000000000000000000000000000000000000000_bytes32,
     };
 
-    const TemporaryDirectory tmp_dir1;
-    const TemporaryDirectory tmp_dir2;
+    const TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
+    data_dir.deploy();
 
     // Initialize temporary Database
-    db::EnvConfig db_config{tmp_dir1.path().string(), /*create*/ true};
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
@@ -233,7 +235,7 @@ TEST_CASE("Account trie around extension node") {
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    CHECK(regenerate_intermediate_hashes(txn, tmp_dir2.path().string().c_str()) == expected_root);
+    CHECK(regenerate_intermediate_hashes(txn, data_dir.etl().path().c_str()) == expected_root);
 
     std::map<Bytes, Node> node_map;
     const auto save_nodes{[&node_map](mdbx::cursor::move_result& entry) {

@@ -217,10 +217,11 @@ StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::pat
 
 void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t prune_from,
                                  bool topics) {
-    db::MapConfig index_config = topics ? db::table::kStorageHistory : db::table::kAccountHistory;
     auto last_processed_block{db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)};
 
-    auto index_table{db::open_cursor(*txn, index_config)};
+    auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
+                    : db::open_cursor(*txn, db::table::kLogAddressIndex)};
+
     if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
         while (data) {

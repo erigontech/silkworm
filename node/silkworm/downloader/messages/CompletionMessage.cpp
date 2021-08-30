@@ -15,4 +15,3 @@
 */
 
 #include "CompletionMessage.hpp"
-

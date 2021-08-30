@@ -66,8 +66,9 @@ StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::pa
             return StageResult::kBadBlockHash;
         }
 
-        collector.collect(etl::Entry{Bytes(static_cast<uint8_t*>(header_data.value.iov_base), header_data.value.iov_len),
-                                     Bytes(static_cast<uint8_t*>(header_data.key.iov_base), header_data.key.iov_len)});
+        collector.collect(
+            etl::Entry{Bytes(static_cast<uint8_t*>(header_data.value.iov_base), header_data.value.iov_len),
+                       Bytes(static_cast<uint8_t*>(header_data.key.iov_base), header_data.key.iov_len)});
 
         // Save last processed block_number and expect next in sequence
         ++blocks_processed_count;

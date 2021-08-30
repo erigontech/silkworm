@@ -24,24 +24,29 @@ namespace silkworm {
 // Special message needed to handle a message rpc completion in the same message processing thread
 // coroutine would avoid avoid this
 
-class CompletionMessage: public Message {
+class CompletionMessage : public Message {
   public:
-    CompletionMessage(std::shared_ptr<Message> waiting_completion, rpc_t completed_rpc):
-        msg_waiting_completion_(waiting_completion), completed_rpc_(completed_rpc) {}
+    CompletionMessage(std::shared_ptr<Message> waiting_completion, rpc_t completed_rpc)
+        : msg_waiting_completion_(waiting_completion), completed_rpc_(completed_rpc) {}
 
-    std::string name() const override {return "CompletionMessage";}
-    std::string content() const override {return "-";}
-    uint64_t reqId() const override {return msg_waiting_completion_->reqId();};
+    std::string name() const override { return "CompletionMessage"; }
+    std::string content() const override { return "-"; }
+    uint64_t reqId() const override { return msg_waiting_completion_->reqId(); };
 
-    rpc_bundle_t execute() override {msg_waiting_completion_->handle_completion(*completed_rpc_); return {};}
+    rpc_bundle_t execute() override {
+        msg_waiting_completion_->handle_completion(*completed_rpc_);
+        return {};
+    }
 
-    static std::shared_ptr<CompletionMessage> make(std::shared_ptr<Message> waiting_completion, rpc_t completed_rpc)
-        {return std::make_shared<CompletionMessage>(waiting_completion, completed_rpc);}
+    static std::shared_ptr<CompletionMessage> make(std::shared_ptr<Message> waiting_completion, rpc_t completed_rpc) {
+        return std::make_shared<CompletionMessage>(waiting_completion, completed_rpc);
+    }
 
   private:
     std::shared_ptr<Message> msg_waiting_completion_;
     rpc_t completed_rpc_;
 };
 
-}
+}  // namespace silkworm
+
 #endif  // SILKWORM_COMPLETIONMESSAGE_HPP

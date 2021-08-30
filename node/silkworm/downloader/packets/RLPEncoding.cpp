@@ -14,10 +14,9 @@
    limitations under the License.
 */
 
-
-
 // types
 #include <silkworm/downloader/Types.hpp>
+
 #include "BlockBodiesPacket.hpp"
 #include "BlockHeadersPacket.hpp"
 #include "GetBlockBodiesPacket.hpp"
@@ -25,22 +24,16 @@
 
 // generic implementations (must follow types)
 #include <silkworm/rlp/encode.hpp>
+
 #include "RLPEth66PacketCoding.hpp"
 #include "RLPVectorCoding.hpp"
 
 namespace silkworm::rlp {
 
-    void encode(Bytes& to, const Hash& h) {
-        rlp::encode(to, dynamic_cast<const evmc::bytes32&>(h));
-    }
+void encode(Bytes& to, const Hash& h) { rlp::encode(to, dynamic_cast<const evmc::bytes32&>(h)); }
 
-    void encode(Bytes& to, const NewBlockHashesPacket& from) {
-        rlp::encode_vec(to, from);
-    }
+void encode(Bytes& to, const NewBlockHashesPacket& from) { rlp::encode_vec(to, from); }
 
-    size_t length(const NewBlockHashesPacket& from) {
-        return rlp::length_vec(from);
-    }
+size_t length(const NewBlockHashesPacket& from) { return rlp::length_vec(from); }
 
-}
-
+}  // namespace silkworm::rlp

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 - 2021 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
 #include "util.hpp"
 
 #include <memory>
@@ -47,7 +48,7 @@ std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView
  * Truncate a table by starting from a certain key, either up or down.
  * If reverse is set to false, then every key either higher or equal than starting key will be erased.
  * If reverse is set to true, then every key either lower(not equal) than starting key will be erased.
-*/
+ */
 void truncate_table_from(mdbx::cursor& table, Bytes& starting_key, bool reverse) {
     auto current{table.lower_bound(db::to_slice(starting_key), false)};
     if (reverse) {
@@ -55,7 +56,7 @@ void truncate_table_from(mdbx::cursor& table, Bytes& starting_key, bool reverse)
     }
     if (current) {
         table.erase();
-        while (reverse? table.to_previous(false) : table.to_next(false)) {
+        while (reverse ? table.to_previous(false) : table.to_next(false)) {
             table.erase();
         }
     }

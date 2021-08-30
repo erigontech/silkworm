@@ -17,17 +17,17 @@
 #ifndef SILKWORM_INBOUNDGETBLOCKHEADERS_HPP
 #define SILKWORM_INBOUNDGETBLOCKHEADERS_HPP
 
-#include "InboundMessage.hpp"
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
 
+#include "InboundMessage.hpp"
 
 namespace silkworm {
 
-class InboundGetBlockHeaders: public InboundMessage {
+class InboundGetBlockHeaders : public InboundMessage {
   public:
     InboundGetBlockHeaders(const sentry::InboundMessage& msg, DbTx& db);
 
-    std::string name() const override {return "InboundGetBlockHeaders";}
+    std::string name() const override { return "InboundGetBlockHeaders"; }
     std::string content() const override;
     uint64_t reqId() const override;
 
@@ -41,5 +41,6 @@ class InboundGetBlockHeaders: public InboundMessage {
     DbTx& db_;
 };
 
-}
+}  // namespace silkworm
+
 #endif  // SILKWORM_INBOUNDGETBLOCKHEADERS_HPP

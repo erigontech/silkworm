@@ -22,9 +22,9 @@
 namespace silkworm {
 
 /*
-* \brief Returns genesis data given a known chain_id.
-* If id is not recognized returns an invalid json string
-*/
+ * \brief Returns genesis data given a known chain_id.
+ * If id is not recognized returns an invalid json string
+ */
 std::string read_genesis_data(unsigned int chain_id);
 
 }  // namespace silkworm

@@ -30,7 +30,6 @@
 namespace silkworm {
 
 TEST_CASE("genesis config") {
-
     std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
@@ -61,11 +60,9 @@ TEST_CASE("genesis config") {
     genesis_data = read_genesis_data(1'000u);
     genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json.is_discarded());
-
 }
 
 TEST_CASE("mainnet_genesis") {
-
     // Parse genesis data
     std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);

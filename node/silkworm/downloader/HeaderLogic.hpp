@@ -17,19 +17,21 @@
 #ifndef SILKWORM_HEADERLOGIC_HPP
 #define SILKWORM_HEADERLOGIC_HPP
 
-#include "Types.hpp"
-#include "DbTx.hpp"
-#include <vector>
-#include <queue>
 #include <map>
+#include <queue>
+#include <vector>
+
+#include "DbTx.hpp"
+#include "Types.hpp"
 
 namespace silkworm {
 
 class HeaderRetrieval {
   public:
-    static const long soft_response_limit = 2 * 1024 * 1024; // Target maximum size of returned blocks, headers or node data.
-    static const long est_header_rlp_size = 500;             // Approximate size of an RLP encoded block header
-    static const long max_headers_serve = 1024;              // Amount of block headers to be fetched per retrieval request
+    static const long soft_response_limit =
+        2 * 1024 * 1024;                          // Target maximum size of returned blocks, headers or node data.
+    static const long est_header_rlp_size = 500;  // Approximate size of an RLP encoded block header
+    static const long max_headers_serve = 1024;   // Amount of block headers to be fetched per retrieval request
 
     explicit HeaderRetrieval(DbTx& db);
 
@@ -38,16 +40,17 @@ class HeaderRetrieval {
     std::vector<BlockHeader> recover_by_number(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse);
 
     // Node current status
-    BlockNum                head_height();
-    std::tuple<Hash,BigInt> head_hash_and_total_difficulty();
+    BlockNum head_height();
+    std::tuple<Hash, BigInt> head_hash_and_total_difficulty();
 
     // Ancestor
-    std::tuple<Hash,BlockNum> get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical);
+    std::tuple<Hash, BlockNum> get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestor,
+                                            uint64_t& max_non_canonical);
 
   protected:
     DbTx& db_;
 };
 
-}
+}  // namespace silkworm
 
 #endif  // SILKWORM_HEADERLOGIC_HPP

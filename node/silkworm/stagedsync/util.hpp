@@ -17,8 +17,9 @@
 #ifndef SILKWORM_STAGEDSYNC_UTIL_HPP_
 #define SILKWORM_STAGEDSYNC_UTIL_HPP_
 
-#include <silkworm/common/base.hpp>
 #include <mdbx.h++>
+
+#include <silkworm/common/base.hpp>
 
 /*
 Part of the compatibility layer with the Erigon DB format;
@@ -27,19 +28,9 @@ see its package dbutils.
 
 namespace silkworm::stagedsync {
 
-enum class [[nodiscard]] StageResult {
-    kSuccess,
-    kUnknownChainId,
-    kBadBlockHash,
-    kBadChainSequence,
-    kInvalidRange,
-    kInvalidBlock,
-    kMissingSenders,
-    kDecodingError,
-    kUnexpectedError,
-    kUnknownError,
-    kDbError,
-    kAborted
+enum class [[nodiscard]] StageResult{
+    kSuccess,        kUnknownChainId, kBadBlockHash,    kBadChainSequence, kInvalidRange, kInvalidBlock,
+    kMissingSenders, kDecodingError,  kUnexpectedError, kUnknownError,     kDbError,      kAborted,
 };
 
 void check_stagedsync_error(StageResult code);

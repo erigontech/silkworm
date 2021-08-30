@@ -21,15 +21,17 @@
 
 namespace silkworm::rpc {
 
-class SendMessageById: public rpc::AsyncUnaryCall<sentry::Sentry, sentry::SendMessageByIdRequest, sentry::SentPeers> {
+class SendMessageById : public rpc::AsyncUnaryCall<sentry::Sentry, sentry::SendMessageByIdRequest, sentry::SentPeers> {
   public:
     SendMessageById(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message);
 
     using SentryRpc::on_receive_reply;
 
-    static auto make(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message)
-        {return std::make_shared<SendMessageById>(peerId, std::move(message));}
+    static auto make(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message) {
+        return std::make_shared<SendMessageById>(peerId, std::move(message));
+    }
 };
 
-}
+}  // namespace silkworm::rpc
+
 #endif  // SILKWORM_SENDMESSAGEBYID_HPP

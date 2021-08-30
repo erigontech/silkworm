@@ -18,11 +18,10 @@
 
 namespace silkworm::rpc {
 
-SendMessageByMinBlock::SendMessageByMinBlock(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message):
-    AsyncUnaryCall("SendMessageByMinBlock", &sentry::Sentry::Stub::PrepareAsyncSendMessageByMinBlock, {})
-{
+SendMessageByMinBlock::SendMessageByMinBlock(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message)
+    : AsyncUnaryCall("SendMessageByMinBlock", &sentry::Sentry::Stub::PrepareAsyncSendMessageByMinBlock, {}) {
     request_.set_min_block(min_block);
     request_.set_allocated_data(message.release());  // take ownership
 }
 
-}
+}  // namespace silkworm::rpc

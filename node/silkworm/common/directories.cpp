@@ -185,9 +185,7 @@ void DataDirectory::deploy() {
     nodes_.create();
 }
 
-std::filesystem::path TemporaryDirectory::get_os_temporary_path() {
-    return std::filesystem::temp_directory_path();
-}
+std::filesystem::path TemporaryDirectory::get_os_temporary_path() { return std::filesystem::temp_directory_path(); }
 
 std::filesystem::path TemporaryDirectory::get_unique_temporary_path(const std::filesystem::path& base_path) {
     if (base_path.empty()) {

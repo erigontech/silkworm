@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-
-
 #include <CLI/CLI.hpp>
 
 #include <silkworm/common/directories.hpp>

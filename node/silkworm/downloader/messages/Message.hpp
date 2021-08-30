@@ -20,7 +20,6 @@
 #include <silkworm/downloader/SentryClient.hpp>
 #include <silkworm/downloader/Types.hpp>
 
-
 namespace silkworm {
 
 class Message {
@@ -30,9 +29,9 @@ class Message {
 
     virtual std::string name() const = 0;
     virtual std::string content() const = 0;
-    virtual uint64_t    reqId() const = 0;
+    virtual uint64_t reqId() const = 0;
 
-    virtual rpc_bundle_t execute() = 0;    // inbound message does a reply, outbound message does a request
+    virtual rpc_bundle_t execute() = 0;  // inbound message does a reply, outbound message does a request
 
     virtual void handle_completion(SentryRpc&) {}
 
@@ -42,8 +41,6 @@ class Message {
 std::ostream& operator<<(std::ostream&, const silkworm::Message&);
 std::string identify(const silkworm::Message& message);
 
-}
-
-
+}  // namespace silkworm
 
 #endif  // SILKWORM_MESSAGE_HPP

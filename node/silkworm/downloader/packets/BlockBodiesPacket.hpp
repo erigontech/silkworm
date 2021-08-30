@@ -21,38 +21,43 @@
 
 namespace silkworm {
 
-    using BlockBodiesPacket = std::vector<BlockBody>;
+using BlockBodiesPacket = std::vector<BlockBody>;
 
-    struct BlockBodiesPacket66 { // eth/66 version
-        uint64_t requestId;
-        BlockBodiesPacket request;
-    };
+struct BlockBodiesPacket66 {  // eth/66 version
+    uint64_t requestId;
+    BlockBodiesPacket request;
+};
 
 namespace rlp {
 
-    // ... length(const BlockBodiesPacket& from)              implemented by rlp::length<T>(const std::vector<T>& v)
+    // ... length(const BlockBodiesPacket& from)
+    // implemented by rlp::length<T>(const std::vector<T>& v)
 
-    // ... encode(Bytes& to, const BlockBodiesPacket& from)   implemented by rlp::encode(Bytes& to, const std::vector<T>& v)
+    // ... encode(Bytes& to, const BlockBodiesPacket& from)
+    // implemented by rlp::encode(Bytes& to, const std::vector<T>& v)
     template <>
     rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket& to) noexcept;
 
-    // ... length(const BlockBodiesPacket66& from)            implemented by template <Eth66Packet T> size_t length(const T& from)
+    // ... length(const BlockBodiesPacket66& from)
+    // implemented by template <Eth66Packet T> size_t length(const T& from)
 
-    // ... encode(Bytes& to, const BlockBodiesPacket66& from) implemented by template <Eth66Packet T> void encode(Bytes& to, const T& from)
+    // ... encode(Bytes& to, const BlockBodiesPacket66& from)
+    // implemented by template <Eth66Packet T> void encode(Bytes& to, const T& from)
 
-    // ... decode(ByteView& from, BlockBodiesPacket66& to)    implemented by template <Eth66Packet T> rlp::DecodingResult decode(ByteView& from, T& to) --> No, it requires a c++20 compiler
+    // ... decode(ByteView& from, BlockBodiesPacket66& to)
+    // implemented by template <Eth66Packet T> rlp::DecodingResult decode(ByteView& from, T& to)
+    // --> No, it requires a c++20 compiler
     template <>
     rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket66& to) noexcept;
+}  // namespace rlp
+
+inline std::ostream& operator<<(std::ostream& os, const BlockBodiesPacket66& packet) {
+    os << "reqId=" << packet.requestId;
+    os << " bodies=" << packet.request.size();
+    return os;
 }
 
-    inline std::ostream& operator<<(std::ostream& os, const BlockBodiesPacket66& packet)
-    {
-        os <<   "reqId="  << packet.requestId;
-        os << " bodies=" << packet.request.size();
-        return os;
-    }
-
-} // silkworm namespace
+}  // namespace silkworm
 
 #include "RLPEth66PacketCoding.hpp"
 

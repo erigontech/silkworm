@@ -21,44 +21,47 @@
 
 namespace silkworm {
 
-    using GetBlockBodiesPacket = std::vector<Hash>;
+using GetBlockBodiesPacket = std::vector<Hash>;
 
-    struct GetBlockBodiesPacket66 { // eth/66 version
-        uint64_t requestId;
-        GetBlockBodiesPacket request;
-    };
+struct GetBlockBodiesPacket66 {  // eth/66 version
+    uint64_t requestId;
+    GetBlockBodiesPacket request;
+};
 
 namespace rlp {
 
-    // size_t length(const GetBlockBodiesPacket& from)           implemented by  rlp::length<T>(const std::vector<T>& v)
-    // void encode(Bytes& to, const GetBlockBodiesPacket& from)  implemented by  rlp::encode(Bytes& to, const std::vector<T>& v)
+    // size_t length(const GetBlockBodiesPacket& from)
+    // implemented by  rlp::length<T>(const std::vector<T>& v)
+    // void encode(Bytes& to, const GetBlockBodiesPacket& from)
+    // implemented by  rlp::encode(Bytes& to, const std::vector<T>& v)
     template <>
     rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket& to) noexcept;
 
-    // ... length(const GetBlockBodiesPacket66& from)            implemented by template <Eth66Packet T> size_t length(const T& from)
+    // ... length(const GetBlockBodiesPacket66& from)
+    // implemented by template <Eth66Packet T> size_t length(const T& from)
 
-    // ... encode(Bytes& to, const GetBlockBodiesPacket66& from) implemented by template <Eth66Packet T> void encode(Bytes& to, const T& from)
+    // ... encode(Bytes& to, const GetBlockBodiesPacket66& from)
+    // implemented by template <Eth66Packet T> void encode(Bytes& to, const T& from)
 
-    // ... decode(ByteView& from, GetBlockBodiesPacket66& to)    implemented by template <Eth66Packet T> rlp::DecodingResult decode(ByteView& from, T& to) --> No, it requires a c++20 compiler
+    // ... decode(ByteView& from, GetBlockBodiesPacket66& to)
+    // implemented by template <Eth66Packet T> rlp::DecodingResult decode(ByteView& from, T& to)
+    // --> No, it requires a c++20 compiler
     template <>
     rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept;
 
 }  // namespace rlp
 
-    inline std::ostream& operator<<(std::ostream& os, const GetBlockBodiesPacket66& packet)
-    {
-        os << " reqId="  << packet.requestId;
+inline std::ostream& operator<<(std::ostream& os, const GetBlockBodiesPacket66& packet) {
+    os << " reqId=" << packet.requestId;
 
-        if (packet.request.size() == 1)
-            os << " hash=" << to_hex(packet.request[0]);
-        else
-            os << " hash=" << packet.request.size() << " block hashes";
+    if (packet.request.size() == 1)
+        os << " hash=" << to_hex(packet.request[0]);
+    else
+        os << " hash=" << packet.request.size() << " block hashes";
 
-        return os;
-    }
+    return os;
+}
 
-} // silkworm namespace
-
-
+}  // namespace silkworm
 
 #endif  // SILKWORM_GETBLOCKBODIESPACKET_HPP

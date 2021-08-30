@@ -19,20 +19,17 @@
 
 #include <memory>
 
+#include <silkworm/downloader/DbTx.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
-#include <silkworm/downloader/DbTx.hpp>
-
 #include "Message.hpp"
-
 
 namespace silkworm {
 
-
 class InboundMessage : public Message {
   public:
-    using reply_call_t = rpc_t; // a more specific name
+    using reply_call_t = rpc_t;  // a more specific name
     using reply_calls_t = rpc_bundle_t;
 
     reply_calls_t execute() override = 0;
@@ -45,6 +42,6 @@ class InboundBlockRequestMessage : public InboundMessage {
 
 std::ostream& operator<<(std::ostream&, const silkworm::InboundMessage&);
 
-}
+}  // namespace silkworm
 
 #endif  // SILKWORM_INBOUNDMESSAGE_HPP

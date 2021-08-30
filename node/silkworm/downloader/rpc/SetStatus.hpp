@@ -19,6 +19,7 @@
 
 #include <string>
 #include <vector>
+
 #include <silkworm/chain/config.hpp>
 #include <silkworm/downloader/SentryClient.hpp>
 #include <silkworm/downloader/Types.hpp>
@@ -27,14 +28,17 @@ namespace silkworm::rpc {
 
 class SetStatus : public rpc::AsyncUnaryCall<sentry::Sentry, sentry::StatusData, sentry::SetStatusReply> {
   public:
-    SetStatus(ChainConfig chain, Hash genesis, std::vector<BlockNum> hard_forks, Hash best_hash, BigInt total_difficulty);
+    SetStatus(ChainConfig chain, Hash genesis, std::vector<BlockNum> hard_forks, Hash best_hash,
+              BigInt total_difficulty);
 
     using SentryRpc::on_receive_reply;
 
-    static std::shared_ptr<SetStatus> make(ChainConfig chain, Hash genesis, std::vector<BlockNum> hard_forks, Hash best_hash, BigInt total_difficulty) {
-        return std::make_shared<SetStatus>(chain, genesis, hard_forks, best_hash, total_difficulty);}
+    static std::shared_ptr<SetStatus> make(ChainConfig chain, Hash genesis, std::vector<BlockNum> hard_forks,
+                                           Hash best_hash, BigInt total_difficulty) {
+        return std::make_shared<SetStatus>(chain, genesis, hard_forks, best_hash, total_difficulty);
+    }
 };
 
-}
+}  // namespace silkworm::rpc
 
 #endif  // SILKWORM_SETSTATUS_HPP

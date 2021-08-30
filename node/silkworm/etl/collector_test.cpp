@@ -18,8 +18,8 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/directories.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/db/tables.hpp>
 
 namespace silkworm::etl {
@@ -47,7 +47,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     return pairs;
 }
 
-    void run_collector_test(LoadFunc load_func, bool do_copy = true) {
+void run_collector_test(LoadFunc load_func, bool do_copy = true) {
     TemporaryDirectory db_tmp_dir;
     TemporaryDirectory etl_tmp_dir;
     // Initialize random seed
@@ -67,7 +67,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     // Collection
     for (auto&& entry : set) {
         if (do_copy)
-            collector.collect(entry); // copy is slower... do only if entry is reused afterwards
+            collector.collect(entry);  // copy is slower... do only if entry is reused afterwards
         else
             collector.collect(std::move(entry));
     }

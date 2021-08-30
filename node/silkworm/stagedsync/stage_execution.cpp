@@ -90,7 +90,8 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
     }
 }
 
-StageResult stage_execution(TransactionManager& txn, const std::filesystem::path&, size_t batch_size, uint64_t prune_from) {
+StageResult stage_execution(TransactionManager& txn, const std::filesystem::path&, size_t batch_size,
+                            uint64_t prune_from) {
     StageResult res{StageResult::kSuccess};
 
     try {
@@ -121,7 +122,8 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
         (void)sw.start();
 
         for (; block_num <= max_block; ++block_num) {
-            res = execute_batch_of_blocks(*txn, chain_config.value(), max_block, storage_mode, batch_size, block_num, prune_from);
+            res = execute_batch_of_blocks(*txn, chain_config.value(), max_block, storage_mode, batch_size, block_num,
+                                          prune_from);
             if (res != StageResult::kSuccess) {
                 return res;
             }

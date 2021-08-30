@@ -46,7 +46,7 @@ struct Account {
 
 bool operator==(const Account& a, const Account& b);
 
- /*
+/*
  * Extract the incarnation from an encoded account object without fully decoding it.
  */
 std::pair<uint64_t, rlp::DecodingResult> extract_incarnation(ByteView);

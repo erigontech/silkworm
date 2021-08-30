@@ -23,7 +23,8 @@
 
 namespace silkworm {
 
-InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg, DbTx& db) : InboundMessage(), db_(db) {
+InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg, DbTx& db)
+    : InboundMessage(), db_(db) {
     if (msg.id() != sentry::MessageId::GET_BLOCK_HEADERS_66) {
         throw std::logic_error("InboundGetBlockHeaders received wrong InboundMessage");
     }
@@ -46,10 +47,11 @@ InboundMessage::reply_calls_t InboundGetBlockHeaders::execute() {
     reply.requestId = packet_.requestId;
     if (holds_alternative<Hash>(packet_.request.origin)) {
         reply.request = header_retrieval.recover_by_hash(get<Hash>(packet_.request.origin), packet_.request.amount,
-                                                     packet_.request.skip, packet_.request.reverse);
+                                                         packet_.request.skip, packet_.request.reverse);
     } else {
-        reply.request = header_retrieval.recover_by_number(get<BlockNum>(packet_.request.origin), packet_.request.amount,
-                                                       packet_.request.skip, packet_.request.reverse);
+        reply.request =
+            header_retrieval.recover_by_number(get<BlockNum>(packet_.request.origin), packet_.request.amount,
+                                               packet_.request.skip, packet_.request.reverse);
     }
 
     Bytes rlp_encoding;

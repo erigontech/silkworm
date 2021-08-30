@@ -17,27 +17,26 @@
 #ifndef SILKWORM_RANDOMNUMBER_HPP
 #define SILKWORM_RANDOMNUMBER_HPP
 #include <random>
+
 #include "Singleton.hpp"
 
 namespace silkworm {
 
 class RandomNumber {
-    std::mt19937_64 generator_; // the 64-bit Mersenne Twister 19937 generator
-    std::uniform_int_distribution<unsigned long long> distr_; // a uniform distribution
+    std::mt19937_64 generator_;                                // the 64-bit Mersenne Twister 19937 generator
+    std::uniform_int_distribution<unsigned long long> distr_;  // a uniform distribution
 
   public:
     RandomNumber() {
         std::random_device rd;
-        generator_.seed(rd()); // init generator_ with a random seed
+        generator_.seed(rd());  // init generator_ with a random seed
     }
 
-    int64_t generate_one() {
-        return distr_(generator_);
-    }
-
+    int64_t generate_one() { return distr_(generator_); }
 };
 
 #define RANDOM_NUMBER default_instantiating::Singleton<RandomNumber>::instance()
 
-}
+}  // namespace silkworm
+
 #endif  // SILKWORM_RANDOMNUMBER_HPP

@@ -21,16 +21,17 @@
 
 namespace silkworm::rpc {
 
-class PeerMinBlock: public rpc::AsyncUnaryCall<sentry::Sentry, sentry::PeerMinBlockRequest, google::protobuf::Empty> {
+class PeerMinBlock : public rpc::AsyncUnaryCall<sentry::Sentry, sentry::PeerMinBlockRequest, google::protobuf::Empty> {
   public:
     PeerMinBlock(const std::string& peerId, BlockNum minBlock);
 
     using SentryRpc::on_receive_reply;
 
-    static auto make(const std::string& peerId, BlockNum minBlock)
-    {return std::make_shared<PeerMinBlock>(peerId, minBlock);}
+    static auto make(const std::string& peerId, BlockNum minBlock) {
+        return std::make_shared<PeerMinBlock>(peerId, minBlock);
+    }
 };
 
-}
+}  // namespace silkworm::rpc
 
 #endif  // SILKWORM_PEERMINBLOCK_HPP

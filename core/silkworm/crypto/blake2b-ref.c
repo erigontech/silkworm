@@ -31,7 +31,7 @@ static const uint8_t blake2b_sigma[12][16] = {
     {6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5}, {10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0},
     {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, {14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3}};
 
-static inline uint64_t load64(const void *src) {
+static inline uint64_t load64(const void* src) {
     uint64_t w;
     memcpy(&w, src, sizeof w);
     return w;
@@ -63,7 +63,7 @@ static inline uint64_t rotr64(const uint64_t w, const unsigned c) { return (w >>
         G(r, 7, v[3], v[4], v[9], v[14]);  \
     } while (0)
 
-void blake2b_compress(blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES], size_t r) {
+void blake2b_compress(blake2b_state* S, const uint8_t block[BLAKE2B_BLOCKBYTES], size_t r) {
     uint64_t m[16];
     uint64_t v[16];
     size_t i;

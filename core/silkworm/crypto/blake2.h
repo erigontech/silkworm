@@ -32,7 +32,7 @@ typedef struct blake2b_state__ {
 } blake2b_state;
 
 // https://tools.ietf.org/html/rfc7693#section-3.2
-void blake2b_compress(blake2b_state *S, const uint8_t block[BLAKE2B_BLOCKBYTES], size_t r);
+void blake2b_compress(blake2b_state* S, const uint8_t block[BLAKE2B_BLOCKBYTES], size_t r);
 
 #if defined(__cplusplus)
 }

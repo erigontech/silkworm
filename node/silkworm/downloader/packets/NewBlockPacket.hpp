@@ -21,15 +21,14 @@
 
 namespace silkworm {
 
-    struct NewBlockPacket {
-        Block block;
-        BigInt td; // total difficulty
-    };
+struct NewBlockPacket {
+    Block block;
+    BigInt td;  // total difficulty
+};
 
 namespace rlp {
     inline void encode(Bytes& to, const NewBlockPacket& from) noexcept {
-        rlp::Header rlp_head{true,
-                             rlp::length(from.block) + rlp::length(from.td)};
+        rlp::Header rlp_head{true, rlp::length(from.block) + rlp::length(from.td)};
 
         rlp::encode_header(to, rlp_head);
 
@@ -38,8 +37,7 @@ namespace rlp {
     }
 
     inline size_t length(const NewBlockPacket& from) noexcept {
-        rlp::Header rlp_head{true,
-                             rlp::length(from.block) + rlp::length(from.td)};
+        rlp::Header rlp_head{true, rlp::length(from.block) + rlp::length(from.td)};
 
         size_t rlp_head_len = rlp::length_of_length(rlp_head.payload_length);
         return rlp_head_len + rlp_head.payload_length;
@@ -47,7 +45,6 @@ namespace rlp {
 
     template <>
     inline rlp::DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept {
-
         auto [rlp_head, err]{decode_header(from)};
         if (err != DecodingResult::kOk) {
             return err;
@@ -68,14 +65,13 @@ namespace rlp {
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
     }
 
+}  // namespace rlp
+
+inline std::ostream& operator<<(std::ostream& os, const NewBlockPacket& packet) {
+    os << "block num " << packet.block.header.number;
+    return os;
 }
 
-    inline std::ostream& operator<<(std::ostream& os, const NewBlockPacket& packet)
-    {
-        os << "block num " << packet.block.header.number;
-        return os;
-    }
-
-}
+}  // namespace silkworm
 
 #endif  // SILKWORM_NEWBLOCKPACKET_HPP

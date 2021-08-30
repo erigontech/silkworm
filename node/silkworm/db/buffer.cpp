@@ -24,7 +24,7 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/types/log_cbor.hpp>
 #include <silkworm/types/receipt_cbor.hpp>
-#include <silkworm/common/endian.hpp>
+
 #include "access_layer.hpp"
 #include "tables.hpp"
 
@@ -255,15 +255,25 @@ void Buffer::insert_receipts(uint64_t block_number, const std::vector<Receipt>& 
     }
 }
 
-evmc::bytes32 Buffer::state_root_hash() const { throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented")); }
+evmc::bytes32 Buffer::state_root_hash() const {
+    throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented"));
+}
 
-uint64_t Buffer::current_canonical_block() const { throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented")); }
+uint64_t Buffer::current_canonical_block() const {
+    throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented"));
+}
 
-std::optional<evmc::bytes32> Buffer::canonical_hash(uint64_t) const { throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented")); }
+std::optional<evmc::bytes32> Buffer::canonical_hash(uint64_t) const {
+    throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented"));
+}
 
-void Buffer::canonize_block(uint64_t, const evmc::bytes32&) { throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented")); }
+void Buffer::canonize_block(uint64_t, const evmc::bytes32&) {
+    throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented"));
+}
 
-void Buffer::decanonize_block(uint64_t) { throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented")); }
+void Buffer::decanonize_block(uint64_t) {
+    throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented"));
+}
 
 void Buffer::insert_block(const Block& block, const evmc::bytes32& hash) {
     uint64_t block_number{block.header.number};
@@ -345,6 +355,8 @@ uint64_t Buffer::previous_incarnation(const evmc::address& address) const noexce
     return incarnation ? *incarnation : 0;
 }
 
-void Buffer::unwind_state_changes(uint64_t) { throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented")); }
+void Buffer::unwind_state_changes(uint64_t) {
+    throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented"));
+}
 
 }  // namespace silkworm::db

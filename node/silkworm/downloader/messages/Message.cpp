@@ -15,6 +15,7 @@
 */
 
 #include "Message.hpp"
+
 #include <silkworm/common/log.hpp>
 
 namespace silkworm {
@@ -34,4 +35,4 @@ std::string identify(const silkworm::Message& message) {
     return message.name() + " reqId=" + std::to_string(message.reqId());
 }
 
-}
+}  // namespace silkworm

@@ -21,16 +21,16 @@
 
 namespace silkworm::rpc {
 
-class ReceiveMessages: public rpc::AsyncOutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
+class ReceiveMessages
+    : public rpc::AsyncOutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
   public:
     ReceiveMessages();
 
     using SentryRpc::on_receive_reply;
 
-    static std::shared_ptr<ReceiveMessages> make() {return std::make_shared<ReceiveMessages>();}
+    static std::shared_ptr<ReceiveMessages> make() { return std::make_shared<ReceiveMessages>(); }
 };
 
-}
-
+}  // namespace silkworm::rpc
 
 #endif  // SILKWORM_RECEIVEMESSAGES_HPP

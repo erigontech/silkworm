@@ -14,16 +14,17 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CONCURRENTCONTAINERS_HPP
-#define SILKWORM_CONCURRENTCONTAINERS_HPP
+#ifndef SILKWORM_CONCURRENCY_CONTAINERS_HPP_
+#define SILKWORM_CONCURRENCY_CONTAINERS_HPP_
 
 /*
  * Decisions about concurrent containers
  */
 
-#include "ThreadSafeQueue.hpp"
+#include <silkworm/concurrency/thread_safe_queue.hpp>
 
 template <typename T>
-using ConcurrentQueue = ThreadSafeQueue<T>;  // todo: use a better alternative from a known library (Intel oneTBB concurrent_queue<T>?)
+using ConcurrentQueue =
+    ThreadSafeQueue<T>;  // todo: use a better alternative from a known library (Intel oneTBB concurrent_queue<T>?)
 
-#endif  // SILKWORM_CONCURRENTCONTAINERS_HPP
+#endif  // SILKWORM_CONCURRENCY_CONTAINERS_HPP_

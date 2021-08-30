@@ -22,13 +22,11 @@
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-
 #include <silkworm/downloader/HeaderLogic.hpp>
 #include <silkworm/downloader/SentryClient.hpp>
 #include <silkworm/downloader/stage1.hpp>
 
 using namespace silkworm;
-
 
 // Main
 int main(int argc, char* argv[]) {
@@ -43,10 +41,8 @@ int main(int argc, char* argv[]) {
     string temporary_file_path = ".";
     string sentry_addr = "127.0.0.1:9091";
 
-    app.add_option("--chaindata", db_path, "Path to the chain database", true)
-        ->check(CLI::ExistingDirectory);
-    app.add_option("--chain", chain_name, "Network name", true)
-        ->needs("--chaindata");
+    app.add_option("--chaindata", db_path, "Path to the chain database", true)->check(CLI::ExistingDirectory);
+    app.add_option("--chain", chain_name, "Network name", true)->needs("--chaindata");
     app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry", true);
     //  todo ->check?
     app.add_option("-f,--filesdir", temporary_file_path, "Path to a temp files dir", true)
@@ -73,19 +69,15 @@ int main(int argc, char* argv[]) {
 
         // Sentry client - connects to sentry
         ActiveSentryClient sentry{sentry_addr};
-        std::thread rpc_handling( [&sentry]() {
-            sentry.execution_loop();
-        });
+        std::thread rpc_handling([&sentry]() { sentry.execution_loop(); });
 
         // Block provider - provides headers and bodies to external peers
         BlockProvider block_provider{sentry, chain_identity, db_path};
-        std::thread msg_processing( [&block_provider]() {
-            block_provider.execution_loop();
-        });
+        std::thread msg_processing([&block_provider]() { block_provider.execution_loop(); });
 
         // Stage1 - Header downloader - example code
-        //HeaderDownload_Stage header_downloader{sentry, chain_identity, db_path};
-        //header_downloader.wind(block_number);
+        // HeaderDownload_Stage header_downloader{sentry, chain_identity, db_path};
+        // header_downloader.wind(block_number);
 
         // Node current status
         HeaderRetrieval headers(block_provider.db_tx());
@@ -94,18 +86,15 @@ int main(int argc, char* argv[]) {
         cout << "   head_td   = " << intx::to_string(head_td) << "\n\n" << std::flush;
 
         // Wait for user termination request
-        std::cin.get();  // wait for user press "enter"
-        sentry.need_exit(); // signal exiting
-        block_provider.need_exit(); // signal exiting
-        rpc_handling.join(); // wait thread termination
-        msg_processing.join(); // wait thread termination
+        std::cin.get();         // wait for user press "enter"
+        sentry.stop();          // signal exiting
+        block_provider.stop();  // signal exiting
+        rpc_handling.join();    // wait thread termination
+        msg_processing.join();  // wait thread termination
 
         return 0;
-    }
-    catch(std::exception& e) {
+    } catch (std::exception& e) {
         cerr << "Exception: " << e.what() << "\n";
         return 1;
     }
 }
-
-

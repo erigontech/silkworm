@@ -64,7 +64,7 @@ void RecoveryWorker::work() {
                 block_result_offset += block_result_length;
                 block_result_length = 0;
                 block_num = package.block_num;
-                if (should_stop()) {
+                if (is_stopping()) {
                     status_.store(Status::Aborted);
                     break;
                 }

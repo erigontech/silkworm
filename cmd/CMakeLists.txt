@@ -44,9 +44,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
-  add_executable(bench_buffer bench_buffer.cpp)
-  target_link_libraries(bench_buffer PRIVATE silkworm_node CLI11::CLI11 absl::time)
-
   add_executable(scan_txs scan_txs.cpp)
   target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
@@ -122,8 +119,6 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(consensus PRIVATE ${SILKWORM_MAIN_DIR}/magic_enum/include)
 
   # Benchmarks
-  find_package(benchmark CONFIG REQUIRED)
-  add_executable(benchmark_precompile benchmark_precompile.cpp)
-  target_link_libraries(benchmark_precompile silkworm_core benchmark::benchmark)
+  add_subdirectory(benchmark)
 
 endif(NOT SILKWORM_CORE_ONLY)

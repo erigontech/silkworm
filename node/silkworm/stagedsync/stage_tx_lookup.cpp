@@ -187,6 +187,8 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
     auto transactions_table{db::open_cursor(*txn, db::table::kEthTx)};
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
 
+    SILKWORM_LOG(LogLevel::Info) << "Pruning Transaction Lookup from: " << prune_from << std::endl;
+
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], prune_from - 1);
 
@@ -217,6 +219,8 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
     }
 
     txn.commit();
+
+    SILKWORM_LOG(LogLevel::Info) << "Pruning Transaction Lookup finished..." << std::endl;
 
     return StageResult::kSuccess;
 }

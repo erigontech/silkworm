@@ -21,14 +21,9 @@
 
 namespace silkworm::rpc {
 
-class SendMessageByMinBlock: public rpc::AsyncUnaryCall<sentry::Sentry, sentry::SendMessageByMinBlockRequest, sentry::SentPeers> {
+class SendMessageByMinBlock: public rpc::UnaryCall<sentry::Sentry, sentry::SendMessageByMinBlockRequest, sentry::SentPeers> {
   public:
     SendMessageByMinBlock(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message);
-
-    using SentryRpc::on_receive_reply;
-
-    static auto make(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message)
-    {return std::make_shared<SendMessageByMinBlock>(min_block, std::move(message));}
 };
 
 }

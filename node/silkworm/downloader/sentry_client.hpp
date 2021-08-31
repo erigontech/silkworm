@@ -19,10 +19,8 @@
 
 #include <interfaces/sentry.grpc.pb.h>
 
-#include <silkworm/concurrency/active_component.hpp>
-
-#include "silkworm/downloader/internals/gRPCAsyncClient.hpp"
-#include "silkworm/downloader/internals/types_for_grpc.hpp"
+#include "internals/gRPCClient.hpp"
+#include "internals/sentry_type_casts.hpp"
 
 namespace silkworm {
 
@@ -32,30 +30,28 @@ namespace silkworm {
  */
 
 // An rpc
-using SentryRpc = rpc::AsyncCall<sentry::Sentry>;
+using SentryRpc = rpc::Call<sentry::Sentry>;
 
 // The client
-class SentryClient : public rpc::AsyncClient<sentry::Sentry> {
+class SentryClient : public rpc::Client<sentry::Sentry> {
   public:
-    using base_t = rpc::AsyncClient<sentry::Sentry>;
+    using base_t = rpc::Client<sentry::Sentry>;
 
     explicit SentryClient(std::string sentry_addr);
+    SentryClient(const SentryClient&) = delete;
+    SentryClient(SentryClient&&) = delete;
 
-    void exec_remotely(std::shared_ptr<SentryRpc> rpc);
-
-    std::shared_ptr<SentryRpc> receive_one_reply();  // wait for a single rpc reply, to call repeatedly
+    void exec_remotely(SentryRpc& rpc);
 
     // grpc::grpc_connectivity_state state() { return channel_->GetState(true); }
+
+    void need_close() { closing_.store(true); }
+    bool closing() { return closing_.load(); }
+
+  protected:
+    std::atomic<bool> closing_{false};
 };
 
-// A SentryClient with an infinite loop to receive rpc forever
-class ActiveSentryClient : public SentryClient, public ActiveComponent {
-  public:
-    using SentryClient::SentryClient;  // use parent constructor
 
-    virtual void execution_loop();
-};
-
-}  // namespace silkworm
-
+}
 #endif  // SILKWORM_SENTRY_CLIENT_HPP

@@ -17,23 +17,15 @@
 #ifndef SILKWORM_SETSTATUS_HPP
 #define SILKWORM_SETSTATUS_HPP
 
-#include <string>
-#include <vector>
-
-#include <silkworm/chain/config.hpp>
+#include <silkworm/chain/identity.hpp>
 #include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-class SetStatus : public rpc::AsyncUnaryCall<sentry::Sentry, sentry::StatusData, sentry::SetStatusReply> {
+class SetStatus : public rpc::UnaryCall<sentry::Sentry, sentry::StatusData, sentry::SetStatusReply> {
   public:
-    SetStatus(ChainConfig chain, Hash genesis, std::vector<BlockNum> hard_forks, Hash best_hash, BigInt total_difficulty);
-
-    using SentryRpc::on_receive_reply;
-
-    static std::shared_ptr<SetStatus> make(ChainConfig chain, Hash genesis, std::vector<BlockNum> hard_forks, Hash best_hash, BigInt total_difficulty) {
-        return std::make_shared<SetStatus>(chain, genesis, hard_forks, best_hash, total_difficulty);}
+    SetStatus(const ChainIdentity& chain_identity, Hash best_hash, BigInt total_difficulty);
 };
 
 }

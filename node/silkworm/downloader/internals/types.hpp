@@ -56,7 +56,8 @@ using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
 using time_dur_t = std::chrono::duration<std::chrono::system_clock>;
 
-inline Bytes bytes_of_string(const std::string& s) { return Bytes(s.begin(), s.end()); }
+// defined elsewhere: ByteView string_view_to_byte_view(std::string_view sv)
+inline Bytes string_to_bytes(const std::string& s) { return Bytes(s.begin(), s.end()); }
 
 inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
     for (const auto& b : bytes) {
@@ -75,6 +76,20 @@ inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
     out << silkworm::to_hex(b32);
     return out;
 }
+
+enum Penalty: int {
+    NoPenalty = 0,
+    BadBlockPenalty,
+    DuplicateHeaderPenalty,
+    WrongChildBlockHeightPenalty,
+    WrongChildDifficultyPenalty,
+    InvalidSealPenalty,
+    TooFarFuturePenalty,
+    TooFarPastPenalty,
+    AbandonedAnchorPenalty
+};
+
+using PeerId = std::string;
 
 namespace rlp {
     void encode(Bytes& to, const Hash& h);

@@ -54,6 +54,9 @@ int main(int argc, char* argv[]) {
 
     SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
 
+    std::thread block_request_processing;
+    int return_value = 0;
+
     try {
         // EIP-2124 based chain identity scheme (networkId + genesis + forks)
         ChainIdentity chain_identity;
@@ -69,34 +72,39 @@ int main(int argc, char* argv[]) {
              << "   genesis-hash: " << chain_identity.genesis_hash << "\n"
              << "   hard-forks: " << chain_identity.distinct_fork_numbers().size() << "\n";
 
-        // Sentry client - connects to sentry
-        ActiveSentryClient sentry{sentry_addr};
-        std::thread rpc_handling([&sentry]() { sentry.execution_loop(); });
-
-        // Block provider - provides headers and bodies to external peers
-        BlockProvider block_provider{sentry, chain_identity, db_path};
-        std::thread msg_processing([&block_provider]() { block_provider.execution_loop(); });
-
-        // Stage1 - Header downloader - example code
-        // HeaderDownload_Stage header_downloader{sentry, chain_identity, db_path};
-        // header_downloader.wind(block_number);
+        // Database access
+        DbTx db{db_path};
 
         // Node current status
-        HeaderRetrieval headers(block_provider.db_tx());
+        HeaderRetrieval headers(db);
         auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
         cout << "   head_hash = " << head_hash.to_hex() << "\n";
         cout << "   head_td   = " << intx::to_string(head_td) << "\n\n" << std::flush;
 
+        // Sentry client - connects to sentry
+        SentryClient sentry{sentry_addr};
+
+        // Block provider - provides headers and bodies to external peers
+        BlockProvider block_provider{sentry, db, chain_identity};
+        block_request_processing = std::thread( [&block_provider]() {  // todo: join in block_provider destructor
+            block_provider.execution_loop();
+        });
+
+        // Stage1 - Header downloader - example code
+        //BlockNum target_block = 13'000'000; // only for test
+        //HeaderDownloader header_downloader{sentry, db, chain_identity};
+        //header_downloader.wind(target_block);
+
         // Wait for user termination request
         std::cin.get();         // wait for user press "enter"
-        sentry.stop();          // signal exiting
         block_provider.stop();  // signal exiting
-        rpc_handling.join();    // wait thread termination
-        msg_processing.join();  // wait thread termination
-
-        return 0;
-    } catch (std::exception& e) {
-        cerr << "Exception: " << e.what() << "\n";
-        return 1;
     }
+    catch(std::exception& e) {
+        cerr << "Exception: " << e.what() << "\n";
+        return_value = 1;
+    }
+
+    if (block_request_processing.joinable())
+        block_request_processing.join(); // wait thread termination
+    return return_value;
 }

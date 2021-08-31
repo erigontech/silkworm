@@ -17,7 +17,7 @@
 #include "InboundGetBlockHeaders.hpp"
 
 #include <silkworm/common/cast.hpp>
-#include <silkworm/downloader/HeaderLogic.hpp>
+#include <silkworm/downloader/internals/header_retrieval.hpp>
 #include <silkworm/downloader/packets/BlockHeadersPacket.hpp>
 #include <silkworm/downloader/rpc/SendMessageById.hpp>
 

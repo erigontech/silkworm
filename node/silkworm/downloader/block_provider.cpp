@@ -13,20 +13,20 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include "stage1.hpp"
+#include "block_provider.hpp"
 
 #include <chrono>
 #include <thread>
 
 #include <silkworm/common/log.hpp>
 
-#include "HeaderLogic.hpp"
 #include "messages/InboundMessage.hpp"
 #include "rpc/PeerMinBlock.hpp"
 #include "rpc/ReceiveMessages.hpp"
 #include "rpc/SendMessageById.hpp"
 #include "rpc/SendMessageByMinBlock.hpp"
 #include "rpc/SetStatus.hpp"
+#include "silkworm/downloader/internals/header_retrieval.hpp"
 
 namespace silkworm {
 

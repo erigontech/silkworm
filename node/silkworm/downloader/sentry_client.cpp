@@ -14,9 +14,9 @@
    limitations under the License.
 */
 
-#include "SentryClient.hpp"
-
 #include <silkworm/common/log.hpp>
+
+#include "sentry_client.hpp"
 
 namespace silkworm {
 

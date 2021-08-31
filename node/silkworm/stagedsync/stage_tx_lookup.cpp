@@ -136,7 +136,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
     if (unwind_to >= db::stages::get_stage_progress(*txn, db::stages::kTxLookupKey)) {
         return StageResult::kSuccess;
     }
-    // We take data from header table and transform it and put it in blockhashes table
+
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transactions_table{db::open_cursor(*txn, db::table::kEthTx)};
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
@@ -181,5 +181,45 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
 
     return StageResult::kSuccess;
 }
+
+StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
+    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transactions_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
+
+    Bytes start(8, '\0');
+    endian::store_big_u64(&start[0], prune_from - 1);
+
+    auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
+    // From the way up, we go down and remove elements
+    while (bodies_data) {
+        auto body_rlp{db::from_slice(bodies_data.value)};
+        auto body{db::detail::decode_stored_block_body(body_rlp)};
+
+        if (body.txn_count) {
+            Bytes tx_base_id(8, '\0');
+            endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
+            auto tx_data{transactions_table.lower_bound(db::to_slice(tx_base_id), /*throw_notfound*/ false)};
+            uint64_t tx_count{0};
+
+            while (tx_data && tx_count < body.txn_count) {
+                auto tx_view{db::from_slice(tx_data.value)};
+                auto hash{keccak256(tx_view)};
+                if (lookup_table.seek(mdbx::slice{hash.bytes, kHashLength})) {
+                    lookup_table.erase();
+                }
+                ++tx_count;
+                tx_data = transactions_table.to_next(/*throw_notfound*/ false);
+            }
+        }
+
+        bodies_data = bodies_table.to_previous(/*throw_notfound*/ false);
+    }
+
+    txn.commit();
+
+    return StageResult::kSuccess;
+}
+
 
 }  // namespace silkworm::stagedsync

@@ -19,9 +19,10 @@
 
 #include <string>
 #include <vector>
+
 #include <silkworm/chain/config.hpp>
-#include <silkworm/downloader/SentryClient.hpp>
-#include <silkworm/downloader/Types.hpp>
+#include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 

@@ -17,7 +17,8 @@
 
 
 // types
-#include <silkworm/downloader/Types.hpp>
+#include <silkworm/downloader/internals/types.hpp>
+
 #include "BlockBodiesPacket.hpp"
 #include "BlockHeadersPacket.hpp"
 #include "GetBlockBodiesPacket.hpp"

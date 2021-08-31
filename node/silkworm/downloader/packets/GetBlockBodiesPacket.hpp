@@ -17,7 +17,7 @@
 #ifndef SILKWORM_GETBLOCKBODIESPACKET_HPP
 #define SILKWORM_GETBLOCKBODIESPACKET_HPP
 
-#include <silkworm/downloader/Types.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 
 namespace silkworm {
 

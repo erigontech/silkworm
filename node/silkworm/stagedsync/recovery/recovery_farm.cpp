@@ -19,6 +19,9 @@
 #include <boost/format.hpp>
 
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/log.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/stages.hpp>
 
 namespace silkworm::stagedsync::recovery {
 
@@ -34,8 +37,8 @@ RecoveryFarm::RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size
 StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     auto ret{StageResult::kSuccess};
 
-    auto config{db::read_chain_config(db_transaction_)};
-    if (!config.has_value()) {
+    auto chain_config{db::read_chain_config(db_transaction_)};
+    if (!chain_config.has_value()) {
         throw std::runtime_error("Invalid Chain Config.");
     }
 
@@ -123,17 +126,16 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
         // Get the body and its transactions
         auto body_rlp{db::from_slice(block_data.value)};
         auto block_body{db::detail::decode_stored_block_body(body_rlp)};
- 
 
         std::vector<Transaction> transactions{
             db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count)};
-       
-        if (transactions.size()) {
+
+        if (!transactions.empty()) {
             if (((*batch_).size() + transactions.size()) > max_batch_size_) {
                 dispatch_batch(true);
             }
 
-            fill_batch(*config, block_num, transactions);
+            fill_batch(*chain_config, block_num, transactions);
         }
 
         // After processing move to next block number and header
@@ -174,11 +176,11 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
 StageResult RecoveryFarm::unwind(uint64_t new_height) {
     SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
     auto unwind_table{db::open_cursor(db_transaction_, db::table::kSenders)};
-    auto unwind_bytes_point{db::block_key(new_height+1)};
+    auto unwind_bytes_point{db::block_key(new_height + 1)};
     truncate_table_from(unwind_table, unwind_bytes_point);
     // Eventually update new stage height
     db::stages::write_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
-    
+
     return StageResult::kSuccess;
 }
 
@@ -190,7 +192,7 @@ void RecoveryFarm::stop_all_workers(bool wait) {
 }
 
 void RecoveryFarm::wait_workers_completion() {
-    if (workers_.size()) {
+    if (!workers_.empty()) {
         uint64_t attempts{0};
         do {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -211,7 +213,7 @@ bool RecoveryFarm::bufferize_workers_results() {
     bool success{true};
     static std::string fmt_row{"%10u b %12u t"};
 
-    std::vector<std::pair<uint64_t, iovec>> worker_results{};
+    std::vector<std::pair<BlockNum, ByteView>> worker_results{};
     do {
         // Check we have results to pull
         std::unique_lock l(batches_completed_mtx);
@@ -238,13 +240,13 @@ bool RecoveryFarm::bufferize_workers_results() {
             success = false;
             break;
         } else if (status == RecoveryWorker::Status::ResultsReady) {
-            if (!worker->pull_results(status, worker_results)) {
+            if (!worker->pull_results(worker_results)) {
                 success = false;
                 break;
             } else {
                 for (auto& [block_num, data] : worker_results) {
                     total_processed_blocks_++;
-                    total_recovered_transactions_ += (data.iov_len / kAddressLength);
+                    total_recovered_transactions_ += (data.length() / kAddressLength);
 
                     auto etl_key{db::block_key(block_num, headers_it_2_->bytes)};
                     Bytes etl_data(db::from_slice(data));
@@ -353,7 +355,8 @@ void RecoveryFarm::dispatch_batch(bool renew) {
             // No other option than wait a while and retry
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
-    };
+    }
+
     if (did_fail) {
         throw std::runtime_error("Unable to dispatch work");
     }

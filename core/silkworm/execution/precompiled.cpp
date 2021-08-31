@@ -64,17 +64,12 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
         return Bytes{};
     }
 
-    const std::optional<Bytes> key{ecdsa::recover(d.substr(0, 32), d.substr(64, 64), parity_and_id->odd)};
-    if (key == std::nullopt || key->at(0) != 4) {
-        return Bytes{};
+    std::optional<evmc::address> recovered_address{
+        ecdsa::recover_address(d.substr(0, 32), d.substr(64, 64), parity_and_id->odd)};
+    if (recovered_address.has_value()) {
+        return Bytes(recovered_address->bytes, 20);
     }
-
-    // Ignore the first byte of the public key
-    const ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
-
-    Bytes out(32, '\0');
-    std::memcpy(&out[12], &hash.bytes[12], 32 - 12);
-    return out;
+    return Bytes{};
 }
 
 uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * ((input.length() + 31) / 32); }

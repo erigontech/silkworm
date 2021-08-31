@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "TypesForGrpc.hpp"
+#include "types_for_grpc.hpp"
 
 #include <silkworm/common/endian.hpp>
 

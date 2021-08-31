@@ -14,10 +14,10 @@
    limitations under the License.
 */
 
-
-#include "HeaderLogic.hpp"
-#include "stage1.hpp"
 #include <silkworm/common/log.hpp>
+
+#include "header_retrieval.hpp"
+#include "silkworm/downloader/block_provider.hpp"
 
 namespace silkworm {
 

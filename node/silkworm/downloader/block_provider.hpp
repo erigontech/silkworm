@@ -13,24 +13,22 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#ifndef SILKWORM_STAGE1_HPP
-#define SILKWORM_STAGE1_HPP
+#ifndef SILKWORM_BLOCK_PROVIDER_HPP
+#define SILKWORM_BLOCK_PROVIDER_HPP
 
-#include <atomic>
 #include <chrono>
 
 #include <silkworm/chain/identity.hpp>
+#include <silkworm/concurrency/active_component.hpp>
+#include <silkworm/concurrency/containers.hpp>
 
-#include "ActiveComponent.hpp"
-#include "ConcurrentContainers.hpp"
-#include "DbTx.hpp"
-#include "SentryClient.hpp"
-#include "Singleton.hpp"
-#include "Types.hpp"
 #include "messages/Message.hpp"
+#include "sentry_client.hpp"
+#include "silkworm/downloader/internals/DbTx.hpp"
+#include "silkworm/downloader/internals/singleton.hpp"
+#include "silkworm/downloader/internals/types.hpp"
 
 namespace silkworm {
-
 
 class BlockProvider : public ActiveComponent {  // but also an active component that must run always
 
@@ -40,8 +38,8 @@ class BlockProvider : public ActiveComponent {  // but also an active component 
 
   public:
     BlockProvider(ActiveSentryClient& sentry, ChainIdentity chain_identity, std::string db_path);
-    BlockProvider(const BlockProvider&) = delete; // not copyable
-    BlockProvider(BlockProvider&&) = delete; // nor movable
+    BlockProvider(const BlockProvider&) = delete;  // not copyable
+    BlockProvider(BlockProvider&&) = delete;       // nor movable
     ~BlockProvider();
 
     DbTx& db_tx() { return db_; }
@@ -60,4 +58,4 @@ class BlockProvider : public ActiveComponent {  // but also an active component 
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_STAGE1_HPP
+#endif  // SILKWORM_BLOCK_PROVIDER_HPP

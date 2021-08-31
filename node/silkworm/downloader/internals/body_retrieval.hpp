@@ -14,16 +14,26 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CONCURRENTCONTAINERS_HPP
-#define SILKWORM_CONCURRENTCONTAINERS_HPP
+#ifndef SILKWORM_BODY_RETRIEVAL_HPP
+#define SILKWORM_BODY_RETRIEVAL_HPP
 
-/*
- * Decisions about concurrent containers
- */
+#include "DbTx.hpp"
+#include "types.hpp"
 
-#include "ThreadSafeQueue.hpp"
+namespace silkworm {
 
-template <typename T>
-using ConcurrentQueue = ThreadSafeQueue<T>;  // todo: use a better alternative from a known library (Intel oneTBB concurrent_queue<T>?)
+class BodyRetrieval {
+  public:
+    static const long soft_response_limit = 2 * 1024 * 1024; // Target maximum size of returned blocks, headers or node data.
+    static const long max_bodies_serve = 1024;                // Amount of block bodies to be fetched per retrieval request
 
-#endif  // SILKWORM_CONCURRENTCONTAINERS_HPP
+    explicit BodyRetrieval(DbTx& db);
+
+    std::vector<BlockBody> recover(std::vector<Hash>);
+
+  protected:
+    DbTx& db_;
+};
+
+}
+#endif  // SILKWORM_BODY_RETRIEVAL_HPP

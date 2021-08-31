@@ -17,6 +17,7 @@
 #include "worker.hpp"
 
 namespace silkworm {
+
 Worker::~Worker() {
     if (state_.load() != WorkerState::kStopped) {
         state_.store(WorkerState::kStopping);
@@ -24,6 +25,7 @@ Worker::~Worker() {
         thread_.reset(nullptr);
     }
 }
+
 void Worker::start(bool wait) {
     WorkerState expected_state{WorkerState::kStopped};
     if (!state_.compare_exchange_strong(expected_state, WorkerState::kStarting)) {
@@ -51,6 +53,7 @@ void Worker::start(bool wait) {
         }
     }
 }
+
 void Worker::stop(bool wait) {
     WorkerState expected_state{WorkerState::kStarted};
     if (state_.compare_exchange_strong(expected_state, WorkerState::kStopping)) {
@@ -60,13 +63,13 @@ void Worker::stop(bool wait) {
         thread_->join();
     }
 }
+
 void Worker::kick() {
     kicked_.store(true);
     kicked_cv_.notify_all();
 }
 
 bool Worker::wait_for_kick(uint32_t timeout_seconds) {
-
     while (true) {
         bool expected_kick_value{true};
         if (!kicked_.compare_exchange_strong(expected_kick_value, false)) {
@@ -76,6 +79,7 @@ bool Worker::wait_for_kick(uint32_t timeout_seconds) {
         }
         break;
     }
-    return should_stop() ? false : true;
+    return !is_stopping();
 }
+
 }  //  namespace silkworm

@@ -14,42 +14,37 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_THREADSAFEQUEUE_HPP
-#define SILKWORM_THREADSAFEQUEUE_HPP
+#ifndef SILKWORM_CONCURRENCY_THREAD_SAFE_QUEUE_HPP_
+#define SILKWORM_CONCURRENCY_THREAD_SAFE_QUEUE_HPP_
 
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 #include <queue>
 
-template<typename T,
-    template <typename S, typename Alloc = std::allocator<T> > class container = std::deque>
-class ThreadSafeQueue
-{
+template <typename T, template <typename S, typename Alloc = std::allocator<T> > class container = std::deque>
+class ThreadSafeQueue {
   private:
     container<T> queue_;
     mutable std::mutex mutex_;
     std::condition_variable condition_variable_;
+
   public:
-    void push(T const& data)
-    {
+    void push(T const& data) {
         {
             std::unique_lock lock(mutex_);
             queue_.push_back(data);
-        } //lock.unlock();
+        }  // lock.unlock();
         condition_variable_.notify_one();
     }
 
-    bool empty() const
-    {
+    bool empty() const {
         std::unique_lock lock(mutex_);
         return queue_.empty();
     }
 
-    bool try_pop(T& popped_value)
-    {
+    bool try_pop(T& popped_value) {
         std::unique_lock lock(mutex_);
-        if(queue_.empty())
-        {
+        if (queue_.empty()) {
             return false;
         }
 
@@ -58,24 +53,23 @@ class ThreadSafeQueue
         return true;
     }
 
-    void wait_and_pop(T& popped_value)
-    {
+    void wait_and_pop(T& popped_value) {
         std::unique_lock lock(mutex_);
         condition_variable_.wait(lock, [this] { return !queue_.empty(); });
         popped_value = queue_.front();
         queue_.pop_front();
     }
 
-    template<typename Duration>
-    bool timed_wait_and_pop(T& popped_value, Duration const& wait_duration)
-    {
+    template <typename Duration>
+    bool timed_wait_and_pop(T& popped_value, Duration const& wait_duration) {
         std::unique_lock lock(mutex_);
-        if(!condition_variable_.wait_for(lock, wait_duration, [this] { return !queue_.empty(); }))
+        if (!condition_variable_.wait_for(lock, wait_duration, [this] { return !queue_.empty(); })) {
             return false;
+        }
         popped_value = queue_.front();
         queue_.pop_front();
         return true;
     }
 };
 
-#endif  // SILKWORM_THREADSAFEQUEUE_HPP
+#endif  // SILKWORM_CONCURRENCY_THREAD_SAFE_QUEUE_HPP_

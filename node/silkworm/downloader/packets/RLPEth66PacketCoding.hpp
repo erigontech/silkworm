@@ -17,8 +17,9 @@
 #ifndef SILKWORM_RLPETH66PACKETS_HPP
 #define SILKWORM_RLPETH66PACKETS_HPP
 
-#include <silkworm/downloader/Types.hpp>
 #include <type_traits>
+
+#include <silkworm/downloader/internals/types.hpp>
 
 namespace silkworm::rlp {
 

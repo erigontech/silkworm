@@ -13,36 +13,29 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include "stage1.hpp"
+#include "block_provider.hpp"
 
 #include <chrono>
 #include <thread>
 
 #include <silkworm/common/log.hpp>
 
-#include "HeaderLogic.hpp"
 #include "messages/InboundMessage.hpp"
+#include "rpc/PeerMinBlock.hpp"
 #include "rpc/ReceiveMessages.hpp"
-#include "rpc/SetStatus.hpp"
 #include "rpc/SendMessageById.hpp"
 #include "rpc/SendMessageByMinBlock.hpp"
-#include "rpc/PeerMinBlock.hpp"
+#include "rpc/SetStatus.hpp"
+#include "silkworm/downloader/internals/header_retrieval.hpp"
 
 namespace silkworm {
 
 std::string result(std::shared_ptr<SentryRpc> rpc);  // for logging purposes
 
+BlockProvider::BlockProvider(ActiveSentryClient& sentry, ChainIdentity chain_identity, std::string db_path)
+    : chain_identity_(std::move(chain_identity)), db_{db_path}, sentry_{sentry} {}
 
-BlockProvider::BlockProvider(ActiveSentryClient& sentry, ChainIdentity chain_identity, std::string db_path):
-    chain_identity_(std::move(chain_identity)),
-    db_{db_path},
-    sentry_{sentry}
-{
-}
-
-BlockProvider::~BlockProvider() {
-    SILKWORM_LOG(LogLevel::Error) << "BlockProvider destroyed\n";
-}
+BlockProvider::~BlockProvider() { SILKWORM_LOG(LogLevel::Error) << "BlockProvider destroyed\n"; }
 
 void BlockProvider::send_status() {
     HeaderRetrieval headers(db_);
@@ -50,20 +43,20 @@ void BlockProvider::send_status() {
     auto set_status = rpc::SetStatus::make(chain_identity_.chain, chain_identity_.genesis_hash,
                                            chain_identity_.distinct_fork_numbers(), head_hash, head_td);
     set_status->on_receive_reply([&, set_status](auto& call) {
-      if (!call.status().ok()) {
-          exiting_ = true;
-          sentry_.need_exit();
-          SILKWORM_LOG(LogLevel::Critical)
-              << "BlockProvider failed to set status to the remote sentry, cause:'" << call.status().error_message() << "', exiting...\n";
-          return;
-      }
-      SILKWORM_LOG(LogLevel::Trace) << "set-status reply arrived\n";
-      sentry::SetStatusReply& reply = set_status->reply();
-      sentry::Protocol supported_protocol = reply.protocol();
-      if (supported_protocol != sentry::Protocol::ETH66) {
-          exiting_ = true;
-          SILKWORM_LOG(LogLevel::Critical) << "BlockProvider: sentry do not support eth/66 protocol, exiting...\n";
-      }
+        if (!call.status().ok()) {
+            stopping_ = true;
+            sentry_.stop();
+            SILKWORM_LOG(LogLevel::Critical) << "BlockProvider failed to set status to the remote sentry, cause:'"
+                                             << call.status().error_message() << "', exiting...\n";
+            return;
+        }
+        SILKWORM_LOG(LogLevel::Trace) << "set-status reply arrived\n";
+        sentry::SetStatusReply& reply = set_status->reply();
+        sentry::Protocol supported_protocol = reply.protocol();
+        if (supported_protocol != sentry::Protocol::ETH66) {
+            stopping_ = true;
+            SILKWORM_LOG(LogLevel::Critical) << "BlockProvider: sentry do not support eth/66 protocol, exiting...\n";
+        }
     });
     sentry_.exec_remotely(set_status);
 }
@@ -72,25 +65,25 @@ void BlockProvider::send_message_subscription(MessageQueue& messages) {
     // create a message subscription rpc
     auto receive_messages = rpc::ReceiveMessages::make();
     receive_messages->on_receive_reply([&, receive_messages](auto& call) {
-      // warning: this code will be executed in a foreign thread
-      SILKWORM_LOG(LogLevel::Trace) << "BlockProvider, receive-messages reply arrived\n";
-      if (!call.terminated()) {
-          // receiving a message... copy it in the message queue for later processing
-          sentry::InboundMessage& reply = receive_messages->reply();
+        // warning: this code will be executed in a foreign thread
+        SILKWORM_LOG(LogLevel::Trace) << "BlockProvider, receive-messages reply arrived\n";
+        if (!call.terminated()) {
+            // receiving a message... copy it in the message queue for later processing
+            sentry::InboundMessage& reply = receive_messages->reply();
 
-          auto message = InboundBlockRequestMessage::make_from_raw_message(reply, db_);
-          if (message) {
-              SILKWORM_LOG(LogLevel::Info) << "BlockProvider, message received from remote peer " << identify(*message) << "\n";
-              messages.push(message);
-          }
-      }
-      else {
-          // this call is a long running call, if it terminates there was an error on the link with the sentry
-          exiting_ = true;
-          sentry_.need_exit();
-          SILKWORM_LOG(LogLevel::Critical)
-              << "BlockProvider receiving messages stream interrupted, cause:'" << call.status().error_message() << "', exiting...\n";
-      }
+            auto message = InboundBlockRequestMessage::make_from_raw_message(reply, db_);
+            if (message) {
+                SILKWORM_LOG(LogLevel::Info)
+                    << "BlockProvider, message received from remote peer " << identify(*message) << "\n";
+                messages.push(message);
+            }
+        } else {
+            // this call is a long running call, if it terminates there was an error on the link with the sentry
+            stopping_ = true;
+            sentry_.stop();
+            SILKWORM_LOG(LogLevel::Critical) << "BlockProvider receiving messages stream interrupted, cause:'"
+                                             << call.status().error_message() << "', exiting...\n";
+        }
     });
 
     // send the subscription rpc
@@ -103,7 +96,9 @@ void BlockProvider::process_one_message(MessageQueue& messages) {
     // pop a message from the queue
     std::shared_ptr<Message> message;
     bool present = messages.timed_wait_and_pop(message, 1000ms);
-    if (!present) return;   // timeout, needed to check exiting_
+    if (!present) {
+        return;  // timeout, needed to check stopping_
+    }
 
     if (std::dynamic_pointer_cast<InboundMessage>(message)) {
         SILKWORM_LOG(LogLevel::Info) << "Processing message " << *message << "\n";
@@ -113,11 +108,14 @@ void BlockProvider::process_one_message(MessageQueue& messages) {
     auto rpc_bundle = message->execute();
 
     // send remote rpcs if the message need them as result of processing
-    for(auto& rpc: rpc_bundle) {
-        SILKWORM_LOG(LogLevel::Info) << "BlockProvider replying to " << identify(*message) << " with " << rpc->name() << "\n";
+    for (auto& rpc : rpc_bundle) {
+        SILKWORM_LOG(LogLevel::Info) << "BlockProvider replying to " << identify(*message) << " with " << rpc->name()
+                                     << "\n";
 
-        rpc->on_receive_reply([message, rpc](auto&) { // copy message and rpc to retain their lifetime (shared_ptr) [avoid rpc passing using make_shared_from_this in AsyncCall]
-            SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*message) << ": " << result(rpc) << "\n";
+        rpc->on_receive_reply([message, rpc](auto&) {  // copy message and rpc to retain their lifetime (shared_ptr)
+                                                       // [avoid rpc passing using make_shared_from_this in AsyncCall]
+            SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*message) << ": " << result(rpc)
+                                         << "\n";
         });
 
         sentry_.exec_remotely(rpc);
@@ -129,25 +127,24 @@ void BlockProvider::execution_loop() {
     using namespace std::chrono_literals;
 
     // set status
-    send_status(); // todo: use a future to wait the result and decide if break or continue, erase the following line
-    std::this_thread::sleep_for(3s); // wait for connection setup before submit other requests
+    send_status();  // todo: use a future to wait the result and decide if break or continue, erase the following line
+    std::this_thread::sleep_for(3s);  // wait for connection setup before submit other requests
 
     // thread safe queue where receive messages from sentry thread
     MessageQueue messages{};
 
     // start message receiving (headers & blocks requests)
-    send_message_subscription(messages); // messages will be copied in the message queue
+    send_message_subscription(messages);  // messages will be copied in the message queue
 
     // message processing
     try {
-        while (!exiting_ && !sentry_.exiting()) {
+        while (!stopping_ && !sentry_.is_stopping()) {
             process_one_message(messages);  // pop a message from the queue and process it
         }
-    }
-    catch(const std::exception& e) {
+    } catch (const std::exception& e) {
         SILKWORM_LOG(LogLevel::Error) << "BlockProvider execution_loop exiting due to exception: " << e.what() << "\n";
-        exiting_ = true;
-        sentry_.need_exit();
+        stopping_ = true;
+        sentry_.stop();
     }
 
     SILKWORM_LOG(LogLevel::Info) << "BlockProvider execution_loop exiting...\n";
@@ -175,4 +172,3 @@ std::string result(std::shared_ptr<SentryRpc> rpc) {
 }
 
 }  // namespace silkworm
-

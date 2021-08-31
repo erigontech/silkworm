@@ -13,13 +13,16 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#ifndef SILKWORM_SENTRYCLIENT_HPP
-#define SILKWORM_SENTRYCLIENT_HPP
+
+#ifndef SILKWORM_SENTRY_CLIENT_HPP
+#define SILKWORM_SENTRY_CLIENT_HPP
 
 #include <interfaces/sentry.grpc.pb.h>
-#include "TypesForGrpc.hpp"
-#include "gRPCAsyncClient.hpp"
-#include "ActiveComponent.hpp"
+
+#include <silkworm/concurrency/active_component.hpp>
+
+#include "silkworm/downloader/internals/gRPCAsyncClient.hpp"
+#include "silkworm/downloader/internals/types_for_grpc.hpp"
 
 namespace silkworm {
 
@@ -48,10 +51,11 @@ class SentryClient : public rpc::AsyncClient<sentry::Sentry> {
 // A SentryClient with an infinite loop to receive rpc forever
 class ActiveSentryClient : public SentryClient, public ActiveComponent {
   public:
-    using SentryClient::SentryClient;   // use parent constructor
+    using SentryClient::SentryClient;  // use parent constructor
 
     virtual void execution_loop();
 };
 
-}
-#endif  // SILKWORM_SENTRYCLIENT_HPP
+}  // namespace silkworm
+
+#endif  // SILKWORM_SENTRY_CLIENT_HPP

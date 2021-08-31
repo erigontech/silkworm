@@ -116,7 +116,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
             target,
             [](etl::Entry entry, mdbx::cursor& history_index_table, MDBX_put_flags_t db_flags) {
                 auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
-                // Check wheter we still need to rework the previous entry
+                // Check whether we still need to rework the previous entry
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');
                 std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
                 endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
@@ -178,7 +178,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
             auto key{db::from_slice(data.key)};
             auto bitmap_data{db::from_slice(data.value)};
             auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-            // Check wheter we should skip the current bitmap
+            // Check whether we should skip the current bitmap
             if (bm.maximum() <= unwind_to) {
                 data = index_table.to_next(/*throw_notfound*/ false);
                 continue;
@@ -189,12 +189,8 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
                 bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(0, unwind_to + 1, 1));
                 Bytes new_bitmap(bm.getSizeInBytes(), '\0');
                 bm.write(byte_ptr_cast(&new_bitmap[0]));
-                // generates new key
-                Bytes new_key(key.size(), '\0');
-                std::memcpy(&new_key[0], key.data(), key.size());
-                endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
                 // replace with new index
-                collector.collect(etl::Entry{new_key, new_bitmap});
+                collector.collect(etl::Entry{Bytes{key}, new_bitmap});
             }
             index_table.erase(/* whole_multivalue = */ true);
             data = index_table.to_next(/*throw_notfound*/ false);
@@ -210,10 +206,11 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
 }
 
 StageResult history_index_prune(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from,
-                                 bool storage) {
+                                bool storage) {
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 10 * kMebi); // We do not prune many blocks usually
+    etl::Collector collector(etl_path.string().c_str(),
+                             /* flush size */ 10 * kMebi);  // We do not prune many blocks usually
 
     auto last_processed_block{db::stages::get_stage_progress(*txn, stage_key)};
 
@@ -225,7 +222,7 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
             auto key{db::from_slice(data.key)};
             auto bitmap_data{db::from_slice(data.value)};
             auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-            // Check wheter we should skip the current bitmap
+            // Check whether we should skip the current bitmap
             if (bm.minimum() >= prune_from) {
                 data = index_table.to_next(/*throw_notfound*/ false);
                 continue;
@@ -233,7 +230,8 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
             // check if prune can be applied
             if (bm.maximum() >= prune_from) {
                 // Erase elements that are below prune_from
-                bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
+                bm &= roaring::Roaring64Map(
+                    roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
                 Bytes new_bitmap(bm.getSizeInBytes(), '\0');
                 bm.write(byte_ptr_cast(&new_bitmap[0]));
                 // replace with new index
@@ -273,6 +271,5 @@ StageResult prune_account_history(TransactionManager& txn, const std::filesystem
 StageResult prune_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     return history_index_prune(txn, etl_path, prune_from, true);
 }
-
 
 }  // namespace silkworm::stagedsync

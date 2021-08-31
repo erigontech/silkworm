@@ -177,12 +177,8 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
             bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(0, unwind_to + 1, 1));
             auto new_bitmap{Bytes(bm.getSizeInBytes(), '\0')};
             bm.write(byte_ptr_cast(&new_bitmap[0]));
-            // make new key
-            Bytes new_key(key.size(), '\0');
-            std::memcpy(&new_key[0], key.data(), key.size());
-            endian::store_big_u32(&new_key[new_key.size() - 4], UINT32_MAX);
             // collect higher bitmap
-            collector.collect(etl::Entry{new_key, new_bitmap});
+            collector.collect(etl::Entry{Bytes{key}, new_bitmap});
         }
         // erase index
         index_table.erase(true);
@@ -215,12 +211,11 @@ StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::pat
     return StageResult::kSuccess;
 }
 
-void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t prune_from,
-                                 bool topics) {
+void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t prune_from, bool topics) {
     auto last_processed_block{db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)};
 
     auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
-                    : db::open_cursor(*txn, db::table::kLogAddressIndex)};
+                            : db::open_cursor(*txn, db::table::kLogAddressIndex)};
 
     if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
@@ -229,7 +224,7 @@ void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_
             auto key{db::from_slice(data.key)};
             auto bitmap_data{db::from_slice(data.value)};
             auto bm{roaring::Roaring::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-            // Check wheter we should skip the current bitmap
+            // Check whether we should skip the current bitmap
             if (bm.minimum() >= prune_from) {
                 data = index_table.to_next(/*throw_notfound*/ false);
                 continue;
@@ -237,7 +232,8 @@ void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_
             // check if prune can be applied
             if (bm.maximum() >= prune_from) {
                 // Erase elements that are below prune_from
-                bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
+                bm &=
+                    roaring::Roaring(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
                 Bytes new_bitmap(bm.getSizeInBytes(), '\0');
                 bm.write(byte_ptr_cast(&new_bitmap[0]));
                 // replace with new index

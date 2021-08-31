@@ -195,9 +195,23 @@ TEST_CASE("Account and storage trie") {
         const Account a4b{0, 5 * kEther};
         hashed_accounts.upsert(db::to_slice(key4b), db::to_slice(a4b.encode_for_storage()));
 
+        const BlockNum block_num{1};
+
         // TODO[Issue 179] add to change set
-        // TODO[Issue 179] increment_intermediate_hashes(txn, data_dir.etl().path().c_str(), /*to=*/1);
-        // TODO[Issue 179] CHECK(0b1101 == node1.hash_mask());
+
+        increment_intermediate_hashes(txn, data_dir.etl().path().c_str(), block_num);
+
+        account_trie.to_first();
+        db::for_each(account_trie, save_nodes);
+
+        REQUIRE(node_map.size() == 2);
+
+        const Node node1a{node_map.at(*from_hex("0B"))};
+
+        CHECK(node1.state_mask() == node1a.state_mask());
+        CHECK(node1.state_mask() == node1a.state_mask());
+        CHECK(0b1101 == node1a.hash_mask());
+
         // TODO[Issue 179] check the new hash
     }
 }

@@ -204,7 +204,7 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir
     return root;
 }
 
-evmc::bytes32 increment_intermediate_hashes(mdbx::txn&, const char*, const evmc::bytes32*) {
+evmc::bytes32 increment_intermediate_hashes(mdbx::txn&, const char*, BlockNum, const evmc::bytes32*) {
     // TODO[Issue 179] implement
     throw WrongRoot{};
 }

@@ -139,7 +139,7 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir
 // Erigon incrementIntermediateHashes
 // might throw WrongRoot
 // returns the state root
-evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
+evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char* etl_dir, BlockNum to,
                                             const evmc::bytes32* expected_root = nullptr);
 
 }  // namespace silkworm::trie

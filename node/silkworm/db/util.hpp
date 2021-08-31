@@ -25,7 +25,12 @@ see its package dbutils.
 #include <string>
 
 #include <absl/container/btree_map.h>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <mdbx.h++>
+#pragma GCC diagnostic pop
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/block.hpp>

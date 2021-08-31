@@ -17,8 +17,13 @@
 #ifndef SILKWORM_STAGEDSYNC_UTIL_HPP_
 #define SILKWORM_STAGEDSYNC_UTIL_HPP_
 
-#include <silkworm/common/base.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <mdbx.h++>
+#pragma GCC diagnostic pop
+
+#include <silkworm/common/base.hpp>
 
 /*
 Part of the compatibility layer with the Erigon DB format;
@@ -27,6 +32,7 @@ see its package dbutils.
 
 namespace silkworm::stagedsync {
 
+// clang-format off
 enum class [[nodiscard]] StageResult {
     kSuccess,
     kUnknownChainId,
@@ -39,8 +45,9 @@ enum class [[nodiscard]] StageResult {
     kUnexpectedError,
     kUnknownError,
     kDbError,
-    kAborted
+    kAborted,
 };
+// clang-format on
 
 void check_stagedsync_error(StageResult code);
 

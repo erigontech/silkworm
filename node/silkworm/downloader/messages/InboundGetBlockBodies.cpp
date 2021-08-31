@@ -17,11 +17,11 @@
 #include "InboundGetBlockBodies.hpp"
 
 #include <silkworm/common/cast.hpp>
-#include <silkworm/downloader/BodyLogic.hpp>
+#include <silkworm/downloader/block_provider.hpp>
+#include <silkworm/downloader/internals/body_retrieval.hpp>
 #include <silkworm/downloader/packets/BlockBodiesPacket.hpp>
 #include <silkworm/downloader/packets/RLPError.hpp>
 #include <silkworm/downloader/rpc/SendMessageById.hpp>
-#include <silkworm/downloader/stage1.hpp>
 
 namespace silkworm {
 

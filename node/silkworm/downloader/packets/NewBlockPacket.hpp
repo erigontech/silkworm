@@ -17,7 +17,7 @@
 #ifndef SILKWORM_NEWBLOCKPACKET_HPP
 #define SILKWORM_NEWBLOCKPACKET_HPP
 
-#include <silkworm/downloader/Types.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 
 namespace silkworm {
 

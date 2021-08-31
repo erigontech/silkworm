@@ -14,22 +14,17 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPESFORGRPC_HPP
-#define SILKWORM_TYPESFORGRPC_HPP
+#ifndef SILKWORM_CONCURRENCY_CONTAINERS_HPP_
+#define SILKWORM_CONCURRENCY_CONTAINERS_HPP_
 
-#include "Types.hpp"
-#include <interfaces/types.pb.h>
-#include <memory>
+/*
+ * Decisions about concurrent containers
+ */
 
-namespace silkworm {
+#include <silkworm/concurrency/thread_safe_queue.hpp>
 
-std::unique_ptr<types::H256> to_H256(const intx::uint256& orig);
-std::unique_ptr<types::H256> to_H256(const Hash& orig);
-std::unique_ptr<types::H512> to_H512(const std::string& orig);
+template <typename T>
+using ConcurrentQueue =
+    ThreadSafeQueue<T>;  // todo: use a better alternative from a known library (Intel oneTBB concurrent_queue<T>?)
 
-intx::uint256 uint256_from_H256(const types::H256& orig);
-Hash          hash_from_H256(const types::H256& orig);
-std::string   string_from_H512(const types::H512& orig);
-
-}   // namespace
-#endif  // SILKWORM_TYPESFORGRPC_HPP
+#endif  // SILKWORM_CONCURRENCY_CONTAINERS_HPP_

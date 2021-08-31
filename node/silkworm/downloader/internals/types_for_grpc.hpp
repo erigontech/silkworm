@@ -14,26 +14,24 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_BODYLOGIC_HPP
-#define SILKWORM_BODYLOGIC_HPP
+#ifndef SILKWORM_TYPES_FOR_GRPC_HPP
+#define SILKWORM_TYPES_FOR_GRPC_HPP
 
-#include "Types.hpp"
-#include "DbTx.hpp"
+#include <memory>
+
+#include <interfaces/types.pb.h>
+
+#include "silkworm/downloader/internals/types.hpp"
 
 namespace silkworm {
 
-class BodyRetrieval {
-  public:
-    static const long soft_response_limit = 2 * 1024 * 1024; // Target maximum size of returned blocks, headers or node data.
-    static const long max_bodies_serve = 1024;                // Amount of block bodies to be fetched per retrieval request
+std::unique_ptr<types::H256> to_H256(const intx::uint256& orig);
+std::unique_ptr<types::H256> to_H256(const Hash& orig);
+std::unique_ptr<types::H512> to_H512(const std::string& orig);
 
-    explicit BodyRetrieval(DbTx& db);
+intx::uint256 uint256_from_H256(const types::H256& orig);
+Hash          hash_from_H256(const types::H256& orig);
+std::string   string_from_H512(const types::H512& orig);
 
-    std::vector<BlockBody> recover(std::vector<Hash>);
-
-  protected:
-    DbTx& db_;
-};
-
-}
-#endif  // SILKWORM_BODYLOGIC_HPP
+}   // namespace
+#endif  // SILKWORM_TYPES_FOR_GRPC_HPP

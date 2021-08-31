@@ -21,6 +21,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <libff/algebra/curves/alt_bn128/alt_bn128_g1.hpp>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_g2.hpp>
 #pragma GCC diagnostic pop

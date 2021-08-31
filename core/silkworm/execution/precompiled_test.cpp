@@ -29,7 +29,7 @@ TEST_CASE("Ecrecover") {
                   "a6a5a75feeb940b1d03b21e36b0e47e79769f095fe2ab855bd91e3a38756b7d75a9c4549")};
     std::optional<Bytes> out{ecrec_run(in)};
     REQUIRE(out);
-    CHECK(to_hex(*out) == "000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
+    CHECK(to_hex(*out) == "a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
 
     // Unrecoverable key
     in = *from_hex(

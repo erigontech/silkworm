@@ -68,15 +68,17 @@ secp256k1_context* create_context(int flags = SECP256K1_CONTEXT_SIGN | SECP256K1
 //! \param [in] signature : the signature
 //! \param [in] odd_y_parity : whether y parity is odd
 //! \remarks An ecdsa recovery context is statically initialized
-std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity);
+std::optional<evmc::address> recover_address(ByteView message, ByteView signature, bool odd_y_parity);
 
 //! \brief Tries recover the public key used for message signing
 //! \param [in] context : a pointer to ecdsa recovery context
 //! \param [in] message : the signed message
 //! \param [in] signature : the signature
 //! \param [in] odd_y_parity : whether y parity is odd
-//! \remarks An ecdsa recovery context is statically initialized
-std::optional<Bytes> recover(secp256k1_context* context, ByteView message, ByteView signature, bool odd_y_parity);
+std::optional<evmc::address> recover_address(secp256k1_context* context, ByteView message, ByteView signature, bool odd_y_parity);
+
+
+
 }  // namespace silkworm::ecdsa
 
 #endif  // SILKWORM_CRYPTO_ECDSA_HPP_

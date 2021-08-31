@@ -26,77 +26,59 @@
 
 namespace silkworm::stagedsync::recovery {
 
-/**
- * @brief An orchestrator of RecoveryWorkers
- */
+//! \brief A class to orchestrate the work of multiple recoverers
 class RecoveryFarm {
   public:
     RecoveryFarm() = delete;
 
-    /**
-     * @brief This class coordinates the recovery of senders' addresses through
-     * multiple threads. May eventually handle the unwinding of already
-     * recovered addresses.
-     *
-     * @param transaction: the database transaction we should work on
-     * @param max_workers: max number of recovery threads to spawn
-     * @param max_batch_size: max number of transaction to be sent a worker for recovery
-     */
+    //! \brief This class coordinates the recovery of senders' addresses through multiple threads. May eventually handle
+    //! the unwinding of already recovered addresses.
+    //! \param [in] db_transaction : the database transaction we should work on
+    //! \param [in] max_workers : max number of parallel recovery workers
+    //! \param [in] max_batch_size : max number of transactions to be sent a worker for recovery
     RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size_t max_batch_size, etl::Collector& collector);
     ~RecoveryFarm() = default;
 
-    /**
-     * @brief Recovers sender's public keys from transactions
-     *
-     * @param height_from : Lower boundary for blocks to process (included)
-     * @param height_to   : Upper boundary for blocks to process (included)
-     */
-    StageResult recover(uint64_t height_from, uint64_t height_to);
+    //! \brief Recover sender's addresses from transactions
+    //! \param [in] height_from : Lower boundary for blocks to process (included)
+    //! \param [in] height_to :  Upper boundary for blocks to process (included)
+    //! \return A code indicating process status
+    StageResult recover(BlockNum height_from, BlockNum height_to);
 
-    /**
-     * @brief Unwinds Sender's recovery stage
-     */
-    StageResult unwind(uint64_t new_height);
+    //! \brief Unwinds sender's recovery i.e. deletes recovered addresses from storage
+    //! \param [in] new_height : the new height at which senders' addresses will be registered as recovered in storage
+    //! \return A code indicating process status
+    StageResult unwind(BlockNum new_height);
 
+    //! \brief Issue an interruption request
     void stop() { should_stop_.store(true); }
 
   private:
-    /**
-     * @brief Gets whether or not this class should stop working
-     */
+    //! \brief Whether running tasks should stop
     bool should_stop() { return should_stop_.load(); }
 
-    /**
-     * @brief Forces each worker to stop
-     */
+    //! \brief Commands every threaded recovery worker to stop
     void stop_all_workers(bool wait = true);
 
-    /**
-     * @brief Waits till every worker has finished or aborted
-     */
+    //! \brief Make the farm wait for every threaded worker to stop
     void wait_workers_completion();
 
-    /**
-     * @brief Collects results from worker's completed tasks
-     */
+    //! \brief Collects results from worker's completed tasks
     bool bufferize_workers_results();
 
-    /**
-     * @brief Transforms transaction into recoverable packages
-     *
-     * @param config       : Chain configuration
-     * @param block_num    : Actual block this transactions belong to
-     * @param transactions : Transactions which have to be recovered for sender address
-     */
-    void fill_batch(ChainConfig config, uint64_t block_num, std::vector<Transaction>& transactions);
+    //! \brief Transforms transactions into recoverable packages
+    //! \param [in] config : active chain configuration
+    //! \param [in] block_num : block number owning this set of transactions
+    //! \param [in] transactions : a set of transactions to transform
+    void fill_batch(ChainConfig config, BlockNum block_num, std::vector<Transaction>& transactions);
 
-    /**
-     * @brief Dispatches the collected batch of data to first available worker.
-     * Eventually creates worksers up to max_workers
-     */
+    //! \brief Dispatches the collected batch of recovery packages to first available worker
+    //! \remarks May spawn new worker(s) up to max_workers
     void dispatch_batch(bool renew);
 
+    //! \brief Spawns a new threaded worker
     bool initialize_new_worker(bool show_error);
+
     /**
      * @brief Fills a vector of all canonical headers
      *
@@ -104,15 +86,16 @@ class RecoveryFarm {
      * @param height_from : Lower boundary for canonical headers (included)
      * @param height_to   : Upper boundary for canonical headers (included)
      */
-    StageResult fill_canonical_headers(uint64_t height_from, uint64_t height_to);
+    //! \brief Fills a vector of all canonical headers
+    //! \param [in] height_from : Lower boundary for blocks to process (included)
+    //! \param [in] height_to :  Upper boundary for blocks to process (included)
+    //! \return A code indicating process status
+    StageResult fill_canonical_headers(BlockNum height_from, BlockNum height_to);
 
-    /**
-     * @brief Gets executed by worker on its work completed
-     */
+    //! \brief Handle completion signal from workers
     void worker_completed_handler(RecoveryWorker* sender, uint32_t batch_id);
-    /**
-     * @brief Initializes a new batch container
-     */
+
+    //! \brief Initializes a new batch container
     void init_batch();
 
     friend class RecoveryWorker;

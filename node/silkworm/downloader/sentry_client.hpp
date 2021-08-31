@@ -14,15 +14,15 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENTRYCLIENT_HPP
-#define SILKWORM_SENTRYCLIENT_HPP
+#ifndef SILKWORM_SENTRY_CLIENT_HPP
+#define SILKWORM_SENTRY_CLIENT_HPP
 
 #include <interfaces/sentry.grpc.pb.h>
 
 #include <silkworm/concurrency/active_component.hpp>
 
-#include "TypesForGrpc.hpp"
-#include "gRPCAsyncClient.hpp"
+#include "silkworm/downloader/internals/gRPCAsyncClient.hpp"
+#include "silkworm/downloader/internals/types_for_grpc.hpp"
 
 namespace silkworm {
 
@@ -58,4 +58,4 @@ class ActiveSentryClient : public SentryClient, public ActiveComponent {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_SENTRYCLIENT_HPP
+#endif  // SILKWORM_SENTRY_CLIENT_HPP

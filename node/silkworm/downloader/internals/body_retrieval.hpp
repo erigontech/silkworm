@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_BODYLOGIC_HPP
-#define SILKWORM_BODYLOGIC_HPP
+#ifndef SILKWORM_BODY_RETRIEVAL_HPP
+#define SILKWORM_BODY_RETRIEVAL_HPP
 
-#include "Types.hpp"
 #include "DbTx.hpp"
+#include "types.hpp"
 
 namespace silkworm {
 
@@ -36,4 +36,4 @@ class BodyRetrieval {
 };
 
 }
-#endif  // SILKWORM_BODYLOGIC_HPP
+#endif  // SILKWORM_BODY_RETRIEVAL_HPP

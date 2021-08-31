@@ -17,7 +17,7 @@
 #ifndef SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
 #define SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
 
-#include <silkworm/downloader/SentryClient.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 

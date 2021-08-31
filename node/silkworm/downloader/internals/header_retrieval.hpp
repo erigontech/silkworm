@@ -14,14 +14,15 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_HEADERLOGIC_HPP
-#define SILKWORM_HEADERLOGIC_HPP
+#ifndef SILKWORM_HEADER_RETRIEVAL_HPP
+#define SILKWORM_HEADER_RETRIEVAL_HPP
 
-#include "Types.hpp"
-#include "DbTx.hpp"
-#include <vector>
-#include <queue>
 #include <map>
+#include <queue>
+#include <vector>
+
+#include "DbTx.hpp"
+#include "types.hpp"
 
 namespace silkworm {
 
@@ -50,4 +51,4 @@ class HeaderRetrieval {
 
 }
 
-#endif  // SILKWORM_HEADERLOGIC_HPP
+#endif  // SILKWORM_HEADER_RETRIEVAL_HPP

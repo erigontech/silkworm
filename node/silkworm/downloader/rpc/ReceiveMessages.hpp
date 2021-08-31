@@ -17,7 +17,7 @@
 #ifndef SILKWORM_RECEIVEMESSAGES_HPP
 #define SILKWORM_RECEIVEMESSAGES_HPP
 
-#include <silkworm/downloader/SentryClient.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 

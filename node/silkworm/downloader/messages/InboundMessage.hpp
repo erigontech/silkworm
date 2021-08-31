@@ -19,13 +19,11 @@
 
 #include <memory>
 
+#include <silkworm/downloader/internals/DbTx.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
-#include <silkworm/downloader/DbTx.hpp>
-
 #include "Message.hpp"
-
 
 namespace silkworm {
 

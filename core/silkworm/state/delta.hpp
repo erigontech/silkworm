@@ -64,6 +64,7 @@ namespace state {
     };
 
     // Account balance updated.
+    // UpdateBalanceDelta is a special case of the more general UpdateDelta. It occupies less memory than UpdateDelta.
     class UpdateBalanceDelta : public Delta {
       public:
         UpdateBalanceDelta(evmc::address address, intx::uint256 previous) noexcept;

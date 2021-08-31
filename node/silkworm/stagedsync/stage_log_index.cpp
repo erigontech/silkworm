@@ -240,11 +240,8 @@ void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_
                 bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
                 Bytes new_bitmap(bm.getSizeInBytes(), '\0');
                 bm.write(byte_ptr_cast(&new_bitmap[0]));
-                // generates new key
-                Bytes new_key(key.size(), '\0');
-                std::memcpy(&new_key[0], key.data(), key.size());
                 // replace with new index
-                etl::Entry entry{new_key, new_bitmap};
+                etl::Entry entry{Bytes{key}, new_bitmap};
                 collector.collect(entry);
             }
             index_table.erase(/* whole_multivalue = */ true);

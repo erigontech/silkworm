@@ -1,4 +1,4 @@
-/*
+#[[
    Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,28 +12,12 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#ifndef SILKWORM_BODYLOGIC_HPP
-#define SILKWORM_BODYLOGIC_HPP
+find_package(benchmark CONFIG REQUIRED)
 
-#include "Types.hpp"
-#include "DbTx.hpp"
-
-namespace silkworm {
-
-class BodyRetrieval {
-  public:
-    static const long soft_response_limit = 2 * 1024 * 1024; // Target maximum size of returned blocks, headers or node data.
-    static const long max_bodies_serve = 1024;                // Amount of block bodies to be fetched per retrieval request
-
-    explicit BodyRetrieval(DbTx& db);
-
-    std::vector<BlockBody> recover(std::vector<Hash>);
-
-  protected:
-    DbTx& db_;
-};
-
-}
-#endif  // SILKWORM_BODYLOGIC_HPP
+add_executable(buffer buffer.cpp)
+target_link_libraries(buffer PRIVATE silkworm_node)
+  
+add_executable(precompile precompile.cpp)
+target_link_libraries(precompile silkworm_core benchmark::benchmark)

@@ -117,6 +117,7 @@ class IntraBlockState {
   private:
     friend class state::CreateDelta;
     friend class state::UpdateDelta;
+    friend class state::UpdateBalanceDelta;
     friend class state::SuicideDelta;
     friend class state::TouchDelta;
     friend class state::StorageChangeDelta;

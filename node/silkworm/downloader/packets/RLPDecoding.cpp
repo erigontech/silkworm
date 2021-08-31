@@ -15,11 +15,12 @@
 */
 
 // types
-#include <silkworm/downloader/Types.hpp>
+#include <silkworm/downloader/internals/types.hpp>
+
 #include "BlockBodiesPacket.hpp"
 #include "BlockHeadersPacket.hpp"
-#include "GetBlockHeadersPacket.hpp"
 #include "GetBlockBodiesPacket.hpp"
+#include "GetBlockHeadersPacket.hpp"
 #include "NewBlockHashesPacket.hpp"
 
 // generic implementations (must follow types)

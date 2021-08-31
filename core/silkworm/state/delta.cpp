@@ -31,6 +31,13 @@ UpdateDelta::UpdateDelta(evmc::address address, state::Object previous) noexcept
 
 void UpdateDelta::revert(IntraBlockState& state) noexcept { state.objects_[address_] = previous_; }
 
+UpdateBalanceDelta::UpdateBalanceDelta(evmc::address address, intx::uint256 previous) noexcept
+    : address_{std::move(address)}, previous_{std::move(previous)} {}
+
+void UpdateBalanceDelta::revert(IntraBlockState& state) noexcept {
+    state.objects_[address_].current->balance = previous_;
+}
+
 SuicideDelta::SuicideDelta(evmc::address address) noexcept : address_{std::move(address)} {}
 
 void SuicideDelta::revert(IntraBlockState& state) noexcept { state.self_destructs_.erase(address_); }

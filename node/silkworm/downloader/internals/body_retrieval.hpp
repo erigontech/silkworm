@@ -14,23 +14,26 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RECEIVEMESSAGES_HPP
-#define SILKWORM_RECEIVEMESSAGES_HPP
+#ifndef SILKWORM_BODY_RETRIEVAL_HPP
+#define SILKWORM_BODY_RETRIEVAL_HPP
 
-#include <silkworm/downloader/sentry_client.hpp>
+#include "DbTx.hpp"
+#include "types.hpp"
 
-namespace silkworm::rpc {
+namespace silkworm {
 
-class ReceiveMessages: public rpc::AsyncOutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
+class BodyRetrieval {
   public:
-    ReceiveMessages();
+    static const long soft_response_limit = 2 * 1024 * 1024; // Target maximum size of returned blocks, headers or node data.
+    static const long max_bodies_serve = 1024;                // Amount of block bodies to be fetched per retrieval request
 
-    using SentryRpc::on_receive_reply;
+    explicit BodyRetrieval(DbTx& db);
 
-    static std::shared_ptr<ReceiveMessages> make() {return std::make_shared<ReceiveMessages>();}
+    std::vector<BlockBody> recover(std::vector<Hash>);
+
+  protected:
+    DbTx& db_;
 };
 
 }
-
-
-#endif  // SILKWORM_RECEIVEMESSAGES_HPP
+#endif  // SILKWORM_BODY_RETRIEVAL_HPP

@@ -15,7 +15,8 @@
 */
 
 #include <catch2/catch.hpp>
-#include "TypesForGrpc.hpp"
+
+#include "types_for_grpc.hpp"
 
 namespace silkworm {
 

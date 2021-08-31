@@ -14,10 +14,11 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RANDOMNUMBER_HPP
-#define SILKWORM_RANDOMNUMBER_HPP
+#ifndef SILKWORM_RANDOM_NUMBER_HPP
+#define SILKWORM_RANDOM_NUMBER_HPP
 #include <random>
-#include "Singleton.hpp"
+
+#include "singleton.hpp"
 
 namespace silkworm {
 
@@ -40,4 +41,4 @@ class RandomNumber {
 #define RANDOM_NUMBER default_instantiating::Singleton<RandomNumber>::instance()
 
 }
-#endif  // SILKWORM_RANDOMNUMBER_HPP
+#endif  // SILKWORM_RANDOM_NUMBER_HPP

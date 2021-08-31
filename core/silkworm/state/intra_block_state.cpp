@@ -159,21 +159,21 @@ intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const n
 
 void IntraBlockState::set_balance(const evmc::address& address, const intx::uint256& value) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(new state::UpdateDelta{address, obj});
+    journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance = value;
     touch(address);
 }
 
 void IntraBlockState::add_to_balance(const evmc::address& address, const intx::uint256& addend) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(new state::UpdateDelta{address, obj});
+    journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance += addend;
     touch(address);
 }
 
 void IntraBlockState::subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(new state::UpdateDelta{address, obj});
+    journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance -= subtrahend;
     touch(address);
 }

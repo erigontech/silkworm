@@ -66,7 +66,7 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, uint64_t bloc
 std::optional<BlockWithHash> read_block(mdbx::txn& txn, uint64_t block_number, bool read_senders);
 
 // See Erigon ReadSenders
-std::vector<evmc::address> read_senders(mdbx::txn& txn, int64_t block_number, const uint8_t (&hash)[kHashLength]);
+std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 
 // Overload
 std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count);

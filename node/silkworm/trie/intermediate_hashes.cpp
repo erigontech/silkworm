@@ -132,9 +132,9 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
             if (account.incarnation) {
                 const Bytes acc_with_inc{db::storage_prefix(db::from_slice(a.key), account.incarnation)};
                 HashBuilder storage_hb;
-                storage_hb.node_collector = [&](ByteView unpacked_key, const Node& node) {
+                storage_hb.node_collector = [&](ByteView unpacked_storage_key, const Node& node) {
                     etl::Entry e{acc_with_inc, marshal_node(node)};
-                    e.key.append(unpacked_key);
+                    e.key.append(unpacked_storage_key);
                     storage_collector_.collect(std::move(e));
                 };
 

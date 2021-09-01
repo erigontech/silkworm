@@ -131,7 +131,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
             // https://eips.ethereum.org/EIPS/eip-170
             res.status_code = EVMC_OUT_OF_GAS;
         } else if (res.gas_left >= 0 && static_cast<uint64_t>(res.gas_left) >= code_deploy_gas) {
-            res.gas_left -= code_deploy_gas;
+            res.gas_left -= static_cast<int64_t>(code_deploy_gas);
             state_.set_code(contract_addr, {res.output_data, res.output_size});
         } else if (rev >= EVMC_HOMESTEAD) {
             res.status_code = EVMC_OUT_OF_GAS;
@@ -189,7 +189,7 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         const uint8_t num{code_address.bytes[kAddressLength - 1]};
         precompiled::Contract contract{precompiled::kContracts[num - 1]};
         const ByteView input{message.input_data, message.input_size};
-        const int64_t gas = contract.gas(input, revision());
+        const int64_t gas{static_cast<int64_t>(contract.gas(input, revision()))};
         if (gas < 0 || gas > message.gas) {
             res.status_code = EVMC_OUT_OF_GAS;
         } else {
@@ -500,9 +500,12 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     intx::be::store(context.tx_gas_price.bytes, effective_gas_price);
     context.tx_origin = *evm_.txn_->from;
     context.block_coinbase = header.beneficiary;
-    context.block_number = header.number;
-    context.block_timestamp = header.timestamp;
-    context.block_gas_limit = header.gas_limit;
+    assert(header.number <= INT64_MAX);  // EIP-1985
+    context.block_number = static_cast<int64_t>(header.number);
+    assert(header.timestamp <= INT64_MAX);  // EIP-1985
+    context.block_timestamp = static_cast<int64_t>(header.timestamp);
+    assert(header.gas_limit <= INT64_MAX);  // EIP-1985
+    context.block_gas_limit = static_cast<int64_t>(header.gas_limit);
     intx::be::store(context.block_difficulty.bytes, header.difficulty);
     intx::be::store(context.chain_id.bytes, intx::uint256{evm_.config().chain_id});
     intx::be::store(context.block_base_fee.bytes, base_fee_per_gas);
@@ -510,8 +513,8 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
 }
 
 evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
-    uint64_t base_number{evm_.block_.header.number};
-    uint64_t new_size{base_number - n};
+    const uint64_t base_number{evm_.block_.header.number};
+    const uint64_t new_size{base_number - static_cast<uint64_t>(n)};
     assert(new_size <= 256);
 
     std::vector<evmc::bytes32>& hashes{evm_.block_hashes_};
@@ -519,7 +522,7 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
         hashes.push_back(evm_.block_.header.parent_hash);
     }
 
-    uint64_t old_size{hashes.size()};
+    const uint64_t old_size{hashes.size()};
     if (old_size < new_size) {
         hashes.resize(new_size);
     }

@@ -76,9 +76,9 @@ template <typename T>
 inline rlp::DecodingResult decode_eth66(ByteView& from, T& to) noexcept {
     using namespace rlp;
 
-    auto [rlp_head, err]{decode_header(from)};
-    if (err != DecodingResult::kOk) {
-        return err;
+    auto [rlp_head, err0]{decode_header(from)};
+    if (err0 != DecodingResult::kOk) {
+        return err0;
     }
     if (!rlp_head.list) {
         return DecodingResult::kUnexpectedString;

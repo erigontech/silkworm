@@ -58,7 +58,7 @@ extern bool log_thread_enabled_;
 void log_set_streams_(std::ostream& o1, std::ostream& o2);
 class log_ {
   public:
-    log_(LogLevel level_) : level_(level_) { log_mtx_.lock(); }
+    log_(LogLevel level) : level_(level) { log_mtx_.lock(); }
     ~log_() { log_mtx_.unlock(); }
     std::ostream& header_(LogLevel);
     template <class T>

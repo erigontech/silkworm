@@ -247,6 +247,9 @@ __attribute__((target("bmi,bmi2"))) static void sha_256_x86_bmi(uint32_t h[8], c
     sha_256_implementation(h, input, len);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+
 // The following function was adapted from https://github.com/noloader/SHA-Intrinsics/blob/master/sha256-x86.c
 /*   Intel SHA extensions using C intrinsics               */
 /*   Written and place in public domain by Jeffrey Walton  */
@@ -445,6 +448,8 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
     _mm_storeu_si128((__m128i*)&h[0], STATE0);
     _mm_storeu_si128((__m128i*)&h[4], STATE1);
 }
+
+#pragma GCC diagnostic pop
 
 // https://stackoverflow.com/questions/6121792/how-to-check-if-a-cpu-supports-the-sse3-instruction-set
 void cpuid(int info[4], int InfoType) { __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]); }

@@ -25,9 +25,9 @@ see its package dbutils.
 #include <string>
 
 #include <absl/container/btree_map.h>
-#include <mdbx.h++>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/types/block.hpp>
 
 namespace silkworm::db {

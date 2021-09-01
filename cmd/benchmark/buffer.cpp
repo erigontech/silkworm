@@ -83,12 +83,12 @@ int main(int argc, char* argv[]) {
         std::cout << " [Buffer-Default copy build] Done in " << sw.format(loop2_timings.second) << "\n" << std::endl;
     }
 
-    // Push all items in buffer default (nove)
+    // Push all items in buffer default (move)
     {
         etl::Buffer buffer(kDataSetSize);
         std::cout << "\n [Buffer-Default] First loop ..." << std::endl;
         sw.start();
-        for (auto&& item : (std::vector<etl::Entry>&)base_buffer.entries()) {
+        for (auto&& item : base_buffer.entries()) {
             buffer.put(std::move(item));
         }
         // buffer.sort();
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
         buffer.clear();
         std::cout << "\n [Buffer-Default] Second loop ..." << std::endl;
         sw.start();
-        for (auto&& item : (std::vector<etl::Entry>&)base_buffer2.entries()) {
+        for (auto&& item : base_buffer2.entries()) {
             buffer.put(std::move(item));
         }
         // buffer.sort();

@@ -32,15 +32,11 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Unwind Execution Stage"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
-    int64_t unwind_to{-1};
-    app.add_option("--chaindata", chaindata, "Path to a database populated by Turbo-Geth", true)
+    BlockNum unwind_to{0};
+    app.add_option("--chaindata", chaindata, "Path to a database populated by Turbo-Geth", /*defaulted=*/true)
         ->check(CLI::ExistingDirectory);
-    app.add_option("--unwind-to", unwind_to, "Specify unwinding point", false);
+    app.add_option("--unwind-to", unwind_to, "Specify unwinding point", /*defaulted=*/false)->required();
     CLI11_PARSE(app, argc, argv);
-    if (unwind_to < 0) {
-        SILKWORM_LOG(LogLevel::Error) << "Specify valid unwinding point with --unwind-to" << std::endl;
-        return -1;
-    }
 
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};

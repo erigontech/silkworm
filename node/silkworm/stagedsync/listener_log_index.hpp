@@ -41,7 +41,7 @@ class listener_log_index : public cbor::listener {
     void on_integer(int) override{};
 
     void on_bytes(unsigned char* data, int size) override {
-        std::string key(byte_ptr_cast(data), size);
+        std::string key(byte_ptr_cast(data), static_cast<size_t>(size));
         if (size == kHashLength) {
             if (topics_map_->find(key) == topics_map_->end()) {
                 topics_map_->emplace(key, roaring::Roaring());

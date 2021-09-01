@@ -185,9 +185,10 @@ endif()
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
-  add_compile_options(-Werror)
-  add_compile_options(-Wall -Wextra -Wshadow -Wimplicit-fallthrough -Wno-missing-field-initializers)
+  add_compile_options(-Werror -Wall -Wextra)
+  add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
+  add_compile_options(-Wno-missing-field-initializers)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-attributes)
   endif()

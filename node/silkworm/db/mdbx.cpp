@@ -73,8 +73,8 @@ namespace silkworm::db {
 
     ::mdbx::env_managed::create_parameters cp{};  // Default create parameters
     if (!(config.shared)) {
-        size_t max_map_size{config.inmemory ? 64_Mebi : 2_Tebi};
-        size_t growth_size{config.inmemory ? 2_Mebi : 2_Gibi};
+        const intptr_t max_map_size = config.inmemory ? 64_Mebi : 2_Tebi;
+        const intptr_t growth_size = config.inmemory ? 2_Mebi : 2_Gibi;
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
         cp.geometry.pagesize = 4_Kibi;

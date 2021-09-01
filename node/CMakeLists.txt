@@ -37,6 +37,7 @@ add_library(silkworm_node ${SILKWORM_NODE_SRC} ${SILKWORM_INTERFACE_SRC})
 add_dependencies(silkworm_node generate_sentry_grpc)
 
 set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
+set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES COMPILE_FLAGS -Wno-sign-conversion)
 
 target_include_directories(silkworm_node PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}

@@ -52,8 +52,8 @@ void FileProvider::flush(Buffer& buffer) {
         head.lengths[0] = entry.key.size();
         head.lengths[1] = entry.value.size();
         if (!file_.write(byte_ptr_cast(head.bytes), 8) ||
-            !file_.write(byte_ptr_cast(entry.key.data()), entry.key.size()) ||
-            !file_.write(byte_ptr_cast(entry.value.data()), entry.value.size())) {
+            !file_.write(byte_ptr_cast(entry.key.data()), static_cast<std::streamsize>(entry.key.size())) ||
+            !file_.write(byte_ptr_cast(entry.value.data()), static_cast<std::streamsize>(entry.value.size()))) {
             auto err{errno};
             reset();
             throw etl_error(strerror(err));
@@ -73,7 +73,7 @@ void FileProvider::flush(Buffer& buffer) {
     };
 }
 
-std::optional<std::pair<Entry, int>> FileProvider::read_entry() {
+std::optional<std::pair<Entry, size_t>> FileProvider::read_entry() {
     head_t head{};
 
     if (!file_.is_open() || !file_size_) {

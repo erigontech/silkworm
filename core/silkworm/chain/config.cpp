@@ -51,7 +51,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
             break;
     }
 
-    for (int i{0}; i < EVMC_MAX_REVISION; ++i) {
+    for (size_t i{0}; i < EVMC_MAX_REVISION; ++i) {
         member_to_json(ret, kJsonForkNames[i], fork_blocks[i]);
     }
 
@@ -77,7 +77,7 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
         config.seal_engine = SealEngineType::kAuRA;
     }
 
-    for (int i{0}; i < EVMC_MAX_REVISION; ++i) {
+    for (size_t i{0}; i < EVMC_MAX_REVISION; ++i) {
         read_json_config_member(json, kJsonForkNames[i], config.fork_blocks[i]);
     }
 
@@ -88,9 +88,9 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
 }
 
 evmc_revision ChainConfig::revision(uint64_t block_number) const noexcept {
-    for (int i{EVMC_MAX_REVISION - 1}; i >= 0; --i) {
-        if (fork_blocks[i].has_value() && block_number >= fork_blocks[i].value()) {
-            return static_cast<evmc_revision>(i + 1);
+    for (size_t i{EVMC_MAX_REVISION}; i > 0; --i) {
+        if (fork_blocks[i - 1].has_value() && block_number >= fork_blocks[i - 1].value()) {
+            return static_cast<evmc_revision>(i);
         }
     }
     return EVMC_FRONTIER;

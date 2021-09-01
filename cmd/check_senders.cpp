@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     if (options.debug) {
-        SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
+        SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
     }
 
     if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions
@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
         signal(SIGTERM, sig_handler);
 
         if (app_recover) {
-            result = farm->recover(options.block_from, options.block_to);
+            result = farm->recover(options.block_to);
         } else {
             result = farm->unwind(options.block_from);
         }

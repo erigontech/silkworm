@@ -31,16 +31,12 @@ RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id), data_si
     }
 }
 
-void RecoveryWorker::set_work(uint32_t batch_id, std::unique_ptr<std::vector<package>> batch) {
-    batch_ = std::move(batch);
+void RecoveryWorker::set_work(uint32_t batch_id, std::vector<package>& farm_batch) {
     batch_id_ = batch_id;
+    batch_.swap(farm_batch);
     status_.store(Status::Working);
     Worker::kick();
 }
-
-uint32_t RecoveryWorker::get_id() const { return id_; }
-
-uint32_t RecoveryWorker::get_batch_id() const { return batch_id_; }
 
 std::string RecoveryWorker::get_error() const {
     return (status_.load() == Status::Error) ? last_error_ : std::string();
@@ -67,11 +63,11 @@ void RecoveryWorker::work() {
          */
 
         results_.clear();
-        BlockNum block_num{batch_->front().block_num};
+        BlockNum block_num{batch_.front().block_num};
         size_t block_data_offset{0};
         size_t block_data_length{0};
 
-        for (auto const& package : *batch_) {
+        for (auto const& package : batch_) {
             // On block switching store the results
             if (block_num != package.block_num) {
                 if (should_stop()) {
@@ -110,12 +106,13 @@ void RecoveryWorker::work() {
         }
 
         // Raise finished event
-        signal_completed(this, batch_id_);
-        batch_.reset();
+        signal_completed(this);
+        batch_.resize(0);
     }
 
     std::free(data_);
     std::free(context_);
+    batch_.clear();
 }
 
 }  // namespace silkworm::stagedsync::recovery

@@ -39,10 +39,9 @@ class RecoveryFarm {
     ~RecoveryFarm() = default;
 
     //! \brief Recover sender's addresses from transactions
-    //! \param [in] height_from : Lower boundary for blocks to process (included)
-    //! \param [in] height_to :  Upper boundary for blocks to process (included)
+    //! \param [in] to :  Upper boundary for blocks to process (included)
     //! \return A code indicating process status
-    StageResult recover(BlockNum height_from, BlockNum height_to);
+    StageResult recover(BlockNum to);
 
     //! \brief Unwinds sender's recovery i.e. deletes recovered addresses from storage
     //! \param [in] new_height : the new height at which senders' addresses will be registered as recovered in storage
@@ -57,74 +56,71 @@ class RecoveryFarm {
     bool should_stop() { return should_stop_.load(); }
 
     //! \brief Commands every threaded recovery worker to stop
+    //! \param [in] wait : whether to wait for worker stopped
     void stop_all_workers(bool wait = true);
 
     //! \brief Make the farm wait for every threaded worker to stop
     void wait_workers_completion();
 
     //! \brief Collects results from worker's completed tasks
-    bool bufferize_workers_results();
+    bool collect_workers_results();
 
     //! \brief Transforms transactions into recoverable packages
     //! \param [in] config : active chain configuration
     //! \param [in] block_num : block number owning this set of transactions
     //! \param [in] transactions : a set of transactions to transform
-    void fill_batch(ChainConfig config, BlockNum block_num, std::vector<Transaction>& transactions);
+    //! \return A code indicating process status
+    //! \remarks If detects a batch overflow it also dispatches
+    StageResult transform_and_fill_batch(const ChainConfig& config, BlockNum block_num,
+                                         std::vector<Transaction>& transactions);
 
     //! \brief Dispatches the collected batch of recovery packages to first available worker
+    //! \param [in] renew : whether to renew the batch container
+    //! \returns True if operation succeeds, false otherwise
     //! \remarks May spawn new worker(s) up to max_workers
-    void dispatch_batch(bool renew);
+    bool dispatch_batch(bool renew = false);
 
     //! \brief Spawns a new threaded worker
-    bool initialize_new_worker(bool show_error);
+    bool initialize_new_worker();
 
-    /**
-     * @brief Fills a vector of all canonical headers
-     *
-     * @param headers     : Storage vector for all headers
-     * @param height_from : Lower boundary for canonical headers (included)
-     * @param height_to   : Upper boundary for canonical headers (included)
-     */
     //! \brief Fills a vector of all canonical headers
-    //! \param [in] height_from : Lower boundary for blocks to process (included)
-    //! \param [in] height_to :  Upper boundary for blocks to process (included)
+    //! \param [in] from : Lower boundary for blocks to process (included)
+    //! \param [in] to :  Upper boundary for blocks to process (included)
     //! \return A code indicating process status
-    StageResult fill_canonical_headers(BlockNum height_from, BlockNum height_to);
+    StageResult fill_canonical_headers(BlockNum from, BlockNum to) noexcept;
 
     //! \brief Handle completion signal from workers
-    void worker_completed_handler(RecoveryWorker* sender, uint32_t batch_id);
-
-    //! \brief Initializes a new batch container
-    void init_batch();
+    void worker_completed_handler(RecoveryWorker* sender);
 
     friend class RecoveryWorker;
     mdbx::txn& db_transaction_;  // Database transaction
 
+    using harvest_pair = std::pair<uint32_t, uint32_t>;  // Worker id + batch id
+
     /* Recovery workers */
     uint32_t max_workers_;                                    // Max number of workers/threads
     std::vector<std::unique_ptr<RecoveryWorker>> workers_{};  // Actual collection of recoverers
+    std::mutex harvest_mutex_;                                // Guards the harvest queue
+    std::queue<harvest_pair> harvest_pairs_{};                // Queue of harvest pairs
+    std::atomic<uint32_t> workers_in_flight_{0};              // Counter of grinding workers
 
     /* Canonical headers */
     std::vector<evmc::bytes32> headers_{};               // Collected canonical headers
     std::vector<evmc::bytes32>::iterator headers_it_1_;  // For blocks reading
-    std::vector<evmc::bytes32>::iterator headers_it_2_;  // For buffer results
+    BlockNum header_index_offset_{};                     // To retrieve proper header hash while harvesting
 
     /* Batches */
-    const size_t max_batch_size_;  // Max number of transaction to be sent a worker for recovery
-    std::unique_ptr<std::vector<RecoveryWorker::package>>
-        batch_;                                  // Collection of transactions to be sent a worker for recovery
-    uint32_t batch_id_{0};                       // Incremental id of launched batches
-    std::atomic_uint32_t completed_batch_id{0};  // Incremental id of completed batches
-    std::queue<std::pair<uint32_t, uint32_t>>
-        batches_completed{};           // Queue of batches completed waiting to be written on disk
-    std::mutex batches_completed_mtx;  // Guards the queue
+    size_t max_batch_size_;                        // Max number of transaction to be sent a worker for recovery
+    uint32_t batch_id_{0};                         // Incremental id of launched batches
+    std::atomic<uint32_t> completed_batch_id_{0};  // Incremental id of completed batches
+    std::vector<RecoveryWorker::package> batch_;   // Collection of transactions to be sent a worker for recovery
     etl::Collector& collector_;
 
     std::atomic_bool should_stop_{false};
 
     /* Stats */
-    uint64_t total_recovered_transactions_{0};
-    uint64_t total_processed_blocks_{0};
+    size_t total_recovered_transactions_{0};
+    size_t total_processed_blocks_{0};
 };
 
 }  // namespace silkworm::stagedsync::recovery

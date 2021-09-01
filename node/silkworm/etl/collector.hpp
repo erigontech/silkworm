@@ -32,7 +32,6 @@ typedef void (*LoadFunc)(Entry, mdbx::cursor&, MDBX_put_flags_t);
 // Collects data Extracted from db
 class Collector {
   public:
-
     // Not copyable nor movable
     Collector(const Collector&) = delete;
     Collector& operator=(const Collector&) = delete;
@@ -47,20 +46,20 @@ class Collector {
     void collect(const Entry& entry);  // Store key-value pair in memory or on disk
     void collect(Entry&& entry);       // Store key-value pair in memory or on disk
 
-    /** @brief Loads and optionally transforms collected entries into db
-     *
-     * @param table : The target db table
-     * @param load_func : Pointer to function transforming collected entries. If NULL no transform is executed
-     * @param flags : Optional whether to append or upsert (default)
-     * @param log_every_percent : Emits a log line indicating progress every this percent increment in processed items
-     */
+    //! \brief Loads and optionally transforms collected entries into db
+    //! \param [in] target : an mdbx cursor opened on target table
+    //! \param [in] load_func : Pointer to function transforming collected entries. If NULL no transform is executed
+    //! \param [in] flags : Optional put flags for append or upsert (default)
+    //! \param [in] log_every_percent : Emits a log line indicating progress every this percent increment in processed
+    //! items
     void load(mdbx::cursor& target, LoadFunc load_func = nullptr,
               MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT, uint32_t log_every_percent = 100u);
 
     //! \brief Returns the number of actually collected items
-    size_t size() const {
-        return size_;
-    }
+    size_t size() const { return size_; }
+
+    //! \brief Returns whether this instance is empty (i.e. no items)
+    bool empty() const {return size_ == 0;}
 
     //! \brief Clears contents of collector and reset
     void clear() {

@@ -31,10 +31,9 @@ StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& 
     // Max number of workers is set to number of cores - 1 (one thread is left for main)
     recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency() - 1, kDefaultRecoverySenderBatch, collector);
 
-    auto block_from{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
     auto block_to{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
 
-    const StageResult res{farm.recover(block_from, block_to)};
+    const StageResult res{farm.recover(block_to)};
 
     if (res != StageResult::kSuccess) {
         return res;

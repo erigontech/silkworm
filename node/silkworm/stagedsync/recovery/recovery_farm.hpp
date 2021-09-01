@@ -76,10 +76,9 @@ class RecoveryFarm {
                                          std::vector<Transaction>& transactions);
 
     //! \brief Dispatches the collected batch of recovery packages to first available worker
-    //! \param [in] renew : whether to renew the batch container
     //! \returns True if operation succeeds, false otherwise
     //! \remarks May spawn new worker(s) up to max_workers
-    bool dispatch_batch(bool renew = false);
+    bool dispatch_batch();
 
     //! \brief Spawns a new threaded worker
     bool initialize_new_worker();

@@ -249,10 +249,10 @@ bool RecoveryFarm::collect_workers_results() {
                             Bytes etl_data(data.data(), data.length());
                             collector_.collect(etl::Entry{etl_key, etl_data});
                         }
-                        SILKWORM_LOG(LogLevel::Info)
-                            << "ETL Load [1/2] : "
-                            << (boost::format(fmt_row) % worker_results.back().first % total_recovered_transactions_ % workers_in_flight_.load())
-                            << std::endl;
+                        SILKWORM_LOG(LogLevel::Info) << "ETL Load [1/2] : "
+                                                     << (boost::format(fmt_row) % worker_results.back().first %
+                                                         total_recovered_transactions_ % workers_in_flight_.load())
+                                                     << std::endl;
                         worker_results.resize(0);
 
                     } catch (const std::exception& ex) {
@@ -290,7 +290,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
 
     // Do we overflow ?
     if ((batch_.size() + transactions.size()) > max_batch_size_) {
-        if (!dispatch_batch(true)) {
+        if (!dispatch_batch()) {
             return StageResult::kUnexpectedError;
         }
     }
@@ -333,7 +333,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
     return StageResult::kSuccess;
 }
 
-bool RecoveryFarm::dispatch_batch(bool renew) {
+bool RecoveryFarm::dispatch_batch() {
     if (should_stop() || batch_.empty()) {
         return true;
     }

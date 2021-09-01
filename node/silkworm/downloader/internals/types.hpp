@@ -56,6 +56,8 @@ using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
 using time_dur_t = std::chrono::duration<std::chrono::system_clock>;
 
+inline Bytes bytes_of_string(const std::string& s) { return Bytes(s.begin(), s.end()); }
+
 inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
     for (const auto& b : bytes) {
         out << std::hex << std::setw(2) << std::setfill('0') << int(b);

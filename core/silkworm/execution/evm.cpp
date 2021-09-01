@@ -131,7 +131,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
             // https://eips.ethereum.org/EIPS/eip-170
             res.status_code = EVMC_OUT_OF_GAS;
         } else if (res.gas_left >= 0 && static_cast<uint64_t>(res.gas_left) >= code_deploy_gas) {
-            res.gas_left -= code_deploy_gas;
+            res.gas_left -= static_cast<int64_t>(code_deploy_gas);
             state_.set_code(contract_addr, {res.output_data, res.output_size});
         } else if (rev >= EVMC_HOMESTEAD) {
             res.status_code = EVMC_OUT_OF_GAS;

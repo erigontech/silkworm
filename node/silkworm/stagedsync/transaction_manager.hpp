@@ -17,12 +17,7 @@
 #ifndef SILKWORM_STAGEDSYNC_TRANSACTION_MANAGER_HPP_
 #define SILKWORM_STAGEDSYNC_TRANSACTION_MANAGER_HPP_
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#include <mdbx.h++>
-#pragma GCC diagnostic pop
+#include <silkworm/db/mdbx.hpp>
 
 namespace silkworm::stagedsync {
 

@@ -114,7 +114,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         auto target{db::open_cursor(*txn, index_config)};
         collector.load(
             target,
-            [](etl::Entry entry, mdbx::cursor& history_index_table, MDBX_put_flags_t db_flags) {
+            [](etl::Entry entry, mdbx::cursor& history_index_table, MDBX_put_flags_t put_flags) {
                 auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
                 // Check wheter we still need to rework the previous entry
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');
@@ -126,7 +126,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
                     // Merge previous and current bitmap
                     bm |= roaring::Roaring64Map::readSafe(previous_bitmap_bytes.value.char_ptr(),
                                                           previous_bitmap_bytes.value.length());
-                    db_flags = MDBX_put_flags_t::MDBX_UPSERT;
+                    put_flags = MDBX_put_flags_t::MDBX_UPSERT;
                 }
                 while (bm.cardinality() > 0) {
                     // Divide in different bitmaps of different (chunks) and push all of them individually
@@ -142,7 +142,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
                     current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
                     mdbx::slice k{db::to_slice(chunk_index)};
                     mdbx::slice v{db::to_slice(current_chunk_bytes)};
-                    history_index_table.put(k, &v, db_flags);
+                    history_index_table.put(k, &v, put_flags);
                 }
             },
             db_flags, /* log_every_percent = */ 20);

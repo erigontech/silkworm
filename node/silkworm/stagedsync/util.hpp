@@ -17,14 +17,8 @@
 #ifndef SILKWORM_STAGEDSYNC_UTIL_HPP_
 #define SILKWORM_STAGEDSYNC_UTIL_HPP_
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#include <mdbx.h++>
-#pragma GCC diagnostic pop
-
 #include <silkworm/common/base.hpp>
+#include <silkworm/db/mdbx.hpp>
 
 /*
 Part of the compatibility layer with the Erigon DB format;

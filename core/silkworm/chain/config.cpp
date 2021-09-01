@@ -106,7 +106,7 @@ std::optional<uint64_t> ChainConfig::revision_block(evmc_revision rev) const noe
 
 void ChainConfig::set_revision_block(evmc_revision rev, std::optional<uint64_t> block) {
     if (rev > 0) {  // Frontier block is always 0
-        fork_blocks[rev - 1] = block;
+        fork_blocks[static_cast<size_t>(rev) - 1] = block;
     }
 }
 

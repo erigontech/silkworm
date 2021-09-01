@@ -60,13 +60,15 @@ class RecoveryWorker final : public silkworm::Worker {
     explicit RecoveryWorker(uint32_t id, size_t data_size);
 
     //! \brief Feed the worker with a new set of data to process
-    void set_work(uint32_t batch_id, std::unique_ptr<std::vector<Package>> batch);
+    //! \param [in] batch_id : identifier of work batch
+    //! \param [in] batch : collection of work packages
+    void set_work(uint32_t batch_id, std::vector<Package>& farm_batch);
 
     //! \brief Return the instance unique identifier
-    uint32_t get_id() const;
+    uint32_t get_id() const { return id_; };
 
-    //! \brief Return the batch identifier this Recoverer is working on
-    uint32_t get_batch_id() const;
+    //! \brief Return the current batch identifier this instance is working on
+    uint32_t get_batch_id() const { return batch_id_; };
 
     //! \brief Return the last error encountered by this Recoverer
     //! \return A string. If empty means no error found
@@ -82,13 +84,13 @@ class RecoveryWorker final : public silkworm::Worker {
     bool pull_results(std::vector<std::pair<BlockNum, ByteView>>& out_results);
 
     //! \brief Signals connected handlers a task is completed
-    boost::signals2::signal<void(RecoveryWorker* sender, uint32_t batch_id)> signal_completed;
+    boost::signals2::signal<void(RecoveryWorker* sender)> signal_completed;
 
   private:
     const uint32_t id_;                                     // Current worker identifier
     size_t data_size_;                                      // Size of the recovery data buffer
-    uint32_t batch_id_{0};                                  // Running batch identifier
-    std::unique_ptr<std::vector<Package>> batch_;           // Batch to process
+    uint32_t batch_id_{0};                                  // Current batch identifier
+    std::vector<Package> batch_;                            // Batch to process
     uint8_t* data_{nullptr};                                // Pointer to data where results are stored
     secp256k1_context* context_;                            // Elliptic curve context;
     std::vector<std::pair<BlockNum, ByteView>> results_{};  // Results per block pointing to data area

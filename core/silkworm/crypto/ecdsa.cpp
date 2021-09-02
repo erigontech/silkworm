@@ -70,7 +70,7 @@ std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_pa
     return recover(context, message, signature, odd_y_parity);
 }
 
-std::optional<Bytes> ecdsa::recover(secp256k1_context* context, ByteView message, ByteView signature,
+std::optional<Bytes> recover(secp256k1_context* context, ByteView message, ByteView signature,
                                     bool odd_y_parity) {
     if (message.length() != 32 || signature.length() != 64) {
         return std::nullopt;

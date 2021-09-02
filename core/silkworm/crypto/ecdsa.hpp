@@ -63,21 +63,45 @@ bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool hom
 //! \remarks Each thread should have its own context
 secp256k1_context* create_context(int flags = SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
 
-//! \brief Tries recover the public key used for message signing
+//! \brief Tries recover public key used for message signing.
 //! \param [in] message : the signed message
 //! \param [in] signature : the signature
 //! \param [in] odd_y_parity : whether y parity is odd
-//! \remarks An ecdsa recovery context is statically initialized
-std::optional<evmc::address> recover_address(ByteView message, ByteView signature, bool odd_y_parity);
+//! \return An optional Bytes. Should it has no value the recovery has failed
+//! \remarks An ecdsa recovery context is statically initialized.
+//! This is different from recover_address as the whole 64 bytes are returned.
+std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity);
 
-//! \brief Tries recover the public key used for message signing
+//! \brief Tries recover public key used for message signing.
 //! \param [in] context : a pointer to ecdsa recovery context
 //! \param [in] message : the signed message
 //! \param [in] signature : the signature
 //! \param [in] odd_y_parity : whether y parity is odd
-std::optional<evmc::address> recover_address(secp256k1_context* context, ByteView message, ByteView signature, bool odd_y_parity);
+//! \return An optional Bytes. Should it has no value the recovery has failed.
+//! This is different from recover_address as the whole 64 bytes are returned.
+std::optional<Bytes> recover(secp256k1_context* context, ByteView message, ByteView signature, bool odd_y_parity);
 
+//! Tries extract address from recovered public key
+//! \param [in] public_key :  The recovered public key
+//! \return An optional evmc::address. Should it has no value the recovery has failed.
+std::optional<evmc::address> public_key_to_address(const Bytes& public_key);
 
+//! \brief Tries recover the address used for message signing
+//! \param [in] message : the signed message
+//! \param [in] signature : the signature
+//! \param [in] odd_y_parity : whether y parity is odd
+//! \return An optional address value. Should it has no value the recovery has failed
+//! \remarks An ecdsa recovery context is statically initialized
+std::optional<evmc::address> recover_address(ByteView message, ByteView signature, bool odd_y_parity);
+
+//! \brief Tries recover the address used for message signing
+//! \param [in] context : a pointer to ecdsa recovery context
+//! \param [in] message : the signed message
+//! \param [in] signature : the signature
+//! \param [in] odd_y_parity : whether y parity is odd
+//! \return An optional address value. Should it has no value the recovery has failed
+std::optional<evmc::address> recover_address(secp256k1_context* context, ByteView message, ByteView signature,
+                                             bool odd_y_parity);
 
 }  // namespace silkworm::ecdsa
 

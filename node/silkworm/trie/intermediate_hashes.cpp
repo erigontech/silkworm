@@ -19,6 +19,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/db/tables.hpp>
+#include <silkworm/trie/prefix_set.hpp>
 
 namespace silkworm::trie {
 
@@ -204,8 +205,27 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir
     return root;
 }
 
-evmc::bytes32 increment_intermediate_hashes(mdbx::txn&, const char*, BlockNum, const evmc::bytes32*) {
-    // TODO[Issue 179] implement
+// See Erigon (p *HashPromoter) Promote
+static void changed_accounts(mdbx::txn& txn, BlockNum from, PrefixSet& out) {
+    // TODO[Issue 179] deleted accounts
+    // TODO[Issue 179] use ETL
+    const Bytes starting_key{db::block_key(from + 1)};
+
+    auto change_cursor{db::open_cursor(txn, db::table::kPlainAccountChangeSet)};
+    change_cursor.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false);
+    db::for_each(change_cursor, [&out](mdbx::cursor::move_result& entry) {
+        const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};
+        const auto hashed_address{keccak256(address)};
+        out.insert(ByteView{hashed_address.bytes, kHashLength});
+        return true;
+    });
+}
+
+evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char*, BlockNum from, const evmc::bytes32*) {
+    PrefixSet changed;
+    changed_accounts(txn, from, changed);
+    // TODO[Issue 179] changed storage
+
     throw WrongRoot{};
 }
 

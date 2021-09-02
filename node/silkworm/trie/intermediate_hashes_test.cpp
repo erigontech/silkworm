@@ -191,15 +191,18 @@ TEST_CASE("Account and storage trie") {
     node_map.clear();
 
     SECTION("Incremental trie") {
-        const auto key4b{0xB1B0000000000000000000000000000000000000000000000000000000000000_bytes32};
+        // Some address whose hash starts with 0xB1
+        const auto address{0x4f61f2d5ebd991b85aa1677db97307caf5215c91_address};
+        const auto key4b{keccak256(full_view(address))};
+        REQUIRE(key4b.bytes[0] == key4a.bytes[0]);
+
         const Account a4b{0, 5 * kEther};
-        hashed_accounts.upsert(db::to_slice(key4b), db::to_slice(a4b.encode_for_storage()));
+        hashed_accounts.upsert(mdbx::slice{key4b.bytes, kHashLength}, db::to_slice(a4b.encode_for_storage()));
 
-        const BlockNum block_num{1};
+        auto account_change_table{db::open_cursor(txn, db::table::kPlainAccountChangeSet)};
+        account_change_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(address));
 
-        // TODO[Issue 179] add to change set
-
-        increment_intermediate_hashes(txn, data_dir.etl().path().c_str(), block_num);
+        increment_intermediate_hashes(txn, data_dir.etl().path().c_str(), /*from=*/0);
 
         account_trie.to_first();
         db::for_each(account_trie, save_nodes);
@@ -213,6 +216,8 @@ TEST_CASE("Account and storage trie") {
         CHECK(0b1101 == node1a.hash_mask());
 
         // TODO[Issue 179] check the new hash
+
+        // TODO[Issue 179] storage
     }
 }
 

@@ -18,6 +18,7 @@
 #define SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
 
 #include <atomic>
+#include <queue>
 
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/recovery/recovery_worker.hpp>

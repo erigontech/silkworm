@@ -20,7 +20,6 @@
 
 #include <atomic>
 #include <csignal>
-#include <queue>
 #include <string>
 
 #include <boost/signals2.hpp>

@@ -34,13 +34,9 @@ StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& 
     auto block_to{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
 
     const StageResult res{farm.recover(block_to)};
-
-    if (res != StageResult::kSuccess) {
-        return res;
+    if (res == StageResult::kSuccess) {
+        txn.commit();
     }
-
-    txn.commit();
-
     return res;
 }
 
@@ -49,7 +45,7 @@ StageResult unwind_senders(TransactionManager& txn, const std::filesystem::path&
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
 
     // Create farm instance and do work
-    recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultBatchSize, collector);
+    recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency() - 1, kDefaultRecoverySenderBatch, collector);
 
     const StageResult res{farm.unwind(unwind_point)};
 

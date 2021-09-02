@@ -17,10 +17,6 @@
 #ifndef SILKWORM_HEADER_RETRIEVAL_HPP
 #define SILKWORM_HEADER_RETRIEVAL_HPP
 
-#include <map>
-#include <queue>
-#include <vector>
-
 #include "DbTx.hpp"
 #include "types.hpp"
 

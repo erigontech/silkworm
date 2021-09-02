@@ -14,5 +14,18 @@
    limitations under the License.
 */
 
-#include "CompletionMessage.hpp"
+#ifndef SILKWORM_PENALIZEPEER_HPP
+#define SILKWORM_PENALIZEPEER_HPP
 
+#include <silkworm/downloader/sentry_client.hpp>
+
+namespace silkworm::rpc {
+
+class PenalizePeer: public rpc::UnaryCall<sentry::Sentry, sentry::PenalizePeerRequest, google::protobuf::Empty> {
+  public:
+    PenalizePeer(const std::string& peerId, Penalty penalty);
+};
+
+}
+
+#endif  // SILKWORM_PENALIZEPEER_HPP

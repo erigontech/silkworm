@@ -128,7 +128,7 @@ ValidationResult validate_block_header(const BlockHeader& header, const State& s
 
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
     // https://eips.ethereum.org/EIPS/eip-1985
-    if (header.gas_limit > 0x7fffffffffffffff) {
+    if (header.gas_limit > INT64_MAX) {
         return ValidationResult::kInvalidGasLimit;
     }
 

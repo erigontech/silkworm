@@ -16,25 +16,23 @@
 
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
-#include <evmc/evmc.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 
 #include "stagedsync.hpp"
 
-using namespace evmc::literals;
+namespace silkworm {
 
 constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
 constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
 constexpr evmc::bytes32 hash_2{0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
 
 TEST_CASE("Stage Block Hashes") {
-    using namespace silkworm;
-
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
     CHECK_NOTHROW(data_dir.deploy());
@@ -73,8 +71,6 @@ TEST_CASE("Stage Block Hashes") {
 }
 
 TEST_CASE("Unwind Block Hashes") {
-    using namespace silkworm;
-
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
     CHECK_NOTHROW(data_dir.deploy());
@@ -110,3 +106,5 @@ TEST_CASE("Unwind Block Hashes") {
     REQUIRE(!blockhashes_table.seek(db::to_slice(hash_1)));
     REQUIRE(!blockhashes_table.seek(db::to_slice(hash_2)));
 }
+
+}  // namespace silkworm

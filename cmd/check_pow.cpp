@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
         // Initialize epoch
         auto epoch_num{options.block_from / ethash::epoch_length};
         SILKWORM_LOG(LogLevel::Info) << "Initializing Light Cache for DAG epoch " << epoch_num << std::endl;
-        auto epoch_context{ethash::create_epoch_context(epoch_num)};
+        auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_num))};
 
         auto canonical_hashes{db::open_cursor(txn, db::table::kCanonicalHashes)};
 
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
             if (epoch_context->epoch_number != static_cast<int>(block_num / ethash::epoch_length)) {
                 epoch_num = (block_num / ethash::epoch_length);
                 SILKWORM_LOG(LogLevel::Info) << "Initializing Light Cache for DAG epoch " << epoch_num << std::endl;
-                epoch_context = ethash::create_epoch_context(epoch_num);
+                epoch_context = ethash::create_epoch_context(static_cast<int>(epoch_num));
             }
 
             auto block_key{db::block_key(block_num)};

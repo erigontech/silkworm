@@ -127,7 +127,7 @@ class RecoveryFarm {
 
     /* Batches */
     const size_t max_batch_size_;  // Max number of transaction to be sent a worker for recovery
-    std::unique_ptr<std::vector<RecoveryWorker::package>>
+    std::unique_ptr<std::vector<RecoveryWorker::Package>>
         batch_;                                  // Collection of transactions to be sent a worker for recovery
     uint32_t batch_id_{0};                       // Incremental id of launched batches
     std::atomic_uint32_t completed_batch_id{0};  // Incremental id of completed batches

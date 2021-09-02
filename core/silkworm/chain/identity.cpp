@@ -18,7 +18,7 @@
 
 namespace silkworm {
 
-std::vector<BlockNum> ChainIdentity::distinct_fork_numbers() {
+std::vector<BlockNum> ChainIdentity::distinct_fork_numbers() const {
     std::vector<BlockNum> forks;
 
     for (std::optional<uint64_t> bn : chain.fork_blocks) {

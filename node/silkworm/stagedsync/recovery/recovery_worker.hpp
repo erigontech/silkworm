@@ -48,7 +48,7 @@ class RecoveryWorker final : public silkworm::Worker {
     RecoveryWorker(uint32_t id, size_t data_size);
 
     // Recovery package
-    struct package {
+    struct Package {
         uint64_t block_num;
         ethash::hash256 hash;
         bool odd_y_parity;
@@ -64,7 +64,7 @@ class RecoveryWorker final : public silkworm::Worker {
     };
 
     // Provides a container of packages to process
-    void set_work(uint32_t batch_id, std::unique_ptr<std::vector<package>> batch);
+    void set_work(uint32_t batch_id, std::unique_ptr<std::vector<Package>> batch);
 
     uint32_t get_id() const;
     uint32_t get_batch_id() const;
@@ -80,7 +80,7 @@ class RecoveryWorker final : public silkworm::Worker {
   private:
     const uint32_t id_;                                  // Current worker identifier
     uint32_t batch_id_{0};                               // Running batch identifier
-    std::unique_ptr<std::vector<package>> batch_;        // Batch to process
+    std::unique_ptr<std::vector<Package>> batch_;        // Batch to process
     size_t data_size_;                                   // Size of the recovery data buffer
     uint8_t* data_{nullptr};                             // Pointer to data where rsults are stored
     std::vector<std::pair<uint64_t, iovec>> results_{};  // Results per block pointing to data area

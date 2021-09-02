@@ -17,7 +17,6 @@
 #include <silkworm/common/log.hpp>
 
 #include "header_retrieval.hpp"
-#include "silkworm/downloader/block_provider.hpp"
 
 namespace silkworm {
 

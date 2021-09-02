@@ -16,28 +16,30 @@
 #ifndef SILKWORM_BLOCK_PROVIDER_HPP
 #define SILKWORM_BLOCK_PROVIDER_HPP
 
-#include <chrono>
-
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/concurrency/active_component.hpp>
-#include <silkworm/concurrency/containers.hpp>
 
-#include "messages/Message.hpp"
+#include "messages/InboundMessage.hpp"
+#include "internals/DbTx.hpp"
+#include "internals/types.hpp"
 #include "sentry_client.hpp"
-#include "silkworm/downloader/internals/DbTx.hpp"
-#include "silkworm/downloader/internals/singleton.hpp"
-#include "silkworm/downloader/internals/types.hpp"
 
 namespace silkworm {
+
+class BlockProviderException: public std::runtime_error {
+  public:
+    explicit BlockProviderException(std::string cause): std::runtime_error(cause) {}
+};
+
 
 class BlockProvider : public ActiveComponent {  // but also an active component that must run always
 
     ChainIdentity chain_identity_;
-    DbTx db_;
-    ActiveSentryClient& sentry_;
+    DbTx& db_;
+    SentryClient& sentry_;
 
   public:
-    BlockProvider(ActiveSentryClient& sentry, ChainIdentity chain_identity, std::string db_path);
+    BlockProvider(SentryClient& sentry, DbTx& db, ChainIdentity chain_identity);
     BlockProvider(const BlockProvider&) = delete;  // not copyable
     BlockProvider(BlockProvider&&) = delete;       // nor movable
     ~BlockProvider();
@@ -48,12 +50,9 @@ class BlockProvider : public ActiveComponent {  // but also an active component 
     void execution_loop() override;
 
   private:
-    using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;
-
     void send_status();
-    void send_message_subscription(MessageQueue& messages);
+    void process_message(std::shared_ptr<InboundMessage> message);
 
-    void process_one_message(MessageQueue& messages);
 };
 
 }  // namespace silkworm

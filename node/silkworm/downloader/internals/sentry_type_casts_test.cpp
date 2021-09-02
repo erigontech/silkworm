@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "types_for_grpc.hpp"
+#include "sentry_type_casts.hpp"
 
 #include <catch2/catch.hpp>
 

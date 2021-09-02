@@ -14,21 +14,17 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RECEIVEMESSAGES_HPP
-#define SILKWORM_RECEIVEMESSAGES_HPP
-
-#include <silkworm/downloader/sentry_client.hpp>
+#include "PenalizePeer.hpp"
 
 namespace silkworm::rpc {
 
-class ReceiveMessages: public rpc::OutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
-  public:
-    enum Scope {BlockRequests, BlockAnnouncements};
+PenalizePeer::PenalizePeer(const std::string& peerId, Penalty penalty):
+    UnaryCall("PenalizePeer", &sentry::Sentry::Stub::PenalizePeer, {})
+{
+    request_.set_allocated_peer_id(to_H512(peerId).release());
 
-    ReceiveMessages(Scope scope);
-};
-
+    sentry::PenaltyKind raw_penalty = static_cast<sentry::PenaltyKind>(penalty);
+    request_.set_penalty(raw_penalty);
 }
 
-
-#endif  // SILKWORM_RECEIVEMESSAGES_HPP
+}

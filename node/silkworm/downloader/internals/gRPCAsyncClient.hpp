@@ -25,11 +25,7 @@
 
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/chain/config.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
+#include <silkworm/concurrency/containers.hpp>
 
 #include "types.hpp"
 
@@ -53,10 +49,13 @@ class AsyncCall {
     // Virtual destructor allows correct child destruction
     virtual ~AsyncCall() = default;
 
+    // Set a callback that will be called on reply arrival from the server
     void on_receive_reply(callback_t f) { callback_ = f; }
 
+    // True if terminated (some async call have one round trip others many)
     virtual bool terminated() { return terminated_; };
 
+    // Status of the RPC upon completion
     grpc::Status status() {
         if (!terminated_) {
             throw std::logic_error("AsyncCall status not ready");
@@ -64,8 +63,10 @@ class AsyncCall {
         return status_;
     }
 
+    // gRPC tag
     void* tag() { return tag_; }
 
+    // name of this call
     std::string name() { return name_; }
 
   protected:
@@ -97,8 +98,10 @@ class AsyncCall {
     // Callback that will be called on completion (i.e. response arrival)
     callback_t callback_;
 
+    // True if terminated (some async call have one round trip others many)
     bool terminated_ = false;
 
+    // Trick to extend the lifetime of this call during remote processing
     std::shared_ptr<AsyncCall<STUB>> pin_;
 };
 

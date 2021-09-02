@@ -43,7 +43,7 @@ TEST_CASE("Check Truncate tables, reverse = true") {
     // Cursor to be opened does not matter
     auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)};
 
-    for (int i = 100; i >= 0; i--) {
+    for (BlockNum i = 100; i > 0; --i) {
         account_history_table.upsert(db::to_slice(db::block_key(i)), db::to_slice(value));
     }
     // Check if works when cut in half
@@ -70,7 +70,7 @@ TEST_CASE("Check Truncate tables, reverse = false") {
     // Cursor to be opened does not matter
     auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)};
 
-    for (int i = 100; i >= 0; i--) {
+    for (BlockNum i = 100; i > 0; --i) {
         account_history_table.upsert(db::to_slice(db::block_key(i)), db::to_slice(value));
     }
     // Check if works when cut in half

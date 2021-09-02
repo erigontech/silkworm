@@ -176,10 +176,19 @@ else()
   target_compile_options(evmone PRIVATE -fno-exceptions)
 endif()
 
+# MDBX
+if(NOT SILKWORM_CORE_ONLY)
+  set(MDBX_ENABLE_TESTS OFF)
+  add_subdirectory(libmdbx)
+  target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libmdbx)
+endif()
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
-  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers)
+  add_compile_options(-Werror -Wall -Wextra)
+  add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
+  add_compile_options(-Wno-missing-field-initializers)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-attributes)
   endif()
@@ -194,10 +203,6 @@ add_subdirectory(core)
 
 if(NOT SILKWORM_CORE_ONLY)
   add_subdirectory(interfaces)
-
-  set(MDBX_ENABLE_TESTS OFF)
-  add_subdirectory(libmdbx)
-  target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libmdbx)
   add_subdirectory(node)
 endif()
 

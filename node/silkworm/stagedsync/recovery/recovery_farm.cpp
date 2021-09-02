@@ -292,7 +292,7 @@ void RecoveryFarm::fill_batch(ChainConfig config, uint64_t block_num, std::vecto
         rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
 
         auto hash{keccak256(rlp)};
-        RecoveryWorker::package package{block_num, hash, transaction.odd_y_parity};
+        RecoveryWorker::Package package{block_num, hash, transaction.odd_y_parity};
         intx::be::unsafe::store(package.signature, transaction.r);
         intx::be::unsafe::store(package.signature + 32, transaction.s);
         (*batch_).push_back(package);
@@ -434,7 +434,7 @@ void RecoveryFarm::worker_completed_handler(RecoveryWorker* sender, uint32_t bat
 }
 
 void RecoveryFarm::init_batch() {
-    batch_ = std::make_unique<std::vector<RecoveryWorker::package>>();
+    batch_ = std::make_unique<std::vector<RecoveryWorker::Package>>();
     (*batch_).reserve(max_batch_size_);
 }
 

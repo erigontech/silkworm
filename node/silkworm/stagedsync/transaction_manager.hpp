@@ -17,7 +17,7 @@
 #ifndef SILKWORM_STAGEDSYNC_TRANSACTION_MANAGER_HPP_
 #define SILKWORM_STAGEDSYNC_TRANSACTION_MANAGER_HPP_
 
-#include <mdbx.h++>
+#include <silkworm/db/mdbx.hpp>
 
 namespace silkworm::stagedsync {
 

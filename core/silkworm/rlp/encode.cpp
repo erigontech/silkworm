@@ -23,11 +23,11 @@ namespace silkworm::rlp {
 
 void encode_header(Bytes& to, Header header) {
     if (header.payload_length < 56) {
-        uint8_t code{header.list ? kEmptyListCode : kEmptyStringCode};
+        const uint8_t code{header.list ? kEmptyListCode : kEmptyStringCode};
         to.push_back(static_cast<uint8_t>(code + header.payload_length));
     } else {
-        ByteView len_be{big_endian(header.payload_length)};
-        uint8_t code = header.list ? '\xF7' : '\xB7';
+        const ByteView len_be{big_endian(header.payload_length)};
+        const uint8_t code = header.list ? 0xF7 : 0xB7;
         to.push_back(static_cast<uint8_t>(code + len_be.length()));
         to.append(len_be);
     }

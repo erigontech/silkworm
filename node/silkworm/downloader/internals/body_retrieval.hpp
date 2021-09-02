@@ -17,7 +17,7 @@
 #ifndef SILKWORM_BODY_RETRIEVAL_HPP
 #define SILKWORM_BODY_RETRIEVAL_HPP
 
-#include "DbTx.hpp"
+#include "db_tx.hpp"
 #include "types.hpp"
 
 namespace silkworm {

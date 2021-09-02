@@ -19,9 +19,9 @@
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/concurrency/active_component.hpp>
 
-#include "messages/InboundMessage.hpp"
-#include "internals/DbTx.hpp"
+#include "internals/db_tx.hpp"
 #include "internals/types.hpp"
+#include "messages/InboundMessage.hpp"
 #include "sentry_client.hpp"
 
 namespace silkworm {

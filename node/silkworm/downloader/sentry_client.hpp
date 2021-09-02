@@ -19,7 +19,7 @@
 
 #include <interfaces/sentry.grpc.pb.h>
 
-#include "internals/gRPCClient.hpp"
+#include "internals/grpc_sync_client.hpp"
 #include "internals/sentry_type_casts.hpp"
 
 namespace silkworm {

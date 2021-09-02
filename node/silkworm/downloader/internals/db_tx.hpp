@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_DBTX_HPP
-#define SILKWORM_DBTX_HPP
+#ifndef SILKWORM_DB_TX_HPP
+#define SILKWORM_DB_TX_HPP
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -119,4 +119,4 @@ class DbTx {
     BlockNum stage_progress(const char* stage_name) { return db::stages::read_stage_progress(txn, stage_name); }
 };
 
-#endif  // SILKWORM_DBTX_HPP
+#endif  // SILKWORM_DB_TX_HPP

@@ -24,6 +24,7 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/block_provider.hpp>
+#include <silkworm/downloader/header_downloader.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
 using namespace silkworm;
@@ -91,9 +92,9 @@ int main(int argc, char* argv[]) {
         });
 
         // Stage1 - Header downloader - example code
-        //BlockNum target_block = 13'000'000; // only for test
-        //HeaderDownloader header_downloader{sentry, db, chain_identity};
-        //header_downloader.wind(target_block);
+        BlockNum target_block = 13'000'000; // only for test
+        HeaderDownloader header_downloader{sentry, db, chain_identity};
+        header_downloader.wind(target_block);
 
         // Wait for user termination request
         std::cin.get();         // wait for user press "enter"

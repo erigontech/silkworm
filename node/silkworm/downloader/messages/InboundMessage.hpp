@@ -19,9 +19,8 @@
 
 #include <memory>
 
-#include <silkworm/downloader/internals/DbTx.hpp>
+#include <silkworm/downloader/internals/db_tx.hpp>
 #include <silkworm/downloader/internals/working_chain.hpp>
-
 #include <silkworm/downloader/sentry_client.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>

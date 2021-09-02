@@ -19,13 +19,12 @@
 #include <atomic>
 
 #include <silkworm/chain/identity.hpp>
-
 #include <silkworm/concurrency/containers.hpp>
 
-#include "messages/Message.hpp"
-#include "internals/DbTx.hpp"
+#include "internals/db_tx.hpp"
 #include "internals/types.hpp"
 #include "internals/working_chain.hpp"
+#include "messages/Message.hpp"
 #include "sentry_client.hpp"
 
 namespace silkworm {

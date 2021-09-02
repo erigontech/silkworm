@@ -19,8 +19,9 @@
 
 #include <gsl/span>
 
-#include "ChainElements.hpp"
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
+
+#include "chain_elements.hpp"
 
 namespace silkworm {
 

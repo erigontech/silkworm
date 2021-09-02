@@ -14,15 +14,15 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAINELEMENTS_HPP
-#define SILKWORM_CHAINELEMENTS_HPP
+#ifndef SILKWORM_CHAIN_ELEMENTS_HPP
+#define SILKWORM_CHAIN_ELEMENTS_HPP
 
 #include <map>
 #include <queue>
 #include <set>
 #include <vector>
 
-#include "DbTx.hpp"
+#include "db_tx.hpp"
 #include "types.hpp"
 
 namespace silkworm {
@@ -164,4 +164,4 @@ protected:
 
 }
 
-#endif //SILKWORM_CHAINELEMENTS_HPP
+#endif  // SILKWORM_CHAIN_ELEMENTS_HPP

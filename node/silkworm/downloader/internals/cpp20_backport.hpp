@@ -14,18 +14,16 @@
    limitations under the License.
 */
 
-#include <silkworm/common/log.hpp>
+#ifndef SILKWORM_CPP20_BACKPORT_HPP
+#define SILKWORM_CPP20_BACKPORT_HPP
 
-#include "sentry_client.hpp"
+#include <set>
 
-namespace silkworm {
-
-SentryClient::SentryClient(std::string sentry_addr):
-    base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {
+// check if a set contains a key - c++20 set has this functionality
+template <typename K, typename V>
+inline bool contains(const std::set<K,V>& s, const K& k)
+{
+    return s.find(k) != s.end();
 }
 
-void SentryClient::exec_remotely(SentryRpc& rpc) {
-    base_t::exec_remotely(rpc);
-}
-
-} // namespace silkworm
+#endif //SILKWORM_CPP20_BACKPORT_HPP

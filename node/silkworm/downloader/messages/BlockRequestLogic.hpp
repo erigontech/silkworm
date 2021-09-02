@@ -14,31 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RANDOM_NUMBER_HPP
-#define SILKWORM_RANDOM_NUMBER_HPP
-#include <random>
+#ifndef SILKWORM_BLOCKREQUESTLOGIC_HPP
+#define SILKWORM_BLOCKREQUESTLOGIC_HPP
 
-#include "singleton.hpp"
+#include <memory>
+#include "OutboundMessage.hpp"
 
 namespace silkworm {
 
-class RandomNumber {
-    std::mt19937_64 generator_; // the 64-bit Mersenne Twister 19937 generator
-    std::uniform_int_distribution<uint64_t> distr_; // a uniform distribution
-
+class BlockRequestLogic {  // todo: modularize this!
   public:
-    RandomNumber() {
-        std::random_device rd;
-        generator_.seed(rd()); // init generator_ with a random seed
+    static std::shared_ptr<OutboundMessage> execute() {
+        return nullptr;  // todo: implements!
     }
-
-    uint64_t generate_one() {
-        return distr_(generator_);
-    }
-
 };
 
-#define RANDOM_NUMBER default_instantiating::Singleton<RandomNumber>::instance()
-
 }
-#endif  // SILKWORM_RANDOM_NUMBER_HPP
+#endif  // SILKWORM_BLOCKREQUESTLOGIC_HPP

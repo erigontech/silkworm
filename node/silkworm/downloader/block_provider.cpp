@@ -52,7 +52,7 @@ void BlockProvider::send_status() {
         sentry_.need_close();
         throw BlockProviderException("BlockProvider exception, cause: sentry do not support eth/66 protocol");
     }
-    }
+}
 
 void BlockProvider::process_message(std::shared_ptr<InboundMessage> message) {
 
@@ -62,7 +62,6 @@ void BlockProvider::process_message(std::shared_ptr<InboundMessage> message) {
 }
 
 void BlockProvider::execution_loop() {
-
     try {
         send_status();
 
@@ -74,7 +73,7 @@ void BlockProvider::execution_loop() {
             auto message = InboundBlockRequestMessage::make(receive_messages.reply(), db_, sentry_);
 
             process_message(message);
-}
+        }
 
         SILKWORM_LOG(LogLevel::Warn) << "BlockProvider execution_loop is_stopping...\n";
     }
@@ -83,9 +82,7 @@ void BlockProvider::execution_loop() {
         stopping_ = true;
         sentry_.need_close();
     }
-
-    }
-
+}
 
 }  // namespace silkworm
 

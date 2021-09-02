@@ -32,7 +32,7 @@ class BlockProviderException: public std::runtime_error {
 };
 
 
-class BlockProvider : public ActiveComponent {  // but also an active component that must run always
+class BlockProvider : public ActiveComponent {  // an active component that must run always
 
     ChainIdentity chain_identity_;
     DbTx& db_;
@@ -47,7 +47,7 @@ class BlockProvider : public ActiveComponent {  // but also an active component 
     DbTx& db_tx() { return db_; }
     SentryClient& sentry() { return sentry_; }
 
-    void execution_loop() override;
+    [[long_running]] void execution_loop() override;
 
   private:
     void send_status();

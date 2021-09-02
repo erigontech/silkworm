@@ -6,4 +6,4 @@ xcode
 .vs
 CMakeFiles
 Makefile
-cmake-build-debug
+cmake-build-*

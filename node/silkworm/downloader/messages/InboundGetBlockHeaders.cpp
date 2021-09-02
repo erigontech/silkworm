@@ -73,10 +73,6 @@ void InboundGetBlockHeaders::execute() {
     sentry::SentPeers peers = rpc.reply();
     SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*this) << ": " << std::to_string(peers.peers_size()) + " peer(s)\n";
 
-
-
-
-
 }
 
 uint64_t InboundGetBlockHeaders::reqId() const { return packet_.requestId; }

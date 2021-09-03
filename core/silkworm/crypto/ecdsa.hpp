@@ -61,7 +61,7 @@ bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool hom
 //! \param [in] flags : creation flags
 //! \return A raw pointer to context
 //! \remarks Each thread should have its own context
-secp256k1_context* create_context(int flags = SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+secp256k1_context* create_context(uint32_t flags = SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
 
 //! \brief Tries recover public key used for message signing.
 //! \param [in] message : the signed message

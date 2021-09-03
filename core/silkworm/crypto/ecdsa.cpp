@@ -49,7 +49,7 @@ std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256&
     return res;
 }
 
-secp256k1_context* create_context(int flags) { return secp256k1_context_create(flags); }
+secp256k1_context* create_context(uint32_t flags) { return secp256k1_context_create(flags); }
 
 bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) {
     if (r == 0 || s == 0) {

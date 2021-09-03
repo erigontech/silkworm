@@ -139,6 +139,7 @@ constexpr size_t kIncarnationLength{8};
 static_assert(kIncarnationLength == sizeof(uint64_t));
 
 constexpr size_t kStoragePrefixLength{kAddressLength + kIncarnationLength};
+constexpr size_t kHashedStoragePrefixLength{kHashLength + kIncarnationLength};
 
 // address -> storage-encoded initial value
 using AccountChanges = absl::btree_map<evmc::address, Bytes>;

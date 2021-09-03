@@ -47,6 +47,19 @@ static std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateO
     }
 }
 
+// ETL key contains hashed location; for DB put we need to move it from key to value
+static void storage_load(const etl::Entry& entry, mdbx::cursor& cursor, MDBX_put_flags_t flags) {
+    assert(entry.key.length() == db::kHashedStoragePrefixLength + kHashLength);
+
+    Bytes value(kHashLength + entry.value.length(), '\0');
+    std::memcpy(&value[0], &entry.key[db::kHashedStoragePrefixLength], kHashLength);
+    std::memcpy(&value[kHashLength], entry.value.data(), entry.value.length());
+
+    mdbx::slice k{entry.key.data(), db::kHashedStoragePrefixLength};
+    mdbx::slice v{db::to_slice(value)};
+    mdbx::error::success_or_throw(cursor.put(k, &v, flags));
+}
+
 /*
  *  If we haven't done hashstate before(first sync), it is possible to just hash values from plainstates,
  *  This is way faster than using changeset because it uses less database reads.
@@ -59,11 +72,10 @@ void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
     etl::Collector collector_storage(etl_path, 512_Mebi);
 
     auto src{db::open_cursor(txn, db::table::kPlainState)};
-    auto data{src.to_first(/*throw_notfound*/ false)};
+    auto data{src.to_first(/*throw_notfound=*/false)};
     int percent{0};
     uint8_t next_start_byte{0};
     while (data) {
-        // TODO (Giulio) -- a byte >= uint64 ??
         if (data.key.at(0) >= next_start_byte) {
             SILKWORM_LOG(LogLevel::Info) << "Progress: " << percent << "%" << std::endl;
             percent += 10;
@@ -73,28 +85,35 @@ void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
         // Account
         if (data.key.length() == kAddressLength) {
             auto hash{keccak256(db::from_slice(data.key))};
-            etl::Entry entry{Bytes(hash.bytes, kHashLength),
-                             Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.length())};
-            collector_account.collect(entry);
+            etl::Entry entry{Bytes(hash.bytes, kHashLength), Bytes{db::from_slice(data.value)}};
+            collector_account.collect(std::move(entry));
         } else {
             Bytes new_key(kHashLength * 2 + db::kIncarnationLength, '\0');
-            uint32_t new_key_pos{0};
+            size_t new_key_pos{0};
+
+            // plain state key = address + incarnation
+            assert(data.key.length() == db::kStoragePrefixLength);
 
             std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.key).substr(0, kAddressLength)).bytes,
                         kHashLength);
             data.key.remove_prefix(kAddressLength);
-            new_key_pos += kAddressLength;
+            new_key_pos += kHashLength;
 
-            std::memcpy(&new_key[new_key_pos], data.key.iov_base, db::kIncarnationLength);
-            data.key.remove_prefix(db::kIncarnationLength);
+            std::memcpy(&new_key[new_key_pos], data.key.data(), db::kIncarnationLength);
             new_key_pos += db::kIncarnationLength;
 
-            std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.key)).bytes, kHashLength);
-            etl::Entry entry{new_key, Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len)};
-            collector_storage.collect(entry);
+            // plain state value = unhashed location + zeroless value
+            assert(data.value.length() > kHashLength);
+
+            std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.value).substr(0, kHashLength)).bytes,
+                        kHashLength);
+            data.value.remove_prefix(kHashLength);
+
+            etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
+            collector_storage.collect(std::move(entry));
         }
 
-        data = src.to_next(/*throw_notfound*/ false);
+        data = src.to_next(/*throw_notfound=*/false);
     }
 
     SILKWORM_LOG(LogLevel::Info) << "Started Account Loading" << std::endl;
@@ -103,7 +122,7 @@ void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
 
     SILKWORM_LOG(LogLevel::Info) << "Started Storage Loading" << std::endl;
     target = db::open_cursor(txn, db::table::kHashedStorage);
-    collector_storage.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
+    collector_storage.load(target, storage_load, MDBX_put_flags_t::MDBX_APPENDDUP, 10);
 }
 
 void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
@@ -113,15 +132,15 @@ void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
     etl::Collector collector(etl_path, 512_Mebi);
 
     auto tbl{db::open_cursor(txn, db::table::kPlainContractCode)};
-    auto data{tbl.to_first(/*throw_notfound*/ false)};
+    auto data{tbl.to_first(/*throw_notfound=*/false)};
     while (data) {
         Bytes new_key(kHashLength + db::kIncarnationLength, '\0');
         std::memcpy(&new_key[0], keccak256(db::from_slice(data.key.safe_middle(0, kAddressLength))).bytes, kHashLength);
-        std::memcpy(&new_key[kHashLength], data.key.safe_middle(kAddressLength, db::kIncarnationLength).iov_base,
+        std::memcpy(&new_key[kHashLength], data.key.safe_middle(kAddressLength, db::kIncarnationLength).data(),
                     db::kIncarnationLength);
-        etl::Entry entry{new_key, Bytes(static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len)};
-        collector.collect(entry);
-        data = tbl.to_next(/*throw_notfound*/ false);
+        etl::Entry entry{new_key, Bytes{db::from_slice(data.value)}};
+        collector.collect(std::move(entry));
+        data = tbl.to_next(/*throw_notfound=*/false);
     }
     tbl.close();
 
@@ -146,7 +165,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     auto start_block_number{db::stages::get_stage_progress(txn, db::stages::kHashStateKey) + 1};
 
     Bytes start_key{db::block_key(start_block_number)};
-    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound*/ false)};
+    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
 
     while (changeset_data) {
         Bytes mdb_key_as_bytes{db::from_slice(changeset_data.key)};
@@ -155,9 +174,9 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
 
         if (operation == HashstateOperation::HashAccount) {
             // We get account and hash its key.
-            auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound*/ false)};
+            auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound=*/false)};
             if (!plainstate_data) {
-                changeset_data = changeset_table.to_next(false);
+                changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
                 continue;
             }
             // Hashing
@@ -166,35 +185,40 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             changeset_data = changeset_table.to_next(false);
 
         } else if (operation == HashstateOperation::HashStorage) {
-            // We get storage value and hash its key.
-            Bytes key(kHashLength * 2 + db::kIncarnationLength, '\0');
-            auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound*/ false)};
+            auto plainstate_data{plainstate_table.find(db::to_slice(db_key), /*throw_notfound=*/false)};
             if (!plainstate_data) {
-                changeset_data = changeset_table.to_next(false);
+                changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
                 continue;
             }
 
-            // Hashing
-            std::memcpy(&key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
-            std::memcpy(&key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
+            // plain state key = address + incarnation
+            assert(db_key.length() == db::kStoragePrefixLength);
 
-            std::memcpy(&key[kHashLength + db::kIncarnationLength],
-                        keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
+            Bytes hashed_key(db::kHashedStoragePrefixLength, '\0');
+            std::memcpy(&hashed_key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
+            std::memcpy(&hashed_key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
 
-            target_table.upsert(db::to_slice(key), plainstate_data.value);
-            changeset_data = changeset_table.to_next(false);
+            // plain state value = unhashed location + zeroless value
+            assert(plainstate_data.value.length() > kHashLength);
+
+            auto hashed_location{keccak256(db::from_slice(plainstate_data.value).substr(0, kHashLength))};
+            ByteView value{db::from_slice(plainstate_data.value).substr(kHashLength)};
+
+            db::upsert_storage_value(target_table, hashed_key, ByteView{hashed_location.bytes, kHashLength}, value);
+
+            changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
 
         } else {
             // get incarnation
             auto encoded_account{plainstate_table.find(db::to_slice(db_key), false)};
             if (!encoded_account) {
-                changeset_data = changeset_table.to_next(false);
+                changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
                 continue;
             }
             auto [incarnation, err]{extract_incarnation(db::from_slice(encoded_account.value))};
             rlp::err_handler(err);
             if (incarnation == 0) {
-                changeset_data = changeset_table.to_next(false);
+                changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
                 continue;
             }
 
@@ -204,7 +228,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             endian::store_big_u64(&plain_key[kAddressLength], incarnation);
             auto code_hash{codehash_table.find(db::to_slice(plain_key), false)};
             if (!code_hash) {
-                changeset_data = changeset_table.to_next(false);
+                changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
                 continue;
             }
 
@@ -213,12 +237,12 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             std::memcpy(&key[0], keccak256(plain_key.substr(0, kAddressLength)).bytes, kHashLength);
             std::memcpy(&key[kHashLength], &plain_key[kAddressLength], db::kIncarnationLength);
             target_table.upsert(db::to_slice(key), code_hash.value);
-            changeset_data = changeset_table.to_next(false);
+            changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
         }
     }
 }
 
-StageResult stage_hashstate(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
+StageResult stage_hashstate(TransactionManager& txn, const fs::path& etl_path, uint64_t) {
     SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
     auto last_processed_block_number{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
@@ -256,7 +280,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     auto contract_code_table{db::open_cursor(txn, db::table::kPlainContractCode)};
 
     Bytes start_key{db::block_key(unwind_to + 1)};
-    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/ false)};
+    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
     if (!changeset_data) {
         return;
     }
@@ -266,7 +290,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
         case silkworm::stagedsync::HashstateOperation::HashAccount:
             unwind_func = [&target_table, &code_table](::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
-                
+
                 auto hash{keccak256(db_key)};
                 auto new_key{mdbx::slice{hash.bytes, kHashLength}};
                 if (db_value.size() == 0) {
@@ -308,20 +332,16 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
         case silkworm::stagedsync::HashstateOperation::HashStorage:
             unwind_func = [&target_table](::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
-                // We get storage value and hash its key.
-                Bytes hashed_key(kHashLength * 2 + db::kIncarnationLength, '\0');
-                // Hashing
+
+                Bytes hashed_key(db::kHashedStoragePrefixLength, '\0');
                 std::memcpy(&hashed_key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
                 std::memcpy(&hashed_key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
-                std::memcpy(&hashed_key[kHashLength + db::kIncarnationLength],
-                            keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
-                
-                if (target_table.seek(db::to_slice(hashed_key))) {
-                    target_table.erase();
-                }
-                if (db_value.size() > 0) {
-                    target_table.upsert(db::to_slice(hashed_key), db::to_slice(db_value));
-                }
+
+                auto hashed_location{keccak256(db_key.substr(db::kStoragePrefixLength))};
+
+                db::upsert_storage_value(target_table, hashed_key, ByteView{hashed_location.bytes, kHashLength},
+                                         db_value);
+
                 return true;
             };
             break;
@@ -347,7 +367,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
                 if (target_table.seek(db::to_slice(hashed_key))) {
                     target_table.erase();
                 }
-                
+
                 target_table.upsert(db::to_slice(hashed_key), code_hash_data.value);
                 return true;
             };
@@ -361,7 +381,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     (void)db::for_each(changeset_table, unwind_func);
 }
 
-StageResult unwind_hashstate(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
+StageResult unwind_hashstate(TransactionManager& txn, const fs::path&, uint64_t unwind_to) {
     try {
         auto stage_height{db::stages::get_stage_progress(*txn, db::stages::kHashStateKey)};
         if (unwind_to >= stage_height) {

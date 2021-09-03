@@ -358,7 +358,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             throw std::runtime_error(error);
     }
 
-    (void)db::for_each(changeset_table, unwind_func);
+    (void)db::cursor_for_each(changeset_table, unwind_func);
 }
 
 StageResult unwind_hashstate(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {

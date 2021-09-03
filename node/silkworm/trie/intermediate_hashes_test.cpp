@@ -141,7 +141,7 @@ TEST_CASE("Account and storage trie") {
 
     auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
     account_trie.to_first();
-    db::for_each(account_trie, save_nodes);
+    db::cursor_for_each(account_trie, save_nodes);
 
     REQUIRE(node_map.size() == 2);
 
@@ -173,7 +173,7 @@ TEST_CASE("Account and storage trie") {
 
     auto storage_trie{db::open_cursor(txn, db::table::kTrieOfStorage)};
     storage_trie.to_first();
-    db::for_each(storage_trie, save_nodes);
+    db::cursor_for_each(storage_trie, save_nodes);
 
     REQUIRE(node_map.size() == 1);
 
@@ -244,7 +244,7 @@ TEST_CASE("Account trie around extension node") {
 
     auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
     account_trie.to_first();
-    db::for_each(account_trie, save_nodes);
+    db::cursor_for_each(account_trie, save_nodes);
 
     REQUIRE(node_map.size() == 2);
 

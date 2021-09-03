@@ -214,7 +214,7 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     }};
 
     if (free_crs.to_first(/*throw_notfound =*/false)) {
-        (void)db::for_each(free_crs, collect_func);
+        (void)db::cursor_for_each(free_crs, collect_func);
     }
 
     return ret;
@@ -982,7 +982,7 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     size_t batch_size{progress.get_increment_count()};
 
     code_cursor.to_first();
-    db::for_each(code_cursor, [&histogram, &batch_size, &progress](mdbx::cursor::move_result& entry) {
+    db::cursor_for_each(code_cursor, [&histogram, &batch_size, &progress](mdbx::cursor::move_result& entry) {
         if (entry.value.length() > 0) {
             uint8_t first_byte{entry.value.at(0)};
             ++histogram[first_byte];

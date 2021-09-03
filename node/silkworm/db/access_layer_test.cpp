@@ -124,7 +124,7 @@ namespace db {
         env.close();
     }
 
-    TEST_CASE("Methods for_each/for_count") {
+    TEST_CASE("Methods cursor_for_each/cursor_for_count") {
         TemporaryDirectory tmp_dir;
         db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
         db_config.inmemory = true;
@@ -143,14 +143,14 @@ namespace db {
         }};
 
         main_crs.to_first();
-        db::for_each(main_crs, walk_func);
+        db::cursor_for_each(main_crs, walk_func);
         CHECK(table_names.size() == sizeof(db::table::kTables) / sizeof(db::table::kTables[0]));
         CHECK(table_names.size() == main_stat.ms_entries);
 
         main_crs.to_first();
         size_t max_count = table_names.size() - 1;
         table_names.clear();
-        db::for_count(main_crs, walk_func, max_count);
+        db::cursor_for_count(main_crs, walk_func, max_count);
         CHECK(table_names.size() == max_count);
     }
 

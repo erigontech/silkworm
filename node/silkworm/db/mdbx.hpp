@@ -39,7 +39,7 @@ namespace silkworm::db {
 constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 constexpr std::string_view kDbLockFileName{"mdbx.lck"};
 
-//! \brief Pointer to a processing function invoked by for_each & for_count on each record
+//! \brief Pointer to a processing function invoked by cursor_for_each & cursor_for_count on each record
 //! \remarks Return value signals whether the loop should continue on next record
 using WalkFunc = std::function<bool(::mdbx::cursor::move_result&)>;
 
@@ -100,7 +100,7 @@ static inline std::filesystem::path get_lockfile_path(const std::filesystem::pat
     return std::filesystem::path(base_path / std::filesystem::path(kDbLockFileName));
 }
 
-//! \brief Defines the direction of cursor while looping by for_each or for_count
+//! \brief Defines the direction of cursor while looping by cursor_for_each or cursor_for_count
 enum class CursorMoveDirection { Forward, Reverse };
 
 //! \brief Executes a function on each record reachable by the provided cursor
@@ -111,7 +111,7 @@ enum class CursorMoveDirection { Forward, Reverse };
 //! \return The overall number of processed records
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
-size_t for_each(::mdbx::cursor& cursor, WalkFunc func, CursorMoveDirection direction = CursorMoveDirection::Forward);
+size_t cursor_for_each(::mdbx::cursor& cursor, WalkFunc func, CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor up to a max number of iterations
 //! \param [in] cursor : A reference to a cursor opened on a map
@@ -123,7 +123,7 @@ size_t for_each(::mdbx::cursor& cursor, WalkFunc func, CursorMoveDirection direc
 //! reached either the end or the beginning of table earlier
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
-size_t for_count(::mdbx::cursor& cursor, WalkFunc func, size_t max_count,
+size_t cursor_for_count(::mdbx::cursor& cursor, WalkFunc func, size_t max_count,
                  CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 }  // namespace silkworm::db

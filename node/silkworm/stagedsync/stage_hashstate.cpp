@@ -92,7 +92,7 @@ void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
             size_t new_key_pos{0};
 
             // plain state key = address + incarnation
-            assert(data.key.length() == db::kStoragePrefixLength);
+            assert(data.key.length() == db::kPlainStoragePrefixLength);
 
             std::memcpy(&new_key[new_key_pos], keccak256(db::from_slice(data.key).substr(0, kAddressLength)).bytes,
                         kHashLength);
@@ -192,7 +192,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             }
 
             // plain state key = address + incarnation
-            assert(db_key.length() == db::kStoragePrefixLength);
+            assert(db_key.length() == db::kPlainStoragePrefixLength);
 
             Bytes hashed_key(db::kHashedStoragePrefixLength, '\0');
             std::memcpy(&hashed_key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
@@ -337,7 +337,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
                 std::memcpy(&hashed_key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
                 std::memcpy(&hashed_key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
 
-                auto hashed_location{keccak256(db_key.substr(db::kStoragePrefixLength))};
+                auto hashed_location{keccak256(db_key.substr(db::kPlainStoragePrefixLength))};
 
                 db::upsert_storage_value(target_table, hashed_key, ByteView{hashed_location.bytes, kHashLength},
                                          db_value);

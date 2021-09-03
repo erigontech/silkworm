@@ -50,7 +50,7 @@ Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
 }
 
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation) {
-    Bytes res(8 + kStoragePrefixLength, '\0');
+    Bytes res(8 + kPlainStoragePrefixLength, '\0');
     endian::store_big_u64(&res[0], block_number);
     std::memcpy(&res[8], address.bytes, kAddressLength);
     endian::store_big_u64(&res[8 + kAddressLength], incarnation);

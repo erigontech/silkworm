@@ -85,7 +85,7 @@ void Buffer::update_account_code(const evmc::address& address, uint64_t incarnat
     }
     if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(full_view(address), incarnation), code_hash)
             .second) {
-        bump_batch_size(kStoragePrefixLength, kHashLength);
+        bump_batch_size(kPlainStoragePrefixLength, kHashLength);
     }
 }
 
@@ -97,11 +97,11 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     changed_storage_.insert(address);
     ByteView change_val{zeroless_view(initial)};
     if (storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
-        bump_batch_size(8 + kStoragePrefixLength, kHashLength + change_val.size());
+        bump_batch_size(8 + kPlainStoragePrefixLength, kHashLength + change_val.size());
     }
 
     if (storage_[address][incarnation].insert_or_assign(location, current).second) {
-        bump_batch_size(kStoragePrefixLength, kHashLength + zeroless_view(current).size());
+        bump_batch_size(kPlainStoragePrefixLength, kHashLength + zeroless_view(current).size());
     }
 }
 

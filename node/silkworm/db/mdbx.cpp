@@ -190,7 +190,7 @@ size_t cursor_erase(mdbx::cursor& cursor, const CursorMoveDirection direction) {
     return cursor_for_each(cursor, detail::cursor_erase_data, direction);
 }
 
-size_t db::cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, const CursorMoveDirection direction) {
+size_t cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, const CursorMoveDirection direction) {
     // Search lower bound key
     if (!cursor.lower_bound(to_slice(set_key), false)) {
         return 0;
@@ -202,11 +202,11 @@ size_t db::cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, const Cur
     return cursor_for_each(cursor, detail::cursor_erase_data, direction);
 }
 
-size_t db::cursor_erase(mdbx::cursor& cursor, size_t max_count, const CursorMoveDirection direction) {
+size_t cursor_erase(mdbx::cursor& cursor, size_t max_count, const CursorMoveDirection direction) {
     return cursor_for_count(cursor, detail::cursor_erase_data, max_count, direction);
 }
 
-size_t db::cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, size_t max_count,
+size_t cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, size_t max_count,
                         const CursorMoveDirection direction) {
     // Search lower bound key
     if (!cursor.lower_bound(to_slice(set_key), false)) {

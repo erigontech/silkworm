@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_GRPC_ASYNC_CLIENT_HPP
-#define SILKWORM_GRPCASYNCCLIENT_HPP
+#ifndef SILKWORM_GRPC_SYNC_CLIENT_HPP
+#define SILKWORM_GRPC_SYNC_CLIENT_HPP
 
 #include <chrono>
 #include <iostream>
@@ -239,4 +239,4 @@ class OutStreamingCall: public Call<STUB> {
 
 } // namespace end
 
-#endif  // SILKWORM_GRPC_ASYNC_CLIENT_HPP
+#endif  // SILKWORM_GRPC_SYNC_CLIENT_HPP

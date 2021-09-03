@@ -37,6 +37,17 @@ static Bytes compact(Bytes& b) {
     return b;
 }
 
+// Convert compacted byte array back to the number
+static uint64_t from_compact(ByteView& b) {
+    uint64_t block_number{0};
+    uint8_t  byte_position{0};
+    for(const auto &byte: b) {
+        block_number |= byte << byte_position;
+        byte_position += 8;
+    }
+    return block_number;
+}
+
 StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
@@ -183,43 +194,21 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
 }
 
 StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
-    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transactions_table{db::open_cursor(*txn, db::table::kEthTx)};
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
 
     SILKWORM_LOG(LogLevel::Info) << "Pruning Transaction Lookup from: " << prune_from << std::endl;
 
-    Bytes start(8, '\0');
-    endian::store_big_u64(&start[0], prune_from - 1);
+    auto lookup_data{lookup_table.to_first(/*throw_notfound*/ false)};
 
-    uint64_t block_processed{0};
-    auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
-    // From the way up, we go down and remove elements
-    while (bodies_data) {
-        auto body_rlp{db::from_slice(bodies_data.value)};
-        auto body{db::detail::decode_stored_block_body(body_rlp)};
-
-        if (body.txn_count) {
-            Bytes tx_base_id(8, '\0');
-            endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
-            auto tx_data{transactions_table.lower_bound(db::to_slice(tx_base_id), /*throw_notfound*/ false)};
-            uint64_t tx_count{0};
-            while (tx_data && tx_count < body.txn_count) {
-                auto tx_view{db::from_slice(tx_data.value)};
-                auto hash{keccak256(tx_view)};
-                if (lookup_table.seek(mdbx::slice{hash.bytes, kHashLength})) {
-                    lookup_table.erase();
-                }
-                ++tx_count;
-                tx_data = transactions_table.to_next(/*throw_notfound*/ false);
-            }
+    while (lookup_data) {
+        // Check current lookup block number
+        auto block_number_view{db::from_slice(lookup_data.value)};
+        auto current_block{from_compact(block_number_view)};
+        // Filter out all of the lookups with invalid block numbers
+        if (current_block < prune_from) {
+            lookup_table.erase(/*whole_multivalue*/ false);
         }
-        block_processed++;
-        if (block_processed % 1'000'000 == 0) {
-            SILKWORM_LOG(LogLevel::Info) << "Pruned " << block_processed << " blocks of lookups" << std::endl;
-            txn.commit();
-        }
-        bodies_data = bodies_table.to_previous(/*throw_notfound*/ false);
+        lookup_data = lookup_table.to_next(/*throw_notfound*/ false);
     }
 
     txn.commit();

@@ -192,6 +192,7 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], prune_from - 1);
 
+    uint64_t block_processed{0};
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
     // From the way up, we go down and remove elements
     while (bodies_data) {
@@ -203,7 +204,6 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
             endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
             auto tx_data{transactions_table.lower_bound(db::to_slice(tx_base_id), /*throw_notfound*/ false)};
             uint64_t tx_count{0};
-
             while (tx_data && tx_count < body.txn_count) {
                 auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
@@ -214,7 +214,11 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
                 tx_data = transactions_table.to_next(/*throw_notfound*/ false);
             }
         }
-
+        block_processed++;
+        if (block_processed % 1'000'000 == 0) {
+            SILKWORM_LOG(LogLevel::Info) << "Pruned " << block_processed << " blocks of lookups" << std::endl;
+            txn.commit();
+        }
         bodies_data = bodies_table.to_previous(/*throw_notfound*/ false);
     }
 

@@ -43,7 +43,7 @@ static const std::map<std::string, std::string> kGeneticCode{
 
 namespace silkworm::db {
 
-TEST_CASE("for_each") {
+TEST_CASE("cursor_for_each") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
     db_config.inmemory = true;
@@ -69,7 +69,7 @@ TEST_CASE("for_each") {
     }};
 
     // empty table
-    for_each(table_cursor, save_all_data_map);
+    cursor_for_each(table_cursor, save_all_data_map);
     REQUIRE(data_map.empty());
 
     // populate table
@@ -82,26 +82,26 @@ TEST_CASE("for_each") {
     table_cursor = txn.open_cursor(handle);
 
     // read entire table forward
-    for_each(table_cursor, save_all_data_map);
+    cursor_for_each(table_cursor, save_all_data_map);
     CHECK(data_map == kGeneticCode);
     data_map.clear();
     table_cursor.close();
     table_cursor = txn.open_cursor(handle);
 
     // read entire table backwards
-    for_each(table_cursor, save_all_data_map, CursorMoveDirection::Reverse);
+    cursor_for_each(table_cursor, save_all_data_map, CursorMoveDirection::Reverse);
     CHECK(data_map == kGeneticCode);
     data_map.clear();
     table_cursor.close();
     table_cursor = txn.open_cursor(handle);
 
     // Ensure the order is reversed
-    for_each(table_cursor, save_all_data_vec, CursorMoveDirection::Reverse);
+    cursor_for_each(table_cursor, save_all_data_vec, CursorMoveDirection::Reverse);
     CHECK(data_vec.back().second == kGeneticCode.at("AAA"));
 
     // late start
     table_cursor.find("UUG");
-    for_each(table_cursor, save_all_data_map);
+    cursor_for_each(table_cursor, save_all_data_map);
     REQUIRE(data_map.size() == 2);
     CHECK(data_map.at("UUG") == "Leucine");
     CHECK(data_map.at("UUU") == "Phenylalanine");
@@ -116,7 +116,7 @@ TEST_CASE("for_each") {
         return true;
     }};
     table_cursor.to_first();
-    for_each(table_cursor, save_some_data);
+    cursor_for_each(table_cursor, save_some_data);
     REQUIRE(data_map.size() == 4);
     CHECK(data_map.at("AAA") == "Lysine");
     CHECK(data_map.at("AAC") == "Asparagine");
@@ -124,7 +124,7 @@ TEST_CASE("for_each") {
     CHECK(data_map.at("AAU") == "Asparagine");
 }
 
-TEST_CASE("for_count") {
+TEST_CASE("cursor_for_count") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
     db_config.inmemory = true;
@@ -143,7 +143,7 @@ TEST_CASE("for_count") {
     }};
 
     // empty table
-    for_count(table_cursor, save_all_data, /*max_count=*/5);
+    cursor_for_count(table_cursor, save_all_data, /*max_count=*/5);
     REQUIRE(data.empty());
 
     // populate table
@@ -153,13 +153,13 @@ TEST_CASE("for_count") {
 
     // read entire table
     table_cursor.to_first();
-    for_count(table_cursor, save_all_data, /*max_count=*/100);
+    cursor_for_count(table_cursor, save_all_data, /*max_count=*/100);
     CHECK(data == kGeneticCode);
     data.clear();
 
     // read some first entries
     table_cursor.to_first();
-    for_count(table_cursor, save_all_data, /*max_count=*/5);
+    cursor_for_count(table_cursor, save_all_data, /*max_count=*/5);
     REQUIRE(data.size() == 5);
     CHECK(data.at("AAA") == "Lysine");
     CHECK(data.at("AAC") == "Asparagine");
@@ -170,7 +170,7 @@ TEST_CASE("for_count") {
 
     // late start
     table_cursor.find("UUA");
-    for_count(table_cursor, save_all_data, /*max_count=*/3);
+    cursor_for_count(table_cursor, save_all_data, /*max_count=*/3);
     REQUIRE(data.size() == 3);
     CHECK(data.at("UUA") == "Leucine");
     CHECK(data.at("UUC") == "Phenylalanine");
@@ -179,7 +179,7 @@ TEST_CASE("for_count") {
 
     // reverse read
     table_cursor.to_last();
-    for_count(table_cursor, save_all_data, /*max_count=*/4, CursorMoveDirection::Reverse);
+    cursor_for_count(table_cursor, save_all_data, /*max_count=*/4, CursorMoveDirection::Reverse);
     REQUIRE(data.size() == 4);
     CHECK(data.at("UUA") == "Leucine");
     CHECK(data.at("UUC") == "Phenylalanine");
@@ -196,7 +196,7 @@ TEST_CASE("for_count") {
         return true;
     }};
     table_cursor.to_first();
-    for_count(table_cursor, save_some_data, /*max_count=*/3);
+    cursor_for_count(table_cursor, save_some_data, /*max_count=*/3);
     REQUIRE(data.size() == 3);
     CHECK(data.at("AAA") == "Lysine");
     CHECK(data.at("AAC") == "Asparagine");
@@ -205,7 +205,7 @@ TEST_CASE("for_count") {
 
     // early stop 2
     table_cursor.to_first();
-    for_count(table_cursor, save_some_data, /*max_count=*/5);
+    cursor_for_count(table_cursor, save_some_data, /*max_count=*/5);
     REQUIRE(data.size() == 4);
     CHECK(data.at("AAA") == "Lysine");
     CHECK(data.at("AAC") == "Asparagine");

@@ -146,7 +146,7 @@ bool has_map(::mdbx::txn& tx, const char* map_name) {
     }
 }
 
-size_t for_each(::mdbx::cursor& cursor, WalkFunc walker, CursorMoveDirection direction) {
+size_t cursor_for_each(::mdbx::cursor& cursor, WalkFunc walker, CursorMoveDirection direction) {
     const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
                                                           ? mdbx::cursor::move_operation::next
                                                           : mdbx::cursor::move_operation::previous};
@@ -163,7 +163,7 @@ size_t for_each(::mdbx::cursor& cursor, WalkFunc walker, CursorMoveDirection dir
     return ret;
 }
 
-size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count, CursorMoveDirection direction) {
+size_t cursor_for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count, CursorMoveDirection direction) {
     const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
                                                           ? mdbx::cursor::move_operation::next
                                                           : mdbx::cursor::move_operation::previous};

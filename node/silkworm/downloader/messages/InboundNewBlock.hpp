@@ -36,8 +36,8 @@ class InboundNewBlock: public InboundMessage {
     std::string peerId_;
     NewBlockPacket packet_;
     uint64_t reqId_;
-    WorkingChain& working_chain_;
-    SentryClient& sentry_;
+    [[maybe_unused]] WorkingChain& working_chain_;
+    [[maybe_unused]] SentryClient& sentry_;
 };
 
 }

@@ -57,13 +57,13 @@ TEST_CASE("cursor_for_each") {
 
     // A map to collect data
     std::map<std::string, std::string> data_map;
-    const auto save_all_data_map{[&data_map](mdbx::cursor::move_result& entry) {
+    const auto save_all_data_map{[&data_map](::mdbx::cursor, mdbx::cursor::move_result& entry) {
         data_map.emplace(entry.key, entry.value);
         return true;
     }};
 
     std::vector<std::pair<std::string, std::string>> data_vec;
-    const auto save_all_data_vec{[&data_vec](mdbx::cursor::move_result& entry) {
+    const auto save_all_data_vec{[&data_vec](::mdbx::cursor, mdbx::cursor::move_result& entry) {
         data_vec.emplace_back(entry.key, entry.value);
         return true;
     }};
@@ -108,7 +108,7 @@ TEST_CASE("cursor_for_each") {
     data_map.clear();
 
     // early stop
-    const auto save_some_data{[&data_map](mdbx::cursor::move_result& entry) {
+    const auto save_some_data{[&data_map](::mdbx::cursor, mdbx::cursor::move_result& entry) {
         if (entry.value == "Threonine") {
             return false;
         }
@@ -137,7 +137,7 @@ TEST_CASE("cursor_for_count") {
     auto table_cursor{txn.open_cursor(handle)};
 
     std::map<std::string, std::string> data;
-    const auto save_all_data{[&data](mdbx::cursor::move_result& entry) {
+    const auto save_all_data{[&data](::mdbx::cursor, mdbx::cursor::move_result& entry) {
         data.emplace(entry.key, entry.value);
         return true;
     }};
@@ -188,7 +188,7 @@ TEST_CASE("cursor_for_count") {
     data.clear();
 
     // early stop 1
-    const auto save_some_data{[&data](mdbx::cursor::move_result& entry) {
+    const auto save_some_data{[&data](::mdbx::cursor, mdbx::cursor::move_result& entry) {
         if (entry.value == "Threonine") {
             return false;
         }

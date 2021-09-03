@@ -20,7 +20,8 @@ namespace silkworm::db {
 
 namespace detail {
 
-    //! \brief Returns data of current cursor position or moves it to begin or end of table on behalf of provided direction
+    //! \brief Returns data of current cursor position or moves it to begin or end of table on behalf of provided
+    //! direction.
     //! \param [in] _c : A reference to an open cursor
     //! \param [in] _d : Direction cursor should have
     //! \return ::mdbx::cursor::move_result
@@ -30,6 +31,11 @@ namespace detail {
         }
         return _c.current(false);
     }
+
+    auto cursor_erase_data = [](::mdbx::cursor& _cursor, ::mdbx::cursor::move_result& _data) -> bool {
+        (void)_data;
+        return _cursor.erase();
+    };
 
 }  // namespace detail
 
@@ -64,7 +70,7 @@ namespace detail {
     uint32_t flags{MDBX_NOTLS | MDBX_NORDAHEAD | MDBX_COALESCE | MDBX_SYNC_DURABLE};  // Default flags
 
     if (config.exclusive && config.shared) {
-        throw std::runtime_error("Exlusive conflicts with Shared");
+        throw std::runtime_error("Exclusive conflicts with Shared");
     }
     if (config.create && config.shared) {
         throw std::runtime_error("Create conflicts with Shared");
@@ -146,7 +152,7 @@ bool has_map(::mdbx::txn& tx, const char* map_name) {
     }
 }
 
-size_t cursor_for_each(::mdbx::cursor& cursor, WalkFunc walker, CursorMoveDirection direction) {
+size_t cursor_for_each(::mdbx::cursor& cursor, WalkFunc walker, const CursorMoveDirection direction) {
     const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
                                                           ? mdbx::cursor::move_operation::next
                                                           : mdbx::cursor::move_operation::previous};
@@ -155,7 +161,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, WalkFunc walker, CursorMoveDirect
     auto data{detail::cursor_data_factory(cursor, direction)};
     while (data.done) {
         ++ret;
-        if (!walker(data)) {
+        if (!walker(cursor, data)) {
             break;  // Walker function has returned false hence stop
         }
         data = cursor.move(move_operation, /*throw_notfound=*/false);
@@ -163,7 +169,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, WalkFunc walker, CursorMoveDirect
     return ret;
 }
 
-size_t cursor_for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count, CursorMoveDirection direction) {
+size_t cursor_for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count, const CursorMoveDirection direction) {
     const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
                                                           ? mdbx::cursor::move_operation::next
                                                           : mdbx::cursor::move_operation::previous};
@@ -172,12 +178,35 @@ size_t cursor_for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count, C
     while (count && data.done) {
         ++ret;
         --count;
-        if (!walker(data)) {
+        if (!walker(cursor, data)) {
             break;  // Walker function has returned false hence stop
         }
         data = cursor.move(move_operation, /*throw_notfound=*/false);
     }
     return ret;
+}
+
+size_t cursor_erase(mdbx::cursor& cursor, const CursorMoveDirection direction) {
+    return cursor_for_each(cursor, detail::cursor_erase_data, direction);
+}
+
+size_t db::cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, const CursorMoveDirection direction) {
+    if (!cursor.seek(to_slice(set_key))) {
+        return 0;
+    }
+    return cursor_for_each(cursor, detail::cursor_erase_data, direction);
+}
+
+size_t db::cursor_erase(mdbx::cursor& cursor, size_t max_count, const CursorMoveDirection direction) {
+    return cursor_for_count(cursor, detail::cursor_erase_data, max_count, direction);
+}
+
+size_t db::cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, size_t max_count,
+                        const CursorMoveDirection direction) {
+    if (!cursor.seek(to_slice(set_key))) {
+        return 0;
+    }
+    return cursor_for_count(cursor, detail::cursor_erase_data, max_count, direction);
 }
 
 }  // namespace silkworm::db

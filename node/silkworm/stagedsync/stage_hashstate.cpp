@@ -235,7 +235,7 @@ StageResult stage_hashstate(TransactionManager& txn, const std::filesystem::path
     }
     // Update progress height with last processed block
     db::stages::write_stage_progress(*txn, db::stages::kHashStateKey,
-                                   db::stages::read_stage_progress(*txn, db::stages::kExecutionKey));
+                                     db::stages::read_stage_progress(*txn, db::stages::kExecutionKey));
     txn.commit();
 
     SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
@@ -256,7 +256,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     auto contract_code_table{db::open_cursor(txn, db::table::kPlainContractCode)};
 
     Bytes start_key{db::block_key(unwind_to + 1)};
-    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/ false)};
+    auto changeset_data{changeset_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
     if (!changeset_data) {
         return;
     }
@@ -264,9 +264,9 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     db::WalkFunc unwind_func;
     switch (operation) {
         case silkworm::stagedsync::HashstateOperation::HashAccount:
-            unwind_func = [&target_table, &code_table](::mdbx::cursor::move_result data) -> bool {
+            unwind_func = [&target_table, &code_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
-                
+
                 auto hash{keccak256(db_key)};
                 auto new_key{mdbx::slice{hash.bytes, kHashLength}};
                 if (db_value.size() == 0) {
@@ -306,7 +306,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             };
             break;
         case silkworm::stagedsync::HashstateOperation::HashStorage:
-            unwind_func = [&target_table](::mdbx::cursor::move_result data) -> bool {
+            unwind_func = [&target_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
                 // We get storage value and hash its key.
                 Bytes hashed_key(kHashLength * 2 + db::kIncarnationLength, '\0');
@@ -315,7 +315,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
                 std::memcpy(&hashed_key[kHashLength], &db_key[kAddressLength], db::kIncarnationLength);
                 std::memcpy(&hashed_key[kHashLength + db::kIncarnationLength],
                             keccak256(db_key.substr(kAddressLength + db::kIncarnationLength)).bytes, kHashLength);
-                
+
                 if (target_table.seek(db::to_slice(hashed_key))) {
                     target_table.erase();
                 }
@@ -326,7 +326,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             };
             break;
         case silkworm::stagedsync::HashstateOperation::Code:
-            unwind_func = [&target_table, &contract_code_table](::mdbx::cursor::move_result data) -> bool {
+            unwind_func = [&target_table, &contract_code_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
                 if (db_value.size() == 0) {
                     return true;
@@ -347,7 +347,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
                 if (target_table.seek(db::to_slice(hashed_key))) {
                     target_table.erase();
                 }
-                
+
                 target_table.upsert(db::to_slice(hashed_key), code_hash_data.value);
                 return true;
             };

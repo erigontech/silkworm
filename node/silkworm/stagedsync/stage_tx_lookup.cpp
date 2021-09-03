@@ -42,7 +42,7 @@ static uint64_t from_compact(ByteView& b) {
     uint64_t block_number{0};
     uint8_t  byte_position{0};
     for(const auto &byte: b) {
-        block_number |= byte << byte_position;
+        block_number |= uint64_t(byte << byte_position);
         byte_position += 8;
     }
     return block_number;

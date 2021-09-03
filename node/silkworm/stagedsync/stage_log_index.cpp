@@ -35,7 +35,7 @@ namespace fs = std::filesystem;
 
 constexpr size_t kBitmapBufferSizeLimit = 512_Mebi;
 
-static void loader_function(etl::Entry entry, mdbx::cursor& target_table, MDBX_put_flags_t db_flags) {
+static void loader_function(const etl::Entry& entry, mdbx::cursor& target_table, MDBX_put_flags_t db_flags) {
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
     Bytes last_chunk_index(entry.key.size() + 4, '\0');
     std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
@@ -57,7 +57,7 @@ static void loader_function(etl::Entry entry, mdbx::cursor& target_table, MDBX_p
 
         mdbx::slice k{db::to_slice(chunk_index)};
         mdbx::slice v{db::to_slice(current_chunk_bytes)};
-        target_table.put(k, &v, db_flags);
+        mdbx::error::success_or_throw(target_table.put(k, &v, db_flags));
     }
 }
 
@@ -215,12 +215,11 @@ StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::pat
     return StageResult::kSuccess;
 }
 
-void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t prune_from,
-                                 bool topics) {
+void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t prune_from, bool topics) {
     auto last_processed_block{db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)};
 
     auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
-                    : db::open_cursor(*txn, db::table::kLogAddressIndex)};
+                            : db::open_cursor(*txn, db::table::kLogAddressIndex)};
 
     if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
@@ -237,7 +236,8 @@ void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_
             // check if prune can be applied
             if (bm.maximum() >= prune_from) {
                 // Erase elements that are below prune_from
-                bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
+                bm &=
+                    roaring::Roaring(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
                 Bytes new_bitmap(bm.getSizeInBytes(), '\0');
                 bm.write(byte_ptr_cast(&new_bitmap[0]));
                 // replace with new index

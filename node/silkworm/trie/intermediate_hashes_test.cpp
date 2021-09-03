@@ -135,7 +135,7 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     std::map<Bytes, Node> node_map;
-    const auto save_nodes{[&node_map](mdbx::cursor::move_result& entry) {
+    const auto save_nodes{[&node_map](::mdbx::cursor, mdbx::cursor::move_result& entry) {
         const Node node{*unmarshal_node(db::from_slice(entry.value))};
         node_map.emplace(db::from_slice(entry.key), node);
         return true;
@@ -264,7 +264,7 @@ TEST_CASE("Account trie around extension node") {
     CHECK(regenerate_intermediate_hashes(txn, data_dir.etl().path()) == expected_root);
 
     std::map<Bytes, Node> node_map;
-    const auto save_nodes{[&node_map](mdbx::cursor::move_result& entry) {
+    const auto save_nodes{[&node_map](::mdbx::cursor, mdbx::cursor::move_result& entry) {
         const Node node{*unmarshal_node(db::from_slice(entry.value))};
         node_map.emplace(db::from_slice(entry.key), node);
         return true;

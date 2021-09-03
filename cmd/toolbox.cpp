@@ -205,7 +205,7 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     auto free_stat{txn.get_map_stat(free_map)};
     auto free_crs{txn.open_cursor(free_map)};
 
-    const auto& collect_func{[&ret, &free_stat](::mdbx::cursor::move_result data) -> bool {
+    const auto& collect_func{[&ret, &free_stat](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
         size_t txId = *(static_cast<size_t*>(data.key.iov_base));
         size_t pagesCount = *(static_cast<uint32_t*>(data.value.iov_base));
         size_t pagesSize = pagesCount * free_stat.ms_psize;
@@ -1001,7 +1001,7 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     size_t batch_size{progress.get_increment_count()};
 
     code_cursor.to_first();
-    db::cursor_for_each(code_cursor, [&histogram, &batch_size, &progress](mdbx::cursor::move_result& entry) {
+    db::cursor_for_each(code_cursor, [&histogram, &batch_size, &progress](::mdbx::cursor, mdbx::cursor::move_result& entry) {
         if (entry.value.length() > 0) {
             uint8_t first_byte{entry.value.at(0)};
             ++histogram[first_byte];

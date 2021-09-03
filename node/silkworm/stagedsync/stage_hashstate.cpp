@@ -259,7 +259,7 @@ StageResult stage_hashstate(TransactionManager& txn, const fs::path& etl_path, u
     }
     // Update progress height with last processed block
     db::stages::write_stage_progress(*txn, db::stages::kHashStateKey,
-                                   db::stages::read_stage_progress(*txn, db::stages::kExecutionKey));
+                                     db::stages::read_stage_progress(*txn, db::stages::kExecutionKey));
     txn.commit();
 
     SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
@@ -288,7 +288,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     db::WalkFunc unwind_func;
     switch (operation) {
         case silkworm::stagedsync::HashstateOperation::HashAccount:
-            unwind_func = [&target_table, &code_table](::mdbx::cursor::move_result data) -> bool {
+            unwind_func = [&target_table, &code_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
 
                 auto hash{keccak256(db_key)};
@@ -330,7 +330,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             };
             break;
         case silkworm::stagedsync::HashstateOperation::HashStorage:
-            unwind_func = [&target_table](::mdbx::cursor::move_result data) -> bool {
+            unwind_func = [&target_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
 
                 Bytes hashed_key(db::kHashedStoragePrefixLength, '\0');
@@ -346,7 +346,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             };
             break;
         case silkworm::stagedsync::HashstateOperation::Code:
-            unwind_func = [&target_table, &contract_code_table](::mdbx::cursor::move_result data) -> bool {
+            unwind_func = [&target_table, &contract_code_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
                 auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
                 if (db_value.size() == 0) {
                     return true;

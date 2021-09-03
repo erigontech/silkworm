@@ -81,7 +81,7 @@ Bytes log_key(uint64_t block_number, uint32_t transaction_id) {
 
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix) {
     auto prefix_slice{to_slice(value_prefix)};
-    auto data{table.lower_bound_multivalue(to_slice(key), prefix_slice, /*throw_notfound*/ false)};
+    auto data{table.lower_bound_multivalue(to_slice(key), prefix_slice, /*throw_notfound=*/false)};
     if (!data || !data.value.starts_with(prefix_slice)) {
         return std::nullopt;
     }
@@ -89,6 +89,17 @@ std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, Byt
     ByteView res{from_slice(data.value)};
     res.remove_prefix(value_prefix.length());
     return res;
+}
+
+void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView value) {
+    if (find_value_suffix(state_cursor, storage_prefix, location)) {
+        state_cursor.erase();
+    }
+    if (!value.empty()) {
+        Bytes data{location};
+        data.append(value);
+        state_cursor.upsert(to_slice(storage_prefix), to_slice(data));
+    }
 }
 
 namespace detail {

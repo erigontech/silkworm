@@ -186,6 +186,9 @@ inline ByteView from_slice(const mdbx::slice slice) { return {static_cast<uint8_
 // Otherwise, return nullopt.
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix);
 
+// We can't simply call upsert for storage values because they live in mdbx::value_mode::multi tables
+void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView value);
+
 namespace detail {
 
     // See Erigon BodyForStorage

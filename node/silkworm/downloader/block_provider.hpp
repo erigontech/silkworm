@@ -31,7 +31,12 @@ class BlockProviderException: public std::runtime_error {
     explicit BlockProviderException(std::string cause): std::runtime_error(cause) {}
 };
 
-
+/*
+ * BlockProvider
+ * This component processes inbound request from other peers that ask for block headers or block bodies.
+ * This component should always be running; to do so provide a thread to run the execution_loop().
+ * BlockProvider depends upon a SentryClient to connect to the remote sentry to receive requests and send responses.
+ */
 class BlockProvider : public ActiveComponent {  // an active component that must run always
 
     ChainIdentity chain_identity_;
@@ -44,10 +49,7 @@ class BlockProvider : public ActiveComponent {  // an active component that must
     BlockProvider(BlockProvider&&) = delete;       // nor movable
     ~BlockProvider();
 
-    DbTx& db_tx() { return db_; }
-    SentryClient& sentry() { return sentry_; }
-
-    [[long_running]] void execution_loop() override;
+    [[long_running]] void execution_loop() override; // main loop, receive messages from sentry and process them
 
   private:
     void send_status();

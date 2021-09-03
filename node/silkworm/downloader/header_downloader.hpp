@@ -44,7 +44,11 @@ class HeaderDownloaderException: public std::runtime_error {
     explicit HeaderDownloaderException(std::string cause): std::runtime_error(cause) {}
 };
 
-// header downloader stage
+/*
+ * Header downloading stage
+ * Like the other stages it has two methods, one to go forward and one to go backwards in the chain.
+ * It doesn't require a thread, but it uses one internally to separate message receiving and message handling
+ */
 class HeaderDownloader : public Stage {
 
     ChainIdentity chain_identity_;
@@ -58,16 +62,18 @@ class HeaderDownloader : public Stage {
     HeaderDownloader(HeaderDownloader&&) = delete; // nor movable
     ~HeaderDownloader();
 
-    StageResult wind(BlockNum new_height) override;
-    StageResult unwind(BlockNum new_height) override;
+    StageResult wind(BlockNum new_height) override;    // go forward, downloading headers up to new_height
+    StageResult unwind(BlockNum new_height) override;  // go backward, unwinding headers to new_height
 
   private:
-    using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;
+    using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>; // used internally to store new messages
 
-    void send_status();
-    [[long_running]] void receive_messages(MessageQueue& messages, std::atomic<bool>& stopping);
+    void send_status();     // send chain identity to sentry
 
-    void process_one_message(MessageQueue& messages);
+    [[long_running]] void receive_messages(MessageQueue& messages,       // subscribe with sentry to receive messages
+                                           std::atomic<bool>& stopping); // and do a long-running loop to wait for messages
+
+    void process_one_message(MessageQueue& messages); // process one message pop-ing it from the queue
 };
 
 

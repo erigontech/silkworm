@@ -243,12 +243,12 @@ evmc::bytes32 InMemoryState::account_storage_root(const evmc::address& address, 
     }
 
     std::map<evmc::bytes32, Bytes> storage_rlp;
-    Bytes rlp;
+    Bytes buffer;
     for (const auto& [location, value] : storage) {
         ethash::hash256 hash{keccak256(full_view(location))};
-        rlp.clear();
-        rlp::encode(rlp, zeroless_view(value));
-        storage_rlp[to_bytes32(full_view(hash.bytes))] = rlp;
+        buffer.clear();
+        rlp::encode(buffer, zeroless_view(value));
+        storage_rlp[to_bytes32(full_view(hash.bytes))] = buffer;
     }
 
     trie::HashBuilder hb;

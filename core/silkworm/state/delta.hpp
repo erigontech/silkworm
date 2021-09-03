@@ -63,6 +63,19 @@ namespace state {
         state::Object previous_;
     };
 
+    // Account balance updated.
+    // UpdateBalanceDelta is a special case of the more general UpdateDelta. It occupies less memory than UpdateDelta.
+    class UpdateBalanceDelta : public Delta {
+      public:
+        UpdateBalanceDelta(evmc::address address, intx::uint256 previous) noexcept;
+
+        void revert(IntraBlockState& state) noexcept override;
+
+      private:
+        evmc::address address_;
+        intx::uint256 previous_;
+    };
+
     // Account recorded for self-destruction.
     class SuicideDelta : public Delta {
       public:

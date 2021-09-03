@@ -87,7 +87,7 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         h.payload_length = 1;
     } else if (b < 0xB8) {
         from.remove_prefix(1);
-        h.payload_length = b - 0x80;
+        h.payload_length = b - 0x80u;
         if (h.payload_length == 1) {
             if (from.empty()) {
                 return {h, DecodingResult::kInputTooShort};
@@ -114,7 +114,7 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
     } else if (b < 0xF8) {
         from.remove_prefix(1);
         h.list = true;
-        h.payload_length = b - 0xC0;
+        h.payload_length = b - 0xC0u;
     } else {
         from.remove_prefix(1);
         h.list = true;

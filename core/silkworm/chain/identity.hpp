@@ -28,7 +28,7 @@ struct ChainIdentity {
     ChainConfig chain;
     evmc::bytes32 genesis_hash;
 
-    std::vector<BlockNum> distinct_fork_numbers();  // helper method
+    std::vector<BlockNum> distinct_fork_numbers() const;  // helper method
 
     static ChainIdentity mainnet;
     static ChainIdentity goerli;

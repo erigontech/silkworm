@@ -14,7 +14,12 @@
 
 image: Visual Studio 2019
 platform: x64
-configuration: Release
+configuration:
+  - Debug
+  - Release
+
+matrix:
+  fast_finish: true
 
 environment:
   APPVEYOR_SAVE_CACHE_ON_ERROR: true
@@ -33,13 +38,13 @@ before_build:
   - git submodule update --init --recursive
   - SET INCLUDE=C:\Tools\vcpkg\installed\x64-windows\include;%INCLUDE%
   - SET PATH=C:\Tools\vcpkg\installed\x64-windows\bin;C:\Strawberry\perl\bin;%PATH%
-  - cmake -H. -Bbuild -Wno-dev
+  - cmake -H. -Bbuild -Wno-dev -DCMAKE_BUILD_TYPE=%CONFIGURATION%
 
 build:
   project: build\silkworm.sln
 
 test_script:
   - cd Build
-  - cmd\Release\core_test.exe
-  - cmd\Release\node_test.exe
-  - cmd\Release\consensus.exe
+  - cmd\%CONFIGURATION%\core_test.exe
+  - cmd\%CONFIGURATION%\node_test.exe
+  - IF "%CONFIGURATION%" == "Release" cmd\%CONFIGURATION%\consensus.exe

@@ -14,30 +14,18 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RANDOMNUMBER_HPP
-#define SILKWORM_RANDOMNUMBER_HPP
-#include <random>
-#include "Singleton.hpp"
+#include <silkworm/common/log.hpp>
+
+#include "sentry_client.hpp"
 
 namespace silkworm {
 
-class RandomNumber {
-    std::mt19937_64 generator_; // the 64-bit Mersenne Twister 19937 generator
-    std::uniform_int_distribution<unsigned long long> distr_; // a uniform distribution
+SentryClient::SentryClient(std::string sentry_addr): base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {
 
-  public:
-    RandomNumber() {
-        std::random_device rd;
-        generator_.seed(rd()); // init generator_ with a random seed
     }
 
-    int64_t generate_one() {
-        return distr_(generator_);
-    }
-
-};
-
-#define RANDOM_NUMBER default_instantiating::Singleton<RandomNumber>::instance()
-
+void SentryClient::exec_remotely(SentryRpc& rpc) {
+    base_t::exec_remotely(rpc);
 }
-#endif  // SILKWORM_RANDOMNUMBER_HPP
+
+} // namespace silkworm

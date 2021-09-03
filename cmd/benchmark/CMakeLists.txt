@@ -1,4 +1,4 @@
-/*
+#[[
    Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +12,12 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#ifndef SILKWORM_CONCURRENTCONTAINERS_HPP
-#define SILKWORM_CONCURRENTCONTAINERS_HPP
+find_package(benchmark CONFIG REQUIRED)
 
-/*
- * Decisions about concurrent containers
- */
-
-#include "ThreadSafeQueue.hpp"
-
-template <typename T>
-using ConcurrentQueue = ThreadSafeQueue<T>;  // todo: use a better alternative from a known library (Intel oneTBB concurrent_queue<T>?)
-
-#endif  // SILKWORM_CONCURRENTCONTAINERS_HPP
+add_executable(buffer buffer.cpp)
+target_link_libraries(buffer PRIVATE silkworm_node)
+  
+add_executable(precompile precompile.cpp)
+target_link_libraries(precompile silkworm_core benchmark::benchmark)

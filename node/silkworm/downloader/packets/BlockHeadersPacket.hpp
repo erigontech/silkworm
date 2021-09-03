@@ -17,8 +17,9 @@
 #ifndef SILKWORM_BLOCKHEADERSPACKET_HPP
 #define SILKWORM_BLOCKHEADERSPACKET_HPP
 
-#include <silkworm/downloader/Types.hpp>
 #include <algorithm>
+
+#include <silkworm/downloader/internals/types.hpp>
 
 namespace silkworm {
 

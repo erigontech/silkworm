@@ -17,15 +17,17 @@
 #include "InboundGetBlockBodies.hpp"
 
 #include <silkworm/common/cast.hpp>
-#include <silkworm/downloader/BodyLogic.hpp>
+#include <silkworm/common/log.hpp>
+#include <silkworm/downloader/internals/body_retrieval.hpp>
 #include <silkworm/downloader/packets/BlockBodiesPacket.hpp>
 #include <silkworm/downloader/packets/RLPError.hpp>
 #include <silkworm/downloader/rpc/SendMessageById.hpp>
-#include <silkworm/downloader/stage1.hpp>
 
 namespace silkworm {
 
-InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg) : InboundMessage() {
+InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, DbTx& db, SentryClient& s) :
+    InboundMessage(), db_(db), sentry_(s)
+{
     if (msg.id() != sentry::MessageId::GET_BLOCK_BODIES_66) {
         throw std::logic_error("InboundGetBlockBodies received wrong InboundMessage");
     }
@@ -37,6 +39,8 @@ InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg) 
     if (err != rlp::DecodingResult::kOk) {
         throw rlp::rlp_error("rlp decoding error decoding GetBlockBodies");
     }
+
+    SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
 }
 
 /*
@@ -49,12 +53,14 @@ func (p *Peer) ReplyBlockBodiesRLP(id uint64, bodies []rlp.RawValue) error {
         })
 }
  */
-InboundMessage::reply_calls_t InboundGetBlockBodies::execute() {
+void InboundGetBlockBodies::execute() {
     using namespace std;
+
+    BodyRetrieval body_retrieval(db_);
 
     BlockBodiesPacket66 reply;
     reply.requestId = packet_.requestId;
-    reply.request = BodyLogic::recover(STAGE1.db_tx(), packet_.request);
+    reply.request = body_retrieval.recover(packet_.request);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, reply);
@@ -63,12 +69,12 @@ InboundMessage::reply_calls_t InboundGetBlockBodies::execute() {
     msg_reply->set_id(sentry::MessageId::BLOCK_BODIES_66);
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    return {std::make_shared<rpc::SendMessageById>(peerId_, std::move(msg_reply))};
-}
+    SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " with send_message_by_id\n";
+    rpc::SendMessageById send_message_by_id(peerId_, std::move(msg_reply));
+    sentry_.exec_remotely(send_message_by_id);
 
-void InboundGetBlockBodies::handle_completion(SentryRpc& reply) {
-    [[maybe_unused]] auto& specific_reply = dynamic_cast<rpc::SendMessageById&>(reply);
-    // todo: use specific_reply...
+    [[maybe_unused]] sentry::SentPeers peers = send_message_by_id.reply();
+    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*this) << ": " << std::to_string(peers.peers_size()) + " peer(s)\n";
 }
 
 uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }

@@ -17,18 +17,13 @@
 #ifndef SILKWORM_SENDMESSAGEBYID_HPP
 #define SILKWORM_SENDMESSAGEBYID_HPP
 
-#include <silkworm/downloader/SentryClient.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-class SendMessageById: public rpc::AsyncUnaryCall<sentry::Sentry, sentry::SendMessageByIdRequest, sentry::SentPeers> {
+class SendMessageById: public rpc::UnaryCall<sentry::Sentry, sentry::SendMessageByIdRequest, sentry::SentPeers> {
   public:
     SendMessageById(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message);
-
-    using SentryRpc::on_receive_reply;
-
-    static auto make(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message)
-        {return std::make_shared<SendMessageById>(peerId, std::move(message));}
 };
 
 }

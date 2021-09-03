@@ -215,4 +215,55 @@ StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::pat
     return StageResult::kSuccess;
 }
 
+void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t prune_from,
+                                 bool topics) {
+    auto last_processed_block{db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)};
+
+    auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
+                    : db::open_cursor(*txn, db::table::kLogAddressIndex)};
+
+    if (index_table.to_first(/* throw_notfound = */ false)) {
+        auto data{index_table.current()};
+        while (data) {
+            // Get bitmap data of current element
+            auto key{db::from_slice(data.key)};
+            auto bitmap_data{db::from_slice(data.value)};
+            auto bm{roaring::Roaring::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
+            // Check wheter we should skip the current bitmap
+            if (bm.minimum() >= prune_from) {
+                data = index_table.to_next(/*throw_notfound*/ false);
+                continue;
+            }
+            // check if prune can be applied
+            if (bm.maximum() >= prune_from) {
+                // Erase elements that are below prune_from
+                bm &= roaring::Roaring(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
+                Bytes new_bitmap(bm.getSizeInBytes(), '\0');
+                bm.write(byte_ptr_cast(&new_bitmap[0]));
+                // replace with new index
+                etl::Entry entry{Bytes{key}, new_bitmap};
+                collector.collect(entry);
+            }
+            index_table.erase(/* whole_multivalue = */ true);
+            data = index_table.to_next(/*throw_notfound*/ false);
+        }
+    }
+
+    collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
+    txn.commit();
+}
+
+StageResult prune_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
+    etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
+
+    SILKWORM_LOG(LogLevel::Info) << "Log Index Pruning..." << std::endl;
+    prune_log_index(txn, collector, unwind_to, true);
+    collector.clear();
+    prune_log_index(txn, collector, unwind_to, false);
+    collector.clear();
+
+    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+    return StageResult::kSuccess;
+}
+
 }  // namespace silkworm::stagedsync

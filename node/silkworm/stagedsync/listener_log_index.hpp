@@ -31,17 +31,17 @@ class listener_log_index : public cbor::listener {
   public:
     listener_log_index(uint64_t block_number, std::unordered_map<std::string, roaring::Roaring>* topics_map,
                        std::unordered_map<std::string, roaring::Roaring>* addrs_map, uint64_t* allocated_topics,
-                       uint64_t* allocated_addrs_)
+                       uint64_t* allocated_addrs)
         : block_number_(block_number),
           topics_map_(topics_map),
           addrs_map_(addrs_map),
           allocated_topics_(allocated_topics),
-          allocated_addrs_(allocated_addrs_){};
+          allocated_addrs_(allocated_addrs) {}
 
-    void on_integer(int) override{};
+    void on_integer(int) override {}
 
     void on_bytes(unsigned char* data, int size) override {
-        std::string key(byte_ptr_cast(data), size);
+        std::string key(byte_ptr_cast(data), static_cast<size_t>(size));
         if (size == kHashLength) {
             if (topics_map_->find(key) == topics_map_->end()) {
                 topics_map_->emplace(key, roaring::Roaring());
@@ -57,33 +57,33 @@ class listener_log_index : public cbor::listener {
         }
     }
 
-    void on_string(std::string&) override{};
+    void on_string(std::string&) override {}
 
     void on_array(int) override {}
 
-    void on_map(int) override{};
+    void on_map(int) override {}
 
-    void on_tag(unsigned int) override{};
+    void on_tag(unsigned int) override {}
 
-    void on_special(unsigned int) override{};
+    void on_special(unsigned int) override {}
 
-    void on_bool(bool) override{};
+    void on_bool(bool) override {}
 
-    void on_null() override{};
+    void on_null() override {}
 
-    void on_undefined() override{};
+    void on_undefined() override {}
 
-    void on_error(const char*) override{};
+    void on_error(const char*) override {}
 
-    void on_extra_integer(unsigned long long, int) override{};
+    void on_extra_integer(unsigned long long, int) override {}
 
-    void on_extra_tag(unsigned long long) override{};
+    void on_extra_tag(unsigned long long) override {}
 
-    void on_extra_special(unsigned long long) override{};
+    void on_extra_special(unsigned long long) override {}
 
-    void on_double(double) override{};
+    void on_double(double) override {}
 
-    void on_float32(float) override{};
+    void on_float32(float) override {}
 
     void set_block_number(uint64_t block_number) { block_number_ = block_number; }
 

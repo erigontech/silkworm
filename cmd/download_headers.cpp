@@ -16,16 +16,17 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include <CLI/CLI.hpp>
+#include <node/silkworm/downloader/internals/header_retrieval.hpp>
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/HeaderLogic.hpp>
-#include <silkworm/downloader/stage1.hpp>
+#include <silkworm/downloader/block_provider.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 using namespace silkworm;
-
 
 // Main
 int main(int argc, char* argv[]) {
@@ -45,13 +46,16 @@ int main(int argc, char* argv[]) {
     app.add_option("--chain", chain_name, "Network name", true)
         ->needs("--chaindata");
     app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry", true);
-    //  todo ->check?
+        //  todo ->check?
     app.add_option("-f,--filesdir", temporary_file_path, "Path to a temp files dir", true)
         ->check(CLI::ExistingDirectory);
 
     CLI11_PARSE(app, argc, argv);
 
     SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
+
+    std::thread block_request_processing;
+    int return_value = 0;
 
     try {
         // EIP-2124 based chain identity scheme (networkId + genesis + forks)
@@ -68,24 +72,39 @@ int main(int argc, char* argv[]) {
              << "   genesis-hash: " << chain_identity.genesis_hash << "\n"
              << "   hard-forks: " << chain_identity.distinct_fork_numbers().size() << "\n";
 
-        // Stage1
-        Stage1 stage1{chain_identity, db_path, sentry_addr};
-        non_owning::Singleton<Stage1>::instance(&stage1);
+        // Database access
+        DbTx db{db_path};
 
         // Node current status
-        auto [head_hash, head_td] = HeaderLogic::head_hash_and_total_difficulty(stage1.db_tx());
+        HeaderRetrieval headers(db);
+        auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
         cout << "   head_hash = " << head_hash.to_hex() << "\n";
         cout << "   head_td   = " << intx::to_string(head_td) << "\n\n" << std::flush;
 
-        // Stage1 main loop
-        stage1.execution_loop();    // blocking
+        // Sentry client - connects to sentry
+        SentryClient sentry{sentry_addr};
 
-        return 0;
+        // Block provider - provides headers and bodies to external peers
+        BlockProvider block_provider{sentry, db, chain_identity};
+        block_request_processing = std::thread( [&block_provider]() {  // todo: join in block_provider destructor
+            block_provider.execution_loop();
+        });
+
+        // Stage1 - Header downloader - example code
+        //BlockNum target_block = 13'000'000; // only for test
+        //HeaderDownloader header_downloader{sentry, db, chain_identity};
+        //header_downloader.wind(target_block);
+
+        // Wait for user termination request
+        std::cin.get();         // wait for user press "enter"
+        block_provider.stop();  // signal exiting
     }
     catch(std::exception& e) {
         cerr << "Exception: " << e.what() << "\n";
-        return 1;
+        return_value = 1;
     }
+
+    if (block_request_processing.joinable())
+        block_request_processing.join(); // wait thread termination
+    return return_value;
 }
-
-

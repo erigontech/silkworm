@@ -17,17 +17,15 @@
 #ifndef SILKWORM_RECEIVEMESSAGES_HPP
 #define SILKWORM_RECEIVEMESSAGES_HPP
 
-#include <silkworm/downloader/SentryClient.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-class ReceiveMessages: public rpc::AsyncOutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
+class ReceiveMessages: public rpc::OutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
   public:
-    ReceiveMessages();
+    enum Scope {BlockRequests, BlockAnnouncements};
 
-    using SentryRpc::on_receive_reply;
-
-    static std::shared_ptr<ReceiveMessages> make() {return std::make_shared<ReceiveMessages>();}
+    ReceiveMessages(Scope scope);
 };
 
 }

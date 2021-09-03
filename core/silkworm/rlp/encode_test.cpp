@@ -38,17 +38,17 @@ TEST_CASE("RLP encoding") {
     }
 
     SECTION("uint64") {
-        CHECK(to_hex(encoded(0)) == "80");
-        CHECK(to_hex(encoded(1)) == "01");
-        CHECK(to_hex(encoded(0x7F)) == "7f");
-        CHECK(to_hex(encoded(0x80)) == "8180");
-        CHECK(to_hex(encoded(0x400)) == "820400");
-        CHECK(to_hex(encoded(0xFFCCB5)) == "83ffccb5");
-        CHECK(to_hex(encoded(0xFFCCB5DD)) == "84ffccb5dd");
-        CHECK(to_hex(encoded(0xFFCCB5DDFF)) == "85ffccb5ddff");
-        CHECK(to_hex(encoded(0xFFCCB5DDFFEE)) == "86ffccb5ddffee");
-        CHECK(to_hex(encoded(0xFFCCB5DDFFEE14)) == "87ffccb5ddffee14");
-        CHECK(to_hex(encoded(0xFFCCB5DDFFEE1483)) == "88ffccb5ddffee1483");
+        CHECK(to_hex(encoded(0u)) == "80");
+        CHECK(to_hex(encoded(1u)) == "01");
+        CHECK(to_hex(encoded(0x7Fu)) == "7f");
+        CHECK(to_hex(encoded(0x80u)) == "8180");
+        CHECK(to_hex(encoded(0x400u)) == "820400");
+        CHECK(to_hex(encoded(0xFFCCB5u)) == "83ffccb5");
+        CHECK(to_hex(encoded(0xFFCCB5DDu)) == "84ffccb5dd");
+        CHECK(to_hex(encoded(0xFFCCB5DDFFu)) == "85ffccb5ddff");
+        CHECK(to_hex(encoded(0xFFCCB5DDFFEEu)) == "86ffccb5ddffee");
+        CHECK(to_hex(encoded(0xFFCCB5DDFFEE14u)) == "87ffccb5ddffee14");
+        CHECK(to_hex(encoded(0xFFCCB5DDFFEE1483u)) == "88ffccb5ddffee1483");
     }
 
     SECTION("uint256") {

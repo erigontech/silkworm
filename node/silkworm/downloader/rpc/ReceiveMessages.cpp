@@ -18,18 +18,18 @@
 
 namespace silkworm::rpc {
 
-ReceiveMessages::ReceiveMessages():
-    AsyncOutStreamingCall("ReceiveMessages", &sentry::Sentry::Stub::PrepareAsyncMessages, {}) {
+ReceiveMessages::ReceiveMessages(Scope scope):
+    OutStreamingCall("ReceiveMessages", &sentry::Sentry::Stub::Messages, {}) {
 
-    // previous RecvMessages
-    //request_.add_ids(sentry::MessageId::BLOCK_HEADERS_66);
-    //request_.add_ids(sentry::MessageId::BLOCK_BODIES_66);
+    if (scope == Scope::BlockAnnouncements) { // previous received with RecvMessages
+        request_.add_ids(sentry::MessageId::BLOCK_HEADERS_66);
+        request_.add_ids(sentry::MessageId::BLOCK_BODIES_66);
     request_.add_ids(sentry::MessageId::NEW_BLOCK_HASHES_66);
-    //request_.add_ids(sentry::MessageId::NEW_BLOCK_66);
-
-    // previous RecvUploadMessages
+        request_.add_ids(sentry::MessageId::NEW_BLOCK_66);
+    }
+    else { // previous received with RecvUploadMessages
     request_.add_ids(sentry::MessageId::GET_BLOCK_HEADERS_66);
     request_.add_ids(sentry::MessageId::GET_BLOCK_BODIES_66);
-
+    }
 }
 }

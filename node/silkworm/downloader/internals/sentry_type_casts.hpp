@@ -14,26 +14,24 @@
    limitations under the License.
 */
 
-#include "BodyLogic.hpp"
-#include <silkworm/types/block.hpp>
+#ifndef SILKWORM_SENTRY_TYPE_CASTS_HPP
+#define SILKWORM_SENTRY_TYPE_CASTS_HPP
+
+#include <memory>
+
+#include <interfaces/types.pb.h>
+
+#include "types.hpp"
 
 namespace silkworm {
 
-std::vector<BlockBody> BodyLogic::recover(DbTx& db, std::vector<Hash> request) {
-    std::vector<BlockBody> response;
-    size_t bytes = 0;
-    for(size_t i = 0; i <= request.size(); ++i) {
-        Hash& hash = request[i];
-        auto body = db.read_body(hash);
-        if (!body) continue;
-        response.push_back(*body);
-        bytes += rlp::length(*body);
-        if (bytes >= soft_response_limit ||
-            response.size() >= max_bodies_serve ||
-            i >= 2 * max_bodies_serve)
-            break;
-    }
-    return response;
-}
+std::unique_ptr<types::H256> to_H256(const intx::uint256& orig);
+std::unique_ptr<types::H256> to_H256(const Hash& orig);
+std::unique_ptr<types::H512> to_H512(const std::string& orig);
 
-}
+intx::uint256 uint256_from_H256(const types::H256& orig);
+Hash          hash_from_H256(const types::H256& orig);
+std::string   string_from_H512(const types::H512& orig);
+
+}   // namespace
+#endif  // SILKWORM_SENTRY_TYPE_CASTS_HPP

@@ -74,9 +74,9 @@ namespace rlp {
 
     template <>
     DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept {
-        auto [rlp_head, err]{decode_header(from)};
-        if (err != DecodingResult::kOk) {
-            return err;
+        auto [rlp_head, err0]{decode_header(from)};
+        if (err0 != DecodingResult::kOk) {
+            return err0;
         }
         if (!rlp_head.list) {
             return DecodingResult::kUnexpectedString;
@@ -268,9 +268,9 @@ namespace rlp {
     static DecodingResult eip2718_decode(ByteView& from, Transaction& to) noexcept {
         assert(to.type == Transaction::Type::kEip2930 || to.type == Transaction::Type::kEip1559);
 
-        auto [h, err]{decode_header(from)};
-        if (err != DecodingResult::kOk) {
-            return err;
+        auto [h, err0]{decode_header(from)};
+        if (err0 != DecodingResult::kOk) {
+            return err0;
         }
         if (!h.list) {
             return DecodingResult::kUnexpectedString;
@@ -333,9 +333,9 @@ namespace rlp {
 
     template <>
     DecodingResult decode(ByteView& from, Transaction& to) noexcept {
-        auto [h, err]{decode_header(from)};
-        if (err != DecodingResult::kOk) {
-            return err;
+        auto [h, err0]{decode_header(from)};
+        if (err0 != DecodingResult::kOk) {
+            return err0;
         }
 
         if (h.list) {

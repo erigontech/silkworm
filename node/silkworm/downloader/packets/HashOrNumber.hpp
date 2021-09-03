@@ -19,10 +19,11 @@
 
 #include <variant>
 
+#include <silkworm/downloader/internals/types.hpp>
+
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
-#include <silkworm/downloader/Types.hpp>
 #include "RLPError.hpp"
 
 namespace silkworm {

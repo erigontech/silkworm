@@ -14,35 +14,37 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_HEADERLOGIC_HPP
-#define SILKWORM_HEADERLOGIC_HPP
+#ifndef SILKWORM_HEADER_RETRIEVAL_HPP
+#define SILKWORM_HEADER_RETRIEVAL_HPP
 
-#include "Types.hpp"
 #include "DbTx.hpp"
-#include <vector>
-#include <queue>
-#include <map>
+#include "types.hpp"
 
 namespace silkworm {
 
-class HeaderLogic {     // todo: modularize this!
+class HeaderRetrieval {
   public:
     static const long soft_response_limit = 2 * 1024 * 1024; // Target maximum size of returned blocks, headers or node data.
     static const long est_header_rlp_size = 500;             // Approximate size of an RLP encoded block header
     static const long max_headers_serve = 1024;              // Amount of block headers to be fetched per retrieval request
 
+    explicit HeaderRetrieval(DbTx& db);
+
     // Headers
-    static std::vector<BlockHeader> recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse);
-    static std::vector<BlockHeader> recover_by_number(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse);
+    std::vector<BlockHeader> recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse);
+    std::vector<BlockHeader> recover_by_number(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse);
 
     // Node current status
-    static BlockNum                head_height(DbTx& db);
-    static std::tuple<Hash,BigInt> head_hash_and_total_difficulty(DbTx& db);
+    BlockNum                head_height();
+    std::tuple<Hash,BigInt> head_hash_and_total_difficulty();
 
     // Ancestor
-    static std::tuple<Hash,BlockNum> get_ancestor(DbTx& db, Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical);
+    std::tuple<Hash,BlockNum> get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical);
+
+  protected:
+    DbTx& db_;
 };
 
 }
 
-#endif  // SILKWORM_HEADERLOGIC_HPP
+#endif  // SILKWORM_HEADER_RETRIEVAL_HPP

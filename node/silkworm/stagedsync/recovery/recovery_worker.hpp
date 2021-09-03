@@ -25,7 +25,7 @@
 #include <boost/signals2.hpp>
 #include <ethash/keccak.hpp>
 
-#include <silkworm/common/worker.hpp>
+#include <silkworm/concurrency/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/db/util.hpp>
 

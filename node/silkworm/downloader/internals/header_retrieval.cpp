@@ -14,19 +14,19 @@
    limitations under the License.
 */
 
-
-#include "HeaderLogic.hpp"
-#include "stage1.hpp"
 #include <silkworm/common/log.hpp>
+
+#include "header_retrieval.hpp"
 
 namespace silkworm {
 
+HeaderRetrieval::HeaderRetrieval(DbTx& db): db_(db) {
 
-std::vector<BlockHeader> HeaderLogic::recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse) {
+}
+
+std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse) {
     using std::optional;
     uint64_t max_non_canonical = 100;
-
-    DbTx& db = STAGE1.db_tx();  // todo: use singleton, is there a better way? HeaderLogic singleton?
 
     std::vector<BlockHeader> headers;
     long long bytes = 0;
@@ -34,7 +34,7 @@ std::vector<BlockHeader> HeaderLogic::recover_by_hash(Hash origin, uint64_t amou
     bool unknown = false;
 
     // first
-    optional<BlockHeader> header = db.read_header(hash);
+    optional<BlockHeader> header = db_.read_header(hash);
     if (!header) return headers;
     BlockNum block_num = header->number;
     headers.push_back(*header);
@@ -55,12 +55,12 @@ std::vector<BlockHeader> HeaderLogic::recover_by_hash(Hash origin, uint64_t amou
                     << ", next=" << next << std::endl;
             }
             else {
-                header = db.read_canonical_header(next);
+                header = db_.read_canonical_header(next);
                 if (!header)
                     unknown = true;
                 else {
                     Hash nextHash = header->hash();
-                    auto [expOldHash, _ ] = get_ancestor(db, nextHash, next, skip + 1, max_non_canonical);
+                    auto [expOldHash, _ ] = get_ancestor(nextHash, next, skip + 1, max_non_canonical);
                     if (expOldHash == hash) {
                         hash = nextHash;
                         block_num = next;
@@ -75,14 +75,14 @@ std::vector<BlockHeader> HeaderLogic::recover_by_hash(Hash origin, uint64_t amou
             if (ancestor == 0)
                 unknown = true;
             else
-                std::tie(hash, block_num) = get_ancestor(db, hash, block_num, ancestor, max_non_canonical);
+                std::tie(hash, block_num) = get_ancestor(hash, block_num, ancestor, max_non_canonical);
         }
 
         // end todo: understand
 
         if (unknown) break;
 
-        header = db.read_header(block_num, hash);
+        header = db_.read_header(block_num, hash);
         if (!header) break;
         headers.push_back(*header);
         bytes += est_header_rlp_size;
@@ -92,17 +92,15 @@ std::vector<BlockHeader> HeaderLogic::recover_by_hash(Hash origin, uint64_t amou
     return headers;
 }
 
-std::vector<BlockHeader> HeaderLogic::recover_by_number(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse) {
+std::vector<BlockHeader> HeaderRetrieval::recover_by_number(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse) {
     using std::optional;
-
-    DbTx& db = STAGE1.db_tx(); // todo: use singleton, is there a better way? HeaderLogic singleton?
 
     std::vector<BlockHeader> headers;
     long long bytes = 0;
     BlockNum block_num = origin;
 
     do {
-        optional<BlockHeader> header = db.read_canonical_header(block_num);
+        optional<BlockHeader> header = db_.read_canonical_header(block_num);
         if (!header) break;
 
         headers.push_back(*header);
@@ -119,28 +117,28 @@ std::vector<BlockHeader> HeaderLogic::recover_by_number(BlockNum origin, uint64_
 }
 
 // Node current status
-BlockNum HeaderLogic::head_height(DbTx& db) {
-    return db.stage_progress(db::stages::kBlockBodiesKey);
+BlockNum HeaderRetrieval::head_height() {
+    return db_.stage_progress(db::stages::kBlockBodiesKey);
 }
 
-std::tuple<Hash,BigInt> HeaderLogic::head_hash_and_total_difficulty(DbTx& db) {
-    BlockNum head_height = db.stage_progress(db::stages::kBlockBodiesKey);
-    auto head_hash = db.read_canonical_hash(head_height);
+std::tuple<Hash,BigInt> HeaderRetrieval::head_hash_and_total_difficulty() {
+    BlockNum head_height = db_.stage_progress(db::stages::kBlockBodiesKey);
+    auto head_hash = db_.read_canonical_hash(head_height);
     if (!head_hash)
         throw std::logic_error("canonical hash at height " + std::to_string(head_height) + " not found in db");
-    std::optional<BigInt> head_td = db.read_total_difficulty(head_height, *head_hash);
+    std::optional<BigInt> head_td = db_.read_total_difficulty(head_height, *head_hash);
     if (!head_td)
         throw std::logic_error("total difficulty of canonical hash at height " + std::to_string(head_height) +
                                " not found in db");
     return {*head_hash, *head_td};
 }
 
-std::tuple<Hash,BlockNum> HeaderLogic::get_ancestor(DbTx& db, Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical) {
+std::tuple<Hash,BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical) {
     if (ancestor > blockNum)
         return {Hash{},0};
 
     if (ancestor == 1) {
-        auto header = db.read_header(blockNum, hash);
+        auto header = db_.read_header(blockNum, hash);
         if (header)
             return {header->parent_hash, blockNum-1};
         else
@@ -148,10 +146,10 @@ std::tuple<Hash,BlockNum> HeaderLogic::get_ancestor(DbTx& db, Hash hash, BlockNu
     }
 
     while (ancestor != 0) {
-        auto h = db.read_canonical_hash(blockNum);
+        auto h = db_.read_canonical_hash(blockNum);
         if (h == hash) {
-            auto ancestorHash = db.read_canonical_hash(blockNum - ancestor);
-            h = db.read_canonical_hash(blockNum);
+            auto ancestorHash = db_.read_canonical_hash(blockNum - ancestor);
+            h = db_.read_canonical_hash(blockNum);
             if (h == hash) {
                 blockNum -= ancestor;
                 return {*ancestorHash, blockNum};   // ancestorHash can be empty
@@ -161,7 +159,7 @@ std::tuple<Hash,BlockNum> HeaderLogic::get_ancestor(DbTx& db, Hash hash, BlockNu
             return {Hash{},0};
         max_non_canonical--;
         ancestor--;
-        auto header = db.read_header(blockNum, hash);
+        auto header = db_.read_header(blockNum, hash);
         if (!header)
             return {Hash{},0};
         hash = header->parent_hash;

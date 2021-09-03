@@ -18,26 +18,30 @@
 #define SILKWORM_INBOUNDMESSAGE_HPP
 
 #include <memory>
-#include "Message.hpp"
+
+#include <silkworm/downloader/internals/DbTx.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
 
+#include "Message.hpp"
+
 namespace silkworm {
-class OutboundMessage;
 
 
 class InboundMessage : public Message {
   public:
-    using reply_call_t = rpc_t; // a more specific name
-    using reply_calls_t = rpc_bundle_t;
+    void execute() override = 0;
+};
 
-    reply_calls_t execute() override = 0;
+std::ostream& operator<<(std::ostream&, const silkworm::InboundMessage&);
 
-    static std::shared_ptr<InboundMessage> make(const sentry::InboundMessage& msg);
+
+struct InboundBlockRequestMessage : public InboundMessage {
+    static std::shared_ptr<InboundMessage> make(const sentry::InboundMessage& msg, DbTx& db, SentryClient& sentry);
 };
 
 
-std::ostream& operator<<(std::ostream&, const silkworm::InboundMessage&);
 
 }
 

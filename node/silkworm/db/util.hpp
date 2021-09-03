@@ -25,9 +25,9 @@ see its package dbutils.
 #include <string>
 
 #include <absl/container/btree_map.h>
-#include <mdbx.h++>
 
 #include <silkworm/common/base.hpp>
+#include <silkworm/db/mdbx.hpp>
 #include <silkworm/types/block.hpp>
 
 namespace silkworm::db {
@@ -138,7 +138,8 @@ constexpr const char* kStorageModeTEVMKey{"smTEVM"};
 constexpr size_t kIncarnationLength{8};
 static_assert(kIncarnationLength == sizeof(uint64_t));
 
-constexpr size_t kStoragePrefixLength{kAddressLength + kIncarnationLength};
+constexpr size_t kPlainStoragePrefixLength{kAddressLength + kIncarnationLength};
+constexpr size_t kHashedStoragePrefixLength{kHashLength + kIncarnationLength};
 
 // address -> storage-encoded initial value
 using AccountChanges = absl::btree_map<evmc::address, Bytes>;
@@ -185,6 +186,9 @@ inline ByteView from_slice(const mdbx::slice slice) { return {static_cast<uint8_
 // return the suffix of the value.
 // Otherwise, return nullopt.
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix);
+
+// We can't simply call upsert for storage values because they live in mdbx::value_mode::multi tables
+void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView value);
 
 namespace detail {
 

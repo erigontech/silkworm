@@ -617,10 +617,10 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
 Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> config) {
-    auto parent_timestamp{std::stoll(j["parentTimestamp"].get<std::string>(), 0, 0)};
+    auto parent_timestamp{std::stoull(j["parentTimestamp"].get<std::string>(), 0, 0)};
     auto parent_difficulty{intx::from_string<intx::uint256>(j["parentDifficulty"].get<std::string>())};
-    auto current_timestamp{std::stoll(j["currentTimestamp"].get<std::string>(), 0, 0)};
-    auto block_number{std::stoll(j["currentBlockNumber"].get<std::string>(), 0, 0)};
+    auto current_timestamp{std::stoull(j["currentTimestamp"].get<std::string>(), 0, 0)};
+    auto block_number{std::stoull(j["currentBlockNumber"].get<std::string>(), 0, 0)};
     auto current_difficulty{intx::from_string<intx::uint256>(j["currentDifficulty"].get<std::string>())};
 
     bool parent_has_uncles{false};

@@ -69,9 +69,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
 
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
 
-    auto body_rlp{db::from_slice(bodies_data.value)};
-    auto body{db::detail::decode_stored_block_body(body_rlp)};
-    auto block_number{0};
+    BlockNum block_number{0};
 
     while (bodies_data) {
         auto body_rlp{db::from_slice(bodies_data.value)};
@@ -217,6 +215,5 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
 
     return StageResult::kSuccess;
 }
-
 
 }  // namespace silkworm::stagedsync

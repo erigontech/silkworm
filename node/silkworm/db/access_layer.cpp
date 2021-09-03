@@ -17,6 +17,7 @@
 #include "access_layer.hpp"
 
 #include <cassert>
+
 #include <nlohmann/json.hpp>
 
 #include <silkworm/common/endian.hpp>
@@ -252,7 +253,7 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, uint64_t block_number, const 
     return out;
 }
 
-std::vector<evmc::address> read_senders(mdbx::txn& txn, int64_t block_number, const uint8_t (&hash)[kHashLength]) {
+std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
     std::vector<evmc::address> senders{};
 
     auto src{db::open_cursor(txn, table::kSenders)};
@@ -427,7 +428,7 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
         }
 
         data.key.remove_prefix(key_prefix.length());
-        assert(data.key.length() == kStoragePrefixLength);
+        assert(data.key.length() == kPlainStoragePrefixLength);
 
         evmc::address address;
         std::memcpy(address.bytes, data.key.iov_base, kAddressLength);

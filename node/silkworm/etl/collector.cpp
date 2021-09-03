@@ -85,7 +85,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
             } else {
                 mdbx::slice k{db::to_slice(etl_entry.key)};
                 mdbx::slice v{db::to_slice(etl_entry.value)};
-                target.put(k, &v, flags);
+                mdbx::error::success_or_throw(target.put(k, &v, flags));
             }
 
             if (!--dummy_counter) {
@@ -104,10 +104,10 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
     flush_buffer();
 
     // Define a priority queue based on smallest available key
-    auto key_comparer = [](const std::pair<Entry, int>& left, const std::pair<Entry, int>& right) {
+    auto key_comparer = [](const std::pair<Entry, size_t>& left, const std::pair<Entry, size_t>& right) {
         return right.first < left.first;
     };
-    std::priority_queue<std::pair<Entry, int>, std::vector<std::pair<Entry, int>>, decltype(key_comparer)> queue(
+    std::priority_queue<std::pair<Entry, size_t>, std::vector<std::pair<Entry, size_t>>, decltype(key_comparer)> queue(
         key_comparer);
 
     // Read one "record" from each data_provider and let the queue
@@ -130,7 +130,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
         } else {
             mdbx::slice k{db::to_slice(etl_entry.key)};
             mdbx::slice v{db::to_slice(etl_entry.value)};
-            target.put(k, &v, flags);
+            mdbx::error::success_or_throw(target.put(k, &v, flags));
         }
 
         // Display progress

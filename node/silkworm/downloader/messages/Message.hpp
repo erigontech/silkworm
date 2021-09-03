@@ -24,16 +24,13 @@ namespace silkworm {
 
 class Message {
   public:
-    using rpc_t = std::shared_ptr<SentryRpc>;
-    using rpc_bundle_t = std::vector<rpc_t>;
 
     virtual std::string name() const = 0;
     virtual std::string content() const = 0;
     virtual uint64_t    reqId() const = 0;
 
-    virtual rpc_bundle_t execute() = 0;    // inbound message does a reply, outbound message does a request
+    virtual void execute() = 0;    // inbound message send a reply, outbound message send a request
 
-    virtual void handle_completion(SentryRpc&) {}
 
     virtual ~Message() = default;
 };

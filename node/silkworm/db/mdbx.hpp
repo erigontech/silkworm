@@ -22,7 +22,13 @@
 #include <filesystem>
 #include <string>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <mdbx.h++>
+#pragma GCC diagnostic pop
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/util.hpp>

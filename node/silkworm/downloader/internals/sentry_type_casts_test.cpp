@@ -14,40 +14,40 @@
    limitations under the License.
 */
 
-#include <catch2/catch.hpp>
+#include "sentry_type_casts.hpp"
 
-#include "types_for_grpc.hpp"
+#include <catch2/catch.hpp>
 
 namespace silkworm {
 
 TEST_CASE("H256/512 to/from conversions") {
     using namespace std;
 
-    SECTION( "H256 to/from Hash" ) {
+    SECTION("H256 to/from Hash") {
         Hash orig_hash = Hash::from_hex("d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3");
         Hash transf_hash = hash_from_H256(*to_H256(orig_hash));
 
         REQUIRE(orig_hash == transf_hash);
     }
 
-    SECTION( "H256 to/from number" ) {
+    SECTION("H256 to/from number") {
         intx::uint256 orig_big{int64_t{789}, int64_t{567}, int64_t{345}, int64_t{123}};
         intx::uint256 transf_big = uint256_from_H256(*to_H256(orig_big));
 
         REQUIRE(orig_big == transf_big);
     }
 
-    for(auto len: {64,64,64,64,64,60,70}) {
-        SECTION( "H512 to/from string, len="+to_string(len) ) {
+    for (size_t len : {64u, 64u, 64u, 64u, 64u, 60u, 70u}) {
+        SECTION("H512 to/from string, len=" + to_string(len)) {
             string orig_string(len, 0);
             generate_n(orig_string.begin(), len, [] { return static_cast<char>(rand() % 255); });
 
             string transf_string = string_from_H512(*to_H512(orig_string));
 
-            orig_string.resize(64,0);   // transf_string is always of 64 bytes with trailing zeros if needed
+            orig_string.resize(64, 0);  // transf_string is always of 64 bytes with trailing zeros if needed
             REQUIRE(orig_string == transf_string);
         }
     }
 }
 
-}
+}  // namespace silkworm

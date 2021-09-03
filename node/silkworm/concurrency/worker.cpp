@@ -27,14 +27,14 @@ Worker::~Worker() {
 }
 
 void Worker::start(bool wait) {
-    WorkerState expected_state{WorkerState::kStopped};
-    if (!state_.compare_exchange_strong(expected_state, WorkerState::kStarting)) {
+    WorkerState expected_state1{WorkerState::kStopped};
+    if (!state_.compare_exchange_strong(expected_state1, WorkerState::kStarting)) {
         return;
     }
 
     thread_.reset(new std::thread([&]() {
-        WorkerState expected_state{WorkerState::kStarting};
-        if (state_.compare_exchange_strong(expected_state, WorkerState::kStarted)) {
+        WorkerState expected_state2{WorkerState::kStarting};
+        if (state_.compare_exchange_strong(expected_state2, WorkerState::kStarted)) {
             try {
                 kicked_.store(false);
                 work();

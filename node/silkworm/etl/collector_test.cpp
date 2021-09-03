@@ -86,10 +86,10 @@ TEST_CASE("collect_and_default_load") { run_collector_test(nullptr); }
 TEST_CASE("collect_and_default_load_move") { run_collector_test(nullptr, false); }
 
 TEST_CASE("collect_and_load") {
-    run_collector_test([](Entry entry, mdbx::cursor& table, MDBX_put_flags_t flags) {
-        (void)flags;
-        entry.key.at(0) = 1;
-        table.upsert(db::to_slice(entry.key), db::to_slice(entry.value));
+    run_collector_test([](const Entry& entry, mdbx::cursor& table, MDBX_put_flags_t) {
+        Bytes key{entry.key};
+        key.at(0) = 1;
+        table.upsert(db::to_slice(key), db::to_slice(entry.value));
     });
 }
 

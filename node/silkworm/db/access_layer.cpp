@@ -17,6 +17,7 @@
 #include "access_layer.hpp"
 
 #include <cassert>
+
 #include <nlohmann/json.hpp>
 
 #include <silkworm/common/endian.hpp>
@@ -427,7 +428,7 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
         }
 
         data.key.remove_prefix(key_prefix.length());
-        assert(data.key.length() == kStoragePrefixLength);
+        assert(data.key.length() == kPlainStoragePrefixLength);
 
         evmc::address address;
         std::memcpy(address.bytes, data.key.iov_base, kAddressLength);

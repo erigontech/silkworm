@@ -18,6 +18,21 @@
 
 namespace silkworm::db {
 
+namespace detail {
+
+    //! \brief Returns data of current cursor position or moves it to begin or end of table on behalf of provided direction
+    //! \param [in] _c : A reference to an open cursor
+    //! \param [in] _d : Direction cursor should have
+    //! \return ::mdbx::cursor::move_result
+    static inline ::mdbx::cursor::move_result cursor_data_factory(::mdbx::cursor& _c, CursorMoveDirection _d) {
+        if (_c.eof()) {
+            return (_d == CursorMoveDirection::Forward) ? _c.to_first(false) : _c.to_last(false);
+        }
+        return _c.current(false);
+    }
+
+}  // namespace detail
+
 ::mdbx::env_managed open_env(const EnvConfig& config) {
     namespace fs = std::filesystem;
 
@@ -131,47 +146,36 @@ bool has_map(::mdbx::txn& tx, const char* map_name) {
     }
 }
 
-size_t for_each(::mdbx::cursor& cursor, WalkFunc walker) {
+size_t for_each(::mdbx::cursor& cursor, WalkFunc walker, CursorMoveDirection direction) {
+    const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
+                                                          ? mdbx::cursor::move_operation::next
+                                                          : mdbx::cursor::move_operation::previous};
+
     size_t ret{0};
-
-    if (cursor.eof()) {
-        // eof determines if cursor is positioned
-        // at end of bucket data as well as it's
-        // not positioned at all
-        return ret;
-    }
-
-    auto data{cursor.current()};
+    auto data{detail::cursor_data_factory(cursor, direction)};
     while (data.done) {
-        const bool go_on{walker(data)};
-        if (!go_on) {
-            break;
-        }
         ++ret;
-        data = cursor.to_next(/*throw_notfound=*/false);
+        if (!walker(data)) {
+            break;  // Walker function has returned false hence stop
+        }
+        data = cursor.move(move_operation, /*throw_notfound=*/false);
     }
     return ret;
 }
 
-size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count) {
+size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count, CursorMoveDirection direction) {
+    const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
+                                                          ? mdbx::cursor::move_operation::next
+                                                          : mdbx::cursor::move_operation::previous};
     size_t ret{0};
-
-    if (cursor.eof()) {
-        // eof determines if cursor is positioned
-        // at end of bucket data as well as it's
-        // not positioned at all
-        return ret;
-    }
-
-    auto data{cursor.current()};
+    auto data{detail::cursor_data_factory(cursor, direction)};
     while (count && data.done) {
-        const bool go_on{walker(data)};
-        if (!go_on) {
-            break;
-        }
         ++ret;
         --count;
-        data = cursor.to_next(/*throw_notfound=*/false);
+        if (!walker(data)) {
+            break;  // Walker function has returned false hence stop
+        }
+        data = cursor.move(move_operation, /*throw_notfound=*/false);
     }
     return ret;
 }

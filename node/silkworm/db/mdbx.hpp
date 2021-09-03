@@ -140,9 +140,10 @@ size_t cursor_erase(::mdbx::cursor& cursor, const CursorMoveDirection direction 
 //! \brief Erases map records by cursor until any record is found
 //! \param [in] cursor : A reference to a cursor opened on a map
 //! \param [in] set_key : A reference to a key where to set the cursor.
-//! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
+//! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards.
 //! \return The overall number of erased records
-//! \remarks If the provided key is not found by cursor then nothing is deleted
+//! \remarks When direction is forward all keys greater equal set_key will be deleted. When direction is reverse all
+//! keys lower than set_key will be deleted.
 size_t cursor_erase(::mdbx::cursor& cursor, const silkworm::ByteView& set_key,
                     const CursorMoveDirection direction = CursorMoveDirection::Forward);
 
@@ -161,7 +162,8 @@ size_t cursor_erase(::mdbx::cursor& cursor, size_t max_count,
 //! \param [in] max_count : Max number of deletions
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
 //! \return The overall number of erased records
-//! \remarks If the provided key is not found by cursor then nothing is deleted
+//! \remarks When direction is forward all keys greater equal set_key will be deleted. When direction is reverse all
+//! keys lower than set_key will be deleted.
 size_t cursor_erase(::mdbx::cursor& cursor, const silkworm::ByteView& set_key, size_t max_count,
                     const CursorMoveDirection direction = CursorMoveDirection::Forward);
 

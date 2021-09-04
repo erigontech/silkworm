@@ -35,6 +35,13 @@ RecoveryFarm::RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size
     batch_.reserve(max_batch_size);
 }
 
+RecoveryFarm::~RecoveryFarm() {
+    while (!workers_.empty()) {
+        workers_.back().second.disconnect();
+        workers_.pop_back();
+    }
+}
+
 StageResult RecoveryFarm::recover(BlockNum to) {
     // Check we have a valid chain configuration
     auto chain_config{db::read_chain_config(db_transaction_)};
@@ -197,8 +204,8 @@ StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height)
 
 void RecoveryFarm::stop_all_workers(bool wait) {
     SILKWORM_LOG(LogLevel::Debug) << "Stopping workers ... " << std::endl;
-    for (const auto& worker : workers_) {
-        worker->stop(wait);
+    for (const auto& item : workers_) {
+        item.first->stop(wait);
     }
 }
 
@@ -206,8 +213,8 @@ void RecoveryFarm::wait_workers_completion() {
     if (!workers_.empty()) {
         uint32_t attempts{0};
         do {
-            auto it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
-                return w->get_status() == RecoveryWorker::Status::Working;
+            auto it = std::find_if(workers_.begin(), workers_.end(), [](const worker_pair& w) {
+                return w.first->get_status() == RecoveryWorker::Status::Working;
             });
             if (it == workers_.end()) {
                 break;
@@ -234,24 +241,25 @@ bool RecoveryFarm::collect_workers_results() {
 
         // Select worker and pop the queue
         auto& worker{workers_.at(harvest_pairs_.front().first)};
-        SILKWORM_LOG(LogLevel::Trace) << "Collecting  results from worker " << worker->get_id() << std::endl;
+        SILKWORM_LOG(LogLevel::Trace) << "Collecting  results from worker " << worker.first->get_id() << std::endl;
         harvest_pairs_.pop();
         l.unlock();
 
-        auto status = worker->get_status();
+        auto status = worker.first->get_status();
         switch (status) {
             case RecoveryWorker::Status::Error:
-                SILKWORM_LOG(LogLevel::Error)
-                    << "Got error from worker #" << worker->get_id() << " : " << worker->get_error() << std::endl;
+                SILKWORM_LOG(LogLevel::Error) << "Got error from worker #" << worker.first->get_id() << " : "
+                                              << worker.first->get_error() << std::endl;
                 ret = false;
                 break;
             case RecoveryWorker::Status::Aborted:
-                SILKWORM_LOG(LogLevel::Trace) << "Got aborted from worker #" << worker->get_id() << std::endl;
+                SILKWORM_LOG(LogLevel::Trace) << "Got aborted from worker #" << worker.first->get_id() << std::endl;
                 ret = false;
                 break;
             case RecoveryWorker::Status::ResultsReady:
-                SILKWORM_LOG(LogLevel::Trace) << "Collecting results from worker #" << worker->get_id() << std::endl;
-                if (worker->pull_results(worker_results)) {
+                SILKWORM_LOG(LogLevel::Trace)
+                    << "Collecting results from worker #" << worker.first->get_id() << std::endl;
+                if (worker.first->pull_results(worker_results)) {
                     try {
                         for (const auto& [block_num, data] : worker_results) {
                             total_processed_blocks_++;
@@ -274,7 +282,7 @@ bool RecoveryFarm::collect_workers_results() {
                 } else {
                     SILKWORM_LOG(LogLevel::Error)
                         << "Unexpected error in " << std::string(__FUNCTION__) << " : "
-                        << "could not pull results from worker #" << worker->get_id() << std::endl;
+                        << "could not pull results from worker #" << worker.first->get_id() << std::endl;
                     ret = false;
                 }
                 break;
@@ -358,20 +366,20 @@ bool RecoveryFarm::dispatch_batch() {
 
     // Locate first available worker
     while (true) {
-        auto it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
-            return w->get_status() == RecoveryWorker::Status::Idle;
+        auto it = std::find_if(workers_.begin(), workers_.end(), [](const worker_pair& w) {
+            return w.first->get_status() == RecoveryWorker::Status::Idle;
         });
 
         if (it != workers_.end()) {
-            SILKWORM_LOG(LogLevel::Trace) << "Dispatching package to worker #" << it->get()->get_id() << std::endl;
-            it->get()->set_work(batch_id_++, batch_);  // Worker will swap contents
+            SILKWORM_LOG(LogLevel::Trace) << "Dispatching package to worker #" << it->first->get_id() << std::endl;
+            it->first->set_work(batch_id_++, batch_);  // Worker will swap contents
             batch_.resize(0);
             workers_in_flight_++;
             return true;
         } else {
             // Do we have ready results from workers that we need to harvest ?
-            it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
-                auto s = static_cast<int>(w->get_status());
+            it = std::find_if(workers_.begin(), workers_.end(), [](const worker_pair& w) {
+                auto s = static_cast<int>(w.first->get_status());
                 return (s >= 2);
             });
             if (it != workers_.end()) {
@@ -401,10 +409,12 @@ bool RecoveryFarm::dispatch_batch() {
 bool RecoveryFarm::initialize_new_worker() {
     SILKWORM_LOG(LogLevel::Trace) << "Launching worker #" << workers_.size() << std::endl;
     try {
-        workers_.emplace_back(new RecoveryWorker(workers_.size(), max_batch_size_ * kAddressLength));
-        workers_.back()->signal_completed.connect(boost::bind(&RecoveryFarm::worker_completed_handler, this, _1));
-        workers_.back()->start(/*wait = */ true);
-        return workers_.back()->get_state() == Worker::WorkerState::kStarted;
+        auto worker{std::make_unique<RecoveryWorker>(workers_.size(), max_batch_size_ * kAddressLength)};
+        auto connector{
+            worker->signal_completed.connect(boost::bind(&RecoveryFarm::worker_completed_handler, this, _1))};
+        workers_.emplace_back(std::move(worker), std::move(connector));
+        workers_.back().first->start(/*wait=*/true);
+        return workers_.back().first->get_state() == Worker::WorkerState::kStarted;
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << "Unable to initialize new recovery worker : " << ex.what() << std::endl;
         return false;

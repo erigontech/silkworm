@@ -37,7 +37,7 @@ class RecoveryFarm {
     //! \param [in] max_workers : max number of parallel recovery workers
     //! \param [in] max_batch_size : max number of transactions to be sent a worker for recovery
     RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size_t max_batch_size, etl::Collector& collector);
-    ~RecoveryFarm() = default;
+    ~RecoveryFarm();
 
     //! \brief Recover sender's addresses from transactions
     //! \param [in] to :  Upper boundary for blocks to process (included)
@@ -97,13 +97,14 @@ class RecoveryFarm {
     mdbx::txn& db_transaction_;  // Database transaction
 
     using harvest_pair = std::pair<uint32_t, uint32_t>;  // Worker id + batch id
+    using worker_pair = std::pair<std::unique_ptr<RecoveryWorker>, boost::signals2::connection>;
 
     /* Recovery workers */
-    uint32_t max_workers_;                                    // Max number of workers/threads
-    std::vector<std::unique_ptr<RecoveryWorker>> workers_{};  // Actual collection of recoverers
-    std::mutex harvest_mutex_;                                // Guards the harvest queue
-    std::queue<harvest_pair> harvest_pairs_{};                // Queue of harvest pairs
-    std::atomic<uint32_t> workers_in_flight_{0};              // Counter of grinding workers
+    uint32_t max_workers_;                        // Max number of workers/threads
+    std::vector<worker_pair> workers_{};          // Actual collection of recoverers
+    std::mutex harvest_mutex_;                    // Guards the harvest queue
+    std::queue<harvest_pair> harvest_pairs_{};    // Queue of harvest pairs
+    std::atomic<uint32_t> workers_in_flight_{0};  // Counter of grinding workers
 
     /* Canonical headers */
     std::vector<evmc::bytes32> headers_{};               // Collected canonical headers

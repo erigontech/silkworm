@@ -34,12 +34,12 @@ namespace silkworm::db {
 
 /* Ancillary entities */
 
-// Used to compare versions of entities (eg. DbSchema)
+// Used to compare versions of entities (e.g. DbSchema)
 struct VersionBase {
     uint32_t Major;
     uint32_t Minor;
     uint32_t Patch;
-    std::string to_string() {
+    std::string to_string() const {
         std::string ret{std::to_string(Major)};
         ret.append("." + std::to_string(Minor));
         ret.append("." + std::to_string(Patch));
@@ -83,13 +83,13 @@ struct VersionBase {
 
 // Holds the storage mode set
 struct StorageMode {
-    bool Initialized;  // Whether or not db storage has been initialized
-    bool History;      // Whether or not History index is stored
-    bool Receipts;     // Whether or not Receipts are stored
-    bool TxIndex;      // Whether or not TxIndex is stored
-    bool CallTraces;   // Whether or not Call Traces are stored
+    bool Initialized;  // Whether db storage has been initialized
+    bool History;      // Whether History index is stored
+    bool Receipts;     // Whether Receipts are stored
+    bool TxIndex;      // Whether TxIndex is stored
+    bool CallTraces;   // Whether Call Traces are stored
     bool TEVM;         // TODO - not yet supported in Silkworm
-    std::string to_string() const {
+    [[nodiscard]] std::string to_string() const {
         if (!Initialized) {
             return "default";
         }
@@ -169,15 +169,15 @@ Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& loc
 Bytes log_key(uint64_t block_number, uint32_t transaction_id);
 
 inline mdbx::slice to_slice(ByteView value) {
-    return mdbx::slice(static_cast<const void*>(value.data()), value.length());
+    return {static_cast<const void*>(value.data()), value.length()};
 }
 
 inline mdbx::slice to_slice(const evmc::address& value) {
-    return mdbx::slice(static_cast<const void*>(value.bytes), sizeof(evmc::address));
+    return {static_cast<const void*>(value.bytes), sizeof(evmc::address)};
 }
 
 inline mdbx::slice to_slice(const evmc::bytes32& value) {
-    return mdbx::slice(static_cast<const void*>(value.bytes), sizeof(evmc::bytes32));
+    return {static_cast<const void*>(value.bytes), sizeof(evmc::bytes32)};
 }
 
 inline ByteView from_slice(const mdbx::slice slice) { return {static_cast<uint8_t*>(slice.iov_base), slice.iov_len}; }
@@ -198,7 +198,7 @@ namespace detail {
         uint64_t txn_count{0};
         std::vector<BlockHeader> ommers;
 
-        Bytes encode() const;
+        [[nodiscard]] Bytes encode() const;
     };
 
     BlockBodyForStorage decode_stored_block_body(ByteView& from);

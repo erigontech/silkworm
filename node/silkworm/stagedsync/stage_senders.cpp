@@ -42,6 +42,7 @@ StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& 
 }
 
 StageResult unwind_senders(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_point) {
+    // TODO(Andrea) No need for collectors on unwind
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
 
@@ -61,9 +62,9 @@ StageResult unwind_senders(TransactionManager& txn, const std::filesystem::path&
 
 StageResult prune_senders(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
     SILKWORM_LOG(LogLevel::Info) << "Pruning Sender Recovery from: " << prune_from << std::endl;
-    auto new_tail{db::block_key(prune_from)};
-    auto unwind_table{db::open_cursor(*txn, db::table::kSenders)};
-    truncate_table_from(unwind_table, new_tail, /* reverse = */ true);
+    auto prune_table{db::open_cursor(*txn, db::table::kSenders)};
+    auto prune_point{db::block_key(prune_from)};
+    db::cursor_erase(prune_table, prune_point, db::CursorMoveDirection::Reverse);
     SILKWORM_LOG(LogLevel::Info) << "Pruning Sender Recovery finished..." << std::endl;
     return StageResult::kSuccess;
 }

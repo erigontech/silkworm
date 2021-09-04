@@ -206,7 +206,7 @@ TEST_CASE("Account and storage trie") {
         increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/0);
 
         account_trie.to_first();
-        db::for_each(account_trie, save_nodes);
+        db::cursor_for_each(account_trie, save_nodes);
 
         REQUIRE(node_map.size() == 2);
 

@@ -18,7 +18,7 @@
 
 namespace silkworm::stagedsync {
 
-StageResult stage_interhashes(TransactionManager&, const std::filesystem::path&) {
+StageResult stage_interhashes(TransactionManager&, const std::filesystem::path&, uint64_t) {
     throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented"));
 }
 

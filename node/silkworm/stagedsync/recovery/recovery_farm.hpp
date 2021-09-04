@@ -40,7 +40,7 @@ class RecoveryFarm {
     ~RecoveryFarm();
 
     //! \brief Recover sender's addresses from transactions
-    //! \param [in] to :  Upper boundary for blocks to process (included)
+    //! \param [in] to : Upper boundary for blocks to process (included)
     //! \return A code indicating process status
     StageResult recover(BlockNum to);
 

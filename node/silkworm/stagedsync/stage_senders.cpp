@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <silkworm/common/log.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/recovery/recovery_farm.hpp>
 

@@ -323,7 +323,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
         rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
 
         auto hash{keccak256(rlp)};
-        batch_.push_back(RecoveryWorker::package{block_num, hash, transaction.odd_y_parity});
+        batch_.push_back(RecoveryPackage{block_num, hash, transaction.odd_y_parity});
         intx::be::unsafe::store(batch_.back().signature, transaction.r);
         intx::be::unsafe::store(batch_.back().signature + kHashLength, transaction.s);
 

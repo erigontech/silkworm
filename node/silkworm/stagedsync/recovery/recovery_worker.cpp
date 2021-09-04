@@ -31,7 +31,7 @@ RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id), data_si
     }
 }
 
-void RecoveryWorker::set_work(uint32_t batch_id, std::vector<package>& farm_batch) {
+void RecoveryWorker::set_work(uint32_t batch_id, std::vector<RecoveryPackage>& farm_batch) {
     batch_id_ = batch_id;
     batch_.swap(farm_batch);
     status_.store(Status::Working);

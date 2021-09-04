@@ -173,15 +173,26 @@ StageResult RecoveryFarm::recover(BlockNum to) {
     return stage_result;
 }
 
-StageResult RecoveryFarm::unwind(BlockNum new_height) {
+StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height) {
     SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
-    auto unwind_table{db::open_cursor(db_transaction_, db::table::kSenders)};
-    auto unwind_point{db::block_key(new_height + 1)};
-    db::cursor_erase(unwind_table, unwind_point);
-    // Eventually update new stage height
-    db::stages::write_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
+    try {
+        auto unwind_table{db::open_cursor(db_transaction, db::table::kSenders)};
+        auto unwind_point{db::block_key(new_height + 1)};
+        db::cursor_erase(unwind_table, unwind_point);
 
-    return StageResult::kSuccess;
+        // Eventually update new stage height
+        db::stages::write_stage_progress(db_transaction, db::stages::kSendersKey, new_height);
+
+        return StageResult::kSuccess;
+
+    } catch (const mdbx::exception& ex) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what()
+                                      << std::endl;
+        return StageResult::kDbError;
+    } catch (...) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected unknown error in " << std::string(__FUNCTION__) << std::endl;
+        return StageResult::kUnexpectedError;
+    }
 }
 
 void RecoveryFarm::stop_all_workers(bool wait) {

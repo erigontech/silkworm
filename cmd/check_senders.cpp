@@ -114,18 +114,18 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 
-        // Create farm instance and do work
-        farm = std::make_unique<stagedsync::recovery::RecoveryFarm>(txn, options.max_workers, options.batch_size,
-                                                                    collector);
         stagedsync::StageResult result{stagedsync::StageResult::kSuccess};
 
         signal(SIGINT, sig_handler);
         signal(SIGTERM, sig_handler);
 
         if (app_recover) {
+            // Create farm instance and do work
+            farm = std::make_unique<stagedsync::recovery::RecoveryFarm>(txn, options.max_workers, options.batch_size,
+                                                                        collector);
             result = farm->recover(options.block_to);
         } else {
-            result = farm->unwind(options.block_from);
+            result = stagedsync::recovery::RecoveryFarm::unwind(txn, options.block_from);
         }
 
         if (rc = static_cast<int>(result), rc) {

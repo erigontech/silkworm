@@ -27,11 +27,12 @@ namespace silkworm::etl {
 constexpr size_t kOptimalBufferSize = 256_Mebi;
 
 // Function pointer to process Load on before Load data into tables
-typedef void (*LoadFunc)(Entry, mdbx::cursor&, MDBX_put_flags_t);
+typedef void (*LoadFunc)(const Entry&, mdbx::cursor&, MDBX_put_flags_t);
 
 // Collects data Extracted from db
 class Collector {
   public:
+
     // Not copyable nor movable
     Collector(const Collector&) = delete;
     Collector& operator=(const Collector&) = delete;

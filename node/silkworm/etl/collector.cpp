@@ -85,7 +85,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
             } else {
                 mdbx::slice k{db::to_slice(etl_entry.key)};
                 mdbx::slice v{db::to_slice(etl_entry.value)};
-                target.put(k, &v, flags);
+                mdbx::error::success_or_throw(target.put(k, &v, flags));
             }
 
             if (!--dummy_counter) {
@@ -130,7 +130,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
         } else {
             mdbx::slice k{db::to_slice(etl_entry.key)};
             mdbx::slice v{db::to_slice(etl_entry.value)};
-            target.put(k, &v, flags);
+            mdbx::error::success_or_throw(target.put(k, &v, flags));
         }
 
         // Display progress

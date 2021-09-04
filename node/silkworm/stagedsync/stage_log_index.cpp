@@ -35,7 +35,7 @@ namespace fs = std::filesystem;
 
 constexpr size_t kBitmapBufferSizeLimit = 512_Mebi;
 
-static void loader_function(etl::Entry entry, mdbx::cursor& target_table, MDBX_put_flags_t db_flags) {
+static void loader_function(const etl::Entry& entry, mdbx::cursor& target_table, MDBX_put_flags_t db_flags) {
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
     Bytes last_chunk_index(entry.key.size() + 4, '\0');
     std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
@@ -57,7 +57,7 @@ static void loader_function(etl::Entry entry, mdbx::cursor& target_table, MDBX_p
 
         mdbx::slice k{db::to_slice(chunk_index)};
         mdbx::slice v{db::to_slice(current_chunk_bytes)};
-        target_table.put(k, &v, db_flags);
+        mdbx::error::success_or_throw(target_table.put(k, &v, db_flags));
     }
 }
 

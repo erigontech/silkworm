@@ -114,7 +114,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         auto target{db::open_cursor(*txn, index_config)};
         collector.load(
             target,
-            [](etl::Entry entry, mdbx::cursor& history_index_table, MDBX_put_flags_t put_flags) {
+            [](const etl::Entry& entry, mdbx::cursor& history_index_table, MDBX_put_flags_t put_flags) {
                 auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
                 // Check wheter we still need to rework the previous entry
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');
@@ -142,7 +142,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
                     current_chunk.write(byte_ptr_cast(&current_chunk_bytes[0]));
                     mdbx::slice k{db::to_slice(chunk_index)};
                     mdbx::slice v{db::to_slice(current_chunk_bytes)};
-                    history_index_table.put(k, &v, put_flags);
+                    mdbx::error::success_or_throw(history_index_table.put(k, &v, put_flags));
                 }
             },
             db_flags, /* log_every_percent = */ 20);
@@ -210,10 +210,11 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
 }
 
 StageResult history_index_prune(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from,
-                                 bool storage) {
+                                bool storage) {
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
-    etl::Collector collector(etl_path.string().c_str(), /* flush size */ 10 * kMebi); // We do not prune many blocks usually
+    etl::Collector collector(etl_path.string().c_str(),
+                             /* flush size */ 10 * kMebi);  // We do not prune many blocks usually
 
     auto last_processed_block{db::stages::read_stage_progress(*txn, stage_key)};
 
@@ -233,7 +234,8 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
             // check if prune can be applied
             if (bm.maximum() >= prune_from) {
                 // Erase elements that are below prune_from
-                bm &= roaring::Roaring64Map(roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
+                bm &= roaring::Roaring64Map(
+                    roaring::api::roaring_bitmap_from_range(prune_from, last_processed_block + 1, 1));
                 Bytes new_bitmap(bm.getSizeInBytes(), '\0');
                 bm.write(byte_ptr_cast(&new_bitmap[0]));
                 // replace with new index
@@ -273,6 +275,5 @@ StageResult prune_account_history(TransactionManager& txn, const std::filesystem
 StageResult prune_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     return history_index_prune(txn, etl_path, prune_from, true);
 }
-
 
 }  // namespace silkworm::stagedsync

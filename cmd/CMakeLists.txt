@@ -117,6 +117,8 @@ endif(NOT SILKWORM_CORE_ONLY)
 
 if(NOT SILKWORM_WASM_API)
   # Ethereum Consensus Tests
+  hunter_add_package(CLI11)
+  find_package(CLI11 CONFIG REQUIRED)
   find_package(nlohmann_json CONFIG REQUIRED)
   add_executable(consensus consensus.cpp)
   target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")

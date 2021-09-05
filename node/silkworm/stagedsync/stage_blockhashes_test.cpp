@@ -50,7 +50,7 @@ TEST_CASE("Stage Block Hashes") {
     // Prepare
     // ---------------------------------------
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-    for (int i = 0; i < 3; ++i) {
+    for (uint32_t i = 0; i < 3; ++i) {
         Bytes block_key{db::block_key(i + 1)};
         canonical_table.insert(db::to_slice(block_key), db::to_slice(block_hashes[i]));
     }
@@ -65,7 +65,7 @@ TEST_CASE("Stage Block Hashes") {
     REQUIRE((*txn).get_map_stat(blockhashes_table.map()).ms_entries == 3);
 
     bool forward_double_check_result{true};
-    for (int i = 0; i < 3 && forward_double_check_result; ++i) {
+    for (uint32_t i = 0; i < 3 && forward_double_check_result; ++i) {
         auto data{blockhashes_table.find(db::to_slice(block_hashes[i]), false)};
         if (!data.done) {
             forward_double_check_result = false;

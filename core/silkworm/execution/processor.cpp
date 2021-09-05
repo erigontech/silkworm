@@ -21,21 +21,22 @@
 #include <silkworm/chain/dao.hpp>
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-
-#include "execution.hpp"
+#include <silkworm/trie/vector_root.hpp>
 
 namespace silkworm {
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config)
-    : evm_{block, state, config} {}
+ExecutionProcessor::ExecutionProcessor(const Block& block, State& state, const ChainConfig& config)
+    : state_{state}, evm_{block, state_, config} {}
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
+    assert(pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
+                                    evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
+
     if (!txn.from.has_value()) {
         return ValidationResult::kMissingSender;
     }
 
-    const IntraBlockState& state{evm_.state()};
-    const uint64_t nonce{state.get_nonce(*txn.from)};
+    const uint64_t nonce{state_.get_nonce(*txn.from)};
     if (nonce != txn.nonce) {
         return ValidationResult::kWrongNonce;
     }
@@ -44,7 +45,7 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
     const intx::uint512 max_gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
     // See YP, Eq (57) in Section 6.2 "Execution"
     const intx::uint512 v0{max_gas_cost + txn.value};
-    if (state.get_balance(*txn.from) < v0) {
+    if (state_.get_balance(*txn.from) < v0) {
         return ValidationResult::kInsufficientFunds;
     }
 
@@ -59,26 +60,27 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
 }
 
 Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept {
-    IntraBlockState& state{evm_.state()};
-    evm_.state().clear_journal_and_substate();
+    assert(validate_transaction(txn) == ValidationResult::kOk);
+
+    state_.clear_journal_and_substate();
 
     assert(txn.from.has_value());
-    state.access_account(*txn.from);
+    state_.access_account(*txn.from);
 
     const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
-    state.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
+    state_.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
 
     if (txn.to.has_value()) {
-        state.access_account(*txn.to);
+        state_.access_account(*txn.to);
         // EVM itself increments the nonce for contract creation
-        state.set_nonce(*txn.from, txn.nonce + 1);
+        state_.set_nonce(*txn.from, txn.nonce + 1);
     }
 
     for (const AccessListEntry& ae : txn.access_list) {
-        state.access_account(ae.account);
+        state_.access_account(ae.account);
         for (const evmc::bytes32& key : ae.storage_keys) {
-            state.access_storage(ae.account, key);
+            state_.access_storage(ae.account, key);
         }
     }
 
@@ -93,23 +95,23 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
 
     // award the miner
     const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
-    state.add_to_balance(evm_.block().header.beneficiary, gas_used * priority_fee_per_gas);
+    state_.add_to_balance(evm_.block().header.beneficiary, gas_used * priority_fee_per_gas);
 
-    evm_.state().destruct_suicides();
+    state_.destruct_suicides();
     if (rev >= EVMC_SPURIOUS_DRAGON) {
-        evm_.state().destruct_touched_dead();
+        state_.destruct_touched_dead();
     }
 
-    evm_.state().finalize_transaction();
+    state_.finalize_transaction();
 
     cumulative_gas_used_ += gas_used;
 
     return {
-        txn.type,                         // type
-        vm_res.status == EVMC_SUCCESS,    // success
-        cumulative_gas_used_,             // cumulative_gas_used
-        logs_bloom(evm_.state().logs()),  // bloom
-        evm_.state().logs(),              // logs
+        txn.type,                       // type
+        vm_res.status == EVMC_SUCCESS,  // success
+        cumulative_gas_used_,           // cumulative_gas_used
+        logs_bloom(state_.logs()),      // bloom
+        state_.logs(),                  // logs
     };
 }
 
@@ -119,9 +121,9 @@ uint64_t ExecutionProcessor::available_gas() const noexcept {
 
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left) noexcept {
     const evmc_revision rev{evm_.revision()};
-    uint64_t refund{evm_.state().get_refund()};
+    uint64_t refund{state_.get_refund()};
     if (rev < EVMC_LONDON) {
-        refund += fee::kRSelfDestruct * evm_.state().number_of_self_destructs();
+        refund += fee::kRSelfDestruct * state_.number_of_self_destructs();
     }
     const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? param::kMaxRefundQuotientLondon
                                                           : param::kMaxRefundQuotientFrontier};
@@ -131,31 +133,64 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
 
     const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
-    evm_.state().add_to_balance(*txn.from, gas_left * effective_gas_price);
+    state_.add_to_balance(*txn.from, gas_left * effective_gas_price);
 
     return gas_left;
 }
 
-std::pair<std::vector<Receipt>, ValidationResult> ExecutionProcessor::execute_block() noexcept {
-    std::vector<Receipt> receipts{};
+ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept {
+    receipts.clear();
+    receipts.reserve(evm_.block().transactions.size());
 
     uint64_t block_num{evm_.block().header.number};
     if (block_num == evm_.config().dao_block) {
-        dao::transfer_balances(evm_.state());
+        dao::transfer_balances(state_);
     }
 
     cumulative_gas_used_ = 0;
     for (const Transaction& txn : evm_.block().transactions) {
-        ValidationResult err{validate_transaction(txn)};
+        const ValidationResult err{validate_transaction(txn)};
         if (err != ValidationResult::kOk) {
-            return {receipts, err};
+            return err;
         }
         receipts.push_back(execute_transaction(txn));
     }
 
     apply_rewards();
 
-    return {receipts, ValidationResult::kOk};
+    return ValidationResult::kOk;
+}
+
+ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt>& receipts) noexcept {
+    if (const ValidationResult res{execute_block_no_post_validation(receipts)}; res != ValidationResult::kOk) {
+        return res;
+    }
+
+    const auto& header{evm_.block().header};
+
+    if (cumulative_gas_used() != header.gas_used) {
+        return ValidationResult::kWrongBlockGas;
+    }
+
+    if (evm_.revision() >= EVMC_BYZANTIUM) {
+        static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
+        evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
+        if (receipt_root != header.receipts_root) {
+            return ValidationResult::kWrongReceiptsRoot;
+        }
+    }
+
+    Bloom bloom{};  // zero initialization
+    for (const Receipt& receipt : receipts) {
+        join(bloom, receipt.bloom);
+    }
+    if (bloom != header.logs_bloom) {
+        return ValidationResult::kWrongLogsBloom;
+    }
+
+    state_.write_to_db(header.number);
+
+    return ValidationResult::kOk;
 }
 
 void ExecutionProcessor::apply_rewards() noexcept {
@@ -173,11 +208,11 @@ void ExecutionProcessor::apply_rewards() noexcept {
     intx::uint256 miner_reward{block_reward};
     for (const BlockHeader& ommer : evm_.block().ommers) {
         intx::uint256 ommer_reward{((8 + ommer.number - block_number) * block_reward) >> 3};
-        evm_.state().add_to_balance(ommer.beneficiary, ommer_reward);
+        state_.add_to_balance(ommer.beneficiary, ommer_reward);
         miner_reward += block_reward / 32;
     }
 
-    evm_.state().add_to_balance(evm_.block().header.beneficiary, miner_reward);
+    state_.add_to_balance(evm_.block().header.beneficiary, miner_reward);
 }
 
 }  // namespace silkworm

@@ -24,9 +24,9 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/hash_maps.hpp>
-#include <silkworm/state/buffer.hpp>
 #include <silkworm/state/delta.hpp>
 #include <silkworm/state/object.hpp>
+#include <silkworm/state/state.hpp>
 #include <silkworm/types/log.hpp>
 
 namespace silkworm {
@@ -51,9 +51,9 @@ class IntraBlockState {
     IntraBlockState(const IntraBlockState&) = delete;
     IntraBlockState& operator=(const IntraBlockState&) = delete;
 
-    explicit IntraBlockState(StateBuffer& db) noexcept : db_{db} {}
+    explicit IntraBlockState(State& db) noexcept : db_{db} {}
 
-    StateBuffer& db() { return db_; }
+    State& db() { return db_; }
 
     bool exists(const evmc::address& address) const noexcept;
 
@@ -117,6 +117,7 @@ class IntraBlockState {
   private:
     friend class state::CreateDelta;
     friend class state::UpdateDelta;
+    friend class state::UpdateBalanceDelta;
     friend class state::SuicideDelta;
     friend class state::TouchDelta;
     friend class state::StorageChangeDelta;
@@ -127,16 +128,19 @@ class IntraBlockState {
 
     evmc::bytes32 get_storage(const evmc::address& address, const evmc::bytes32& key, bool original) const noexcept;
 
-    state::Object* get_object(const evmc::address& address) const noexcept;
+    const state::Object* get_object(const evmc::address& address) const noexcept;
+    state::Object* get_object(const evmc::address& address) noexcept;
+
     state::Object& get_or_create_object(const evmc::address& address) noexcept;
 
-    StateBuffer& db_;
+    State& db_;
 
     mutable FlatHashMap<evmc::address, state::Object> objects_;
     mutable FlatHashMap<evmc::address, state::Storage> storage_;
 
     // we want pointer stability here, thus node map
-    mutable NodeHashMap<evmc::bytes32, Bytes> code_;
+    mutable NodeHashMap<evmc::bytes32, ByteView> existing_code_;
+    NodeHashMap<evmc::bytes32, Bytes> new_code_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 

@@ -29,6 +29,21 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
     return bit_cast<evmc_bytes32>(keccak256(rlp));
 }
 
+ethash::hash256 BlockHeader::boundary() const {
+    static intx::uint256 dividend{
+        intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")};
+
+    ethash::hash256 ret{};
+
+    if (difficulty > 1u) {
+        auto result{intx::bswap(dividend / difficulty)};
+        std::memcpy(ret.bytes, intx::as_bytes(result), 32);
+    } else {
+        std::memcpy(ret.bytes, intx::as_bytes(dividend), 32);
+    }
+    return ret;
+}
+
 bool operator==(const BlockHeader& a, const BlockHeader& b) {
     return a.parent_hash == b.parent_hash && a.ommers_hash == b.ommers_hash && a.beneficiary == b.beneficiary &&
            a.state_root == b.state_root && a.transactions_root == b.transactions_root &&
@@ -174,6 +189,14 @@ namespace rlp {
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
     }
 
+    size_t length(const BlockBody& block_body) {
+        Header rlp_head{true, 0};
+        rlp_head.payload_length += length(block_body.transactions);
+        rlp_head.payload_length += length(block_body.ommers);
+
+        return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
+    }
+
     void encode(Bytes& to, const BlockBody& block_body) {
         Header rlp_head{true, 0};
         rlp_head.payload_length += length(block_body.transactions);
@@ -226,6 +249,26 @@ namespace rlp {
         }
 
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
+    }
+
+    size_t length(const Block& block) {
+        Header rlp_head{true, 0};
+        rlp_head.payload_length += length(block.header);
+        rlp_head.payload_length += length(block.transactions);
+        rlp_head.payload_length += length(block.ommers);
+
+        return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
+    }
+
+    void encode(Bytes& to, const Block& block) {
+        Header rlp_head{true, 0};
+        rlp_head.payload_length += length(block.header);
+        rlp_head.payload_length += length(block.transactions);
+        rlp_head.payload_length += length(block.ommers);
+        encode_header(to, rlp_head);
+        encode(to, block.header);
+        encode(to, block.transactions);
+        encode(to, block.ommers);
     }
 
 }  // namespace rlp

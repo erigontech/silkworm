@@ -19,11 +19,11 @@
 
 #include <stdint.h>
 
-#include <utility>
 #include <vector>
 
 #include <silkworm/chain/validity.hpp>
 #include <silkworm/execution/evm.hpp>
+#include <silkworm/state/state.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
 #include <silkworm/types/transaction.hpp>
@@ -35,18 +35,22 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, IntraBlockState& state, const ChainConfig& config);
+    ExecutionProcessor(const Block& block, State& state, const ChainConfig& config);
 
     // Preconditions:
     // 1) pre_validate_transaction(txn) must return kOk
     // 2) txn.from must be recovered, otherwise kMissingSender will be returned
     ValidationResult validate_transaction(const Transaction& txn) const noexcept;
 
-    // precondition: transaction must be valid
+    // Execute a transaction, but do not write to the DB yet.
+    // Precondition: transaction must be valid.
     Receipt execute_transaction(const Transaction& txn) noexcept;
 
-    /// Execute the block, but do not write to the DB yet
-    [[nodiscard]] std::pair<std::vector<Receipt>, ValidationResult> execute_block() noexcept;
+    /// Execute the block and write the result to the DB.
+    /// Warning: This method does not verify state root;
+    /// pre-Byzantium receipt root isn't validated either.
+    /// Precondition: pre_validate_block(block) must return kOk.
+    [[nodiscard]] ValidationResult execute_and_write_block(std::vector<Receipt>& receipts) noexcept;
 
     uint64_t cumulative_gas_used() const noexcept { return cumulative_gas_used_; }
 
@@ -54,12 +58,18 @@ class ExecutionProcessor {
     const EVM& evm() const noexcept { return evm_; }
 
   private:
+    /// Execute the block, but do not write to the DB yet.
+    /// Does not perform any post-execution validation (for example, receipt root is not checked).
+    /// Precondition: pre_validate_block(block) must return kOk.
+    [[nodiscard]] ValidationResult execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept;
+
     uint64_t available_gas() const noexcept;
     uint64_t refund_gas(const Transaction& txn, uint64_t gas_left) noexcept;
 
     void apply_rewards() noexcept;
 
     uint64_t cumulative_gas_used_{0};
+    IntraBlockState state_;
     EVM evm_;
 };
 

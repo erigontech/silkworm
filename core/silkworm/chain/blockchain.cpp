@@ -18,11 +18,11 @@
 
 #include <cassert>
 
-#include <silkworm/execution/execution.hpp>
+#include <silkworm/execution/processor.hpp>
 
 namespace silkworm {
 
-Blockchain::Blockchain(StateBuffer& state, const ChainConfig& config, const Block& genesis_block)
+Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& genesis_block)
     : state_{state}, config_{config} {
     evmc::bytes32 hash{genesis_block.header.hash()};
     state_.insert_block(genesis_block, hash);
@@ -89,10 +89,12 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
 }
 
 ValidationResult Blockchain::execute_block(const Block& block, bool check_state_root) {
-    std::pair<std::vector<Receipt>, ValidationResult> res{
-        silkworm::execute_block(block, state_, config_, /*analysis_cache=*/nullptr, state_pool, exo_evm)};
-    if (res.second != ValidationResult::kOk) {
-        return res.second;
+    ExecutionProcessor processor{block, state_, config_};
+    processor.evm().state_pool = state_pool;
+    processor.evm().exo_evm = exo_evm;
+
+    if (const auto res{processor.execute_and_write_block(receipts_)}; res != ValidationResult::kOk) {
+        return res;
     }
 
     if (check_state_root) {
@@ -110,8 +112,11 @@ void Blockchain::re_execute_canonical_chain(uint64_t ancestor, uint64_t tip) {
     assert(ancestor <= tip);
     for (uint64_t block_number{ancestor + 1}; block_number <= tip; ++block_number) {
         std::optional<evmc::bytes32> hash{state_.canonical_hash(block_number)};
+        assert(hash != std::nullopt);
         std::optional<BlockBody> body{state_.read_body(block_number, *hash)};
+        assert(body != std::nullopt);
         std::optional<BlockHeader> header{state_.read_header(block_number, *hash)};
+        assert(header != std::nullopt);
 
         Block block;
         block.header = *header;
@@ -138,7 +143,10 @@ std::vector<BlockWithHash> Blockchain::intermediate_chain(uint64_t block_number,
         BlockWithHash& x{chain[block_number - canonical_ancestor - 1]};
 
         std::optional<BlockBody> body{state_.read_body(block_number, hash)};
+        assert(body != std::nullopt);
         std::optional<BlockHeader> header{state_.read_header(block_number, hash)};
+        assert(header != std::nullopt);
+
         x.block.header = *header;
         x.block.transactions = body->transactions;
         x.block.ommers = body->ommers;
@@ -155,6 +163,11 @@ uint64_t Blockchain::canonical_ancestor(const BlockHeader& header, const evmc::b
         return header.number;
     }
     std::optional<BlockHeader> parent{state_.read_header(header.number - 1, header.parent_hash)};
+
+    // Blockchain::insert_block fails for blocks whose parent is not in the state,
+    // so all ancestors should be in the state.
+    assert(parent != std::nullopt);
+
     return canonical_ancestor(*parent, header.parent_hash);
 }
 

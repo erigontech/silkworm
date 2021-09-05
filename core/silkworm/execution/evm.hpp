@@ -59,7 +59,8 @@ class EVM {
 
     evmc_revision revision() const noexcept;
 
-    AnalysisCache* analysis_cache{nullptr};  // use for better performance
+    // Point to a cache instance in order to enable execution with evmone advanced rather than baseline interpreter
+    AnalysisCache* advanced_analysis_cache{nullptr};
 
     ExecutionStatePool* state_pool{nullptr};  // use for better performance
 
@@ -78,7 +79,7 @@ class EVM {
                                                   ByteView code) noexcept;
 
     evmc_result execute_with_default_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
-                                                 std::optional<evmc::bytes32> code_hash) noexcept;
+                                                 const evmc::bytes32& code_hash) noexcept;
 
     uint8_t number_of_precompiles() const noexcept;
     bool is_precompiled(const evmc::address& contract) const noexcept;

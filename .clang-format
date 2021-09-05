@@ -3,6 +3,10 @@ ColumnLimit: 120
 IndentWidth: 4
 AccessModifierOffset: -2
 NamespaceIndentation: Inner
+
+DerivePointerAlignment: false
+PointerAlignment: Left
+
 IncludeCategories:
   # Silkworm headers
   - Regex:           '<silkworm.*'

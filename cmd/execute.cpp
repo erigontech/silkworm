@@ -14,38 +14,27 @@
    limitations under the License.
 */
 
-#include <filesystem>
-
 #include <CLI/CLI.hpp>
-#include <boost/endian/conversion.hpp>
 #include <magic_enum.hpp>
 
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/execution/execution.hpp>
-#include <silkworm_tg_api.h>
+#include <silkworm/stagedsync/stagedsync.hpp>
 
 int main(int argc, char* argv[]) {
     using namespace silkworm;
 
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
-
-    uint64_t to_block{UINT64_MAX};
-    app.add_option("--to", to_block, "Block execute up to");
 
     std::string batch_size_str{"512MB"};
     app.add_option("--batch", batch_size_str, "Batch size of DB changes to accumulate before committing", true);
 
     CLI11_PARSE(app, argc, argv);
-
-    namespace fs = std::filesystem;
 
     auto batch_size{parse_size(batch_size_str)};
     if (!batch_size.has_value()) {
@@ -55,56 +44,18 @@ int main(int argc, char* argv[]) {
 
     SILKWORM_LOG(LogLevel::Info) << "Starting block execution. DB: " << chaindata << std::endl;
 
-    try {
-        db::EnvConfig db_config{chaindata};
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
+    SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
 
-        bool write_receipts{db::read_storage_mode_receipts(txn)};
-        auto chain_config{db::read_chain_config(txn)};
-        if (!chain_config.has_value()) {
-            throw std::runtime_error("Unable to retrieve chain config");
-        }
-
-        uint64_t previous_progress{db::stages::get_stage_progress(txn, db::stages::kExecutionKey)};
-        uint64_t current_progress{previous_progress};
-
-        for (uint64_t block_number{previous_progress + 1}; block_number <= to_block; ++block_number) {
-            int db_error_code{0};
-            SilkwormStatusCode status{silkworm_execute_blocks(txn, chain_config->chain_id, block_number, to_block,
-                                                              *batch_size, write_receipts, &current_progress,
-                                                              &db_error_code)};
-            if (status != SilkwormStatusCode::kSilkwormSuccess &&
-                status != SilkwormStatusCode::kSilkwormBlockNotFound) {
-                SILKWORM_LOG(LogLevel::Error) << "Error in silkworm_execute_blocks: " << magic_enum::enum_name(status)
-                                              << ", DB: " << db_error_code << std::endl;
-                return magic_enum::enum_integer(status);
-            }
-
-            block_number = current_progress;
-
-            db::stages::set_stage_progress(txn, db::stages::kExecutionKey, current_progress);
-            txn.commit();
-
-            if (status == SilkwormStatusCode::kSilkwormBlockNotFound) {
-                break;
-            }
-
-            SILKWORM_LOG(LogLevel::Info) << "Blocks <= " << current_progress << " committed" << std::endl;
-            txn = env.start_write();
-        }
-
-        if (current_progress > previous_progress) {
-            SILKWORM_LOG(LogLevel::Info) << "All blocks <= " << current_progress << " executed and committed"
-                                         << std::endl;
-        } else {
-            SILKWORM_LOG(LogLevel::Warn) << "Nothing to execute" << std::endl;
-        }
-
-    } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
-        return -5;
+    auto data_dir{DataDirectory::from_chaindata(chaindata)};
+    data_dir.deploy();
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
+    db_config.create = false;
+    auto env{db::open_env(db_config)};
+    stagedsync::TransactionManager tm{env};
+    auto res{stagedsync::stage_execution(tm, data_dir.etl().path(), batch_size.value(), 0)};
+    if (res != stagedsync::StageResult::kSuccess) {
+        SILKWORM_LOG(LogLevel::Info) << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res)
+                                     << std::endl;
     }
-
-    return 0;
+    return magic_enum::enum_integer<stagedsync::StageResult>(res);
 }

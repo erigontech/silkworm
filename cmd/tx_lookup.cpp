@@ -14,17 +14,14 @@
    limitations under the License.
 */
 
-#include <filesystem>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
-#include <boost/endian/conversion.hpp>
 
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
 using namespace silkworm;
@@ -34,7 +31,7 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"Generates Tc Hashes => BlockNumber mapping in database"};
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     bool full{false};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
@@ -43,19 +40,22 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     try {
-        db::EnvConfig db_config{chaindata};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.deploy();
+        db::EnvConfig db_config{data_dir.chaindata().path().string()};
+        auto env{db::open_env(db_config)};
+
         if (full) {
-            auto env{db::open_env(db_config)};
             auto txn{env.start_write()};
 
             auto tx_map{db::open_map(txn, db::table::kTxLookup)};
             txn.clear_map(tx_map);
             db::stages::set_stage_progress(txn, db::stages::kTxLookupKey, 0);
             txn.commit();
-            env.close();
         }
 
-        stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(db_config));
+        stagedsync::TransactionManager tm{env};
+        stagedsync::check_stagedsync_error(stagedsync::stage_tx_lookup(tm, data_dir.etl().path()));
 
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

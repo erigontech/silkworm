@@ -20,7 +20,7 @@
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/state/memory_buffer.hpp>
+#include <silkworm/state/in_memory_state.hpp>
 
 #include "address.hpp"
 
@@ -34,7 +34,7 @@ TEST_CASE("Value transfer") {
     evmc::address to{0x8b299e2b7d7f43c0ce3068263545309ff4ffb521_address};
     intx::uint256 value{10'200'000'000'000'000};
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     EVM evm{block, state, kMainnetConfig};
 
@@ -88,7 +88,7 @@ TEST_CASE("Smart contract with storage") {
     // 25     PUSH1  => 00
     // 27     SSTORE         // storage[0] = input[0]
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     EVM evm{block, state, kMainnetConfig};
 
@@ -158,14 +158,14 @@ TEST_CASE("Maximum call depth") {
     35     JUMPDEST
     */
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     state.set_code(contract, code);
 
     EVM evm{block, state, kMainnetConfig};
 
     AnalysisCache analysis_cache{/*maxSize=*/16};
-    evm.analysis_cache = &analysis_cache;
+    evm.advanced_analysis_cache = &analysis_cache;
 
     Transaction txn{};
     txn.from = caller;
@@ -216,7 +216,7 @@ TEST_CASE("DELEGATECALL") {
     10     DELEGATECALL
     */
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     state.set_code(caller_address, caller_code);
     state.set_code(callee_address, callee_code);
@@ -280,7 +280,7 @@ TEST_CASE("CREATE should only return on failure") {
     51     RETURN
     */
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     EVM evm{block, state, kMainnetConfig};
 
@@ -310,7 +310,7 @@ TEST_CASE("Contract overwrite") {
 
     evmc::address contract_address{create_address(caller, /*nonce=*/0)};
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     state.set_code(contract_address, old_code);
 
@@ -335,7 +335,7 @@ TEST_CASE("EIP-3541: Reject new contracts starting with the 0xEF byte") {
     Block block;
     block.header.number = 13'500'000;
 
-    MemoryBuffer db;
+    InMemoryState db;
     IntraBlockState state{db};
     EVM evm{block, state, config};
 

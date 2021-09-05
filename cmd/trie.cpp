@@ -23,16 +23,12 @@ At the moment only full regeneration is supported, not incremental update.
 The previous Generate Hashed State Stage must be performed prior to calling this executable.
 */
 
-#include <filesystem>
-
 #include <CLI/CLI.hpp>
 
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/temp_dir.hpp>
 #include <silkworm/db/mdbx.hpp>
-#include <silkworm/db/util.hpp>
-#include <silkworm/trie/db_trie.hpp>
+#include <silkworm/trie/intermediate_hashes.hpp>
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Generate account & storage tries in the DB and compute the state root"};
@@ -40,24 +36,21 @@ int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
     using namespace silkworm;
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
     CLI11_PARSE(app, argc, argv);
 
-
     SILKWORM_LOG(LogLevel::Info) << "Regenerating account & storage tries. DB: " << chaindata << std::endl;
 
     try {
-
-        db::EnvConfig db_config{chaindata};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.deploy();
+        db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
-
-        TemporaryDirectory temp_dir;
-
-        evmc::bytes32 state_root{trie::regenerate_db_tries(txn, temp_dir.path())};
+        evmc::bytes32 state_root{trie::regenerate_intermediate_hashes(txn, data_dir.etl().path().string().c_str())};
 
         SILKWORM_LOG(LogLevel::Info) << "State root " << to_hex(state_root) << std::endl;
         txn.commit();

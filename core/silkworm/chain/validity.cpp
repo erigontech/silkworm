@@ -20,6 +20,7 @@
 
 #include <ethash/ethash.hpp>
 
+#include <silkworm/common/endian.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/trie/vector_root.hpp>
 
@@ -39,18 +40,16 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
         }
     }
 
-    if (txn.type.has_value()) {
-        if (txn.type == kEip2930TransactionType) {
-            if (rev < EVMC_BERLIN) {
-                return ValidationResult::kUnsupportedTransactionType;
-            }
-        } else if (txn.type == kEip1559TransactionType) {
-            if (rev < EVMC_LONDON) {
-                return ValidationResult::kUnsupportedTransactionType;
-            }
-        } else {
+    if (txn.type == Transaction::Type::kEip2930) {
+        if (rev < EVMC_BERLIN) {
             return ValidationResult::kUnsupportedTransactionType;
         }
+    } else if (txn.type == Transaction::Type::kEip1559) {
+        if (rev < EVMC_LONDON) {
+            return ValidationResult::kUnsupportedTransactionType;
+        }
+    } else if (txn.type != Transaction::Type::kLegacy) {
+        return ValidationResult::kUnsupportedTransactionType;
     }
 
     if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas) {
@@ -74,7 +73,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     return ValidationResult::kOk;
 }
 
-static std::optional<BlockHeader> get_parent(const StateBuffer& state, const BlockHeader& header) {
+static std::optional<BlockHeader> get_parent(const State& state, const BlockHeader& header) {
     return state.read_header(header.number - 1, header.parent_hash);
 }
 
@@ -118,7 +117,7 @@ static std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader&
     }
 }
 
-ValidationResult validate_block_header(const BlockHeader& header, const StateBuffer& state, const ChainConfig& config) {
+ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) {
     if (header.gas_used > header.gas_limit) {
         return ValidationResult::kGasAboveLimit;
     }
@@ -129,7 +128,7 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
 
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
     // https://eips.ethereum.org/EIPS/eip-1985
-    if (header.gas_limit > 0x7fffffffffffffff) {
+    if (header.gas_limit > INT64_MAX) {
         return ValidationResult::kInvalidGasLimit;
     }
 
@@ -178,24 +177,18 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
 
     // Ethash PoW verification
     if (config.seal_engine == SealEngineType::kEthash) {
-        auto boundary256{ethash::get_boundary_from_diff(header.difficulty)};
+        auto epoch_number{header.number / ethash::epoch_length};
+        auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_number))};
+
+        auto boundary256{header.boundary()};
         auto seal_hash(header.hash(/*for_sealing =*/true));
         ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
         ethash::hash256 mixh256{};
         std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
 
-        uint64_t nonce{0};
-        std::memcpy(&nonce, header.nonce.data(), 8);
-        nonce = ethash::be::uint64(nonce);
-
-        auto result{ethash::verify_full(header.number, sealh256, mixh256, nonce, boundary256)};
-        switch (result) {
-            case ethash::VerificationResult::kInvalidNonce:
-            case ethash::VerificationResult::kInvalidMixHash:
-                return ValidationResult::kInvalidSeal;
-            default:
-                return ValidationResult::kOk;
-        }
+        uint64_t nonce{endian::load_big_u64(header.nonce.data())};
+        return ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256) ? ValidationResult::kOk
+                                                                                     : ValidationResult::kInvalidSeal;
     }
 
     return ValidationResult::kOk;
@@ -203,7 +196,7 @@ ValidationResult validate_block_header(const BlockHeader& header, const StateBuf
 
 // See [YP] Section 11.1 "Ommer Validation"
 static bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                   const evmc::bytes32& mainline_hash, unsigned n, const StateBuffer& state,
+                   const evmc::bytes32& mainline_hash, unsigned n, const State& state,
                    std::vector<BlockHeader>& old_ommers) {
     if (n == 0 || branch_header == mainline_header) {
         return false;
@@ -230,7 +223,7 @@ static bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline
     return is_kin(branch_header, *mainline_parent, mainline_header.parent_hash, n - 1, state, old_ommers);
 }
 
-ValidationResult pre_validate_block(const Block& block, const StateBuffer& state, const ChainConfig& config) {
+ValidationResult pre_validate_block(const Block& block, const State& state, const ChainConfig& config) {
     const BlockHeader& header{block.header};
 
     if (ValidationResult err{validate_block_header(header, state, config)}; err != ValidationResult::kOk) {

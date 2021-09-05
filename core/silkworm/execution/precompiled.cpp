@@ -27,6 +27,8 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #pragma GCC diagnostic pop
 
@@ -50,27 +52,27 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
         d.resize(kInputLen, '\0');
     }
 
-    auto v{intx::be::unsafe::load<intx::uint256>(&d[32])};
-    auto r{intx::be::unsafe::load<intx::uint256>(&d[64])};
-    auto s{intx::be::unsafe::load<intx::uint256>(&d[96])};
+    const auto v{intx::be::unsafe::load<intx::uint256>(&d[32])};
+    const auto r{intx::be::unsafe::load<intx::uint256>(&d[64])};
+    const auto s{intx::be::unsafe::load<intx::uint256>(&d[96])};
 
-    bool homestead{false};  // See EIP-2
+    const bool homestead{false};  // See EIP-2
     if (!ecdsa::is_valid_signature(r, s, homestead)) {
         return Bytes{};
     }
 
-    ecdsa::YParityAndChainId y{ecdsa::v_to_y_parity_and_chain_id(v)};
-    if (y.chain_id) {
+    const std::optional<ecdsa::YParityAndChainId> parity_and_id{ecdsa::v_to_y_parity_and_chain_id(v)};
+    if (parity_and_id == std::nullopt || parity_and_id->chain_id != std::nullopt) {
         return Bytes{};
     }
 
-    std::optional<Bytes> key{ecdsa::recover(d.substr(0, 32), d.substr(64, 64), y.odd)};
-    if (!key || key->at(0) != 4) {
+    const std::optional<Bytes> key{ecdsa::recover(d.substr(0, 32), d.substr(64, 64), parity_and_id->odd)};
+    if (key == std::nullopt || key->at(0) != 4) {
         return Bytes{};
     }
 
     // Ignore the first byte of the public key
-    ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
+    const ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
 
     Bytes out(32, '\0');
     std::memcpy(&out[12], &hash.bytes[12], 32 - 12);
@@ -81,7 +83,7 @@ uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * (
 
 std::optional<Bytes> sha256_run(ByteView input) noexcept {
     Bytes out(32, '\0');
-    calc_sha_256(out.data(), input.data(), input.length());
+    calc_sha_256(out.data(), input.data(), input.length(), /*use_cpu_extensions=*/true);
     return out;
 }
 

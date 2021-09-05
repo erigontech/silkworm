@@ -14,8 +14,14 @@
    limitations under the License.
 ]]
 
-hunter_config(Boost VERSION 1.72.0-p1)    # <-- Highest available on hunter
-hunter_config(abseil VERSION 20200923.2)  # <-- Required for C++20
+hunter_config(Boost VERSION 1.72.0-p1)
+
+hunter_config(
+    abseil
+    VERSION 20210324.2
+    URL https://github.com/abseil/abseil-cpp/archive/20210324.2.tar.gz
+    SHA1 2d46ae096bfbdab19de1d65079b95e0fae9efe2e
+)
 
 hunter_config(
   Catch
@@ -32,8 +38,24 @@ hunter_config(
 )
 
 hunter_config(
-    Microsoft.GSL
-    VERSION 3.1.0
-    URL https://github.com/microsoft/GSL/archive/v3.1.0.tar.gz
-    SHA1 3f2891a46595806563e7a0e25bb7ecbb30776445
+  Microsoft.GSL
+  VERSION 3.1.0
+  URL https://github.com/microsoft/GSL/archive/v3.1.0.tar.gz
+  SHA1 3f2891a46595806563e7a0e25bb7ecbb30776445
 )
+
+hunter_config(
+  ethash
+  VERSION 0.7.1
+  URL https://github.com/chfast/ethash/archive/v0.7.1.tar.gz
+  SHA1 fb33772305a81ec2946fe0a7d327854b8192ee63
+  CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
+)
+
+hunter_config(Protobuf VERSION 3.14.0-4a09d77-p0)
+
+hunter_config(
+  gRPC
+  VERSION 1.31.0-p0
+  CMAKE_ARGS gRPC_BUILD_TESTS=OFF gRPC_BUILD_CODEGEN=ON gRPC_BUILD_CSHARP_EXT=OFF
+)      # <-- Last working version (greater seems to have networking issues)

@@ -18,9 +18,8 @@
 #include <iostream>
 
 #include <CLI/CLI.hpp>
-#include <boost/endian/conversion.hpp>
 
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
@@ -31,7 +30,7 @@ namespace fs = std::filesystem;
 int main(int argc, char* argv[]) {
     CLI::App app{"Generates Hashed state"};
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     bool full{false};
     bool incrementally{false};
     bool reset{false};
@@ -43,9 +42,9 @@ int main(int argc, char* argv[]) {
     app.add_flag("--reset", reset, "Reset HashState");
     CLI11_PARSE(app, argc, argv);
 
-    fs::path etl_path(fs::path(chaindata) / fs::path("etl-temp"));
-
-    db::EnvConfig db_config{chaindata};
+    auto data_dir{DataDirectory::from_chaindata(chaindata)};
+    data_dir.deploy();
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
 
@@ -72,8 +71,8 @@ int main(int argc, char* argv[]) {
             SILKWORM_LOG(LogLevel::Info) << "Hashing Code Keys" << std::endl;
             stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::Code);
         } else {
-            stagedsync::hashstate_promote_clean_state(txn, etl_path.string());
-            stagedsync::hashstate_promote_clean_code(txn, etl_path.string());
+            stagedsync::hashstate_promote_clean_state(txn, data_dir.etl().path().string());
+            stagedsync::hashstate_promote_clean_code(txn, data_dir.etl().path().string());
         }
         // Update progress height with last processed block
         db::stages::set_stage_progress(txn, db::stages::kHashStateKey,

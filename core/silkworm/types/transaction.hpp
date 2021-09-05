@@ -27,9 +27,6 @@
 
 namespace silkworm {
 
-static constexpr uint8_t kEip2930TransactionType{1};
-static constexpr uint8_t kEip1559TransactionType{2};
-
 // https://eips.ethereum.org/EIPS/eip-2930
 struct AccessListEntry {
     evmc::address account{};
@@ -39,12 +36,15 @@ struct AccessListEntry {
 bool operator==(const AccessListEntry& a, const AccessListEntry& b);
 
 struct Transaction {
-    // EIP-2718 transaction type, see
-    // https://eips.ethereum.org/EIPS/eip-2718
-    //
-    // Only legacy (=std::nullopt) and EIP-2930 (=1) types are currently supported;
-    // one should not set this field to anything else.
-    std::optional<uint8_t> type{std::nullopt};
+    // EIP-2718 transaction type
+    // https://github.com/ethereum/eth1.0-specs/tree/master/lists/signature-types
+    enum class Type : uint8_t {
+        kLegacy = 0,
+        kEip2930 = 1,
+        kEip1559 = 2,
+    };
+
+    Type type{Type::kLegacy};
 
     uint64_t nonce{0};
     intx::uint256 max_priority_fee_per_gas{0};
@@ -62,8 +62,10 @@ struct Transaction {
 
     std::optional<evmc::address> from{std::nullopt};  // sender recovered from the signature
 
-    intx::uint256 v() const;             // EIP-155
-    void set_v(const intx::uint256& v);  // EIP-155
+    intx::uint256 v() const;  // EIP-155
+
+    // Returns false is v is not acceptable (v != 27 && v != 28 && v < 35, see EIP-155)
+    [[nodiscard]] bool set_v(const intx::uint256& v);
 
     // Populates the from field with recovered sender.
     // See Yellow Paper, Appendix F "Signing Transactions",

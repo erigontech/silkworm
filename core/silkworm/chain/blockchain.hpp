@@ -22,14 +22,22 @@
 
 #include <silkworm/chain/validity.hpp>
 #include <silkworm/execution/state_pool.hpp>
-#include <silkworm/state/buffer.hpp>
+#include <silkworm/state/state.hpp>
+#include <silkworm/types/receipt.hpp>
 
 namespace silkworm {
 
+/// Reference implementation of Ethereum blockchain logic.
+/// Used for running consensus tests; the real node will use staged sync instead
+/// (https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md)
 class Blockchain {
   public:
-    Blockchain(StateBuffer& state, const ChainConfig& config, const Block& genesis_block);
+    /// Creates a new instance of Blockchain.
+    /// In the begining the state must have the genesis allocation.
+    /// Later on the state may only be modified by the created instance of Blockchain.
+    Blockchain(State& state, const ChainConfig& config, const Block& genesis_block);
 
+    // Not copyable nor movable
     Blockchain(const Blockchain&) = delete;
     Blockchain& operator=(const Blockchain&) = delete;
 
@@ -51,9 +59,10 @@ class Blockchain {
 
     uint64_t canonical_ancestor(const BlockHeader& header, const evmc::bytes32& hash) const;
 
-    StateBuffer& state_;
+    State& state_;
     const ChainConfig& config_;
     std::unordered_map<evmc::bytes32, ValidationResult> bad_blocks_;
+    std::vector<Receipt> receipts_;
 };
 
 }  // namespace silkworm

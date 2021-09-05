@@ -142,9 +142,10 @@ if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
 endif()
 
-find_package(intx CONFIG REQUIRED) # Required from here below
+find_package(intx CONFIG REQUIRED)   # Required from here below
+find_package(ethash CONFIG REQUIRED) # Required from here below
+
 add_subdirectory(evmone/evmc)
-add_subdirectory(ethash)
 
 add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/analysis.hpp
@@ -165,9 +166,9 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/tracing.hpp
                    evmone/lib/evmone/vm.cpp
                    evmone/lib/evmone/vm.hpp)
-set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.8.0")
+set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.8.1")
 target_include_directories(evmone PUBLIC evmone/include evmone/lib)
-target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex ethash)
+target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex)
 
 if(MSVC)
   target_compile_options(evmone PRIVATE /EHsc /w)
@@ -175,10 +176,19 @@ else()
   target_compile_options(evmone PRIVATE -fno-exceptions)
 endif()
 
+# MDBX
+if(NOT SILKWORM_CORE_ONLY)
+  set(MDBX_ENABLE_TESTS OFF)
+  add_subdirectory(libmdbx)
+  target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libmdbx)
+endif()
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
-  add_compile_options(-Wall -Wextra -Werror -Wno-missing-field-initializers)
+  add_compile_options(-Werror -Wall -Wextra)
+  add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
+  add_compile_options(-Wno-missing-field-initializers)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-attributes)
   endif()
@@ -192,10 +202,8 @@ endif()
 add_subdirectory(core)
 
 if(NOT SILKWORM_CORE_ONLY)
-  option(MDBX_HUGE_TRANSACTIONS "" ON)
-  add_subdirectory(libmdbx)
-  add_subdirectory(db)
-  add_subdirectory(tg_api)
+  add_subdirectory(interfaces)
+  add_subdirectory(node)
 endif()
 
 if(NOT SILKWORM_HAS_PARENT)

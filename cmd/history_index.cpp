@@ -21,21 +21,20 @@
 #include <unordered_map>
 
 #include <CLI/CLI.hpp>
-#include <boost/endian/conversion.hpp>
 
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
 using namespace silkworm;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     namespace fs = std::filesystem;
 
     CLI::App app{"Generates History Indexes"};
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     bool full{false}, storage{false};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
@@ -45,26 +44,30 @@ int main(int argc, char *argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    db::EnvConfig db_config{chaindata};
+    auto data_dir{DataDirectory::from_chaindata(chaindata)};
+    data_dir.deploy();
+    db::EnvConfig db_config{data_dir.chaindata().path().string()};
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
-    const char *stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryKey;
+    const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
 
     try {
+        auto env{db::open_env(db_config)};
+
         if (full) {
-            auto env{db::open_env(db_config)};
             auto txn{env.start_write()};
             txn.clear_map(db::open_map(txn, index_config));
             db::stages::set_stage_progress(txn, stage_key, 0);
             txn.commit();
         }
 
+        stagedsync::TransactionManager tm{env};
         if (storage) {
-            stagedsync::check_stagedsync_error(stagedsync::stage_storage_history(db_config));
+            stagedsync::check_stagedsync_error(stagedsync::stage_storage_history(tm, data_dir.etl().path()));
         } else {
-            stagedsync::check_stagedsync_error(stagedsync::stage_account_history(db_config));
+            stagedsync::check_stagedsync_error(stagedsync::stage_account_history(tm, data_dir.etl().path()));
         }
 
-    } catch (const std::exception &ex) {
+    } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
         return -5;
     }

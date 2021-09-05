@@ -138,11 +138,11 @@ uint8_t* header_state_root(BlockHeader* header) { return header->state_root.byte
 
 void block_recover_senders(Block* b) { b->recover_senders(); }
 
-MemoryBuffer* new_state() { return new MemoryBuffer; }
+InMemoryState* new_state() { return new InMemoryState; }
 
-void delete_state(MemoryBuffer* x) { delete x; }
+void delete_state(InMemoryState* x) { delete x; }
 
-uint8_t* state_root_hash_new(const MemoryBuffer* state) {
+uint8_t* state_root_hash_new(const InMemoryState* state) {
     evmc::bytes32 root_hash{state->state_root_hash()};
     void* out{new_buffer(kHashLength)};
     std::memcpy(out, root_hash.bytes, kHashLength);
@@ -153,13 +153,13 @@ static evmc::address address_from_ptr(const uint8_t* ptr) { return to_address({p
 
 static evmc::bytes32 bytes32_from_ptr(const uint8_t* ptr) { return to_bytes32({ptr, kHashLength}); }
 
-size_t state_number_of_accounts(const MemoryBuffer* state) { return state->number_of_accounts(); }
+size_t state_number_of_accounts(const InMemoryState* state) { return state->number_of_accounts(); }
 
-size_t state_storage_size(const MemoryBuffer* state, const uint8_t* address, const Account* account) {
+size_t state_storage_size(const InMemoryState* state, const uint8_t* address, const Account* account) {
     return state->storage_size(address_from_ptr(address), account->incarnation);
 }
 
-Account* state_read_account_new(const StateBuffer* state, const uint8_t* address) {
+Account* state_read_account_new(const State* state, const uint8_t* address) {
     std::optional<Account> account{state->read_account(address_from_ptr(address))};
     if (!account) {
         return nullptr;
@@ -170,13 +170,13 @@ Account* state_read_account_new(const StateBuffer* state, const uint8_t* address
     return out;
 }
 
-Bytes* state_read_code_new(const StateBuffer* state, const uint8_t* code_hash) {
+Bytes* state_read_code_new(const State* state, const uint8_t* code_hash) {
     auto out{new Bytes};
     *out = state->read_code(bytes32_from_ptr(code_hash));
     return out;
 }
 
-Bytes* state_read_storage_new(const StateBuffer* state, const uint8_t* address, const Account* account,
+Bytes* state_read_storage_new(const State* state, const uint8_t* address, const Account* account,
                               const Bytes* location) {
     evmc::bytes32 value{state->read_storage(address_from_ptr(address), account->incarnation, to_bytes32(*location))};
     auto out{new Bytes};
@@ -184,7 +184,7 @@ Bytes* state_read_storage_new(const StateBuffer* state, const uint8_t* address, 
     return out;
 }
 
-void state_update_account(StateBuffer* state, const uint8_t* address, const Account* current_ptr) {
+void state_update_account(State* state, const uint8_t* address, const Account* current_ptr) {
     std::optional<Account> current_opt;
     if (current_ptr) {
         current_opt = *current_ptr;
@@ -192,17 +192,17 @@ void state_update_account(StateBuffer* state, const uint8_t* address, const Acco
     state->update_account(address_from_ptr(address), /* initial=*/std::nullopt, current_opt);
 }
 
-void state_update_code(StateBuffer* state, const uint8_t* address, const Account* account, const Bytes* code) {
+void state_update_code(State* state, const uint8_t* address, const Account* account, const Bytes* code) {
     state->update_account_code(address_from_ptr(address), account->incarnation, account->code_hash, *code);
 }
 
-void state_update_storage(StateBuffer* state, const uint8_t* address, const Account* account, const Bytes* location,
+void state_update_storage(State* state, const uint8_t* address, const Account* account, const Bytes* location,
                           const Bytes* value) {
     state->update_storage(address_from_ptr(address), account->incarnation, to_bytes32(*location), /*initial=*/{},
                           to_bytes32(*value));
 }
 
-Blockchain* new_blockchain(StateBuffer* state, const ChainConfig* config, const Block* genesis_block) {
+Blockchain* new_blockchain(State* state, const ChainConfig* config, const Block* genesis_block) {
     return new Blockchain{*state, *config, *genesis_block};
 }
 

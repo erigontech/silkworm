@@ -20,7 +20,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/state/memory_buffer.hpp>
+#include <silkworm/state/in_memory_state.hpp>
 
 #include "address.hpp"
 #include "execution.hpp"
@@ -39,71 +39,21 @@ TEST_CASE("Zero gas price") {
     evmc::address sender{0x004512399a230565b99be5c3b0030a56f3ace68c_address};
 
     Transaction txn{
-        std::nullopt,  // type
-        0,             // nonce
-        0,             // max_priority_fee_per_gas
-        0,             // max_fee_per_gas
-        764'017,       // gas_limit
-        {},            // to
-        0,             // value
-        *from_hex("0x6060604052610922806100126000396000f3606060405236156100b6576000357c01000000000000000000"
-                  "000000000000000000000000000000000000009004806317e7dd22146100bb5780633562fd20146100ee5780"
-                  "633eba9ed21461011457806344bfa56e1461013a5780634c77e5ba146101c35780635a2bf25a1461020a5780"
-                  "639007127b14610230578063a209a29c14610261578063a77aa49e146102ea578063bdc963d8146103105780"
-                  "63c9a52d2c14610341578063f5866066146103a5576100b6565b610002565b34610002576100d66004808035"
-                  "906020019091905050610409565b60405180821515815260200191505060405180910390f35b346100025761"
-                  "0112600480803590602001909190803590602001909190505061043f565b005b346100025761013860048080"
-                  "35906020019091908035906020019091905050610466565b005b346100025761015560048080359060200190"
-                  "919050506104c0565b6040518080602001828103825283818151815260200191508051906020019080838382"
-                  "9060006004602084601f0104600302600f01f150905090810190601f1680156101b557808203805160018360"
-                  "20036101000a031916815260200191505b509250505060405180910390f35b34610002576101de6004808035"
-                  "906020019091905050610596565b604051808273ffffffffffffffffffffffffffffffffffffffff16815260"
-                  "200191505060405180910390f35b346100025761022e60048080359060200190919080359060200190919050"
-                  "506105df565b005b346100025761024b6004808035906020019091905050610639565b604051808281526020"
-                  "0191505060405180910390f35b346100025761027c6004808035906020019091905050610665565b60405180"
-                  "806020018281038252838181518152602001915080519060200190808383829060006004602084601f010460"
-                  "0302600f01f150905090810190601f1680156102dc5780820380516001836020036101000a03191681526020"
-                  "0191505b509250505060405180910390f35b346100025761030e600480803590602001909190803590602001"
-                  "909190505061073b565b005b346100025761032b6004808035906020019091905050610762565b6040518082"
-                  "815260200191505060405180910390f35b34610002576103a360048080359060200190919080359060200190"
-                  "82018035906020019191908080601f0160208091040260200160405190810160405280939291908181526020"
-                  "0183838082843782019150505050505090909190505061078e565b005b346100025761040760048080359060"
-                  "20019091908035906020019082018035906020019191908080601f0160208091040260200160405190810160"
-                  "40528093929190818152602001838380828437820191505050505050909091905050610858565b005b600060"
-                  "0460005060008360001916815260200190815260200160002060009054906101000a900460ff16905061043a"
-                  "565b919050565b806000600050600084600019168152602001908152602001600020600050819055505b5050"
-                  "565b80600460005060008460001916815260200190815260200160002060006101000a81548160ff02191690"
-                  "837f01000000000000000000000000000000000000000000000000000000000000009081020402179055505b"
-                  "5050565b60206040519081016040528060008152602001506003600050600083600019168152602001908152"
-                  "6020016000206000508054600181600116156101000203166002900480601f01602080910402602001604051"
-                  "9081016040528092919081815260200182805460018160011615610100020316600290048015610585578060"
-                  "1f1061055a57610100808354040283529160200191610585565b820191906000526020600020905b81548152"
-                  "906001019060200180831161056857829003601f168201915b50505050509050610591565b919050565b6000"
-                  "600260005060008360001916815260200190815260200160002060009054906101000a900473ffffffffffff"
-                  "ffffffffffffffffffffffffffff1690506105da565b919050565b8060026000506000846000191681526020"
-                  "0190815260200160002060006101000a81548173ffffffffffffffffffffffffffffffffffffffff02191690"
-                  "836c010000000000000000000000009081020402179055505b5050565b600060056000506000836000191681"
-                  "52602001908152602001600020600050549050610660565b919050565b602060405190810160405280600081"
-                  "5260200150600160005060008360001916815260200190815260200160002060005080546001816001161561"
-                  "01000203166002900480601f0160208091040260200160405190810160405280929190818152602001828054"
-                  "6001816001161561010002031660029004801561072a5780601f106106ff5761010080835404028352916020"
-                  "019161072a565b820191906000526020600020905b81548152906001019060200180831161070d5782900360"
-                  "1f168201915b50505050509050610736565b919050565b806005600050600084600019168152602001908152"
-                  "602001600020600050819055505b5050565b6000600060005060008360001916815260200190815260200160"
-                  "0020600050549050610789565b919050565b8060036000506000846000191681526020019081526020016000"
-                  "206000509080519060200190828054600181600116156101000203166002900490600052602060002090601f"
-                  "016020900481019282601f106107f557805160ff1916838001178555610826565b8280016001018555821561"
-                  "0826579182015b82811115610825578251826000505591602001919060010190610807565b5b509050610851"
-                  "9190610833565b8082111561084d5760008181506000905550600101610833565b5090565b50505b5050565b"
-                  "8060016000506000846000191681526020019081526020016000206000509080519060200190828054600181"
-                  "600116156101000203166002900490600052602060002090601f016020900481019282601f106108bf578051"
-                  "60ff19168380011785556108f0565b828001600101855582156108f0579182015b828111156108ef57825182"
-                  "60005055916020019190600101906108d1565b5b50905061091b91906108fd565b8082111561091757600081"
-                  "815060009055506001016108fd565b5090565b50505b505056"),
+        Transaction::Type::kLegacy,  // type
+        0,                           // nonce
+        0,                           // max_priority_fee_per_gas
+        0,                           // max_fee_per_gas
+        764'017,                     // gas_limit
+        {},                          // to
+        0,                           // value
+        *from_hex("0x606060"),       // data
+        false,                       // odd_y_parity
+        std::nullopt,                // chain_id
+        1,                           // r
+        1,                           // s
     };
 
-    MemoryBuffer db;
-    IntraBlockState state{db};
+    InMemoryState state;
     ExecutionProcessor processor{block, state, kMainnetConfig};
 
     CHECK(processor.validate_transaction(txn) == ValidationResult::kMissingSender);
@@ -144,23 +94,26 @@ TEST_CASE("No refund on error") {
     23     BALANCE
     */
 
-    MemoryBuffer db;
-    IntraBlockState state{db};
+    InMemoryState state;
     ExecutionProcessor processor{block, state, kMainnetConfig};
 
     Transaction txn{
-        std::nullopt,  // type
-        nonce,         // nonce
-        0,             // max_priority_fee_per_gas
-        59 * kGiga,    // max_fee_per_gas
-        103'858,       // gas_limit
-        {},            // to
-        0,             // value
-        code,          // data
+        Transaction::Type::kLegacy,  // type
+        nonce,                       // nonce
+        59 * kGiga,                  // max_priority_fee_per_gas
+        59 * kGiga,                  // max_fee_per_gas
+        103'858,                     // gas_limit
+        {},                          // to
+        0,                           // value
+        code,                        // data
+        false,                       // odd_y_parity
+        std::nullopt,                // chain_id
+        1,                           // r
+        1,                           // s
     };
 
-    state.add_to_balance(caller, kEther);
-    state.set_nonce(caller, nonce);
+    processor.evm().state().add_to_balance(caller, kEther);
+    processor.evm().state().set_nonce(caller, nonce);
     txn.from = caller;
 
     Receipt receipt1{processor.execute_transaction(txn)};
@@ -235,22 +188,26 @@ TEST_CASE("Self-destruct") {
     38     CALL
     */
 
-    MemoryBuffer db;
-    IntraBlockState state{db};
+    InMemoryState state;
     ExecutionProcessor processor{block, state, kMainnetConfig};
 
-    state.add_to_balance(caller_address, kEther);
-    state.set_code(caller_address, caller_code);
-    state.set_code(suicidal_address, suicidal_code);
+    processor.evm().state().add_to_balance(caller_address, kEther);
+    processor.evm().state().set_code(caller_address, caller_code);
+    processor.evm().state().set_code(suicidal_address, suicidal_code);
 
     Transaction txn{
-        std::nullopt,    // type
-        0,               // nonce
-        0,               // max_priority_fee_per_gas
-        20 * kGiga,      // max_fee_per_gas
-        100'000,         // gas_limit
-        caller_address,  // to
-        0,               // value
+        Transaction::Type::kLegacy,  // type
+        0,                           // nonce
+        20 * kGiga,                  // max_priority_fee_per_gas
+        20 * kGiga,                  // max_fee_per_gas
+        100'000,                     // gas_limit
+        caller_address,              // to
+        0,                           // value
+        {},                          // data
+        false,                       // odd_y_parity
+        std::nullopt,                // chain_id
+        1,                           // r
+        1,                           // s
     };
     txn.from = caller_address;
 
@@ -260,7 +217,7 @@ TEST_CASE("Self-destruct") {
     Receipt receipt1{processor.execute_transaction(txn)};
     CHECK(receipt1.success);
 
-    CHECK(!state.exists(suicidal_address));
+    CHECK(!processor.evm().state().exists(suicidal_address));
 
     // Now the contract is self-destructed, this is a simple value transfer
     txn.nonce = 1;
@@ -270,8 +227,8 @@ TEST_CASE("Self-destruct") {
     Receipt receipt2{processor.execute_transaction(txn)};
     CHECK(receipt2.success);
 
-    CHECK(state.exists(suicidal_address));
-    CHECK(state.get_balance(suicidal_address) == 0);
+    CHECK(processor.evm().state().exists(suicidal_address));
+    CHECK(processor.evm().state().get_balance(suicidal_address) == 0);
 
     CHECK(receipt2.cumulative_gas_used == receipt1.cumulative_gas_used + fee::kGTransaction);
 }
@@ -287,22 +244,22 @@ TEST_CASE("Out of Gas during account re-creation") {
     uint64_t nonce{0};
     evmc::address address{create_address(caller, nonce)};
 
-    MemoryBuffer buffer;
+    InMemoryState state;
 
     // Some funds were previously transferred to the address:
     // https://etherscan.io/address/0x78c65b078353a8c4ce58fb4b5acaac6042d591d5
     Account account{};
     account.balance = 66'252'368 * kGiga;
-    buffer.update_account(address, std::nullopt, account);
+    state.update_account(address, /*initial=*/std::nullopt, account);
 
     Transaction txn{
-        std::nullopt,  // type
-        nonce,         // nonce
-        0,             // max_priority_fee_per_gas
-        20 * kGiga,    // max_fee_per_gas
-        690'000,       // gas_limit
-        {},            // to
-        0,             // value
+        Transaction::Type::kLegacy,  // type
+        nonce,                       // nonce
+        20 * kGiga,                  // max_priority_fee_per_gas
+        20 * kGiga,                  // max_fee_per_gas
+        690'000,                     // gas_limit
+        {},                          // to
+        0,                           // value
         *from_hex("0x6060604052604051610ca3380380610ca3833981016040528080518201919060200150505b600281511015"
                   "61003357610002565b8060006000509080519060200190828054828255906000526020600020908101928215"
                   "6100a4579160200282015b828111156100a35782518260006101000a81548173ffffffffffffffffffffffff"
@@ -379,23 +336,25 @@ TEST_CASE("Out of Gas during account re-creation") {
                   "73ffffffffffffffffffffffffffffffffffffffff1681560000000000000000000000000000000000000000"
                   "0000000000000000000000200000000000000000000000000000000000000000000000000000000000000002"
                   "000000000000000000000000c789e5aba05051b1468ac980e30068e19fad8587000000000000000000000000"
-                  "99c426b2a0453e27decaecd93c3722fb0f378fc5"),
+                  "99c426b2a0453e27decaecd93c3722fb0f378fc5"),  // data
+        false,                                                  // odd_y_parity
+        std::nullopt,                                           // chain_id
+        1,                                                      // r
+        1,                                                      // s
     };
     txn.from = caller;
 
-    IntraBlockState state{buffer};
-    state.add_to_balance(caller, kEther);
-
     ExecutionProcessor processor{block, state, kMainnetConfig};
+    processor.evm().state().add_to_balance(caller, kEther);
 
     Receipt receipt{processor.execute_transaction(txn)};
     // out of gas
     CHECK(!receipt.success);
 
-    state.write_to_db(block_number);
+    processor.evm().state().write_to_db(block_number);
 
     // only the caller and the miner should change
-    CHECK(buffer.read_account(address) == account);
+    CHECK(state.read_account(address) == account);
 }
 
 TEST_CASE("Empty suicide beneficiary") {
@@ -408,36 +367,39 @@ TEST_CASE("Empty suicide beneficiary") {
     evmc::address suicide_beneficiary{0xee098e6c2a43d9e2c04f08f0c3a87b0ba59079d5_address};
 
     Transaction txn{
-        std::nullopt,  // type
-        0,             // nonce
-        0,             // max_priority_fee_per_gas
-        30 * kGiga,    // max_fee_per_gas
-        360'000,       // gas_limit
-        {},            // to
-        0,             // value
+        Transaction::Type::kLegacy,  // type
+        0,                           // nonce
+        30 * kGiga,                  // max_priority_fee_per_gas
+        30 * kGiga,                  // max_fee_per_gas
+        360'000,                     // gas_limit
+        {},                          // to
+        0,                           // value
         *from_hex("0x6000607f5359610043806100135939610056566c010000000000000000000000007fee098e6c2"
                   "a43d9e2c04f08f0c3a87b0ba59079d4d53532071d6cd0cb86facd5605ff6100008061003f600039"
                   "61003f565b6000f35b816000f0905050596100718061006c59396100dd5661005f8061000e60003"
                   "961006d566000603f5359610043806100135939610056566c010000000000000000000000007fee"
                   "098e6c2a43d9e2c04f08f0c3a87b0ba59079d4d53532071d6cd0cb86facd5605ff6100008061003"
                   "f60003961003f565b6000f35b816000f0905050fe5b6000f35b816000f090506040526000600060"
-                  "0060006000604051620249f0f15061000080610108600039610108565b6000f3"),
+                  "0060006000604051620249f0f15061000080610108600039610108565b6000f3"),  // data
+        false,                                                                          // odd_y_parity
+        std::nullopt,                                                                   // chain_id
+        1,                                                                              // r
+        1,                                                                              // s
     };
     txn.from = caller;
 
-    MemoryBuffer db;
-    IntraBlockState state{db};
-    state.add_to_balance(caller, kEther);
+    InMemoryState state;
 
     ExecutionProcessor processor{block, state, kMainnetConfig};
+    processor.evm().state().add_to_balance(caller, kEther);
 
     Receipt receipt{processor.execute_transaction(txn)};
     CHECK(receipt.success);
 
-    state.write_to_db(block_number);
+    processor.evm().state().write_to_db(block_number);
 
     // suicide_beneficiary should've been touched and deleted
-    CHECK(!db.read_account(suicide_beneficiary).has_value());
+    CHECK(!state.read_account(suicide_beneficiary).has_value());
 }
 
 }  // namespace silkworm

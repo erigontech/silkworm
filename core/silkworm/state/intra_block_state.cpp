@@ -25,14 +25,14 @@
 
 namespace silkworm {
 
-state::Object* IntraBlockState::get_object(const evmc::address& address) const noexcept {
+const state::Object* IntraBlockState::get_object(const evmc::address& address) const noexcept {
     auto it{objects_.find(address)};
     if (it != objects_.end()) {
         return &it->second;
     }
 
     std::optional<Account> account{db_.read_account(address)};
-    if (!account) {
+    if (account == std::nullopt) {
         return nullptr;
     }
 
@@ -42,14 +42,19 @@ state::Object* IntraBlockState::get_object(const evmc::address& address) const n
     return &obj;
 }
 
+state::Object* IntraBlockState::get_object(const evmc::address& address) noexcept {
+    const auto& self{*this};
+    return const_cast<state::Object*>(self.get_object(address));
+}
+
 state::Object& IntraBlockState::get_or_create_object(const evmc::address& address) noexcept {
     auto* obj{get_object(address)};
 
-    if (!obj) {
+    if (obj == nullptr) {
         journal_.emplace_back(new state::CreateDelta{address});
         obj = &objects_[address];
         obj->current = Account{};
-    } else if (!obj->current) {
+    } else if (obj->current == std::nullopt) {
         journal_.emplace_back(new state::UpdateDelta{address, *obj});
         obj->current = Account{};
     }
@@ -59,12 +64,12 @@ state::Object& IntraBlockState::get_or_create_object(const evmc::address& addres
 
 bool IntraBlockState::exists(const evmc::address& address) const noexcept {
     auto* obj{get_object(address)};
-    return obj && obj->current;
+    return obj != nullptr && obj->current != std::nullopt;
 }
 
 bool IntraBlockState::is_dead(const evmc::address& address) const noexcept {
     auto* obj{get_object(address)};
-    if (!obj || !obj->current) {
+    if (obj == nullptr || obj->current == std::nullopt) {
         return true;
     }
     return obj->current->code_hash == kEmptyHash && obj->current->nonce == 0 && obj->current->balance == 0;
@@ -154,21 +159,21 @@ intx::uint256 IntraBlockState::get_balance(const evmc::address& address) const n
 
 void IntraBlockState::set_balance(const evmc::address& address, const intx::uint256& value) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(new state::UpdateDelta{address, obj});
+    journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance = value;
     touch(address);
 }
 
 void IntraBlockState::add_to_balance(const evmc::address& address, const intx::uint256& addend) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(new state::UpdateDelta{address, obj});
+    journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance += addend;
     touch(address);
 }
 
 void IntraBlockState::subtract_from_balance(const evmc::address& address, const intx::uint256& subtrahend) noexcept {
     auto& obj{get_or_create_object(address)};
-    journal_.emplace_back(new state::UpdateDelta{address, obj});
+    journal_.emplace_back(new state::UpdateBalanceDelta{address, obj.current->balance});
     obj.current->balance -= subtrahend;
     touch(address);
 }
@@ -196,12 +201,17 @@ ByteView IntraBlockState::get_code(const evmc::address& address) const noexcept 
         return {};
     }
 
-    if (auto it{code_.find(code_hash)}; it != code_.end()) {
+    if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
         return it->second;
     }
 
-    code_[code_hash] = db_.read_code(code_hash);
-    return code_[code_hash];
+    if (auto it{existing_code_.find(code_hash)}; it != existing_code_.end()) {
+        return it->second;
+    }
+
+    ByteView code{db_.read_code(code_hash)};
+    existing_code_[code_hash] = code;
+    return code;
 }
 
 evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const noexcept {
@@ -216,7 +226,7 @@ void IntraBlockState::set_code(const evmc::address& address, Bytes code) noexcep
 
     // Don't overwrite already existing code so that views of it
     // that were previously returned by get_code() are still valid.
-    code_.try_emplace(obj.current->code_hash, std::move(code));
+    new_code_.try_emplace(obj.current->code_hash, std::move(code));
 }
 
 evmc_access_status IntraBlockState::access_account(const evmc::address& address) noexcept {
@@ -311,10 +321,15 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
 
     for (const auto& [address, obj] : objects_) {
         db_.update_account(address, obj.initial, obj.current);
-        if (obj.current && obj.current->code_hash != kEmptyHash &&
-            (!obj.initial || obj.initial->incarnation != obj.current->incarnation)) {
-            db_.update_account_code(address, obj.current->incarnation, obj.current->code_hash,
-                                    code_[obj.current->code_hash]);
+        if (!obj.current.has_value()) {
+            continue;
+        }
+        const auto& code_hash{obj.current->code_hash};
+        if (code_hash != kEmptyHash &&
+            (!obj.initial.has_value() || obj.initial->incarnation != obj.current->incarnation)) {
+            if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
+                db_.update_account_code(address, obj.current->incarnation, code_hash, it->second);
+            }
         }
     }
 }

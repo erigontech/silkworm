@@ -20,11 +20,11 @@
 #include <absl/container/flat_hash_set.h>
 #include <absl/time/time.h>
 
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
-#include <silkworm/execution/execution.hpp>
+#include <silkworm/execution/processor.hpp>
 
 using namespace evmc::literals;
 using namespace silkworm;
@@ -52,7 +52,7 @@ static void print_storage_changes(const db::StorageChanges& s) {
 int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and compares resulting change sets against DB"};
 
-    std::string chaindata{DataDirectory{}.get_chaindata_path().string()};
+    std::string chaindata{DataDirectory{}.chaindata().path().string()};
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
@@ -71,7 +71,9 @@ int main(int argc, char* argv[]) {
     uint64_t block_num{from};
 
     try {
-        db::EnvConfig db_config{chaindata};
+        auto data_dir{DataDirectory::from_chaindata(chaindata)};
+        data_dir.deploy();
+        db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};
         auto chain_config{db::read_chain_config(txn)};
@@ -81,6 +83,7 @@ int main(int argc, char* argv[]) {
 
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
+        std::vector<Receipt> receipts;
 
         for (; block_num < to; ++block_num) {
             txn.renew_reading();
@@ -91,8 +94,11 @@ int main(int argc, char* argv[]) {
 
             db::Buffer buffer{txn, block_num};
 
-            ValidationResult err{execute_block(bh->block, buffer, *chain_config, &analysis_cache, &state_pool).second};
-            if (err != ValidationResult::kOk) {
+            ExecutionProcessor processor{bh->block, buffer, *chain_config};
+            processor.evm().advanced_analysis_cache = &analysis_cache;
+            processor.evm().state_pool = &state_pool;
+
+            if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
                 SILKWORM_LOG(LogLevel::Error) << "Failed to execute block " << block_num << std::endl;
                 continue;
             }

@@ -19,12 +19,12 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <boost/interprocess/mapped_region.hpp>
 #include <ethash/ethash.hpp>
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/common/data_dir.hpp>
+#include <silkworm/common/directories.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
     // Init command line parser
     CLI::App app("Check PoW.");
     app_options_t options{};
-    options.datadir = DataDirectory{}.get_chaindata_path().string();  // Default chain data db path
+    options.datadir = DataDirectory{}.chaindata().path().string();  // Default chain data db path
 
     // Command line arguments
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
@@ -79,6 +79,10 @@ int main(int argc, char* argv[]) {
     // Invoke proper action
     int rc{0};
     try {
+        auto data_dir{DataDirectory::from_chaindata(options.datadir)};
+        data_dir.deploy();
+        options.datadir = data_dir.chaindata().path().string();
+
         // Set database parameters
         db::EnvConfig db_config{options.datadir};
         auto env{db::open_env(db_config)};
@@ -98,16 +102,16 @@ int main(int argc, char* argv[]) {
         // Initialize epoch
         auto epoch_num{options.block_from / ethash::epoch_length};
         SILKWORM_LOG(LogLevel::Info) << "Initializing Light Cache for DAG epoch " << epoch_num << std::endl;
-        auto epoch_context{ethash::create_epoch_context(epoch_num)};
+        auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_num))};
 
         auto canonical_hashes{db::open_cursor(txn, db::table::kCanonicalHashes)};
 
         // Loop blocks
         for (uint32_t block_num{options.block_from}; block_num <= options.block_to && !g_should_stop; block_num++) {
-            if (epoch_context->epoch_number != (block_num / ethash::epoch_length)) {
+            if (epoch_context->epoch_number != static_cast<int>(block_num / ethash::epoch_length)) {
                 epoch_num = (block_num / ethash::epoch_length);
                 SILKWORM_LOG(LogLevel::Info) << "Initializing Light Cache for DAG epoch " << epoch_num << std::endl;
-                epoch_context = ethash::create_epoch_context(epoch_num);
+                epoch_context = ethash::create_epoch_context(static_cast<int>(epoch_num));
             }
 
             auto block_key{db::block_key(block_num)};
@@ -123,31 +127,21 @@ int main(int argc, char* argv[]) {
             }
 
             // Verify Proof of Work
-            uint64_t nonce{ethash::be::uint64(*reinterpret_cast<uint64_t*>(header->nonce.data()))};
+            uint64_t nonce{endian::load_big_u64(header->nonce.data())};
 
-            auto boundary256{ethash::get_boundary_from_diff(header->difficulty)};
+            auto boundary256{header->boundary()};
             auto seal_hash(header->hash(/*for_sealing =*/true));
             ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
-            auto result{ethash::hash(*epoch_context, sealh256, nonce)};
-            if (!ethash::is_less_or_equal(result.final_hash, boundary256)) {
+            ethash::hash256 mixh256{*reinterpret_cast<ethash::hash256*>(header->mix_hash.bytes)};
+            if (!ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256)) {
+                auto result{ethash::hash(*epoch_context, sealh256, nonce)};
                 auto b{to_bytes32({boundary256.bytes, 32})};
                 auto f{to_bytes32({result.final_hash.bytes, 32})};
                 auto m{to_bytes32({result.mix_hash.bytes, 32})};
 
-                std::cout << "\n Pow Verification error (above target) on block " << block_num << " : \n"
-                          << "Boundary   " << to_hex(b) << "\n"
-                          << "Final hash " << to_hex(f) << "\n"
-                          << "Mix   hash " << to_hex(m) << std::endl;
-                break;
-            }
-
-            // Check mix_hash match
-            if (std::memcmp(result.mix_hash.bytes, header->mix_hash.bytes, 32) != 0) {
-                auto m{to_bytes32({result.mix_hash.bytes, 32})};
-
-                std::cout << "\n Pow Verification error (mismatch mix_hash) on block " << block_num << " : \n"
-                          << "Computed mix_hash   " << to_hex(m) << "\n"
-                          << "Header   mix_hash   " << to_hex(header->mix_hash) << std::endl;
+                std::cout << "\n Pow Verification error on block " << block_num << " : \n"
+                          << "Final hash " << to_hex(f) << " expected below " << to_hex(b) << "\n"
+                          << "Mix   hash " << to_hex(m) << " expected mix" << to_hex(m) << std::endl;
                 break;
             }
 

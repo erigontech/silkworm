@@ -17,6 +17,7 @@
 #include "block.hpp"
 
 #include <catch2/catch.hpp>
+#include <iostream>
 
 namespace silkworm {
 
@@ -187,5 +188,6 @@ TEST_CASE("EIP-1559 Header RLP") {
     CHECK(view.empty());
     CHECK(decoded == h);
 }
+
 
 }  // namespace silkworm

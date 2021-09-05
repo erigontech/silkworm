@@ -29,6 +29,9 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
     return bit_cast<evmc_bytes32>(keccak256(rlp));
 }
 
+//! \brief Calculates header's boundary.
+//! \return Header's boundary.
+//! \remarks When difficulty is an exact power of 2, we need to adjust the quotient by one.
 ethash::hash256 BlockHeader::boundary() const {
     static intx::uint256 dividend{
         intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")};

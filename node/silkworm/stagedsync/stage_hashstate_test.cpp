@@ -27,11 +27,10 @@
 
 #include "stagedsync.hpp"
 
-using namespace evmc::literals;
-using namespace silkworm;
-using namespace silkworm::consensus;
-
 TEST_CASE("Stage Hashstate") {
+
+    using namespace evmc::literals;
+    using namespace silkworm;
 
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};

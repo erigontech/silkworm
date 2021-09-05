@@ -87,6 +87,7 @@ TEST_CASE("Prune Execution") {
     // Execute first block
     // ---------------------------------------
     REQUIRE(execute_block(block, buffer, test::kLondonConfig) == ValidationResult::kOk);
+
     auto contract_address{create_address(sender, /*nonce=*/0)};
 
     // ---------------------------------------
@@ -123,8 +124,8 @@ TEST_CASE("Prune Execution") {
     block.transactions[0].data = *from_hex(new_val);
 
     REQUIRE(execute_block(block, buffer, test::kLondonConfig) == ValidationResult::kOk);
+    REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3));
 
-    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
     SECTION("Without prune function") {
         // We keep chain from Block 2 onwards (Aka, we delete block 1 changesets and receipts)
         buffer.write_to_db();

@@ -189,5 +189,4 @@ TEST_CASE("EIP-1559 Header RLP") {
     CHECK(decoded == h);
 }
 
-
 }  // namespace silkworm

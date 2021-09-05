@@ -27,9 +27,9 @@
 
 #include "stagedsync.hpp"
 
-using namespace evmc::literals;
-
 TEST_CASE("Stage Hashstate") {
+
+    using namespace evmc::literals;
     using namespace silkworm;
 
     TemporaryDirectory tmp_dir;

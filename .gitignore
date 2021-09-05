@@ -4,6 +4,6 @@ xcode
 .idea
 .vscode
 .vs
-.idea
 CMakeFiles
 Makefile
+cmake-build-debug

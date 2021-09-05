@@ -139,7 +139,7 @@ TEST_CASE("Prune Execution") {
         CHECK(account_changeset_tail.substr(0, 8).compare(db::block_key(2)) == 0);
         CHECK(storage_changeset_tail.substr(0, 8).compare(db::block_key(2)) == 0);
     }
-    
+
     SECTION("With prune function") {
         buffer.write_to_db();
         // We prune from block 2, thus we delete block 1

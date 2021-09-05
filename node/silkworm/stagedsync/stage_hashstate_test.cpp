@@ -80,7 +80,8 @@ TEST_CASE("Stage Hashstate") {
     // ---------------------------------------
     // Execute first block
     // ---------------------------------------
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
+
     auto contract_address{create_address(sender, /*nonce=*/0)};
 
     // ---------------------------------------
@@ -99,7 +100,7 @@ TEST_CASE("Stage Hashstate") {
     block.transactions[0].to = contract_address;
     block.transactions[0].data = full_view(new_val);
 
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
 
     // ---------------------------------------
     // Execute third block
@@ -117,17 +118,15 @@ TEST_CASE("Stage Hashstate") {
     block.transactions[0].to = contract_address;
     block.transactions[0].data = full_view(new_val);
 
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
-    buffer.write_to_db();
-    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    REQUIRE(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
+    REQUIRE_NOTHROW(buffer.write_to_db());
+    REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3));
 
     // ---------------------------------------
-    // Hash the state
+    // Execute stage forward
     // ---------------------------------------
-
-    CHECK(stagedsync::stage_hashstate(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
-
-    CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 3);
+    REQUIRE(stagedsync::stage_hashstate(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
+    REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 3);
 
     // ---------------------------------------
     // Check hashed account
@@ -135,12 +134,13 @@ TEST_CASE("Stage Hashstate") {
 
     auto hashed_address_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
     auto sender_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
-    CHECK(hashed_address_table.seek(db::to_slice(sender_keccak)));
-    auto account_encoded{db::from_slice(hashed_address_table.current().value)};
-
-    auto [acc, _]{decode_account_from_storage(account_encoded)};
-    CHECK(acc.nonce == 3);
-    CHECK(acc.balance < kEther);
+    REQUIRE(hashed_address_table.seek(db::to_slice(sender_keccak)));
+    {
+        auto account_encoded{db::from_slice(hashed_address_table.current().value)};
+        auto [acc, _]{decode_account_from_storage(account_encoded)};
+        CHECK(acc.nonce == 3);
+        CHECK(acc.balance < kEther);
+    }
 
     // ---------------------------------------
     // Check hashed storage
@@ -170,112 +170,19 @@ TEST_CASE("Stage Hashstate") {
     CHECK(db_val.starts_with(mdbx::slice{hashed_loc1.bytes, kHashLength}));
     value = db::from_slice(db_val).substr(kHashLength);
     CHECK(to_hex(value) == "01c9");
-}
 
-TEST_CASE("Unwind Hashstate") {
-    using namespace silkworm;
+    // Unwind the stage
+    REQUIRE(stagedsync::unwind_hashstate(txn, data_dir.etl().path(), 1) == stagedsync::StageResult::kSuccess);
 
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
-
-    // ---------------------------------------
-    // Prepare
-    // ---------------------------------------
-
-    uint64_t block_number{1};
-    auto miner{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
-
-    Block block{};
-    block.header.number = block_number;
-    block.header.beneficiary = miner;
-    block.header.gas_limit = 100'000;
-    block.header.gas_used = 63'820;
-
-    // This contract initially sets its 0th storage to 0x2a
-    // and its 1st storage to 0x01c9.
-    // When called, it updates its 0th storage to the input provided.
-    Bytes contract_code{*from_hex("600035600055")};
-    Bytes deployment_code{*from_hex("602a6000556101c960015560068060166000396000f3") + contract_code};
-
-    block.transactions.resize(1);
-    block.transactions[0].data = deployment_code;
-    block.transactions[0].gas_limit = block.header.gas_limit;
-    block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
-    block.transactions[0].max_fee_per_gas = block.transactions[0].max_priority_fee_per_gas;
-
-    auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
-    block.transactions[0].r = 1;  // dummy
-    block.transactions[0].s = 1;  // dummy
-    block.transactions[0].from = sender;
-
-    db::Buffer buffer{*txn};
-    Account sender_account{};
-    sender_account.balance = kEther;
-    buffer.update_account(sender, std::nullopt, sender_account);
-
-    // ---------------------------------------
-    // Execute first block
-    // ---------------------------------------
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
-    auto contract_address{create_address(sender, /*nonce=*/0)};
-
-    // ---------------------------------------
-    // Execute second block
-    // ---------------------------------------
-
-    std::string new_val{"000000000000000000000000000000000000000000000000000000000000003e"};
-
-    block_number = 2;
-    block.header.number = block_number;
-    block.header.gas_used = 26'201;
-
-    block.transactions[0].nonce = 1;
-    block.transactions[0].value = 1000;
-
-    block.transactions[0].to = contract_address;
-    block.transactions[0].data = *from_hex(new_val);
-
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
-
-    // ---------------------------------------
-    // Execute third block
-    // ---------------------------------------
-
-    new_val = "000000000000000000000000000000000000000000000000000000000000003b";
-
-    block_number = 3;
-    block.header.number = block_number;
-    block.header.gas_used = 26'201;
-
-    block.transactions[0].nonce = 2;
-    block.transactions[0].value = 1000;
-
-    block.transactions[0].to = contract_address;
-    block.transactions[0].data = *from_hex(new_val);
-
-    CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
-    buffer.write_to_db();
-    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
-
-    CHECK(stagedsync::stage_hashstate(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::unwind_hashstate(txn, data_dir.etl().path(), 1) == stagedsync::StageResult::kSuccess);
-
-    auto hashed_address_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
-
+    hashed_address_table = db::open_cursor(*txn, db::table::kHashedAccounts);
     auto address_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
 
-    CHECK(hashed_address_table.seek(db::to_slice(address_keccak)));
-    auto account_encoded{db::from_slice(hashed_address_table.current().value)};
-
-    auto [acc, _]{decode_account_from_storage(account_encoded)};
-    CHECK(acc.nonce == 2);
-    CHECK(acc.balance < kEther);  // Slightly less due to fees
-    CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 1);
+    REQUIRE(hashed_address_table.seek(db::to_slice(address_keccak)));
+    {
+        auto account_encoded{db::from_slice(hashed_address_table.current().value)};
+        auto [acc, _]{decode_account_from_storage(account_encoded)};
+        CHECK(acc.nonce == 2);
+        CHECK(acc.balance < kEther);  // Slightly less due to fees
+        CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 1);
+    }
 }

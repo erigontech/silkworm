@@ -36,10 +36,8 @@ ethash::hash256 BlockHeader::boundary() const {
     ethash::hash256 ret{};
 
     if (difficulty > 1u) {
-        auto result{intx::bswap(dividend / difficulty)};
-        if ((difficulty & (difficulty - 1)) == 0) {
-            result += 1;
-        }
+        unsigned int add_one{(difficulty & (difficulty - 1)) == 0 ? 1u : 0u};
+        auto result{intx::bswap((dividend / difficulty) + add_one)};
         std::memcpy(ret.bytes, intx::as_bytes(result), 32);
     } else {
         std::memcpy(ret.bytes, intx::as_bytes(dividend), 32);

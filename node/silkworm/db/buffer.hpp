@@ -111,7 +111,7 @@ class Buffer : public State {
     /** Approximate size of accumulated DB changes in bytes.*/
     size_t current_batch_size() const noexcept { return batch_size_; }
 
-    void write_to_db(uint64_t prune_from = 0);
+    void write_to_db();
 
   private:
     void write_to_state_table();

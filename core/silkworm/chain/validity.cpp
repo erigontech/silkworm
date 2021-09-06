@@ -74,6 +74,9 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
 }
 
 static std::optional<BlockHeader> get_parent(const State& state, const BlockHeader& header) {
+    if (header.number == 0) {
+        return std::nullopt;
+    }
     return state.read_header(header.number - 1, header.parent_hash);
 }
 

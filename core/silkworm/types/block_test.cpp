@@ -17,7 +17,7 @@
 #include "block.hpp"
 
 #include <catch2/catch.hpp>
-
+#include <iostream>
 namespace silkworm {
 
 TEST_CASE("BlockBody RLP") {
@@ -190,34 +190,26 @@ TEST_CASE("EIP-1559 Header RLP") {
 
 TEST_CASE("Hash header boundary computation") {
     BlockHeader h;
-    h.difficulty = intx::from_string<intx::uint256>("0xf90260f90207a068a61c4a05db4913009de5666753258eb9306157680dc5da0d");
+    h.difficulty = intx::from_string<intx::uint256>("0x13009de5666753258eb9306157680dc5da0d");
 
-    auto boundary{h.boundary()};
-    auto boundary_view{full_view(boundary.bytes)};
-    auto expected_boundary{intx::bswap(
-        intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff") /
-        h.difficulty
-    )};
-    Bytes expected_boundary_view(kHashLength, '\0');
-    std::memcpy(&expected_boundary_view[0], intx::as_bytes(expected_boundary), kHashLength);
-
-    CHECK(boundary_view.compare(expected_boundary_view) == 0);
+    auto expected_boundary_view{*from_hex("0x00000000000000000000000000000000000d78d369778f29e54c2b9e37d107e1")};
+    CHECK(full_view(h.boundary().bytes).compare(expected_boundary_view) == 0);
 }
 
 TEST_CASE("Hash header boundary computation when we have difficulty with power of 2") {
     BlockHeader h;
     h.difficulty = intx::from_string<intx::uint256>("0x10000000000");
 
-    auto boundary{h.boundary()};
-    auto boundary_view{full_view(boundary.bytes)};
-    auto expected_boundary{intx::bswap(
-        (intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff") /
-        h.difficulty) + 1u
-    )};
-    Bytes expected_boundary_view(kHashLength, '\0');
-    std::memcpy(&expected_boundary_view[0], intx::as_bytes(expected_boundary), kHashLength);
+    auto expected_boundary_view{*from_hex("0x0000000001000000000000000000000000000000000000000000000000000000")};
+    CHECK(full_view(h.boundary().bytes).compare(expected_boundary_view) == 0);
+}
 
-    CHECK(boundary_view.compare(expected_boundary_view) == 0);
+TEST_CASE("Hash header boundary computation when we difficult is equal to 0") {
+    BlockHeader h;
+    h.difficulty = intx::from_string<intx::uint256>("0x0");
+
+    auto expected_boundary_view{*from_hex("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")};
+    CHECK(full_view(h.boundary().bytes).compare(expected_boundary_view) == 0);
 }
 
 }  // namespace silkworm

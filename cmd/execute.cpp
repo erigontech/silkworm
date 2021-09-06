@@ -21,6 +21,7 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
+#include <silkworm/db/stages.hpp>
 
 int main(int argc, char* argv[]) {
     using namespace silkworm;
@@ -28,11 +29,19 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Execute Ethereum blocks and write the result into the DB"};
 
     std::string chaindata{DataDirectory{}.chaindata().path().string()};
+
+    bool prune{false};
+    uint64_t blocks_to_keep{96000};
+
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
 
     std::string batch_size_str{"512MB"};
     app.add_option("--batch", batch_size_str, "Batch size of DB changes to accumulate before committing", true);
+
+    app.add_flag("--prune", prune, "Enable pruned mode");
+
+    app.add_option("--blocks-to-keep", blocks_to_keep, "How many block to keep in pruned mode");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -46,13 +55,20 @@ int main(int argc, char* argv[]) {
 
     SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
 
+    uint64_t prune_from{0};
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
     data_dir.deploy();
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = false;
     auto env{db::open_env(db_config)};
     stagedsync::TransactionManager tm{env};
-    auto res{stagedsync::stage_execution(tm, data_dir.etl().path(), batch_size.value(), 0)};
+
+    if (prune) {
+        prune_from = db::stages::get_stage_progress(*tm, db::stages::kSendersKey) - blocks_to_keep;
+
+    }
+    auto res{stagedsync::stage_execution(tm, data_dir.etl().path(), batch_size.value(), prune_from)};
+
     if (res != stagedsync::StageResult::kSuccess) {
         SILKWORM_LOG(LogLevel::Info) << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res)
                                      << std::endl;

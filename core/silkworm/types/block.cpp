@@ -23,6 +23,9 @@
 
 namespace silkworm {
 
+// Just for literals
+using namespace intx;
+
 evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
     Bytes rlp;
     rlp::encode(rlp, *this, for_sealing);
@@ -43,7 +46,7 @@ ethash::hash256 BlockHeader::boundary() const {
     }
 
     return intx::be::store<ethash::hash256>(
-        intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256
     );
 }
 

@@ -110,15 +110,19 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(download_headers PRIVATE silkworm_node silkworm_core CLI11::CLI11)
   target_include_directories(download_headers PRIVATE ${CMAKE_SOURCE_DIR})
 
+  # Benchmarks
+  add_subdirectory(benchmark)
+
+endif(NOT SILKWORM_CORE_ONLY)
+
+if(NOT SILKWORM_WASM_API)
   # Ethereum Consensus Tests
+  hunter_add_package(CLI11)
+  find_package(CLI11 CONFIG REQUIRED)
   find_package(nlohmann_json CONFIG REQUIRED)
   add_executable(consensus consensus.cpp)
   target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/tests")
   target_link_libraries(consensus PRIVATE silkworm_core nlohmann_json::nlohmann_json evmc::loader CLI11::CLI11)
   get_filename_component(SILKWORM_MAIN_DIR ../ ABSOLUTE)
   target_include_directories(consensus PRIVATE ${SILKWORM_MAIN_DIR}/magic_enum/include)
-
-  # Benchmarks
-  add_subdirectory(benchmark)
-
-endif(NOT SILKWORM_CORE_ONLY)
+endif()

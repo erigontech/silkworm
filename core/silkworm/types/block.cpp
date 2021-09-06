@@ -33,19 +33,18 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
 //! \return Header's boundary.
 //! \remarks When difficulty is an exact power of 2, we need to adjust the quotient by one.
 ethash::hash256 BlockHeader::boundary() const {
-    static intx::uint256 dividend{
-        intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")};
-
-    ethash::hash256 ret{};
+    auto dividend{intx::uint320{1} << 256};
 
     if (difficulty >= 1u) {
-        unsigned int add_one{(difficulty & (difficulty - 1)) == 0 ? 1u : 0u};
-        auto result{intx::bswap((dividend / difficulty) + add_one)};
+        ethash::hash256 ret{};
+        auto result{intx::bswap(intx::uint256{dividend / difficulty})};
         std::memcpy(&ret.bytes[0], intx::as_bytes(result), kHashLength);
-    } else {
-        std::memcpy(&ret.bytes[0], intx::as_bytes(dividend), kHashLength);
+        return ret;
     }
-    return ret;
+
+    return intx::be::store<ethash::hash256>(
+        intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+    );
 }
 
 bool operator==(const BlockHeader& a, const BlockHeader& b) {

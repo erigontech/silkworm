@@ -204,7 +204,7 @@ TEST_CASE("Hash header boundary computation when we have difficulty with power o
     CHECK(full_view(h.boundary().bytes).compare(expected_boundary_view) == 0);
 }
 
-TEST_CASE("Hash header boundary computation when we difficult is equal to 0") {
+TEST_CASE("Hash header boundary computation when the difficulty is equal to 0") {
     BlockHeader h;
     h.difficulty = intx::from_string<intx::uint256>("0x0");
 

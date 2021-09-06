@@ -63,6 +63,7 @@ bool operator==(const BlockBody& a, const BlockBody& b) {
     return a.transactions == b.transactions && a.ommers == b.ommers;
 }
 
+//! \brief Recover transaction senders for each block.
 void Block::recover_senders() {
     for (Transaction& txn : transactions) {
         txn.recover_sender();
@@ -71,7 +72,6 @@ void Block::recover_senders() {
 
 namespace rlp {
 
-    // Computes the length of the RLP payload
     static Header rlp_header(const BlockHeader& header, bool for_sealing = false) {
         Header rlp_head{true, 0};
         rlp_head.payload_length += kHashLength + 1;                                        // parent_hash

@@ -253,16 +253,16 @@ void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_
     txn.commit();
 }
 
-StageResult prune_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
+StageResult prune_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
 
-    SILKWORM_LOG(LogLevel::Info) << "Log Index Pruning..." << std::endl;
-    prune_log_index(txn, collector, unwind_to, true);
+    SILKWORM_LOG(LogLevel::Info) << "Pruning Log Index from: " << prune_from << std::endl;
+    prune_log_index(txn, collector, prune_from, true);
     collector.clear();
-    prune_log_index(txn, collector, unwind_to, false);
+    prune_log_index(txn, collector, prune_from, false);
     collector.clear();
 
-    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Pruning Log Index finished..." << std::endl;
     return StageResult::kSuccess;
 }
 

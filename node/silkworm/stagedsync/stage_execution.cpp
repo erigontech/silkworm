@@ -36,7 +36,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
                                            const db::StorageMode& storage_mode, const size_t batch_size,
                                            uint64_t& block_num, uint64_t prune_from) noexcept {
     try {
-        db::Buffer buffer{txn};
+        db::Buffer buffer{txn, prune_from};
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;

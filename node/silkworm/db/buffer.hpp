@@ -37,8 +37,8 @@ namespace silkworm::db {
 class Buffer : public State {
   public:
     // txn must be valid (its handle != nullptr)
-    explicit Buffer(mdbx::txn& txn, std::optional<uint64_t> historical_block = std::nullopt)
-        : txn_{txn}, historical_block_{historical_block} {
+    explicit Buffer(mdbx::txn& txn, uint64_t prune_from, std::optional<uint64_t> historical_block = std::nullopt)
+        : txn_{txn}, prune_from_{prune_from}, historical_block_{historical_block} {
         assert(txn_);
     }
 
@@ -119,6 +119,7 @@ class Buffer : public State {
     void bump_batch_size(size_t key_len, size_t value_len);
 
     mdbx::txn& txn_;
+    uint64_t prune_from_;
     std::optional<uint64_t> historical_block_{};
 
     absl::btree_map<Bytes, BlockHeader> headers_{};

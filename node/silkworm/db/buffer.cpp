@@ -52,13 +52,15 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         return;
     }
 
-    Bytes encoded_initial{};
-    if (initial) {
-        bool omit_code_hash{!account_deleted};
-        encoded_initial = initial->encode_for_storage(omit_code_hash);
-    }
-    if (account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
-        bump_batch_size(8, kAddressLength + encoded_initial.length());
+    if (block_number_ >= prune_from_) {
+        Bytes encoded_initial{};
+        if (initial) {
+            bool omit_code_hash{!account_deleted};
+            encoded_initial = initial->encode_for_storage(omit_code_hash);
+        }
+        if (account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
+            bump_batch_size(8, kAddressLength + encoded_initial.length());
+        }
     }
 
     if (equal) {
@@ -94,10 +96,12 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     if (current == initial) {
         return;
     }
-    changed_storage_.insert(address);
-    ByteView change_val{zeroless_view(initial)};
-    if (storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
-        bump_batch_size(8 + kPlainStoragePrefixLength, kHashLength + change_val.size());
+    if (block_number_ >= prune_from_) {
+        changed_storage_.insert(address);
+        ByteView change_val{zeroless_view(initial)};
+        if (storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
+            bump_batch_size(8 + kPlainStoragePrefixLength, kHashLength + change_val.size());
+        }
     }
 
     if (storage_[address][incarnation].insert_or_assign(location, current).second) {

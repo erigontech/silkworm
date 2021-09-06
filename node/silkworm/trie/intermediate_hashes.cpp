@@ -184,12 +184,14 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
     return hb_.root_hash();
 }
 
-evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir, const evmc::bytes32* expected_root) {
+static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
+                                                   const evmc::bytes32* expected_root, const PrefixSet&) {
     etl::Collector account_collector{etl_dir};
     etl::Collector storage_collector{etl_dir};
+    // TODO[Issue 179] use const PrefixSet& changed
     DbTrieLoader loader{txn, account_collector, storage_collector};
     const evmc::bytes32 root{loader.calculate_root()};
-    if (expected_root && root != *expected_root) {
+    if (expected_root != nullptr && root != *expected_root) {
         SILKWORM_LOG(LogLevel::Error) << "Wrong trie root: " << to_hex(root) << ", expected: " << to_hex(*expected_root)
                                       << "\n";
         throw WrongRoot{};
@@ -221,12 +223,18 @@ static void changed_accounts(mdbx::txn& txn, BlockNum from, PrefixSet& out) {
     });
 }
 
-evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char*, BlockNum from, const evmc::bytes32*) {
+evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char* etl_dir, BlockNum from,
+                                            const evmc::bytes32* expected_root) {
     PrefixSet changed;
     changed_accounts(txn, from, changed);
     // TODO[Issue 179] changed storage
+    return increment_intermediate_hashes(txn, etl_dir, expected_root, changed);
+}
 
-    throw WrongRoot{};
+evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir, const evmc::bytes32* expected_root) {
+    txn.clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
+    txn.clear_map(db::open_map(txn, db::table::kTrieOfStorage));
+    return increment_intermediate_hashes(txn, etl_dir, expected_root, /*changed=*/{});
 }
 
 }  // namespace silkworm::trie

@@ -51,23 +51,24 @@ Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
 
 // Minimize size in database
 Bytes encode_lookup(uint64_t lookup) {
-    Bytes ret{};
-    while (lookup != 0) {
-        ret.push_back(lookup);
-        lookup >>= 8;
+    auto lookup_encoded{block_key(lookup)};
+    // Compressing
+    std::string::size_type offset{lookup_encoded.find_first_not_of(uint8_t{0})};
+    if (offset != std::string::npos) {
+        return lookup_encoded.substr(offset);
     }
-
-    return ret;
+    return lookup_encoded;
 }
 
-uint64_t decode_lookup(ByteView b) {
-    uint64_t block_number{0};
+uint64_t decode_lookup(ByteView encoded_lookup) {
+    uint64_t decoded_lookup{0};
     uint8_t  position{0};
-    for(const auto &byte: b) {
-        block_number |= uint64_t(byte << position);
+    for (auto i = encoded_lookup.rbegin(); i != encoded_lookup.rend(); ++i) {
+        decoded_lookup |= uint64_t((*i) << position);
         position += 8;
     }
-    return block_number;
+
+    return decoded_lookup;
 }
 
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation) {

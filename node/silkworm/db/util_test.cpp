@@ -17,6 +17,7 @@
 #include <vector>
 
 #include <catch2/catch.hpp>
+#include <iostream>
 
 #include "util.hpp"
 
@@ -30,7 +31,7 @@ TEST_CASE("encode/decode lookups") {
     uint64_t lookup{5474774};
 
     Bytes encoded_lookup{encode_lookup(lookup)};
-    CHECK(encoded_lookup.compare(ByteView({214, 137, 83})) == 0);
+    CHECK(encoded_lookup.compare(ByteView({83, 137, 214})) == 0);
     CHECK(decode_lookup(encoded_lookup) == lookup);
 }
 

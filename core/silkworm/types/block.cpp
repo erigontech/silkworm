@@ -37,7 +37,7 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
 ethash::hash256 BlockHeader::boundary() const {
     auto dividend{intx::uint320{1} << 256};
 
-    if (difficulty >= 1u) {
+    if (difficulty > 1u) {
         ethash::hash256 ret{};
         auto result{intx::bswap(intx::uint256{dividend / difficulty})};
         std::memcpy(&ret.bytes[0], intx::as_bytes(result), kHashLength);

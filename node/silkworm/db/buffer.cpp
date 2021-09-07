@@ -52,13 +52,15 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
         return;
     }
 
-    Bytes encoded_initial{};
-    if (initial) {
-        bool omit_code_hash{!account_deleted};
-        encoded_initial = initial->encode_for_storage(omit_code_hash);
-    }
-    if (account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
-        bump_batch_size(8, kAddressLength + encoded_initial.length());
+    if (block_number_ >= prune_from_) {
+        Bytes encoded_initial{};
+        if (initial) {
+            bool omit_code_hash{!account_deleted};
+            encoded_initial = initial->encode_for_storage(omit_code_hash);
+        }
+        if (account_changes_[block_number_].insert_or_assign(address, encoded_initial).second) {
+            bump_batch_size(8, kAddressLength + encoded_initial.length());
+        }
     }
 
     if (equal) {
@@ -94,10 +96,12 @@ void Buffer::update_storage(const evmc::address& address, uint64_t incarnation, 
     if (current == initial) {
         return;
     }
-    changed_storage_.insert(address);
-    ByteView change_val{zeroless_view(initial)};
-    if (storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
-        bump_batch_size(8 + kPlainStoragePrefixLength, kHashLength + change_val.size());
+    if (block_number_ >= prune_from_) {
+        changed_storage_.insert(address);
+        ByteView change_val{zeroless_view(initial)};
+        if (storage_changes_[block_number_][address][incarnation].insert_or_assign(location, change_val).second) {
+            bump_batch_size(8 + kPlainStoragePrefixLength, kHashLength + change_val.size());
+        }
     }
 
     if (storage_[address][incarnation].insert_or_assign(location, current).second) {
@@ -152,7 +156,7 @@ void Buffer::write_to_state_table() {
     }
 }
 
-void Buffer::write_to_db(uint64_t prune_from) {
+void Buffer::write_to_db() {
     write_to_state_table();
 
     auto incarnation_table{db::open_cursor(txn_, table::kIncarnationMap)};
@@ -176,8 +180,6 @@ void Buffer::write_to_db(uint64_t prune_from) {
     Bytes change_key;
     for (const auto& block_entry : account_changes_) {
         uint64_t block_num{block_entry.first};
-        // If we do not need historical data, we do not put changesets
-        if (block_num < prune_from) continue;
         change_key = block_key(block_num);
         for (const auto& account_entry : block_entry.second) {
             data = full_view(account_entry.first);
@@ -189,8 +191,6 @@ void Buffer::write_to_db(uint64_t prune_from) {
     auto storage_change_table{db::open_cursor(txn_, table::kPlainStorageChangeSet)};
     for (const auto& block_entry : storage_changes_) {
         uint64_t block_num{block_entry.first};
-        // If we do not need historical data, we do not put changesets
-        if (block_num < prune_from) continue;
 
         for (const auto& address_entry : block_entry.second) {
             const evmc::address& address{address_entry.first};
@@ -208,9 +208,6 @@ void Buffer::write_to_db(uint64_t prune_from) {
 
     auto receipt_table{db::open_cursor(txn_, table::kBlockReceipts)};
     for (const auto& entry : receipts_) {
-        auto block_num{endian::load_big_u64(&entry.first[0])};
-        // If we do not need historical data, we do not put changesets
-        if (block_num < prune_from) continue;
         receipt_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }
 

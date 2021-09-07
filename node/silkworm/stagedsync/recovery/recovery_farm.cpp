@@ -317,12 +317,12 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
     const evmc_revision rev{config.revision(block_num)};
     const bool has_homestead{rev >= EVMC_HOMESTEAD};
     const bool has_spurious_dragon{rev >= EVMC_SPURIOUS_DRAGON};
-    const bool hash_london{rev >= EVMC_LONDON};
+    const bool has_london{rev >= EVMC_LONDON};
 
     uint32_t tx_id{0};
     for (const auto& transaction : transactions) {
 
-        if (transaction.type != Transaction::Type::kLegacy && !hash_london) {
+        if (transaction.type != Transaction::Type::kLegacy && !has_london) {
             SILKWORM_LOG(LogLevel::Error) << "Non legacy transaction type for transaction #" << tx_id << " in block #"
                                           << block_num << " before London" << std::endl;
             return StageResult::kInvalidTransaction;

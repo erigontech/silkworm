@@ -49,6 +49,27 @@ Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     return key;
 }
 
+// Minimize size in database
+Bytes encode_lookup(uint64_t lookup) {
+    Bytes ret{};
+    while (lookup != 0) {
+        ret.push_back(lookup);
+        lookup >>= 8;
+    }
+
+    return ret;
+}
+
+uint64_t decode_lookup(ByteView b) {
+    uint64_t block_number{0};
+    uint8_t  position{0};
+    for(const auto &byte: b) {
+        block_number |= uint64_t(byte << position);
+        position += 8;
+    }
+    return block_number;
+}
+
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation) {
     Bytes res(8 + kPlainStoragePrefixLength, '\0');
     endian::store_big_u64(&res[0], block_number);

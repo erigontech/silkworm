@@ -154,6 +154,10 @@ Bytes storage_prefix(ByteView address, uint64_t incarnation);
 // Erigon CanonicalHeadersKey / ReceiptsKey
 Bytes block_key(uint64_t block_number);
 
+// Erigon TxIndex value
+Bytes encode_lookup(uint64_t lookup);
+uint64_t decode_lookup(ByteView b);
+
 // Erigon HeaderKey & BlockBodyKey
 Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 

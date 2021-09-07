@@ -17,7 +17,7 @@
 #include "block.hpp"
 
 #include <catch2/catch.hpp>
-#include <iostream>
+
 namespace silkworm {
 
 // Just for literals

@@ -51,8 +51,6 @@ static std::vector<T> decode_vector_success(std::string_view hex) {
 }
 
 TEST_CASE("RLP decoding") {
-    using Catch::Message;
-
     SECTION("strings") {
         CHECK(to_hex(decode_success<Bytes>("00")) == "00");
         CHECK(to_hex(decode_success<Bytes>("8D6F62636465666768696A6B6C6D")) == "6f62636465666768696a6b6c6d");

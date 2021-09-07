@@ -30,8 +30,11 @@
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
+namespace silkworm {
+
+using namespace silkworm::consensus;
+
 TEST_CASE("Execute two blocks") {
-    using namespace silkworm;
 
     // ---------------------------------------
     // Prepare
@@ -126,4 +129,5 @@ TEST_CASE("Execute two blocks") {
     REQUIRE(miner_account != std::nullopt);
     CHECK(miner_account->balance > 2 * param::kBlockRewardConstantinople);
     CHECK(miner_account->balance < 3 * param::kBlockRewardConstantinople);
+}
 }

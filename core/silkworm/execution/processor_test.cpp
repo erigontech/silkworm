@@ -27,6 +27,8 @@
 
 namespace silkworm {
 
+using namespace silkworm::consensus;
+
 TEST_CASE("Zero gas price") {
     using Catch::Message;
 

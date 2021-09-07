@@ -14,18 +14,18 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_BLOCKCHAIN_HPP_
-#define SILKWORM_CHAIN_BLOCKCHAIN_HPP_
+#ifndef SILKWORM_CONSENSUS_BLOCKCHAIN_HPP_
+#define SILKWORM_CONSENSUS_BLOCKCHAIN_HPP_
 
 #include <unordered_map>
 #include <vector>
 
-#include <silkworm/chain/validity.hpp>
+#include <silkworm/consensus/consensus_engine.hpp>
 #include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/state.hpp>
 #include <silkworm/types/receipt.hpp>
 
-namespace silkworm {
+namespace silkworm::consensus {
 
 /// Reference implementation of Ethereum blockchain logic.
 /// Used for running consensus tests; the real node will use staged sync instead
@@ -35,7 +35,7 @@ class Blockchain {
     /// Creates a new instance of Blockchain.
     /// In the begining the state must have the genesis allocation.
     /// Later on the state may only be modified by the created instance of Blockchain.
-    Blockchain(State& state, const ChainConfig& config, const Block& genesis_block);
+    Blockchain(State& state, ConsensusEngine& engine, const ChainConfig& config, const Block& genesis_block);
 
     // Not copyable nor movable
     Blockchain(const Blockchain&) = delete;
@@ -60,6 +60,7 @@ class Blockchain {
     uint64_t canonical_ancestor(const BlockHeader& header, const evmc::bytes32& hash) const;
 
     State& state_;
+    ConsensusEngine& engine_;
     const ChainConfig& config_;
     std::unordered_map<evmc::bytes32, ValidationResult> bad_blocks_;
     std::vector<Receipt> receipts_;
@@ -67,4 +68,4 @@ class Blockchain {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_CHAIN_BLOCKCHAIN_HPP_
+#endif  // SILKWORM_CONSENSUS_BLOCKCHAIN_HPP_

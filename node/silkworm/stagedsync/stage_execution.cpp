@@ -51,8 +51,8 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
-            if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                SILKWORM_LOG(LogLevel::Error) << "Validation error " << magic_enum::enum_name<ValidationResult>(res)
+            if (const auto res{processor.execute_and_write_block(receipts)}; res != consensus::ValidationResult::kOk) {
+                SILKWORM_LOG(LogLevel::Error) << "Validation error " << magic_enum::enum_name<consensus::ValidationResult>(res)
                                               << " at block " << block_num << std::endl;
                 return StageResult::kInvalidBlock;
             }

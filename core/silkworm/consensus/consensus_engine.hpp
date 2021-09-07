@@ -14,15 +14,18 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CHAIN_VALIDITY_HPP_
-#define SILKWORM_CHAIN_VALIDITY_HPP_
+#ifndef SILKWORM_CONSENSUS_ENGINE_HPP_
+#define SILKWORM_CONSENSUS_ENGINE_HPP_
 
-#include <optional>
+#include <unordered_map>
+#include <vector>
 
+#include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/state.hpp>
-#include <silkworm/types/block.hpp>
+#include <silkworm/types/receipt.hpp>
+#include <silkworm/common/endian.hpp>
 
-namespace silkworm {
+namespace silkworm::consensus {
 
 // Classification of invalid transactions and blocks.
 enum class [[nodiscard]] ValidationResult{
@@ -71,21 +74,34 @@ enum class [[nodiscard]] ValidationResult{
     kUnsupportedTransactionType = 29,  // EIP-2718
 };
 
+class ConsensusEngine {
+    public:
+    // Performs validation of block header & body that can be done prior to sender recovery and execution.
+    // See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
+    // and 11.1 "Ommer Validation".
+    // Shouldn't be used for genesis block.
+    virtual ValidationResult pre_validate_block(const Block& block, const State& state, const ChainConfig& config) = 0;
+
+    // See [YP] Section 4.3.4 "Block Header Validity".
+    // Shouldn't be used for genesis block.
+    virtual ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) = 0;
+
+};
+
 // Performs validation of a transaction that can be done prior to sender recovery and block execution.
 // May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
 ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
                                           const std::optional<intx::uint256>& base_fee_per_gas);
 
-// Performs validation of block header & body that can be done prior to sender recovery and execution.
-// See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
-// and 11.1 "Ommer Validation".
-// Shouldn't be used for genesis block.
-ValidationResult pre_validate_block(const Block& block, const State& state, const ChainConfig& config);
+std::optional<BlockHeader> get_parent(const State& state, const BlockHeader& header);
 
-// See [YP] Section 4.3.4 "Block Header Validity".
-// Shouldn't be used for genesis block.
-ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config);
+// https://eips.ethereum.org/EIPS/eip-1559
+std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent,
+                                                              const ChainConfig& config);
 
-}  // namespace silkworm
+bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                   const evmc::bytes32& mainline_hash, unsigned n, const State& state,
+                   std::vector<BlockHeader>& old_ommers);
+}
 
-#endif  // SILKWORM_CHAIN_VALIDITY_HPP_
+#endif // SILKWORM_CONSENSUS_ENGINE_HPP_

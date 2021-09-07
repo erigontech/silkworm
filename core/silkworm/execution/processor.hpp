@@ -21,7 +21,7 @@
 
 #include <vector>
 
-#include <silkworm/chain/validity.hpp>
+#include <silkworm/consensus/consensus_engine.hpp>
 #include <silkworm/execution/evm.hpp>
 #include <silkworm/state/state.hpp>
 #include <silkworm/types/block.hpp>
@@ -40,7 +40,7 @@ class ExecutionProcessor {
     // Preconditions:
     // 1) pre_validate_transaction(txn) must return kOk
     // 2) txn.from must be recovered, otherwise kMissingSender will be returned
-    ValidationResult validate_transaction(const Transaction& txn) const noexcept;
+    consensus::ValidationResult validate_transaction(const Transaction& txn) const noexcept;
 
     // Execute a transaction, but do not write to the DB yet.
     // Precondition: transaction must be valid.
@@ -50,7 +50,7 @@ class ExecutionProcessor {
     /// Warning: This method does not verify state root;
     /// pre-Byzantium receipt root isn't validated either.
     /// Precondition: pre_validate_block(block) must return kOk.
-    [[nodiscard]] ValidationResult execute_and_write_block(std::vector<Receipt>& receipts) noexcept;
+    [[nodiscard]] consensus::ValidationResult execute_and_write_block(std::vector<Receipt>& receipts) noexcept;
 
     uint64_t cumulative_gas_used() const noexcept { return cumulative_gas_used_; }
 
@@ -61,7 +61,7 @@ class ExecutionProcessor {
     /// Execute the block, but do not write to the DB yet.
     /// Does not perform any post-execution validation (for example, receipt root is not checked).
     /// Precondition: pre_validate_block(block) must return kOk.
-    [[nodiscard]] ValidationResult execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept;
+    [[nodiscard]] consensus::ValidationResult execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept;
 
     uint64_t available_gas() const noexcept;
     uint64_t refund_gas(const Transaction& txn, uint64_t gas_left) noexcept;

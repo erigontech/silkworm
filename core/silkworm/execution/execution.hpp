@@ -20,7 +20,7 @@
 #include <vector>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/chain/validity.hpp>
+#include <silkworm/consensus/consensus_engine.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/state/state.hpp>
 #include <silkworm/types/block.hpp>
@@ -41,7 +41,7 @@ namespace silkworm {
  *
  * @param state The Ethereum state at the begining of the block.
  */
-[[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
+[[nodiscard]] inline consensus::ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& config) noexcept {
     ExecutionProcessor processor{block, state, config};
     std::vector<Receipt> receipts;

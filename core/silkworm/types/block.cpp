@@ -34,7 +34,6 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
 
 //! \brief Calculates header's boundary.
 //! \return Header's boundary.
-//! \remarks When difficulty is an exact power of 2, we need to adjust the quotient by one.
 ethash::hash256 BlockHeader::boundary() const {
     auto dividend{intx::uint320{1} << 256};
 

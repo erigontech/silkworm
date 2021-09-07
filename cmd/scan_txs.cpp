@@ -23,6 +23,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
+#include <silkworm/consensus/ethash/ethash.hpp>
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and scans txs for errored txs"};
@@ -56,7 +57,7 @@ int main(int argc, char* argv[]) {
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
     std::vector<Receipt> receipts;
-
+    consensus::Ethash engine;
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
@@ -85,7 +86,7 @@ int main(int argc, char* argv[]) {
 
             db::Buffer buffer{txn, block_num};
 
-            ExecutionProcessor processor{bh->block, buffer, *chain_config};
+            ExecutionProcessor processor{bh->block, engine, buffer, *chain_config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 

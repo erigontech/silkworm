@@ -20,11 +20,11 @@
 #include <vector>
 
 #include <silkworm/chain/config.hpp>
-#include <silkworm/consensus/consensus_engine.hpp>
 #include <silkworm/execution/processor.hpp>
 #include <silkworm/state/state.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
+#include <silkworm/consensus/ethash/ethash.hpp>
 
 namespace silkworm {
 
@@ -43,7 +43,8 @@ namespace silkworm {
  */
 [[nodiscard]] inline consensus::ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& config) noexcept {
-    ExecutionProcessor processor{block, state, config};
+    consensus::Ethash engine;
+    ExecutionProcessor processor{block, engine, state, config};
     std::vector<Receipt> receipts;
     return processor.execute_and_write_block(receipts);
 }

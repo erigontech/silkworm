@@ -24,6 +24,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/consensus/ethash/ethash.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/execution/processor.hpp>
 
@@ -40,14 +41,14 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
-
+        consensus::Ethash engine;
         while (true) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
             if (!bh) {
                 return StageResult::kBadChainSequence;
             }
 
-            ExecutionProcessor processor{bh->block, buffer, config};
+            ExecutionProcessor processor{bh->block, engine, buffer, config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 

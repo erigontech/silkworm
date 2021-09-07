@@ -14,6 +14,9 @@
    limitations under the License.
 */
 
+#ifndef SILKWORM_CONSENSUS_ETHASH
+#define SILKWORM_CONSENSUS_ETHASH
+
 #include <silkworm/consensus/consensus_engine.hpp>
 
 namespace silkworm::consensus {
@@ -24,6 +27,8 @@ class Ethash: public ConsensusEngine {
 
     ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) override;
 
+    void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
 };
 
 }
+#endif

@@ -24,6 +24,7 @@
 #include <silkworm/state/state.hpp>
 #include <silkworm/types/receipt.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/state/intra_block_state.hpp>
 
 namespace silkworm::consensus {
 
@@ -76,16 +77,27 @@ enum class [[nodiscard]] ValidationResult{
 
 class ConsensusEngine {
     public:
-    // Performs validation of block header & body that can be done prior to sender recovery and execution.
-    // See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity",
-    // and 11.1 "Ommer Validation".
-    // Shouldn't be used for genesis block.
+
+    //! \brief Performs validation of block header & body that can be done prior to sender recovery and execution.
+    //! \brief See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity", and 11.1 "Ommer Validation".
+    //! \param [in] block: block to pre-validate.
+    //! \param [in] state: current state.
+    //! \param [in] config: current chain config.
+    //! \note Shouldn't be used for genesis block.
     virtual ValidationResult pre_validate_block(const Block& block, const State& state, const ChainConfig& config) = 0;
 
-    // See [YP] Section 4.3.4 "Block Header Validity".
-    // Shouldn't be used for genesis block.
+    //! \brief See [YP] Section 4.3.4 "Block Header Validity".
+    //! \param [in] header: header to validate.
+    //! \param [in] state: current state.
+    //! \param [in] config: current chain config.
+    //! \note Shouldn't be used for genesis block.
     virtual ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) = 0;
 
+    //! \brief See [YP] Section 11.3 "Reward Application".
+    //! \param [in] state: current state.
+    //! \param [in] block: current block to apply rewards for.
+    //! \param [in] revision: EVM fork.
+    virtual void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) = 0;
 };
 
 // Performs validation of a transaction that can be done prior to sender recovery and block execution.

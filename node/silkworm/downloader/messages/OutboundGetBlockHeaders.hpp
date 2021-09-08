@@ -29,13 +29,14 @@ class OutboundGetBlockHeaders : public OutboundMessage {
     OutboundGetBlockHeaders(WorkingChain&, SentryClient&);
 
     std::string name() const override {return "OutboundGetBlockHeaders";}
-    std::string content() const override;
-    uint64_t reqId() const override;
 
-    void execute() override;
+    void execute() override;    // headers_forward function in Erigon
 
   private:
-    GetBlockHeadersPacket66 packet_;
+    sentry::SentPeers send_packet(const GetBlockHeadersPacket66&, seconds_t timeout);
+    void send_penalization(const PeerPenalization&, seconds_t timeout);
+
+    //GetBlockHeadersPacket66 packet_;
     WorkingChain& working_chain_;
     SentryClient& sentry_;
 };

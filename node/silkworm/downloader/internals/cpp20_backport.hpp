@@ -26,4 +26,25 @@ inline bool contains(const std::set<K,V>& s, const K& k)
     return s.find(k) != s.end();
 }
 
+#include <map>
+
+// check if a map contains a key - c++20 map has this functionality
+template <typename K, typename V>
+inline bool contains(const std::map<K,V>& s, const K& k)
+{
+    return s.find(k) != s.end();
+}
+
+#include <vector>
+
+// move (non copy) elements from a source container appending them to destination container
+template <typename T>
+auto move_at_end(std::vector<T>& destination, std::vector<T>& source) {
+    destination.insert(
+        destination.end(),
+        std::make_move_iterator(source.begin()),
+        std::make_move_iterator(source.end())
+    );
+}
+
 #endif //SILKWORM_CPP20_BACKPORT_HPP

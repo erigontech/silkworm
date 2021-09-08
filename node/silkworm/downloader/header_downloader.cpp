@@ -46,7 +46,7 @@ void HeaderDownloader::send_status() {
     rpc::SetStatus set_status(chain_identity_, head_hash, head_td);
     sentry_.exec_remotely(set_status);
 
-    SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader, send_status ok\n";
+    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader, set_status sent\n";
     sentry::SetStatusReply reply = set_status.reply();
 
     sentry::Protocol supported_protocol = reply.protocol();
@@ -81,18 +81,13 @@ void HeaderDownloader::process_one_message(MessageQueue& messages) {
     bool present = messages.timed_wait_and_pop(message, 1000ms);
     if (!present) return;   // timeout, needed to check exiting_
 
-    if (std::dynamic_pointer_cast<InboundMessage>(message)) {
-        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader processing message " << *message << "\n";
-    }
-    else if (std::dynamic_pointer_cast<OutboundMessage>(message)) {
-        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader sending outgoing request " << *message << "\n";
-    }
+    SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader processing message " << message->name() << "\n";
 
     // process the message (command pattern)
     message->execute();
 }
 
-auto HeaderDownloader::wind(BlockNum new_height) -> StageResult {
+auto HeaderDownloader::forward_to(BlockNum new_height) -> StageResult {
 
     using std::shared_ptr;
     using namespace std::chrono_literals;
@@ -150,7 +145,7 @@ auto HeaderDownloader::wind(BlockNum new_height) -> StageResult {
     return new_height_reached ? StageResult::kOk : StageResult::kError;
 }
 
-auto HeaderDownloader::unwind([[maybe_unused]] BlockNum new_height) -> StageResult {
+auto HeaderDownloader::unwind_to([[maybe_unused]] BlockNum new_height) -> StageResult {
     // todo: to implement
     return StageResult::kOk;
 }

@@ -33,9 +33,13 @@ namespace silkworm {
 class InboundMessage : public Message {
   public:
     void execute() override = 0;
+
+    virtual uint64_t reqId() const = 0;
+    virtual std::string content() const = 0;
 };
 
 std::ostream& operator<<(std::ostream&, const silkworm::InboundMessage&);
+std::string identify(const silkworm::InboundMessage& message);
 
 
 struct InboundBlockRequestMessage : public InboundMessage {

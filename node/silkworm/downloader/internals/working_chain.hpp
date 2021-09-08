@@ -30,8 +30,10 @@ class WorkingChain {  // tentative name - todo: improve!
     WorkingChain();  // todo: ok???
     WorkingChain(BlockNum highestInDb, BlockNum topSeenHeight);
 
+    // load from db
     void recover_from_db(DbTx&); // todo: make it private and call in the constructor?
 
+    // status
     void highest_block_in_db(BlockNum n);
     BlockNum highest_block_in_db();
     void top_seen_block_height(BlockNum n);
@@ -39,12 +41,25 @@ class WorkingChain {  // tentative name - todo: improve!
 
     BlockNum height_reached();
 
-    std::optional<GetBlockHeadersPacket66> headers_forward(); // progresses Headers stage in the forward direction
-    void request_ack(GetBlockHeadersPacket66 packet, time_point_t tp, time_dur_t timeout);
+    // core functionalities: anchor collection
+    // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
+    // given range of block chain that we want to fill
+    std::optional<GetBlockHeadersPacket66> request_skeleton();
 
+    // core functionalities: anchor extension
+    // to complete a range of block chain we need to do a request of headers to extend up or down an anchor or a segment
+    std::tuple<std::optional<GetBlockHeadersPacket66>,
+               std::vector<PeerPenalization>> request_more_headers(time_point_t tp);
+    // also we need to know if the request issued was delivered
+    void request_ack(const GetBlockHeadersPacket66& packet, time_point_t tp, seconds_t timeout);
+
+    // core functionalities: process receiving headers
+    // when a remote peer satisfy our request we receive one or more header that will be processed to fill hole in the
+    // block chain
     using RequestMoreHeaders = bool;
     std::tuple<Penalty,RequestMoreHeaders> accept_headers(const std::vector<BlockHeader>&, PeerId);
 
+    // ...
     void save_external_announce(Hash hash);
     bool has_link(Hash hash);
 
@@ -56,9 +71,6 @@ class WorkingChain {  // tentative name - todo: improve!
     static constexpr size_t persistent_link_limit = link_total / 16;
     static constexpr size_t link_limit = link_total - persistent_link_limit;
 
-    std::optional<GetBlockHeadersPacket66> request_skeleton(); // anchor collection
-    std::optional<GetBlockHeadersPacket66> request_more_headers(); // anchor extension
-
     using IsANewBlock = bool;
     auto process_segment(const Segment&, IsANewBlock, PeerId) -> RequestMoreHeaders;
 
@@ -67,6 +79,7 @@ class WorkingChain {  // tentative name - todo: improve!
     auto find_link(const Segment&, size_t start)             -> std::tuple<Found, End>;
     auto get_link(Hash hash)                                 -> std::optional<std::shared_ptr<Link>>;
     void reduce_links();
+    void invalidate(Anchor&);
     bool find_bad_header(const std::vector<BlockHeader>&);
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
     void mark_as_preverified(std::shared_ptr<Link>);

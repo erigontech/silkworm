@@ -34,8 +34,8 @@ class Stage {
   public:
     enum StageResult { kOk, kError };
 
-    virtual StageResult wind(BlockNum new_height) = 0;
-    virtual StageResult unwind(BlockNum new_height) = 0;
+    virtual StageResult forward_to(BlockNum new_height) = 0;
+    virtual StageResult unwind_to(BlockNum new_height) = 0;
 };
 
 // custom exception
@@ -62,8 +62,8 @@ class HeaderDownloader : public Stage {
     HeaderDownloader(HeaderDownloader&&) = delete; // nor movable
     ~HeaderDownloader();
 
-    StageResult wind(BlockNum new_height) override;    // go forward, downloading headers up to new_height
-    StageResult unwind(BlockNum new_height) override;  // go backward, unwinding headers to new_height
+    StageResult forward_to(BlockNum new_height) override; // go forward, downloading headers up to new_height
+    StageResult unwind_to(BlockNum new_height) override;  // go backward, unwinding headers to new_height
 
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>; // used internally to store new messages

@@ -54,7 +54,7 @@ using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 // using std::optional<Bytes> from_hex(std::string_view hex) noexcept;
 
 using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
-using time_dur_t = std::chrono::duration<std::chrono::system_clock>;
+using seconds_t = std::chrono::seconds;
 
 // defined elsewhere: ByteView string_view_to_byte_view(std::string_view sv)
 inline Bytes string_to_bytes(const std::string& s) { return Bytes(s.begin(), s.end()); }
@@ -77,6 +77,8 @@ inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
     return out;
 }
 
+using PeerId = std::string;
+
 enum Penalty: int {
     NoPenalty = 0,
     BadBlockPenalty,
@@ -89,7 +91,12 @@ enum Penalty: int {
     AbandonedAnchorPenalty
 };
 
-using PeerId = std::string;
+struct PeerPenalization {
+    Penalty penalty;
+    PeerId peerId;
+
+    PeerPenalization(Penalty p, PeerId id):  penalty(p), peerId(id) {} // unnecessary with c++20
+};
 
 namespace rlp {
     void encode(Bytes& to, const Hash& h);

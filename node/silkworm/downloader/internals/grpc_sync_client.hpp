@@ -141,6 +141,15 @@ class UnaryCall: public Call<STUB> {
         base_t{std::move(name)}, procedure_{proc}, request_{std::move(request)} {
     }
 
+    void deadline(time_point_t tp) {
+        context_.set_deadline(tp);
+    }
+
+    void timeout(seconds_t delta) {
+        time_point_t deadline = std::chrono::system_clock::now() + delta;
+        context_.set_deadline(deadline);
+    }
+
     virtual ~UnaryCall() = default;
 
     // Direct access to the reply

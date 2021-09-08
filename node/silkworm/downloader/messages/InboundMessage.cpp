@@ -58,6 +58,10 @@ std::ostream& operator<<(std::ostream& os, const silkworm::InboundMessage& msg) 
     return os;
 }
 
+std::string identify(const silkworm::InboundMessage& message) {
+    return message.name() + " reqId=" + std::to_string(message.reqId());
+}
+
 }
 
 

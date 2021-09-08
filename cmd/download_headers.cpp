@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
         // Stage1 - Header downloader - example code
         BlockNum target_block = 13'000'000; // only for test
         HeaderDownloader header_downloader{sentry, db, chain_identity};
-        header_downloader.wind(target_block);
+        header_downloader.forward_to(target_block);
 
         // Wait for user termination request
         std::cin.get();         // wait for user press "enter"

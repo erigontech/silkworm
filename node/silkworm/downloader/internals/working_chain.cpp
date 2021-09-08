@@ -257,17 +257,8 @@ func HeadersForward(
 	return nil
 }
 */
-std::optional<GetBlockHeadersPacket66> WorkingChain::headers_forward() {
-    // todo: implements!
 
-    //auto [packet, penalties] = request_more_headers();
-    // when the packet is sent we need to update some structures here
-
-    // ...
-
-    // only for test:
-    return request_skeleton();
-}
+// HeadersForward is implemented in OutboundGetBlockHeadersMessage
 
 /*
  * Skeleton query.
@@ -298,6 +289,38 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 }
 
 /*
+ func (hd *HeaderDownload) RequestMoreHeaders(currentTime uint64) (*HeaderRequest, []PenaltyItem) {
+	hd.lock.Lock()
+	defer hd.lock.Unlock()
+	var penalties []PenaltyItem
+	if hd.anchorQueue.Len() == 0 {
+		log.Debug("Empty anchor queue")
+		return nil, penalties
+	}
+	for hd.anchorQueue.Len() > 0 {
+		anchor := (*hd.anchorQueue)[0]
+		if _, ok := hd.anchors[anchor.parentHash]; ok {
+			if anchor.timestamp > currentTime {
+				// Anchor not ready for re-request yet
+				return nil, penalties
+			}
+			if anchor.timeouts < 10 {
+				return &HeaderRequest{Hash: anchor.parentHash, Number: anchor.blockHeight - 1, Length: 192, Skip: 0, Reverse: true}, penalties
+			} else {
+				// Ancestors of this anchor seem to be unavailable, invalidate and move on
+				hd.invalidateAnchor(anchor)
+				penalties = append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID: anchor.peerID})
+			}
+		}
+		// Anchor disappeared or unavailable, pop from the queue and move on
+		heap.Remove(hd.anchorQueue, 0)
+	}
+	return nil, penalties
+}
+ */
+
+
+/*
  * Anchor extension query.
  * The function uses an auxiliary data structure, anchorQueue to decide which anchors to select for queries first.
  * anchorQueue is a priority queue of anchors, priorities by the timestamp of latest anchor extension query issued
@@ -308,17 +331,109 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
  * and all its descendants get deleted from consideration (invalidate_anchor function). This would happen if anchor
  * was "fake", i.e. it corresponds to a header without existing ancestors.
  */
-std::optional<GetBlockHeadersPacket66> WorkingChain::request_more_headers() {
-    // time = currentTime
-    // todo: implement!
-    return {};
+std::tuple<std::optional<GetBlockHeadersPacket66>,
+           std::vector<PeerPenalization>> WorkingChain::request_more_headers(time_point_t time_point) {
+    using std::nullopt;
+
+    if (anchorQueue_.empty()) {
+        SILKWORM_LOG(LogLevel::Debug) << "WorkingChain::request_more_headers(): empty anchor queue\n";
+        return {};
+    }
+
+    std::vector<PeerPenalization> penalties;
+    while (!anchorQueue_.empty()) {
+        auto anchor = anchorQueue_.top();
+
+        if (!contains(anchors_, anchor->parentHash)) {
+            anchorQueue_.pop(); // anchor disappeared (i.e. it became link as per our request) or unavailable,
+            continue;           // normal condition, pop from the queue and move on
+        }
+
+        if (anchor->timestamp > time_point) {
+            return {nullopt, penalties}; // anchor not ready for "extend" re-request yet
+        }
+
+        if (anchor->timeouts < 10) {
+            GetBlockHeadersPacket66 packet{RANDOM_NUMBER.generate_one(),
+                                           {anchor->blockHeight, max_len, 0, true}}; // todo: why we use blockHeight in place of parentHash?
+            return {packet, penalties}; // try (again) to extend this anchor
+        }
+        else {
+            // ancestors of this anchor seem to be unavailable, invalidate and move on
+            SILKWORM_LOG(LogLevel::Warn) << "WorkingChain::request_more_headers(): "
+                                         << "invalidating anchor for suspected unavailability, height="
+                                         << anchor->blockHeight << "\n";
+            invalidate(*anchor);
+            anchors_.erase(anchor->parentHash);
+            anchorQueue_.pop();
+            penalties.emplace_back(Penalty::AbandonedAnchorPenalty, anchor->peerId);
+        }
+    }
+
+    return {nullopt, penalties};
+}
+
+/*
+func (hd *HeaderDownload) invalidateAnchor(anchor *Anchor) {
+	log.Warn("Invalidating anchor for suspected unavailability", "height", anchor.blockHeight)
+	delete(hd.anchors, anchor.parentHash)
+	hd.removeUpwards(anchor.links)
+}
+
+func (hd *HeaderDownload) removeUpwards(toRemove []*Link) {
+	for len(toRemove) > 0 {
+		removal := toRemove[len(toRemove)-1]
+		toRemove = toRemove[:len(toRemove)-1]
+		delete(hd.links, removal.header.Hash())
+		heap.Remove(hd.linkQueue, removal.idx)
+		toRemove = append(toRemove, removal.next...)
+	}
+}
+*/
+void WorkingChain::invalidate(Anchor& anchor) {
+    auto link_to_remove = anchor.links;
+    while (!link_to_remove.empty()) {
+        auto removal = link_to_remove.back();
+        link_to_remove.pop_back();
+        links_.erase(removal->hash);
+        linkQueue_.erase(removal);
+        move_at_end(link_to_remove, removal->next); // link_to_remove.insert(link_to_remove.end(),std::make_move_iterator(removal->next.begin()),std::make_move_iterator(removal->next.end())
+    }
 }
 
 void WorkingChain::save_external_announce(Hash) {
     // Erigon implementation:
     // hd.seenAnnounces.Add(hash)
     // todo: implement!
-    SILKWORM_LOG(LogLevel::Warn) << "SelfExtendingChain::save_external_announce() not implemented yet\n";
+    SILKWORM_LOG(LogLevel::Warn) << "WorkingChain::save_external_announce() not implemented yet\n";
+}
+
+/*
+func (hd *HeaderDownload) SentRequest(req *HeaderRequest, currentTime, timeout uint64) {
+    hd.lock.Lock()
+        defer hd.lock.Unlock()
+            anchor, ok := hd.anchors[req.Hash]
+               if !ok {
+                   return
+               }
+               anchor.timeouts++
+               anchor.timestamp = currentTime + timeout
+               heap.Fix(hd.anchorQueue, 0)
+}
+*/
+
+void WorkingChain::request_ack(const GetBlockHeadersPacket66& packet, time_point_t tp, seconds_t timeout) {
+    // use packet
+    if (!std::holds_alternative<Hash>(packet.request.origin))
+        throw std::logic_error("WorkingChain::request_ack expects hash not block number");    // todo: check!
+
+    Hash hash = std::get<Hash>(packet.request.origin);
+    auto anchor_it = anchors_.find(hash);
+    if (anchor_it != anchors_.end()) {
+        anchor_it->second->timeouts++;
+        anchor_it->second->timestamp = tp + timeout;
+        anchorQueue_.resort();
+    }
 }
 
 bool WorkingChain::has_link(Hash hash) {
@@ -463,7 +578,7 @@ auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penal
         else {
             // No children, or more than one child, create new segment
             segmentIdx = segments.size();
-            segments.push_back(Segment(shared_from_this()));    // add a void segment
+            segments.emplace_back(shared_from_this());    // add a void segment
         }
 
         segments[segmentIdx].push_back(header);

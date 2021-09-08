@@ -83,7 +83,7 @@ TEST_CASE("Unwind Execution") {
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{*txn};
+    db::Buffer buffer{*txn, 0};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -137,7 +137,7 @@ TEST_CASE("Unwind Execution") {
     // ---------------------------------------
     REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_execution(txn, data_dir.etl().path(), 1)));
 
-    db::Buffer buffer2{*txn};
+    db::Buffer buffer2{*txn, 0};
 
     std::optional<Account> contract_account{buffer2.read_account(contract_address)};
     REQUIRE(contract_account);

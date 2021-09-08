@@ -37,7 +37,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
                                            const db::StorageMode& storage_mode, const size_t batch_size,
                                            uint64_t& block_num, uint64_t prune_from) noexcept {
     try {
-        db::Buffer buffer{txn};
+        db::Buffer buffer{txn, prune_from};
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
@@ -58,7 +58,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
                 return StageResult::kInvalidBlock;
             }
 
-            if (storage_mode.Receipts) {
+            if (storage_mode.Receipts && block_num >= prune_from) {
                 buffer.insert_receipts(block_num, receipts);
             }
 
@@ -67,7 +67,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
             }
 
             if (buffer.current_batch_size() >= batch_size || block_num >= max_block) {
-                buffer.write_to_db(prune_from);
+                buffer.write_to_db();
                 return StageResult::kSuccess;
             }
 

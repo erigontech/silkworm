@@ -19,12 +19,8 @@
 #include <cstring>
 
 #include <silkworm/common/cast.hpp>
-#include <silkworm/rlp/encode.hpp>
 
 namespace silkworm {
-
-// Just for literals
-using namespace intx;
 
 evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
     Bytes rlp;
@@ -33,6 +29,7 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
 }
 
 ethash::hash256 BlockHeader::boundary() const {
+    using intx::operator""_u256;
     static const auto dividend{intx::uint320{1} << 256};
     auto result{difficulty > 1u ? intx::uint256{dividend / difficulty}
                                 : 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256};

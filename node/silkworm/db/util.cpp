@@ -16,16 +16,10 @@
 
 #include "util.hpp"
 
-#include <cassert>
-#include <cstdlib>
 #include <cstring>
-
-#include <intx/int128.hpp>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
-#include <silkworm/common/util.hpp>
-#include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::db {
 
@@ -52,29 +46,44 @@ Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
 // Minimize size in database
 // Encode/Decode Lookups
 
-Bytes encode_lookup(Bytes& encoded_number) {
-    std::string::size_type offset{encoded_number.find_first_not_of(uint8_t{0})};
+Bytes to_compact(const ByteView& data) {
+    if (data.empty()) {
+        return {};
+    }
+    std::string::size_type offset{data.find_first_not_of(uint8_t{0})};
     if (offset != std::string::npos) {
-        return encoded_number.substr(offset);
+        return Bytes(data.data() + offset, data.length() - offset);
+    } else {
+        // All bytes are zeroed
+        return {};
     }
-    return encoded_number;
 }
 
-Bytes encode_lookup(uint64_t lookup) {
-    auto lookup_encoded{block_key(lookup)};
-    // Compressing
-    return encode_lookup(lookup_encoded);
+Bytes to_compact(const uint64_t value) {
+    if (!value) {
+        return {};  // All bytes are zero
+    }
+    auto value_be_bytes{block_key(value)};
+    return to_compact(value_be_bytes);
 }
 
-uint64_t decode_lookup(ByteView encoded_lookup) {
-    uint64_t decoded_lookup{0};
-    uint8_t  position{0};
-    for (auto i = encoded_lookup.rbegin(); i != encoded_lookup.rend(); ++i) {
-        decoded_lookup |= uint64_t((*i) << position);
-        position += 8;
+uint64_t from_compact(const ByteView& data) {
+    // Important ! We can't have a string of bytes wider than an uint64_t
+    if (data.length() > sizeof(uint64_t)) {
+        throw std::invalid_argument(std::string(__FUNCTION__) + " : Data too wide");
     }
 
-    return decoded_lookup;
+    uint64_t ret{0};
+    if (data.empty()) {
+        return ret;
+    }
+
+    uint8_t num_shifts{0};
+    for (auto i = data.rbegin(); i != data.rend(); ++i) {
+        ret |= (static_cast<uint64_t>(*i) << num_shifts);
+        num_shifts += 8;
+    }
+    return ret;
 }
 
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation) {

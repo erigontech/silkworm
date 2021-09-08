@@ -60,7 +60,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
         if (body.txn_count) {
             // Read and Encode block number
             Bytes block_number_as_bytes(static_cast<uint8_t*>(bodies_data.key.iov_base), 8);
-            auto lookup_encoded{db::encode_lookup(block_number_as_bytes)};
+            auto lookup_encoded{db::to_compact(block_number_as_bytes)};
             // Prepare to read transactions for current block
             Bytes tx_base_id(8, '\0');
             endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
@@ -183,7 +183,7 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
     while (lookup_data) {
         // Check current lookup block number
         auto block_number_view{db::from_slice(lookup_data.value)};
-        auto current_block{db::decode_lookup(block_number_view)};
+        auto current_block{db::from_compact(block_number_view)};
         // Filter out all of the lookups with invalid block numbers
         if (current_block < prune_from) {
             lookup_table.erase(/*whole_multivalue*/ false);

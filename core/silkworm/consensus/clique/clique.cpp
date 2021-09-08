@@ -47,74 +47,17 @@ ValidationResult Clique::pre_validate_block(const Block& block, const State& sta
         return err;
     }
 
-    // In Clique POA there must be no ommers
-    Bytes ommers_rlp;
-    rlp::encode(ommers_rlp, block.ommers);
-    ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
-    if (full_view(ommers_hash.bytes) != full_view(kEmptyListHash)) {
+    // In Clique POA there must be no ommers, since uncles are not allowed
+    if (!block.ommers.empty()) {
         return ValidationResult::kWrongOmmersHash;
     }
 
     return ValidationResult::kOk;
 }
 
-ValidationResult Clique::validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) {
-    if (header.gas_used > header.gas_limit) {
-        return ValidationResult::kGasAboveLimit;
-    }
-
-    if (header.gas_limit < 5000) {
-        return ValidationResult::kInvalidGasLimit;
-    }
-
-    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
-    // https://eips.ethereum.org/EIPS/eip-1985
-    if (header.gas_limit > INT64_MAX) {
-        return ValidationResult::kInvalidGasLimit;
-    }
-
-    if (header.extra_data.length() > 32) {
-        return ValidationResult::kExtraDataTooLong;
-    }
-
-    const std::optional<BlockHeader> parent{get_parent(state, header)};
-    if (!parent) {
-        return ValidationResult::kUnknownParent;
-    }
-
-    if (header.timestamp <= parent->timestamp) {
-        return ValidationResult::kInvalidTimestamp;
-    }
-
-    uint64_t parent_gas_limit{parent->gas_limit};
-    if (header.number == config.revision_block(EVMC_LONDON)) {
-        parent_gas_limit = parent->gas_limit * param::kElasticityMultiplier;  // EIP-1559
-    }
-
-    const uint64_t gas_delta{header.gas_limit > parent_gas_limit ? header.gas_limit - parent_gas_limit
-                                                                 : parent_gas_limit - header.gas_limit};
-    if (gas_delta >= parent_gas_limit / 1024) {
-        return ValidationResult::kInvalidGasLimit;
-    }
-
-    const bool parent_has_uncles{parent->ommers_hash != kEmptyListHash};
-    const intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent->difficulty,
-                                                        parent->timestamp, parent_has_uncles, config)};
-    if (difficulty != header.difficulty) {
-        return ValidationResult::kWrongDifficulty;
-    }
-
-    // https://eips.ethereum.org/EIPS/eip-779
-    if (config.dao_block && *config.dao_block <= header.number && header.number <= *config.dao_block + 9) {
-        static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
-        if (header.extra_data != kDaoExtraData) {
-            return ValidationResult::kWrongDaoExtraData;
-        }
-    }
-
-    if (header.base_fee_per_gas != expected_base_fee_per_gas(header, *parent, config)) {
-        return ValidationResult::kWrongBaseFee;
-    }
+ValidationResult Clique::validate_block_header(const BlockHeader& , const State& , const ChainConfig& ) {
+    static_cast<void>(clique_config_);
+    static_cast<void>(snapshot_config_);
 
     return ValidationResult::kOk;
 }

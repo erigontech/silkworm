@@ -35,16 +35,48 @@
 #include <silkworm/consensus/consensus_engine.hpp>
 
 namespace silkworm::consensus {
-// Proof of Work implementation
+
+// CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
+struct CliqueConfig {
+	uint64_t   period;   // Number of seconds between blocks to enforce
+    uint64_t   epoch;    // Epoch length to reset votes and checkpoint
+};
+
+struct SnapshotConfig {
+    uint64_t checkpoint_interval;     // Number of blocks after which to save the vote snapshot to the database
+    uint64_t inmemory_snapshots;      // Number of recent vote snapshots to keep in memory
+	uint64_t inmemory_signatures;     // Number of recent block signatures to keep in memory
+};
+
+// Proof of Authority (Clique) implementation
 class Clique: public ConsensusEngine {
 
     public:
 
-    ValidationResult pre_validate_block(const Block& block, const State& state, const ChainConfig& config) override;
+     Clique(CliqueConfig clique_config, SnapshotConfig snapshot_config): 
+        clique_config_{clique_config}, snapshot_config_{snapshot_config} {}
 
-    ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) override;
+     ValidationResult pre_validate_block(const Block& block, const State& state, const ChainConfig& config) override;
 
-    void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
+     ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) override;
+
+     void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
+
+    private:
+
+     CliqueConfig clique_config_;
+     SnapshotConfig snapshot_config_;
+};
+
+constexpr CliqueConfig kDefaultCliqueConfig = {
+    15,
+    30000,
+}; // Ropsten and Görli configuration
+
+constexpr SnapshotConfig kDefaultSnapshotConfig = {
+    10,
+    1024,
+    16384
 };
 
 }

@@ -66,7 +66,7 @@ Bytes encode_lookup(uint64_t lookup) {
     return encode_lookup(lookup_encoded);
 }
 
-uint64_t decode_lookup(ByteView& encoded_lookup) {
+uint64_t decode_lookup(ByteView encoded_lookup) {
     uint64_t decoded_lookup{0};
     uint8_t  position{0};
     for (auto i = encoded_lookup.rbegin(); i != encoded_lookup.rend(); ++i) {

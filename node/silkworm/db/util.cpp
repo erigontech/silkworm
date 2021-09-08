@@ -50,17 +50,23 @@ Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
 }
 
 // Minimize size in database
+// Encode/Decode Lookups
+
+Bytes encode_lookup(Bytes& encoded_number) {
+    std::string::size_type offset{encoded_number.find_first_not_of(uint8_t{0})};
+    if (offset != std::string::npos) {
+        return encoded_number.substr(offset);
+    }
+    return encoded_number;
+}
+
 Bytes encode_lookup(uint64_t lookup) {
     auto lookup_encoded{block_key(lookup)};
     // Compressing
-    std::string::size_type offset{lookup_encoded.find_first_not_of(uint8_t{0})};
-    if (offset != std::string::npos) {
-        return lookup_encoded.substr(offset);
-    }
-    return lookup_encoded;
+    return encode_lookup(lookup_encoded);
 }
 
-uint64_t decode_lookup(ByteView encoded_lookup) {
+uint64_t decode_lookup(ByteView& encoded_lookup) {
     uint64_t decoded_lookup{0};
     uint8_t  position{0};
     for (auto i = encoded_lookup.rbegin(); i != encoded_lookup.rend(); ++i) {

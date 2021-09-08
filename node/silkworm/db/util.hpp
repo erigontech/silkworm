@@ -156,7 +156,8 @@ Bytes block_key(uint64_t block_number);
 
 // Erigon TxIndex value
 Bytes encode_lookup(uint64_t lookup);
-uint64_t decode_lookup(ByteView b);
+Bytes encode_lookup(Bytes& encoded_number);
+uint64_t decode_lookup(ByteView& encoded_lookup);
 
 // Erigon HeaderKey & BlockBodyKey
 Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);

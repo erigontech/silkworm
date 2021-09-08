@@ -156,20 +156,21 @@ Bytes block_key(uint64_t block_number);
 
 //! Compacts the bytes string removing leftmost zeroes
 //! \param [in] data : a string view of bytes
-//! \return A string of bytes with initial zeroes stripped off
+//! \return A string of bytes where leftmost zeroed bytes are removed
 //! \remarks This function does not check length of string does match any data type size nor tampers with byte order
 Bytes to_compact(const ByteView& data);
 
-//! Transforms a uint64_t in native endianness to it's byte form with big endianness
+//! Transforms a uint64_t in native endianness to it's compacted big endian byte form
 //! \param [in] value : the value to be transformed
 //! \return A string of bytes
 //! \remarks See Erigon TxIndex value
+//! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 Bytes to_compact(const uint64_t value);
 
-//! \brief Parses bytes of data representing a uint64_t stored in compact form with big endianness
+//! \brief Parses uint64_t from a compacted big endian byte form
 //! \param [in] data : byteview of memory allocation for value. Length must be either 0 or match sizeof(uint64_t)
 //! \return A uint64_t with native endianness
-//! \remarks A "compact" form strips initial bytes valued to zero
+//! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 uint64_t from_compact(const ByteView& data);
 
 // Erigon HeaderKey & BlockBodyKey

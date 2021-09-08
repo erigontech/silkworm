@@ -52,7 +52,7 @@ TEST_CASE("Storage update") {
     data_b.append(zeroless_view(value_b));
     state.upsert(to_slice(key), to_slice(data_b));
 
-    Buffer buffer{txn};
+    Buffer buffer{txn, 0};
 
     CHECK(buffer.read_storage(address, kDefaultIncarnation, location_a) == value_a1);
 

@@ -17,7 +17,7 @@
 #ifndef SILKWORM_TYPES_BLOCK_HPP_
 #define SILKWORM_TYPES_BLOCK_HPP_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <array>
 #include <optional>

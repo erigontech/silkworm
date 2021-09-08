@@ -114,6 +114,9 @@ std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header
 bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
                    const evmc::bytes32& mainline_hash, unsigned n, const State& state,
                    std::vector<BlockHeader>& old_ommers);
+
+ConsensusEngine& get_consensus_engine(SealEngineType engine_type);
+
 }
 
 #endif // SILKWORM_CONSENSUS_ENGINE_HPP_

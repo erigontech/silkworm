@@ -41,7 +41,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
-        consensus::Ethash engine;
+        consensus::ConsensusEngine& engine{consensus::get_consensus_engine(config.seal_engine)};
         while (true) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
             if (!bh) {

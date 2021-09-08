@@ -13,30 +13,15 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-/*
-   Copyright 2021 The Silkworm Authors
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-
-#ifndef SILKWORM_CONSENSUS_CLIQUE
-#define SILKWORM_CONSENSUS_CLIQUE
+#ifndef SILKWORM_CONSENSUS_NOPROOF
+#define SILKWORM_CONSENSUS_NOPROOF
 
 #include <silkworm/consensus/consensus_engine.hpp>
 
 namespace silkworm::consensus {
-// Proof of Work implementation
-class Clique: public ConsensusEngine {
+// Disabled consensus checks (PoW)
+class NoProof: public ConsensusEngine {
 
     public:
 
@@ -48,4 +33,4 @@ class Clique: public ConsensusEngine {
 };
 
 }
-#endif // SILKWORM_CONSENSUS_CLIQUE
+#endif // SILKWORM_CONSENSUS_NOPROOF

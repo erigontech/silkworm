@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
     AnalysisCache analysis_cache;
     ExecutionStatePool state_pool;
     std::vector<Receipt> receipts;
-    consensus::Ethash engine;
+
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
         data_dir.deploy();
@@ -65,6 +65,7 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};
         auto chain_config{db::read_chain_config(txn)};
+        consensus::ConsensusEngine& engine{consensus::get_consensus_engine((*chain_config).seal_engine)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
         }

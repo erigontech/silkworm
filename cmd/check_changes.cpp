@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
-        consensus::Ethash engine;
+        consensus::ConsensusEngine& engine{consensus::get_consensus_engine((*chain_config).seal_engine)};
         for (; block_num < to; ++block_num) {
             txn.renew_reading();
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};

@@ -43,7 +43,8 @@ namespace silkworm {
  */
 [[nodiscard]] inline consensus::ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& config) noexcept {
-    consensus::Ethash engine;
+    
+    consensus::ConsensusEngine& engine{consensus::get_consensus_engine(config.seal_engine)};
     ExecutionProcessor processor{block, engine, state, config};
     std::vector<Receipt> receipts;
     return processor.execute_and_write_block(receipts);

@@ -26,6 +26,9 @@
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/chain/difficulty.hpp>
+#include <silkworm/consensus/ethash/ethash.hpp>
+#include <silkworm/consensus/clique/clique.hpp>
+#include <silkworm/consensus/noproof/noproof.hpp>
 
 namespace silkworm::consensus {
 
@@ -144,6 +147,21 @@ bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header
     }
 
     return is_kin(branch_header, *mainline_parent, mainline_header.parent_hash, n - 1, state, old_ommers);
+}
+
+ConsensusEngine& get_consensus_engine(SealEngineType engine_type) {
+    ConsensusEngine* engine;
+    switch (engine_type) {
+        case SealEngineType::kEthash:            
+            engine = new Ethash();
+            return *engine;
+        case SealEngineType::kClique:
+            engine = new Clique();
+            return *engine;
+        default:
+            engine = new NoProof();
+            return *engine;
+    }
 }
 
 }  // namespace silkworm

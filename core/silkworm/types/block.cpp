@@ -32,8 +32,6 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
     return bit_cast<evmc_bytes32>(keccak256(rlp));
 }
 
-//! \brief Calculates header's boundary. This is described by Equation(50) by the yellow paper.
-//! \return Header's boundary.
 ethash::hash256 BlockHeader::boundary() const {
     static const auto dividend{intx::uint320{1} << 256};
     auto result{difficulty > 1u ? intx::uint256{dividend / difficulty}

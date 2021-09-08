@@ -53,16 +53,16 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
 
     Bytes value_rlp;
     rlp::encode(value_rlp, val1);
-    storage_hb.add(full_view(loc1), value_rlp);
+    storage_hb.add_leaf(unpack_nibbles(full_view(loc1)), value_rlp);
     value_rlp.clear();
     rlp::encode(value_rlp, val2);
-    storage_hb.add(full_view(loc2), value_rlp);
+    storage_hb.add_leaf(unpack_nibbles(full_view(loc2)), value_rlp);
     value_rlp.clear();
     rlp::encode(value_rlp, val3);
-    storage_hb.add(full_view(loc3), value_rlp);
+    storage_hb.add_leaf(unpack_nibbles(full_view(loc3)), value_rlp);
     value_rlp.clear();
     rlp::encode(value_rlp, val4);
-    storage_hb.add(full_view(loc4), value_rlp);
+    storage_hb.add_leaf(unpack_nibbles(full_view(loc4)), value_rlp);
 
     return storage_hb.root_hash();
 }
@@ -90,12 +90,12 @@ TEST_CASE("Account and storage trie") {
     const auto key1{0xB000000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a1{0, 3 * kEther};
     hashed_accounts.upsert(db::to_slice(key1), db::to_slice(a1.encode_for_storage()));
-    hb.add(full_view(key1), a1.rlp(/*storage_root=*/kEmptyRoot));
+    hb.add_leaf(unpack_nibbles(full_view(key1)), a1.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key2{0xB040000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a2{0, 1 * kEther};
     hashed_accounts.upsert(db::to_slice(key2), db::to_slice(a2.encode_for_storage()));
-    hb.add(full_view(key2), a2.rlp(/*storage_root=*/kEmptyRoot));
+    hb.add_leaf(unpack_nibbles(full_view(key2)), a2.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key3{0xB041000000000000000000000000000000000000000000000000000000000000_bytes32};
     const auto code_hash{0x5be74cad16203c4905c068b012a2e9fb6d19d036c410f16fd177f337541440dd_bytes32};
@@ -105,22 +105,22 @@ TEST_CASE("Account and storage trie") {
     Bytes storage_key{db::storage_prefix(full_view(key3), kDefaultIncarnation)};
     const evmc::bytes32 storage_root{setup_storage(txn, storage_key)};
 
-    hb.add(full_view(key3), a3.rlp(storage_root));
+    hb.add_leaf(unpack_nibbles(full_view(key3)), a3.rlp(storage_root));
 
     const auto key4a{0xB1A0000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a4a{0, 4 * kEther};
     hashed_accounts.upsert(db::to_slice(key4a), db::to_slice(a4a.encode_for_storage()));
-    hb.add(full_view(key4a), a4a.rlp(/*storage_root=*/kEmptyRoot));
+    hb.add_leaf(unpack_nibbles(full_view(key4a)), a4a.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key5{0xB310000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a5{0, 8 * kEther};
     hashed_accounts.upsert(db::to_slice(key5), db::to_slice(a5.encode_for_storage()));
-    hb.add(full_view(key5), a5.rlp(/*storage_root=*/kEmptyRoot));
+    hb.add_leaf(unpack_nibbles(full_view(key5)), a5.rlp(/*storage_root=*/kEmptyRoot));
 
     const auto key6{0xB340000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a6{0, 1 * kEther};
     hashed_accounts.upsert(db::to_slice(key6), db::to_slice(a6.encode_for_storage()));
-    hb.add(full_view(key6), a6.rlp(/*storage_root=*/kEmptyRoot));
+    hb.add_leaf(unpack_nibbles(full_view(key6)), a6.rlp(/*storage_root=*/kEmptyRoot));
 
     // ----------------------------------------------------------------
     // Populate account & storage trie DB tables
@@ -250,7 +250,7 @@ TEST_CASE("Account trie around extension node") {
     for (const auto& key : keys) {
         auto key_view{full_view(key)};
         hashed_accounts.upsert(db::to_slice(key_view), db::to_slice(a.encode_for_storage()));
-        hb.add(key_view, a.rlp(/*storage_root=*/kEmptyRoot));
+        hb.add_leaf(unpack_nibbles(key_view), a.rlp(/*storage_root=*/kEmptyRoot));
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};

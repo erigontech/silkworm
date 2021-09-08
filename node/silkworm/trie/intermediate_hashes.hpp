@@ -84,9 +84,15 @@ class AccountTrieCursor {
 
     std::optional<Bytes> key() const;
 
+    const evmc::bytes32& hash() const;
+
     void next();
 
-    bool can_skip_state() const;
+    bool can_skip_state() const { return skip_state_; }
+
+  private:
+    mdbx::cursor_managed c_;
+    bool skip_state_{false};
 };
 
 // Erigon StorageTrieCursor

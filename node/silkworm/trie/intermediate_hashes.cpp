@@ -23,7 +23,14 @@
 
 namespace silkworm::trie {
 
-AccountTrieCursor::AccountTrieCursor(mdbx::txn&) {}
+AccountTrieCursor::AccountTrieCursor(mdbx::txn& txn) : c_{db::open_cursor(txn, db::table::kTrieOfAccounts)} {
+    c_.to_first(/*throw_notfound=*/false);
+    if (c_.eof()) {
+        return;
+    }
+    skip_state_ = true;
+    // TODO[Issue 179] implement the rest of (c *AccTrieCursor) AtPrefix
+}
 
 Bytes AccountTrieCursor::first_uncovered_prefix() {
     // TODO[Issue 179] implement
@@ -35,13 +42,14 @@ std::optional<Bytes> AccountTrieCursor::key() const {
     return std::nullopt;
 }
 
-void AccountTrieCursor::next() {
+const evmc::bytes32& AccountTrieCursor::hash() const {
     // TODO[Issue 179] implement
+    static evmc::bytes32 hash{};
+    return hash;
 }
 
-bool AccountTrieCursor::can_skip_state() const {
+void AccountTrieCursor::next() {
     // TODO[Issue 179] implement
-    return false;
 }
 
 StorageTrieCursor::StorageTrieCursor(mdbx::txn&) {}
@@ -84,6 +92,48 @@ DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, et
     };
 }
 
+/*
+**Theoretically:** "Merkle trie root calculation" starts from state, build from state keys - trie,
+on each level of trie calculates intermediate hash of underlying data.
+
+**Practically:** It can be implemented as "Preorder trie traversal" (Preorder - visit Root, visit Left, visit Right).
+But, let's make couple observations to make traversal over huge state efficient.
+
+**Observation 1:** `TrieOfAccounts` already stores state keys in sorted way.
+Iteration over this bucket will retrieve keys in same order as "Preorder trie traversal".
+
+**Observation 2:** each Eth block - changes not big part of state - it means most of Merkle trie intermediate hashes
+will not change. It means we effectively can cache them. `TrieOfAccounts` stores "Intermediate hashes of all Merkle trie
+levels". It also sorted and Iteration over `TrieOfAccounts` will retrieve keys in same order as "Preorder trie
+traversal".
+
+**Implementation:** by opening 1 Cursor on state and 1 more Cursor on intermediate hashes bucket - we will receive data
+in order of "Preorder trie traversal". Cursors will only do "sequential reads" and "jumps forward" - been
+hardware-friendly. 1 stack keeps all accumulated hashes, when sub-trie traverse ends - all hashes pulled from stack ->
+hashed -> new hash puts on stack - it's hash of visited sub-trie (it emulates recursive nature of "Preorder trie
+traversal" algo).
+
+Imagine that account with key 0000....00 (64 zeroes, 32 bytes of zeroes) changed.
+Here is an example sequence which can be seen by running 2 Cursors:
+```
+00                   // key came from cache, can't use it - because account with this prefix changed
+0000                 // key came from cache, can't use it - because account with this prefix changed
+...
+{30 zero bytes}00    // key which came from cache, can't use it - because account with this prefix changed
+{30 zero bytes}0000  // account came from state, use it - calculate hash, jump to next sub-trie
+{30 zero bytes}01    // key came from cache, it's next sub-trie, use it, jump to next sub-trie
+{30 zero bytes}02    // key came from cache, it's next sub-trie, use it, jump to next sub-trie
+...
+{30 zero bytes}ff    // key came from cache, it's next sub-trie, use it, jump to next sub-trie
+{29 zero bytes}01    // key came from cache, it's next sub-trie (1 byte shorter key), use it, jump to next sub-trie
+{29 zero bytes}02    // key came from cache, it's next sub-trie (1 byte shorter key), use it, jump to next sub-trie
+...
+ff                   // key came from cache, it's next sub-trie (1 byte shorter key), use it, jump to next sub-trie
+nil                  // db returned nil - means no more keys there, done
+```
+In practice Trie is not full - it means that after account key `{30 zero bytes}0000` may come `{5 zero bytes}01` and
+amount of iterations will not be big.
+*/
 // calculate_root algo:
 //  for iterateIHOfAccounts {
 //      if canSkipState
@@ -112,55 +162,54 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
     auto acc_state{db::open_cursor(txn_, db::table::kHashedAccounts)};
     auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
 
-    StorageTrieCursor storage_trie{txn_};
-
     for (AccountTrieCursor acc_trie{txn_};; acc_trie.next()) {
         if (acc_trie.can_skip_state()) {
             goto use_account_trie;
         }
 
-        for (auto a{acc_state.lower_bound(db::to_slice(acc_trie.first_uncovered_prefix()), /*throw_notfound*/ false)};
-             a.done == true; a = acc_state.to_next(/*throw_notfound*/ false)) {
-            const Bytes unpacked_key{unpack_nibbles(db::from_slice(a.key))};
+        for (auto acc{acc_state.lower_bound(db::to_slice(acc_trie.first_uncovered_prefix()), /*throw_notfound=*/false)};
+             acc.done; acc = acc_state.to_next(/*throw_notfound=*/false)) {
+            const Bytes unpacked_key{unpack_nibbles(db::from_slice(acc.key))};
             if (acc_trie.key().has_value() && acc_trie.key().value() < unpacked_key) {
                 break;
             }
-            const auto [account, err]{decode_account_from_storage(db::from_slice(a.value))};
+            const auto [account, err]{decode_account_from_storage(db::from_slice(acc.value))};
             rlp::err_handler(err);
 
             evmc::bytes32 storage_root{kEmptyRoot};
 
             if (account.incarnation) {
-                const Bytes acc_with_inc{db::storage_prefix(db::from_slice(a.key), account.incarnation)};
+                const Bytes key_with_inc{db::storage_prefix(db::from_slice(acc.key), account.incarnation)};
                 HashBuilder storage_hb;
                 storage_hb.node_collector = [&](ByteView unpacked_storage_key, const Node& node) {
-                    etl::Entry e{acc_with_inc, marshal_node(node)};
+                    etl::Entry e{key_with_inc, marshal_node(node)};
                     e.key.append(unpacked_storage_key);
                     storage_collector_.collect(std::move(e));
                 };
 
-                for (storage_trie.seek_to_account(acc_with_inc);; storage_trie.next()) {
+                StorageTrieCursor storage_trie{txn_};
+                for (storage_trie.seek_to_account(key_with_inc);; storage_trie.next()) {
                     if (storage_trie.can_skip_state()) {
                         goto use_storage_trie;
                     }
 
-                    for (auto s{storage_state.lower_bound_multivalue(
-                             db::to_slice(acc_with_inc), db::to_slice(storage_trie.first_uncovered_prefix()), false)};
-                         s.done == true; s = storage_state.to_current_next_multi(false)) {
-                        const ByteView packed_loc{db::from_slice(s.value).substr(0, kHashLength)};
-                        const ByteView value{db::from_slice(s.value).substr(kHashLength)};
-                        const Bytes unpacked_loc{unpack_nibbles(packed_loc)};
+                    for (auto storage{storage_state.lower_bound_multivalue(
+                             db::to_slice(key_with_inc), db::to_slice(storage_trie.first_uncovered_prefix()),
+                             /*throw_notfound=*/false)};
+                         storage.done; storage = storage_state.to_current_next_multi(/*throw_notfound=*/false)) {
+                        const Bytes unpacked_loc{unpack_nibbles(db::from_slice(storage.value).substr(0, kHashLength))};
+                        const ByteView value{db::from_slice(storage.value).substr(kHashLength)};
                         if (storage_trie.key().has_value() && storage_trie.key().value() < unpacked_loc) {
                             break;
                         }
 
                         rlp_.clear();
                         rlp::encode(rlp_, value);
-                        storage_hb.add(packed_loc, rlp_);
+                        storage_hb.add_leaf(unpacked_loc, rlp_);
                     }
 
                 use_storage_trie:
-                    if (!storage_trie.key().has_value()) {
+                    if (storage_trie.key() == std::nullopt) {
                         break;
                     }
 
@@ -170,15 +219,15 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                 storage_root = storage_hb.root_hash();
             }
 
-            hb_.add(db::from_slice(a.key), account.rlp(storage_root));
+            hb_.add_leaf(unpacked_key, account.rlp(storage_root));
         }
 
     use_account_trie:
-        if (!acc_trie.key().has_value()) {
+        if (acc_trie.key() == std::nullopt) {
             break;
         }
 
-        // TODO[Issue 179] use account trie
+        hb_.add_branch_node(*acc_trie.key(), acc_trie.hash());
     }
 
     return hb_.root_hash();

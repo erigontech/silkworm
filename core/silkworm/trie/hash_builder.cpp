@@ -41,7 +41,7 @@ Bytes unpack_nibbles(ByteView packed) {
 
 static Bytes encode_path(ByteView path, bool terminating) {
     Bytes res(path.length() / 2 + 1, '\0');
-    bool odd{path.length() % 2 != 0};
+    const bool odd{path.length() % 2 != 0};
 
     if (!terminating && !odd) {
         res[0] = 0x00;
@@ -103,14 +103,17 @@ static Bytes node_ref(ByteView rlp) {
     return rlp_wrapped_hash;
 }
 
-void HashBuilder::add(ByteView packed, ByteView value) {
-    Bytes key{unpack_nibbles(packed)};
+void HashBuilder::add_leaf(ByteView key, ByteView value) {
     assert(key > key_);
     if (!key_.empty()) {
         gen_struct_step(key_, key, value_);
     }
     key_ = key;
     value_ = value;
+}
+
+void HashBuilder::add_branch_node(ByteView, const evmc::bytes32&) {
+    // TODO[Issue 179] implement
 }
 
 void HashBuilder::finalize() {

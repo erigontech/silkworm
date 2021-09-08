@@ -30,15 +30,12 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/state/in_memory_state.hpp>
-#include <silkworm/trie/hash_builder.hpp>
-#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
+#include <silkworm/state/in_memory_state.hpp>
+#include <silkworm/trie/hash_builder.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -373,14 +370,15 @@ void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
     stagedsync::TransactionManager txn{env};
 
     auto current_progress{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
-    
+
     if (prune_size > current_progress) return;
     auto prune_from{current_progress - prune_size};
 
     std::cout << "\n Pruned start, block to be kept: " << prune_size << "\n" << std::endl;
     auto pruned_node_stages{stagedsync::get_pruned_node_stages()};
-    for(auto stage: pruned_node_stages) {
-        stagedsync::check_stagedsync_error(stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
+    for (auto stage : pruned_node_stages) {
+        stagedsync::check_stagedsync_error(
+            stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
     }
 }
 
@@ -885,7 +883,7 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
 
         trie::HashBuilder hb;
         for (const auto& [hash, rlp] : account_rlp) {
-            hb.add(full_view(hash), rlp);
+            hb.add_leaf(trie::unpack_nibbles(full_view(hash)), rlp);
         }
         state_root_hash = hb.root_hash();
     }
@@ -1180,8 +1178,8 @@ int main(int argc, char* argv[]) {
     // List migration keys
     auto cmd_do_prunes = app_main.add_subcommand("do-prunes", "Prune the node");
     auto cmd_do_prunes_size = cmd_do_prunes->add_option("--block-to-keep", "How many blocks of history to keep")
-                                ->default_val("96000")
-                                ->check(CLI::Range(1u, UINT32_MAX));
+                                  ->default_val("96000")
+                                  ->check(CLI::Range(1u, UINT32_MAX));
 
     /*
      * Parse arguments and validate

@@ -20,6 +20,9 @@
 
 namespace silkworm {
 
+// Just for literals
+using namespace intx;
+
 TEST_CASE("BlockBody RLP") {
     // https://etherscan.io/block/3
     const char* rlp_hex{
@@ -70,10 +73,8 @@ TEST_CASE("BlockBody RLP 2") {
     body.transactions[0].value = 1'027'501'080 * kGiga;
     body.transactions[0].data = {};
     CHECK(body.transactions[0].set_v(27));
-    body.transactions[0].r =
-        intx::from_string<intx::uint256>("0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353");
-    body.transactions[0].s =
-        intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
+    body.transactions[0].r = 0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353_u256;
+    body.transactions[0].s = 0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804_u256;
 
     body.transactions[1].type = Transaction::Type::kEip1559;
     body.transactions[1].nonce = 1;
@@ -84,10 +85,8 @@ TEST_CASE("BlockBody RLP 2") {
     body.transactions[1].value = 0;
     body.transactions[1].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
     CHECK(body.transactions[1].set_v(37));
-    body.transactions[1].r =
-        intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
-    body.transactions[1].s =
-        intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
+    body.transactions[1].r = 0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb_u256;
+    body.transactions[1].s = 0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb_u256;
 
     body.ommers.resize(1);
     body.ommers[0].parent_hash = 0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55_bytes32;
@@ -186,6 +185,30 @@ TEST_CASE("EIP-1559 Header RLP") {
 
     CHECK(view.empty());
     CHECK(decoded == h);
+}
+
+TEST_CASE("Hash header boundary computation") {
+    BlockHeader h;
+    h.difficulty = 0x13009de5666753258eb9306157680dc5da0d_u256;
+
+    auto expected_boundary_view{*from_hex("0x00000000000000000000000000000000000d78d369778f29e54c2b9e37d107e1")};
+    CHECK(full_view(h.boundary().bytes).compare(expected_boundary_view) == 0);
+}
+
+TEST_CASE("Hash header boundary computation when we have difficulty with power of 2") {
+    BlockHeader h;
+    h.difficulty = intx::from_string<intx::uint256>("0x10000000000");
+
+    auto expected_boundary_view{*from_hex("0x0000000001000000000000000000000000000000000000000000000000000000")};
+    CHECK(full_view(h.boundary().bytes).compare(expected_boundary_view) == 0);
+}
+
+TEST_CASE("Hash header boundary computation when the difficulty is equal to 0") {
+    BlockHeader h;
+    h.difficulty = intx::from_string<intx::uint256>("0x0");
+
+    auto expected_boundary_view{*from_hex("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")};
+    CHECK(full_view(h.boundary().bytes).compare(expected_boundary_view) == 0);
 }
 
 }  // namespace silkworm

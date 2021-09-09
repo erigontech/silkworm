@@ -65,7 +65,8 @@ void InboundGetBlockHeaders::execute() {
     msg_reply->set_id(sentry::MessageId::BLOCK_HEADERS_66);
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " with send_message_by_id\n";
+    SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " using send_message_by_id with "
+                                        << reply.request.size() << " headers\n";
 
     rpc::SendMessageById rpc{peerId_, std::move(msg_reply)};
     sentry_.exec_remotely(rpc);

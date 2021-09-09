@@ -193,7 +193,7 @@ void OutboundGetBlockHeaders::execute() {
 
     // anchor extension
     do {
-        auto [packet, penalizations] = working_chain_.request_more_headers(now);
+        auto [packet, penalizations] = working_chain_.request_more_headers(now, timeout);
 
         if (packet == std::nullopt)
             break;
@@ -202,10 +202,10 @@ void OutboundGetBlockHeaders::execute() {
 
         SILKWORM_LOG(LogLevel::Info) << "Headers request sent, received by " << send_outcome.peers_size() << " peer(s)\n";
 
-        if (send_outcome.peers_size() == 0)
+        if (send_outcome.peers_size() == 0) {
+            working_chain_.request_nack(*packet);
             break;
-
-        working_chain_.request_ack(*packet, now, timeout);
+        }
 
         for (auto& penalization : penalizations) {
             send_penalization(penalization, 1s);
@@ -244,7 +244,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     rlp::encode(rlp_encoding, packet_);
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length()); // copy
 
-    SILKWORM_LOG(LogLevel::Info) << "Requesting " << packet_ << " with send_message_by_min_block\n";
+    SILKWORM_LOG(LogLevel::Info) << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_ << " \n";
     rpc::SendMessageByMinBlock rpc{min_block, std::move(msg_reply)};
 
     rpc.timeout(timeout);
@@ -252,7 +252,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     sentry_.exec_remotely(rpc);
 
     sentry::SentPeers peers = rpc.reply();
-    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << packet_ << ": " << std::to_string(peers.peers_size()) + " peer(s)\n";
+    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of OutboundGetBlockHeaders " << packet_ << ": " << std::to_string(peers.peers_size()) + " peer(s)\n";
 
     return peers;
 }

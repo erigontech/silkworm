@@ -332,11 +332,11 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
  * was "fake", i.e. it corresponds to a header without existing ancestors.
  */
 std::tuple<std::optional<GetBlockHeadersPacket66>,
-           std::vector<PeerPenalization>> WorkingChain::request_more_headers(time_point_t time_point) {
+           std::vector<PeerPenalization>> WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeout) {
     using std::nullopt;
 
     if (anchorQueue_.empty()) {
-        SILKWORM_LOG(LogLevel::Debug) << "WorkingChain::request_more_headers(): empty anchor queue\n";
+        SILKWORM_LOG(LogLevel::Debug) << "WorkingChain, no more headers to request: empty anchor queue\n";
         return {};
     }
 
@@ -354,15 +354,17 @@ std::tuple<std::optional<GetBlockHeadersPacket66>,
         }
 
         if (anchor->timeouts < 10) {
+            anchor->update_timestamp(time_point + timeout);
+            anchorQueue_.fix();
+
             GetBlockHeadersPacket66 packet{RANDOM_NUMBER.generate_one(),
                                            {anchor->blockHeight, max_len, 0, true}}; // todo: why we use blockHeight in place of parentHash?
             return {packet, penalties}; // try (again) to extend this anchor
         }
         else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
-            SILKWORM_LOG(LogLevel::Warn) << "WorkingChain::request_more_headers(): "
-                                         << "invalidating anchor for suspected unavailability, height="
-                                         << anchor->blockHeight << "\n";
+            SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: invalidating anchor for suspected unavailability, " <<
+                                                << "height=" << anchor->blockHeight << "\n";
             invalidate(*anchor);
             anchors_.erase(anchor->parentHash);
             anchorQueue_.pop();
@@ -405,7 +407,7 @@ void WorkingChain::save_external_announce(Hash) {
     // Erigon implementation:
     // hd.seenAnnounces.Add(hash)
     // todo: implement!
-    SILKWORM_LOG(LogLevel::Warn) << "WorkingChain::save_external_announce() not implemented yet\n";
+    SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: save_external_announce() not implemented yet\n";
 }
 
 /*
@@ -422,18 +424,32 @@ func (hd *HeaderDownload) SentRequest(req *HeaderRequest, currentTime, timeout u
 }
 */
 
-void WorkingChain::request_ack(const GetBlockHeadersPacket66& packet, time_point_t tp, seconds_t timeout) {
-    // use packet
-    if (!std::holds_alternative<Hash>(packet.request.origin))
-        throw std::logic_error("WorkingChain::request_ack expects hash not block number");    // todo: check!
+void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
+    std::shared_ptr<Anchor> anchor;
 
-    Hash hash = std::get<Hash>(packet.request.origin);
-    auto anchor_it = anchors_.find(hash);
-    if (anchor_it != anchors_.end()) {
-        anchor_it->second->timeouts++;
-        anchor_it->second->timestamp = tp + timeout;
-        anchorQueue_.resort();
+    SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: restoring some timestamp due to request nack\n";
+
+    if (std::holds_alternative<Hash>(packet.request.origin)) {
+        Hash hash = std::get<Hash>(packet.request.origin);
+        auto anchor_it = anchors_.find(hash);
+        if (anchor_it != anchors_.end())
+            anchor = anchor_it->second;
     }
+    else {
+        BlockNum bn = std::get<BlockNum>(packet.request.origin);
+        for(const auto& p: anchors_) {
+            if (p.second->blockHeight == bn) {  // this search it is burdensome but should rarely occur
+                anchor = p.second;
+                break;
+            }
+        }
+    }
+
+    if (anchor == nullptr)
+        return; // not found
+
+    anchor->restore_timestamp();
+    anchorQueue_.fix();
 }
 
 bool WorkingChain::has_link(Hash hash) {

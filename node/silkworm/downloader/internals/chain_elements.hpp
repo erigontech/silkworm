@@ -58,6 +58,7 @@ struct Anchor {
     Hash parentHash;                            // Hash of the header this anchor can be connected to (to disappear)
     BlockNum blockHeight;                       // block height of the anchor
     time_point_t timestamp;                     // Zero when anchor has just been created, otherwise timestamps when timeout on this anchor request expires
+    time_point_t prev_timestamp;                // Used to restore timestamp when a request fails for network reasons
     int timeouts = 0;                           // Number of timeout that this anchor has experiences - after certain threshold, it gets invalidated
     std::vector<std::shared_ptr<Link>> links;   // Links attached immediately to this anchor
     PeerId peerId;
@@ -72,6 +73,17 @@ struct Anchor {
     void remove_child(std::shared_ptr<Link> child) {
         auto to_remove = std::remove_if(links.begin(), links.end(), [child](auto& link) {return (link->hash == child->hash);});
         links.erase(to_remove, links.end());
+    }
+
+    void update_timestamp(time_point_t time_point) {
+        prev_timestamp = timestamp;
+        timestamp = time_point;
+        timeouts++;
+    }
+
+    void restore_timestamp() {
+        timeouts--;
+        timestamp = prev_timestamp;
     }
 };
 
@@ -97,7 +109,7 @@ struct Anchor_Older_Than: public std::binary_function<std::shared_ptr<Anchor>, s
     }
 };
 
-// Priority queue types - todo: check boost::multi-index-container to tie queue & map together
+// Priority queue types
 
 using Oldest_First_Link_Queue  = std::priority_queue<std::shared_ptr<Link>,
                                                      std::vector<std::shared_ptr<Link>>,
@@ -114,20 +126,23 @@ using Youngest_First_Link_Queue = std::priority_queue<std::shared_ptr<Link>,
                                                       std::vector<std::shared_ptr<Link>>,
                                                       Link_Younger_Than>;
 */
-using Youngest_First_Link_Queue = Set_Based_Priority_Queue<std::shared_ptr<Link>,Link_Younger_Than>;
-// todo: verify if Set_Based_Priority_Queue has comparable performance with Erigon intrusive priority queue
+using Youngest_First_Link_Queue = set_based_priority_queue<std::shared_ptr<Link>,
+                                                           Link_Younger_Than>;
+// todo: verify if set_based_priority_queue has comparable performance with Erigon intrusive priority queue
 
-using Oldest_First_Anchor_Queue = custom_priority_queue<std::shared_ptr<Anchor>,
-                                                        std::vector<std::shared_ptr<Anchor>>,
-                                                        Anchor_Older_Than>;
-// todo: anchorQueue and anchorMap should be encapsulated because if one change an anchor anchorQueue must be re-sorted
-// todo: find a better alternative of custom_priority_queue (we use the custom one because Oldest_First_Link_Queue need a resort when an anchor change externally)
+using Oldest_First_Anchor_Queue = heap_based_priority_queue<std::shared_ptr<Anchor>,
+                                                            std::vector<std::shared_ptr<Anchor>>,
+                                                            Anchor_Older_Than>;
+// todo: find a better alternative of heap_based_priority_queue (we use the custom one because Oldest_First_Link_Queue need a fix when an anchor change externally)
 
 // Maps
 using Link_Map = std::map<Hash,std::shared_ptr<Link>>;     // hash = link hash
 using Anchor_Map = std::map<Hash,std::shared_ptr<Anchor>>; // hash = anchor *parent* hash
+
 // todo: Anchor_Map key = anchor *parent* hash, incapsulate this kwnowledge in a class
 // so we can write anchor_map.add(anchor) in place of anchor_map[anchor->parent_hash] = anchor
+// todo: anchorQueue and anchorMap should be encapsulated because if one change an anchor anchorQueue must be fixed
+// todo: assess boost::multi-index-container to replace queue + map pair
 
 // Lists
 using Link_List = std::vector<std::shared_ptr<Link>>;
@@ -179,7 +194,7 @@ struct Segment:
 
     using Slice = gsl::span<const HeaderList::Header_Ref>; // a Segment slice
 
-    [[nodiscard]] Slice slice(size_t start, size_t end) const { return Slice(*this).subspan(start, end); } // with c++20 it can be implemented as: return Slice(begin() + start, begin() + end);
+    [[nodiscard]] Slice slice(size_t start, size_t end) const { return Slice(*this).subspan(start, end-start); } // with c++20 it can be implemented as: return Slice(begin() + start, begin() + end);
 
 protected:
     //std::vector<something> headersRaw; // todo: do we need this?

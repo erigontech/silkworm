@@ -49,9 +49,9 @@ class WorkingChain {  // tentative name - todo: improve!
     // core functionalities: anchor extension
     // to complete a range of block chain we need to do a request of headers to extend up or down an anchor or a segment
     std::tuple<std::optional<GetBlockHeadersPacket66>,
-               std::vector<PeerPenalization>> request_more_headers(time_point_t tp);
-    // also we need to know if the request issued was delivered
-    void request_ack(const GetBlockHeadersPacket66& packet, time_point_t tp, seconds_t timeout);
+               std::vector<PeerPenalization>> request_more_headers(time_point_t tp, seconds_t timeout);
+    // also we need to know if the request issued was not delivered
+    void request_nack(const GetBlockHeadersPacket66& packet);
 
     // core functionalities: process receiving headers
     // when a remote peer satisfy our request we receive one or more header that will be processed to fill hole in the

@@ -70,8 +70,8 @@ class HeaderDownloader : public Stage {
 
     void send_status();     // send chain identity to sentry
 
-    [[long_running]] void receive_messages(MessageQueue& messages,       // subscribe with sentry to receive messages
-                                           std::atomic<bool>& stopping); // and do a long-running loop to wait for messages
+    /*[[long_running]]*/ void receive_messages(MessageQueue& messages,       // subscribe with sentry to receive messages
+                                               std::atomic<bool>& stopping); // and do a long-running loop to wait for messages
 
     void process_one_message(MessageQueue& messages); // process one message pop-ing it from the queue
 };

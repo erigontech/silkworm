@@ -25,7 +25,7 @@ limitations under the License.
  * A multiset based priority_queue for ease removal of elements
  */
 template <typename T, typename CMP>
-class Set_Based_Priority_Queue {
+class set_based_priority_queue {
     std::multiset<T, CMP> elements_;
   public:
     const T& top() const            {return *elements_.begin();}
@@ -36,12 +36,12 @@ class Set_Based_Priority_Queue {
 };
 
 /*
- * A custom priority queue thats add a remove method to the standard one
+ * A custom priority queue that add erase and fix methods to the standard ones
  * For the implementation see here https://stackoverflow.com/questions/19467485/how-to-remove-element-not-at-top-from-priority-queue
  */
 template<typename T, typename SEQ = std::vector<T>,
     typename CMP = std::less<typename SEQ::value_type> >
-class custom_priority_queue : public std::priority_queue<T, SEQ, CMP>
+class heap_based_priority_queue : public std::priority_queue<T, SEQ, CMP>
 {
   public:
     // erase an element and restore the priority_queue invariant
@@ -58,11 +58,12 @@ class custom_priority_queue : public std::priority_queue<T, SEQ, CMP>
     }
 
     // restore the priority_queue invariant (e.g. after an item external modify)
-    void resort() {
+    void fix() {
         std::make_heap(this->c.begin(), this->c.end(), this->comp);
     }
 };
 
-// todo: add a test for erase & resort
+// todo: add a test for erase & fix of heap_based_priority_queue
+// todo: assess set_based_priority_queue & heap_based_priority_queue performances
 
 #endif  // SILKWORM_PRIORITY_QUEUE_HPP

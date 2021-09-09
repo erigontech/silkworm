@@ -49,7 +49,7 @@ class BlockProvider : public ActiveComponent {  // an active component that must
     BlockProvider(BlockProvider&&) = delete;       // nor movable
     ~BlockProvider();
 
-    [[long_running]] void execution_loop() override; // main loop, receive messages from sentry and process them
+    /*[[long_running]]*/ void execution_loop() override; // main loop, receive messages from sentry and process them
 
   private:
     void send_status();

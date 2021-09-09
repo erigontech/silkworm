@@ -103,6 +103,9 @@ auto HeaderDownloader::forward_to(BlockNum new_height) -> StageResult {
         // read last chain
         working_chain_.recover_from_db(db_); // todo: this use the same db connection, it is ok?
 
+        // set a goal
+        working_chain_.top_seen_block_height(new_height);
+
         // send status to sentry
         send_status(); // todo: avoid if already sent by BlockProvider?
 
@@ -112,9 +115,7 @@ auto HeaderDownloader::forward_to(BlockNum new_height) -> StageResult {
         });
 
         // message processing
-
         time_point_t last_request;
-
         while (!new_height_reached && !sentry_.closing()) {
 
             // make an outbound headers request at every minute

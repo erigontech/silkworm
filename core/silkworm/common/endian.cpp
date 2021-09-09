@@ -21,13 +21,13 @@
 namespace silkworm::endian {
 
 Bytes to_big_compact(const uint64_t value) {
-    uint8_t full_be[sizeof(uint64_t)];
+    SILKWORM_THREAD_LOCAL uint8_t full_be[sizeof(uint64_t)];
     store_big_u64(&full_be[0], value);
     return Bytes{zeroless_view(full_be)};
 }
 
 Bytes to_big_compact(const intx::uint256& value) {
-    uint8_t full_be[sizeof(intx::uint256)];
+    SILKWORM_THREAD_LOCAL uint8_t full_be[sizeof(intx::uint256)];
     intx::be::store(full_be, value);
     return Bytes{zeroless_view(full_be)};
 }

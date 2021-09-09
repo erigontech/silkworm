@@ -31,6 +31,12 @@
 
 namespace silkworm {
 
+#if defined(__wasm__)
+#define SILKWORM_THREAD_LOCAL
+#else
+#define SILKWORM_THREAD_LOCAL thread_local
+#endif
+
 using namespace evmc::literals;
 
 using Bytes = std::basic_string<uint8_t>;

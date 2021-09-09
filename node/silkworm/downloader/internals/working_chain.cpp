@@ -340,6 +340,8 @@ std::tuple<std::optional<GetBlockHeadersPacket66>,
         return {};
     }
 
+    SILKWORM_LOG(LogLevel::Debug) << "WorkingChain, " << anchors_.size() << " anchors, " << links_.size() << " links\n";
+
     std::vector<PeerPenalization> penalties;
     while (!anchorQueue_.empty()) {
         auto anchor = anchorQueue_.top();
@@ -363,7 +365,7 @@ std::tuple<std::optional<GetBlockHeadersPacket66>,
         }
         else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
-            SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: invalidating anchor for suspected unavailability, " <<
+            SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: invalidating anchor for suspected unavailability, "
                                                 << "height=" << anchor->blockHeight << "\n";
             invalidate(*anchor);
             anchors_.erase(anchor->parentHash);

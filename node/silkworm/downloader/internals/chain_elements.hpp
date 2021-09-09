@@ -100,20 +100,25 @@ struct Link_Younger_Than: public std::binary_function<std::shared_ptr<Link>, std
     { return x->blockHeight > y->blockHeight; }
 };
 
-struct Anchor_Older_Than: public std::binary_function<std::shared_ptr<Anchor>, std::shared_ptr<Anchor>, bool>
+struct Anchor_Younger_Than: public std::binary_function<std::shared_ptr<Anchor>, std::shared_ptr<Anchor>, bool>
 {
     bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const
     {
-        return x->timestamp != y->timestamp ? x->timestamp < y->timestamp :
-                                              x->blockHeight < y->blockHeight;  // todo: check! Erigon do the same but in the comment the idea is the opposite
+        return x->timestamp != y->timestamp ? x->timestamp > y->timestamp :
+                                              x->blockHeight > y->blockHeight;  // when timestamps are the same, we prioritise low block height anchors
     }
 };
 
 // Priority queue types
 
+// For persisted links, those with the lower block heights get evicted first. This means that more recently persisted
+// links are preferred.
+// For non-persisted links, those with the highest block heights get evicted first. This is to prevent "holes" in the
+// block heights that may cause inability to insert headers in the ascending order of their block heights.
+
 using Oldest_First_Link_Queue  = std::priority_queue<std::shared_ptr<Link>,
                                                      std::vector<std::shared_ptr<Link>>,
-                                                     Link_Older_Than>;
+                                                     Link_Younger_Than>; // c++ heap is a max heap, so we need the inverse
 
 // For the Youngest_First_Link_Queue, Erigon use an intrusive priority_queue with elements storing index in the queue
 // for low removal time. We can:
@@ -124,15 +129,17 @@ using Oldest_First_Link_Queue  = std::priority_queue<std::shared_ptr<Link>,
 /*
 using Youngest_First_Link_Queue = std::priority_queue<std::shared_ptr<Link>,
                                                       std::vector<std::shared_ptr<Link>>,
-                                                      Link_Younger_Than>;
+                                                      Link_Older_Than>;
 */
 using Youngest_First_Link_Queue = set_based_priority_queue<std::shared_ptr<Link>,
-                                                           Link_Younger_Than>;
+                                                           Link_Younger_Than>;  // c++ set put min at the top
 // todo: verify if set_based_priority_queue has comparable performance with Erigon intrusive priority queue
+
+// For anchors, those that have been inserted in the queue before are requested first
 
 using Oldest_First_Anchor_Queue = heap_based_priority_queue<std::shared_ptr<Anchor>,
                                                             std::vector<std::shared_ptr<Anchor>>,
-                                                            Anchor_Older_Than>;
+                                                            Anchor_Younger_Than>;   // c++ heap is a max heap (where go heap is a min heap)
 // todo: find a better alternative of heap_based_priority_queue (we use the custom one because Oldest_First_Link_Queue need a fix when an anchor change externally)
 
 // Maps

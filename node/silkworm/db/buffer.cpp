@@ -292,6 +292,12 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     return db::read_header(txn_, block_number, block_hash.bytes);
 }
 
+std::optional<CliqueSnapshot> Buffer::read_snapshot(uint64_t block_number,const evmc::bytes32& block_hash) const noexcept {
+    static_cast<void>(block_number);
+    static_cast<void>(block_hash);
+    return CliqueSnapshot{};
+}
+
 std::optional<BlockBody> Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
     Bytes key{block_key(block_number, block_hash.bytes)};
     if (auto it{bodies_.find(key)}; it != bodies_.end()) {
@@ -330,6 +336,12 @@ evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarn
     }
 
     return db::read_storage(txn_, address, incarnation, location, historical_block_);
+}
+
+void Buffer::write_snapshot(uint64_t block_number, const evmc::bytes32& block_hash, CliqueSnapshot& snapshot) {
+    static_cast<void>(block_number);
+    static_cast<void>(block_hash);
+    static_cast<void>(snapshot);
 }
 
 uint64_t Buffer::previous_incarnation(const evmc::address& address) const noexcept {

@@ -343,10 +343,10 @@ void Buffer::write_snapshot(uint64_t block_number, const evmc::bytes32& block_ha
     auto json_snapshot{snapshot.to_json()};
     auto snapshot_dump{json_snapshot.dump()};
     // Snapshot key is block number + hash
-    auto key{db::block_key(block_number, block_hash.bytes)}
-    auto clique_table{db::open_cursor(txn, table::kClique)};
-    // Insert the final result
-    clique_table.upsert(db::to_slice(), mdbx::slice{json_snapshot.c_str()});
+    auto key{db::block_key(block_number, block_hash.bytes)};
+    auto clique_table{db::open_cursor(txn_, table::kClique)};
+    // Insert the final results
+    clique_table.upsert(db::to_slice(key), mdbx::slice{snapshot_dump.c_str()});
 }
 
 uint64_t Buffer::previous_incarnation(const evmc::address& address) const noexcept {

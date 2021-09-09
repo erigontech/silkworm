@@ -37,7 +37,7 @@ consensus::ValidationResult ExecutionProcessor::validate_transaction(const Trans
     }
 
     if (state_.get_code_hash(*txn.from) != kEmptyHash) {
-        return ValidationResult::kSenderNoEOA;  // EIP-3607
+        return consensus::ValidationResult::kSenderNoEOA;  // EIP-3607
     }
 
     const uint64_t nonce{state_.get_nonce(*txn.from)};

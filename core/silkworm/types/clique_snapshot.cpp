@@ -15,10 +15,10 @@
 */
 
 #include "clique_snapshot.hpp"
-#include <silkworm/common/util.hpp>
 
 namespace silkworm {
-
+//! \brief Convert the snapshot in JSON.
+//! \return The resulting JSON.
 nlohmann::json CliqueSnapshot::to_json() const noexcept {
     nlohmann::json ret; // Returning json
     // Block Number and Hash
@@ -54,5 +54,11 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
 
     return ret;
 }
+//! \brief Decode snapshot from json format.
+//! \return Decoded snapshot.
+std::optional<CliqueSnapshot> CliqueSnapshot::from_json(const nlohmann::json& ) noexcept {
+    return std::nullopt;
+}
+
 
 }  // namespace silkworm

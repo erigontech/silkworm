@@ -79,7 +79,7 @@ TEST_CASE("EIP-3607: Reject transactions from senders with deployed code") {
     txn.from = sender;
 
     InMemoryState state;
-    ExecutionProcessor processor{block, state, kMainnetConfig};
+    ExecutionProcessor processor{block, engine, state, kMainnetConfig};
 
     processor.evm().state().add_to_balance(sender, 10 * kEther);
     processor.evm().state().set_code(sender, *from_hex("B0B0FACE"));

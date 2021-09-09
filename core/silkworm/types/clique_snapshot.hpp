@@ -33,9 +33,9 @@
 #define SILKWORM_TYPES_CLIQUE_SNAPSHOT
 
 #include <absl/container/btree_map.h>
-#include <evmc/evmc.hpp>
 #include <silkworm/common/base.hpp>
 #include <nlohmann/json.hpp>
+#include <silkworm/common/util.hpp>
 
 namespace silkworm {
 
@@ -78,8 +78,7 @@ class CliqueSnapshot {
         //! \return Decoded snapshot.
         static std::optional<CliqueSnapshot> from_json(const nlohmann::json& json) noexcept;
     private:
-        CliqueConfig  config_;                             // Consensus engine parameters to fine tune behavior
-        uint64_t      block_number_;                       // Block number where the snapshot was created
+        uint64_t block_number_;                       // Block number where the snapshot was created
         evmc::bytes32 hash_;                               // Block hash where the snapshot was created     
         std::vector<evmc::address> signers_;               // Set of authorized signers at this moment
         absl::btree_map<uint64_t, evmc::address> recents_; // Set of recent signers for spam protections

@@ -17,7 +17,7 @@
 #ifndef SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_
 #define SILKWORM_CHAIN_PROTOCOL_PARAM_HPP_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <silkworm/common/base.hpp>
 

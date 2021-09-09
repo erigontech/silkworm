@@ -33,8 +33,7 @@ In addition, SILKWORM_BSWAP16, SILKWORM_BSWAP32, and SILKWORM_BSWAP64 macros are
 as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers respectively.
 */
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <cstring>
 #include <optional>
 

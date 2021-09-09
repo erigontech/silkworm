@@ -17,8 +17,7 @@
 #ifndef SILKWORM_EXECUTION_PROCESSOR_HPP_
 #define SILKWORM_EXECUTION_PROCESSOR_HPP_
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <vector>
 
 #include <silkworm/chain/validity.hpp>

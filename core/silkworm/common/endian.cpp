@@ -21,16 +21,15 @@
 namespace silkworm::endian {
 
 Bytes to_big_compact(const uint64_t value) {
-    Bytes be(sizeof(uint64_t), '\0');
-    store_big_u64(&be[0], value);
-    return Bytes{zeroless_view(be)};
+    uint8_t full_be[sizeof(uint64_t)];
+    store_big_u64(&full_be[0], value);
+    return Bytes{zeroless_view(full_be)};
 }
 
 Bytes to_big_compact(const intx::uint256& value) {
-    uint8_t buf[sizeof(intx::uint256)];
-    intx::be::store(buf, value);
-    const unsigned zero_bytes{intx::clz(value) / 8};
-    return {buf + zero_bytes, sizeof(intx::uint256) - zero_bytes};
+    uint8_t full_be[sizeof(intx::uint256)];
+    intx::be::store(full_be, value);
+    return Bytes{zeroless_view(full_be)};
 }
 
 template <typename T>

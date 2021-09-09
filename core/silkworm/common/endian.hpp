@@ -66,6 +66,8 @@ as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers resp
 #error "endianness detection failure"
 #endif
 
+#include <intx/intx.hpp>
+
 #include <silkworm/common/base.hpp>
 
 namespace silkworm::endian {
@@ -165,9 +167,17 @@ Bytes to_big_compact(const uint64_t value);
 
 //! \brief Parses uint64_t from a compacted big endian byte form
 //! \param [in] data : byteview of memory allocation for compacted value. Length must be <= sizeof(uint64_t)
+//! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (not compact)
 //! \return A uint64_t with native endianness; std::nullopt if data is invalid
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-std::optional<uint64_t> from_big_compact(const ByteView& data);
+std::optional<uint64_t> from_big_compact_u64(const ByteView& data, bool allow_leading_zeros = false);
+
+//! \brief Parses uint256 from a compacted big endian byte form
+//! \param [in] data : byteview of memory allocation for compacted value. Length must be <= sizeof(uint256)
+//! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (not compact)
+//! \return A uint256 with native endianness; std::nullopt if data is invalid
+//! \remarks A "compact" big endian form strips leftmost bytes valued to zero
+std::optional<intx::uint256> from_big_compact_u256(const ByteView& data, bool allow_leading_zeros = false);
 
 }  // namespace silkworm::endian
 

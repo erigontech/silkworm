@@ -25,27 +25,42 @@ Bytes to_big_compact(const uint64_t value) {
         return {};  // All bytes are zero
     }
     thread_local Bytes be(8, '\0');
-    endian::store_big_u64(&be[0], value);
+    store_big_u64(&be[0], value);
     return Bytes{zeroless_view(be)};
 }
 
-std::optional<uint64_t> from_big_compact(const ByteView& data) {
-    // Important ! We can't have a string of bytes wider than an uint64_t
-    if (data.length() > sizeof(uint64_t)) {
+template <typename T>
+static std::optional<T> from_big_compact(const ByteView& data, bool allow_leading_zeros) {
+    if (data.length() > sizeof(T)) {
         return std::nullopt;
     }
 
-    uint64_t ret{0};
+    T x{0};
+
     if (data.empty()) {
-        return ret;
+        return x;
     }
 
-    uint8_t num_shifts{0};
-    for (auto i = data.rbegin(); i != data.rend(); ++i) {
-        ret |= (static_cast<uint64_t>(*i) << num_shifts);
-        num_shifts += 8;
+    if (data[0] == 0 && !allow_leading_zeros) {
+        return std::nullopt;
     }
-    return ret;
+
+    auto* ptr{reinterpret_cast<uint8_t*>(&x)};
+    std::memcpy(ptr + (sizeof(T) - data.length()), &data[0], data.length());
+
+#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
+    x = intx::bswap(x);
+#endif
+
+    return x;
+}
+
+std::optional<uint64_t> from_big_compact_u64(const ByteView& data, bool allow_leading_zeros) {
+    return from_big_compact<uint64_t>(data, allow_leading_zeros);
+}
+
+std::optional<intx::uint256> from_big_compact_u256(const ByteView& data, bool allow_leading_zeros) {
+    return from_big_compact<intx::uint256>(data, allow_leading_zeros);
 }
 
 }  // namespace silkworm::endian

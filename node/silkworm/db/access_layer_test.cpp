@@ -487,7 +487,7 @@ namespace db {
         const char* val3{""};
         const char* val4{"9a31634956ec64b6865a"};
 
-        auto table{db::open_cursor(txn, table::kPlainAccountChangeSet)};
+        auto table{db::open_cursor(txn, table::kAccountChangeSet)};
 
         Bytes data1{full_view(addr1)};
         Bytes key1{block_key(block_num1)};
@@ -561,7 +561,7 @@ namespace db {
         uint64_t incarnation3{3};
         uint64_t incarnation4{1};
 
-        auto table{db::open_cursor(txn, table::kPlainStorageChangeSet)};
+        auto table{db::open_cursor(txn, table::kStorageChangeSet)};
 
         Bytes data1{full_view(location1)};
         data1.append(val1);

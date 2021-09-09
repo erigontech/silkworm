@@ -199,7 +199,7 @@ TEST_CASE("Account and storage trie") {
         const Account a4b{0, 5 * kEther};
         hashed_accounts.upsert(mdbx::slice{key4b.bytes, kHashLength}, db::to_slice(a4b.encode_for_storage()));
 
-        auto account_change_table{db::open_cursor(txn, db::table::kPlainAccountChangeSet)};
+        auto account_change_table{db::open_cursor(txn, db::table::kAccountChangeSet)};
         account_change_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(address));
 
         increment_intermediate_hashes(txn, data_dir.etl().path().c_str(), /*from=*/0);

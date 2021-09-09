@@ -176,7 +176,7 @@ void Buffer::write_to_db() {
         code_hash_table.upsert(to_slice(entry.first), to_slice(full_view(entry.second)));
     }
 
-    auto account_change_table{db::open_cursor(txn_, table::kPlainAccountChangeSet)};
+    auto account_change_table{db::open_cursor(txn_, table::kAccountChangeSet)};
     Bytes change_key;
     for (const auto& block_entry : account_changes_) {
         uint64_t block_num{block_entry.first};
@@ -188,7 +188,7 @@ void Buffer::write_to_db() {
         }
     }
 
-    auto storage_change_table{db::open_cursor(txn_, table::kPlainStorageChangeSet)};
+    auto storage_change_table{db::open_cursor(txn_, table::kStorageChangeSet)};
     for (const auto& block_entry : storage_changes_) {
         uint64_t block_num{block_entry.first};
 

@@ -21,12 +21,25 @@
 namespace silkworm::endian {
 
 Bytes to_big_compact(const uint64_t value) {
-    if (!value) {
-        return {};  // All bytes are zero
-    }
-    thread_local Bytes be(8, '\0');
-    store_big_u64(&be[0], value);
-    return Bytes{zeroless_view(be)};
+    thread_local uint64_t buf;
+
+#if SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
+    buf = value;
+#else
+    buf = intx::bswap(value);
+#endif
+
+    const uint8_t* p{reinterpret_cast<uint8_t*>(&buf)};
+    unsigned zero_bytes = intx::clz(value) / 8;
+    return {p + zero_bytes, sizeof(uint64_t) - zero_bytes};
+}
+
+Bytes to_big_compact(const intx::uint256& value) {
+    thread_local uint8_t buf[32];
+
+    intx::be::store(buf, value);
+    unsigned zero_bytes = intx::clz(value) / 8;
+    return {buf + zero_bytes, sizeof(intx::uint256) - zero_bytes};
 }
 
 template <typename T>

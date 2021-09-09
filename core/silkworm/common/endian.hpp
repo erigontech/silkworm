@@ -165,6 +165,13 @@ inline void store_big_u64(uint8_t* bytes, const uint64_t value) {
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 Bytes to_big_compact(const uint64_t value);
 
+//! \brief Transforms a uint256 stored in memory with native endianness to it's compacted big endian byte form
+//! \param [in] value : the value to be transformed
+//! \return A string of bytes
+//! \remarks See Erigon TxIndex value
+//! \remarks A "compact" big endian form strips leftmost bytes valued to zero
+Bytes to_big_compact(const intx::uint256& value);
+
 //! \brief Parses uint64_t from a compacted big endian byte form
 //! \param [in] data : byteview of memory allocation for compacted value. Length must be <= sizeof(uint64_t)
 //! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (not compact)

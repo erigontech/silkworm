@@ -17,9 +17,8 @@
 #ifndef SILKWORM_TYPES_BLOCK_HPP_
 #define SILKWORM_TYPES_BLOCK_HPP_
 
-#include <stdint.h>
-
 #include <array>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -56,6 +55,9 @@ struct BlockHeader {
     std::optional<intx::uint256> base_fee_per_gas{std::nullopt};  // EIP-1559
 
     evmc::bytes32 hash(bool for_sealing = false) const;
+
+    //! \brief Calculates header's boundary. This is described by Equation(50) by the yellow paper.
+    //! \return A hash of 256 bits with big endian byte order
     ethash::hash256 boundary() const;
 
   private:

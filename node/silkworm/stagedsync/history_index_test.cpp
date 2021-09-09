@@ -73,7 +73,7 @@ TEST_CASE("Stage History") {
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{*txn};
+    db::Buffer buffer{*txn, 0};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -224,7 +224,7 @@ TEST_CASE("Prune History Index") {
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{*txn};
+    db::Buffer buffer{*txn, 0};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);

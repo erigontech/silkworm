@@ -16,16 +16,10 @@
 
 #include "util.hpp"
 
-#include <cassert>
-#include <cstdlib>
 #include <cstring>
-
-#include <intx/int128.hpp>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
-#include <silkworm/common/util.hpp>
-#include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::db {
 
@@ -47,6 +41,34 @@ Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     endian::store_big_u64(&key[0], block_number);
     std::memcpy(&key[8], hash, kHashLength);
     return key;
+}
+
+Bytes to_big_compact(const uint64_t value) {
+    if (!value) {
+        return {};  // All bytes are zero
+    }
+    auto value_be_bytes{block_key(value)};
+    auto compact_view{zeroless_view(value_be_bytes)};
+    return {compact_view.data(), compact_view.length()};
+}
+
+uint64_t from_big_compact(const ByteView& data) {
+    // Important ! We can't have a string of bytes wider than an uint64_t
+    if (data.length() > sizeof(uint64_t)) {
+        throw std::invalid_argument(std::string(__FUNCTION__) + " : Data too wide");
+    }
+
+    uint64_t ret{0};
+    if (data.empty()) {
+        return ret;
+    }
+
+    uint8_t num_shifts{0};
+    for (auto i = data.rbegin(); i != data.rend(); ++i) {
+        ret |= (static_cast<uint64_t>(*i) << num_shifts);
+        num_shifts += 8;
+    }
+    return ret;
 }
 
 Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation) {

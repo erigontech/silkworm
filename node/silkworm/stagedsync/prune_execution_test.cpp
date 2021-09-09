@@ -78,7 +78,7 @@ TEST_CASE("Prune Execution") {
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{*txn};
+    db::Buffer buffer{*txn, 2};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -128,7 +128,7 @@ TEST_CASE("Prune Execution") {
 
     SECTION("Without prune function") {
         // We keep chain from Block 2 onwards (Aka, we delete block 1 changesets and receipts)
-        buffer.write_to_db(2);
+        buffer.write_to_db();
 
         auto account_changeset_table{db::open_cursor(*txn, db::table::kPlainAccountChangeSet)};
         auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};

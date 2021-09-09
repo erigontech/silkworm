@@ -36,6 +36,10 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
         return ValidationResult::kMissingSender;
     }
 
+    if (state_.get_code_hash(*txn.from) != kEmptyHash) {
+        return ValidationResult::kSenderNoEOA;  // EIP-3607
+    }
+
     const uint64_t nonce{state_.get_nonce(*txn.from)};
     if (nonce != txn.nonce) {
         return ValidationResult::kWrongNonce;

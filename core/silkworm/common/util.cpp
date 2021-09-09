@@ -83,13 +83,15 @@ evmc::bytes32 to_bytes32(ByteView bytes) {
     return out;
 }
 
-ByteView zeroless_view(const evmc::bytes32& hash) {
-    unsigned zero_bytes{0};
-    while (zero_bytes < kHashLength && hash.bytes[zero_bytes] == 0) {
-        ++zero_bytes;
+ByteView zeroless_view(const ByteView& data) {
+    unsigned offset{0};
+    while (offset < data.length() && data[offset] == 0) {
+        ++offset;
     }
-    return {hash.bytes + zero_bytes, kHashLength - zero_bytes};
+    return {data.data() + offset, data.length() - offset};
 }
+
+ByteView zeroless_view(const evmc::bytes32& hash) { return zeroless_view(full_view(hash)); }
 
 std::string to_hex(const evmc::address& address) { return to_hex(full_view(address)); }
 

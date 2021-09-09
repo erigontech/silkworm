@@ -386,7 +386,7 @@ namespace db {
         auto txn{env.start_write()};
         table::create_all(txn);
 
-        Buffer buffer{txn};
+        Buffer buffer{txn, 0};
 
         const auto miner_a{0x00000000000000000000000000000000000000aa_address};
         const auto miner_b{0x00000000000000000000000000000000000000bb_address};

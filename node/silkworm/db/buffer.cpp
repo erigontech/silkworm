@@ -339,9 +339,14 @@ evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarn
 }
 
 void Buffer::write_snapshot(uint64_t block_number, const evmc::bytes32& block_hash, CliqueSnapshot& snapshot) {
-    static_cast<void>(block_number);
-    static_cast<void>(block_hash);
-    static_cast<void>(snapshot);
+    // Encode Clique Snapshot
+    auto json_snapshot{snapshot.to_json()};
+    auto snapshot_dump{json_snapshot.dump()};
+    // Snapshot key is block number + hash
+    auto key{db::block_key(block_number, block_hash.bytes)}
+    auto clique_table{db::open_cursor(txn, table::kClique)};
+    // Insert the final result
+    clique_table.upsert(db::to_slice(), mdbx::slice{json_snapshot.c_str()});
 }
 
 uint64_t Buffer::previous_incarnation(const evmc::address& address) const noexcept {

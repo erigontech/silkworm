@@ -32,22 +32,59 @@
 #ifndef SILKWORM_TYPES_CLIQUE_SNAPSHOT
 #define SILKWORM_TYPES_CLIQUE_SNAPSHOT
 
+#include <absl/container/btree_map.h>
+#include <evmc/evmc.hpp>
+#include <silkworm/common/base.hpp>
+#include <nlohmann/json.hpp>
+
 namespace silkworm {
 
 // CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
 struct CliqueConfig {
-	uint64_t   period;   // Number of seconds between blocks to enforce
-    uint64_t   epoch;    // Epoch length to reset votes and checkpoint
+	uint64_t   period; // Number of seconds between blocks to enforce
+    uint64_t   epoch;  // Epoch length to reset votes and checkpoint
 };
 
 struct SnapshotConfig {
-    uint64_t checkpoint_interval;     // Number of blocks after which to save the vote snapshot to the database
-    uint64_t inmemory_snapshots;      // Number of recent vote snapshots to keep in memory
-	uint64_t inmemory_signatures;     // Number of recent block signatures to keep in memory
+    uint64_t checkpoint_interval; // Number of blocks after which to save the vote snapshot to the database
+    uint64_t inmemory_snapshots;  // Number of recent vote snapshots to keep in memory
+	uint64_t inmemory_signatures; // Number of recent block signatures to keep in memory
+};
+
+// Vote represents a single vote that an authorized signer made to modify the
+// list of authorizations.
+struct Vote {
+	evmc::address  signer;       // Authorized signer that cast this vote
+	uint64_t       block_number; // Block number the vote was cast in (expire old votes)
+	evmc::address  address;      // Account being voted on to change its authorization
+	bool           authorize;    // Whether to authorize or deauthorize the voted account
+};
+
+// Tally is a simple vote tally to keep the current score of votes. Votes that
+// go against the proposal aren't counted since it's equivalent to not voting.
+struct Tally {
+	bool     authorize; // Whether the vote is about authorizing or kicking someone
+	uint64_t votes;     // Number of votes until now wanting to pass the proposal
 };
 
 // Voting Snapshot for Clique
 class CliqueSnapshot {
+    public:
+        CliqueSnapshot() = default;
+        //! \brief Convert the snapshot in JSON.
+        //! \return The resulting JSON.
+        nlohmann::json to_json() const noexcept;
+        //! \brief Decode snapshot from json format.
+        //! \return Decoded snapshot.
+        static std::optional<CliqueSnapshot> from_json(const nlohmann::json& json) noexcept;
+    private:
+        CliqueConfig  config_;                             // Consensus engine parameters to fine tune behavior
+        uint64_t      block_number_;                       // Block number where the snapshot was created
+        evmc::bytes32 hash_;                               // Block hash where the snapshot was created     
+        std::vector<evmc::address> signers_;               // Set of authorized signers at this moment
+        absl::btree_map<uint64_t, evmc::address> recents_; // Set of recent signers for spam protections
+        std::vector<Vote> votes_;                          // List of votes cast in chronological order
+        absl::btree_map<evmc::address, Tally> tallies_;    // Current vote tally to avoid recalculating
 };
 
 constexpr CliqueConfig kDefaultCliqueConfig = {

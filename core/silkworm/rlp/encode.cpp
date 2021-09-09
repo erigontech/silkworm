@@ -26,7 +26,7 @@ void encode_header(Bytes& to, Header header) {
         const uint8_t code{header.list ? kEmptyListCode : kEmptyStringCode};
         to.push_back(static_cast<uint8_t>(code + header.payload_length));
     } else {
-        const ByteView len_be{big_endian(header.payload_length)};
+        const Bytes len_be{endian::to_big_compact(header.payload_length)};
         const uint8_t code = header.list ? 0xF7 : 0xB7;
         to.push_back(static_cast<uint8_t>(code + len_be.length()));
         to.append(len_be);
@@ -67,7 +67,7 @@ void encode(Bytes& to, uint64_t n) {
     } else if (n < kEmptyStringCode) {
         to.push_back(static_cast<uint8_t>(n));
     } else {
-        ByteView be{big_endian(n)};
+        const Bytes be{endian::to_big_compact(n)};
         to.push_back(static_cast<uint8_t>(kEmptyStringCode + be.length()));
         to.append(be);
     }
@@ -87,7 +87,7 @@ void encode(Bytes& to, const intx::uint256& n) {
     } else if (n < kEmptyStringCode) {
         to.push_back(static_cast<uint8_t>(n));
     } else {
-        ByteView be{big_endian(n)};
+        const Bytes be{endian::to_big_compact(n)};
         to.push_back(static_cast<uint8_t>(kEmptyStringCode + be.length()));
         to.append(be);
     }
@@ -99,24 +99,6 @@ size_t length(const intx::uint256& n) {
     } else {
         return 1 + 32 - intx::clz(n) / 8;
     }
-}
-
-ByteView big_endian(uint64_t n) {
-    thread_local uint64_t buf;
-
-    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN, "We assume a little-endian architecture like amd64");
-    buf = intx::bswap(n);
-    const uint8_t* p{reinterpret_cast<uint8_t*>(&buf)};
-    unsigned zero_bytes = intx::clz(n) / 8;
-    return {p + zero_bytes, 8 - zero_bytes};
-}
-
-ByteView big_endian(const intx::uint256& n) {
-    thread_local uint8_t buf[32];
-
-    intx::be::store(buf, n);
-    unsigned zero_bytes = intx::clz(n) / 8;
-    return {buf + zero_bytes, 32 - zero_bytes};
 }
 
 }  // namespace silkworm::rlp

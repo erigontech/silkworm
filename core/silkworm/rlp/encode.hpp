@@ -116,14 +116,6 @@ namespace rlp {
             encode(to, x);
         }
     }
-
-    // Returns a view of a thread-local buffer,
-    // which must be consumed prior to the next invocation.
-    ByteView big_endian(uint64_t n);
-
-    // Returns a view of a thread-local buffer,
-    // which must be consumed prior to the next invocation.
-    ByteView big_endian(const intx::uint256& n);
 }  // namespace rlp
 
 }  // namespace silkworm

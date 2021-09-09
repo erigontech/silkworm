@@ -16,6 +16,7 @@
 
 #include "account.hpp"
 
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 
 namespace silkworm {
@@ -30,21 +31,21 @@ Bytes Account::encode_for_storage(bool omit_code_hash) const {
 
     if (nonce != 0) {
         field_set |= 1;
-        ByteView be{rlp::big_endian(nonce)};
+        const Bytes be{endian::to_big_compact(nonce)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);
     }
 
     if (balance != 0) {
         field_set |= 2;
-        ByteView be{rlp::big_endian(balance)};
+        const Bytes be{endian::to_big_compact(balance)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);
     }
 
     if (incarnation != 0) {
         field_set |= 4;
-        ByteView be{rlp::big_endian(incarnation)};
+        const Bytes be{endian::to_big_compact(incarnation)};
         res.push_back(static_cast<uint8_t>(be.length()));
         res.append(be);
     }
@@ -63,17 +64,17 @@ size_t Account::encoding_length_for_storage() const {
     size_t len{1};
 
     if (nonce != 0) {
-        ByteView be{rlp::big_endian(nonce)};
+        const Bytes be{endian::to_big_compact(nonce)};
         len += 1 + be.length();
     }
 
     if (balance != 0) {
-        ByteView be{rlp::big_endian(balance)};
+        const Bytes be{endian::to_big_compact(balance)};
         len += 1 + be.length();
     }
 
     if (incarnation != 0) {
-        ByteView be{rlp::big_endian(incarnation)};
+        const Bytes be{endian::to_big_compact(incarnation)};
         len += 1 + be.length();
     }
 
@@ -97,7 +98,11 @@ std::pair<uint64_t, rlp::DecodingResult> extract_incarnation(ByteView encoded) {
     if (field_set & 4) {
         // Incarnation has been found.
         uint8_t len = encoded[pos++];
-        return rlp::read_uint64(encoded.substr(pos, len));
+        const std::optional<uint64_t> incarnation{endian::from_big_compact_u64(encoded.substr(pos, len))};
+        if (incarnation == std::nullopt) {
+            return {0, rlp::DecodingResult::kOverflow};
+        }
+        return {*incarnation, rlp::DecodingResult::kOk};
     }
     return {0, rlp::DecodingResult::kOk};
 }
@@ -116,11 +121,11 @@ std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView enc
         if (encoded.length() < pos + len) {
             return {a, rlp::DecodingResult::kInputTooShort};
         }
-        auto [nonce, err]{rlp::read_uint64(encoded.substr(pos, len))};
-        if (err != rlp::DecodingResult::kOk) {
-            return {a, err};
+        const std::optional<uint64_t> nonce{endian::from_big_compact_u64(encoded.substr(pos, len))};
+        if (nonce == std::nullopt) {
+            return {a, rlp::DecodingResult::kOverflow};
         }
-        a.nonce = nonce;
+        a.nonce = *nonce;
         pos += len;
     }
 
@@ -139,11 +144,11 @@ std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView enc
         if (encoded.length() < pos + len) {
             return {a, rlp::DecodingResult::kInputTooShort};
         }
-        auto [incarnation, err]{rlp::read_uint64(encoded.substr(pos, len))};
-        if (err != rlp::DecodingResult::kOk) {
-            return {a, err};
+        const std::optional<uint64_t> incarnation{endian::from_big_compact_u64(encoded.substr(pos, len))};
+        if (incarnation == std::nullopt) {
+            return {a, rlp::DecodingResult::kOverflow};
         }
-        a.incarnation = incarnation;
+        a.incarnation = *incarnation;
         pos += len;
     }
 

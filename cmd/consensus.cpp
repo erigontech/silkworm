@@ -32,6 +32,7 @@
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/consensus/ethash/ethash.hpp>
 #include <silkworm/common/cast.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/in_memory_state.hpp>
@@ -279,20 +280,18 @@ evmc_vm* evm{nullptr};
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
 void init_pre_state(const nlohmann::json& pre, State& state) {
     for (const auto& entry : pre.items()) {
-        evmc::address address{to_address(from_hex(entry.key()).value())};
+        const evmc::address address{to_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};
 
         Account account;
-        Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
-        auto [balance, err1]{rlp::read_uint256(balance_str, /*allow_leading_zeros=*/true)};
-        check_rlp_err(err1);
-        account.balance = balance;
-        Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
-        auto [nonce, err2]{rlp::read_uint64(nonce_str, /*allow_leading_zeros=*/true)};
-        check_rlp_err(err2);
-        account.nonce = nonce;
+        const Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
+        const auto balance{endian::from_big_compact_u256(balance_str, /*allow_leading_zeros=*/true)};
+        account.balance = *balance;
+        const Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
+        const auto nonce{endian::from_big_compact_u64(nonce_str, /*allow_leading_zeros=*/true)};
+        account.nonce = *nonce;
 
-        Bytes code{from_hex(j["code"].get<std::string>()).value()};
+        const Bytes code{from_hex(j["code"].get<std::string>()).value()};
         if (!code.empty()) {
             account.incarnation = kDefaultIncarnation;
             account.code_hash = bit_cast<evmc_bytes32>(keccak256(code));
@@ -360,7 +359,7 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
     }
 
     for (const auto& entry : expected.items()) {
-        evmc::address address{to_address(from_hex(entry.key()).value())};
+        const evmc::address address{to_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};
 
         std::optional<Account> account{state.read_account(address)};
@@ -369,21 +368,19 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
             return false;
         }
 
-        Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
-        auto [expected_balance, err1]{rlp::read_uint256(balance_str, /*allow_leading_zeros=*/true)};
-        check_rlp_err(err1);
+        const Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
+        const auto expected_balance{endian::from_big_compact_u256(balance_str, /*allow_leading_zeros=*/true)};
         if (account->balance != expected_balance) {
             std::cout << "Balance mismatch for " << entry.key() << ":\n"
                       << to_string(account->balance, 16) << " != " << j["balance"] << std::endl;
             return false;
         }
 
-        Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
-        auto [expected_nonce, err2]{rlp::read_uint64(nonce_str, /*allow_leading_zeros=*/true)};
-        check_rlp_err(err2);
+        const Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
+        const auto expected_nonce{endian::from_big_compact_u64(nonce_str, /*allow_leading_zeros=*/true)};
         if (account->nonce != expected_nonce) {
             std::cout << "Nonce mismatch for " << entry.key() << ":\n"
-                      << account->nonce << " != " << expected_nonce << std::endl;
+                      << account->nonce << " != " << *expected_nonce << std::endl;
             return false;
         }
 

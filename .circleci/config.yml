@@ -100,7 +100,7 @@ jobs:
       - run:
           name: "Ethereum consensus tests"
           working_directory: ~/build
-          no_output_timeout: 15m
+          no_output_timeout: 20m
           command: |
             cmd/consensus
             mv default.profraw consensus.profraw

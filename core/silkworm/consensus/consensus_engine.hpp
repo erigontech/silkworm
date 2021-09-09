@@ -52,27 +52,28 @@ enum class [[nodiscard]] ValidationResult{
 
     // See [YP] Section 6.2 "Execution", Eq (58)
     kMissingSender = 15,                 // S(T) = ∅
-    kWrongNonce = 16,                    // Tn ≠ σ[S(T)]n
-    kIntrinsicGas = 17,                  // g0 > Tg
-    kInsufficientFunds = 18,             // v0 > σ[S(T)]b
-    kBlockGasLimitExceeded = 19,         // Tg > BHl - l(BR)u
-    kMaxFeeLessThanBase = 20,            // max_fee_per_gas < base_fee_per_gas (EIP-1559)
-    kMaxPriorityFeeGreaterThanMax = 21,  // max_priority_fee_per_gas > max_fee_per_gas (EIP-1559)
+    kSenderNoEOA = 16,                   // EIP-3607: σ[S(T)]c ≠ KEC( () )
+    kWrongNonce = 17,                    // Tn ≠ σ[S(T)]n
+    kIntrinsicGas = 18,                  // g0 > Tg
+    kInsufficientFunds = 19,             // v0 > σ[S(T)]b
+    kBlockGasLimitExceeded = 20,         // Tg > BHl - l(BR)u
+    kMaxFeeLessThanBase = 21,            // max_fee_per_gas < base_fee_per_gas (EIP-1559)
+    kMaxPriorityFeeGreaterThanMax = 22,  // max_priority_fee_per_gas > max_fee_per_gas (EIP-1559)
 
     // See [YP] Section 11.1 "Ommer Validation", Eq (157)
-    kTooManyOmmers = 22,       // ‖BU‖ > 2
-    kInvalidOmmerHeader = 23,  // ¬V(U)
-    kNotAnOmmer = 24,          // ¬k(U, P(BH)H, 6)
-    kDuplicateOmmer = 25,      // not well covered by the YP actually
+    kTooManyOmmers = 23,       // ‖BU‖ > 2
+    kInvalidOmmerHeader = 24,  // ¬V(U)
+    kNotAnOmmer = 25,          // ¬k(U, P(BH)H, 6)
+    kDuplicateOmmer = 26,      // not well covered by the YP actually
 
     // See [YP] Section 11.2 "Transaction Validation", Eq (160)
-    kWrongBlockGas = 26,  // BHg ≠ l(BR)u
+    kWrongBlockGas = 27,  // BHg ≠ l(BR)u
 
-    kInvalidSignature = 27,  // EIP-2
+    kInvalidSignature = 28,  // EIP-2
 
-    kWrongChainId = 28,  // EIP-155
+    kWrongChainId = 29,  // EIP-155
 
-    kUnsupportedTransactionType = 29,  // EIP-2718
+    kUnsupportedTransactionType = 30,  // EIP-2718
 };
 
 class ConsensusEngine {

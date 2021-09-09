@@ -20,6 +20,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/consensus/ethash/ethash.hpp>
 
@@ -33,8 +34,6 @@ using namespace silkworm::consensus;
 Ethash engine;
 
 TEST_CASE("Zero gas price") {
-    using Catch::Message;
-
     Block block{};
     block.header.number = 2'687'232;
     block.header.gas_limit = 3'303'221;
@@ -66,6 +65,26 @@ TEST_CASE("Zero gas price") {
     txn.from = sender;
     Receipt receipt{processor.execute_transaction(txn)};
     CHECK(receipt.success);
+}
+
+TEST_CASE("EIP-3607: Reject transactions from senders with deployed code") {
+    Block block{};
+    block.header.number = 1;
+    block.header.gas_limit = 3'000'000;
+
+    const evmc::address sender{0x71562b71999873DB5b286dF957af199Ec94617F7_address};
+
+    Transaction txn{test_util::sample_transactions()[0]};
+    txn.nonce = 0;
+    txn.from = sender;
+
+    InMemoryState state;
+    ExecutionProcessor processor{block, state, kMainnetConfig};
+
+    processor.evm().state().add_to_balance(sender, 10 * kEther);
+    processor.evm().state().set_code(sender, *from_hex("B0B0FACE"));
+
+    CHECK(processor.validate_transaction(txn) == ValidationResult::kSenderNoEOA);
 }
 
 TEST_CASE("No refund on error") {
@@ -144,8 +163,10 @@ TEST_CASE("Self-destruct") {
     block.header.number = 1'487'375;
     block.header.gas_limit = 4'712'388;
     block.header.beneficiary = 0x61c808d82a3ac53231750dadc13c777b59310bd9_address;
-    evmc::address suicidal_address{0x6d20c1c07e56b7098eb8c50ee03ba0f6f498a91d_address};
-    evmc::address caller_address{0x4bf2054ffae7a454a35fd8cf4be21b23b1f25a6f_address};
+
+    const evmc::address suicidal_address{0x6d20c1c07e56b7098eb8c50ee03ba0f6f498a91d_address};
+    const evmc::address caller_address{0x4bf2054ffae7a454a35fd8cf4be21b23b1f25a6f_address};
+    const evmc::address originator{0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address};
 
     // The contract self-destructs if called with zero value.
     Bytes suicidal_code{*from_hex("346007576000ff5b")};
@@ -196,7 +217,7 @@ TEST_CASE("Self-destruct") {
     InMemoryState state;
     ExecutionProcessor processor{block, engine, state, kMainnetConfig};
 
-    processor.evm().state().add_to_balance(caller_address, kEther);
+    processor.evm().state().add_to_balance(originator, kEther);
     processor.evm().state().set_code(caller_address, caller_code);
     processor.evm().state().set_code(suicidal_address, suicidal_code);
 
@@ -214,7 +235,7 @@ TEST_CASE("Self-destruct") {
         1,                           // r
         1,                           // s
     };
-    txn.from = caller_address;
+    txn.from = originator;
 
     evmc::bytes32 address_as_hash{to_bytes32(full_view(suicidal_address))};
     txn.data = full_view(address_as_hash);

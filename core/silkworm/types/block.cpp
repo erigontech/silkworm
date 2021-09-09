@@ -19,7 +19,6 @@
 #include <cstring>
 
 #include <silkworm/common/cast.hpp>
-#include <silkworm/rlp/encode.hpp>
 
 namespace silkworm {
 
@@ -30,18 +29,11 @@ evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
 }
 
 ethash::hash256 BlockHeader::boundary() const {
-    static intx::uint256 dividend{
-        intx::from_string<intx::uint256>("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")};
-
-    ethash::hash256 ret{};
-
-    if (difficulty > 1u) {
-        auto result{intx::bswap(dividend / difficulty)};
-        std::memcpy(ret.bytes, intx::as_bytes(result), 32);
-    } else {
-        std::memcpy(ret.bytes, intx::as_bytes(dividend), 32);
-    }
-    return ret;
+    using intx::operator""_u256;
+    static const auto dividend{intx::uint320{1} << 256};
+    auto result{difficulty > 1u ? intx::uint256{dividend / difficulty}
+                                : 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256};
+    return intx::be::store<ethash::hash256>(result);
 }
 
 bool operator==(const BlockHeader& a, const BlockHeader& b) {
@@ -57,6 +49,7 @@ bool operator==(const BlockBody& a, const BlockBody& b) {
     return a.transactions == b.transactions && a.ommers == b.ommers;
 }
 
+//! \brief Recover transaction senders for each block.
 void Block::recover_senders() {
     for (Transaction& txn : transactions) {
         txn.recover_sender();
@@ -65,7 +58,6 @@ void Block::recover_senders() {
 
 namespace rlp {
 
-    // Computes the length of the RLP payload
     static Header rlp_header(const BlockHeader& header, bool for_sealing = false) {
         Header rlp_head{true, 0};
         rlp_head.payload_length += kHashLength + 1;                                        // parent_hash

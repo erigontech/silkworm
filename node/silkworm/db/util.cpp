@@ -59,7 +59,7 @@ Bytes to_compact(const ByteView& data) {
     }
 }
 
-Bytes to_compact(const uint64_t value) {
+Bytes to_big_compact(const uint64_t value) {
     if (!value) {
         return {};  // All bytes are zero
     }
@@ -67,7 +67,7 @@ Bytes to_compact(const uint64_t value) {
     return to_compact(value_be_bytes);
 }
 
-uint64_t from_compact(const ByteView& data) {
+uint64_t from_big_compact(const ByteView& data) {
     // Important ! We can't have a string of bytes wider than an uint64_t
     if (data.length() > sizeof(uint64_t)) {
         throw std::invalid_argument(std::string(__FUNCTION__) + " : Data too wide");

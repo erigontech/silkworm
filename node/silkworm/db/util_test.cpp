@@ -65,10 +65,10 @@ TEST_CASE("Block as key and compact form") {
 
     SECTION("Block number as compact") {
         // Convert block number to compact and check initial zeroes are stripped
-        auto block_number_compact_bytes{to_compact(block_number)};
+        auto block_number_compact_bytes{to_big_compact(block_number)};
         CHECK(silkworm::to_hex(block_number_compact_bytes) == "5485ffde");
         // Convert back and check
-        auto block_number_from_compact{from_compact(block_number_compact_bytes)};
+        auto block_number_from_compact{from_big_compact(block_number_compact_bytes)};
         CHECK(block_number_from_compact == block_number);
         // Try compact empty bytes
         Bytes empty_bytes{};
@@ -77,12 +77,12 @@ TEST_CASE("Block as key and compact form") {
         Bytes zeroed_bytes(2, 0);
         CHECK(to_compact(zeroed_bytes).empty() == true);
         // Compact block == 0
-        CHECK(to_compact(0).empty() == true);
+        CHECK(to_big_compact(0).empty() == true);
         // Try retrieve a compacted value from an empty Byte string
-        CHECK(from_compact(Bytes()) == 0u);
+        CHECK(from_big_compact(Bytes()) == 0u);
         // Try retrieve a compacted value from a too large Byte string
         Bytes extra_long_bytes(sizeof(uint64_t) + 1, 0);
-        CHECK_THROWS((void)from_compact(extra_long_bytes));
+        CHECK_THROWS((void)from_big_compact(extra_long_bytes));
     }
 }
 

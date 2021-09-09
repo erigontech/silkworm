@@ -17,10 +17,6 @@
 #ifndef SILKWORM_COMMON_ENDIAN_HPP_
 #define SILKWORM_COMMON_ENDIAN_HPP_
 
-#include <stdint.h>
-
-#include <cstring>
-
 /*
 Facilities to deal with byte order/endianness
 See https://en.wikipedia.org/wiki/Endianness
@@ -36,6 +32,11 @@ and to SILKWORM_LITTLE_ENDIAN for little-endian ones (most current architectures
 In addition, SILKWORM_BSWAP16, SILKWORM_BSWAP32, and SILKWORM_BSWAP64 macros are defined
 as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers respectively.
 */
+
+#include <stdint.h>
+
+#include <cstring>
+#include <optional>
 
 #ifdef _WIN32
 
@@ -64,6 +65,8 @@ as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers resp
 #else
 #error "endianness detection failure"
 #endif
+
+#include <silkworm/common/base.hpp>
 
 namespace silkworm::endian {
 
@@ -152,6 +155,19 @@ inline void store_big_u64(uint8_t* bytes, const uint64_t value) {
     uint64_t x{be::uint64(value)};
     std::memcpy(bytes, &x, sizeof(x));
 }
+
+//! \brief Transforms a uint64_t stored in memory with native endianness to it's compacted big endian byte form
+//! \param [in] value : the value to be transformed
+//! \return A string of bytes
+//! \remarks See Erigon TxIndex value
+//! \remarks A "compact" big endian form strips leftmost bytes valued to zero
+Bytes to_big_compact(const uint64_t value);
+
+//! \brief Parses uint64_t from a compacted big endian byte form
+//! \param [in] data : byteview of memory allocation for compacted value. Length must be <= sizeof(uint64_t)
+//! \return A uint64_t with native endianness; std::nullopt if data is invalid
+//! \remarks A "compact" big endian form strips leftmost bytes valued to zero
+std::optional<uint64_t> from_big_compact(const ByteView& data);
 
 }  // namespace silkworm::endian
 

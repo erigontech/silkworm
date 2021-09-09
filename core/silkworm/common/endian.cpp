@@ -21,7 +21,7 @@
 namespace silkworm::endian {
 
 Bytes to_big_compact(const uint64_t value) {
-    Bytes be(8, '\0');
+    Bytes be(sizeof(uint64_t), '\0');
     store_big_u64(&be[0], value);
     return Bytes{zeroless_view(be)};
 }

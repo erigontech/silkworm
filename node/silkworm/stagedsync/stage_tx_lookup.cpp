@@ -28,26 +28,6 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-// Minimize size in database
-static Bytes compact(Bytes& b) {
-    std::string::size_type offset{b.find_first_not_of(uint8_t{0})};
-    if (offset != std::string::npos) {
-        return b.substr(offset);
-    }
-    return b;
-}
-
-// Convert compacted byte array back to the number
-static uint64_t from_compact(ByteView& b) {
-    uint64_t block_number{0};
-    uint8_t  byte_position{0};
-    for(const auto &byte: b) {
-        block_number |= uint64_t(byte << byte_position);
-        byte_position += 8;
-    }
-    return block_number;
-}
-
 StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
@@ -74,12 +54,16 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
     while (bodies_data) {
         auto body_rlp{db::from_slice(bodies_data.value)};
         auto body{db::detail::decode_stored_block_body(body_rlp)};
-        Bytes block_number_as_bytes(static_cast<uint8_t*>(bodies_data.key.iov_base), 8);
-        // we compact block number
-        auto lookup_block_data{compact(block_number_as_bytes)};
-        block_number = endian::load_big_u64(&block_number_as_bytes[0]);
+        // Block number is computed here in order to record accurate stage progress
+        block_number = endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.iov_base));
         // Iterate over transactions in current block
         if (body.txn_count) {
+
+            // Extract compact form of big endian block number
+            auto block_compact_view{zeroless_view(db::from_slice(bodies_data.key).substr(0, sizeof(BlockNum)))};
+            Bytes block_compact_data{block_compact_view.data(), block_compact_view.length()};
+
+            // Prepare to read transactions for current block
             Bytes tx_base_id(8, '\0');
             endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
             auto tx_data{transactions_table.lower_bound(db::to_slice(tx_base_id), /*throw_notfound*/ false)};
@@ -90,7 +74,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
                 auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
                 // Collect hash => compacted block number mapping
-                etl::Entry entry{Bytes(hash.bytes, 32), Bytes(lookup_block_data.data(), lookup_block_data.size())};
+                etl::Entry entry{Bytes(hash.bytes, 32), block_compact_data};
                 collector.collect(entry);
                 ++tx_count;
                 tx_data = transactions_table.to_next(/*throw_notfound*/ false);
@@ -201,7 +185,7 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
     while (lookup_data) {
         // Check current lookup block number
         auto block_number_view{db::from_slice(lookup_data.value)};
-        auto current_block{from_compact(block_number_view)};
+        auto current_block{db::from_big_compact(block_number_view)};
         // Filter out all of the lookups with invalid block numbers
         if (current_block < prune_from) {
             lookup_table.erase(/*whole_multivalue*/ false);

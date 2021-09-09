@@ -43,28 +43,13 @@ Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     return key;
 }
 
-// Minimize size in database
-// Encode/Decode Lookups
-
-Bytes to_compact(const ByteView& data) {
-    if (data.empty()) {
-        return {};
-    }
-    std::string::size_type offset{data.find_first_not_of(uint8_t{0})};
-    if (offset != std::string::npos) {
-        return Bytes(data.data() + offset, data.length() - offset);
-    } else {
-        // All bytes are zeroed
-        return {};
-    }
-}
-
 Bytes to_big_compact(const uint64_t value) {
     if (!value) {
         return {};  // All bytes are zero
     }
     auto value_be_bytes{block_key(value)};
-    return to_compact(value_be_bytes);
+    auto compact_view{zeroless_view(value_be_bytes)};
+    return {compact_view.data(), compact_view.length()};
 }
 
 uint64_t from_big_compact(const ByteView& data) {

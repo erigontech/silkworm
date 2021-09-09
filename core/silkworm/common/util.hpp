@@ -62,7 +62,14 @@ inline ByteView full_view(const evmc::address& address) { return {address.bytes,
 
 inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHashLength}; }
 
-// Leading zero bytes are stripped
+//! \brief Strips leftmost zeroed bytes from byte sequence
+//! \param [in] data : The view to process
+//! \return A new view of the sequence
+ByteView zeroless_view(const ByteView& data);
+
+//! \brief Strips leftmost zeroed bytes from byte sequence
+//! \param [in] hash : a reference to evmc::bytes32
+//! \return A new view of the sequence
 ByteView zeroless_view(const evmc::bytes32& hash);
 
 std::string to_hex(const evmc::address& address);

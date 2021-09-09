@@ -72,10 +72,10 @@ TEST_CASE("Block as key and compact form") {
         CHECK(block_number_from_compact == block_number);
         // Try compact empty bytes
         Bytes empty_bytes{};
-        CHECK(to_compact(empty_bytes).empty() == true);
+        CHECK(zeroless_view(empty_bytes).empty() == true);
         // Try compact zeroed bytes
         Bytes zeroed_bytes(2, 0);
-        CHECK(to_compact(zeroed_bytes).empty() == true);
+        CHECK(zeroless_view(zeroed_bytes).empty() == true);
         // Compact block == 0
         CHECK(to_big_compact(0).empty() == true);
         // Try retrieve a compacted value from an empty Byte string

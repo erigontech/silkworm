@@ -58,9 +58,11 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
         block_number = endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.iov_base));
         // Iterate over transactions in current block
         if (body.txn_count) {
-            // Read and Encode block number
-            Bytes block_number_as_bytes(static_cast<uint8_t*>(bodies_data.key.iov_base), 8);
-            auto lookup_encoded{db::to_compact(block_number_as_bytes)};
+
+            // Extract compact form of big endian block number
+            auto block_compact_view{zeroless_view(db::from_slice(bodies_data.key).substr(0, sizeof(BlockNum)))};
+            Bytes block_compact_data{block_compact_view.data(), block_compact_view.length()};
+
             // Prepare to read transactions for current block
             Bytes tx_base_id(8, '\0');
             endian::store_big_u64(tx_base_id.data(), body.base_txn_id);
@@ -72,7 +74,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
                 auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
                 // Collect hash => compacted block number mapping
-                etl::Entry entry{Bytes(hash.bytes, 32), lookup_encoded};
+                etl::Entry entry{Bytes(hash.bytes, 32), block_compact_data};
                 collector.collect(entry);
                 ++tx_count;
                 tx_data = transactions_table.to_next(/*throw_notfound*/ false);

@@ -154,13 +154,7 @@ Bytes storage_prefix(ByteView address, uint64_t incarnation);
 // Erigon CanonicalHeadersKey / ReceiptsKey
 Bytes block_key(uint64_t block_number);
 
-//! Compacts the bytes string removing leftmost zeroes
-//! \param [in] data : a string view of bytes
-//! \return A string of bytes where leftmost zeroed bytes are removed
-//! \remarks This function does not check length of string does match any data type size nor tampers with byte order
-Bytes to_compact(const ByteView& data);
-
-//! Transforms a uint64_t stored in memory with native endianness to it's compacted big endian byte form
+//! \brief Transforms a uint64_t stored in memory with native endianness to it's compacted big endian byte form
 //! \param [in] value : the value to be transformed
 //! \return A string of bytes
 //! \remarks See Erigon TxIndex value

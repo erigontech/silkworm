@@ -51,7 +51,7 @@ nlohmann::json clique_json = R"({
 
 TEST_CASE("Encode/Decode Snapshot") {
     auto snapshot{CliqueSnapshot::from_json(clique_json)};
-    auto decoded_snapshot{snapshot->to_json()};
+    auto decoded_snapshot{snapshot.to_json()};
     CHECK(decoded_snapshot == clique_json);
 }
 }  // namespace silkworm

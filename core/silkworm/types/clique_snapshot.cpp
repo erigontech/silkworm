@@ -59,7 +59,7 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
 }
 //! \brief Decode snapshot from json format.
 //! \return Decoded snapshot.
-std::optional<CliqueSnapshot> CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
+CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
     // Block Number
     uint64_t block_number{json["number"].get<uint64_t>()};
     
@@ -106,9 +106,42 @@ std::optional<CliqueSnapshot> CliqueSnapshot::from_json(const nlohmann::json& js
     return CliqueSnapshot{block_number, hash, signers, recents, votes, tallies};
 }
 
-bool CliqueSnapshot::is_vote_valid(evmc::address signer, bool authorize) const noexcept {
-    auto existing_signer{std::find(signers_.begin(), signers_.end(), signer) != signers_.end()};
+bool CliqueSnapshot::is_vote_valid(evmc::address address, bool authorize) const noexcept {
+    auto existing_signer{std::find(signers_.begin(), signers_.end(), address) != signers_.end()};
     return (existing_signer && !authorize) || (!existing_signer && authorize);
+}
+
+bool CliqueSnapshot::cast(evmc::address address, bool authorize) {
+    if (!is_vote_valid(address, authorize)) {
+        return false;
+    }
+    if (tallies_.find(address) != tallies_.end()) {
+        // Update existing tally
+        ++tallies_[address].votes;
+    } else {
+        // Create new tally
+        tallies_[address] = {authorize, 1};
+    }
+
+    return true;
+}
+
+void CliqueSnapshot::uncast(evmc::address address, bool authorize) {
+    // If there's no tally, it's a dangling vote, just drop
+    if (tallies_.find(address) != tallies_.end()) {
+        return;
+    }
+    // Ensure we only revert counted votes
+    if (tallies_[address].authorize != authorize) {
+        return;
+    }
+	// Otherwise revert the vote
+	if (tallies_[address].votes > 1) {
+		--tallies_[address].votes;
+	} else {
+        // Tallies are empty now so we can just free them
+		tallies_.erase(address);
+	}
 }
 
 }  // namespace silkworm

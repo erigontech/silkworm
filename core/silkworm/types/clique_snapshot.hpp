@@ -67,11 +67,16 @@ class CliqueSnapshot {
         nlohmann::json to_json() const noexcept;
         //! \brief Decode snapshot from json format.
         //! \return Decoded snapshot.
-        static std::optional<CliqueSnapshot> from_json(const nlohmann::json& json) noexcept;
+        static CliqueSnapshot from_json(const nlohmann::json& json) noexcept;
     private:
-        // validVote returns whether it makes sense to cast the specified vote in the
+        // is_vote_valid returns whether it makes sense to cast the specified vote in the
         // given snapshot context (e.g. don't try to add an already authorized signer).
-        bool is_vote_valid(evmc::address signer, bool authorize) const noexcept;
+        bool is_vote_valid(evmc::address address, bool authorize) const noexcept;
+
+        // cast adds a new vote into the tally.
+        bool cast(evmc::address address, bool authorize);
+        // uncast removes a previously cast vote from the tally.
+        void uncast(evmc::address address, bool authorize);
 
         uint64_t block_number_;                            // Block number where the snapshot was created
         evmc::bytes32 hash_;                               // Block hash where the snapshot was created     

@@ -88,7 +88,7 @@ ByteView zeroless_view(ByteView data) {
     while (offset < data.length() && data[offset] == 0) {
         ++offset;
     }
-    return {data.data() + offset, data.length() - offset};
+    return data.substr(offset);
 }
 
 std::string to_hex(ByteView bytes) {

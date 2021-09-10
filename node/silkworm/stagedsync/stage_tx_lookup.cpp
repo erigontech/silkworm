@@ -58,7 +58,6 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
         block_number = endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.iov_base));
         // Iterate over transactions in current block
         if (body.txn_count) {
-
             // Extract compact form of big endian block number
             auto block_compact_view{zeroless_view(db::from_slice(bodies_data.key).substr(0, sizeof(BlockNum)))};
             Bytes block_compact_data{block_compact_view.data(), block_compact_view.length()};
@@ -185,7 +184,7 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
     while (lookup_data) {
         // Check current lookup block number
         auto block_number_view{db::from_slice(lookup_data.value)};
-        auto current_block{db::from_big_compact(block_number_view)};
+        auto current_block{endian::from_big_compact_u64(block_number_view)};
         // Filter out all of the lookups with invalid block numbers
         if (current_block < prune_from) {
             lookup_table.erase(/*whole_multivalue*/ false);

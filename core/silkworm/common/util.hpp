@@ -68,6 +68,14 @@ inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHash
 ByteView zeroless_view(const ByteView& data);
 
 //! \brief Strips leftmost zeroed bytes from byte sequence
+//! \param [in] data : The view to process
+//! \return A new view of the sequence
+template <unsigned N>
+ByteView zeroless_view(const uint8_t (&data)[N]) {
+    return zeroless_view(ByteView{data, N});
+}
+
+//! \brief Strips leftmost zeroed bytes from byte sequence
 //! \param [in] hash : a reference to evmc::bytes32
 //! \return A new view of the sequence
 ByteView zeroless_view(const evmc::bytes32& hash);

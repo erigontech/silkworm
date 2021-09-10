@@ -17,10 +17,9 @@
 #ifndef SILKWORM_TYPES_BLOOM_HPP_
 #define SILKWORM_TYPES_BLOOM_HPP_
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include <silkworm/types/log.hpp>

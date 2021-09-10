@@ -19,9 +19,8 @@
 
 // The most common and basic types and constants.
 
-#include <stddef.h>
-#include <stdint.h>
-
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 

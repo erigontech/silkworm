@@ -154,19 +154,6 @@ Bytes storage_prefix(ByteView address, uint64_t incarnation);
 // Erigon CanonicalHeadersKey / ReceiptsKey
 Bytes block_key(uint64_t block_number);
 
-//! \brief Transforms a uint64_t stored in memory with native endianness to it's compacted big endian byte form
-//! \param [in] value : the value to be transformed
-//! \return A string of bytes
-//! \remarks See Erigon TxIndex value
-//! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-Bytes to_big_compact(const uint64_t value);
-
-//! \brief Parses uint64_t from a compacted big endian byte form
-//! \param [in] data : byteview of memory allocation for compacted value. Length must be <= sizeof(uint64_t)
-//! \return A uint64_t with native endianness
-//! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-uint64_t from_big_compact(const ByteView& data);
-
 // Erigon HeaderKey & BlockBodyKey
 Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 

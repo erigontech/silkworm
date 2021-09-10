@@ -17,8 +17,7 @@
 #ifndef SILKWORM_DB_MDBX_HPP_
 #define SILKWORM_DB_MDBX_HPP_
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <filesystem>
 #include <string>
 

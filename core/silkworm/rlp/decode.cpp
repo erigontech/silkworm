@@ -24,58 +24,6 @@
 
 namespace silkworm::rlp {
 
-std::pair<uint64_t, DecodingResult> read_uint64(ByteView be, bool allow_leading_zeros) noexcept {
-    static constexpr size_t kMaxBytes{8};
-    static_assert(sizeof(uint64_t) == kMaxBytes);
-
-    uint64_t buf{0};
-
-    if (be.length() > kMaxBytes) {
-        return {buf, DecodingResult::kOverflow};
-    }
-
-    if (be.empty()) {
-        return {buf, DecodingResult::kOk};
-    }
-
-    if (be[0] == 0 && !allow_leading_zeros) {
-        return {buf, DecodingResult::kLeadingZero};
-    }
-
-    auto* p{reinterpret_cast<uint8_t*>(&buf)};
-    std::memcpy(p + (kMaxBytes - be.length()), &be[0], be.length());
-
-    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN, "We assume a little-endian architecture like amd64");
-    buf = intx::bswap(buf);
-    return {buf, DecodingResult::kOk};
-}
-
-std::pair<intx::uint256, DecodingResult> read_uint256(ByteView be, bool allow_leading_zeros) noexcept {
-    static constexpr size_t kMaxBytes{32};
-    static_assert(sizeof(intx::uint256) == kMaxBytes);
-
-    intx::uint256 buf{0};
-
-    if (be.length() > kMaxBytes) {
-        return {buf, DecodingResult::kOverflow};
-    }
-
-    if (be.empty()) {
-        return {buf, DecodingResult::kOk};
-    }
-
-    if (be[0] == 0 && !allow_leading_zeros) {
-        return {buf, DecodingResult::kLeadingZero};
-    }
-
-    uint8_t* p{as_bytes(buf)};
-    std::memcpy(p + (kMaxBytes - be.length()), &be[0], be.length());
-
-    static_assert(SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN);
-    buf = intx::bswap(buf);
-    return {buf, DecodingResult::kOk};
-}
-
 std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
     Header h;
     if (from.empty()) {
@@ -98,15 +46,15 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         }
     } else if (b < 0xC0) {
         from.remove_prefix(1);
-        size_t len_of_len{b - 0xB7u};
+        const size_t len_of_len{b - 0xB7u};
         if (from.length() < len_of_len) {
             return {h, DecodingResult::kInputTooShort};
         }
-        auto [len, err]{read_uint64(from.substr(0, len_of_len))};
-        if (err != DecodingResult::kOk) {
-            return {h, err};
+        const auto len{endian::from_big_compact_u64(from.substr(0, len_of_len))};
+        if (len == std::nullopt) {
+            return {h, DecodingResult::kLeadingZero};
         }
-        h.payload_length = len;
+        h.payload_length = *len;
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
             return {h, DecodingResult::kNonCanonicalSize};
@@ -118,15 +66,15 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
     } else {
         from.remove_prefix(1);
         h.list = true;
-        size_t len_of_len{b - 0xF7u};
+        const size_t len_of_len{b - 0xF7u};
         if (from.length() < len_of_len) {
             return {h, DecodingResult::kInputTooShort};
         }
-        auto [len, err]{read_uint64(from.substr(0, len_of_len))};
-        if (err != DecodingResult::kOk) {
-            return {h, err};
+        const auto len{endian::from_big_compact_u64(from.substr(0, len_of_len))};
+        if (len == std::nullopt) {
+            return {h, DecodingResult::kLeadingZero};
         }
-        h.payload_length = len;
+        h.payload_length = *len;
         from.remove_prefix(len_of_len);
         if (h.payload_length < 56) {
             return {h, DecodingResult::kNonCanonicalSize};
@@ -174,36 +122,42 @@ DecodingResult decode(ByteView& from, bool& to) noexcept {
 
 template <>
 DecodingResult decode(ByteView& from, uint64_t& to) noexcept {
-    auto [h, err1]{decode_header(from)};
-    if (err1 != DecodingResult::kOk) {
-        return err1;
+    const auto [h, err]{decode_header(from)};
+    if (err != DecodingResult::kOk) {
+        return err;
     }
     if (h.list) {
         return DecodingResult::kUnexpectedList;
     }
-    DecodingResult err2;
-    std::tie(to, err2) = read_uint64(from.substr(0, h.payload_length));
-    if (err2 != DecodingResult::kOk) {
-        return err2;
+    if (h.payload_length > sizeof(uint64_t)) {
+        return DecodingResult::kOverflow;
     }
+    const std::optional<uint64_t> res{endian::from_big_compact_u64(from.substr(0, h.payload_length))};
+    if (res == std::nullopt) {
+        return DecodingResult::kLeadingZero;
+    }
+    to = *res;
     from.remove_prefix(h.payload_length);
     return DecodingResult::kOk;
 }
 
 template <>
 DecodingResult decode(ByteView& from, intx::uint256& to) noexcept {
-    auto [h, err1]{decode_header(from)};
-    if (err1 != DecodingResult::kOk) {
-        return err1;
+    const auto [h, err]{decode_header(from)};
+    if (err != DecodingResult::kOk) {
+        return err;
     }
     if (h.list) {
         return DecodingResult::kUnexpectedList;
     }
-    DecodingResult err2;
-    std::tie(to, err2) = read_uint256(from.substr(0, h.payload_length));
-    if (err2 != DecodingResult::kOk) {
-        return err2;
+    if (h.payload_length > sizeof(intx::uint256)) {
+        return DecodingResult::kOverflow;
     }
+    const std::optional<intx::uint256> res{endian::from_big_compact_u256(from.substr(0, h.payload_length))};
+    if (res == std::nullopt) {
+        return DecodingResult::kLeadingZero;
+    }
+    to = *res;
     from.remove_prefix(h.payload_length);
     return DecodingResult::kOk;
 }

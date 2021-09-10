@@ -15,6 +15,7 @@
 */
 
 #include "clique_snapshot.hpp"
+#include <silkworm/common/endian.hpp>
 
 namespace silkworm {
 //! \brief Convert the snapshot in JSON.
@@ -26,11 +27,13 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
     ret["hash"]   = to_hex(hash_);
     // Signers
     for (const auto& address: signers_) {
-        ret["signers"][to_hex(address)] = {};
+        ret["signers"][to_hex(address)] = nullptr;
     }
     // Recents
     for (const auto& [block_number, address]: recents_) {
-        ret["recents"][block_number] = to_hex(address);
+        Bytes block_number_bytes(4, '\0');
+        endian::store_big_u32(&block_number_bytes[0], block_number);
+        ret["recents"][to_hex(block_number_bytes).insert(0, "0x")] = to_hex(address);
     }
     
     // Votes
@@ -59,9 +62,10 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
 std::optional<CliqueSnapshot> CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
     // Block Number
     uint64_t block_number{json["number"].get<uint64_t>()};
+    
     // Hash
     evmc::bytes32 hash;
-    std::memcpy(hash.bytes, from_hex(json["hash"].dump())->c_str(), kHashLength);
+    std::memcpy(hash.bytes, from_hex(json["hash"].get<std::string>())->c_str(), kHashLength);
     // Assign signers
     std::vector<evmc::address> signers;
     for (auto it = json["signers"].begin(); it != json["signers"].end(); ++it) {
@@ -74,18 +78,18 @@ std::optional<CliqueSnapshot> CliqueSnapshot::from_json(const nlohmann::json& js
     for (auto it = json["recents"].begin(); it != json["recents"].end(); ++it) {
         // We compute address (JSON value)
         evmc::address address;
-        std::memcpy(address.bytes, from_hex(it.value().dump())->c_str(), kAddressLength);
+        std::memcpy(address.bytes, from_hex(it.value().get<std::string>())->c_str(), kAddressLength);
         // Block Number => Address
-        recents[std::stoull(it.key())] = address;
+        recents[std::strtoull(it.key().c_str(), nullptr, 16)] = address;
     }
     // Assign votes
     std::vector<Vote> votes;
     for (auto it = json["votes"].begin(); it != json["votes"].end(); ++it) {
         Vote v;
-        std::memcpy(v.signer.bytes,   from_hex((*it)["signer"].dump())->c_str(), kAddressLength);
-        std::memcpy(v.address.bytes,  from_hex((*it)["address"].dump())->c_str(), kAddressLength);
+        std::memcpy(v.signer.bytes, from_hex((*it)["signer"].get<std::string>())->c_str(), kAddressLength);
+        std::memcpy(v.address.bytes, from_hex((*it)["address"].get<std::string>())->c_str(), kAddressLength);
         v.block_number = (*it)["block"].get<uint64_t>();
-        v.authorize =    (*it)["authorize"].get<bool>();
+        v.authorize  = (*it)["authorize"].get<bool>();
         votes.push_back(v);
     }
 
@@ -102,5 +106,9 @@ std::optional<CliqueSnapshot> CliqueSnapshot::from_json(const nlohmann::json& js
     return CliqueSnapshot{block_number, hash, signers, recents, votes, tallies};
 }
 
+bool CliqueSnapshot::is_vote_valid(evmc::address signer, bool authorize) const noexcept {
+    auto existing_signer{std::find(signers_.begin(), signers_.end(), signer) != signers_.end()};
+    return (existing_signer && !authorize) || (!existing_signer && authorize);
+}
 
 }  // namespace silkworm

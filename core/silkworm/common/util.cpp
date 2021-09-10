@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <regex>
+#include <iostream>
 
 namespace silkworm {
 
@@ -129,7 +130,6 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
     if (hex.length() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) {
         hex.remove_prefix(2);
     }
-
     if (hex.length() % 2 != 0) {
         return std::nullopt;
     }

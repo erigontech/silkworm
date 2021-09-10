@@ -13,21 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-/*
-   Copyright 2021 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
 
 #ifndef SILKWORM_TYPES_CLIQUE_SNAPSHOT
 #define SILKWORM_TYPES_CLIQUE_SNAPSHOT
@@ -76,6 +61,7 @@ class CliqueSnapshot {
                        absl::btree_map<evmc::address, Tally> tallies): 
                             block_number_{block_number}, hash_{hash}, signers_{signers},
                             recents_{recents}, votes_{votes}, tallies_{tallies} {}
+
         //! \brief Convert the snapshot in JSON.
         //! \return The resulting JSON.
         nlohmann::json to_json() const noexcept;
@@ -83,6 +69,10 @@ class CliqueSnapshot {
         //! \return Decoded snapshot.
         static std::optional<CliqueSnapshot> from_json(const nlohmann::json& json) noexcept;
     private:
+        // validVote returns whether it makes sense to cast the specified vote in the
+        // given snapshot context (e.g. don't try to add an already authorized signer).
+        bool is_vote_valid(evmc::address signer, bool authorize) const noexcept;
+
         uint64_t block_number_;                            // Block number where the snapshot was created
         evmc::bytes32 hash_;                               // Block hash where the snapshot was created     
         std::vector<evmc::address> signers_;               // Set of authorized signers at this moment

@@ -48,16 +48,58 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
     }
     // Tallies
     for (const auto& [address, tally]: tallies_) {
-        ret["tallies"][to_hex(address)]["authorize"] = tally.authorize;
-        ret["tallies"][to_hex(address)]["votes"]     = tally.votes;
+        ret["tally"][to_hex(address)]["authorize"] = tally.authorize;
+        ret["tally"][to_hex(address)]["votes"]     = tally.votes;
     }
 
     return ret;
 }
 //! \brief Decode snapshot from json format.
 //! \return Decoded snapshot.
-std::optional<CliqueSnapshot> CliqueSnapshot::from_json(const nlohmann::json& ) noexcept {
-    return std::nullopt;
+std::optional<CliqueSnapshot> CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
+    // Block Number
+    uint64_t block_number{json["number"].get<uint64_t>()};
+    // Hash
+    evmc::bytes32 hash;
+    std::memcpy(hash.bytes, from_hex(json["hash"].dump())->c_str(), kHashLength);
+    // Assign signers
+    std::vector<evmc::address> signers;
+    for (auto it = json["signers"].begin(); it != json["signers"].end(); ++it) {
+        evmc::address signer;
+        std::memcpy(signer.bytes, from_hex(it.key())->c_str(), kAddressLength);
+        signers.push_back(signer);
+    }
+    // Assign recents
+    absl::btree_map<uint64_t, evmc::address> recents;
+    for (auto it = json["recents"].begin(); it != json["recents"].end(); ++it) {
+        // We compute address (JSON value)
+        evmc::address address;
+        std::memcpy(address.bytes, from_hex(it.value().dump())->c_str(), kAddressLength);
+        // Block Number => Address
+        recents[std::stoull(it.key())] = address;
+    }
+    // Assign votes
+    std::vector<Vote> votes;
+    for (auto it = json["votes"].begin(); it != json["votes"].end(); ++it) {
+        Vote v;
+        std::memcpy(v.signer.bytes,   from_hex((*it)["signer"].dump())->c_str(), kAddressLength);
+        std::memcpy(v.address.bytes,  from_hex((*it)["address"].dump())->c_str(), kAddressLength);
+        v.block_number = (*it)["block"].get<uint64_t>();
+        v.authorize =    (*it)["authorize"].get<bool>();
+        votes.push_back(v);
+    }
+
+    // Assign tallies
+    absl::btree_map<evmc::address, Tally> tallies;
+    for (auto it = json["tally"].begin(); it != json["tally"].end(); ++it) {
+        Tally t;
+        evmc::address address;
+        std::memcpy(address.bytes, from_hex(it.key())->c_str(), kAddressLength);
+        t.votes =      it.value()["votes"].get<uint64_t>();
+        t.authorize =  it.value()["authorize"].get<bool>();
+        tallies[address] = t;
+    }
+    return CliqueSnapshot{block_number, hash, signers, recents, votes, tallies};
 }
 
 

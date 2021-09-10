@@ -55,8 +55,8 @@ struct SnapshotConfig {
 // list of authorizations.
 struct Vote {
 	evmc::address  signer;       // Authorized signer that cast this vote
-	uint64_t       block_number; // Block number the vote was cast in (expire old votes)
 	evmc::address  address;      // Account being voted on to change its authorization
+	uint64_t       block_number; // Block number the vote was cast in (expire old votes)
 	bool           authorize;    // Whether to authorize or deauthorize the voted account
 };
 
@@ -71,6 +71,11 @@ struct Tally {
 class CliqueSnapshot {
     public:
         CliqueSnapshot() = default;
+        CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers,
+                       absl::btree_map<uint64_t, evmc::address> recents, std::vector<Vote> votes,
+                       absl::btree_map<evmc::address, Tally> tallies): 
+                            block_number_{block_number}, hash_{hash}, signers_{signers},
+                            recents_{recents}, votes_{votes}, tallies_{tallies} {}
         //! \brief Convert the snapshot in JSON.
         //! \return The resulting JSON.
         nlohmann::json to_json() const noexcept;
@@ -78,7 +83,7 @@ class CliqueSnapshot {
         //! \return Decoded snapshot.
         static std::optional<CliqueSnapshot> from_json(const nlohmann::json& json) noexcept;
     private:
-        uint64_t block_number_;                       // Block number where the snapshot was created
+        uint64_t block_number_;                            // Block number where the snapshot was created
         evmc::bytes32 hash_;                               // Block hash where the snapshot was created     
         std::vector<evmc::address> signers_;               // Set of authorized signers at this moment
         absl::btree_map<uint64_t, evmc::address> recents_; // Set of recent signers for spam protections

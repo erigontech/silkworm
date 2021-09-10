@@ -21,9 +21,9 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/common/test_util.hpp>
 
 using namespace evmc::literals;
 
@@ -91,7 +91,7 @@ TEST_CASE("Stage Senders") {
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
+    config_table.upsert(db::to_slice(hash_0), mdbx::slice{config_data.c_str()});
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
@@ -167,7 +167,7 @@ TEST_CASE("Unwind Senders") {
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
+    config_table.upsert(db::to_slice(hash_0), mdbx::slice{config_data.c_str()});
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
@@ -242,7 +242,7 @@ TEST_CASE("Prune Senders") {
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
+    config_table.upsert(db::to_slice(hash_0), mdbx::slice{config_data.c_str()});
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));

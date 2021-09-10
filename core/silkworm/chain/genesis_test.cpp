@@ -30,7 +30,6 @@
 namespace silkworm {
 
 TEST_CASE("genesis config") {
-
     std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
@@ -61,11 +60,9 @@ TEST_CASE("genesis config") {
     genesis_data = read_genesis_data(1'000u);
     genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json.is_discarded());
-
 }
 
 TEST_CASE("mainnet_genesis") {
-
     // Parse genesis data
     std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
@@ -95,9 +92,7 @@ TEST_CASE("mainnet_genesis") {
     SECTION("state_root") {
         auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
         auto actual_state_root{state.state_root_hash()};
-        auto a = full_view(expected_state_root);
-        auto b = full_view(actual_state_root);
-        CHECK(to_hex(a) == to_hex(b));
+        CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
     }
 
     // Fill Header

@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ size_t length(const Log& l) {
 
 void encode(Bytes& to, const Log& l) {
     encode_header(to, header(l));
-    encode(to, full_view(l.address));
+    encode(to, l.address);
     encode(to, l.topics);
     encode(to, l.data);
 }

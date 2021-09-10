@@ -190,25 +190,19 @@ TEST_CASE("EIP-1559 Header RLP") {
 TEST_CASE("Hash header boundary computation") {
     BlockHeader h;
     h.difficulty = 0x13009de5666753258eb9306157680dc5da0d_u256;
-
-    auto expected_boundary_view{*from_hex("0x00000000000000000000000000000000000d78d369778f29e54c2b9e37d107e1")};
-    CHECK(full_view(h.boundary().bytes).compare(expected_boundary_view) == 0);
+    CHECK(to_hex(h.boundary().bytes) == "00000000000000000000000000000000000d78d369778f29e54c2b9e37d107e1");
 }
 
 TEST_CASE("Hash header boundary computation when we have difficulty with power of 2") {
     BlockHeader h;
-    h.difficulty = intx::from_string<intx::uint256>("0x10000000000");
-
-    auto expected_boundary_view{*from_hex("0x0000000001000000000000000000000000000000000000000000000000000000")};
-    CHECK(full_view(h.boundary().bytes).compare(expected_boundary_view) == 0);
+    h.difficulty = 0x10000000000_u256;
+    CHECK(to_hex(h.boundary().bytes) == "0000000001000000000000000000000000000000000000000000000000000000");
 }
 
 TEST_CASE("Hash header boundary computation when the difficulty is equal to 0") {
     BlockHeader h;
-    h.difficulty = intx::from_string<intx::uint256>("0x0");
-
-    auto expected_boundary_view{*from_hex("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")};
-    CHECK(full_view(h.boundary().bytes).compare(expected_boundary_view) == 0);
+    h.difficulty = 0;
+    CHECK(to_hex(h.boundary().bytes) == "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 }
 
 }  // namespace silkworm

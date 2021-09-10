@@ -26,7 +26,7 @@ static Header header(const Receipt& r) {
     h.list = true;
     h.payload_length = 1;
     h.payload_length += length(r.cumulative_gas_used);
-    h.payload_length += length(full_view(r.bloom));
+    h.payload_length += length(r.bloom);
     h.payload_length += length(r.logs);
     return h;
 }
@@ -38,7 +38,7 @@ void encode(Bytes& to, const Receipt& r) {
     encode_header(to, header(r));
     encode(to, r.success);
     encode(to, r.cumulative_gas_used);
-    encode(to, full_view(r.bloom));
+    encode(to, r.bloom);
     encode(to, r.logs);
 }
 

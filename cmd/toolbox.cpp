@@ -30,15 +30,12 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/stages.hpp>
-#include <silkworm/state/in_memory_state.hpp>
-#include <silkworm/trie/hash_builder.hpp>
-#include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
+#include <silkworm/state/in_memory_state.hpp>
+#include <silkworm/trie/hash_builder.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -373,14 +370,15 @@ void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
     stagedsync::TransactionManager txn{env};
 
     auto current_progress{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
-    
+
     if (prune_size > current_progress) return;
     auto prune_from{current_progress - prune_size};
 
     std::cout << "\n Pruned start, block to be kept: " << prune_size << "\n" << std::endl;
     auto pruned_node_stages{stagedsync::get_pruned_node_stages()};
-    for(auto stage: pruned_node_stages) {
-        stagedsync::check_stagedsync_error(stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
+    for (auto stage : pruned_node_stages) {
+        stagedsync::check_stagedsync_error(
+            stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
     }
 }
 
@@ -872,20 +870,18 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
         std::map<evmc::bytes32, Bytes> account_rlp;
         auto state_table{db::open_cursor(txn, db::table::kPlainState)};
         for (const auto& [address, account] : state_buffer.accounts()) {
-            auto address_view{full_view(address)};
-
             // Store account plain state
             Bytes encoded{account.encode_for_storage()};
-            state_table.upsert(db::to_slice(address_view), db::to_slice(encoded));
+            state_table.upsert(db::to_slice(address), db::to_slice(encoded));
 
             // First pass for state_root_hash
-            ethash::hash256 hash{keccak256(address_view)};
-            account_rlp[to_bytes32(full_view(hash.bytes))] = account.rlp(kEmptyRoot);
+            ethash::hash256 hash{keccak256(address)};
+            account_rlp[to_bytes32(hash.bytes)] = account.rlp(kEmptyRoot);
         }
 
         trie::HashBuilder hb;
         for (const auto& [hash, rlp] : account_rlp) {
-            hb.add(full_view(hash), rlp);
+            hb.add(hash, rlp);
         }
         state_root_hash = hb.root_hash();
     }
@@ -931,8 +927,7 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
     Bytes key(8 + kHashLength, '\0');
     std::memcpy(&key[8], block_hash.bytes, kHashLength);
     db::open_cursor(txn, db::table::kHeaders).upsert(db::to_slice(key), db::to_slice(rlp_header));
-    db::open_cursor(txn, db::table::kCanonicalHashes)
-        .upsert(db::to_slice(block_key), db::to_slice(full_view(block_hash.bytes)));
+    db::open_cursor(txn, db::table::kCanonicalHashes).upsert(db::to_slice(block_key), db::to_slice(block_hash));
 
     // Write body
     db::open_cursor(txn, db::table::kBlockBodies).upsert(db::to_slice(key), db::to_slice(rlp_body));
@@ -942,14 +937,12 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
     db::open_cursor(txn, db::table::kBlockReceipts)
         .upsert(db::to_slice(key).safe_middle(0, 8), db::to_slice(Bytes(genesis_null_receipts, 1)));
     db::open_cursor(txn, db::table::kHeadHeader)
-        .upsert(mdbx::slice{db::table::kLastHeaderKey}, db::to_slice(full_view(block_hash.bytes)));
-    db::open_cursor(txn, db::table::kHeaderNumbers)
-        .upsert(db::to_slice(full_view(block_hash.bytes)), db::to_slice(key.substr(0, 8)));
+        .upsert(mdbx::slice{db::table::kLastHeaderKey}, db::to_slice(block_hash));
+    db::open_cursor(txn, db::table::kHeaderNumbers).upsert(db::to_slice(block_hash), db::to_slice(key.substr(0, 8)));
 
     // Write Chain Config
     auto config_data{genesis_json["config"].dump()};
-    db::open_cursor(txn, db::table::kConfig)
-        .upsert(db::to_slice(full_view(block_hash.bytes)), mdbx::slice{config_data.c_str()});
+    db::open_cursor(txn, db::table::kConfig).upsert(db::to_slice(block_hash), mdbx::slice{config_data.c_str()});
 
     // Set schema version
     silkworm::db::VersionBase v{3, 0, 0};
@@ -1180,8 +1173,8 @@ int main(int argc, char* argv[]) {
     // List migration keys
     auto cmd_do_prunes = app_main.add_subcommand("do-prunes", "Prune the node");
     auto cmd_do_prunes_size = cmd_do_prunes->add_option("--block-to-keep", "How many blocks of history to keep")
-                                ->default_val("96000")
-                                ->check(CLI::Range(1u, UINT32_MAX));
+                                  ->default_val("96000")
+                                  ->check(CLI::Range(1u, UINT32_MAX));
 
     /*
      * Parse arguments and validate

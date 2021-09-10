@@ -245,15 +245,15 @@ evmc::bytes32 InMemoryState::account_storage_root(const evmc::address& address, 
     std::map<evmc::bytes32, Bytes> storage_rlp;
     Bytes buffer;
     for (const auto& [location, value] : storage) {
-        ethash::hash256 hash{keccak256(full_view(location))};
+        ethash::hash256 hash{keccak256(location)};
         buffer.clear();
         rlp::encode(buffer, zeroless_view(value));
-        storage_rlp[to_bytes32(full_view(hash.bytes))] = buffer;
+        storage_rlp[to_bytes32(hash.bytes)] = buffer;
     }
 
     trie::HashBuilder hb;
     for (const auto& [hash, rlp] : storage_rlp) {
-        hb.add(full_view(hash), rlp);
+        hb.add(hash, rlp);
     }
 
     return hb.root_hash();
@@ -266,14 +266,14 @@ evmc::bytes32 InMemoryState::state_root_hash() const {
 
     std::map<evmc::bytes32, Bytes> account_rlp;
     for (const auto& [address, account] : accounts_) {
-        ethash::hash256 hash{keccak256(full_view(address))};
+        ethash::hash256 hash{keccak256(address)};
         evmc::bytes32 storage_root{account_storage_root(address, account.incarnation)};
-        account_rlp[to_bytes32(full_view(hash.bytes))] = account.rlp(storage_root);
+        account_rlp[to_bytes32(hash.bytes)] = account.rlp(storage_root);
     }
 
     trie::HashBuilder hb;
     for (const auto& [hash, rlp] : account_rlp) {
-        hb.add(full_view(hash), rlp);
+        hb.add(hash, rlp);
     }
 
     return hb.root_hash();

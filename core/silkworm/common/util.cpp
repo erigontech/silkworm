@@ -83,19 +83,13 @@ evmc::bytes32 to_bytes32(ByteView bytes) {
     return out;
 }
 
-ByteView zeroless_view(const ByteView& data) {
+ByteView zeroless_view(ByteView data) {
     unsigned offset{0};
     while (offset < data.length() && data[offset] == 0) {
         ++offset;
     }
     return {data.data() + offset, data.length() - offset};
 }
-
-ByteView zeroless_view(const evmc::bytes32& hash) { return zeroless_view(full_view(hash)); }
-
-std::string to_hex(const evmc::address& address) { return to_hex(full_view(address)); }
-
-std::string to_hex(const evmc::bytes32& hash) { return to_hex(full_view(hash)); }
 
 std::string to_hex(ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};

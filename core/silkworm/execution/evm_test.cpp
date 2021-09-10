@@ -112,7 +112,7 @@ TEST_CASE("Smart contract with storage") {
 
     evmc::bytes32 new_val{to_bytes32(*from_hex("f5"))};
     txn.to = contract_address;
-    txn.data = full_view(new_val);
+    txn.data = ByteView{new_val};
 
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_SUCCESS);
@@ -177,13 +177,13 @@ TEST_CASE("Maximum call depth") {
     CHECK(res.data == Bytes{});
 
     evmc::bytes32 num_of_recursions{to_bytes32(*from_hex("0400"))};
-    txn.data = full_view(num_of_recursions);
+    txn.data = ByteView{num_of_recursions};
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_SUCCESS);
     CHECK(res.data == Bytes{});
 
     num_of_recursions = to_bytes32(*from_hex("0401"));
-    txn.data = full_view(num_of_recursions);
+    txn.data = ByteView{num_of_recursions};
     res = evm.execute(txn, gas);
     CHECK(res.status == EVMC_INVALID_INSTRUCTION);
     CHECK(res.data == Bytes{});
@@ -226,7 +226,7 @@ TEST_CASE("DELEGATECALL") {
     Transaction txn{};
     txn.from = caller_address;
     txn.to = caller_address;
-    txn.data = full_view(to_bytes32(full_view(callee_address)));
+    txn.data = ByteView{to_bytes32(callee_address)};
 
     uint64_t gas{1'000'000};
     CallResult res{evm.execute(txn, gas)};
@@ -234,7 +234,7 @@ TEST_CASE("DELEGATECALL") {
     CHECK(res.data == Bytes{});
 
     evmc::bytes32 key0{};
-    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0))) == to_hex(full_view(caller_address)));
+    CHECK(to_hex(zeroless_view(state.get_current_storage(caller_address, key0))) == to_hex(caller_address));
 }
 
 // https://eips.ethereum.org/EIPS/eip-211#specification

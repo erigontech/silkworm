@@ -85,8 +85,7 @@ void Buffer::update_account_code(const evmc::address& address, uint64_t incarnat
     if (hash_to_code_.try_emplace(code_hash, code).second) {
         bump_batch_size(kHashLength, code.length());
     }
-    if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(full_view(address), incarnation), code_hash)
-            .second) {
+    if (storage_prefix_to_code_hash_.insert_or_assign(storage_prefix(address, incarnation), code_hash).second) {
         bump_batch_size(kPlainStoragePrefixLength, kHashLength);
     }
 }
@@ -130,14 +129,14 @@ void Buffer::write_to_state_table() {
             }
             if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
-                state_table.upsert(to_slice(full_view(address)), to_slice(encoded));
+                state_table.upsert(to_slice(address), to_slice(encoded));
             }
         }
 
         if (auto it{storage_.find(address)}; it != storage_.end()) {
             for (const auto& contract : it->second) {
                 uint64_t incarnation{contract.first};
-                Bytes prefix{storage_prefix(full_view(address), incarnation)};
+                Bytes prefix{storage_prefix(address, incarnation)};
 
                 const auto& contract_storage{contract.second};
 
@@ -149,7 +148,7 @@ void Buffer::write_to_state_table() {
                 std::sort(storage_keys.begin(), storage_keys.end());
 
                 for (const auto& k : storage_keys) {
-                    upsert_storage_value(state_table, prefix, full_view(k), zeroless_view(contract_storage.at(k)));
+                    upsert_storage_value(state_table, prefix, k, zeroless_view(contract_storage.at(k)));
                 }
             }
         }
@@ -173,7 +172,7 @@ void Buffer::write_to_db() {
 
     auto code_hash_table{db::open_cursor(txn_, table::kPlainContractCode)};
     for (const auto& entry : storage_prefix_to_code_hash_) {
-        code_hash_table.upsert(to_slice(entry.first), to_slice(full_view(entry.second)));
+        code_hash_table.upsert(to_slice(entry.first), to_slice(entry.second));
     }
 
     auto account_change_table{db::open_cursor(txn_, table::kPlainAccountChangeSet)};
@@ -182,7 +181,7 @@ void Buffer::write_to_db() {
         uint64_t block_num{block_entry.first};
         change_key = block_key(block_num);
         for (const auto& account_entry : block_entry.second) {
-            data = full_view(account_entry.first);
+            data = ByteView{account_entry.first};
             data.append(account_entry.second);
             account_change_table.upsert(to_slice(change_key), to_slice(data));
         }
@@ -198,7 +197,7 @@ void Buffer::write_to_db() {
                 uint64_t incarnation{incarnation_entry.first};
                 change_key = storage_change_key(block_num, address, incarnation);
                 for (const auto& storage_entry : incarnation_entry.second) {
-                    data = full_view(storage_entry.first);
+                    data = ByteView{storage_entry.first};
                     data.append(storage_entry.second);
                     storage_change_table.upsert(to_slice(change_key), to_slice(data));
                 }

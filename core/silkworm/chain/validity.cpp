@@ -236,7 +236,7 @@ ValidationResult pre_validate_block(const Block& block, const State& state, cons
     Bytes ommers_rlp;
     rlp::encode(ommers_rlp, block.ommers);
     ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
-    if (full_view(ommers_hash.bytes) != full_view(header.ommers_hash)) {
+    if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
         return ValidationResult::kWrongOmmersHash;
     }
 

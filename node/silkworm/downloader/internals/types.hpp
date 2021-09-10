@@ -36,7 +36,6 @@ class Hash : public evmc::bytes32 {
     Hash(ByteView bv) { std::memcpy(bytes, bv.data(), 32); }
 
     operator Bytes() { return {bytes, 32}; }
-    operator ByteView() { return {bytes, 32}; }
 
     uint8_t* raw_bytes() { return bytes; }
     int length() { return 32; }
@@ -77,7 +76,7 @@ inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
     return out;
 }
 
-enum Penalty: int {
+enum Penalty : int {
     NoPenalty = 0,
     BadBlockPenalty,
     DuplicateHeaderPenalty,

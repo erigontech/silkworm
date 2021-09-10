@@ -20,11 +20,9 @@
 #ifndef SILKWORM_RLP_ENCODE_HPP_
 #define SILKWORM_RLP_ENCODE_HPP_
 
-#include <array>
 #include <optional>
 #include <vector>
 
-#include <gsl/span>
 #include <intx/intx.hpp>
 
 #include <silkworm/common/base.hpp>
@@ -56,23 +54,6 @@ namespace rlp {
     void encode(Bytes& to, uint64_t);
     void encode(Bytes& to, const intx::uint256&);
 
-    template <size_t N>
-    void encode(Bytes& to, gsl::span<const uint8_t, N> bytes) {
-        static_assert(N <= 55, "Complex RLP length encoding not supported");
-        to.push_back(kEmptyStringCode + N);
-        to.append(bytes.data(), N);
-    }
-
-    template <size_t N>
-    void encode(Bytes& to, const uint8_t (&bytes)[N]) {
-        encode<N>(to, gsl::span<const uint8_t, N>{bytes});
-    }
-
-    template <size_t N>
-    void encode(Bytes& to, const std::array<uint8_t, N>& bytes) {
-        encode<N>(to, gsl::span<const uint8_t, N>{bytes});
-    }
-
     void encode(Bytes& to, const BlockBody&);
     void encode(Bytes& to, const BlockHeader&, bool for_sealing = false);
     void encode(Bytes& to, const Block&);
@@ -82,8 +63,6 @@ namespace rlp {
     void encode(Bytes& to, const Transaction&);
 
     size_t length_of_length(uint64_t payload_length);
-
-    inline size_t length(const evmc::bytes32&) { return kHashLength + 1; }
 
     size_t length(ByteView);
     size_t length(uint64_t) noexcept;

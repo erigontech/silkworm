@@ -29,7 +29,7 @@ namespace silkworm::trie {
 
 TEST_CASE("Empty trie") {
     HashBuilder hb;
-    CHECK(to_hex(hb.root_hash()) == to_hex(full_view(kEmptyRoot)));
+    CHECK(to_hex(hb.root_hash()) == to_hex(kEmptyRoot));
 }
 
 TEST_CASE("HashBuilder1") {
@@ -40,8 +40,8 @@ TEST_CASE("HashBuilder1") {
     const auto val2{*from_hex("02")};
 
     HashBuilder hb;
-    hb.add(full_view(key1), val1);
-    hb.add(full_view(key2), val2);
+    hb.add(key1, val1);
+    hb.add(key2, val2);
 
     // even terminating
     const Bytes encoded_empty_terminating_path{*from_hex("20")};
@@ -82,7 +82,7 @@ TEST_CASE("HashBuilder1") {
 
     const ethash::hash256 hash{keccak256(extension_rlp)};
     const auto root_hash{hb.root_hash()};
-    CHECK(to_hex(root_hash) == to_hex(full_view(hash.bytes)));
+    CHECK(to_hex(root_hash) == to_hex(hash.bytes));
 }
 
 TEST_CASE("HashBuilder2") {
@@ -97,7 +97,7 @@ TEST_CASE("HashBuilder2") {
 
     HashBuilder hb0;
     hb0.add(key0, val0);
-    CHECK(to_hex(hb0.root_hash()) == to_hex(full_view(hash0.bytes)));
+    CHECK(to_hex(hb0.root_hash()) == to_hex(hash0.bytes));
 
     // ------------------------------------------------------------------------------------------
     // Add the second entry
@@ -126,7 +126,7 @@ TEST_CASE("HashBuilder2") {
     HashBuilder hb1;
     hb1.add(key0, val0);
     hb1.add(key1, val1);
-    CHECK(to_hex(hb1.root_hash()) == to_hex(full_view(hash1.bytes)));
+    CHECK(to_hex(hb1.root_hash()) == to_hex(hash1.bytes));
 }
 
 }  // namespace silkworm::trie

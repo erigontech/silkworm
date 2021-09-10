@@ -339,7 +339,7 @@ namespace db {
             CHECK(bh->block.header == header);
             CHECK(bh->block.ommers == body.ommers);
             CHECK(bh->block.transactions == body.transactions);
-            CHECK(full_view(bh->hash) == full_view(hash.bytes));
+            CHECK(ByteView{bh->hash} == ByteView{hash.bytes});
 
             CHECK(!bh->block.transactions[0].from);
             CHECK(!bh->block.transactions[1].from);
@@ -363,7 +363,7 @@ namespace db {
             CHECK(bh->block.header == header);
             CHECK(bh->block.ommers == body.ommers);
             CHECK(bh->block.transactions == body.transactions);
-            CHECK(full_view(bh->hash) == full_view(hash.bytes));
+            CHECK(ByteView{bh->hash} == ByteView{hash.bytes});
 
             CHECK(bh->block.transactions[0].from == 0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c_address);
             CHECK(bh->block.transactions[1].from == 0x941591b6ca8e8dd05c69efdec02b77c72dac1496_address);
@@ -428,7 +428,7 @@ namespace db {
         auto table{db::open_cursor(txn, table::kPlainState)};
 
         const auto addr{0xb000000000000000000000000000000000000008_address};
-        const Bytes key{storage_prefix(full_view(addr), kDefaultIncarnation)};
+        const Bytes key{storage_prefix(addr, kDefaultIncarnation)};
 
         const auto loc1{0x000000000000000000000000000000000000a000000000000000000000000037_bytes32};
         const auto loc2{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
@@ -439,15 +439,15 @@ namespace db {
         const auto val2{0x000000000000000000000000000000000000000000005666856076ebaf477f07_bytes32};
         const auto val3{0x4400000000000000000000000000000000000000000000000000000000000000_bytes32};
 
-        Bytes dat1{full_view(loc1)};
+        Bytes dat1{ByteView{loc1}};
         dat1.append(zeroless_view(val1));
         table.upsert(to_slice(key), to_slice(dat1));
 
-        Bytes dat2{full_view(loc2)};
+        Bytes dat2{ByteView{loc2}};
         dat2.append(zeroless_view(val2));
         table.upsert(to_slice(key), to_slice(dat2));
 
-        Bytes dat3{full_view(loc3)};
+        Bytes dat3{ByteView{loc3}};
         dat3.append(zeroless_view(val3));
         table.upsert(to_slice(key), to_slice(dat3));
 
@@ -489,20 +489,20 @@ namespace db {
 
         auto table{db::open_cursor(txn, table::kPlainAccountChangeSet)};
 
-        Bytes data1{full_view(addr1)};
+        Bytes data1{ByteView{addr1}};
         Bytes key1{block_key(block_num1)};
         data1.append(*from_hex(val1));
         table.upsert(to_slice(key1), to_slice(data1));
 
-        Bytes data2{full_view(addr2)};
+        Bytes data2{ByteView{addr2}};
         data2.append(*from_hex(val2));
         table.upsert(to_slice(key1), to_slice(data2));
 
-        Bytes data3{full_view(addr3)};
+        Bytes data3{ByteView{addr3}};
         data3.append(*from_hex(val3));
         table.upsert(to_slice(key1), to_slice(data3));
 
-        Bytes data4{full_view(addr4)};
+        Bytes data4{ByteView{addr4}};
         Bytes key2{block_key(block_num2)};
         data4.append(*from_hex(val4));
         table.upsert(to_slice(key2), to_slice(data4));
@@ -563,22 +563,22 @@ namespace db {
 
         auto table{db::open_cursor(txn, table::kPlainStorageChangeSet)};
 
-        Bytes data1{full_view(location1)};
+        Bytes data1{ByteView{location1}};
         data1.append(val1);
         auto key1{storage_change_key(block_num1, addr1, incarnation1)};
         table.upsert(db::to_slice(key1), db::to_slice(data1));
 
-        Bytes data2{full_view(location2)};
+        Bytes data2{ByteView{location2}};
         data2.append(val2);
         auto key2{storage_change_key(block_num1, addr2, incarnation2)};
         table.upsert(db::to_slice(key2), db::to_slice(data2));
 
-        Bytes data3{full_view(location3)};
+        Bytes data3{ByteView{location3}};
         data3.append(val3);
         auto key3{storage_change_key(block_num1, addr3, incarnation3)};
         table.upsert(db::to_slice(key3), db::to_slice(data3));
 
-        Bytes data4{full_view(location4)};
+        Bytes data4{ByteView{location4}};
         data4.append(val4);
         auto key4{storage_change_key(block_num3, addr4, incarnation4)};
         table.upsert(db::to_slice(key4), db::to_slice(data4));

@@ -19,9 +19,9 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/common/test_util.hpp>
 
 using namespace evmc::literals;
 
@@ -75,8 +75,8 @@ TEST_CASE("Stage Transaction Lookups") {
 
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
     // Retrieve numbers associated with hashes
-    auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_1.bytes))).value)};
-    auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_2.bytes))).value)};
+    auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(tx_hash_1.bytes)).value)};
+    auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(tx_hash_2.bytes)).value)};
     // Keys must be compact and equivalent to block number
     REQUIRE(got_block_0.compare(ByteView({1})) == 0);
     REQUIRE(got_block_1.compare(ByteView({2})) == 0);
@@ -127,10 +127,10 @@ TEST_CASE("Unwind Transaction Lookups") {
 
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
     // Unwind block should be still there
-    auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_1.bytes))).value)};
+    auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(tx_hash_1.bytes)).value)};
     REQUIRE(got_block_0.compare(ByteView({1})) == 0);
     // Block 2 must be absent due to unwind
-    CHECK(!lookup_table.seek(db::to_slice(full_view(tx_hash_2.bytes))));
+    CHECK(!lookup_table.seek(db::to_slice(tx_hash_2.bytes)));
 }
 
 TEST_CASE("Prune Transaction Lookups") {
@@ -179,8 +179,8 @@ TEST_CASE("Prune Transaction Lookups") {
 
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
     // Unwind block should be still there
-    auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_2.bytes))).value)};
+    auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(tx_hash_2.bytes)).value)};
     REQUIRE(got_block_1.compare(ByteView({2})) == 0);
     // Block 2 must be absent due to unwind
-    CHECK(!lookup_table.seek(db::to_slice(full_view(tx_hash_1.bytes))));
+    CHECK(!lookup_table.seek(db::to_slice(tx_hash_1.bytes)));
 }

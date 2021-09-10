@@ -70,8 +70,7 @@ void RecoveryWorker::work() {
                 }
             }
 
-            std::optional<Bytes> recovered{
-                ecdsa::recover(full_view(package.hash.bytes), full_view(package.signature), package.odd_y_parity)};
+            std::optional<Bytes> recovered{ecdsa::recover(package.hash.bytes, package.signature, package.odd_y_parity)};
 
             if (recovered.has_value() && recovered->at(0) == 4u) {
                 auto keyHash{ethash::keccak256(recovered->data() + 1, recovered->length() - 1)};

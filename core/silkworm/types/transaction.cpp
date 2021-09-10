@@ -385,7 +385,7 @@ void Transaction::recover_sender() {
     intx::be::unsafe::store(signature, r);
     intx::be::unsafe::store(signature + 32, s);
 
-    std::optional<Bytes> recovered{ecdsa::recover(full_view(hash.bytes), full_view(signature), odd_y_parity)};
+    const std::optional<Bytes> recovered{ecdsa::recover(hash.bytes, signature, odd_y_parity)};
     if (recovered) {
         hash = ethash::keccak256(recovered->data() + 1, recovered->length() - 1);
         from = evmc::address{};

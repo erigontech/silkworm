@@ -33,7 +33,7 @@ TEST_CASE("Storage update") {
     table::create_all(txn);
 
     const auto address{0xbe00000000000000000000000000000000000000_address};
-    const Bytes key{storage_prefix(full_view(address), kDefaultIncarnation)};
+    const Bytes key{storage_prefix(address, kDefaultIncarnation)};
 
     const auto location_a{0x0000000000000000000000000000000000000000000000000000000000000013_bytes32};
     const auto value_a1{0x000000000000000000000000000000000000000000000000000000000000006b_bytes32};
@@ -44,11 +44,11 @@ TEST_CASE("Storage update") {
 
     auto state{db::open_cursor(txn, table::kPlainState)};
 
-    Bytes data_a{full_view(location_a)};
+    Bytes data_a{ByteView{location_a}};
     data_a.append(zeroless_view(value_a1));
     state.upsert(to_slice(key), to_slice(data_a));
 
-    Bytes data_b{full_view(location_b)};
+    Bytes data_b{ByteView{location_b}};
     data_b.append(zeroless_view(value_b));
     state.upsert(to_slice(key), to_slice(data_b));
 
@@ -62,12 +62,12 @@ TEST_CASE("Storage update") {
     buffer.write_to_db();
 
     // Location A should have the new value
-    const std::optional<ByteView> db_value_a{find_value_suffix(state, key, full_view(location_a))};
+    const std::optional<ByteView> db_value_a{find_value_suffix(state, key, location_a)};
     REQUIRE(db_value_a.has_value());
     CHECK(db_value_a == zeroless_view(value_a2));
 
     // Location B should not change
-    const std::optional<ByteView> db_value_b{find_value_suffix(state, key, full_view(location_b))};
+    const std::optional<ByteView> db_value_b{find_value_suffix(state, key, location_b)};
     REQUIRE(db_value_b.has_value());
     CHECK(db_value_b == zeroless_view(value_b));
 }

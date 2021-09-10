@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
                     ByteView transaction_rlp{db::from_slice(transaction_data.value)};
                     auto transaction_hash{keccak256(transaction_rlp)};
-                    auto transaction_view{full_view(transaction_hash.bytes)};
+                    ByteView transaction_view{transaction_hash.bytes};
                     auto lookup_data{tx_lookup_table.find(db::to_slice(transaction_view), false)};
                     if (!lookup_data) {
                         SILKWORM_LOG(LogLevel::Error) << "Block " << block_number << " transaction " << i

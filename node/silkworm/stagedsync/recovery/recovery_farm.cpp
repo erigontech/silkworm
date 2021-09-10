@@ -422,6 +422,7 @@ bool RecoveryFarm::dispatch_batch() {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
+    return false;
 }
 
 bool RecoveryFarm::initialize_new_worker() {

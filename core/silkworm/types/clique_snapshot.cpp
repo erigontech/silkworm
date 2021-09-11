@@ -201,7 +201,7 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
         ret["tally"][to_hex(address)]["votes"]     = tally.votes;
     }
 
-    return ret;
+    return ret[0];
 }
 
 //! \brief Decode snapshot from json format.

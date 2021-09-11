@@ -27,7 +27,7 @@
 #include <evmc/evmc.h>
 #include <intx/intx.hpp>
 
-#include <silkworm/chain/blockchain.hpp>
+#include <silkworm/consensus/blockchain.hpp>
 #include <silkworm/common/base.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/types/account.hpp>

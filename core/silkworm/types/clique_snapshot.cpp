@@ -84,7 +84,7 @@ ValidationResult CliqueSnapshot::add_headers(std::vector<BlockHeader> headers, C
 				uncast(vote.address, vote.authorize);
 
 				// Uncast the vote from the chronological list
-				votes_.erase(votes_.begin(), it + 1);
+				votes_.erase(it);
 				break; // only one vote allowed
             }
         }
@@ -97,7 +97,54 @@ ValidationResult CliqueSnapshot::add_headers(std::vector<BlockHeader> headers, C
         } else {
             return ValidationResult::kInvalidVote;
         }
+    
+        if (cast(header.beneficiary, authorize)) {
+            votes_.push_back({signer, header.beneficiary, header.number, authorize});
+        }
+        // If the vote passed, update the list of signers
+        if (tallies_[header.beneficiary].votes > signers_.size() / 2) {
+            if (authorize) {
+                std::remove(signers_.begin(), signers_.end(), header.beneficiary);
+            } else {
+                if (std::find(signers_.begin(), signers_.end(), header.beneficiary) == signers_.end()) {
+                    signers_.push_back(header.beneficiary);
+                    // Update limit and clean up snapshot
+                    limit = (signers_.size() / 2) + 1;
+                    if  (header.number >= limit) {
+                        recents_.erase(header.number - limit);
+                    }
+                    for(auto it = votes_.begin(); it != votes_.end(); it++)  {
+                        auto vote{*it};
+                        if (vote.signer == header.beneficiary) {
+                            uncast(vote.address, vote.authorize);
+                            votes_.erase(it);
+                            it--;
+                        }
+                    }
+                }
+            }
+			// Discard previous votes.
+            for(auto it = votes_.begin(); it != votes_.end(); it++)  {
+                auto vote{*it};
+                if (vote.signer == header.beneficiary) {
+                    votes_.erase(it);
+                    it--;
+                }
+            }
+            tallies_.erase(header.beneficiary);
+        }
     }
+    block_number_ = headers.back().number;
+    hash_         = headers.back().hash();
+    // Sort signers for turness
+    std::sort(signers_.begin(), signers_.end(), [](
+            evmc::address& a, 
+            evmc::address& b) { 
+        return std::strcmp(
+            reinterpret_cast<char *>(a.bytes),
+            reinterpret_cast<char *>(b.bytes)) < 0; 
+    });
+    // Success
     return ValidationResult::kOk;
 }
 

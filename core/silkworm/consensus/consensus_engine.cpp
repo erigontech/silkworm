@@ -28,7 +28,6 @@
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/consensus/ethash/ethash.hpp>
 #include <silkworm/consensus/clique/clique.hpp>
-#include <silkworm/consensus/noproof/noproof.hpp>
 
 namespace silkworm::consensus {
 
@@ -152,14 +151,14 @@ bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header
 ConsensusEngine& get_consensus_engine(SealEngineType engine_type) {
     ConsensusEngine* engine;
     switch (engine_type) {
-        case SealEngineType::kEthash:            
+        case SealEngineType::kEthash:
             engine = new Ethash();
             return *engine;
         case SealEngineType::kClique:
             engine = new Clique(kDefaultCliqueConfig, kDefaultSnapshotConfig);
             return *engine;
         default:
-            engine = new NoProof();
+            engine = new Ethash();
             return *engine;
     }
 }

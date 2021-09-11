@@ -81,60 +81,10 @@ struct VersionBase {
     bool operator>=(const VersionBase& other) const { return this->operator==(other) || this->operator>(other); }
 };
 
-// Holds the storage mode set
-struct StorageMode {
-    bool Initialized;  // Whether db storage has been initialized
-    bool History;      // Whether History index is stored
-    bool Receipts;     // Whether Receipts are stored
-    bool TxIndex;      // Whether TxIndex is stored
-    bool CallTraces;   // Whether Call Traces are stored
-    bool TEVM;         // TODO - not yet supported in Silkworm
-
-    [[nodiscard]] std::string to_string() const {
-        if (!Initialized) {
-            return "default";
-        }
-        std::string ret{};
-        if (History) {
-            ret.push_back('h');
-        }
-        if (Receipts) {
-            ret.push_back('r');
-        }
-        if (TxIndex) {
-            ret.push_back('t');
-        }
-        if (CallTraces) {
-            ret.push_back('c');
-        }
-        if (TEVM) {
-            ret.push_back('e');
-        }
-        return ret;
-    }
-
-    bool operator==(const StorageMode& other) const {
-        return History == other.History && Receipts == other.Receipts && TxIndex == other.TxIndex &&
-               CallTraces == other.CallTraces && TEVM == other.TEVM;
-    }
-};
-
-constexpr StorageMode kDefaultStorageMode{
-    /*Initialized*/ true, /*History*/ true,    /*Receipts*/ true,
-    /*TxIndex*/ true,     /*CallTraces*/ true, /*TEVM*/ false,
-};
-
 /* Common Keys */
 
 // Key for DbInfo bucket storing db schema version
 constexpr const char* kDbSchemaVersionKey{"dbVersion"};
-
-// Keys for storage mode info from DbInfo bucket
-constexpr const char* kStorageModeHistoryKey{"smHistory"};
-constexpr const char* kStorageModeReceiptsKey{"smReceipts"};
-constexpr const char* kStorageModeTxIndexKey{"smTxIndex"};
-constexpr const char* kStorageModeCallTracesKey{"smCallTraces"};
-constexpr const char* kStorageModeTEVMKey{"smTEVM"};
 
 constexpr size_t kIncarnationLength{8};
 static_assert(kIncarnationLength == sizeof(uint64_t));

@@ -20,7 +20,7 @@
 #include <silkworm/db/tables.hpp>
 
 /*
-List of stages keys stored into SSP2 table
+    List of stages keys stored into SyncStage table
 */
 
 namespace silkworm::db::stages {

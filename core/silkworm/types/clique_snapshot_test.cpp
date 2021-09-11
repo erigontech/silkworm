@@ -29,8 +29,8 @@ nlohmann::json clique_json = R"({
         "hash": "04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f",
         "number": 52,
         "signers": {
-            "e7fb22dfef11920312e4989a3a2b81e2ebf05986": null,
-            "22341ae42d6dd7384bc8584e50419ea3ac75b83f": null
+            "e7fb22dfef11920312e4989a3a2b81e2ebf05986": {},
+            "22341ae42d6dd7384bc8584e50419ea3ac75b83f": {}
         },
         "recents": {
             "0x00000010": "22341ae42d6dd7384bc8584e50419ea3ac75b83f",
@@ -54,7 +54,7 @@ nlohmann::json clique_json = R"({
 
 TEST_CASE("Encode/Decode Snapshot") {
     auto snapshot{CliqueSnapshot::from_json(clique_json)};
-    auto decoded_snapshot{snapshot.to_json()};
+    nlohmann::json decoded_snapshot = snapshot.to_json();
     auto signers{snapshot.get_signers()};
     CHECK(signers[0] == 0x22341ae42d6dd7384bc8584e50419ea3ac75b83f_address);
     CHECK(signers[1] == 0xe7fb22dfef11920312e4989a3a2b81e2ebf05986_address);

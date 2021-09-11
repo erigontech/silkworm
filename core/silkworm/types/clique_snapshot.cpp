@@ -221,7 +221,7 @@ CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
         signers.push_back(signer);
     }
     // Assign recents
-    absl::btree_map<uint64_t, evmc::address> recents;
+    std::map<uint64_t, evmc::address> recents;
     for (auto it = json["recents"].begin(); it != json["recents"].end(); ++it) {
         // We compute address (JSON value)
         evmc::address address;
@@ -241,7 +241,7 @@ CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
     }
 
     // Assign tallies
-    absl::btree_map<evmc::address, Tally> tallies;
+    std::map<evmc::address, Tally> tallies;
     for (auto it = json["tally"].begin(); it != json["tally"].end(); ++it) {
         Tally t;
         evmc::address address;

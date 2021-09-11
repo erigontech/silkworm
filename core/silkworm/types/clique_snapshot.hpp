@@ -17,7 +17,7 @@
 #ifndef SILKWORM_TYPES_CLIQUE_SNAPSHOT
 #define SILKWORM_TYPES_CLIQUE_SNAPSHOT
 
-#include <absl/container/btree_map.h>
+#include <map>
 #include <silkworm/common/base.hpp>
 #include <nlohmann/json.hpp>
 #include <silkworm/common/util.hpp>
@@ -62,8 +62,8 @@ class CliqueSnapshot {
     public:
         CliqueSnapshot() = default;
         CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers,
-                       absl::btree_map<uint64_t, evmc::address> recents, std::vector<Vote> votes,
-                       absl::btree_map<evmc::address, Tally> tallies): 
+                       std::map<uint64_t, evmc::address> recents, std::vector<Vote> votes,
+                       std::map<evmc::address, Tally> tallies): 
                             block_number_{block_number}, hash_{hash}, signers_{signers},
                             recents_{recents}, votes_{votes}, tallies_{tallies} {}
 
@@ -100,9 +100,9 @@ class CliqueSnapshot {
         uint64_t block_number_;                            // Block number where the snapshot was created
         evmc::bytes32 hash_;                               // Block hash where the snapshot was created     
         std::vector<evmc::address> signers_;               // Set of authorized signers at this moment
-        absl::btree_map<uint64_t, evmc::address> recents_; // Set of recent signers for spam protections
+        std::map<uint64_t, evmc::address> recents_; // Set of recent signers for spam protections
         std::vector<Vote> votes_;                          // List of votes cast in chronological order
-        absl::btree_map<evmc::address, Tally> tallies_;    // Current vote tally to avoid recalculating
+        std::map<evmc::address, Tally> tallies_;    // Current vote tally to avoid recalculating
 };
 
 evmc::address get_signer_from_clique_header(BlockHeader header);

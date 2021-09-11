@@ -29,7 +29,7 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::ConsensusE
     : state_{state}, engine_{engine}, evm_{block, state_, config} {}
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
-    assert(pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
+    assert(consensus::pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
                                     evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
 
     if (!txn.from.has_value()) {

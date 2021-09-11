@@ -171,8 +171,8 @@ const std::vector<evmc::address>& CliqueSnapshot::get_signers() const noexcept {
 nlohmann::json CliqueSnapshot::to_json() const noexcept {
     nlohmann::json ret; // Returning json
     // Block Number and Hash
-    ret["number"] = block_number_;
-    ret["hash"]   = to_hex(hash_);
+    ret.emplace("number", block_number_);
+    ret.emplace("hash", to_hex(hash_));
     // Signers
     for (const auto& address: signers_) {
         ret["signers"][to_hex(address)] = nullptr;
@@ -184,16 +184,14 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
         ret["recents"][to_hex(block_number_bytes).insert(0, "0x")] = to_hex(address);
     }
     
-    // Votes
-    ret["votes"] = nlohmann::json::array();
-    nlohmann::json vote_json;
     // Iterates over each vote
     for (const auto& vote: votes_) {
+        nlohmann::json vote_json;
         // Build a vote JSON
-        vote_json["signer"]    = to_hex(vote.signer);
-        vote_json["address"]   = to_hex(vote.address);
-        vote_json["block"]     = vote.block_number;
-        vote_json["authorize"] = vote.authorize;
+        vote_json.emplace("signer", to_hex(vote.signer));
+        vote_json.emplace("address", to_hex(vote.address));
+        vote_json.emplace("block", vote.block_number);
+        vote_json.emplace("authorize", vote.authorize);
         // Push it to the votes array
         ret["votes"].push_back(vote_json);
     }

@@ -41,7 +41,7 @@ namespace silkworm {
  *
  * @param state The Ethereum state at the begining of the block.
  */
-[[nodiscard]] inline consensus::ValidationResult execute_block(const Block& block, State& state,
+[[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& config) noexcept {
     
     consensus::ConsensusEngine& engine{consensus::get_consensus_engine(config.seal_engine)};

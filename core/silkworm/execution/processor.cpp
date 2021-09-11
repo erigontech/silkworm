@@ -28,21 +28,21 @@ namespace silkworm {
 ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::ConsensusEngine& engine, State& state, const ChainConfig& config)
     : state_{state}, engine_{engine}, evm_{block, state_, config} {}
 
-consensus::ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
+ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
     assert(pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
-                                    evm_.block().header.base_fee_per_gas) == consensus::ValidationResult::kOk);
+                                    evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
 
     if (!txn.from.has_value()) {
-        return consensus::ValidationResult::kMissingSender;
+        return ValidationResult::kMissingSender;
     }
 
     if (state_.get_code_hash(*txn.from) != kEmptyHash) {
-        return consensus::ValidationResult::kSenderNoEOA;  // EIP-3607
+        return ValidationResult::kSenderNoEOA;  // EIP-3607
     }
 
     const uint64_t nonce{state_.get_nonce(*txn.from)};
     if (nonce != txn.nonce) {
-        return consensus::ValidationResult::kWrongNonce;
+        return ValidationResult::kWrongNonce;
     }
 
     // https://github.com/ethereum/EIPs/pull/3594
@@ -50,21 +50,21 @@ consensus::ValidationResult ExecutionProcessor::validate_transaction(const Trans
     // See YP, Eq (57) in Section 6.2 "Execution"
     const intx::uint512 v0{max_gas_cost + txn.value};
     if (state_.get_balance(*txn.from) < v0) {
-        return consensus::ValidationResult::kInsufficientFunds;
+        return ValidationResult::kInsufficientFunds;
     }
 
     if (available_gas() < txn.gas_limit) {
         // Corresponds to the final condition of Eq (58) in Yellow Paper Section 6.2 "Execution".
         // The sum of the transaction’s gas limit and the gas utilized in this block prior
         // must be no greater than the block’s gas limit.
-        return consensus::ValidationResult::kBlockGasLimitExceeded;
+        return ValidationResult::kBlockGasLimitExceeded;
     }
 
-    return consensus::ValidationResult::kOk;
+    return ValidationResult::kOk;
 }
 
 Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept {
-    assert(validate_transaction(txn) == consensus::ValidationResult::kOk);
+    assert(validate_transaction(txn) == ValidationResult::kOk);
 
     state_.clear_journal_and_substate();
 
@@ -142,7 +142,7 @@ uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_lef
     return gas_left;
 }
 
-consensus::ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept {
+ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept {
     receipts.clear();
     receipts.reserve(evm_.block().transactions.size());
 
@@ -153,8 +153,8 @@ consensus::ValidationResult ExecutionProcessor::execute_block_no_post_validation
 
     cumulative_gas_used_ = 0;
     for (const Transaction& txn : evm_.block().transactions) {
-        const consensus::ValidationResult err{validate_transaction(txn)};
-        if (err != consensus::ValidationResult::kOk) {
+        const ValidationResult err{validate_transaction(txn)};
+        if (err != ValidationResult::kOk) {
             return err;
         }
         receipts.push_back(execute_transaction(txn));
@@ -162,25 +162,25 @@ consensus::ValidationResult ExecutionProcessor::execute_block_no_post_validation
 
     apply_rewards();
 
-    return consensus::ValidationResult::kOk;
+    return ValidationResult::kOk;
 }
 
-consensus::ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt>& receipts) noexcept {
-    if (const consensus::ValidationResult res{execute_block_no_post_validation(receipts)}; res != consensus::ValidationResult::kOk) {
+ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt>& receipts) noexcept {
+    if (const ValidationResult res{execute_block_no_post_validation(receipts)}; res != ValidationResult::kOk) {
         return res;
     }
 
     const auto& header{evm_.block().header};
 
     if (cumulative_gas_used() != header.gas_used) {
-        return consensus::ValidationResult::kWrongBlockGas;
+        return ValidationResult::kWrongBlockGas;
     }
 
     if (evm_.revision() >= EVMC_BYZANTIUM) {
         static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
         evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
         if (receipt_root != header.receipts_root) {
-            return consensus::ValidationResult::kWrongReceiptsRoot;
+            return ValidationResult::kWrongReceiptsRoot;
         }
     }
 
@@ -189,12 +189,12 @@ consensus::ValidationResult ExecutionProcessor::execute_and_write_block(std::vec
         join(bloom, receipt.bloom);
     }
     if (bloom != header.logs_bloom) {
-        return consensus::ValidationResult::kWrongLogsBloom;
+        return ValidationResult::kWrongLogsBloom;
     }
 
     state_.write_to_db(header.number);
 
-    return consensus::ValidationResult::kOk;
+    return ValidationResult::kOk;
 }
 
 void ExecutionProcessor::apply_rewards() noexcept {

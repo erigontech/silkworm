@@ -21,8 +21,13 @@
 #include <silkworm/common/base.hpp>
 #include <nlohmann/json.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/types/block.hpp>
+#include <silkworm/consensus/validation.hpp>
 
 namespace silkworm {
+
+extern std::array<uint8_t, 8> kNonceAuthorize;
+extern std::array<uint8_t, 8> kNonceUnauthorize;
 
 // CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
 struct CliqueConfig {
@@ -62,6 +67,20 @@ class CliqueSnapshot {
                             block_number_{block_number}, hash_{hash}, signers_{signers},
                             recents_{recents}, votes_{votes}, tallies_{tallies} {}
 
+        //! \brief Updated snapshot by adding headers
+        //! \param headers: list of headers to add.
+        //! \param config: clique config.
+        ValidationResult add_headers(std::vector<BlockHeader> headers, CliqueConfig config);
+        //! \brief Checks for authority
+        //! \param block_number: Block to check.
+        //! \param address: Address to check.
+        //! \return if a signer at a given block height is in charge or not.
+        bool is_authority(uint64_t block_number, evmc::address address) const noexcept;
+
+        //! \brief Getter method for signers_.
+        //! \return Snapshot's signers.
+        const std::vector<evmc::address>& get_signers() const noexcept;
+
         //! \brief Convert the snapshot in JSON.
         //! \return The resulting JSON.
         nlohmann::json to_json() const noexcept;
@@ -85,6 +104,8 @@ class CliqueSnapshot {
         std::vector<Vote> votes_;                          // List of votes cast in chronological order
         absl::btree_map<evmc::address, Tally> tallies_;    // Current vote tally to avoid recalculating
 };
+
+evmc::address get_signer_from_clique_header(BlockHeader header);
 
 constexpr CliqueConfig kDefaultCliqueConfig = {
     15,

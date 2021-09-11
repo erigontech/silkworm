@@ -30,7 +30,7 @@ Blockchain::Blockchain(State& state, ConsensusEngine& engine, const ChainConfig&
 }
 
 ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
-    if (consensus::ValidationResult err{engine_.pre_validate_block(block, state_, config_)}; err != consensus::ValidationResult::kOk) {
+    if (ValidationResult err{engine_.pre_validate_block(block, state_, config_)}; err != ValidationResult::kOk) {
         return err;
     }
 
@@ -50,17 +50,17 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
     std::vector<BlockWithHash> chain{intermediate_chain(block_number - 1, block.header.parent_hash, ancestor)};
     chain.push_back({block, hash});
 
-    consensus::ValidationResult err{consensus::ValidationResult::kOk};
+    ValidationResult err{ValidationResult::kOk};
     size_t num_of_executed_chain_blocks{0};
     for (const BlockWithHash& x : chain) {
         err = execute_block(x.block, check_state_root);
-        if (err != consensus::ValidationResult::kOk) {
+        if (err != ValidationResult::kOk) {
             break;
         }
         ++num_of_executed_chain_blocks;
     }
 
-    if (err != consensus::ValidationResult::kOk) {
+    if (err != ValidationResult::kOk) {
         bad_blocks_[hash] = err;
         unwind_last_changes(ancestor, ancestor + num_of_executed_chain_blocks);
         re_execute_canonical_chain(ancestor, current_canonical_block);
@@ -93,7 +93,7 @@ ValidationResult Blockchain::execute_block(const Block& block, bool check_state_
     processor.evm().state_pool = state_pool;
     processor.evm().exo_evm = exo_evm;
 
-    if (const auto res{processor.execute_and_write_block(receipts_)}; res != consensus::ValidationResult::kOk) {
+    if (const auto res{processor.execute_and_write_block(receipts_)}; res != ValidationResult::kOk) {
         return res;
     }
 
@@ -101,11 +101,11 @@ ValidationResult Blockchain::execute_block(const Block& block, bool check_state_
         evmc::bytes32 state_root{state_.state_root_hash()};
         if (state_root != block.header.state_root) {
             state_.unwind_state_changes(block.header.number);
-            return consensus::ValidationResult::kWrongStateRoot;
+            return ValidationResult::kWrongStateRoot;
         }
     }
 
-    return consensus::ValidationResult::kOk;
+    return ValidationResult::kOk;
 }
 
 void Blockchain::re_execute_canonical_chain(uint64_t ancestor, uint64_t tip) {
@@ -123,8 +123,8 @@ void Blockchain::re_execute_canonical_chain(uint64_t ancestor, uint64_t tip) {
         block.transactions = body->transactions;
         block.ommers = body->ommers;
 
-        [[maybe_unused]] consensus::ValidationResult err{execute_block(block, /*check_state_root=*/false)};
-        assert(err == consensus::ValidationResult::kOk);
+        [[maybe_unused]] ValidationResult err{execute_block(block, /*check_state_root=*/false)};
+        assert(err == ValidationResult::kOk);
     }
 }
 

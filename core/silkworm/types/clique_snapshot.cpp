@@ -16,8 +16,113 @@
 
 #include "clique_snapshot.hpp"
 #include <silkworm/common/endian.hpp>
+#include <silkworm/crypto/ecdsa.hpp>
+#include <cstring>
 
 namespace silkworm {
+
+std::array<uint8_t, 8> kNonceAuthorize =   {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+std::array<uint8_t, 8> kNonceUnauthorize = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+evmc::address get_signer_from_clique_header(BlockHeader header) { // taking the header not by reference is intentional
+    Bytes ecrecover_data(kHashLength + kSignatureLength, '\0');
+    // Insert signature first
+    auto signature{header.extra_data.substr(header.extra_data.size() - kSignatureLength)};
+    std::memcpy(&ecrecover_data[kHashLength], 
+                &signature[0], 
+                kSignatureLength);
+    // Generate Sealing Hash for Clique
+    // for_sealing = false, with signature in extra_data
+    header.extra_data = signature; // we modify header directly, that is why we do not make copies
+    auto header_hash{header.hash()};
+    // Run Ecrecover and get public key
+    auto pub_key{*ecdsa::recover(full_view(header_hash), signature.substr(0, kSignatureLength - 1), signature[kSignatureLength - 1])};
+    // Convert public key to address
+    evmc::address signer;
+    std::memcpy(signer.bytes, &pub_key[12], kAddressLength);
+
+    return signer;
+}
+
+//! \brief Updated snapshot by adding headers
+//! \param headers: list of headers to add.
+ValidationResult CliqueSnapshot::add_headers(std::vector<BlockHeader> headers, CliqueConfig config) {
+	// Sanity check that the headers can be applied
+	for (size_t i = 0; i < headers.size() - 1; ++i) {
+		if (headers[i+1].number != headers[i].number +1) {
+			return ValidationResult::kInvalidVotingSegment;
+		}
+	}
+
+	if (headers[0].number != block_number_ + 1) {
+		return ValidationResult::kInvalidVotingSegment;
+	}
+
+    for(const auto& header: headers) {
+        // Remove any votes on checkpoint blocks
+        if (header.number % config.epoch == 0) {
+            votes_.clear();
+            tallies_.clear();
+        }
+		// Delete the oldest signer from the recent list to allow it signing again
+        uint64_t limit{(signers_.size() / 2) + 1};
+		if  (header.number >= limit) {
+			recents_.erase(header.number - limit);
+		}
+        auto signer{get_signer_from_clique_header(header)};
+        if (std::find(signers_.begin(), signers_.end(), signer) == signers_.end()) {
+            return ValidationResult::kUnhauthorizedSigner;
+        }
+
+        for(const auto& [_, recent]: recents_) {
+            if (signer == recent) {
+                return ValidationResult::kRecentlySigned;
+            }
+        }
+        recents_[header.number] = signer;
+
+        for(auto it = votes_.begin(); it != votes_.end(); it++)  {
+            auto vote{*it};
+            if (vote.signer == signer && vote.address == header.beneficiary) {
+				// Uncast the vote from the cached tally
+				uncast(vote.address, vote.authorize);
+
+				// Uncast the vote from the chronological list
+				votes_.erase(votes_.begin(), it + 1);
+				break; // only one vote allowed
+            }
+        }
+        // We check what the vote is
+        bool authorize;
+        if (header.nonce == kNonceAuthorize) {
+            authorize = true;
+        } else if (header.nonce == kNonceUnauthorize) {
+            authorize = false;
+        } else {
+            return ValidationResult::kInvalidVote;
+        }
+    }
+    return ValidationResult::kOk;
+}
+
+//! \brief Checks for authority
+//! \param block_number: Block to check.
+//! \param address: Address to check.
+//! \return if a signer at a given block height is in charge or not.
+bool CliqueSnapshot::is_authority(uint64_t block_number, evmc::address address) const noexcept {
+    uint64_t offset{0};
+	while (offset < signers_.size() && signers_[offset] != address) {
+		++offset;
+	}
+	return (block_number % signers_.size()) == offset;
+}
+
+//! \brief Getter method for signers_.
+//! \return Snapshot's signers.
+const std::vector<evmc::address>& CliqueSnapshot::get_signers() const noexcept {
+    return signers_;
+}
+
 //! \brief Convert the snapshot in JSON.
 //! \return The resulting JSON.
 nlohmann::json CliqueSnapshot::to_json() const noexcept {
@@ -57,6 +162,7 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
 
     return ret;
 }
+
 //! \brief Decode snapshot from json format.
 //! \return Decoded snapshot.
 CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
@@ -103,6 +209,14 @@ CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
         t.authorize =  it.value()["authorize"].get<bool>();
         tallies[address] = t;
     }
+    // Make sure signers are sorted before turn-ness check
+    std::sort(signers.begin(), signers.end(), [](
+            evmc::address& a, 
+            evmc::address& b) { 
+        return std::strcmp(
+            reinterpret_cast<char *>(a.bytes),
+            reinterpret_cast<char *>(b.bytes)) < 0; 
+    });
     return CliqueSnapshot{block_number, hash, signers, recents, votes, tallies};
 }
 

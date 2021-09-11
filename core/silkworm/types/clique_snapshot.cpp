@@ -25,18 +25,14 @@ std::array<uint8_t, 8> kNonceAuthorize =   {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
 std::array<uint8_t, 8> kNonceUnauthorize = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 evmc::address get_signer_from_clique_header(BlockHeader header) { // taking the header not by reference is intentional
-    Bytes ecrecover_data(kHashLength + kSignatureLength, '\0');
-    // Insert signature first
+    // Extract signature first
     auto signature{header.extra_data.substr(header.extra_data.size() - kSignatureLength)};
-    std::memcpy(&ecrecover_data[kHashLength], 
-                &signature[0], 
-                kSignatureLength);
     // Generate Sealing Hash for Clique
     // for_sealing = false, with signature in extra_data
     header.extra_data = signature; // we modify header directly, that is why we do not make copies
     auto header_hash{header.hash()};
     // Run Ecrecover and get public key
-    auto pub_key{*ecdsa::recover(full_view(header_hash), signature.substr(0, kSignatureLength - 1), signature[kSignatureLength - 1])};
+    auto pub_key{*ecdsa::recover(full_view(header_hash), signature, header.extra_data.back())};
     // Convert public key to address
     evmc::address signer;
     std::memcpy(signer.bytes, &pub_key[12], kAddressLength);

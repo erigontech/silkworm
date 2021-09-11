@@ -169,7 +169,7 @@ const std::vector<evmc::address>& CliqueSnapshot::get_signers() const noexcept {
 //! \brief Convert the snapshot in JSON.
 //! \return The resulting JSON.
 nlohmann::json CliqueSnapshot::to_json() const noexcept {
-    nlohmann::json ret; // Returning json
+    nlohmann::json ret(nlohmann::json::value_t::object); // Returning json
     // Block Number and Hash
     ret.emplace("number", block_number_);
     ret.emplace("hash", to_hex(hash_));
@@ -201,7 +201,7 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
         ret["tally"][to_hex(address)]["votes"]     = tally.votes;
     }
 
-    return ret[0];
+    return ret;
 }
 
 //! \brief Decode snapshot from json format.

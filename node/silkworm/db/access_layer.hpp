@@ -43,15 +43,6 @@ std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept;
 // Writes database schema version (throws on downgrade)
 void write_schema_version(mdbx::txn& txn, VersionBase& schema_version);
 
-// Gets storage mode from db
-StorageMode read_storage_mode(mdbx::txn& txn) noexcept;
-
-// Writes storage mode to db
-void write_storage_mode(mdbx::txn& txn, const StorageMode& val);
-
-// Parses storage mode from a string
-StorageMode parse_storage_mode(std::string& mode);
-
 std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength]);
 
 std::optional<BlockBody> read_body(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength],

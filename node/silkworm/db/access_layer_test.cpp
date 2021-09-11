@@ -22,6 +22,7 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/storage.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 

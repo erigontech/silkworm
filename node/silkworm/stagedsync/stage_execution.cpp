@@ -24,6 +24,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/storage.hpp>
 #include <silkworm/execution/processor.hpp>
 
 #include "stagedsync.hpp"

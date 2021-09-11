@@ -448,7 +448,7 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         while (data.done) {
             reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
             if (reached_block_num != expected_block_num) {
-                SILKWORM_LOG(LogLevel::Error) << "Bad header hash sequence ! Expected " << expected_block_num << " got "
+                SILKWORM_LOG(LogLevel::Error) << "Bad block number sequence ! Expected " << expected_block_num << " got "
                                               << reached_block_num << std::endl;
                 return StageResult::kBadChainSequence;
             }

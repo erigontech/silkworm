@@ -204,7 +204,7 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     auto free_stat{txn.get_map_stat(free_map)};
     auto free_crs{txn.open_cursor(free_map)};
 
-    const auto& collect_func{[&ret, &free_stat](const ::mdbx::cursor&, ::mdbx::cursor::move_result data) -> bool {
+    const auto& collect_func{[&ret, &free_stat](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
         size_t txId = *(static_cast<size_t*>(data.key.iov_base));
         size_t pagesCount = *(static_cast<uint32_t*>(data.value.iov_base));
         size_t pagesSize = pagesCount * free_stat.ms_psize;
@@ -372,7 +372,7 @@ void do_stages(db::EnvConfig& config) {
     }
 }
 
-void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
+void do_prunings(db::EnvConfig& config, uint64_t prune_size) {
     auto env{silkworm::db::open_env(config)};
     stagedsync::TransactionManager txn{env};
 
@@ -383,8 +383,9 @@ void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
 
     std::cout << "\n Pruned start, block to be kept: " << prune_size << "\n" << std::endl;
     auto pruned_node_stages{stagedsync::get_pruned_node_stages()};
-    for(auto stage: pruned_node_stages) {
-        stagedsync::success_or_throw(stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
+    for (auto stage : pruned_node_stages) {
+        stagedsync::success_or_throw(
+            stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
     }
 }
 
@@ -1033,11 +1034,12 @@ int main(int argc, char* argv[]) {
     auto cmd_extract_headers_step_opt = cmd_extract_headers->add_option("--step", "Step every this number of blocks")
                                             ->default_val("100000")
                                             ->check(CLI::Range(1u, UINT32_MAX));
-    // List migration keys
-    auto cmd_do_prunes = app_main.add_subcommand("do-prunes", "Prune the node");
-    auto cmd_do_prunes_size = cmd_do_prunes->add_option("--block-to-keep", "How many blocks of history to keep")
-                                  ->default_val("96000")
-                                  ->check(CLI::Range(1u, UINT32_MAX));
+    // Executes database prunings
+    // TODO(Andrea) eventually move to integration tool
+    auto cmd_do_prunings = app_main.add_subcommand("prune", "Prune the node");
+    auto cmd_do_prunings_size = cmd_do_prunings->add_option("--block-to-keep", "How many blocks of history to keep")
+                                    ->default_val("96000")
+                                    ->check(CLI::Range(1u, UINT32_MAX));
 
     /*
      * Parse arguments and validate
@@ -1116,8 +1118,8 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_extract_headers) {
             do_extract_headers(src_config, cmd_extract_headers_file_opt->as<std::string>(),
                                cmd_extract_headers_step_opt->as<uint32_t>());
-        } else if (*cmd_do_prunes) {
-            do_prunes(src_config, cmd_do_prunes_size->as<uint64_t>());
+        } else if (*cmd_do_prunings) {
+            do_prunings(src_config, cmd_do_prunings_size->as<uint64_t>());
         }
 
         return 0;

@@ -249,7 +249,7 @@ namespace db {
             CHECK(prune_mode.to_string() == "--prune=");
             CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
 
-            // Cross check we have the same value
+            // Cross-check we have the same value
             prune_mode = db::read_prune_mode(txn);
             CHECK(prune_mode.to_string() == "--prune=");
 

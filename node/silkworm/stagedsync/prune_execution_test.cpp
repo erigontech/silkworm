@@ -135,8 +135,7 @@ TEST_CASE("Prune Execution") {
     SECTION("With prune function") {
         buffer.write_to_db();
         // We prune from block 2, thus we delete block 1
-        REQUIRE_NOTHROW(
-            stagedsync::check_stagedsync_error(stagedsync::prune_execution(txn, context.dir().etl().path(), 2)));
+        REQUIRE_NOTHROW(stagedsync::success_or_throw(stagedsync::prune_execution(txn, context.dir().etl().path(), 2)));
 
         auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
         auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};

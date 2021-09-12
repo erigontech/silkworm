@@ -360,7 +360,7 @@ void do_stages(db::EnvConfig& config) {
             if (std::memcmp(result.key.iov_base, prune_prefix, 6) == 0) {
                 offset = 6;
             }
-            
+
             bool Known{db::stages::is_known_stage(result.key.char_ptr() + offset)};
             std::cout << (boost::format(fmt_row) % result.key.as_string() % height %
                           (Known ? std::string(8, ' ') : "Unknown"))
@@ -384,9 +384,8 @@ void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
 
     std::cout << "\n Pruned start, block to be kept: " << prune_size << "\n" << std::endl;
     auto pruned_node_stages{stagedsync::get_pruned_node_stages()};
-    for (auto stage : pruned_node_stages) {
-        stagedsync::check_stagedsync_error(
-            stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
+    for(auto stage: pruned_node_stages) {
+        stagedsync::success_or_throw(stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
     }
 }
 
@@ -419,7 +418,7 @@ void do_migrations(db::EnvConfig& config) {
     }
 }
 
-void do_stage_set(db::EnvConfig& config, std::string stage_name, uint32_t new_height, bool dry) {
+void do_stage_set(db::EnvConfig& config, std::string& stage_name, uint32_t new_height, bool dry) {
     config.readonly = false;
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_write()};
@@ -518,7 +517,7 @@ void do_schema(db::EnvConfig& config) {
               << std::endl;
 }
 
-void do_compact(db::EnvConfig& config, std::string work_dir, bool replace, bool nobak) {
+void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace, bool nobak) {
     fs::path work_path{work_dir};
     if (work_path.has_filename()) {
         work_path += fs::path::preferred_separator;
@@ -584,7 +583,7 @@ void do_compact(db::EnvConfig& config, std::string work_dir, bool replace, bool 
     }
 }
 
-void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, bool noempty,
+void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool create, bool noempty,
              std::vector<std::string>& names, std::vector<std::string>& xnames, bool dry) {
     fs::path target_path{target_dir};
     if (target_path.has_filename()) {
@@ -776,7 +775,7 @@ void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, boo
  * \param bool dry : whether or not commit data or run in simulation
  *
  */
-void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t chain_id, bool dry) {
+void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uint32_t chain_id, bool dry) {
     // Check datadir does not exist
     if (data_dir.exists()) {
         throw std::runtime_error("Provided data directory already exist");

@@ -120,7 +120,7 @@ class InMemoryState : public State {
     std::unordered_map<uint64_t, AccountChanges> account_changes_;  // per block
     std::unordered_map<uint64_t, StorageChanges> storage_changes_;  // per block
 
-    CliqueSnapshot current_snapshot_{};
+    std::unordered_map<uint64_t, CliqueSnapshot> snapshots_; // per block
     uint64_t block_number_{0};
 };
 

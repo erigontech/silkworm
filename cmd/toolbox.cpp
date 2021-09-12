@@ -32,9 +32,9 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/stagedsync/stagedsync.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
-#include <silkworm/stagedsync/stagedsync.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -372,19 +372,20 @@ void do_stages(db::EnvConfig& config) {
     }
 }
 
-void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
+void do_prunings(db::EnvConfig& config, uint64_t prune_size) {
     auto env{silkworm::db::open_env(config)};
     stagedsync::TransactionManager txn{env};
 
     auto current_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
-    
+
     if (prune_size > current_progress) return;
     auto prune_from{current_progress - prune_size};
 
     std::cout << "\n Pruned start, block to be kept: " << prune_size << "\n" << std::endl;
     auto pruned_node_stages{stagedsync::get_pruned_node_stages()};
-    for(auto stage: pruned_node_stages) {
-        stagedsync::success_or_throw(stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
+    for (auto stage : pruned_node_stages) {
+        stagedsync::success_or_throw(
+            stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
     }
 }
 
@@ -999,18 +1000,19 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     size_t batch_size{progress.get_increment_count()};
 
     code_cursor.to_first();
-    db::cursor_for_each(code_cursor, [&histogram, &batch_size, &progress](::mdbx::cursor&, mdbx::cursor::move_result& entry) {
-        if (entry.value.length() > 0) {
-            uint8_t first_byte{entry.value.at(0)};
-            ++histogram[first_byte];
-        }
-        if (!--batch_size) {
-            progress.set_current(progress.get_current() + progress.get_increment_count());
-            std::cout << progress.print_interval('.') << std::flush;
-            batch_size = progress.get_increment_count();
-        }
-        return true;
-    });
+    db::cursor_for_each(code_cursor,
+                        [&histogram, &batch_size, &progress](::mdbx::cursor&, mdbx::cursor::move_result& entry) {
+                            if (entry.value.length() > 0) {
+                                uint8_t first_byte{entry.value.at(0)};
+                                ++histogram[first_byte];
+                            }
+                            if (!--batch_size) {
+                                progress.set_current(progress.get_current() + progress.get_increment_count());
+                                std::cout << progress.print_interval('.') << std::flush;
+                                batch_size = progress.get_increment_count();
+                            }
+                            return true;
+                        });
 
     BlockNum last_block{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
     progress.set_current(total_entries);
@@ -1181,11 +1183,12 @@ int main(int argc, char* argv[]) {
     auto cmd_extract_headers_step_opt = cmd_extract_headers->add_option("--step", "Step every this number of blocks")
                                             ->default_val("100000")
                                             ->check(CLI::Range(1u, UINT32_MAX));
-    // List migration keys
-    auto cmd_do_prunes = app_main.add_subcommand("do-prunes", "Prune the node");
-    auto cmd_do_prunes_size = cmd_do_prunes->add_option("--block-to-keep", "How many blocks of history to keep")
-                                ->default_val("96000")
-                                ->check(CLI::Range(1u, UINT32_MAX));
+    // Executes database prunings
+    // TODO(Andrea) eventually move to integration tool
+    auto cmd_do_prunings = app_main.add_subcommand("prune", "Prune the node");
+    auto cmd_do_prunings_size = cmd_do_prunings->add_option("--block-to-keep", "How many blocks of history to keep")
+                                    ->default_val("96000")
+                                    ->check(CLI::Range(1u, UINT32_MAX));
 
     /*
      * Parse arguments and validate
@@ -1264,8 +1267,8 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_extract_headers) {
             do_extract_headers(src_config, cmd_extract_headers_file_opt->as<std::string>(),
                                cmd_extract_headers_step_opt->as<uint32_t>());
-        } else if (*cmd_do_prunes) {
-            do_prunes(src_config, cmd_do_prunes_size->as<uint64_t>());
+        } else if (*cmd_do_prunings) {
+            do_prunings(src_config, cmd_do_prunings_size->as<uint64_t>());
         }
 
         return 0;

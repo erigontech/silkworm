@@ -152,16 +152,18 @@ constexpr PruneMode kDefaultPruneMode{
 //! \brief Reads storage mode from db
 //! \param [in] txn : a db transaction
 //! \return A StorageMode instance
-[[deprecated("Use read_prune_mode() instead")]]
+[[deprecated("Storage mode has been superseded by prune mode")]]
 StorageMode read_storage_mode(mdbx::txn& txn);
 
 //! \brief Writes storage mode to db
 //! \param [in] txn : a db transaction
 //! \param [in] value : the StorageMode to be persisted
+[[deprecated("Storage mode has been superseded by prune mode")]]
 void write_storage_mode(mdbx::txn& txn, const StorageMode& value);
 
 //! \brief Parses storage mode from a string
 //! \param [in] mode : the string representation of StorageMode
+[[deprecated("Storage mode has been superseded by prune mode")]]
 StorageMode parse_storage_mode(std::string& mode);
 
 //! \brief Reads pruning mode from db

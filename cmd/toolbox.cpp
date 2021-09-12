@@ -384,7 +384,7 @@ void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
     std::cout << "\n Pruned start, block to be kept: " << prune_size << "\n" << std::endl;
     auto pruned_node_stages{stagedsync::get_pruned_node_stages()};
     for(auto stage: pruned_node_stages) {
-        stagedsync::check_stagedsync_error(stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
+        stagedsync::success_or_throw(stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
     }
 }
 

@@ -24,7 +24,7 @@
 
 namespace silkworm::stagedsync {
 
-void check_stagedsync_error(StageResult code) {
+void success_or_throw(StageResult code) {
     if (code != StageResult::kSuccess) {
         std::string error{magic_enum::enum_name<StageResult>(code)};
         throw std::runtime_error(error);

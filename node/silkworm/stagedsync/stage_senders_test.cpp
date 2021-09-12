@@ -100,7 +100,7 @@ TEST_CASE("Stage Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.etl().path()));
+    stagedsync::success_or_throw(stagedsync::stage_senders(txn, data_dir.etl().path()));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
@@ -176,8 +176,8 @@ TEST_CASE("Unwind Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
-    stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, tmp_dir.path(), 1));
+    stagedsync::success_or_throw(stagedsync::stage_senders(txn, tmp_dir.path()));
+    stagedsync::success_or_throw(stagedsync::unwind_senders(txn, tmp_dir.path(), 1));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
@@ -251,9 +251,9 @@ TEST_CASE("Prune Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
+    stagedsync::success_or_throw(stagedsync::stage_senders(txn, tmp_dir.path()));
     // We prune from Block 2, thus deleting block 1
-    stagedsync::check_stagedsync_error(stagedsync::prune_senders(txn, tmp_dir.path(), 2));
+    stagedsync::success_or_throw(stagedsync::prune_senders(txn, tmp_dir.path(), 2));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_1{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(2))).value)};

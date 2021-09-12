@@ -64,7 +64,7 @@ static const std::vector<fs::path> kExcludedTests{
     // Gas limit >= 2^64 is not supported; see EIP-1985.
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
-    kTransactionDir / "GasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
+    kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
 constexpr size_t kColumnWidth{80};

@@ -201,7 +201,7 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
         ret["tally"][to_hex(address)]["authorize"] = tally.authorize;
         ret["tally"][to_hex(address)]["votes"]     = tally.votes;
     }
-    if (ret.is_array()) { // on linux it becomes an array for some reason. tmp solution
+    if (ret.is_array()) { // on linux it becomes an array for some reason. this is a temporary solution
         return ret[0];
     }
     return ret;

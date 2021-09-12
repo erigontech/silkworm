@@ -60,9 +60,13 @@ enum class [[nodiscard]] ValidationResult{
     kWrongChainId = 29,  // EIP-155
     kInvalidVotingSegment = 30, // Invalid voting segment in Clique/Aura
     kUnhauthorizedSigner = 31,  // Handling an unhautorized voting signer
-    kRecentlySigned = 32, // Signer has already recently signed
-    kInvalidVote = 33, // Non-Existing vote option
-    kUnsupportedTransactionType = 34,  // EIP-2718
+    kMissingSigner = 32,   // Missing Signer in extra_data
+    kRecentlySigned = 33, // Signer has already recently signed
+    kInvalidVote = 34, // Non-Existing vote option
+    kInvalidCheckpointBeneficiary = 35,
+    kMissingVanity = 36,   // ‖Hx‖ < 97
+
+    kUnsupportedTransactionType = 37,  // EIP-2718
 };
 
 #endif // SILKWORM_CONSENSUS_VALIDATION_HPP_

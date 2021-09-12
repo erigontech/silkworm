@@ -38,20 +38,25 @@ class ConsensusEngine {
     //! \param [in] state: current state.
     //! \param [in] config: current chain config.
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult pre_validate_block(const Block& block, const State& state, const ChainConfig& config) = 0;
+    virtual ValidationResult pre_validate_block(const Block& block, State& state, const ChainConfig& config) = 0;
 
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.
     //! \param [in] state: current state.
     //! \param [in] config: current chain config.
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) = 0;
+    virtual ValidationResult validate_block_header(const BlockHeader& header, State& state, const ChainConfig& config) = 0;
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
     virtual void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) = 0;
+    //! \brief See [YP] Section 11.3 "Reward Application".
+    //! \param [in] txn: Transaction to process.
+    //! \param [in] header: Current block to apply rewards for.
+    //! \param [in] state: Current state.
+    virtual void assign_transaction_fees(const BlockHeader& header, intx::uint256 accumulated_fees, IntraBlockState& state) = 0;
 };
 
 // Performs validation of a transaction that can be done prior to sender recovery and block execution.

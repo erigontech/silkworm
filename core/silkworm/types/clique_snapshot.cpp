@@ -148,6 +148,35 @@ ValidationResult CliqueSnapshot::add_headers(std::vector<BlockHeader> headers, C
     return ValidationResult::kOk;
 }
 
+//! \brief Verify seal for header
+//! \param header: header to verify.
+ValidationResult CliqueSnapshot::verify_seal(BlockHeader header) {
+    auto signer{get_signer_from_clique_header(header)};
+
+    if (std::find(signers_.begin(), signers_.end(), signer) == signers_.end()) {
+        return ValidationResult::kUnhauthorizedSigner;
+    }
+
+    for (const auto& [block_number, address]: recents_) {
+        if (address == signer && block_number > block_number_ - ((signers_.size() / 2) - 1)) {
+            return ValidationResult::kRecentlySigned;
+        }
+    }
+
+    // Check difficituly
+    auto authority{is_authority(header.number, signer)};
+
+    if (authority && header.difficulty != kDiffInTurn) {
+        return ValidationResult::kIntrinsicGas;
+    }
+
+    if (authority && header.difficulty != kDiffNoTurn) {
+        return ValidationResult::kIntrinsicGas;
+    }
+
+    return ValidationResult::kOk;
+}
+
 //! \brief Checks for authority
 //! \param block_number: Block to check.
 //! \param address: Address to check.
@@ -164,6 +193,18 @@ bool CliqueSnapshot::is_authority(uint64_t block_number, evmc::address address) 
 //! \return Snapshot's signers.
 const std::vector<evmc::address>& CliqueSnapshot::get_signers() const noexcept {
     return signers_;
+}
+
+//! \brief Getter method for block_number_.
+//! \return Snapshot's block number.
+const uint64_t& CliqueSnapshot::get_block_number() const noexcept {
+    return block_number_;
+}
+
+//! \brief Getter method for hash_.
+//! \return Snapshot's hash.
+const evmc::bytes32& CliqueSnapshot::get_hash() const noexcept {
+    return hash_;
 }
 
 //! \brief Convert the snapshot in JSON.

@@ -25,11 +25,13 @@ class Ethash: public ConsensusEngine {
 
     public:
 
-     ValidationResult pre_validate_block(const Block& block, const State& state, const ChainConfig& config) override;
+     ValidationResult pre_validate_block(const Block& block, State& state, const ChainConfig& config) override;
 
-     ValidationResult validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) override;
+     ValidationResult validate_block_header(const BlockHeader& header, State& state, const ChainConfig& config) override;
 
      void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
+
+    void assign_transaction_fees(const BlockHeader& header, intx::uint256 accumulated_fees, IntraBlockState& state) override;
 };
 
 }

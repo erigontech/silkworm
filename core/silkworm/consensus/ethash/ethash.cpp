@@ -25,7 +25,7 @@
 
 namespace silkworm::consensus {
 
-ValidationResult Ethash::pre_validate_block(const Block& block, const State& state, const ChainConfig& config) {
+ValidationResult Ethash::pre_validate_block(const Block& block, State& state, const ChainConfig& config) {
     const BlockHeader& header{block.header};
 
     if (ValidationResult err{validate_block_header(header, state, config)}; err != ValidationResult::kOk) {
@@ -83,7 +83,7 @@ ValidationResult Ethash::pre_validate_block(const Block& block, const State& sta
     return ValidationResult::kOk;
 }
 
-ValidationResult Ethash::validate_block_header(const BlockHeader& header, const State& state, const ChainConfig& config) {
+ValidationResult Ethash::validate_block_header(const BlockHeader& header, State& state, const ChainConfig& config) {
      if (header.gas_used > header.gas_limit) {
         return ValidationResult::kGasAboveLimit;
     }
@@ -180,5 +180,8 @@ void Ethash::apply_rewards(IntraBlockState& state, const Block& block, const evm
     state.add_to_balance(block.header.beneficiary, miner_reward);
 }
 
+void Ethash::assign_transaction_fees(const BlockHeader& header, intx::uint256 accumulated_fees, IntraBlockState& state) {
+    state.add_to_balance(header.beneficiary, accumulated_fees);
+}
 
 }

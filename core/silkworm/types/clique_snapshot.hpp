@@ -29,6 +29,8 @@ namespace silkworm {
 extern std::array<uint8_t, 8> kNonceAuthorize;
 extern std::array<uint8_t, 8> kNonceUnauthorize;
 
+constexpr uint64_t kDiffInTurn = 2; // Block difficulty for in-turn signatures
+constexpr uint64_t kDiffNoTurn = 1; // Block difficulty for out-of-turn signatures
 // CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
 struct CliqueConfig {
 	uint64_t   period; // Number of seconds between blocks to enforce
@@ -37,8 +39,8 @@ struct CliqueConfig {
 
 struct SnapshotConfig {
     uint64_t checkpoint_interval; // Number of blocks after which to save the vote snapshot to the database
-    uint64_t inmemory_snapshots;  // Number of recent vote snapshots to keep in memory
-	uint64_t inmemory_signatures; // Number of recent block signatures to keep in memory
+    uint64_t inmemory_snapshots;  // Number of recent vote snapshots to keep in memory (To implement in the future)
+	uint64_t inmemory_signatures; // Number of recent block signatures to keep in memory (To implement in the future)
 };
 
 // Vote represents a single vote that an authorized signer made to modify the
@@ -61,6 +63,8 @@ struct Tally {
 class CliqueSnapshot {
     public:
         CliqueSnapshot() = default;
+        CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers):
+                        block_number_{block_number}, hash_{hash}, signers_{signers} {}
         CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers,
                        std::map<uint64_t, evmc::address> recents, std::vector<Vote> votes,
                        std::map<evmc::address, Tally> tallies): 
@@ -71,6 +75,10 @@ class CliqueSnapshot {
         //! \param headers: list of headers to add.
         //! \param config: clique config.
         ValidationResult add_headers(std::vector<BlockHeader> headers, CliqueConfig config);
+        //! \brief Verify seal for header
+        //! \param header: header to verify.
+        ValidationResult verify_seal(BlockHeader header);
+
         //! \brief Checks for authority
         //! \param block_number: Block to check.
         //! \param address: Address to check.
@@ -81,6 +89,13 @@ class CliqueSnapshot {
         //! \return Snapshot's signers.
         const std::vector<evmc::address>& get_signers() const noexcept;
 
+        //! \brief Getter method for block_number_.
+        //! \return Snapshot's block number.
+        const uint64_t& get_block_number() const noexcept;
+
+        //! \brief Getter method for hash_.
+        //! \return Snapshot's hash.
+        const evmc::bytes32& get_hash() const noexcept;
         //! \brief Convert the snapshot in JSON.
         //! \return The resulting JSON.
         nlohmann::json to_json() const noexcept;

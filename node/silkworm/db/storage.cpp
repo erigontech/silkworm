@@ -16,8 +16,10 @@ limitations under the License.
 
 #include "storage.hpp"
 
+#include <silkworm/common/endian.hpp>
+
 namespace silkworm::db {
-StorageMode read_storage_mode(mdbx::txn& txn) noexcept {
+StorageMode read_storage_mode(mdbx::txn& txn) {
     StorageMode ret{true};
     auto src{db::open_cursor(txn, table::kDatabaseInfo)};
 
@@ -82,6 +84,119 @@ StorageMode parse_storage_mode(std::string& mode) {
                 throw std::invalid_argument("Invalid mode");
         }
     }
+    return ret;
+}
+
+PruneMode read_prune_mode(mdbx::txn& txn) {
+    PruneMode ret{true};
+    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
+
+    /*
+     * TODO Eventually optimize with removal of keys which don't prune at all
+     * For compatibility reasons with erigon we assume a value == UINT64_MAX means no pruning
+     */
+
+    // History
+    auto data{src.find(mdbx::slice{kPruneModeHistoryKey}, /*throw_notfound=*/false)};
+    if (data.done) {
+        assert(data.value.length() == sizeof(uint64_t));
+        auto value{endian::load_big_u64(from_slice(data.value).data())};
+        if (value != UINT64_MAX) {
+            ret.History.emplace(value);
+        }
+    }
+
+    // Receipts
+    data = src.find(mdbx::slice{kPruneModeReceiptsKey}, /*throw_notfound=*/false);
+    if (data.done) {
+        assert(data.value.length() == sizeof(uint64_t));
+        auto value{endian::load_big_u64(from_slice(data.value).data())};
+        if (value != UINT64_MAX) {
+            ret.Receipts.emplace(value);
+        }
+    }
+
+    // TxIndex
+    data = src.find(mdbx::slice{kPruneModeTxIndexKey}, /*throw_notfound=*/false);
+    if (data.done) {
+        assert(data.value.length() == sizeof(uint64_t));
+        auto value{endian::load_big_u64(from_slice(data.value).data())};
+        if (value != UINT64_MAX) {
+            ret.TxIndex.emplace(value);
+        }
+    }
+
+    // CallTraces
+    data = src.find(mdbx::slice{kPruneModeCallTracesKey}, /*throw_notfound=*/false);
+    if (data.done) {
+        assert(data.value.length() == sizeof(uint64_t));
+        auto value{endian::load_big_u64(from_slice(data.value).data())};
+        if (value != UINT64_MAX) {
+            ret.CallTraces.emplace(value);
+        }
+    }
+
+    return ret;
+}
+
+void write_prune_mode(mdbx::txn& txn, const PruneMode& value) {
+    auto target{db::open_cursor(txn, table::kDatabaseInfo)};
+    Bytes db_value(sizeof(BlockNum), '\0');
+
+    // History
+    if (value.History.has_value()) {
+        endian::store_big_u64(db_value.data(), value.History.value());
+        target.upsert(mdbx::slice(kPruneModeHistoryKey), to_slice(db_value));
+    }
+
+    // Receipts
+    if (value.Receipts.has_value()) {
+        endian::store_big_u64(db_value.data(), value.Receipts.value());
+        target.upsert(mdbx::slice(kPruneModeReceiptsKey), to_slice(db_value));
+    }
+
+    // TxIndex
+    if (value.TxIndex.has_value()) {
+        endian::store_big_u64(db_value.data(), value.TxIndex.value());
+        target.upsert(mdbx::slice(kPruneModeTxIndexKey), to_slice(db_value));
+    }
+
+    // Call Traces
+    if (value.CallTraces.has_value()) {
+        endian::store_big_u64(db_value.data(), value.CallTraces.value());
+        target.upsert(mdbx::slice(kPruneModeCallTracesKey), to_slice(db_value));
+    }
+}
+
+PruneMode parse_prune_mode(std::string& mode, PruneDistance exactHistory, PruneDistance exactReceipts,
+                           PruneDistance exactTxIndex, PruneDistance exactCallTraces) {
+    PruneMode ret{kDefaultPruneMode};
+    if (!mode.empty() && !(iequals(mode, "default") || iequals(mode, "disabled"))) {
+        for (const auto& c : mode) {
+            switch (c) {
+                case 'h':
+                    ret.History.emplace(kDefaultPruneThreshold);
+                    break;
+                case 'r':
+                    ret.Receipts.emplace(kDefaultPruneThreshold);
+                    break;
+                case 't':
+                    ret.TxIndex.emplace(kDefaultPruneThreshold);
+                    break;
+                case 'c':
+                    ret.CallTraces.emplace(kDefaultPruneThreshold);
+                    break;
+                default:
+                    throw std::invalid_argument("Invalid mode");
+            }
+        }
+    }
+    // Apply discrete values if provided
+    if (exactHistory.has_value()) ret.History = exactHistory;
+    if (exactReceipts.has_value()) ret.Receipts = exactReceipts;
+    if (exactTxIndex.has_value()) ret.TxIndex = exactTxIndex;
+    if (exactCallTraces.has_value()) ret.CallTraces = exactCallTraces;
+
     return ret;
 }
 

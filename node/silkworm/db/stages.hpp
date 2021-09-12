@@ -101,14 +101,14 @@ void write_stage_prune_progress(mdbx::txn& txn, const char* stage_name, BlockNum
 //! \return The invalidation point
 //! \remarks An invalidation point == 0 means there is no invalidation point. BlockNum 0 is the genesis and you can't
 //! unwind it
-BlockNum read_stage_unwind(mdbx::txn& txn, const char* stage_name);
+BlockNum read_stage_unwind_progress(mdbx::txn& txn, const char* stage_name);
 
 //! \brief Writes into db the invalidation point (block height) for the provided stage name
 //! \param [in] txn : a reference to a rw db transaction
 //! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
 //! \param [in] block_num : the actual chain invalidation point (BlockNum) the stage must record. If omitted the value
 //! defaults to 0 which means to clear any previously recorded invalidation point.
-void write_stage_unwind(mdbx::txn& txn, const char* stage_name, BlockNum block_num = 0);
+void write_stage_unwind_progress(mdbx::txn& txn, const char* stage_name, BlockNum block_num = 0);
 
 //! \brief Whether the provided stage name is known to Silkworm
 //! \param [in] stage_name : The name of the stage to check for

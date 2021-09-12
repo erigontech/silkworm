@@ -78,11 +78,11 @@ void write_stage_prune_progress(mdbx::txn& txn, const char* stage_name, BlockNum
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageProgress, "prune_");
 }
 
-BlockNum read_stage_unwind(mdbx::txn& txn, const char* stage_name) {
+BlockNum read_stage_unwind_progress(mdbx::txn& txn, const char* stage_name) {
     return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageUnwind);
 }
 
-void write_stage_unwind(mdbx::txn& txn, const char* stage_name, BlockNum block_num) {
+void write_stage_unwind_progress(mdbx::txn& txn, const char* stage_name, BlockNum block_num) {
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageUnwind);
 }
 

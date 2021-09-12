@@ -127,11 +127,11 @@ SILKWORM_EXPORT void state_update_storage(silkworm::State* state, const uint8_t*
                                           const silkworm::Account* account, const silkworm::Bytes* location,
                                           const silkworm::Bytes* value);
 
-SILKWORM_EXPORT silkworm::Blockchain* new_blockchain(silkworm::State* state, const silkworm::ChainConfig* config,
+SILKWORM_EXPORT silkworm::consensus::Blockchain* new_blockchain(silkworm::State* state, const silkworm::ChainConfig* config,
                                                      const silkworm::Block* genesis_block);
-SILKWORM_EXPORT void delete_blockchain(silkworm::Blockchain* x);
+SILKWORM_EXPORT void delete_blockchain(silkworm::consensus::Blockchain* x);
 
-SILKWORM_EXPORT silkworm::ValidationResult blockchain_insert_block(silkworm::Blockchain* chain, silkworm::Block* block,
+SILKWORM_EXPORT silkworm::ValidationResult blockchain_insert_block(silkworm::consensus::Blockchain* chain, silkworm::Block* block,
                                                                    bool check_state_root);
 }
 

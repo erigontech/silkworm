@@ -90,7 +90,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
     }
 }
 
-StageResult stage_execution(TransactionManager& txn, const std::filesystem::path&, size_t batch_size,
+StageResult stage_execution(db::TransactionManager& txn, const std::filesystem::path&, size_t batch_size,
                             uint64_t prune_from) {
     StageResult res{StageResult::kSuccess};
 
@@ -217,7 +217,7 @@ static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plai
     }
 }
 
-StageResult unwind_execution(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
+StageResult unwind_execution(db::TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
     BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
     if (unwind_to >= execution_progress) {
         return StageResult::kSuccess;
@@ -275,7 +275,7 @@ StageResult unwind_execution(TransactionManager& txn, const std::filesystem::pat
     }
 }
 
-StageResult prune_execution(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
+StageResult prune_execution(db::TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
     static const db::MapConfig prune_tables[] = {
         db::table::kPlainAccountChangeSet,  //
         db::table::kPlainStorageChangeSet,  //

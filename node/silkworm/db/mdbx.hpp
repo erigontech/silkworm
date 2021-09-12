@@ -63,6 +63,40 @@ struct MapConfig {
     const ::mdbx::value_mode value_mode{::mdbx::value_mode::single};  // Data Storage Mode
 };
 
+//! \brief TransactionManager class acts as a wrapper around an MDBX RW transaction which can be internally managed or
+//! externally provided
+class TransactionManager {
+  public:
+    //! \brief Creates an instance with an internally managed transaction
+    explicit TransactionManager(mdbx::env& env) : env_{&env} { managed_txn_ = env_->start_write(); }
+
+    //! \brief Creates an instance with an externally provided transaction
+    //! \remarks Useful in staged sync for running several stages on a handful of blocks atomically. Commit (or abort)
+    //! of transaction must be handled by the function which has provided the transaction
+    explicit TransactionManager(mdbx::txn& external_txn) : external_txn_{&external_txn} {}
+
+    // Not copyable nor movable
+    TransactionManager(const TransactionManager&) = delete;
+    TransactionManager& operator=(const TransactionManager&) = delete;
+
+    mdbx::txn& operator*() { return external_txn_ ? *external_txn_ : managed_txn_; }
+    mdbx::txn* operator->() { return external_txn_ ? external_txn_ : &managed_txn_; }
+
+    //! \brief Commits and renews the transaction when internally handled. If externally provided this method does
+    //! nothing
+    void commit() {
+        if (external_txn_ == nullptr) {
+            managed_txn_.commit();
+            managed_txn_ = env_->start_write();  // renew transaction
+        }
+    }
+
+  private:
+    mdbx::txn* external_txn_{nullptr};
+    mdbx::env* env_{nullptr};
+    mdbx::txn_managed managed_txn_;
+};
+
 //! \brief Opens an mdbx environment using the provided environment config
 //! \param [in] config : A structure containing essential environment settings
 //! \return A handler to mdbx::env_managed class
@@ -97,7 +131,8 @@ static inline std::filesystem::path get_datafile_path(const std::filesystem::pat
 //! \brief Builds the full path to mdbx lockfile provided a directory
 //! \param [in] base_path : a reference to the directory holding the lock file
 //! \return A path with file name
-static inline std::filesystem::path get_lockfile_path(const std::filesystem::path& base_path) noexcept {
+[[maybe_unused]] static inline std::filesystem::path get_lockfile_path(
+    const std::filesystem::path& base_path) noexcept {
     return std::filesystem::path(base_path / std::filesystem::path(kDbLockFileName));
 }
 

@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
     try {
         auto env{db::open_env(db_config)};
-        stagedsync::TransactionManager tm{env};
+        db::TransactionManager tm{env};
         if (storage) {
             stagedsync::success_or_throw(
                 stagedsync::unwind_storage_history(tm, data_dir.etl().path(), unwind_to));

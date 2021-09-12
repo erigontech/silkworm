@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
         data_dir.deploy();
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
-        stagedsync::TransactionManager tm{env};
+        db::TransactionManager tm{env};
         stagedsync::success_or_throw(stagedsync::unwind_tx_lookup(tm, data_dir.etl().path(), unwind_to));
 
     } catch (const std::exception& ex) {

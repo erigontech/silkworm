@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = false;
     auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager tm{env};
+    db::TransactionManager tm{env};
 
     if (prune) {
         prune_from = db::stages::read_stage_progress(*tm, db::stages::kSendersKey) - blocks_to_keep;

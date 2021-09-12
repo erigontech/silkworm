@@ -29,7 +29,7 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+StageResult stage_blockhashes(db::TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
     uint32_t block_number{0};
@@ -112,7 +112,7 @@ StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::pa
     return StageResult::kSuccess;
 }
 
-StageResult unwind_blockhashes(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
+StageResult unwind_blockhashes(db::TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
     // We take data from header table and transform it and put it in blockhashes table
     auto canonical_hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};

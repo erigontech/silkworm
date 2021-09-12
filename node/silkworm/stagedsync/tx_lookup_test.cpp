@@ -40,7 +40,7 @@ TEST_CASE("Stage Transaction Lookups") {
     db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
+    db::TransactionManager txn{env};
     db::table::create_all(*txn);
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};

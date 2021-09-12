@@ -242,7 +242,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     }
 }
 
-StageResult stage_hashstate(TransactionManager& txn, const fs::path& etl_path, uint64_t) {
+StageResult stage_hashstate(db::TransactionManager& txn, const fs::path& etl_path, uint64_t) {
     SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
     auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
@@ -381,7 +381,7 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     (void)db::cursor_for_each(changeset_table, unwind_func);
 }
 
-StageResult unwind_hashstate(TransactionManager& txn, const fs::path&, uint64_t unwind_to) {
+StageResult unwind_hashstate(db::TransactionManager& txn, const fs::path&, uint64_t unwind_to) {
     try {
         auto stage_height{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
         if (unwind_to >= stage_height) {

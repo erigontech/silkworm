@@ -70,7 +70,7 @@ static void flush_bitmaps(etl::Collector& collector, std::unordered_map<std::str
     map.clear();
 }
 
-StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
+StageResult stage_log_index(db::TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
     fs::create_directories(etl_path);
     etl::Collector topic_collector(etl_path, /* flush size */ 256_Mebi);
     etl::Collector addresses_collector(etl_path, /* flush size */ 256_Mebi);
@@ -150,7 +150,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     return StageResult::kSuccess;
 }
 
-static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t unwind_to,
+static StageResult unwind_log_index(db::TransactionManager& txn, etl::Collector& collector, uint64_t unwind_to,
                                     bool topics) {
     auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
                             : db::open_cursor(*txn, db::table::kLogAddressIndex)};
@@ -195,7 +195,7 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
     return StageResult::kSuccess;
 }
 
-StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
+StageResult unwind_log_index(db::TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
 
     SILKWORM_LOG(LogLevel::Info) << "Started Topic Index Unwind" << std::endl;
@@ -215,7 +215,7 @@ StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::pat
     return StageResult::kSuccess;
 }
 
-void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t prune_from,
+void prune_log_index(db::TransactionManager& txn, etl::Collector& collector, uint64_t prune_from,
                                  bool topics) {
     auto last_processed_block{db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)};
 
@@ -253,7 +253,7 @@ void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_
     txn.commit();
 }
 
-StageResult prune_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+StageResult prune_log_index(db::TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
 
     SILKWORM_LOG(LogLevel::Info) << "Pruning Log Index from: " << prune_from << std::endl;

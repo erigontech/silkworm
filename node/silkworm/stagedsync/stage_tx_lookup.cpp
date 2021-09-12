@@ -28,7 +28,7 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+StageResult stage_tx_lookup(db::TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
 
@@ -124,7 +124,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
     return StageResult::kSuccess;
 }
 
-StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
+StageResult unwind_tx_lookup(db::TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
     if (unwind_to >= db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey)) {
         return StageResult::kSuccess;
     }
@@ -174,7 +174,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
     return StageResult::kSuccess;
 }
 
-StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
+StageResult prune_tx_lookup(db::TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
 
     SILKWORM_LOG(LogLevel::Info) << "Pruning Transaction Lookup from: " << prune_from << std::endl;

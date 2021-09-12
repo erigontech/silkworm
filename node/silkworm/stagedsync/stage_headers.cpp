@@ -18,7 +18,7 @@
 
 namespace silkworm::stagedsync {
 
-StageResult stage_headers(TransactionManager&, const std::filesystem::path&, uint64_t) {
+StageResult stage_headers(db::TransactionManager&, const std::filesystem::path&, uint64_t) {
     throw std::runtime_error(std::string(__FUNCTION__).append(" not yet implemented"));
 }
 

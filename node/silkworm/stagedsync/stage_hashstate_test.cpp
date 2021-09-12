@@ -39,7 +39,7 @@ TEST_CASE("Stage Hashstate") {
     db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
     db_config.inmemory = true;
     auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
+    db::TransactionManager txn{env};
     db::table::create_all(*txn);
 
     // ---------------------------------------

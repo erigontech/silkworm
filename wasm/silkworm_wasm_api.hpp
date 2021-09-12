@@ -32,6 +32,7 @@
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/transaction.hpp>
+#include <silkworm/consensus/ethash/ethash.hpp>
 
 #define SILKWORM_EXPORT __attribute__((visibility("default")))
 

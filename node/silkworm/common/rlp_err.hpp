@@ -20,6 +20,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/rlp/decode.hpp>
+#include <utility>
 
 namespace silkworm::rlp {
 
@@ -28,18 +29,18 @@ class DecodingError : public std::exception {
     explicit DecodingError(DecodingResult err)
         : err_{magic_enum::enum_integer<DecodingResult>(err)},
           message_{"Decoding error : " + std::string(magic_enum::enum_name<DecodingResult>(err))} {};
-    explicit DecodingError(DecodingResult err, const std::string& message)
-        : err_{magic_enum::enum_integer<DecodingResult>(err)}, message_{message} {};
-    virtual ~DecodingError() noexcept {};
-    const char* what() const noexcept override { return message_.c_str(); }
-    int err() const noexcept { return err_; }
+    [[maybe_unused]] explicit DecodingError(DecodingResult err, std::string  message)
+        : err_{magic_enum::enum_integer<DecodingResult>(err)}, message_{std::move(message)} {};
+    ~DecodingError() noexcept override = default;
+    [[nodiscard]] const char* what() const noexcept override { return message_.c_str(); }
+    [[nodiscard]] int err() const noexcept { return err_; }
 
   protected:
     int err_;
     std::string message_;
 };
 
-inline void err_handler(DecodingResult err) {
+inline void success_or_throw(DecodingResult err) {
     if (err != DecodingResult::kOk) {
         throw DecodingError(err);
     }

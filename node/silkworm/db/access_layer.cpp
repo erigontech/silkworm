@@ -73,7 +73,7 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, co
 
     BlockHeader header;
     ByteView data_view{from_slice(data.value)};
-    rlp::err_handler(rlp::decode(data_view, header));
+    rlp::success_or_throw(rlp::decode(data_view, header));
     return header;
 }
 
@@ -87,7 +87,7 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, uint64_t bloc
     }
     intx::uint256 td{0};
     ByteView data_view{from_slice(data.value)};
-    rlp::err_handler(rlp::decode(data_view, td));
+    rlp::success_or_throw(rlp::decode(data_view, td));
     return td;
 }
 
@@ -115,7 +115,7 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
          data = txn_table.to_next(/*throw_notfound = */ false), ++i) {
         ByteView data_view{from_slice(data.value)};
         Transaction eth_txn;
-        rlp::err_handler(rlp::decode(data_view, eth_txn));
+        rlp::success_or_throw(rlp::decode(data_view, eth_txn));
         v.push_back(eth_txn);
     }
 
@@ -144,7 +144,7 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, uint64_t block_number, b
     }
 
     ByteView data_view(from_slice(data.value));
-    rlp::err_handler(rlp::decode(data_view, bh.block.header));
+    rlp::success_or_throw(rlp::decode(data_view, bh.block.header));
 
     // Read body
     std::optional<BlockBody> body{read_body(txn, block_number, bh.hash.bytes, read_senders)};
@@ -272,7 +272,7 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
     }
 
     auto [acc, err]{decode_account_from_storage(encoded.value())};
-    rlp::err_handler(err);
+    rlp::success_or_throw(err);
 
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash

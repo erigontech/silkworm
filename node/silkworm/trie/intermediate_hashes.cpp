@@ -125,7 +125,7 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
                 break;
             }
             const auto [account, err]{decode_account_from_storage(db::from_slice(a.value))};
-            rlp::err_handler(err);
+            rlp::success_or_throw(err);
 
             evmc::bytes32 storage_root{kEmptyRoot};
 

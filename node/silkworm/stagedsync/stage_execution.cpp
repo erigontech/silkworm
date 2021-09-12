@@ -153,7 +153,7 @@ static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
             auto [account, err1]{decode_account_from_storage(value)};
-            rlp::err_handler(err1);
+            rlp::success_or_throw(err1);
             if (account.incarnation > 0 && account.code_hash == kEmptyHash) {
                 Bytes code_hash_key(kAddressLength + db::kIncarnationLength, '\0');
                 std::memcpy(&code_hash_key[0], &key[0], kAddressLength);
@@ -165,7 +165,7 @@ static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table
             auto state_account_encoded{plain_state_table.find(db::to_slice(key), /*throw_notfound=*/false)};
             if (state_account_encoded) {
                 auto [state_incarnation, err2]{extract_incarnation(db::from_slice(state_account_encoded.value))};
-                rlp::err_handler(err2);
+                rlp::success_or_throw(err2);
                 // cleanup each code incarnation
                 for (uint64_t i = state_incarnation; i > account.incarnation && i > 0; --i) {
                     Bytes key_hash(kAddressLength + 8, '\0');

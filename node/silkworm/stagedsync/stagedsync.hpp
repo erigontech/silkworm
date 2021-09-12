@@ -80,7 +80,6 @@ StageResult stage_log_index      (TransactionManager& txn, const std::filesystem
 StageResult stage_tx_lookup      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from = 0);
 
 // Unwind functions
-StageResult no_unwind             (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_blockhashes    (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_senders        (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_execution      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
@@ -91,7 +90,6 @@ StageResult unwind_storage_history(TransactionManager& txn, const std::filesyste
 StageResult unwind_log_index      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 StageResult unwind_tx_lookup      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to);
 // Prune functions
-StageResult no_prune             (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_senders        (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_execution      (TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);
 StageResult prune_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from);

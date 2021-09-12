@@ -32,6 +32,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/storage.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
@@ -449,7 +450,8 @@ void do_tables(db::EnvConfig& config) {
     auto dbTablesInfo{get_tablesInfo(txn)};
     auto dbFreeInfo{get_freeInfo(txn)};
 
-    std::cout << "\n Database dbTablesInfo    : " << dbTablesInfo.tables.size() << "\n" << std::endl;
+    std::cout << "\n Database tables          : " << dbTablesInfo.tables.size() << std::endl;
+    std::cout << " Effective pruning        : " << db::read_prune_mode(txn).to_string() << "\n" << std::endl;
 
     if (!dbTablesInfo.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" % "Overflow" %

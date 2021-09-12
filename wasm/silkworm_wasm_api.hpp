@@ -131,7 +131,7 @@ SILKWORM_EXPORT silkworm::consensus::Blockchain* new_blockchain(silkworm::State*
                                                      const silkworm::Block* genesis_block);
 SILKWORM_EXPORT void delete_blockchain(silkworm::consensus::Blockchain* x);
 
-SILKWORM_EXPORT silkworm::ValidationResult blockchain_insert_block(silkworm::consensus::Blockchain* chain, silkworm::Block* block,
+SILKWORM_EXPORT ValidationResult blockchain_insert_block(silkworm::consensus::Blockchain* chain, silkworm::Block* block,
                                                                    bool check_state_root);
 }
 

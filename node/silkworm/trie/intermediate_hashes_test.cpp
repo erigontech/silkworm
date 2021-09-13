@@ -80,7 +80,8 @@ TEST_CASE("Account and storage trie") {
     db::table::create_all(txn);
 
     // ----------------------------------------------------------------
-    // Set up test accounts. See the big comment in intermediate_hashes.hpp
+    // Set up test accounts according to the example
+    // in the big comment in intermediate_hashes.hpp
     // ----------------------------------------------------------------
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
@@ -146,25 +147,25 @@ TEST_CASE("Account and storage trie") {
 
     REQUIRE(node_map.size() == 2);
 
-    const Node node1{node_map.at(*from_hex("0B"))};
+    const Node node1a{node_map.at(*from_hex("0B"))};
 
-    CHECK(0b1011 == node1.state_mask());
-    CHECK(0b0001 == node1.tree_mask());
-    CHECK(0b1001 == node1.hash_mask());
+    CHECK(0b1011 == node1a.state_mask());
+    CHECK(0b0001 == node1a.tree_mask());
+    CHECK(0b1001 == node1a.hash_mask());
 
-    CHECK(!node1.root_hash());
+    CHECK(node1a.root_hash() == std::nullopt);
 
-    REQUIRE(node1.hashes().size() == 2);
+    REQUIRE(node1a.hashes().size() == 2);
 
-    const Node node2{node_map.at(*from_hex("0B00"))};
+    const Node node2a{node_map.at(*from_hex("0B00"))};
 
-    CHECK(0b10001 == node2.state_mask());
-    CHECK(0b00000 == node2.tree_mask());
-    CHECK(0b10000 == node2.hash_mask());
+    CHECK(0b10001 == node2a.state_mask());
+    CHECK(0b00000 == node2a.tree_mask());
+    CHECK(0b10000 == node2a.hash_mask());
 
-    CHECK(!node2.root_hash());
+    CHECK(node2a.root_hash() == std::nullopt);
 
-    REQUIRE(node2.hashes().size() == 1);
+    REQUIRE(node2a.hashes().size() == 1);
 
     node_map.clear();
 
@@ -209,13 +210,15 @@ TEST_CASE("Account and storage trie") {
 
         REQUIRE(node_map.size() == 2);
 
-        const Node node1a{node_map.at(*from_hex("0B"))};
-
-        CHECK(node1.state_mask() == node1a.state_mask());
-        CHECK(node1.state_mask() == node1a.state_mask());
-        CHECK(0b1101 == node1a.hash_mask());
+        const Node node1b{node_map.at(*from_hex("0B"))};
+        CHECK(node1a.state_mask() == node1b.state_mask());
+        CHECK(node1a.state_mask() == node1b.state_mask());
+        CHECK(0b1011 == node1b.hash_mask());
 
         // TODO[Issue 179] check the new hash
+
+        const Node node2b{node_map.at(*from_hex("0B00"))};
+        CHECK(node2a == node2b);
 
         // TODO[Issue 179] storage
     }

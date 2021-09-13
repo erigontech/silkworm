@@ -151,7 +151,7 @@ using StorageChanges = absl::btree_map<evmc::address, absl::btree_map<uint64_t, 
 // address can be either plain account address (20 bytes) or hash thereof (32 bytes)
 Bytes storage_prefix(ByteView address, uint64_t incarnation);
 
-// Erigon CanonicalHeadersKey / ReceiptsKey
+// Erigon EncodeBlockNumber
 Bytes block_key(uint64_t block_number);
 
 // Erigon HeaderKey & BlockBodyKey

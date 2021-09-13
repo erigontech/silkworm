@@ -262,7 +262,7 @@ static void changed_accounts(mdbx::txn& txn, BlockNum from, PrefixSet& out) {
     // TODO[Issue 179] use ETL
     const Bytes starting_key{db::block_key(from + 1)};
 
-    auto change_cursor{db::open_cursor(txn, db::table::kPlainAccountChangeSet)};
+    auto change_cursor{db::open_cursor(txn, db::table::kAccountChangeSet)};
     change_cursor.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false);
     db::for_each(change_cursor, [&out](mdbx::cursor::move_result& entry) {
         const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};

@@ -27,19 +27,19 @@ namespace silkworm {
 
 class WorkingChain {  // tentative name - todo: improve!
   public:
-    WorkingChain();  // todo: ok???
-    WorkingChain(BlockNum highestInDb, BlockNum topSeenHeight);
+    WorkingChain();
+
+    // set a target
+    void target_height(BlockNum);
 
     // load from db
     void recover_from_db(DbTx&); // todo: make it private and call in the constructor?
 
     // status
-    void highest_block_in_db(BlockNum n);
-    BlockNum highest_block_in_db();
-    void top_seen_block_height(BlockNum n);
-    BlockNum top_seen_block_height();
-
     BlockNum height_reached();
+    BlockNum highest_block_in_db();
+    BlockNum top_seen_block_height();
+    void top_seen_block_height(BlockNum);
 
     // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
@@ -98,6 +98,7 @@ class WorkingChain {  // tentative name - todo: improve!
     Link_List insertList_;                       // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highestInDb_;
     BlockNum topSeenHeight_;
+    BlockNum targetHeight_;
     std::set<Hash> badHeaders_;
     std::set<Hash> preverifiedHashes_; // todo: fill! // Set of hashes that are known to belong to canonical chain
 };

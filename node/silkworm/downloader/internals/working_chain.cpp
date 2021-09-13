@@ -34,21 +34,21 @@ class segment_cut_and_paste_error: public std::logic_error {
 };
 
 
-WorkingChain::WorkingChain(): highestInDb_(0), topSeenHeight_(0) {
+WorkingChain::WorkingChain(): highestInDb_(0), topSeenHeight_(0), targetHeight_(0) {
 }
 
-WorkingChain::WorkingChain(BlockNum highestInDb, BlockNum topSeenHeight): highestInDb_(highestInDb), topSeenHeight_(topSeenHeight) {
+void WorkingChain::target_height(BlockNum n) {
+    targetHeight_ = n;
 }
 
-void WorkingChain::highest_block_in_db(BlockNum n) {
-    highestInDb_ = n;
-}
 BlockNum WorkingChain::highest_block_in_db() {
     return highestInDb_;
 }
+
 void WorkingChain::top_seen_block_height(BlockNum n) {
     topSeenHeight_ = n;
 }
+
 BlockNum WorkingChain::top_seen_block_height() {
     return topSeenHeight_;
 }
@@ -97,7 +97,7 @@ func (hd *HeaderDownload) RecoverFromDb(db ethdb.RoKV) error {
 void WorkingChain::recover_from_db(DbTx& db) {
     HeaderRetrieval headers(db);
     auto head_height = headers.head_height();
-    highest_block_in_db(head_height); // the second limit will be set at the each block announcements
+    highestInDb_ = head_height; // topSeenHeight_ will be set at the each block announcements
 
     // todo: implements!
 }
@@ -272,9 +272,11 @@ func HeadersForward(
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     if (anchors_.size() > 16) return std::nullopt;
 
-    if (topSeenHeight_ < highestInDb_ + stride) return std::nullopt;
+    auto targetHeight = targetHeight_; // todo: targetHeight_ or topSeenHeight_?
 
-    BlockNum length = (topSeenHeight_ - highestInDb_) / stride;
+    if (targetHeight < highestInDb_ + stride) return std::nullopt;
+
+    BlockNum length = (targetHeight - highestInDb_) / stride;
     if (length > max_len)
         length = max_len;
 
@@ -340,7 +342,7 @@ std::tuple<std::optional<GetBlockHeadersPacket66>,
         return {};
     }
 
-    SILKWORM_LOG(LogLevel::Debug) << "WorkingChain, " << anchors_.size() << " anchors, " << links_.size() << " links\n";
+    SILKWORM_LOG(LogLevel::Debug) << "WorkingChain status: " << anchors_.size() << " anchors, " << links_.size() << " links\n";
 
     std::vector<PeerPenalization> penalties;
     while (!anchorQueue_.empty()) {

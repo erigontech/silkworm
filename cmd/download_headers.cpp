@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
         });
 
         // Stage1 - Header downloader - example code
-        BlockNum target_block = 13'000'000; // only for test
+        BlockNum target_block = 1'000'000; // only for test
         HeaderDownloader header_downloader{sentry, db, chain_identity};
         header_downloader.forward_to(target_block);
 

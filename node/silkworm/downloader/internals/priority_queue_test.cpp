@@ -47,7 +47,6 @@ namespace silkworm {
         using namespace std::literals::chrono_literals;
         BlockHeader dummy_header;
         time_point_t now = std::chrono::system_clock::now();
-        seconds_t timeout = 5s;
 
         Oldest_First_Anchor_Queue queue;
 

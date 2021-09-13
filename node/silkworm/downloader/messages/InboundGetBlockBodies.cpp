@@ -19,7 +19,7 @@
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/body_retrieval.hpp>
-#include <silkworm/downloader/packets/BlockBodiesPacket.hpp>
+#include <silkworm/downloader/packets/all_packets_with_rlp.hpp>
 #include <silkworm/downloader/packets/RLPError.hpp>
 #include <silkworm/downloader/rpc/SendMessageById.hpp>
 

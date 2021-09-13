@@ -16,12 +16,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "BlockHeadersPacket.hpp"
-#include "GetBlockBodiesPacket.hpp"
-#include "GetBlockHeadersPacket.hpp"
-#include "NewBlockHashesPacket.hpp"
-#include "NewBlockPacket.hpp"
-#include "RLPEth66PacketCoding.hpp"
+#include "all_packets_with_rlp.hpp"
 
 namespace silkworm {
 

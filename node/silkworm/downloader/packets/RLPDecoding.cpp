@@ -25,6 +25,7 @@
 
 // generic implementations (must follow types)
 #include <silkworm/rlp/decode.hpp>
+#include "RLPEth66PacketCoding.hpp"
 #include "RLPVectorCoding.hpp"
 
 // specific implementations

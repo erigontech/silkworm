@@ -36,13 +36,14 @@
 
 namespace silkworm::consensus {
 
+constexpr size_t kCliqueSnapshotInterval = 1000;
 // Proof of Authority (Clique) implementation
 class Clique: public ConsensusEngine {
 
     public:
 
-     Clique(CliqueConfig clique_config, SnapshotConfig snapshot_config): 
-        clique_config_{clique_config}, snapshot_config_{snapshot_config} {}
+     Clique(CliqueConfig clique_config): 
+        clique_config_{clique_config} {}
 
      ValidationResult pre_validate_block(const Block& block, State& state, const ChainConfig& config) override;
 
@@ -54,7 +55,7 @@ class Clique: public ConsensusEngine {
     private:
 
      CliqueConfig clique_config_;
-     SnapshotConfig snapshot_config_;
+     CliqueSnapshot last_snapshot_{}; // We cache it to avoid writes and reads
 };
 
 }

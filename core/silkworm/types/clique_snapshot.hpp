@@ -37,12 +37,6 @@ struct CliqueConfig {
     uint64_t   epoch;  // Epoch length to reset votes and checkpoint
 };
 
-struct SnapshotConfig {
-    uint64_t checkpoint_interval; // Number of blocks after which to save the vote snapshot to the database
-    uint64_t inmemory_snapshots;  // Number of recent vote snapshots to keep in memory (To implement in the future)
-	uint64_t inmemory_signatures; // Number of recent block signatures to keep in memory (To implement in the future)
-};
-
 // Vote represents a single vote that an authorized signer made to modify the
 // list of authorizations.
 struct Vote {
@@ -102,6 +96,7 @@ class CliqueSnapshot {
         //! \brief Decode snapshot from json format.
         //! \return Decoded snapshot.
         static CliqueSnapshot from_json(const nlohmann::json& json) noexcept;
+
     private:
         // is_vote_valid returns whether it makes sense to cast the specified vote in the
         // given snapshot context (e.g. don't try to add an already authorized signer).
@@ -115,23 +110,17 @@ class CliqueSnapshot {
         uint64_t block_number_;                            // Block number where the snapshot was created
         evmc::bytes32 hash_;                               // Block hash where the snapshot was created     
         std::vector<evmc::address> signers_;               // Set of authorized signers at this moment
-        std::map<uint64_t, evmc::address> recents_; // Set of recent signers for spam protections
+        std::map<uint64_t, evmc::address> recents_;        // Set of recent signers for spam protections
         std::vector<Vote> votes_;                          // List of votes cast in chronological order
-        std::map<evmc::address, Tally> tallies_;    // Current vote tally to avoid recalculating
+        std::map<evmc::address, Tally> tallies_;           // Current vote tally to avoid recalculating
 };
 
-evmc::address get_signer_from_clique_header(BlockHeader header);
+std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);
 
 constexpr CliqueConfig kDefaultCliqueConfig = {
     15,
     30000,
 }; // Ropsten and Görli configuration
-
-constexpr SnapshotConfig kDefaultSnapshotConfig = {
-    10,
-    1024,
-    16384
-};
 
 }
 #endif // SILKWORM_TYPES_CLIQUE_SNAPSHOT

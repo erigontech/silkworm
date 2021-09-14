@@ -155,7 +155,7 @@ ConsensusEngine& get_consensus_engine(SealEngineType engine_type) {
             engine = new Ethash();
             return *engine;
         case SealEngineType::kClique:
-            engine = new Clique(kDefaultCliqueConfig, kDefaultSnapshotConfig);
+            engine = new Clique(kDefaultCliqueConfig);
             return *engine;
         default:
             engine = new Ethash();

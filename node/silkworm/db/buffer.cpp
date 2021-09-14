@@ -297,7 +297,10 @@ std::optional<CliqueSnapshot> Buffer::read_snapshot(uint64_t block_number,const 
     auto key{db::block_key(block_number, block_hash.bytes)};
     auto clique_table{db::open_cursor(txn_, table::kClique)};
     // Convert to json
-    auto clique_data{clique_table.find(db::to_slice(key))};
+    auto clique_data{clique_table.find(db::to_slice(key), false)};
+    if (!clique_data) {
+        return std::nullopt;
+    }
     auto snapshot_string{std::string(static_cast<char *>(clique_data.value.data()), clique_data.value.size())};
     auto clique_json{nlohmann::json::parse(snapshot_string, nullptr, /* allow_exceptions = */ true)};
     // Return CliqueSnapshot

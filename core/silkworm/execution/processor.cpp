@@ -182,7 +182,6 @@ ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt
         static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
         evmc::bytes32 receipt_root{trie::root_hash(receipts, kEncoder)};
         if (receipt_root != header.receipts_root) {
-            std::cout <<receipts[0].success << std::endl;;
             return ValidationResult::kWrongReceiptsRoot;
         }
     }

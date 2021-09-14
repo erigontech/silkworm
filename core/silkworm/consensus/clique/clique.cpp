@@ -14,27 +14,12 @@
    limitations under the License.
 */
 
-/*
-   Copyright 2021 The Silkworm Authors
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-
 #include <silkworm/trie/vector_root.hpp>
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
+#include <iostream>
 
 #include "clique.hpp"
 
@@ -51,19 +36,10 @@ ValidationResult Clique::pre_validate_block(const Block& block, State& state, co
 }
 
 ValidationResult Clique::validate_block_header(const BlockHeader& header, State& state, const ChainConfig&) {
-    auto parent{state.read_header(header.number - 1, header.parent_hash)};
-
-    if (parent == std::nullopt) {
-        return ValidationResult::kUnknownParent;
-    }
-
-    if (header.timestamp <= parent->timestamp) {
-        return ValidationResult::kInvalidTimestamp;
-    }
 
 	// Checkpoint blocks need to enforce zero beneficiary
-	uint64_t checkpoint{header.number % clique_config_.epoch};
-	if (checkpoint == 0 && header.beneficiary != 0x0000000000000000000000000000000000000000_address) {
+	uint64_t checkpoint{header.number % clique_config_.epoch == 0};
+	if (checkpoint && header.beneficiary != 0x0000000000000000000000000000000000000000_address) {
 		return ValidationResult::kInvalidCheckpointBeneficiary;
 	}
 
@@ -72,21 +48,21 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 		return ValidationResult::kInvalidVote;
 	}
 
-	if (checkpoint == 0 && header.nonce != kNonceUnauthorize) {
+	if (checkpoint && header.nonce != kNonceUnauthorize) {
 		return ValidationResult::kInvalidVote;
 	}
 
 	// Check that the extra-data contains both the vanity and signature
-	if (header.extra_data.size() < kHashLength + kSignatureLength) {
+	if (header.extra_data.size() < (kHashLength + kSignatureLength + 1)) {
 		return ValidationResult::kMissingVanity;
 	}
 
 	// Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
-	uint64_t signers_length{header.extra_data.size() - kHashLength - kSignatureLength};
-	if (checkpoint != 0 && signers_length != 0) {
+	uint64_t signers_length{header.extra_data.size() - kHashLength - kSignatureLength - 1};
+	if (!checkpoint && signers_length != 0) {
 		return ValidationResult::kUnhauthorizedSigner;
 	}
-	if (checkpoint == 0 && signers_length % kAddressLength != 0) {
+	if (checkpoint && (signers_length % kAddressLength) != 0) {
 		return ValidationResult::kMissingSigner;
 	}
 	// Ensure that the mix digest is zero as we don't have fork protection currently
@@ -109,26 +85,42 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
         return ValidationResult::kOk;
     }
 
+    auto parent{state.read_header(header.number - 1, header.parent_hash)};
+
+    if (parent == std::nullopt) {
+        return ValidationResult::kUnknownParent;
+    }
+
+    if (header.timestamp <= parent->timestamp) {
+        return ValidationResult::kInvalidTimestamp;
+    }
+
     CliqueSnapshot snapshot{};
     auto current_header{header};
     std::vector<BlockHeader> pending_headers;
+
     while (true) { // This loop goes until we find something
         // If an on-disk checkpoint snapshot can be found, use that
-		if (current_header.number % snapshot_config_.inmemory_snapshots == 0) {
+		if (current_header.number != 0) {
+            if (current_header.number != 1 && last_snapshot_.get_hash() == current_header.hash()) {
+                // If we have latest snapshot cached then let's use it.
+                snapshot = last_snapshot_;
+                break;
+            }
+
             auto found_snapshot{state.read_snapshot(current_header.number, current_header.hash())};
 			if (found_snapshot != std::nullopt) {
 				snapshot = *found_snapshot;
 				break;
 			}
         }
-        pending_headers.push_back(current_header);
         // If we're at the genesis, snapshot the initial state. Alternatively if we're
 		// at a checkpoint block without a parent (light client CHT), or we have piled
 		// up more headers than allowed to be reorged (chain reinit from a freezer),
 		// consider the checkpoint trusted and snapshot it.
 		if (current_header.number == 0 || current_header.number % clique_config_.epoch == 0) {
             std::vector<evmc::address> signers;
-            size_t signers_count{(current_header.extra_data.size() - kHashLength - kSignatureLength) / kAddressLength};
+            size_t signers_count{(current_header.extra_data.size() - kHashLength - kSignatureLength -1) / kAddressLength};
             for (size_t i = 0; i < signers_count; i++) {
                 evmc::address signer;
                 std::memcpy(signer.bytes, 
@@ -140,6 +132,8 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
             state.write_snapshot(current_header.number, current_header.hash(), snapshot);
             break;
 		}
+        pending_headers.push_back(current_header);
+        
         auto previous_header{state.read_header(current_header.number - 1, current_header.parent_hash)};
         // If nothing is found, go back
         if (previous_header == std::nullopt) {
@@ -149,14 +143,16 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
     }
 
     auto err{snapshot.add_headers(pending_headers, clique_config_)};
+
     if (err != ValidationResult::kOk) {
         return err;
     }
 
 	// If we've generated a new checkpoint snapshot, save to disk
-	if (snapshot.get_block_number() % snapshot_config_.checkpoint_interval == 0 && pending_headers.size() > 0) {
+	if (pending_headers.size() > 0 && header.number % kCliqueSnapshotInterval == 0) {
 		state.write_snapshot(snapshot.get_block_number(), snapshot.get_hash(), snapshot);
 	}
+    last_snapshot_ = snapshot;
 
     return snapshot.verify_seal(header);
 }

@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "decoding" << std::endl;
                 return -2;
             }
-            if (block_num % 1 == 0) {
+            if (block_num % 1000 == 0) {
                 std::cout << "Now at Block: " << block_num << std::endl;
             }
             auto err{engine.validate_block_header(header, buffer, *config)};

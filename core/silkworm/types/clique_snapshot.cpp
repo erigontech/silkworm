@@ -66,6 +66,7 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
         return ValidationResult::kUnhauthorizedSigner;
     }
     if (std::find(signers_.begin(), signers_.end(), *signer) == signers_.end()) {
+        std::cout << to_hex(*signer) << " was unhauthorized" << std::endl;
         return ValidationResult::kUnhauthorizedSigner;
     }
 
@@ -98,9 +99,14 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
     // If the vote passed, update the list of signers
     auto current_tally{tallies_[header.beneficiary]};
     if (current_tally.votes > signers_.size() / 2) {
+
         if (current_tally.authorize) {
+            std::cout << "Signer " << to_hex(*signer) << ", Added: " << to_hex(header.beneficiary)
+                      << " at block: " << header.number << std::endl;
             signers_.push_back(header.beneficiary);
         } else {
+            std::cout << "Signer " << to_hex(*signer) << ", Removed: " << to_hex(header.beneficiary) 
+                    << " at block: " << header.number << std::endl;
             std::remove(signers_.begin(), signers_.end(), header.beneficiary);
             // Clean up recents
             if (recents_.size() > 0) {

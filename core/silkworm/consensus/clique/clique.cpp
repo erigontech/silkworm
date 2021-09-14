@@ -90,6 +90,7 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
                         &header.extra_data[kHashLength + (i * kAddressLength)],
                         kAddressLength);
             signers.push_back(signer);
+			std::cout << "Added: " << to_hex(signer) << std::endl;
         }
         last_snapshot_ = CliqueSnapshot{header.number, header.hash(), signers};
         state.write_snapshot(header.number, header.hash(), last_snapshot_);

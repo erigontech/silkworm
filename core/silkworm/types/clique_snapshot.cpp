@@ -56,31 +56,32 @@ std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header) {
 //! \brief Updated snapshot by adding headers
 //! \param headers: list of headers to add.
 ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
-    // Remove any votes on checkpoint blocks
-    if (header.beneficiary == 0x0000000000000000000000000000000000000000_address) {
-        votes_.clear();
-        tallies_.clear();
-    }
     // Delete the oldest signer from the recent list to allow it signing again
-    uint64_t limit{(signers_.size() / 2) + 1};
-
-    if  (header.number >= limit) {
-        recents_.erase(header.number - limit);
+    if (recents_.size() > 0) {
+        recents_.pop_back();
     }
+
     auto signer{get_signer_from_clique_header(header)};
     if (signer == std::nullopt) {
         return ValidationResult::kUnhauthorizedSigner;
     }
     if (std::find(signers_.begin(), signers_.end(), *signer) == signers_.end()) {
+        std::cout << "k" << std::endl;
         return ValidationResult::kUnhauthorizedSigner;
     }
 
-    for(const auto& [_, recent]: recents_) {
-        if (signer == recent) {
-            return ValidationResult::kRecentlySigned;
-        }
+    if (std::find(recents_.begin(), recents_.end(), signer) != recents_.end()) {
+        return ValidationResult::kRecentlySigned;
     }
-    recents_[header.number] = *signer;
+
+    recents_.push_front(*signer);
+
+    // Remove any votes on checkpoint blocks
+    if (header.beneficiary == 0x0000000000000000000000000000000000000000_address) {
+        votes_.clear();
+        tallies_.clear();
+        // return ValidationResult::kOk;
+    }
 
     for(auto it = votes_.begin(); it != votes_.end(); it++)  {
         auto vote{*it};
@@ -102,58 +103,50 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
     } else {
         return ValidationResult::kInvalidVote;
     }
+
     if (cast(header.beneficiary, authorize)) {
-        votes_.push_back({*signer, header.beneficiary, header.number, authorize});
-    
-        // If the vote passed, update the list of signers
-        auto current_tally{tallies_[header.beneficiary]};
-        if (current_tally.votes > signers_.size() / 2) {
-            if (current_tally.authorize) {
-                signers_.push_back(header.beneficiary);
-            } else {
-                std::remove(signers_.begin(), signers_.end(), header.beneficiary);
-                // Update limit and clean up snapshot
-                limit = (signers_.size() / 2) + 1;
-                if  (header.number >= limit) {
-                    recents_.erase(header.number - limit);
-                }
-                // Update Tallies
-                for(auto it = votes_.begin(); it != votes_.end(); it++)  {
-                    auto vote{*it};
-                    if (vote.signer == header.beneficiary) {
-                        uncast(vote.address, vote.authorize);
-                    }
-                }
-                // Filter out
-                std::vector<Vote> filtered_votes;
-                std::copy_if (filtered_votes.begin(),
-                                filtered_votes.end(),
-                                std::back_inserter(filtered_votes), 
-                                [&header](Vote v){ return v.signer != header.beneficiary; }
-                );
-                votes_ = filtered_votes;
+        votes_.push_back({*signer, header.beneficiary, authorize});
+    }
+    // If the vote passed, update the list of signers
+    auto current_tally{tallies_[header.beneficiary]};
+    if (current_tally.votes > signers_.size() / 2) {
+        if (current_tally.authorize) {
+            signers_.push_back(header.beneficiary);
+            // Filter out address
+            std::vector<Vote> filtered_votes;
+            std::copy_if(votes_.begin(),
+                        votes_.end(),
+                        std::back_inserter(filtered_votes), 
+                        [&header](Vote v){ return v.address != header.beneficiary; }
+            );
+        } else {
+            std::remove(signers_.begin(), signers_.end(), header.beneficiary);
+            // Clean up recents
+            if (recents_.size() > 0) {
+                recents_.pop_back();
             }
-            // Discard previous votes.
+            // Update Tallies
             for(auto it = votes_.begin(); it != votes_.end(); it++)  {
                 auto vote{*it};
                 if (vote.signer == header.beneficiary) {
-                    votes_.erase(it);
-                    it--;
+                    uncast(vote.address, vote.authorize);
                 }
             }
-            tallies_.erase(header.beneficiary);
-        }
+            // filtered out signers votes
+            std::vector<Vote> filtered_votes;
+            std::copy_if (votes_.begin(),
+                          votes_.end(),
+                          std::back_inserter(filtered_votes), 
+                          [&header](Vote v){ return v.signer != header.beneficiary && v.address != header.beneficiary; }
+            );
+            votes_ = filtered_votes;
+        }   
+        tallies_.erase(header.beneficiary);
     }
     block_number_ = header.number;
     std::memcpy(hash_.bytes, header.hash().bytes, kHashLength);
     // Sort signers for turness
-    std::sort(signers_.begin(), signers_.end(), [](
-            evmc::address& a, 
-            evmc::address& b) { 
-        return std::strcmp(
-            reinterpret_cast<char *>(a.bytes),
-            reinterpret_cast<char *>(b.bytes)) < 0;
-    });
+    std::sort(signers_.begin(), signers_.end());
 
     // Success
     return ValidationResult::kOk;
@@ -166,15 +159,6 @@ ValidationResult CliqueSnapshot::verify_seal(BlockHeader header) {
 
     if (signer == std::nullopt) {
         return ValidationResult::kInvalidVotingSegment;
-    }
-    if (std::find(signers_.begin(), signers_.end(), signer) == signers_.end()) {
-        return ValidationResult::kUnhauthorizedSigner;
-    }
-
-    for (const auto& [block_number, address]: recents_) {
-        if (address == signer && block_number > block_number_ - ((signers_.size() / 2) - 1)) {
-            return ValidationResult::kRecentlySigned;
-        }
     }
 
     // Check difficituly
@@ -234,13 +218,11 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
     }
     if (recents_.size() > 0) {
         // Recents
-        for (const auto& [block_number, address]: recents_) {
-            Bytes block_number_bytes(4, '\0');
-            endian::store_big_u32(&block_number_bytes[0], block_number);
-            ret["recents"][to_hex(block_number_bytes).insert(0, "0x")] = to_hex(address);
+        for (const auto& address: recents_) {
+            ret["recents"].push_back(to_hex(address));
         }
     } else {
-        ret.emplace("recents", empty_object);
+        ret.emplace("recents", nlohmann::json::value_t::array);
     }
 
     if (votes_.size() > 0) {
@@ -250,7 +232,6 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
             // Build a vote JSON
             vote_json.emplace("signer", to_hex(vote.signer));
             vote_json.emplace("address", to_hex(vote.address));
-            vote_json.emplace("block", vote.block_number);
             vote_json.emplace("authorize", vote.authorize);
             // Push it to the votes array
             ret["votes"].push_back(vote_json);
@@ -292,13 +273,12 @@ CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
         signers.push_back(signer);
     }
     // Assign recents
-    std::map<uint64_t, evmc::address> recents;
+    std::deque<evmc::address> recents;
     for (auto it = json["recents"].begin(); it != json["recents"].end(); ++it) {
         // We compute address (JSON value)
         evmc::address address;
-        std::memcpy(address.bytes, from_hex(it.value().get<std::string>())->c_str(), kAddressLength);
-        // Block Number => Address
-        recents[std::strtoull(it.key().c_str(), nullptr, 16)] = address;
+        std::memcpy(address.bytes, from_hex(it->get<std::string>())->c_str(), kAddressLength);
+        recents.push_back(address);
     }
     // Assign votes
     std::vector<Vote> votes;
@@ -306,7 +286,6 @@ CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
         Vote v;
         std::memcpy(v.signer.bytes, from_hex((*it)["signer"].get<std::string>())->c_str(), kAddressLength);
         std::memcpy(v.address.bytes, from_hex((*it)["address"].get<std::string>())->c_str(), kAddressLength);
-        v.block_number = (*it)["block"].get<uint64_t>();
         v.authorize  = (*it)["authorize"].get<bool>();
         votes.push_back(v);
     }
@@ -322,13 +301,7 @@ CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
         tallies[address] = t;
     }
     // Make sure signers are sorted before turn-ness check
-    std::sort(signers.begin(), signers.end(), [](
-            evmc::address& a, 
-            evmc::address& b) { 
-        return std::strcmp(
-            reinterpret_cast<char *>(a.bytes),
-            reinterpret_cast<char *>(b.bytes)) < 0; 
-    });
+    std::sort(signers.begin(), signers.end());
     return CliqueSnapshot{block_number, hash, signers, recents, votes, tallies};
 }
 

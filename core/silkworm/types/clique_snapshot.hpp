@@ -23,6 +23,7 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/types/block.hpp>
 #include <silkworm/consensus/validation.hpp>
+#include <deque>
 
 namespace silkworm {
 
@@ -42,7 +43,6 @@ struct CliqueConfig {
 struct Vote {
 	evmc::address  signer;       // Authorized signer that cast this vote
 	evmc::address  address;      // Account being voted on to change its authorization
-	uint64_t       block_number; // Block number the vote was cast in (expire old votes)
 	bool           authorize;    // Whether to authorize or deauthorize the voted account
 };
 
@@ -60,7 +60,7 @@ class CliqueSnapshot {
         CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers):
                         block_number_{block_number}, hash_{hash}, signers_{signers} {}
         CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers,
-                       std::map<uint64_t, evmc::address> recents, std::vector<Vote> votes,
+                       std::deque<evmc::address> recents, std::vector<Vote> votes,
                        std::map<evmc::address, Tally> tallies): 
                             block_number_{block_number}, hash_{hash}, signers_{signers},
                             recents_{recents}, votes_{votes}, tallies_{tallies} {}
@@ -110,7 +110,7 @@ class CliqueSnapshot {
         uint64_t block_number_;                            // Block number where the snapshot was created
         evmc::bytes32 hash_;                               // Block hash where the snapshot was created     
         std::vector<evmc::address> signers_;               // Set of authorized signers at this moment
-        std::map<uint64_t, evmc::address> recents_;        // Set of recent signers for spam protections
+        std::deque<evmc::address> recents_;                // Set of recent signers for spam protections
         std::vector<Vote> votes_;                          // List of votes cast in chronological order
         std::map<evmc::address, Tally> tallies_;           // Current vote tally to avoid recalculating
 };

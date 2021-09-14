@@ -101,7 +101,6 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
         if (err != ValidationResult::kOk) {
             return err;
         }
-
         state.write_snapshot(last_snapshot_.get_block_number(), last_snapshot_.get_hash(), last_snapshot_);
         return last_snapshot_.verify_seal(header);
     }

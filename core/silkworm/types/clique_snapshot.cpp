@@ -66,7 +66,6 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
         return ValidationResult::kUnhauthorizedSigner;
     }
     if (std::find(signers_.begin(), signers_.end(), *signer) == signers_.end()) {
-        std::cout << "k" << std::endl;
         return ValidationResult::kUnhauthorizedSigner;
     }
 
@@ -78,22 +77,11 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
 
     // Remove any votes on checkpoint blocks
     if (header.beneficiary == 0x0000000000000000000000000000000000000000_address) {
-        votes_.clear();
         tallies_.clear();
-        // return ValidationResult::kOk;
+        return ValidationResult::kOk;
     }
-
-    for(auto it = votes_.begin(); it != votes_.end(); it++)  {
-        auto vote{*it};
-        if (vote.signer == signer && vote.address == header.beneficiary) {
-            // Uncast the vote from the cached tally
-            uncast(vote.address, vote.authorize);
-
-            // Uncast the vote from the chronological list
-            votes_.erase(it);
-            break; // only one vote allowed
-        }
-    }
+    // Uncast votes from signers
+    uncast(*signer);
     // We check what the vote is
     bool authorize;
     if (header.nonce == kNonceAuthorize) {
@@ -105,20 +93,13 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
     }
 
     if (cast(header.beneficiary, authorize)) {
-        votes_.push_back({*signer, header.beneficiary, authorize});
+        votes_[*signer] = header.beneficiary;
     }
     // If the vote passed, update the list of signers
     auto current_tally{tallies_[header.beneficiary]};
     if (current_tally.votes > signers_.size() / 2) {
         if (current_tally.authorize) {
             signers_.push_back(header.beneficiary);
-            // Filter out address
-            std::vector<Vote> filtered_votes;
-            std::copy_if(votes_.begin(),
-                        votes_.end(),
-                        std::back_inserter(filtered_votes), 
-                        [&header](Vote v){ return v.address != header.beneficiary; }
-            );
         } else {
             std::remove(signers_.begin(), signers_.end(), header.beneficiary);
             // Clean up recents
@@ -126,21 +107,16 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
                 recents_.pop_back();
             }
             // Update Tallies
-            for(auto it = votes_.begin(); it != votes_.end(); it++)  {
-                auto vote{*it};
-                if (vote.signer == header.beneficiary) {
-                    uncast(vote.address, vote.authorize);
-                }
-            }
+            uncast(header.beneficiary);
             // filtered out signers votes
-            std::vector<Vote> filtered_votes;
-            std::copy_if (votes_.begin(),
-                          votes_.end(),
-                          std::back_inserter(filtered_votes), 
-                          [&header](Vote v){ return v.signer != header.beneficiary && v.address != header.beneficiary; }
-            );
-            votes_ = filtered_votes;
+            votes_.erase(header.beneficiary);
         }   
+        // Clean up votes
+        for (auto it = votes_.begin(); it != votes_.end(); ++it){
+            if (it->second == header.beneficiary) {
+                votes_.erase(it);
+            }
+        }
         tallies_.erase(header.beneficiary);
     }
     block_number_ = header.number;
@@ -227,14 +203,9 @@ nlohmann::json CliqueSnapshot::to_json() const noexcept {
 
     if (votes_.size() > 0) {
         // Iterates over each vote
-        for (const auto& vote: votes_) {
-            nlohmann::json vote_json;
+        for (const auto& [signer, address]: votes_) {
             // Build a vote JSON
-            vote_json.emplace("signer", to_hex(vote.signer));
-            vote_json.emplace("address", to_hex(vote.address));
-            vote_json.emplace("authorize", vote.authorize);
-            // Push it to the votes array
-            ret["votes"].push_back(vote_json);
+            ret["votes"].emplace(to_hex(signer), to_hex(address));
         }
     } else {
         ret.emplace("votes", empty_object);
@@ -281,13 +252,13 @@ CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
         recents.push_back(address);
     }
     // Assign votes
-    std::vector<Vote> votes;
+    std::map<evmc::address, evmc::address> votes;
     for (auto it = json["votes"].begin(); it != json["votes"].end(); ++it) {
-        Vote v;
-        std::memcpy(v.signer.bytes, from_hex((*it)["signer"].get<std::string>())->c_str(), kAddressLength);
-        std::memcpy(v.address.bytes, from_hex((*it)["address"].get<std::string>())->c_str(), kAddressLength);
-        v.authorize  = (*it)["authorize"].get<bool>();
-        votes.push_back(v);
+        evmc::address signer{};
+        evmc::address address{};
+        std::memcpy(signer.bytes, from_hex(it.key())->c_str(), kAddressLength);
+        std::memcpy(address.bytes, from_hex(it->get<std::string>())->c_str(), kAddressLength);
+        votes[signer] = address;
     }
 
     // Assign tallies
@@ -302,7 +273,7 @@ CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
     }
     // Make sure signers are sorted before turn-ness check
     std::sort(signers.begin(), signers.end());
-    return CliqueSnapshot{block_number, hash, signers, recents, votes, tallies};
+    return CliqueSnapshot{block_number, hash, signers, recents, tallies, votes};
 }
 
 bool CliqueSnapshot::is_vote_valid(evmc::address address, bool authorize) const noexcept {
@@ -325,22 +296,16 @@ bool CliqueSnapshot::cast(evmc::address address, bool authorize) {
     return true;
 }
 
-void CliqueSnapshot::uncast(evmc::address address, bool authorize) {
-    // If there's no tally, it's a dangling vote, just drop
-    if (tallies_.find(address) == tallies_.end()) {
-        return;
+void CliqueSnapshot::uncast(evmc::address address) {
+    auto previous_vote{votes_.find(address)};
+    if (previous_vote != votes_.end()) {
+        auto address_voted{previous_vote->second};
+        if (tallies_[address_voted].votes == 1) {
+            tallies_.erase(address_voted);
+        } else {
+            tallies_[address_voted].votes--;
+        }
     }
-    // Ensure we only revert counted votes
-    if (tallies_[address].authorize != authorize) {
-        return;
-    }
-	// Otherwise revert the vote
-	if (tallies_[address].votes > 1) {
-		tallies_[address].votes--;
-	} else {
-        // Tallies are empty now so we can just free them
-		tallies_.erase(address);
-	}
 }
 
 }  // namespace silkworm

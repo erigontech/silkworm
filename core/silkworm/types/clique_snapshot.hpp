@@ -38,19 +38,11 @@ struct CliqueConfig {
     uint64_t   epoch;  // Epoch length to reset votes and checkpoint
 };
 
-// Vote represents a single vote that an authorized signer made to modify the
-// list of authorizations.
-struct Vote {
-	evmc::address  signer;       // Authorized signer that cast this vote
-	evmc::address  address;      // Account being voted on to change its authorization
-	bool           authorize;    // Whether to authorize or deauthorize the voted account
-};
-
 // Tally is a simple vote tally to keep the current score of votes. Votes that
 // go against the proposal aren't counted since it's equivalent to not voting.
 struct Tally {
-	bool     authorize; // Whether the vote is about authorizing or kicking someone
-	uint64_t votes;     // Number of votes until now wanting to pass the proposal
+	bool     authorize;                // Whether the vote is about authorizing or kicking someone
+	uint64_t votes;                    // Number of votes until now wanting to pass the proposal
 };
 
 // Voting Snapshot for Clique
@@ -60,10 +52,10 @@ class CliqueSnapshot {
         CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers):
                         block_number_{block_number}, hash_{hash}, signers_{signers} {}
         CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers,
-                       std::deque<evmc::address> recents, std::vector<Vote> votes,
-                       std::map<evmc::address, Tally> tallies): 
+                       std::deque<evmc::address> recents, std::map<evmc::address, Tally> tallies, 
+                       std::map<evmc::address, evmc::address> votes): 
                             block_number_{block_number}, hash_{hash}, signers_{signers},
-                            recents_{recents}, votes_{votes}, tallies_{tallies} {}
+                            recents_{recents}, tallies_{tallies}, votes_{votes} {}
 
         //! \brief Updated snapshot by adding headers
         //! \param headers: list of headers to add.
@@ -105,14 +97,14 @@ class CliqueSnapshot {
         // cast adds a new vote into the tally.
         bool cast(evmc::address address, bool authorize);
         // uncast removes a previously cast vote from the tally.
-        void uncast(evmc::address address, bool authorize);
+        void uncast(evmc::address address);
 
         uint64_t block_number_;                            // Block number where the snapshot was created
         evmc::bytes32 hash_;                               // Block hash where the snapshot was created     
         std::vector<evmc::address> signers_;               // Set of authorized signers at this moment
         std::deque<evmc::address> recents_;                // Set of recent signers for spam protections
-        std::vector<Vote> votes_;                          // List of votes cast in chronological order
         std::map<evmc::address, Tally> tallies_;           // Current vote tally to avoid recalculating
+        std::map<evmc::address, evmc::address> votes_;     // Sets of votes
 };
 
 std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);

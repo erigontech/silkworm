@@ -82,79 +82,29 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 
 	// All basic checks passed, verify cascading fields
     if (header.number == 0) {
+        std::vector<evmc::address> signers;
+        size_t signers_count{(header.extra_data.size() - kHashLength - kSignatureLength -1) / kAddressLength};
+        for (size_t i = 0; i < signers_count; i++) {
+            evmc::address signer;
+            std::memcpy(signer.bytes, 
+                        &header.extra_data[kHashLength + (i * kAddressLength)],
+                        kAddressLength);
+            signers.push_back(signer);
+        }
+        last_snapshot_ = CliqueSnapshot{header.number, header.hash(), signers};
+        state.write_snapshot(header.number, header.hash(), last_snapshot_);
+
         return ValidationResult::kOk;
-    }
+    } else {
+        auto err{last_snapshot_.add_header(header)};
 
-    auto parent{state.read_header(header.number - 1, header.parent_hash)};
-
-    if (parent == std::nullopt) {
-        return ValidationResult::kUnknownParent;
-    }
-
-    if (header.timestamp <= parent->timestamp) {
-        return ValidationResult::kInvalidTimestamp;
-    }
-
-    CliqueSnapshot snapshot{};
-    auto current_header{header};
-    std::vector<BlockHeader> pending_headers;
-
-    while (true) { // This loop goes until we find something
-        // If an on-disk checkpoint snapshot can be found, use that
-		if (current_header.number != 0) {
-            if (current_header.number != 1 && last_snapshot_.get_hash() == current_header.hash()) {
-                // If we have latest snapshot cached then let's use it.
-                snapshot = last_snapshot_;
-                break;
-            }
-
-            auto found_snapshot{state.read_snapshot(current_header.number, current_header.hash())};
-			if (found_snapshot != std::nullopt) {
-				snapshot = *found_snapshot;
-				break;
-			}
+        if (err != ValidationResult::kOk) {
+            return err;
         }
-        // If we're at the genesis, snapshot the initial state. Alternatively if we're
-		// at a checkpoint block without a parent (light client CHT), or we have piled
-		// up more headers than allowed to be reorged (chain reinit from a freezer),
-		// consider the checkpoint trusted and snapshot it.
-		if (current_header.number == 0 || current_header.number % clique_config_.epoch == 0) {
-            std::vector<evmc::address> signers;
-            size_t signers_count{(current_header.extra_data.size() - kHashLength - kSignatureLength -1) / kAddressLength};
-            for (size_t i = 0; i < signers_count; i++) {
-                evmc::address signer;
-                std::memcpy(signer.bytes, 
-                            &current_header.extra_data[kHashLength + (i * kAddressLength)],
-                            kAddressLength);
-                signers.push_back(signer);
-            }
-            snapshot = CliqueSnapshot{current_header.number, current_header.hash(), signers};
-            state.write_snapshot(current_header.number, current_header.hash(), snapshot);
-            break;
-		}
-        pending_headers.push_back(current_header);
-        
-        auto previous_header{state.read_header(current_header.number - 1, current_header.parent_hash)};
-        // If nothing is found, go back
-        if (previous_header == std::nullopt) {
-            return ValidationResult::kUnknownParent;
-        }
-        current_header = *previous_header;
+
+        state.write_snapshot(last_snapshot_.get_block_number(), last_snapshot_.get_hash(), last_snapshot_);
+        return last_snapshot_.verify_seal(header);
     }
-
-    auto err{snapshot.add_headers(pending_headers, clique_config_)};
-
-    if (err != ValidationResult::kOk) {
-        return err;
-    }
-
-	// If we've generated a new checkpoint snapshot, save to disk
-	if (pending_headers.size() > 0 && header.number % kCliqueSnapshotInterval == 0) {
-		state.write_snapshot(snapshot.get_block_number(), snapshot.get_hash(), snapshot);
-	}
-    last_snapshot_ = snapshot;
-
-    return snapshot.verify_seal(header);
 }
 
 // There are no rewards in Clique POA consensus

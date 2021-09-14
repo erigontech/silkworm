@@ -68,7 +68,7 @@ class CliqueSnapshot {
         //! \brief Updated snapshot by adding headers
         //! \param headers: list of headers to add.
         //! \param config: clique config.
-        ValidationResult add_headers(std::vector<BlockHeader> headers, CliqueConfig config);
+        ValidationResult add_header(BlockHeader header);
         //! \brief Verify seal for header
         //! \param header: header to verify.
         ValidationResult verify_seal(BlockHeader header);

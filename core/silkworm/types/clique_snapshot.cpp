@@ -112,11 +112,15 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
             votes_.erase(header.beneficiary);
         }   
         // Clean up votes
-        for (auto it = votes_.begin(); it != votes_.end(); ++it){
+        auto it{votes_.begin()};
+        while (it != votes_.end()) {
             if (it->second == header.beneficiary) {
-                votes_.erase(it);
+                it = votes_.erase(it);
+            } else {
+                it++;
             }
         }
+        
         tallies_.erase(header.beneficiary);
     }
     block_number_ = header.number;

@@ -129,4 +129,13 @@ TEST_CASE("HashBuilder2") {
     CHECK(to_hex(hb1.root_hash()) == to_hex(full_view(hash1.bytes)));
 }
 
+TEST_CASE("pack_nibbles") {
+    CHECK(pack_nibbles({}) == ByteView{});
+    CHECK(to_hex(pack_nibbles(*from_hex("0a"))) == "a0");
+    CHECK(to_hex(pack_nibbles(*from_hex("0a0b"))) == "ab");
+    CHECK(to_hex(pack_nibbles(*from_hex("0a0b02"))) == "ab20");
+    CHECK(to_hex(pack_nibbles(*from_hex("0a0b0200"))) == "ab20");
+    CHECK(to_hex(pack_nibbles(*from_hex("0a0b0207"))) == "ab27");
+}
+
 }  // namespace silkworm::trie

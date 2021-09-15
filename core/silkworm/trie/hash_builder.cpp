@@ -30,6 +30,22 @@
 
 namespace silkworm::trie {
 
+Bytes pack_nibbles(ByteView nibbles) {
+    const size_t n{(nibbles.length() + 1) / 2};
+    Bytes out(n, '\0');
+    if (n == 0) {
+        return out;
+    }
+    for (size_t i{0}; i < n - 1; ++i) {
+        out[i] = (nibbles[2 * i] << 4) + nibbles[2 * i + 1];
+    }
+    out[n - 1] = nibbles[2 * (n - 1)] << 4;
+    if (nibbles.length() % 2 == 0) {
+        out[n - 1] += nibbles[2 * n - 1];
+    }
+    return out;
+}
+
 Bytes unpack_nibbles(ByteView packed) {
     Bytes out(2 * packed.length(), '\0');
     for (size_t i{0}; i < packed.length(); ++i) {

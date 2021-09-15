@@ -75,6 +75,9 @@ class HashBuilder {
     std::vector<Bytes> stack_;  // node references: hashes or embedded RLPs
 };
 
+// Erigon CompressNibbles
+Bytes pack_nibbles(ByteView nibbles);
+
 // Erigon DecompressNibbles
 Bytes unpack_nibbles(ByteView packed);
 

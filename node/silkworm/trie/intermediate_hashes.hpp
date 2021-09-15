@@ -69,6 +69,7 @@ the correct bit in tree_mask bitmap
 #include <silkworm/common/base.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/prefix_set.hpp>
 #include <silkworm/types/account.hpp>
 
 namespace silkworm::trie {
@@ -79,21 +80,27 @@ class AccountTrieCursor {
     AccountTrieCursor(const AccountTrieCursor&) = delete;
     AccountTrieCursor& operator=(const AccountTrieCursor&) = delete;
 
-    explicit AccountTrieCursor(mdbx::txn& txn);
-
-    Bytes first_uncovered_prefix();
-
-    std::optional<Bytes> key() const;
-
-    const evmc::bytes32& hash() const;
+    AccountTrieCursor(mdbx::txn& txn, const PrefixSet& changed);
 
     void next();
 
-    bool can_skip_state() const { return skip_state_; }
+    Bytes first_uncovered_prefix() const;
+
+    // nullopt key signifies trie's end
+    std::optional<Bytes> key() const;
+
+    const evmc::bytes32* hash() const;
+
+    bool can_skip_state() const;
 
   private:
-    mdbx::cursor_managed c_;
-    bool skip_state_{false};
+    void seek_node(ByteView lower_bound);
+
+    const PrefixSet& changed_;
+    Bytes first_uncovered_prefix_;
+    mdbx::cursor_managed cursor_;
+    uint8_t nibble_{0};
+    std::optional<Node> node_{std::nullopt};
 };
 
 // Erigon StorageTrieCursor
@@ -123,7 +130,7 @@ class DbTrieLoader {
 
     DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector);
 
-    evmc::bytes32 calculate_root();
+    evmc::bytes32 calculate_root(const PrefixSet& changed);
 
   private:
     mdbx::txn& txn_;

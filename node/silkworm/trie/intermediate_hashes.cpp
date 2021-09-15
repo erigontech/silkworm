@@ -16,81 +16,11 @@
 
 #include "intermediate_hashes.hpp"
 
+#include <bitset>
+
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/db/tables.hpp>
-#include <silkworm/trie/prefix_set.hpp>
-
-namespace silkworm::trie {
-
-AccountTrieCursor::AccountTrieCursor(mdbx::txn& txn) : c_{db::open_cursor(txn, db::table::kTrieOfAccounts)} {
-    c_.to_first(/*throw_notfound=*/false);
-    if (c_.eof()) {
-        return;
-    }
-    skip_state_ = true;
-    // TODO[Issue 179] implement the rest of (c *AccTrieCursor) AtPrefix
-}
-
-Bytes AccountTrieCursor::first_uncovered_prefix() {
-    // TODO[Issue 179] implement
-    return {};
-}
-
-std::optional<Bytes> AccountTrieCursor::key() const {
-    // TODO[Issue 179] implement
-    return std::nullopt;
-}
-
-const evmc::bytes32& AccountTrieCursor::hash() const {
-    // TODO[Issue 179] implement
-    static evmc::bytes32 hash{};
-    return hash;
-}
-
-void AccountTrieCursor::next() {
-    // TODO[Issue 179] implement
-}
-
-StorageTrieCursor::StorageTrieCursor(mdbx::txn&) {}
-
-Bytes StorageTrieCursor::seek_to_account(ByteView) {
-    // TODO[Issue 179] implement
-    return {};
-}
-
-Bytes StorageTrieCursor::first_uncovered_prefix() {
-    // TODO[Issue 179] implement
-    return Bytes(1, '\0');
-}
-
-std::optional<Bytes> StorageTrieCursor::key() const {
-    // TODO[Issue 179] implement
-    return std::nullopt;
-}
-
-void StorageTrieCursor::next() {
-    // TODO[Issue 179] implement
-}
-
-bool StorageTrieCursor::can_skip_state() const {
-    // TODO[Issue 179] implement
-    return false;
-}
-
-DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
-    : txn_{txn}, storage_collector_{storage_collector} {
-    hb_.node_collector = [&account_collector](ByteView unpacked_key, const Node& node) {
-        if (unpacked_key.empty()) {
-            return;
-        }
-
-        etl::Entry e;
-        e.key = unpacked_key;
-        e.value = marshal_node(node);
-        account_collector.collect(std::move(e));
-    };
-}
 
 /*
 **Theoretically:** "Merkle trie root calculation" starts from state, build from state keys - trie,
@@ -134,6 +64,121 @@ nil                  // db returned nil - means no more keys there, done
 In practice Trie is not full - it means that after account key `{30 zero bytes}0000` may come `{5 zero bytes}01` and
 amount of iterations will not be big.
 */
+
+namespace silkworm::trie {
+
+AccountTrieCursor::AccountTrieCursor(mdbx::txn& txn, const PrefixSet& changed)
+    : changed_{changed}, cursor_{db::open_cursor(txn, db::table::kTrieOfAccounts)} {
+    seek_node({});
+}
+
+void AccountTrieCursor::seek_node(ByteView to) {
+    const auto entry{cursor_.lower_bound(db::to_slice(to), /*throw_notfound=*/false)};
+    if (!entry) {
+        node_ = std::nullopt;
+        return;
+    }
+    node_ = unmarshal_node(db::from_slice(entry.value));
+    assert(node_ != std::nullopt);
+    assert(node_->state_mask() != 0);
+    nibble_ = 0;
+    while ((node_->state_mask() & (1u << nibble_)) == 0) {
+        ++nibble_;
+    }
+}
+
+void AccountTrieCursor::next() {
+    if (node_ == std::nullopt) {
+        return;
+    }
+
+    first_uncovered_prefix_ = pack_nibbles(*key());
+
+    assert(nibble_ < 16);
+    do {
+        ++nibble_;
+        if (nibble_ == 16) {
+            nibble_ = 0;
+            seek_node(*key());
+            return;
+        }
+    } while ((node_->state_mask() & (1u << nibble_)) == 0);
+}
+
+Bytes AccountTrieCursor::first_uncovered_prefix() const { return first_uncovered_prefix_; }
+
+std::optional<Bytes> AccountTrieCursor::key() const {
+    if (node_ == std::nullopt) {
+        return std::nullopt;
+    }
+    Bytes key{db::from_slice(cursor_.current().key)};
+    key.push_back(nibble_);
+    return key;
+}
+
+const evmc::bytes32* AccountTrieCursor::hash() const {
+    if (node_ == std::nullopt) {
+        return nullptr;
+    }
+    if ((node_->hash_mask() & (1u << nibble_)) == 0) {
+        return nullptr;
+    }
+    const unsigned first_nibbles_mask{(1u << nibble_) - 1};
+    const size_t hash_idx{std::bitset<16>(node_->hash_mask() & first_nibbles_mask).count()};
+    return &node_->hashes()[hash_idx];
+}
+
+bool AccountTrieCursor::can_skip_state() const {
+    if (first_uncovered_prefix_.empty()) {
+        return false;
+    }
+    const std::optional<Bytes> k{key()};
+    if (k == std::nullopt || changed_.contains(*k)) {
+        return false;
+    }
+    return node_->hash_mask() & (1u << nibble_);
+}
+
+StorageTrieCursor::StorageTrieCursor(mdbx::txn&) {}
+
+Bytes StorageTrieCursor::seek_to_account(ByteView) {
+    // TODO[Issue 179] implement
+    return {};
+}
+
+Bytes StorageTrieCursor::first_uncovered_prefix() {
+    // TODO[Issue 179] implement
+    return Bytes(1, '\0');
+}
+
+std::optional<Bytes> StorageTrieCursor::key() const {
+    // TODO[Issue 179] implement
+    return std::nullopt;
+}
+
+void StorageTrieCursor::next() {
+    // TODO[Issue 179] implement
+}
+
+bool StorageTrieCursor::can_skip_state() const {
+    // TODO[Issue 179] implement
+    return false;
+}
+
+DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
+    : txn_{txn}, storage_collector_{storage_collector} {
+    hb_.node_collector = [&account_collector](ByteView unpacked_key, const Node& node) {
+        if (unpacked_key.empty()) {
+            return;
+        }
+
+        etl::Entry e;
+        e.key = unpacked_key;
+        e.value = marshal_node(node);
+        account_collector.collect(std::move(e));
+    };
+}
+
 // calculate_root algo:
 //  for iterateIHOfAccounts {
 //      if canSkipState
@@ -158,11 +203,11 @@ amount of iterations will not be big.
 //
 // See also
 // https://github.com/ledgerwatch/erigon/blob/devel/docs/programmers_guide/guide.md#merkle-trie-root-calculation
-evmc::bytes32 DbTrieLoader::calculate_root() {
+evmc::bytes32 DbTrieLoader::calculate_root(const PrefixSet& changed) {
     auto acc_state{db::open_cursor(txn_, db::table::kHashedAccounts)};
     auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
 
-    for (AccountTrieCursor acc_trie{txn_};; acc_trie.next()) {
+    for (AccountTrieCursor acc_trie{txn_, changed};; acc_trie.next()) {
         if (acc_trie.can_skip_state()) {
             goto use_account_trie;
         }
@@ -227,19 +272,19 @@ evmc::bytes32 DbTrieLoader::calculate_root() {
             break;
         }
 
-        hb_.add_branch_node(*acc_trie.key(), acc_trie.hash());
+        assert(acc_trie.hash() != nullptr);
+        hb_.add_branch_node(*acc_trie.key(), *acc_trie.hash());
     }
 
     return hb_.root_hash();
 }
 
 static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
-                                                   const evmc::bytes32* expected_root, const PrefixSet&) {
+                                                   const evmc::bytes32* expected_root, const PrefixSet& changed) {
     etl::Collector account_collector{etl_dir};
     etl::Collector storage_collector{etl_dir};
-    // TODO[Issue 179] use const PrefixSet& changed
     DbTrieLoader loader{txn, account_collector, storage_collector};
-    const evmc::bytes32 root{loader.calculate_root()};
+    const evmc::bytes32 root{loader.calculate_root(changed)};
     if (expected_root != nullptr && root != *expected_root) {
         SILKWORM_LOG(LogLevel::Error) << "Wrong trie root: " << to_hex(root) << ", expected: " << to_hex(*expected_root)
                                       << "\n";

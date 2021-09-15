@@ -292,7 +292,7 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     return db::read_header(txn_, block_number, block_hash.bytes);
 }
 
-std::optional<CliqueSnapshot> Buffer::read_snapshot(uint64_t block_number,const evmc::bytes32& block_hash) const noexcept {
+std::optional<CliqueSnapshot> Buffer::read_snapshot(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
     // Snapshot key is block number + hash
     auto key{db::block_key(block_number, block_hash.bytes)};
     auto clique_table{db::open_cursor(txn_, table::kClique)};
@@ -301,10 +301,9 @@ std::optional<CliqueSnapshot> Buffer::read_snapshot(uint64_t block_number,const 
     if (!clique_data) {
         return std::nullopt;
     }
-    auto snapshot_string{std::string(static_cast<char *>(clique_data.value.data()), clique_data.value.size())};
-    auto clique_json{nlohmann::json::parse(snapshot_string, nullptr, /* allow_exceptions = */ true)};
+    auto snapshot_encoded{from_slice(clique_data.value)};
     // Return CliqueSnapshot
-    return CliqueSnapshot::from_json(clique_json);
+    return CliqueSnapshot::from_bytes(snapshot_encoded, block_number, block_hash);
 }
 
 std::optional<BlockBody> Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
@@ -349,13 +348,12 @@ evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarn
 
 void Buffer::write_snapshot(uint64_t block_number, const evmc::bytes32& block_hash, CliqueSnapshot& snapshot) {
     // Encode Clique Snapshot
-    auto json_snapshot{snapshot.to_json()};
-    auto snapshot_dump{json_snapshot.dump()};
+    auto encoded{snapshot.to_bytes()};
     // Snapshot key is block number + hash
     auto key{db::block_key(block_number, block_hash.bytes)};
     auto clique_table{db::open_cursor(txn_, table::kClique)};
     // Insert the final results
-    clique_table.upsert(db::to_slice(key), mdbx::slice{snapshot_dump.c_str()});
+    clique_table.upsert(db::to_slice(key), db::to_slice(encoded));
 }
 
 uint64_t Buffer::previous_incarnation(const evmc::address& address) const noexcept {

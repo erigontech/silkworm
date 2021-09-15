@@ -55,7 +55,12 @@ std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header) {
 
 //! \brief Updated snapshot by adding headers
 //! \param headers: list of headers to add.
-ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
+ValidationResult CliqueSnapshot::add_header(BlockHeader header, CliqueConfig config) {
+    // Remove any votes on checkpoint blocks
+    if (header.number % config.epoch == 0) {
+        tallies_.clear();
+        votes_.clear();
+    }
     // Delete the oldest signer from the recent list to allow it signing again
     if (recents_.size() > 0) {
         recents_.pop_back();
@@ -76,11 +81,6 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
 
     recents_.push_front(*signer);
 
-    // Remove any votes on checkpoint blocks
-    if (header.beneficiary == 0x0000000000000000000000000000000000000000_address) {
-        tallies_.clear();
-        return ValidationResult::kOk;
-    }
     // Uncast votes from signers
     uncast(*signer);
     // We check what the vote is
@@ -96,10 +96,10 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
     if (cast(header.beneficiary, authorize)) {
         votes_[*signer] = header.beneficiary;
     }
+
     // If the vote passed, update the list of signers
     auto current_tally{tallies_[header.beneficiary]};
     if (current_tally.votes > signers_.size() / 2) {
-
         if (current_tally.authorize) {
             std::cout << "Signer " << to_hex(*signer) << ", Added: " << to_hex(header.beneficiary)
                       << " at block: " << header.number << std::endl;
@@ -114,8 +114,6 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header) {
             }
             // Update Tallies
             uncast(header.beneficiary);
-            // filtered out signers votes
-            votes_.erase(header.beneficiary);
         }   
         // Clean up votes
         auto it{votes_.begin()};
@@ -188,102 +186,29 @@ const evmc::bytes32& CliqueSnapshot::get_hash() const noexcept {
 
 //! \brief Convert the snapshot in JSON.
 //! \return The resulting JSON.
-nlohmann::json CliqueSnapshot::to_json() const noexcept {
-    nlohmann::json ret; // Returning json
-    nlohmann::json empty_object(nlohmann::json::value_t::object);
-    // Block Number and Hash
-    ret.emplace("number", block_number_);
-    ret.emplace("hash", to_hex(hash_));
-    // Signers
-    if (signers_.size() > 0) {
-        for (const auto& address: signers_) {
-            ret["signers"].emplace(to_hex(address), empty_object);
-        }
-    } else {
-        ret.emplace("signers", empty_object);
-    }
-    if (recents_.size() > 0) {
-        // Recents
-        for (const auto& address: recents_) {
-            ret["recents"].push_back(to_hex(address));
-        }
-    } else {
-        ret.emplace("recents", nlohmann::json::value_t::array);
-    }
-
-    if (votes_.size() > 0) {
-        // Iterates over each vote
-        for (const auto& [signer, address]: votes_) {
-            // Build a vote JSON
-            ret["votes"].emplace(to_hex(signer), to_hex(address));
-        }
-    } else {
-        ret.emplace("votes", empty_object);
-    }
-
-    // Tallies
-    if (tallies_.size() > 0) {
-        for (const auto& [address, tally]: tallies_) {
-            ret["tally"][to_hex(address)]["authorize"] = tally.authorize;
-            ret["tally"][to_hex(address)]["votes"]     = tally.votes;
-        }
-    } else {
-        ret.emplace("tally", empty_object);
-    }
-
-    if (ret.is_array()) { // on linux it becomes an array for some reason. this is a temporary solution
-        return ret[0];
+Bytes CliqueSnapshot::to_bytes() const noexcept {
+    Bytes ret(signers_.size() * kAddressLength, '\0');
+    size_t i = 0;
+    for (const auto &signer: signers_) {
+        std::memcpy(&ret[i * kAddressLength], signer.bytes, kAddressLength);
+        i++;
     }
     return ret;
 }
 
 //! \brief Decode snapshot from json format.
 //! \return Decoded snapshot.
-CliqueSnapshot CliqueSnapshot::from_json(const nlohmann::json& json) noexcept {
-    // Block Number
-    uint64_t block_number{json["number"].get<uint64_t>()};
-    
-    // Hash
-    evmc::bytes32 hash;
-    std::memcpy(hash.bytes, from_hex(json["hash"].get<std::string>())->c_str(), kHashLength);
-    // Assign signers
+CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, uint64_t& block_number, const evmc::bytes32& hash) noexcept {
+    auto signers_count{b.size() / kAddressLength};
     std::vector<evmc::address> signers;
-    for (auto it = json["signers"].begin(); it != json["signers"].end(); ++it) {
+    for (size_t i = 0; i < signers_count; i++) {
         evmc::address signer;
-        std::memcpy(signer.bytes, from_hex(it.key())->c_str(), kAddressLength);
+        std::memcpy(signer.bytes, &b[i * kAddressLength], kAddressLength);
         signers.push_back(signer);
-    }
-    // Assign recents
-    std::deque<evmc::address> recents;
-    for (auto it = json["recents"].begin(); it != json["recents"].end(); ++it) {
-        // We compute address (JSON value)
-        evmc::address address;
-        std::memcpy(address.bytes, from_hex(it->get<std::string>())->c_str(), kAddressLength);
-        recents.push_back(address);
-    }
-    // Assign votes
-    std::map<evmc::address, evmc::address> votes;
-    for (auto it = json["votes"].begin(); it != json["votes"].end(); ++it) {
-        evmc::address signer{};
-        evmc::address address{};
-        std::memcpy(signer.bytes, from_hex(it.key())->c_str(), kAddressLength);
-        std::memcpy(address.bytes, from_hex(it->get<std::string>())->c_str(), kAddressLength);
-        votes[signer] = address;
-    }
-
-    // Assign tallies
-    std::map<evmc::address, Tally> tallies;
-    for (auto it = json["tally"].begin(); it != json["tally"].end(); ++it) {
-        Tally t;
-        evmc::address address;
-        std::memcpy(address.bytes, from_hex(it.key())->c_str(), kAddressLength);
-        t.votes =      it.value()["votes"].get<uint64_t>();
-        t.authorize =  it.value()["authorize"].get<bool>();
-        tallies[address] = t;
     }
     // Make sure signers are sorted before turn-ness check
     std::sort(signers.begin(), signers.end());
-    return CliqueSnapshot{block_number, hash, signers, recents, tallies, votes};
+    return CliqueSnapshot{block_number, hash, signers};
 }
 
 bool CliqueSnapshot::is_vote_valid(evmc::address address, bool authorize) const noexcept {
@@ -293,14 +218,20 @@ bool CliqueSnapshot::is_vote_valid(evmc::address address, bool authorize) const 
 
 bool CliqueSnapshot::cast(evmc::address address, bool authorize) {
     if (!is_vote_valid(address, authorize)) {
+
+        std::cout << authorize << std::endl;
+            std::cout << "detected invalid cast" << std::endl;
         return false;
     }
-    if (tallies_.find(address) != tallies_.end()) {
+    auto tally{tallies_.find(address)};
+    if (tally != tallies_.end()) {
         // Update existing tally
         tallies_[address].votes += 1;
+        std::cout << "casted vote " << tallies_[address].votes << " on " << to_hex(address) << std::endl;
     } else {
         // Create new tally
         tallies_.emplace(address, Tally{authorize, 1});
+        std::cout << "create tally with vote " << authorize << " on " << to_hex(address) << std::endl;
     }
 
     return true;
@@ -310,12 +241,18 @@ void CliqueSnapshot::uncast(evmc::address address) {
     auto previous_vote{votes_.find(address)};
     if (previous_vote != votes_.end()) {
         auto address_voted{previous_vote->second};
-        if (tallies_[address_voted].votes == 1) {
+        if (tallies_[address_voted].votes <= 1) {
             tallies_.erase(address_voted);
+            std::cout << "erased tally for " << to_hex(address_voted) << std::endl;
         } else {
             tallies_[address_voted].votes--;
+            std::cout << "erased tally for " << to_hex(address_voted) << " to " << tallies_[address_voted].votes << std::endl;
         }
+        votes_.erase(previous_vote);
+    } else {
+        std::cout << "detected invalid uncast " << to_hex(address) << std::endl;
     }
+
 }
 
 }  // namespace silkworm

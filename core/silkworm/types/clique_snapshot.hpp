@@ -51,16 +51,11 @@ class CliqueSnapshot {
         CliqueSnapshot() = default;
         CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers):
                         block_number_{block_number}, hash_{hash}, signers_{signers} {}
-        CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers,
-                       std::deque<evmc::address> recents, std::map<evmc::address, Tally> tallies, 
-                       std::map<evmc::address, evmc::address> votes): 
-                            block_number_{block_number}, hash_{hash}, signers_{signers},
-                            recents_{recents}, tallies_{tallies}, votes_{votes} {}
 
         //! \brief Updated snapshot by adding headers
         //! \param headers: list of headers to add.
         //! \param config: clique config.
-        ValidationResult add_header(BlockHeader header);
+        ValidationResult add_header(BlockHeader header, CliqueConfig config);
         //! \brief Verify seal for header
         //! \param header: header to verify.
         ValidationResult verify_seal(BlockHeader header);
@@ -84,10 +79,10 @@ class CliqueSnapshot {
         const evmc::bytes32& get_hash() const noexcept;
         //! \brief Convert the snapshot in JSON.
         //! \return The resulting JSON.
-        nlohmann::json to_json() const noexcept;
+        Bytes to_bytes() const noexcept;
         //! \brief Decode snapshot from json format.
         //! \return Decoded snapshot.
-        static CliqueSnapshot from_json(const nlohmann::json& json) noexcept;
+        static CliqueSnapshot from_bytes(ByteView& b, uint64_t& block_number, const evmc::bytes32& hash) noexcept;
 
     private:
         // is_vote_valid returns whether it makes sense to cast the specified vote in the
@@ -99,12 +94,12 @@ class CliqueSnapshot {
         // uncast removes a previously cast vote from the tally.
         void uncast(evmc::address address);
 
-        uint64_t block_number_;                            // Block number where the snapshot was created
-        evmc::bytes32 hash_;                               // Block hash where the snapshot was created     
-        std::vector<evmc::address> signers_;               // Set of authorized signers at this moment
-        std::deque<evmc::address> recents_;                // Set of recent signers for spam protections
-        std::map<evmc::address, Tally> tallies_;           // Current vote tally to avoid recalculating
-        std::map<evmc::address, evmc::address> votes_;     // Sets of votes
+        uint64_t block_number_;                          // Block number where the snapshot was created
+        evmc::bytes32 hash_;                             // Block hash where the snapshot was created     
+        std::vector<evmc::address> signers_;             // Set of authorized signers at this moment
+        std::deque<evmc::address> recents_;              // Set of recent signers for spam protections
+        std::map<evmc::address, Tally> tallies_;         // Current vote tally to avoid recalculating
+        std::map<evmc::address, evmc::address> votes_;   // Sets of votes
 };
 
 std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);

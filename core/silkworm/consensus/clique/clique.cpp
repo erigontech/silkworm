@@ -79,7 +79,6 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 			return ValidationResult::kInvalidGasLimit;
 		}
 	}
-
 	// All basic checks passed, verify cascading fields
     if (header.number == 0) {
         std::vector<evmc::address> signers;
@@ -97,7 +96,7 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 
         return ValidationResult::kOk;
     } else {
-        auto err{last_snapshot_.add_header(header)};
+        auto err{last_snapshot_.add_header(header, clique_config_)};
 
         if (err != ValidationResult::kOk) {
             return err;

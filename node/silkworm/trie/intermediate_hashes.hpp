@@ -82,9 +82,7 @@ class AccountTrieCursor {
 
     AccountTrieCursor(mdbx::txn& txn, const PrefixSet& changed);
 
-    void next();
-
-    Bytes first_uncovered_prefix() const;
+    void next(bool skip_children);
 
     // nullopt key signifies trie's end
     std::optional<Bytes> key() const;
@@ -97,7 +95,7 @@ class AccountTrieCursor {
     void seek_node(ByteView lower_bound);
 
     const PrefixSet& changed_;
-    Bytes first_uncovered_prefix_;
+    bool at_root_{true};
     mdbx::cursor_managed cursor_;
     uint8_t nibble_{0};
     std::optional<Node> node_{std::nullopt};

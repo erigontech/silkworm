@@ -41,7 +41,8 @@ using namespace silkworm;
 std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
 
 struct app_options_t {
-    std::string datadir{};          // Provided database path
+    std::string datadir{};
+    uint64_t from_block{0};
 };
 
 int main(int argc, char* argv[]) {
@@ -52,6 +53,7 @@ int main(int argc, char* argv[]) {
 
     // Command line arguments
     app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
+    app.add_option("--from", options.from_block, "Path to chain db", true);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -76,7 +78,8 @@ int main(int argc, char* argv[]) {
     }
 
     auto headers{db::open_cursor(*txn, db::table::kHeaders)};
-    auto header_data{headers.to_first()};
+    auto from_block_bytes{db::block_key(options.from_block)};
+    auto header_data{headers.lower_bound(db::to_slice(from_block_bytes))};
     consensus::Clique engine(kDefaultCliqueConfig);
     try {
         // Loop blocks
@@ -94,12 +97,13 @@ int main(int argc, char* argv[]) {
                 std::cout << "decoding" << std::endl;
                 return -2;
             }
-            if (block_num % 1000 == 0) {
+            if (block_num % 10000 == 0) {
                 std::cout << "Now at Block: " << block_num << std::endl;
             }
             auto err{engine.validate_block_header(header, buffer, *config)};
             if (err != ValidationResult::kOk) {
                 std::cout << "fail, at " << block_num << ", due to: " << std::string(magic_enum::enum_name<ValidationResult>(err)) << std::endl;
+                txn.commit();
                 return -1;
             }
             buffer.write_to_db();
@@ -110,6 +114,6 @@ int main(int argc, char* argv[]) {
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
     }
-
+    txn.commit();
     return rc;
 }

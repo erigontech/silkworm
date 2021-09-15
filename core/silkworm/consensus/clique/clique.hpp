@@ -38,7 +38,7 @@ class Clique: public ConsensusEngine {
      void assign_transaction_fees(const BlockHeader& header, intx::uint256 accumulated_fees, IntraBlockState& state) override;
     private:
 
-     CliqueConfig    clique_config_;
+     CliqueConfig   clique_config_;
      CliqueSnapshot last_snapshot_{}; // We cache it to avoid writes and reads
 };
 

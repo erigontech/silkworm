@@ -79,6 +79,7 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 			return ValidationResult::kInvalidGasLimit;
 		}
 	}
+	
 	// All basic checks passed, verify cascading fields
     if (header.number == 0) {
         std::vector<evmc::address> signers;
@@ -89,19 +90,44 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
                         &header.extra_data[kHashLength + (i * kAddressLength)],
                         kAddressLength);
             signers.push_back(signer);
-			std::cout << "Added: " << to_hex(signer) << std::endl;
         }
         last_snapshot_ = CliqueSnapshot{header.number, header.hash(), signers};
         state.write_snapshot(header.number, header.hash(), last_snapshot_);
-
+		std::cout << "Genesis Snapshot generated" << std::endl;
         return ValidationResult::kOk;
-    } else {
-        auto err{last_snapshot_.add_header(header, clique_config_)};
+    } else if (last_snapshot_.get_hash() == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32) {
+		// If last snapshot is not set, find it from the database and initialize it
+		auto current_header{header};
+		std::vector<BlockHeader> pending_blocks;
 
+		while (current_header.number % clique_config_.epoch != 0) {
+			pending_blocks.push_back(current_header);
+			auto parent{state.read_header(current_header.number - 1, current_header.parent_hash)};
+			if (parent == std::nullopt) {
+				return ValidationResult::kUnknownParent;
+			}
+			current_header = *parent;
+		}
+		std::reverse(pending_blocks.begin(), pending_blocks.end());
+		last_snapshot_ = *state.read_snapshot(current_header.number, current_header.hash());
+		for (const auto& h: pending_blocks) {
+			auto err{last_snapshot_.add_header(h, clique_config_)};
+			if (err != ValidationResult::kOk) {
+				return err;
+			}
+		}
+		return ValidationResult::kOk;
+	} else {
+        auto err{last_snapshot_.add_header(header, clique_config_)};
         if (err != ValidationResult::kOk) {
             return err;
         }
-        state.write_snapshot(last_snapshot_.get_block_number(), last_snapshot_.get_hash(), last_snapshot_);
+		if (header.number % clique_config_.epoch == 0) {
+			std::cout << "Pushed snapshot at Hash: 0x" << to_hex(last_snapshot_.get_hash()) << 
+						". Block Number: " << last_snapshot_.get_block_number()
+						<< std::endl;
+        	state.write_snapshot(last_snapshot_.get_block_number(), last_snapshot_.get_hash(), last_snapshot_);
+		}
         return last_snapshot_.verify_seal(header);
     }
 }

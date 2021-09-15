@@ -43,6 +43,7 @@ struct CliqueConfig {
 struct Tally {
 	bool     authorize;                // Whether the vote is about authorizing or kicking someone
 	uint64_t votes;                    // Number of votes until now wanting to pass the proposal
+    std::vector<evmc::address> voters; // Voters for current proposal
 };
 
 // Voting Snapshot for Clique
@@ -87,22 +88,24 @@ class CliqueSnapshot {
     private:
         // is_vote_valid returns whether it makes sense to cast the specified vote in the
         // given snapshot context (e.g. don't try to add an already authorized signer).
-        bool is_vote_valid(evmc::address address, bool authorize) const noexcept;
+        bool is_vote_valid(const evmc::address& address, bool authorize) const noexcept;
 
         // cast adds a new vote into the tally.
-        bool cast(evmc::address address, bool authorize);
+        void cast(const evmc::address& address, const evmc::address& signer, bool authorize);
         // uncast removes a previously cast vote from the tally.
-        void uncast(evmc::address address);
+        void uncast(const evmc::address& address, const evmc::address& signer);
+        // uncast_all removes every cast vote from the signer.
+        void uncast_all(const evmc::address& signer);
 
-        uint64_t block_number_;                          // Block number where the snapshot was created
-        evmc::bytes32 hash_;                             // Block hash where the snapshot was created     
-        std::vector<evmc::address> signers_;             // Set of authorized signers at this moment
-        std::deque<evmc::address> recents_;              // Set of recent signers for spam protections
-        std::map<evmc::address, Tally> tallies_;         // Current vote tally to avoid recalculating
-        std::map<evmc::address, evmc::address> votes_;   // Sets of votes
+        std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);
+
+        uint64_t block_number_;                             // Block number where the snapshot was created
+        evmc::bytes32 hash_;                                // Block hash where the snapshot was created     
+        std::vector<evmc::address> signers_;                // Set of authorized signers at this moment
+        std::deque<evmc::address> recents_;                 // Set of recent signers for spam protections
+        std::map<evmc::address, Tally> tallies_;            // Current vote tally to avoid recalculating
+        std::map<evmc::bytes32, evmc::address> sig_cache_;  // Cache where signatures are stored
 };
-
-std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);
 
 constexpr CliqueConfig kDefaultCliqueConfig = {
     15,

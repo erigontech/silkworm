@@ -27,7 +27,7 @@ std::array<uint8_t, 8> kNonceAuthorize =   {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
 std::array<uint8_t, 8> kNonceUnauthorize = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 // taking the header not by reference is intentional
-std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header) {
+std::optional<evmc::address> CliqueSnapshot::get_signer_from_clique_header(BlockHeader header) {
     auto extra_data_size{header.extra_data.size()};
     // Extract signature first
     Bytes signature(kSignatureLength, '\0');
@@ -41,6 +41,9 @@ std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header) {
     // for_sealing = false, with signature in extra_data
     header.extra_data = header.extra_data.substr(0, extra_data_size - kSignatureLength - 1);
     auto header_hash{header.hash()};
+    if (sig_cache_.find(header_hash) != sig_cache_.end()) {
+        return sig_cache_[header_hash];
+    }
     // Run Ecrecover and get public key
     auto recovered{ecdsa::recover(full_view(header_hash), signature, v)};
     if (recovered == std::nullopt) {
@@ -50,17 +53,13 @@ std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header) {
     // Convert public key to address
     evmc::address signer{};
     std::memcpy(signer.bytes, &hash.bytes[12], kAddressLength);
+    sig_cache_.emplace(header_hash, signer);
     return signer;
 }
 
 //! \brief Updated snapshot by adding headers
 //! \param headers: list of headers to add.
 ValidationResult CliqueSnapshot::add_header(BlockHeader header, CliqueConfig config) {
-    // Remove any votes on checkpoint blocks
-    if (header.number % config.epoch == 0) {
-        tallies_.clear();
-        votes_.clear();
-    }
     // Delete the oldest signer from the recent list to allow it signing again
     if (recents_.size() > 0) {
         recents_.pop_back();
@@ -81,8 +80,20 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header, CliqueConfig con
 
     recents_.push_front(*signer);
 
+    // Remove any votes on checkpoint blocks
+    if (header.number % config.epoch == 0) {
+        tallies_.clear();
+    }
+
+    if (header.beneficiary == 0x0000000000000000000000000000000000000000_address) {
+        block_number_ = header.number;
+        std::memcpy(hash_.bytes, header.hash().bytes, kHashLength);
+        return ValidationResult::kOk;
+    }
+
     // Uncast votes from signers
-    uncast(*signer);
+    uncast(header.beneficiary, *signer);
+
     // We check what the vote is
     bool authorize;
     if (header.nonce == kNonceAuthorize) {
@@ -92,11 +103,8 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header, CliqueConfig con
     } else {
         return ValidationResult::kInvalidVote;
     }
-
-    if (cast(header.beneficiary, authorize)) {
-        votes_[*signer] = header.beneficiary;
-    }
-
+    // do casting
+    cast(header.beneficiary, *signer, authorize);
     // If the vote passed, update the list of signers
     auto current_tally{tallies_[header.beneficiary]};
     if (current_tally.votes > signers_.size() / 2) {
@@ -113,18 +121,8 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header, CliqueConfig con
                 recents_.pop_back();
             }
             // Update Tallies
-            uncast(header.beneficiary);
-        }   
-        // Clean up votes
-        auto it{votes_.begin()};
-        while (it != votes_.end()) {
-            if (it->second == header.beneficiary) {
-                it = votes_.erase(it);
-            } else {
-                it++;
-            }
+            uncast_all(header.beneficiary);
         }
-        
         tallies_.erase(header.beneficiary);
     }
     block_number_ = header.number;
@@ -211,46 +209,62 @@ CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, uint64_t& block_number, c
     return CliqueSnapshot{block_number, hash, signers};
 }
 
-bool CliqueSnapshot::is_vote_valid(evmc::address address, bool authorize) const noexcept {
+bool CliqueSnapshot::is_vote_valid(const evmc::address& address, bool authorize) const noexcept {
     auto existing_signer{std::find(signers_.begin(), signers_.end(), address) != signers_.end()};
     return (existing_signer && !authorize) || (!existing_signer && authorize);
 }
 
-bool CliqueSnapshot::cast(evmc::address address, bool authorize) {
+void CliqueSnapshot::cast(const evmc::address& address, const evmc::address& signer, bool authorize) {
     if (!is_vote_valid(address, authorize)) {
-
-        std::cout << authorize << std::endl;
-            std::cout << "detected invalid cast" << std::endl;
-        return false;
+        return;
     }
     auto tally{tallies_.find(address)};
     if (tally != tallies_.end()) {
         // Update existing tally
         tallies_[address].votes += 1;
-        std::cout << "casted vote " << tallies_[address].votes << " on " << to_hex(address) << std::endl;
+        tallies_[address].voters.push_back(signer);
+        // std::cout << to_hex(signer) << " casted vote " << tallies_[address].votes << " on " << to_hex(address) << std::endl;
     } else {
         // Create new tally
-        tallies_.emplace(address, Tally{authorize, 1});
-        std::cout << "create tally with vote " << authorize << " on " << to_hex(address) << std::endl;
+        tallies_.emplace(address, Tally{authorize, 1, {signer}});
+        // std::cout << to_hex(signer) << " create tally with vote " << authorize << " on " << to_hex(address) << std::endl;
     }
-
-    return true;
 }
 
-void CliqueSnapshot::uncast(evmc::address address) {
-    auto previous_vote{votes_.find(address)};
-    if (previous_vote != votes_.end()) {
-        auto address_voted{previous_vote->second};
-        if (tallies_[address_voted].votes <= 1) {
-            tallies_.erase(address_voted);
-            std::cout << "erased tally for " << to_hex(address_voted) << std::endl;
-        } else {
-            tallies_[address_voted].votes--;
-            std::cout << "erased tally for " << to_hex(address_voted) << " to " << tallies_[address_voted].votes << std::endl;
+void CliqueSnapshot::uncast(const evmc::address& address, const evmc::address& signer) {
+    if(tallies_.count(address)) {
+        if (std::find(tallies_[address].voters.begin(), 
+            tallies_[address].voters.end(), signer) == tallies_[address].voters.end()) {
+            return;
         }
-        votes_.erase(previous_vote);
-    } else {
-        std::cout << "detected invalid uncast " << to_hex(address) << std::endl;
+        if (tallies_[address].votes <= 1) {
+            tallies_.erase(address);
+            // std::cout << to_hex(signer) << " erased tally for " << to_hex(address) << std::endl;
+        } else {
+            tallies_[address].votes--;
+            std::remove(tallies_[address].voters.begin(), tallies_[address].voters.end(), signer);
+            // std::cout << to_hex(signer) << " erased tally for " << to_hex(address) << " to " << tallies_[address].votes << std::endl;
+        }
+    }
+}
+
+void CliqueSnapshot::uncast_all(const evmc::address& signer) {
+    for (auto& [address, tally]: tallies_) {
+        auto vote{std::find(tally.voters.begin(), tally.voters.end(), signer)};
+        if (vote != tally.voters.end() && tally.votes <= 1 && tally.votes > 0) {
+            tally.votes--;
+            tally.voters.erase(vote);
+            std::cout << "erased tally for " << to_hex(address) << " to " << tallies_[address].votes << std::endl;
+        }
+    }
+    // Clean up for whenever votes was equal to 0
+    auto it{tallies_.begin()};
+    while(it != tallies_.end()) {
+        if (it->second.votes == 0) {
+            tallies_.erase(it);
+        } else {
+            it++;
+        }
     }
 
 }

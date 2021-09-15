@@ -129,6 +129,7 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header, CliqueConfig con
     std::memcpy(hash_.bytes, header.hash().bytes, kHashLength);
     // Sort signers for turness
     std::sort(signers_.begin(), signers_.end());
+    signers_.erase(std::unique(signers_.begin(), signers_.end()), signers_.end());
 
     // Success
     return ValidationResult::kOk;
@@ -202,6 +203,7 @@ CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, uint64_t& block_number, c
     for (size_t i = 0; i < signers_count; i++) {
         evmc::address signer;
         std::memcpy(signer.bytes, &b[i * kAddressLength], kAddressLength);
+        std::cout << "Added: " << to_hex(signer) << std::endl;
         signers.push_back(signer);
     }
     // Make sure signers are sorted before turn-ness check
@@ -254,7 +256,7 @@ void CliqueSnapshot::uncast_all(const evmc::address& signer) {
         if (vote != tally.voters.end() && tally.votes <= 1 && tally.votes > 0) {
             tally.votes--;
             tally.voters.erase(vote);
-            std::cout << "erased tally for " << to_hex(address) << " to " << tallies_[address].votes << std::endl;
+            // std::cout << "erased tally for " << to_hex(address) << " to " << tallies_[address].votes << std::endl;
         }
     }
     // Clean up for whenever votes was equal to 0

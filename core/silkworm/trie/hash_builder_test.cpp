@@ -137,7 +137,7 @@ TEST_CASE("HashBuilder2") {
 }
 
 TEST_CASE("pack_nibbles") {
-    CHECK(pack_nibbles({}) == ByteView{});
+    CHECK(pack_nibbles({}).empty());
     CHECK(to_hex(pack_nibbles(*from_hex("0a"))) == "a0");
     CHECK(to_hex(pack_nibbles(*from_hex("0a0b"))) == "ab");
     CHECK(to_hex(pack_nibbles(*from_hex("0a0b02"))) == "ab20");

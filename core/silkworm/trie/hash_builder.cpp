@@ -20,7 +20,6 @@
 #include <bitset>
 #include <cassert>
 #include <cstring>
-#include <utility>
 
 #include <ethash/keccak.hpp>
 

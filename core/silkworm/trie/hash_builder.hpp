@@ -64,7 +64,7 @@ class HashBuilder {
     void finalize();
 
     // See Erigon GenStructStep
-    void gen_struct_step(ByteView curr, ByteView succ);
+    void gen_struct_step(ByteView current, ByteView succeeding);
 
     std::vector<Bytes> branch_ref(uint16_t state_mask, uint16_t hash_mask);
 

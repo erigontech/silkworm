@@ -19,6 +19,7 @@
 
 #include <functional>
 #include <optional>
+#include <variant>
 #include <vector>
 
 #include <silkworm/common/base.hpp>
@@ -49,6 +50,7 @@ class HashBuilder {
     // Entries (leaves, nodes) must be added in the strictly increasing lexicographic order (by key).
     // Consequently, duplicate keys are not allowed.
     // The key should be unpacked, i.e. have one nibble per byte.
+    // Nodes whose RLP is shorter than 32 bytes may not be added.
     void add_branch_node(ByteView unpacked_key, const evmc::bytes32& hash);
 
     // May only be called after all entries have been added.
@@ -57,17 +59,17 @@ class HashBuilder {
     NodeCollector node_collector{nullptr};
 
   private:
-    // See Erigon GenStructStep
-    void gen_struct_step(ByteView curr, ByteView succ, ByteView value);
-
-    std::vector<Bytes> branch_ref(uint16_t state_mask, uint16_t hash_mask);
+    evmc::bytes32 root_hash(bool auto_finalize);
 
     void finalize();
 
-    evmc::bytes32 root_hash(bool auto_finalize);
+    // See Erigon GenStructStep
+    void gen_struct_step(ByteView curr, ByteView succ);
 
-    Bytes key_;  // unpacked – one nibble per byte
-    Bytes value_;
+    std::vector<Bytes> branch_ref(uint16_t state_mask, uint16_t hash_mask);
+
+    Bytes key_;                                 // unpacked – one nibble per byte
+    std::variant<Bytes, evmc::bytes32> value_;  // leaf value or node hash
 
     std::vector<uint16_t> groups_;
     std::vector<uint16_t> tree_masks_;

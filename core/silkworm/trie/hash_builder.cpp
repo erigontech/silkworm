@@ -107,36 +107,44 @@ static Bytes extension_node_rlp(ByteView path, ByteView child_ref) {
     return rlp;
 }
 
+static Bytes wrap_hash(gsl::span<const uint8_t, kHashLength> hash) {
+    Bytes wrapped(kHashLength + 1, '\0');
+    wrapped[0] = rlp::kEmptyStringCode + kHashLength;
+    std::memcpy(&wrapped[1], &hash[0], kHashLength);
+    return wrapped;
+}
+
 static Bytes node_ref(ByteView rlp) {
     if (rlp.length() < kHashLength) {
         return Bytes{rlp};
     }
-
-    Bytes rlp_wrapped_hash(kHashLength + 1, '\0');
-    rlp_wrapped_hash[0] = rlp::kEmptyStringCode + kHashLength;
     const ethash::hash256 hash{keccak256(rlp)};
-    std::memcpy(&rlp_wrapped_hash[1], hash.bytes, kHashLength);
-    return rlp_wrapped_hash;
+    return wrap_hash(hash.bytes);
 }
 
 void HashBuilder::add_leaf(ByteView key, ByteView value) {
     assert(key > key_);
     if (!key_.empty()) {
-        gen_struct_step(key_, key, value_);
+        gen_struct_step(key_, key);
+    }
+    key_ = key;
+    value_ = Bytes{value};
+}
+
+void HashBuilder::add_branch_node(ByteView key, const evmc::bytes32& value) {
+    assert(key > key_);
+    if (!key_.empty()) {
+        gen_struct_step(key_, key);
     }
     key_ = key;
     value_ = value;
 }
 
-void HashBuilder::add_branch_node(ByteView, const evmc::bytes32&) {
-    // TODO[Issue 179] implement
-}
-
 void HashBuilder::finalize() {
     if (!key_.empty()) {
-        gen_struct_step(key_, {}, value_);
+        gen_struct_step(key_, {});
         key_.clear();
-        value_.clear();
+        value_ = Bytes{};
     }
 }
 
@@ -162,7 +170,7 @@ evmc::bytes32 HashBuilder::root_hash(bool auto_finalize) {
 }
 
 // https://github.com/ledgerwatch/erigon/blob/devel/docs/programmers_guide/guide.md#generating-the-structural-information-from-the-sequence-of-keys
-void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding, const ByteView value) {
+void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
     for (bool build_extensions{false};; build_extensions = true) {
         const bool preceding_exists{!groups_.empty()};
 
@@ -191,8 +199,15 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding, c
 
         const ByteView short_node_key{current.substr(from)};
         if (!build_extensions) {
-            stack_.push_back(node_ref(leaf_node_rlp(short_node_key, value)));
-        } else if (!short_node_key.empty()) {  // extension node
+            if (const Bytes * leaf_value{std::get_if<Bytes>(&value_)}) {
+                stack_.push_back(node_ref(leaf_node_rlp(short_node_key, *leaf_value)));
+            } else {
+                stack_.push_back(wrap_hash(std::get<evmc::bytes32>(value_).bytes));
+                build_extensions = true;
+            }
+        }
+
+        if (build_extensions && !short_node_key.empty()) {  // extension node
             if (node_collector && from > 0) {
                 // See node/silkworm/trie/intermediate_hashes.hpp
                 const uint16_t flag = 1u << current[from - 1];

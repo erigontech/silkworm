@@ -116,7 +116,8 @@ TEST_CASE("HashBuilder2") {
     Bytes rlp1_2{*from_hex("e480808080") + rlp1_0 + *from_hex("8080") + rlp1_1 + *from_hex("808080808080808080")};
     REQUIRE(rlp1_2.length() >= kHashLength);
 
-    ethash::hash256 hash1_2{keccak256(rlp1_2)};
+    evmc::bytes32 hash1_2;
+    std::memcpy(hash1_2.bytes, keccak256(rlp1_2).bytes, kHashLength);
 
     // extension node
     Bytes rlp1{*from_hex("e216a0")};
@@ -127,6 +128,12 @@ TEST_CASE("HashBuilder2") {
     hb1.add_leaf(unpack_nibbles(key0), val0);
     hb1.add_leaf(unpack_nibbles(key1), val1);
     CHECK(to_hex(hb1.root_hash()) == to_hex(full_view(hash1.bytes)));
+
+    // ------------------------------------------------------------------------------------------
+    // Now add the branch node directly
+    HashBuilder hb2;
+    hb2.add_branch_node(*from_hex("06"), hash1_2);
+    CHECK(to_hex(hb2.root_hash()) == to_hex(full_view(hash1.bytes)));
 }
 
 TEST_CASE("pack_nibbles") {

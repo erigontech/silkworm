@@ -80,6 +80,7 @@ int main(int argc, char* argv[]) {
     auto headers{db::open_cursor(*txn, db::table::kHeaders)};
     auto from_block_bytes{db::block_key(options.from_block)};
     auto header_data{headers.lower_bound(db::to_slice(from_block_bytes))};
+    auto bodies{db::open_cursor(*txn, db::table::kBlockBodies)};
     consensus::Clique engine(kDefaultCliqueConfig);
     try {
         // Loop blocks
@@ -87,6 +88,11 @@ int main(int argc, char* argv[]) {
             auto key{db::from_slice(header_data.key)};
             auto encoded_header{db::from_slice(header_data.value)};
             if (header_data.key.size() != 40) {
+                header_data = headers.to_next(false);
+                continue;
+            }
+            if (!bodies.seek(header_data.key)) {
+                // non-canonical, we skip
                 header_data = headers.to_next(false);
                 continue;
             }

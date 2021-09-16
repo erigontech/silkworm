@@ -91,7 +91,7 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
                         kAddressLength);
             signers.push_back(signer);
         }
-        last_snapshot_ = CliqueSnapshot{header.number, header.hash(), signers};
+        last_snapshot_ = CliqueSnapshot{header.number, header.hash(), signers, {}};
         state.write_snapshot(header.number, header.hash(), last_snapshot_);
 		std::cout << "Genesis Snapshot generated" << std::endl;
         return ValidationResult::kOk;

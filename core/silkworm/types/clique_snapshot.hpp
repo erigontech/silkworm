@@ -50,8 +50,9 @@ struct Tally {
 class CliqueSnapshot {
     public:
         CliqueSnapshot() = default;
-        CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers):
-                        block_number_{block_number}, hash_{hash}, signers_{signers} {}
+        CliqueSnapshot(uint64_t block_number, evmc::bytes32 hash, std::vector<evmc::address> signers,
+                       std::deque<evmc::address> recents):
+                        block_number_{block_number}, hash_{hash}, signers_{signers}, recents_{recents} {}
 
         //! \brief Updated snapshot by adding headers
         //! \param headers: list of headers to add.
@@ -89,14 +90,14 @@ class CliqueSnapshot {
         // is_vote_valid returns whether it makes sense to cast the specified vote in the
         // given snapshot context (e.g. don't try to add an already authorized signer).
         bool is_vote_valid(const evmc::address& address, bool authorize) const noexcept;
-
         // cast adds a new vote into the tally.
         void cast(const evmc::address& address, const evmc::address& signer, bool authorize);
         // uncast removes a previously cast vote from the tally.
         void uncast(const evmc::address& address, const evmc::address& signer);
         // uncast_all removes every cast vote from the signer.
         void uncast_all(const evmc::address& signer);
-
+        // update update snapshots and cleans it up from db corruption, etc..
+        void update(const uint64_t& block_number, const evmc::bytes32& hash);
         std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);
 
         uint64_t block_number_;                             // Block number where the snapshot was created

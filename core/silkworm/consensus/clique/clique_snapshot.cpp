@@ -228,8 +228,9 @@ void CliqueSnapshot::uncast_all(const evmc::address& signer) {
     auto it{tallies_.begin()};
     while(it != tallies_.end()) {
         if (it->second.votes == 0) {
-            tallies_.erase(it);
-            it--;
+            auto to_erase{it};
+            it++;
+            tallies_.erase(to_erase);
         } else {
             it++;
         } 

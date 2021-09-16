@@ -22,7 +22,7 @@
 #include <silkworm/common/base.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
-#include <silkworm/types/clique_snapshot.hpp>
+#include <silkworm/consensus/clique/clique_snapshot.hpp>
 
 namespace silkworm {
 

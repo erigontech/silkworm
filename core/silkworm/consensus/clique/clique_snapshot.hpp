@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_TYPES_CLIQUE_SNAPSHOT
-#define SILKWORM_TYPES_CLIQUE_SNAPSHOT
+#ifndef SILKWORM_CONSENSUS_CLIQUE_SNAPSHOT
+#define SILKWORM_CONSENSUS_CLIQUE_SNAPSHOT
 
 #include <map>
 #include <silkworm/common/base.hpp>
@@ -57,10 +57,10 @@ class CliqueSnapshot {
         //! \brief Updated snapshot by adding headers
         //! \param headers: list of headers to add.
         //! \param config: clique config.
-        ValidationResult add_header(BlockHeader header, CliqueConfig config);
+        ValidationResult add_header(const BlockHeader& header, const evmc::address& signer, const CliqueConfig& config);
         //! \brief Verify seal for header
         //! \param header: header to verify.
-        ValidationResult verify_seal(BlockHeader header);
+        ValidationResult verify_seal(BlockHeader header, const evmc::address& signer);
 
         //! \brief Checks for authority
         //! \param block_number: Block to check.
@@ -98,14 +98,12 @@ class CliqueSnapshot {
         void uncast_all(const evmc::address& signer);
         // update update snapshots and cleans it up from db corruption, etc..
         void update(const uint64_t& block_number, const evmc::bytes32& hash);
-        std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);
 
         uint64_t block_number_;                             // Block number where the snapshot was created
         evmc::bytes32 hash_;                                // Block hash where the snapshot was created     
         std::vector<evmc::address> signers_;                // Set of authorized signers at this moment
         std::deque<evmc::address> recents_;                 // Set of recent signers for spam protections
         std::map<evmc::address, Tally> tallies_;            // Current vote tally to avoid recalculating
-        std::map<evmc::bytes32, evmc::address> sig_cache_;  // Cache where signatures are stored
 };
 
 constexpr CliqueConfig kDefaultCliqueConfig = {
@@ -114,4 +112,4 @@ constexpr CliqueConfig kDefaultCliqueConfig = {
 }; // Ropsten and Görli configuration
 
 }
-#endif // SILKWORM_TYPES_CLIQUE_SNAPSHOT
+#endif // SILKWORM_CONSENSUS_CLIQUE_SNAPSHOT

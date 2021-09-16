@@ -38,8 +38,10 @@ class Clique: public ConsensusEngine {
      void assign_transaction_fees(const BlockHeader& header, intx::uint256 accumulated_fees, IntraBlockState& state) override;
     private:
 
+     std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);
      CliqueConfig   clique_config_;
      CliqueSnapshot last_snapshot_{}; // We cache it to avoid writes and reads
+     std::map<evmc::bytes32, evmc::address> sig_cache_;  // Cache where signatures are stored
 };
 
 }

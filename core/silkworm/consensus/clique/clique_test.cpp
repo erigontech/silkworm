@@ -25,6 +25,7 @@ using namespace evmc::literals;
 
 namespace silkworm {
 
+// Clique Consensus tests
 /*nlohmann::json clique_json = R"({
         "hash": "04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f",
         "number": 52,

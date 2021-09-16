@@ -26,51 +26,17 @@ namespace silkworm {
 std::array<uint8_t, 8> kNonceAuthorize =   {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 std::array<uint8_t, 8> kNonceUnauthorize = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-// taking the header not by reference is intentional
-std::optional<evmc::address> CliqueSnapshot::get_signer_from_clique_header(BlockHeader header) {
-    auto extra_data_size{header.extra_data.size()};
-    // Extract signature first
-    Bytes signature(kSignatureLength, '\0');
-    std::memcpy(&signature[0], &header.extra_data[extra_data_size - 65], kSignatureLength);
-    auto v{header.extra_data.back()};
-    if (v == 27 || v == 28) {
-        v -= 27;
-    }
-
-    // Generate Sealing Hash for Clique
-    // for_sealing = false, with signature in extra_data
-    header.extra_data = header.extra_data.substr(0, extra_data_size - kSignatureLength - 1);
-    auto header_hash{header.hash()};
-    if (sig_cache_.find(header_hash) != sig_cache_.end()) {
-        return sig_cache_[header_hash];
-    }
-    // Run Ecrecover and get public key
-    auto recovered{ecdsa::recover(full_view(header_hash), signature, v)};
-    if (recovered == std::nullopt) {
-        return std::nullopt;
-    }
-    auto hash{keccak256(recovered->substr(1))};
-    // Convert public key to address
-    evmc::address signer{};
-    std::memcpy(signer.bytes, &hash.bytes[12], kAddressLength);
-    sig_cache_.emplace(header_hash, signer);
-    return signer;
-}
-
 //! \brief Updated snapshot by adding headers
 //! \param headers: list of headers to add.
-ValidationResult CliqueSnapshot::add_header(BlockHeader header, CliqueConfig config) {
+ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evmc::address& signer, const CliqueConfig& config) {
     auto hash{header.hash()};
+    auto tmp_recents{recents_}; // We only modify snapshot after checks are done.
     // Delete the oldest signer from the recent list to allow it signing again
     if ((recents_.size() > 0 && recents_.size() >= signers_.size() / 2)) {
-        recents_.pop_back();
+        tmp_recents.pop_back();
     }
 
-    auto signer{get_signer_from_clique_header(header)};
-    if (signer == std::nullopt) {
-        return ValidationResult::kUnhauthorizedSigner;
-    }
-    if (std::find(signers_.begin(), signers_.end(), *signer) == signers_.end()) {
+    if (std::find(signers_.begin(), signers_.end(), signer) == signers_.end()) {
         return ValidationResult::kUnhauthorizedSigner;
     }
 
@@ -79,14 +45,8 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header, CliqueConfig con
         tallies_.clear();
     }
 
-    if (std::find(recents_.begin(), recents_.end(), signer) != recents_.end()) {
+    if (std::find(tmp_recents.begin(), tmp_recents.end(), signer) != tmp_recents.end()) {
         return ValidationResult::kRecentlySigned;
-    }
-    recents_.push_front(*signer);
-
-    if (header.beneficiary == 0x0000000000000000000000000000000000000000_address) {        
-        update(header.number, hash);
-        return ValidationResult::kOk;
     }
 
     // We check what the vote is
@@ -98,12 +58,20 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header, CliqueConfig con
     } else {
         return ValidationResult::kInvalidVote;
     }
+    
+    tmp_recents.push_front(signer);
+    recents_ = tmp_recents;
+
+    if (header.beneficiary == 0x0000000000000000000000000000000000000000_address) {        
+        update(header.number, hash);
+        return ValidationResult::kOk;
+    }
 
     // Uncast votes from signers
-    uncast(header.beneficiary, *signer);
+    uncast(header.beneficiary, signer);
 
     // do casting
-    cast(header.beneficiary, *signer, authorize);
+    cast(header.beneficiary, signer, authorize);
     // If the vote passed, update the list of signers
     auto current_tally{tallies_[header.beneficiary]};
     if (current_tally.votes > signers_.size() / 2) {
@@ -126,15 +94,9 @@ ValidationResult CliqueSnapshot::add_header(BlockHeader header, CliqueConfig con
 
 //! \brief Verify seal for header
 //! \param header: header to verify.
-ValidationResult CliqueSnapshot::verify_seal(BlockHeader header) {
-    auto signer{get_signer_from_clique_header(header)};
-
-    if (signer == std::nullopt) {
-        return ValidationResult::kInvalidVotingSegment;
-    }
-
+ValidationResult CliqueSnapshot::verify_seal(BlockHeader header, const evmc::address& signer) {
     // Check difficituly
-    auto authority{is_authority(header.number, *signer)};
+    auto authority{is_authority(header.number, signer)};
     if (authority && header.difficulty != kDiffInTurn && header.difficulty != kDiffNoTurn) {
         return ValidationResult::kIntrinsicGas;
     }
@@ -223,7 +185,7 @@ bool CliqueSnapshot::is_vote_valid(const evmc::address& address, bool authorize)
     auto existing_signer{std::find(signers_.begin(), signers_.end(), address) != signers_.end()};
     return (existing_signer && !authorize) || (!existing_signer && authorize);
 }
-
+// cast a vote made to address by signer
 void CliqueSnapshot::cast(const evmc::address& address, const evmc::address& signer, bool authorize) {
     if (!is_vote_valid(address, authorize)) {
         return;
@@ -238,7 +200,7 @@ void CliqueSnapshot::cast(const evmc::address& address, const evmc::address& sig
         tallies_.emplace(address, Tally{authorize, 1, {signer}});
     }
 }
-
+// uncast the vote made to address by signer
 void CliqueSnapshot::uncast(const evmc::address& address, const evmc::address& signer) {
     if(tallies_.count(address)) {
         if (std::find(tallies_[address].voters.begin(), 
@@ -253,7 +215,7 @@ void CliqueSnapshot::uncast(const evmc::address& address, const evmc::address& s
         }
     }
 }
-
+// Uncast all of the votes made by signer
 void CliqueSnapshot::uncast_all(const evmc::address& signer) {
     for (auto& [address, tally]: tallies_) {
         auto vote{std::find(tally.voters.begin(), tally.voters.end(), signer)};

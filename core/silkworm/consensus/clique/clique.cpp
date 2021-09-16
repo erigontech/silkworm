@@ -111,24 +111,33 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 		std::reverse(pending_blocks.begin(), pending_blocks.end());
 		last_snapshot_ = *state.read_snapshot(current_header.number, current_header.hash());
 		for (const auto& h: pending_blocks) {
-			auto err{last_snapshot_.add_header(h, clique_config_)};
+			auto signer{get_signer_from_clique_header(h)};
+			
+			if (signer == std::nullopt) {
+				return ValidationResult::kInvalidVote;
+			}
+
+			auto err{last_snapshot_.add_header(h, *signer, clique_config_)};
 			if (err != ValidationResult::kOk) {
 				return err;
 			}
 		}
 		return ValidationResult::kOk;
-	} else {
-        auto err{last_snapshot_.add_header(header, clique_config_)};
+	} else {			
+		auto signer{get_signer_from_clique_header(header)};
+
+		if (signer == std::nullopt) {
+			return ValidationResult::kInvalidVote;
+		}
+		
+        auto err{last_snapshot_.add_header(header, *signer, clique_config_)};
         if (err != ValidationResult::kOk) {
             return err;
         }
 		if (header.number % clique_config_.epoch == 0) {
-			std::cout << "Pushed snapshot at Hash: 0x" << to_hex(last_snapshot_.get_hash()) << 
-						". Block Number: " << last_snapshot_.get_block_number()
-						<< std::endl;
         	state.write_snapshot(last_snapshot_.get_block_number(), last_snapshot_.get_hash(), last_snapshot_);
 		}
-        return last_snapshot_.verify_seal(header);
+		return last_snapshot_.verify_seal(header, *signer);
     }
 }
 
@@ -136,5 +145,36 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 void Clique::apply_rewards(IntraBlockState&, const Block&, const evmc_revision&) {}
 
 void Clique::assign_transaction_fees(const BlockHeader&, intx::uint256, IntraBlockState&) {}
+
+// taking the header not by reference is intentional
+std::optional<evmc::address> Clique::get_signer_from_clique_header(BlockHeader header) {
+    auto extra_data_size{header.extra_data.size()};
+    // Extract signature first
+    Bytes signature(kSignatureLength, '\0');
+    std::memcpy(&signature[0], &header.extra_data[extra_data_size - 65], kSignatureLength);
+    auto v{header.extra_data.back()};
+    if (v == 27 || v == 28) {
+        v -= 27;
+    }
+
+    // Generate Sealing Hash for Clique
+    // for_sealing = false, with signature in extra_data
+    header.extra_data = header.extra_data.substr(0, extra_data_size - kSignatureLength - 1);
+    auto header_hash{header.hash()};
+    if (sig_cache_.find(header_hash) != sig_cache_.end()) {
+        return sig_cache_[header_hash];
+    }
+    // Run Ecrecover and get public key
+    auto recovered{ecdsa::recover(full_view(header_hash), signature, v)};
+    if (recovered == std::nullopt) {
+        return std::nullopt;
+    }
+    auto hash{keccak256(recovered->substr(1))};
+    // Convert public key to address
+    evmc::address signer{};
+    std::memcpy(signer.bytes, &hash.bytes[12], kAddressLength);
+    sig_cache_.emplace(header_hash, signer);
+    return signer;
+}
 
 }

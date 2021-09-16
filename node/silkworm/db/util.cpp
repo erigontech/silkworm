@@ -16,16 +16,10 @@
 
 #include "util.hpp"
 
-#include <cassert>
-#include <cstdlib>
 #include <cstring>
-
-#include <intx/int128.hpp>
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
-#include <silkworm/common/util.hpp>
-#include <silkworm/rlp/encode.hpp>
 
 namespace silkworm::db {
 

@@ -17,9 +17,8 @@
 #ifndef SILKWORM_CHAIN_CONFIG_HPP_
 #define SILKWORM_CHAIN_CONFIG_HPP_
 
-#include <stdint.h>
-
 #include <array>
+#include <cstdint>
 #include <optional>
 
 #include <evmc/evmc.h>

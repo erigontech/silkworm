@@ -124,12 +124,6 @@ DecodingResult decode_vector(ByteView& from, std::vector<T>& to) noexcept {
     return DecodingResult::kOk;
 }
 
-[[nodiscard]] std::pair<uint64_t, DecodingResult> read_uint64(ByteView big_endian,
-                                                              bool allow_leading_zeros = false) noexcept;
-
-[[nodiscard]] std::pair<intx::uint256, DecodingResult> read_uint256(ByteView big_endian,
-                                                                    bool allow_leading_zeros = false) noexcept;
-
 }  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLP_DECODE_HPP_

@@ -21,8 +21,8 @@
 // Currently it's unstable and is likely to change.
 // Used for https://torquem.ch/eth_tests.html
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
 
 #include <evmc/evmc.h>
 #include <intx/intx.hpp>

@@ -63,6 +63,7 @@ the correct bit in tree_mask bitmap
 - Other records in TrieAccount and TrieStorage must satisfy (tree_mask≠0 ∨ hash_mask≠0)
 */
 
+#include <filesystem>
 #include <optional>
 #include <vector>
 
@@ -147,13 +148,13 @@ class WrongRoot : public std::runtime_error {
 // Erigon RegenerateIntermediateHashes
 // might throw WrongRoot
 // returns the state root
-evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
+evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir,
                                              const evmc::bytes32* expected_root = nullptr);
 
 // Erigon incrementIntermediateHashes
 // might throw WrongRoot
 // returns the state root
-evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char* etl_dir, BlockNum from,
+evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir, BlockNum from,
                                             const evmc::bytes32* expected_root = nullptr);
 
 }  // namespace silkworm::trie

@@ -128,7 +128,7 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    regenerate_intermediate_hashes(txn, data_dir.etl().path().c_str(), &expected_root);
+    regenerate_intermediate_hashes(txn, data_dir.etl().path(), &expected_root);
 
     // ----------------------------------------------------------------
     // Check account trie
@@ -203,7 +203,7 @@ TEST_CASE("Account and storage trie") {
         auto account_change_table{db::open_cursor(txn, db::table::kAccountChangeSet)};
         account_change_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(address));
 
-        increment_intermediate_hashes(txn, data_dir.etl().path().c_str(), /*from=*/0);
+        increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/0);
 
         account_trie.to_first();
         db::for_each(account_trie, save_nodes);
@@ -258,7 +258,7 @@ TEST_CASE("Account trie around extension node") {
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    CHECK(regenerate_intermediate_hashes(txn, data_dir.etl().path().c_str()) == expected_root);
+    CHECK(regenerate_intermediate_hashes(txn, data_dir.etl().path()) == expected_root);
 
     std::map<Bytes, Node> node_map;
     const auto save_nodes{[&node_map](mdbx::cursor::move_result& entry) {

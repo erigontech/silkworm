@@ -89,6 +89,8 @@ class AccountTrieCursor {
 
     const evmc::bytes32* hash() const;
 
+    bool children_are_in_trie() const;
+
     bool can_skip_state() const;
 
   private:

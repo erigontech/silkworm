@@ -212,10 +212,11 @@ TEST_CASE("Account and storage trie") {
 
         const Node node1b{node_map.at(*from_hex("0B"))};
         CHECK(node1a.state_mask() == node1b.state_mask());
-        CHECK(node1a.state_mask() == node1b.state_mask());
+        CHECK(node1a.tree_mask() == node1b.tree_mask());
         CHECK(0b1011 == node1b.hash_mask());
+        CHECK(node1b.root_hash() == std::nullopt);
 
-        // TODO[Issue 179] check the new hash
+        // TODO[Issue 179] check node1b.hashes()
 
         const Node node2b{node_map.at(*from_hex("0B00"))};
         CHECK(node2a == node2b);

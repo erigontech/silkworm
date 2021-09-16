@@ -53,8 +53,7 @@ void AccountTrieCursor::next(bool skip_children) {
         return;
     }
 
-    const bool has_children = node_->tree_mask() & (1u << nibble_);
-    if (has_children && !skip_children) {
+    if (!skip_children && children_are_in_trie()) {
         seek_node(*key());
         return;
     }
@@ -92,6 +91,13 @@ const evmc::bytes32* AccountTrieCursor::hash() const {
     const unsigned first_nibbles_mask{(1u << nibble_) - 1};
     const size_t hash_idx{std::bitset<16>(node_->hash_mask() & first_nibbles_mask).count()};
     return &node_->hashes()[hash_idx];
+}
+
+bool AccountTrieCursor::children_are_in_trie() const {
+    if (node_ == std::nullopt) {
+        return false;
+    }
+    return node_->tree_mask() & (1u << nibble_);
 }
 
 bool AccountTrieCursor::can_skip_state() const {
@@ -194,7 +200,7 @@ evmc::bytes32 DbTrieLoader::calculate_root(const PrefixSet& changed) {
     for (AccountTrieCursor acc_trie{txn_, changed}; acc_trie.key() != std::nullopt;) {
         if (acc_trie.can_skip_state()) {
             assert(acc_trie.hash() != nullptr);
-            hb_.add_branch_node(*acc_trie.key(), *acc_trie.hash());
+            hb_.add_branch_node(*acc_trie.key(), *acc_trie.hash(), acc_trie.children_are_in_trie());
             acc_trie.next(/*skip_children=*/true);
             continue;
         }

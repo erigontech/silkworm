@@ -51,7 +51,7 @@ class HashBuilder {
     // Consequently, duplicate keys are not allowed.
     // The key should be unpacked, i.e. have one nibble per byte.
     // Nodes whose RLP is shorter than 32 bytes may not be added.
-    void add_branch_node(ByteView unpacked_key, const evmc::bytes32& hash);
+    void add_branch_node(ByteView unpacked_key, const evmc::bytes32& hash, bool is_in_db_trie = false);
 
     // May only be called after all entries have been added.
     evmc::bytes32 root_hash();
@@ -70,6 +70,7 @@ class HashBuilder {
 
     Bytes key_;                                 // unpacked – one nibble per byte
     std::variant<Bytes, evmc::bytes32> value_;  // leaf value or node hash
+    bool is_in_db_trie_{false};
 
     std::vector<uint16_t> groups_;
     std::vector<uint16_t> tree_masks_;

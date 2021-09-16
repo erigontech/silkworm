@@ -131,13 +131,14 @@ void HashBuilder::add_leaf(ByteView key, ByteView value) {
     value_ = Bytes{value};
 }
 
-void HashBuilder::add_branch_node(ByteView key, const evmc::bytes32& value) {
+void HashBuilder::add_branch_node(ByteView key, const evmc::bytes32& value, bool is_in_db_trie) {
     assert(key > key_);
     if (!key_.empty()) {
         gen_struct_step(key_, key);
     }
     key_ = key;
     value_ = value;
+    is_in_db_trie_ = is_in_db_trie;
 }
 
 void HashBuilder::finalize() {
@@ -203,6 +204,14 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
                 stack_.push_back(node_ref(leaf_node_rlp(short_node_key, *leaf_value)));
             } else {
                 stack_.push_back(wrap_hash(std::get<evmc::bytes32>(value_).bytes));
+                if (node_collector) {
+                    if (is_in_db_trie_) {
+                        // keep track of existing records in DB
+                        tree_masks_[current.length() - 1] |= 1u << current.back();
+                    }
+                    // register myself in parent's bitmaps
+                    hash_masks_[current.length() - 1] |= 1u << current.back();
+                }
                 build_extensions = true;
             }
         }
@@ -242,8 +251,8 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
                     hash_masks_[len - 1] |= 1u << current[len - 1];
                 }
 
-                bool store_in_intermediate_hashes{tree_masks_[len] || hash_masks_[len]};
-                if (store_in_intermediate_hashes) {
+                bool store_in_db_trie{tree_masks_[len] || hash_masks_[len]};
+                if (store_in_db_trie) {
                     if (len > 0) {
                         tree_masks_[len - 1] |= 1u << current[len - 1];  // register myself in parent bitmap
                     }

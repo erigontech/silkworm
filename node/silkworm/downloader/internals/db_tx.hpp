@@ -27,17 +27,66 @@
 
 using namespace silkworm;
 
-class DbTx {
-    mdbx::env_managed env;
+// A database
+class Db {
+  public:
+    class ReadOnlyAccess;
+    class ReadWriteAccess;
+
+    explicit Db(std::string db_path) {
+        db::EnvConfig db_config{db_path};
+        //db_config.readonly = false;
+        env_ = db::open_env(db_config);
+    }
+
+  private:
+    mdbx::env_managed env_;
+};
+
+// A read-only access to database - used to enforce in some method signatures the type of access
+class Db::ReadOnlyAccess {
+  public:
+    class Tx;
+
+    ReadOnlyAccess(Db& db): env_{db.env_} {}
+    ReadOnlyAccess(mdbx::env_managed& env): env_{env} {} // low level construction, more silkworm friendly
+    ReadOnlyAccess(const ReadOnlyAccess& copy): env_{copy.env_} {}
+
+    Tx start_ro_tx();
+
+  protected:
+    mdbx::env_managed& env_;
+};
+
+// A read-write access to database - used to enforce in some method signatures the type of access
+class Db::ReadWriteAccess: public Db::ReadOnlyAccess {
+  public:
+    class Tx;
+
+    ReadWriteAccess(Db& db): Db::ReadOnlyAccess{db} {}
+    ReadWriteAccess(mdbx::env_managed& env): Db::ReadOnlyAccess{env} {} // low level construction, more silkworm friendly
+    ReadWriteAccess(const ReadWriteAccess& copy): Db::ReadOnlyAccess{copy} {}
+
+    Tx start_tx();
+    // improvement: enforce a single read-write tx (as MDBX requires) at compilation time
+};
+
+// A db read-only transaction
+class Db::ReadOnlyAccess::Tx {
+  protected:
     mdbx::txn_managed txn;
 
+    Tx(mdbx::txn_managed&& source): txn{std::move(source)} {}
+
   public:
-    explicit DbTx(std::string db_path) {
-        db::EnvConfig db_config{db_path};
-        db_config.readonly = true;
-        env = db::open_env(db_config);
-        txn = env.start_read();
-    }
+    Tx(Db::ReadOnlyAccess& access): Tx{access.env_.start_read()} {}
+    Tx(const Tx&) = delete; // not copyable
+    Tx(Tx&& source) noexcept: txn(std::move(source.txn)) {} // only movable
+    ~Tx() {} // destroying txn cause abort if not done
+
+    void close() {txn.abort();}     // a more friendly name for a read-only tx
+    void abort() {txn.abort();}
+    void commit() {txn.commit();}
 
     std::optional<Hash> read_canonical_hash(BlockNum b) {  // throws db exceptions // todo: add to db::access_layer.hpp?
         auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
@@ -118,5 +167,24 @@ class DbTx {
 
     BlockNum stage_progress(const char* stage_name) { return db::stages::read_stage_progress(txn, stage_name); }
 };
+
+// A db read-write transaction
+class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
+  public:
+    Tx(Db::ReadWriteAccess& access): Db::ReadOnlyAccess::Tx{access.env_.start_write()} {}
+    Tx(const Tx&) = delete; // not copyable
+    Tx(Tx&& source) noexcept: Db::ReadOnlyAccess::Tx(std::move(source.txn)) {} // only movable
+};
+
+
+// Implementation of some methods
+inline auto Db::ReadOnlyAccess::start_ro_tx() -> Tx {
+    return Tx(*this);
+}
+
+inline auto Db::ReadWriteAccess::start_tx() -> Tx {
+    return Tx(*this);
+}
+
 
 #endif  // SILKWORM_DB_TX_HPP

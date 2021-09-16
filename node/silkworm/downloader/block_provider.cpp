@@ -24,9 +24,9 @@
 
 namespace silkworm {
 
-BlockProvider::BlockProvider(SentryClient& sentry, DbTx& db, ChainIdentity chain_identity):
+BlockProvider::BlockProvider(SentryClient& sentry, Db::ReadOnlyAccess db_access, ChainIdentity chain_identity):
     chain_identity_(std::move(chain_identity)),
-    db_{db},
+    db_access_{db_access},
     sentry_{sentry}
 {
 }
@@ -37,7 +37,7 @@ BlockProvider::~BlockProvider() {
 }
 
 void BlockProvider::send_status() {
-    HeaderRetrieval headers(db_);
+    HeaderRetrieval headers(db_access_);
     auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
 
     rpc::SetStatus set_status(chain_identity_, head_hash, head_td);
@@ -70,7 +70,7 @@ void BlockProvider::execution_loop() {
 
         while (!stopping_ && !sentry_.closing() && receive_messages.receive_one_reply()) {
 
-            auto message = InboundBlockRequestMessage::make(receive_messages.reply(), db_, sentry_);
+            auto message = InboundBlockRequestMessage::make(receive_messages.reply(), db_access_, sentry_);
 
             process_message(message);
         }

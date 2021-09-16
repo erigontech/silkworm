@@ -74,10 +74,10 @@ int main(int argc, char* argv[]) {
              << "   hard-forks: " << chain_identity.distinct_fork_numbers().size() << "\n";
 
         // Database access
-        DbTx db{db_path};
+        Db db{db_path};
 
         // Node current status
-        HeaderRetrieval headers(db);
+        HeaderRetrieval headers(Db::ReadOnlyAccess{db});
         auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
         cout << "   head_hash = " << head_hash.to_hex() << "\n";
         cout << "   head_td   = " << intx::to_string(head_td) << "\n\n" << std::flush;
@@ -86,14 +86,14 @@ int main(int argc, char* argv[]) {
         SentryClient sentry{sentry_addr};
 
         // Block provider - provides headers and bodies to external peers
-        BlockProvider block_provider{sentry, db, chain_identity};
+        BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}, chain_identity};
         block_request_processing = std::thread( [&block_provider]() {  // todo: join in block_provider destructor
             block_provider.execution_loop();
         });
 
         // Stage1 - Header downloader - example code
         BlockNum target_block = 1'000'000; // only for test
-        HeaderDownloader header_downloader{sentry, db, chain_identity};
+        HeaderDownloader header_downloader{sentry, Db::ReadWriteAccess{db}, chain_identity};
         header_downloader.forward_to(target_block);
 
         // Wait for user termination request

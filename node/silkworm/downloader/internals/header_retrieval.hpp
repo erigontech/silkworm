@@ -28,7 +28,7 @@ class HeaderRetrieval {
     static const long est_header_rlp_size = 500;             // Approximate size of an RLP encoded block header
     static const long max_headers_serve = 1024;              // Amount of block headers to be fetched per retrieval request
 
-    explicit HeaderRetrieval(DbTx& db);
+    explicit HeaderRetrieval(Db::ReadOnlyAccess db_access);
 
     // Headers
     std::vector<BlockHeader> recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse);
@@ -42,7 +42,7 @@ class HeaderRetrieval {
     std::tuple<Hash,BlockNum> get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical);
 
   protected:
-    DbTx& db_;
+    Db::ReadOnlyAccess::Tx db_tx_;
 };
 
 }

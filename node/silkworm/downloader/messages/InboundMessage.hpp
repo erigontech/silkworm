@@ -43,7 +43,7 @@ std::string identify(const silkworm::InboundMessage& message);
 
 
 struct InboundBlockRequestMessage : public InboundMessage {
-    static std::shared_ptr<InboundMessage> make(const sentry::InboundMessage& msg, DbTx& db, SentryClient& sentry);
+    static std::shared_ptr<InboundMessage> make(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db, SentryClient& sentry);
 };
 
 

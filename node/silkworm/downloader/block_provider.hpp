@@ -40,11 +40,11 @@ class BlockProviderException: public std::runtime_error {
 class BlockProvider : public ActiveComponent {  // an active component that must run always
 
     ChainIdentity chain_identity_;
-    DbTx& db_;
+    Db::ReadOnlyAccess db_access_;
     SentryClient& sentry_;
 
   public:
-    BlockProvider(SentryClient& sentry, DbTx& db, ChainIdentity chain_identity);
+    BlockProvider(SentryClient& sentry, Db::ReadOnlyAccess db_access, ChainIdentity chain_identity);
     BlockProvider(const BlockProvider&) = delete;  // not copyable
     BlockProvider(BlockProvider&&) = delete;       // nor movable
     ~BlockProvider();

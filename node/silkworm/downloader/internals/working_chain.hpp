@@ -33,7 +33,7 @@ class WorkingChain {  // tentative name - todo: improve!
     void target_height(BlockNum);
 
     // load from db
-    void recover_from_db(DbTx&); // todo: make it private and call in the constructor?
+    void recover_from_db(Db::ReadWriteAccess); // todo: make it private and call in the constructor?
 
     // status
     BlockNum height_reached();

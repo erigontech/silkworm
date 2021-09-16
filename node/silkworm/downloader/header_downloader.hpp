@@ -52,12 +52,12 @@ class HeaderDownloaderException: public std::runtime_error {
 class HeaderDownloader : public Stage {
 
     ChainIdentity chain_identity_;
-    DbTx& db_;
+    Db::ReadWriteAccess db_access_;
     SentryClient& sentry_;
     WorkingChain working_chain_;
 
   public:
-    HeaderDownloader(SentryClient& sentry, DbTx& db, ChainIdentity chain_identity);
+    HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_access, ChainIdentity chain_identity);
     HeaderDownloader(const HeaderDownloader&) = delete; // not copyable
     HeaderDownloader(HeaderDownloader&&) = delete; // nor movable
     ~HeaderDownloader();

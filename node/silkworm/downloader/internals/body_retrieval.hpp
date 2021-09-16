@@ -27,12 +27,12 @@ class BodyRetrieval {
     static const long soft_response_limit = 2 * 1024 * 1024; // Target maximum size of returned blocks, headers or node data.
     static const long max_bodies_serve = 1024;                // Amount of block bodies to be fetched per retrieval request
 
-    explicit BodyRetrieval(DbTx& db);
+    explicit BodyRetrieval(Db::ReadOnlyAccess db_access);
 
     std::vector<BlockBody> recover(std::vector<Hash>);
 
   protected:
-    DbTx& db_;
+    Db::ReadOnlyAccess::Tx db_tx_;
 };
 
 }

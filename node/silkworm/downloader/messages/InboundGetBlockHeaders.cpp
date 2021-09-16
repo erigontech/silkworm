@@ -24,7 +24,7 @@
 
 namespace silkworm {
 
-InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg, DbTx& db, SentryClient& sentry) :
+InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db, SentryClient& sentry) :
     InboundMessage(), db_(db), sentry_(sentry)
 {
 

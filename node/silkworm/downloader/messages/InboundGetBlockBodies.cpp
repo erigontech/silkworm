@@ -25,7 +25,7 @@
 
 namespace silkworm {
 
-InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, DbTx& db, SentryClient& s) :
+InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db, SentryClient& s) :
     InboundMessage(), db_(db), sentry_(s)
 {
     if (msg.id() != sentry::MessageId::GET_BLOCK_BODIES_66) {

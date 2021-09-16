@@ -27,7 +27,7 @@
 
 namespace silkworm {
 
-std::shared_ptr<InboundMessage> InboundBlockRequestMessage::make(const sentry::InboundMessage& raw_message, DbTx& db, SentryClient& sentry) {
+std::shared_ptr<InboundMessage> InboundBlockRequestMessage::make(const sentry::InboundMessage& raw_message, Db::ReadOnlyAccess db, SentryClient& sentry) {
     std::shared_ptr<InboundMessage> message;
     if (raw_message.id() == sentry::MessageId::GET_BLOCK_HEADERS_66)
         message = std::make_shared<InboundGetBlockHeaders>(raw_message, db, sentry);

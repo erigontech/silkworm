@@ -27,11 +27,10 @@
 
 namespace silkworm {
 
-HeaderDownloader::HeaderDownloader(SentryClient& sentry, DbTx& db, ChainIdentity chain_identity):
+HeaderDownloader::HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_access, ChainIdentity chain_identity):
     chain_identity_(std::move(chain_identity)),
-    db_{db},
+    db_access_{db_access},
     sentry_{sentry}
-	// todo: do we need init working_chain_?
 {
 }
 
@@ -40,7 +39,7 @@ HeaderDownloader::~HeaderDownloader() {
 }
 
 void HeaderDownloader::send_status() {
-    HeaderRetrieval headers(db_);
+    HeaderRetrieval headers(db_access_);
     auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
 
     rpc::SetStatus set_status(chain_identity_, head_hash, head_td);
@@ -101,7 +100,7 @@ auto HeaderDownloader::forward_to(BlockNum new_height) -> StageResult {
     try {
 
         // read last chain
-        working_chain_.recover_from_db(db_); // todo: this use the same db connection, it is ok?
+        working_chain_.recover_from_db(db_access_); // todo: this use the same db connection, it is ok?
 
         // set a goal
         working_chain_.target_height(new_height);

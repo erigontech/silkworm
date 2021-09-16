@@ -94,8 +94,8 @@ func (hd *HeaderDownload) RecoverFromDb(db ethdb.RoKV) error {
 	return nil
 }
 */
-void WorkingChain::recover_from_db(DbTx& db) {
-    HeaderRetrieval headers(db);
+void WorkingChain::recover_from_db(Db::ReadWriteAccess db_access) {
+    HeaderRetrieval headers(db_access);
     auto head_height = headers.head_height();
     highestInDb_ = head_height; // topSeenHeight_ will be set at the each block announcements
 

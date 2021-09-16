@@ -24,7 +24,7 @@ namespace silkworm {
 
 class InboundGetBlockBodies: public InboundMessage {
   public:
-    InboundGetBlockBodies(const sentry::InboundMessage& msg, DbTx& db, SentryClient& s);
+    InboundGetBlockBodies(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db, SentryClient& s);
 
     std::string name() const override {return "InboundGetBlockBodies";}
     std::string content() const override;
@@ -35,7 +35,7 @@ class InboundGetBlockBodies: public InboundMessage {
   private:
     std::string peerId_;
     GetBlockBodiesPacket66 packet_;
-    DbTx& db_;
+    Db::ReadOnlyAccess db_;
     SentryClient& sentry_;
 };
 

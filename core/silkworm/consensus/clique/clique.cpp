@@ -19,7 +19,6 @@
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
-#include <iostream>
 
 #include "clique.hpp"
 
@@ -93,7 +92,6 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
         }
         last_snapshot_ = CliqueSnapshot{header.number, header.hash(), signers, {}};
         state.write_snapshot(header.number, header.hash(), last_snapshot_);
-		std::cout << "Genesis Snapshot generated" << std::endl;
         return ValidationResult::kOk;
     } else if (last_snapshot_.get_hash() == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32) {
 		// If last snapshot is not set, find it from the database and initialize it

@@ -18,7 +18,6 @@
 #include <catch2/catch.hpp>
 
 #include "clique_snapshot.hpp"
-#include <iostream>
 
 using namespace evmc::literals;
 

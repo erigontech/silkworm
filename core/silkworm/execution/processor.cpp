@@ -22,7 +22,6 @@
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/trie/vector_root.hpp>
-#include <iostream>
 
 namespace silkworm {
 

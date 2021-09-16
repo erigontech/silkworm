@@ -19,7 +19,6 @@
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <cstring>
-#include <iostream>
 
 namespace silkworm {
 

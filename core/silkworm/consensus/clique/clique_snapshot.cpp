@@ -32,7 +32,7 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
     auto hash{header.hash()};
     auto tmp_recents{recents_}; // We only modify snapshot after checks are done.
     // Delete the oldest signer from the recent list to allow it signing again
-    if ((recents_.size() > 0 && recents_.size() >= signers_.size() / 2)) {
+    if (recents_.size() > 0 && recents_.size() > signers_.size() / 2) {
         tmp_recents.pop_back();
     }
 
@@ -69,7 +69,6 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
 
     // Uncast votes from signers
     uncast(header.beneficiary, signer);
-
     // do casting
     cast(header.beneficiary, signer, authorize);
     // If the vote passed, update the list of signers
@@ -78,13 +77,15 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
         if (current_tally.authorize) {
             signers_.push_back(header.beneficiary);
         } else {
-            std::remove(signers_.begin(), signers_.end(), header.beneficiary);
+            signers_.erase(std::remove(signers_.begin(), signers_.end(), header.beneficiary), signers_.end());
             // Clean up recents
-            recents_.pop_back();  
+            recents_.pop_back();
             // Update Tallies
             uncast_all(header.beneficiary);
         }
-        tallies_.erase(header.beneficiary);
+        if (tallies_.count(header.beneficiary)) {
+            tallies_.erase(header.beneficiary);
+        }
     }
 
     update(header.number, hash);
@@ -219,7 +220,7 @@ void CliqueSnapshot::uncast(const evmc::address& address, const evmc::address& s
 void CliqueSnapshot::uncast_all(const evmc::address& signer) {
     for (auto& [address, tally]: tallies_) {
         auto vote{std::find(tally.voters.begin(), tally.voters.end(), signer)};
-        if (vote != tally.voters.end() && tally.votes <= 1 && tally.votes > 0) {
+        if (vote != tally.voters.end() && tally.votes > 0) {
             tally.votes--;
             tally.voters.erase(vote);
         }
@@ -229,9 +230,10 @@ void CliqueSnapshot::uncast_all(const evmc::address& signer) {
     while(it != tallies_.end()) {
         if (it->second.votes == 0) {
             tallies_.erase(it);
+            it--;
         } else {
             it++;
-        }
+        } 
     }
 }
 

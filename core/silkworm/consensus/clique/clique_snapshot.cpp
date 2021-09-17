@@ -137,23 +137,22 @@ const evmc::bytes32& CliqueSnapshot::get_hash() const noexcept {
 //! \brief Convert the snapshot in Bytes.
 //! \return The resulting Bytes.
 Bytes CliqueSnapshot::to_bytes() const noexcept {
-    auto signers_size{signers_.size()};
-    auto recents_size{recents_.size()};
-    Bytes ret(signers_size * kAddressLength + recents_size * kAddressLength + 1, '\0');
+    auto signers_bytes_count{signers_.size() * kAddressLength};
+    auto recents_bytes_count{recents_.size() * kAddressLength};
+    Bytes ret(signers_bytes_count + recents_bytes_count + 1 /* byte for signers count*/, '\0');
+
     // We specify how many are signers
-    ret[0] = signers_.size();
-    // We add the signers
-    size_t i = 0;
-    for (const auto &signer: signers_) {
-        std::memcpy(&ret[i * kAddressLength + 1], signer.bytes, kAddressLength);
-        i++;
-    }
+    size_t offset{0};
+    ret[offset++] = static_cast<uint8_t>(signers_.size());
+    std::memcpy(&ret[offset], signers_.data(), signers_bytes_count);
+    offset += signers_bytes_count;
+
     // We add the recents
-    i = 0;
     for (const auto &recent: recents_) {
-        std::memcpy(&ret[signers_size * kAddressLength + i * kAddressLength + 1], recent.bytes, kAddressLength);
-        i++;
+        std::memcpy(&ret[offset], recent.bytes, kAddressLength);
+        offset += kAddressLength;
     }
+
     return ret;
 }
 

@@ -50,7 +50,7 @@ TEST_CASE("BlockBody RLP") {
 
     REQUIRE(rlp::decode(in, bb) == rlp::DecodingResult::kOk);
 
-    CHECK(bb.transactions.size() == 0);
+    CHECK(bb.transactions.empty());
     REQUIRE(bb.ommers.size() == 1);
     CHECK(bb.ommers[0].number == 1);
     CHECK(bb.ommers[0].beneficiary == 0xc8ebccc5f5689fa8659d83713341e5ad19349448_address);

@@ -25,9 +25,9 @@
 
 namespace silkworm {
 
-ExecutionStatePool::ExecutionStatePool() {}
+ExecutionStatePool::ExecutionStatePool() = default;
 
-ExecutionStatePool::~ExecutionStatePool() {}
+ExecutionStatePool::~ExecutionStatePool() = default;
 
 std::unique_ptr<evmone::AdvancedExecutionState> ExecutionStatePool::acquire() noexcept {
     if (pool_.empty()) {

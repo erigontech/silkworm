@@ -16,8 +16,6 @@
 
 #include "block.hpp"
 
-#include <cstring>
-
 #include <silkworm/common/cast.hpp>
 
 namespace silkworm {

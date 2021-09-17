@@ -33,7 +33,7 @@ namespace silkworm {
 class Blockchain {
   public:
     /// Creates a new instance of Blockchain.
-    /// In the begining the state must have the genesis allocation.
+    /// In the beginning the state must have the genesis allocation.
     /// Later on the state may only be modified by the created instance of Blockchain.
     Blockchain(State& state, const ChainConfig& config, const Block& genesis_block);
 

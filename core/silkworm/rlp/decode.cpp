@@ -20,7 +20,6 @@
 #include <tuple>
 
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/util.hpp>
 
 namespace silkworm::rlp {
 

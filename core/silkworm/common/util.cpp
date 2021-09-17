@@ -168,7 +168,7 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
     std::smatch matches;
     if (!std::regex_search(sizestr, matches, pattern, std::regex_constants::match_default)) {
         return std::nullopt;
-    };
+    }
 
     std::string int_part, dec_part, suf_part;
     uint64_t multiplier{1};  // Default for bytes (B|b)
@@ -194,7 +194,7 @@ std::optional<uint64_t> parse_size(const std::string& sizestr) {
     auto number{std::strtoull(int_part.c_str(), nullptr, 10)};
     number *= multiplier;
     if (!dec_part.empty()) {
-        // Use literals so we don't deal with floats and doubles
+        // Use literals, so we don't deal with floats and doubles
         auto base{"1" + std::string(dec_part.size(), '0')};
         auto b{std::strtoul(base.c_str(), nullptr, 10)};
         auto d{std::strtoul(dec_part.c_str(), nullptr, 10)};
@@ -229,7 +229,7 @@ size_t prefix_length(ByteView a, ByteView b) {
     return len;
 }
 
-std::vector<std::string> split(std::string source, std::string delimiter) {
+std::vector<std::string> split(std::string_view source, std::string_view delimiter) {
     std::vector<std::string> res{};
     if (delimiter.length() >= source.length() || !delimiter.length()) {
         res.emplace_back(source);
@@ -238,7 +238,7 @@ std::vector<std::string> split(std::string source, std::string delimiter) {
     size_t pos{0};
     while ((pos = source.find(delimiter)) != std::string::npos) {
         res.emplace_back(source.substr(0, pos));
-        source.erase(0, pos + delimiter.length());
+        source.remove_prefix(pos + delimiter.length());
     }
     // Any residual part of input where delimiter is not found
     if (source.length()) {

@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 #include <ethash/keccak.hpp>
@@ -29,7 +30,7 @@ namespace silkworm {
 
 // If a given string is shorter than min_size,
 // pads it to the left with 0s up to min_size.
-// Otherwise returns unmodified string.
+// Otherwise, returns unmodified string.
 //
 // Might return a view of the supplied buffer,
 // which must be consumed prior to the next invocation.
@@ -38,7 +39,7 @@ ByteView left_pad(ByteView view, size_t min_size, Bytes& buffer);
 
 // If a given string is shorter than min_size,
 // pads it to the right with 0s up to min_size.
-// Otherwise returns unmodified string.
+// Otherwise, returns unmodified string.
 //
 // Might return a view of the supplied buffer,
 // which must be consumed prior to the next invocation.
@@ -87,10 +88,10 @@ std::string to_hex(ByteView bytes);
 std::optional<Bytes> from_hex(std::string_view hex) noexcept;
 
 // Parses a string input value representing a size in
-// human readable format with qualifiers. eg "256MB"
+// human-readable format with qualifiers. eg "256MB"
 std::optional<uint64_t> parse_size(const std::string& sizestr);
 
-// Converts a number of bytes in a human readable format
+// Converts a number of bytes in a human-readable format
 std::string human_size(uint64_t bytes);
 
 // Compares two strings for equality with case insensitivity
@@ -105,7 +106,7 @@ size_t prefix_length(ByteView a, ByteView b);
 inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
 
 // Splits a string by delimiter and returns a vector of tokens
-std::vector<std::string> split(std::string source, std::string delimiter);
+std::vector<std::string> split(std::string_view source, std::string_view delimiter);
 
 }  // namespace silkworm
 

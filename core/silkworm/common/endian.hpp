@@ -172,14 +172,14 @@ Bytes to_big_compact(const uint64_t value);
 Bytes to_big_compact(const intx::uint256& value);
 
 //! \brief Parses uint64_t from a compacted big endian byte form
-//! \param [in] data : byteview of memory allocation for compacted value. Length must be <= sizeof(uint64_t)
+//! \param [in] data : byte view of memory allocation for compacted value. Length must be <= sizeof(uint64_t)
 //! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (not compact)
 //! \return A uint64_t with native endianness; std::nullopt if data is invalid
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 std::optional<uint64_t> from_big_compact_u64(const ByteView& data, bool allow_leading_zeros = false);
 
 //! \brief Parses uint256 from a compacted big endian byte form
-//! \param [in] data : byteview of memory allocation for compacted value. Length must be <= sizeof(uint256)
+//! \param [in] data : byte view of memory allocation for compacted value. Length must be <= sizeof(uint256)
 //! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (not compact)
 //! \return A uint256 with native endianness; std::nullopt if data is invalid
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero

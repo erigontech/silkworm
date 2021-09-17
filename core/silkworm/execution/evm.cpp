@@ -32,7 +32,6 @@
 
 #include "address.hpp"
 #include "precompiled.hpp"
-#include "state_pool.hpp"
 
 namespace silkworm {
 
@@ -365,14 +364,15 @@ evmc_storage_status EvmHost::set_storage(const evmc::address& address, const evm
         return EVMC_STORAGE_MODIFIED;
     }
 
-    uint64_t sload_cost{0};
-    if (rev >= EVMC_BERLIN) {
-        sload_cost = fee::kWarmStorageReadCost;
-    } else if (rev >= EVMC_ISTANBUL) {
-        sload_cost = fee::kGSLoadIstanbul;
-    } else {
-        sload_cost = fee::kGSLoadTangerineWhistle;
-    }
+    const uint64_t sload_cost{[rev]() {
+        if (rev >= EVMC_BERLIN) {
+            return fee::kWarmStorageReadCost;
+        } else if (rev >= EVMC_ISTANBUL) {
+            return fee::kGSLoadIstanbul;
+        } else {
+            return fee::kGSLoadTangerineWhistle;
+        }
+    }()};
 
     uint64_t sstore_reset_gas{fee::kGSReset};
     if (rev >= EVMC_BERLIN) {

@@ -18,8 +18,6 @@
 
 #include <secp256k1_recovery.h>
 
-#include <silkworm/common/util.hpp>
-
 namespace silkworm::ecdsa {
 
 intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) {

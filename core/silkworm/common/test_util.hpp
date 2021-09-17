@@ -23,6 +23,6 @@ namespace silkworm::test_util {
 
 std::vector<Transaction> sample_transactions();
 
-};  // namespace silkworm::test_util
+}  // namespace silkworm::test_util
 
-#endif  // !SILKWORM_COMMON_LOG_HPP_
+#endif  // SILKWORM_COMMON_TEST_UTIL_HPP_

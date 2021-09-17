@@ -34,7 +34,7 @@ namespace silkworm::trie {
 class Node {
   public:
     Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vector<evmc::bytes32> hashes,
-         std::optional<evmc::bytes32> root_hash = std::nullopt);
+         const std::optional<evmc::bytes32>& root_hash = std::nullopt);
 
     // copyable
     Node(const Node& other) = default;
@@ -48,7 +48,7 @@ class Node {
 
     const std::optional<evmc::bytes32>& root_hash() const { return root_hash_; }
 
-    void set_root_hash(std::optional<evmc::bytes32> root_hash);
+    void set_root_hash(const std::optional<evmc::bytes32>& root_hash);
 
   private:
     uint16_t state_mask_{0};

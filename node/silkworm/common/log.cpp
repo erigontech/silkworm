@@ -45,8 +45,6 @@ std::ostream& log_::header_(LogLevel level) {
     return log_streams_;
 }
 
-void log_expand_and_compile_test_() { SILKWORM_LOG(LogLevel::Info) << "log_expand_and_compile_test_" << std::endl; }
-
 std::ostream& null_stream() {
     static struct null_buf : public std::streambuf {
         int overflow(int c) override { return c; }

@@ -89,8 +89,6 @@ AccountChanges read_account_changes(mdbx::txn& txn, uint64_t block_number);
 
 StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_number);
 
-bool migration_happened(mdbx::txn& txn, const char* name);
-
 // Retrieves the chain_id for which database is populated
 // See Erigon chainConfig / chainConfigWithGenesis
 std::optional<ChainConfig> read_chain_config(mdbx::txn& txn);

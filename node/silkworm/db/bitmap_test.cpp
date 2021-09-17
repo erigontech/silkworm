@@ -20,8 +20,6 @@
 
 #include <catch2/catch.hpp>
 
-#include "access_layer.hpp"
-
 namespace silkworm::db::bitmap {
 TEST_CASE("cut_left") {
     roaring::Roaring64Map bitmap(roaring::api::roaring_bitmap_from_range(0, 100000, 1));

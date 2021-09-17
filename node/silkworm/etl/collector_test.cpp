@@ -77,7 +77,7 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
     // Load data
     auto to{db::open_cursor(txn, db::table::kHeaderNumbers)};
     collector.load(to, load_func);
-    // Check wheter temporary files were cleaned
+    // Check whether temporary files were cleaned
     CHECK(std::distance(fs::directory_iterator{etl_tmp_dir.path()}, fs::directory_iterator{}) == 0);
 }
 

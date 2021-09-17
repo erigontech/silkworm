@@ -33,13 +33,11 @@ namespace silkworm::etl {
 class FileProvider {
   public:
     FileProvider(std::string file_name, size_t id);
-    ~FileProvider(void);
+    ~FileProvider();
+
     void flush(Buffer& buffer);                            // Write buffer's contents to disk
     std::optional<std::pair<Entry, size_t>> read_entry();  // Read next data element from file starting from position 0
     void reset();                                          // Remove the file when eof is met
-
-    std::string get_file_name(void) const;
-    size_t get_file_size(void) const;
 
   private:
     size_t id_;

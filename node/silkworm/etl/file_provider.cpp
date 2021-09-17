@@ -27,7 +27,7 @@ namespace fs = std::filesystem;
 // https://abseil.io/tips/117
 FileProvider::FileProvider(std::string file_name, size_t id) : id_{id}, file_name_{std::move(file_name)} {}
 
-FileProvider::~FileProvider(void) { reset(); }
+FileProvider::~FileProvider() { reset(); }
 
 void FileProvider::flush(Buffer& buffer) {
     head_t head{};
@@ -46,7 +46,7 @@ void FileProvider::flush(Buffer& buffer) {
     if (!file_.is_open()) {
         reset();
         throw etl_error(strerror(errno));
-    };
+    }
 
     for (const auto& entry : entries) {
         head.lengths[0] = entry.key.size();
@@ -70,7 +70,7 @@ void FileProvider::flush(Buffer& buffer) {
         auto err{errno};
         reset();
         throw etl_error(strerror(err));
-    };
+    }
 }
 
 std::optional<std::pair<Entry, size_t>> FileProvider::read_entry() {
@@ -103,9 +103,5 @@ void FileProvider::reset() {
         fs::remove(file_name_.c_str());
     }
 }
-
-std::string FileProvider::get_file_name(void) const { return file_name_; }
-
-size_t FileProvider::get_file_size(void) const { return file_size_; }
 
 }  // namespace silkworm::etl

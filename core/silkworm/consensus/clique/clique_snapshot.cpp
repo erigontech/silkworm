@@ -61,15 +61,15 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
     tmp_recents.push_front(signer);
     recents_ = tmp_recents;
 
-    if (header.beneficiary == 0x0000000000000000000000000000000000000000_address) {
+    if (!header.beneficiary) {
         update(header.number, hash);
         return ValidationResult::kOk;
     }
 
     // Uncast votes from signers
-    uncast(header.beneficiary, signer);
+    decrement_vote(header.beneficiary, signer);
     // do casting
-    cast(header.beneficiary, signer, authorize);
+    increment_vote(header.beneficiary, signer, authorize);
     // If the vote passed, update the list of signers
     auto current_tally{tallies_[header.beneficiary]};
     if (current_tally.votes > signers_.size() / 2) {
@@ -80,7 +80,7 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
             // Clean up recents
             recents_.pop_back();
             // Update Tallies
-            uncast_all(header.beneficiary);
+            clear_votes(header.beneficiary);
         }
         if (tallies_.count(header.beneficiary)) {
             tallies_.erase(header.beneficiary);
@@ -186,7 +186,7 @@ bool CliqueSnapshot::is_vote_valid(const evmc::address& address, bool authorize)
     return (existing_signer && !authorize) || (!existing_signer && authorize);
 }
 // cast a vote made to address by signer
-void CliqueSnapshot::cast(const evmc::address& address, const evmc::address& signer, bool authorize) {
+void CliqueSnapshot::increment_vote(const evmc::address& address, const evmc::address& signer, bool authorize) {
     if (!is_vote_valid(address, authorize)) {
         return;
     }
@@ -201,7 +201,7 @@ void CliqueSnapshot::cast(const evmc::address& address, const evmc::address& sig
     }
 }
 // uncast the vote made to address by signer
-void CliqueSnapshot::uncast(const evmc::address& address, const evmc::address& signer) {
+void CliqueSnapshot::decrement_vote(const evmc::address& address, const evmc::address& signer) {
     if(tallies_.count(address)) {
         if (std::find(tallies_[address].voters.begin(), 
             tallies_[address].voters.end(), signer) == tallies_[address].voters.end()) {
@@ -216,7 +216,7 @@ void CliqueSnapshot::uncast(const evmc::address& address, const evmc::address& s
     }
 }
 // Uncast all of the votes made by signer
-void CliqueSnapshot::uncast_all(const evmc::address& signer) {
+void CliqueSnapshot::clear_votes(const evmc::address& signer) {
     for (auto& [address, tally]: tallies_) {
         auto vote{std::find(tally.voters.begin(), tally.voters.end(), signer)};
         if (vote != tally.voters.end() && tally.votes > 0) {

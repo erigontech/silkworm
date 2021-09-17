@@ -90,16 +90,16 @@ class CliqueSnapshot {
         // is_vote_valid returns whether it makes sense to cast the specified vote in the
         // given snapshot context (e.g. don't try to add an already authorized signer).
         bool is_vote_valid(const evmc::address& address, bool authorize) const noexcept;
-        // cast adds a new vote into the tally.
-        void cast(const evmc::address& address, const evmc::address& signer, bool authorize);
-        // uncast removes a previously cast vote from the tally.
-        void uncast(const evmc::address& address, const evmc::address& signer);
-        // uncast_all removes every cast vote from the signer.
-        void uncast_all(const evmc::address& signer);
+        // increment_vote adds a new vote into the tally.
+        void increment_vote(const evmc::address& address, const evmc::address& signer, bool authorize);
+        // decrement_vote removes a previously cast vote from the tally.
+        void decrement_vote(const evmc::address& address, const evmc::address& signer);
+        // clear_votes removes every cast vote from the signer.
+        void clear_votes(const evmc::address& signer);
         // update update snapshots and cleans it up from db corruption, etc..
         void update(const uint64_t& block_number, const evmc::bytes32& hash);
 
-        uint64_t block_number_;                             // Block number where the snapshot was created
+        uint64_t block_number_{0};                             // Block number where the snapshot was created
         evmc::bytes32 hash_;                                // Block hash where the snapshot was created     
         std::vector<evmc::address> signers_;                // Set of authorized signers at this moment
         std::deque<evmc::address> recents_;                 // Set of recent signers for spam protections

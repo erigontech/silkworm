@@ -18,7 +18,6 @@
 
 #include <cassert>
 #include <regex>
-#include <iostream>
 
 namespace silkworm {
 

@@ -31,7 +31,7 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
     auto hash{header.hash()};
     auto tmp_recents{recents_}; // We only modify snapshot after checks are done.
     // Delete the oldest signer from the recent list to allow it signing again
-    if (recents_.size() > 0 && recents_.size() > signers_.size() / 2) {
+    if (recents_.size() > signers_.size() / 2) {
         tmp_recents.pop_back();
     }
 
@@ -61,7 +61,7 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
     tmp_recents.push_front(signer);
     recents_ = tmp_recents;
 
-    if (header.beneficiary == 0x0000000000000000000000000000000000000000_address) {        
+    if (header.beneficiary == 0x0000000000000000000000000000000000000000_address) {
         update(header.number, hash);
         return ValidationResult::kOk;
     }

@@ -81,7 +81,7 @@ class State {
      */
     ///@{
 
-    /** Mark the beggining of a new block.
+    /** Mark the beginning of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
      */
     virtual void begin_block(uint64_t block_number) = 0;

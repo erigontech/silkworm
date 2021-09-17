@@ -95,7 +95,8 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
     }
 }
 
-StageResult stage_execution(TransactionManager& txn, const std::filesystem::path&, size_t batch_size, uint64_t prune_from) {
+StageResult stage_execution(TransactionManager& txn, const std::filesystem::path&, size_t batch_size,
+                            uint64_t prune_from) {
     StageResult res{StageResult::kSuccess};
 
     try {
@@ -126,7 +127,8 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
         (void)sw.start();
 
         for (; block_num <= max_block; ++block_num) {
-            res = execute_batch_of_blocks(*txn, chain_config.value(), max_block, storage_mode, batch_size, block_num, prune_from);
+            res = execute_batch_of_blocks(*txn, chain_config.value(), max_block, storage_mode, batch_size, block_num,
+                                          prune_from);
             if (res != StageResult::kSuccess) {
                 return res;
             }
@@ -226,8 +228,8 @@ StageResult unwind_execution(TransactionManager& txn, const std::filesystem::pat
 
     auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
     auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
-    auto account_changeset_table{db::open_cursor(*txn, db::table::kPlainAccountChangeSet)};
-    auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};
+    auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+    auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
     auto receipts_table{db::open_cursor(*txn, db::table::kBlockReceipts)};
     auto log_table{db::open_cursor(*txn, db::table::kLogs)};
     auto traces_table{db::open_cursor(*txn, db::table::kCallTraceSet)};
@@ -274,8 +276,8 @@ StageResult prune_execution(TransactionManager& txn, const std::filesystem::path
     auto new_tail{db::block_key(prune_from)};
     SILKWORM_LOG(LogLevel::Info) << "Pruning Execution from: " << prune_from << std::endl;
 
-    auto account_changeset_table{db::open_cursor(*txn, db::table::kPlainAccountChangeSet)};
-    auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};
+    auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+    auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
     auto receipts_table{db::open_cursor(*txn, db::table::kBlockReceipts)};
     auto traces_table{db::open_cursor(*txn, db::table::kCallTraceSet)};
     auto log_table{db::open_cursor(*txn, db::table::kLogs)};

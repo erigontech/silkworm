@@ -91,7 +91,7 @@ TEST_CASE("RLP decoding") {
     }
 
     SECTION("vectors") {
-        CHECK(decode_vector_success<intx::uint256>("C0") == std::vector<intx::uint256>{});
+        CHECK(decode_vector_success<intx::uint256>("C0").empty());
         CHECK(decode_vector_success<uint64_t>("C883BBCCB583FFC0B5") == std::vector<uint64_t>{0xBBCCB5, 0xFFC0B5});
     }
 }

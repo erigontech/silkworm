@@ -40,8 +40,8 @@ TEST_CASE("HashBuilder1") {
     const auto val2{*from_hex("02")};
 
     HashBuilder hb;
-    hb.add(full_view(key1), val1);
-    hb.add(full_view(key2), val2);
+    hb.add_leaf(unpack_nibbles(full_view(key1)), val1);
+    hb.add_leaf(unpack_nibbles(full_view(key2)), val2);
 
     // even terminating
     const Bytes encoded_empty_terminating_path{*from_hex("20")};
@@ -96,7 +96,7 @@ TEST_CASE("HashBuilder2") {
     ethash::hash256 hash0{keccak256(rlp0)};
 
     HashBuilder hb0;
-    hb0.add(key0, val0);
+    hb0.add_leaf(unpack_nibbles(key0), val0);
     CHECK(to_hex(hb0.root_hash()) == to_hex(full_view(hash0.bytes)));
 
     // ------------------------------------------------------------------------------------------
@@ -116,7 +116,8 @@ TEST_CASE("HashBuilder2") {
     Bytes rlp1_2{*from_hex("e480808080") + rlp1_0 + *from_hex("8080") + rlp1_1 + *from_hex("808080808080808080")};
     REQUIRE(rlp1_2.length() >= kHashLength);
 
-    ethash::hash256 hash1_2{keccak256(rlp1_2)};
+    evmc::bytes32 hash1_2;
+    std::memcpy(hash1_2.bytes, keccak256(rlp1_2).bytes, kHashLength);
 
     // extension node
     Bytes rlp1{*from_hex("e216a0")};
@@ -124,9 +125,24 @@ TEST_CASE("HashBuilder2") {
     ethash::hash256 hash1{keccak256(rlp1)};
 
     HashBuilder hb1;
-    hb1.add(key0, val0);
-    hb1.add(key1, val1);
+    hb1.add_leaf(unpack_nibbles(key0), val0);
+    hb1.add_leaf(unpack_nibbles(key1), val1);
     CHECK(to_hex(hb1.root_hash()) == to_hex(full_view(hash1.bytes)));
+
+    // ------------------------------------------------------------------------------------------
+    // Now add the branch node directly
+    HashBuilder hb2;
+    hb2.add_branch_node(*from_hex("06"), hash1_2);
+    CHECK(to_hex(hb2.root_hash()) == to_hex(full_view(hash1.bytes)));
+}
+
+TEST_CASE("pack_nibbles") {
+    CHECK(pack_nibbles({}).empty());
+    CHECK(to_hex(pack_nibbles(*from_hex("0a"))) == "a0");
+    CHECK(to_hex(pack_nibbles(*from_hex("0a0b"))) == "ab");
+    CHECK(to_hex(pack_nibbles(*from_hex("0a0b02"))) == "ab20");
+    CHECK(to_hex(pack_nibbles(*from_hex("0a0b0200"))) == "ab20");
+    CHECK(to_hex(pack_nibbles(*from_hex("0a0b0207"))) == "ab27");
 }
 
 }  // namespace silkworm::trie

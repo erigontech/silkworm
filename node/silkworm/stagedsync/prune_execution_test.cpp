@@ -130,8 +130,8 @@ TEST_CASE("Prune Execution without prune function") {
     // We keep chain from Block 2 onwards (Aka, we delete block 1 changesets and receipts)
     buffer.write_to_db();
 
-    auto account_changeset_table{db::open_cursor(*txn, db::table::kPlainAccountChangeSet)};
-    auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};
+    auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+    auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
     // Check wheter we start from Block 2 and not block 1
     auto account_changeset_tail{db::from_slice(account_changeset_table.to_first().key)};
     auto storage_changeset_tail{db::from_slice(storage_changeset_table.to_first().key)};
@@ -241,8 +241,8 @@ TEST_CASE("Prune Execution with prune function") {
     // We prune from block 2, thus we delete block 1
     REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::prune_execution(txn, data_dir.etl().path(), 2)));
 
-    auto account_changeset_table{db::open_cursor(*txn, db::table::kPlainAccountChangeSet)};
-    auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};
+    auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+    auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
     // Check wheter we start from Block 2 and not block 1
     auto account_changeset_tail{db::from_slice(account_changeset_table.to_first().key)};
     auto storage_changeset_tail{db::from_slice(storage_changeset_table.to_first().key)};

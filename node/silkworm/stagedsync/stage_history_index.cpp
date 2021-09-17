@@ -50,7 +50,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
 
     // We take data from changesets and turn it to indexes, so from [Block Number => Location] to [Location => Block
     // Number]
-    db::MapConfig changeset_config = storage ? db::table::kPlainStorageChangeSet : db::table::kPlainAccountChangeSet;
+    db::MapConfig changeset_config = storage ? db::table::kStorageChangeSet : db::table::kAccountChangeSet;
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
 
@@ -219,7 +219,8 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
     auto last_processed_block{db::stages::get_stage_progress(*txn, stage_key)};
 
     auto index_table{db::open_cursor(*txn, index_config)};
-    SILKWORM_LOG(LogLevel::Info) << "Pruning " << (storage? "Storage" : "Account") << " History from: " << prune_from << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Pruning " << (storage ? "Storage" : "Account") << " History from: " << prune_from
+                                 << std::endl;
 
     if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
@@ -251,7 +252,8 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
 
     collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
     txn.commit();
-    SILKWORM_LOG(LogLevel::Info) << "Pruning " << (storage ? "Storage" : "Account") << " History finished..." << std::endl;
+    SILKWORM_LOG(LogLevel::Info) << "Pruning " << (storage ? "Storage" : "Account") << " History finished..."
+                                 << std::endl;
 
     return StageResult::kSuccess;
 }

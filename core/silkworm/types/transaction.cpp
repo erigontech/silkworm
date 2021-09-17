@@ -163,7 +163,7 @@ namespace rlp {
             encode(to, *txn.chain_id);
             encode(to, 0);
             encode(to, 0);
-        };
+        }
     }
 
     static void eip2718_encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_into_array) {
@@ -201,7 +201,7 @@ namespace rlp {
             encode(to, txn.odd_y_parity);
             encode(to, txn.r);
             encode(to, txn.s);
-        };
+        }
     }
 
     void encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_eip2718_into_array) {
@@ -213,7 +213,7 @@ namespace rlp {
     }
 
     void encode(Bytes& to, const Transaction& txn) {
-        encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_as_array=*/true);
+        encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/true);
     }
 
     static DecodingResult legacy_decode(ByteView& from, Transaction& to) noexcept {

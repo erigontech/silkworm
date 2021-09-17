@@ -292,7 +292,7 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
         return std::nullopt;
     }
 
-    auto change_set_table{db::open_cursor(txn, table::kPlainAccountChangeSet)};
+    auto change_set_table{db::open_cursor(txn, table::kAccountChangeSet)};
     const Bytes change_set_key{block_key(*change_block)};
     return find_value_suffix(change_set_table, change_set_key, full_view(address));
 }
@@ -319,7 +319,7 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
         return std::nullopt;
     }
 
-    auto change_set_table{db::open_cursor(txn, table::kPlainStorageChangeSet)};
+    auto change_set_table{db::open_cursor(txn, table::kStorageChangeSet)};
     const Bytes change_set_key{storage_change_key(*change_block, address, incarnation)};
     return find_value_suffix(change_set_table, change_set_key, full_view(location));
 }
@@ -397,7 +397,7 @@ std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::ad
 AccountChanges read_account_changes(mdbx::txn& txn, uint64_t block_num) {
     AccountChanges changes;
 
-    auto src{db::open_cursor(txn, table::kPlainAccountChangeSet)};
+    auto src{db::open_cursor(txn, table::kAccountChangeSet)};
     auto key{block_key(block_num)};
 
     auto data{src.find(to_slice(key), /*throw_notfound*/ false)};
@@ -418,7 +418,7 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
 
     const Bytes block_prefix{block_key(block_num)};
 
-    auto src{db::open_cursor(txn, table::kPlainStorageChangeSet)};
+    auto src{db::open_cursor(txn, table::kStorageChangeSet)};
 
     auto key_prefix{to_slice(block_prefix)};
     auto data{src.lower_bound(key_prefix, false)};

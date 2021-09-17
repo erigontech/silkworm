@@ -36,7 +36,7 @@ class Collector {
     Collector(const Collector&) = delete;
     Collector& operator=(const Collector&) = delete;
 
-    explicit Collector(const std::filesystem::path work_path, size_t optimal_size = kOptimalBufferSize)
+    explicit Collector(const std::filesystem::path& work_path, size_t optimal_size = kOptimalBufferSize)
         : work_path_managed_{false}, work_path_{set_work_path(work_path)}, buffer_{optimal_size} {}
     explicit Collector(size_t optimal_size = kOptimalBufferSize)
         : work_path_managed_{true}, work_path_{set_work_path(std::nullopt)}, buffer_{optimal_size} {}

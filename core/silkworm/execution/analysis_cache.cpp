@@ -17,7 +17,6 @@
 #include "analysis_cache.hpp"
 
 #include <memory>
-#include <utility>
 
 #include <evmone/analysis.hpp>
 

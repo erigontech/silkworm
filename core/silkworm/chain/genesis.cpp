@@ -17,17 +17,16 @@
 #include "genesis.hpp"
 
 #include <cassert>
-#include <fstream>
 #include <stdexcept>
 
-extern const char* genesis_mainnet_data(void);
-extern size_t sizeof_genesis_mainnet_data(void);
+extern const char* genesis_mainnet_data();
+extern size_t sizeof_genesis_mainnet_data();
 
-extern const char* genesis_goerli_data(void);
-extern size_t sizeof_genesis_goerli_data(void);
+extern const char* genesis_goerli_data();
+extern size_t sizeof_genesis_goerli_data();
 
-extern const char* genesis_rinkeby_data(void);
-extern size_t sizeof_genesis_rinkeby_data(void);
+extern const char* genesis_rinkeby_data();
+extern size_t sizeof_genesis_rinkeby_data();
 
 namespace silkworm {
 
@@ -48,8 +47,9 @@ std::string read_genesis_data(unsigned int chain_id) {
             break;
         default:
             ret = "{";  // <- Won't be lately parsed as valid json value
-    };
+    }
 
     return ret;
 }
+
 }  // namespace silkworm

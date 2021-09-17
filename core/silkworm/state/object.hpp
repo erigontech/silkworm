@@ -31,8 +31,8 @@ struct Object {
 };
 
 struct CommittedValue {
-    evmc::bytes32 initial{};   // value at the begining of the block
-    evmc::bytes32 original{};  // value at the begining of the transaction; see EIP-2200
+    evmc::bytes32 initial{};   // value at the beginning of the block
+    evmc::bytes32 original{};  // value at the beginning of the transaction; see EIP-2200
 };
 
 struct Storage {

@@ -50,7 +50,7 @@ evmc::bytes32 root_hash(const std::vector<Value>& v, Encoder value_encoder) {
         value_rlp.clear();
         value_encoder(value_rlp, v[index]);
 
-        hb.add(index_rlp, value_rlp);
+        hb.add_leaf(unpack_nibbles(index_rlp), value_rlp);
     }
 
     return hb.root_hash();

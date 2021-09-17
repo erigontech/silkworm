@@ -80,7 +80,7 @@ class lru_cache {
         }
     }
 
-    size_t size() const noexcept { return _cache_items_map.size(); }
+    [[nodiscard]] size_t size() const noexcept { return _cache_items_map.size(); }
 
     void clear() noexcept {
         _cache_items_map.clear();

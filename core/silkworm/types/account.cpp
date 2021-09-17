@@ -17,7 +17,6 @@
 #include "account.hpp"
 
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/util.hpp>
 
 namespace silkworm {
 

@@ -25,7 +25,6 @@
 #include <silkworm/consensus/ethash/ethash.hpp>
 
 #include "address.hpp"
-#include "execution.hpp"
 
 namespace silkworm {
 

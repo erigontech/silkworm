@@ -23,18 +23,18 @@
 namespace silkworm::trie {
 
 Node::Node(uint16_t state_mask, uint16_t tree_mask, uint16_t hash_mask, std::vector<evmc::bytes32> hashes,
-           std::optional<evmc::bytes32> root_hash)
+           const std::optional<evmc::bytes32>& root_hash)
     : state_mask_{state_mask},
       tree_mask_{tree_mask},
       hash_mask_{hash_mask},
       hashes_{std::move(hashes)},
-      root_hash_{std::move(root_hash)} {
+      root_hash_{root_hash} {
     assert_subset(tree_mask_, state_mask_);
     assert_subset(hash_mask_, state_mask_);
     assert(std::bitset<16>(hash_mask_).count() == hashes_.size());
 }
 
-void Node::set_root_hash(std::optional<evmc::bytes32> root_hash) { root_hash_ = std::move(root_hash); }
+void Node::set_root_hash(const std::optional<evmc::bytes32>& root_hash) { root_hash_ = root_hash; }
 
 bool operator==(const Node& a, const Node& b) {
     return a.state_mask() == b.state_mask() && a.tree_mask() == b.tree_mask() && a.hash_mask() == b.hash_mask() &&

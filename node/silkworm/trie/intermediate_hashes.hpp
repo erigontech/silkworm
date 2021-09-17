@@ -17,29 +17,29 @@
 #ifndef SILKWORM_TRIE_INTERMEDIATE_HASHES_HPP_
 #define SILKWORM_TRIE_INTERMEDIATE_HASHES_HPP_
 
-/* On trie_account & trie_storage DB tables
+/* On TrieAccount & TrieStorage DB tables
 
-state_mask - mark prefixes existing in hashed_accounts (hashed_storage) table
-tree_mask - mark prefixes existing in trie_account (trie_storage) table
-hash_mask - mark prefixes whose hashes are saved in the current trie_account (trie_storage) record (actually only
+state_mask - mark prefixes existing in HashedAccount (HashedStorage) table
+tree_mask - mark prefixes existing in TrieAccount (TrieStorage) table
+hash_mask - mark prefixes whose hashes are saved in the current TrieAccount (TrieStorage) record (actually only
 hashes of branch nodes can be saved)
 
 For example:
-+-----------------------------------------------------------------------------------------------------+
-| DB record: 0x0B, state_mask: 0b1011, tree_mask: 0b1001, hash_mask: 0b1001, hashes: [x,x]            |
-+-----------------------------------------------------------------------------------------------------+
++----------------------------------------------------------------------------------------------------+
+| DB record: 0xB, state_mask: 0b1011, tree_mask: 0b0001, hash_mask: 0b1001, hashes: [x,x]            |
++----------------------------------------------------------------------------------------------------+
                 |                                           |                               |
                 v                                           |                               v
-+-----------------------------------------------+           |            +----------------------------------------+
-| DB record: 0x0B00, state_mask: 0b10001        |           |            | DB record: 0x0B03, state_mask: 0b10010 |
-| tree_mask: 0, hash_mask: 0b10000, hashes: [x] |           |            | tree_mask: 0, hash_mask: 0, hashes: [] |
-+-----------------------------------------------+           |            +----------------------------------------+
++-----------------------------------------------+           |               +----------------------------------------+
+| DB record: 0xB0, state_mask: 0b10001          |           |               | BranchNode: 0xB3                       |
+| tree_mask: 0, hash_mask: 0b10000, hashes: [x] |           |               | has no record in TrieAccount           |
++-----------------------------------------------+           |               +----------------------------------------+
         |                    |                              |                         |                  |
         v                    v                              v                         v                  v
 +--------------------+   +----------------------+     +---------------+        +---------------+  +---------------+
-| Account:           |   | BranchNode: 0x0B0004 |     | Account:      |        | Account:      |  | Account:      |
+| Account:           |   | BranchNode: 0xB04    |     | Account:      |        | Account:      |  | Account:      |
 | 0xB00...           |   | has no record in     |     | 0xB1...       |        | 0xB31...      |  | 0xB34...      |
-| in hashed_accounts |   |    trie_account      |     |               |        |               |  |               |
+| in HashedAccount   |   |    TrieAccount       |     |               |        |               |  |               |
 +--------------------+   +----------------------+     +---------------+        +---------------+  +---------------+
                            |                |
                            v                v
@@ -47,27 +47,30 @@ For example:
                       | Account:      |  | Account:      |
                       | 0xB040...     |  | 0xB041...     |
                       +---------------+  +---------------+
-N.B. Nibbles in trie_account keys are unpacked, while hashed_accounts have packed keys.
+N.B. Nibbles in TrieAccount keys are actually unpacked (one nibble per byte unlike shown above),
+while keys in HashedAccount are packed (two nibbles per byte).
 
 Invariants:
 - tree_mask is a subset of state_mask (tree_mask ⊆ state_mask)
 - hash_mask is a subset of state_mask (hash_mask ⊆ state_mask)
-- the first level in account_trie always exists if state_mask≠0
-- trie_storage record of account root (length=40) must have +1 hash - it's the account root
-- each record in trie_account table must have an ancestor (may be not immediate) and this ancestor must have
+- the first level in TrieAccount always exists if state_mask≠0
+- TrieStorage record of account root (length=40) must have +1 hash - it's the account root
+- each record in TrieAccount table must have an ancestor (may be not immediate) and this ancestor must have
 the correct bit in tree_mask bitmap
-- if state_mask has a bit - then hashed_accounts table must have a record corresponding to this bit
-- each trie_account record must cover some state (means state_mask is always ≠ 0)
-- trie_account records with length=1 may satisfy (tree_mask=0 ∧ hash_mask=0)
-- Other records in trie_account and trie_storage must satisfy (tree_mask≠0 ∨ hash_mask≠0)
+- if state_mask has a bit - then HashedAccount table must have a record corresponding to this bit
+- each TrieAccount record must cover some state (means state_mask is always ≠ 0)
+- TrieAccount records with length=1 may satisfy (tree_mask=0 ∧ hash_mask=0)
+- Other records in TrieAccount and TrieStorage must satisfy (tree_mask≠0 ∨ hash_mask≠0)
 */
 
+#include <filesystem>
 #include <optional>
 #include <vector>
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/trie/hash_builder.hpp>
+#include <silkworm/trie/prefix_set.hpp>
 #include <silkworm/types/account.hpp>
 
 namespace silkworm::trie {
@@ -78,15 +81,27 @@ class AccountTrieCursor {
     AccountTrieCursor(const AccountTrieCursor&) = delete;
     AccountTrieCursor& operator=(const AccountTrieCursor&) = delete;
 
-    explicit AccountTrieCursor(mdbx::txn& txn);
+    AccountTrieCursor(mdbx::txn& txn, const PrefixSet& changed);
 
-    Bytes first_uncovered_prefix();
+    void next(bool skip_children);
 
+    // nullopt key signifies trie's end
     std::optional<Bytes> key() const;
 
-    void next();
+    const evmc::bytes32* hash() const;
+
+    bool children_are_in_trie() const;
 
     bool can_skip_state() const;
+
+  private:
+    void seek_node(ByteView lower_bound);
+
+    const PrefixSet& changed_;
+    bool at_root_{true};
+    mdbx::cursor_managed cursor_;
+    uint8_t nibble_{0};
+    std::optional<Node> node_{std::nullopt};
 };
 
 // Erigon StorageTrieCursor
@@ -116,7 +131,7 @@ class DbTrieLoader {
 
     DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector);
 
-    evmc::bytes32 calculate_root();
+    evmc::bytes32 calculate_root(const PrefixSet& changed);
 
   private:
     mdbx::txn& txn_;
@@ -133,13 +148,13 @@ class WrongRoot : public std::runtime_error {
 // Erigon RegenerateIntermediateHashes
 // might throw WrongRoot
 // returns the state root
-evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
+evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir,
                                              const evmc::bytes32* expected_root = nullptr);
 
 // Erigon incrementIntermediateHashes
 // might throw WrongRoot
 // returns the state root
-evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const char* etl_dir,
+evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir, BlockNum from,
                                             const evmc::bytes32* expected_root = nullptr);
 
 }  // namespace silkworm::trie

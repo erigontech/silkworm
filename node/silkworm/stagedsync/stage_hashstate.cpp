@@ -35,11 +35,11 @@ namespace fs = std::filesystem;
 static std::pair<db::MapConfig, db::MapConfig> get_tables_for_promote(HashstateOperation operation) {
     switch (operation) {
         case HashstateOperation::HashAccount:
-            return {db::table::kPlainAccountChangeSet, db::table::kHashedAccounts};
+            return {db::table::kAccountChangeSet, db::table::kHashedAccounts};
         case HashstateOperation::HashStorage:
-            return {db::table::kPlainStorageChangeSet, db::table::kHashedStorage};
+            return {db::table::kStorageChangeSet, db::table::kHashedStorage};
         case HashstateOperation::Code:
-            return {db::table::kPlainAccountChangeSet, db::table::kContractCode};
+            return {db::table::kAccountChangeSet, db::table::kContractCode};
         default:
             std::string error{magic_enum::enum_name<HashstateOperation>(operation)};
             error.append(": unknown operation");

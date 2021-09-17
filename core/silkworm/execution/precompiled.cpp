@@ -20,7 +20,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <iterator>
 #include <limits>
 
 #include <ethash/keccak.hpp>
@@ -213,9 +212,7 @@ std::optional<Bytes> expmod_run(ByteView input) noexcept {
 
     mpz_t modulus;
     mpz_init(modulus);
-    if (modulus_len) {
-        mpz_import(modulus, modulus_len, 1, 1, 0, 0, input.data());
-    }
+    mpz_import(modulus, modulus_len, 1, 1, 0, 0, input.data());
 
     if (mpz_sgn(modulus) == 0) {
         mpz_clear(modulus);

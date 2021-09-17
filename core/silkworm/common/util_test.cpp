@@ -46,13 +46,13 @@ TEST_CASE("Split") {
 
 TEST_CASE("Hex") {
     auto expected = from_hex("");
-    CHECK((expected.has_value() == true && expected->size() == 0));
+    CHECK((expected.has_value() == true && expected->empty()));
 
     expected = from_hex("0");
     CHECK(expected.has_value() == false);
 
     expected = from_hex("0x");
-    CHECK((expected.has_value() == true && expected->size() == 0));
+    CHECK((expected.has_value() == true && expected->empty()));
 
     expected = from_hex("0x0");
     CHECK((expected.has_value() == false));

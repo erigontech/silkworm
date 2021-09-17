@@ -24,7 +24,6 @@
 #include <silkworm/state/in_memory_state.hpp>
 
 #include "address.hpp"
-#include "execution.hpp"
 
 namespace silkworm {
 

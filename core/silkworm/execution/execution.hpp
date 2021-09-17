@@ -39,7 +39,7 @@ namespace silkworm {
  *
  * For better performance use ExecutionProcessor directly and set EVM state_pool & advanced_analysis_cache.
  *
- * @param state The Ethereum state at the begining of the block.
+ * @param state The Ethereum state at the beginning of the block.
  */
 [[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& config) noexcept {

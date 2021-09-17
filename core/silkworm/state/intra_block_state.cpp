@@ -16,8 +16,6 @@
 
 #include "intra_block_state.hpp"
 
-#include <cstring>
-
 #include <ethash/keccak.hpp>
 
 #include <silkworm/common/cast.hpp>
@@ -219,14 +217,14 @@ evmc::bytes32 IntraBlockState::get_code_hash(const evmc::address& address) const
     return obj && obj->current ? obj->current->code_hash : kEmptyHash;
 }
 
-void IntraBlockState::set_code(const evmc::address& address, Bytes code) noexcept {
+void IntraBlockState::set_code(const evmc::address& address, ByteView code) noexcept {
     auto& obj{get_or_create_object(address)};
     journal_.emplace_back(new state::UpdateDelta{address, obj});
     obj.current->code_hash = bit_cast<evmc_bytes32>(keccak256(code));
 
     // Don't overwrite already existing code so that views of it
     // that were previously returned by get_code() are still valid.
-    new_code_.try_emplace(obj.current->code_hash, std::move(code));
+    new_code_.try_emplace(obj.current->code_hash, code);
 }
 
 evmc_access_status IntraBlockState::access_account(const evmc::address& address) noexcept {

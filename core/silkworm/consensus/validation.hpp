@@ -58,7 +58,7 @@ enum class [[nodiscard]] ValidationResult{
     kWrongBlockGas = 27,  // BHg ≠ l(BR)u
     kInvalidSignature = 28,  // EIP-2
     kWrongChainId = 29,  // EIP-155
-    kUnhauthorizedSigner = 30,  // Handling an unhautorized voting signer
+    kUnauthorizedSigner = 30,  // Handling an unhautorized voting signer
     kMissingSigner = 31,   // Missing Signer in extra_data
     kRecentlySigned = 32, // Signer has already recently signed
     kInvalidVote = 33, // Non-Existing vote option

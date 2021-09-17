@@ -276,7 +276,7 @@ TEST_CASE("Ensure that pending votes don't survive authorization status changes.
 
 TEST_CASE("An unauthorized signer should not be able to sign blocks") {
     CliqueSnapshot snapshot{0, evmc::bytes32{}, {signer_a}, {}};
-    CHECK(execute_vote(snapshot, signer_b, no_vote, false) == ValidationResult::kUnhauthorizedSigner);
+    CHECK(execute_vote(snapshot, signer_b, no_vote, false) == ValidationResult::kUnauthorizedSigner);
 }
 
 TEST_CASE("An authorized signer that signed recenty should not be able to sign again") {

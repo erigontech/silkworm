@@ -36,7 +36,7 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
     }
 
     if (std::find(signers_.begin(), signers_.end(), signer) == signers_.end()) {
-        return ValidationResult::kUnhauthorizedSigner;
+        return ValidationResult::kUnauthorizedSigner;
     }
 
     // Remove any votes on checkpoint blocks
@@ -95,7 +95,7 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
 //! \brief Verify seal for header
 //! \param header: header to verify.
 ValidationResult CliqueSnapshot::verify_seal(const BlockHeader& header, const evmc::address& signer) {
-    // Check difficituly
+    // Check difficulty
     auto authority{is_authority(header.number, signer)};
     if (authority && header.difficulty != kDiffInTurn && header.difficulty != kDiffNoTurn) {
         return ValidationResult::kIntrinsicGas;

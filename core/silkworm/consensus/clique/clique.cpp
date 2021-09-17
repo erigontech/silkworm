@@ -59,7 +59,7 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 	// Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
 	uint64_t signers_length{header.extra_data.size() - kHashLength - kSignatureLength - 1};
 	if (!checkpoint && signers_length != 0) {
-		return ValidationResult::kUnhauthorizedSigner;
+		return ValidationResult::kUnauthorizedSigner;
 	}
 	if (checkpoint && (signers_length % kAddressLength) != 0) {
 		return ValidationResult::kMissingSigner;

@@ -111,7 +111,7 @@ ValidationResult CliqueSnapshot::verify_seal(const BlockHeader& header, const ev
 //! \param address: Address to check.
 //! \return if a signer at a given block height is in charge or not.
 bool CliqueSnapshot::is_authority(uint64_t block_number, evmc::address address) const noexcept {
-        if (signers_.size() > 0) {
+        if (signers_.size() == 0) {
             return false;
         }
 	return signers_[block_number % signers_.size()] == address;

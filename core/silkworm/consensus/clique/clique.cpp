@@ -173,11 +173,7 @@ std::optional<evmc::address> Clique::get_signer_from_clique_header(BlockHeader h
     }
     // Run Ecrecover and get public key
     auto recovered{ecdsa::recover(full_view(header_hash), signature, v)};
-    if (recovered == std::nullopt) {
-        return std::nullopt;
-    }
-
-    if (recovered->at(0) != 4u) {
+    if (!recovered.has_value() || recovered->at(0) !=4u) {
         return std::nullopt;
     }
     auto hash{keccak256(recovered->substr(1))};

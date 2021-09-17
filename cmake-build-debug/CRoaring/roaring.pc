@@ -1,0 +1,10 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: roaring
+Description: Roaring bitmap implementation in C
+Version: 0.2.66
+Cflags: -I${includedir}
+Libs: -L${libdir} -lroaring

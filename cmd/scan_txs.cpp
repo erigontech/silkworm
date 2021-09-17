@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};
         auto chain_config{db::read_chain_config(txn)};
-        consensus::ConsensusEngine& engine{consensus::get_consensus_engine((*chain_config).seal_engine)};
+        auto engine{consensus::get_consensus_engine((*chain_config).seal_engine)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
 
             db::Buffer buffer{txn, block_num};
 
-            ExecutionProcessor processor{bh->block, engine, buffer, *chain_config};
+            ExecutionProcessor processor{bh->block, *engine, buffer, *chain_config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 

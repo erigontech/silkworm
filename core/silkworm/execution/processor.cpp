@@ -100,7 +100,8 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
     // award the miner
     const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
     auto header{evm_.block().header};
-    engine_.assign_transaction_fees(header, priority_fee_per_gas * gas_used, state_);
+
+    state_.add_to_balance(evm_.block().header.beneficiary, priority_fee_per_gas * gas_used);
 
     state_.destruct_suicides();
     if (rev >= EVMC_SPURIOUS_DRAGON) {

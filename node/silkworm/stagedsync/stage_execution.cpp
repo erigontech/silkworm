@@ -41,14 +41,18 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
-        consensus::ConsensusEngine& engine{consensus::get_consensus_engine(config.seal_engine)};
+        auto engine{consensus::get_consensus_engine(config.seal_engine)};
         while (true) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
             if (!bh) {
                 return StageResult::kBadChainSequence;
             }
 
-            ExecutionProcessor processor{bh->block, engine, buffer, config};
+
+            Block evm_block{bh->block};
+            evm_block.header.beneficiary = engine->get_beneficiary(evm_block.header);
+
+            ExecutionProcessor processor{evm_block, *engine, buffer, config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 

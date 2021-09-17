@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
-        consensus::ConsensusEngine& engine{consensus::get_consensus_engine((*chain_config).seal_engine)};
+        auto engine{consensus::get_consensus_engine((*chain_config).seal_engine)};
         for (; block_num < to; ++block_num) {
             txn.renew_reading();
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
 
             db::Buffer buffer{txn, block_num};
 
-            ExecutionProcessor processor{bh->block, engine, buffer, *chain_config};
+            ExecutionProcessor processor{bh->block, *engine, buffer, *chain_config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 

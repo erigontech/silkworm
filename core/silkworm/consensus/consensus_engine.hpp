@@ -56,7 +56,8 @@ class ConsensusEngine {
     //! \param [in] txn: Transaction to process.
     //! \param [in] header: Current block to apply rewards for.
     //! \param [in] state: Current state.
-    virtual void assign_transaction_fees(const BlockHeader& header, intx::uint256 accumulated_fees, IntraBlockState& state) = 0;
+    virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
+    virtual ~ConsensusEngine() {};
 };
 
 // Performs validation of a transaction that can be done prior to sender recovery and block execution.
@@ -74,7 +75,7 @@ bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header
                    const evmc::bytes32& mainline_hash, unsigned n, const State& state,
                    std::vector<BlockHeader>& old_ommers);
 
-ConsensusEngine& get_consensus_engine(SealEngineType engine_type);
+std::unique_ptr<ConsensusEngine> get_consensus_engine(SealEngineType engine_type);
 
 }
 

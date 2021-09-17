@@ -134,8 +134,8 @@ const evmc::bytes32& CliqueSnapshot::get_hash() const noexcept {
     return hash_;
 }
 
-//! \brief Convert the snapshot in JSON.
-//! \return The resulting JSON.
+//! \brief Convert the snapshot in Bytes.
+//! \return The resulting Bytes.
 Bytes CliqueSnapshot::to_bytes() const noexcept {
     auto signers_size{signers_.size()};
     auto recents_size{recents_.size()};
@@ -157,7 +157,7 @@ Bytes CliqueSnapshot::to_bytes() const noexcept {
     return ret;
 }
 
-//! \brief Decode snapshot from json format.
+//! \brief Decode snapshot from bytes format.
 //! \return Decoded snapshot.
 CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, uint64_t& block_number, const evmc::bytes32& hash) noexcept {
     auto signers_count{b[0]};

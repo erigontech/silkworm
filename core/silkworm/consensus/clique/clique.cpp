@@ -74,6 +74,13 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 	}
 	// Ensure that the block's difficulty is meaningful (may not be correct at this point)
 	if (header.number > 0) {
+		auto parent{state.read_header(header.number - 1, header.parent_hash)};
+		if (parent == std::nullopt) {
+			return ValidationResult::kUnknownParent;
+		}
+		if (parent->timestamp > header.timestamp - clique_config_.period) {
+			return ValidationResult::kInvalidTimestamp;
+		}
 		if (header.difficulty == 0 || (header.difficulty != kDiffInTurn && header.difficulty != kDiffNoTurn)) {
 			return ValidationResult::kInvalidGasLimit;
 		}
@@ -142,7 +149,9 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 // There are no rewards in Clique POA consensus
 void Clique::apply_rewards(IntraBlockState&, const Block&, const evmc_revision&) {}
 
-void Clique::assign_transaction_fees(const BlockHeader&, intx::uint256, IntraBlockState&) {}
+evmc::address Clique::get_beneficiary(const BlockHeader& header) {
+    return *get_signer_from_clique_header(header);
+}
 
 // taking the header not by reference is intentional
 std::optional<evmc::address> Clique::get_signer_from_clique_header(BlockHeader header) {
@@ -174,5 +183,6 @@ std::optional<evmc::address> Clique::get_signer_from_clique_header(BlockHeader h
     sig_cache_.emplace(header_hash, signer);
     return signer;
 }
+
 
 }

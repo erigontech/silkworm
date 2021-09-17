@@ -31,7 +31,7 @@ class Ethash: public ConsensusEngine {
 
      void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
 
-    void assign_transaction_fees(const BlockHeader& header, intx::uint256 accumulated_fees, IntraBlockState& state) override;
+     evmc::address get_beneficiary(const BlockHeader& header) override;
 };
 
 }

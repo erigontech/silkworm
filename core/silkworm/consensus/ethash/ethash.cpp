@@ -180,8 +180,8 @@ void Ethash::apply_rewards(IntraBlockState& state, const Block& block, const evm
     state.add_to_balance(block.header.beneficiary, miner_reward);
 }
 
-void Ethash::assign_transaction_fees(const BlockHeader& header, intx::uint256 accumulated_fees, IntraBlockState& state) {
-    state.add_to_balance(header.beneficiary, accumulated_fees);
+evmc::address Ethash::get_beneficiary(const BlockHeader& header) {
+    return header.beneficiary;
 }
 
 }

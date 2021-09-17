@@ -79,10 +79,10 @@ class CliqueSnapshot {
         //! \brief Getter method for hash_.
         //! \return Snapshot's hash.
         const evmc::bytes32& get_hash() const noexcept;
-        //! \brief Convert the snapshot in JSON.
-        //! \return The resulting JSON.
+        //! \brief Convert the snapshot in Bytes.
+        //! \return The resulting Bytes.
         Bytes to_bytes() const noexcept;
-        //! \brief Decode snapshot from json format.
+        //! \brief Decode snapshot from Bytes format.
         //! \return Decoded snapshot.
         static CliqueSnapshot from_bytes(ByteView& b, uint64_t& block_number, const evmc::bytes32& hash) noexcept;
 

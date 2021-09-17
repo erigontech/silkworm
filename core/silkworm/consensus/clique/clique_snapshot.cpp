@@ -29,10 +29,10 @@ std::array<uint8_t, 8> kNonceUnauthorize = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 //! \param headers: list of headers to add.
 ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evmc::address& signer, const CliqueConfig& config) {
     auto hash{header.hash()};
-    auto tmp_recents{recents_}; // We only modify snapshot after checks are done.
+    evmc::address allowed_signer{}; // We only modify snapshot after checks are done.
     // Delete the oldest signer from the recent list to allow it signing again
     if (recents_.size() > signers_.size() / 2) {
-        tmp_recents.pop_back();
+        allowed_signer = recents_.back();
     }
 
     if (std::find(signers_.begin(), signers_.end(), signer) == signers_.end()) {
@@ -44,7 +44,7 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
         tallies_.clear();
     }
 
-    if (std::find(tmp_recents.begin(), tmp_recents.end(), signer) != tmp_recents.end()) {
+    if (std::find(recents_.begin(), recents_.end(), signer) != recents_.end() && signer != allowed_signer) {
         return ValidationResult::kRecentlySigned;
     }
 
@@ -57,9 +57,11 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
     } else {
         return ValidationResult::kInvalidVote;
     }
-    
-    tmp_recents.push_front(signer);
-    recents_ = tmp_recents;
+
+    if (allowed_signer) {
+        recents_.pop_back();
+    }
+    recents_.push_front(signer);
 
     if (!header.beneficiary) {
         update(header.number, hash);

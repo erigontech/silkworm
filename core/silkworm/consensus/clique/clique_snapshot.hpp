@@ -99,8 +99,8 @@ class CliqueSnapshot {
         // update update snapshots and cleans it up from db corruption, etc..
         void update(const uint64_t& block_number, const evmc::bytes32& hash);
 
-        uint64_t block_number_{0};                             // Block number where the snapshot was created
-        evmc::bytes32 hash_;                                // Block hash where the snapshot was created     
+        uint64_t block_number_{0};                          // Block number where the snapshot was created
+        evmc::bytes32 hash_;                                // Block hash where the snapshot was created
         std::vector<evmc::address> signers_;                // Set of authorized signers at this moment
         std::deque<evmc::address> recents_;                 // Set of recent signers for spam protections
         std::map<evmc::address, Tally> tallies_;            // Current vote tally to avoid recalculating

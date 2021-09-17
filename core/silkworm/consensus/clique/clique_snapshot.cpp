@@ -226,14 +226,12 @@ void CliqueSnapshot::clear_votes(const evmc::address& signer) {
     }
     // Clean up for whenever votes was equal to 0
     auto it{tallies_.begin()};
-    while(it != tallies_.end()) {
+    while (it != tallies_.end()) {
         if (it->second.votes == 0) {
-            auto to_erase{it};
-            it++;
-            tallies_.erase(to_erase);
-        } else {
-            it++;
-        } 
+            it = tallies_.erase(it);
+            continue;
+        }
+        it++;
     }
 }
 

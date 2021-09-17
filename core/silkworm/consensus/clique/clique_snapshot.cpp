@@ -185,7 +185,7 @@ bool CliqueSnapshot::is_vote_valid(const evmc::address& address, bool authorize)
     auto existing_signer{std::find(signers_.begin(), signers_.end(), address) != signers_.end()};
     return (existing_signer && !authorize) || (!existing_signer && authorize);
 }
-// cast a vote made to address by signer
+// increment_vote a vote made to address by signer
 void CliqueSnapshot::increment_vote(const evmc::address& address, const evmc::address& signer, bool authorize) {
     if (!is_vote_valid(address, authorize)) {
         return;
@@ -200,7 +200,7 @@ void CliqueSnapshot::increment_vote(const evmc::address& address, const evmc::ad
         tallies_.emplace(address, Tally{authorize, 1, {signer}});
     }
 }
-// uncast the vote made to address by signer
+// decrement_vote the vote made to address by signer
 void CliqueSnapshot::decrement_vote(const evmc::address& address, const evmc::address& signer) {
     if(tallies_.count(address)) {
         if (std::find(tallies_[address].voters.begin(), 
@@ -215,7 +215,7 @@ void CliqueSnapshot::decrement_vote(const evmc::address& address, const evmc::ad
         }
     }
 }
-// Uncast all of the votes made by signer
+// clear_votes all of the votes made by signer
 void CliqueSnapshot::clear_votes(const evmc::address& signer) {
     for (auto& [address, tally]: tallies_) {
         auto vote{std::find(tally.voters.begin(), tally.voters.end(), signer)};

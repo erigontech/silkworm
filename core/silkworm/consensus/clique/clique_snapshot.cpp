@@ -159,22 +159,25 @@ Bytes CliqueSnapshot::to_bytes() const noexcept {
 //! \brief Decode snapshot from bytes format.
 //! \return Decoded snapshot.
 CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, uint64_t& block_number, const evmc::bytes32& hash) noexcept {
-    auto signers_count{b[0]};
-    auto recents_count{(b.size() - signers_count * kAddressLength - 1) / kAddressLength};
-    // Add Signers
-    std::vector<evmc::address> signers;
-    for (size_t i = 0; i < signers_count; i++) {
-        evmc::address signer;
-        std::memcpy(signer.bytes, &b[i * kAddressLength + 1], kAddressLength);
-        signers.push_back(signer);
-    }
-    // Add Recents
+    // Consume signers count
+    auto signers_count{static_cast<size_t>(b[0])};
+    auto signers_bytes_count{signers_count * kAddressLength};
+    b.remove_prefix(1);
+
+    // Consume signers
+    std::vector<evmc::address> signers(signers_count);
+    memcpy(&signers[0], b.data(), signers_bytes_count);
+    b.remove_prefix(signers_bytes_count);
+
+    // Consume recents
     std::deque<evmc::address> recents;
-    for (size_t i = 0; i < recents_count; i++) {
+    while (!b.empty()) {
         evmc::address signer;
-        std::memcpy(signer.bytes, &b[signers_count * kAddressLength + i * kAddressLength + 1], kAddressLength);
+        std::memcpy(signer.bytes, b.data(), kAddressLength);
         recents.push_back(signer);
+        b.remove_prefix(kAddressLength);
     }
+
     // Make sure signers are sorted before turn-ness check
     std::sort(signers.begin(), signers.end());
     return CliqueSnapshot{block_number, hash, signers, recents};

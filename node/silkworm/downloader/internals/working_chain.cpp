@@ -34,7 +34,7 @@ class segment_cut_and_paste_error: public std::logic_error {
 };
 
 
-WorkingChain::WorkingChain(): highestInDb_(0), topSeenHeight_(0), targetHeight_(0) {
+WorkingChain::WorkingChain(): highestInDb_(0), topSeenHeight_(0), targetHeight_(0), seenAnnounces_(1000) {
 }
 
 void WorkingChain::target_height(BlockNum n) {
@@ -55,6 +55,10 @@ BlockNum WorkingChain::top_seen_block_height() {
 
 BlockNum WorkingChain::height_reached() {
     return 0;   // todo: implement!
+}
+
+std::string WorkingChain::human_readable_status() {
+    return std::to_string(anchors_.size()) + " anchors, " + std::to_string(links_.size()) + " links";
 }
 
 /*
@@ -342,8 +346,6 @@ std::tuple<std::optional<GetBlockHeadersPacket66>,
         return {};
     }
 
-    SILKWORM_LOG(LogLevel::Debug) << "WorkingChain status: " << anchors_.size() << " anchors, " << links_.size() << " links\n";
-
     std::vector<PeerPenalization> penalties;
     while (!anchorQueue_.empty()) {
         auto anchor = anchorQueue_.top();
@@ -407,11 +409,8 @@ void WorkingChain::invalidate(Anchor& anchor) {
     }
 }
 
-void WorkingChain::save_external_announce(Hash) {
-    // Erigon implementation:
-    // hd.seenAnnounces.Add(hash)
-    // todo: implement!
-    SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: save_external_announce() not implemented yet\n";
+void WorkingChain::save_external_announce(Hash h) {
+    seenAnnounces_.put(h, 0);   // we ignore value zero, this rlu cache is based on map so we need to provide a dummy value
 }
 
 /*
@@ -776,7 +775,7 @@ func (hd *HeaderDownload) ProcessSegment(segment *ChainSegment, newBlock bool, p
 }
 
 */
-auto WorkingChain::process_segment(const Segment& segment, IsANewBlock isANewBlock, PeerId peerId) -> RequestMoreHeaders {
+auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, PeerId peerId) -> RequestMoreHeaders {
     auto [foundAnchor, start] = find_anchor(segment);
     auto [foundTip, end] = find_link(segment, start);
 
@@ -788,14 +787,14 @@ auto WorkingChain::process_segment(const Segment& segment, IsANewBlock isANewBlo
     auto lowest_header = segment.back();
     auto height = lowest_header->number;
 
-    if (isANewBlock /*|| hd.seenAnnounces.Seen(lowest_header->hash())*/) {  // todo: translate seenAnnounces
+    if (is_a_new_block || seenAnnounces_.get(Hash(lowest_header->hash())) != nullptr) {
         if (height > topSeenHeight_) topSeenHeight_ = height;
     }
 
     auto startNum = segment[start]->number;
     auto endNum = segment[end - 1]->number;
 
-    //Segment::Slice segment_slice{segment.begin()+start, segment.begin()+end};  // todo: remove, require c++20 span
+    //Segment::Slice segment_slice{segment.begin()+start, segment.begin()+end};  // require c++20 span
     Segment::Slice segment_slice = segment.slice(start, end);
 
     std::string op;
@@ -1123,8 +1122,6 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
             anchorQueue_.push(new_anchor);
         }
     }
-
-
 
     // todo: modularize this block
     // Iterate over headers backwards (from parents towards children)

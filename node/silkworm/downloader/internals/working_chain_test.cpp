@@ -358,10 +358,8 @@ namespace silkworm {
     TEST_CASE("WorkingChain::process_segment - test1 - new_anchor / extend_up / extend_down / connect") {
         using namespace std;
 
-        BlockNum highestInDb = 0;
-        BlockNum topSeenHeight = 1'000'000;
-
-        WorkingChain_ForTest chain(highestInDb, topSeenHeight);
+        WorkingChain_ForTest chain;
+        chain.target_height(1'000'000);
 
         PeerId peerId = "1";
 
@@ -545,10 +543,8 @@ namespace silkworm {
     TEST_CASE("WorkingChain::process_segment - test2 - chain with branches") {
         using namespace std;
 
-        BlockNum highestInDb = 0;
-        BlockNum topSeenHeight = 1'000'000;
-
-        WorkingChain_ForTest chain(highestInDb, topSeenHeight);
+        WorkingChain_ForTest chain;
+        chain.target_height(1'000'000);
 
         PeerId peerId = "1";
 

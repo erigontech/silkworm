@@ -114,4 +114,13 @@ namespace rlp {
 
 }  // namespace silkworm
 
+namespace std {
+
+template <>
+struct hash<silkworm::Hash>: public std::hash<evmc::bytes32>    // to use Hash with std::unordered_set/map
+{
+};
+
+} // namespace std
+
 #endif  // SILKWORM_TYPES_HPP

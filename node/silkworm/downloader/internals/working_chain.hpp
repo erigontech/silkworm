@@ -20,6 +20,7 @@
 #include <gsl/span>
 
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
+#include <silkworm/common/lru_cache.hpp>
 
 #include "chain_elements.hpp"
 
@@ -40,6 +41,7 @@ class WorkingChain {  // tentative name - todo: improve!
     BlockNum highest_block_in_db();
     BlockNum top_seen_block_height();
     void top_seen_block_height(BlockNum);
+    std::string human_readable_status();
 
     // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
@@ -71,8 +73,7 @@ class WorkingChain {  // tentative name - todo: improve!
     static constexpr size_t persistent_link_limit = link_total / 16;
     static constexpr size_t link_limit = link_total - persistent_link_limit;
 
-    using IsANewBlock = bool;
-    auto process_segment(const Segment&, IsANewBlock, PeerId) -> RequestMoreHeaders;
+    auto process_segment(const Segment&, bool is_a_new_block, PeerId) -> RequestMoreHeaders;
 
     using Found = bool; using Start = size_t; using End = size_t;
     auto find_anchor(const Segment&)                         -> std::tuple<Found, Start>;
@@ -100,7 +101,9 @@ class WorkingChain {  // tentative name - todo: improve!
     BlockNum topSeenHeight_;
     BlockNum targetHeight_;
     std::set<Hash> badHeaders_;
-    std::set<Hash> preverifiedHashes_; // todo: fill! // Set of hashes that are known to belong to canonical chain
+    std::set<Hash> preverifiedHashes_; // Set of hashes that are known to belong to canonical chain - todo: fill preverifiedHashes_!
+    using Ignore = int;
+    lru_cache<Hash, Ignore> seenAnnounces_;
 };
 
 }

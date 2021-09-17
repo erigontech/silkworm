@@ -129,6 +129,7 @@ auto HeaderDownloader::forward_to(BlockNum new_height) -> StageResult {
 
             // check if finished
             new_height_reached = working_chain_.height_reached() >= new_height;
+            SILKWORM_LOG(LogLevel::Debug) << "WorkingChain status: " << working_chain_.human_readable_status() << "\n";
         }
 
         stopping = true; // todo: it is better to try to cancel the grpc call

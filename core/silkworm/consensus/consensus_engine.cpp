@@ -151,11 +151,11 @@ bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header
 std::unique_ptr<ConsensusEngine> get_consensus_engine(SealEngineType engine_type) {
     switch (engine_type) {
         case SealEngineType::kEthash:
-            return std::unique_ptr<Ethash>(new Ethash());
+            return std::make_unique<Ethash>();
         case SealEngineType::kClique:
-            return std::make_unique<Clique>(Clique(kDefaultCliqueConfig));
+            return std::make_unique<Clique>(kDefaultCliqueConfig);
         default:
-            return std::make_unique<Ethash>(Ethash());
+            return std::make_unique<Ethash>();
     }
 }
 

@@ -214,9 +214,12 @@ TEST_CASE("Account and storage trie") {
         CHECK(node1a.state_mask() == node1b.state_mask());
         CHECK(node1a.tree_mask() == node1b.tree_mask());
         CHECK(0b1011 == node1b.hash_mask());
+
         CHECK(node1b.root_hash() == std::nullopt);
 
-        // TODO[Issue 179] check node1b.hashes()
+        REQUIRE(node1b.hashes().size() == 3);
+        CHECK(node1a.hashes()[0] == node1b.hashes()[0]);
+        CHECK(node1a.hashes()[1] == node1b.hashes()[2]);
 
         const Node node2b{node_map.at(*from_hex("0B00"))};
         CHECK(node2a == node2b);

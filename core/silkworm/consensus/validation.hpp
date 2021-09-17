@@ -58,15 +58,14 @@ enum class [[nodiscard]] ValidationResult{
     kWrongBlockGas = 27,  // BHg ≠ l(BR)u
     kInvalidSignature = 28,  // EIP-2
     kWrongChainId = 29,  // EIP-155
-    kInvalidVotingSegment = 30, // Invalid voting segment in Clique/Aura
-    kUnhauthorizedSigner = 31,  // Handling an unhautorized voting signer
-    kMissingSigner = 32,   // Missing Signer in extra_data
-    kRecentlySigned = 33, // Signer has already recently signed
-    kInvalidVote = 34, // Non-Existing vote option
-    kInvalidCheckpointBeneficiary = 35,
-    kMissingVanity = 36,   // ‖Hx‖ < 97
+    kUnhauthorizedSigner = 30,  // Handling an unhautorized voting signer
+    kMissingSigner = 31,   // Missing Signer in extra_data
+    kRecentlySigned = 32, // Signer has already recently signed
+    kInvalidVote = 33, // Non-Existing vote option
+    kInvalidCheckpointBeneficiary = 34,
+    kMissingVanity = 35,   // ‖Hx‖ < 97
 
-    kUnsupportedTransactionType = 37,  // EIP-2718
+    kUnsupportedTransactionType = 36,  // EIP-2718
 };
 
 #endif // SILKWORM_CONSENSUS_VALIDATION_HPP_

@@ -60,7 +60,7 @@ class CliqueSnapshot {
         ValidationResult add_header(const BlockHeader& header, const evmc::address& signer, const CliqueConfig& config);
         //! \brief Verify seal for header
         //! \param header: header to verify.
-        ValidationResult verify_seal(BlockHeader header, const evmc::address& signer);
+        ValidationResult verify_seal(const BlockHeader& header, const evmc::address& signer);
 
         //! \brief Checks for authority
         //! \param block_number: Block to check.

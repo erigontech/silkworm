@@ -84,7 +84,7 @@ TEST_CASE("empty snapshot encoding/decoding") {
     auto snapshot_encoded{snapshot.to_bytes()};
     ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
     CHECK(snapshot_encoded.size() == 8);
-    CHECK(int(snapshot_encoded[0]) == 0);
+    CHECK(endian::load_big_u64(&snapshot_encoded[0]) == 0);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, evmc::bytes32{})};
     CHECK(snapshot_decoded.get_signers().size() == 0);
     CHECK(snapshot_decoded.get_recents().size() == 0);
@@ -95,7 +95,7 @@ TEST_CASE("Signers without recents snapshot encoding/decoding") {
     auto snapshot_encoded{snapshot.to_bytes()};
     ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
     CHECK(snapshot_encoded.size() == 2 * kAddressLength + 8);
-    CHECK(snapshot_encoded[0] == 2);
+    CHECK(endian::load_big_u64(&snapshot_encoded[0]) == 2);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
     auto signers{snapshot_decoded.get_signers()};
     CHECK(signers.size() == 2);
@@ -123,7 +123,7 @@ TEST_CASE("Recents and signers snapshot encoding/decoding") {
     auto snapshot_encoded{snapshot.to_bytes()};
     ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
     REQUIRE(snapshot_encoded.size() == 3 * kAddressLength + 8);
-    REQUIRE(snapshot_encoded[0] == 2);
+    CHECK(endian::load_big_u64(&snapshot_encoded[0]) == 2);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
     auto signers{snapshot_decoded.get_signers()};
     auto recents{snapshot_decoded.get_recents()};

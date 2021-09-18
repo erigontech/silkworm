@@ -29,26 +29,25 @@ std::array<uint8_t, 8> kNonceDropVote = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0
 //! \param headers: list of headers to add.
 ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evmc::address& signer, const CliqueConfig& config) {
     // Block 0 is unsupported
+    auto hash{header.hash()};
     if (header.number == 0) {
+        update(header.number, hash);
         return ValidationResult::kOk;
     }
-    auto hash{header.hash()};
-    evmc::address allowed_signer{}; // We only modify snapshot after checks are done.
     // Delete the oldest signer from the recent list to allow it signing again
-    if (recents_.size() > signers_.size() / 2) {
-        allowed_signer = recents_.back();
-    }
+    auto pop_recent{static_cast<uint64_t>(recents_.size() > signers_.size() / 2)};
 
     if (std::find(signers_.begin(), signers_.end(), signer) == signers_.end()) {
         return ValidationResult::kUnauthorizedSigner;
     }
+
 
     // Remove any votes on checkpoint blocks
     if (header.number % config.epoch == 0) {
         tallies_.clear();
     }
 
-    if (std::find(recents_.begin(), recents_.end(), signer) != recents_.end() && signer != allowed_signer) {
+    if (std::find(recents_.begin(), recents_.begin() + long(recents_.size() - pop_recent), signer) != recents_.end()) {
         return ValidationResult::kRecentlySigned;
     }
 
@@ -62,7 +61,7 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
         return ValidationResult::kInvalidVote;
     }
 
-    if (allowed_signer) {
+    if (pop_recent) {
         recents_.pop_back();
     }
     recents_.push_front(signer);
@@ -114,7 +113,7 @@ ValidationResult CliqueSnapshot::verify_seal(const BlockHeader& header, const ev
 //! \param address: Address to check.
 //! \return if a signer at a given block height is in charge or not.
 bool CliqueSnapshot::is_authority(uint64_t block_number, evmc::address address) const noexcept {
-    if (signers_.size() == 0) {
+    if (signers_.empty()) {
         return false;
     }
     return signers_[block_number % signers_.size()] == address;
@@ -148,11 +147,11 @@ const evmc::bytes32& CliqueSnapshot::get_hash() const noexcept {
 Bytes CliqueSnapshot::to_bytes() const noexcept {
     auto signers_bytes_count{signers_.size() * kAddressLength};
     auto recents_bytes_count{recents_.size() * kAddressLength};
-    Bytes ret(signers_bytes_count + recents_bytes_count + 1 /* byte for signers count*/, '\0');
+    Bytes ret(signers_bytes_count + recents_bytes_count + 8 /* byte for signers count*/, '\0');
 
     // We specify how many are signers
-    size_t offset{0};
-    ret[offset++] = static_cast<uint8_t>(signers_.size());
+    size_t offset{8};
+    endian::store_big_u64(&ret[0], signers_.size());
     std::memcpy(&ret[offset], signers_.data(), signers_bytes_count);
     offset += signers_bytes_count;
 
@@ -169,9 +168,9 @@ Bytes CliqueSnapshot::to_bytes() const noexcept {
 //! \return Decoded snapshot.
 CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, const uint64_t& block_number, const evmc::bytes32& hash) noexcept {
     // Consume signers count
-    auto signers_count{static_cast<size_t>(b[0])};
+    auto signers_count{endian::load_big_u64(&b[0])};
     auto signers_bytes_count{signers_count * kAddressLength};
-    b.remove_prefix(1);
+    b.remove_prefix(sizeof(uint64_t));
 
     // Consume signers
     std::vector<evmc::address> signers(signers_count);

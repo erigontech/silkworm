@@ -27,6 +27,7 @@ namespace silkworm::consensus {
 constexpr uint64_t zero = 0;
 constexpr evmc::bytes32 zero_hash{};
 
+// This the RLP of Goerli Block 1.
 const char* rlp_sample_header_hex{
     "f90256a0bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969"
     "eab529dd9b88c1aa01dcc4de8dec75d7aab85b567b6ccd41ad312451b"
@@ -93,7 +94,7 @@ TEST_CASE("Signers without recents snapshot encoding/decoding") {
     CliqueSnapshot snapshot{zero, zero_hash, {signer_a, signer_b}, {}};
     auto snapshot_encoded{snapshot.to_bytes()};
     ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
-    CHECK(snapshot_encoded.size() == 2 * kAddressLength + 1);
+    CHECK(snapshot_encoded.size() == 2 * kAddressLength + 8);
     CHECK(snapshot_encoded[0] == 2);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
     auto signers{snapshot_decoded.get_signers()};
@@ -107,7 +108,7 @@ TEST_CASE("Recents without signers snapshot encoding/decoding") {
     CliqueSnapshot snapshot{zero, zero_hash, {}, {signer_a, signer_b}};
     auto snapshot_encoded{snapshot.to_bytes()};
     ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
-    CHECK(snapshot_encoded.size() == 2 * kAddressLength + 1);
+    CHECK(snapshot_encoded.size() == 2 * kAddressLength + 8);
     CHECK(snapshot_encoded[0] == 0);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
     auto recents{snapshot_decoded.get_recents()};
@@ -120,7 +121,7 @@ TEST_CASE("Recents and signers snapshot encoding/decoding") {
     CliqueSnapshot snapshot{zero, zero_hash, {signer_a, signer_b}, {signer_a}};
     auto snapshot_encoded{snapshot.to_bytes()};
     ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
-    CHECK(snapshot_encoded.size() == 3 * kAddressLength + 1);
+    CHECK(snapshot_encoded.size() == 3 * kAddressLength + 8);
     CHECK(snapshot_encoded[0] == 2);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
     auto signers{snapshot_decoded.get_signers()};

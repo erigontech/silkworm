@@ -65,9 +65,9 @@ ValidationResult execute_vote(CliqueSnapshot& snapshot, evmc::address signer, ev
     BlockHeader header;
     header.beneficiary = voted;
     if (authorize) {
-        header.nonce = kNonceAuthorize;
+        header.nonce = kNonceAuthVote;
     } else {
-        header.nonce = kNonceUnauthorize;
+        header.nonce = kNonceDropVote;
     }
     if (checkpoint) {
         header.number = 3; // process it do not treat it like an epoch
@@ -144,21 +144,38 @@ TEST_CASE("Signer recovery") {
 
 }
 
-TEST_CASE("Signer recovery") {
+TEST_CASE("Seal Verification") {
+    evmc::address signer = 0xe0a2bd4258d2768837baa26a28fe71dc079f84c7_address;
+    CliqueSnapshot snapshot{zero, zero_hash, {signer}, {}};
+    Bytes rlp_bytes{*from_hex(rlp_sample_header_hex)};
+    ByteView in{rlp_bytes};
+    BlockHeader header{};
+
+    REQUIRE(rlp::decode(in, header) == rlp::DecodingResult::kOk);
+    CHECK(snapshot.verify_seal(header, signer) == ValidationResult::kOk);
+}
+
+TEST_CASE("Seal Verification with invalid difficulty") {
+    evmc::address signer = 0xe0a2bd4258d2768837baa26a28fe71dc079f84c7_address;
+    CliqueSnapshot snapshot{zero, zero_hash, {signer}, {}};
+    Bytes rlp_bytes{*from_hex(rlp_sample_header_hex)};
+    ByteView in{rlp_bytes};
+    BlockHeader header{};
+
+    REQUIRE(rlp::decode(in, header) == rlp::DecodingResult::kOk);
+    header.difficulty = 5;
+    CHECK(snapshot.verify_seal(header, signer) == ValidationResult::kInvalidSeal);
+}
+// Clique Consensus tests (Look https://eips.ethereum.org/EIPS/eip-225)
+TEST_CASE("Single signer, no votes cast") {
     Clique engine(kDefaultCliqueConfig);
     Bytes rlp_bytes{*from_hex(rlp_sample_header_hex)};
     ByteView in{rlp_bytes};
     BlockHeader header{};
 
     REQUIRE(rlp::decode(in, header) == rlp::DecodingResult::kOk);
-    CHECK(*engine.get_signer_from_clique_header(header) ==
-          0xe0a2bd4258d2768837baa26a28fe71dc079f84c7_address);
-
-}
-// Clique Consensus tests (Look https://eips.ethereum.org/EIPS/eip-225)
-TEST_CASE("Single signer, no votes cast") {
-    CliqueSnapshot snapshot{0, evmc::bytes32{}, {signer_a}, {}};
-    CHECK(execute_vote(snapshot, signer_a, no_vote, false) == ValidationResult::kOk);
+    auto signer{*engine.get_signer_from_clique_header(header)};
+    CHECK(signer == 0xe0a2bd4258d2768837baa26a28fe71dc079f84c7_address);
 }
 
 TEST_CASE("Single signer, voting to add two others (only accept first, second needs 2 votes)") {

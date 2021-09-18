@@ -37,11 +37,11 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 	}
 
 	// Nonces must be 0x00..0 or 0xff..f, zeroes enforced on checkpoints
-	if (header.nonce != kNonceAuthorize && header.nonce !=  kNonceUnauthorize) {
+	if (header.nonce != kNonceAuthVote && header.nonce !=  kNonceDropVote) {
 		return ValidationResult::kInvalidVote;
 	}
 
-	if (checkpoint && header.nonce != kNonceUnauthorize) {
+	if (checkpoint && header.nonce != kNonceDropVote) {
 		return ValidationResult::kInvalidVote;
 	}
 

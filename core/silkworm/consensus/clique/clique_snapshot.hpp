@@ -27,8 +27,8 @@
 
 namespace silkworm {
 
-extern std::array<uint8_t, 8> kNonceAuthorize;
-extern std::array<uint8_t, 8> kNonceUnauthorize;
+extern std::array<uint8_t, 8> kNonceAuthVote;
+extern std::array<uint8_t, 8> kNonceDropVote;
 
 constexpr uint64_t kDiffInTurn = 2; // Block difficulty for in-turn signatures
 constexpr uint64_t kDiffNoTurn = 1; // Block difficulty for out-of-turn signatures

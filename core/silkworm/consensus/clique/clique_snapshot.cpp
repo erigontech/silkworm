@@ -22,8 +22,8 @@
 
 namespace silkworm {
 
-std::array<uint8_t, 8> kNonceAuthorize =   {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-std::array<uint8_t, 8> kNonceUnauthorize = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+std::array<uint8_t, 8> kNonceAuthVote =   {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+std::array<uint8_t, 8> kNonceDropVote = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 //! \brief Updated snapshot by adding headers
 //! \param headers: list of headers to add.
@@ -54,9 +54,9 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
 
     // We check what the vote is
     bool authorize;
-    if (header.nonce == kNonceAuthorize) {
+    if (header.nonce == kNonceAuthVote) {
         authorize = true;
-    } else if (header.nonce == kNonceUnauthorize) {
+    } else if (header.nonce == kNonceDropVote) {
         authorize = false;
     } else {
         return ValidationResult::kInvalidVote;

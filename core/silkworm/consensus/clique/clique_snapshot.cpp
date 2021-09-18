@@ -28,6 +28,10 @@ std::array<uint8_t, 8> kNonceUnauthorize = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 //! \brief Updated snapshot by adding headers
 //! \param headers: list of headers to add.
 ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evmc::address& signer, const CliqueConfig& config) {
+    // Block 0 is unsupported
+    if (header.number > 0) {
+        return ValidationResult::kOk;
+    }
     auto hash{header.hash()};
     evmc::address allowed_signer{}; // We only modify snapshot after checks are done.
     // Delete the oldest signer from the recent list to allow it signing again
@@ -110,9 +114,9 @@ ValidationResult CliqueSnapshot::verify_seal(const BlockHeader& header, const ev
 //! \param address: Address to check.
 //! \return if a signer at a given block height is in charge or not.
 bool CliqueSnapshot::is_authority(uint64_t block_number, evmc::address address) const noexcept {
-        if (signers_.size() == 0) {
-            return false;
-        }
+    if (signers_.size() == 0) {
+        return false;
+    }
 	return signers_[block_number % signers_.size()] == address;
 }
 

@@ -72,6 +72,10 @@ class CliqueSnapshot {
         //! \return Snapshot's signers.
         const std::vector<evmc::address>& get_signers() const noexcept;
 
+        //! \brief Getter method for recents_.
+        //! \return Snapshot's recents.
+        const std::deque<evmc::address>& get_recents() const noexcept;
+
         //! \brief Getter method for block_number_.
         //! \return Snapshot's block number.
         const uint64_t& get_block_number() const noexcept;
@@ -84,7 +88,7 @@ class CliqueSnapshot {
         Bytes to_bytes() const noexcept;
         //! \brief Decode snapshot from Bytes format.
         //! \return Decoded snapshot.
-        static CliqueSnapshot from_bytes(ByteView& b, uint64_t& block_number, const evmc::bytes32& hash) noexcept;
+        static CliqueSnapshot from_bytes(ByteView& b, const uint64_t& block_number, const evmc::bytes32& hash) noexcept;
 
     private:
         // is_vote_valid returns whether it makes sense to cast the specified vote in the

@@ -23,8 +23,11 @@ using namespace evmc::literals;
 
 namespace silkworm {
 
+constexpr uint64_t zero = 0;
+constexpr evmc::bytes32 zero_hash{};
+
 CliqueConfig config_sample{3, 3};
-constexpr evmc::address no_vote = 0x0000000000000000000000000000000000000000_address;
+constexpr evmc::address no_vote{};
 // signers
 constexpr evmc::address signer_a = 0x0000000000000000000000000000000000000001_address;
 constexpr evmc::address signer_b = 0x0000000000000000000000000000000000000002_address;
@@ -47,6 +50,61 @@ ValidationResult execute_vote(CliqueSnapshot& snapshot, evmc::address signer, ev
         header.number = 8; // process it do not treat it like an epoch
     }
     return snapshot.add_header(header, signer, config_sample);
+}
+
+// Encoding/Decoding
+TEST_CASE("empty snapshot encoding/decoding") {
+    CliqueSnapshot snapshot{0, evmc::bytes32{}, {}, {}};
+    auto snapshot_encoded{snapshot.to_bytes()};
+    ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
+    CHECK(snapshot_encoded.size() == 1);
+    CHECK(int(snapshot_encoded[0]) == 0);
+    auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, evmc::bytes32{})};
+    CHECK(snapshot_decoded.get_signers().size() == 0);
+    CHECK(snapshot_decoded.get_recents().size() == 0);
+}
+
+TEST_CASE("Signers without recents snapshot encoding/decoding") {
+    CliqueSnapshot snapshot{zero, zero_hash, {signer_a, signer_b}, {}};
+    auto snapshot_encoded{snapshot.to_bytes()};
+    ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
+    CHECK(snapshot_encoded.size() == 2 * kAddressLength + 1);
+    CHECK(snapshot_encoded[0] == 2);
+    auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
+    auto signers{snapshot_decoded.get_signers()};
+    CHECK(signers.size() == 2);
+    CHECK(signers[0] == signer_a);
+    CHECK(signers[1] == signer_b);
+    CHECK(snapshot_decoded.get_recents().size() == 0);
+}
+
+TEST_CASE("Recents without signers snapshot encoding/decoding") {
+    CliqueSnapshot snapshot{zero, zero_hash, {}, {signer_a, signer_b}};
+    auto snapshot_encoded{snapshot.to_bytes()};
+    ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
+    CHECK(snapshot_encoded.size() == 2 * kAddressLength + 1);
+    CHECK(snapshot_encoded[0] == 0);
+    auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
+    auto recents{snapshot_decoded.get_recents()};
+    CHECK(recents[0] == signer_a);
+    CHECK(recents[1] == signer_b);
+    CHECK(snapshot_decoded.get_signers().size() == 0);
+}
+
+TEST_CASE("Recents and signers snapshot encoding/decoding") {
+    CliqueSnapshot snapshot{zero, zero_hash, {signer_a, signer_b}, {signer_a}};
+    auto snapshot_encoded{snapshot.to_bytes()};
+    ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
+    CHECK(snapshot_encoded.size() == 3 * kAddressLength + 1);
+    CHECK(snapshot_encoded[0] == 2);
+    auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
+    auto signers{snapshot_decoded.get_signers()};
+    auto recents{snapshot_decoded.get_recents()};
+    CHECK(signers.size() == 2);
+    CHECK(recents.size() == 1);
+    CHECK(signers[0] == signer_a);
+    CHECK(signers[1] == signer_b);
+    CHECK(recents[0] == signer_a);
 }
 // Clique Consensus tests (Look https://eips.ethereum.org/EIPS/eip-225)
 TEST_CASE("Single signer, no votes cast") {

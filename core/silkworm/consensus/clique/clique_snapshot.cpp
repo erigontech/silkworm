@@ -122,6 +122,11 @@ bool CliqueSnapshot::is_authority(uint64_t block_number, evmc::address address) 
 const std::vector<evmc::address>& CliqueSnapshot::get_signers() const noexcept {
     return signers_;
 }
+//! \brief Getter method for recents_.
+//! \return Snapshot's recents.
+const std::deque<evmc::address>& CliqueSnapshot::get_recents() const noexcept {
+    return recents_;
+}
 
 //! \brief Getter method for block_number_.
 //! \return Snapshot's block number.
@@ -159,7 +164,7 @@ Bytes CliqueSnapshot::to_bytes() const noexcept {
 
 //! \brief Decode snapshot from bytes format.
 //! \return Decoded snapshot.
-CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, uint64_t& block_number, const evmc::bytes32& hash) noexcept {
+CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, const uint64_t& block_number, const evmc::bytes32& hash) noexcept {
     // Consume signers count
     auto signers_count{static_cast<size_t>(b[0])};
     auto signers_bytes_count{signers_count * kAddressLength};

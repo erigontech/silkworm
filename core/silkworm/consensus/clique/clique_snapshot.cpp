@@ -15,39 +15,44 @@
 */
 
 #include "clique_snapshot.hpp"
+
+#include <cstring>
+
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
-#include <cstring>
 
 namespace silkworm {
 
-std::array<uint8_t, 8> kNonceAuthVote =   {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+std::array<uint8_t, 8> kNonceAuthVote = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 std::array<uint8_t, 8> kNonceDropVote = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 //! \brief Updated snapshot by adding headers
 //! \param headers: list of headers to add.
-ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evmc::address& signer, const CliqueConfig& config) {
+ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evmc::address& signer,
+                                            const CliqueConfig& config) {
     // Block 0 is unsupported
     auto hash{header.hash()};
     if (header.number == 0) {
         update(header.number, hash);
         return ValidationResult::kOk;
     }
-    // Delete the oldest signer from the recent list to allow it signing again
-    auto pop_recent{static_cast<uint64_t>(recents_.size() > signers_.size() / 2)};
 
     if (std::find(signers_.begin(), signers_.end(), signer) == signers_.end()) {
         return ValidationResult::kUnauthorizedSigner;
     }
-
 
     // Remove any votes on checkpoint blocks
     if (header.number % config.epoch == 0) {
         tallies_.clear();
     }
 
-    if (std::find(recents_.begin(), recents_.begin() + long(recents_.size() - pop_recent), signer) != recents_.end()) {
+    // We need to determine if this signer is allowed to vote.
+    // Conditions are either :
+    // 1 - The signer has not recently voted
+    // 2 - The signer has recently voted BUT is the least recent AND the queue would be popped
+    auto pop_least_recent{static_cast<int64_t>(recents_.size() > signers_.size() / 2)};
+    if (std::find(recents_.begin(), std::prev(recents_.end(), pop_least_recent), signer) != recents_.end()) {
         return ValidationResult::kRecentlySigned;
     }
 
@@ -61,7 +66,7 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
         return ValidationResult::kInvalidVote;
     }
 
-    if (pop_recent) {
+    if (pop_least_recent) {
         recents_.pop_back();
     }
     recents_.push_front(signer);
@@ -121,26 +126,18 @@ bool CliqueSnapshot::is_authority(uint64_t block_number, evmc::address address) 
 
 //! \brief Getter method for signers_.
 //! \return Snapshot's signers.
-const std::vector<evmc::address>& CliqueSnapshot::get_signers() const noexcept {
-    return signers_;
-}
+const std::vector<evmc::address>& CliqueSnapshot::get_signers() const noexcept { return signers_; }
 //! \brief Getter method for recents_.
 //! \return Snapshot's recents.
-const std::deque<evmc::address>& CliqueSnapshot::get_recents() const noexcept {
-    return recents_;
-}
+const std::deque<evmc::address>& CliqueSnapshot::get_recents() const noexcept { return recents_; }
 
 //! \brief Getter method for block_number_.
 //! \return Snapshot's block number.
-const uint64_t& CliqueSnapshot::get_block_number() const noexcept {
-    return block_number_;
-}
+const uint64_t& CliqueSnapshot::get_block_number() const noexcept { return block_number_; }
 
 //! \brief Getter method for hash_.
 //! \return Snapshot's hash.
-const evmc::bytes32& CliqueSnapshot::get_hash() const noexcept {
-    return hash_;
-}
+const evmc::bytes32& CliqueSnapshot::get_hash() const noexcept { return hash_; }
 
 //! \brief Convert the snapshot in Bytes.
 //! \return The resulting Bytes.
@@ -150,13 +147,14 @@ Bytes CliqueSnapshot::to_bytes() const noexcept {
     Bytes ret(signers_bytes_count + recents_bytes_count + 8 /* byte for signers count*/, '\0');
 
     // We specify how many are signers
-    size_t offset{8};
-    endian::store_big_u64(&ret[0], signers_.size());
+    size_t offset{0};
+    endian::store_big_u64(&ret[offset], signers_.size());
+    offset += sizeof(uint64_t);
     std::memcpy(&ret[offset], signers_.data(), signers_bytes_count);
     offset += signers_bytes_count;
 
     // We add the recents
-    for (const auto &recent: recents_) {
+    for (const auto& recent : recents_) {
         std::memcpy(&ret[offset], recent.bytes, kAddressLength);
         offset += kAddressLength;
     }
@@ -166,7 +164,8 @@ Bytes CliqueSnapshot::to_bytes() const noexcept {
 
 //! \brief Decode snapshot from bytes format.
 //! \return Decoded snapshot.
-CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, const uint64_t& block_number, const evmc::bytes32& hash) noexcept {
+CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, const uint64_t& block_number,
+                                          const evmc::bytes32& hash) noexcept {
     // Consume signers count
     auto signers_count{endian::load_big_u64(&b[0])};
     auto signers_bytes_count{signers_count * kAddressLength};
@@ -212,9 +211,9 @@ void CliqueSnapshot::increment_vote(const evmc::address& address, const evmc::ad
 }
 // decrement_vote the vote made to address by signer
 void CliqueSnapshot::decrement_vote(const evmc::address& address, const evmc::address& signer) {
-    if(tallies_.count(address)) {
-        if (std::find(tallies_[address].voters.begin(), 
-            tallies_[address].voters.end(), signer) == tallies_[address].voters.end()) {
+    if (tallies_.count(address)) {
+        if (std::find(tallies_[address].voters.begin(), tallies_[address].voters.end(), signer) ==
+            tallies_[address].voters.end()) {
             return;
         }
         if (tallies_[address].votes <= 1) {
@@ -227,7 +226,7 @@ void CliqueSnapshot::decrement_vote(const evmc::address& address, const evmc::ad
 }
 // clear_votes all of the votes made by signer
 void CliqueSnapshot::clear_votes(const evmc::address& signer) {
-    for (auto& [address, tally]: tallies_) {
+    for (auto& [address, tally] : tallies_) {
         auto vote{std::find(tally.voters.begin(), tally.voters.end(), signer)};
         if (vote != tally.voters.end() && tally.votes > 0) {
             tally.votes--;

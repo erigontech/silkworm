@@ -37,9 +37,9 @@ class Clique: public ConsensusEngine {
 
      evmc::address get_beneficiary(const BlockHeader& header) override;
 
+     std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);
     private:
 
-     std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);
      CliqueConfig   clique_config_;
      CliqueSnapshot last_snapshot_{}; // We cache it to avoid writes and reads
      std::map<evmc::bytes32, evmc::address> sig_cache_;  // Cache where signatures are stored

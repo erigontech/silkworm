@@ -18,13 +18,38 @@
 #include <catch2/catch.hpp>
 
 #include "clique_snapshot.hpp"
+#include "clique.hpp"
 
 using namespace evmc::literals;
 
-namespace silkworm {
+namespace silkworm::consensus {
 
 constexpr uint64_t zero = 0;
 constexpr evmc::bytes32 zero_hash{};
+
+const char* rlp_sample_header_hex{
+    "f90256a0bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969"
+    "eab529dd9b88c1aa01dcc4de8dec75d7aab85b567b6ccd41ad312451b"
+    "948a7413f0a142fd40d49347940000000000000000000000000000000"
+    "000000000a05d6cded585e73c4e322c30c2f782a336316f17dd85a486"
+    "3b9d838d2d4b8b3008a056e81f171bcc55a6ff8345e692c0f86e5b48e"
+    "01b996cadc001622fb5e363b421a056e81f171bcc55a6ff8345e692c0"
+    "f86e5b48e01b996cadc001622fb5e363b421b90100000000000000000"
+    "000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000000000000000000"
+    "000000000000000000000000000000000000000000201839fd8018084"
+    "5c530ffdb861506172697479205465636820417574686f72697479000"
+    "00000000000000000002bbf886181970654ed46e3fae0ded41ee53fec"
+    "702c47431988a7ae80e6576f3552684f069af80ba11d36327aaf846d47"
+    "0526e4a1c461601b2fd4ebdcdc2b734a01a00000000000000000000000"
+    "000000000000000000000000000000000000000000880000000000000000"
+};
 
 CliqueConfig config_sample{3, 3};
 constexpr evmc::address no_vote{};
@@ -105,6 +130,30 @@ TEST_CASE("Recents and signers snapshot encoding/decoding") {
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
     CHECK(recents[0] == signer_a);
+}
+// Signature and Seal
+TEST_CASE("Signer recovery") {
+    Clique engine(kDefaultCliqueConfig);
+    Bytes rlp_bytes{*from_hex(rlp_sample_header_hex)};
+    ByteView in{rlp_bytes};
+    BlockHeader header{};
+
+    REQUIRE(rlp::decode(in, header) == rlp::DecodingResult::kOk);
+    CHECK(*engine.get_signer_from_clique_header(header) ==
+          0xe0a2bd4258d2768837baa26a28fe71dc079f84c7_address);
+
+}
+
+TEST_CASE("Signer recovery") {
+    Clique engine(kDefaultCliqueConfig);
+    Bytes rlp_bytes{*from_hex(rlp_sample_header_hex)};
+    ByteView in{rlp_bytes};
+    BlockHeader header{};
+
+    REQUIRE(rlp::decode(in, header) == rlp::DecodingResult::kOk);
+    CHECK(*engine.get_signer_from_clique_header(header) ==
+          0xe0a2bd4258d2768837baa26a28fe71dc079f84c7_address);
+
 }
 // Clique Consensus tests (Look https://eips.ethereum.org/EIPS/eip-225)
 TEST_CASE("Single signer, no votes cast") {

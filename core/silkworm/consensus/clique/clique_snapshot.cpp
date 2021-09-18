@@ -51,8 +51,9 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
     // Conditions are either :
     // 1 - The signer has not recently voted
     // 2 - The signer has recently voted BUT is the least recent AND the queue would be popped
-    auto pop_least_recent{static_cast<int64_t>(recents_.size() > signers_.size() / 2)};
-    if (std::find(recents_.begin(), std::prev(recents_.end(), pop_least_recent), signer) != recents_.end()) {
+    auto pop_least_recent{recents_.size() > signers_.size() / 2};
+    auto is_least_recent{pop_least_recent && recents_.back() == signer};
+    if (!is_least_recent && std::find(recents_.begin(), recents_.end(), signer) != recents_.end()) {
         return ValidationResult::kRecentlySigned;
     }
 

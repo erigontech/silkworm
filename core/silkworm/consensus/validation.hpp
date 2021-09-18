@@ -37,35 +37,36 @@ enum class [[nodiscard]] ValidationResult{
     kWrongDaoExtraData = 12,  // see EIP-779
     kWrongBaseFee = 13,       // see EIP-1559
     kInvalidSeal = 14,        // Nonce or mix_hash
+    kInvalidMixHash = 15,
 
     // See [YP] Section 6.2 "Execution", Eq (58)
-    kMissingSender = 15,                 // S(T) = ∅
-    kSenderNoEOA = 16,                   // EIP-3607: σ[S(T)]c ≠ KEC( () )
-    kWrongNonce = 17,                    // Tn ≠ σ[S(T)]n
-    kIntrinsicGas = 18,                  // g0 > Tg
-    kInsufficientFunds = 19,             // v0 > σ[S(T)]b
-    kBlockGasLimitExceeded = 20,         // Tg > BHl - l(BR)u
-    kMaxFeeLessThanBase = 21,            // max_fee_per_gas < base_fee_per_gas (EIP-1559)
-    kMaxPriorityFeeGreaterThanMax = 22,  // max_priority_fee_per_gas > max_fee_per_gas (EIP-1559)
+    kMissingSender = 16,                 // S(T) = ∅
+    kSenderNoEOA = 17,                   // EIP-3607: σ[S(T)]c ≠ KEC( () )
+    kWrongNonce = 18,                    // Tn ≠ σ[S(T)]n
+    kIntrinsicGas = 19,                  // g0 > Tg
+    kInsufficientFunds = 20,             // v0 > σ[S(T)]b
+    kBlockGasLimitExceeded = 21,         // Tg > BHl - l(BR)u
+    kMaxFeeLessThanBase = 22,            // max_fee_per_gas < base_fee_per_gas (EIP-1559)
+    kMaxPriorityFeeGreaterThanMax = 23,  // max_priority_fee_per_gas > max_fee_per_gas (EIP-1559)
 
     // See [YP] Section 11.1 "Ommer Validation", Eq (157)
-    kTooManyOmmers = 23,       // ‖BU‖ > 2
-    kInvalidOmmerHeader = 24,  // ¬V(U)
-    kNotAnOmmer = 25,          // ¬k(U, P(BH)H, 6)
-    kDuplicateOmmer = 26,      // not well covered by the YP actually
+    kTooManyOmmers = 24,       // ‖BU‖ > 2
+    kInvalidOmmerHeader = 25,  // ¬V(U)
+    kNotAnOmmer = 26,          // ¬k(U, P(BH)H, 6)
+    kDuplicateOmmer = 27,      // not well covered by the YP actually
 
     // See [YP] Section 11.2 "Transaction Validation", Eq (160)
-    kWrongBlockGas = 27,  // BHg ≠ l(BR)u
-    kInvalidSignature = 28,  // EIP-2
-    kWrongChainId = 29,  // EIP-155
-    kUnauthorizedSigner = 30,  // Handling an unhautorized voting signer
-    kMissingSigner = 31,   // Missing Signer in extra_data
-    kRecentlySigned = 32, // Signer has already recently signed
-    kInvalidVote = 33, // Non-Existing vote option
-    kInvalidCheckpointBeneficiary = 34,
-    kMissingVanity = 35,   // ‖Hx‖ < 97
+    kWrongBlockGas = 28,  // BHg ≠ l(BR)u
+    kInvalidSignature = 29,  // EIP-2
+    kWrongChainId = 30,  // EIP-155
+    kUnauthorizedSigner = 31,  // Handling an unhautorized voting signer
+    kMissingSigner = 32,   // Missing Signer in extra_data
+    kRecentlySigned = 33, // Signer has already recently signed
+    kInvalidVote = 34, // Non-Existing vote option
+    kInvalidCheckpointBeneficiary = 35,
+    kMissingVanity = 36,   // ‖Hx‖ < 97
 
-    kUnsupportedTransactionType = 36,  // EIP-2718
+    kUnsupportedTransactionType = 37,  // EIP-2718
 };
 
 #endif // SILKWORM_CONSENSUS_VALIDATION_HPP_

@@ -98,9 +98,8 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
 //! \param header: header to verify.
 ValidationResult CliqueSnapshot::verify_seal(const BlockHeader& header, const evmc::address& signer) {
     // Check difficulty
-    auto authority{is_authority(header.number, signer)};
-    if (authority && header.difficulty != kDiffInTurn && header.difficulty != kDiffNoTurn) {
-        return ValidationResult::kIntrinsicGas;
+    if (is_authority(header.number, signer) && header.difficulty != kDiffInTurn && header.difficulty != kDiffNoTurn) {
+        return ValidationResult::kInvalidSeal;
     }
 
     return ValidationResult::kOk;

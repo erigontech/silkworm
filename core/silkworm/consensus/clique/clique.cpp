@@ -25,13 +25,7 @@
 namespace silkworm::consensus {
 
 ValidationResult Clique::pre_validate_block(const Block& block, State& state, const ChainConfig& config) {
-    const BlockHeader& header{block.header};
-
-    if (ValidationResult err{validate_block_header(header, state, config)}; err != ValidationResult::kOk) {
-        return err;
-    }
-
-    return ValidationResult::kOk;
+    return validate_block_header(block.header, state, config);
 }
 
 ValidationResult Clique::validate_block_header(const BlockHeader& header, State& state, const ChainConfig&) {
@@ -66,7 +60,7 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 	}
 	// Ensure that the mix digest is zero as we don't have fork protection currently
 	if (header.mix_hash) {
-		return ValidationResult::kWrongNonce;
+		return ValidationResult::kInvalidMixHash;
 	}
 	// Ensure that the block doesn't contain any uncles which are meaningless in PoA
 	if (header.ommers_hash != kEmptyListHash) {
@@ -81,8 +75,8 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 		if (parent->timestamp > header.timestamp - clique_config_.period) {
 			return ValidationResult::kInvalidTimestamp;
 		}
-		if (header.difficulty == 0 || (header.difficulty != kDiffInTurn && header.difficulty != kDiffNoTurn)) {
-			return ValidationResult::kInvalidGasLimit;
+		if (header.difficulty != kDiffInTurn && header.difficulty != kDiffNoTurn) {
+			return ValidationResult::kWrongDifficulty;
 		}
 	}
 	
@@ -139,7 +133,7 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
         if (err != ValidationResult::kOk) {
             return err;
         }
-		if (header.number % clique_config_.epoch == 0) {
+		if (checkpoint) {
         	state.write_snapshot(last_snapshot_.get_block_number(), last_snapshot_.get_hash(), last_snapshot_);
 		}
 		return last_snapshot_.verify_seal(header, *signer);

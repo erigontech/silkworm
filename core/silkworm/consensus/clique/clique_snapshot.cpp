@@ -174,7 +174,7 @@ CliqueSnapshot CliqueSnapshot::from_bytes(ByteView& b, const uint64_t& block_num
 
     // Consume signers
     std::vector<evmc::address> signers(signers_count);
-    memcpy(&signers[0], b.data(), signers_bytes_count);
+    memcpy(signers.data(), b.data(), signers_bytes_count);
     b.remove_prefix(signers_bytes_count);
 
     // Consume recents

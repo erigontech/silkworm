@@ -104,4 +104,8 @@ void FileProvider::reset() {
     }
 }
 
+std::string FileProvider::get_file_name() const { return file_name_; }
+
+size_t FileProvider::get_file_size() const { return file_size_; }
+
 }  // namespace silkworm::etl

@@ -83,7 +83,7 @@ TEST_CASE("empty snapshot encoding/decoding") {
     CliqueSnapshot snapshot{0, evmc::bytes32{}, {}, {}};
     auto snapshot_encoded{snapshot.to_bytes()};
     ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
-    CHECK(snapshot_encoded.size() == 8);
+    REQUIRE(snapshot_encoded.size() == sizeof(uint64_t));
     CHECK(endian::load_big_u64(&snapshot_encoded[0]) == 0);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, evmc::bytes32{})};
     CHECK(snapshot_decoded.get_signers().empty());
@@ -94,7 +94,7 @@ TEST_CASE("Signers without recents snapshot encoding/decoding") {
     CliqueSnapshot snapshot{zero, zero_hash, {signer_a, signer_b}, {}};
     auto snapshot_encoded{snapshot.to_bytes()};
     ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
-    CHECK(snapshot_encoded.size() == 2 * kAddressLength + 8);
+    REQUIRE(snapshot_encoded.size() == sizeof(uint64_t) + 2 * kAddressLength);
     CHECK(endian::load_big_u64(&snapshot_encoded[0]) == 2);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
     auto signers{snapshot_decoded.get_signers()};
@@ -108,8 +108,8 @@ TEST_CASE("Recents without signers snapshot encoding/decoding") {
     CliqueSnapshot snapshot{zero, zero_hash, {}, {signer_a, signer_b}};
     auto snapshot_encoded{snapshot.to_bytes()};
     ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
-    REQUIRE(snapshot_encoded.size() == 2 * kAddressLength + 8);
-    REQUIRE(snapshot_encoded[0] == 0);
+    REQUIRE(snapshot_encoded.size() == sizeof(uint64_t) + 2 * kAddressLength);
+    CHECK(endian::load_big_u64(&snapshot_encoded[0]) == 0);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
     auto recents{snapshot_decoded.get_recents()};
     REQUIRE(recents.size() == 2);
@@ -122,7 +122,7 @@ TEST_CASE("Recents and signers snapshot encoding/decoding") {
     CliqueSnapshot snapshot{zero, zero_hash, {signer_a, signer_b}, {signer_a}};
     auto snapshot_encoded{snapshot.to_bytes()};
     ByteView snapshot_encoded_view{snapshot_encoded.data(), snapshot_encoded.size()};
-    REQUIRE(snapshot_encoded.size() == 3 * kAddressLength + 8);
+    REQUIRE(snapshot_encoded.size() == sizeof(uint64_t) + 3 * kAddressLength);
     CHECK(endian::load_big_u64(&snapshot_encoded[0]) == 2);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
     auto signers{snapshot_decoded.get_signers()};

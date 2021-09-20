@@ -40,7 +40,7 @@ struct app_options_t {
 
 int main(int argc, char* argv[]) {
     // Init command line parser
-    CLI::App app("Check PoW.");
+    CLI::App app("Check PoA.");
     app_options_t options{};
 
     // Command line arguments
@@ -48,7 +48,6 @@ int main(int argc, char* argv[]) {
         ->required(true)
         ->check(CLI::ExistingDirectory);
     app.add_option("--from", options.from_block, "Initial block to begin check from", true);
-
     CLI11_PARSE(app, argc, argv);
 
     // Invoke proper action
@@ -61,7 +60,7 @@ int main(int argc, char* argv[]) {
         // Set database parameters
         db::EnvConfig db_config{options.datadir};
         auto env{db::open_env(db_config)};
-        auto txn{env.start_read()};
+        auto txn{env.start_write()};
 
         auto config{db::read_chain_config(txn)};
         if (!config.has_value()) {

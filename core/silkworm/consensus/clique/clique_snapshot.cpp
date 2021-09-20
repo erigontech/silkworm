@@ -20,7 +20,6 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
 
 namespace silkworm {
 
@@ -105,7 +104,7 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
 
 //! \brief Verify seal for header
 //! \param header: header to verify.
-ValidationResult CliqueSnapshot::verify_seal(const BlockHeader& header, const evmc::address& signer) {
+ValidationResult CliqueSnapshot::verify_seal(const BlockHeader& header, const evmc::address& signer) const {
     // Check difficulty
     if (is_authority(header.number, signer) && header.difficulty != kDiffInTurn && header.difficulty != kDiffNoTurn) {
         return ValidationResult::kInvalidSeal;

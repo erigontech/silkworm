@@ -66,7 +66,7 @@ class Collector {
     }
 
   private:
-    std::filesystem::path set_work_path(const std::optional<std::filesystem::path>& provided_work_path);
+    static std::filesystem::path set_work_path(const std::optional<std::filesystem::path>& provided_work_path);
     void flush_buffer();  // Write buffer to file
 
     bool work_path_managed_;

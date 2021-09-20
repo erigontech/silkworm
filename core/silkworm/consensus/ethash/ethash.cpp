@@ -14,77 +14,27 @@
    limitations under the License.
 */
 
-#include <silkworm/trie/vector_root.hpp>
-#include <silkworm/chain/intrinsic_gas.hpp>
-#include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/chain/difficulty.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
+#include "ethash.hpp"
+
 #include <ethash/ethash.hpp>
 
-#include "ethash.hpp"
+#include <silkworm/chain/difficulty.hpp>
+#include <silkworm/chain/intrinsic_gas.hpp>
+#include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/endian.hpp>
+#include <silkworm/trie/vector_root.hpp>
 
 namespace silkworm::consensus {
 
-ValidationResult Ethash::pre_validate_block(const Block& block, State& state, const ChainConfig& config) {
-    const BlockHeader& header{block.header};
-
-    if (ValidationResult err{validate_block_header(header, state, config)}; err != ValidationResult::kOk) {
-        return err;
+static std::optional<BlockHeader> get_parent(const State& state, const BlockHeader& header) {
+    if (header.number == 0) {
+        return std::nullopt;
     }
-
-    Bytes ommers_rlp;
-    rlp::encode(ommers_rlp, block.ommers);
-    ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
-    if (full_view(ommers_hash.bytes) != full_view(header.ommers_hash)) {
-        return ValidationResult::kWrongOmmersHash;
-    }
-
-    static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
-        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/false);
-    };
-
-    evmc::bytes32 txn_root{trie::root_hash(block.transactions, kEncoder)};
-    if (txn_root != header.transactions_root) {
-        return ValidationResult::kWrongTransactionsRoot;
-    }
-
-    if (block.ommers.size() > 2) {
-        return ValidationResult::kTooManyOmmers;
-    }
-
-    if (block.ommers.size() == 2 && block.ommers[0] == block.ommers[1]) {
-        return ValidationResult::kDuplicateOmmer;
-    }
-
-    std::optional<BlockHeader> parent{get_parent(state, header)};
-
-    for (const BlockHeader& ommer : block.ommers) {
-        if (ValidationResult err{validate_block_header(ommer, state, config)}; err != ValidationResult::kOk) {
-            return ValidationResult::kInvalidOmmerHeader;
-        }
-        std::vector<BlockHeader> old_ommers;
-        if (!is_kin(ommer, *parent, header.parent_hash, 6, state, old_ommers)) {
-            return ValidationResult::kNotAnOmmer;
-        }
-        for (const BlockHeader& oo : old_ommers) {
-            if (oo == ommer) {
-                return ValidationResult::kDuplicateOmmer;
-            }
-        }
-    }
-
-    for (const Transaction& txn : block.transactions) {
-        ValidationResult err{pre_validate_transaction(txn, header.number, config, header.base_fee_per_gas)};
-        if (err != ValidationResult::kOk) {
-            return err;
-        }
-    }
-
-    return ValidationResult::kOk;
+    return state.read_header(header.number - 1, header.parent_hash);
 }
 
 ValidationResult Ethash::validate_block_header(const BlockHeader& header, State& state, const ChainConfig& config) {
-     if (header.gas_used > header.gas_limit) {
+    if (header.gas_used > header.gas_limit) {
         return ValidationResult::kGasAboveLimit;
     }
 
@@ -159,6 +109,93 @@ ValidationResult Ethash::validate_block_header(const BlockHeader& header, State&
     return ValidationResult::kOk;
 }
 
+// See [YP] Section 11.1 "Ommer Validation"
+static bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                   const evmc::bytes32& mainline_hash, unsigned n, const State& state,
+                   std::vector<BlockHeader>& old_ommers) {
+    if (n == 0 || branch_header == mainline_header) {
+        return false;
+    }
+
+    std::optional<BlockBody> mainline_body{state.read_body(mainline_header.number, mainline_hash)};
+    if (!mainline_body) {
+        return false;
+    }
+    old_ommers.insert(old_ommers.end(), mainline_body->ommers.begin(), mainline_body->ommers.end());
+
+    std::optional<BlockHeader> mainline_parent{get_parent(state, mainline_header)};
+    std::optional<BlockHeader> branch_parent{get_parent(state, branch_header)};
+
+    if (!mainline_parent) {
+        return false;
+    }
+
+    bool siblings{branch_parent == mainline_parent};
+    if (siblings) {
+        return true;
+    }
+
+    return is_kin(branch_header, *mainline_parent, mainline_header.parent_hash, n - 1, state, old_ommers);
+}
+
+ValidationResult Ethash::pre_validate_block(const Block& block, State& state, const ChainConfig& config) {
+    const BlockHeader& header{block.header};
+
+    if (ValidationResult err{validate_block_header(header, state, config)}; err != ValidationResult::kOk) {
+        return err;
+    }
+
+    Bytes ommers_rlp;
+    rlp::encode(ommers_rlp, block.ommers);
+    ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
+    if (full_view(ommers_hash.bytes) != full_view(header.ommers_hash)) {
+        return ValidationResult::kWrongOmmersHash;
+    }
+
+    static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
+        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/false);
+    };
+
+    evmc::bytes32 txn_root{trie::root_hash(block.transactions, kEncoder)};
+    if (txn_root != header.transactions_root) {
+        return ValidationResult::kWrongTransactionsRoot;
+    }
+
+    if (block.ommers.size() > 2) {
+        return ValidationResult::kTooManyOmmers;
+    }
+
+    if (block.ommers.size() == 2 && block.ommers[0] == block.ommers[1]) {
+        return ValidationResult::kDuplicateOmmer;
+    }
+
+    std::optional<BlockHeader> parent{get_parent(state, header)};
+
+    for (const BlockHeader& ommer : block.ommers) {
+        if (ValidationResult err{validate_block_header(ommer, state, config)}; err != ValidationResult::kOk) {
+            return ValidationResult::kInvalidOmmerHeader;
+        }
+        std::vector<BlockHeader> old_ommers;
+        if (!is_kin(ommer, *parent, header.parent_hash, 6, state, old_ommers)) {
+            return ValidationResult::kNotAnOmmer;
+        }
+        for (const BlockHeader& oo : old_ommers) {
+            if (oo == ommer) {
+                return ValidationResult::kDuplicateOmmer;
+            }
+        }
+    }
+
+    for (const Transaction& txn : block.transactions) {
+        ValidationResult err{pre_validate_transaction(txn, header.number, config, header.base_fee_per_gas)};
+        if (err != ValidationResult::kOk) {
+            return err;
+        }
+    }
+
+    return ValidationResult::kOk;
+}
+
 void Ethash::apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) {
     intx::uint256 block_reward;
     if (revision >= EVMC_CONSTANTINOPLE) {
@@ -180,8 +217,6 @@ void Ethash::apply_rewards(IntraBlockState& state, const Block& block, const evm
     state.add_to_balance(block.header.beneficiary, miner_reward);
 }
 
-evmc::address Ethash::get_beneficiary(const BlockHeader& header) {
-    return header.beneficiary;
-}
+evmc::address Ethash::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
-}
+}  // namespace silkworm::consensus

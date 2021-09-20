@@ -14,11 +14,13 @@
    limitations under the License.
 */
 
+#include "clique.hpp"
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/endian.hpp>
+
 #include "clique_snapshot.hpp"
-#include "clique.hpp"
 
 using namespace evmc::literals;
 
@@ -49,8 +51,7 @@ const char* rlp_sample_header_hex{
     "00000000000000000002bbf886181970654ed46e3fae0ded41ee53fec"
     "702c47431988a7ae80e6576f3552684f069af80ba11d36327aaf846d47"
     "0526e4a1c461601b2fd4ebdcdc2b734a01a00000000000000000000000"
-    "000000000000000000000000000000000000000000880000000000000000"
-};
+    "000000000000000000000000000000000000000000880000000000000000"};
 
 CliqueConfig config_sample{3, 3};
 constexpr evmc::address no_vote{};
@@ -62,7 +63,8 @@ constexpr evmc::address signer_d = 0x0000000000000000000000000000000000000004_ad
 constexpr evmc::address signer_e = 0x0000000000000000000000000000000000000005_address;
 constexpr evmc::address signer_f = 0x0000000000000000000000000000000000000006_address;
 
-ValidationResult execute_vote(CliqueSnapshot& snapshot, evmc::address signer, evmc::address voted, bool authorize, bool checkpoint = false) {
+static ValidationResult execute_vote(CliqueSnapshot& snapshot, evmc::address signer, evmc::address voted,
+                                     bool authorize, bool checkpoint = false) {
     BlockHeader header;
     header.beneficiary = voted;
     if (authorize) {
@@ -71,9 +73,9 @@ ValidationResult execute_vote(CliqueSnapshot& snapshot, evmc::address signer, ev
         header.nonce = kNonceDropVote;
     }
     if (checkpoint) {
-        header.number = 3; // process it do not treat it like an epoch
+        header.number = 3;  // process it do not treat it like an epoch
     } else {
-        header.number = 8; // process it do not treat it like an epoch
+        header.number = 8;  // process it do not treat it like an epoch
     }
     return snapshot.add_header(header, signer, config_sample);
 }
@@ -141,9 +143,7 @@ TEST_CASE("Signer recovery") {
     BlockHeader header{};
 
     REQUIRE(rlp::decode(in, header) == rlp::DecodingResult::kOk);
-    CHECK(*engine.get_signer_from_clique_header(header) ==
-          0xe0a2bd4258d2768837baa26a28fe71dc079f84c7_address);
-
+    CHECK(*engine.get_signer_from_clique_header(header) == 0xe0a2bd4258d2768837baa26a28fe71dc079f84c7_address);
 }
 
 TEST_CASE("Seal Verification") {
@@ -189,7 +189,6 @@ TEST_CASE("Single signer, voting to add two others (only accept first, second ne
     REQUIRE(signers.size() == 2);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
-
 }
 
 TEST_CASE("Two signers, voting to add three others (only accept first two, third needs 3 votes already)") {
@@ -211,7 +210,7 @@ TEST_CASE("Two signers, voting to add three others (only accept first two, third
     CHECK(signers[3] == signer_d);
 }
 
-TEST_CASE("Single signer, dropping itself (weird, but one less cornercase by explicitly allowing this)") {
+TEST_CASE("Single signer, dropping itself (weird, but one less corner case by explicitly allowing this)") {
     CliqueSnapshot snapshot{0, evmc::bytes32{}, {signer_a}, {}};
     CHECK(execute_vote(snapshot, signer_a, signer_a, false) == ValidationResult::kOk);
     CHECK(snapshot.get_signers().empty());
@@ -398,7 +397,6 @@ TEST_CASE("Ensure that pending votes don't survive authorization status changes.
     CHECK(signers[2] == signer_d);
     CHECK(signers[3] == signer_e);
     CHECK(signers[4] == signer_f);
-
 }
 
 TEST_CASE("An unauthorized signer should not be able to sign blocks") {
@@ -406,7 +404,7 @@ TEST_CASE("An unauthorized signer should not be able to sign blocks") {
     CHECK(execute_vote(snapshot, signer_b, no_vote, false) == ValidationResult::kUnauthorizedSigner);
 }
 
-TEST_CASE("An authorized signer that signed recenty should not be able to sign again") {
+TEST_CASE("An authorized signer that signed recently should not be able to sign again") {
     CliqueSnapshot snapshot{0, evmc::bytes32{}, {signer_a, signer_b}, {}};
     CHECK(execute_vote(snapshot, signer_b, no_vote, false) == ValidationResult::kOk);
     CHECK(execute_vote(snapshot, signer_b, no_vote, false) == ValidationResult::kRecentlySigned);
@@ -418,7 +416,6 @@ TEST_CASE("Recent signatures should not reset on checkpoint blocks imported in a
     CHECK(execute_vote(snapshot, signer_b, no_vote, false) == ValidationResult::kOk);
     CHECK(execute_vote(snapshot, signer_a, no_vote, false, true) == ValidationResult::kOk);
     CHECK(execute_vote(snapshot, signer_a, no_vote, false) == ValidationResult::kRecentlySigned);
-
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::consensus

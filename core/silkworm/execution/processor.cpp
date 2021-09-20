@@ -25,12 +25,13 @@
 
 namespace silkworm {
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::ConsensusEngine& engine, State& state, const ChainConfig& config)
+ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::ConsensusEngine& engine, State& state,
+                                       const ChainConfig& config)
     : state_{state}, engine_{engine}, evm_{block, state_, config} {}
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
     assert(consensus::pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
-                                    evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
+                                               evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
 
     if (!txn.from.has_value()) {
         return ValidationResult::kMissingSender;
@@ -99,8 +100,6 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
 
     // award the miner
     const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
-    auto header{evm_.block().header};
-
     state_.add_to_balance(evm_.block().header.beneficiary, priority_fee_per_gas * gas_used);
 
     state_.destruct_suicides();
@@ -162,7 +161,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         receipts.push_back(execute_transaction(txn));
     }
 
-    apply_rewards();
+    engine_.apply_rewards(state_, evm_.block(), evm_.revision());
 
     return ValidationResult::kOk;
 }
@@ -197,12 +196,6 @@ ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt
     state_.write_to_db(header.number);
 
     return ValidationResult::kOk;
-}
-
-void ExecutionProcessor::apply_rewards() noexcept {
-    const evmc_revision rev{evm_.revision()};
-
-    engine_.apply_rewards(state_, evm_.block(), rev);
 }
 
 }  // namespace silkworm

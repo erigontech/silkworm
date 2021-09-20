@@ -24,13 +24,4 @@ void create_all(mdbx::txn& txn) {
     }
 }
 
-std::optional<db::MapConfig> get_config(std::string name) {
-    for (auto config : kTables) {
-        if (strcmp(config.name, name.c_str()) == 0) {
-            return {config};
-        }
-    }
-    return std::nullopt;
-}
-
 }  // namespace silkworm::db::table

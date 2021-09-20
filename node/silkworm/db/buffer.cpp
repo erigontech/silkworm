@@ -69,7 +69,7 @@ void Buffer::update_account(const evmc::address& address, std::optional<Account>
 
     if (accounts_.insert_or_assign(address, current).second) {
         bump_batch_size(kAddressLength, current ? current->encoding_length_for_storage() : 0);
-    };
+    }
 
     if (account_deleted && initial->incarnation) {
         if (incarnations_.insert_or_assign(address, initial->incarnation).second) {

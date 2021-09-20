@@ -65,8 +65,6 @@ class ExecutionProcessor {
     uint64_t available_gas() const noexcept;
     uint64_t refund_gas(const Transaction& txn, uint64_t gas_left) noexcept;
 
-    void apply_rewards() noexcept;
-
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;
     consensus::ConsensusEngine& engine_;

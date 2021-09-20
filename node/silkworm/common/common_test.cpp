@@ -66,8 +66,8 @@ TEST_CASE("Stop Watch") {
     CHECK(sw1.format(200us) == "200us");
 
     sw1.reset();
-    CHECK(sw1.laps().size() == 0);  // No more laps
-    CHECK_FALSE(sw1);               // Not started
+    CHECK(sw1.laps().empty());  // No more laps
+    CHECK_FALSE(sw1);           // Not started
 
     CHECK(silkworm::StopWatch::format(918734032564785ns) == "10d 15h:12m:14.032s");
 }

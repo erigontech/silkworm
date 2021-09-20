@@ -18,7 +18,6 @@
 
 #include <CLI/CLI.hpp>
 #include <ethash/ethash.hpp>
-#include <ethash/keccak.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/chain/config.hpp>
@@ -29,9 +28,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/util.hpp>
 #include <silkworm/stagedsync/transaction_manager.hpp>
-#include <silkworm/types/block.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;

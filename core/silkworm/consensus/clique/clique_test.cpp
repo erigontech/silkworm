@@ -86,8 +86,8 @@ TEST_CASE("empty snapshot encoding/decoding") {
     CHECK(snapshot_encoded.size() == 8);
     CHECK(endian::load_big_u64(&snapshot_encoded[0]) == 0);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, evmc::bytes32{})};
-    CHECK(snapshot_decoded.get_signers().size() == 0);
-    CHECK(snapshot_decoded.get_recents().size() == 0);
+    CHECK(snapshot_decoded.get_signers().empty());
+    CHECK(snapshot_decoded.get_recents().empty());
 }
 
 TEST_CASE("Signers without recents snapshot encoding/decoding") {
@@ -101,7 +101,7 @@ TEST_CASE("Signers without recents snapshot encoding/decoding") {
     CHECK(signers.size() == 2);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
-    CHECK(snapshot_decoded.get_recents().size() == 0);
+    CHECK(snapshot_decoded.get_recents().empty());
 }
 
 TEST_CASE("Recents without signers snapshot encoding/decoding") {
@@ -115,7 +115,7 @@ TEST_CASE("Recents without signers snapshot encoding/decoding") {
     REQUIRE(recents.size() == 2);
     CHECK(recents[0] == signer_a);
     CHECK(recents[1] == signer_b);
-    CHECK(snapshot_decoded.get_signers().size() == 0);
+    CHECK(snapshot_decoded.get_signers().empty());
 }
 
 TEST_CASE("Recents and signers snapshot encoding/decoding") {
@@ -213,7 +213,7 @@ TEST_CASE("Two signers, voting to add three others (only accept first two, third
 TEST_CASE("Single signer, dropping itself (weird, but one less cornercase by explicitly allowing this)") {
     CliqueSnapshot snapshot{0, evmc::bytes32{}, {signer_a}, {}};
     CHECK(execute_vote(snapshot, signer_a, signer_a, false) == ValidationResult::kOk);
-    CHECK(snapshot.get_signers().size() == 0);
+    CHECK(snapshot.get_signers().empty());
 }
 
 TEST_CASE("Two signers, actually needing mutual consent to drop either of them (not fulfilled)") {

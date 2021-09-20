@@ -292,7 +292,8 @@ std::optional<BlockHeader> Buffer::read_header(uint64_t block_number, const evmc
     return db::read_header(txn_, block_number, block_hash.bytes);
 }
 
-std::optional<CliqueSnapshot> Buffer::read_snapshot(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
+std::optional<consensus::CliqueSnapshot> Buffer::read_snapshot(uint64_t block_number,
+                                                               const evmc::bytes32& block_hash) const noexcept {
     // Snapshot key is block number + hash
     auto key{db::block_key(block_number, block_hash.bytes)};
     auto clique_table{db::open_cursor(txn_, table::kClique)};
@@ -303,7 +304,7 @@ std::optional<CliqueSnapshot> Buffer::read_snapshot(uint64_t block_number, const
     }
     auto snapshot_encoded{from_slice(clique_data.value)};
     // Return CliqueSnapshot
-    return CliqueSnapshot::from_bytes(snapshot_encoded, block_number, block_hash);
+    return consensus::CliqueSnapshot::from_bytes(snapshot_encoded, block_number, block_hash);
 }
 
 std::optional<BlockBody> Buffer::read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
@@ -346,7 +347,8 @@ evmc::bytes32 Buffer::read_storage(const evmc::address& address, uint64_t incarn
     return db::read_storage(txn_, address, incarnation, location, historical_block_);
 }
 
-void Buffer::write_snapshot(uint64_t block_number, const evmc::bytes32& block_hash, CliqueSnapshot& snapshot) {
+void Buffer::write_snapshot(uint64_t block_number, const evmc::bytes32& block_hash,
+                            consensus::CliqueSnapshot& snapshot) {
     // Encode Clique Snapshot
     auto encoded{snapshot.to_bytes()};
     // Snapshot key is block number + hash

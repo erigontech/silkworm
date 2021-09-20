@@ -21,7 +21,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 
-namespace silkworm {
+namespace silkworm::consensus {
 
 std::array<uint8_t, 8> kNonceAuthVote = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 std::array<uint8_t, 8> kNonceDropVote = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -251,4 +251,4 @@ void CliqueSnapshot::update(const uint64_t& block_number, const evmc::bytes32& h
     signers_.erase(std::unique(signers_.begin(), signers_.end()), signers_.end());
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::consensus

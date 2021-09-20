@@ -34,6 +34,7 @@ class InMemoryState : public State {
     using StorageChanges =
         std::unordered_map<evmc::address,
                            std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, evmc::bytes32>>>;
+
   public:
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -47,8 +48,8 @@ class InMemoryState : public State {
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
 
-    std::optional<CliqueSnapshot> read_snapshot(uint64_t block_number,
-                                           const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<consensus::CliqueSnapshot> read_snapshot(uint64_t block_number,
+                                                           const evmc::bytes32& block_hash) const noexcept override;
 
     std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
 
@@ -80,8 +81,8 @@ class InMemoryState : public State {
     void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
                         const evmc::bytes32& initial, const evmc::bytes32& current) override;
 
-    void write_snapshot(uint64_t block_number,
-                        const evmc::bytes32& block_hash, CliqueSnapshot& snapshot) override;
+    void write_snapshot(uint64_t block_number, const evmc::bytes32& block_hash,
+                        consensus::CliqueSnapshot& snapshot) override;
 
     void unwind_state_changes(uint64_t block_number) override;
 
@@ -120,7 +121,7 @@ class InMemoryState : public State {
     std::unordered_map<uint64_t, AccountChanges> account_changes_;  // per block
     std::unordered_map<uint64_t, StorageChanges> storage_changes_;  // per block
 
-    std::unordered_map<uint64_t, CliqueSnapshot> snapshots_; // per block
+    std::unordered_map<uint64_t, consensus::CliqueSnapshot> snapshots_;  // per block
     uint64_t block_number_{0};
 };
 

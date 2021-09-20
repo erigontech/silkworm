@@ -28,7 +28,7 @@
 #include <silkworm/consensus/validation.hpp>
 #include <silkworm/types/block.hpp>
 
-namespace silkworm {
+namespace silkworm::consensus {
 
 extern std::array<uint8_t, 8> kNonceAuthVote;
 extern std::array<uint8_t, 8> kNonceDropVote;
@@ -104,7 +104,7 @@ class CliqueSnapshot {
     void decrement_vote(const evmc::address& address, const evmc::address& signer);
     // clear_votes removes every cast vote from the signer.
     void clear_votes(const evmc::address& signer);
-    // update update snapshots and cleans it up from db corruption, etc..
+    // update updates snapshots and cleans it up from db corruption, etc...
     void update(const uint64_t& block_number, const evmc::bytes32& hash);
 
     uint64_t block_number_{0};                // Block number where the snapshot was created
@@ -119,6 +119,6 @@ constexpr CliqueConfig kDefaultCliqueConfig = {
     30000,
 };  // Ropsten and Görli configuration
 
-}  // namespace silkworm
+}  // namespace silkworm::consensus
 
 #endif  // SILKWORM_CONSENSUS_CLIQUE_SNAPSHOT

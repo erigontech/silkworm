@@ -14,26 +14,24 @@
    limitations under the License.
 */
 
-#include <csignal>
 #include <filesystem>
-#include <string>
 
 #include <CLI/CLI.hpp>
 #include <ethash/ethash.hpp>
 #include <ethash/keccak.hpp>
+#include <magic_enum.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/consensus/clique/clique.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/util.hpp>
-#include <silkworm/types/block.hpp>
 #include <silkworm/stagedsync/transaction_manager.hpp>
-#include <silkworm/db/buffer.hpp>
-#include <magic_enum.hpp>
+#include <silkworm/types/block.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -81,10 +79,10 @@ int main(int argc, char* argv[]) {
     auto from_block_bytes{db::block_key(options.from_block)};
     auto header_data{headers.lower_bound(db::to_slice(from_block_bytes))};
     auto bodies{db::open_cursor(*txn, db::table::kBlockBodies)};
-    consensus::Clique engine(kDefaultCliqueConfig);
+    consensus::Clique engine(consensus::kDefaultCliqueConfig);
     try {
         // Loop blocks
-        while(header_data) {
+        while (header_data) {
             auto key{db::from_slice(header_data.key)};
             auto encoded_header{db::from_slice(header_data.value)};
             if (header_data.key.size() != 40) {
@@ -108,7 +106,8 @@ int main(int argc, char* argv[]) {
             }
             auto err{engine.validate_block_header(header, buffer, *config)};
             if (err != ValidationResult::kOk) {
-                std::cout << "fail, at " << block_num << ", due to: " << std::string(magic_enum::enum_name<ValidationResult>(err)) << std::endl;
+                std::cout << "fail, at " << block_num
+                          << ", due to: " << std::string(magic_enum::enum_name<ValidationResult>(err)) << std::endl;
                 txn.commit();
                 return -1;
             }

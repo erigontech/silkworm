@@ -16,6 +16,9 @@
 
 #ifndef SILKWORM_CONSENSUS_VALIDATION_HPP_
 #define SILKWORM_CONSENSUS_VALIDATION_HPP_
+
+namespace silkworm {
+
 // Classification of invalid transactions and blocks.
 enum class [[nodiscard]] ValidationResult{
     kOk = 0,
@@ -36,37 +39,42 @@ enum class [[nodiscard]] ValidationResult{
     kExtraDataTooLong = 11,   // ‖Hx‖ > 32
     kWrongDaoExtraData = 12,  // see EIP-779
     kWrongBaseFee = 13,       // see EIP-1559
-    kInvalidSeal = 14,        // Nonce or mix_hash
-    kInvalidMixHash = 15,
+    kInvalidSeal = 14,        // Nonce or mix_hash (invalid Proof of Work)
+    kInvalidMixHash = 15,     // Invalid mix_hash (Clique, EIP-225)
 
     // See [YP] Section 6.2 "Execution", Eq (58)
-    kMissingSender = 16,                 // S(T) = ∅
-    kSenderNoEOA = 17,                   // EIP-3607: σ[S(T)]c ≠ KEC( () )
-    kWrongNonce = 18,                    // Tn ≠ σ[S(T)]n
-    kIntrinsicGas = 19,                  // g0 > Tg
-    kInsufficientFunds = 20,             // v0 > σ[S(T)]b
-    kBlockGasLimitExceeded = 21,         // Tg > BHl - l(BR)u
+    kMissingSender = 16,          // S(T) = ∅
+    kSenderNoEOA = 17,            // EIP-3607: σ[S(T)]c ≠ KEC( () )
+    kWrongNonce = 18,             // Tn ≠ σ[S(T)]n
+    kIntrinsicGas = 19,           // g0 > Tg
+    kInsufficientFunds = 20,      // v0 > σ[S(T)]b
+    kBlockGasLimitExceeded = 21,  // Tg > BHl - l(BR)u
+
+    // Various other transaction validation
     kMaxFeeLessThanBase = 22,            // max_fee_per_gas < base_fee_per_gas (EIP-1559)
     kMaxPriorityFeeGreaterThanMax = 23,  // max_priority_fee_per_gas > max_fee_per_gas (EIP-1559)
+    kInvalidSignature = 24,              // EIP-2
+    kWrongChainId = 25,                  // EIP-155
+    kUnsupportedTransactionType = 26,    // EIP-2718
 
     // See [YP] Section 11.1 "Ommer Validation", Eq (157)
-    kTooManyOmmers = 24,       // ‖BU‖ > 2
-    kInvalidOmmerHeader = 25,  // ¬V(U)
-    kNotAnOmmer = 26,          // ¬k(U, P(BH)H, 6)
-    kDuplicateOmmer = 27,      // not well covered by the YP actually
+    kTooManyOmmers = 27,       // ‖BU‖ > 2
+    kInvalidOmmerHeader = 28,  // ¬V(U)
+    kNotAnOmmer = 29,          // ¬k(U, P(BH)H, 6)
+    kDuplicateOmmer = 30,      // not well covered by the YP actually
 
     // See [YP] Section 11.2 "Transaction Validation", Eq (160)
-    kWrongBlockGas = 28,  // BHg ≠ l(BR)u
-    kInvalidSignature = 29,  // EIP-2
-    kWrongChainId = 30,  // EIP-155
-    kUnauthorizedSigner = 31,  // Handling an unhautorized voting signer
-    kMissingSigner = 32,   // Missing Signer in extra_data
-    kRecentlySigned = 33, // Signer has already recently signed
-    kInvalidVote = 34, // Non-Existing vote option
-    kInvalidCheckpointBeneficiary = 35,
-    kMissingVanity = 36,   // ‖Hx‖ < 97
+    kWrongBlockGas = 31,  // BHg ≠ l(BR)u
 
-    kUnsupportedTransactionType = 37,  // EIP-2718
+    // Clique (EIP-225)
+    kUnauthorizedSigner = 32,  // Handling an unauthorized voting signer
+    kMissingSigner = 33,       // Missing Signer in extra_data
+    kRecentlySigned = 34,      // Signer has already recently signed
+    kInvalidVote = 35,         // Non-Existing vote option
+    kInvalidCheckpointBeneficiary = 36,
+    kMissingVanity = 37,  // ‖Hx‖ < 32+65
 };
 
-#endif // SILKWORM_CONSENSUS_VALIDATION_HPP_
+}  // namespace silkworm
+
+#endif  // SILKWORM_CONSENSUS_VALIDATION_HPP_

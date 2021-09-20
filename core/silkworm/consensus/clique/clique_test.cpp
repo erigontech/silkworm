@@ -98,7 +98,7 @@ TEST_CASE("Signers without recents snapshot encoding/decoding") {
     CHECK(endian::load_big_u64(&snapshot_encoded[0]) == 2);
     auto snapshot_decoded{CliqueSnapshot::from_bytes(snapshot_encoded_view, zero, zero_hash)};
     auto signers{snapshot_decoded.get_signers()};
-    CHECK(signers.size() == 2);
+    REQUIRE(signers.size() == 2);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
     CHECK(snapshot_decoded.get_recents().empty());
@@ -203,7 +203,7 @@ TEST_CASE("Two signers, voting to add three others (only accept first two, third
     CHECK(execute_vote(snapshot, signer_b, signer_e, true) == ValidationResult::kOk);
     // Signer B and Signer A must be the only authorized signers
     auto signers{snapshot.get_signers()};
-    CHECK(signers.size() == 4);
+    REQUIRE(signers.size() == 4);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
     CHECK(signers[2] == signer_c);
@@ -227,7 +227,7 @@ TEST_CASE("Three signers, two of them deciding to drop the third") {
     CHECK(execute_vote(snapshot, signer_a, signer_c, false) == ValidationResult::kOk);
     CHECK(execute_vote(snapshot, signer_b, signer_c, false) == ValidationResult::kOk);
     auto signers{snapshot.get_signers()};
-    CHECK(signers.size() == 2);
+    REQUIRE(signers.size() == 2);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
 }
@@ -245,7 +245,7 @@ TEST_CASE("Four signers, consensus of three already being enough to drop someone
     CHECK(execute_vote(snapshot, signer_b, signer_c, false) == ValidationResult::kOk);
     CHECK(execute_vote(snapshot, signer_d, signer_c, false) == ValidationResult::kOk);
     auto signers{snapshot.get_signers()};
-    CHECK(signers.size() == 3);
+    REQUIRE(signers.size() == 3);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
     CHECK(signers[2] == signer_d);
@@ -297,7 +297,7 @@ TEST_CASE("Deauthorizing multiple accounts concurrently is permitted") {
     CHECK(execute_vote(snapshot, signer_a, no_vote, false) == ValidationResult::kOk);
     CHECK(execute_vote(snapshot, signer_b, signer_c, false) == ValidationResult::kOk);
     auto signers{snapshot.get_signers()};
-    CHECK(signers.size() == 2);
+    REQUIRE(signers.size() == 2);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
 }
@@ -309,7 +309,7 @@ TEST_CASE("Votes from deauthorized signers are discarded immediately (deauth vot
     CHECK(execute_vote(snapshot, signer_b, signer_c, false) == ValidationResult::kOk);
     CHECK(execute_vote(snapshot, signer_a, signer_a, false) == ValidationResult::kOk);
     auto signers{snapshot.get_signers()};
-    CHECK(signers.size() == 2);
+    REQUIRE(signers.size() == 2);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
 }
@@ -327,7 +327,7 @@ TEST_CASE("Cascading changes are not allowed, only the account being voted on ma
     CHECK(execute_vote(snapshot, signer_c, signer_d, false) == ValidationResult::kOk);
 
     auto signers{snapshot.get_signers()};
-    CHECK(signers.size() == 3);
+    REQUIRE(signers.size() == 3);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
     CHECK(signers[2] == signer_c);
@@ -348,7 +348,7 @@ TEST_CASE("Changes reaching consensus out of bounds (via a deauth) execute on to
     CHECK(execute_vote(snapshot, signer_c, signer_c, true) == ValidationResult::kOk);
 
     auto signers{snapshot.get_signers()};
-    CHECK(signers.size() == 2);
+    REQUIRE(signers.size() == 2);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
 }
@@ -368,7 +368,7 @@ TEST_CASE("Changes reaching consensus out of bounds (via a deauth) may go out of
     CHECK(execute_vote(snapshot, signer_b, signer_c, true) == ValidationResult::kOk);
 
     auto signers{snapshot.get_signers()};
-    CHECK(signers.size() == 3);
+    REQUIRE(signers.size() == 3);
     CHECK(signers[0] == signer_a);
     CHECK(signers[1] == signer_b);
     CHECK(signers[2] == signer_c);
@@ -391,7 +391,7 @@ TEST_CASE("Ensure that pending votes don't survive authorization status changes.
     CHECK(execute_vote(snapshot, signer_b, signer_f, true) == ValidationResult::kOk);
 
     auto signers{snapshot.get_signers()};
-    CHECK(signers.size() == 5);
+    REQUIRE(signers.size() == 5);
     CHECK(signers[0] == signer_b);
     CHECK(signers[1] == signer_c);
     CHECK(signers[2] == signer_d);

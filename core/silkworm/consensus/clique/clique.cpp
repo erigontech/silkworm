@@ -103,7 +103,10 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
             current_header = *parent;
         }
         std::reverse(pending_blocks.begin(), pending_blocks.end());
-        last_snapshot_ = *state.read_snapshot(current_header.number, current_header.hash());
+        auto db_snapshot{state.read_snapshot(current_header.number, current_header.hash())};
+        if (db_snapshot.has_value()) {
+            last_snapshot_ = db_snapshot.value();
+        }
         for (const auto& h : pending_blocks) {
             auto signer{get_signer_from_clique_header(h)};
 

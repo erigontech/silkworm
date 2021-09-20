@@ -27,12 +27,12 @@
 #include <evmc/evmc.h>
 #include <intx/intx.hpp>
 
-#include <silkworm/consensus/blockchain.hpp>
 #include <silkworm/common/base.hpp>
+#include <silkworm/consensus/blockchain.hpp>
+#include <silkworm/consensus/ethash/ethash.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/transaction.hpp>
-#include <silkworm/consensus/ethash/ethash.hpp>
 
 #define SILKWORM_EXPORT __attribute__((visibility("default")))
 
@@ -128,12 +128,13 @@ SILKWORM_EXPORT void state_update_storage(silkworm::State* state, const uint8_t*
                                           const silkworm::Account* account, const silkworm::Bytes* location,
                                           const silkworm::Bytes* value);
 
-SILKWORM_EXPORT silkworm::consensus::Blockchain* new_blockchain(silkworm::State* state, const silkworm::ChainConfig* config,
-                                                     const silkworm::Block* genesis_block);
+SILKWORM_EXPORT silkworm::consensus::Blockchain* new_blockchain(silkworm::State* state,
+                                                                const silkworm::ChainConfig* config,
+                                                                const silkworm::Block* genesis_block);
 SILKWORM_EXPORT void delete_blockchain(silkworm::consensus::Blockchain* x);
 
-SILKWORM_EXPORT ValidationResult blockchain_insert_block(silkworm::consensus::Blockchain* chain, silkworm::Block* block,
-                                                                   bool check_state_root);
+SILKWORM_EXPORT silkworm::ValidationResult blockchain_insert_block(silkworm::consensus::Blockchain* chain,
+                                                                   silkworm::Block* block, bool check_state_root);
 }
 
 #endif  // SILKWORM_WASM_API_HPP_

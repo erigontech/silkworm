@@ -67,48 +67,47 @@ int main(int argc, char* argv[]) {
         if (!config.has_value()) {
             throw std::runtime_error("Invalid chain config");
         }
+
         if (config->seal_engine != SealEngineType::kClique) {
             throw std::runtime_error("Not a PoA chain");
         }
-
-        auto headers{db::open_cursor(txn, db::table::kHeaders)};
-        auto from_block_bytes{db::block_key(options.from_block)};
-        auto header_data{headers.lower_bound(db::to_slice(from_block_bytes))};
-        auto bodies{db::open_cursor(txn, db::table::kBlockBodies)};
         consensus::Clique engine(consensus::kDefaultCliqueConfig);
 
-        // Loop blocks
-        while (header_data) {
-            auto key{db::from_slice(header_data.key)};
-            auto encoded_header{db::from_slice(header_data.value)};
-            if (header_data.key.size() != 40) {
-                header_data = headers.to_next(false);
-                continue;
+        auto canonical{db::open_cursor(txn, db::table::kCanonicalHashes)};
+        BlockNum expected_block_num{options.from_block};
+        BlockNum block_num{0};
+
+        // Loop canonical blocks from initial requested
+        auto start_key{db::block_key(options.from_block)};
+        auto canonical_data{canonical.find(db::to_slice(start_key), /*throw_notfound=*/false)};
+        while (canonical_data) {
+            block_num = endian::load_big_u64(static_cast<uint8_t*>(canonical_data.key.iov_base));
+            if (block_num != expected_block_num) {
+                throw std::runtime_error("Bad header sequence : expected #" + std::to_string(expected_block_num) +
+                                         " got #" + std::to_string(block_num));
             }
-            if (!bodies.seek(header_data.key)) {
-                // non-canonical, we skip
-                header_data = headers.to_next(false);
-                continue;
+
+            // Retrieve header
+            auto header_hash{to_bytes32(db::from_slice(canonical_data.value))};
+            auto header{db::read_header(txn, block_num, header_hash.bytes)};
+            if (!header.has_value()) {
+                throw std::runtime_error("Cannot retrieve header for block #" + std::to_string(block_num));
             }
-            BlockHeader header{};
-            uint64_t block_num{endian::load_big_u64(&key[0])};
-            db::Buffer buffer{txn, block_num};
-            if (rlp::decode(encoded_header, header) != rlp::DecodingResult::kOk) {
-                std::cout << "decoding" << std::endl;
-                return -2;
-            }
+
             if (block_num % 10000 == 0) {
                 std::cout << "Now at Block: " << block_num << std::endl;
             }
-            auto err{engine.validate_block_header(header, buffer, *config)};
+
+            db::Buffer buffer{txn, block_num};
+            auto err{engine.validate_block_header(header.value(), buffer, *config)};
             if (err != ValidationResult::kOk) {
-                std::cout << "fail, at " << block_num
-                          << ", due to: " << std::string(magic_enum::enum_name<ValidationResult>(err)) << std::endl;
-                txn.commit();
-                return -1;
+                throw std::runtime_error("Validation error at block #" + std::to_string(block_num) + " : " +
+                                         std::string(magic_enum::enum_name<ValidationResult>(err)));
             }
             buffer.write_to_db();
-            header_data = headers.to_next(false);
+
+            canonical_data = canonical.to_next(/*throw_notfound=*/false);
+            expected_block_num++;
         }
         txn.commit();
 

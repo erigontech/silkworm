@@ -195,6 +195,7 @@ TEST_CASE("Single signer, voting to add two others (only accept first, second ne
 TEST_CASE("Two signers, voting to add three others (only accept first two, third needs 3 votes already)") {
     CliqueSnapshot snapshot{0, evmc::bytes32{}, {signer_a, signer_b}, {}};
     CHECK(execute_vote(snapshot, signer_a, signer_c, true) == ValidationResult::kOk);
+    CHECK(execute_vote(snapshot, signer_a, signer_c, true) == ValidationResult::kRecentlySigned);
     CHECK(execute_vote(snapshot, signer_b, signer_c, true) == ValidationResult::kOk);
     CHECK(execute_vote(snapshot, signer_a, signer_d, true) == ValidationResult::kOk);
     CHECK(execute_vote(snapshot, signer_b, signer_d, true) == ValidationResult::kOk);

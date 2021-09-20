@@ -72,7 +72,7 @@ uint64_t get_stage_progress(mdbx::txn& txn, const char* stage_name);
 void set_stage_progress(mdbx::txn& txn, const char* stage_name, uint64_t block_num);
 
 // Gets the invalidation point for the given stage
-// Invalidation point means that that stage needs to rollback to the invalidation
+// Invalidation point means that that stage needs to roll back to the invalidation
 // point and be redone
 uint64_t get_stage_unwind(mdbx::txn& txn, const char* stage_name);
 

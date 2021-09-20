@@ -17,11 +17,9 @@
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
-#include <silkworm/chain/config.hpp>
 #include <silkworm/common/directories.hpp>
-#include <silkworm/db/buffer.hpp>
-#include <silkworm/execution/execution.hpp>
 #include <silkworm/common/test_util.hpp>
+#include <silkworm/execution/execution.hpp>
 
 using namespace evmc::literals;
 

@@ -246,7 +246,7 @@ namespace db {
         auto txn{env.start_write()};
         table::create_all(txn);
 
-        // Querying an non existent stage name should throe
+        // Querying a non-existent stage name should throw
         CHECK_THROWS(stages::get_stage_progress(txn, "NonExistentStage"));
         CHECK_THROWS(stages::get_stage_unwind(txn, "NonExistentStage"));
 

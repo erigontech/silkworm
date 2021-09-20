@@ -131,7 +131,7 @@ bool has_map(::mdbx::txn& tx, const char* map_name) {
     }
 }
 
-size_t for_each(::mdbx::cursor& cursor, WalkFunc walker) {
+size_t for_each(::mdbx::cursor& cursor, const WalkFunc& walker) {
     size_t ret{0};
 
     if (cursor.eof()) {
@@ -153,7 +153,7 @@ size_t for_each(::mdbx::cursor& cursor, WalkFunc walker) {
     return ret;
 }
 
-size_t for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count) {
+size_t for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t count) {
     size_t ret{0};
 
     if (cursor.eof()) {

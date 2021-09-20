@@ -18,12 +18,9 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/directories.hpp>
-#include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/transaction_manager.hpp>
 
 using namespace silkworm;

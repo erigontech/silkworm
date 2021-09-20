@@ -120,8 +120,8 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
     }
 
     // Process the queue from smallest to largest key
-    while (queue.size()) {
-        auto& [etl_entry, provider_index]{queue.top()};           // Pick smallest key by reference
+    while (!queue.empty()) {
+        auto& [etl_entry, provider_index]{queue.top()};           // Pick the smallest key by reference
         auto& file_provider{file_providers_.at(provider_index)};  // and set current file provider
 
         // Process linked pairs

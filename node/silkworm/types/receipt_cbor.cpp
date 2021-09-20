@@ -28,7 +28,7 @@ Bytes cbor_encode(const std::vector<Receipt>& v) {
     if (v.empty()) {
         encoder.write_null();
     } else {
-        encoder.write_array(v.size());
+        encoder.write_array(static_cast<int>(v.size()));
     }
 
     for (const Receipt& r : v) {

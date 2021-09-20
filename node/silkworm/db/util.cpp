@@ -125,7 +125,7 @@ namespace detail {
         rlp::err_handler(rlp::decode_vector(from, to.ommers));
 
         if (from.length() != leftover) {
-            throw rlp::DecodingResult::kListLengthMismatch;
+            throw rlp::DecodingError{rlp::DecodingResult::kListLengthMismatch};
         }
 
         return to;

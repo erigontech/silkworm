@@ -17,7 +17,6 @@
 #include <filesystem>
 
 #include <CLI/CLI.hpp>
-#include <ethash/ethash.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/chain/config.hpp>
@@ -28,7 +27,6 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/stagedsync/transaction_manager.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -44,40 +42,41 @@ int main(int argc, char* argv[]) {
     // Init command line parser
     CLI::App app("Check PoW.");
     app_options_t options{};
-    options.datadir = DataDirectory{}.chaindata().path().string();  // Default chain data db path
 
     // Command line arguments
-    app.add_option("--chaindata", options.datadir, "Path to chain db", true)->check(CLI::ExistingDirectory);
-    app.add_option("--from", options.from_block, "Path to chain db", true);
+    app.add_option("--chaindata", options.datadir, "Path to chain db", false)
+        ->required(true)
+        ->check(CLI::ExistingDirectory);
+    app.add_option("--from", options.from_block, "Initial block to begin check from", true);
 
     CLI11_PARSE(app, argc, argv);
 
     // Invoke proper action
     int rc{0};
-
-    auto data_dir{DataDirectory::from_chaindata(options.datadir)};
-    data_dir.deploy();
-    options.datadir = data_dir.chaindata().path().string();
-
-    // Set database parameters
-    db::EnvConfig db_config{options.datadir};
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-
-    auto config{db::read_chain_config(*txn)};
-    if (!config.has_value()) {
-        throw std::runtime_error("Invalid chain config");
-    }
-    if (config->seal_engine != SealEngineType::kClique) {
-        throw std::runtime_error("Not a PoA chain");
-    }
-
-    auto headers{db::open_cursor(*txn, db::table::kHeaders)};
-    auto from_block_bytes{db::block_key(options.from_block)};
-    auto header_data{headers.lower_bound(db::to_slice(from_block_bytes))};
-    auto bodies{db::open_cursor(*txn, db::table::kBlockBodies)};
-    consensus::Clique engine(consensus::kDefaultCliqueConfig);
     try {
+        auto data_dir{DataDirectory::from_chaindata(options.datadir)};
+        data_dir.deploy();
+        options.datadir = data_dir.chaindata().path().string();
+
+        // Set database parameters
+        db::EnvConfig db_config{options.datadir};
+        auto env{db::open_env(db_config)};
+        auto txn{env.start_read()};
+
+        auto config{db::read_chain_config(txn)};
+        if (!config.has_value()) {
+            throw std::runtime_error("Invalid chain config");
+        }
+        if (config->seal_engine != SealEngineType::kClique) {
+            throw std::runtime_error("Not a PoA chain");
+        }
+
+        auto headers{db::open_cursor(txn, db::table::kHeaders)};
+        auto from_block_bytes{db::block_key(options.from_block)};
+        auto header_data{headers.lower_bound(db::to_slice(from_block_bytes))};
+        auto bodies{db::open_cursor(txn, db::table::kBlockBodies)};
+        consensus::Clique engine(consensus::kDefaultCliqueConfig);
+
         // Loop blocks
         while (header_data) {
             auto key{db::from_slice(header_data.key)};
@@ -93,7 +92,7 @@ int main(int argc, char* argv[]) {
             }
             BlockHeader header{};
             uint64_t block_num{endian::load_big_u64(&key[0])};
-            db::Buffer buffer{*txn, block_num};
+            db::Buffer buffer{txn, block_num};
             if (rlp::decode(encoded_header, header) != rlp::DecodingResult::kOk) {
                 std::cout << "decoding" << std::endl;
                 return -2;
@@ -111,11 +110,15 @@ int main(int argc, char* argv[]) {
             buffer.write_to_db();
             header_data = headers.to_next(false);
         }
+        txn.commit();
+
     } catch (const fs::filesystem_error& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << " Check your filesystem permissions" << std::endl;
+        rc = -1;
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        rc = -1;
     }
-    txn.commit();
+
     return rc;
 }

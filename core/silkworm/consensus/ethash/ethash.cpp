@@ -14,16 +14,53 @@
    limitations under the License.
 */
 
-#include <silkworm/trie/vector_root.hpp>
-#include <silkworm/chain/intrinsic_gas.hpp>
-#include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/chain/difficulty.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
-#include <ethash/ethash.hpp>
-
 #include "ethash.hpp"
 
+#include <ethash/ethash.hpp>
+
+#include <silkworm/chain/difficulty.hpp>
+#include <silkworm/chain/intrinsic_gas.hpp>
+#include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/endian.hpp>
+#include <silkworm/crypto/ecdsa.hpp>
+#include <silkworm/trie/vector_root.hpp>
+
 namespace silkworm::consensus {
+
+static std::optional<BlockHeader> get_parent(const State& state, const BlockHeader& header) {
+    if (header.number == 0) {
+        return std::nullopt;
+    }
+    return state.read_header(header.number - 1, header.parent_hash);
+}
+
+static bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                   const evmc::bytes32& mainline_hash, unsigned n, const State& state,
+                   std::vector<BlockHeader>& old_ommers) {
+    if (n == 0 || branch_header == mainline_header) {
+        return false;
+    }
+
+    std::optional<BlockBody> mainline_body{state.read_body(mainline_header.number, mainline_hash)};
+    if (!mainline_body) {
+        return false;
+    }
+    old_ommers.insert(old_ommers.end(), mainline_body->ommers.begin(), mainline_body->ommers.end());
+
+    std::optional<BlockHeader> mainline_parent{get_parent(state, mainline_header)};
+    std::optional<BlockHeader> branch_parent{get_parent(state, branch_header)};
+
+    if (!mainline_parent) {
+        return false;
+    }
+
+    bool siblings{branch_parent == mainline_parent};
+    if (siblings) {
+        return true;
+    }
+
+    return is_kin(branch_header, *mainline_parent, mainline_header.parent_hash, n - 1, state, old_ommers);
+}
 
 ValidationResult Ethash::pre_validate_block(const Block& block, State& state, const ChainConfig& config) {
     const BlockHeader& header{block.header};
@@ -84,7 +121,7 @@ ValidationResult Ethash::pre_validate_block(const Block& block, State& state, co
 }
 
 ValidationResult Ethash::validate_block_header(const BlockHeader& header, State& state, const ChainConfig& config) {
-     if (header.gas_used > header.gas_limit) {
+    if (header.gas_used > header.gas_limit) {
         return ValidationResult::kGasAboveLimit;
     }
 
@@ -180,8 +217,6 @@ void Ethash::apply_rewards(IntraBlockState& state, const Block& block, const evm
     state.add_to_balance(block.header.beneficiary, miner_reward);
 }
 
-evmc::address Ethash::get_beneficiary(const BlockHeader& header) {
-    return header.beneficiary;
-}
+evmc::address Ethash::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
-}
+}  // namespace silkworm::consensus

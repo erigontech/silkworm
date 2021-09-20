@@ -20,14 +20,13 @@
 
 #include <ethash/ethash.hpp>
 
-#include <silkworm/common/endian.hpp>
-#include <silkworm/trie/vector_root.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
+#include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/chain/difficulty.hpp>
-#include <silkworm/consensus/ethash/ethash.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/consensus/clique/clique.hpp>
+#include <silkworm/consensus/ethash/ethash.hpp>
+#include <silkworm/crypto/ecdsa.hpp>
 
 namespace silkworm::consensus {
 
@@ -74,15 +73,8 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     return ValidationResult::kOk;
 }
 
-std::optional<BlockHeader> get_parent(const State& state, const BlockHeader& header) {
-    if (header.number == 0) {
-        return std::nullopt;
-    }
-    return state.read_header(header.number - 1, header.parent_hash);
-}
-
 std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent,
-                                                              const ChainConfig& config) {
+                                                       const ChainConfig& config) {
     if (config.revision(header.number) < EVMC_LONDON) {
         return std::nullopt;
     }
@@ -120,34 +112,6 @@ std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header
     }
 }
 
-bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                   const evmc::bytes32& mainline_hash, unsigned n, const State& state,
-                   std::vector<BlockHeader>& old_ommers) {
-    if (n == 0 || branch_header == mainline_header) {
-        return false;
-    }
-
-    std::optional<BlockBody> mainline_body{state.read_body(mainline_header.number, mainline_hash)};
-    if (!mainline_body) {
-        return false;
-    }
-    old_ommers.insert(old_ommers.end(), mainline_body->ommers.begin(), mainline_body->ommers.end());
-
-    std::optional<BlockHeader> mainline_parent{get_parent(state, mainline_header)};
-    std::optional<BlockHeader> branch_parent{get_parent(state, branch_header)};
-
-    if (!mainline_parent) {
-        return false;
-    }
-
-    bool siblings{branch_parent == mainline_parent};
-    if (siblings) {
-        return true;
-    }
-
-    return is_kin(branch_header, *mainline_parent, mainline_header.parent_hash, n - 1, state, old_ommers);
-}
-
 std::unique_ptr<ConsensusEngine> get_consensus_engine(SealEngineType engine_type) {
     switch (engine_type) {
         case SealEngineType::kEthash:
@@ -159,4 +123,4 @@ std::unique_ptr<ConsensusEngine> get_consensus_engine(SealEngineType engine_type
     }
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::consensus

@@ -19,7 +19,6 @@
 #include <cstring>
 
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 
 namespace silkworm {

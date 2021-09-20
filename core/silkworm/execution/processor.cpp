@@ -27,7 +27,9 @@ namespace silkworm {
 
 ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::ConsensusEngine& engine, State& state,
                                        const ChainConfig& config)
-    : state_{state}, engine_{engine}, evm_{block, state_, config} {}
+    : state_{state}, engine_{engine}, evm_{block, state_, config} {
+    evm_.beneficiary = engine.get_beneficiary(block.header);
+}
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
     assert(consensus::pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
@@ -100,7 +102,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
 
     // award the miner
     const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
-    state_.add_to_balance(evm_.block().header.beneficiary, priority_fee_per_gas * gas_used);
+    state_.add_to_balance(evm_.beneficiary, priority_fee_per_gas * gas_used);
 
     state_.destruct_suicides();
     if (rev >= EVMC_SPURIOUS_DRAGON) {

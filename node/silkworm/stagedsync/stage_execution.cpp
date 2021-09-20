@@ -21,11 +21,10 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
+#include <silkworm/consensus/ethash/ethash.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/consensus/ethash/ethash.hpp>
-#include <silkworm/etl/collector.hpp>
 #include <silkworm/execution/processor.hpp>
 
 #include "stagedsync.hpp"
@@ -44,15 +43,11 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
         auto engine{consensus::get_consensus_engine(config.seal_engine)};
         while (true) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
-            if (!bh) {
+            if (bh == std::nullopt) {
                 return StageResult::kBadChainSequence;
             }
 
-
-            Block evm_block{bh->block};
-            evm_block.header.beneficiary = engine->get_beneficiary(evm_block.header);
-
-            ExecutionProcessor processor{evm_block, *engine, buffer, config};
+            ExecutionProcessor processor{bh->block, *engine, buffer, config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 

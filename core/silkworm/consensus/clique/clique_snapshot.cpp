@@ -92,9 +92,8 @@ ValidationResult CliqueSnapshot::add_header(const BlockHeader& header, const evm
             // Update Tallies
             clear_votes(header.beneficiary);
         }
-        if (tallies_.count(header.beneficiary)) {
-            tallies_.erase(header.beneficiary);
-        }
+
+        tallies_.erase(header.beneficiary);
     }
 
     update(header.number, hash);

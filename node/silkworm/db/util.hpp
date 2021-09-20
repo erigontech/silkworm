@@ -34,12 +34,12 @@ namespace silkworm::db {
 
 /* Ancillary entities */
 
-// Used to compare versions of entities (eg. DbSchema)
+// Used to compare versions of entities (e.g. DbSchema)
 struct VersionBase {
     uint32_t Major;
     uint32_t Minor;
     uint32_t Patch;
-    std::string to_string() {
+    std::string to_string() const {
         std::string ret{std::to_string(Major)};
         ret.append("." + std::to_string(Minor));
         ret.append("." + std::to_string(Patch));

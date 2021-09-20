@@ -38,7 +38,7 @@ union head_t {
 struct Entry {
     Bytes key;
     Bytes value;
-    size_t size() const noexcept { return key.size() + value.size(); }
+    [[nodiscard]] size_t size() const noexcept { return key.size() + value.size(); }
 };
 
 bool operator<(const Entry& a, const Entry& b);

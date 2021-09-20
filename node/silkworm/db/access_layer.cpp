@@ -447,12 +447,6 @@ StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
     return changes;
 }
 
-bool migration_happened(mdbx::txn& txn, const char* name) {
-    auto src{db::open_cursor(txn, table::kMigrations)};
-    auto data{src.find(mdbx::slice{name}, /*throw_notfound=*/false)};
-    return data.done;
-}
-
 std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
     auto src{db::open_cursor(txn, table::kCanonicalHashes)};
     auto data{src.find(to_slice(block_key(0)), /*throw_notfound=*/false)};

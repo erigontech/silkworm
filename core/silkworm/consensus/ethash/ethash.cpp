@@ -22,7 +22,6 @@
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/trie/vector_root.hpp>
 
 namespace silkworm::consensus {
@@ -34,6 +33,83 @@ static std::optional<BlockHeader> get_parent(const State& state, const BlockHead
     return state.read_header(header.number - 1, header.parent_hash);
 }
 
+ValidationResult Ethash::validate_block_header(const BlockHeader& header, State& state, const ChainConfig& config) {
+    if (header.gas_used > header.gas_limit) {
+        return ValidationResult::kGasAboveLimit;
+    }
+
+    if (header.gas_limit < 5000) {
+        return ValidationResult::kInvalidGasLimit;
+    }
+
+    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
+    // https://eips.ethereum.org/EIPS/eip-1985
+    if (header.gas_limit > INT64_MAX) {
+        return ValidationResult::kInvalidGasLimit;
+    }
+
+    if (header.extra_data.length() > 32) {
+        return ValidationResult::kExtraDataTooLong;
+    }
+
+    const std::optional<BlockHeader> parent{get_parent(state, header)};
+    if (!parent) {
+        return ValidationResult::kUnknownParent;
+    }
+
+    if (header.timestamp <= parent->timestamp) {
+        return ValidationResult::kInvalidTimestamp;
+    }
+
+    uint64_t parent_gas_limit{parent->gas_limit};
+    if (header.number == config.revision_block(EVMC_LONDON)) {
+        parent_gas_limit = parent->gas_limit * param::kElasticityMultiplier;  // EIP-1559
+    }
+
+    const uint64_t gas_delta{header.gas_limit > parent_gas_limit ? header.gas_limit - parent_gas_limit
+                                                                 : parent_gas_limit - header.gas_limit};
+    if (gas_delta >= parent_gas_limit / 1024) {
+        return ValidationResult::kInvalidGasLimit;
+    }
+
+    const bool parent_has_uncles{parent->ommers_hash != kEmptyListHash};
+    const intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent->difficulty,
+                                                        parent->timestamp, parent_has_uncles, config)};
+    if (difficulty != header.difficulty) {
+        return ValidationResult::kWrongDifficulty;
+    }
+
+    // https://eips.ethereum.org/EIPS/eip-779
+    if (config.dao_block && *config.dao_block <= header.number && header.number <= *config.dao_block + 9) {
+        static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
+        if (header.extra_data != kDaoExtraData) {
+            return ValidationResult::kWrongDaoExtraData;
+        }
+    }
+
+    if (header.base_fee_per_gas != expected_base_fee_per_gas(header, *parent, config)) {
+        return ValidationResult::kWrongBaseFee;
+    }
+
+    // Ethash PoW verification
+    if (config.seal_engine == SealEngineType::kEthash) {
+        auto epoch_number{header.number / ethash::epoch_length};
+        auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_number))};
+
+        auto boundary256{header.boundary()};
+        auto seal_hash(header.hash(/*for_sealing =*/true));
+        ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
+        ethash::hash256 mixh256{};
+        std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
+
+        uint64_t nonce{endian::load_big_u64(header.nonce.data())};
+        return ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256) ? ValidationResult::kOk
+                                                                                     : ValidationResult::kInvalidSeal;
+    }
+    return ValidationResult::kOk;
+}
+
+// See [YP] Section 11.1 "Ommer Validation"
 static bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
                    const evmc::bytes32& mainline_hash, unsigned n, const State& state,
                    std::vector<BlockHeader>& old_ommers) {
@@ -117,82 +193,6 @@ ValidationResult Ethash::pre_validate_block(const Block& block, State& state, co
         }
     }
 
-    return ValidationResult::kOk;
-}
-
-ValidationResult Ethash::validate_block_header(const BlockHeader& header, State& state, const ChainConfig& config) {
-    if (header.gas_used > header.gas_limit) {
-        return ValidationResult::kGasAboveLimit;
-    }
-
-    if (header.gas_limit < 5000) {
-        return ValidationResult::kInvalidGasLimit;
-    }
-
-    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/consensus/ethash/consensus.go#L267
-    // https://eips.ethereum.org/EIPS/eip-1985
-    if (header.gas_limit > INT64_MAX) {
-        return ValidationResult::kInvalidGasLimit;
-    }
-
-    if (header.extra_data.length() > 32) {
-        return ValidationResult::kExtraDataTooLong;
-    }
-
-    const std::optional<BlockHeader> parent{get_parent(state, header)};
-    if (!parent) {
-        return ValidationResult::kUnknownParent;
-    }
-
-    if (header.timestamp <= parent->timestamp) {
-        return ValidationResult::kInvalidTimestamp;
-    }
-
-    uint64_t parent_gas_limit{parent->gas_limit};
-    if (header.number == config.revision_block(EVMC_LONDON)) {
-        parent_gas_limit = parent->gas_limit * param::kElasticityMultiplier;  // EIP-1559
-    }
-
-    const uint64_t gas_delta{header.gas_limit > parent_gas_limit ? header.gas_limit - parent_gas_limit
-                                                                 : parent_gas_limit - header.gas_limit};
-    if (gas_delta >= parent_gas_limit / 1024) {
-        return ValidationResult::kInvalidGasLimit;
-    }
-
-    const bool parent_has_uncles{parent->ommers_hash != kEmptyListHash};
-    const intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent->difficulty,
-                                                        parent->timestamp, parent_has_uncles, config)};
-    if (difficulty != header.difficulty) {
-        return ValidationResult::kWrongDifficulty;
-    }
-
-    // https://eips.ethereum.org/EIPS/eip-779
-    if (config.dao_block && *config.dao_block <= header.number && header.number <= *config.dao_block + 9) {
-        static const Bytes kDaoExtraData{*from_hex("0x64616f2d686172642d666f726b")};
-        if (header.extra_data != kDaoExtraData) {
-            return ValidationResult::kWrongDaoExtraData;
-        }
-    }
-
-    if (header.base_fee_per_gas != expected_base_fee_per_gas(header, *parent, config)) {
-        return ValidationResult::kWrongBaseFee;
-    }
-
-    // Ethash PoW verification
-    if (config.seal_engine == SealEngineType::kEthash) {
-        auto epoch_number{header.number / ethash::epoch_length};
-        auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_number))};
-
-        auto boundary256{header.boundary()};
-        auto seal_hash(header.hash(/*for_sealing =*/true));
-        ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
-        ethash::hash256 mixh256{};
-        std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
-
-        uint64_t nonce{endian::load_big_u64(header.nonce.data())};
-        return ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256) ? ValidationResult::kOk
-                                                                                     : ValidationResult::kInvalidSeal;
-    }
     return ValidationResult::kOk;
 }
 

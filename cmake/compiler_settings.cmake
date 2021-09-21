@@ -25,7 +25,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # is solved by this (issue only for MVC)
   add_definitions(-DBOOST_DATE_TIME_NO_LIB)
 
-  # Abseil triggeres some deprecation warnings
+  # Abseil triggers some deprecation warnings
   add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
   add_compile_definitions(_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING)
 

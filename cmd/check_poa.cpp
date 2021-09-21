@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
             }
 
             db::Buffer buffer{txn, block_num};
-            auto err{engine.validate_block_header(header.value(), buffer, *config)};
+            auto err{engine.validate_block_header(header.value(), buffer, config.value())};
             if (err != ValidationResult::kOk) {
                 throw std::runtime_error("Validation error at block #" + std::to_string(block_num) + " : " +
                                          std::string(magic_enum::enum_name<ValidationResult>(err)));

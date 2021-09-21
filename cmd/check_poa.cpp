@@ -76,6 +76,8 @@ int main(int argc, char* argv[]) {
         BlockNum expected_block_num{options.from_block};
         BlockNum block_num{0};
 
+        db::Buffer state_buffer(txn, /*prune_from=*/0);
+
         // Loop canonical blocks from initial requested
         auto start_key{db::block_key(options.from_block)};
         auto canonical_data{canonical.find(db::to_slice(start_key), /*throw_notfound=*/false)};
@@ -97,13 +99,12 @@ int main(int argc, char* argv[]) {
                 SILKWORM_LOG(LogLevel::Info) << "At block height #" << block_num << std::endl;
             }
 
-            db::Buffer buffer{txn, block_num};
-            auto err{engine.validate_block_header(header.value(), buffer, config.value())};
+            auto err{engine.validate_block_header(header.value(), state_buffer, config.value())};
             if (err != ValidationResult::kOk) {
                 throw std::runtime_error("Validation error at block #" + std::to_string(block_num) + " : " +
                                          std::string(magic_enum::enum_name<ValidationResult>(err)));
             }
-            buffer.write_to_db();
+
             canonical_data = canonical.to_next(/*throw_notfound=*/false);
             expected_block_num++;
         }

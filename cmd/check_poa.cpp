@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (block_num % 10000 == 0) {
-                std::cout << "Now at Block: " << block_num << std::endl;
+                SILKWORM_LOG(LogLevel::Info) << "At block height #" << block_num << std::endl;
             }
 
             db::Buffer buffer{txn, block_num};
@@ -104,11 +104,11 @@ int main(int argc, char* argv[]) {
                                          std::string(magic_enum::enum_name<ValidationResult>(err)));
             }
             buffer.write_to_db();
-
             canonical_data = canonical.to_next(/*throw_notfound=*/false);
             expected_block_num++;
         }
         txn.commit();
+        SILKWORM_LOG(LogLevel::Info) << "Completed at height #" << block_num << std::endl;
 
     } catch (const fs::filesystem_error& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << " Check your filesystem permissions" << std::endl;

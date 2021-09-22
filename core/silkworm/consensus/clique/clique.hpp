@@ -22,28 +22,26 @@
 namespace silkworm::consensus {
 
 // Proof of Authority (Clique) implementation
-class Clique: public ConsensusEngine {
+class Clique : public ConsensusEngine {
+  public:
 
-    public:
+    explicit Clique(CliqueConfig clique_config) : clique_config_{clique_config} {}
 
-     Clique(CliqueConfig clique_config): 
-        clique_config_{clique_config} {}
+    ValidationResult pre_validate_block(const Block& block, State& state, const ChainConfig& config) override;
 
-     ValidationResult pre_validate_block(const Block& block, State& state, const ChainConfig& config) override;
+    ValidationResult validate_block_header(const BlockHeader& header, State& state, const ChainConfig& config) override;
 
-     ValidationResult validate_block_header(const BlockHeader& header, State& state, const ChainConfig& config) override;
+    void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
 
-     void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
+    evmc::address get_beneficiary(const BlockHeader& header) override;
 
-     evmc::address get_beneficiary(const BlockHeader& header) override;
+    std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);
 
-     std::optional<evmc::address> get_signer_from_clique_header(BlockHeader header);
-    private:
-
-     CliqueConfig   clique_config_;
-     CliqueSnapshot last_snapshot_{}; // We cache it to avoid writes and reads
-     std::map<evmc::bytes32, evmc::address> sig_cache_;  // Cache where signatures are stored
+  private:
+    CliqueConfig clique_config_;
+    CliqueSnapshot last_snapshot_{};                    // We cache it to avoid writes and reads
+    std::map<evmc::bytes32, evmc::address> sig_cache_;  // Cache where signatures are stored
 };
 
-}
-#endif // SILKWORM_CONSENSUS_CLIQUE
+}  // namespace silkworm::consensus
+#endif  // SILKWORM_CONSENSUS_CLIQUE

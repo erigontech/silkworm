@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <ctime>
+
 #include "clique.hpp"
 
 #include <silkworm/chain/protocol_param.hpp>
@@ -27,8 +29,14 @@ ValidationResult Clique::pre_validate_block(const Block& block, State& state, co
 }
 
 ValidationResult Clique::validate_block_header(const BlockHeader& header, State& state, const ChainConfig&) {
+
+    auto now{std::time(nullptr)};
+    if (header.timestamp > static_cast<uint64_t>(now)){
+        return ValidationResult::kFutureBlock;
+    }
+
     // Checkpoint blocks need to enforce zero beneficiary
-    uint64_t checkpoint{header.number % clique_config_.epoch == 0};
+    bool checkpoint{header.number % clique_config_.epoch == 0};
     if (checkpoint && header.beneficiary) {
         return ValidationResult::kInvalidCheckpointBeneficiary;
     }

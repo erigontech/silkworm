@@ -21,7 +21,8 @@ namespace silkworm {
 
 // Classification of invalid transactions and blocks.
 enum class [[nodiscard]] ValidationResult{
-    kOk,
+    kOk,           // All checks passed
+    kFutureBlock,  // Block has a timestamp in the future
 
     // See [YP] Section 4.3.2 "Holistic Validity", Eq (31)
     kWrongStateRoot,         // wrong Hr

@@ -57,7 +57,7 @@ CallResult EVM::execute(const Transaction& txn, uint64_t gas) noexcept {
         0,                                            // flags
         0,                                            // depth
         static_cast<int64_t>(gas),                    // gas
-        destination,                                  // destination
+        destination,                                  // recipient
         *txn.from,                                    // sender
         &txn.data[0],                                 // input_data
         txn.data.size(),                              // input_size
@@ -117,7 +117,7 @@ evmc::result EVM::create(const evmc_message& message) noexcept {
         0,               // flags
         message.depth,   // depth
         message.gas,     // gas
-        contract_addr,   // destination
+        contract_addr,   // recipient
         message.sender,  // sender
         nullptr,         // input_data
         0,               // input_size
@@ -179,10 +179,10 @@ evmc::result EVM::call(const evmc_message& message) noexcept {
         if (message.flags & EVMC_STATIC) {
             // Match geth logic
             // https://github.com/ethereum/go-ethereum/blob/v1.9.25/core/vm/evm.go#L391
-            state_.touch(message.destination);
+            state_.touch(message.recipient);
         } else {
             state_.subtract_from_balance(message.sender, value);
-            state_.add_to_balance(message.destination, value);
+            state_.add_to_balance(message.recipient, value);
         }
     }
 

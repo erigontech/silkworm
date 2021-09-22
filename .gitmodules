@@ -1,7 +1,6 @@
 [submodule "evmone"]
 	path = evmone
-	url = https://github.com/torquem-ch/evmone.git
-	branch = code_address
+	url = https://github.com/ethereum/evmone.git
 [submodule "secp256k1"]
 	path = secp256k1
 	url = https://github.com/bitcoin-core/secp256k1.git
@@ -17,7 +16,7 @@
 	url = https://github.com/torquem-ch/cbor-cpp.git
 [submodule "CRoaring"]
 	path = CRoaring
-	url = https://github.com/RoaringBitmap/CRoaring
+	url = https://github.com/RoaringBitmap/CRoaring.git
 [submodule "magic_enum"]
 	path = magic_enum
 	url = https://github.com/Neargye/magic_enum.git

@@ -14,9 +14,9 @@
    limitations under the License.
 */
 
-#include <ctime>
-
 #include "clique.hpp"
+
+#include <ctime>
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
@@ -31,29 +31,43 @@ ValidationResult Clique::pre_validate_block(const Block& block, State& state, co
 ValidationResult Clique::validate_block_header(const BlockHeader& header, State& state, const ChainConfig&) {
 
     auto now{std::time(nullptr)};
-    if (header.timestamp > static_cast<uint64_t>(now)){
+    if (header.timestamp > static_cast<uint64_t>(now)) {
         return ValidationResult::kFutureBlock;
     }
 
-    // Checkpoint blocks need to enforce zero beneficiary
-    bool checkpoint{header.number % clique_config_.epoch == 0};
-    if (checkpoint && header.beneficiary) {
-        return ValidationResult::kInvalidCheckpointBeneficiary;
-    }
+    /* Common checks for all block types (regular and checkpoint) */
 
-    // Nonces must be 0x00..0 or 0xff..f, zeroes enforced on checkpoints
+    // Nonces must be always 0x00..0 or 0xff..f, zeroes enforced on checkpoints
     if (header.nonce != kNonceAuthVote && header.nonce != kNonceDropVote) {
         return ValidationResult::kInvalidVote;
     }
 
-    if (checkpoint && header.nonce != kNonceDropVote) {
-        return ValidationResult::kInvalidVote;
+    // Ensure that the block doesn't contain any uncles which are meaningless in PoA
+    if (header.ommers_hash != kEmptyListHash) {
+        return ValidationResult::kWrongOmmersHash;
+    }
+
+    // Ensure that the mix digest is zero as we don't have fork protection currently
+    if (header.mix_hash) {
+        return ValidationResult::kInvalidMixHash;
     }
 
     // Check that the extra-data contains both the vanity and signature
     if (header.extra_data.size() < (kHashLength + kSignatureLength + 1)) {
         return ValidationResult::kMissingVanity;
     }
+
+    // Checkpoint blocks
+    bool checkpoint{header.number % clique_config_.epoch == 0};
+    if (checkpoint) {
+        if (header.beneficiary) {
+            return ValidationResult::kInvalidCheckpointBeneficiary;
+        }
+        if (header.nonce != kNonceDropVote) {
+            return ValidationResult::kInvalidVote;
+        }
+    }
+
 
     // Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
     uint64_t signers_length{header.extra_data.size() - kHashLength - kSignatureLength - 1};
@@ -63,14 +77,7 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
     if (checkpoint && (signers_length % kAddressLength) != 0) {
         return ValidationResult::kMissingSigner;
     }
-    // Ensure that the mix digest is zero as we don't have fork protection currently
-    if (header.mix_hash) {
-        return ValidationResult::kInvalidMixHash;
-    }
-    // Ensure that the block doesn't contain any uncles which are meaningless in PoA
-    if (header.ommers_hash != kEmptyListHash) {
-        return ValidationResult::kWrongOmmersHash;
-    }
+
     // Ensure that the block's difficulty is meaningful (may not be correct at this point)
     if (header.number > 0) {
         auto parent{state.read_header(header.number - 1, header.parent_hash)};
@@ -166,9 +173,7 @@ std::optional<evmc::address> Clique::get_signer_from_clique_header(BlockHeader h
     // for_sealing = false, with signature in extra_data
     header.extra_data = header.extra_data.substr(0, extra_data_size - kSignatureLength - 1);
     auto header_hash{header.hash()};
-    if (sig_cache_.find(header_hash) != sig_cache_.end()) {
-        return sig_cache_[header_hash];
-    }
+
     // Run Ecrecover and get public key
     auto recovered{ecdsa::recover(full_view(header_hash), signature, v)};
     if (!recovered.has_value() || recovered->at(0) != 4u) {
@@ -178,7 +183,6 @@ std::optional<evmc::address> Clique::get_signer_from_clique_header(BlockHeader h
     // Convert public key to address
     evmc::address signer{};
     std::memcpy(signer.bytes, &hash.bytes[12], kAddressLength);
-    sig_cache_.emplace(header_hash, signer);
     return signer;
 }
 

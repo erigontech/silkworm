@@ -40,7 +40,6 @@ class Clique : public ConsensusEngine {
   private:
     CliqueConfig clique_config_;
     CliqueSnapshot last_snapshot_{};                    // We cache it to avoid writes and reads
-    std::map<evmc::bytes32, evmc::address> sig_cache_;  // Cache where signatures are stored
 };
 
 }  // namespace silkworm::consensus

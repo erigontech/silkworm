@@ -51,10 +51,9 @@ class ConsensusEngine {
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
     virtual void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) = 0;
+
     //! \brief See [YP] Section 11.3 "Reward Application".
-    //! \param [in] txn: Transaction to process.
-    //! \param [in] header: Current block to apply rewards for.
-    //! \param [in] state: Current state.
+    //! \param [in] header: Current block to get beneficiary from
     virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
 
     virtual ~ConsensusEngine() = default;

@@ -23,14 +23,22 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
   # LINK : fatal error LNK1104: cannot open file 'libboost_date_time-vc142-mt-x64-1_72.lib
   # is solved by this (issue only for MVC)
-  add_definitions(-DBOOST_DATE_TIME_NO_LIB) 
+  add_definitions(-DBOOST_DATE_TIME_NO_LIB)
 
-  # Abseil triggeres some deprecation warnings
+  # Abseil triggers some deprecation warnings
   add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
   add_compile_definitions(_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING)
 
   add_compile_options(/MP)     # Enable parallel compilation
   add_compile_options(/EHa)    # Enable standard C++ unwinding
+
+  #[[
+  There is an issue on CLion IDE when toolchain is MSVC. Basically it wrongly parses file(line,column) which
+  are meant to point to an error or a warning. Adding the following compile option works around the problem
+  but still has to be considered a temporary solution.
+  https://youtrack.jetbrains.com/issue/CPP-20259?_ga=2.92522975.312527487.1632161219-1027977455.1629393843&_gac=1.251211380.1631446966.CjwKCAjwyvaJBhBpEiwA8d38vIMQB8b0QfoFeQR5Mf4LHU50RFx3CWeeNzVeCrDOr1QcnfCpUPbFTBoCLEYQAvD_BwE
+  ]]
+  add_compile_options(/diagnostics:classic)
 
   add_compile_options(/wd4127) # Silence warnings about "conditional expression is constant" (abseil mainly)
   add_compile_options(/wd5030) # Silence warnings about GNU attributes

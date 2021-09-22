@@ -29,7 +29,6 @@ ValidationResult Clique::pre_validate_block(const Block& block, State& state, co
 }
 
 ValidationResult Clique::validate_block_header(const BlockHeader& header, State& state, const ChainConfig&) {
-
     auto now{std::time(nullptr)};
     if (header.timestamp > static_cast<uint64_t>(now)) {
         return ValidationResult::kFutureBlock;
@@ -67,7 +66,6 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
             return ValidationResult::kInvalidVote;
         }
     }
-
 
     // Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
     uint64_t signers_length{header.extra_data.size() - kHashLength - kSignatureLength - 1};
@@ -156,7 +154,7 @@ ValidationResult Clique::validate_block_header(const BlockHeader& header, State&
 // There are no rewards in Clique POA consensus
 void Clique::apply_rewards(IntraBlockState&, const Block&, const evmc_revision&) {}
 
-evmc::address Clique::get_beneficiary(const BlockHeader& header) { return *get_signer_from_clique_header(header); }
+evmc::address Clique::get_beneficiary(const BlockHeader& header) { return {}; }
 
 // taking the header not by reference is intentional
 std::optional<evmc::address> Clique::get_signer_from_clique_header(BlockHeader header) {

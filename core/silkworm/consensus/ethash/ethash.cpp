@@ -90,18 +90,22 @@ ValidationResult Ethash::validate_block_header(const BlockHeader& header, State&
         return ValidationResult::kWrongBaseFee;
     }
 
-    auto epoch_number{header.number / ethash::epoch_length};
-    auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_number))};
+    // Ethash PoW verification
+    if (config.seal_engine == SealEngineType::kEthash) {
+        auto epoch_number{header.number / ethash::epoch_length};
+        auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_number))};
 
-    auto boundary256{header.boundary()};
-    auto seal_hash(header.hash(/*for_sealing =*/true));
-    ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
-    ethash::hash256 mixh256{};
-    std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
+        auto boundary256{header.boundary()};
+        auto seal_hash(header.hash(/*for_sealing =*/true));
+        ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
+        ethash::hash256 mixh256{};
+        std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
 
-    uint64_t nonce{endian::load_big_u64(header.nonce.data())};
-    return ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256) ? ValidationResult::kOk
-                                                                                 : ValidationResult::kInvalidSeal;
+        uint64_t nonce{endian::load_big_u64(header.nonce.data())};
+        return ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256) ? ValidationResult::kOk
+                                                                                     : ValidationResult::kInvalidSeal;
+    }
+    return ValidationResult::kOk;
 }
 
 // See [YP] Section 11.1 "Ommer Validation"

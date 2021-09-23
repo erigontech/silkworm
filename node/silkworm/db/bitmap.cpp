@@ -45,21 +45,22 @@ static void remove_range_closed(roaring::Roaring64Map& bm, uint64_t min, uint64_
 template <typename RoaringMap>
 RoaringMap cut_left_impl(RoaringMap& bm, uint64_t size_limit) {
     if (bm.getSizeInBytes() <= size_limit) {
-        RoaringMap res(roaring::api::roaring_bitmap_from_range(bm.minimum(), bm.maximum() + 1, 1));  // With range
-        res &= bm;
+        RoaringMap res = bm;
         res.runOptimize();
         bm = RoaringMap();
         return res;
     }
-    auto from{bm.minimum()};
-    auto min_max{bm.maximum() - bm.minimum()};
+
+    const auto from{bm.minimum()};
+    const auto min_max{bm.maximum() - bm.minimum()};
 
     // We look for the cutting point
     uint64_t i = min_max;
     uint64_t j = 0;
     while (i < j) {
-        uint64_t h = (i + j) >> 1;
-        RoaringMap current_bitmap(roaring::api::roaring_bitmap_from_range(from, from + i + 1, 1));  // With range
+        // binary search
+        const uint64_t h = (i + j) / 2;
+        RoaringMap current_bitmap(roaring::api::roaring_bitmap_from_range(from, from + i + 1, 1));
         current_bitmap &= bm;
         current_bitmap.runOptimize();
         if (current_bitmap.getSizeInBytes() <= size_limit) {

@@ -39,9 +39,11 @@ roaring::Roaring64Map read(ByteView serialized);
 // See Erigon SeekInBitmap64.
 std::optional<uint64_t> seek(const roaring::Roaring64Map& bitmap, uint64_t n);
 
-// Return cut bitmap of given size limit
-roaring::Roaring64Map cut_left(roaring::Roaring64Map& bitmap, uint64_t len);
-roaring::Roaring cut_left(roaring::Roaring& bitmap, uint64_t len);
+// Remove from a bitmap and return its biggest left part not exceeding a given size
+roaring::Roaring64Map cut_left(roaring::Roaring64Map& bitmap, uint64_t size_limit);
+
+// Remove from a bitmap and return its biggest left part not exceeding a given size
+roaring::Roaring cut_left(roaring::Roaring& bitmap, uint64_t size_limit);
 
 }  // namespace silkworm::db::bitmap
 

@@ -19,7 +19,6 @@
 #include <ethash/ethash.hpp>
 
 #include <silkworm/chain/difficulty.hpp>
-#include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/trie/vector_root.hpp>

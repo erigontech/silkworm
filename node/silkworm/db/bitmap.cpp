@@ -32,13 +32,23 @@ std::optional<uint64_t> seek(const roaring::Roaring64Map& bitmap, uint64_t n) {
     return std::nullopt;
 }
 
-roaring::Roaring64Map cut_left(roaring::Roaring64Map& bm, uint64_t size_limit) {
+static void remove_range_closed(roaring::Roaring& bm, uint32_t min, uint32_t max) {
+    roaring::api::roaring_bitmap_remove_range_closed(&bm.roaring, min, max);
+}
+
+static void remove_range_closed(roaring::Roaring64Map& bm, uint64_t min, uint64_t max) {
+    for (uint64_t k = min; k <= max; ++k) {
+        bm.remove(k);
+    }
+}
+
+template <typename RoaringMap>
+RoaringMap cut_left_impl(RoaringMap& bm, uint64_t size_limit) {
     if (bm.getSizeInBytes() <= size_limit) {
-        roaring::Roaring64Map res(
-            roaring::api::roaring_bitmap_from_range(bm.minimum(), bm.maximum() + 1, 1));  // With range
+        RoaringMap res(roaring::api::roaring_bitmap_from_range(bm.minimum(), bm.maximum() + 1, 1));  // With range
         res &= bm;
         res.runOptimize();
-        bm.clear();
+        bm = RoaringMap();
         return res;
     }
     auto from{bm.minimum()};
@@ -49,8 +59,7 @@ roaring::Roaring64Map cut_left(roaring::Roaring64Map& bm, uint64_t size_limit) {
     uint64_t j = 0;
     while (i < j) {
         uint64_t h = (i + j) >> 1;
-        roaring::Roaring64Map current_bitmap(
-            roaring::api::roaring_bitmap_from_range(from, from + i + 1, 1));  // With range
+        RoaringMap current_bitmap(roaring::api::roaring_bitmap_from_range(from, from + i + 1, 1));  // With range
         current_bitmap &= bm;
         current_bitmap.runOptimize();
         if (current_bitmap.getSizeInBytes() <= size_limit) {
@@ -59,45 +68,19 @@ roaring::Roaring64Map cut_left(roaring::Roaring64Map& bm, uint64_t size_limit) {
             j = h;
         }
     }
-    roaring::Roaring64Map res(roaring::api::roaring_bitmap_from_range(from, from + i, 1));
+    RoaringMap res(roaring::api::roaring_bitmap_from_range(from, from + i, 1));
     res &= bm;
     res.runOptimize();
-    for (uint64_t k = from; k <= from + i; k++) {
-        bm.remove(k);
-    }
+    remove_range_closed(bm, from, from + i);
     return res;
 }
 
 roaring::Roaring cut_left(roaring::Roaring& bm, uint64_t size_limit) {
-    if (bm.getSizeInBytes() <= size_limit) {
-        roaring::Roaring res(roaring::api::roaring_bitmap_from_range(bm.minimum(), bm.maximum() + 1, 1));  // With range
-        res &= bm;
-        res.runOptimize();
-        bm = roaring::Roaring();
-        return res;
-    }
-    auto from{bm.minimum()};
-    auto min_max{bm.maximum() - bm.minimum()};
+    return cut_left_impl<roaring::Roaring>(bm, size_limit);
+}
 
-    // We look for the cutting point
-    uint64_t i = min_max;
-    uint64_t j = 0;
-    while (i < j) {
-        uint64_t h = (i + j) >> 1;
-        roaring::Roaring current_bitmap(roaring::api::roaring_bitmap_from_range(from, from + i + 1, 1));  // With range
-        current_bitmap &= bm;
-        current_bitmap.runOptimize();
-        if (current_bitmap.getSizeInBytes() <= size_limit) {
-            i = h + 1;
-        } else {
-            j = h;
-        }
-    }
-    roaring::Roaring res(roaring::api::roaring_bitmap_from_range(from, from + i, 1));
-    res &= bm;
-    res.runOptimize();
-    roaring::api::roaring_bitmap_remove_range_closed(&bm.roaring, from, from + i);
-    return res;
+roaring::Roaring64Map cut_left(roaring::Roaring64Map& bm, uint64_t size_limit) {
+    return cut_left_impl<roaring::Roaring64Map>(bm, size_limit);
 }
 
 }  // namespace silkworm::db::bitmap

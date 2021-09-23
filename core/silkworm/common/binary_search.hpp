@@ -38,7 +38,8 @@ template <class SizeType, class UnaryPredicate>
 SizeType upper_bound(SizeType n, UnaryPredicate f) {
     SizeType i{0};
     SizeType j{n};
-    while (const auto count{j - i}) {
+    while (j > i) {
+        const auto count{j - i};
         const auto m{i + count / 2};
         if (f(m)) {
             j = m;

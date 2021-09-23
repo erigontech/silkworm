@@ -33,7 +33,7 @@ std::optional<uint64_t> seek(const roaring::Roaring64Map& bitmap, uint64_t n) {
     return std::nullopt;
 }
 
-static void remove_range_impl(roaring::Roaring& bm, uint32_t min, uint32_t max) {
+static void remove_range_impl(roaring::Roaring& bm, uint64_t min, uint64_t max) {
     roaring::api::roaring_bitmap_remove_range(&bm.roaring, min, max);
 }
 
@@ -70,12 +70,8 @@ RoaringMap cut_left_impl(RoaringMap& bm, uint64_t size_limit) {
     return res;
 }
 
-roaring::Roaring cut_left(roaring::Roaring& bm, uint64_t size_limit) {
-    return cut_left_impl<roaring::Roaring>(bm, size_limit);
-}
+roaring::Roaring cut_left(roaring::Roaring& bm, uint64_t size_limit) { return cut_left_impl(bm, size_limit); }
 
-roaring::Roaring64Map cut_left(roaring::Roaring64Map& bm, uint64_t size_limit) {
-    return cut_left_impl<roaring::Roaring64Map>(bm, size_limit);
-}
+roaring::Roaring64Map cut_left(roaring::Roaring64Map& bm, uint64_t size_limit) { return cut_left_impl(bm, size_limit); }
 
 }  // namespace silkworm::db::bitmap

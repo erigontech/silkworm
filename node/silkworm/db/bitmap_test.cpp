@@ -39,17 +39,17 @@ TEST_CASE("cut_left1") {
 static void cut_everything(roaring::Roaring& bm, uint64_t limit) {
     while (bm.cardinality() > 0) {
         const auto original{bm};
-        const auto lft{cut_left(bm, limit)};
+        const auto left{cut_left(bm, limit)};
 
-        CHECK((lft & bm).isEmpty());
-        CHECK((lft | bm) == original);
+        CHECK((left & bm).isEmpty());
+        CHECK((left | bm) == original);
 
-        const auto lft_size{lft.getSizeInBytes()};
-        CHECK(lft_size <= limit);
+        const auto left_size{left.getSizeInBytes()};
+        CHECK(left_size <= limit);
         if (bm.isEmpty()) {
-            CHECK(lft_size > 0);
+            CHECK(left_size > 0);
         } else {
-            CHECK(lft_size > limit - 256);
+            CHECK(left_size > limit - 256);
         }
     }
 }

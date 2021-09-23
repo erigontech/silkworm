@@ -36,7 +36,11 @@
 namespace silkworm {
 
 EVM::EVM(const Block& block, IntraBlockState& state, const ChainConfig& config) noexcept
-    : block_{block}, state_{state}, config_{config}, evm1_{evmc_create_evmone()} {}
+    : beneficiary{block.header.beneficiary},
+      block_{block},
+      state_{state},
+      config_{config},
+      evm1_{evmc_create_evmone()} {}
 
 EVM::~EVM() { evm1_->destroy(evm1_); }
 
@@ -475,7 +479,7 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     const intx::uint256 effective_gas_price{evm_.txn_->effective_gas_price(base_fee_per_gas)};
     intx::be::store(context.tx_gas_price.bytes, effective_gas_price);
     context.tx_origin = *evm_.txn_->from;
-    context.block_coinbase = header.beneficiary;
+    context.block_coinbase = evm_.beneficiary;
     assert(header.number <= INT64_MAX);  // EIP-1985
     context.block_number = static_cast<int64_t>(header.number);
     assert(header.timestamp <= INT64_MAX);  // EIP-1985

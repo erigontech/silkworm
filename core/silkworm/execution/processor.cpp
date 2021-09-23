@@ -25,12 +25,15 @@
 
 namespace silkworm {
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, State& state, const ChainConfig& config)
-    : state_{state}, evm_{block, state_, config} {}
+ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::ConsensusEngine& engine, State& state,
+                                       const ChainConfig& config)
+    : state_{state}, engine_{engine}, evm_{block, state_, config} {
+    evm_.beneficiary = engine.get_beneficiary(block.header);
+}
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
-    assert(pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
-                                    evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
+    assert(consensus::pre_validate_transaction(txn, evm_.block().header.number, evm_.config(),
+                                               evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
 
     if (!txn.from.has_value()) {
         return ValidationResult::kMissingSender;
@@ -99,7 +102,7 @@ Receipt ExecutionProcessor::execute_transaction(const Transaction& txn) noexcept
 
     // award the miner
     const intx::uint256 priority_fee_per_gas{txn.priority_fee_per_gas(base_fee_per_gas)};
-    state_.add_to_balance(evm_.block().header.beneficiary, gas_used * priority_fee_per_gas);
+    state_.add_to_balance(evm_.beneficiary, priority_fee_per_gas * gas_used);
 
     state_.destruct_suicides();
     if (rev >= EVMC_SPURIOUS_DRAGON) {
@@ -160,7 +163,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         receipts.push_back(execute_transaction(txn));
     }
 
-    apply_rewards();
+    engine_.apply_rewards(state_, evm_.block(), evm_.revision());
 
     return ValidationResult::kOk;
 }
@@ -195,28 +198,6 @@ ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt
     state_.write_to_db(header.number);
 
     return ValidationResult::kOk;
-}
-
-void ExecutionProcessor::apply_rewards() noexcept {
-    const evmc_revision rev{evm_.revision()};
-    intx::uint256 block_reward;
-    if (rev >= EVMC_CONSTANTINOPLE) {
-        block_reward = param::kBlockRewardConstantinople;
-    } else if (rev >= EVMC_BYZANTIUM) {
-        block_reward = param::kBlockRewardByzantium;
-    } else {
-        block_reward = param::kBlockRewardFrontier;
-    }
-
-    const uint64_t block_number{evm_.block().header.number};
-    intx::uint256 miner_reward{block_reward};
-    for (const BlockHeader& ommer : evm_.block().ommers) {
-        intx::uint256 ommer_reward{((8 + ommer.number - block_number) * block_reward) >> 3};
-        state_.add_to_balance(ommer.beneficiary, ommer_reward);
-        miner_reward += block_reward / 32;
-    }
-
-    state_.add_to_balance(evm_.block().header.beneficiary, miner_reward);
 }
 
 }  // namespace silkworm

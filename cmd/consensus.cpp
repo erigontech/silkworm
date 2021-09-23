@@ -28,9 +28,9 @@
 #include <magic_enum.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/chain/blockchain.hpp>
+#include <silkworm/consensus/blockchain.hpp>
 #include <silkworm/chain/difficulty.hpp>
-#include <silkworm/chain/validity.hpp>
+#include <silkworm/consensus/ethash/ethash.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
@@ -42,6 +42,7 @@
 // See https://ethereum-tests.readthedocs.io
 
 using namespace silkworm;
+using namespace silkworm::consensus;
 
 namespace fs = std::filesystem;
 
@@ -435,8 +436,9 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
     }
 
     init_pre_state(json_test["pre"], state);
-
-    Blockchain blockchain{state, config, genesis_block};
+    
+    auto engine{consensus::get_consensus_engine(config.seal_engine)};
+    Blockchain blockchain{state, *engine, config, genesis_block};
     blockchain.state_pool = &state_pool;
     blockchain.exo_evm = evm;
 

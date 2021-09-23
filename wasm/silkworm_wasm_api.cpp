@@ -28,6 +28,7 @@ void delete_buffer(void* ptr) { std::free(ptr); }
 
 using namespace silkworm;
 
+silkworm::consensus::Ethash engine;
 Bytes* new_bytes_from_hex(const char* data, size_t size) {
     std::optional<Bytes> res{from_hex(std::string_view{data, size})};
     if (!res) {
@@ -202,13 +203,13 @@ void state_update_storage(State* state, const uint8_t* address, const Account* a
                           to_bytes32(*value));
 }
 
-Blockchain* new_blockchain(State* state, const ChainConfig* config, const Block* genesis_block) {
-    return new Blockchain{*state, *config, *genesis_block};
+consensus::Blockchain* new_blockchain(State* state, const ChainConfig* config, const Block* genesis_block) {
+    return new consensus::Blockchain{*state, engine, *config, *genesis_block};
 }
 
-void delete_blockchain(Blockchain* x) { delete x; }
+void delete_blockchain(consensus::Blockchain* x) { delete x; }
 
-ValidationResult blockchain_insert_block(Blockchain* chain, Block* block, bool check_state_root) {
+ValidationResult blockchain_insert_block(consensus::Blockchain* chain, Block* block, bool check_state_root) {
     return chain->insert_block(*block, check_state_root);
 }
 

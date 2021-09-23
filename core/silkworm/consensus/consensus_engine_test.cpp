@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#include "validity.hpp"
+#include "consensus_engine.hpp"
 
 #include <catch2/catch.hpp>
 
-namespace silkworm {
+namespace silkworm::consensus {
 
 static const ChainConfig kTestConfig{
     1,  // chain_id

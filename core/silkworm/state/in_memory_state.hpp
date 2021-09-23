@@ -34,6 +34,7 @@ class InMemoryState : public State {
     using StorageChanges =
         std::unordered_map<evmc::address,
                            std::unordered_map<uint64_t, std::unordered_map<evmc::bytes32, evmc::bytes32>>>;
+
   public:
     std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 

@@ -30,7 +30,9 @@
 #include "stagedsync.hpp"
 
 using namespace evmc::literals;
+
 using namespace silkworm;
+using namespace silkworm::consensus;
 
 TEST_CASE("Stage History") {
     TemporaryDirectory tmp_dir;

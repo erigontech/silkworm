@@ -27,7 +27,7 @@ namespace silkworm {
 // the first true index. If there is no such index, binary_find_if returns n.
 // binary_find_if calls f(i) only for i in the range [0, n).
 //
-// For a vector<int> vec and some int value, the following should return the same index:
+// For a sorted vector<int> vec and some int value, the following should return the same index:
 //
 // std::upper_bound(vec.begin(), vec.end(), value) - vec.begin();
 // std::find_if(vec.begin(), vec.end(), [&](int x) { return x > value;}) - vec.begin();

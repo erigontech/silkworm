@@ -36,7 +36,7 @@ TEST_CASE("cut_left1") {
     CHECK(actual == expected);
 }
 
-static void cut_all(roaring::Roaring& bm, uint64_t limit) {
+static void cut_everything(roaring::Roaring& bm, uint64_t limit) {
     while (bm.cardinality() > 0) {
         const auto original{bm};
         const auto lft{cut_left(bm, limit)};
@@ -60,8 +60,8 @@ TEST_CASE("cut_left2") {
         bm.addRange(j, j + 10);
     }
 
-    SECTION("limit=1024") { cut_all(bm, 1024); }
-    SECTION("limit=2048") { cut_all(bm, 2048); }
+    SECTION("limit=1024") { cut_everything(bm, 1024); }
+    SECTION("limit=2048") { cut_everything(bm, 2048); }
 }
 
 TEST_CASE("cut_left3") {

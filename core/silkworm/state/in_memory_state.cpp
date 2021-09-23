@@ -80,11 +80,6 @@ std::optional<BlockHeader> InMemoryState::read_header(uint64_t block_number,
     return it->second;
 }
 
-std::optional<consensus::CliqueSnapshot> InMemoryState::read_snapshot(uint64_t block_number,
-                                                                      const evmc::bytes32&) const noexcept {
-    return snapshots_.at(block_number);
-}
-
 std::optional<BlockBody> InMemoryState::read_body(uint64_t block_number,
                                                   const evmc::bytes32& block_hash) const noexcept {
     if (block_number >= bodies_.size()) {
@@ -191,10 +186,6 @@ void InMemoryState::update_storage(const evmc::address& address, uint64_t incarn
     } else {
         storage_[address][incarnation][location] = current;
     }
-}
-
-void InMemoryState::write_snapshot(uint64_t block_number, const evmc::bytes32&, consensus::CliqueSnapshot& snapshot) {
-    snapshots_[block_number] = snapshot;
 }
 
 void InMemoryState::unwind_state_changes(uint64_t block_number) {

@@ -20,11 +20,8 @@
 
 #include <ethash/ethash.hpp>
 
-#include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/endian.hpp>
-#include <silkworm/consensus/clique/clique.hpp>
 #include <silkworm/consensus/ethash/ethash.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 
@@ -113,11 +110,10 @@ std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header
 }
 
 std::unique_ptr<ConsensusEngine> get_consensus_engine(SealEngineType engine_type) {
+    // TODO(Andrea) check where used. We should not return an unimplemented seal engine
     switch (engine_type) {
         case SealEngineType::kEthash:
             return std::make_unique<Ethash>();
-        case SealEngineType::kClique:
-            return std::make_unique<Clique>(kDefaultCliqueConfig);
         default:
             return std::make_unique<Ethash>();
     }

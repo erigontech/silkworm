@@ -20,7 +20,6 @@
 #include <optional>
 
 #include <silkworm/common/base.hpp>
-#include <silkworm/consensus/clique/clique_snapshot.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
@@ -50,9 +49,6 @@ class State {
 
     virtual std::optional<BlockHeader> read_header(uint64_t block_number,
                                                    const evmc::bytes32& block_hash) const noexcept = 0;
-
-    virtual std::optional<consensus::CliqueSnapshot> read_snapshot(uint64_t block_number,
-                                                                   const evmc::bytes32& block_hash) const noexcept = 0;
 
     virtual std::optional<BlockBody> read_body(uint64_t block_number,
                                                const evmc::bytes32& block_hash) const noexcept = 0;
@@ -96,9 +92,6 @@ class State {
                                 const evmc::bytes32& initial, const evmc::bytes32& current) = 0;
 
     virtual void unwind_state_changes(uint64_t block_number) = 0;
-
-    virtual void write_snapshot(uint64_t block_number, const evmc::bytes32& block_hash,
-                                consensus::CliqueSnapshot& snapshot) = 0;
 
     ///@}
 };

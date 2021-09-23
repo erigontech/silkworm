@@ -55,14 +55,14 @@ RoaringMap cut_left_impl(RoaringMap& bm, uint64_t size_limit) {
     const auto from{bm.minimum()};
     const auto min_max{bm.maximum() - bm.minimum()};
 
-    const auto cutting_point{upper_bound(min_max, [&](size_t i) {
+    const auto cutting_point{binary_find_if(min_max, [&](size_t i) {
         RoaringMap current_bitmap(roaring::api::roaring_bitmap_from_range(from, from + i + 1, 1));
         current_bitmap &= bm;
         current_bitmap.runOptimize();
         return current_bitmap.getSizeInBytes() > size_limit;
     })};
 
-    // no +1 because upper_bound returns the element which is just above the threshold - but we need <=
+    // no +1 because binary_find_if returns the element which is just above the threshold - but we need <=
     RoaringMap res(roaring::api::roaring_bitmap_from_range(from, from + cutting_point, 1));
     res &= bm;
     res.runOptimize();

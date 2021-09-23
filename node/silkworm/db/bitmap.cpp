@@ -16,6 +16,7 @@
 
 #include "bitmap.hpp"
 
+#include <silkworm/common/binary_search.hpp>
 #include <silkworm/common/cast.hpp>
 
 namespace silkworm::db::bitmap {
@@ -32,12 +33,12 @@ std::optional<uint64_t> seek(const roaring::Roaring64Map& bitmap, uint64_t n) {
     return std::nullopt;
 }
 
-static void remove_range_closed(roaring::Roaring& bm, uint32_t min, uint32_t max) {
-    roaring::api::roaring_bitmap_remove_range_closed(&bm.roaring, min, max);
+static void remove_range_impl(roaring::Roaring& bm, uint32_t min, uint32_t max) {
+    roaring::api::roaring_bitmap_remove_range(&bm.roaring, min, max);
 }
 
-static void remove_range_closed(roaring::Roaring64Map& bm, uint64_t min, uint64_t max) {
-    for (uint64_t k = min; k <= max; ++k) {
+static void remove_range_impl(roaring::Roaring64Map& bm, uint64_t min, uint64_t max) {
+    for (uint64_t k = min; k < max; ++k) {
         bm.remove(k);
     }
 }
@@ -54,25 +55,18 @@ RoaringMap cut_left_impl(RoaringMap& bm, uint64_t size_limit) {
     const auto from{bm.minimum()};
     const auto min_max{bm.maximum() - bm.minimum()};
 
-    // We look for the cutting point
-    uint64_t i = min_max;
-    uint64_t j = 0;
-    while (i < j) {
-        // binary search
-        const uint64_t h = (i + j) / 2;
+    const auto cutting_point{upper_bound(min_max, [&](size_t i) {
         RoaringMap current_bitmap(roaring::api::roaring_bitmap_from_range(from, from + i + 1, 1));
         current_bitmap &= bm;
         current_bitmap.runOptimize();
-        if (current_bitmap.getSizeInBytes() <= size_limit) {
-            i = h + 1;
-        } else {
-            j = h;
-        }
-    }
-    RoaringMap res(roaring::api::roaring_bitmap_from_range(from, from + i, 1));
+        return current_bitmap.getSizeInBytes() > size_limit;
+    })};
+
+    // no +1 because upper_bound returns the element which is just above the threshold - but we need <=
+    RoaringMap res(roaring::api::roaring_bitmap_from_range(from, from + cutting_point, 1));
     res &= bm;
     res.runOptimize();
-    remove_range_closed(bm, from, from + i);
+    remove_range_impl(bm, from, from + cutting_point);
     return res;
 }
 

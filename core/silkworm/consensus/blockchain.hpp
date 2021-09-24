@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <silkworm/consensus/consensus_engine.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/execution/state_pool.hpp>
 #include <silkworm/state/state.hpp>
 #include <silkworm/types/receipt.hpp>
@@ -35,7 +35,7 @@ class Blockchain {
     /// Creates a new instance of Blockchain.
     /// In the beginning the state must have the genesis allocation.
     /// Later on the state may only be modified by the created instance of Blockchain.
-    Blockchain(State& state, ConsensusEngine& engine, const ChainConfig& config, const Block& genesis_block);
+    Blockchain(State& state, IConsensusEngine& engine, const ChainConfig& config, const Block& genesis_block);
 
     // Not copyable nor movable
     Blockchain(const Blockchain&) = delete;
@@ -60,7 +60,7 @@ class Blockchain {
     uint64_t canonical_ancestor(const BlockHeader& header, const evmc::bytes32& hash) const;
 
     State& state_;
-    ConsensusEngine& engine_;
+    IConsensusEngine& engine_;
     const ChainConfig& config_;
     std::unordered_map<evmc::bytes32, ValidationResult> bad_blocks_;
     std::vector<Receipt> receipts_;

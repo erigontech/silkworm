@@ -20,10 +20,10 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/common/directories.hpp>
+#include <silkworm/consensus/ethash/engine.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
-#include <silkworm/consensus/ethash/ethash.hpp>
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and scans txs for errored txs"};
@@ -65,9 +65,12 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};
         auto chain_config{db::read_chain_config(txn)};
-        auto engine{consensus::get_consensus_engine((*chain_config).seal_engine)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
+        }
+        auto engine{consensus::engine_factory(chain_config.value())};
+        if (!engine) {
+            throw std::runtime_error("Unable to retrieve consensus engine");
         }
 
         // counters

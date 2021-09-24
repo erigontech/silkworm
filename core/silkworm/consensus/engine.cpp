@@ -14,15 +14,11 @@
    limitations under the License.
 */
 
-#include "consensus_engine.hpp"
-
-#include <cassert>
-
-#include <ethash/ethash.hpp>
+#include "engine.hpp"
 
 #include <silkworm/chain/intrinsic_gas.hpp>
-#include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/consensus/ethash/ethash.hpp>
+#include <silkworm/consensus/ethash/engine.hpp>
+#include <silkworm/consensus/noproof/engine.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 
 namespace silkworm::consensus {
@@ -70,52 +66,14 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     return ValidationResult::kOk;
 }
 
-std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent,
-                                                       const ChainConfig& config) {
-    if (config.revision(header.number) < EVMC_LONDON) {
-        return std::nullopt;
-    }
-
-    if (header.number == config.revision_block(EVMC_LONDON)) {
-        return param::kInitialBaseFee;
-    }
-
-    const uint64_t parent_gas_target{parent.gas_limit / param::kElasticityMultiplier};
-
-    assert(parent.base_fee_per_gas.has_value());
-    const intx::uint256 parent_base_fee_per_gas{*parent.base_fee_per_gas};
-
-    if (parent.gas_used == parent_gas_target) {
-        return parent_base_fee_per_gas;
-    }
-
-    if (parent.gas_used > parent_gas_target) {
-        const intx::uint256 gas_used_delta{parent.gas_used - parent_gas_target};
-        intx::uint256 base_fee_per_gas_delta{parent_base_fee_per_gas * gas_used_delta / parent_gas_target /
-                                             param::kBaseFeeMaxChangeDenominator};
-        if (base_fee_per_gas_delta < 1) {
-            base_fee_per_gas_delta = 1;
-        }
-        return parent_base_fee_per_gas + base_fee_per_gas_delta;
-    } else {
-        const intx::uint256 gas_used_delta{parent_gas_target - parent.gas_used};
-        const intx::uint256 base_fee_per_gas_delta{parent_base_fee_per_gas * gas_used_delta / parent_gas_target /
-                                                   param::kBaseFeeMaxChangeDenominator};
-        if (parent_base_fee_per_gas > base_fee_per_gas_delta) {
-            return parent_base_fee_per_gas - base_fee_per_gas_delta;
-        } else {
-            return 0;
-        }
-    }
-}
-
-std::unique_ptr<ConsensusEngine> get_consensus_engine(SealEngineType engine_type) {
-    // TODO(Andrea) check where used. We should not return an unimplemented seal engine
-    switch (engine_type) {
+std::unique_ptr<IConsensusEngine> engine_factory(const ChainConfig& chain_config) {
+    switch (chain_config.seal_engine) {
         case SealEngineType::kEthash:
-            return std::make_unique<Ethash>();
+            return std::make_unique<ConsensusEngineEthash>(chain_config);
+        case SealEngineType::kNoProof:
+            return std::make_unique<ConsensusEngineNoproof>(chain_config);
         default:
-            return std::make_unique<Ethash>();
+            return {};
     }
 }
 

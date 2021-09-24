@@ -14,9 +14,9 @@
    limitations under the License.
 */
 
-#include "consensus_engine.hpp"
-
 #include <catch2/catch.hpp>
+
+#include "engine.hpp"
 
 namespace silkworm::consensus {
 

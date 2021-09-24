@@ -25,7 +25,7 @@
 
 namespace silkworm {
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::ConsensusEngine& engine, State& state,
+ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::IConsensusEngine& engine, State& state,
                                        const ChainConfig& config)
     : state_{state}, engine_{engine}, evm_{block, state_, config} {
     evm_.beneficiary = engine.get_beneficiary(block.header);

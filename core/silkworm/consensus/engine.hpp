@@ -28,23 +28,25 @@
 
 namespace silkworm::consensus {
 
-class ConsensusEngine {
+class IConsensusEngine {
   public:
+    explicit IConsensusEngine(const ChainConfig& chain_config) : chain_config_{chain_config} {};
+
     //! \brief Performs validation of block header & body that can be done prior to sender recovery and execution.
     //! \brief See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity", and 11.1 "Ommer Validation".
     //! \param [in] block: block to pre-validate.
     //! \param [in] state: current state.
-    //! \param [in] config: current chain config.
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult pre_validate_block(const Block& block, State& state, const ChainConfig& config) = 0;
+    virtual ValidationResult pre_validate_block(const Block& block, State& state) = 0;
 
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.
     //! \param [in] state: current state.
-    //! \param [in] config: current chain config.
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult validate_block_header(const BlockHeader& header, State& state,
-                                                   const ChainConfig& config) = 0;
+    virtual ValidationResult validate_block_header(const BlockHeader& header, State& state) = 0;
+
+    //! \brief Validates the seal of the header
+    virtual ValidationResult validate_seal(const BlockHeader& header) = 0;
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] state: current state.
@@ -56,19 +58,28 @@ class ConsensusEngine {
     //! \param [in] header: Current block to get beneficiary from
     virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
 
-    virtual ~ConsensusEngine() = default;
+    //! \brief Returns parent header (if any) of provided header
+    virtual std::optional<BlockHeader> get_parent_header(const State& state, const BlockHeader& header) = 0;
+
+  protected:
+    const ChainConfig& chain_config_;
+
+    //! \brief See [YP] Section 11.1 "Ommer Validation"
+    virtual bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                        const evmc::bytes32& mainline_hash, unsigned n, const State& state,
+                        std::vector<BlockHeader>& old_ommers) = 0;
+
+    //! \brief See https://eips.ethereum.org/EIPS/eip-1559
+    virtual std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header,
+                                                                   const BlockHeader& parent) = 0;
 };
 
-// Performs validation of a transaction that can be done prior to sender recovery and block execution.
-// May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
+//! \brief Performs validation of a transaction that can be done prior to sender recovery and block execution.
+//! \return Any of kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
 ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
                                           const std::optional<intx::uint256>& base_fee_per_gas);
 
-// https://eips.ethereum.org/EIPS/eip-1559
-std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent,
-                                                       const ChainConfig& config);
-
-std::unique_ptr<ConsensusEngine> get_consensus_engine(SealEngineType engine_type);
+std::unique_ptr<IConsensusEngine> engine_factory(const ChainConfig& chain_config);
 
 }  // namespace silkworm::consensus
 

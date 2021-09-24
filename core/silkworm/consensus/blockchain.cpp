@@ -22,7 +22,7 @@
 
 namespace silkworm::consensus {
 
-Blockchain::Blockchain(State& state, ConsensusEngine& engine, const ChainConfig& config, const Block& genesis_block)
+Blockchain::Blockchain(State& state, IConsensusEngine& engine, const ChainConfig& config, const Block& genesis_block)
     : state_{state}, engine_{engine}, config_{config} {
     evmc::bytes32 hash{genesis_block.header.hash()};
     state_.insert_block(genesis_block, hash);
@@ -30,7 +30,7 @@ Blockchain::Blockchain(State& state, ConsensusEngine& engine, const ChainConfig&
 }
 
 ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
-    if (ValidationResult err{engine_.pre_validate_block(block, state_, config_)}; err != ValidationResult::kOk) {
+    if (ValidationResult err{engine_.pre_validate_block(block, state_)}; err != ValidationResult::kOk) {
         return err;
     }
 

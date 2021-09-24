@@ -20,7 +20,7 @@
 #include <cstdint>
 #include <vector>
 
-#include <silkworm/consensus/consensus_engine.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/execution/evm.hpp>
 #include <silkworm/state/state.hpp>
 #include <silkworm/types/block.hpp>
@@ -34,7 +34,7 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, consensus::ConsensusEngine& engine, State& state, const ChainConfig& config);
+    ExecutionProcessor(const Block& block, consensus::IConsensusEngine& engine, State& state, const ChainConfig& config);
 
     // Preconditions:
     // 1) pre_validate_transaction(txn) must return kOk
@@ -67,7 +67,7 @@ class ExecutionProcessor {
 
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;
-    consensus::ConsensusEngine& engine_;
+    consensus::IConsensusEngine& engine_;
     EVM evm_;
 };
 

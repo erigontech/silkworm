@@ -14,25 +14,24 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_CONSENSUS_ETHASH
-#define SILKWORM_CONSENSUS_ETHASH
+#pragma once
+#ifndef SILKWORM_CONSENSUS_NOPROOF_ENGINE_HPP_
+#define SILKWORM_CONSENSUS_NOPROOF_ENGINE_HPP_
 
-#include <silkworm/consensus/consensus_engine.hpp>
+#include <silkworm/consensus/ethash/engine.hpp>
 
 namespace silkworm::consensus {
 // Proof of Work implementation
-class Ethash: public ConsensusEngine {
+class ConsensusEngineNoproof : public ConsensusEngineEthash {
+    using base = ConsensusEngineEthash;
 
-    public:
+  public:
+    explicit ConsensusEngineNoproof(const ChainConfig& chain_config) : base(chain_config){};
 
-     ValidationResult pre_validate_block(const Block& block, State& state, const ChainConfig& config) override;
+    //! \brief Validates the seal of the header
+    ValidationResult validate_seal(const BlockHeader& header) final;
 
-     ValidationResult validate_block_header(const BlockHeader& header, State& state, const ChainConfig& config) override;
-
-     void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
-
-     evmc::address get_beneficiary(const BlockHeader& header) override;
 };
 
-}
-#endif // SILKWORM_CONSENSUS_ETHASH
+}  // namespace silkworm::consensus
+#endif  // SILKWORM_CONSENSUS_NOPROOF_ENGINE_HPP_

@@ -28,12 +28,12 @@
 #include <magic_enum.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/consensus/blockchain.hpp>
 #include <silkworm/chain/difficulty.hpp>
-#include <silkworm/consensus/ethash/ethash.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/consensus/blockchain.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/state/intra_block_state.hpp>
@@ -437,7 +437,7 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
 
     init_pre_state(json_test["pre"], state);
     
-    auto engine{consensus::get_consensus_engine(config.seal_engine)};
+    auto engine{consensus::engine_factory(config)};
     Blockchain blockchain{state, *engine, config, genesis_block};
     blockchain.state_pool = &state_pool;
     blockchain.exo_evm = evm;
@@ -574,7 +574,6 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         }
 
         ChainConfig config{kNetworkConfig.at(entry.key())};
-
         if (ValidationResult err{
                 pre_validate_transaction(txn, /*block_number=*/0, config, /*base_fee_per_gas=*/std::nullopt)};
             err != ValidationResult::kOk) {
@@ -616,10 +615,10 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
 Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> config) {
-    auto parent_timestamp{std::stoull(j["parentTimestamp"].get<std::string>(), 0, 0)};
+    auto parent_timestamp{std::stoull(j["parentTimestamp"].get<std::string>(), nullptr, 0)};
     auto parent_difficulty{intx::from_string<intx::uint256>(j["parentDifficulty"].get<std::string>())};
-    auto current_timestamp{std::stoull(j["currentTimestamp"].get<std::string>(), 0, 0)};
-    auto block_number{std::stoull(j["currentBlockNumber"].get<std::string>(), 0, 0)};
+    auto current_timestamp{std::stoull(j["currentTimestamp"].get<std::string>(), nullptr, 0)};
+    auto block_number{std::stoull(j["currentBlockNumber"].get<std::string>(), nullptr, 0)};
     auto current_difficulty{intx::from_string<intx::uint256>(j["currentDifficulty"].get<std::string>())};
 
     bool parent_has_uncles{false};

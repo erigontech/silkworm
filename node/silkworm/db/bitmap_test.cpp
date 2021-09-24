@@ -21,7 +21,8 @@
 #include <catch2/catch.hpp>
 
 namespace silkworm::db::bitmap {
-TEST_CASE("cut_left") {
+
+TEST_CASE("cut_left1") {
     roaring::Roaring64Map bitmap(roaring::api::roaring_bitmap_from_range(0, 100000, 1));
     roaring::Roaring64Map expected(roaring::api::roaring_bitmap_from_range(0, 100000, 1));
     roaring::Roaring64Map actual;
@@ -34,4 +35,45 @@ TEST_CASE("cut_left") {
     }
     CHECK(actual == expected);
 }
+
+static void cut_everything(roaring::Roaring& bm, uint64_t limit) {
+    while (bm.cardinality() > 0) {
+        const auto original{bm};
+        const auto left{cut_left(bm, limit)};
+
+        CHECK((left & bm).isEmpty());
+        CHECK((left | bm) == original);
+
+        const auto left_size{left.getSizeInBytes()};
+        CHECK(left_size <= limit);
+        if (bm.isEmpty()) {
+            CHECK(left_size > 0);
+        } else {
+            CHECK(left_size > limit - 256);
+        }
+    }
+}
+
+TEST_CASE("cut_left2") {
+    roaring::Roaring bm;
+    for (uint64_t j{0}; j < 10'000; j += 20) {
+        bm.addRange(j, j + 10);
+    }
+
+    SECTION("limit=1024") { cut_everything(bm, 1024); }
+    SECTION("limit=2048") { cut_everything(bm, 2048); }
+}
+
+TEST_CASE("cut_left3") {
+    roaring::Roaring bm;
+    bm.add(1);
+
+    const uint64_t limit{2048};
+    const auto lft{cut_left(bm, limit)};
+
+    CHECK(lft.getSizeInBytes() > 0);
+    CHECK(lft.cardinality() == 1);
+    CHECK(bm.cardinality() == 0);
+}
+
 }  // namespace silkworm::db::bitmap

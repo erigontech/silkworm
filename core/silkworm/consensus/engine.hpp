@@ -31,6 +31,7 @@ namespace silkworm::consensus {
 class IConsensusEngine {
   public:
     explicit IConsensusEngine(const ChainConfig& chain_config) : chain_config_{chain_config} {};
+    virtual ~IConsensusEngine() = default;
 
     //! \brief Performs validation of block header & body that can be done prior to sender recovery and execution.
     //! \brief See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity", and 11.1 "Ommer Validation".

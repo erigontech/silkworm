@@ -34,7 +34,7 @@ Blockchain::Blockchain(State& state, std::unique_ptr<IConsensusEngine>& engine, 
 }
 
 ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
-    if (ValidationResult err{engine_->pre_validate_block(block, state_)}; err != ValidationResult::kOk) {
+    if (ValidationResult err{engine_->validate_block(block, state_)}; err != ValidationResult::kOk) {
         return err;
     }
 

@@ -33,7 +33,7 @@ class ConsensusEngineBase : public IConsensusEngine {
     //! \param [in] block: block to pre-validate.
     //! \param [in] state: current state.
     //! \note Shouldn't be used for genesis block.
-    ValidationResult pre_validate_block(const Block& block, State& state) override;
+    ValidationResult validate_block(const Block& block, State& state) override;
 
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.

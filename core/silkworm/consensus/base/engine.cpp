@@ -23,7 +23,7 @@
 
 namespace silkworm::consensus {
 
-ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& block, silkworm::State& state) {
+ValidationResult ConsensusEngineBase::validate_block(const silkworm::Block& block, silkworm::State& state) {
     const BlockHeader& header{block.header};
 
     if (ValidationResult err{validate_block_header(header, state)}; err != ValidationResult::kOk) {

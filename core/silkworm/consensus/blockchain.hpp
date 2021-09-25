@@ -60,8 +60,8 @@ class Blockchain {
     uint64_t canonical_ancestor(const BlockHeader& header, const evmc::bytes32& hash) const;
 
     State& state_;
-    IConsensusEngine& engine_;
     const ChainConfig& config_;
+    std::unique_ptr<IConsensusEngine> engine_;
     std::unordered_map<evmc::bytes32, ValidationResult> bad_blocks_;
     std::vector<Receipt> receipts_;
 };

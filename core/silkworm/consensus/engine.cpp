@@ -28,7 +28,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     const evmc_revision rev{config.revision(block_number)};
 
     if (txn.chain_id.has_value()) {
-        if (rev < EVMC_SPURIOUS_DRAGON || txn.chain_id != config.chain_id) {
+        if (rev < EVMC_SPURIOUS_DRAGON || txn.chain_id.value() != config.chain_id) {
             return ValidationResult::kWrongChainId;
         }
     }
@@ -45,7 +45,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
         return ValidationResult::kUnsupportedTransactionType;
     }
 
-    if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas) {
+    if (base_fee_per_gas.has_value() && txn.max_fee_per_gas < base_fee_per_gas.value()) {
         return ValidationResult::kMaxFeeLessThanBase;
     }
 

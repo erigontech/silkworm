@@ -194,8 +194,7 @@ bool ConsensusEngineBase::is_kin(const BlockHeader& branch_header, const BlockHe
         return true;
     }
 
-    return is_kin(branch_header, *mainline_parent, mainline_header.parent_hash, n - 1, state, old_ommers);
-
+    return is_kin(branch_header, mainline_parent.value(), mainline_header.parent_hash, n - 1, state, old_ommers);
 }
 
 evmc::address ConsensusEngineBase::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
@@ -213,7 +212,7 @@ std::optional<intx::uint256> ConsensusEngineBase::expected_base_fee_per_gas(cons
     const uint64_t parent_gas_target{parent.gas_limit / param::kElasticityMultiplier};
 
     assert(parent.base_fee_per_gas.has_value());
-    const intx::uint256 parent_base_fee_per_gas{*parent.base_fee_per_gas};
+    const intx::uint256 parent_base_fee_per_gas{parent.base_fee_per_gas.value()};
 
     if (parent.gas_used == parent_gas_target) {
         return parent_base_fee_per_gas;

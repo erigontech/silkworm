@@ -22,7 +22,7 @@
 
 namespace silkworm::consensus {
 
-Blockchain::Blockchain(State& state, IConsensusEngine& engine, const ChainConfig& config, const Block& genesis_block)
+Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& genesis_block)
     : state_{state}, config_{config}, engine_{consensus::engine_factory(config)} {
     evmc::bytes32 hash{genesis_block.header.hash()};
     state_.insert_block(genesis_block, hash);

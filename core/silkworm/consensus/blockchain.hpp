@@ -35,7 +35,7 @@ class Blockchain {
     /// Creates a new instance of Blockchain.
     /// In the beginning the state must have the genesis allocation.
     /// Later on the state may only be modified by the created instance of Blockchain.
-    Blockchain(State& state, IConsensusEngine& engine, const ChainConfig& config, const Block& genesis_block);
+    Blockchain(State& state, const ChainConfig& config, const Block& genesis_block);
 
     // Not copyable nor movable
     Blockchain(const Blockchain&) = delete;

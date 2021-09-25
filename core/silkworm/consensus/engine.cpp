@@ -54,8 +54,10 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
         return ValidationResult::kMaxPriorityFeeGreaterThanMax;
     }
 
-    if (!ecdsa::is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
-        return ValidationResult::kInvalidSignature;
+    if (!txn.from.has_value()) {
+        if (!ecdsa::is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
+            return ValidationResult::kInvalidSignature;
+        }
     }
 
     const intx::uint128 g0{intrinsic_gas(txn, rev >= EVMC_HOMESTEAD, rev >= EVMC_ISTANBUL)};

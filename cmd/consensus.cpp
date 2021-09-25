@@ -334,7 +334,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
         if (invalid) {
             return Status::kPassed;
         }
-        std::cout << "Validation error " << static_cast<int>(err) << std::endl;
+        std::cout << "Validation error " << magic_enum::enum_name<ValidationResult>(err) << std::endl;
         return Status::kFailed;
     }
 
@@ -570,7 +570,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
                 validate_transaction(txn, /*block_number=*/0, config, /*base_fee_per_gas=*/std::nullopt)};
             err != ValidationResult::kOk) {
             if (valid) {
-                std::cout << "Validation error " << static_cast<int>(err) << std::endl;
+                std::cout << "Validation error " << magic_enum::enum_name<ValidationResult>(err) << std::endl;
                 return Status::kFailed;
             } else {
                 continue;

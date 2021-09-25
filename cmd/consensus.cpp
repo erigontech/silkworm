@@ -33,11 +33,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/consensus/blockchain.hpp>
-#include <silkworm/consensus/engine.hpp>
-#include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/in_memory_state.hpp>
-#include <silkworm/state/intra_block_state.hpp>
-#include <silkworm/types/block.hpp>
 
 // See https://ethereum-tests.readthedocs.io
 
@@ -634,7 +630,7 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
     }
 }
 
-bool exclude_test(const fs::path& p, const fs::path root_dir) {
+bool exclude_test(const fs::path& p, const fs::path& root_dir) {
     for (const fs::path& e : kExcludedTests) {
         if (root_dir / e == p) {
             return true;

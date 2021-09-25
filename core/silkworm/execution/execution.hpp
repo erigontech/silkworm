@@ -42,9 +42,12 @@ namespace silkworm {
  * @param state The Ethereum state at the beginning of the block.
  */
 [[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
-                                                    const ChainConfig& config) noexcept {
-    auto engine{consensus::engine_factory(config)};
-    ExecutionProcessor processor{block, *engine, state, config};
+                                                    const ChainConfig& chain_config) noexcept {
+    auto consensus_engine{consensus::engine_factory(chain_config)};
+    if (!consensus_engine) {
+        return ValidationResult::kUnknownConsensusEngine;
+    }
+    ExecutionProcessor processor{block, *consensus_engine, state, chain_config};
     std::vector<Receipt> receipts;
     return processor.execute_and_write_block(receipts);
 }

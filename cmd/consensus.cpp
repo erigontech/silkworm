@@ -436,9 +436,8 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
     }
 
     init_pre_state(json_test["pre"], state);
-    
-    auto engine{consensus::engine_factory(config)};
-    Blockchain blockchain{state, *engine, config, genesis_block};
+
+    Blockchain blockchain{state, config, genesis_block};
     blockchain.state_pool = &state_pool;
     blockchain.exo_evm = evm;
 

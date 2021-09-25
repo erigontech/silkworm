@@ -47,7 +47,10 @@ class IConsensusEngine {
     virtual ValidationResult validate_block_header(const BlockHeader& header, State& state) = 0;
 
     //! \brief Validates the seal of the header
-    virtual ValidationResult validate_seal(const BlockHeader& header) = 0;
+    virtual ValidationResult validate_seal(const BlockHeader& header) {
+        (void)header;
+        return ValidationResult::kOk;
+    }
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] state: current state.

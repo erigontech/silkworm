@@ -41,9 +41,6 @@ class ConsensusEngineBase : public IConsensusEngine {
     //! \note Shouldn't be used for genesis block.
     ValidationResult validate_block_header(const BlockHeader& header, State& state) override;
 
-    //! \brief Validates the seal of the header
-    virtual ValidationResult validate_seal(const BlockHeader& header) override;
-
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.

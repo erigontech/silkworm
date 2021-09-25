@@ -37,7 +37,7 @@ class ExecutionProcessor {
     ExecutionProcessor(const Block& block, consensus::IConsensusEngine& engine, State& state, const ChainConfig& config);
 
     // Preconditions:
-    // 1) pre_validate_transaction(txn) must return kOk
+    // 1) validate_transaction(txn) must return kOk
     // 2) txn.from must be recovered, otherwise kMissingSender will be returned
     ValidationResult validate_transaction(const Transaction& txn) const noexcept;
 

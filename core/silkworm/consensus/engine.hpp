@@ -78,11 +78,14 @@ class IConsensusEngine {
                                                                    const BlockHeader& parent) = 0;
 };
 
-//! \brief Performs validation of a transaction that can be done prior to sender recovery and block execution.
+//! \brief Performs a validation of a transaction.
 //! \return Any of kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
-ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
-                                          const std::optional<intx::uint256>& base_fee_per_gas);
+//! \remarks Should sender of transaction not yet recovered a check on signature's validity is performed
+//! \remarks These function is agnostic to whole block validity
+ValidationResult validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
+                                      const std::optional<intx::uint256>& base_fee_per_gas);
 
+//! \brief Creates an instance of proper Consensus Engine on behalf of chain configuration
 std::unique_ptr<IConsensusEngine> engine_factory(const ChainConfig& chain_config);
 
 }  // namespace silkworm::consensus

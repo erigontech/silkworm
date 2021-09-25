@@ -425,19 +425,16 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
     std::string network{json_test["network"].get<std::string>()};
     ChainConfig config{kNetworkConfig.at(network)};
 
-    std::string seal_engine{json_test["sealEngine"].get<std::string>()};
-    if (seal_engine == "Ethash") {
-        config.seal_engine = SealEngineType::kEthash;
-    } else if (seal_engine == "NoProof") {
-        config.seal_engine = SealEngineType::kNoProof;
-    } else {
-        std::cout << seal_engine << " seal engine is not supported yet" << std::endl;
+    auto consensus_engine{consensus::engine_factory(config)};
+    if (!consensus_engine) {
+        std::cout << magic_enum::enum_name<SealEngineType>(config.seal_engine) << " seal engine is not supported yet"
+                  << std::endl;
         return Status::kSkipped;
     }
 
     init_pre_state(json_test["pre"], state);
 
-    Blockchain blockchain{state, config, genesis_block};
+    Blockchain blockchain{state, consensus_engine, config, genesis_block};
     blockchain.state_pool = &state_pool;
     blockchain.exo_evm = evm;
 

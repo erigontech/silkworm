@@ -35,7 +35,13 @@ class Blockchain {
     /// Creates a new instance of Blockchain.
     /// In the beginning the state must have the genesis allocation.
     /// Later on the state may only be modified by the created instance of Blockchain.
-    Blockchain(State& state, const ChainConfig& config, const Block& genesis_block);
+    explicit Blockchain(State& state, const ChainConfig& config, const Block& genesis_block);
+
+    /// Creates a new instance of Blockchain providing an existing consensus engine
+    /// In the beginning the state must have the genesis allocation.
+    /// Later on the state may only be modified by the created instance of Blockchain.
+    explicit Blockchain(State& state, std::unique_ptr<IConsensusEngine>& engine, const ChainConfig& config,
+                        const Block& genesis_block);
 
     // Not copyable nor movable
     Blockchain(const Blockchain&) = delete;
@@ -50,14 +56,16 @@ class Blockchain {
   private:
     ValidationResult execute_block(const Block& block, bool check_state_root);
 
+    void prime_state_with_genesis(const Block& genesis_block);
+
     void re_execute_canonical_chain(uint64_t ancestor, uint64_t tip);
 
     void unwind_last_changes(uint64_t ancestor, uint64_t tip);
 
-    std::vector<BlockWithHash> intermediate_chain(uint64_t block_number, evmc::bytes32 hash,
-                                                  uint64_t canonical_ancestor) const;
+    [[nodiscard]] std::vector<BlockWithHash> intermediate_chain(uint64_t block_number, evmc::bytes32 hash,
+                                                                uint64_t canonical_ancestor) const;
 
-    uint64_t canonical_ancestor(const BlockHeader& header, const evmc::bytes32& hash) const;
+    [[nodiscard]] uint64_t canonical_ancestor(const BlockHeader& header, const evmc::bytes32& hash) const;
 
     State& state_;
     const ChainConfig& config_;
@@ -66,6 +74,6 @@ class Blockchain {
     std::vector<Receipt> receipts_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::consensus
 
 #endif  // SILKWORM_CONSENSUS_BLOCKCHAIN_HPP_

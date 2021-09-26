@@ -149,6 +149,7 @@ std::optional<BlockHeader> ConsensusEngineBase::get_parent_header(const State& s
     }
     return state.read_header(header.number - 1, header.parent_hash);
 }
+
 bool ConsensusEngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
                                  const evmc::bytes32& mainline_hash, unsigned int n, const State& state,
                                  std::vector<BlockHeader>& old_ommers) {

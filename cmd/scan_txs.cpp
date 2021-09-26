@@ -20,7 +20,7 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/common/directories.hpp>
-#include <silkworm/consensus/ethash/engine.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
-            // Execute the block and retreive the receipts
+            // Execute the block and retrieve the receipts
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
                 std::cerr << "Validation error " << static_cast<int>(res) << " at block " << block_num << "\n";
             }

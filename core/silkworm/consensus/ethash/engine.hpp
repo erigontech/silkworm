@@ -29,7 +29,7 @@ class ConsensusEngineEthash : public ConsensusEngineBase {
     explicit ConsensusEngineEthash(const ChainConfig& chain_config) : base(chain_config){};
 
     //! \brief Validates the seal of the header
-    virtual ValidationResult validate_seal(const BlockHeader& header);
+    virtual ValidationResult validate_seal(const BlockHeader& header) override;
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] state: current state.

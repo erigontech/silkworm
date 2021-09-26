@@ -25,15 +25,15 @@
 
 namespace silkworm {
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::IConsensusEngine& engine, State& state,
+ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::IConsensusEngine& consensus_engine, State& state,
                                        const ChainConfig& config)
-    : state_{state}, engine_{engine}, evm_{block, state_, config} {
-    evm_.beneficiary = engine.get_beneficiary(block.header);
+    : state_{state}, consensus_engine_{consensus_engine}, evm_{block, state_, config} {
+    evm_.beneficiary = consensus_engine.get_beneficiary(block.header);
 }
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
     assert(consensus::validate_transaction(txn, evm_.block().header.number, evm_.config(),
-                                               evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
+                                           evm_.block().header.base_fee_per_gas) == ValidationResult::kOk);
 
     if (!txn.from.has_value()) {
         return ValidationResult::kMissingSender;
@@ -163,7 +163,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         receipts.push_back(execute_transaction(txn));
     }
 
-    engine_.apply_rewards(state_, evm_.block(), evm_.revision());
+    consensus_engine_.apply_rewards(state_, evm_.block(), evm_.revision());
 
     return ValidationResult::kOk;
 }

@@ -45,7 +45,7 @@ class ConsensusEngineBase : public IConsensusEngine {
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
-    void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
+    void finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from

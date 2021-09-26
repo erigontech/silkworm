@@ -163,7 +163,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         receipts.push_back(execute_transaction(txn));
     }
 
-    consensus_engine_.apply_rewards(state_, evm_.block(), evm_.revision());
+    consensus_engine_.finalize(state_, evm_.block(), evm_.revision());
 
     return ValidationResult::kOk;
 }

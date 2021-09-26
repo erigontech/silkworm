@@ -143,7 +143,7 @@ ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& h
     return validate_seal(header);
 }
 
-void ConsensusEngineBase::apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) {
+void ConsensusEngineBase::finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision) {
     intx::uint256 block_reward;
     if (revision >= EVMC_CONSTANTINOPLE) {
         block_reward = param::kBlockRewardConstantinople;

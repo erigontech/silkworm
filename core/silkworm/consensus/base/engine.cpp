@@ -143,27 +143,6 @@ ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& h
     return validate_seal(header);
 }
 
-void ConsensusEngineBase::finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision) {
-    intx::uint256 block_reward;
-    if (revision >= EVMC_CONSTANTINOPLE) {
-        block_reward = param::kBlockRewardConstantinople;
-    } else if (revision >= EVMC_BYZANTIUM) {
-        block_reward = param::kBlockRewardByzantium;
-    } else {
-        block_reward = param::kBlockRewardFrontier;
-    }
-
-    const uint64_t block_number{block.header.number};
-    intx::uint256 miner_reward{block_reward};
-    for (const BlockHeader& ommer : block.ommers) {
-        intx::uint256 ommer_reward{((8 + ommer.number - block_number) * block_reward) >> 3};
-        state.add_to_balance(ommer.beneficiary, ommer_reward);
-        miner_reward += block_reward / 32;
-    }
-
-    state.add_to_balance(block.header.beneficiary, miner_reward);
-}
-
 std::optional<BlockHeader> ConsensusEngineBase::get_parent_header(const State& state, const BlockHeader& header) {
     if (header.number == 0) {
         return std::nullopt;

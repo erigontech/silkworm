@@ -42,12 +42,6 @@ class ConsensusEngineBase : public IConsensusEngine {
     ValidationResult validate_block_header(const BlockHeader& header, State& state) override;
 
     //! \brief See [YP] Section 11.3 "Reward Application".
-    //! \param [in] state: current state.
-    //! \param [in] block: current block to apply rewards for.
-    //! \param [in] revision: EVM fork.
-    void finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
-
-    //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from
     evmc::address get_beneficiary(const BlockHeader& header) override;
 

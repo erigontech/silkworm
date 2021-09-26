@@ -64,10 +64,10 @@ ValidationResult ConsensusEngineBase::validate_block(const silkworm::Block& bloc
         if (!is_kin(ommer, *parent, header.parent_hash, 6, state, old_ommers)) {
             return ValidationResult::kNotAnOmmer;
         }
-        for (const BlockHeader& oo : old_ommers) {
-            if (oo == ommer) {
-                return ValidationResult::kDuplicateOmmer;
-            }
+
+        if (std::any_of(old_ommers.begin(), old_ommers.end(),
+                        [&ommer](const BlockHeader& old_ommer) -> bool { return old_ommer == ommer; })) {
+            return ValidationResult::kDuplicateOmmer;
         }
     }
 

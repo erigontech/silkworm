@@ -24,7 +24,7 @@
 namespace silkworm::consensus {
 
 ValidationResult validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
-                                          const std::optional<intx::uint256>& base_fee_per_gas) {
+                                      const std::optional<intx::uint256>& base_fee_per_gas) {
     const evmc_revision rev{config.revision(block_number)};
 
     if (txn.chain_id.has_value()) {
@@ -54,6 +54,7 @@ ValidationResult validate_transaction(const Transaction& txn, uint64_t block_num
         return ValidationResult::kMaxPriorityFeeGreaterThanMax;
     }
 
+    /* Should the sender already be present it means the validation of signature already occurred */
     if (!txn.from.has_value()) {
         if (!ecdsa::is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
             return ValidationResult::kInvalidSignature;

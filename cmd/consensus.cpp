@@ -554,10 +554,10 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
             continue;
         }
 
-        bool valid{entry.value().contains("sender")};
+        bool should_be_valid{entry.value().contains("sender")};
 
         if (!decoded) {
-            if (valid) {
+            if (should_be_valid) {
                 std::cout << "Failed to decode valid transaction" << std::endl;
                 return Status::kFailed;
             } else {
@@ -566,10 +566,19 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         }
 
         ChainConfig config{kNetworkConfig.at(entry.key())};
+
+        /* validate_transaction checks for invalid signature only if from is empty which means sender's recovery phase
+         * (which btw also verifies signature) has not triggered yet. in the context of tests, instead, from is already
+         * valued from the json rlp payload: this makes validate_transaction to incorrectly skip the validation
+         * signature. Hence we reset from to nullopt to allow proper validation flow. In any case sender recovery would
+         * be performed anyway immediately after this block
+         * */
+        txn.from.reset();
+
         if (ValidationResult err{
                 validate_transaction(txn, /*block_number=*/0, config, /*base_fee_per_gas=*/std::nullopt)};
             err != ValidationResult::kOk) {
-            if (valid) {
+            if (should_be_valid) {
                 std::cout << "Validation error " << magic_enum::enum_name<ValidationResult>(err) << std::endl;
                 return Status::kFailed;
             } else {
@@ -578,19 +587,18 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         }
 
         txn.recover_sender();
-
-        if (valid && !txn.from.has_value()) {
+        if (should_be_valid && !txn.from.has_value()) {
             std::cout << "Failed to recover sender" << std::endl;
             return Status::kFailed;
         }
 
-        if (!valid && txn.from.has_value()) {
+        if (!should_be_valid && txn.from.has_value()) {
             std::cout << entry.key() << "\n"
                       << "Sender recovered for invalid transaction" << std::endl;
             return Status::kFailed;
         }
 
-        if (!valid) {
+        if (!should_be_valid) {
             continue;
         }
 

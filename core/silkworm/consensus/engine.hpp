@@ -38,7 +38,7 @@ class IConsensusEngine {
     //! \param [in] block: block to pre-validate.
     //! \param [in] state: current state.
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult validate_block(const Block& block, State& state) = 0;
+    virtual ValidationResult pre_validate_block(const Block& block, State& state) = 0;
 
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.

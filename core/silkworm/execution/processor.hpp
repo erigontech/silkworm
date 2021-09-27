@@ -48,7 +48,7 @@ class ExecutionProcessor {
     /// Execute the block and write the result to the DB.
     /// Warning: This method does not verify state root;
     /// pre-Byzantium receipt root isn't validated either.
-    /// Precondition: validate_block(block) must return kOk.
+    /// Precondition: consensus_engine's pre_validate_block(block) must return kOk.
     [[nodiscard]] ValidationResult execute_and_write_block(std::vector<Receipt>& receipts) noexcept;
 
     uint64_t cumulative_gas_used() const noexcept { return cumulative_gas_used_; }
@@ -59,7 +59,7 @@ class ExecutionProcessor {
   private:
     /// Execute the block, but do not write to the DB yet.
     /// Does not perform any post-execution validation (for example, receipt root is not checked).
-    /// Precondition: validate_block(block) must return kOk.
+    /// Precondition: pre_validate_block(block) must return kOk.
     [[nodiscard]] ValidationResult execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept;
 
     uint64_t available_gas() const noexcept;

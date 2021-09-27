@@ -36,6 +36,20 @@ static const ChainConfig kTestConfig{
     },
 };
 
+TEST_CASE("Consensus Engine factory") {
+    std::unique_ptr<IConsensusEngine> consensus_engine;
+    consensus_engine = consensus::engine_factory(kMainnetConfig);  // Ethash consensus engine
+    CHECK(consensus_engine != nullptr);
+    consensus_engine = consensus::engine_factory(kRopstenConfig);  // Ethash consensus engine
+    CHECK(consensus_engine != nullptr);
+    consensus_engine = consensus::engine_factory(kLondonTestConfig);  // Noproof consensus engine
+    CHECK(consensus_engine != nullptr);
+    consensus_engine = consensus::engine_factory(kRinkebyConfig);  // Clique consensus engine
+    CHECK(consensus_engine == nullptr);
+    consensus_engine = consensus::engine_factory(kGoerliConfig);  // Clique consensus engine
+    CHECK(consensus_engine == nullptr);
+}
+
 TEST_CASE("Validate transaction types") {
     const std::optional<intx::uint256> base_fee_per_gas{std::nullopt};
 
@@ -100,4 +114,4 @@ TEST_CASE("Validate max_fee_per_gas") {
           ValidationResult::kMaxPriorityFeeGreaterThanMax);
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::consensus

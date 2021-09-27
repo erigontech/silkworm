@@ -30,61 +30,9 @@ OutboundGetBlockHeaders::OutboundGetBlockHeaders(WorkingChain& wc, SentryClient&
 
 /*
 // HeadersForward progresses Headers stage in the forward direction
-func HeadersForward(
-	s *StageState,
-	u Unwinder,
-	ctx context.Context,
-	tx ethdb.RwTx,
-	cfg HeadersCfg,
-	initialCycle bool,
-	test bool, // Set to true in tests, allows the stage to fail rather than wait indefinitely
-) error {
-	var headerProgress uint64
-	var err error
-	useExternalTx := tx != nil
-	if !useExternalTx {
-		tx, err = cfg.db.BeginRw(ctx)
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-	}
-	if err = cfg.hd.ReadProgressFromDb(tx); err != nil {
-		return err
-	}
-	cfg.hd.SetFetching(true)
-	defer cfg.hd.SetFetching(false)
-	headerProgress = cfg.hd.Progress()
-	logPrefix := s.LogPrefix()
-	// Check if this is called straight after the unwinds, which means we need to create new canonical markings
-	hash, err := rawdb.ReadCanonicalHash(tx, headerProgress)
-	if err != nil {
-		return err
-	}
-	logEvery := time.NewTicker(logInterval)
-	defer logEvery.Stop()
-	if hash == (common.Hash{}) {
-		headHash := rawdb.ReadHeadHeaderHash(tx)
-		if err = fixCanonicalChain(logPrefix, logEvery, headerProgress, headHash, tx); err != nil {
-			return err
-		}
-		if !useExternalTx {
-			if err = tx.Commit(); err != nil {
-				return err
-			}
-		}
-		s.Done()
-		return nil
-	}
+func HeadersForward(s *StageState, u Unwinder, ctx context.Context, tx ethdb.RwTx, cfg HeadersCfg, initialCycle bool,...) error {
 
-	log.Info(fmt.Sprintf("[%s] Waiting for headers...", logPrefix), "from", headerProgress)
-
-	localTd, err := rawdb.ReadTd(tx, hash, headerProgress)
-	if err != nil {
-		return err
-	}
-	headerInserter := headerdownload.NewHeaderInserter(logPrefix, localTd, headerProgress)
-	cfg.hd.SetHeaderReader(&chainReader{config: &cfg.chainConfig, tx: tx})
+        [...]
 
 	var peer []byte
 	stopped := false
@@ -159,27 +107,9 @@ func HeadersForward(
 		}
 		timer.Stop()
 	}
-	if headerInserter.Unwind() {
-		if err := u.UnwindTo(headerInserter.UnwindPoint(), tx, common.Hash{}); err != nil {
-			return fmt.Errorf("%s: failed to unwind to %d: %w", logPrefix, headerInserter.UnwindPoint(), err)
-		}
-	} else if headerInserter.GetHighest() != 0 {
-		if err := fixCanonicalChain(logPrefix, logEvery, headerInserter.GetHighest(), headerInserter.GetHighestHash(), tx); err != nil {
-			return fmt.Errorf("%s: failed to fix canonical chain: %w", logPrefix, err)
-		}
-	}
-	s.Done()
-	if !useExternalTx {
-		if err := tx.Commit(); err != nil {
-			return err
-		}
-	}
-	if stopped {
-		return common.ErrStopped
-	}
-	// We do not print the followin line if the stage was interrupted
-	log.Info(fmt.Sprintf("[%s] Processed", logPrefix), "highest inserted", headerInserter.GetHighest(), "age", common.PrettyAge(time.Unix(int64(headerInserter.GetHighestTimestamp()), 0)))
-	stageHeadersGauge.Update(int64(cfg.hd.Progress()))
+
+        [...]
+
 	return nil
 }
 */
@@ -222,8 +152,6 @@ void OutboundGetBlockHeaders::execute() {
 
         SILKWORM_LOG(LogLevel::Info) << "Headers skeleton request sent, received by " << send_outcome.peers_size() << " peer(s)\n";
     }
-
-    // todo: complete implementations looking at Erigon HeadersForward
 }
 
 sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPacket66& packet_, seconds_t timeout) {

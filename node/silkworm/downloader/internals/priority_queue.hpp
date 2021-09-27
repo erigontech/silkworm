@@ -33,6 +33,7 @@ class set_based_priority_queue {
     void push(const T& element)     {elements_.insert(element);}
     void erase(const T& element)    {elements_.erase(element);}
     size_t size() const             {return elements_.size();}
+    bool contains(const T& element) {return elements_.template find(element) != elements_.end();}
 };
 
 /*

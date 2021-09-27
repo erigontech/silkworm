@@ -32,9 +32,9 @@ namespace silkworm {
 // (proposed) abstract interface for all stages
 class Stage {
   public:
-    enum StageResult { kOk, kError };
+    enum StageResult { Done, Error };
 
-    virtual StageResult forward_to(BlockNum new_height) = 0;
+    virtual StageResult forward(bool first_sync) = 0;
     virtual StageResult unwind_to(BlockNum new_height) = 0;
 };
 
@@ -62,13 +62,15 @@ class HeaderDownloader : public Stage {
     HeaderDownloader(HeaderDownloader&&) = delete; // nor movable
     ~HeaderDownloader();
 
-    StageResult forward_to(BlockNum new_height) override; // go forward, downloading headers up to new_height
+    StageResult forward(bool first_sync) override; // go forward, downloading headers
     StageResult unwind_to(BlockNum new_height) override;  // go backward, unwinding headers to new_height
 
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>; // used internally to store new messages
 
-    void send_status();     // send chain identity to sentry
+    void send_status();          // send chain identity to sentry
+    void send_header_requests(); // send requests for more headers
+    void send_announcements();
 
     /*[[long_running]]*/ void receive_messages(MessageQueue& messages,       // subscribe with sentry to receive messages
                                                std::atomic<bool>& stopping); // and do a long-running loop to wait for messages

@@ -47,4 +47,12 @@ auto move_at_end(std::vector<T>& destination, std::vector<T>& source) {
     );
 }
 
+#include <stack>
+
+template <typename T>
+void push_all(std::stack<T>& destination, std::vector<T>& source) {
+    for(auto& element: source)
+        destination.push(element);
+}
+
 #endif //SILKWORM_CPP20_BACKPORT_HPP

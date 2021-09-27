@@ -80,6 +80,17 @@ class lru_cache {
         }
     }
 
+    bool remove(const key_t& key) {
+        auto it = _cache_items_map.find(key);
+        if (it == _cache_items_map.end())
+            return false;
+
+        _cache_items_list.erase(it->second);
+        _cache_items_map.erase(it);
+
+        return true;
+    }
+
     [[nodiscard]] size_t size() const noexcept { return _cache_items_map.size(); }
 
     void clear() noexcept {

@@ -21,6 +21,7 @@
 #include <queue>
 #include <set>
 #include <vector>
+#include <stack>
 
 #include "db_tx.hpp"
 #include "types.hpp"
@@ -151,8 +152,9 @@ using Anchor_Map = std::map<Hash,std::shared_ptr<Anchor>>; // hash = anchor *par
 // todo: anchorQueue and anchorMap should be encapsulated because if one change an anchor anchorQueue must be fixed
 // todo: assess boost::multi-index-container to replace queue + map pair
 
-// Lists
+// Other containers
 using Link_List = std::vector<std::shared_ptr<Link>>;
+using Link_LIFO_Queue = std::stack<std::shared_ptr<Link>>;
 
 struct Segment; // forward declaration
 

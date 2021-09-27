@@ -19,6 +19,7 @@
 #include <functional>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/db/stages.hpp>
 
 #include "cpp20_backport.hpp"
 #include "header_retrieval.hpp"
@@ -34,11 +35,7 @@ class segment_cut_and_paste_error: public std::logic_error {
 };
 
 
-WorkingChain::WorkingChain(): highestInDb_(0), topSeenHeight_(0), targetHeight_(0), seenAnnounces_(1000) {
-}
-
-void WorkingChain::target_height(BlockNum n) {
-    targetHeight_ = n;
+WorkingChain::WorkingChain(): highestInDb_(0), topSeenHeight_(0), seenAnnounces_(1000) {
 }
 
 BlockNum WorkingChain::highest_block_in_db() {
@@ -53,14 +50,13 @@ BlockNum WorkingChain::top_seen_block_height() {
     return topSeenHeight_;
 }
 
-BlockNum WorkingChain::height_reached() {
-    return 0;   // todo: implement!
-}
-
 std::string WorkingChain::human_readable_status() {
     return std::to_string(anchors_.size()) + " anchors, " + std::to_string(links_.size()) + " links";
 }
 
+std::vector<Announce>& WorkingChain::announces_to_do() {
+    return announcesToDo_;
+}
 /*
 func (hd *HeaderDownload) RecoverFromDb(db ethdb.RoKV) error {
 	hd.lock.Lock()
@@ -98,171 +94,170 @@ func (hd *HeaderDownload) RecoverFromDb(db ethdb.RoKV) error {
 	return nil
 }
 */
-void WorkingChain::recover_from_db(Db::ReadWriteAccess db_access) {
-    HeaderRetrieval headers(db_access);
-    auto head_height = headers.head_height();
-    highestInDb_ = head_height; // topSeenHeight_ will be set at the each block announcements
+void WorkingChain::recover_initial_state(Db::ReadOnlyAccess::Tx& tx) {
+    reduce_persisted_links_to(0);    // drain persistedLinksQueue and remove links
 
-    // todo: implements!
+    tx.read_headers_in_reverse_order(persistent_link_limit, [this](BlockHeader&& header){
+        this->add_header_as_link(header, true); // todo: optimize add_header_as_link to use Header&&
+    });
+
+    //highestInDb_ = tx.read_stage_progress(db::stages::kHeadersKey); // will be done by sync_with
+}
+
+void WorkingChain::sync_current_state_with(PersistedChain& persisted_chain) {
+    highestInDb_ = persisted_chain.initial_height();
 }
 
 /*
-// HeadersForward progresses Headers stage in the forward direction
-func HeadersForward(
-	s *StageState,
-	u Unwinder,
-	ctx context.Context,
-	tx ethdb.RwTx,
-	cfg HeadersCfg,
-	initialCycle bool,
-	test bool, // Set to true in tests, allows the stage to fail rather than wait indefinitely
-) error {
-	var headerProgress uint64
-	var err error
-	useExternalTx := tx != nil
-	if !useExternalTx {
-		tx, err = cfg.db.BeginRw(ctx)
-		if err != nil {
-			return err
+/ InsertHeaders attempts to insert headers into the database, verifying them first
+// It returns true in the first return value if the system is "in sync"
+func (hd *HeaderDownload) InsertHeaders(hf func(header *types.Header, blockHeight uint64) error, logPrefix string, logChannel <-chan time.Time) (bool, error) {
+	hd.lock.Lock()
+	defer hd.lock.Unlock()
+	var linksInFuture []*Link // Here we accumulate links that fail validation as "in the future"
+	for len(hd.insertList) > 0 {
+		// Make sure long insertions do not appear as a stuck stage 1
+		select {
+		case <-logChannel:
+			log.Info(fmt.Sprintf("[%s] Inserting headers", logPrefix), "progress", hd.highestInDb)
+		default:
 		}
-		defer tx.Rollback()
-	}
-	if err = cfg.hd.ReadProgressFromDb(tx); err != nil {
-		return err
-	}
-	cfg.hd.SetFetching(true)
-	defer cfg.hd.SetFetching(false)
-	headerProgress = cfg.hd.Progress()
-	logPrefix := s.LogPrefix()
-	// Check if this is called straight after the unwinds, which means we need to create new canonical markings
-	hash, err := rawdb.ReadCanonicalHash(tx, headerProgress)
-	if err != nil {
-		return err
-	}
-	logEvery := time.NewTicker(logInterval)
-	defer logEvery.Stop()
-	if hash == (common.Hash{}) {
-		headHash := rawdb.ReadHeadHeaderHash(tx)
-		if err = fixCanonicalChain(logPrefix, logEvery, headerProgress, headHash, tx); err != nil {
-			return err
-		}
-		if !useExternalTx {
-			if err = tx.Commit(); err != nil {
-				return err
-			}
-		}
-		s.Done()
-		return nil
-	}
-
-	log.Info(fmt.Sprintf("[%s] Waiting for headers...", logPrefix), "from", headerProgress)
-
-	localTd, err := rawdb.ReadTd(tx, hash, headerProgress)
-	if err != nil {
-		return err
-	}
-	headerInserter := headerdownload.NewHeaderInserter(logPrefix, localTd, headerProgress)
-	cfg.hd.SetHeaderReader(&chainReader{config: &cfg.chainConfig, tx: tx})
-
-	var peer []byte
-	stopped := false
-	prevProgress := headerProgress
-	for !stopped {
-		currentTime := uint64(time.Now().Unix())
-		req, penalties := cfg.hd.RequestMoreHeaders(currentTime)
-		if req != nil {
-			peer = cfg.headerReqSend(ctx, req)
-			if peer != nil {
-				cfg.hd.SentRequest(req, currentTime, 5 ) // 5 = timeout
-				log.Debug("Sent request", "height", req.Number)
-			}
-		}
-		cfg.penalize(ctx, penalties)
-		maxRequests := 64 // Limit number of requests sent per round to let some headers to be inserted into the database
-		for req != nil && peer != nil && maxRequests > 0 {
-			req, penalties = cfg.hd.RequestMoreHeaders(currentTime)
-			if req != nil {
-				peer = cfg.headerReqSend(ctx, req)
-				if peer != nil {
-					cfg.hd.SentRequest(req, currentTime, 5 ) // 5 = timeout
-					log.Debug("Sent request", "height", req.Number)
-				}
-			}
-			cfg.penalize(ctx, penalties)
-			maxRequests--
-		}
-
-		// Send skeleton request if required
-		req = cfg.hd.RequestSkeleton()
-		if req != nil {
-			peer = cfg.headerReqSend(ctx, req)
-			if peer != nil {
-				log.Debug("Sent skeleton request", "height", req.Number)
-			}
-		}
-		// Load headers into the database
-		var inSync bool
-		if inSync, err = cfg.hd.InsertHeaders(headerInserter.FeedHeaderFunc(tx), logPrefix, logEvery.C); err != nil {
-			return err
-		}
-		announces := cfg.hd.GrabAnnounces()
-		if len(announces) > 0 {
-			cfg.announceNewHashes(ctx, announces)
-		}
-		if headerInserter.BestHeaderChanged() { // We do not break unless there best header changed
-			if !initialCycle {
-				// if this is not an initial cycle, we need to react quickly when new headers are coming in
-				break
-			}
-			// if this is initial cycle, we want to make sure we insert all known headers (inSync)
-			if inSync {
-				break
-			}
-		}
-		if test {
+		link := hd.insertList[len(hd.insertList)-1]
+		if link.blockHeight <= hd.preverifiedHeight && !link.preverified {
+			// Header should be preverified, but not yet, try again later
 			break
 		}
-		timer := time.NewTimer(1 * time.Second)
-		select {
-		case <-ctx.Done():
-			stopped = true
-		case <-logEvery.C:
-			progress := cfg.hd.Progress()
-			logProgressHeaders(logPrefix, prevProgress, progress)
-			prevProgress = progress
-		case <-timer.C:
-			log.Trace("RequestQueueTime (header) ticked")
-		case <-cfg.hd.DeliveryNotify:
-			log.Debug("headerLoop woken up by the incoming request")
+		hd.insertList = hd.insertList[:len(hd.insertList)-1]
+		skip := false
+		if !link.preverified {
+			if _, bad := hd.badHeaders[link.hash]; bad {
+				skip = true
+			} else if err := hd.engine.VerifyHeader(hd.headerReader, link.header, true); err != nil {  // true = seal
+				log.Warn("Verification failed for header", "hash", link.header.Hash(), "height", link.blockHeight, "error", err)
+				if errors.Is(err, consensus.ErrFutureBlock) {
+					// This may become valid later
+					linksInFuture = append(linksInFuture, link)
+					log.Warn("Added future link", "hash", link.header.Hash(), "height", link.blockHeight, "timestamp", link.header.Time)
+					continue // prevent removal of the link from the hd.linkQueue
+				} else {
+					skip = true
+				}
+			} else {
+				if hd.seenAnnounces.Pop(link.hash) {
+					hd.toAnnounce = append(hd.toAnnounce, Announce{Hash: link.hash, Number: link.blockHeight})
+				}
+			}
 		}
-		timer.Stop()
-	}
-	if headerInserter.Unwind() {
-		if err := u.UnwindTo(headerInserter.UnwindPoint(), tx, common.Hash{}); err != nil {
-			return fmt.Errorf("%s: failed to unwind to %d: %w", logPrefix, headerInserter.UnwindPoint(), err)
+		if _, ok := hd.links[link.hash]; ok {
+			heap.Remove(hd.linkQueue, link.idx)
 		}
-	} else if headerInserter.GetHighest() != 0 {
-		if err := fixCanonicalChain(logPrefix, logEvery, headerInserter.GetHighest(), headerInserter.GetHighestHash(), tx); err != nil {
-			return fmt.Errorf("%s: failed to fix canonical chain: %w", logPrefix, err)
+		if skip {
+			delete(hd.links, link.hash)
+			continue
+		}
+		if err := hf(link.header, link.blockHeight); err != nil {
+			return false, err
+		}
+		if link.blockHeight > hd.highestInDb {
+			hd.highestInDb = link.blockHeight
+		}
+		link.persisted = true
+		link.header = nil // Drop header reference to free memory, as we won't need it anymore
+		heap.Push(hd.persistedLinkQueue, link)
+		if len(link.next) > 0 {
+			hd.insertList = append(hd.insertList, link.next...)
 		}
 	}
-	s.Done()
-	if !useExternalTx {
-		if err := tx.Commit(); err != nil {
-			return err
-		}
+	for hd.persistedLinkQueue.Len() > hd.persistedLinkLimit {
+		link := heap.Pop(hd.persistedLinkQueue).(*Link)
+		delete(hd.links, link.hash)
 	}
-	if stopped {
-		return common.ErrStopped
+	if len(linksInFuture) > 0 {
+		hd.insertList = append(hd.insertList, linksInFuture...)
+		linksInFuture = nil //nolint
 	}
-	// We do not print the followin line if the stage was interrupted
-	log.Info(fmt.Sprintf("[%s] Processed", logPrefix), "highest inserted", headerInserter.GetHighest(), "age", common.PrettyAge(time.Unix(int64(headerInserter.GetHighestTimestamp()), 0)))
-	stageHeadersGauge.Update(int64(cfg.hd.Progress()))
-	return nil
+	return hd.highestInDb >= hd.preverifiedHeight && hd.topSeenHeight > 0 && hd.highestInDb >= hd.topSeenHeight, nil
 }
 */
 
-// HeadersForward is implemented in OutboundGetBlockHeadersMessage
+
+bool WorkingChain::save_steady_headers(PersistedChain& persisted_chain) {
+
+    Link_List links_in_future; // here we accumulate links that fail validation as "in the future"
+
+    while(!insertList_.empty()) {   // todo: insertList_ is a stack so we iterate it in reverse insertion order, is it correct?
+        // Make sure long insertions do not appear as a stuck stage headers
+        SILKWORM_LOG(LogLevel::Info) << "WorkingChain: inserting headers (" << highestInDb_ << ")\n";
+
+        // Choose a link at top
+        auto link = insertList_.top(); // is the last added
+        if (link->blockHeight <= preverifiedHeight_ && !link->preverified) {
+            break; // header should be preverified, but not yet, try again later
+        }
+
+        insertList_.pop();
+
+        bool skip = false;
+        if (!link->preverified) {
+            if (contains(badHeaders_,link->hash))
+                skip = true;
+            else if (auto error = ConsensusProto::verify(*link->header); error != ConsensusProto::ERROR) {  // true = seal
+                if (error == ConsensusProto::FUTURE_BLOCK) {
+                    links_in_future.push_back(link);
+                    //log
+                    continue;
+                }
+                else {
+                    skip = true;
+                }
+            }
+            else {
+                if (seenAnnounces_.get(link->hash)) {
+                    seenAnnounces_.remove(link->hash);
+                    announcesToDo_.push_back({link->hash, link->blockHeight}); // todo: we do an already seen announce; is it correct?
+                }
+            }
+        }
+        if (contains(links_, link->hash)) {
+            linkQueue_.erase(link);
+        }
+        if (skip) {
+            links_.erase(link->hash);
+        }
+
+        persisted_chain.persist_header(*link->header, link->blockHeight);
+
+        link->persisted = true;
+        link->header = nullptr; // drop header reference to free memory, as we won't need it anymore
+        persistedLinkQueue_.push(link);
+        if (!link->next.empty()) {
+            push_all(insertList_, link->next);
+        }
+    }
+
+    reduce_persisted_links_to(persistent_link_limit);
+
+    if (!links_in_future.empty()) {
+        push_all(insertList_, links_in_future);
+        links_in_future.clear();
+    }
+
+    return highestInDb_ >= preverifiedHeight_ &&
+           topSeenHeight_ > 0 &&
+           highestInDb_ >= topSeenHeight_;
+}
+
+// reduce persistedLinksQueue and remove links
+void WorkingChain::reduce_persisted_links_to(size_t limit) {
+    while(persistedLinkQueue_.size() > limit) {
+        auto link = persistedLinkQueue_.top();
+        persistedLinkQueue_.pop();
+
+        links_.erase(link->hash);
+    }
+}
+
+// Note: Erigon's HeadersForward is implemented in OutboundGetBlockHeaders message
 
 /*
  * Skeleton query.
@@ -276,11 +271,9 @@ func HeadersForward(
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     if (anchors_.size() > 16) return std::nullopt;
 
-    auto targetHeight = targetHeight_; // todo: targetHeight_ or topSeenHeight_?
+    if (topSeenHeight_ < highestInDb_ + stride) return std::nullopt;
 
-    if (targetHeight < highestInDb_ + stride) return std::nullopt;
-
-    BlockNum length = (targetHeight - highestInDb_) / stride;
+    BlockNum length = (topSeenHeight_ - highestInDb_) / stride;
     if (length > max_len)
         length = max_len;
 
@@ -409,8 +402,9 @@ void WorkingChain::invalidate(Anchor& anchor) {
     }
 }
 
+// SaveExternalAnnounce - does mark hash as seen in external announcement, only such hashes will broadcast further after
 void WorkingChain::save_external_announce(Hash h) {
-    seenAnnounces_.put(h, 0);   // we ignore value zero, this rlu cache is based on map so we need to provide a dummy value
+    seenAnnounces_.put(h, 0);   // we ignore the value in the map (zero here), we only need the key
 }
 
 /*
@@ -826,20 +820,20 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
         return false;
     }
 
-    reduce_links();
+    reduce_links_to(link_limit);
 
     // select { case hd.DeliveryNotify <- struct{}{}: default: } // todo: translate
 
     return requestMore /* && hd.requestChaining */; // todo: translate requestChaining
 }
 
-void WorkingChain::reduce_links() {
-    if (linkQueue_.size() <= link_limit)
+void WorkingChain::reduce_links_to(size_t limit) {
+    if (linkQueue_.size() <= limit)
         return; // does nothing
 
     SILKWORM_LOG(LogLevel::Debug) << "LinkQueue: too many links, cutting down from " << linkQueue_.size() << " to " << link_limit << "\n";
 
-    while (linkQueue_.size() > link_limit) {
+    while (linkQueue_.size() > limit) {
         auto link = linkQueue_.top();
         linkQueue_.pop();
         links_.erase(link->hash);
@@ -995,7 +989,7 @@ void WorkingChain::connect(Segment::Slice segment_slice) { // throw segment_cut_
     if (attachment_link.value()->persisted) {
         auto link = links_.find(link_header->hash());
         if (link != links_.end()) // todo: Erigon code assume true always, check!
-            insertList_.push_back(link->second);
+            insertList_.push(link->second);
     }
 
     // todo: modularize this, his block is the same in extend_down
@@ -1207,7 +1201,7 @@ void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_c
     if (attachment_link.value()->persisted) {
         auto link = links_.find(link_header->hash());
         if (link != links_.end()) // todo: Erigon code assume true always, check!
-            insertList_.push_back(link->second);
+            insertList_.push(link->second);
     }
 }
 
@@ -1346,4 +1340,10 @@ void WorkingChain::mark_as_preverified(std::shared_ptr<Link> link) {
         link = (parent != links_.end() ? parent->second : nullptr);
     }
 }
+
+void WorkingChain::set_preverified_hashes(std::set<Hash>&& preverifiedHashes, BlockNum preverifiedHeight) {
+    preverifiedHashes_ = std::move(preverifiedHashes);
+    preverifiedHeight_ = preverifiedHeight;
+}
+
 }

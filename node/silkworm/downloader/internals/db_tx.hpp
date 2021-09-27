@@ -25,6 +25,8 @@
 
 #include "types.hpp"
 
+#include <functional>
+
 using namespace silkworm;
 
 // A database
@@ -87,6 +89,8 @@ class Db::ReadOnlyAccess::Tx {
     void close() {txn.abort();}     // a more friendly name for a read-only tx
     void abort() {txn.abort();}
     void commit() {txn.commit();}
+
+    mdbx::txn_managed& raw() {return txn;}  // for compatibility reason with other modules
 
     std::optional<Hash> read_canonical_hash(BlockNum b) {  // throws db exceptions // todo: add to db::access_layer.hpp?
         auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
@@ -152,6 +156,25 @@ class Db::ReadOnlyAccess::Tx {
         return read_header(*block_num, h);
     }
 
+    void read_headers_in_reverse_order(size_t limit, std::function<void (BlockHeader&&)> callback) {
+        auto header_table = db::open_cursor(txn, db::table::kHeaders);
+
+        bool throw_notfound = false;
+        size_t read = 0;
+        auto data = header_table.to_last(throw_notfound);
+        while (data && read < limit) {
+            // read header
+            BlockHeader header;
+            ByteView data_view = db::from_slice(data.value);
+            rlp::err_handler(rlp::decode(data_view, header));
+            read++;
+            // consume header
+            callback(std::move(header));
+            // move backward
+            data = header_table.to_previous(throw_notfound);
+        }
+    }
+
     std::optional<BlockBody> read_body(Hash h) {  // todo: add to db::access_layer.hpp?
         auto block_num = read_block_num(h);
         if (!block_num) {
@@ -165,7 +188,9 @@ class Db::ReadOnlyAccess::Tx {
         return db::read_total_difficulty(txn, b, h.bytes);
     }
 
-    BlockNum stage_progress(const char* stage_name) { return db::stages::read_stage_progress(txn, stage_name); }
+    BlockNum read_stage_progress(const char* stage_name) {
+        return db::stages::get_stage_progress(txn, stage_name);
+    }
 };
 
 // A db read-write transaction
@@ -174,6 +199,29 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
     Tx(Db::ReadWriteAccess& access): Db::ReadOnlyAccess::Tx{access.env_.start_write()} {}
     Tx(const Tx&) = delete; // not copyable
     Tx(Tx&& source) noexcept: Db::ReadOnlyAccess::Tx(std::move(source.txn)) {} // only movable
+
+    void write_header(BlockHeader) {
+        // in kHeaders table
+        throw std::logic_error("not implemented");
+        /*
+         * data, err2 := rlp.EncodeToBytes(header)
+        if err = db.Put(dbutils.HeadersBucket, dbutils.HeaderKey(blockHeight, hash), data); err != nil {
+            return fmt.Errorf("[%s] failed to store header: %w", hi.logPrefix, err)
+        }
+         */
+    }
+
+    void write_head_header_hash(Hash h) {
+        throw std::logic_error("not implemented");
+    }
+
+    void write_total_difficulty(BlockNum b, Hash h, intx::uint256) noexcept(false) {
+        throw std::logic_error("not implemented");
+    }
+
+    void write_stage_progress(const char* stage_name, BlockNum height) noexcept(false) {
+        db::stages::set_stage_progress(txn, stage_name, height);
+    }
 };
 
 

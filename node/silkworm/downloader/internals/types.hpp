@@ -98,6 +98,11 @@ struct PeerPenalization {
     PeerPenalization(Penalty p, PeerId id):  penalty(p), peerId(id) {} // unnecessary with c++20
 };
 
+struct Announce {
+    Hash hash;
+    BlockNum number;
+}
+
 namespace rlp {
     void encode(Bytes& to, const Hash& h);
     rlp::DecodingResult decode(ByteView& from, Hash& to) noexcept;

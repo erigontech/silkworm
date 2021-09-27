@@ -640,7 +640,7 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
 
 bool exclude_test(const fs::path& p, const fs::path& root_dir) {
     return std::any_of(kExcludedTests.begin(), kExcludedTests.end(),
-                       [&p, &root_dir](const std::filesystem::path e) -> bool { return root_dir / e == p; });
+                       [&p, &root_dir](const std::filesystem::path& e) -> bool { return root_dir / e == p; });
 }
 
 int main(int argc, char* argv[]) {

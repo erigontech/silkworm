@@ -73,7 +73,7 @@ struct Transaction {
     // https://eips.ethereum.org/EIPS/eip-155.
     // If recovery fails the from field is set to null.
     //
-    // Precondition: validate_transaction must return kOk.
+    // Precondition: pre_validate_transaction must return kOk.
     void recover_sender();
 
     intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559

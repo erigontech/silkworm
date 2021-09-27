@@ -72,7 +72,7 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
     }
 
     for (const Transaction& txn : block.transactions) {
-        ValidationResult err{validate_transaction(txn, header.number, chain_config_, header.base_fee_per_gas)};
+        ValidationResult err{pre_validate_transaction(txn, header.number, chain_config_, header.base_fee_per_gas)};
         if (err != ValidationResult::kOk) {
             return err;
         }

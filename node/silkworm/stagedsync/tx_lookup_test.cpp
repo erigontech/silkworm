@@ -44,7 +44,7 @@ TEST_CASE("Stage Transaction Lookups") {
     auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
     db::detail::BlockBodyForStorage block{};
-    auto transactions{test_util::sample_transactions()};
+    auto transactions{test::sample_transactions()};
     block.base_txn_id = 1;
     block.txn_count = 1;
     // ---------------------------------------
@@ -94,7 +94,7 @@ TEST_CASE("Unwind Transaction Lookups") {
     auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
     db::detail::BlockBodyForStorage block{};
-    auto transactions{test_util::sample_transactions()};
+    auto transactions{test::sample_transactions()};
     block.base_txn_id = 1;
     block.txn_count = 1;
 
@@ -145,7 +145,7 @@ TEST_CASE("Prune Transaction Lookups") {
     auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
     db::detail::BlockBodyForStorage block{};
-    auto transactions{test_util::sample_transactions()};
+    auto transactions{test::sample_transactions()};
     block.base_txn_id = 1;
     block.txn_count = 1;
 

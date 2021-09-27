@@ -50,6 +50,15 @@ TEST_CASE("Consensus Engine factory") {
     CHECK(consensus_engine == nullptr);
 }
 
+TEST_CASE("Consensus Engine Seal") {
+    std::unique_ptr<IConsensusEngine> consensus_engine{
+        consensus::engine_factory(kMainnetConfig)};  // Ethash consensus engine
+    BlockHeader fake_header{};
+    CHECK(consensus_engine->validate_seal(fake_header) != ValidationResult::kOk);
+    consensus_engine = consensus::engine_factory(kLondonTestConfig);  // Noproof consensus engine
+    CHECK(consensus_engine->validate_seal(fake_header) == ValidationResult::kOk);
+}
+
 TEST_CASE("Validate transaction types") {
     const std::optional<intx::uint256> base_fee_per_gas{std::nullopt};
 

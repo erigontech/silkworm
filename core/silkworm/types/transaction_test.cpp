@@ -141,7 +141,7 @@ TEST_CASE("Recover sender 1") {
 
     txn.recover_sender();
     CHECK(txn.from == 0xa1e4380a3b1f749673e270229993ee55f35663b4_address);
-    CHECK_NOTHROW(txn.recover_sender());  // Only for coverage - should not recover twice
+    txn.recover_sender();  // Only for coverage - should not recover twice
 }
 
 TEST_CASE("Recover sender 2") {

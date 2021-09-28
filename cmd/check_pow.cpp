@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Not an Ethash PoW chain");
         }
 
-        auto max_headers_height{db::stages::get_stage_progress(txn, db::stages::kSendersKey)};
+        auto max_headers_height{db::stages::read_stage_progress(txn, db::stages::kSendersKey)};
         options.block_to = std::min(options.block_to, static_cast<uint32_t>(max_headers_height));
 
         // Initialize epoch

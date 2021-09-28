@@ -249,30 +249,37 @@ namespace db {
         table::create_all(txn);
 
         // Querying a non-existent stage name should throw
-        CHECK_THROWS(stages::get_stage_progress(txn, "NonExistentStage"));
-        CHECK_THROWS(stages::get_stage_unwind(txn, "NonExistentStage"));
+        CHECK_THROWS(stages::read_stage_progress(txn, "NonExistentStage"));
+        CHECK_THROWS(stages::read_stage_unwind(txn, "NonExistentStage"));
 
         // Not valued stage should return 0
-        CHECK(stages::get_stage_progress(txn, stages::kBlockBodiesKey) == 0);
-        CHECK(stages::get_stage_unwind(txn, stages::kBlockBodiesKey) == 0);
+        CHECK(stages::read_stage_progress(txn, stages::kBlockBodiesKey) == 0);
+        CHECK(stages::read_stage_unwind(txn, stages::kBlockBodiesKey) == 0);
 
         // Value a stage progress and check returned value
         uint64_t block_num{0};
         uint64_t expected_block_num{123456};
-        CHECK_NOTHROW(stages::set_stage_progress(txn, stages::kBlockBodiesKey, expected_block_num));
-        CHECK_NOTHROW(stages::set_stage_unwind(txn, stages::kBlockBodiesKey, expected_block_num));
-        CHECK_NOTHROW(block_num = stages::get_stage_progress(txn, stages::kBlockBodiesKey));
+        CHECK_NOTHROW(stages::write_stage_progress(txn, stages::kBlockBodiesKey, expected_block_num));
+        CHECK_NOTHROW(stages::write_stage_unwind(txn, stages::kBlockBodiesKey, expected_block_num));
+        CHECK_NOTHROW(block_num = stages::read_stage_progress(txn, stages::kBlockBodiesKey));
         CHECK(block_num == expected_block_num);
-        CHECK_NOTHROW(block_num = stages::get_stage_unwind(txn, stages::kBlockBodiesKey));
+        CHECK_NOTHROW(block_num = stages::read_stage_unwind(txn, stages::kBlockBodiesKey));
         CHECK(block_num == expected_block_num);
-        CHECK_NOTHROW(stages::clear_stage_unwind(txn, stages::kBlockBodiesKey));
-        CHECK(!stages::get_stage_unwind(txn, stages::kBlockBodiesKey));
+        CHECK_NOTHROW(stages::write_stage_unwind(txn, stages::kBlockBodiesKey));
+        CHECK(!stages::read_stage_unwind(txn, stages::kBlockBodiesKey));
 
         // Write voluntary wrong value in stage
         Bytes stage_progress(2, 0);
         auto map{db::open_cursor(txn, table::kSyncStageProgress)};
         CHECK_NOTHROW(txn.upsert(map, mdbx::slice{stages::kBlockBodiesKey}, to_slice(stage_progress)));
-        CHECK_THROWS(block_num = stages::get_stage_progress(txn, stages::kBlockBodiesKey));
+        CHECK_THROWS(block_num = stages::read_stage_progress(txn, stages::kBlockBodiesKey));
+
+        // Check "prune_" prefix
+        CHECK_NOTHROW(stages::write_stage_prune_progress(txn, stages::kBlockBodiesKey, expected_block_num));
+        CHECK_NOTHROW(block_num = stages::read_stage_prune_progress(txn, stages::kBlockBodiesKey));
+        CHECK(block_num == expected_block_num);
+        CHECK_NOTHROW(stages::write_stage_prune_progress(txn, stages::kBlockBodiesKey, 0));
+        CHECK(stages::read_stage_prune_progress(txn, stages::kBlockBodiesKey) == 0);
     }
 
     TEST_CASE("read_header") {

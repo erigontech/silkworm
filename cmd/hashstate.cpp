@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
             txn.clear_map(db::open_map(txn, db::table::kHashedAccounts));
             txn.clear_map(db::open_map(txn, db::table::kHashedStorage));
             txn.clear_map(db::open_map(txn, db::table::kContractCode));
-            db::stages::set_stage_progress(txn, db::stages::kHashStateKey, 0);
+            db::stages::write_stage_progress(txn, db::stages::kHashStateKey, 0);
             if (reset) {
                 SILKWORM_LOG(LogLevel::Info) << "Reset Complete!" << std::endl;
                 txn.commit();
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
         }
         SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
 
-        auto last_processed_block_number{db::stages::get_stage_progress(txn, db::stages::kHashStateKey)};
+        auto last_processed_block_number{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
         if (last_processed_block_number != 0 || incrementally) {
             SILKWORM_LOG(LogLevel::Info) << "Starting Account Hashing" << std::endl;
             stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::HashAccount);
@@ -75,8 +75,8 @@ int main(int argc, char* argv[]) {
             stagedsync::hashstate_promote_clean_code(txn, data_dir.etl().path().string());
         }
         // Update progress height with last processed block
-        db::stages::set_stage_progress(txn, db::stages::kHashStateKey,
-                                       db::stages::get_stage_progress(txn, db::stages::kExecutionKey));
+        db::stages::write_stage_progress(txn, db::stages::kHashStateKey,
+                                       db::stages::read_stage_progress(txn, db::stages::kExecutionKey));
         txn.commit();
         SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
     } catch (const std::exception& ex) {

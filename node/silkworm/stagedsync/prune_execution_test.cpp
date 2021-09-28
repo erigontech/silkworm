@@ -125,7 +125,7 @@ TEST_CASE("Prune Execution without prune function") {
 
     REQUIRE(execute_block(block, buffer, test::kLondonConfig) == ValidationResult::kOk);
 
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
     // We keep chain from Block 2 onwards (Aka, we delete block 1 changesets and receipts)
     buffer.write_to_db();
 
@@ -235,7 +235,7 @@ TEST_CASE("Prune Execution with prune function") {
 
     REQUIRE(execute_block(block, buffer, test::kLondonConfig) == ValidationResult::kOk);
 
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
     buffer.write_to_db();
     // We prune from block 2, thus we delete block 1
     REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::prune_execution(txn, data_dir.etl().path(), 2)));

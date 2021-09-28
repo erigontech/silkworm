@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
     stagedsync::TransactionManager tm{env};
 
     if (prune) {
-        prune_from = db::stages::get_stage_progress(*tm, db::stages::kSendersKey) - blocks_to_keep;
+        prune_from = db::stages::read_stage_progress(*tm, db::stages::kSendersKey) - blocks_to_keep;
 
     }
     auto res{stagedsync::stage_execution(tm, data_dir.etl().path(), batch_size.value(), prune_from)};

@@ -128,7 +128,7 @@ TEST_CASE("Unwind Execution") {
 
     REQUIRE(execute_block(block, buffer, test::kLondonConfig) == ValidationResult::kOk);
 
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
     buffer.write_to_db();
 
     // ---------------------------------------

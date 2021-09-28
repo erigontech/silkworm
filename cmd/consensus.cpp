@@ -16,7 +16,6 @@
 
 #include <exception>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <map>
 #include <string>
@@ -31,9 +30,12 @@
 #include <silkworm/chain/difficulty.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/consensus/blockchain.hpp>
+#include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/in_memory_state.hpp>
+#include <silkworm/types/block.hpp>
 
 // See https://ethereum-tests.readthedocs.io
 
@@ -164,7 +166,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
          },
          0,  // muir_glacier_block
      }},
-    {"London", kLondonTestConfig},
+    {"London", test::kLondonConfig},
     {"FrontierToHomesteadAt5",
      {
          1,  // chain_id

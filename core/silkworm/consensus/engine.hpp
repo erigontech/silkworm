@@ -63,9 +63,6 @@ class IConsensusEngine {
     //! \param [in] header: Current block to get beneficiary from
     virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
 
-    //! \brief Returns parent header (if any) of provided header
-    virtual std::optional<BlockHeader> get_parent_header(const State& state, const BlockHeader& header) = 0;
-
   protected:
     const ChainConfig& chain_config_;
 

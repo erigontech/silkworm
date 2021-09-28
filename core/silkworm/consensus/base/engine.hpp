@@ -46,7 +46,7 @@ class ConsensusEngineBase : public IConsensusEngine {
     evmc::address get_beneficiary(const BlockHeader& header) override;
 
     //! \brief Returns parent header (if any) of provided header
-    std::optional<BlockHeader> get_parent_header(const State& state, const BlockHeader& header) final;
+    std::optional<BlockHeader> get_parent_header(const State& state, const BlockHeader& header);
 
   protected:
     //! \brief See [YP] Section 11.1 "Ommer Validation"

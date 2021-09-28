@@ -217,5 +217,8 @@ std::optional<intx::uint256> ConsensusEngineBase::expected_base_fee_per_gas(cons
         }
     }
 }
+ValidationResult ConsensusEngineBase::validate_seal(const BlockHeader&) {
+    return ValidationResult::kOk;
+}
 
 }  // namespace silkworm::consensus

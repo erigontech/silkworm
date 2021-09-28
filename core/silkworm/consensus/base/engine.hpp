@@ -26,7 +26,7 @@ class ConsensusEngineBase : public IConsensusEngine {
     using base = IConsensusEngine;
 
   public:
-    explicit ConsensusEngineBase(const ChainConfig& chain_config) : base(chain_config){};
+    explicit ConsensusEngineBase(const ChainConfig& chain_config) : chain_config_{chain_config} {};
 
     //! \brief Performs validation of block header & body that can be done prior to sender recovery and execution.
     //! \brief See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity", and 11.1 "Ommer Validation".
@@ -41,6 +41,9 @@ class ConsensusEngineBase : public IConsensusEngine {
     //! \note Shouldn't be used for genesis block.
     ValidationResult validate_block_header(const BlockHeader& header, State& state) override;
 
+    //! \brief Validates the seal of the header
+    ValidationResult validate_seal(const BlockHeader& header) override;
+
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from
     evmc::address get_beneficiary(const BlockHeader& header) override;
@@ -49,14 +52,15 @@ class ConsensusEngineBase : public IConsensusEngine {
     std::optional<BlockHeader> get_parent_header(const State& state, const BlockHeader& header);
 
   protected:
+    const ChainConfig& chain_config_;
+
     //! \brief See [YP] Section 11.1 "Ommer Validation"
-    virtual bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                        const evmc::bytes32& mainline_hash, unsigned n, const State& state,
-                        std::vector<BlockHeader>& old_ommers) override;
+    bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                const evmc::bytes32& mainline_hash, unsigned n, const State& state,
+                std::vector<BlockHeader>& old_ommers);
 
     //! \brief See https://eips.ethereum.org/EIPS/eip-1559
-    std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent) final;
-
+    std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent);
 };
 
 }  // namespace silkworm::consensus

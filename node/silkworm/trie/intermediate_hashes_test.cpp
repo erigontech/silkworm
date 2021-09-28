@@ -67,6 +67,18 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
     return storage_hb.root_hash();
 }
 
+static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
+    cursor.to_first();
+    std::map<Bytes, Node> out;
+    const auto save_nodes{[&out](mdbx::cursor::move_result& entry) {
+        const Node node{*unmarshal_node(db::from_slice(entry.value))};
+        out.emplace(db::from_slice(entry.key), node);
+        return true;
+    }};
+    db::for_each(cursor, save_nodes);
+    return out;
+}
+
 TEST_CASE("Account and storage trie") {
     const TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
@@ -137,17 +149,9 @@ TEST_CASE("Account and storage trie") {
     // Check account trie
     // ----------------------------------------------------------------
 
-    std::map<Bytes, Node> node_map;
-    const auto save_nodes{[&node_map](mdbx::cursor::move_result& entry) {
-        const Node node{*unmarshal_node(db::from_slice(entry.value))};
-        node_map.emplace(db::from_slice(entry.key), node);
-        return true;
-    }};
-
     auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
-    account_trie.to_first();
-    db::for_each(account_trie, save_nodes);
 
+    std::map<Bytes, Node> node_map{read_all_nodes(account_trie)};
     CHECK(node_map.size() == 2);
 
     const Node node1a{node_map.at(*from_hex("0B"))};
@@ -168,16 +172,13 @@ TEST_CASE("Account and storage trie") {
     CHECK(node2a.root_hash() == std::nullopt);
     CHECK(node2a.hashes().size() == 1);
 
-    node_map.clear();
-
     // ----------------------------------------------------------------
     // Check storage trie
     // ----------------------------------------------------------------
 
     auto storage_trie{db::open_cursor(txn, db::table::kTrieOfStorage)};
-    storage_trie.to_first();
-    db::for_each(storage_trie, save_nodes);
 
+    node_map = read_all_nodes(storage_trie);
     CHECK(node_map.size() == 1);
 
     const Node node3{node_map.at(storage_key)};
@@ -188,8 +189,6 @@ TEST_CASE("Account and storage trie") {
 
     CHECK(node3.root_hash() == storage_root);
     CHECK(node3.hashes().size() == 1);
-
-    node_map.clear();
 
     // ----------------------------------------------------------------
     // Add an account
@@ -208,9 +207,7 @@ TEST_CASE("Account and storage trie") {
 
     increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/0);
 
-    account_trie.to_first();
-    db::for_each(account_trie, save_nodes);
-
+    node_map = read_all_nodes(account_trie);
     CHECK(node_map.size() == 2);
 
     const Node node1b{node_map.at(*from_hex("0B"))};
@@ -229,8 +226,6 @@ TEST_CASE("Account and storage trie") {
 
     // TODO[Issue 179] storage
 
-    node_map.clear();
-
     // ----------------------------------------------------------------
     // Delete an account
     // ----------------------------------------------------------------
@@ -242,9 +237,7 @@ TEST_CASE("Account and storage trie") {
 
     increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/1);
 
-    account_trie.to_first();
-    db::for_each(account_trie, save_nodes);
-
+    node_map = read_all_nodes(account_trie);
     CHECK(node_map.size() == 1);
 
     const Node node1c{node_map.at(*from_hex("0B"))};
@@ -258,8 +251,6 @@ TEST_CASE("Account and storage trie") {
     CHECK(node1b.hashes()[0] != node1c.hashes()[0]);
     CHECK(node1b.hashes()[1] == node1c.hashes()[1]);
     CHECK(node1b.hashes()[2] == node1c.hashes()[2]);
-
-    node_map.clear();
 }
 
 TEST_CASE("Account trie around extension node") {
@@ -297,17 +288,9 @@ TEST_CASE("Account trie around extension node") {
     const evmc::bytes32 expected_root{hb.root_hash()};
     CHECK(regenerate_intermediate_hashes(txn, data_dir.etl().path()) == expected_root);
 
-    std::map<Bytes, Node> node_map;
-    const auto save_nodes{[&node_map](mdbx::cursor::move_result& entry) {
-        const Node node{*unmarshal_node(db::from_slice(entry.value))};
-        node_map.emplace(db::from_slice(entry.key), node);
-        return true;
-    }};
-
     auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
-    account_trie.to_first();
-    db::for_each(account_trie, save_nodes);
 
+    std::map<Bytes, Node> node_map{read_all_nodes(account_trie)};
     CHECK(node_map.size() == 2);
 
     const Node node1{node_map.at(*from_hex("03"))};

@@ -128,7 +128,7 @@ TEST_CASE("Stage Hashstate") {
 
     CHECK(stagedsync::stage_hashstate(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
 
-    CHECK(db::stages::get_stage_progress(*txn, db::stages::kHashStateKey) == 3);
+    CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 3);
 
     // ---------------------------------------
     // Check hashed account

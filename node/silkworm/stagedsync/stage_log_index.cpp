@@ -216,7 +216,7 @@ StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::pat
 }
 
 void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_t prune_from, bool topics) {
-    auto last_processed_block{db::stages::get_stage_progress(*txn, db::stages::kLogIndexKey)};
+    auto last_processed_block{db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)};
 
     auto index_table{topics ? db::open_cursor(*txn, db::table::kLogTopicIndex)
                             : db::open_cursor(*txn, db::table::kLogAddressIndex)};
@@ -228,7 +228,7 @@ void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_
             auto key{db::from_slice(data.key)};
             auto bitmap_data{db::from_slice(data.value)};
             auto bm{roaring::Roaring::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-            // Check wheter we should skip the current bitmap
+            // Check whether we should skip the current bitmap
             if (bm.minimum() >= prune_from) {
                 data = index_table.to_next(/*throw_notfound*/ false);
                 continue;

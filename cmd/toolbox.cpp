@@ -377,7 +377,7 @@ void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
     auto env{silkworm::db::open_env(config)};
     stagedsync::TransactionManager txn{env};
 
-    auto current_progress{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
+    auto current_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
 
     if (prune_size > current_progress) return;
     auto prune_from{current_progress - prune_size};

@@ -336,7 +336,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
         if (invalid) {
             return Status::kPassed;
         }
-        std::cout << "Validation error " << static_cast<int>(err) << std::endl;
+        std::cout << "Validation error " << magic_enum::enum_name<ValidationResult>(err) << std::endl;
         return Status::kFailed;
     }
 
@@ -423,20 +423,16 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
     std::string network{json_test["network"].get<std::string>()};
     ChainConfig config{kNetworkConfig.at(network)};
 
-    std::string seal_engine{json_test["sealEngine"].get<std::string>()};
-    if (seal_engine == "Ethash") {
-        config.seal_engine = SealEngineType::kEthash;
-    } else if (seal_engine == "NoProof") {
-        config.seal_engine = SealEngineType::kNoProof;
-    } else {
-        std::cout << seal_engine << " seal engine is not supported yet" << std::endl;
+    auto consensus_engine{consensus::engine_factory(config)};
+    if (!consensus_engine) {
+        std::cout << magic_enum::enum_name<SealEngineType>(config.seal_engine) << " seal engine is not supported yet"
+                  << std::endl;
         return Status::kSkipped;
     }
 
     init_pre_state(json_test["pre"], state);
 
-    auto engine{consensus::get_consensus_engine(config.seal_engine)};
-    Blockchain blockchain{state, *engine, config, genesis_block};
+    Blockchain blockchain{state, consensus_engine, config, genesis_block};
     blockchain.state_pool = &state_pool;
     blockchain.exo_evm = evm;
 
@@ -560,10 +556,10 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
             continue;
         }
 
-        bool valid{entry.value().contains("sender")};
+        bool should_be_valid{entry.value().contains("sender")};
 
         if (!decoded) {
-            if (valid) {
+            if (should_be_valid) {
                 std::cout << "Failed to decode valid transaction" << std::endl;
                 return Status::kFailed;
             } else {
@@ -573,11 +569,19 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 
         ChainConfig config{kNetworkConfig.at(entry.key())};
 
+        /* pre_validate_transaction checks for invalid signature only if from is empty which means sender's recovery phase
+         * (which btw also verifies signature) has not triggered yet. in the context of tests, instead, from is already
+         * valued from the json rlp payload: this makes pre_validate_transaction to incorrectly skip the validation
+         * signature. Hence we reset from to nullopt to allow proper validation flow. In any case sender recovery would
+         * be performed anyway immediately after this block
+         * */
+        txn.from.reset();
+
         if (ValidationResult err{
                 pre_validate_transaction(txn, /*block_number=*/0, config, /*base_fee_per_gas=*/std::nullopt)};
             err != ValidationResult::kOk) {
-            if (valid) {
-                std::cout << "Validation error " << static_cast<int>(err) << std::endl;
+            if (should_be_valid) {
+                std::cout << "Validation error " << magic_enum::enum_name<ValidationResult>(err) << std::endl;
                 return Status::kFailed;
             } else {
                 continue;
@@ -585,19 +589,18 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         }
 
         txn.recover_sender();
-
-        if (valid && !txn.from.has_value()) {
+        if (should_be_valid && !txn.from.has_value()) {
             std::cout << "Failed to recover sender" << std::endl;
             return Status::kFailed;
         }
 
-        if (!valid && txn.from.has_value()) {
+        if (!should_be_valid && txn.from.has_value()) {
             std::cout << entry.key() << "\n"
                       << "Sender recovered for invalid transaction" << std::endl;
             return Status::kFailed;
         }
 
-        if (!valid) {
+        if (!should_be_valid) {
             continue;
         }
 
@@ -614,10 +617,10 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
 Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> config) {
-    auto parent_timestamp{std::stoull(j["parentTimestamp"].get<std::string>(), 0, 0)};
+    auto parent_timestamp{std::stoull(j["parentTimestamp"].get<std::string>(), nullptr, 0)};
     auto parent_difficulty{intx::from_string<intx::uint256>(j["parentDifficulty"].get<std::string>())};
-    auto current_timestamp{std::stoull(j["currentTimestamp"].get<std::string>(), 0, 0)};
-    auto block_number{std::stoull(j["currentBlockNumber"].get<std::string>(), 0, 0)};
+    auto current_timestamp{std::stoull(j["currentTimestamp"].get<std::string>(), nullptr, 0)};
+    auto block_number{std::stoull(j["currentBlockNumber"].get<std::string>(), nullptr, 0)};
     auto current_difficulty{intx::from_string<intx::uint256>(j["currentDifficulty"].get<std::string>())};
 
     bool parent_has_uncles{false};
@@ -637,13 +640,9 @@ Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> confi
     }
 }
 
-bool exclude_test(const fs::path& p, const fs::path root_dir) {
-    for (const fs::path& e : kExcludedTests) {
-        if (root_dir / e == p) {
-            return true;
-        }
-    }
-    return false;
+bool exclude_test(const fs::path& p, const fs::path& root_dir) {
+    return std::any_of(kExcludedTests.begin(), kExcludedTests.end(),
+                       [&p, &root_dir](const std::filesystem::path& e) -> bool { return root_dir / e == p; });
 }
 
 int main(int argc, char* argv[]) {

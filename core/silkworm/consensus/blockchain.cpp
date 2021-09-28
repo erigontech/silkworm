@@ -22,15 +22,19 @@
 
 namespace silkworm::consensus {
 
-Blockchain::Blockchain(State& state, ConsensusEngine& engine, const ChainConfig& config, const Block& genesis_block)
-    : state_{state}, engine_{engine}, config_{config} {
-    evmc::bytes32 hash{genesis_block.header.hash()};
-    state_.insert_block(genesis_block, hash);
-    state_.canonize_block(genesis_block.header.number, hash);
+Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& genesis_block)
+    : state_{state}, config_{config}, engine_{consensus::engine_factory(config)} {
+    prime_state_with_genesis(genesis_block);
+}
+
+Blockchain::Blockchain(State& state, std::unique_ptr<IConsensusEngine>& engine, const ChainConfig& config,
+                       const Block& genesis_block)
+    : state_{state}, config_{config}, engine_{std::move(engine)} {
+    prime_state_with_genesis(genesis_block);
 }
 
 ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
-    if (ValidationResult err{engine_.pre_validate_block(block, state_, config_)}; err != ValidationResult::kOk) {
+    if (ValidationResult err{engine_->pre_validate_block(block, state_)}; err != ValidationResult::kOk) {
         return err;
     }
 
@@ -89,7 +93,7 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
 }
 
 ValidationResult Blockchain::execute_block(const Block& block, bool check_state_root) {
-    ExecutionProcessor processor{block, engine_, state_, config_};
+    ExecutionProcessor processor{block, *engine_, state_, config_};
     processor.evm().state_pool = state_pool;
     processor.evm().exo_evm = exo_evm;
 
@@ -108,6 +112,12 @@ ValidationResult Blockchain::execute_block(const Block& block, bool check_state_
     return ValidationResult::kOk;
 }
 
+void Blockchain::prime_state_with_genesis(const Block& genesis_block) {
+    evmc::bytes32 hash{genesis_block.header.hash()};
+    state_.insert_block(genesis_block, hash);
+    state_.canonize_block(genesis_block.header.number, hash);
+}
+
 void Blockchain::re_execute_canonical_chain(uint64_t ancestor, uint64_t tip) {
     assert(ancestor <= tip);
     for (uint64_t block_number{ancestor + 1}; block_number <= tip; ++block_number) {
@@ -119,7 +129,7 @@ void Blockchain::re_execute_canonical_chain(uint64_t ancestor, uint64_t tip) {
         assert(header != std::nullopt);
 
         Block block;
-        block.header = *header;
+        block.header = header.value();
         block.transactions = body->transactions;
         block.ommers = body->ommers;
 
@@ -171,4 +181,4 @@ uint64_t Blockchain::canonical_ancestor(const BlockHeader& header, const evmc::b
     return canonical_ancestor(*parent, header.parent_hash);
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::consensus

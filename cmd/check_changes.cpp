@@ -14,18 +14,14 @@
    limitations under the License.
 */
 
-#include <filesystem>
-
 #include <CLI/CLI.hpp>
 #include <absl/container/flat_hash_set.h>
-#include <absl/time/time.h>
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/processor.hpp>
-#include <silkworm/consensus/ethash/ethash.hpp>
 
 using namespace evmc::literals;
 using namespace silkworm;
@@ -78,14 +74,14 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         auto txn{env.start_read()};
         auto chain_config{db::read_chain_config(txn)};
-        if (!chain_config) {
+        if (!chain_config.has_value()) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
-        auto engine{consensus::get_consensus_engine((*chain_config).seal_engine)};
+        auto engine{consensus::engine_factory(chain_config.value())};
         for (; block_num < to; ++block_num) {
             txn.renew_reading();
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};

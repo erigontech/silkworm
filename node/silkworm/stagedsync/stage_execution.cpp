@@ -21,7 +21,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/stopwatch.hpp>
-#include <silkworm/consensus/consensus_engine.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -40,14 +40,17 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
         AnalysisCache analysis_cache;
         ExecutionStatePool state_pool;
         std::vector<Receipt> receipts;
-        auto engine{consensus::get_consensus_engine(config.seal_engine)};
+        auto consensus_engine{consensus::engine_factory(config)};
+        if (!consensus_engine) {
+            return StageResult::kUnknownConsensusEngine;
+        }
         while (true) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
             if (bh == std::nullopt) {
                 return StageResult::kBadChainSequence;
             }
 
-            ExecutionProcessor processor{bh->block, *engine, buffer, config};
+            ExecutionProcessor processor{bh->block, *consensus_engine, buffer, config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
@@ -109,7 +112,7 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
             return StageResult::kInvalidRange;
         }
 
-        // Execution needs senders hence we need to check whether or not sender's stage is
+        // Execution needs senders hence we need to check whether sender's stage is
         // at least at max_block as set above
         uint64_t max_block_senders{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
         if (max_block > max_block_senders) {

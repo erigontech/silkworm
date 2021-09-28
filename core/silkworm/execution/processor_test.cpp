@@ -21,8 +21,8 @@
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/test_util.hpp>
-#include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/consensus/ethash/ethash.hpp>
+#include <silkworm/state/in_memory_state.hpp>
 
 #include "address.hpp"
 
@@ -73,7 +73,7 @@ TEST_CASE("EIP-3607: Reject transactions from senders with deployed code") {
 
     const evmc::address sender{0x71562b71999873DB5b286dF957af199Ec94617F7_address};
 
-    Transaction txn{test_util::sample_transactions()[0]};
+    Transaction txn{test::sample_transactions()[0]};
     txn.nonce = 0;
     txn.from = sender;
 

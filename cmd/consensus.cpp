@@ -16,7 +16,6 @@
 
 #include <exception>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <map>
 #include <string>
@@ -28,15 +27,14 @@
 #include <magic_enum.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/consensus/blockchain.hpp>
 #include <silkworm/chain/difficulty.hpp>
-#include <silkworm/consensus/ethash/ethash.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/common/util.hpp>
+#include <silkworm/consensus/blockchain.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/in_memory_state.hpp>
-#include <silkworm/state/intra_block_state.hpp>
 #include <silkworm/types/block.hpp>
 
 // See https://ethereum-tests.readthedocs.io
@@ -168,7 +166,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
          },
          0,  // muir_glacier_block
      }},
-    {"London", kLondonTestConfig},
+    {"London", test::kLondonConfig},
     {"FrontierToHomesteadAt5",
      {
          1,  // chain_id
@@ -436,7 +434,7 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
     }
 
     init_pre_state(json_test["pre"], state);
-    
+
     auto engine{consensus::get_consensus_engine(config.seal_engine)};
     Blockchain blockchain{state, *engine, config, genesis_block};
     blockchain.state_pool = &state_pool;

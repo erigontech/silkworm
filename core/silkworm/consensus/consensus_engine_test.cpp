@@ -16,6 +16,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/test_util.hpp>
+
 #include "engine.hpp"
 
 namespace silkworm::consensus {
@@ -42,7 +44,7 @@ TEST_CASE("Consensus Engine factory") {
     CHECK(consensus_engine != nullptr);
     consensus_engine = consensus::engine_factory(kRopstenConfig);  // Ethash consensus engine
     CHECK(consensus_engine != nullptr);
-    consensus_engine = consensus::engine_factory(kLondonTestConfig);  // Noproof consensus engine
+    consensus_engine = consensus::engine_factory(test::kLondonConfig);  // Noproof consensus engine
     CHECK(consensus_engine != nullptr);
     consensus_engine = consensus::engine_factory(kRinkebyConfig);  // Clique consensus engine
     CHECK(consensus_engine == nullptr);
@@ -55,7 +57,7 @@ TEST_CASE("Consensus Engine Seal") {
         consensus::engine_factory(kMainnetConfig)};  // Ethash consensus engine
     BlockHeader fake_header{};
     CHECK(consensus_engine->validate_seal(fake_header) != ValidationResult::kOk);
-    consensus_engine = consensus::engine_factory(kLondonTestConfig);  // Noproof consensus engine
+    consensus_engine = consensus::engine_factory(test::kLondonConfig);  // Noproof consensus engine
     CHECK(consensus_engine->validate_seal(fake_header) == ValidationResult::kOk);
 }
 

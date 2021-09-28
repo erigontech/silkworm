@@ -25,7 +25,7 @@ PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical
     BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
     auto headers_head_hash = tx.read_canonical_hash(headers_height);
     if (!headers_head_hash) {
-        fix_canonical_chain(headers_height, tx.read_head_header_hash());
+        fix_canonical_chain(headers_height, *tx.read_head_header_hash());
         unwind_detected_ = true;
         return;
     }
@@ -51,6 +51,8 @@ BlockNum PersistedChain::initial_height() { return initial_height_; }
 BlockNum PersistedChain::highest_height() { return highest_bn_; }
 
 Hash PersistedChain::highest_hash() { return highest_hash_; }
+
+BlockNum PersistedChain::unwind_point() { return unwind_point_; }
 
 /*
 func (hi *HeaderInserter) FeedHeader(db ethdb.StatelessRwTx, header *types.Header, blockHeight uint64) error {
@@ -276,17 +278,18 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
 }
 
 /*
-func fixCanonicalChain(logPrefix string, logEvery *time.Ticker, height uint64, hash common.Hash, tx ethdb.StatelessRwTx)
-error { if height == 0 { return nil
+func fixCanonicalChain(logPrefix string, logEvery *time.Ticker, height uint64, hash common.Hash, tx ethdb.StatelessRwTx) error {
+        if height == 0 {
+            return nil
         }
         ancestorHash := hash
         ancestorHeight := height
 
         var ch common.Hash
         var err error
-        for ch, err = rawdb.ReadCanonicalHash(tx, ancestorHeight); err == nil && ch != ancestorHash; ch, err =
-rawdb.ReadCanonicalHash(tx, ancestorHeight) { if err = rawdb.WriteCanonicalHash(tx, ancestorHash, ancestorHeight); err
-!= nil { return fmt.Errorf("[%s] marking canonical header %d %x: %w", logPrefix, ancestorHeight, ancestorHash, err)
+        for ch, err = rawdb.ReadCanonicalHash(tx, ancestorHeight); err == nil && ch != ancestorHash; ch, err = rawdb.ReadCanonicalHash(tx, ancestorHeight) {
+                if err = rawdb.WriteCanonicalHash(tx, ancestorHash, ancestorHeight); err != nil {
+                    return fmt.Errorf("[%s] marking canonical header %d %x: %w", logPrefix, ancestorHeight, ancestorHash, err)
                 }
                 ancestor := rawdb.ReadHeader(tx, ancestorHash, ancestorHeight)
                 if ancestor == nil {
@@ -309,10 +312,41 @@ rawdb.ReadCanonicalHash(tx, ancestorHeight) { if err = rawdb.WriteCanonicalHash(
 
  */
 
-void PersistedChain::fix_canonical_chain() {
-    // todo: implement!
+void PersistedChain::fix_canonical_chain(BlockNum heigth, Hash hash) { // hash can be empty
+    if (heigth == 0) return;
 
-    // todo: check that tx do a commit if it is opened in this mehod
+    auto ancestor_hash = hash;
+    auto ancestor_height = heigth;
+
+    std::optional<Hash> persisted_canon_hash;
+    while ((persisted_canon_hash = tx_.read_canonical_hash(ancestor_height)) &&
+           persisted_canon_hash != ancestor_hash) {
+
+        tx_.write_canonical_hash(ancestor_height, ancestor_hash);
+
+        auto ancestor = tx_.read_header(ancestor_height, ancestor_hash);
+        if (ancestor == std::nullopt) {
+            std::string msg = "PersistedChain: fix canonical chain failed at ancestor=" + std::to_string(ancestor_height) +
+                              " hash=" + ancestor_hash.to_hex();
+            SILKWORM_LOG(LogLevel::Error) << msg;
+            throw std::logic_error(msg);
+        }
+
+        ancestor_hash = ancestor->parent_hash;
+        ancestor_height--;
+    }
+}
+
+void PersistedChain::close() {
+    if (closed_) return;
+
+    if (unwind()) return;
+
+    if (highest_height() != 0) {
+        fix_canonical_chain(highest_height(), highest_hash());
+    }
+
+    closed_ = true;
 }
 
 }

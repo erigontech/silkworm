@@ -121,7 +121,7 @@ class ConsensusProto {  // todo: replace with correct implementation
   public:
     enum VerificationResult {OK, FUTURE_BLOCK, ERROR};
 
-    static VerificationResult verify(const BlockHeader& header) {
+    static VerificationResult verify(const BlockHeader&) {
         // todo: implement, use seal = true
         return OK;
     };

@@ -101,7 +101,7 @@ struct PeerPenalization {
 struct Announce {
     Hash hash;
     BlockNum number;
-}
+};
 
 namespace rlp {
     void encode(Bytes& to, const Hash& h);

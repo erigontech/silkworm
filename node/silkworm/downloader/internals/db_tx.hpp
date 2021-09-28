@@ -17,6 +17,7 @@
 #ifndef SILKWORM_DB_TX_HPP
 #define SILKWORM_DB_TX_HPP
 
+#include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -115,7 +116,9 @@ class Db::ReadOnlyAccess::Tx {
         return Hash(db::from_slice(data.value));
     }
 
-    std::optional<BlockHeader> read_header(BlockNum b, Hash h) { return db::read_header(txn, b, h.bytes); }
+    std::optional<BlockHeader> read_header(BlockNum b, Hash h) {
+        return db::read_header(txn, b, h.bytes);
+    }
 
     std::optional<BlockHeader> read_canonical_header(BlockNum b) {  // also known as read-header-by-number
         std::optional<Hash> h = read_canonical_hash(b);
@@ -200,23 +203,47 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
     Tx(const Tx&) = delete; // not copyable
     Tx(Tx&& source) noexcept: Db::ReadOnlyAccess::Tx(std::move(source.txn)) {} // only movable
 
-    void write_header(BlockHeader) {
-        // in kHeaders table
-        throw std::logic_error("not implemented");
-        /*
-         * data, err2 := rlp.EncodeToBytes(header)
-        if err = db.Put(dbutils.HeadersBucket, dbutils.HeaderKey(blockHeight, hash), data); err != nil {
-            return fmt.Errorf("[%s] failed to store header: %w", hi.logPrefix, err)
-        }
-         */
+    void write_header(const BlockHeader& header) {
+        Bytes encoded_header;
+        rlp::encode(encoded_header, header);
+
+        auto header_hash = bit_cast<evmc_bytes32>(keccak256(encoded_header));   // avoid header.hash() re-do rlp encoding
+        auto key = db::to_slice(db::block_key(header.number, header_hash.bytes));
+        auto value = db::to_slice(encoded_header);
+
+        auto headers_table = db::open_cursor(txn, db::table::kHeaders);
+        headers_table.upsert(key, value);
+        headers_table.close();
     }
 
     void write_head_header_hash(Hash h) {
-        throw std::logic_error("not implemented");
+        auto key = db::to_slice(head_header_key());
+        auto value = db::to_slice(h);
+
+        auto head_header_table = db::open_cursor(txn, db::table::kHeadHeader);
+        head_header_table.upsert(key, value);
+        head_header_table.close();
     }
 
-    void write_total_difficulty(BlockNum b, Hash h, intx::uint256) noexcept(false) {
-        throw std::logic_error("not implemented");
+    void write_total_difficulty(BlockNum b, Hash h, intx::uint256 td) noexcept(false) {
+        Bytes encoded_td;
+        rlp::encode(encoded_td, td);
+
+        auto key = db::to_slice(db::block_key(b, h.bytes));
+        auto value = db::to_slice(encoded_td);
+
+        auto td_table = db::open_cursor(txn, db::table::kDifficulty);
+        td_table.upsert(key, value);
+        td_table.close();
+    }
+
+    void write_canonical_hash(BlockNum b, Hash h) {
+        auto key = db::to_slice(db::block_key(b));
+        auto value = db::to_slice(h);
+
+        auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
+        hashes_table.upsert(key, value);
+        hashes_table.close();
     }
 
     void write_stage_progress(const char* stage_name, BlockNum height) noexcept(false) {

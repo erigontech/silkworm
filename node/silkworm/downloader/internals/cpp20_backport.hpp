@@ -19,7 +19,7 @@
 
 #include <set>
 
-// check if a set contains a key - c++20 set has this functionality
+// check if a set contains a key - replace with set::contains() if c++20 is available
 template <typename K, typename V>
 inline bool contains(const std::set<K,V>& s, const K& k)
 {
@@ -28,7 +28,7 @@ inline bool contains(const std::set<K,V>& s, const K& k)
 
 #include <map>
 
-// check if a map contains a key - c++20 map has this functionality
+// check if a map contains a key - replace with map::contains() if c++20 is available
 template <typename K, typename V>
 inline bool contains(const std::map<K,V>& s, const K& k)
 {
@@ -49,6 +49,7 @@ auto move_at_end(std::vector<T>& destination, std::vector<T>& source) {
 
 #include <stack>
 
+// bulk insert for stacks
 template <typename T>
 void push_all(std::stack<T>& destination, std::vector<T>& source) {
     for(auto& element: source)

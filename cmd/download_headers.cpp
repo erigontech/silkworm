@@ -92,9 +92,19 @@ int main(int argc, char* argv[]) {
         });
 
         // Stage1 - Header downloader - example code
-        BlockNum target_block = 1'000'000; // only for test
+        bool first_sync = true; // = starting up silkworm
         HeaderDownloader header_downloader{sentry, Db::ReadWriteAccess{db}, chain_identity};
-        header_downloader.forward_to(target_block);
+
+        // Sample stage loop with 1 stage
+        Stage::Result stage_result{Stage::Result::Unknown};
+        do {
+            if (stage_result.status != Stage::Result::UnwindNeeded) {
+                stage_result = header_downloader.forward(first_sync);
+            }
+            else {
+                stage_result = header_downloader.unwind_to(*stage_result.unwind_point);
+            }
+        } while(stage_result.status != Stage::Result::Error);
 
         // Wait for user termination request
         std::cin.get();         // wait for user press "enter"

@@ -117,11 +117,11 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_number(BlockNum origin, uin
 
 // Node current status
 BlockNum HeaderRetrieval::head_height() {
-    return db_tx_.stage_progress(db::stages::kBlockBodiesKey);
+    return db_tx_.read_stage_progress(db::stages::kBlockBodiesKey);
 }
 
 std::tuple<Hash,BigInt> HeaderRetrieval::head_hash_and_total_difficulty() {
-    BlockNum head_height = db_tx_.stage_progress(db::stages::kBlockBodiesKey);
+    BlockNum head_height = db_tx_.read_stage_progress(db::stages::kBlockBodiesKey);
     auto head_hash = db_tx_.read_canonical_hash(head_height);
     if (!head_hash)
         throw std::logic_error("canonical hash at height " + std::to_string(head_height) + " not found in db");

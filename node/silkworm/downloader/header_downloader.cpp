@@ -246,11 +246,12 @@ func HeadersForward(
 }
 */
 
-auto HeaderDownloader::forward(bool first_sync) -> StageResult {
+auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
     using std::shared_ptr;
     using namespace std::chrono_literals;
 
+    Stage::Result result;
     bool new_height_reached = false;
 
     MessageQueue messages{}; // thread safe queue where receive messages from sentry thread
@@ -263,7 +264,8 @@ auto HeaderDownloader::forward(bool first_sync) -> StageResult {
         PersistedChain persisted_chain_(tx);
 
         if (persisted_chain_.unwind_detected()) {
-            return StageResult::Done;
+            result.status = Stage::Result::Done;
+            return result;
         }
 
         // sync status
@@ -316,32 +318,37 @@ auto HeaderDownloader::forward(bool first_sync) -> StageResult {
             SILKWORM_LOG(LogLevel::Debug) << "WorkingChain status: " << working_chain_.human_readable_status() << "\n";
         }
 
+        result.status = Stage::Result::Done;
+
         // see HeadersForward
         if (persisted_chain_.unwind()) {
-            signal_to_unwind_to(persisted_chain_.unwind_point());
-        }
-        else if (persisted_chain_.highest_bn_ != 0) {
-            fix_canonical_chain(persisted_chain_.highest_height(), persisted_chain_.highest_hash(), tx);
+            result.status = Result::UnwindNeeded;
+            result.unwind_point = persisted_chain_.unwind_point();
         }
 
+        persisted_chain_.close();
+
         tx.commit(); // todo: commit only if opened here
+
+        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader wind operation completed\n";
     }
     catch(const std::exception& e) {
-        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader wind operation is_stopping due to exception: " << e.what() << "\n";
+        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader wind operation is stopping due to an exception: " << e.what() << "\n";
         // tx rollback executed automatically if needed
-        return StageResult::Error;
+        result.status = Stage::Result::Error;
     }
 
     stopping = true; // todo: it is better to try to cancel the grpc call, do a message_subscription.try_cancel() or both
     message_receiving.join();
 
-    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader wind operation completed\n";
-    return StageResult::Done;
+    SILKWORM_LOG(LogLevel::Debug) << "HeaderDownloader wind operation clean exit\n";
+    return result;
 }
 
-auto HeaderDownloader::unwind_to([[maybe_unused]] BlockNum new_height) -> StageResult {
+auto HeaderDownloader::unwind_to([[maybe_unused]] BlockNum new_height) -> Stage::Result {
     // todo: to implement
-    return StageResult::Done;
+    Stage::Result result{Result::Error};
+    return result;
 }
 
 void HeaderDownloader::send_header_requests() {

@@ -45,6 +45,7 @@ class PersistedChain {      // counterpart of Erigon HeaderInserter
     explicit PersistedChain(Db::ReadWriteAccess::Tx& tx);
 
     void persist_header(const BlockHeader&, BlockNum height);
+    void close();
 
     bool best_header_changed();
     bool unwind_detected();     // todo: do we need both unwind() & unwind_detected() ?
@@ -57,6 +58,7 @@ class PersistedChain {      // counterpart of Erigon HeaderInserter
 
   private:
     BlockNum find_forking_point(Db::ReadWriteAccess::Tx&, const BlockHeader& header, BlockNum height);
+    void fix_canonical_chain(BlockNum heigth, Hash hash);
 
     Db::ReadWriteAccess::Tx& tx_;
     Hash previous_hash_;
@@ -71,6 +73,7 @@ class PersistedChain {      // counterpart of Erigon HeaderInserter
     bool unwind_detected_{false};
     bool new_canonical_{false};
     lru_cache<BlockNum,Hash> canonical_cache_;
+    bool closed_{false};
 };
 
 

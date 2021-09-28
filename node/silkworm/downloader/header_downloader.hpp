@@ -32,10 +32,13 @@ namespace silkworm {
 // (proposed) abstract interface for all stages
 class Stage {
   public:
-    enum StageResult { Done, Error };
+    struct Result {
+        enum Status { Unknown, Done, UnwindNeeded, Error } status;
+        std::optional<BlockNum> unwind_point;
+    };
 
-    virtual StageResult forward(bool first_sync) = 0;
-    virtual StageResult unwind_to(BlockNum new_height) = 0;
+    virtual Result forward(bool first_sync) = 0;
+    virtual Result unwind_to(BlockNum new_height) = 0;
 };
 
 // custom exception
@@ -62,8 +65,8 @@ class HeaderDownloader : public Stage {
     HeaderDownloader(HeaderDownloader&&) = delete; // nor movable
     ~HeaderDownloader();
 
-    StageResult forward(bool first_sync) override; // go forward, downloading headers
-    StageResult unwind_to(BlockNum new_height) override;  // go backward, unwinding headers to new_height
+    Stage::Result forward(bool first_sync) override; // go forward, downloading headers
+    Stage::Result unwind_to(BlockNum new_height) override;  // go backward, unwinding headers to new_height
 
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>; // used internally to store new messages

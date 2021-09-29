@@ -84,6 +84,8 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, Work
 void InboundBlockHeaders::execute() {
     using namespace std;
 
+    // todo: PRIO - Erigon apparently processes this message even if it is not in a fetching phase - do we need the same?
+
     BlockNum highestBlock = 0;
     for(BlockHeader& header: packet_.request) {
         highestBlock = std::max(highestBlock, header.number);
@@ -91,29 +93,15 @@ void InboundBlockHeaders::execute() {
 
     auto [penalty, requestMoreHeaders] = working_chain_.accept_headers(packet_.request, peerId_); // todo: provide WorkingChain as messages member
 
-    /* really do we need to call request_more_headers() here? it will be called by header_forward()...
-     * or do we only need to enable header_forward() if blocked?
-     * todo: take a decision here!
-     * If we need it:
-
+    // Erigon here calls request_more_headers(). Do we have to do the same? What if header downloader is not in a forward phase?
+    // todo: take a decision here!
+    /* If we need to implement as Erigon does:
     if (penalty == Penalty::NoPenalty && requestMoreHeaders) {
-        auto [packet, penalties] = STAGE1.working_chain().request_more_headers();
-        auto msg = new OutboundGetBlockHeaders(packet); // todo: modify OutboundGetBlockHeaders to handle this case
-        STAGE1.add_to_message_queue(msg);
-
-        if (penalties) {
-            for(auto penalty: penalties)
-                reply_calls.push_back(rpc::PenalizePeer::make(penalty.peerId, penalty.reason));
-        }
-    }
-
-     * other way to implement it:
-
-    if (penalty == Penalty::NoPenalty && requestMoreHeaders) {
-        auto msg = new OutboundGetBlockHeaders(REQUEST_MORE_HEADERS); // calls request_more_headers() and PenalizePeer
-        STAGE1.add_to_message_queue(msg);
+        OutboundGetBlockHeaders message(working_chain_, sentry_);
+        message.execute();
     }
     */
+    SILKWORM_LOG(LogLevel::Warn) << "Handling of " << identify(*this) << " is incomplete\n";
 
     if (penalty != Penalty::NoPenalty) {
         SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " with penalize_peer\n";

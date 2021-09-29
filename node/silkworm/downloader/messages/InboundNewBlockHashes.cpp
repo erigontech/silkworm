@@ -47,6 +47,8 @@ InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg, 
 void InboundNewBlockHashes::execute() {
     using namespace std;
 
+    // todo: Erigon apparently processes this message even if it is not in a fetching phase BUT is in request-chaining mode - do we need the same?
+
     BlockNum max = working_chain_.top_seen_block_height();
 
     for(size_t i = 0; i < packet_.size(); i++) {

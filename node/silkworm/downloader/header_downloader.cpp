@@ -21,10 +21,12 @@
 #include "header_downloader.hpp"
 #include "messages/InboundGetBlockHeaders.hpp"
 #include "messages/OutboundGetBlockHeaders.hpp"
+#include "messages/OutboundNewBlockHashes.hpp"
 #include "rpc/ReceiveMessages.hpp"
 #include "rpc/SetStatus.hpp"
 #include "internals/header_retrieval.hpp"
-#include "internals/persisted_chain.hpp"
+
+// todo: implement sentry ready check before usage & sentry reconnect semantics
 
 namespace silkworm {
 
@@ -352,21 +354,76 @@ auto HeaderDownloader::unwind_to([[maybe_unused]] BlockNum new_height) -> Stage:
 }
 
 void HeaderDownloader::send_header_requests() {
+    // if (!sentry_.ready()) return;
 
     OutboundGetBlockHeaders message(working_chain_, sentry_);
     message.execute();
 
 }
 
+/*
+func (cs *ControlServerImpl) PropagateNewBlockHashes(ctx context.Context, announces []headerdownload.Announce) {
+	cs.lock.RLock()
+	defer cs.lock.RUnlock()
+	typedRequest := make(eth.NewBlockHashesPacket, len(announces))
+	for i := range announces {
+		typedRequest[i].Hash = announces[i].Hash
+		typedRequest[i].Number = announces[i].Number
+	}
+	data, err := rlp.EncodeToBytes(&typedRequest)
+	if err != nil {
+		log.Error("propagateNewBlockHashes", "error", err)
+		return
+	}
+	var req66, req65 *proto_sentry.OutboundMessageData
+	for _, sentry := range cs.sentries {
+		if !sentry.Ready() {
+			continue
+		}
+
+		switch sentry.Protocol() {
+		case eth.ETH65:
+			if req65 == nil {
+				req65 = &proto_sentry.OutboundMessageData{
+					Id:   proto_sentry.MessageId_NEW_BLOCK_HASHES_65,
+					Data: data,
+				}
+			}
+
+			_, err = sentry.SendMessageToAll(ctx, req65, &grpc.EmptyCallOption{})
+			if err != nil {
+				log.Error("propagateNewBlockHashes", "error", err)
+			}
+		case eth.ETH66:
+			if req66 == nil {
+				req66 = &proto_sentry.OutboundMessageData{
+					Id:   proto_sentry.MessageId_NEW_BLOCK_HASHES_66,
+					Data: data,
+				}
+
+				_, err = sentry.SendMessageToAll(ctx, req66, &grpc.EmptyCallOption{})
+				if err != nil {
+					log.Error("propagateNewBlockHashes", "error", err)
+				}
+			}
+		default:
+			//??
+		}
+	}
+}
+ */
+
+// New block hash propagation
 void HeaderDownloader::send_announcements() {
-    // todo: complete the implementation below
-    auto announces_to_do = working_chain_.announces_to_do();
-    /*
-    for(Announce& announce: announcesToDo_) {
-        send(announce);
-    }
-    */
+    // if (!sentry_.ready()) return;
+
+    auto& announces_to_do = working_chain_.announces_to_do();
+
+    OutboundNewBlockHashes message{working_chain_, sentry_, announces_to_do};
+    message.execute();
+
     announces_to_do.clear();
 }
+
 }  // namespace silkworm
 

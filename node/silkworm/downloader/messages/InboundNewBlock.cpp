@@ -44,8 +44,9 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain
 }
 
 void InboundNewBlock::execute() {
-    using namespace std;
-    // todo: implement!
+    // todo: Erigon header-downloader apparently processes this message even if it is not in a fetching phase - do we need the same?
+
+    // todo: implement in the block-downloader
 }
 
 uint64_t InboundNewBlock::reqId() const {

@@ -42,6 +42,8 @@ class Db {
         env_ = db::open_env(db_config);
     }
 
+    Db(mdbx::env_managed&& env): env_{std::move(env)} {} // low level construction, more silkworm friendly
+
   private:
     mdbx::env_managed env_;
 };
@@ -58,6 +60,11 @@ class Db::ReadOnlyAccess {
     Tx start_ro_tx();
 
   protected:
+    //auto start_read() {return env_.start_read();}
+    //auto start_write() {return env_.start_write();}
+    //auto abort(mdbx::txn_managed& txn) {return txn.abort();};
+    //auto commit(mdbx::txn_managed& txn) {return txn.commit();};
+
     mdbx::env_managed& env_;
 };
 
@@ -198,10 +205,11 @@ class Db::ReadOnlyAccess::Tx {
 
 // A db read-write transaction
 class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
+    using base = Db::ReadOnlyAccess::Tx;
   public:
-    Tx(Db::ReadWriteAccess& access): Db::ReadOnlyAccess::Tx{access.env_.start_write()} {}
+    Tx(Db::ReadWriteAccess& access): base{access.env_.start_write()} {}
     Tx(const Tx&) = delete; // not copyable
-    Tx(Tx&& source) noexcept: Db::ReadOnlyAccess::Tx(std::move(source.txn)) {} // only movable
+    Tx(Tx&& source) noexcept: base(std::move(source.txn)) {} // only movable
 
     void write_header(const BlockHeader& header) {
         Bytes encoded_header;

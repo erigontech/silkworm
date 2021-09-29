@@ -164,16 +164,16 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     if (!packet_.request.reverse)
         min_block += packet_.request.amount * packet_.request.skip;
 
-    auto msg_reply = std::make_unique<sentry::OutboundMessageData>(); // create header request
+    auto request = std::make_unique<sentry::OutboundMessageData>(); // create header request
 
-    msg_reply->set_id(sentry::MessageId::GET_BLOCK_HEADERS_66);
+    request->set_id(sentry::MessageId::GET_BLOCK_HEADERS_66);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, packet_);
-    msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length()); // copy
+    request->set_data(rlp_encoding.data(), rlp_encoding.length()); // copy
 
     SILKWORM_LOG(LogLevel::Info) << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_ << " \n";
-    rpc::SendMessageByMinBlock rpc{min_block, std::move(msg_reply)};
+    rpc::SendMessageByMinBlock rpc{min_block, std::move(request)};
 
     rpc.timeout(timeout);
 

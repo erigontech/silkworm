@@ -359,7 +359,7 @@ namespace silkworm {
         using namespace std;
 
         WorkingChain_ForTest chain;
-        chain.target_height(1'000'000);
+        chain.top_seen_block_height(1'000'000);
 
         PeerId peerId = "1";
 
@@ -544,7 +544,7 @@ namespace silkworm {
         using namespace std;
 
         WorkingChain_ForTest chain;
-        chain.target_height(1'000'000);
+        chain.top_seen_block_height(1'000'000);
 
         PeerId peerId = "1";
 

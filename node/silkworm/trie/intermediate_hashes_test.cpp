@@ -32,6 +32,76 @@ static Bytes nibbles_from_hex(std::string_view s) {
     return unpacked;
 }
 
+static std::string nibbles_to_hex(ByteView unpacked) {
+    static const char* kHexDigits{"0123456789ABCDEF"};
+
+    std::string out;
+    out.reserve(unpacked.length());
+
+    for (uint8_t x : unpacked) {
+        out.push_back(kHexDigits[x]);
+    }
+
+    return out;
+}
+
+TEST_CASE("AccountTrieCursor traversal") {
+    const TemporaryDirectory tmp_dir;
+    DataDirectory data_dir{tmp_dir.path()};
+    data_dir.deploy();
+
+    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
+    db_config.inmemory = true;
+    auto env{db::open_env(db_config)};
+    auto txn{env.start_write()};
+    db::table::create_all(txn);
+
+    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+
+    const Bytes key1{nibbles_from_hex("1")};
+    const Node node1{/*state_mask=*/0b111, /*tree_mask=*/0b101, /*hash_mask=*/0, /*hashes=*/{}};
+    account_trie.upsert(db::to_slice(key1), db::to_slice(marshal_node(node1)));
+
+    const Bytes key2{nibbles_from_hex("10B")};
+    const Node node2{/*state_mask=*/0b1010, /*tree_mask=*/0, /*hash_mask=*/0, /*hashes=*/{}};
+    account_trie.upsert(db::to_slice(key2), db::to_slice(marshal_node(node2)));
+
+    const Bytes key3{nibbles_from_hex("13")};
+    const Node node3{/*state_mask=*/0b1110, /*tree_mask=*/0, /*hash_mask=*/0, /*hashes=*/{}};
+    account_trie.upsert(db::to_slice(key3), db::to_slice(marshal_node(node3)));
+
+    PrefixSet changed;
+    AccountTrieCursor atc{txn, changed};
+
+    // Traversal should be in pre-order:
+    // 1. Visit the current node
+    // 2. Recursively traverse the current node's left subtree.
+    // 3. Recursively traverse the current node's right subtree.
+    // https://en.wikipedia.org/wiki/Tree_traversal#Pre-order,_NLR
+
+    CHECK((atc.key() != std::nullopt && atc.key()->empty()));  // root
+
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "10");
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "10B1");
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "10B3");
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "11");
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "12");
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "131");
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "132");
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "133");
+
+    atc.next(/*skip_children=*/false);
+    CHECK(atc.key() == std::nullopt);  // end of trie
+}
+
 static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
     const auto loc1{0x1200000000000000000000000000000000000000000000000000000000000000_bytes32};
     const auto loc2{0x1400000000000000000000000000000000000000000000000000000000000000_bytes32};

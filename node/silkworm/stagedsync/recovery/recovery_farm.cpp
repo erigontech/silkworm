@@ -19,6 +19,9 @@
 #include <boost/format.hpp>
 
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/log.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/stages.hpp>
 
 namespace silkworm::stagedsync::recovery {
 
@@ -123,12 +126,11 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
         // Get the body and its transactions
         auto body_rlp{db::from_slice(block_data.value)};
         auto block_body{db::detail::decode_stored_block_body(body_rlp)};
- 
 
         std::vector<Transaction> transactions{
             db::read_transactions(transactions_table, block_body.base_txn_id, block_body.txn_count)};
-       
-        if (transactions.size()) {
+
+        if (!transactions.empty()) {
             if (((*batch_).size() + transactions.size()) > max_batch_size_) {
                 dispatch_batch(true);
             }
@@ -174,11 +176,11 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
 StageResult RecoveryFarm::unwind(uint64_t new_height) {
     SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
     auto unwind_table{db::open_cursor(db_transaction_, db::table::kSenders)};
-    auto unwind_bytes_point{db::block_key(new_height+1)};
+    auto unwind_bytes_point{db::block_key(new_height + 1)};
     truncate_table_from(unwind_table, unwind_bytes_point);
     // Eventually update new stage height
     db::stages::write_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
-    
+
     return StageResult::kSuccess;
 }
 
@@ -190,7 +192,7 @@ void RecoveryFarm::stop_all_workers(bool wait) {
 }
 
 void RecoveryFarm::wait_workers_completion() {
-    if (workers_.size()) {
+    if (!workers_.empty()) {
         uint64_t attempts{0};
         do {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -304,12 +306,12 @@ void RecoveryFarm::dispatch_batch(bool renew) {
     if (should_stop()) {
         init_batch();  // Empties the batch
         throw std::runtime_error("Unable to dispatch work");
-    } else if (!batch_ || !(*batch_).size()) {
+    } else if (!batch_ || batch_->empty()) {
         return;
     }
 
     // First worker created
-    if (!workers_.size()) {
+    if (workers_.empty()) {
         if (!initialize_new_worker(true)) {
             throw std::runtime_error("Unable to dispatch work");
         }
@@ -435,7 +437,7 @@ void RecoveryFarm::worker_completed_handler(RecoveryWorker* sender, uint32_t bat
 
 void RecoveryFarm::init_batch() {
     batch_ = std::make_unique<std::vector<RecoveryWorker::Package>>();
-    (*batch_).reserve(max_batch_size_);
+    batch_->reserve(max_batch_size_);
 }
 
 }  // namespace silkworm::stagedsync::recovery

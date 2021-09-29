@@ -14,11 +14,13 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
 #define SILKWORM_STAGEDSYNC_RECOVERY_FARM_HPP_
 
 #include <atomic>
 
+#include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/recovery/recovery_worker.hpp>
 #include <silkworm/stagedsync/util.hpp>
 

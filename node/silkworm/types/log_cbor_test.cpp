@@ -13,27 +13,27 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
-#include "receipt_cbor.hpp"
-
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/util.hpp>
-#include <silkworm/types/transaction.hpp>
+#include "log_cbor.hpp"
+
 #include <silkworm/common/test_util.hpp>
 
 namespace silkworm {
 
-TEST_CASE("CBOR encoding of empty receipts") {
-    std::vector<Receipt> v{};
-    Bytes encoded{cbor_encode(v)};
-    CHECK(to_hex(encoded) == "f6");
+TEST_CASE("CBOR encoding of empty logs") {
+    std::vector<Log> logs{};
+    Bytes encoded{cbor_encode(logs)};
+    CHECK(to_hex(encoded) == "80");
 }
 
-TEST_CASE("CBOR encoding of receipts") {
-    auto v{test::sample_receipts()};
-    auto encoded{cbor_encode(v)};
-    CHECK(to_hex(encoded) == "828400f6001a0032f05d8402f6011a00beadd0");
+TEST_CASE("CBOR encoding of logs") {
+    auto logs{test::sample_receipts().at(0).logs};
+    auto encoded{cbor_encode(logs)};
+    CHECK(to_hex(encoded) == "828354ea674fdde714fd979de3edf0f56aa9716b898ec88043010043835444fd3ab8381cc3d"
+                             "14afa7c4af7fd13cdc65026e1825820000000000000000000000000000000000000000000000"
+                             "000000000000000dead582000000000000000000000000000000000000000000000000000000"
+                             "0000000abba46aabbff780043");
 }
 
 }  // namespace silkworm

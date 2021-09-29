@@ -15,6 +15,7 @@
 */
 
 #include "log_cbor.hpp"
+#include <catch2/catch.hpp>
 
 #include <cbor/encoder.h>
 #include <cbor/output_dynamic.h>

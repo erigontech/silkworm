@@ -18,6 +18,7 @@
 #define SILKWORM_COMMON_TEST_UTIL_HPP_
 
 #include <silkworm/types/block.hpp>
+#include <silkworm/types/receipt.hpp>
 
 namespace silkworm::test {
 
@@ -31,6 +32,7 @@ constexpr ChainConfig kLondonConfig{
 static_assert(kLondonConfig.revision(0) == EVMC_LONDON);
 
 std::vector<Transaction> sample_transactions();
+std::vector<Receipt> sample_receipts();
 
 }  // namespace silkworm::test
 

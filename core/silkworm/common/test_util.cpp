@@ -52,4 +52,32 @@ std::vector<Transaction> sample_transactions() {
     return transactions;
 }
 
+std::vector<Receipt> sample_receipts() {
+    std::vector<Receipt> receipts{};
+    receipts.resize(2);
+
+    receipts[0].type = Transaction::Type::kLegacy;
+    receipts[0].success = false;
+    receipts[0].cumulative_gas_used = 0x32f05d;
+    receipts[0].logs = {
+        Log{
+            0xea674fdde714fd979de3edf0f56aa9716b898ec8_address,
+            {},
+            *from_hex("0x010043"),
+        },
+        Log{
+            0x44fd3ab8381cc3d14afa7c4af7fd13cdc65026e1_address,
+            {to_bytes32(*from_hex("dead")), to_bytes32(*from_hex("abba"))},
+            *from_hex("0xaabbff780043"),
+        },
+    };
+
+    receipts[1].type = Transaction::Type::kEip1559;
+    receipts[1].success = true;
+    receipts[1].cumulative_gas_used = 0xbeadd0;
+    receipts[1].logs = {};
+
+    return receipts;
+}
+
 }  // namespace silkworm::test

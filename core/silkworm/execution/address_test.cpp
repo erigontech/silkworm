@@ -22,16 +22,8 @@ namespace silkworm {
 
 using namespace evmc::literals;
 
-constexpr evmc::address sample_caller = 0xfbe0afcd7658ba86be41922059dd879c192d4c73_address;
-constexpr evmc::bytes32 sample_salt = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32;
-
 TEST_CASE("Create address") {
-    CHECK(create_address(sample_caller, 0) ==
-          0xc669eaad75042be84daaf9b461b0e868b9ac1871_address);
-}
-
-TEST_CASE("Create2 address") {
-    CHECK(create2_address(sample_caller, 0, sample_salt.bytes) ==
+    CHECK(create_address(0xfbe0afcd7658ba86be41922059dd879c192d4c73_address, 0) ==
           0xc669eaad75042be84daaf9b461b0e868b9ac1871_address);
 }
 }  // namespace silkworm

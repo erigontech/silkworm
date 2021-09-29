@@ -54,7 +54,7 @@ Invariants:
 - tree_mask is a subset of state_mask (tree_mask ⊆ state_mask)
 - hash_mask is a subset of state_mask (hash_mask ⊆ state_mask)
 - the first level in TrieAccount always exists if state_mask≠0
-- TrieStorage record of account root (length=40) must have +1 hash - it's the account root
+- TrieStorage record of account root (length=40) must have +1 hash - it's the storage root
 - each record in TrieAccount table must have an ancestor (may be not immediate) and this ancestor must have
 the correct bit in tree_mask bitmap
 - if state_mask has a bit - then HashedAccount table must have a record corresponding to this bit

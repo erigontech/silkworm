@@ -37,7 +37,7 @@ namespace silkworm::stagedsync::recovery {
 class RecoveryWorker final : public silkworm::Worker {
   public:
     //! \brief A recovery package
-    struct package {
+    struct Package {
         BlockNum block_num;     // Block number this package refers to
         ethash::hash256 hash;   // Keccak hash of transaction's rlp representation
         bool odd_y_parity;      // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
@@ -60,7 +60,7 @@ class RecoveryWorker final : public silkworm::Worker {
     explicit RecoveryWorker(uint32_t id, size_t data_size);
 
     //! \brief Feed the worker with a new set of data to process
-    void set_work(uint32_t batch_id, std::unique_ptr<std::vector<package>> batch);
+    void set_work(uint32_t batch_id, std::unique_ptr<std::vector<Package>> batch);
 
     //! \brief Return the instance unique identifier
     uint32_t get_id() const;
@@ -88,7 +88,7 @@ class RecoveryWorker final : public silkworm::Worker {
     const uint32_t id_;                                     // Current worker identifier
     size_t data_size_;                                      // Size of the recovery data buffer
     uint32_t batch_id_{0};                                  // Running batch identifier
-    std::unique_ptr<std::vector<package>> batch_;           // Batch to process
+    std::unique_ptr<std::vector<Package>> batch_;           // Batch to process
     uint8_t* data_{nullptr};                                // Pointer to data where results are stored
     secp256k1_context* context_;                            // Elliptic curve context;
     std::vector<std::pair<BlockNum, ByteView>> results_{};  // Results per block pointing to data area

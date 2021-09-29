@@ -16,6 +16,8 @@
 
 #include "ecdsa.hpp"
 
+#include <ethash/hash_types.hpp>
+#include <ethash/keccak.hpp>
 #include <secp256k1_recovery.h>
 
 namespace silkworm::ecdsa {

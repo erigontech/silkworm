@@ -74,7 +74,7 @@ void RecoveryWorker::work() {
         for (auto const& package : *batch_) {
             // On block switching store the results
             if (block_num != package.block_num) {
-                if (should_stop()) {
+                if (is_stopping()) {
                     status_.store(Status::Aborted);
                     break;
                 }

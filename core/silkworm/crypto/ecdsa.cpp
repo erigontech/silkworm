@@ -16,13 +16,15 @@
 
 #include "ecdsa.hpp"
 
+#include <ethash/hash_types.hpp>
+#include <ethash/keccak.hpp>
 #include <secp256k1_recovery.h>
 
 namespace silkworm::ecdsa {
 
 intx::uint256 y_parity_and_chain_id_to_v(bool odd, const std::optional<intx::uint256>& chain_id) {
-    if (chain_id) {
-        return *chain_id * 2 + 35 + odd;
+    if (chain_id.has_value()) {
+        return chain_id.value() * 2 + 35 + odd;
     } else {
         return odd ? 28 : 27;
     }
@@ -42,12 +44,13 @@ std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256&
         // Find chain_id and y_parity ∈ {0, 1} such that
         // v = chain_id * 2 + 35 + y_parity
         intx::uint256 w{v - 35};
-        intx::uint256 chain_id{w >> 1};  // w / 2
         res.odd = static_cast<uint64_t>(w) % 2;
-        res.chain_id = chain_id;
+        res.chain_id.emplace(w >> 1); // w / 2
     }
     return res;
 }
+
+secp256k1_context* create_context(uint32_t flags) { return secp256k1_context_create(flags); }
 
 bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) {
     if (r == 0 || s == 0) {
@@ -63,8 +66,12 @@ bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool hom
     return true;
 }
 
-std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity) {
-    static secp256k1_context* context{secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY)};
+std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity, secp256k1_context* context) {
+
+    static secp256k1_context* static_context{create_context()};
+    if(!context){
+        context = static_context;
+    }
 
     if (message.length() != 32 || signature.length() != 64) {
         return std::nullopt;
@@ -84,6 +91,25 @@ std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_pa
     Bytes out(kOutLen, '\0');
     secp256k1_ec_pubkey_serialize(context, &out[0], &kOutLen, &pub_key, SECP256K1_EC_UNCOMPRESSED);
     return out;
+}
+
+std::optional<evmc::address> public_key_to_address(const Bytes& public_key) {
+    if (public_key.length() == 65 && public_key[0] == 4u) {
+        // Ignore first byte of public key
+        const auto key_hash{ethash::keccak256(public_key.data() + 1, public_key.length() - 1)};
+        evmc::address recovered_address{};
+        std::memcpy(&recovered_address.bytes[0], &key_hash.bytes[kHashLength - kAddressLength], kAddressLength);
+        return recovered_address;
+    }
+    return std::nullopt;
+}
+
+std::optional<evmc::address> recover_address(ByteView message, ByteView signature, bool odd_y_parity, secp256k1_context* context) {
+    const auto recovered_public_key{recover(message, signature, odd_y_parity, context)};
+    if (!recovered_public_key.has_value()) {
+        return std::nullopt;
+    }
+    return public_key_to_address(recovered_public_key.value());
 }
 
 }  // namespace silkworm::ecdsa

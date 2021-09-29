@@ -152,7 +152,7 @@ bool has_map(::mdbx::txn& tx, const char* map_name) {
     }
 }
 
-size_t cursor_for_each(::mdbx::cursor& cursor, WalkFunc walker, const CursorMoveDirection direction) {
+size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const CursorMoveDirection direction) {
     const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
                                                           ? mdbx::cursor::move_operation::next
                                                           : mdbx::cursor::move_operation::previous};
@@ -169,7 +169,8 @@ size_t cursor_for_each(::mdbx::cursor& cursor, WalkFunc walker, const CursorMove
     return ret;
 }
 
-size_t cursor_for_count(::mdbx::cursor& cursor, WalkFunc walker, size_t count, const CursorMoveDirection direction) {
+size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t count,
+                        const CursorMoveDirection direction) {
     const mdbx::cursor::move_operation move_operation{direction == CursorMoveDirection::Forward
                                                           ? mdbx::cursor::move_operation::next
                                                           : mdbx::cursor::move_operation::previous};
@@ -207,7 +208,7 @@ size_t cursor_erase(mdbx::cursor& cursor, size_t max_count, const CursorMoveDire
 }
 
 size_t cursor_erase(mdbx::cursor& cursor, const ByteView& set_key, size_t max_count,
-                        const CursorMoveDirection direction) {
+                    const CursorMoveDirection direction) {
     // Search lower bound key
     if (!cursor.lower_bound(to_slice(set_key), false)) {
         return 0;

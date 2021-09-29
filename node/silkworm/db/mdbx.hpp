@@ -112,7 +112,7 @@ enum class CursorMoveDirection { Forward, Reverse };
 //! \return The overall number of processed records
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
-size_t cursor_for_each(::mdbx::cursor& cursor, WalkFunc func,
+size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& func,
                        const CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor up to a max number of iterations
@@ -125,7 +125,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, WalkFunc func,
 //! reached either the end or the beginning of table earlier
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
-size_t cursor_for_count(::mdbx::cursor& cursor, WalkFunc func, size_t max_count,
+size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& func, size_t max_count,
                         const CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Erases map records by cursor until any record is found

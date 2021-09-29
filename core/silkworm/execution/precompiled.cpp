@@ -83,15 +83,6 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
         return out;
     }
     return Bytes{};
-
-    //    std::optional<evmc::address> recovered_address{
-    //        ecdsa::recover_address(d.substr(0, 32), d.substr(64, 64), parity_and_id->odd)};
-    //    if (recovered_address.has_value()) {
-    //        Bytes out(kHashLength, '\0');
-    //        std::memcpy(&out[12], recovered_address->bytes, kAddressLength);
-    //        return out;
-    //    }
-    //    return Bytes{};
 }
 
 uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * ((input.length() + 31) / 32); }

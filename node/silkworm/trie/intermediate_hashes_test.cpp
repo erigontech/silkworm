@@ -19,9 +19,18 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/directories.hpp>
+#include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
 
 namespace silkworm::trie {
+
+static Bytes nibbles_from_hex(std::string_view s) {
+    Bytes unpacked(s.size(), '\0');
+    for (size_t i{0}; i < s.size(); ++i) {
+        unpacked[i] = *decode_hex_digit(s[i]);
+    }
+    return unpacked;
+}
 
 static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
     const auto loc1{0x1200000000000000000000000000000000000000000000000000000000000000_bytes32};
@@ -154,7 +163,7 @@ TEST_CASE("Account and storage trie") {
     std::map<Bytes, Node> node_map{read_all_nodes(account_trie)};
     CHECK(node_map.size() == 2);
 
-    const Node node1a{node_map.at(*from_hex("0B"))};
+    const Node node1a{node_map.at(nibbles_from_hex("B"))};
 
     CHECK(0b1011 == node1a.state_mask());
     CHECK(0b0001 == node1a.tree_mask());
@@ -163,7 +172,7 @@ TEST_CASE("Account and storage trie") {
     CHECK(node1a.root_hash() == std::nullopt);
     CHECK(node1a.hashes().size() == 2);
 
-    const Node node2a{node_map.at(*from_hex("0B00"))};
+    const Node node2a{node_map.at(nibbles_from_hex("B0"))};
 
     CHECK(0b10001 == node2a.state_mask());
     CHECK(0b00000 == node2a.tree_mask());
@@ -210,7 +219,7 @@ TEST_CASE("Account and storage trie") {
     node_map = read_all_nodes(account_trie);
     CHECK(node_map.size() == 2);
 
-    const Node node1b{node_map.at(*from_hex("0B"))};
+    const Node node1b{node_map.at(nibbles_from_hex("B"))};
     CHECK(0b1011 == node1b.state_mask());
     CHECK(0b0001 == node1b.tree_mask());
     CHECK(0b1011 == node1b.hash_mask());
@@ -221,7 +230,7 @@ TEST_CASE("Account and storage trie") {
     CHECK(node1a.hashes()[0] == node1b.hashes()[0]);
     CHECK(node1a.hashes()[1] == node1b.hashes()[2]);
 
-    const Node node2b{node_map.at(*from_hex("0B00"))};
+    const Node node2b{node_map.at(nibbles_from_hex("B0"))};
     CHECK(node2a == node2b);
 
     // TODO[Issue 179] storage
@@ -240,7 +249,7 @@ TEST_CASE("Account and storage trie") {
     node_map = read_all_nodes(account_trie);
     CHECK(node_map.size() == 1);
 
-    const Node node1c{node_map.at(*from_hex("0B"))};
+    const Node node1c{node_map.at(nibbles_from_hex("B"))};
     CHECK(0b1011 == node1c.state_mask());
     CHECK(0b0000 == node1c.tree_mask());
     CHECK(0b1011 == node1c.hash_mask());
@@ -295,7 +304,7 @@ TEST_CASE("Account trie around extension node") {
     std::map<Bytes, Node> node_map{read_all_nodes(account_trie)};
     CHECK(node_map.size() == 2);
 
-    const Node node1{node_map.at(*from_hex("03"))};
+    const Node node1{node_map.at(nibbles_from_hex("3"))};
 
     CHECK(0b11 == node1.state_mask());
     CHECK(0b01 == node1.tree_mask());
@@ -304,7 +313,7 @@ TEST_CASE("Account trie around extension node") {
     CHECK(node1.root_hash() == std::nullopt);
     CHECK(node1.hashes().empty());
 
-    const Node node2{node_map.at(*from_hex("03000a0f"))};
+    const Node node2{node_map.at(nibbles_from_hex("30af"))};
 
     CHECK(0b101100000 == node2.state_mask());
     CHECK(0b000000000 == node2.tree_mask());

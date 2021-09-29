@@ -224,8 +224,13 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
                 hash_masks_[from - 1] &= ~flag;
 
                 if (tree_masks_[current.length() - 1]) {
-                    // Propagate tree_masks flag along the extension node
+                    // Propagate tree_masks flag along the extension
                     tree_masks_[from - 1] |= flag;
+                }
+
+                for (size_t i{from}; i < current.length(); ++i) {
+                    // Delete old nodes along the extension
+                    node_collector(current.substr(0, i), std::nullopt);
                 }
             }
 
@@ -267,6 +272,8 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
                     }
 
                     node_collector(current.substr(0, len), n);
+                } else {
+                    node_collector(current.substr(0, len), std::nullopt);
                 }
             }
         }

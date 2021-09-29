@@ -251,6 +251,8 @@ TEST_CASE("Account and storage trie") {
     CHECK(node1b.hashes()[0] != node1c.hashes()[0]);
     CHECK(node1b.hashes()[1] == node1c.hashes()[1]);
     CHECK(node1b.hashes()[2] == node1c.hashes()[2]);
+
+    // TODO[Issue 179] (2nd) SECTION(Delete several accounts)
 }
 
 TEST_CASE("Account trie around extension node") {

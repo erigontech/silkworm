@@ -139,14 +139,17 @@ bool StorageTrieCursor::can_skip_state() const {
 
 DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
     : txn_{txn}, storage_collector_{storage_collector} {
-    hb_.node_collector = [&account_collector](ByteView unpacked_key, const Node& node) {
+    hb_.node_collector = [&account_collector](ByteView unpacked_key, const std::optional<Node>& node) {
         if (unpacked_key.empty()) {
             return;
         }
 
         etl::Entry e;
         e.key = unpacked_key;
-        e.value = marshal_node(node);
+        if (node != std::nullopt) {
+            e.value = marshal_node(*node);
+        }
+
         account_collector.collect(std::move(e));
     };
 }
@@ -168,9 +171,7 @@ traversal".
 
 **Implementation:** by opening 1 Cursor on state and 1 more Cursor on intermediate hashes bucket - we will receive data
 in order of "Preorder trie traversal". Cursors will only do "sequential reads" and "jumps forward" - been
-hardware-friendly. 1 stack keeps all accumulated hashes, when sub-trie traverse ends - all hashes pulled from stack ->
-hashed -> new hash puts on stack - it's hash of visited sub-trie (it emulates recursive nature of "Preorder trie
-traversal" algo).
+hardware-friendly.
 
 Imagine that account with key 0000....00 (64 zeroes, 32 bytes of zeroes) changed.
 Here is an example sequence which can be seen by running 2 Cursors:
@@ -222,9 +223,13 @@ evmc::bytes32 DbTrieLoader::calculate_root(const PrefixSet& changed) {
             if (account.incarnation) {
                 const Bytes key_with_inc{db::storage_prefix(db::from_slice(acc.key), account.incarnation)};
                 HashBuilder storage_hb;
-                storage_hb.node_collector = [&](ByteView unpacked_storage_key, const Node& node) {
-                    etl::Entry e{key_with_inc, marshal_node(node)};
+                storage_hb.node_collector = [&](ByteView unpacked_storage_key, const std::optional<Node>& node) {
+                    etl::Entry e;
+                    e.key = key_with_inc;
                     e.key.append(unpacked_storage_key);
+                    if (node != std::nullopt) {
+                        e.value = marshal_node(*node);
+                    }
                     storage_collector_.collect(std::move(e));
                 };
 
@@ -291,8 +296,7 @@ static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::fi
 
 // See Erigon (p *HashPromoter) Promote
 static void changed_accounts(mdbx::txn& txn, BlockNum from, PrefixSet& out) {
-    // TODO[Issue 179] deleted accounts
-    // TODO[Issue 179] use ETL
+    // TODO[Issue 179] delete TrieStorage for deleted accounts
     const Bytes starting_key{db::block_key(from + 1)};
 
     auto change_cursor{db::open_cursor(txn, db::table::kAccountChangeSet)};

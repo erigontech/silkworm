@@ -248,8 +248,8 @@ StageResult unwind_execution(TransactionManager& txn, const std::filesystem::pat
             {
                 auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
                 auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
-                auto account_changeset_table{db::open_cursor(*txn, db::table::kPlainAccountChangeSet)};
-                auto storage_changeset_table{db::open_cursor(*txn, db::table::kPlainStorageChangeSet)};
+                auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+                auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
                 unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, unwind_to);
                 unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, unwind_to);
             }

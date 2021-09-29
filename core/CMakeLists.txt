@@ -29,8 +29,8 @@ list(FILTER SILKWORM_CORE_SRC EXCLUDE REGEX "_test\.cpp$")
 add_library(silkworm_core ${SILKWORM_CORE_SRC})
 target_include_directories(silkworm_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(SILKWORM_CORE_PUBLIC_LIBS evmc ethash::ethash intx::intx ff Microsoft.GSL::GSL nlohmann_json)
-set(SILKWORM_CORE_PRIVATE_LIBS evmone secp256k1 gmp)
+set(SILKWORM_CORE_PUBLIC_LIBS evmc ethash::ethash intx::intx ff Microsoft.GSL::GSL nlohmann_json secp256k1)
+set(SILKWORM_CORE_PRIVATE_LIBS evmone gmp)
 
 if(NOT SILKWORM_WASM_API)
   hunter_add_package(abseil)

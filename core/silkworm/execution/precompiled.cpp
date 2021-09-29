@@ -65,17 +65,24 @@ std::optional<Bytes> ecrec_run(ByteView input) noexcept {
         return Bytes{};
     }
 
+    /*
+     * Note ! We could replace this block of code with the one commented below (kept for reference) which directly
+     * returns address. This could bring the advantage to have validation of public key to address (first byte == 4) in
+     * a single place (crypto/ecdsa.cpp) but also incurs in an extra memcpy due to keccak -> evmc::address -> bytes[32].
+     * Here instead we copy only keccak -> bytes32
+     */
+
+    // TODO (yperbasis) : check why is necessary to return a Byte[32] while actually the first 12 bytes are zeroes
+
     const std::optional<Bytes> key{ecdsa::recover(d.substr(0, 32), d.substr(64, 64), parity_and_id->odd)};
-    if (key == std::nullopt || key->at(0) != 4) {
-        return Bytes{};
+    if (key.has_value() && key->at(0) == 4u) {
+        // Ignore the first byte of the public key
+        const ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
+        Bytes out(32, '\0');
+        std::memcpy(&out[12], &hash.bytes[12], 32 - 12);
+        return out;
     }
-
-    // Ignore the first byte of the public key
-    const ethash::hash256 hash{ethash::keccak256(key->data() + 1, key->length() - 1)};
-
-    Bytes out(32, '\0');
-    std::memcpy(&out[12], &hash.bytes[12], 32 - 12);
-    return out;
+    return Bytes{};
 }
 
 uint64_t sha256_gas(ByteView input, evmc_revision) noexcept { return 60 + 12 * ((input.length() + 31) / 32); }

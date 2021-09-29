@@ -40,7 +40,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
     }
 
     // Retrieve previous stage height
-    auto senders_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kSendersKey)};
+    auto senders_stage_height{db::stages::read_stage_progress(db_transaction_, db::stages::kSendersKey)};
     if (height_from > (senders_stage_height + 1)) {
         height_from = (senders_stage_height + 1);
     }
@@ -48,7 +48,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
         height_from = senders_stage_height + 1;
     }
 
-    auto blocks_stage_height{db::stages::get_stage_progress(db_transaction_, db::stages::kBlockBodiesKey)};
+    auto blocks_stage_height{db::stages::read_stage_progress(db_transaction_, db::stages::kBlockBodiesKey)};
 
     if (height_to > blocks_stage_height) {
         height_to = blocks_stage_height;
@@ -163,7 +163,7 @@ StageResult RecoveryFarm::recover(uint64_t height_from, uint64_t height_to) {
 
             // Get the last processed block and update stage height
             auto last_processed_block{endian::load_big_u64(static_cast<uint8_t*>(target_table.to_last().key.iov_base))};
-            db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
+            db::stages::write_stage_progress(db_transaction_, db::stages::kSendersKey, last_processed_block);
         }
     }
 
@@ -177,7 +177,7 @@ StageResult RecoveryFarm::unwind(uint64_t new_height) {
     auto unwind_bytes_point{db::block_key(new_height+1)};
     truncate_table_from(unwind_table, unwind_bytes_point);
     // Eventually update new stage height
-    db::stages::set_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
+    db::stages::write_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
     
     return StageResult::kSuccess;
 }

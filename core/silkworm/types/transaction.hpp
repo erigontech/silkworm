@@ -64,16 +64,14 @@ struct Transaction {
 
     intx::uint256 v() const;  // EIP-155
 
-    // Returns false is v is not acceptable (v != 27 && v != 28 && v < 35, see EIP-155)
+    //! \brief Returns false if v is not acceptable (v != 27 && v != 28 && v < 35, see EIP-155)
     [[nodiscard]] bool set_v(const intx::uint256& v);
 
-    // Populates the from field with recovered sender.
-    // See Yellow Paper, Appendix F "Signing Transactions",
-    // https://eips.ethereum.org/EIPS/eip-2 and
-    // https://eips.ethereum.org/EIPS/eip-155.
-    // If recovery fails the from field is set to null.
-    //
-    // Precondition: pre_validate_transaction must return kOk.
+    //! \brief Populates the from field with recovered sender.
+    //! See Yellow Paper, Appendix F "Signing Transactions",
+    //! https://eips.ethereum.org/EIPS/eip-2 and
+    //! https://eips.ethereum.org/EIPS/eip-155.
+    //! If recovery fails the from field is set to null.
     void recover_sender();
 
     intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559

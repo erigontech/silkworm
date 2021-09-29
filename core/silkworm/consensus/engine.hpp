@@ -28,47 +28,48 @@
 
 namespace silkworm::consensus {
 
-class ConsensusEngine {
+class IConsensusEngine {
   public:
+    explicit IConsensusEngine() = default;
+    virtual ~IConsensusEngine() = default;
+
     //! \brief Performs validation of block header & body that can be done prior to sender recovery and execution.
     //! \brief See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity", and 11.1 "Ommer Validation".
     //! \param [in] block: block to pre-validate.
     //! \param [in] state: current state.
-    //! \param [in] config: current chain config.
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult pre_validate_block(const Block& block, State& state, const ChainConfig& config) = 0;
+    virtual ValidationResult pre_validate_block(const Block& block, State& state) = 0;
 
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.
     //! \param [in] state: current state.
-    //! \param [in] config: current chain config.
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult validate_block_header(const BlockHeader& header, State& state,
-                                                   const ChainConfig& config) = 0;
+    virtual ValidationResult validate_block_header(const BlockHeader& header, State& state) = 0;
 
-    //! \brief See [YP] Section 11.3 "Reward Application".
+    //! \brief Validates the seal of the header
+    virtual ValidationResult validate_seal(const BlockHeader& header) = 0;
+
+    //! \brief Finalizes block execution by applying changes in the state of accounts or of the consensus itself
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
-    virtual void apply_rewards(IntraBlockState& state, const Block& block, const evmc_revision& revision) = 0;
+    //! \remarks For Ethash See [YP] Section 11.3 "Reward Application".
+    virtual void finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision);
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from
     virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
-
-    virtual ~ConsensusEngine() = default;
 };
 
-// Performs validation of a transaction that can be done prior to sender recovery and block execution.
-// May return kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
+//! \brief Performs validation of a transaction that can be done prior to sender recovery and block execution.
+//! \return Any of kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
+//! \remarks Should sender of transaction not yet recovered a check on signature's validity is performed
+//! \remarks These function is agnostic to whole block validity
 ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
                                           const std::optional<intx::uint256>& base_fee_per_gas);
 
-// https://eips.ethereum.org/EIPS/eip-1559
-std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent,
-                                                       const ChainConfig& config);
-
-std::unique_ptr<ConsensusEngine> get_consensus_engine(SealEngineType engine_type);
+//! \brief Creates an instance of proper Consensus Engine on behalf of chain configuration
+std::unique_ptr<IConsensusEngine> engine_factory(const ChainConfig& chain_config);
 
 }  // namespace silkworm::consensus
 

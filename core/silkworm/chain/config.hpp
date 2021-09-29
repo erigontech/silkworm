@@ -67,17 +67,24 @@ struct ChainConfig {
 
     // Returns the revision level at given block number
     // In other words, on behalf of Json chain config data
-    // returns whether or not specific HF have occurred
-    evmc_revision revision(uint64_t block_number) const noexcept;
+    // returns whether specific HF have occurred
+    [[nodiscard]] constexpr evmc_revision revision(uint64_t block_number) const noexcept {
+        for (size_t i{EVMC_MAX_REVISION}; i > 0; --i) {
+            if (fork_blocks[i - 1].has_value() && block_number >= fork_blocks[i - 1].value()) {
+                return static_cast<evmc_revision>(i);
+            }
+        }
+        return EVMC_FRONTIER;
+    }
 
     // As ancillary to revision this returns at which block
     // a specific revision has occurred. If return value is std::nullopt
     // it means the actual chain either does not support such revision
-    std::optional<uint64_t> revision_block(evmc_revision rev) const noexcept;
+    [[nodiscard]] std::optional<uint64_t> revision_block(evmc_revision rev) const noexcept;
 
     void set_revision_block(evmc_revision rev, std::optional<uint64_t> block);
 
-    nlohmann::json to_json() const noexcept;
+    [[nodiscard]] nlohmann::json to_json() const noexcept;
 
     /*Sample JSON input:
     {
@@ -168,13 +175,6 @@ constexpr ChainConfig kGoerliConfig{
         4'460'644,  // Berlin
         5'062'605,  // London
     },
-};
-
-/// Enables London from genesis. Used in tests.
-constexpr ChainConfig kLondonTestConfig{
-    1,  // chain_id
-    SealEngineType::kNoProof,
-    {0, 0, 0, 0, 0, 0, 0, 0, 0},
 };
 
 inline const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept {

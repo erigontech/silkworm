@@ -14,9 +14,11 @@
    limitations under the License.
 */
 
-#include "consensus_engine.hpp"
-
 #include <catch2/catch.hpp>
+
+#include <silkworm/common/test_util.hpp>
+
+#include "engine.hpp"
 
 namespace silkworm::consensus {
 
@@ -35,6 +37,29 @@ static const ChainConfig kTestConfig{
         EVMC_LONDON,
     },
 };
+
+TEST_CASE("Consensus Engine factory") {
+    std::unique_ptr<IConsensusEngine> consensus_engine;
+    consensus_engine = consensus::engine_factory(kMainnetConfig);  // Ethash consensus engine
+    CHECK(consensus_engine != nullptr);
+    consensus_engine = consensus::engine_factory(kRopstenConfig);  // Ethash consensus engine
+    CHECK(consensus_engine != nullptr);
+    consensus_engine = consensus::engine_factory(test::kLondonConfig);  // Noproof consensus engine
+    CHECK(consensus_engine != nullptr);
+    consensus_engine = consensus::engine_factory(kRinkebyConfig);  // Clique consensus engine
+    CHECK(consensus_engine == nullptr);
+    consensus_engine = consensus::engine_factory(kGoerliConfig);  // Clique consensus engine
+    CHECK(consensus_engine == nullptr);
+}
+
+TEST_CASE("Consensus Engine Seal") {
+    std::unique_ptr<IConsensusEngine> consensus_engine{
+        consensus::engine_factory(kMainnetConfig)};  // Ethash consensus engine
+    BlockHeader fake_header{};
+    CHECK(consensus_engine->validate_seal(fake_header) != ValidationResult::kOk);
+    consensus_engine = consensus::engine_factory(test::kLondonConfig);  // Noproof consensus engine
+    CHECK(consensus_engine->validate_seal(fake_header) == ValidationResult::kOk);
+}
 
 TEST_CASE("Validate transaction types") {
     const std::optional<intx::uint256> base_fee_per_gas{std::nullopt};
@@ -100,4 +125,4 @@ TEST_CASE("Validate max_fee_per_gas") {
           ValidationResult::kMaxPriorityFeeGreaterThanMax);
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::consensus

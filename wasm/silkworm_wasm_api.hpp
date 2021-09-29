@@ -29,7 +29,7 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/consensus/blockchain.hpp>
-#include <silkworm/consensus/ethash/ethash.hpp>
+#include <silkworm/consensus/ethash/engine.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/transaction.hpp>

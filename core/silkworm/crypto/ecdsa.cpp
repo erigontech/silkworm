@@ -67,13 +67,13 @@ bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool hom
     return true;
 }
 
-std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity) {
-    static secp256k1_context* context{create_context()};
-    return recover(context, message, signature, odd_y_parity);
-}
+std::optional<Bytes> recover(ByteView message, ByteView signature, bool odd_y_parity, secp256k1_context* context) {
 
-std::optional<Bytes> recover(secp256k1_context* context, ByteView message, ByteView signature,
-                                    bool odd_y_parity) {
+    static secp256k1_context* static_context{create_context()};
+    if(!context){
+        context = static_context;
+    }
+
     if (message.length() != 32 || signature.length() != 64) {
         return std::nullopt;
     }
@@ -95,8 +95,7 @@ std::optional<Bytes> recover(secp256k1_context* context, ByteView message, ByteV
 }
 
 std::optional<evmc::address> public_key_to_address(const Bytes& public_key) {
-    assert(public_key.length() == 65);
-    if (public_key[0] == 4u) {
+    if (public_key.length() == 65 && public_key[0] == 4u) {
         // Ignore first byte of public key
         const auto key_hash{ethash::keccak256(public_key.data() + 1, public_key.length() - 1)};
         evmc::address recovered_address{};
@@ -106,22 +105,12 @@ std::optional<evmc::address> public_key_to_address(const Bytes& public_key) {
     return std::nullopt;
 }
 
-std::optional<evmc::address> recover_address(ByteView message, ByteView signature, bool odd_y_parity) {
-    const auto recovered_public_key{recover(message, signature, odd_y_parity)};
+std::optional<evmc::address> recover_address(ByteView message, ByteView signature, bool odd_y_parity, secp256k1_context* context) {
+    const auto recovered_public_key{recover(message, signature, odd_y_parity, context)};
     if (!recovered_public_key.has_value()) {
         return std::nullopt;
     }
     return public_key_to_address(recovered_public_key.value());
-}
-
-std::optional<evmc::address> recover_address(secp256k1_context* context, ByteView message, ByteView signature,
-                                             bool odd_y_parity) {
-    const auto recovered_public_key{recover(context, message, signature, odd_y_parity)};
-    if (!recovered_public_key.has_value()) {
-        return std::nullopt;
-    }
-    return public_key_to_address(recovered_public_key.value());
-
 }
 
 }  // namespace silkworm::ecdsa

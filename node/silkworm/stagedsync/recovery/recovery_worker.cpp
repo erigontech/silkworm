@@ -84,7 +84,7 @@ void RecoveryWorker::work() {
             }
 
             std::optional<evmc::address> recovered_address{ecdsa::recover_address(
-                context_, full_view(package.hash.bytes), full_view(package.signature), package.odd_y_parity)};
+                full_view(package.hash.bytes), full_view(package.signature), package.odd_y_parity, context_)};
 
             if (recovered_address.has_value()) {
                 std::memcpy(&data_[block_data_offset + block_data_length], recovered_address->bytes, kAddressLength);

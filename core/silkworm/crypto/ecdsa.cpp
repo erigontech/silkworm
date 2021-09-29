@@ -44,9 +44,8 @@ std::optional<YParityAndChainId> v_to_y_parity_and_chain_id(const intx::uint256&
         // Find chain_id and y_parity ∈ {0, 1} such that
         // v = chain_id * 2 + 35 + y_parity
         intx::uint256 w{v - 35};
-        intx::uint256 chain_id{w >> 1};  // w / 2
         res.odd = static_cast<uint64_t>(w) % 2;
-        res.chain_id = chain_id;
+        res.chain_id.emplace(w >> 1); // w / 2
     }
     return res;
 }

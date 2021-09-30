@@ -28,7 +28,7 @@
 namespace silkworm::trie {
 
 // Erigon HashCollector2
-using NodeCollector = std::function<void(ByteView unpacked_key, const std::optional<Node>&)>;
+using NodeCollector = std::function<void(ByteView unpacked_key, const Node&)>;
 
 // Calculates root hash of a Modified Merkle Patricia Trie.
 // See Appendix D "Modified Merkle Patricia Trie" of the Yellow Paper

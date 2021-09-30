@@ -169,16 +169,14 @@ bool StorageTrieCursor::can_skip_state() const {
 
 DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
     : txn_{txn}, storage_collector_{storage_collector} {
-    hb_.node_collector = [&account_collector](ByteView unpacked_key, const std::optional<Node>& node) {
+    hb_.node_collector = [&account_collector](ByteView unpacked_key, const Node& node) {
         if (unpacked_key.empty()) {
             return;
         }
 
         etl::Entry e;
         e.key = unpacked_key;
-        if (node != std::nullopt) {
-            e.value = marshal_node(*node);
-        }
+        e.value = marshal_node(node);
 
         account_collector.collect(std::move(e));
     };
@@ -253,13 +251,9 @@ evmc::bytes32 DbTrieLoader::calculate_root(const PrefixSet& changed) {
             if (account.incarnation) {
                 const Bytes key_with_inc{db::storage_prefix(db::from_slice(acc.key), account.incarnation)};
                 HashBuilder storage_hb;
-                storage_hb.node_collector = [&](ByteView unpacked_storage_key, const std::optional<Node>& node) {
-                    etl::Entry e;
-                    e.key = key_with_inc;
+                storage_hb.node_collector = [&](ByteView unpacked_storage_key, const Node& node) {
+                    etl::Entry e{key_with_inc, marshal_node(node)};
                     e.key.append(unpacked_storage_key);
-                    if (node != std::nullopt) {
-                        e.value = marshal_node(*node);
-                    }
                     storage_collector_.collect(std::move(e));
                 };
 

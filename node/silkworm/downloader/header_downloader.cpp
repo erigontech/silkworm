@@ -63,10 +63,16 @@ void HeaderDownloader::send_status() {
 }
 
 void HeaderDownloader::receive_messages(MessageQueue& messages, std::atomic<bool>& stopping) {
+    // todo: handle connection loss and retry (at each re-connect re-send status)
 
+    // send status to sentry
+    send_status();
+
+    // send a message subscription
     rpc::ReceiveMessages message_subscription(rpc::ReceiveMessages::Scope::BlockAnnouncements);
     sentry_.exec_remotely(message_subscription);
 
+    // receive messages
     while (!stopping && !sentry_.closing() && message_subscription.receive_one_reply()) {
 
         auto message = InboundBlockAnnouncementMessage::make(message_subscription.reply(), working_chain_, sentry_);
@@ -273,9 +279,6 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         // sync status
         //working_chain_.target_height(new_height);
         working_chain_.sync_current_state_with(persisted_chain_);
-
-        // send status to sentry
-        send_status(); // todo: avoid if already sent by BlockProvider?
 
         // start message receiving (headers & blocks requests)
         message_receiving = std::thread([this, &messages, &stopping]() {

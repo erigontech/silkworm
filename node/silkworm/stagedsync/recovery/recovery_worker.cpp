@@ -19,29 +19,35 @@
 namespace silkworm::stagedsync::recovery {
 
 RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id), data_size_{data_size} {
-    // Try allocate enough memory to store
-    // results output
+    // Try allocate enough memory to store results output
+    assert(data_size % kAddressLength == 0);
     data_ = static_cast<uint8_t*>(std::calloc(1, data_size_));
     if (!data_) {
         throw std::runtime_error("Memory allocation failed");
     }
+    context_ = ecdsa::create_context();
+    if (!context_) {
+        throw std::runtime_error("Could not create elliptic curve context");
+    }
 }
 
-void RecoveryWorker::set_work(uint32_t batch_id, std::unique_ptr<std::vector<Package>> batch) {
-    batch_ = std::move(batch);
+void RecoveryWorker::set_work(uint32_t batch_id, std::vector<Package>& farm_batch) {
     batch_id_ = batch_id;
+    batch_.swap(farm_batch);
     status_.store(Status::Working);
     Worker::kick();
 }
 
-uint32_t RecoveryWorker::get_id() const { return id_; };
-uint32_t RecoveryWorker::get_batch_id() const { return batch_id_; };
-std::string RecoveryWorker::get_error(void) const { return last_error_; };
-RecoveryWorker::Status RecoveryWorker::get_status(void) const { return status_.load(); };
+std::string RecoveryWorker::get_error() const {
+    return (status_.load() == Status::Error) ? last_error_ : std::string();
+}
 
-bool RecoveryWorker::pull_results(Status status, std::vector<std::pair<uint64_t, iovec>>& out) {
-    if (status_.compare_exchange_strong(status, Status::Idle)) {
-        std::swap(out, results_);
+RecoveryWorker::Status RecoveryWorker::get_status() const { return status_.load(); }
+
+bool RecoveryWorker::pull_results(std::vector<std::pair<BlockNum, ByteView>>& out_results) {
+    Status expected_status{Status::ResultsReady};
+    if (status_.compare_exchange_strong(expected_status, Status::Idle)) {
+        std::swap(out_results, results_);
         return true;
     }
     return false;
@@ -49,57 +55,64 @@ bool RecoveryWorker::pull_results(Status status, std::vector<std::pair<uint64_t,
 
 void RecoveryWorker::work() {
     while (wait_for_kick()) {
-        // Prefer swapping with a new vector instead of clear
-        std::vector<std::pair<uint64_t, iovec>>().swap(results_);
+        /**
+         * Each work package is a pair of BlockNum + Transaction data.
+         * Work packages are processed in order and recovered sender's addresses are
+         * stored in allocated memory area. At block level break s byteview of
+         * memory area for addresses of the block is created and stored in results_ vector
+         */
 
-        uint64_t block_num{(*batch_).front().block_num};
-        size_t block_result_offset{0};
-        size_t block_result_length{0};
+        results_.clear();
+        BlockNum block_num{batch_.front().block_num};
+        size_t block_data_offset{0};
+        size_t block_data_length{0};
 
-        for (auto const& package : (*batch_)) {
+        for (auto const& package : batch_) {
             // On block switching store the results
             if (block_num != package.block_num) {
-                iovec result{&data_[block_result_offset], block_result_length};
-                results_.push_back({block_num, result});
-                block_result_offset += block_result_length;
-                block_result_length = 0;
-                block_num = package.block_num;
                 if (is_stopping()) {
                     status_.store(Status::Aborted);
                     break;
                 }
+
+                ByteView data_view{&data_[block_data_offset], block_data_length};
+                results_.emplace_back(block_num, data_view);
+
+                block_data_offset += block_data_length;
+                block_data_length = 0;
+                block_num = package.block_num;
             }
 
-            std::optional<Bytes> recovered{
-                ecdsa::recover(full_view(package.hash.bytes), full_view(package.signature), package.odd_y_parity)};
+            std::optional<evmc::address> recovered_address{ecdsa::recover_address(
+                full_view(package.hash.bytes), full_view(package.signature), package.odd_y_parity, context_)};
 
-            if (recovered.has_value() && recovered->at(0) == 4u) {
-                auto keyHash{ethash::keccak256(recovered->data() + 1, recovered->length() - 1)};
-                std::memcpy(&data_[block_result_offset + block_result_length],
-                            &keyHash.bytes[sizeof(keyHash) - kAddressLength], kAddressLength);
-                block_result_length += kAddressLength;
+            if (recovered_address.has_value()) {
+                std::memcpy(&data_[block_data_offset + block_data_length], recovered_address->bytes, kAddressLength);
+                block_data_length += kAddressLength;
             } else {
                 last_error_ = "Public key recovery failed at block #" + std::to_string(package.block_num);
                 status_.store(Status::Error);
-                break;  // No need to process other txns
+                break;  // No need to process other transactions
             }
         }
 
         if (status_.load() == Status::Working) {
             // Store results for last block
-            if (block_result_length) {
-                iovec result{&data_[block_result_offset], block_result_length};
-                results_.push_back({block_num, result});
+            if (block_data_length) {
+                ByteView data_view{&data_[block_data_offset], block_data_length};
+                results_.emplace_back(block_num, data_view);
             }
             status_.store(Status::ResultsReady);
         }
 
         // Raise finished event
-        signal_completed(this, batch_id_);
-        batch_.reset();
+        signal_completed(this);
+        batch_.resize(0);
     }
 
     std::free(data_);
+    std::free(context_);
+    batch_.clear();
 }
 
 }  // namespace silkworm::stagedsync::recovery

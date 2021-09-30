@@ -115,7 +115,7 @@ class AccountTrieCursor {
         [[nodiscard]] const evmc::bytes32* hash() const;
     };
 
-    void seek_node(ByteView lower_bound);
+    void consume_node(ByteView lower_bound);
 
     void move_to_next_sibling();
 

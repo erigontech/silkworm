@@ -27,12 +27,13 @@ namespace silkworm::trie {
 AccountTrieCursor::AccountTrieCursor(mdbx::txn& txn, const PrefixSet& changed)
     : changed_{changed}, cursor_{db::open_cursor(txn, db::table::kTrieOfAccounts)} {}
 
-void AccountTrieCursor::seek_node(ByteView to) {
+void AccountTrieCursor::consume_node(ByteView to) {
     const auto entry{cursor_.lower_bound(db::to_slice(to), /*throw_notfound=*/false)};
     if (!entry) {
         // end-of-tree
         return;
     }
+
     const auto node{unmarshal_node(db::from_slice(entry.value))};
     assert(node != std::nullopt);
     assert(node->state_mask() != 0);
@@ -41,11 +42,13 @@ void AccountTrieCursor::seek_node(ByteView to) {
         ++nibble;
     }
     stack_.push(SubNode{Bytes{db::from_slice(entry.key)}, *node, nibble});
+
+    cursor_.erase();
 }
 
 void AccountTrieCursor::next(bool skip_children) {
     if (at_root_) {
-        seek_node({});
+        consume_node({});
         at_root_ = false;
         return;
     }
@@ -56,7 +59,7 @@ void AccountTrieCursor::next(bool skip_children) {
     }
 
     if (!skip_children && children_are_in_trie()) {
-        seek_node(*key());
+        consume_node(*key());
         return;
     }
 

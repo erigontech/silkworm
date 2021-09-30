@@ -79,6 +79,8 @@ TEST_CASE("AccountTrieCursor traversal") {
     // 3. Recursively traverse the current node's right subtree.
     // https://en.wikipedia.org/wiki/Tree_traversal#Pre-order,_NLR
 
+    // Only nibbles with state flag should be traversed.
+
     CHECK((atc.key() != std::nullopt && atc.key()->empty()));  // root
 
     atc.next(/*skip_children=*/false);
@@ -192,15 +194,18 @@ TEST_CASE("Account and storage trie") {
     hashed_accounts.upsert(mdbx::slice{key2.bytes, kHashLength}, db::to_slice(a2.encode_for_storage()));
     hb.add_leaf(unpack_nibbles(full_view(key2.bytes)), a2.rlp(/*storage_root=*/kEmptyRoot));
 
-    const auto key3{0xB041000000000000000000000000000000000000000000000000000000000000_bytes32};
+    // Some address whose hash starts with 0xB041
+    const auto address3{0x16b07afd1c635f77172e842a000ead9a2a222459_address};
+    const auto key3{keccak256(full_view(address3))};
+    REQUIRE((key3.bytes[0] == 0xB0 && key3.bytes[1] == 0x41));
     const auto code_hash{0x5be74cad16203c4905c068b012a2e9fb6d19d036c410f16fd177f337541440dd_bytes32};
     const Account a3{0, 2 * kEther, code_hash, kDefaultIncarnation};
-    hashed_accounts.upsert(db::to_slice(key3), db::to_slice(a3.encode_for_storage()));
+    hashed_accounts.upsert(mdbx::slice{key3.bytes, kHashLength}, db::to_slice(a3.encode_for_storage()));
 
-    Bytes storage_key{db::storage_prefix(full_view(key3), kDefaultIncarnation)};
+    Bytes storage_key{db::storage_prefix(full_view(key3.bytes), kDefaultIncarnation)};
     const evmc::bytes32 storage_root{setup_storage(txn, storage_key)};
 
-    hb.add_leaf(unpack_nibbles(full_view(key3)), a3.rlp(storage_root));
+    hb.add_leaf(unpack_nibbles(full_view(key3.bytes)), a3.rlp(storage_root));
 
     const auto key4a{0xB1A0000000000000000000000000000000000000000000000000000000000000_bytes32};
     const Account a4a{0, 4 * kEther};
@@ -305,33 +310,54 @@ TEST_CASE("Account and storage trie") {
 
     // TODO[Issue 179] storage
 
-    // ----------------------------------------------------------------
-    // Delete an account
-    // ----------------------------------------------------------------
+    SECTION("Delete an account") {
+        hashed_accounts.find(mdbx::slice{key2.bytes, kHashLength});
+        hashed_accounts.erase();
+        account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
 
-    hashed_accounts.find(mdbx::slice{key2.bytes, kHashLength});
-    hashed_accounts.erase();
+        increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/1);
 
-    account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
+        node_map = read_all_nodes(account_trie);
+        CHECK(node_map.size() == 1);
 
-    increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/1);
+        const Node node1c{node_map.at(nibbles_from_hex("B"))};
+        CHECK(0b1011 == node1c.state_mask());
+        CHECK(0b0000 == node1c.tree_mask());
+        CHECK(0b1011 == node1c.hash_mask());
 
-    node_map = read_all_nodes(account_trie);
-    CHECK(node_map.size() == 1);
+        CHECK(node1c.root_hash() == std::nullopt);
 
-    const Node node1c{node_map.at(nibbles_from_hex("B"))};
-    CHECK(0b1011 == node1c.state_mask());
-    CHECK(0b0000 == node1c.tree_mask());
-    CHECK(0b1011 == node1c.hash_mask());
+        REQUIRE(node1c.hashes().size() == 3);
+        CHECK(node1b.hashes()[0] != node1c.hashes()[0]);
+        CHECK(node1b.hashes()[1] == node1c.hashes()[1]);
+        CHECK(node1b.hashes()[2] == node1c.hashes()[2]);
+    }
 
-    CHECK(node1c.root_hash() == std::nullopt);
+    SECTION("Delete several accounts") {
+        hashed_accounts.find(mdbx::slice{key2.bytes, kHashLength});
+        hashed_accounts.erase();
+        account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
 
-    REQUIRE(node1c.hashes().size() == 3);
-    CHECK(node1b.hashes()[0] != node1c.hashes()[0]);
-    CHECK(node1b.hashes()[1] == node1c.hashes()[1]);
-    CHECK(node1b.hashes()[2] == node1c.hashes()[2]);
+        hashed_accounts.find(mdbx::slice{key3.bytes, kHashLength});
+        hashed_accounts.erase();
+        account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address3));
 
-    // TODO[Issue 179] (2nd) SECTION(Delete several accounts)
+        increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/1);
+
+        node_map = read_all_nodes(account_trie);
+        CHECK(node_map.size() == 1);
+
+        const Node node1c{node_map.at(nibbles_from_hex("B"))};
+        CHECK(0b1011 == node1c.state_mask());
+        CHECK(0b0000 == node1c.tree_mask());
+        CHECK(0b1010 == node1c.hash_mask());
+
+        CHECK(node1c.root_hash() == std::nullopt);
+
+        REQUIRE(node1c.hashes().size() == 2);
+        CHECK(node1b.hashes()[1] == node1c.hashes()[0]);
+        CHECK(node1b.hashes()[2] == node1c.hashes()[1]);
+    }
 }
 
 TEST_CASE("Account trie around extension node") {

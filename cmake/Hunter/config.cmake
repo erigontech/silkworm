@@ -46,9 +46,9 @@ hunter_config(
 
 hunter_config(
   ethash
-  VERSION 0.7.1
-  URL https://github.com/chfast/ethash/archive/v0.7.1.tar.gz
-  SHA1 fb33772305a81ec2946fe0a7d327854b8192ee63
+  VERSION 8fff2fedb250dccb8dd15b7607719cdbf34f9e01
+  URL https://github.com/chfast/ethash/archive/8fff2fedb250dccb8dd15b7607719cdbf34f9e01.tar.gz
+  SHA1 95791f242e4caef7464ce087f3537d66f7ce24cf
   CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
 )
 

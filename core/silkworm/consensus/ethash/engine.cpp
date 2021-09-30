@@ -56,7 +56,7 @@ ValidationResult ConsensusEngineEthash::validate_seal(const BlockHeader& header)
     std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
 
     uint64_t nonce{endian::load_big_u64(header.nonce.data())};
-    return ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256) ? ValidationResult::kOk
-                                                                                 : ValidationResult::kInvalidSeal;
+    return ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256) ? ValidationResult::kInvalidSeal
+                                                                                 : ValidationResult::kOk;
 }
 }  // namespace silkworm::consensus

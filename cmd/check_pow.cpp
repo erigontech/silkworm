@@ -131,15 +131,16 @@ int main(int argc, char* argv[]) {
 
             auto boundary256{header->boundary()};
             auto seal_hash(header->hash(/*for_sealing =*/true));
-            ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
-            ethash::hash256 mixh256{*reinterpret_cast<ethash::hash256*>(header->mix_hash.bytes)};
-            if (!ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256)) {
+            const auto sealh256{ethash::hash256_from_bytes(seal_hash.bytes)};
+            const auto mixh256{ethash::hash256_from_bytes(header->mix_hash.bytes)};
+            if (const auto ec = ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256); ec) {
                 auto result{ethash::hash(*epoch_context, sealh256, nonce)};
                 auto b{to_bytes32({boundary256.bytes, 32})};
                 auto f{to_bytes32({result.final_hash.bytes, 32})};
                 auto m{to_bytes32({result.mix_hash.bytes, 32})};
 
                 std::cout << "\n Pow Verification error on block " << block_num << " : \n"
+                          << "Error: " << ec << "\n"
                           << "Final hash " << to_hex(f) << " expected below " << to_hex(b) << "\n"
                           << "Mix   hash " << to_hex(m) << " expected mix" << to_hex(m) << std::endl;
                 break;

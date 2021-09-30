@@ -24,7 +24,7 @@ namespace detail {
     //! provided direction if the cursor is not positioned.
     //! \param [in] c : A reference to an open cursor
     //! \param [in] d : Direction cursor should have \return ::mdbx::cursor::move_result
-    static inline ::mdbx::cursor::move_result adjust_cursor_postion_if_unpositioned_and_return_data(
+    static inline ::mdbx::cursor::move_result adjust_cursor_position_if_unpositioned_and_return_data(
         ::mdbx::cursor& c, CursorMoveDirection d) {
         // Warning: eof() is not exactly what we need here since it returns true not only for cursors
         // that are not positioned, but also for those pointing to the end of data.
@@ -162,7 +162,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, const WalkFunc& walker, const Cur
                                                           : mdbx::cursor::move_operation::previous};
 
     size_t ret{0};
-    auto data{detail::adjust_cursor_postion_if_unpositioned_and_return_data(cursor, direction)};
+    auto data{detail::adjust_cursor_position_if_unpositioned_and_return_data(cursor, direction)};
     while (data.done) {
         ++ret;
         if (!walker(cursor, data)) {
@@ -179,7 +179,7 @@ size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t c
                                                           ? mdbx::cursor::move_operation::next
                                                           : mdbx::cursor::move_operation::previous};
     size_t ret{0};
-    auto data{detail::adjust_cursor_postion_if_unpositioned_and_return_data(cursor, direction)};
+    auto data{detail::adjust_cursor_position_if_unpositioned_and_return_data(cursor, direction)};
     while (count && data.done) {
         ++ret;
         --count;

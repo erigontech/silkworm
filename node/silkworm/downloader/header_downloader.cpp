@@ -347,12 +347,104 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     return result;
 }
 
+/*
+func HeadersUnwind(u *UnwindState, s *StageState, tx ethdb.RwTx, cfg HeadersCfg) error {
+	var err error
+	useExternalTx := tx != nil
+	if !useExternalTx {
+		tx, err = cfg.db.BeginRw(context.Background())
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+	}
+	// Delete canonical hashes that are being unwound
+	var headerProgress uint64
+	headerProgress, err = stages.GetStageProgress(tx, stages.Headers)
+	if err != nil {
+		return err
+	}
+	badBlock := u.BadBlock != (common.Hash{})
+	for blockHeight := headerProgress; blockHeight > u.UnwindPoint; blockHeight-- {
+		if badBlock {
+			var hash common.Hash
+			if hash, err = rawdb.ReadCanonicalHash(tx, blockHeight); err != nil {
+				return err
+			}
+			cfg.hd.ReportBadHeader(hash)
+		}
+		if err = rawdb.DeleteCanonicalHash(tx, blockHeight); err != nil {
+			return err
+		}
+	}
+	if u.BadBlock != (common.Hash{}) {
+		cfg.hd.ReportBadHeader(u.BadBlock)
+		// Find header with biggest TD
+		tdCursor, cErr := tx.Cursor(dbutils.HeaderTDBucket)
+		if cErr != nil {
+			return cErr
+		}
+		defer tdCursor.Close()
+		var k, v []byte
+		k, v, err = tdCursor.Last()
+		if err != nil {
+			return err
+		}
+		var maxTd big.Int
+		var maxHash common.Hash
+		var maxNum uint64 = 0
+		for ; err == nil && k != nil; k, v, err = tdCursor.Prev() {
+			if len(k) != 40 {
+				return fmt.Errorf("key in TD table has to be 40 bytes long: %x", k)
+			}
+			var hash common.Hash
+			copy(hash[:], k[8:])
+			if cfg.hd.IsBadHeader(hash) {
+				continue
+			}
+			var td big.Int
+			if err = rlp.DecodeBytes(v, &td); err != nil {
+				return err
+			}
+			if td.Cmp(&maxTd) > 0 {
+				maxTd.Set(&td)
+				copy(maxHash[:], k[8:])
+				maxNum = binary.BigEndian.Uint64(k[:8])
+			}
+		}
+		if err != nil {
+			return err
+		}
+		if maxNum == 0 {
+			// Read genesis hash
+			if maxHash, err = rawdb.ReadCanonicalHash(tx, 0); err != nil {
+				return err
+			}
+		}
+		if err = rawdb.WriteHeadHeaderHash(tx, maxHash); err != nil {
+			return err
+		}
+		if err = s.DoneAndUpdate(tx, maxNum); err != nil {
+			return err
+		}
+	} else if err = u.Skip(tx); err != nil {
+		return err
+	}
+	if !useExternalTx {
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+ */
 auto HeaderDownloader::unwind_to([[maybe_unused]] BlockNum new_height) -> Stage::Result {
     // todo: to implement
     Stage::Result result{Result::Error};
     return result;
 }
 
+// Request new headers from peers
 void HeaderDownloader::send_header_requests() {
     // if (!sentry_.ready()) return;
 
@@ -361,68 +453,13 @@ void HeaderDownloader::send_header_requests() {
 
 }
 
-/*
-func (cs *ControlServerImpl) PropagateNewBlockHashes(ctx context.Context, announces []headerdownload.Announce) {
-	cs.lock.RLock()
-	defer cs.lock.RUnlock()
-	typedRequest := make(eth.NewBlockHashesPacket, len(announces))
-	for i := range announces {
-		typedRequest[i].Hash = announces[i].Hash
-		typedRequest[i].Number = announces[i].Number
-	}
-	data, err := rlp.EncodeToBytes(&typedRequest)
-	if err != nil {
-		log.Error("propagateNewBlockHashes", "error", err)
-		return
-	}
-	var req66, req65 *proto_sentry.OutboundMessageData
-	for _, sentry := range cs.sentries {
-		if !sentry.Ready() {
-			continue
-		}
-
-		switch sentry.Protocol() {
-		case eth.ETH65:
-			if req65 == nil {
-				req65 = &proto_sentry.OutboundMessageData{
-					Id:   proto_sentry.MessageId_NEW_BLOCK_HASHES_65,
-					Data: data,
-				}
-			}
-
-			_, err = sentry.SendMessageToAll(ctx, req65, &grpc.EmptyCallOption{})
-			if err != nil {
-				log.Error("propagateNewBlockHashes", "error", err)
-			}
-		case eth.ETH66:
-			if req66 == nil {
-				req66 = &proto_sentry.OutboundMessageData{
-					Id:   proto_sentry.MessageId_NEW_BLOCK_HASHES_66,
-					Data: data,
-				}
-
-				_, err = sentry.SendMessageToAll(ctx, req66, &grpc.EmptyCallOption{})
-				if err != nil {
-					log.Error("propagateNewBlockHashes", "error", err)
-				}
-			}
-		default:
-			//??
-		}
-	}
-}
- */
-
-// New block hash propagation
+// New block hash announcements propagation
 void HeaderDownloader::send_announcements() {
     // if (!sentry_.ready()) return;
 
-    auto& announces_to_do = working_chain_.announces_to_do();
-
-    OutboundNewBlockHashes message{working_chain_, sentry_, announces_to_do};
+    OutboundNewBlockHashes message{working_chain_, sentry_};
     message.execute();
 
-    announces_to_do.clear();
 }
 
 }  // namespace silkworm

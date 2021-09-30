@@ -26,7 +26,7 @@ namespace silkworm {
 
 class OutboundNewBlockHashes : public OutboundMessage {
   public:
-    OutboundNewBlockHashes(WorkingChain&, SentryClient&, const std::vector<Announce>& announces);
+    OutboundNewBlockHashes(WorkingChain&, SentryClient&);
 
     std::string name() const override {return "OutboundNewBlockHashes";}
 

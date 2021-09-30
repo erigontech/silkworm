@@ -103,7 +103,8 @@ class Db::ReadOnlyAccess::Tx {
     std::optional<Hash> read_canonical_hash(BlockNum b) {  // throws db exceptions // todo: add to db::access_layer.hpp?
         auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
         // accessing this table with only b we will get the hash of the canonical block at height b
-        auto data = hashes_table.find(db::to_slice(db::block_key(b)), /*throw_notfound*/ false);
+        auto key = db::block_key(b);
+        auto data = hashes_table.find(db::to_slice(key), /*throw_notfound*/ false);
         if (!data) return std::nullopt;  // not found
         assert(data.value.length() == kHashLength);
         return Hash(db::from_slice(data.value));  // copy
@@ -117,7 +118,8 @@ class Db::ReadOnlyAccess::Tx {
 
     std::optional<Hash> read_head_header_hash() {  // todo: add to db::access_layer.hpp?
         auto head_header_table = db::open_cursor(txn, db::table::kHeadHeader);
-        auto data = head_header_table.find(db::to_slice(head_header_key()), /*throw_notfound*/ false);
+        auto key = head_header_key();
+        auto data = head_header_table.find(db::to_slice(key), /*throw_notfound*/ false);
         if (!data) return std::nullopt;
         assert(data.value.length() == kHashLength);
         return Hash(db::from_slice(data.value));
@@ -216,20 +218,22 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
         rlp::encode(encoded_header, header);
 
         auto header_hash = bit_cast<evmc_bytes32>(keccak256(encoded_header));   // avoid header.hash() re-do rlp encoding
-        auto key = db::to_slice(db::block_key(header.number, header_hash.bytes));
-        auto value = db::to_slice(encoded_header);
+        Bytes key = db::block_key(header.number, header_hash.bytes);
+        auto skey = db::to_slice(key);
+        auto svalue = db::to_slice(encoded_header);
 
         auto headers_table = db::open_cursor(txn, db::table::kHeaders);
-        headers_table.upsert(key, value);
+        headers_table.upsert(skey, svalue);
         headers_table.close();
     }
 
     void write_head_header_hash(Hash h) {
-        auto key = db::to_slice(head_header_key());
-        auto value = db::to_slice(h);
+        Bytes key = head_header_key();
+        auto skey = db::to_slice(key);
+        auto svalue = db::to_slice(h);
 
         auto head_header_table = db::open_cursor(txn, db::table::kHeadHeader);
-        head_header_table.upsert(key, value);
+        head_header_table.upsert(skey, svalue);
         head_header_table.close();
     }
 
@@ -237,20 +241,22 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
         Bytes encoded_td;
         rlp::encode(encoded_td, td);
 
-        auto key = db::to_slice(db::block_key(b, h.bytes));
-        auto value = db::to_slice(encoded_td);
+        Bytes key = db::block_key(b, h.bytes);
+        auto skey = db::to_slice(key);
+        auto svalue = db::to_slice(encoded_td);
 
         auto td_table = db::open_cursor(txn, db::table::kDifficulty);
-        td_table.upsert(key, value);
+        td_table.upsert(skey, svalue);
         td_table.close();
     }
 
     void write_canonical_hash(BlockNum b, Hash h) {
-        auto key = db::to_slice(db::block_key(b));
-        auto value = db::to_slice(h);
+        Bytes key = db::block_key(b);
+        auto skey = db::to_slice(key);
+        auto svalue = db::to_slice(h);
 
         auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
-        hashes_table.upsert(key, value);
+        hashes_table.upsert(skey, svalue);
         hashes_table.close();
     }
 

@@ -191,7 +191,8 @@ size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& walker, size_t c
     return ret;
 }
 
-size_t cursor_erase(mdbx::cursor& cursor, const CursorMoveDirection direction) {
+size_t
+cursor_erase_records_from_current_position_if_not_eof_otherwise_from_begin_or_end_of_data_on_behalf_of_move_direction(mdbx::cursor& cursor, const CursorMoveDirection direction) {
     return cursor_for_each(cursor, detail::cursor_erase_data, direction);
 }
 

@@ -198,7 +198,7 @@ TEST_CASE("Cursor walk") {
         CHECK(data_map.at("AAU") == "Asparagine");
     }
 
-    SECTION("cursor_erase_records_from_current_position_if_not_eof_otherwise_from_begin_or_end_of_data_on_behalf_of_move_direction") {
+    SECTION("cursor_erase") {
         // populate table
         for (const auto& [key, value] : kGeneticCode) {
             table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
@@ -207,7 +207,7 @@ TEST_CASE("Cursor walk") {
         table_cursor = txn.open_cursor(handle);
 
         // Erase all records in forward order
-        cursor_erase_records_from_current_position_if_not_eof_otherwise_from_begin_or_end_of_data_on_behalf_of_move_direction(table_cursor);
+        cursor_erase(table_cursor);
         REQUIRE(txn.get_map_stat(handle).ms_entries == 0);
 
         // populate table
@@ -218,7 +218,7 @@ TEST_CASE("Cursor walk") {
         table_cursor = txn.open_cursor(handle);
 
         // Erase all records in reverse order
-        cursor_erase_records_from_current_position_if_not_eof_otherwise_from_begin_or_end_of_data_on_behalf_of_move_direction(table_cursor, CursorMoveDirection::Reverse);
+        cursor_erase(table_cursor, CursorMoveDirection::Reverse);
         REQUIRE(txn.get_map_stat(handle).ms_entries == 0);
 
         // populate table

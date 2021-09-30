@@ -135,9 +135,7 @@ size_t cursor_for_count(::mdbx::cursor& cursor, const WalkFunc& func, size_t max
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria.
 //! \warning Might nuke all your table records if not used properly
-size_t
-cursor_erase_records_from_current_position_if_not_eof_otherwise_from_begin_or_end_of_data_on_behalf_of_move_direction(
-    ::mdbx::cursor& cursor, const CursorMoveDirection direction = CursorMoveDirection::Forward);
+size_t cursor_erase(::mdbx::cursor& cursor, const CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Erases map records by cursor until any record is found
 //! \param [in] cursor : A reference to a cursor opened on a map

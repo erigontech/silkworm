@@ -27,77 +27,107 @@ namespace silkworm::trie {
 AccountTrieCursor::AccountTrieCursor(mdbx::txn& txn, const PrefixSet& changed)
     : changed_{changed}, cursor_{db::open_cursor(txn, db::table::kTrieOfAccounts)} {}
 
-void AccountTrieCursor::seek_node(ByteView to) {
+void AccountTrieCursor::consume_node(ByteView to) {
     const auto entry{cursor_.lower_bound(db::to_slice(to), /*throw_notfound=*/false)};
     if (!entry) {
-        node_ = std::nullopt;
+        // end-of-tree
         return;
     }
-    node_ = unmarshal_node(db::from_slice(entry.value));
-    assert(node_ != std::nullopt);
-    assert(node_->state_mask() != 0);
-    nibble_ = 0;
-    while ((node_->state_mask() & (1u << nibble_)) == 0) {
-        ++nibble_;
+
+    const auto node{unmarshal_node(db::from_slice(entry.value))};
+    assert(node != std::nullopt);
+    assert(node->state_mask() != 0);
+    uint8_t nibble{0};
+    while ((node->state_mask() & (1u << nibble)) == 0) {
+        ++nibble;
     }
+    stack_.push(SubNode{Bytes{db::from_slice(entry.key)}, *node, nibble});
+
+    cursor_.erase();
 }
 
 void AccountTrieCursor::next(bool skip_children) {
     if (at_root_) {
-        seek_node({});
+        consume_node({});
         at_root_ = false;
         return;
     }
 
-    if (node_ == std::nullopt) {
+    if (stack_.empty()) {
+        // end-of-tree
         return;
     }
 
     if (!skip_children && children_are_in_trie()) {
-        seek_node(*key());
+        consume_node(*key());
         return;
     }
 
-    assert(nibble_ < 16);
+    move_to_next_sibling();
+}
+
+void AccountTrieCursor::move_to_next_sibling() {
+    if (stack_.empty()) {
+        return;
+    }
+
+    SubNode& sn{stack_.top()};
+
+    assert(sn.nibble < 16);
     do {
-        ++nibble_;
-        if (nibble_ == 16) {
-            seek_node(*key());
+        ++sn.nibble;
+        if (sn.nibble == 16) {
+            // this node is fully traversed
+            stack_.pop();
+            move_to_next_sibling();  // on parent
             return;
         }
-    } while ((node_->state_mask() & (1u << nibble_)) == 0);
+    } while (!sn.state_flag());
+}
+
+Bytes AccountTrieCursor::SubNode::full_key() const {
+    Bytes out{key};
+    out.push_back(nibble);
+    return out;
+}
+
+bool AccountTrieCursor::SubNode::state_flag() const { return node.state_mask() & (1u << nibble); }
+
+bool AccountTrieCursor::SubNode::tree_flag() const { return node.tree_mask() & (1u << nibble); }
+
+bool AccountTrieCursor::SubNode::hash_flag() const { return node.hash_mask() & (1u << nibble); }
+
+const evmc::bytes32* AccountTrieCursor::SubNode::hash() const {
+    if (!hash_flag()) {
+        return nullptr;
+    }
+    const unsigned first_nibbles_mask{(1u << nibble) - 1};
+    const size_t hash_idx{std::bitset<16>(node.hash_mask() & first_nibbles_mask).count()};
+    return &node.hashes()[hash_idx];
 }
 
 std::optional<Bytes> AccountTrieCursor::key() const {
     if (at_root_) {
         return Bytes{};
     }
-    if (node_ == std::nullopt) {
+    if (stack_.empty()) {
         return std::nullopt;
     }
-
-    Bytes key{db::from_slice(cursor_.current().key)};
-    key.push_back(nibble_);
-    return key;
+    return stack_.top().full_key();
 }
 
 const evmc::bytes32* AccountTrieCursor::hash() const {
-    if (node_ == std::nullopt) {
+    if (stack_.empty()) {
         return nullptr;
     }
-    if ((node_->hash_mask() & (1u << nibble_)) == 0) {
-        return nullptr;
-    }
-    const unsigned first_nibbles_mask{(1u << nibble_) - 1};
-    const size_t hash_idx{std::bitset<16>(node_->hash_mask() & first_nibbles_mask).count()};
-    return &node_->hashes()[hash_idx];
+    return stack_.top().hash();
 }
 
 bool AccountTrieCursor::children_are_in_trie() const {
-    if (node_ == std::nullopt) {
+    if (stack_.empty()) {
         return false;
     }
-    return node_->tree_mask() & (1u << nibble_);
+    return stack_.top().tree_flag();
 }
 
 bool AccountTrieCursor::can_skip_state() const {
@@ -108,7 +138,7 @@ bool AccountTrieCursor::can_skip_state() const {
     if (k == std::nullopt || changed_.contains(pack_nibbles(*k))) {
         return false;
     }
-    return node_->hash_mask() & (1u << nibble_);
+    return stack_.top().hash_flag();
 }
 
 StorageTrieCursor::StorageTrieCursor(mdbx::txn&) {}
@@ -147,6 +177,7 @@ DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, et
         etl::Entry e;
         e.key = unpacked_key;
         e.value = marshal_node(node);
+
         account_collector.collect(std::move(e));
     };
 }
@@ -168,9 +199,7 @@ traversal".
 
 **Implementation:** by opening 1 Cursor on state and 1 more Cursor on intermediate hashes bucket - we will receive data
 in order of "Preorder trie traversal". Cursors will only do "sequential reads" and "jumps forward" - been
-hardware-friendly. 1 stack keeps all accumulated hashes, when sub-trie traverse ends - all hashes pulled from stack ->
-hashed -> new hash puts on stack - it's hash of visited sub-trie (it emulates recursive nature of "Preorder trie
-traversal" algo).
+hardware-friendly.
 
 Imagine that account with key 0000....00 (64 zeroes, 32 bytes of zeroes) changed.
 Here is an example sequence which can be seen by running 2 Cursors:
@@ -291,8 +320,7 @@ static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::fi
 
 // See Erigon (p *HashPromoter) Promote
 static void changed_accounts(mdbx::txn& txn, BlockNum from, PrefixSet& out) {
-    // TODO[Issue 179] deleted accounts
-    // TODO[Issue 179] use ETL
+    // TODO[Issue 179] delete TrieStorage for deleted accounts
     const Bytes starting_key{db::block_key(from + 1)};
 
     auto change_cursor{db::open_cursor(txn, db::table::kAccountChangeSet)};

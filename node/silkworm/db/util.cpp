@@ -73,6 +73,23 @@ Bytes log_key(uint64_t block_number, uint32_t transaction_id) {
     return key;
 }
 
+std::pair<Bytes, Bytes> change_set_to_plain_state_format(const ByteView key, const ByteView value) {
+    if (key.size() == 8) {  // AccountChangeSet
+        const Bytes address{value.substr(0, kAddressLength)};
+        const Bytes previous_value{value.substr(kAddressLength)};
+        return {address, previous_value};
+    } else {  // StorageChangeSet
+        assert(key.length() == 8 + kPlainStoragePrefixLength);
+        // See storage_change_key
+        const ByteView address_with_incarnation{key.substr(8)};
+        const ByteView location{value.substr(0, kHashLength)};
+        Bytes full_key{address_with_incarnation};
+        full_key.append(location);
+        const Bytes previous_value{value.substr(kHashLength)};
+        return {full_key, previous_value};
+    }
+}
+
 std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix) {
     auto prefix_slice{to_slice(value_prefix)};
     auto data{table.lower_bound_multivalue(to_slice(key), prefix_slice, /*throw_notfound=*/false)};

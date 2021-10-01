@@ -215,7 +215,7 @@ static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plai
         if (block_number == unwind_to) {
             break;
         }
-        auto [new_key, new_value]{change_set_to_plain_state_format(key, value)};
+        auto [new_key, new_value]{db::change_set_to_plain_state_format(key, value)};
         revert_state(new_key, new_value, plain_state_table, plain_code_table);
         src_data = source.to_previous(/*throw_notfound*/ false);
     }

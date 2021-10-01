@@ -16,13 +16,9 @@
 
 #include "util.hpp"
 
-#include <cassert>
-#include <memory>
 #include <stdexcept>
 
 #include <magic_enum.hpp>
-
-#include <silkworm/db/util.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -30,23 +26,6 @@ void check_stagedsync_error(StageResult code) {
     if (code != StageResult::kSuccess) {
         std::string error{magic_enum::enum_name<StageResult>(code)};
         throw std::runtime_error(error);
-    }
-}
-
-std::pair<Bytes, Bytes> change_set_to_plain_state_format(const ByteView key, const ByteView value) {
-    if (key.size() == 8) {  // AccountChangeSet
-        const Bytes address{value.substr(0, kAddressLength)};
-        const Bytes previous_value{value.substr(kAddressLength)};
-        return {address, previous_value};
-    } else {  // StorageChangeSet
-        assert(key.length() == 8 + db::kPlainStoragePrefixLength);
-        // See db::storage_change_key
-        const ByteView address_with_incarnation{key.substr(8)};
-        const ByteView location{value.substr(0, kHashLength)};
-        Bytes full_key{address_with_incarnation};
-        full_key.append(location);
-        const Bytes previous_value{value.substr(kHashLength)};
-        return {full_key, previous_value};
     }
 }
 

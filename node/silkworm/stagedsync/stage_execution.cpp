@@ -46,7 +46,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
         }
         while (true) {
             std::optional<BlockWithHash> bh{db::read_block(txn, block_num, /*read_senders=*/true)};
-            if (bh == std::nullopt) {
+            if (!bh.has_value()) {
                 return StageResult::kBadChainSequence;
             }
 
@@ -88,7 +88,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
         SILKWORM_LOG(LogLevel::Error) << "Unexpected error " << ex.what() << " at block " << block_num << std::endl;
         return StageResult::kUnexpectedError;
     } catch (...) {
-        SILKWORM_LOG(LogLevel::Error) << "Unkown error at block " << block_num << std::endl;
+        SILKWORM_LOG(LogLevel::Error) << "Unknown error at block " << block_num << std::endl;
         return StageResult::kUnknownError;
     }
 }
@@ -154,7 +154,7 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
 // Revert State for given address/storage location
 static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
-        if (value.size() > 0) {
+        if (!value.empty()) {
             auto [account, err1]{decode_account_from_storage(value)};
             rlp::err_handler(err1);
             if (account.incarnation > 0 && account.code_hash == kEmptyHash) {
@@ -196,11 +196,10 @@ static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table
     if (db::find_value_suffix(plain_state_table, key1, location) != std::nullopt) {
         plain_state_table.erase();
     }
-    if (value.size() > 0) {
+    if (!value.empty()) {
         auto data{location.append(value)};
         plain_state_table.upsert(db::to_slice(key1), db::to_slice(data));
     }
-    return;
 }
 
 // For given changeset cursor/bucket it reverts the changes on states buckets
@@ -222,79 +221,90 @@ static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plai
 }
 
 StageResult unwind_execution(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
-    uint64_t block_number{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+    BlockNum execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+    if (unwind_to >= execution_progress) {
+        return StageResult::kSuccess;
+    }
 
-    auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
-    auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
-    auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
-    auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
-    auto receipts_table{db::open_cursor(*txn, db::table::kBlockReceipts)};
-    auto log_table{db::open_cursor(*txn, db::table::kLogs)};
-    auto traces_table{db::open_cursor(*txn, db::table::kCallTraceSet)};
+    SILKWORM_LOG(LogLevel::Info) << "Unwind Execution from " << execution_progress << " to " << unwind_to << std::endl;
 
-    if (unwind_to == 0) {
-        txn->clear_map(plain_state_table.map());
-        txn->clear_map(plain_code_table.map());
-        txn->clear_map(account_changeset_table.map());
-        txn->clear_map(storage_changeset_table.map());
-        txn->clear_map(receipts_table.map());
-        txn->clear_map(log_table.map());
-        txn->clear_map(traces_table.map());
-        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 0);
+    static const db::MapConfig unwind_tables[7] = {
+        db::table::kPlainState,         //
+        db::table::kPlainContractCode,  //
+        db::table::kAccountChangeSet,   //
+        db::table::kStorageChangeSet,   //
+        db::table::kBlockReceipts,      //
+        db::table::kLogs,               //
+        db::table::kCallTraceSet        //
+    };
+
+    try {
+        if (unwind_to == 0) {
+            for (const auto& unwind_table : unwind_tables) {
+                auto unwind_map_handle{db::open_map(*txn, unwind_table)};
+                txn->clear_map(unwind_map_handle);
+            }
+        } else {
+            {
+                auto plain_state_table{db::open_cursor(*txn, db::table::kPlainState)};
+                auto plain_code_table{db::open_cursor(*txn, db::table::kPlainContractCode)};
+                auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+                auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
+                unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, unwind_to);
+                unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, unwind_to);
+            }
+
+            // Delete records which has keys greater than unwind point
+            // Note erasing forward the start key is included that's why we increase unwind_to by 1
+            Bytes start_key(8, '\0');
+            endian::store_big_u64(&start_key[0], unwind_to + 1);
+            for (int i = 2; i < 7; ++i) {
+                auto unwind_cursor{db::open_cursor(*txn, unwind_tables[i])};
+                auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
+                SILKWORM_LOG(LogLevel::Info)
+                    << "Erased " << erased << " records from " << unwind_tables[i].name << std::endl;
+                unwind_cursor.close();
+            }
+        }
         txn.commit();
         return StageResult::kSuccess;
+    } catch (const mdbx::exception& ex) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what()
+                                      << std::endl;
+        return StageResult::kDbError;
+    } catch (...) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected unknown error in " << std::string(__FUNCTION__) << std::endl;
+        return StageResult::kUnexpectedError;
     }
-
-    if (unwind_to >= block_number) {
-        return StageResult::kSuccess;
-    }
-
-    SILKWORM_LOG(LogLevel::Info) << "Unwind Execution from " << block_number << " to " << unwind_to << std::endl;
-
-    unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, unwind_to);
-    unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, unwind_to);
-    // We set the cursor data
-    Bytes unwind_to_bytes(8, '\0');
-    endian::store_big_u64(&unwind_to_bytes[0], unwind_to + 1);
-
-    // Truncate Tables
-    truncate_table_from(account_changeset_table, unwind_to_bytes);
-    truncate_table_from(storage_changeset_table, unwind_to_bytes);
-    truncate_table_from(receipts_table, unwind_to_bytes);
-    truncate_table_from(log_table, unwind_to_bytes);
-    truncate_table_from(traces_table, unwind_to_bytes);
-
-    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, unwind_to);
-    txn.commit();
-
-    return StageResult::kSuccess;
 }
 
 StageResult prune_execution(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
-    auto new_tail{db::block_key(prune_from)};
-    SILKWORM_LOG(LogLevel::Info) << "Pruning Execution from: " << prune_from << std::endl;
+    static const db::MapConfig prune_tables[] = {
+        db::table::kAccountChangeSet,  //
+        db::table::kStorageChangeSet,  //
+        db::table::kBlockReceipts,     //
+        db::table::kCallTraceSet,      //
+        db::table::kLogs               //
+    };
 
-    auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
-    auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
-    auto receipts_table{db::open_cursor(*txn, db::table::kBlockReceipts)};
-    auto traces_table{db::open_cursor(*txn, db::table::kCallTraceSet)};
-    auto log_table{db::open_cursor(*txn, db::table::kLogs)};
-    // Truncate Tables
-    truncate_table_from(account_changeset_table, new_tail, /* reverse = */ true);
-    SILKWORM_LOG(LogLevel::Info) << "Pruned Account Changesets" << std::endl;
-    truncate_table_from(storage_changeset_table, new_tail, /* reverse = */ true);
-    SILKWORM_LOG(LogLevel::Info) << "Pruned Storage Changesets" << std::endl;
-    truncate_table_from(receipts_table, new_tail, /* reverse = */ true);
-    SILKWORM_LOG(LogLevel::Info) << "Pruned Receipts" << std::endl;
-    truncate_table_from(traces_table, new_tail, /* reverse = */ true);
-    SILKWORM_LOG(LogLevel::Info) << "Pruned Traces" << std::endl;
-    truncate_table_from(log_table, new_tail, /* reverse = */ true);
-    SILKWORM_LOG(LogLevel::Info) << "Pruned Logs" << std::endl;
-
-    txn.commit();
-    SILKWORM_LOG(LogLevel::Info) << "Pruning Execution finished..." << std::endl;
-
-    return StageResult::kSuccess;
+    try {
+        const auto prune_point{db::block_key(prune_from)};
+        for (const auto& prune_table : prune_tables) {
+            auto prune_cursor{db::open_cursor(*txn, prune_table)};
+            auto erased{db::cursor_erase(prune_cursor, prune_point, db::CursorMoveDirection::Reverse)};
+            SILKWORM_LOG(LogLevel::Info) << "Erased " << erased << " records from " << prune_table.name << std::endl;
+            prune_cursor.close();
+        }
+        txn.commit();  // TODO(Giulio) Should we commit here or at return of stage ?
+        return StageResult::kSuccess;
+    } catch (const mdbx::exception& ex) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what()
+                                      << std::endl;
+        return StageResult::kDbError;
+    } catch (...) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected unknown error in " << std::string(__FUNCTION__) << std::endl;
+        return StageResult::kUnexpectedError;
+    }
 }
 
 }  // namespace silkworm::stagedsync

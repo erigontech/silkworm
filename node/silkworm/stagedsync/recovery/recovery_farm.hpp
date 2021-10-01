@@ -114,7 +114,7 @@ class RecoveryFarm {
     size_t max_batch_size_;                        // Max number of transaction to be sent a worker for recovery
     uint32_t batch_id_{0};                         // Incremental id of launched batches
     std::atomic<uint32_t> completed_batch_id_{0};  // Incremental id of completed batches
-    std::vector<RecoveryWorker::Package> batch_;   // Collection of transactions to be sent a worker for recovery
+    std::vector<RecoveryPackage> batch_;           // Collection of transactions to be sent a worker for recovery
     etl::Collector& collector_;
 
     std::atomic_bool should_stop_{false};

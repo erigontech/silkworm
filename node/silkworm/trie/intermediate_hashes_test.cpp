@@ -151,12 +151,12 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
 static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
     cursor.to_first();
     std::map<Bytes, Node> out;
-    const auto save_nodes{[&out](mdbx::cursor::move_result& entry) {
+    const auto save_nodes{[&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
         const Node node{*unmarshal_node(db::from_slice(entry.value))};
         out.emplace(db::from_slice(entry.key), node);
         return true;
     }};
-    db::for_each(cursor, save_nodes);
+    db::cursor_for_each(cursor, save_nodes);
     return out;
 }
 

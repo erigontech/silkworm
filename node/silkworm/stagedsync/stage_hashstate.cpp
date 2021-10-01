@@ -170,7 +170,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     while (changeset_data) {
         Bytes mdb_key_as_bytes{db::from_slice(changeset_data.key)};
         Bytes mdb_value_as_bytes{db::from_slice(changeset_data.value)};
-        auto [db_key, _]{convert_to_db_format(mdb_key_as_bytes, mdb_value_as_bytes)};
+        auto [db_key, _]{change_set_to_plain_state_format(mdb_key_as_bytes, mdb_value_as_bytes)};
 
         if (operation == HashstateOperation::HashAccount) {
             // We get account and hash its key.
@@ -289,11 +289,12 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
     switch (operation) {
         case silkworm::stagedsync::HashstateOperation::HashAccount:
             unwind_func = [&target_table, &code_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
-                auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
+                auto [db_key,
+                      db_value]{change_set_to_plain_state_format(db::from_slice(data.key), db::from_slice(data.value))};
 
                 auto hash{keccak256(db_key)};
                 auto new_key{mdbx::slice{hash.bytes, kHashLength}};
-                if (db_value.size() == 0) {
+                if (db_value.empty()) {
                     if (target_table.seek(new_key)) {
                         target_table.erase();
                     }
@@ -331,7 +332,8 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             break;
         case silkworm::stagedsync::HashstateOperation::HashStorage:
             unwind_func = [&target_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
-                auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
+                auto [db_key,
+                      db_value]{change_set_to_plain_state_format(db::from_slice(data.key), db::from_slice(data.value))};
 
                 Bytes hashed_key(db::kHashedStoragePrefixLength, '\0');
                 std::memcpy(&hashed_key[0], keccak256(db_key.substr(0, kAddressLength)).bytes, kHashLength);
@@ -346,9 +348,11 @@ void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation ope
             };
             break;
         case silkworm::stagedsync::HashstateOperation::Code:
-            unwind_func = [&target_table, &contract_code_table](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
-                auto [db_key, db_value]{convert_to_db_format(db::from_slice(data.key), db::from_slice(data.value))};
-                if (db_value.size() == 0) {
+            unwind_func = [&target_table, &contract_code_table](::mdbx::cursor,
+                                                                ::mdbx::cursor::move_result data) -> bool {
+                auto [db_key,
+                      db_value]{change_set_to_plain_state_format(db::from_slice(data.key), db::from_slice(data.value))};
+                if (db_value.empty()) {
                     return true;
                 }
                 auto [incarnation, err]{extract_incarnation(db_value)};

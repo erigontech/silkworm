@@ -49,8 +49,13 @@ enum class [[nodiscard]] StageResult {
 
 void check_stagedsync_error(StageResult code);
 
-// Convert changesets key and value pair to plain state format
-std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView& value);
+//! \brief Converts change set (AccountChangeSet/StorageChangeSet) entry to plain state format.
+//! \param [in] key : Change set key.
+//! \param [in] value : Change set value.
+//! \return Plain state key + previous value of the account or storage.
+//! \remarks For storage location is returned as the last part of the key,
+//! while technically in PlainState it's the first part of the value.
+std::pair<Bytes, Bytes> change_set_to_plain_state_format(ByteView key, ByteView value);
 
 }  // namespace silkworm::stagedsync
 

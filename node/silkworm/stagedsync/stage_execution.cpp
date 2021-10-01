@@ -152,7 +152,8 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
 }
 
 // Revert State for given address/storage location
-static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table) {
+static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
+                         mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
             auto [account, err1]{decode_account_from_storage(value)};
@@ -197,7 +198,8 @@ static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table
         plain_state_table.erase();
     }
     if (!value.empty()) {
-        auto data{location.append(value)};
+        Bytes data{location};
+        data.append(value);
         plain_state_table.upsert(db::to_slice(key1), db::to_slice(data));
     }
 }
@@ -205,16 +207,15 @@ static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table
 // For given changeset cursor/bucket it reverts the changes on states buckets
 static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table,
                                         mdbx::cursor& plain_code_table, uint64_t unwind_to) {
-    uint64_t block_number{0};
     auto src_data{source.to_last(/*throw_notfound*/ false)};
     while (src_data) {
         Bytes key(db::from_slice(src_data.key));
         Bytes value(db::from_slice(src_data.value));
-        block_number = endian::load_big_u64(&key[0]);
+        const uint64_t block_number = endian::load_big_u64(&key[0]);
         if (block_number == unwind_to) {
             break;
         }
-        auto [new_key, new_value]{convert_to_db_format(key, value)};
+        auto [new_key, new_value]{change_set_to_plain_state_format(key, value)};
         revert_state(new_key, new_value, plain_state_table, plain_code_table);
         src_data = source.to_previous(/*throw_notfound*/ false);
     }

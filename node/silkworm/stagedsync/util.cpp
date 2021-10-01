@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 - 2021 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,8 +13,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
 #include "util.hpp"
 
+#include <cassert>
 #include <memory>
 #include <stdexcept>
 
@@ -31,16 +33,21 @@ void check_stagedsync_error(StageResult code) {
     }
 }
 
-std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView& value) {
-    if (key.size() == 8) {
-        Bytes a(value.data(), kAddressLength);
-        Bytes b(value.substr(kAddressLength).data(), value.size() - kAddressLength);
-        return {a, b};
+std::pair<Bytes, Bytes> change_set_to_plain_state_format(const ByteView key, const ByteView value) {
+    if (key.size() == 8) {  // AccountChangeSet
+        const Bytes address{value.substr(0, kAddressLength)};
+        const Bytes previous_value{value.substr(kAddressLength)};
+        return {address, previous_value};
+    } else {  // StorageChangeSet
+        assert(key.length() == 8 + db::kPlainStoragePrefixLength);
+        // See db::storage_change_key
+        const ByteView address_with_incarnation{key.substr(8)};
+        const ByteView location{value.substr(0, kHashLength)};
+        Bytes full_key{address_with_incarnation};
+        full_key.append(location);
+        const Bytes previous_value{value.substr(kHashLength)};
+        return {full_key, previous_value};
     }
-    Bytes a(key.substr(8).data(), kAddressLength + db::kIncarnationLength);
-    a.append(value.data(), kHashLength);
-    Bytes b(value.substr(kHashLength).data(), value.size() - kHashLength);
-    return {a, b};
 }
 
 }  // namespace silkworm::stagedsync

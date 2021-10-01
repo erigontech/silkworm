@@ -14,13 +14,11 @@
    limitations under the License.
 */
 
-#include <string>
 #include <unordered_map>
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/etl/collector.hpp>
@@ -69,7 +67,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         std::string composite_key;
         auto key{db::from_slice(data.key)};
         auto value{db::from_slice(data.value)};
-        auto [db_key, _]{convert_to_db_format(key, value)};
+        auto [db_key, _]{change_set_to_plain_state_format(key, value)};
         // Make the composite key accordingly whether we are dealing with storages or accounts
         if (storage) {
             // Storage: Address + Location
@@ -104,7 +102,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
 
     // Proceed only if we've done something
-    if (collector.size()) {
+    if (!collector.empty()) {
         SILKWORM_LOG(LogLevel::Info) << "Started Loading" << std::endl;
 
         MDBX_put_flags_t db_flags{last_processed_block_number ? MDBX_put_flags_t::MDBX_UPSERT
@@ -178,7 +176,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
             auto key{db::from_slice(data.key)};
             auto bitmap_data{db::from_slice(data.value)};
             auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-            // Check wheter we should skip the current bitmap
+            // Check whether we should skip the current bitmap
             if (bm.maximum() <= unwind_to) {
                 data = index_table.to_next(/*throw_notfound*/ false);
                 continue;

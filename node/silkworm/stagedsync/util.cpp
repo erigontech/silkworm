@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 - 2021 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -13,14 +13,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
 #include "util.hpp"
 
-#include <memory>
 #include <stdexcept>
 
 #include <magic_enum.hpp>
-
-#include <silkworm/db/util.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -29,18 +27,6 @@ void check_stagedsync_error(StageResult code) {
         std::string error{magic_enum::enum_name<StageResult>(code)};
         throw std::runtime_error(error);
     }
-}
-
-std::pair<Bytes, Bytes> convert_to_db_format(const ByteView& key, const ByteView& value) {
-    if (key.size() == 8) {
-        Bytes a(value.data(), kAddressLength);
-        Bytes b(value.substr(kAddressLength).data(), value.size() - kAddressLength);
-        return {a, b};
-    }
-    Bytes a(key.substr(8).data(), kAddressLength + db::kIncarnationLength);
-    a.append(value.data(), kHashLength);
-    Bytes b(value.substr(kHashLength).data(), value.size() - kHashLength);
-    return {a, b};
 }
 
 }  // namespace silkworm::stagedsync

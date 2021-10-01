@@ -32,9 +32,9 @@
 namespace silkworm::stagedsync {
 
 // block_num is input-output
-static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& config, const uint64_t max_block,
+static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& config, const BlockNum max_block,
                                            const db::StorageMode& storage_mode, const size_t batch_size,
-                                           uint64_t& block_num, uint64_t prune_from) noexcept {
+                                           BlockNum& block_num, BlockNum prune_from) noexcept {
     try {
         db::Buffer buffer{txn, prune_from};
         AnalysisCache analysis_cache;
@@ -104,8 +104,8 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
         }
         const auto storage_mode{db::read_storage_mode(*txn)};
 
-        uint64_t max_block{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
-        uint64_t block_num{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey) + 1};
+        const BlockNum max_block{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+        BlockNum block_num{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey) + 1};
         if (block_num > max_block) {
             SILKWORM_LOG(LogLevel::Error) << "Stage progress is " << (block_num - 1)
                                           << " which is <= than requested block_to " << max_block << std::endl;
@@ -114,7 +114,7 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
 
         // Execution needs senders hence we need to check whether sender's stage is
         // at least at max_block as set above
-        uint64_t max_block_senders{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
+        const BlockNum max_block_senders{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
         if (max_block > max_block_senders) {
             SILKWORM_LOG(LogLevel::Error) << "Sender's stage progress is " << (max_block_senders)
                                           << " which is <= than requested block_to " << max_block << std::endl;
@@ -152,7 +152,8 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
 }
 
 // Revert State for given address/storage location
-static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table, mdbx::cursor& plain_code_table) {
+static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
+                         mdbx::cursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
             auto [account, err1]{decode_account_from_storage(value)};
@@ -197,24 +198,24 @@ static void revert_state(Bytes key, Bytes value, mdbx::cursor& plain_state_table
         plain_state_table.erase();
     }
     if (!value.empty()) {
-        auto data{location.append(value)};
+        Bytes data{location};
+        data.append(value);
         plain_state_table.upsert(db::to_slice(key1), db::to_slice(data));
     }
 }
 
 // For given changeset cursor/bucket it reverts the changes on states buckets
 static void unwind_state_from_changeset(mdbx::cursor& source, mdbx::cursor& plain_state_table,
-                                        mdbx::cursor& plain_code_table, uint64_t unwind_to) {
-    uint64_t block_number{0};
+                                        mdbx::cursor& plain_code_table, BlockNum unwind_to) {
     auto src_data{source.to_last(/*throw_notfound*/ false)};
     while (src_data) {
         Bytes key(db::from_slice(src_data.key));
         Bytes value(db::from_slice(src_data.value));
-        block_number = endian::load_big_u64(&key[0]);
+        const BlockNum block_number = endian::load_big_u64(&key[0]);
         if (block_number == unwind_to) {
             break;
         }
-        auto [new_key, new_value]{convert_to_db_format(key, value)};
+        auto [new_key, new_value]{db::change_set_to_plain_state_format(key, value)};
         revert_state(new_key, new_value, plain_state_table, plain_code_table);
         src_data = source.to_previous(/*throw_notfound*/ false);
     }

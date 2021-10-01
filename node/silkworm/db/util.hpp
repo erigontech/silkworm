@@ -39,7 +39,7 @@ struct VersionBase {
     uint32_t Major;
     uint32_t Minor;
     uint32_t Patch;
-    std::string to_string() const {
+    [[nodiscard]] std::string to_string() const {
         std::string ret{std::to_string(Major)};
         ret.append("." + std::to_string(Minor));
         ret.append("." + std::to_string(Patch));
@@ -83,13 +83,14 @@ struct VersionBase {
 
 // Holds the storage mode set
 struct StorageMode {
-    bool Initialized;  // Whether or not db storage has been initialized
-    bool History;      // Whether or not History index is stored
-    bool Receipts;     // Whether or not Receipts are stored
-    bool TxIndex;      // Whether or not TxIndex is stored
-    bool CallTraces;   // Whether or not Call Traces are stored
+    bool Initialized;  // Whether db storage has been initialized
+    bool History;      // Whether History index is stored
+    bool Receipts;     // Whether Receipts are stored
+    bool TxIndex;      // Whether TxIndex is stored
+    bool CallTraces;   // Whether Call Traces are stored
     bool TEVM;         // TODO - not yet supported in Silkworm
-    std::string to_string() const {
+
+    [[nodiscard]] std::string to_string() const {
         if (!Initialized) {
             return "default";
         }
@@ -152,33 +153,35 @@ using StorageChanges = absl::btree_map<evmc::address, absl::btree_map<uint64_t, 
 Bytes storage_prefix(ByteView address, uint64_t incarnation);
 
 // Erigon EncodeBlockNumber
-Bytes block_key(uint64_t block_number);
+Bytes block_key(BlockNum block_number);
 
 // Erigon HeaderKey & BlockBodyKey
-Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
+Bytes block_key(BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 
-Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation);
+Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation);
 
 // Erigon IndexChunkKey for account
-Bytes account_history_key(const evmc::address& address, uint64_t block_number);
+Bytes account_history_key(const evmc::address& address, BlockNum block_number);
 
 // Erigon IndexChunkKey for storage
-Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, uint64_t block_number);
+Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, BlockNum block_number);
 
 // Erigon LogKey
-Bytes log_key(uint64_t block_number, uint32_t transaction_id);
+Bytes log_key(BlockNum block_number, uint32_t transaction_id);
 
-inline mdbx::slice to_slice(ByteView value) {
-    return mdbx::slice(static_cast<const void*>(value.data()), value.length());
-}
+//! \brief Converts change set (AccountChangeSet/StorageChangeSet) entry to plain state format.
+//! \param [in] key : Change set key.
+//! \param [in] value : Change set value.
+//! \return Plain state key + previous value of the account or storage.
+//! \remarks For storage location is returned as the last part of the key,
+//! while technically in PlainState it's the first part of the value.
+std::pair<Bytes, Bytes> change_set_to_plain_state_format(ByteView key, ByteView value);
 
-inline mdbx::slice to_slice(const evmc::address& value) {
-    return mdbx::slice(static_cast<const void*>(value.bytes), sizeof(evmc::address));
-}
+inline mdbx::slice to_slice(ByteView value) { return {value.data(), value.length()}; }
 
-inline mdbx::slice to_slice(const evmc::bytes32& value) {
-    return mdbx::slice(static_cast<const void*>(value.bytes), sizeof(evmc::bytes32));
-}
+inline mdbx::slice to_slice(const evmc::address& value) { return {value.bytes, sizeof(evmc::address)}; }
+
+inline mdbx::slice to_slice(const evmc::bytes32& value) { return {value.bytes, sizeof(evmc::bytes32)}; }
 
 inline ByteView from_slice(const mdbx::slice slice) { return {static_cast<uint8_t*>(slice.iov_base), slice.iov_len}; }
 
@@ -198,7 +201,7 @@ namespace detail {
         uint64_t txn_count{0};
         std::vector<BlockHeader> ommers;
 
-        Bytes encode() const;
+        [[nodiscard]] Bytes encode() const;
     };
 
     BlockBodyForStorage decode_stored_block_body(ByteView& from);

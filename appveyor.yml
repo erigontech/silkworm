@@ -1,4 +1,4 @@
-#   Copyright 2020 The Silkworm Authors
+#   Copyright 2020-2021 The Silkworm Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ install:
   - vcpkg install mpir:x64-windows
 
 cache:
-  - C:\Tools\vcpkg\installed -> .appveyor.yml
-  - C:\.hunter -> .appveyor.yml, cmake\toolchain.cmake, cmake\Hunter\config.cmake, cmake\Hunter\core_packages.cmake, cmake\Hunter\extra_packages.cmake
+  - C:\Tools\vcpkg\installed
+  - C:\.hunter
 
 before_build:
   - cd "%APPVEYOR_BUILD_FOLDER%"

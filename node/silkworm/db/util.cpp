@@ -30,20 +30,20 @@ Bytes storage_prefix(ByteView address, uint64_t incarnation) {
     return res;
 }
 
-Bytes block_key(uint64_t block_number) {
+Bytes block_key(BlockNum block_number) {
     Bytes key(8, '\0');
     endian::store_big_u64(&key[0], block_number);
     return key;
 }
 
-Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
+Bytes block_key(BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
     Bytes key(8 + kHashLength, '\0');
     endian::store_big_u64(&key[0], block_number);
     std::memcpy(&key[8], hash, kHashLength);
     return key;
 }
 
-Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation) {
+Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation) {
     Bytes res(8 + kPlainStoragePrefixLength, '\0');
     endian::store_big_u64(&res[0], block_number);
     std::memcpy(&res[8], address.bytes, kAddressLength);
@@ -51,14 +51,14 @@ Bytes storage_change_key(uint64_t block_number, const evmc::address& address, ui
     return res;
 }
 
-Bytes account_history_key(const evmc::address& address, uint64_t block_number) {
+Bytes account_history_key(const evmc::address& address, BlockNum block_number) {
     Bytes res(kAddressLength + 8, '\0');
     std::memcpy(&res[0], address.bytes, kAddressLength);
     endian::store_big_u64(&res[kAddressLength], block_number);
     return res;
 }
 
-Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, uint64_t block_number) {
+Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, BlockNum block_number) {
     Bytes res(kAddressLength + kHashLength + 8, '\0');
     std::memcpy(&res[0], address.bytes, kAddressLength);
     std::memcpy(&res[kAddressLength], location.bytes, kHashLength);
@@ -66,7 +66,7 @@ Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& loc
     return res;
 }
 
-Bytes log_key(uint64_t block_number, uint32_t transaction_id) {
+Bytes log_key(BlockNum block_number, uint32_t transaction_id) {
     Bytes key(8 + 4, '\0');
     endian::store_big_u64(&key[0], block_number);
     endian::store_big_u32(&key[8], transaction_id);

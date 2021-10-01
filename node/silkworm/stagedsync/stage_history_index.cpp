@@ -61,7 +61,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
                                  << " Index Extraction. From: " << (last_processed_block_number + 1) << std::endl;
 
     size_t allocated_space{0};
-    uint64_t block_number{0};
+    BlockNum block_number{0};
     auto data{changeset_table.lower_bound(db::to_slice(start))};
     while (data) {
         std::string composite_key;
@@ -133,7 +133,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
                     Bytes chunk_index(entry.key.size() + 8, '\0');
                     std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
                     // Suffix is either the maximum Block Number of the bitmap or if it's the last chunk: UINT64_MAX
-                    uint64_t suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
+                    BlockNum suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
                     endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
                     // Push chunk to database
                     Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');

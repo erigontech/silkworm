@@ -271,7 +271,7 @@ StageResult stage_hashstate(TransactionManager& txn, const fs::path& etl_path, u
  *  We need to use changeset because we can use the progress system.
  *  Note: Standard Promotion is way slower than Clean Promotion
  */
-void hashstate_unwind(mdbx::txn& txn, uint64_t unwind_to, HashstateOperation operation) {
+static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperation operation) {
     auto [changeset_config, target_config] = get_tables_for_promote(operation);
 
     auto changeset_table{db::open_cursor(txn, changeset_config)};

@@ -153,21 +153,21 @@ using StorageChanges = absl::btree_map<evmc::address, absl::btree_map<uint64_t, 
 Bytes storage_prefix(ByteView address, uint64_t incarnation);
 
 // Erigon EncodeBlockNumber
-Bytes block_key(uint64_t block_number);
+Bytes block_key(BlockNum block_number);
 
 // Erigon HeaderKey & BlockBodyKey
-Bytes block_key(uint64_t block_number, const uint8_t (&hash)[kHashLength]);
+Bytes block_key(BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 
-Bytes storage_change_key(uint64_t block_number, const evmc::address& address, uint64_t incarnation);
+Bytes storage_change_key(BlockNum block_number, const evmc::address& address, uint64_t incarnation);
 
 // Erigon IndexChunkKey for account
-Bytes account_history_key(const evmc::address& address, uint64_t block_number);
+Bytes account_history_key(const evmc::address& address, BlockNum block_number);
 
 // Erigon IndexChunkKey for storage
-Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, uint64_t block_number);
+Bytes storage_history_key(const evmc::address& address, const evmc::bytes32& location, BlockNum block_number);
 
 // Erigon LogKey
-Bytes log_key(uint64_t block_number, uint32_t transaction_id);
+Bytes log_key(BlockNum block_number, uint32_t transaction_id);
 
 //! \brief Converts change set (AccountChangeSet/StorageChangeSet) entry to plain state format.
 //! \param [in] key : Change set key.

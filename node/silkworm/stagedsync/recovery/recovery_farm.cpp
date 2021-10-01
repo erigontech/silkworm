@@ -176,8 +176,8 @@ StageResult RecoveryFarm::recover(BlockNum to) {
 StageResult RecoveryFarm::unwind(BlockNum new_height) {
     SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
     auto unwind_table{db::open_cursor(db_transaction_, db::table::kSenders)};
-    auto unwind_bytes_point{db::block_key(new_height + 1)};
-    truncate_table_from(unwind_table, unwind_bytes_point);
+    auto unwind_point{db::block_key(new_height + 1)};
+    db::cursor_erase(unwind_table, unwind_point);
     // Eventually update new stage height
     db::stages::write_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
 
@@ -323,7 +323,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
         rlp::encode(rlp, transaction, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
 
         auto hash{keccak256(rlp)};
-        batch_.push_back(RecoveryWorker::Package{block_num, hash, transaction.odd_y_parity});
+        batch_.push_back(RecoveryPackage{block_num, hash, transaction.odd_y_parity});
         intx::be::unsafe::store(batch_.back().signature, transaction.r);
         intx::be::unsafe::store(batch_.back().signature + kHashLength, transaction.s);
 

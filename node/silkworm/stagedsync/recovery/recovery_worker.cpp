@@ -31,7 +31,7 @@ RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id), data_si
     }
 }
 
-void RecoveryWorker::set_work(uint32_t batch_id, std::vector<Package>& farm_batch) {
+void RecoveryWorker::set_work(uint32_t batch_id, std::vector<RecoveryPackage>& farm_batch) {
     batch_id_ = batch_id;
     batch_.swap(farm_batch);
     status_.store(Status::Working);
@@ -70,7 +70,7 @@ void RecoveryWorker::work() {
         for (auto const& package : batch_) {
             // On block switching store the results
             if (block_num != package.block_num) {
-                if (is_stopping()) {
+                if (Worker::is_stopping()) {
                     status_.store(Status::Aborted);
                     break;
                 }

@@ -51,12 +51,12 @@ ValidationResult ConsensusEngineEthash::validate_seal(const BlockHeader& header)
 
     auto boundary256{header.boundary()};
     auto seal_hash(header.hash(/*for_sealing =*/true));
-    ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
+    ethash::hash256 sealh256{ethash::hash256_from_bytes(seal_hash.bytes)};
     ethash::hash256 mixh256{};
     std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
 
     uint64_t nonce{endian::load_big_u64(header.nonce.data())};
-    return ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256) ? ValidationResult::kInvalidSeal
-                                                                                 : ValidationResult::kOk;
+    const auto ec{ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256)};
+    return ec ? ValidationResult::kInvalidSeal : ValidationResult::kOk;
 }
 }  // namespace silkworm::consensus

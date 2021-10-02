@@ -35,6 +35,13 @@ RecoveryFarm::RecoveryFarm(mdbx::txn& db_transaction, uint32_t max_workers, size
     batch_.reserve(max_batch_size);
 }
 
+RecoveryFarm::~RecoveryFarm() {
+    while (!workers_.empty()) {
+        workers_.back().second.disconnect();
+        workers_.pop_back();
+    }
+}
+
 StageResult RecoveryFarm::recover(BlockNum to) {
     // Check we have a valid chain configuration
     auto chain_config{db::read_chain_config(db_transaction_)};
@@ -173,21 +180,32 @@ StageResult RecoveryFarm::recover(BlockNum to) {
     return stage_result;
 }
 
-StageResult RecoveryFarm::unwind(BlockNum new_height) {
+StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height) {
     SILKWORM_LOG(LogLevel::Info) << "Unwinding Senders' table to height " << new_height << std::endl;
-    auto unwind_table{db::open_cursor(db_transaction_, db::table::kSenders)};
-    auto unwind_point{db::block_key(new_height + 1)};
-    db::cursor_erase(unwind_table, unwind_point);
-    // Eventually update new stage height
-    db::stages::write_stage_progress(db_transaction_, db::stages::kSendersKey, new_height);
+    try {
+        auto unwind_table{db::open_cursor(db_transaction, db::table::kSenders)};
+        auto unwind_point{db::block_key(new_height + 1)};
+        db::cursor_erase(unwind_table, unwind_point);
 
-    return StageResult::kSuccess;
+        // Eventually update new stage height
+        db::stages::write_stage_progress(db_transaction, db::stages::kSendersKey, new_height);
+
+        return StageResult::kSuccess;
+
+    } catch (const mdbx::exception& ex) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what()
+                                      << std::endl;
+        return StageResult::kDbError;
+    } catch (...) {
+        SILKWORM_LOG(LogLevel::Error) << "Unexpected unknown error in " << std::string(__FUNCTION__) << std::endl;
+        return StageResult::kUnexpectedError;
+    }
 }
 
 void RecoveryFarm::stop_all_workers(bool wait) {
     SILKWORM_LOG(LogLevel::Debug) << "Stopping workers ... " << std::endl;
-    for (const auto& worker : workers_) {
-        worker->stop(wait);
+    for (const auto& item : workers_) {
+        item.first->stop(wait);
     }
 }
 
@@ -195,8 +213,8 @@ void RecoveryFarm::wait_workers_completion() {
     if (!workers_.empty()) {
         uint32_t attempts{0};
         do {
-            auto it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
-                return w->get_status() == RecoveryWorker::Status::Working;
+            auto it = std::find_if(workers_.begin(), workers_.end(), [](const worker_pair& w) {
+                return w.first->get_status() == RecoveryWorker::Status::Working;
             });
             if (it == workers_.end()) {
                 break;
@@ -223,24 +241,25 @@ bool RecoveryFarm::collect_workers_results() {
 
         // Select worker and pop the queue
         auto& worker{workers_.at(harvest_pairs_.front().first)};
-        SILKWORM_LOG(LogLevel::Trace) << "Collecting  results from worker " << worker->get_id() << std::endl;
+        SILKWORM_LOG(LogLevel::Trace) << "Collecting  results from worker " << worker.first->get_id() << std::endl;
         harvest_pairs_.pop();
         l.unlock();
 
-        auto status = worker->get_status();
+        auto status = worker.first->get_status();
         switch (status) {
             case RecoveryWorker::Status::Error:
-                SILKWORM_LOG(LogLevel::Error)
-                    << "Got error from worker #" << worker->get_id() << " : " << worker->get_error() << std::endl;
+                SILKWORM_LOG(LogLevel::Error) << "Got error from worker #" << worker.first->get_id() << " : "
+                                              << worker.first->get_error() << std::endl;
                 ret = false;
                 break;
             case RecoveryWorker::Status::Aborted:
-                SILKWORM_LOG(LogLevel::Trace) << "Got aborted from worker #" << worker->get_id() << std::endl;
+                SILKWORM_LOG(LogLevel::Trace) << "Got aborted from worker #" << worker.first->get_id() << std::endl;
                 ret = false;
                 break;
             case RecoveryWorker::Status::ResultsReady:
-                SILKWORM_LOG(LogLevel::Trace) << "Collecting results from worker #" << worker->get_id() << std::endl;
-                if (worker->pull_results(worker_results)) {
+                SILKWORM_LOG(LogLevel::Trace)
+                    << "Collecting results from worker #" << worker.first->get_id() << std::endl;
+                if (worker.first->pull_results(worker_results)) {
                     try {
                         for (const auto& [block_num, data] : worker_results) {
                             total_processed_blocks_++;
@@ -263,7 +282,7 @@ bool RecoveryFarm::collect_workers_results() {
                 } else {
                     SILKWORM_LOG(LogLevel::Error)
                         << "Unexpected error in " << std::string(__FUNCTION__) << " : "
-                        << "could not pull results from worker #" << worker->get_id() << std::endl;
+                        << "could not pull results from worker #" << worker.first->get_id() << std::endl;
                     ret = false;
                 }
                 break;
@@ -298,9 +317,32 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
     const evmc_revision rev{config.revision(block_num)};
     const bool has_homestead{rev >= EVMC_HOMESTEAD};
     const bool has_spurious_dragon{rev >= EVMC_SPURIOUS_DRAGON};
+    const bool has_berlin{rev >= EVMC_BERLIN};
+    const bool has_london{rev >= EVMC_LONDON};
 
     uint32_t tx_id{0};
     for (const auto& transaction : transactions) {
+        switch (transaction.type) {
+            case Transaction::Type::kLegacy:
+                break;
+            case Transaction::Type::kEip2930:
+                if (!has_berlin) {
+                    SILKWORM_LOG(LogLevel::Error)
+                        << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
+                        << " for transaction #" << tx_id << " in block #" << block_num << " before Berlin" << std::endl;
+                    return StageResult::kInvalidTransaction;
+                }
+                break;
+            case Transaction::Type::kEip1559:
+                if (!has_london) {
+                    SILKWORM_LOG(LogLevel::Error)
+                        << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
+                        << " for transaction #" << tx_id << " in block #" << block_num << " before London" << std::endl;
+                    return StageResult::kInvalidTransaction;
+                }
+                break;
+        }
+
         if (!silkworm::ecdsa::is_valid_signature(transaction.r, transaction.s, has_homestead)) {
             SILKWORM_LOG(LogLevel::Error)
                 << "Got invalid signature for transaction #" << tx_id << " in block #" << block_num << std::endl;
@@ -346,21 +388,21 @@ bool RecoveryFarm::dispatch_batch() {
     }
 
     // Locate first available worker
-    while (true) {
-        auto it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
-            return w->get_status() == RecoveryWorker::Status::Idle;
+    while (!should_stop()) {
+        auto it = std::find_if(workers_.begin(), workers_.end(), [](const worker_pair& w) {
+            return w.first->get_status() == RecoveryWorker::Status::Idle;
         });
 
         if (it != workers_.end()) {
-            SILKWORM_LOG(LogLevel::Trace) << "Dispatching package to worker #" << it->get()->get_id() << std::endl;
-            it->get()->set_work(batch_id_++, batch_);  // Worker will swap contents
+            SILKWORM_LOG(LogLevel::Trace) << "Dispatching package to worker #" << it->first->get_id() << std::endl;
+            it->first->set_work(batch_id_++, batch_);  // Worker will swap contents
             batch_.resize(0);
             workers_in_flight_++;
             return true;
         } else {
             // Do we have ready results from workers that we need to harvest ?
-            it = std::find_if(workers_.begin(), workers_.end(), [](const std::unique_ptr<RecoveryWorker>& w) {
-                auto s = static_cast<int>(w->get_status());
+            it = std::find_if(workers_.begin(), workers_.end(), [](const worker_pair& w) {
+                auto s = static_cast<int>(w.first->get_status());
                 return (s >= 2);
             });
             if (it != workers_.end()) {
@@ -385,15 +427,18 @@ bool RecoveryFarm::dispatch_batch() {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
+    return false;
 }
 
 bool RecoveryFarm::initialize_new_worker() {
     SILKWORM_LOG(LogLevel::Trace) << "Launching worker #" << workers_.size() << std::endl;
     try {
-        workers_.emplace_back(new RecoveryWorker(workers_.size(), max_batch_size_ * kAddressLength));
-        workers_.back()->signal_completed.connect(boost::bind(&RecoveryFarm::worker_completed_handler, this, _1));
-        workers_.back()->start(/*wait = */ true);
-        return workers_.back()->get_state() == Worker::WorkerState::kStarted;
+        auto worker{std::make_unique<RecoveryWorker>(workers_.size(), max_batch_size_ * kAddressLength)};
+        auto connector{
+            worker->signal_completed.connect(boost::bind(&RecoveryFarm::worker_completed_handler, this, _1))};
+        workers_.emplace_back(std::move(worker), std::move(connector));
+        workers_.back().first->start(/*wait=*/true);
+        return workers_.back().first->get_state() == Worker::WorkerState::kStarted;
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << "Unable to initialize new recovery worker : " << ex.what() << std::endl;
         return false;
@@ -418,8 +463,8 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         while (data.done) {
             reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
             if (reached_block_num != expected_block_num) {
-                SILKWORM_LOG(LogLevel::Error) << "Bad header hash sequence ! Expected " << expected_block_num << " got "
-                                              << reached_block_num << std::endl;
+                SILKWORM_LOG(LogLevel::Error) << "Bad block number sequence ! Expected " << expected_block_num
+                                              << " got " << reached_block_num << std::endl;
                 return StageResult::kBadChainSequence;
             }
 

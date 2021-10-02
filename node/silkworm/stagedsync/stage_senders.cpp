@@ -41,22 +41,11 @@ StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& 
     return res;
 }
 
-StageResult unwind_senders(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_point) {
-    // TODO(Andrea) No need for collectors on unwind
-    fs::create_directories(etl_path);
-    etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
-
-    // Create farm instance and do work
-    recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency() - 1, kDefaultRecoverySenderBatch, collector);
-
-    const StageResult res{farm.unwind(unwind_point)};
-
-    if (res != StageResult::kSuccess) {
-        return res;
+StageResult unwind_senders(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_point) {
+    const StageResult res{recovery::RecoveryFarm::unwind(*txn, unwind_point)};
+    if (res == StageResult::kSuccess) {
+        txn.commit();
     }
-
-    txn.commit();
-
     return res;
 }
 

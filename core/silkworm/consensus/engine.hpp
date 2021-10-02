@@ -44,7 +44,7 @@ class IConsensusEngine {
     //! \param [in] header: header to validate.
     //! \param [in] state: current state.
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult validate_block_header(const BlockHeader& header, State& state) = 0;
+    virtual ValidationResult validate_block_header(const BlockHeader& header, State& state, bool is_ommer) = 0;
 
     //! \brief Validates the seal of the header
     virtual ValidationResult validate_seal(const BlockHeader& header) = 0;

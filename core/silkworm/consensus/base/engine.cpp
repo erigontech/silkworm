@@ -26,7 +26,7 @@ namespace silkworm::consensus {
 ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& block, silkworm::State& state) {
     const BlockHeader& header{block.header};
 
-    if (ValidationResult err{validate_block_header(header, state)}; err != ValidationResult::kOk) {
+    if (ValidationResult err{validate_block_header(header, state, /*is_ommer=*/false)}; err != ValidationResult::kOk) {
         return err;
     }
 
@@ -57,7 +57,8 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
     std::optional<BlockHeader> parent{get_parent_header(state, header)};
 
     for (const BlockHeader& ommer : block.ommers) {
-        if (ValidationResult err{validate_block_header(ommer, state)}; err != ValidationResult::kOk) {
+        if (ValidationResult err{validate_block_header(ommer, state, /*is_ommer=*/true)};
+            err != ValidationResult::kOk) {
             return ValidationResult::kInvalidOmmerHeader;
         }
         std::vector<BlockHeader> old_ommers;
@@ -81,7 +82,14 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
     return ValidationResult::kOk;
 }
 
-ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& header, State& state) {
+ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& header, State& state, bool is_ommer) {
+    if (!is_ommer) {
+        const std::time_t now{std::time(nullptr)};
+        if (header.timestamp > static_cast<uint64_t>(now)) {
+            return ValidationResult::kFutureBlock;
+        }
+    }
+
     if (header.gas_used > header.gas_limit) {
         return ValidationResult::kGasAboveLimit;
     }
@@ -217,8 +225,6 @@ std::optional<intx::uint256> ConsensusEngineBase::expected_base_fee_per_gas(cons
         }
     }
 }
-ValidationResult ConsensusEngineBase::validate_seal(const BlockHeader&) {
-    return ValidationResult::kOk;
-}
+ValidationResult ConsensusEngineBase::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
 
 }  // namespace silkworm::consensus

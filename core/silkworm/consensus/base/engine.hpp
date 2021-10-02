@@ -39,7 +39,7 @@ class ConsensusEngineBase : public IConsensusEngine {
     //! \param [in] header: header to validate.
     //! \param [in] state: current state.
     //! \note Shouldn't be used for genesis block.
-    ValidationResult validate_block_header(const BlockHeader& header, State& state) override;
+    ValidationResult validate_block_header(const BlockHeader& header, State& state, bool is_ommer) override;
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) override;

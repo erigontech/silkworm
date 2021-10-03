@@ -24,7 +24,7 @@
 
 namespace silkworm::trie {
 
-AccountTrieCursor::AccountTrieCursor(mdbx::txn& txn, const PrefixSet& changed)
+AccountTrieCursor::AccountTrieCursor(mdbx::txn& txn, PrefixSet& changed)
     : changed_{changed}, cursor_{db::open_cursor(txn, db::table::kTrieOfAccounts)} {}
 
 void AccountTrieCursor::consume_node(ByteView to) {
@@ -130,7 +130,7 @@ bool AccountTrieCursor::children_are_in_trie() const {
     return stack_.top().tree_flag();
 }
 
-bool AccountTrieCursor::can_skip_state() const {
+bool AccountTrieCursor::can_skip_state() {
     if (at_root_) {
         return false;
     }
@@ -222,7 +222,7 @@ nil                  // db returned nil - means no more keys there, done
 In practice Trie is not full - it means that after account key `{30 zero bytes}0000` may come `{5 zero bytes}01` and
 amount of iterations will not be big.
 */
-evmc::bytes32 DbTrieLoader::calculate_root(const PrefixSet& changed) {
+evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
     auto acc_state{db::open_cursor(txn_, db::table::kHashedAccounts)};
     auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
 
@@ -297,7 +297,7 @@ evmc::bytes32 DbTrieLoader::calculate_root(const PrefixSet& changed) {
 }
 
 static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir,
-                                                   const evmc::bytes32* expected_root, const PrefixSet& changed) {
+                                                   const evmc::bytes32* expected_root, PrefixSet& changed) {
     etl::Collector account_collector{etl_dir};
     etl::Collector storage_collector{etl_dir};
     DbTrieLoader loader{txn, account_collector, storage_collector};
@@ -345,7 +345,8 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesyst
                                              const evmc::bytes32* expected_root) {
     txn.clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
     txn.clear_map(db::open_map(txn, db::table::kTrieOfStorage));
-    return increment_intermediate_hashes(txn, etl_dir, expected_root, /*changed=*/{});
+    PrefixSet empty;
+    return increment_intermediate_hashes(txn, etl_dir, expected_root, /*changed=*/empty);
 }
 
 }  // namespace silkworm::trie

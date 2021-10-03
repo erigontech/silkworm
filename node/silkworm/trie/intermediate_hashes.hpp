@@ -88,7 +88,7 @@ class AccountTrieCursor {
     AccountTrieCursor(const AccountTrieCursor&) = delete;
     AccountTrieCursor& operator=(const AccountTrieCursor&) = delete;
 
-    AccountTrieCursor(mdbx::txn& txn, const PrefixSet& changed);
+    AccountTrieCursor(mdbx::txn& txn, PrefixSet& changed);
 
     void next(bool skip_children);
 
@@ -99,7 +99,7 @@ class AccountTrieCursor {
 
     [[nodiscard]] bool children_are_in_trie() const;
 
-    [[nodiscard]] bool can_skip_state() const;
+    [[nodiscard]] bool can_skip_state();
 
   private:
     // TrieAccount node with a particular nibble selected
@@ -119,7 +119,7 @@ class AccountTrieCursor {
 
     void move_to_next_sibling();
 
-    const PrefixSet& changed_;
+    PrefixSet& changed_;
     bool at_root_{true};
     mdbx::cursor_managed cursor_;
     std::stack<SubNode> stack_;
@@ -152,7 +152,7 @@ class DbTrieLoader {
 
     DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector);
 
-    evmc::bytes32 calculate_root(const PrefixSet& changed);
+    evmc::bytes32 calculate_root(PrefixSet& changed);
 
   private:
     mdbx::txn& txn_;

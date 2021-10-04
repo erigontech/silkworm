@@ -26,7 +26,8 @@ namespace silkworm::consensus {
 ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& block, silkworm::State& state) {
     const BlockHeader& header{block.header};
 
-    if (ValidationResult err{validate_block_header(header, state, /*is_ommer=*/false)}; err != ValidationResult::kOk) {
+    if (ValidationResult err{validate_block_header(header, state, /*with_future_timestamp_check=*/true)};
+        err != ValidationResult::kOk) {
         return err;
     }
 
@@ -57,7 +58,7 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
     std::optional<BlockHeader> parent{get_parent_header(state, header)};
 
     for (const BlockHeader& ommer : block.ommers) {
-        if (ValidationResult err{validate_block_header(ommer, state, /*is_ommer=*/true)};
+        if (ValidationResult err{validate_block_header(ommer, state, /*with_future_timestamp_check=*/false)};
             err != ValidationResult::kOk) {
             return ValidationResult::kInvalidOmmerHeader;
         }
@@ -82,8 +83,9 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
     return ValidationResult::kOk;
 }
 
-ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& header, State& state, bool is_ommer) {
-    if (!is_ommer) {
+ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& header, State& state,
+                                                            bool with_future_timestamp_check) {
+    if (with_future_timestamp_check) {
         const std::time_t now{std::time(nullptr)};
         if (header.timestamp > static_cast<uint64_t>(now)) {
             return ValidationResult::kFutureBlock;

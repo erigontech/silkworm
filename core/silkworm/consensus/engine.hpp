@@ -43,8 +43,11 @@ class IConsensusEngine {
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.
     //! \param [in] state: current state.
+    //! \param [in] with_future_timestamp_check : whether to check header timestamp is in the future wrt host current
+    //! time \see https://github.com/torquem-ch/silkworm/issues/448
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult validate_block_header(const BlockHeader& header, State& state, bool is_ommer) = 0;
+    virtual ValidationResult validate_block_header(const BlockHeader& header, State& state,
+                                                   bool with_future_timestamp_check) = 0;
 
     //! \brief Validates the seal of the header
     virtual ValidationResult validate_seal(const BlockHeader& header) = 0;

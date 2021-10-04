@@ -20,6 +20,7 @@
 
 #include "header_downloader.hpp"
 #include "messages/InboundGetBlockHeaders.hpp"
+#include "messages/InternalMessage.hpp"
 #include "messages/OutboundGetBlockHeaders.hpp"
 #include "messages/OutboundNewBlockHashes.hpp"
 #include "rpc/ReceiveMessages.hpp"
@@ -41,6 +42,7 @@ HeaderDownloader::HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_
 }
 
 HeaderDownloader::~HeaderDownloader() {
+    stop();
     SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader destroyed\n";
 }
 
@@ -62,7 +64,7 @@ void HeaderDownloader::send_status() {
     }
 }
 
-void HeaderDownloader::receive_messages(MessageQueue& messages, std::atomic<bool>& stopping) {
+void HeaderDownloader::receive_messages() {
     // todo: handle connection loss and retry (at each re-connect re-send status)
 
     // send status to sentry
@@ -73,29 +75,32 @@ void HeaderDownloader::receive_messages(MessageQueue& messages, std::atomic<bool
     sentry_.exec_remotely(message_subscription);
 
     // receive messages
-    while (!stopping && !sentry_.closing() && message_subscription.receive_one_reply()) {
+    while (!is_stopping() && !sentry_.closing() && message_subscription.receive_one_reply()) {
 
         auto message = InboundBlockAnnouncementMessage::make(message_subscription.reply(), working_chain_, sentry_);
 
-        messages.push(message);
+        messages_.push(message);
+
     }
 
     SILKWORM_LOG(LogLevel::Warn) << "HeaderDownloader execution_loop is_stopping...\n";
-
 }
 
-void HeaderDownloader::process_one_message(MessageQueue& messages) {
+void HeaderDownloader::execution_loop() {
     using namespace std::chrono_literals;
 
-    // pop a message from the queue
-    std::shared_ptr<Message> message;
-    bool present = messages.timed_wait_and_pop(message, 1000ms);
-    if (!present) return;   // timeout, needed to check exiting_
+    while (!is_stopping() && !sentry_.closing()) {
+        // pop a message from the queue
+        std::shared_ptr<Message> message;
+        bool present = messages_.timed_wait_and_pop(message, 1000ms);
+        if (!present) continue;   // timeout, needed to check exiting_
 
-    SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader processing message " << message->name() << "\n";
+        SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader processing message " << message->name() << "\n";
 
-    // process the message (command pattern)
-    message->execute();
+        // process the message (command pattern)
+        message->execute();
+    }
+
 }
 
 /*
@@ -262,8 +267,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     Stage::Result result;
     bool new_height_reached = false;
 
-    MessageQueue messages{}; // thread safe queue where receive messages from sentry thread
-    std::atomic<bool> stopping{false};
+
     std::thread message_receiving;
 
     try {
@@ -277,20 +281,13 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         }
 
         // sync status
-        //working_chain_.target_height(new_height);
-        working_chain_.sync_current_state_with(persisted_chain_);
-
-        // start message receiving (headers & blocks requests)
-        message_receiving = std::thread([this, &messages, &stopping]() {
-            receive_messages(messages, stopping);
-        });
+        //working_chain_.sync_current_state_with(persisted_chain_);
+        auto sync_command = sync_working_chain(persisted_chain_);
+        sync_command->result().get(); // blocking
 
         // message processing
         time_point_t last_request;
         while (!new_height_reached && !sentry_.closing()) {
-
-            // process inbound messages
-            process_one_message(messages);  // pop a message from the queue and process it
 
             // at every minute...
             if (std::chrono::system_clock::now() - last_request > 60s) {
@@ -300,7 +297,9 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 send_header_requests();
 
                 // check if it needs to persist some headers
-                bool in_sync = working_chain_.save_steady_headers(persisted_chain_);
+                //bool in_sync = working_chain_.save_steady_headers(persisted_chain_);
+                auto command = save_steady_headers(persisted_chain_);
+                bool in_sync = command->result().get();  // blocking
 
                 // do announcements
                 send_announcements();
@@ -319,6 +318,8 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 SILKWORM_LOG(LogLevel::Debug) << "HeaderDownloader status: current persisted height="
                                               << persisted_chain_.highest_height() << "\n";
             }
+            else
+                std::this_thread::sleep_for(1s);
 
             SILKWORM_LOG(LogLevel::Debug) << "WorkingChain status: " << working_chain_.human_readable_status() << "\n";
         }
@@ -343,7 +344,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         result.status = Stage::Result::Error;
     }
 
-    stopping = true; // todo: it is better to try to cancel the grpc call, do a message_subscription.try_cancel() or both
+    stop(); // todo: it is better to try to cancel the grpc call, do a message_subscription.try_cancel() or both
     message_receiving.join();
 
     SILKWORM_LOG(LogLevel::Debug) << "HeaderDownloader wind operation clean exit\n";
@@ -440,7 +441,7 @@ func HeadersUnwind(u *UnwindState, s *StageState, tx ethdb.RwTx, cfg HeadersCfg)
 	}
 	return nil
 }
- */
+*/
 auto HeaderDownloader::unwind_to([[maybe_unused]] BlockNum new_height) -> Stage::Result {
     // todo: to implement
     Stage::Result result{Result::Error};
@@ -451,8 +452,8 @@ auto HeaderDownloader::unwind_to([[maybe_unused]] BlockNum new_height) -> Stage:
 void HeaderDownloader::send_header_requests() {
     // if (!sentry_.ready()) return;
 
-    OutboundGetBlockHeaders message(working_chain_, sentry_);
-    message.execute();
+    auto message = std::make_shared<OutboundGetBlockHeaders>(working_chain_, sentry_);
+    messages_.push(message);
 
 }
 
@@ -460,9 +461,31 @@ void HeaderDownloader::send_header_requests() {
 void HeaderDownloader::send_announcements() {
     // if (!sentry_.ready()) return;
 
-    OutboundNewBlockHashes message{working_chain_, sentry_};
-    message.execute();
+    auto message = std::make_shared<OutboundNewBlockHashes>(working_chain_, sentry_);
+    messages_.push(message);
 
+}
+
+auto HeaderDownloader::sync_working_chain(PersistedChain& persisted_chain) -> std::shared_ptr<InternalMessage<void>> {
+
+    auto message = std::make_shared<InternalMessage<void>>(working_chain_, persisted_chain, [](WorkingChain& wc, PersistedChain& pc){
+        wc.sync_current_state_with(pc);
+    });
+
+    messages_.push(message);
+
+    return message;
+}
+
+auto HeaderDownloader::save_steady_headers(PersistedChain& persisted_chain) -> std::shared_ptr<InternalMessage<bool>> {
+
+    auto message = std::make_shared<InternalMessage<bool>>(working_chain_, persisted_chain, [](WorkingChain& wc, PersistedChain& pc){
+        return wc.save_steady_headers(pc);
+    });
+
+    messages_.push(message);
+
+    return message;
 }
 
 }  // namespace silkworm

@@ -32,7 +32,7 @@ BlockProvider::BlockProvider(SentryClient& sentry, Db::ReadOnlyAccess db_access,
 }
 
 BlockProvider::~BlockProvider() {
-    stopping_ = true;
+    stop();
     SILKWORM_LOG(LogLevel::Error) << "BlockProvider destroyed\n";
 }
 
@@ -68,7 +68,7 @@ void BlockProvider::execution_loop() {
         rpc::ReceiveMessages receive_messages(rpc::ReceiveMessages::Scope::BlockRequests);
         sentry_.exec_remotely(receive_messages);
 
-        while (!stopping_ && !sentry_.closing() && receive_messages.receive_one_reply()) {
+        while (!is_stopping() && !sentry_.closing() && receive_messages.receive_one_reply()) {
 
             auto message = InboundBlockRequestMessage::make(receive_messages.reply(), db_access_, sentry_);
 
@@ -79,7 +79,7 @@ void BlockProvider::execution_loop() {
     }
     catch(const std::exception& e) {
         SILKWORM_LOG(LogLevel::Error) << "BlockProvider execution_loop is_stopping due to exception: " << e.what() << "\n";
-        stopping_ = true;
+        stop();
         sentry_.need_close();
     }
 }

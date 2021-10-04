@@ -16,8 +16,6 @@
 #ifndef SILKWORM_OUTBOUNDMESSAGE_HPP
 #define SILKWORM_OUTBOUNDMESSAGE_HPP
 
-#include <memory>
-
 #include "Message.hpp"
 
 namespace silkworm {

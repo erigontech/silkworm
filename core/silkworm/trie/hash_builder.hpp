@@ -45,7 +45,7 @@ class HashBuilder {
     // The key should be unpacked, i.e. have one nibble per byte.
     // In addition, a leaf key may not be a prefix of another leaf key
     // (e.g. leaves with keys 0a0b & 0a0b0005 may not coexist).
-    void add_leaf(ByteView unpacked_key, ByteView value);
+    void add_leaf(Bytes unpacked_key, ByteView value);
 
     // Entries (leaves, nodes) must be added in the strictly increasing lexicographic order (by key).
     // Consequently, duplicate keys are not allowed.

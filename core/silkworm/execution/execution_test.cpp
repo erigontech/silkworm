@@ -21,8 +21,8 @@
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
-#include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/execution/address.hpp>
 #include <silkworm/rlp/encode.hpp>
 #include <silkworm/state/in_memory_state.hpp>
@@ -30,9 +30,11 @@
 #include <silkworm/types/account.hpp>
 #include <silkworm/types/block.hpp>
 
-TEST_CASE("Execute two blocks") {
-    using namespace silkworm;
+namespace silkworm {
 
+using namespace silkworm::consensus;
+
+TEST_CASE("Execute two blocks") {
     // ---------------------------------------
     // Prepare
     // ---------------------------------------
@@ -79,7 +81,7 @@ TEST_CASE("Execute two blocks") {
     // Execute first block
     // ---------------------------------------
 
-    REQUIRE(execute_block(block, state, kLondonTestConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, state, test::kLondonConfig) == ValidationResult::kOk);
 
     auto contract_address{create_address(sender, /*nonce=*/0)};
     std::optional<Account> contract_account{state.read_account(contract_address)};
@@ -117,7 +119,7 @@ TEST_CASE("Execute two blocks") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    REQUIRE(execute_block(block, state, kLondonTestConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, state, test::kLondonConfig) == ValidationResult::kOk);
 
     storage0 = state.read_storage(contract_address, kDefaultIncarnation, storage_key0);
     CHECK(to_hex(storage0) == new_val);
@@ -127,3 +129,4 @@ TEST_CASE("Execute two blocks") {
     CHECK(miner_account->balance > 2 * param::kBlockRewardConstantinople);
     CHECK(miner_account->balance < 3 * param::kBlockRewardConstantinople);
 }
+}  // namespace silkworm

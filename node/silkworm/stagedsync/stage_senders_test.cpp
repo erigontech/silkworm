@@ -21,9 +21,9 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/common/test_util.hpp>
 
 using namespace evmc::literals;
 
@@ -49,7 +49,7 @@ TEST_CASE("Stage Senders") {
     auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
     db::detail::BlockBodyForStorage block{};
-    auto transactions{test_util::sample_transactions()};
+    auto transactions{test::sample_transactions()};
     block.base_txn_id = 1;
     block.txn_count = 1;
 
@@ -98,7 +98,7 @@ TEST_CASE("Stage Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
     stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.etl().path()));
 
@@ -126,7 +126,7 @@ TEST_CASE("Unwind Senders") {
     auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
     db::detail::BlockBodyForStorage block{};
-    auto transactions{test_util::sample_transactions()};
+    auto transactions{test::sample_transactions()};
     block.base_txn_id = 1;
     block.txn_count = 1;
 
@@ -174,7 +174,7 @@ TEST_CASE("Unwind Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
     stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
     stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, tmp_dir.path(), 1));
@@ -203,7 +203,7 @@ TEST_CASE("Prune Senders") {
     auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
     db::detail::BlockBodyForStorage block{};
-    auto transactions{test_util::sample_transactions()};
+    auto transactions{test::sample_transactions()};
     block.base_txn_id = 1;
     block.txn_count = 1;
 
@@ -249,7 +249,7 @@ TEST_CASE("Prune Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::set_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
     stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
     // We prune from Block 2, thus deleting block 1

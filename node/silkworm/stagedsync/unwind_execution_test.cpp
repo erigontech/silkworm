@@ -17,9 +17,9 @@
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
-#include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_util.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/execution/address.hpp>
@@ -31,9 +31,10 @@
 
 #include "stagedsync.hpp"
 
-TEST_CASE("Unwind Execution") {
-    using namespace silkworm;
+using namespace silkworm;
+using namespace silkworm::consensus;
 
+TEST_CASE("Unwind Execution") {
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
 
@@ -89,7 +90,7 @@ TEST_CASE("Unwind Execution") {
     // ---------------------------------------
     // Execute first block
     // ---------------------------------------
-    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, test::kLondonConfig) == ValidationResult::kOk);
     auto contract_address{create_address(sender, /*nonce=*/0)};
 
     // ---------------------------------------
@@ -111,7 +112,7 @@ TEST_CASE("Unwind Execution") {
     block.transactions[0].data = *from_hex(new_val);
     block.transactions[0].max_priority_fee_per_gas = 20 * kGiga;
 
-    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, test::kLondonConfig) == ValidationResult::kOk);
 
     // ---------------------------------------
     // Execute third block
@@ -125,9 +126,9 @@ TEST_CASE("Unwind Execution") {
     block.transactions[0].nonce = 2;
     block.transactions[0].data = *from_hex(new_val);
 
-    REQUIRE(execute_block(block, buffer, kLondonTestConfig) == ValidationResult::kOk);
+    REQUIRE(execute_block(block, buffer, test::kLondonConfig) == ValidationResult::kOk);
 
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
     buffer.write_to_db();
 
     // ---------------------------------------

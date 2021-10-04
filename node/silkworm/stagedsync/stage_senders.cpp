@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include <silkworm/db/stages.hpp>
+#include <silkworm/common/log.hpp>
 #include <silkworm/stagedsync/recovery/recovery_farm.hpp>
 
 #include "stagedsync.hpp"
@@ -27,45 +29,31 @@ StageResult stage_senders(TransactionManager& txn, const std::filesystem::path& 
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
 
     // Create farm instance and do work
-    recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultRecoverySenderBatch, collector);
+    // Max number of workers is set to number of cores - 1 (one thread is left for main)
+    recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency() - 1, kDefaultRecoverySenderBatch, collector);
 
-    auto block_from{db::stages::get_stage_progress(*txn, db::stages::kSendersKey)};
-    auto block_to{db::stages::get_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+    auto block_to{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
 
-    const StageResult res{farm.recover(block_from, block_to)};
-
-    if (res != StageResult::kSuccess) {
-        return res;
+    const StageResult res{farm.recover(block_to)};
+    if (res == StageResult::kSuccess) {
+        txn.commit();
     }
-
-    txn.commit();
-
     return res;
 }
 
-StageResult unwind_senders(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_point) {
-    fs::create_directories(etl_path);
-    etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
-
-    // Create farm instance and do work
-    recovery::RecoveryFarm farm(*txn, std::thread::hardware_concurrency(), kDefaultBatchSize, collector);
-
-    const StageResult res{farm.unwind(unwind_point)};
-
-    if (res != StageResult::kSuccess) {
-        return res;
+StageResult unwind_senders(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_point) {
+    const StageResult res{recovery::RecoveryFarm::unwind(*txn, unwind_point)};
+    if (res == StageResult::kSuccess) {
+        txn.commit();
     }
-
-    txn.commit();
-
     return res;
 }
 
 StageResult prune_senders(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
     SILKWORM_LOG(LogLevel::Info) << "Pruning Sender Recovery from: " << prune_from << std::endl;
-    auto new_tail{db::block_key(prune_from)};
-    auto unwind_table{db::open_cursor(*txn, db::table::kSenders)};
-    truncate_table_from(unwind_table, new_tail, /* reverse = */ true);
+    auto prune_table{db::open_cursor(*txn, db::table::kSenders)};
+    auto prune_point{db::block_key(prune_from)};
+    db::cursor_erase(prune_table, prune_point, db::CursorMoveDirection::Reverse);
     SILKWORM_LOG(LogLevel::Info) << "Pruning Sender Recovery finished..." << std::endl;
     return StageResult::kSuccess;
 }

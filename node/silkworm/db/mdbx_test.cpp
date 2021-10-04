@@ -43,7 +43,7 @@ static const std::map<std::string, std::string> kGeneticCode{
 
 namespace silkworm::db {
 
-TEST_CASE("for_each") {
+TEST_CASE("Cursor walk") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
     db_config.inmemory = true;
@@ -55,129 +55,209 @@ TEST_CASE("for_each") {
     const auto handle{txn.create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single)};
     auto table_cursor{txn.open_cursor(handle)};
 
-    std::map<std::string, std::string> data;
-    const auto save_all_data{[&data](mdbx::cursor::move_result& entry) {
-        data.emplace(entry.key, entry.value);
+    // A map to collect data
+    std::map<std::string, std::string> data_map;
+    const auto save_all_data_map{[&data_map](::mdbx::cursor, mdbx::cursor::move_result& entry) {
+        data_map.emplace(entry.key, entry.value);
         return true;
     }};
 
-    // empty table
-    for_each(table_cursor, save_all_data);
-    REQUIRE(data.empty());
+    // A vector to collect data
+    std::vector<std::pair<std::string, std::string>> data_vec;
+    const auto save_all_data_vec{[&data_vec](::mdbx::cursor, mdbx::cursor::move_result& entry) {
+        data_vec.emplace_back(entry.key, entry.value);
+        return true;
+    }};
 
-    // populate table
-    for (const auto& [key, value] : kGeneticCode) {
-        table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+    SECTION("cursor_for_each") {
+        // empty table
+        cursor_for_each(table_cursor, save_all_data_map);
+        REQUIRE(data_map.empty());
+
+        // populate table
+        for (const auto& [key, value] : kGeneticCode) {
+            table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+        }
+
+        // Close cursor so at subsequent opening its position is undefined
+        table_cursor.close();
+        table_cursor = txn.open_cursor(handle);
+
+        // read entire table forward
+        cursor_for_each(table_cursor, save_all_data_map);
+        CHECK(data_map == kGeneticCode);
+        data_map.clear();
+        table_cursor.close();
+        table_cursor = txn.open_cursor(handle);
+
+        // read entire table backwards
+        cursor_for_each(table_cursor, save_all_data_map, CursorMoveDirection::Reverse);
+        CHECK(data_map == kGeneticCode);
+        data_map.clear();
+        table_cursor.close();
+        table_cursor = txn.open_cursor(handle);
+
+        // Ensure the order is reversed
+        cursor_for_each(table_cursor, save_all_data_vec, CursorMoveDirection::Reverse);
+        CHECK(data_vec.back().second == kGeneticCode.at("AAA"));
+
+        // late start
+        table_cursor.find("UUG");
+        cursor_for_each(table_cursor, save_all_data_map);
+        REQUIRE(data_map.size() == 2);
+        CHECK(data_map.at("UUG") == "Leucine");
+        CHECK(data_map.at("UUU") == "Phenylalanine");
+        data_map.clear();
+
+        // early stop
+        const auto save_some_data{[&data_map](::mdbx::cursor, mdbx::cursor::move_result& entry) {
+            if (entry.value == "Threonine") {
+                return false;
+            }
+            data_map.emplace(entry.key, entry.value);
+            return true;
+        }};
+        table_cursor.to_first();
+        cursor_for_each(table_cursor, save_some_data);
+        REQUIRE(data_map.size() == 4);
+        CHECK(data_map.at("AAA") == "Lysine");
+        CHECK(data_map.at("AAC") == "Asparagine");
+        CHECK(data_map.at("AAG") == "Lysine");
+        CHECK(data_map.at("AAU") == "Asparagine");
     }
 
-    // read entire table
-    table_cursor.to_first();
-    for_each(table_cursor, save_all_data);
-    CHECK(data == kGeneticCode);
-    data.clear();
+    SECTION("cursor_for_count") {
+        // empty table
+        cursor_for_count(table_cursor, save_all_data_map, /*max_count=*/5);
+        REQUIRE(data_map.empty());
 
-    // late start
-    table_cursor.find("UUG");
-    for_each(table_cursor, save_all_data);
-    REQUIRE(data.size() == 2);
-    CHECK(data.at("UUG") == "Leucine");
-    CHECK(data.at("UUU") == "Phenylalanine");
-    data.clear();
-
-    // early stop
-    const auto save_some_data{[&data](mdbx::cursor::move_result& entry) {
-        if (entry.value == "Threonine") {
-            return false;
+        // populate table
+        for (const auto& [key, value] : kGeneticCode) {
+            table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
         }
-        data.emplace(entry.key, entry.value);
-        return true;
-    }};
-    table_cursor.to_first();
-    for_each(table_cursor, save_some_data);
-    REQUIRE(data.size() == 4);
-    CHECK(data.at("AAA") == "Lysine");
-    CHECK(data.at("AAC") == "Asparagine");
-    CHECK(data.at("AAG") == "Lysine");
-    CHECK(data.at("AAU") == "Asparagine");
-}
 
-TEST_CASE("for_count") {
-    const TemporaryDirectory tmp_dir;
-    db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
+        // read entire table
+        table_cursor.to_first();
+        cursor_for_count(table_cursor, save_all_data_map, /*max_count=*/100);
+        CHECK(data_map == kGeneticCode);
+        data_map.clear();
 
-    static const char* table_name{"GeneticCode"};
+        // read some first entries
+        table_cursor.to_first();
+        cursor_for_count(table_cursor, save_all_data_map, /*max_count=*/5);
+        REQUIRE(data_map.size() == 5);
+        CHECK(data_map.at("AAA") == "Lysine");
+        CHECK(data_map.at("AAC") == "Asparagine");
+        CHECK(data_map.at("AAG") == "Lysine");
+        CHECK(data_map.at("AAU") == "Asparagine");
+        CHECK(data_map.at("ACA") == "Threonine");
+        data_map.clear();
 
-    const auto handle{txn.create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single)};
-    auto table_cursor{txn.open_cursor(handle)};
+        // late start
+        table_cursor.find("UUA");
+        cursor_for_count(table_cursor, save_all_data_map, /*max_count=*/3);
+        REQUIRE(data_map.size() == 3);
+        CHECK(data_map.at("UUA") == "Leucine");
+        CHECK(data_map.at("UUC") == "Phenylalanine");
+        CHECK(data_map.at("UUG") == "Leucine");
+        data_map.clear();
 
-    std::map<std::string, std::string> data;
-    const auto save_all_data{[&data](mdbx::cursor::move_result& entry) {
-        data.emplace(entry.key, entry.value);
-        return true;
-    }};
+        // reverse read
+        table_cursor.to_last();
+        cursor_for_count(table_cursor, save_all_data_map, /*max_count=*/4, CursorMoveDirection::Reverse);
+        REQUIRE(data_map.size() == 4);
+        CHECK(data_map.at("UUA") == "Leucine");
+        CHECK(data_map.at("UUC") == "Phenylalanine");
+        CHECK(data_map.at("UUG") == "Leucine");
+        CHECK(data_map.at("UUU") == "Phenylalanine");
+        data_map.clear();
 
-    // empty table
-    for_count(table_cursor, save_all_data, /*max_count=*/5);
-    REQUIRE(data.empty());
+        // early stop 1
+        const auto save_some_data{[&data_map](::mdbx::cursor, mdbx::cursor::move_result& entry) {
+            if (entry.value == "Threonine") {
+                return false;
+            }
+            data_map.emplace(entry.key, entry.value);
+            return true;
+        }};
+        table_cursor.to_first();
+        cursor_for_count(table_cursor, save_some_data, /*max_count=*/3);
+        REQUIRE(data_map.size() == 3);
+        CHECK(data_map.at("AAA") == "Lysine");
+        CHECK(data_map.at("AAC") == "Asparagine");
+        CHECK(data_map.at("AAG") == "Lysine");
+        data_map.clear();
 
-    // populate table
-    for (const auto& [key, value] : kGeneticCode) {
-        table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+        // early stop 2
+        table_cursor.to_first();
+        cursor_for_count(table_cursor, save_some_data, /*max_count=*/5);
+        REQUIRE(data_map.size() == 4);
+        CHECK(data_map.at("AAA") == "Lysine");
+        CHECK(data_map.at("AAC") == "Asparagine");
+        CHECK(data_map.at("AAG") == "Lysine");
+        CHECK(data_map.at("AAU") == "Asparagine");
     }
 
-    // read entire table
-    table_cursor.to_first();
-    for_count(table_cursor, save_all_data, /*max_count=*/100);
-    CHECK(data == kGeneticCode);
-    data.clear();
-
-    // read some first entries
-    table_cursor.to_first();
-    for_count(table_cursor, save_all_data, /*max_count=*/5);
-    REQUIRE(data.size() == 5);
-    CHECK(data.at("AAA") == "Lysine");
-    CHECK(data.at("AAC") == "Asparagine");
-    CHECK(data.at("AAG") == "Lysine");
-    CHECK(data.at("AAU") == "Asparagine");
-    CHECK(data.at("ACA") == "Threonine");
-    data.clear();
-
-    // late start
-    table_cursor.find("UUA");
-    for_count(table_cursor, save_all_data, /*max_count=*/3);
-    REQUIRE(data.size() == 3);
-    CHECK(data.at("UUA") == "Leucine");
-    CHECK(data.at("UUC") == "Phenylalanine");
-    CHECK(data.at("UUG") == "Leucine");
-    data.clear();
-
-    // early stop 1
-    const auto save_some_data{[&data](mdbx::cursor::move_result& entry) {
-        if (entry.value == "Threonine") {
-            return false;
+    SECTION("cursor_erase") {
+        // populate table
+        for (const auto& [key, value] : kGeneticCode) {
+            table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
         }
-        data.emplace(entry.key, entry.value);
-        return true;
-    }};
-    table_cursor.to_first();
-    for_count(table_cursor, save_some_data, /*max_count=*/3);
-    REQUIRE(data.size() == 3);
-    CHECK(data.at("AAA") == "Lysine");
-    CHECK(data.at("AAC") == "Asparagine");
-    CHECK(data.at("AAG") == "Lysine");
-    data.clear();
+        table_cursor.close();
+        table_cursor = txn.open_cursor(handle);
 
-    // early stop 2
-    table_cursor.to_first();
-    for_count(table_cursor, save_some_data, /*max_count=*/5);
-    REQUIRE(data.size() == 4);
-    CHECK(data.at("AAA") == "Lysine");
-    CHECK(data.at("AAC") == "Asparagine");
-    CHECK(data.at("AAG") == "Lysine");
-    CHECK(data.at("AAU") == "Asparagine");
+        // Erase all records in forward order
+        cursor_erase(table_cursor);
+        REQUIRE(txn.get_map_stat(handle).ms_entries == 0);
+
+        // populate table
+        for (const auto& [key, value] : kGeneticCode) {
+            table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+        }
+        table_cursor.close();
+        table_cursor = txn.open_cursor(handle);
+
+        // Erase all records in reverse order
+        cursor_erase(table_cursor, CursorMoveDirection::Reverse);
+        REQUIRE(txn.get_map_stat(handle).ms_entries == 0);
+
+        // populate table
+        for (const auto& [key, value] : kGeneticCode) {
+            table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+        }
+
+        // Erase first 5 records
+        table_cursor.to_first();
+        auto erased{cursor_erase(table_cursor, 5)};
+        REQUIRE(erased == 5);
+        REQUIRE(txn.get_map_stat(handle).ms_entries == kGeneticCode.size() - erased);
+        cursor_for_each(table_cursor, save_all_data_map);
+        REQUIRE(data_map.find("AAA") == data_map.end());
+        REQUIRE(data_map.find("AAC") == data_map.end());
+        REQUIRE(data_map.find("AAG") == data_map.end());
+        REQUIRE(data_map.find("AAU") == data_map.end());
+        REQUIRE(data_map.find("ACA") == data_map.end());
+        data_map.clear();
+
+        // Erase backwards from "CAA"
+        Bytes set_key(3, '\0');
+        set_key[0] = 'C';
+        set_key[1] = 'A';
+        set_key[2] = 'A';
+        cursor_erase(table_cursor, set_key, CursorMoveDirection::Reverse);
+        cursor_for_each(table_cursor, save_all_data_map);
+        REQUIRE(data_map.begin()->second == "Glutamine");
+
+        // Erase forward from "UAA"
+        set_key[0] = 'U';
+        set_key[1] = 'A';
+        set_key[2] = 'A';
+        cursor_erase(table_cursor, set_key, CursorMoveDirection::Forward);
+        data_map.clear();
+        cursor_for_each(table_cursor, save_all_data_map);
+        REQUIRE(data_map.rbegin()->second == "Valine");
+
+    }
 }
 
 }  // namespace silkworm::db

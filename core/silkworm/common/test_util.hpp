@@ -18,11 +18,22 @@
 #define SILKWORM_COMMON_TEST_UTIL_HPP_
 
 #include <silkworm/types/block.hpp>
+#include <silkworm/types/receipt.hpp>
 
-namespace silkworm::test_util {
+namespace silkworm::test {
+
+/// Enables London from genesis.
+constexpr ChainConfig kLondonConfig{
+    1,  // chain_id
+    SealEngineType::kNoProof,
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+};
+
+static_assert(kLondonConfig.revision(0) == EVMC_LONDON);
 
 std::vector<Transaction> sample_transactions();
+std::vector<Receipt> sample_receipts();
 
-}  // namespace silkworm::test_util
+}  // namespace silkworm::test
 
 #endif  // SILKWORM_COMMON_TEST_UTIL_HPP_

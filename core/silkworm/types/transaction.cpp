@@ -375,21 +375,21 @@ namespace rlp {
 }  // namespace rlp
 
 void Transaction::recover_sender() {
-    from.reset();
-
+    if (from.has_value()) {
+        return;
+    }
     Bytes rlp{};
     rlp::encode(rlp, *this, /*for_signing=*/true, /*wrap_eip2718_into_array=*/false);
     ethash::hash256 hash{keccak256(rlp)};
 
-    uint8_t signature[32 * 2];
+    uint8_t signature[kHashLength * 2];
     intx::be::unsafe::store(signature, r);
-    intx::be::unsafe::store(signature + 32, s);
+    intx::be::unsafe::store(signature + kHashLength, s);
 
-    std::optional<Bytes> recovered{ecdsa::recover(full_view(hash.bytes), full_view(signature), odd_y_parity)};
-    if (recovered) {
-        hash = ethash::keccak256(recovered->data() + 1, recovered->length() - 1);
-        from = evmc::address{};
-        std::memcpy(from->bytes, &hash.bytes[12], 32 - 12);
+    // Might still return std::nullopt if the recovery fails
+    auto recovered_address{ecdsa::recover_address(full_view(hash.bytes), full_view(signature), odd_y_parity)};
+    if (recovered_address.has_value()){
+        from.emplace(std::move(recovered_address.value()));
     }
 }
 

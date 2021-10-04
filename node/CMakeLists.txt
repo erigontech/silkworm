@@ -39,7 +39,7 @@ add_dependencies(silkworm_node generate_sentry_grpc)
 set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
 if(NOT MSVC)
   set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES COMPILE_FLAGS -Wno-sign-conversion)
-endif(MSVC)
+endif(NOT MSVC)
 
 target_include_directories(silkworm_node PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}

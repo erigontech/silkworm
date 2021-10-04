@@ -21,7 +21,6 @@
 #include <absl/container/btree_set.h>
 
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/util.hpp>
 #include <silkworm/types/log_cbor.hpp>
 #include <silkworm/types/receipt_cbor.hpp>
 

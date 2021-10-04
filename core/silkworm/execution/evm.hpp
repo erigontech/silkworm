@@ -66,6 +66,8 @@ class EVM {
 
     evmc_vm* exo_evm{nullptr};  // it's possible to use an exogenous EVMC VM
 
+    evmc::address beneficiary;  // block.header.beneficiary by default; may be overridden for Clique
+
   private:
     friend class EvmHost;
 

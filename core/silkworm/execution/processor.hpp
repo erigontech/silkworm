@@ -20,7 +20,7 @@
 #include <cstdint>
 #include <vector>
 
-#include <silkworm/chain/validity.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/execution/evm.hpp>
 #include <silkworm/state/state.hpp>
 #include <silkworm/types/block.hpp>
@@ -34,10 +34,10 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, State& state, const ChainConfig& config);
+    ExecutionProcessor(const Block& block, consensus::IConsensusEngine& engine, State& state, const ChainConfig& config);
 
     // Preconditions:
-    // 1) pre_validate_transaction(txn) must return kOk
+    // 1) consensus' pre_validate_transaction(txn) must return kOk
     // 2) txn.from must be recovered, otherwise kMissingSender will be returned
     ValidationResult validate_transaction(const Transaction& txn) const noexcept;
 
@@ -45,10 +45,9 @@ class ExecutionProcessor {
     // Precondition: transaction must be valid.
     Receipt execute_transaction(const Transaction& txn) noexcept;
 
-    /// Execute the block and write the result to the DB.
-    /// Warning: This method does not verify state root;
-    /// pre-Byzantium receipt root isn't validated either.
-    /// Precondition: pre_validate_block(block) must return kOk.
+    //! \brief Execute the block and write the result to the DB.
+    //! \remarks Warning: This method does not verify state root; pre-Byzantium receipt root isn't validated either.
+    //! \pre consensus_engine's pre_validate_block(block) must return kOk.
     [[nodiscard]] ValidationResult execute_and_write_block(std::vector<Receipt>& receipts) noexcept;
 
     uint64_t cumulative_gas_used() const noexcept { return cumulative_gas_used_; }
@@ -65,10 +64,9 @@ class ExecutionProcessor {
     uint64_t available_gas() const noexcept;
     uint64_t refund_gas(const Transaction& txn, uint64_t gas_left) noexcept;
 
-    void apply_rewards() noexcept;
-
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;
+    consensus::IConsensusEngine& consensus_engine_;
     EVM evm_;
 };
 

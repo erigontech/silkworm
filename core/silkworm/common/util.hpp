@@ -85,6 +85,8 @@ std::string to_hex(const evmc::address& address);
 std::string to_hex(const evmc::bytes32& hash);
 std::string to_hex(ByteView bytes);
 
+std::optional<unsigned> decode_hex_digit(char ch) noexcept;
+
 std::optional<Bytes> from_hex(std::string_view hex) noexcept;
 
 // Parses a string input value representing a size in

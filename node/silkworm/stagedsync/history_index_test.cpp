@@ -30,7 +30,9 @@
 #include "stagedsync.hpp"
 
 using namespace evmc::literals;
+
 using namespace silkworm;
+using namespace silkworm::consensus;
 
 TEST_CASE("Stage History") {
     TemporaryDirectory tmp_dir;
@@ -120,7 +122,7 @@ TEST_CASE("Stage History") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
 
     CHECK(stagedsync::stage_account_history(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
     CHECK(stagedsync::stage_storage_history(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
@@ -271,7 +273,7 @@ TEST_CASE("Prune History Index") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
-    db::stages::set_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
 
     CHECK(stagedsync::stage_account_history(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
     CHECK(stagedsync::stage_storage_history(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);

@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     if (options.debug) {
-        SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
+        SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
     }
 
     if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions
@@ -114,18 +114,18 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 
-        // Create farm instance and do work
-        farm = std::make_unique<stagedsync::recovery::RecoveryFarm>(txn, options.max_workers, options.batch_size,
-                                                                    collector);
         stagedsync::StageResult result{stagedsync::StageResult::kSuccess};
 
         signal(SIGINT, sig_handler);
         signal(SIGTERM, sig_handler);
 
         if (app_recover) {
-            result = farm->recover(options.block_from, options.block_to);
+            // Create farm instance and do work
+            farm = std::make_unique<stagedsync::recovery::RecoveryFarm>(txn, options.max_workers, options.batch_size,
+                                                                        collector);
+            result = farm->recover(options.block_to);
         } else {
-            result = farm->unwind(options.block_from);
+            result = stagedsync::recovery::RecoveryFarm::unwind(txn, options.block_from);
         }
 
         if (rc = static_cast<int>(result), rc) {

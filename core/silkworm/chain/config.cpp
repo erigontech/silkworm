@@ -87,15 +87,6 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     return config;
 }
 
-evmc_revision ChainConfig::revision(uint64_t block_number) const noexcept {
-    for (size_t i{EVMC_MAX_REVISION}; i > 0; --i) {
-        if (fork_blocks[i - 1].has_value() && block_number >= fork_blocks[i - 1].value()) {
-            return static_cast<evmc_revision>(i);
-        }
-    }
-    return EVMC_FRONTIER;
-}
-
 std::optional<uint64_t> ChainConfig::revision_block(evmc_revision rev) const noexcept {
     if (rev == EVMC_FRONTIER) {
         return 0;

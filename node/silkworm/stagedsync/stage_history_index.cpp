@@ -14,13 +14,11 @@
    limitations under the License.
 */
 
-#include <string>
 #include <unordered_map>
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/etl/collector.hpp>
@@ -55,7 +53,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
 
     auto changeset_table{db::open_cursor(*txn, changeset_config)};
-    auto last_processed_block_number{db::stages::get_stage_progress(*txn, stage_key)};
+    auto last_processed_block_number{db::stages::read_stage_progress(*txn, stage_key)};
     Bytes start{db::block_key(last_processed_block_number + 1)};
 
     // Extract
@@ -63,13 +61,13 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
                                  << " Index Extraction. From: " << (last_processed_block_number + 1) << std::endl;
 
     size_t allocated_space{0};
-    uint64_t block_number{0};
+    BlockNum block_number{0};
     auto data{changeset_table.lower_bound(db::to_slice(start))};
     while (data) {
         std::string composite_key;
         auto key{db::from_slice(data.key)};
         auto value{db::from_slice(data.value)};
-        auto [db_key, _]{convert_to_db_format(key, value)};
+        auto [db_key, _]{db::change_set_to_plain_state_format(key, value)};
         // Make the composite key accordingly whether we are dealing with storages or accounts
         if (storage) {
             // Storage: Address + Location
@@ -104,7 +102,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     SILKWORM_LOG(LogLevel::Info) << "Latest Block: " << block_number << std::endl;
 
     // Proceed only if we've done something
-    if (collector.size()) {
+    if (!collector.empty()) {
         SILKWORM_LOG(LogLevel::Info) << "Started Loading" << std::endl;
 
         MDBX_put_flags_t db_flags{last_processed_block_number ? MDBX_put_flags_t::MDBX_UPSERT
@@ -116,12 +114,12 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
             target,
             [](const etl::Entry& entry, mdbx::cursor& history_index_table, MDBX_put_flags_t put_flags) {
                 auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};
-                // Check wheter we still need to rework the previous entry
+                // Check whether we still need to rework the previous entry
                 Bytes last_chunk_index(entry.key.size() + 8, '\0');
                 std::memcpy(&last_chunk_index[0], &entry.key[0], entry.key.size());
                 endian::store_big_u64(&last_chunk_index[entry.key.size()], UINT64_MAX);
                 auto previous_bitmap_bytes{history_index_table.find(db::to_slice(last_chunk_index), false)};
-                // If we have an unfinished bitmpa for the current location then continue working on it
+                // If we have an unfinished bitmap for the current location then continue working on it
                 if (previous_bitmap_bytes) {
                     // Merge previous and current bitmap
                     bm |= roaring::Roaring64Map::readSafe(previous_bitmap_bytes.value.char_ptr(),
@@ -135,7 +133,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
                     Bytes chunk_index(entry.key.size() + 8, '\0');
                     std::memcpy(&chunk_index[0], &entry.key[0], entry.key.size());
                     // Suffix is either the maximum Block Number of the bitmap or if it's the last chunk: UINT64_MAX
-                    uint64_t suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
+                    BlockNum suffix{bm.cardinality() == 0 ? UINT64_MAX : current_chunk.maximum()};
                     endian::store_big_u64(&chunk_index[entry.key.size()], suffix);
                     // Push chunk to database
                     Bytes current_chunk_bytes(current_chunk.getSizeInBytes(), '\0');
@@ -148,7 +146,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
             db_flags, /* log_every_percent = */ 20);
 
         // Update progress height with last processed block
-        db::stages::set_stage_progress(*txn, stage_key, block_number);
+        db::stages::write_stage_progress(*txn, stage_key, block_number);
         txn.commit();
 
     } else {
@@ -178,7 +176,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
             auto key{db::from_slice(data.key)};
             auto bitmap_data{db::from_slice(data.value)};
             auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-            // Check wheter we should skip the current bitmap
+            // Check whether we should skip the current bitmap
             if (bm.maximum() <= unwind_to) {
                 data = index_table.to_next(/*throw_notfound*/ false);
                 continue;
@@ -201,7 +199,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
         }
     }
 
-    db::stages::set_stage_progress(*txn, stage_key, unwind_to);
+    db::stages::write_stage_progress(*txn, stage_key, unwind_to);
     collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
     txn.commit();
     SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
@@ -216,7 +214,7 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
     etl::Collector collector(etl_path.string().c_str(),
                              /* flush size */ 10 * kMebi);  // We do not prune many blocks usually
 
-    auto last_processed_block{db::stages::get_stage_progress(*txn, stage_key)};
+    auto last_processed_block{db::stages::read_stage_progress(*txn, stage_key)};
 
     auto index_table{db::open_cursor(*txn, index_config)};
     SILKWORM_LOG(LogLevel::Info) << "Pruning " << (storage ? "Storage" : "Account") << " History from: " << prune_from
@@ -229,7 +227,7 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
             auto key{db::from_slice(data.key)};
             auto bitmap_data{db::from_slice(data.value)};
             auto bm{roaring::Roaring64Map::readSafe(byte_ptr_cast(bitmap_data.data()), bitmap_data.size())};
-            // Check wheter we should skip the current bitmap
+            // Check whether we should skip the current bitmap
             if (bm.minimum() >= prune_from) {
                 data = index_table.to_next(/*throw_notfound*/ false);
                 continue;

@@ -118,6 +118,4 @@ TEST_CASE("JSON serialization") {
     CHECK(config->to_json() == mainnet_json);
 }
 
-TEST_CASE("London Test Config") { CHECK(kLondonTestConfig.revision(0) == EVMC_LONDON); }
-
 }  // namespace silkworm

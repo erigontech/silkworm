@@ -114,7 +114,7 @@ std::string to_hex(ByteView bytes) {
     return out;
 }
 
-static std::optional<unsigned> decode_hex_digit(char ch) noexcept {
+std::optional<unsigned> decode_hex_digit(char ch) noexcept {
     if (ch >= '0' && ch <= '9') {
         return ch - '0';
     } else if (ch >= 'a' && ch <= 'f') {
@@ -129,7 +129,6 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
     if (hex.length() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) {
         hex.remove_prefix(2);
     }
-
     if (hex.length() % 2 != 0) {
         return std::nullopt;
     }

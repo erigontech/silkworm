@@ -21,11 +21,16 @@
 
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/test_util.hpp>
+#include <silkworm/consensus/ethash/engine.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 
 #include "address.hpp"
 
 namespace silkworm {
+
+using namespace silkworm::consensus;
+
+// Ethash engine;
 
 TEST_CASE("Zero gas price") {
     Block block{};
@@ -52,7 +57,8 @@ TEST_CASE("Zero gas price") {
     };
 
     InMemoryState state;
-    ExecutionProcessor processor{block, state, kMainnetConfig};
+    auto engine{engine_factory(kMainnetConfig)};
+    ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
 
     CHECK(processor.validate_transaction(txn) == ValidationResult::kMissingSender);
 
@@ -68,12 +74,13 @@ TEST_CASE("EIP-3607: Reject transactions from senders with deployed code") {
 
     const evmc::address sender{0x71562b71999873DB5b286dF957af199Ec94617F7_address};
 
-    Transaction txn{test_util::sample_transactions()[0]};
+    Transaction txn{test::sample_transactions()[0]};
     txn.nonce = 0;
     txn.from = sender;
 
     InMemoryState state;
-    ExecutionProcessor processor{block, state, kMainnetConfig};
+    auto engine{engine_factory(kMainnetConfig)};
+    ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
 
     processor.evm().state().add_to_balance(sender, 10 * kEther);
     processor.evm().state().set_code(sender, *from_hex("B0B0FACE"));
@@ -113,7 +120,8 @@ TEST_CASE("No refund on error") {
     */
 
     InMemoryState state;
-    ExecutionProcessor processor{block, state, kMainnetConfig};
+    auto engine{engine_factory(kMainnetConfig)};
+    ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
 
     Transaction txn{
         Transaction::Type::kLegacy,  // type
@@ -209,7 +217,8 @@ TEST_CASE("Self-destruct") {
     */
 
     InMemoryState state;
-    ExecutionProcessor processor{block, state, kMainnetConfig};
+    auto engine{engine_factory(kMainnetConfig)};
+    ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
 
     processor.evm().state().add_to_balance(originator, kEther);
     processor.evm().state().set_code(caller_address, caller_code);
@@ -364,7 +373,8 @@ TEST_CASE("Out of Gas during account re-creation") {
     };
     txn.from = caller;
 
-    ExecutionProcessor processor{block, state, kMainnetConfig};
+    auto engine{engine_factory(kMainnetConfig)};
+    ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
     processor.evm().state().add_to_balance(caller, kEther);
 
     Receipt receipt{processor.execute_transaction(txn)};
@@ -410,7 +420,8 @@ TEST_CASE("Empty suicide beneficiary") {
 
     InMemoryState state;
 
-    ExecutionProcessor processor{block, state, kMainnetConfig};
+    auto engine{engine_factory(kMainnetConfig)};
+    ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
     processor.evm().state().add_to_balance(caller, kEther);
 
     Receipt receipt{processor.execute_transaction(txn)};

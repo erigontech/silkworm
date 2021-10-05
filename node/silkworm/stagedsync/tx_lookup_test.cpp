@@ -17,9 +17,8 @@
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
-#include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/common/test_util.hpp>
-#include <silkworm/execution/execution.hpp>
 
 using namespace evmc::literals;
 
@@ -31,15 +30,9 @@ constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6
 using namespace silkworm;
 
 TEST_CASE("Stage Transaction Lookups") {
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
@@ -70,7 +63,7 @@ TEST_CASE("Stage Transaction Lookups") {
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
 
     // Execute stage forward
-    REQUIRE(stagedsync::stage_tx_lookup(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
+    REQUIRE(stagedsync::stage_tx_lookup(txn, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
 
     SECTION("Forward checks and unwind") {
         auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
@@ -82,7 +75,7 @@ TEST_CASE("Stage Transaction Lookups") {
         CHECK(got_block_1.compare(ByteView({2})) == 0);
 
         // Execute stage unwind
-        REQUIRE(stagedsync::unwind_tx_lookup(txn, data_dir.etl().path(), 1) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stagedsync::unwind_tx_lookup(txn, context.dir().etl().path(), 1) == stagedsync::StageResult::kSuccess);
 
         lookup_table = db::open_cursor(*txn, db::table::kTxLookup);
         // Unwind block should be still there
@@ -94,7 +87,7 @@ TEST_CASE("Stage Transaction Lookups") {
 
     SECTION("Prune") {
         // Only leave block 2 alive
-        REQUIRE(stagedsync::prune_tx_lookup(txn, data_dir.etl().path(), 2) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stagedsync::prune_tx_lookup(txn, context.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
 
         auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
         // Unwind block should be still there

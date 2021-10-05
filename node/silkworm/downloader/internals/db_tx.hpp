@@ -201,7 +201,7 @@ class Db::ReadOnlyAccess::Tx {
     }
 
     BlockNum read_stage_progress(const char* stage_name) {
-        return db::stages::get_stage_progress(txn, stage_name);
+        return db::stages::read_stage_progress(txn, stage_name);
     }
 };
 
@@ -261,7 +261,7 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
     }
 
     void write_stage_progress(const char* stage_name, BlockNum height) noexcept(false) {
-        db::stages::set_stage_progress(txn, stage_name, height);
+        db::stages::write_stage_progress(txn, stage_name, height);
     }
 };
 

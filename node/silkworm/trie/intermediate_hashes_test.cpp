@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_set_up.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
 
@@ -46,17 +46,9 @@ static std::string nibbles_to_hex(ByteView unpacked) {
 }
 
 TEST_CASE("AccountTrieCursor traversal") {
-    const TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    data_dir.deploy();
+    test::SetUp t;
 
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
-
-    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+    auto account_trie{db::open_cursor(t.txn(), db::table::kTrieOfAccounts)};
 
     const Bytes key1{nibbles_from_hex("1")};
     const Node node1{/*state_mask=*/0b111, /*tree_mask=*/0b101, /*hash_mask=*/0, /*hashes=*/{}};
@@ -71,7 +63,7 @@ TEST_CASE("AccountTrieCursor traversal") {
     account_trie.upsert(db::to_slice(key3), db::to_slice(marshal_node(node3)));
 
     PrefixSet changed;
-    AccountTrieCursor atc{txn, changed};
+    AccountTrieCursor atc{t.txn(), changed};
 
     // Traversal should be in pre-order:
     // 1. Visit the current node
@@ -161,23 +153,14 @@ static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
 }
 
 TEST_CASE("Account and storage trie") {
-    const TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    data_dir.deploy();
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
+    test::SetUp t;
 
     // ----------------------------------------------------------------
     // Set up test accounts according to the example
     // in the big comment in intermediate_hashes.hpp
     // ----------------------------------------------------------------
 
-    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
+    auto hashed_accounts{db::open_cursor(t.txn(), db::table::kHashedAccounts)};
 
     HashBuilder hb;
 
@@ -203,7 +186,7 @@ TEST_CASE("Account and storage trie") {
     hashed_accounts.upsert(mdbx::slice{key3.bytes, kHashLength}, db::to_slice(a3.encode_for_storage()));
 
     Bytes storage_key{db::storage_prefix(full_view(key3.bytes), kDefaultIncarnation)};
-    const evmc::bytes32 storage_root{setup_storage(txn, storage_key)};
+    const evmc::bytes32 storage_root{setup_storage(t.txn(), storage_key)};
 
     hb.add_leaf(unpack_nibbles(full_view(key3.bytes)), a3.rlp(storage_root));
 
@@ -227,13 +210,13 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    regenerate_intermediate_hashes(txn, data_dir.etl().path(), &expected_root);
+    regenerate_intermediate_hashes(t.txn(), t.dir().etl().path(), &expected_root);
 
     // ----------------------------------------------------------------
     // Check account trie
     // ----------------------------------------------------------------
 
-    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+    auto account_trie{db::open_cursor(t.txn(), db::table::kTrieOfAccounts)};
 
     std::map<Bytes, Node> node_map{read_all_nodes(account_trie)};
     CHECK(node_map.size() == 2);
@@ -260,7 +243,7 @@ TEST_CASE("Account and storage trie") {
     // Check storage trie
     // ----------------------------------------------------------------
 
-    auto storage_trie{db::open_cursor(txn, db::table::kTrieOfStorage)};
+    auto storage_trie{db::open_cursor(t.txn(), db::table::kTrieOfStorage)};
 
     node_map = read_all_nodes(storage_trie);
     CHECK(node_map.size() == 1);
@@ -286,10 +269,10 @@ TEST_CASE("Account and storage trie") {
     const Account a4b{0, 5 * kEther};
     hashed_accounts.upsert(mdbx::slice{key4b.bytes, kHashLength}, db::to_slice(a4b.encode_for_storage()));
 
-    auto account_change_table{db::open_cursor(txn, db::table::kAccountChangeSet)};
+    auto account_change_table{db::open_cursor(t.txn(), db::table::kAccountChangeSet)};
     account_change_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(address4b));
 
-    increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/0);
+    increment_intermediate_hashes(t.txn(), t.dir().etl().path(), /*from=*/0);
 
     node_map = read_all_nodes(account_trie);
     CHECK(node_map.size() == 2);
@@ -315,7 +298,7 @@ TEST_CASE("Account and storage trie") {
         hashed_accounts.erase();
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
 
-        increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/1);
+        increment_intermediate_hashes(t.txn(), t.dir().etl().path(), /*from=*/1);
 
         node_map = read_all_nodes(account_trie);
         CHECK(node_map.size() == 1);
@@ -342,7 +325,7 @@ TEST_CASE("Account and storage trie") {
         hashed_accounts.erase();
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address3));
 
-        increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/1);
+        increment_intermediate_hashes(t.txn(), t.dir().etl().path(), /*from=*/1);
 
         node_map = read_all_nodes(account_trie);
         CHECK(node_map.size() == 1);
@@ -372,18 +355,9 @@ TEST_CASE("Account trie around extension node") {
         0x3100000000000000000000000000000000000000000000000000000000000000_bytes32,
     };
 
-    const TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    data_dir.deploy();
+    test::SetUp t;
 
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
-
-    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
+    auto hashed_accounts{db::open_cursor(t.txn(), db::table::kHashedAccounts)};
     HashBuilder hb;
 
     for (const auto& key : keys) {
@@ -393,9 +367,9 @@ TEST_CASE("Account trie around extension node") {
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    CHECK(regenerate_intermediate_hashes(txn, data_dir.etl().path()) == expected_root);
+    CHECK(regenerate_intermediate_hashes(t.txn(), t.dir().etl().path()) == expected_root);
 
-    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+    auto account_trie{db::open_cursor(t.txn(), db::table::kTrieOfAccounts)};
 
     std::map<Bytes, Node> node_map{read_all_nodes(account_trie)};
     CHECK(node_map.size() == 2);

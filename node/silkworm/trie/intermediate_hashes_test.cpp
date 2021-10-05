@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
 
@@ -46,15 +46,8 @@ static std::string nibbles_to_hex(ByteView unpacked) {
 }
 
 TEST_CASE("AccountTrieCursor traversal") {
-    const TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    data_dir.deploy();
-
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
+    test::Context context;
+    auto& txn{context.txn()};
 
     auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
 
@@ -161,16 +154,8 @@ static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
 }
 
 TEST_CASE("Account and storage trie") {
-    const TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    data_dir.deploy();
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
+    test::Context context;
+    auto& txn{context.txn()};
 
     // ----------------------------------------------------------------
     // Set up test accounts according to the example
@@ -227,7 +212,7 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    regenerate_intermediate_hashes(txn, data_dir.etl().path(), &expected_root);
+    regenerate_intermediate_hashes(txn, context.dir().etl().path(), &expected_root);
 
     // ----------------------------------------------------------------
     // Check account trie
@@ -289,7 +274,7 @@ TEST_CASE("Account and storage trie") {
     auto account_change_table{db::open_cursor(txn, db::table::kAccountChangeSet)};
     account_change_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(address4b));
 
-    increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/0);
+    increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/0);
 
     node_map = read_all_nodes(account_trie);
     CHECK(node_map.size() == 2);
@@ -315,7 +300,7 @@ TEST_CASE("Account and storage trie") {
         hashed_accounts.erase();
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
 
-        increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/1);
+        increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/1);
 
         node_map = read_all_nodes(account_trie);
         CHECK(node_map.size() == 1);
@@ -342,7 +327,7 @@ TEST_CASE("Account and storage trie") {
         hashed_accounts.erase();
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address3));
 
-        increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/1);
+        increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/1);
 
         node_map = read_all_nodes(account_trie);
         CHECK(node_map.size() == 1);
@@ -372,16 +357,8 @@ TEST_CASE("Account trie around extension node") {
         0x3100000000000000000000000000000000000000000000000000000000000000_bytes32,
     };
 
-    const TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    data_dir.deploy();
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
+    test::Context context;
+    auto& txn{context.txn()};
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
     HashBuilder hb;
@@ -393,7 +370,7 @@ TEST_CASE("Account trie around extension node") {
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    CHECK(regenerate_intermediate_hashes(txn, data_dir.etl().path()) == expected_root);
+    CHECK(regenerate_intermediate_hashes(txn, context.dir().etl().path()) == expected_root);
 
     auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
 

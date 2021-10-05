@@ -45,7 +45,7 @@ TEST_CASE("Stage Block Hashes") {
         canonical_table.insert(db::to_slice(block_key), db::to_slice(block_hashes[i]));
     }
 
-        // Execute stage forward
+    // Execute stage forward
     REQUIRE(stagedsync::stage_blockhashes(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
 
     // Verify execution has written correctly

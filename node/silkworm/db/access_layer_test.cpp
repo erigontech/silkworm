@@ -19,8 +19,8 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/test_set_up.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
@@ -127,19 +127,15 @@ namespace db {
     }
 
     TEST_CASE("Methods cursor_for_each/cursor_for_count") {
-        TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::SetUp t;
+        auto& txn{t.txn()};
 
         ::mdbx::map_handle main_map{1};
         auto main_stat{txn.get_map_stat(main_map)};
         auto main_crs{txn.open_cursor(main_map)};
         std::vector<std::string> table_names{};
 
-        const auto& walk_func{[&table_names](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
+        const auto& walk_func{[&table_names](::mdbx::cursor&, ::mdbx::cursor::move_result data) -> bool {
             table_names.push_back(data.key.as_string());
             return true;
         }};
@@ -168,48 +164,36 @@ namespace db {
     }
 
     TEST_CASE("Read schema Version") {
-        TemporaryDirectory tmp_dir;
+        test::SetUp t;
 
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
-
-        auto version{db::read_schema_version(txn)};
+        auto version{db::read_schema_version(t.txn())};
         CHECK(version.has_value() == false);
 
         version = VersionBase{3, 0, 0};
-        CHECK_NOTHROW(db::write_schema_version(txn, version.value()));
-        version = db::read_schema_version(txn);
+        CHECK_NOTHROW(db::write_schema_version(t.txn(), version.value()));
+        version = db::read_schema_version(t.txn());
         CHECK(version.has_value() == true);
 
-        CHECK_NOTHROW(txn.commit());
-        txn = env.start_write();
+        t.commit_and_renew_txn();
 
-        auto version2{db::read_schema_version(txn)};
+        auto version2{db::read_schema_version(t.txn())};
         CHECK(version.value() == version2.value());
 
         version2 = VersionBase{2, 0, 0};
-        CHECK_THROWS(db::write_schema_version(txn, version2.value()));
+        CHECK_THROWS(db::write_schema_version(t.txn(), version2.value()));
 
         version2 = VersionBase{3, 1, 0};
-        CHECK_NOTHROW(db::write_schema_version(txn, version2.value()));
+        CHECK_NOTHROW(db::write_schema_version(t.txn(), version2.value()));
     }
 
     TEST_CASE("Storage Mode") {
-        TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::SetUp t;
 
         StorageMode default_mode{};
         CHECK(default_mode.to_string() == "default");
 
         StorageMode expected_mode{true, false, false, false, false, false};
-        auto actual_mode{db::read_storage_mode(txn)};
+        auto actual_mode{db::read_storage_mode(t.txn())};
         CHECK(expected_mode == actual_mode);
 
         std::string mode_s1{};
@@ -227,11 +211,11 @@ namespace db {
         auto actual_mode4{db::parse_storage_mode(mode_s4)};
         CHECK(actual_mode4.to_string() == mode_s4);
 
-        db::write_storage_mode(txn, actual_mode4);
-        CHECK_NOTHROW(txn.commit());
+        db::write_storage_mode(t.txn(), actual_mode4);
 
-        txn = env.start_read();
-        auto actual_mode5{db::read_storage_mode(txn)};
+        t.commit_and_renew_txn();
+
+        auto actual_mode5{db::read_storage_mode(t.txn())};
         CHECK(actual_mode4.to_string() == actual_mode5.to_string());
 
         std::string mode_s6{"hrtce"};
@@ -240,13 +224,8 @@ namespace db {
     }
 
     TEST_CASE("read_stages") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::SetUp t;
+        auto& txn{t.txn()};
 
         // Querying a non-existent stage name should throw
         CHECK_THROWS(stages::read_stage_progress(txn, "NonExistentStage"));
@@ -283,13 +262,8 @@ namespace db {
     }
 
     TEST_CASE("read_header") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::SetUp t;
+        auto& txn{t.txn()};
 
         uint64_t block_num{11'054'435};
 
@@ -380,13 +354,8 @@ namespace db {
     }
 
     TEST_CASE("read_account") {
-        TemporaryDirectory tmp_dir;
-        DataDirectory data_dir{tmp_dir.path(), /*create=*/true};
-        EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::SetUp t;
+        auto& txn{t.txn()};
 
         Buffer buffer{txn, 0};
 
@@ -414,7 +383,7 @@ namespace db {
         buffer.write_to_db();
 
         stagedsync::TransactionManager tm{txn};
-        REQUIRE(stagedsync::stage_account_history(tm, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stagedsync::stage_account_history(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());
@@ -426,13 +395,8 @@ namespace db {
     }
 
     TEST_CASE("read_storage") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::SetUp t;
+        auto& txn{t.txn()};
 
         auto table{db::open_cursor(txn, table::kPlainState)};
 
@@ -467,13 +431,8 @@ namespace db {
     }
 
     TEST_CASE("read_account_changes") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::SetUp t;
+        auto& txn{t.txn()};
 
         uint64_t block_num1{42};
         uint64_t block_num2{49};
@@ -531,13 +490,8 @@ namespace db {
     }
 
     TEST_CASE("read_storage_changes") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::SetUp t;
+        auto& txn{t.txn()};
 
         uint64_t block_num1{42};
         uint64_t block_num2{49};
@@ -615,12 +569,8 @@ namespace db {
     }
 
     TEST_CASE("read_chain_config") {
-        TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::SetUp t;
+        auto& txn{t.txn()};
 
         const auto chain_config1{read_chain_config(txn)};
         CHECK(chain_config1 == std::nullopt);

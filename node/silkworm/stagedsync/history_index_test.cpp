@@ -20,7 +20,7 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/cast.hpp>
-#include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_set_up.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -35,15 +35,8 @@ using namespace silkworm;
 using namespace silkworm::consensus;
 
 TEST_CASE("Stage History") {
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
+    test::SetUp t;
+    stagedsync::TransactionManager tm{t.txn()};
 
     // ---------------------------------------
     // Prepare
@@ -75,7 +68,7 @@ TEST_CASE("Stage History") {
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{*txn, 0};
+    db::Buffer buffer{t.txn(), 0};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -122,14 +115,14 @@ TEST_CASE("Stage History") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
-    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(t.txn(), db::stages::kExecutionKey, 3);
 
-    CHECK(stagedsync::stage_account_history(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::stage_storage_history(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_account_history(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_storage_history(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
 
-    auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)};
-    auto storage_history_table{db::open_cursor(*txn, db::table::kStorageHistory)};
-    // Account retrieving from Databse
+    auto account_history_table{db::open_cursor(t.txn(), db::table::kAccountHistory)};
+    auto storage_history_table{db::open_cursor(t.txn(), db::table::kStorageHistory)};
+    // Account retrieving from Database
     auto bitmap_address_sender_bytes{account_history_table.lower_bound(db::to_slice(sender)).value};
     auto bitmap_address_contract_bytes{account_history_table.lower_bound(db::to_slice(contract_address)).value};
     // Bitmaps computation of accounts
@@ -148,20 +141,20 @@ TEST_CASE("Stage History") {
     Bytes composite(kAddressLength + kHashLength, '\0');
     std::memcpy(&composite[0], contract_address.bytes, kAddressLength);
     std::memcpy(&composite[kAddressLength], location.bytes, kHashLength);
-    // Storage retrieving from Databse
+    // Storage retrieving from Database
     auto bitmap_storage_contract_bytes{storage_history_table.lower_bound(db::to_slice(composite)).value};
     // Bitmaps computing for storage
     auto bitmap_storage_contract{roaring::Roaring64Map::readSafe(
-    byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size())};
+        byte_ptr_cast(db::from_slice(bitmap_storage_contract_bytes).data()), bitmap_storage_contract_bytes.size())};
     // Checks on storage's bitmaps
     CHECK(bitmap_storage_contract.cardinality() == 3);
     CHECK(bitmap_storage_contract.toString() == "{1,2,3}");
 
-    CHECK(stagedsync::unwind_account_history(txn, data_dir.etl().path(), 2) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::unwind_storage_history(txn, data_dir.etl().path(), 2) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::unwind_account_history(tm, t.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::unwind_storage_history(tm, t.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
 
-    account_history_table = db::open_cursor(*txn, db::table::kAccountHistory);
-    storage_history_table = db::open_cursor(*txn, db::table::kStorageHistory);
+    account_history_table = db::open_cursor(t.txn(), db::table::kAccountHistory);
+    storage_history_table = db::open_cursor(t.txn(), db::table::kStorageHistory);
     // Account retrieving from Database
     bitmap_address_sender_bytes = account_history_table.lower_bound(db::to_slice(sender)).value;
     bitmap_address_contract_bytes = account_history_table.lower_bound(db::to_slice(contract_address)).value;
@@ -175,7 +168,7 @@ TEST_CASE("Stage History") {
     CHECK(bitmap_address_contract.cardinality() == 2);
     CHECK(bitmap_address_sender.toString() == "{1,2}");
     CHECK(bitmap_address_contract.toString() == "{1,2}");
-    // Storage retrieving from Databse
+    // Storage retrieving from Database
     bitmap_storage_contract_bytes = storage_history_table.lower_bound(db::to_slice(composite)).value;
     // Bitmaps computing for storage
     bitmap_storage_contract = roaring::Roaring64Map::readSafe(
@@ -186,15 +179,8 @@ TEST_CASE("Stage History") {
 }
 
 TEST_CASE("Prune History Index") {
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
+    test::SetUp t;
+    stagedsync::TransactionManager tm{t.txn()};
 
     // ---------------------------------------
     // Prepare
@@ -226,7 +212,7 @@ TEST_CASE("Prune History Index") {
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{*txn, 0};
+    db::Buffer buffer{t.txn(), 0};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -273,17 +259,17 @@ TEST_CASE("Prune History Index") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
-    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(t.txn(), db::stages::kExecutionKey, 3);
 
-    CHECK(stagedsync::stage_account_history(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::stage_storage_history(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_account_history(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_storage_history(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
     // Prune from second block thus only, so we delete block 1
-    CHECK(stagedsync::prune_account_history(txn, data_dir.etl().path(), 2) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::prune_storage_history(txn, data_dir.etl().path(), 2) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::prune_account_history(tm, t.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::prune_storage_history(tm, t.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
 
-    auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)};
-    auto storage_history_table{db::open_cursor(*txn, db::table::kStorageHistory)};
-    // Account retrieving from Databse
+    auto account_history_table{db::open_cursor(t.txn(), db::table::kAccountHistory)};
+    auto storage_history_table{db::open_cursor(t.txn(), db::table::kStorageHistory)};
+    // Account retrieving from Database
     auto bitmap_address_sender_bytes{account_history_table.lower_bound(db::to_slice(sender)).value};
     auto bitmap_address_contract_bytes{account_history_table.lower_bound(db::to_slice(contract_address)).value};
     // Bitmaps computation of accounts
@@ -302,7 +288,7 @@ TEST_CASE("Prune History Index") {
     Bytes composite(kAddressLength + kHashLength, '\0');
     std::memcpy(&composite[0], contract_address.bytes, kAddressLength);
     std::memcpy(&composite[kAddressLength], location.bytes, kHashLength);
-    // Storage retrieving from Databse
+    // Storage retrieving from Database
     auto bitmap_storage_contract_bytes{storage_history_table.lower_bound(db::to_slice(composite)).value};
     // Bitmaps computing for storage
     auto bitmap_storage_contract{roaring::Roaring64Map::readSafe(

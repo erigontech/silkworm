@@ -37,6 +37,11 @@ class SetUp {
 
     [[nodiscard]] mdbx::txn& txn() { return txn_; }
 
+    void commit_and_renew_txn() {
+        txn_.commit();
+        txn_ = env_.start_write();
+    }
+
   private:
     TemporaryDirectory tmp_dir_;
     DataDirectory data_dir_;

@@ -18,19 +18,15 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_set_up.hpp>
 
 #include "tables.hpp"
 
 namespace silkworm::db {
 
 TEST_CASE("Storage update") {
-    TemporaryDirectory tmp_dir;
-    EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{open_env(db_config)};
-    auto txn{env.start_write()};
-    table::create_all(txn);
+    test::SetUp t;
+    auto& txn{t.txn()};
 
     const auto address{0xbe00000000000000000000000000000000000000_address};
     const Bytes key{storage_prefix(full_view(address), kDefaultIncarnation)};

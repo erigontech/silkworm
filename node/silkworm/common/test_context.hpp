@@ -14,24 +14,24 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_COMMON_TEST_SET_UP_HPP_
-#define SILKWORM_COMMON_TEST_SET_UP_HPP_
+#ifndef SILKWORM_COMMON_TEST_CONTEXT_HPP_
+#define SILKWORM_COMMON_TEST_CONTEXT_HPP_
 
 #include <silkworm/common/directories.hpp>
 #include <silkworm/db/mdbx.hpp>
 
 namespace silkworm::test {
 
-// SetUp is a helper resource manager for test set-up.
+// Context is a helper resource manager for test temporary directory and database.
 // Upon construction, it creates all the necessary data directories and DB tables.
-// SetUp follows the RAII idiom and cleans up its temporary directory upon destruction.
-class SetUp {
+// Context follows the RAII idiom and cleans up its temporary directory upon destruction.
+class Context {
   public:
-    SetUp();
+    Context();
 
     // Not copyable nor movable
-    SetUp(const SetUp&) = delete;
-    SetUp& operator=(const SetUp&) = delete;
+    Context(const Context&) = delete;
+    Context& operator=(const Context&) = delete;
 
     [[nodiscard]] const DataDirectory& dir() const { return data_dir_; }
 
@@ -51,4 +51,4 @@ class SetUp {
 
 }  // namespace silkworm::test
 
-#endif  // SILKWORM_COMMON_TEST_SET_UP_HPP_
+#endif  // SILKWORM_COMMON_TEST_CONTEXT_HPP_

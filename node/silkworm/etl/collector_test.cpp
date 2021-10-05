@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/test_set_up.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/db/tables.hpp>
 
 namespace silkworm::etl {
@@ -48,14 +48,14 @@ static std::vector<Entry> generate_entry_set(size_t size) {
 }
 
 void run_collector_test(LoadFunc load_func, bool do_copy = true) {
-    test::SetUp t;
+    test::Context context;
 
     // Initialize random seed
     std::srand(std::time(nullptr));
 
     // Generate Test Entries
-    auto set{generate_entry_set(1000)};                         // 1000 entries in total
-    auto collector{Collector(t.dir().etl().path(), 100 * 16)};  // 100 entries per file (16 bytes per entry)
+    auto set{generate_entry_set(1000)};                               // 1000 entries in total
+    auto collector{Collector(context.dir().etl().path(), 100 * 16)};  // 100 entries per file (16 bytes per entry)
 
     // Collection
     for (auto&& entry : set) {
@@ -65,13 +65,13 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
             collector.collect(std::move(entry));
     }
     // Check whether temporary files were generated
-    CHECK(std::distance(fs::directory_iterator{t.dir().etl().path()}, fs::directory_iterator{}) == 10);
+    CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 10);
 
     // Load data
-    auto to{db::open_cursor(t.txn(), db::table::kHeaderNumbers)};
+    auto to{db::open_cursor(context.txn(), db::table::kHeaderNumbers)};
     collector.load(to, load_func);
     // Check whether temporary files were cleaned
-    CHECK(std::distance(fs::directory_iterator{t.dir().etl().path()}, fs::directory_iterator{}) == 0);
+    CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 0);
 }
 
 TEST_CASE("collect_and_default_load") { run_collector_test(nullptr); }

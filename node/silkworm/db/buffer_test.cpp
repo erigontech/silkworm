@@ -18,15 +18,15 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/test_set_up.hpp>
+#include <silkworm/common/test_context.hpp>
 
 #include "tables.hpp"
 
 namespace silkworm::db {
 
 TEST_CASE("Storage update") {
-    test::SetUp t;
-    auto& txn{t.txn()};
+    test::Context context;
+    auto& txn{context.txn()};
 
     const auto address{0xbe00000000000000000000000000000000000000_address};
     const Bytes key{storage_prefix(full_view(address), kDefaultIncarnation)};

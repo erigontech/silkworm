@@ -18,7 +18,7 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/test_set_up.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -31,8 +31,8 @@
 namespace silkworm {
 
 TEST_CASE("Prune Execution") {
-    test::SetUp t;
-    stagedsync::TransactionManager tm{t.txn()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
     // ---------------------------------------
     // Prepare
@@ -71,7 +71,7 @@ TEST_CASE("Prune Execution") {
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{t.txn(), 2};
+    db::Buffer buffer{*txn, 2};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -117,14 +117,14 @@ TEST_CASE("Prune Execution") {
     block.transactions[0].data = *from_hex(new_val);
 
     REQUIRE(execute_block(block, buffer, test::kLondonConfig) == ValidationResult::kOk);
-    REQUIRE_NOTHROW(db::stages::write_stage_progress(t.txn(), db::stages::kExecutionKey, 3));
+    REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3));
 
     SECTION("Without prune function") {
         // We keep chain from Block 2 onwards (Aka, we delete block 1 changesets and receipts)
         buffer.write_to_db();
 
-        auto account_changeset_table{db::open_cursor(t.txn(), db::table::kAccountChangeSet)};
-        auto storage_changeset_table{db::open_cursor(t.txn(), db::table::kStorageChangeSet)};
+        auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+        auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
         // Check whether we start from Block 2 and not block 1
         auto account_changeset_tail{db::from_slice(account_changeset_table.to_first().key)};
         auto storage_changeset_tail{db::from_slice(storage_changeset_table.to_first().key)};
@@ -135,10 +135,11 @@ TEST_CASE("Prune Execution") {
     SECTION("With prune function") {
         buffer.write_to_db();
         // We prune from block 2, thus we delete block 1
-        REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::prune_execution(tm, t.dir().etl().path(), 2)));
+        REQUIRE_NOTHROW(
+            stagedsync::check_stagedsync_error(stagedsync::prune_execution(txn, context.dir().etl().path(), 2)));
 
-        auto account_changeset_table{db::open_cursor(t.txn(), db::table::kAccountChangeSet)};
-        auto storage_changeset_table{db::open_cursor(t.txn(), db::table::kStorageChangeSet)};
+        auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
+        auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
         // Check whether we start from Block 2 and not block 1
         auto account_changeset_tail{db::from_slice(account_changeset_table.to_first().key)};
         auto storage_changeset_tail{db::from_slice(storage_changeset_table.to_first().key)};

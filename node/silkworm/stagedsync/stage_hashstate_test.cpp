@@ -19,7 +19,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/test_set_up.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/execution/address.hpp>
@@ -31,8 +31,8 @@ TEST_CASE("Stage Hashstate") {
     using namespace evmc::literals;
     using namespace silkworm;
 
-    test::SetUp t;
-    stagedsync::TransactionManager tm{t.txn()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
     // ---------------------------------------
     // Prepare
@@ -64,7 +64,7 @@ TEST_CASE("Stage Hashstate") {
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{t.txn(), 0};
+    db::Buffer buffer{*txn, 0};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -112,19 +112,19 @@ TEST_CASE("Stage Hashstate") {
 
     REQUIRE(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     REQUIRE_NOTHROW(buffer.write_to_db());
-    REQUIRE_NOTHROW(db::stages::write_stage_progress(t.txn(), db::stages::kExecutionKey, 3));
+    REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3));
 
     // ---------------------------------------
     // Execute stage forward
     // ---------------------------------------
-    REQUIRE(stagedsync::stage_hashstate(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
-    REQUIRE(db::stages::read_stage_progress(t.txn(), db::stages::kHashStateKey) == 3);
+    REQUIRE(stagedsync::stage_hashstate(txn, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
+    REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 3);
 
     // ---------------------------------------
     // Check hashed account
     // ---------------------------------------
 
-    auto hashed_address_table{db::open_cursor(t.txn(), db::table::kHashedAccounts)};
+    auto hashed_address_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
     auto sender_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
     REQUIRE(hashed_address_table.seek(db::to_slice(sender_keccak)));
     {
@@ -138,7 +138,7 @@ TEST_CASE("Stage Hashstate") {
     // Check hashed storage
     // ---------------------------------------
 
-    auto hashed_storage_cursor{db::open_cursor(t.txn(), db::table::kHashedStorage)};
+    auto hashed_storage_cursor{db::open_cursor(*txn, db::table::kHashedStorage)};
     auto contract_keccak{Bytes(keccak256(full_view(contract_address.bytes)).bytes, kHashLength)};
     Bytes storage_key{db::storage_prefix(contract_keccak, kDefaultIncarnation)};
 
@@ -164,9 +164,9 @@ TEST_CASE("Stage Hashstate") {
     CHECK(to_hex(value) == "01c9");
 
     // Unwind the stage
-    REQUIRE(stagedsync::unwind_hashstate(tm, t.dir().etl().path(), 1) == stagedsync::StageResult::kSuccess);
+    REQUIRE(stagedsync::unwind_hashstate(txn, context.dir().etl().path(), 1) == stagedsync::StageResult::kSuccess);
 
-    hashed_address_table = db::open_cursor(t.txn(), db::table::kHashedAccounts);
+    hashed_address_table = db::open_cursor(*txn, db::table::kHashedAccounts);
     auto address_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
 
     REQUIRE(hashed_address_table.seek(db::to_slice(address_keccak)));
@@ -175,6 +175,6 @@ TEST_CASE("Stage Hashstate") {
         auto [acc, _]{decode_account_from_storage(account_encoded)};
         CHECK(acc.nonce == 2);
         CHECK(acc.balance < kEther);  // Slightly less due to fees
-        CHECK(db::stages::read_stage_progress(t.txn(), db::stages::kHashStateKey) == 1);
+        CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 1);
     }
 }

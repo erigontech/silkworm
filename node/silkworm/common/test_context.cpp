@@ -14,13 +14,13 @@
    limitations under the License.
 */
 
-#include "test_set_up.hpp"
+#include "test_context.hpp"
 
 #include <silkworm/db/tables.hpp>
 
 namespace silkworm::test {
 
-SetUp::SetUp() : tmp_dir_{}, data_dir_{tmp_dir_.path()} {
+Context::Context() : tmp_dir_{}, data_dir_{tmp_dir_.path()} {
     data_dir_.deploy();
 
     db::EnvConfig config{data_dir_.chaindata().path().string(), /*create=*/true};

@@ -20,7 +20,7 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/test_set_up.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/db/stages.hpp>
 
@@ -35,11 +35,11 @@ constexpr evmc::bytes32 hash_2{0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f6
 using namespace silkworm;
 
 TEST_CASE("Stage Senders") {
-    test::SetUp t;
-    stagedsync::TransactionManager tm{t.txn()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
-    auto bodies_table{db::open_cursor(t.txn(), db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(t.txn(), db::table::kEthTx)};
+    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -83,19 +83,19 @@ TEST_CASE("Stage Senders") {
 
     auto config_data{genesis_json["config"].dump()};
 
-    auto config_table{db::open_cursor(t.txn(), db::table::kConfig)};
+    auto config_table{db::open_cursor(*txn, db::table::kConfig)};
     config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
 
-    auto canonical_table{db::open_cursor(t.txn(), db::table::kCanonicalHashes)};
+    auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::write_stage_progress(t.txn(), db::stages::kBlockBodiesKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(tm, t.dir().etl().path()));
+    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, context.dir().etl().path()));
 
-    auto sender_table{db::open_cursor(t.txn(), db::table::kSenders)};
+    auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
     auto got_sender_1{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(2))).value)};
     auto expected_sender{ByteView(sender.bytes, kAddressLength)};
@@ -106,11 +106,11 @@ TEST_CASE("Stage Senders") {
 }
 
 TEST_CASE("Unwind Senders") {
-    test::SetUp t;
-    stagedsync::TransactionManager tm{t.txn()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
-    auto bodies_table{db::open_cursor(t.txn(), db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(t.txn(), db::table::kEthTx)};
+    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -153,20 +153,20 @@ TEST_CASE("Unwind Senders") {
     CHECK(genesis_json.contains("config"));
     auto config_data{genesis_json["config"].dump()};
 
-    auto config_table{db::open_cursor(t.txn(), db::table::kConfig)};
+    auto config_table{db::open_cursor(*txn, db::table::kConfig)};
     config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
 
-    auto canonical_table{db::open_cursor(t.txn(), db::table::kCanonicalHashes)};
+    auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::write_stage_progress(t.txn(), db::stages::kBlockBodiesKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(tm, t.dir().path()));
-    stagedsync::check_stagedsync_error(stagedsync::unwind_senders(tm, t.dir().path(), 1));
+    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, context.dir().path()));
+    stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, context.dir().path(), 1));
 
-    auto sender_table{db::open_cursor(t.txn(), db::table::kSenders)};
+    auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
 
     auto expected_sender{ByteView(sender.bytes, kAddressLength)};
@@ -177,11 +177,11 @@ TEST_CASE("Unwind Senders") {
 }
 
 TEST_CASE("Prune Senders") {
-    test::SetUp t;
-    stagedsync::TransactionManager tm{t.txn()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
-    auto bodies_table{db::open_cursor(t.txn(), db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(t.txn(), db::table::kEthTx)};
+    auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -222,21 +222,21 @@ TEST_CASE("Prune Senders") {
     auto genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     auto config_data{genesis_json["config"].dump()};
 
-    auto config_table{db::open_cursor(t.txn(), db::table::kConfig)};
+    auto config_table{db::open_cursor(*txn, db::table::kConfig)};
     config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
 
-    auto canonical_table{db::open_cursor(t.txn(), db::table::kCanonicalHashes)};
+    auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(hash_0));
     canonical_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(hash_1));
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
-    db::stages::write_stage_progress(t.txn(), db::stages::kBlockBodiesKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(tm, t.dir().path()));
+    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, context.dir().path()));
     // We prune from Block 2, thus deleting block 1
-    stagedsync::check_stagedsync_error(stagedsync::prune_senders(tm, t.dir().path(), 2));
+    stagedsync::check_stagedsync_error(stagedsync::prune_senders(txn, context.dir().path(), 2));
 
-    auto sender_table{db::open_cursor(t.txn(), db::table::kSenders)};
+    auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_1{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(2))).value)};
     auto got_start_key{db::from_slice(sender_table.to_first().key).substr(0, 8)};
 

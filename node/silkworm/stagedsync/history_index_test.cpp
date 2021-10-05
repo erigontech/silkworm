@@ -20,7 +20,7 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/cast.hpp>
-#include <silkworm/common/test_set_up.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/db/bitmap.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -35,8 +35,8 @@ using namespace silkworm;
 using namespace silkworm::consensus;
 
 TEST_CASE("Stage History") {
-    test::SetUp t;
-    stagedsync::TransactionManager tm{t.txn()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
     // ---------------------------------------
     // Prepare
@@ -68,7 +68,7 @@ TEST_CASE("Stage History") {
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{t.txn(), 0};
+    db::Buffer buffer{*txn, 0};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -115,13 +115,13 @@ TEST_CASE("Stage History") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
-    db::stages::write_stage_progress(t.txn(), db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
 
-    CHECK(stagedsync::stage_account_history(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::stage_storage_history(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_account_history(txn, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_storage_history(txn, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
 
-    auto account_history_table{db::open_cursor(t.txn(), db::table::kAccountHistory)};
-    auto storage_history_table{db::open_cursor(t.txn(), db::table::kStorageHistory)};
+    auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)};
+    auto storage_history_table{db::open_cursor(*txn, db::table::kStorageHistory)};
     // Account retrieving from Database
     auto bitmap_address_sender_bytes{account_history_table.lower_bound(db::to_slice(sender)).value};
     auto bitmap_address_contract_bytes{account_history_table.lower_bound(db::to_slice(contract_address)).value};
@@ -150,11 +150,11 @@ TEST_CASE("Stage History") {
     CHECK(bitmap_storage_contract.cardinality() == 3);
     CHECK(bitmap_storage_contract.toString() == "{1,2,3}");
 
-    CHECK(stagedsync::unwind_account_history(tm, t.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::unwind_storage_history(tm, t.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::unwind_account_history(txn, context.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::unwind_storage_history(txn, context.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
 
-    account_history_table = db::open_cursor(t.txn(), db::table::kAccountHistory);
-    storage_history_table = db::open_cursor(t.txn(), db::table::kStorageHistory);
+    account_history_table = db::open_cursor(*txn, db::table::kAccountHistory);
+    storage_history_table = db::open_cursor(*txn, db::table::kStorageHistory);
     // Account retrieving from Database
     bitmap_address_sender_bytes = account_history_table.lower_bound(db::to_slice(sender)).value;
     bitmap_address_contract_bytes = account_history_table.lower_bound(db::to_slice(contract_address)).value;
@@ -179,8 +179,8 @@ TEST_CASE("Stage History") {
 }
 
 TEST_CASE("Prune History Index") {
-    test::SetUp t;
-    stagedsync::TransactionManager tm{t.txn()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
     // ---------------------------------------
     // Prepare
@@ -212,7 +212,7 @@ TEST_CASE("Prune History Index") {
     block.transactions[0].s = 1;  // dummy
     block.transactions[0].from = sender;
 
-    db::Buffer buffer{t.txn(), 0};
+    db::Buffer buffer{*txn, 0};
     Account sender_account{};
     sender_account.balance = kEther;
     buffer.update_account(sender, std::nullopt, sender_account);
@@ -259,16 +259,16 @@ TEST_CASE("Prune History Index") {
 
     CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     buffer.write_to_db();
-    db::stages::write_stage_progress(t.txn(), db::stages::kExecutionKey, 3);
+    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
 
-    CHECK(stagedsync::stage_account_history(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::stage_storage_history(tm, t.dir().etl().path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_account_history(txn, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::stage_storage_history(txn, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
     // Prune from second block thus only, so we delete block 1
-    CHECK(stagedsync::prune_account_history(tm, t.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
-    CHECK(stagedsync::prune_storage_history(tm, t.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::prune_account_history(txn, context.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
+    CHECK(stagedsync::prune_storage_history(txn, context.dir().etl().path(), 2) == stagedsync::StageResult::kSuccess);
 
-    auto account_history_table{db::open_cursor(t.txn(), db::table::kAccountHistory)};
-    auto storage_history_table{db::open_cursor(t.txn(), db::table::kStorageHistory)};
+    auto account_history_table{db::open_cursor(*txn, db::table::kAccountHistory)};
+    auto storage_history_table{db::open_cursor(*txn, db::table::kStorageHistory)};
     // Account retrieving from Database
     auto bitmap_address_sender_bytes{account_history_table.lower_bound(db::to_slice(sender)).value};
     auto bitmap_address_contract_bytes{account_history_table.lower_bound(db::to_slice(contract_address)).value};

@@ -19,20 +19,22 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
+#include <silkworm/common/endian.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 
 #include "stagedsync.hpp"
 
-namespace silkworm {
-
-constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
-constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
-constexpr evmc::bytes32 hash_2{0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
-
 TEST_CASE("Stage Block Hashes") {
+    using namespace evmc::literals;
+    using namespace silkworm;
+
+    static constexpr evmc::bytes32 block_hashes[] = {
+        0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32,
+        0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32,
+        0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
+
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
     CHECK_NOTHROW(data_dir.deploy());
@@ -48,63 +50,40 @@ TEST_CASE("Stage Block Hashes") {
     // Prepare
     // ---------------------------------------
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-    auto expected_block_number_0{db::block_key(1)};
-    auto expected_block_number_1{db::block_key(2)};
-    auto expected_block_number_2{db::block_key(3)};
+    for (uint32_t i = 0; i < 3; ++i) {
+        Bytes block_key{db::block_key(i + 1)};
+        canonical_table.insert(db::to_slice(block_key), db::to_slice(block_hashes[i]));
+    }
+    canonical_table.close();
+    CHECK_NOTHROW(txn.commit());
 
-    canonical_table.insert(db::to_slice(expected_block_number_0), db::to_slice(hash_0));
-    canonical_table.insert(db::to_slice(expected_block_number_1), db::to_slice(hash_1));
-    canonical_table.insert(db::to_slice(expected_block_number_2), db::to_slice(hash_2));
-    txn.commit();
-    // Execute checks
-    CHECK(stagedsync::stage_blockhashes(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
-    // Hopefully not Post-Mortem checks
+    // Execute stage forward
+    REQUIRE(stagedsync::stage_blockhashes(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
+
+    // Verify execution has written correctly
     auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
+    REQUIRE((*txn).get_map_stat(blockhashes_table.map()).ms_entries == 3);
 
-    auto actual_block_number_0{db::from_slice(blockhashes_table.find(db::to_slice(hash_0)).value)};
-    auto actual_block_number_1{db::from_slice(blockhashes_table.find(db::to_slice(hash_1)).value)};
-    auto actual_block_number_2{db::from_slice(blockhashes_table.find(db::to_slice(hash_2)).value)};
+    bool forward_double_check_result{true};
+    for (uint32_t i = 0; i < 3 && forward_double_check_result; ++i) {
+        auto data{blockhashes_table.find(db::to_slice(block_hashes[i]), false)};
+        if (!data.done) {
+            forward_double_check_result = false;
+            continue;
+        }
+        auto reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base));
+        if (reached_block_num != i + 1) {
+            forward_double_check_result = false;
+        }
+    }
+    REQUIRE(forward_double_check_result);
 
-    REQUIRE(actual_block_number_0.compare(expected_block_number_0) == 0);
-    REQUIRE(actual_block_number_1.compare(expected_block_number_1) == 0);
-    REQUIRE(actual_block_number_2.compare(expected_block_number_2) == 0);
+    // Unwind stage
+    REQUIRE(stagedsync::unwind_blockhashes(txn, data_dir.etl().path(), 1) == stagedsync::StageResult::kSuccess);
+
+    // Check records have decreased to 1
+    blockhashes_table = db::open_cursor(*txn, db::table::kHeaderNumbers);
+    REQUIRE((*txn).get_map_stat(blockhashes_table.map()).ms_entries == 1);
+    auto data{blockhashes_table.find(db::to_slice(block_hashes[0]), false)};
+    REQUIRE(data.done);
 }
-
-TEST_CASE("Unwind Block Hashes") {
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    CHECK_NOTHROW(data_dir.deploy());
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
-
-    // ---------------------------------------
-    // Prepare
-    // ---------------------------------------
-    auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
-    auto expected_block_number_0{db::block_key(1)};
-    auto expected_block_number_1{db::block_key(2)};
-    auto expected_block_number_2{db::block_key(3)};
-
-    canonical_table.insert(db::to_slice(expected_block_number_0), db::to_slice(hash_0));
-    canonical_table.insert(db::to_slice(expected_block_number_1), db::to_slice(hash_1));
-    canonical_table.insert(db::to_slice(expected_block_number_2), db::to_slice(hash_2));
-    txn.commit();
-    // Execute checks
-    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::stage_blockhashes(txn, data_dir.etl().path())));
-    CHECK_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::unwind_blockhashes(txn, data_dir.etl().path(), 1)));
-    // Hopefully not Post-Mortem checks
-    auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
-
-    auto actual_block_number_0{db::from_slice(blockhashes_table.find(db::to_slice(hash_0)).value)};
-
-    REQUIRE(actual_block_number_0.compare(expected_block_number_0) == 0);
-    REQUIRE(!blockhashes_table.seek(db::to_slice(hash_1)));
-    REQUIRE(!blockhashes_table.seek(db::to_slice(hash_2)));
-}
-
-}  // namespace silkworm

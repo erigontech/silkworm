@@ -18,7 +18,7 @@
 #include <ethash/keccak.hpp>
 
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -28,18 +28,11 @@
 
 #include "stagedsync.hpp"
 
+namespace silkworm {
+
 TEST_CASE("Prune Execution") {
-    using namespace silkworm;
-
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
     // ---------------------------------------
     // Prepare
@@ -142,7 +135,8 @@ TEST_CASE("Prune Execution") {
     SECTION("With prune function") {
         buffer.write_to_db();
         // We prune from block 2, thus we delete block 1
-        REQUIRE_NOTHROW(stagedsync::check_stagedsync_error(stagedsync::prune_execution(txn, data_dir.etl().path(), 2)));
+        REQUIRE_NOTHROW(
+            stagedsync::check_stagedsync_error(stagedsync::prune_execution(txn, context.dir().etl().path(), 2)));
 
         auto account_changeset_table{db::open_cursor(*txn, db::table::kAccountChangeSet)};
         auto storage_changeset_table{db::open_cursor(*txn, db::table::kStorageChangeSet)};
@@ -154,3 +148,5 @@ TEST_CASE("Prune Execution") {
         CHECK(storage_changeset_tail.substr(0, 8).compare(db::block_key(2)) == 0);
     }
 }
+
+}  // namespace silkworm

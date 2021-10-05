@@ -19,7 +19,7 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/execution/address.hpp>
@@ -28,19 +28,11 @@
 #include "stagedsync.hpp"
 
 TEST_CASE("Stage Hashstate") {
-
     using namespace evmc::literals;
     using namespace silkworm;
 
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
     // ---------------------------------------
     // Prepare
@@ -125,7 +117,7 @@ TEST_CASE("Stage Hashstate") {
     // ---------------------------------------
     // Execute stage forward
     // ---------------------------------------
-    REQUIRE(stagedsync::stage_hashstate(txn, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
+    REQUIRE(stagedsync::stage_hashstate(txn, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
     REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 3);
 
     // ---------------------------------------
@@ -172,7 +164,7 @@ TEST_CASE("Stage Hashstate") {
     CHECK(to_hex(value) == "01c9");
 
     // Unwind the stage
-    REQUIRE(stagedsync::unwind_hashstate(txn, data_dir.etl().path(), 1) == stagedsync::StageResult::kSuccess);
+    REQUIRE(stagedsync::unwind_hashstate(txn, context.dir().etl().path(), 1) == stagedsync::StageResult::kSuccess);
 
     hashed_address_table = db::open_cursor(*txn, db::table::kHashedAccounts);
     auto address_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};

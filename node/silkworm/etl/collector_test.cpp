@@ -18,8 +18,8 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/db/tables.hpp>
 
 namespace silkworm::etl {
@@ -32,8 +32,8 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     while (pairs.size() < size) {
         Bytes key(8, '\0');
         Bytes value(8, '\0');
-        endian::store_big_u64(&key[0], static_cast<unsigned>(rand()) % 200000000u);
-        endian::store_big_u64(&value[0], static_cast<unsigned>(rand()) % 200000000u);
+        endian::store_big_u64(&key[0], static_cast<unsigned>(std::rand()) % 200000000u);
+        endian::store_big_u64(&value[0], static_cast<unsigned>(std::rand()) % 200000000u);
 
         if (keys.count(key)) {
             // we want unique keys
@@ -48,22 +48,15 @@ static std::vector<Entry> generate_entry_set(size_t size) {
 }
 
 void run_collector_test(LoadFunc load_func, bool do_copy = true) {
-    TemporaryDirectory db_tmp_dir;
-    TemporaryDirectory etl_tmp_dir;
+    test::Context context;
+
     // Initialize random seed
-    srand(time(NULL));
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{db_tmp_dir.path().string(), /*create*/ true};
-    db_config.inmemory = true;
-
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
+    std::srand(std::time(nullptr));
 
     // Generate Test Entries
-    auto set{generate_entry_set(1000)};                       // 1000 entries in total
-    auto collector{Collector(etl_tmp_dir.path(), 100 * 16)};  // 100 entries per file (16 bytes per entry)
-    db::table::create_all(txn);
+    auto set{generate_entry_set(1000)};                               // 1000 entries in total
+    auto collector{Collector(context.dir().etl().path(), 100 * 16)};  // 100 entries per file (16 bytes per entry)
+
     // Collection
     for (auto&& entry : set) {
         if (do_copy)
@@ -72,13 +65,13 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
             collector.collect(std::move(entry));
     }
     // Check whether temporary files were generated
-    CHECK(std::distance(fs::directory_iterator{etl_tmp_dir.path()}, fs::directory_iterator{}) == 10);
+    CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 10);
 
     // Load data
-    auto to{db::open_cursor(txn, db::table::kHeaderNumbers)};
+    auto to{db::open_cursor(context.txn(), db::table::kHeaderNumbers)};
     collector.load(to, load_func);
     // Check whether temporary files were cleaned
-    CHECK(std::distance(fs::directory_iterator{etl_tmp_dir.path()}, fs::directory_iterator{}) == 0);
+    CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 0);
 }
 
 TEST_CASE("collect_and_default_load") { run_collector_test(nullptr); }

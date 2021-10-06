@@ -23,60 +23,6 @@
 
 namespace silkworm::db {
 
-//! \brief Holds the storage mode set
-struct StorageMode {
-    bool Initialized;  // Whether db storage has been initialized
-    bool History;      // Whether history index is stored
-    bool Receipts;     // Whether receipts are stored
-    bool TxIndex;      // Whether tx_index is stored
-    bool CallTraces;   // Whether Call Traces are stored
-    bool TEVM;         // TODO - not yet supported in Silkworm
-    [[nodiscard]] std::string to_string() const {
-        if (!Initialized) {
-            return "default";
-        }
-        std::string ret{};
-        if (History) {
-            ret.push_back('h');
-        }
-        if (Receipts) {
-            ret.push_back('r');
-        }
-        if (TxIndex) {
-            ret.push_back('t');
-        }
-        if (CallTraces) {
-            ret.push_back('c');
-        }
-        if (TEVM) {
-            ret.push_back('e');
-        }
-        return ret;
-    }
-
-    bool operator==(const StorageMode& other) const {
-        return History == other.History && Receipts == other.Receipts && TxIndex == other.TxIndex &&
-               CallTraces == other.CallTraces && TEVM == other.TEVM;
-    }
-};
-
-constexpr StorageMode kDefaultStorageMode{
-    true,  // initialized
-    true,  // history
-    true,  // receipts
-    true,  // tx_index
-    true,  // call_traces
-    false  // TEVM
-};
-
-// Keys for storage mode info from DbInfo bucket
-
-constexpr const char* kStorageModeHistoryKey{"smHistory"};
-constexpr const char* kStorageModeReceiptsKey{"smReceipts"};
-constexpr const char* kStorageModeTxIndexKey{"smTxIndex"};
-constexpr const char* kStorageModeCallTracesKey{"smCallTraces"};
-constexpr const char* kStorageModeTEVMKey{"smTEVM"};
-
 constexpr const char* kPruneModeHistoryKey{"pruneHistory"};
 constexpr const char* kPruneModeReceiptsKey{"pruneReceipts"};
 constexpr const char* kPruneModeTxIndexKey{"pruneTxIndex"};
@@ -148,20 +94,6 @@ constexpr PruneMode kDefaultPruneMode{
     std::nullopt,  // tx_index
     std::nullopt   // call_traces
 };
-
-//! \brief Reads storage mode from db
-//! \param [in] txn : a db transaction
-//! \return A StorageMode instance
-StorageMode read_storage_mode(mdbx::txn& txn);
-
-//! \brief Writes storage mode to db
-//! \param [in] txn : a db transaction
-//! \param [in] value : the StorageMode to be persisted
-void write_storage_mode(mdbx::txn& txn, const StorageMode& value);
-
-//! \brief Parses storage mode from a string
-//! \param [in] mode : the string representation of StorageMode
-StorageMode parse_storage_mode(std::string& mode);
 
 //! \brief Reads pruning mode from db
 //! \param [in] txn : a db transaction

@@ -38,8 +38,8 @@ inline ByteView full_view(const Bloom& bloom) { return {bloom.data(), kBloomByte
 Bloom logs_bloom(const std::vector<Log>& logs);
 
 inline void join(Bloom& sum, const Bloom& addend) {
-    Bloom_u64& sum_u64 = *(reinterpret_cast<Bloom_u64 *>(&sum));
-    const Bloom_u64& addend_u64 = *(reinterpret_cast<const Bloom_u64 *>(&addend));
+    Bloom_u64& sum_u64 = *((Bloom_u64 *)&sum);
+    const Bloom_u64& addend_u64 = *((const Bloom_u64 *)&addend);
 
     for (size_t i{0}; i < kBloomU64Length; ++i) {
         sum_u64[i] |= addend_u64[i];

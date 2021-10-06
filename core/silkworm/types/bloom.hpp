@@ -20,7 +20,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <vector>
 
 #include <silkworm/types/log.hpp>
@@ -28,30 +27,17 @@
 namespace silkworm {
 
 constexpr size_t kBloomByteLength{256};
-constexpr size_t kBloomU64Length{kBloomByteLength / sizeof(uint64_t)};
 
-using Bloom     = std::array<uint8_t,   kBloomByteLength>;
-using Bloom_u64 = std::array<uint64_t,  kBloomU64Length>;
+using Bloom = std::array<uint8_t, kBloomByteLength>;
 
 inline ByteView full_view(const Bloom& bloom) { return {bloom.data(), kBloomByteLength}; }
 
 Bloom logs_bloom(const std::vector<Log>& logs);
 
 inline void join(Bloom& sum, const Bloom& addend) {
-    Bloom_u64& sum_u64 = *((Bloom_u64 *)&sum);
-    const Bloom_u64& addend_u64 = *((const Bloom_u64 *)&addend);
-
-    for (size_t i{0}; i < kBloomU64Length; ++i) {
-        sum_u64[i] |= addend_u64[i];
+    for (size_t i{0}; i < kBloomByteLength; ++i) {
+        sum[i] |= addend[i];
     }
-}
-
-inline bool operator==(const Bloom& a, const Bloom& b) {
-    return std::memcmp(&a[0], &b[0], kBloomByteLength) == 0;
-}
-
-inline bool operator!=(const Bloom& a, const Bloom& b) {
-    return std::memcmp(&a[0], &b[0], kBloomByteLength) != 0;
 }
 
 }  // namespace silkworm

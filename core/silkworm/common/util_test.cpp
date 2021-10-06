@@ -49,13 +49,13 @@ TEST_CASE("Hex") {
     CHECK((expected.has_value() == true && expected->empty()));
 
     expected = from_hex("0");
-    CHECK(expected.has_value() == false);
+    CHECK(expected.has_value() == true);
 
     expected = from_hex("0x");
     CHECK((expected.has_value() == true && expected->empty()));
 
     expected = from_hex("0x0");
-    CHECK((expected.has_value() == false));
+    CHECK((expected.has_value() == true));
 
     expected = from_hex("0x0a");
     CHECK((expected.has_value() == true && expected->size() == 1 && expected->at(0) == 0x0a));

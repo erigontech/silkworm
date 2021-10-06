@@ -38,7 +38,7 @@ class segment_cut_and_paste_error: public std::logic_error {
 WorkingChain::WorkingChain(): highestInDb_(0), topSeenHeight_(0), seenAnnounces_(1000) {
 }
 
-BlockNum WorkingChain::highest_block_in_db() {
+BlockNum WorkingChain::highest_block_in_db() const {
     return highestInDb_;
 }
 
@@ -46,11 +46,17 @@ void WorkingChain::top_seen_block_height(BlockNum n) {
     topSeenHeight_ = n;
 }
 
-BlockNum WorkingChain::top_seen_block_height() {
+BlockNum WorkingChain::top_seen_block_height() const {
     return topSeenHeight_;
 }
 
-std::string WorkingChain::human_readable_status() {
+bool WorkingChain::in_sync() const {
+    return highestInDb_ >= preverifiedHeight_ &&
+           topSeenHeight_ > 0 &&
+           highestInDb_ >= topSeenHeight_;
+}
+
+std::string WorkingChain::human_readable_status() const {
     return std::to_string(anchors_.size()) + " anchors, " + std::to_string(links_.size()) + " links";
 }
 
@@ -104,8 +110,8 @@ void WorkingChain::recover_initial_state(Db::ReadOnlyAccess::Tx& tx) {
     //highestInDb_ = tx.read_stage_progress(db::stages::kHeadersKey); // will be done by sync_with
 }
 
-void WorkingChain::sync_current_state_with(PersistedChain& persisted_chain) {
-    highestInDb_ = persisted_chain.initial_height();
+void WorkingChain::sync_current_state(BlockNum highest_in_db) {
+    highestInDb_ = highest_in_db;
 }
 
 /*
@@ -180,8 +186,8 @@ func (hd *HeaderDownload) InsertHeaders(hf func(header *types.Header, blockHeigh
 }
 */
 
-
-bool WorkingChain::save_steady_headers(PersistedChain& persisted_chain) {
+Headers WorkingChain::withdraw_stable_headers() {
+    Headers stable_headers;
 
     Link_List links_in_future; // here we accumulate links that fail validation as "in the future"
 
@@ -204,7 +210,10 @@ bool WorkingChain::save_steady_headers(PersistedChain& persisted_chain) {
             else if (auto error = ConsensusProto::verify(*link->header); error != ConsensusProto::ERROR) {  // true = seal
                 if (error == ConsensusProto::FUTURE_BLOCK) {
                     links_in_future.push_back(link);
-                    //log
+                    SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: added future link,"
+                                                 << " hash=" << link->hash
+                                                 << " height=" << link->blockHeight
+                                                 << " timestamp=" << link->header->timestamp << ")\n";
                     continue;
                 }
                 else {
@@ -225,7 +234,8 @@ bool WorkingChain::save_steady_headers(PersistedChain& persisted_chain) {
             links_.erase(link->hash);
         }
 
-        persisted_chain.persist_header(*link->header, link->blockHeight);
+        //persisted_chain.persist_header(*link->header, link->blockHeight);
+        stable_headers.push_back(link->header);
 
         link->persisted = true;
         link->header = nullptr; // drop header reference to free memory, as we won't need it anymore
@@ -242,9 +252,10 @@ bool WorkingChain::save_steady_headers(PersistedChain& persisted_chain) {
         links_in_future.clear();
     }
 
-    return highestInDb_ >= preverifiedHeight_ &&
-           topSeenHeight_ > 0 &&
-           highestInDb_ >= topSeenHeight_;
+    //return highestInDb_ >= preverifiedHeight_ &&
+    //       topSeenHeight_ > 0 &&
+    //       highestInDb_ >= topSeenHeight_;
+    return stable_headers;  // RVO
 }
 
 // reduce persistedLinksQueue and remove links

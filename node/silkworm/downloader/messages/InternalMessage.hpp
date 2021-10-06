@@ -29,9 +29,9 @@ namespace silkworm {
 template <class R>
 class InternalMessage : public Message {
   public:
-    using ExecutionFunc = std::function<R (WorkingChain&, PersistedChain&)>;
+    using ExecutionFunc = std::function<R (WorkingChain&)>;
 
-    InternalMessage(WorkingChain&, PersistedChain&, ExecutionFunc);
+    InternalMessage(WorkingChain&, ExecutionFunc);
 
     std::string name() const override {return "InternalMessage";}
 
@@ -41,28 +41,27 @@ class InternalMessage : public Message {
 
   private:
     WorkingChain& working_chain_;
-    PersistedChain& persisted_chain_;
     ExecutionFunc execution_impl_;
 
     std::promise<R> result_;
 };
 
 template <class R>
-InternalMessage<R>::InternalMessage(WorkingChain& wc, PersistedChain& pc, ExecutionFunc exec):
-    working_chain_(wc), persisted_chain_(pc), execution_impl_(exec)
+InternalMessage<R>::InternalMessage(WorkingChain& wc, ExecutionFunc exec):
+    working_chain_(wc), execution_impl_(exec)
 {
 }
 
 template <class R>
 void InternalMessage<R>::execute() {
-    R local_result = execution_impl_(working_chain_, persisted_chain_);
+    R local_result = execution_impl_(working_chain_);
 
     result_.set_value(local_result);
 }
 
 template <>
 inline void InternalMessage<void>::execute() {
-    execution_impl_(working_chain_, persisted_chain_);
+    execution_impl_(working_chain_);
 
     result_.set_value();
 }

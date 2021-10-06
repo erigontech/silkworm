@@ -79,8 +79,8 @@ class HeaderDownloader : public Stage, public ActiveComponent {
     void send_status();          // send chain identity to sentry
     void send_header_requests(); // send requests for more headers
     void send_announcements();
-    auto sync_working_chain(PersistedChain&) -> std::shared_ptr<InternalMessage<void>>;
-    auto save_steady_headers(PersistedChain&) -> std::shared_ptr<InternalMessage<bool>>;
+    auto sync_working_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>>;
+    auto withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers,bool>>>;
 
     WorkingChain working_chain_;
     MessageQueue messages_{}; // thread safe queue where to receive messages from sentry

@@ -160,10 +160,15 @@ header.ParentHash, blockHeight-1, hash, blockHeight))
 
 */
 
-void PersistedChain::persist_header(const BlockHeader& header, BlockNum height) {
-    // todo: try to modularize
+void PersistedChain::persist(Headers headers) {
+    for(auto& header: headers) {
+        persist(*header);
+    }
+}
 
+void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modularize
     // Admittance conditions
+    auto height = header.number;
     Hash hash = header.hash();
     if (hash == previous_hash_) {
         return;  // skip duplicates

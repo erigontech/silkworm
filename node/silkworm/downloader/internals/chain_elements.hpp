@@ -156,6 +156,8 @@ using Anchor_Map = std::map<Hash,std::shared_ptr<Anchor>>; // hash = anchor *par
 using Link_List = std::vector<std::shared_ptr<Link>>;
 using Link_LIFO_Queue = std::stack<std::shared_ptr<Link>>;
 
+using Headers = std::vector<std::shared_ptr<BlockHeader>>;
+
 struct Segment; // forward declaration
 
 // A list of (possibly unrelated) headers

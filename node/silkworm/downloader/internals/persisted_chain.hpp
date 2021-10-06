@@ -21,6 +21,7 @@ limitations under the License.
 
 #include "db_tx.hpp"
 #include "types.hpp"
+#include "chain_elements.hpp"
 
 namespace silkworm {
 
@@ -44,7 +45,8 @@ class PersistedChain {      // counterpart of Erigon HeaderInserter
   public:
     explicit PersistedChain(Db::ReadWriteAccess::Tx& tx);
 
-    void persist_header(const BlockHeader&, BlockNum height);
+    void persist(Headers);
+    void persist(const BlockHeader&);
     void close();
 
     bool best_header_changed();

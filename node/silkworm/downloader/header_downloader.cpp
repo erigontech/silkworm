@@ -281,8 +281,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         }
 
         // sync status
-        //working_chain_.sync_current_state_with(persisted_chain_);
-        auto sync_command = sync_working_chain(persisted_chain_);
+        auto sync_command = sync_working_chain(persisted_chain_.initial_height());
         sync_command->result().get(); // blocking
 
         // message processing
@@ -297,9 +296,9 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 send_header_requests();
 
                 // check if it needs to persist some headers
-                //bool in_sync = working_chain_.save_steady_headers(persisted_chain_);
-                auto command = save_steady_headers(persisted_chain_);
-                bool in_sync = command->result().get();  // blocking
+                auto command = withdraw_stable_headers();
+                auto [stable_headers, in_sync] = command->result().get();  // blocking
+                persisted_chain_.persist(stable_headers);
 
                 // do announcements
                 send_announcements();
@@ -466,10 +465,10 @@ void HeaderDownloader::send_announcements() {
 
 }
 
-auto HeaderDownloader::sync_working_chain(PersistedChain& persisted_chain) -> std::shared_ptr<InternalMessage<void>> {
+auto HeaderDownloader::sync_working_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
 
-    auto message = std::make_shared<InternalMessage<void>>(working_chain_, persisted_chain, [](WorkingChain& wc, PersistedChain& pc){
-        wc.sync_current_state_with(pc);
+    auto message = std::make_shared<InternalMessage<void>>(working_chain_, [highest_in_db](WorkingChain& wc){
+        wc.sync_current_state(highest_in_db);
     });
 
     messages_.push(message);
@@ -477,10 +476,13 @@ auto HeaderDownloader::sync_working_chain(PersistedChain& persisted_chain) -> st
     return message;
 }
 
-auto HeaderDownloader::save_steady_headers(PersistedChain& persisted_chain) -> std::shared_ptr<InternalMessage<bool>> {
+auto HeaderDownloader::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers,bool>>> {
+    using result_t = std::tuple<Headers,bool>;
 
-    auto message = std::make_shared<InternalMessage<bool>>(working_chain_, persisted_chain, [](WorkingChain& wc, PersistedChain& pc){
-        return wc.save_steady_headers(pc);
+    auto message = std::make_shared<InternalMessage<result_t>>(working_chain_, [](WorkingChain& wc){
+        Headers headers = wc.withdraw_stable_headers();
+        bool in_sync = wc.in_sync();
+        return result_t{std::move(headers), in_sync};
     });
 
     messages_.push(message);

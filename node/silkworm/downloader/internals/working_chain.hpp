@@ -34,25 +34,25 @@ class WorkingChain {  // tentative name - todo: improve!
     // load initial state from db
     void recover_initial_state(Db::ReadOnlyAccess::Tx&);
 
-    // load current state from PersistedChain
-    void sync_current_state_with(PersistedChain&);
+    // sync current state
+    void sync_current_state(BlockNum highest_in_db);
 
     // status
-    BlockNum height_reached();
-    BlockNum highest_block_in_db();
-    BlockNum top_seen_block_height();
+    bool in_sync() const;
+    BlockNum highest_block_in_db() const;
+    BlockNum top_seen_block_height() const;
     void top_seen_block_height(BlockNum);
-    std::string human_readable_status();
+    std::string human_readable_status() const;
 
     // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
     // given range of block chain that we want to fill
-    std::optional<GetBlockHeadersPacket66> request_skeleton();
+    auto request_skeleton() -> std::optional<GetBlockHeadersPacket66>;
 
     // core functionalities: anchor extension
     // to complete a range of block chain we need to do a request of headers to extend up or down an anchor or a segment
-    std::tuple<std::optional<GetBlockHeadersPacket66>,
-               std::vector<PeerPenalization>> request_more_headers(time_point_t tp, seconds_t timeout);
+    auto request_more_headers(time_point_t tp, seconds_t timeout) -> std::tuple<std::optional<GetBlockHeadersPacket66>,
+                                                                                std::vector<PeerPenalization>>;
     // also we need to know if the request issued was not delivered
     void request_nack(const GetBlockHeadersPacket66& packet);
 
@@ -60,10 +60,10 @@ class WorkingChain {  // tentative name - todo: improve!
     // when a remote peer satisfy our request we receive one or more header that will be processed to fill hole in the
     // block chain
     using RequestMoreHeaders = bool;
-    std::tuple<Penalty,RequestMoreHeaders> accept_headers(const std::vector<BlockHeader>&, PeerId);
+    auto accept_headers(const std::vector<BlockHeader>&, PeerId) -> std::tuple<Penalty,RequestMoreHeaders>;
 
     // core functionalities: persist new headers that have persisted parent
-    bool save_steady_headers(PersistedChain&);
+    auto withdraw_stable_headers() -> Headers;
 
     // minor functionalities
     void save_external_announce(Hash hash);

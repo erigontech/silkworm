@@ -147,25 +147,34 @@ void write_prune_mode(mdbx::txn& txn, const PruneMode& value) {
     if (value.history.has_value()) {
         endian::store_big_u64(db_value.data(), value.history.value());
         target.upsert(mdbx::slice(kPruneModeHistoryKey), to_slice(db_value));
+    } else {
+        target.erase(mdbx::slice(kPruneModeHistoryKey));
     }
 
     // Receipts
     if (value.receipts.has_value()) {
         endian::store_big_u64(db_value.data(), value.receipts.value());
         target.upsert(mdbx::slice(kPruneModeReceiptsKey), to_slice(db_value));
+    } else {
+        target.erase(mdbx::slice(kPruneModeReceiptsKey));
     }
 
     // TxIndex
     if (value.tx_index.has_value()) {
         endian::store_big_u64(db_value.data(), value.tx_index.value());
         target.upsert(mdbx::slice(kPruneModeTxIndexKey), to_slice(db_value));
+    } else {
+        target.erase(mdbx::slice(kPruneModeTxIndexKey));
     }
 
     // Call Traces
     if (value.call_traces.has_value()) {
         endian::store_big_u64(db_value.data(), value.call_traces.value());
         target.upsert(mdbx::slice(kPruneModeCallTracesKey), to_slice(db_value));
+    } else {
+        target.erase(mdbx::slice(kPruneModeCallTracesKey));
     }
+
 }
 
 PruneMode parse_prune_mode(std::string& mode, PruneDistance exactHistory, PruneDistance exactReceipts,

@@ -93,7 +93,7 @@ PruneMode read_prune_mode(mdbx::txn& txn) {
 
     /*
      * TODO Eventually optimize with removal of keys which don't prune at all
-     * For compatibility reasons with erigon we assume a value == UINT64_MAX means no pruning
+     * For compatibility reasons with Erigon we assume a value == UINT64_MAX means no pruning
      */
 
     // History
@@ -102,7 +102,7 @@ PruneMode read_prune_mode(mdbx::txn& txn) {
         assert(data.value.length() == sizeof(uint64_t));
         auto value{endian::load_big_u64(from_slice(data.value).data())};
         if (value != UINT64_MAX) {
-            ret.History.emplace(value);
+            ret.history.emplace(value);
         }
     }
 
@@ -112,7 +112,7 @@ PruneMode read_prune_mode(mdbx::txn& txn) {
         assert(data.value.length() == sizeof(uint64_t));
         auto value{endian::load_big_u64(from_slice(data.value).data())};
         if (value != UINT64_MAX) {
-            ret.Receipts.emplace(value);
+            ret.receipts.emplace(value);
         }
     }
 
@@ -122,7 +122,7 @@ PruneMode read_prune_mode(mdbx::txn& txn) {
         assert(data.value.length() == sizeof(uint64_t));
         auto value{endian::load_big_u64(from_slice(data.value).data())};
         if (value != UINT64_MAX) {
-            ret.TxIndex.emplace(value);
+            ret.tx_index.emplace(value);
         }
     }
 
@@ -132,7 +132,7 @@ PruneMode read_prune_mode(mdbx::txn& txn) {
         assert(data.value.length() == sizeof(uint64_t));
         auto value{endian::load_big_u64(from_slice(data.value).data())};
         if (value != UINT64_MAX) {
-            ret.CallTraces.emplace(value);
+            ret.call_traces.emplace(value);
         }
     }
 
@@ -144,26 +144,26 @@ void write_prune_mode(mdbx::txn& txn, const PruneMode& value) {
     Bytes db_value(sizeof(BlockNum), '\0');
 
     // History
-    if (value.History.has_value()) {
-        endian::store_big_u64(db_value.data(), value.History.value());
+    if (value.history.has_value()) {
+        endian::store_big_u64(db_value.data(), value.history.value());
         target.upsert(mdbx::slice(kPruneModeHistoryKey), to_slice(db_value));
     }
 
     // Receipts
-    if (value.Receipts.has_value()) {
-        endian::store_big_u64(db_value.data(), value.Receipts.value());
+    if (value.receipts.has_value()) {
+        endian::store_big_u64(db_value.data(), value.receipts.value());
         target.upsert(mdbx::slice(kPruneModeReceiptsKey), to_slice(db_value));
     }
 
     // TxIndex
-    if (value.TxIndex.has_value()) {
-        endian::store_big_u64(db_value.data(), value.TxIndex.value());
+    if (value.tx_index.has_value()) {
+        endian::store_big_u64(db_value.data(), value.tx_index.value());
         target.upsert(mdbx::slice(kPruneModeTxIndexKey), to_slice(db_value));
     }
 
     // Call Traces
-    if (value.CallTraces.has_value()) {
-        endian::store_big_u64(db_value.data(), value.CallTraces.value());
+    if (value.call_traces.has_value()) {
+        endian::store_big_u64(db_value.data(), value.call_traces.value());
         target.upsert(mdbx::slice(kPruneModeCallTracesKey), to_slice(db_value));
     }
 }
@@ -175,16 +175,16 @@ PruneMode parse_prune_mode(std::string& mode, PruneDistance exactHistory, PruneD
         for (const auto& c : mode) {
             switch (c) {
                 case 'h':
-                    ret.History.emplace(kDefaultPruneThreshold);
+                    ret.history.emplace(kDefaultPruneThreshold);
                     break;
                 case 'r':
-                    ret.Receipts.emplace(kDefaultPruneThreshold);
+                    ret.receipts.emplace(kDefaultPruneThreshold);
                     break;
                 case 't':
-                    ret.TxIndex.emplace(kDefaultPruneThreshold);
+                    ret.tx_index.emplace(kDefaultPruneThreshold);
                     break;
                 case 'c':
-                    ret.CallTraces.emplace(kDefaultPruneThreshold);
+                    ret.call_traces.emplace(kDefaultPruneThreshold);
                     break;
                 default:
                     throw std::invalid_argument("Invalid mode");
@@ -192,10 +192,10 @@ PruneMode parse_prune_mode(std::string& mode, PruneDistance exactHistory, PruneD
         }
     }
     // Apply discrete values if provided
-    if (exactHistory.has_value()) ret.History = exactHistory;
-    if (exactReceipts.has_value()) ret.Receipts = exactReceipts;
-    if (exactTxIndex.has_value()) ret.TxIndex = exactTxIndex;
-    if (exactCallTraces.has_value()) ret.CallTraces = exactCallTraces;
+    if (exactHistory.has_value()) ret.history = exactHistory;
+    if (exactReceipts.has_value()) ret.receipts = exactReceipts;
+    if (exactTxIndex.has_value()) ret.tx_index = exactTxIndex;
+    if (exactCallTraces.has_value()) ret.call_traces = exactCallTraces;
 
     return ret;
 }

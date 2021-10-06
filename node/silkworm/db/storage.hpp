@@ -26,9 +26,9 @@ namespace silkworm::db {
 //! \brief Holds the storage mode set
 struct StorageMode {
     bool Initialized;  // Whether db storage has been initialized
-    bool History;      // Whether History index is stored
-    bool Receipts;     // Whether Receipts are stored
-    bool TxIndex;      // Whether TxIndex is stored
+    bool History;      // Whether history index is stored
+    bool Receipts;     // Whether receipts are stored
+    bool TxIndex;      // Whether tx_index is stored
     bool CallTraces;   // Whether Call Traces are stored
     bool TEVM;         // TODO - not yet supported in Silkworm
     [[nodiscard]] std::string to_string() const {
@@ -61,11 +61,11 @@ struct StorageMode {
 };
 
 constexpr StorageMode kDefaultStorageMode{
-    true,  // Initialized
-    true,  // History
-    true,  // Receipts
-    true,  // TxIndex
-    true,  // CallTraces
+    true,  // initialized
+    true,  // history
+    true,  // receipts
+    true,  // tx_index
+    true,  // call_traces
     false  // TEVM
 };
 
@@ -86,49 +86,49 @@ using PruneDistance = std::optional<BlockNum>;
 constexpr BlockNum kDefaultPruneThreshold{90'000};
 
 struct PruneMode {
-    bool Initialized{false};   // Whether db storage has been initialized
-    PruneDistance History;     // Amount of blocks for History to keep in db
-    PruneDistance Receipts;    // Amount of blocks for Receipts to keep in db
-    PruneDistance TxIndex;     // Amount of blocks for TxIndex to keep in db
-    PruneDistance CallTraces;  // Amount of blocks for CallTraces to keep in db
+    bool initialized{false};    // Whether db storage has been initialized
+    PruneDistance history;      // Amount of blocks for history to keep in db
+    PruneDistance receipts;     // Amount of blocks for receipts to keep in db
+    PruneDistance tx_index;     // Amount of blocks for tx_index to keep in db
+    PruneDistance call_traces;  // Amount of blocks for call_traces to keep in db
 
     [[nodiscard]] std::string to_string() const {
-        if (!Initialized) {
+        if (!initialized) {
             return "default";
         }
 
         std::string short_form{"--prune="};
         std::string long_form{};
 
-        if (History.has_value()) {
-            if (History.value() == kDefaultPruneThreshold) {
+        if (history.has_value()) {
+            if (history.value() == kDefaultPruneThreshold) {
                 short_form += "h";
             } else {
-                long_form += (" --prune.h.older=" + std::to_string(History.value()));
+                long_form += (" --prune.h.older=" + std::to_string(history.value()));
             }
         }
 
-        if (Receipts.has_value()) {
-            if (Receipts.value() == kDefaultPruneThreshold) {
+        if (receipts.has_value()) {
+            if (receipts.value() == kDefaultPruneThreshold) {
                 short_form += "r";
             } else {
-                long_form += (" --prune.r.older=" + std::to_string(Receipts.value()));
+                long_form += (" --prune.r.older=" + std::to_string(receipts.value()));
             }
         }
 
-        if (TxIndex.has_value()) {
-            if (TxIndex.value() == kDefaultPruneThreshold) {
+        if (tx_index.has_value()) {
+            if (tx_index.value() == kDefaultPruneThreshold) {
                 short_form += "t";
             } else {
-                long_form += (" --prune.t.older=" + std::to_string(TxIndex.value()));
+                long_form += (" --prune.t.older=" + std::to_string(tx_index.value()));
             }
         }
 
-        if (CallTraces.has_value()) {
-            if (CallTraces.value() == kDefaultPruneThreshold) {
+        if (call_traces.has_value()) {
+            if (call_traces.value() == kDefaultPruneThreshold) {
                 short_form += "c";
             } else {
-                long_form += (" --prune.c.older=" + std::to_string(CallTraces.value()));
+                long_form += (" --prune.c.older=" + std::to_string(call_traces.value()));
             }
         }
 
@@ -136,17 +136,17 @@ struct PruneMode {
     }
 
     bool operator==(const PruneMode& other) const {
-        return History == other.History && Receipts == other.Receipts && TxIndex == other.TxIndex &&
-               CallTraces == other.CallTraces;
+        return history == other.history && receipts == other.receipts && tx_index == other.tx_index &&
+               call_traces == other.call_traces;
     }
 };
 
 constexpr PruneMode kDefaultPruneMode{
-    true,          // Initialized
-    std::nullopt,  // History
-    std::nullopt,  // Receipts
-    std::nullopt,  // TxIndex
-    std::nullopt   // CallTraces
+    true,          // initialized
+    std::nullopt,  // history
+    std::nullopt,  // receipts
+    std::nullopt,  // tx_index
+    std::nullopt   // call_traces
 };
 
 //! \brief Reads storage mode from db

@@ -246,14 +246,14 @@ namespace db {
             prune_mode = db::read_prune_mode(txn);
             CHECK(prune_mode.to_string() == "--prune=h");
 
-            // Set default prune value for Receipts
-            prune_mode.Receipts.emplace(kDefaultPruneThreshold);
+            // Set default prune value for receipts
+            prune_mode.receipts.emplace(kDefaultPruneThreshold);
             CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
             prune_mode = db::read_prune_mode(txn);
             CHECK(prune_mode.to_string() == "--prune=hr");
 
-            // Set default prune value for TxIndex and CallTraces
-            prune_mode.TxIndex.emplace(kDefaultPruneThreshold);
+            // Set default prune value for tx_index and CallTraces
+            prune_mode.tx_index.emplace(kDefaultPruneThreshold);
             prune_mode.CallTraces.emplace(kDefaultPruneThreshold);
             CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
             prune_mode = db::read_prune_mode(txn);

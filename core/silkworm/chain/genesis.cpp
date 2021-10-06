@@ -30,7 +30,7 @@ extern size_t sizeof_genesis_rinkeby_data();
 
 namespace silkworm {
 
-std::string read_genesis_data(unsigned int chain_id) {
+std::string read_genesis_data(unsigned long long chain_id) {
     std::string ret{};
     switch (chain_id) {
         case 1:

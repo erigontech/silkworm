@@ -241,7 +241,7 @@ namespace db {
             CHECK(prune_mode.to_string() == "--prune=");
 
             // Set default prune value for History
-            prune_mode.History.emplace(kDefaultPruneThreshold);
+            prune_mode.history.emplace(kDefaultPruneThreshold);
             CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
             prune_mode = db::read_prune_mode(txn);
             CHECK(prune_mode.to_string() == "--prune=h");
@@ -254,13 +254,13 @@ namespace db {
 
             // Set default prune value for tx_index and CallTraces
             prune_mode.tx_index.emplace(kDefaultPruneThreshold);
-            prune_mode.CallTraces.emplace(kDefaultPruneThreshold);
+            prune_mode.call_traces.emplace(kDefaultPruneThreshold);
             CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
             prune_mode = db::read_prune_mode(txn);
             CHECK(prune_mode.to_string() == "--prune=hrtc");
 
             // Set non-default prune value for History
-            prune_mode.History.emplace(1'000u);
+            prune_mode.history.emplace(1'000u);
             CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
             prune_mode = db::read_prune_mode(txn);
             CHECK(prune_mode.to_string() == "--prune=rtc --prune.h.older=1000");

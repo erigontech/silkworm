@@ -418,7 +418,7 @@ void do_migrations(db::EnvConfig& config) {
     }
 }
 
-void do_stage_set(db::EnvConfig& config, std::string& stage_name, uint32_t new_height, bool dry) {
+void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_height, bool dry) {
     config.readonly = false;
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_write()};

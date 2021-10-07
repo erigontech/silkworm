@@ -383,9 +383,8 @@ void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
 
     std::cout << "\n Pruned start, block to be kept: " << prune_size << "\n" << std::endl;
     auto pruned_node_stages{stagedsync::get_pruned_node_stages()};
-    for (auto stage : pruned_node_stages) {
-        stagedsync::check_stagedsync_error(
-            stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
+    for(auto stage: pruned_node_stages) {
+        stagedsync::success_or_throw(stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
     }
 }
 
@@ -418,7 +417,7 @@ void do_migrations(db::EnvConfig& config) {
     }
 }
 
-void do_stage_set(db::EnvConfig& config, const std::string& stage_name, uint32_t new_height, bool dry) {
+void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_height, bool dry) {
     config.readonly = false;
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_write()};
@@ -775,7 +774,7 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
  * \param bool dry : whether or not commit data or run in simulation
  *
  */
-void do_init_genesis(DataDirectory& data_dir, const std::string& json_file, uint32_t chain_id, bool dry) {
+void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uint32_t chain_id, bool dry) {
     // Check datadir does not exist
     if (data_dir.exists()) {
         throw std::runtime_error("Provided data directory already exist");

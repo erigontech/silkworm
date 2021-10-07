@@ -62,9 +62,9 @@ int main(int argc, char* argv[]) {
 
         stagedsync::TransactionManager tm{env};
         if (storage) {
-            stagedsync::check_stagedsync_error(stagedsync::stage_storage_history(tm, data_dir.etl().path()));
+            stagedsync::success_or_throw(stagedsync::stage_storage_history(tm, data_dir.etl().path()));
         } else {
-            stagedsync::check_stagedsync_error(stagedsync::stage_account_history(tm, data_dir.etl().path()));
+            stagedsync::success_or_throw(stagedsync::stage_account_history(tm, data_dir.etl().path()));
         }
 
     } catch (const std::exception& ex) {

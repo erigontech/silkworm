@@ -130,19 +130,19 @@ namespace detail {
 
     BlockBodyForStorage decode_stored_block_body(ByteView& from) {
         auto [header, err]{rlp::decode_header(from)};
-        rlp::err_handler(err);
+        rlp::success_or_throw(err);
         if (!header.list) {
-            rlp::err_handler(rlp::DecodingResult::kUnexpectedString);
+            rlp::success_or_throw(rlp::DecodingResult::kUnexpectedString);
         }
         uint64_t leftover{from.length() - header.payload_length};
 
         BlockBodyForStorage to;
-        rlp::err_handler(rlp::decode(from, to.base_txn_id));
-        rlp::err_handler(rlp::decode(from, to.txn_count));
-        rlp::err_handler(rlp::decode_vector(from, to.ommers));
+        rlp::success_or_throw(rlp::decode(from, to.base_txn_id));
+        rlp::success_or_throw(rlp::decode(from, to.txn_count));
+        rlp::success_or_throw(rlp::decode_vector(from, to.ommers));
 
         if (from.length() != leftover) {
-            throw rlp::DecodingError{rlp::DecodingResult::kListLengthMismatch};
+            throw rlp::DecodingError(rlp::DecodingResult::kListLengthMismatch);
         }
 
         return to;

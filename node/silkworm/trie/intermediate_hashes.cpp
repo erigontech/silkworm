@@ -141,7 +141,7 @@ bool AccountTrieCursor::can_skip_state() {
         return false;
     }
     const std::optional<Bytes> k{key()};
-    if (k == std::nullopt || changed_.contains(pack_nibbles(*k))) {
+    if (k == std::nullopt || changed_.contains(*k)) {
         return false;
     }
     return stack_.top().hash_flag();
@@ -334,7 +334,7 @@ static void changed_accounts(mdbx::txn& txn, BlockNum from, PrefixSet& out) {
     db::cursor_for_each(change_cursor, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
         const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};
         const auto hashed_address{keccak256(address)};
-        out.insert(ByteView{hashed_address.bytes, kHashLength});
+        out.insert(unpack_nibbles(ByteView{hashed_address.bytes, kHashLength}));
         return true;
     });
 }

@@ -25,6 +25,7 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/storage.hpp>
 #include <silkworm/execution/processor.hpp>
 
 #include "stagedsync.hpp"
@@ -33,8 +34,7 @@ namespace silkworm::stagedsync {
 
 // block_num is input-output
 static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& config, const BlockNum max_block,
-                                           const db::StorageMode& storage_mode, const size_t batch_size,
-                                           BlockNum& block_num, BlockNum prune_from) noexcept {
+                                           const size_t batch_size, BlockNum& block_num, BlockNum prune_from) noexcept {
     try {
         db::Buffer buffer{txn, prune_from};
         AnalysisCache analysis_cache;
@@ -60,9 +60,8 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
                 return StageResult::kInvalidBlock;
             }
 
-            if (storage_mode.Receipts && block_num >= prune_from) {
-                buffer.insert_receipts(block_num, receipts);
-            }
+            // TODO(Andrea) implement pruning
+            buffer.insert_receipts(block_num, receipts);
 
             if (block_num % 1000 == 0) {
                 SILKWORM_LOG(LogLevel::Debug) << "Blocks <= " << block_num << " executed" << std::endl;
@@ -102,7 +101,6 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
         if (!chain_config.has_value()) {
             return StageResult::kUnknownChainId;
         }
-        const auto storage_mode{db::read_storage_mode(*txn)};
 
         const BlockNum max_block{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
         BlockNum block_num{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey) + 1};
@@ -125,8 +123,7 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
         (void)sw.start();
 
         for (; block_num <= max_block; ++block_num) {
-            res = execute_batch_of_blocks(*txn, chain_config.value(), max_block, storage_mode, batch_size, block_num,
-                                          prune_from);
+            res = execute_batch_of_blocks(*txn, chain_config.value(), max_block, batch_size, block_num, prune_from);
             if (res != StageResult::kSuccess) {
                 return res;
             }

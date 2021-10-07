@@ -45,20 +45,37 @@ TEST_CASE("Split") {
 }
 
 TEST_CASE("Hex") {
-    auto expected = from_hex("");
-    CHECK((expected.has_value() == true && expected->empty()));
 
-    expected = from_hex("0");
-    CHECK(expected.has_value() == true);
+    auto parsed_bytes = from_hex("");
+    CHECK((parsed_bytes.has_value() == true && parsed_bytes->empty()));
 
-    expected = from_hex("0x");
-    CHECK((expected.has_value() == true && expected->empty()));
+    parsed_bytes = from_hex("0x");
+    CHECK((parsed_bytes.has_value() == true && parsed_bytes->empty()));
 
-    expected = from_hex("0x0");
-    CHECK((expected.has_value() == true));
+    parsed_bytes = from_hex("0xg");
+    CHECK(parsed_bytes.has_value() == false);
+    
+    Bytes expected_bytes{0x0};
+    parsed_bytes = from_hex("0");
+    CHECK((parsed_bytes.has_value() == true && parsed_bytes.value() == expected_bytes));
 
-    expected = from_hex("0x0a");
-    CHECK((expected.has_value() == true && expected->size() == 1 && expected->at(0) == 0x0a));
+    parsed_bytes = from_hex("0x0");
+    CHECK((parsed_bytes.has_value() == true && parsed_bytes.value() == expected_bytes));
+
+    expected_bytes = {0x0a};
+    parsed_bytes = from_hex("0xa");
+    CHECK((parsed_bytes.has_value() == true && parsed_bytes.value() == expected_bytes));
+
+    parsed_bytes = from_hex("0x0a");
+    CHECK((parsed_bytes.has_value() == true && parsed_bytes.value() == expected_bytes));
+
+    expected_bytes = {0x0a, 0x1f};
+    parsed_bytes = from_hex("0xa1f");
+    CHECK((parsed_bytes.has_value() == true && parsed_bytes.value() == expected_bytes));
+
+    parsed_bytes = from_hex("0x0a1f");
+    CHECK((parsed_bytes.has_value() == true && parsed_bytes.value() == expected_bytes));
+
 }
 
 TEST_CASE("Padding") {

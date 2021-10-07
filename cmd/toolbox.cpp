@@ -202,22 +202,20 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     dbFreeInfo ret{};
 
     ::mdbx::map_handle free_map{0};
-    auto free_stat{txn.get_map_stat(free_map)};
-    auto free_crs{txn.open_cursor(free_map)};
+    auto page_size{txn.get_map_stat(free_map).ms_psize};
 
-    const auto& collect_func{[&ret, &free_stat](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+    const auto& collect_func{[&ret, &page_size](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
         size_t txId = *(static_cast<size_t*>(data.key.iov_base));
         size_t pagesCount = *(static_cast<uint32_t*>(data.value.iov_base));
-        size_t pagesSize = pagesCount * free_stat.ms_psize;
+        size_t pagesSize = pagesCount * page_size;
         ret.pages += pagesCount;
         ret.size += pagesSize;
         ret.entries.push_back({txId, pagesCount, pagesSize});
         return true;
     }};
 
-    if (free_crs.to_first(/*throw_notfound =*/false)) {
-        (void)db::cursor_for_each(free_crs, collect_func);
-    }
+    auto free_crs{txn.open_cursor(free_map)};
+    (void)db::cursor_for_each(free_crs, collect_func);
 
     return ret;
 }
@@ -248,22 +246,25 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     ret.size += table->size();
     ret.tables.push_back(*table);
 
-    // Get all tables from the unnamed database
-    auto main_crs{txn.open_cursor(main_map)};
-    auto result{main_crs.to_first(/*throw_notfound =*/false)};
-    while (result) {
-        auto named_map{txn.open_map(result.key.as_string())};
-        stat = txn.get_map_stat(named_map);
-        info = txn.get_handle_info(named_map);
-        table = new dbTableEntry{named_map.dbi, result.key.as_string(), stat, info};
+    const auto& collect_func{[&ret, &txn](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+
+        auto named_map{txn.open_map(data.key.as_string())};
+        auto stat{txn.get_map_stat(named_map)};
+        auto info{txn.get_handle_info(named_map)};
+        dbTableEntry* table = new dbTableEntry{named_map.dbi, data.key.as_string(), stat, info};
 
         ret.pageSize += table->stat.ms_psize;
         ret.pages += table->pages();
         ret.size += table->size();
         ret.tables.push_back(*table);
-        result = main_crs.to_next(/*throw_notfound =*/false);
-    }
 
+        return true;
+
+    }};
+
+    // Get all tables from the unnamed database
+    auto main_crs{txn.open_cursor(main_map)};
+    (void) db::cursor_for_each(main_crs,collect_func);
     return ret;
 }
 

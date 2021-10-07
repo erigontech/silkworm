@@ -120,7 +120,7 @@ class AccountTrieCursor {
     void move_to_next_sibling();
 
     PrefixSet& changed_;
-    bool at_root_{true};
+    int root_nibble_{-1};  // -1 means the very beginning of trie traversal, before any actual nodes
     mdbx::cursor_managed cursor_;
     std::stack<SubNode> stack_;
 };

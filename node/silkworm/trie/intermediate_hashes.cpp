@@ -31,6 +31,7 @@ void AccountTrieCursor::consume_node(ByteView to) {
     const auto entry{cursor_.lower_bound(db::to_slice(to), /*throw_notfound=*/false)};
     if (!entry) {
         // end-of-tree
+        root_nibble_ = 16;
         return;
     }
 
@@ -41,23 +42,17 @@ void AccountTrieCursor::consume_node(ByteView to) {
     while ((node->state_mask() & (1u << nibble)) == 0) {
         ++nibble;
     }
-    stack_.push(SubNode{Bytes{db::from_slice(entry.key)}, *node, nibble});
+
+    const ByteView key{db::from_slice(entry.key)};
+    assert(!key.empty());
+    root_nibble_ = key[0];
+
+    stack_.push(SubNode{Bytes{key}, *node, nibble});
 
     cursor_.erase();
 }
 
 void AccountTrieCursor::next(bool skip_children) {
-    if (at_root_) {
-        consume_node({});
-        at_root_ = false;
-        return;
-    }
-
-    if (stack_.empty()) {
-        // end-of-tree
-        return;
-    }
-
     if (!skip_children && children_are_in_trie()) {
         consume_node(*key());
         return;
@@ -67,7 +62,15 @@ void AccountTrieCursor::next(bool skip_children) {
 }
 
 void AccountTrieCursor::move_to_next_sibling() {
+    if (root_nibble_ == 16) {
+        // end-of-tree
+        return;
+    }
+
     if (stack_.empty()) {
+        ++root_nibble_;
+        const Bytes key(1, root_nibble_);
+        consume_node(key);
         return;
     }
 
@@ -107,7 +110,7 @@ const evmc::bytes32* AccountTrieCursor::SubNode::hash() const {
 }
 
 std::optional<Bytes> AccountTrieCursor::key() const {
-    if (at_root_) {
+    if (root_nibble_ == -1) {
         return Bytes{};
     }
     if (stack_.empty()) {
@@ -124,6 +127,9 @@ const evmc::bytes32* AccountTrieCursor::hash() const {
 }
 
 bool AccountTrieCursor::children_are_in_trie() const {
+    if (root_nibble_ == -1) {
+        return true;
+    }
     if (stack_.empty()) {
         return false;
     }
@@ -131,7 +137,7 @@ bool AccountTrieCursor::children_are_in_trie() const {
 }
 
 bool AccountTrieCursor::can_skip_state() {
-    if (at_root_) {
+    if (root_nibble_ == -1) {
         return false;
     }
     const std::optional<Bytes> k{key()};

@@ -46,7 +46,7 @@ static std::string nibbles_to_hex(ByteView unpacked) {
     return out;
 }
 
-TEST_CASE("AccountTrieCursor traversal") {
+TEST_CASE("AccountTrieCursor traversal 1") {
     test::Context context;
     auto& txn{context.txn()};
 
@@ -93,6 +93,40 @@ TEST_CASE("AccountTrieCursor traversal") {
     CHECK(nibbles_to_hex(*atc.key()) == "132");
     atc.next(/*skip_children=*/false);
     CHECK(nibbles_to_hex(*atc.key()) == "133");
+
+    atc.next(/*skip_children=*/false);
+    CHECK(atc.key() == std::nullopt);  // end of trie
+}
+
+TEST_CASE("AccountTrieCursor traversal 2") {
+    test::Context context;
+    auto& txn{context.txn()};
+
+    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+
+    const Bytes key1{nibbles_from_hex("4")};
+    const Node node1{/*state_mask=*/0b10100, /*tree_mask=*/0, /*hash_mask=*/0b00100,
+                     /*hashes=*/{0x0384e6e2c2b33c4eb911a08a7ff57f83dc3eb86d8d0c92ec112f3b416d6685a9_bytes32}};
+    account_trie.upsert(db::to_slice(key1), db::to_slice(marshal_node(node1)));
+
+    const Bytes key2{nibbles_from_hex("6")};
+    const Node node2{/*state_mask=*/0b10010, /*tree_mask=*/0, /*hash_mask=*/0b00010,
+                     /*hashes=*/{0x7f9a58b00625a6e725559acf327baf88d90e4a5b65a2003acd24f110c0441df1_bytes32}};
+    account_trie.upsert(db::to_slice(key2), db::to_slice(marshal_node(node2)));
+
+    PrefixSet changed;
+    AccountTrieCursor atc{txn, changed};
+
+    CHECK((atc.key() != std::nullopt && atc.key()->empty()));  // root
+
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "42");
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "44");
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "61");
+    atc.next(/*skip_children=*/false);
+    CHECK(nibbles_to_hex(*atc.key()) == "64");
 
     atc.next(/*skip_children=*/false);
     CHECK(atc.key() == std::nullopt);  // end of trie

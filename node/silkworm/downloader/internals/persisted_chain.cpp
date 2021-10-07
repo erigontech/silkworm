@@ -229,6 +229,8 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
     // Save header
     tx_.write_header(header);
 
+    SILKWORM_LOG(LogLevel::Info) << "PersistedChain: saved header height=" << height << " hash=" << hash << "\n";
+
     previous_hash_ = hash;
 }
 
@@ -236,16 +238,24 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
     BlockNum forking_point{};
 
     // Read canonical hash at height-1
-    auto prev_canonical_hash = tx.read_canonical_hash(height - 1);
-    if (!prev_canonical_hash) {
-        std::string error_message =
-            "PersistedChain: error reading canonical hash for height " + std::to_string(height - 1);
-        SILKWORM_LOG(LogLevel::Error) << error_message;
-        throw std::logic_error(error_message);  // unexpected condition, bug?
+    Hash prev_canon_hash;
+    const Hash* cached_prev_hash = canonical_cache_.get(height - 1); // look in the cache first
+    if (cached_prev_hash) {
+        prev_canon_hash = *cached_prev_hash;
+    }
+    else {
+        auto persisted_prev_hash = tx.read_canonical_hash(height - 1); // then look in the db
+        if (!persisted_prev_hash) {
+            std::string error_message =
+                "PersistedChain: error reading canonical hash for height " + std::to_string(height - 1);
+            SILKWORM_LOG(LogLevel::Error) << error_message;
+            throw std::logic_error(error_message);  // unexpected condition, bug?
+        }
+        prev_canon_hash = *persisted_prev_hash;
     }
 
     // Most common case: forking point is the height of the parent header
-    if (prev_canonical_hash == header.parent_hash) {
+    if (prev_canon_hash == header.parent_hash) {
         forking_point = height - 1;
     }
     // Going further back
@@ -255,16 +265,17 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
 
         // look in the cache first
         const Hash* cached_canon_hash;
-        while ((cached_canon_hash = canonical_cache_.get(ancestor_height)) && *cached_canon_hash != ancestor_hash) {
+        while ((cached_canon_hash = canonical_cache_.get(ancestor_height))
+               && *cached_canon_hash != ancestor_hash) {
             auto ancestor = tx.read_header(ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             ancestor_height--;
-        }  // todo: if this loop finds a probable_canonical_hash the next loop will be executed, is this right?
+        }  // todo: if this loop finds a cached_canon_hash the next loop will be executed, is this right?
 
         // now look in the db
         std::optional<Hash> persisted_canon_hash;
-        while ((persisted_canon_hash = tx.read_canonical_hash(ancestor_height)) &&
-               persisted_canon_hash != ancestor_hash) {
+        while ((persisted_canon_hash = tx.read_canonical_hash(ancestor_height))
+               && persisted_canon_hash != ancestor_hash) {
             auto ancestor = tx.read_header(ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             ancestor_height--;

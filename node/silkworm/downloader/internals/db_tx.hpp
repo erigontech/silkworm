@@ -92,6 +92,7 @@ class Db::ReadOnlyAccess::Tx {
     Tx(Db::ReadOnlyAccess& access): Tx{access.env_.start_read()} {}
     Tx(const Tx&) = delete; // not copyable
     Tx(Tx&& source) noexcept: txn(std::move(source.txn)) {} // only movable
+    Tx(mdbx::txn& source): txn{source.start_nested()} {} // to be more silkworm friendly
     ~Tx() {} // destroying txn cause abort if not done
 
     void close() {txn.abort();}     // a more friendly name for a read-only tx
@@ -178,7 +179,7 @@ class Db::ReadOnlyAccess::Tx {
             // read header
             BlockHeader header;
             ByteView data_view = db::from_slice(data.value);
-            rlp::err_handler(rlp::decode(data_view, header));
+            rlp::success_or_throw(rlp::decode(data_view, header));
             read++;
             // consume header
             callback(std::move(header));
@@ -212,6 +213,7 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
     Tx(Db::ReadWriteAccess& access): base{access.env_.start_write()} {}
     Tx(const Tx&) = delete; // not copyable
     Tx(Tx&& source) noexcept: base(std::move(source.txn)) {} // only movable
+    Tx(mdbx::txn& source): base{source} {} // to be more silkworm friendly
 
     void write_header(const BlockHeader& header) {
         Bytes encoded_header;

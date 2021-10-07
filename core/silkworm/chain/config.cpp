@@ -75,6 +75,8 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
         config.seal_engine = SealEngineType::kClique;
     } else if (json.contains("aura")) {
         config.seal_engine = SealEngineType::kAuRA;
+    } else {
+        config.seal_engine = SealEngineType::kNoProof;
     }
 
     for (size_t i{0}; i < EVMC_MAX_REVISION; ++i) {

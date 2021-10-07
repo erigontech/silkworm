@@ -18,6 +18,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
@@ -142,7 +143,7 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
 }
 
 static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
-    cursor.to_first();
+    cursor.to_first(/*throw_notfound=*/false);
     std::map<Bytes, Node> out;
     const auto save_nodes{[&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
         const Node node{*unmarshal_node(db::from_slice(entry.value))};
@@ -394,6 +395,104 @@ TEST_CASE("Account trie around extension node") {
 
     CHECK(node2.root_hash() == std::nullopt);
     CHECK(node2.hashes().size() == 1);
+}
+
+static evmc::address int_to_address(uint64_t i) {
+    uint8_t be[8];
+    endian::store_big_u64(be, i);
+    return to_address(full_view(be));
+}
+
+TEST_CASE("Incremental vs regeneration") {
+    test::Context context;
+    auto& txn{context.txn()};
+
+    static constexpr size_t n{11};
+
+    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
+    auto account_change_table{db::open_cursor(txn, db::table::kAccountChangeSet)};
+    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+
+    // ------------------------------------------------------------------------------
+    // Take A: create some genesis accounts and then apply some changes
+    // ------------------------------------------------------------------------------
+
+    // Start with 3n accounts at genesis, each holding 1 ETH
+    const Account one_eth{0, 1 * kEther};
+    for (size_t i{0}; i < 3 * n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(one_eth.encode_for_storage()));
+    }
+
+    regenerate_intermediate_hashes(txn, context.dir().etl().path());
+
+    const Bytes block_key{db::block_key(1)};
+
+    // Double the balance of the first third of the accounts
+    const Account two_eth{0, 2 * kEther};
+    for (size_t i{0}; i < n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(two_eth.encode_for_storage()));
+        account_change_table.upsert(db::to_slice(block_key), db::to_slice(address));
+    }
+
+    // Delete the second third of the accounts
+    for (size_t i{n}; i < 2 * n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.find(mdbx::slice{hash.bytes, kHashLength});
+        hashed_accounts.erase();
+        account_change_table.upsert(db::to_slice(block_key), db::to_slice(address));
+    }
+
+    // Don't touch the last third of genesis accounts
+
+    // And add some new accounts, each holding 1 ETH
+    for (size_t i{3 * n}; i < 4 * n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(one_eth.encode_for_storage()));
+        account_change_table.upsert(db::to_slice(block_key), db::to_slice(address));
+    }
+
+    const auto incremental_root{increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/0)};
+
+    const std::map<Bytes, Node> incremental_nodes{read_all_nodes(account_trie)};
+
+    // ------------------------------------------------------------------------------
+    // Take B: generate intermediate hashes for the accounts as of Block 1 in one go,
+    // without increment_intermediate_hashes
+    // ------------------------------------------------------------------------------
+    txn.clear_map(db::open_map(txn, db::table::kHashedAccounts));
+    txn.clear_map(db::open_map(txn, db::table::kAccountChangeSet));
+
+    // Accounts [0,n) now hold 2 ETH
+    for (size_t i{0}; i < n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(two_eth.encode_for_storage()));
+    }
+
+    // Accounts [n,2n) are deleted
+
+    // Accounts [2n,4n) hold 1 ETH
+    for (size_t i{2 * n}; i < 4 * n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(one_eth.encode_for_storage()));
+    }
+
+    const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+
+    const std::map<Bytes, Node> fused_nodes{read_all_nodes(account_trie)};
+
+    // ------------------------------------------------------------------------------
+    // A and B should yield the same result
+    // ------------------------------------------------------------------------------
+    CHECK(fused_root == incremental_root);
+    CHECK(fused_nodes == incremental_nodes);
 }
 
 }  // namespace silkworm::trie

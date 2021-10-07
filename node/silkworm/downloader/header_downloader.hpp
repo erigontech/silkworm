@@ -39,7 +39,7 @@ class Stage {
     };
 
     virtual Result forward(bool first_sync) = 0;
-    virtual Result unwind_to(BlockNum new_height) = 0;
+    virtual Result unwind_to(BlockNum new_height, Hash bad_block) = 0;
 };
 
 // custom exception
@@ -66,7 +66,7 @@ class HeaderDownloader : public Stage, public ActiveComponent {
     ~HeaderDownloader();
 
     Stage::Result forward(bool first_sync) override; // go forward, downloading headers
-    Stage::Result unwind_to(BlockNum new_height) override;  // go backward, unwinding headers to new_height
+    Stage::Result unwind_to(BlockNum new_height, Hash bad_block = {}) override;  // go backward, unwinding headers to new_height
 
     /*[[long_running]]*/ void receive_messages(); // subscribe with sentry to receive messages
                                                    // and do a long-running loop to wait for messages
@@ -81,6 +81,7 @@ class HeaderDownloader : public Stage, public ActiveComponent {
     void send_announcements();
     auto sync_working_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>>;
     auto withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers,bool>>>;
+    auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
     WorkingChain working_chain_;
     MessageQueue messages_{}; // thread safe queue where to receive messages from sentry

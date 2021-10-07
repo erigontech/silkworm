@@ -25,7 +25,7 @@ PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical
     BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
     auto headers_head_hash = tx.read_canonical_hash(headers_height);
     if (!headers_head_hash) {
-        fix_canonical_chain(headers_height, *tx.read_head_header_hash());
+        update_canonical_chain(headers_height, *tx.read_head_header_hash());
         unwind_detected_ = true;
         return;
     }
@@ -328,7 +328,7 @@ func fixCanonicalChain(logPrefix string, logEvery *time.Ticker, height uint64, h
 
  */
 
-void PersistedChain::fix_canonical_chain(BlockNum heigth, Hash hash) { // hash can be empty
+void PersistedChain::update_canonical_chain(BlockNum heigth, Hash hash) { // hash can be empty
     if (heigth == 0) return;
 
     auto ancestor_hash = hash;
@@ -359,10 +359,33 @@ void PersistedChain::close() {
     if (unwind()) return;
 
     if (highest_height() != 0) {
-        fix_canonical_chain(highest_height(), highest_hash());
+        update_canonical_chain(highest_height(), highest_hash());
     }
 
     closed_ = true;
+}
+
+std::set<Hash> PersistedChain::remove_headers([[maybe_unused]] BlockNum unwind_point, [[maybe_unused]] Hash bad_block, [[maybe_unused]] Db::ReadWriteAccess::Tx& tx) {
+    std::set<Hash> bad_headers;
+/*
+    BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
+
+    bool is_bad_block = (bad_block != Hash{});
+    for(BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
+        if (is_bad_block) {
+            auto current_hash = tx.read_canonical_hash(current_height);
+            bad_headers.insert(current_hash);
+        }
+        tx.delete_canonical_hash(current_height);
+    }
+
+    if (is_bad_block) {
+        bad_headers.insert(bad_block);
+
+        // todo: implement here
+    }
+*/
+    return bad_headers;
 }
 
 }

@@ -266,12 +266,12 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
     Stage::Result result;
     bool new_height_reached = false;
-
-
     std::thread message_receiving;
 
+    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader forward operation started\n";
+
     try {
-        Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
+        Db::ReadWriteAccess::Tx tx = db_access_.start_tx(); // this will start a new tx only if db_access has not an active tx
 
         PersistedChain persisted_chain_(tx);
 
@@ -333,12 +333,12 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         persisted_chain_.close();
 
-        tx.commit(); // todo: commit only if opened here
+        tx.commit(); // this will commit if the tx was started here
 
-        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader wind operation completed\n";
+        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader forward operation completed\n";
     }
     catch(const std::exception& e) {
-        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader wind operation is stopping due to an exception: " << e.what() << "\n";
+        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader forward operation is stopping due to an exception: " << e.what() << "\n";
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
@@ -346,7 +346,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     stop(); // todo: it is better to try to cancel the grpc call, do a message_subscription.try_cancel() or both
     message_receiving.join();
 
-    SILKWORM_LOG(LogLevel::Debug) << "HeaderDownloader wind operation clean exit\n";
+    SILKWORM_LOG(LogLevel::Debug) << "HeaderDownloader forward operation clean exit\n";
     return result;
 }
 
@@ -441,9 +441,30 @@ func HeadersUnwind(u *UnwindState, s *StageState, tx ethdb.RwTx, cfg HeadersCfg)
 	return nil
 }
 */
-auto HeaderDownloader::unwind_to([[maybe_unused]] BlockNum new_height) -> Stage::Result {
+auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
+    Stage::Result result;
+
+    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader unwind operation started\n";
+
+    try {
+        Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
+
+        auto bad_headers = PersistedChain::remove_headers(new_height, bad_block, tx);
+
+        update_bad_headers(std::move(bad_headers));    // update working_chain bad headers list todo: activate
+
+        tx.commit();
+
+        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader unwind operation completed\n";
+    }
+    catch(const std::exception& e) {
+        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader unwind operation is stopping due to an exception: " << e.what() << "\n";
+        // tx rollback executed automatically if needed
+        result.status = Stage::Result::Error;
+    }
+
     // todo: to implement
-    Stage::Result result{Result::Error};
+
     return result;
 }
 
@@ -483,6 +504,16 @@ auto HeaderDownloader::withdraw_stable_headers() -> std::shared_ptr<InternalMess
         Headers headers = wc.withdraw_stable_headers();
         bool in_sync = wc.in_sync();
         return result_t{std::move(headers), in_sync};
+    });
+
+    messages_.push(message);
+
+    return message;
+}
+
+auto HeaderDownloader::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
+    auto message = std::make_shared<InternalMessage<void>>(working_chain_, [bads = std::move(bad_headers)](WorkingChain& wc){
+        wc.add_bad_headers(bads);
     });
 
     messages_.push(message);

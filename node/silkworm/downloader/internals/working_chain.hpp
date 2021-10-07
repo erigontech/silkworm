@@ -69,6 +69,7 @@ class WorkingChain {  // tentative name - todo: improve!
     void save_external_announce(Hash hash);
     bool has_link(Hash hash);
     std::vector<Announce>& announces_to_do();
+    void add_bad_headers(std::set<Hash>);
 
   protected:
     static constexpr BlockNum max_len = 192;

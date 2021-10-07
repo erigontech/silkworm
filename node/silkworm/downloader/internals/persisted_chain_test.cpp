@@ -45,7 +45,7 @@ namespace silkworm {
             auto header0 = tx.read_canonical_header(0);
             REQUIRE(header0.has_value());
 
-            PersistedChain pc(tx);
+            PersistedChain pc(tx); // is correct but here FAILS at the moment because initialize_genesis() write total difficulty without rlp encoding
 
             REQUIRE(pc.unwind_detected() == false);
             REQUIRE(pc.initial_height() == 0);

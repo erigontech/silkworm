@@ -63,6 +63,11 @@ std::string WorkingChain::human_readable_status() const {
 std::vector<Announce>& WorkingChain::announces_to_do() {
     return announcesToDo_;
 }
+
+void WorkingChain::add_bad_headers(std::set<Hash> bads) {
+    badHeaders_.insert(bads.begin(), bads.end());   // todo: use set_union or merge?
+}
+
 /*
 func (hd *HeaderDownload) RecoverFromDb(db ethdb.RoKV) error {
 	hd.lock.Lock()

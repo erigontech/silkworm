@@ -14,10 +14,12 @@
    limitations under the License.
 */
 
+#pragma once
 #ifndef SILKWORM_CORE_CHAIN_GENESIS_HPP_
 #define SILKWORM_CORE_CHAIN_GENESIS_HPP_
 
 #include <string>
+#include <cstddef>
 
 namespace silkworm {
 
@@ -25,7 +27,7 @@ namespace silkworm {
 * \brief Returns genesis data given a known chain_id.
 * If id is not recognized returns an invalid json string
 */
-std::string read_genesis_data(unsigned long long chain_id);
+std::string read_genesis_data(uint64_t chain_id);
 
 }  // namespace silkworm
 

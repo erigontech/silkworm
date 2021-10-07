@@ -54,7 +54,7 @@ TEST_CASE("Hex") {
 
     parsed_bytes = from_hex("0xg");
     CHECK(parsed_bytes.has_value() == false);
-    
+
     Bytes expected_bytes{0x0};
     parsed_bytes = from_hex("0");
     CHECK((parsed_bytes.has_value() == true && parsed_bytes.value() == expected_bytes));

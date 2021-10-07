@@ -249,14 +249,14 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     const auto& collect_func{[&ret, &txn](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
 
         auto named_map{txn.open_map(data.key.as_string())};
-        auto stat{txn.get_map_stat(named_map)};
-        auto info{txn.get_handle_info(named_map)};
-        dbTableEntry* table = new dbTableEntry{named_map.dbi, data.key.as_string(), stat, info};
+        auto stat2{txn.get_map_stat(named_map)};
+        auto info2{txn.get_handle_info(named_map)};
+        dbTableEntry* table2 = new dbTableEntry{named_map.dbi, data.key.as_string(), stat2, info2};
 
-        ret.pageSize += table->stat.ms_psize;
-        ret.pages += table->pages();
-        ret.size += table->size();
-        ret.tables.push_back(*table);
+        ret.pageSize += table2->stat.ms_psize;
+        ret.pages += table2->pages();
+        ret.size += table2->size();
+        ret.tables.push_back(*table2);
 
         return true;
 

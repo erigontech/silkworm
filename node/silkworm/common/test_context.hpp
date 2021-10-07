@@ -22,9 +22,9 @@
 
 namespace silkworm::test {
 
-// Context is a helper resource manager for test temporary directory and database.
-// Upon construction, it creates all the necessary data directories and DB tables.
-// Context follows the RAII idiom and cleans up its temporary directory upon destruction.
+//! \brief Context is a helper resource manager for test temporary directory and inmemory database.
+//! Upon construction, it creates all the necessary data directories and DB tables.
+//! \remarks Context follows the RAII idiom and cleans up its temporary directory upon destruction.
 class Context {
   public:
     Context();
@@ -36,6 +36,8 @@ class Context {
     [[nodiscard]] const DataDirectory& dir() const { return data_dir_; }
 
     [[nodiscard]] mdbx::txn& txn() { return txn_; }
+
+    [[nodiscard]] mdbx::env& env() { return env_; }
 
     void commit_and_renew_txn() {
         txn_.commit();

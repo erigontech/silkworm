@@ -18,6 +18,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/test_context.hpp>

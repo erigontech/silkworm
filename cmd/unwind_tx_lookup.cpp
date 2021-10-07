@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
         stagedsync::TransactionManager tm{env};
-        stagedsync::check_stagedsync_error(stagedsync::unwind_tx_lookup(tm, data_dir.etl().path(), unwind_to));
+        stagedsync::success_or_throw(stagedsync::unwind_tx_lookup(tm, data_dir.etl().path(), unwind_to));
 
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

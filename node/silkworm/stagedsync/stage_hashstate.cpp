@@ -216,7 +216,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
                 continue;
             }
             auto [incarnation, err]{extract_incarnation(db::from_slice(encoded_account.value))};
-            rlp::err_handler(err);
+            rlp::success_or_throw(err);
             if (incarnation == 0) {
                 changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
                 continue;
@@ -301,7 +301,7 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                     return true;
                 }
                 auto [acc, err]{decode_account_from_storage(db_value)};
-                rlp::err_handler(err);
+                rlp::success_or_throw(err);
 
                 if (acc.incarnation <= 0 || acc.code_hash != kEmptyHash) {
                     if (target_table.seek(new_key)) {
@@ -356,7 +356,7 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                     return true;
                 }
                 auto [incarnation, err]{extract_incarnation(db_value)};
-                rlp::err_handler(err);
+                rlp::success_or_throw(err);
                 if (incarnation == 0) {
                     return true;
                 }

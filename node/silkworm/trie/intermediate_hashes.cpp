@@ -244,7 +244,7 @@ evmc::bytes32 DbTrieLoader::calculate_root(const PrefixSet& changed) {
                 break;
             }
             const auto [account, err]{decode_account_from_storage(db::from_slice(acc.value))};
-            rlp::err_handler(err);
+            rlp::success_or_throw(err);
 
             evmc::bytes32 storage_root{kEmptyRoot};
 

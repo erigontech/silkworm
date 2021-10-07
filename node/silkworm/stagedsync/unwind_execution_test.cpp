@@ -127,8 +127,7 @@ TEST_CASE("Unwind Execution") {
     // ---------------------------------------
     // Unwind second block and checks if state is first block
     // ---------------------------------------
-    REQUIRE_NOTHROW(
-        stagedsync::check_stagedsync_error(stagedsync::unwind_execution(txn, context.dir().etl().path(), 1)));
+    REQUIRE_NOTHROW(stagedsync::success_or_throw(stagedsync::unwind_execution(txn, context.dir().etl().path(), 1)));
 
     db::Buffer buffer2{*txn, 0};
 

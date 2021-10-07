@@ -18,8 +18,6 @@
 
 #include <cassert>
 
-#include <nlohmann/json.hpp>
-
 #include <silkworm/common/endian.hpp>
 
 #include "bitmap.hpp"
@@ -62,73 +60,6 @@ void write_schema_version(mdbx::txn& txn, VersionBase& schema_version) {
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
-StorageMode read_storage_mode(mdbx::txn& txn) noexcept {
-    StorageMode ret{true};
-    auto src{db::open_cursor(txn, table::kDatabaseInfo)};
-
-    // History
-    auto data{src.find(mdbx::slice{kStorageModeHistoryKey}, /*throw_notfound*/ false)};
-    ret.History = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
-
-    // Receipts
-    data = src.find(mdbx::slice{kStorageModeReceiptsKey}, /*throw_notfound*/ false);
-    ret.Receipts = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
-
-    // TxIndex
-    data = src.find(mdbx::slice{kStorageModeTxIndexKey}, /*throw_notfound*/ false);
-    ret.TxIndex = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
-
-    // Call Traces
-    data = src.find(mdbx::slice{kStorageModeCallTracesKey}, /*throw_notfound*/ false);
-    ret.CallTraces = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
-
-    // TEVM
-    data = src.find(mdbx::slice{kStorageModeTEVMKey}, /*throw_notfound*/ false);
-    ret.TEVM = (data.done && data.value.length() == 1 && data.value.at(0) == 1);
-
-    return ret;
-}
-
-void write_storage_mode(mdbx::txn& txn, const StorageMode& val) {
-    auto target{db::open_cursor(txn, table::kDatabaseInfo)};
-    Bytes v_on(1, '\1');
-    Bytes v_off(2, '\0');
-
-    target.upsert(mdbx::slice{kStorageModeHistoryKey}, to_slice(val.History ? v_on : v_off));
-    target.upsert(mdbx::slice{kStorageModeReceiptsKey}, to_slice(val.Receipts ? v_on : v_off));
-    target.upsert(mdbx::slice{kStorageModeTxIndexKey}, to_slice(val.TxIndex ? v_on : v_off));
-    target.upsert(mdbx::slice{kStorageModeCallTracesKey}, to_slice(val.CallTraces ? v_on : v_off));
-    target.upsert(mdbx::slice{kStorageModeTEVMKey}, to_slice(val.TEVM ? v_on : v_off));
-}
-
-StorageMode parse_storage_mode(std::string& mode) {
-    if (mode == "default") {
-        return kDefaultStorageMode;
-    }
-    StorageMode ret{/*Initialized*/ true};
-    for (auto& c : mode) {
-        switch (c) {
-            case 'h':
-                ret.History = true;
-                break;
-            case 'r':
-                ret.Receipts = true;
-                break;
-            case 't':
-                ret.TxIndex = true;
-                break;
-            case 'c':
-                ret.CallTraces = true;
-                break;
-            case 'e':
-                ret.TEVM = true;
-                break;
-            default:
-                throw std::invalid_argument("Invalid mode");
-        }
-    }
-    return ret;
-}
 
 std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     auto src{db::open_cursor(txn, table::kHeaders)};
@@ -140,7 +71,7 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, co
 
     BlockHeader header;
     ByteView data_view{from_slice(data.value)};
-    rlp::err_handler(rlp::decode(data_view, header));
+    rlp::success_or_throw(rlp::decode(data_view, header));
     return header;
 }
 
@@ -154,7 +85,7 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, uint64_t bloc
     }
     intx::uint256 td{0};
     ByteView data_view{from_slice(data.value)};
-    rlp::err_handler(rlp::decode(data_view, td));
+    rlp::success_or_throw(rlp::decode(data_view, td));
     return td;
 }
 
@@ -182,7 +113,7 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
          data = txn_table.to_next(/*throw_notfound = */ false), ++i) {
         ByteView data_view{from_slice(data.value)};
         Transaction eth_txn;
-        rlp::err_handler(rlp::decode(data_view, eth_txn));
+        rlp::success_or_throw(rlp::decode(data_view, eth_txn));
         v.push_back(eth_txn);
     }
 
@@ -211,7 +142,7 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, uint64_t block_number, b
     }
 
     ByteView data_view(from_slice(data.value));
-    rlp::err_handler(rlp::decode(data_view, bh.block.header));
+    rlp::success_or_throw(rlp::decode(data_view, bh.block.header));
 
     // Read body
     std::optional<BlockBody> body{read_body(txn, block_number, bh.hash.bytes, read_senders)};
@@ -339,7 +270,7 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
     }
 
     auto [acc, err]{decode_account_from_storage(encoded.value())};
-    rlp::err_handler(err);
+    rlp::success_or_throw(err);
 
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash

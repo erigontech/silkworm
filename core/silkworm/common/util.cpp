@@ -129,20 +129,18 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
     if (hex.length() >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X')) {
         hex.remove_prefix(2);
     }
-    if (hex.length() % 2 != 0) {
-        return std::nullopt;
-    }
 
     Bytes out{};
-    out.reserve(hex.length() / 2);
+    auto pos{hex.length() & 1}; // "[0x]1" is legit and has to be treated as "[0x]01"
+    out.reserve(hex.length() + pos / 2);
 
     unsigned carry{0};
-    for (size_t i{0}; i < hex.size(); ++i) {
+    for (size_t i{0}; i < hex.size(); ++i, ++pos) {
         std::optional<unsigned> v{decode_hex_digit(hex[i])};
         if (!v) {
             return std::nullopt;
         }
-        if (i % 2 == 0) {
+        if (pos % 2 == 0) {
             carry = *v << 4;
         } else {
             out.push_back(static_cast<uint8_t>(carry | *v));

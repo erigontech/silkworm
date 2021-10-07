@@ -18,10 +18,12 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/storage.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
@@ -135,7 +137,7 @@ namespace db {
         auto main_crs{txn.open_cursor(main_map)};
         std::vector<std::string> table_names{};
 
-        const auto& walk_func{[&table_names](::mdbx::cursor&, ::mdbx::cursor::move_result data) -> bool {
+        const auto& walk_func{[&table_names](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
             table_names.push_back(data.key.as_string());
             return true;
         }};
@@ -186,41 +188,59 @@ namespace db {
         CHECK_NOTHROW(db::write_schema_version(context.txn(), version2.value()));
     }
 
-    TEST_CASE("Storage Mode") {
+    TEST_CASE("Storage and Prune Modes") {
         test::Context context;
+        auto& txn{context.txn()};
 
-        StorageMode default_mode{};
-        CHECK(default_mode.to_string() == "default");
+        SECTION("Prune Mode") {
+            // Uninitialized mode
+            PruneMode default_mode{};
+            CHECK(default_mode.to_string() == "default");
 
-        StorageMode expected_mode{true, false, false, false, false, false};
-        auto actual_mode{db::read_storage_mode(context.txn())};
-        CHECK(expected_mode == actual_mode);
+            // No value in db -> no pruning
+            auto prune_mode{db::read_prune_mode(txn)};
+            CHECK(prune_mode.to_string() == "--prune=");
+            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
 
-        std::string mode_s1{};
-        auto actual_mode1{db::parse_storage_mode(mode_s1)};
-        CHECK(actual_mode1.to_string() == mode_s1);
+            // Cross-check we have the same value
+            prune_mode = db::read_prune_mode(txn);
+            CHECK(prune_mode.to_string() == "--prune=");
 
-        std::string mode_s2{"default"};
-        auto actual_mode2{db::parse_storage_mode(mode_s2)};
-        CHECK(actual_mode2.to_string() == kDefaultStorageMode.to_string());
+            // Set default prune value for History
+            prune_mode.history.emplace(kDefaultPruneThreshold);
+            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            CHECK(prune_mode.to_string() == "--prune=h");
 
-        std::string mode_s3{"x"};
-        CHECK_THROWS(db::parse_storage_mode(mode_s3));
+            // Set default prune value for receipts
+            prune_mode.receipts.emplace(kDefaultPruneThreshold);
+            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            CHECK(prune_mode.to_string() == "--prune=hr");
 
-        std::string mode_s4{"hrc"};
-        auto actual_mode4{db::parse_storage_mode(mode_s4)};
-        CHECK(actual_mode4.to_string() == mode_s4);
+            // Set default prune value for tx_index and CallTraces
+            prune_mode.tx_index.emplace(kDefaultPruneThreshold);
+            prune_mode.call_traces.emplace(kDefaultPruneThreshold);
+            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            CHECK(prune_mode.to_string() == "--prune=hrtc");
 
-        db::write_storage_mode(context.txn(), actual_mode4);
+            // Set non-default prune value for History
+            prune_mode.history.emplace(1'000u);
+            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            CHECK(prune_mode.to_string() == "--prune=rtc --prune.h.older=1000");
 
-        context.commit_and_renew_txn();
+            // Parse from string with one discrete value
+            std::string mode_str{"hrtc"};
+            prune_mode = db::parse_prune_mode(mode_str, 1'000u);
+            CHECK(prune_mode.to_string() == "--prune=rtc --prune.h.older=1000");
 
-        auto actual_mode5{db::read_storage_mode(context.txn())};
-        CHECK(actual_mode4.to_string() == actual_mode5.to_string());
-
-        std::string mode_s6{"hrtce"};
-        auto actual_mode6{db::parse_storage_mode(mode_s6)};
-        CHECK(actual_mode6.to_string() == mode_s6);
+            // Parse from string with all discrete values
+            prune_mode = db::parse_prune_mode(mode_str, 1'000u, 999u, 998u, 997u);
+            CHECK(prune_mode.to_string() ==
+                  "--prune= --prune.h.older=1000 --prune.r.older=999 --prune.t.older=998 --prune.c.older=997");
+        }
     }
 
     TEST_CASE("read_stages") {

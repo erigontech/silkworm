@@ -48,10 +48,10 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         stagedsync::TransactionManager tm{env};
         if (storage) {
-            stagedsync::check_stagedsync_error(
+            stagedsync::success_or_throw(
                 stagedsync::unwind_storage_history(tm, data_dir.etl().path(), unwind_to));
         } else {
-            stagedsync::check_stagedsync_error(
+            stagedsync::success_or_throw(
                 stagedsync::unwind_account_history(tm, data_dir.etl().path(), unwind_to));
         }
     } catch (const std::exception& ex) {

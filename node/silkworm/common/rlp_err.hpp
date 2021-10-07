@@ -28,8 +28,6 @@ class DecodingError : public std::exception {
     explicit DecodingError(DecodingResult err)
         : err_{magic_enum::enum_integer<DecodingResult>(err)},
           message_{"Decoding error : " + std::string(magic_enum::enum_name<DecodingResult>(err))} {};
-    [[maybe_unused]] explicit DecodingError(DecodingResult err, std::string  message)
-        : err_{magic_enum::enum_integer<DecodingResult>(err)}, message_{std::move(message)} {};
     ~DecodingError() noexcept override = default;
     [[nodiscard]] const char* what() const noexcept override { return message_.c_str(); }
     [[nodiscard]] int err() const noexcept { return err_; }

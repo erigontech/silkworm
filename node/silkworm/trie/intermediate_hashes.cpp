@@ -52,13 +52,20 @@ void AccountTrieCursor::consume_node(ByteView to) {
     cursor_.erase();
 }
 
-void AccountTrieCursor::next(bool skip_children) {
-    if (!skip_children && children_are_in_trie()) {
+void AccountTrieCursor::next() {
+    if (!can_skip_state_ && children_are_in_trie()) {
+        // go to the child node
         consume_node(*key());
-        return;
+    } else {
+        move_to_next_sibling();
     }
 
-    move_to_next_sibling();
+    const std::optional<Bytes> k{key()};
+    if (k == std::nullopt || changed_.contains(*k)) {
+        can_skip_state_ = false;
+    } else {
+        can_skip_state_ = stack_.top().hash_flag();
+    }
 }
 
 void AccountTrieCursor::move_to_next_sibling() {
@@ -68,6 +75,7 @@ void AccountTrieCursor::move_to_next_sibling() {
     }
 
     if (stack_.empty()) {
+        // we're at the root
         ++root_nibble_;
         const Bytes key(1, root_nibble_);
         consume_node(key);
@@ -136,15 +144,15 @@ bool AccountTrieCursor::children_are_in_trie() const {
     return stack_.top().tree_flag();
 }
 
-bool AccountTrieCursor::can_skip_state() {
-    if (root_nibble_ == -1) {
-        return false;
+std::optional<Bytes> AccountTrieCursor::first_uncovered_prefix() const {
+    std::optional<Bytes> k{key()};
+    if (can_skip_state_ && k != std::nullopt) {
+        k = increment_key(*k);
     }
-    const std::optional<Bytes> k{key()};
-    if (k == std::nullopt || changed_.contains(*k)) {
-        return false;
+    if (k == std::nullopt) {
+        return std::nullopt;
     }
-    return stack_.top().hash_flag();
+    return pack_nibbles(*k);
 }
 
 StorageTrieCursor::StorageTrieCursor(mdbx::txn&) {}
@@ -236,14 +244,17 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
         if (acc_trie.can_skip_state()) {
             assert(acc_trie.hash() != nullptr);
             hb_.add_branch_node(*acc_trie.key(), *acc_trie.hash(), acc_trie.children_are_in_trie());
-            acc_trie.next(/*skip_children=*/true);
-            continue;
         }
 
-        const Bytes first_uncovered_prefix{pack_nibbles(*acc_trie.key())};
-        acc_trie.next(/*skip_children=*/false);
+        const std::optional<Bytes> uncovered{acc_trie.first_uncovered_prefix()};
+        if (uncovered == std::nullopt) {
+            // no more uncovered state
+            break;
+        }
 
-        for (auto acc{acc_state.lower_bound(db::to_slice(first_uncovered_prefix), /*throw_notfound=*/false)}; acc.done;
+        acc_trie.next();
+
+        for (auto acc{acc_state.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)}; acc.done;
              acc = acc_state.to_next(/*throw_notfound=*/false)) {
             const Bytes unpacked_key{unpack_nibbles(db::from_slice(acc.key))};
             if (acc_trie.key().has_value() && acc_trie.key().value() < unpacked_key) {
@@ -353,6 +364,22 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesyst
     txn.clear_map(db::open_map(txn, db::table::kTrieOfStorage));
     PrefixSet empty;
     return increment_intermediate_hashes(txn, etl_dir, expected_root, /*changed=*/empty);
+}
+
+std::optional<Bytes> increment_key(ByteView unpacked) {
+    Bytes out{unpacked};
+    for (size_t i{out.size()}; i > 0; --i) {
+        uint8_t& nibble{out[i - 1]};
+        assert(nibble < 0x10);
+        if (nibble < 0xF) {
+            ++nibble;
+            return out;
+        } else {
+            nibble = 0;
+            // carry over
+        }
+    }
+    return std::nullopt;
 }
 
 }  // namespace silkworm::trie

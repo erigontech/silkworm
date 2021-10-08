@@ -90,7 +90,7 @@ class AccountTrieCursor {
 
     AccountTrieCursor(mdbx::txn& txn, PrefixSet& changed);
 
-    void next(bool skip_children);
+    void next();
 
     // nullopt key signifies end-of-tree
     [[nodiscard]] std::optional<Bytes> key() const;
@@ -99,7 +99,9 @@ class AccountTrieCursor {
 
     [[nodiscard]] bool children_are_in_trie() const;
 
-    [[nodiscard]] bool can_skip_state();
+    [[nodiscard]] bool can_skip_state() const { return can_skip_state_; }
+
+    [[nodiscard]] std::optional<Bytes> first_uncovered_prefix() const;
 
   private:
     // TrieAccount node with a particular nibble selected
@@ -123,6 +125,7 @@ class AccountTrieCursor {
     int root_nibble_{-1};  // -1 means the very beginning of trie traversal, before any actual nodes
     mdbx::cursor_managed cursor_;
     std::stack<SubNode> stack_;
+    bool can_skip_state_{false};
 };
 
 // Erigon StorageTrieCursor
@@ -177,6 +180,9 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesyst
 // returns the state root
 evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir, BlockNum from,
                                             const evmc::bytes32* expected_root = nullptr);
+
+// TODO (Andrew) doc + test case
+std::optional<Bytes> increment_key(ByteView unpacked);
 
 }  // namespace silkworm::trie
 

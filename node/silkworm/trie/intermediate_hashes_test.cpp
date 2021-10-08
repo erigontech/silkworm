@@ -77,24 +77,24 @@ TEST_CASE("AccountTrieCursor traversal 1") {
 
     CHECK((atc.key() != std::nullopt && atc.key()->empty()));  // root
 
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "10");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "10B1");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "10B3");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "11");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "12");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "131");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "132");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "133");
 
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(atc.key() == std::nullopt);  // end of trie
 }
 
@@ -119,16 +119,16 @@ TEST_CASE("AccountTrieCursor traversal 2") {
 
     CHECK((atc.key() != std::nullopt && atc.key()->empty()));  // root
 
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "42");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "44");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "61");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "64");
 
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(atc.key() == std::nullopt);  // end of trie
 }
 
@@ -441,7 +441,7 @@ TEST_CASE("Incremental vs regeneration") {
     test::Context context;
     auto& txn{context.txn()};
 
-    static constexpr size_t n{11};
+    static constexpr size_t n{10'000};
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
     auto account_change_table{db::open_cursor(txn, db::table::kAccountChangeSet)};

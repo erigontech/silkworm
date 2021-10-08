@@ -348,7 +348,7 @@ namespace db {
             CHECK(!bh->block.transactions[1].from);
 
             read_senders = true;
-            CHECK_THROWS_AS(read_block(txn, block_num, read_senders), MissingSenders);
+            CHECK_NOTHROW(read_block(txn, block_num, read_senders));
 
             Bytes full_senders{
                 *from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"

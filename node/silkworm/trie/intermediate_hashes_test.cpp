@@ -331,8 +331,7 @@ TEST_CASE("Account and storage trie") {
     // TODO[Issue 179] storage
 
     SECTION("Delete an account") {
-        hashed_accounts.find(mdbx::slice{key2.bytes, kHashLength});
-        hashed_accounts.erase();
+        hashed_accounts.erase(mdbx::slice{key2.bytes, kHashLength});
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
 
         increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/1);
@@ -354,12 +353,10 @@ TEST_CASE("Account and storage trie") {
     }
 
     SECTION("Delete several accounts") {
-        hashed_accounts.find(mdbx::slice{key2.bytes, kHashLength});
-        hashed_accounts.erase();
+        hashed_accounts.erase(mdbx::slice{key2.bytes, kHashLength});
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
 
-        hashed_accounts.find(mdbx::slice{key3.bytes, kHashLength});
-        hashed_accounts.erase();
+        hashed_accounts.erase(mdbx::slice{key3.bytes, kHashLength});
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address3));
 
         increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/1);
@@ -476,8 +473,7 @@ TEST_CASE("Incremental vs regeneration") {
     for (size_t i{n}; i < 2 * n; ++i) {
         const evmc::address address{int_to_address(i)};
         const auto hash{keccak256(full_view(address))};
-        hashed_accounts.find(mdbx::slice{hash.bytes, kHashLength});
-        hashed_accounts.erase();
+        hashed_accounts.erase(mdbx::slice{hash.bytes, kHashLength});
         account_change_table.upsert(db::to_slice(block_key), db::to_slice(address));
     }
 

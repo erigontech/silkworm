@@ -32,6 +32,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/storage.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
@@ -201,22 +202,20 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     dbFreeInfo ret{};
 
     ::mdbx::map_handle free_map{0};
-    auto free_stat{txn.get_map_stat(free_map)};
-    auto free_crs{txn.open_cursor(free_map)};
+    auto page_size{txn.get_map_stat(free_map).ms_psize};
 
-    const auto& collect_func{[&ret, &free_stat](const ::mdbx::cursor&, ::mdbx::cursor::move_result data) -> bool {
+    const auto& collect_func{[&ret, &page_size](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
         size_t txId = *(static_cast<size_t*>(data.key.iov_base));
         size_t pagesCount = *(static_cast<uint32_t*>(data.value.iov_base));
-        size_t pagesSize = pagesCount * free_stat.ms_psize;
+        size_t pagesSize = pagesCount * page_size;
         ret.pages += pagesCount;
         ret.size += pagesSize;
         ret.entries.push_back({txId, pagesCount, pagesSize});
         return true;
     }};
 
-    if (free_crs.to_first(/*throw_notfound =*/false)) {
-        (void)db::cursor_for_each(free_crs, collect_func);
-    }
+    auto free_crs{txn.open_cursor(free_map)};
+    (void)db::cursor_for_each(free_crs, collect_func);
 
     return ret;
 }
@@ -247,22 +246,25 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     ret.size += table->size();
     ret.tables.push_back(*table);
 
+    const auto& collect_func{[&ret, &txn](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+
+        auto named_map{txn.open_map(data.key.as_string())};
+        auto stat2{txn.get_map_stat(named_map)};
+        auto info2{txn.get_handle_info(named_map)};
+        dbTableEntry* table2 = new dbTableEntry{named_map.dbi, data.key.as_string(), stat2, info2};
+
+        ret.pageSize += table2->stat.ms_psize;
+        ret.pages += table2->pages();
+        ret.size += table2->size();
+        ret.tables.push_back(*table2);
+
+        return true;
+
+    }};
+
     // Get all tables from the unnamed database
     auto main_crs{txn.open_cursor(main_map)};
-    auto result{main_crs.to_first(/*throw_notfound =*/false)};
-    while (result) {
-        auto named_map{txn.open_map(result.key.as_string())};
-        stat = txn.get_map_stat(named_map);
-        info = txn.get_handle_info(named_map);
-        table = new dbTableEntry{named_map.dbi, result.key.as_string(), stat, info};
-
-        ret.pageSize += table->stat.ms_psize;
-        ret.pages += table->pages();
-        ret.size += table->size();
-        ret.tables.push_back(*table);
-        result = main_crs.to_next(/*throw_notfound =*/false);
-    }
-
+    (void) db::cursor_for_each(main_crs,collect_func);
     return ret;
 }
 
@@ -372,7 +374,7 @@ void do_stages(db::EnvConfig& config) {
     }
 }
 
-void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
+void do_prunings(db::EnvConfig& config, uint64_t prune_size) {
     auto env{silkworm::db::open_env(config)};
     stagedsync::TransactionManager txn{env};
 
@@ -383,8 +385,9 @@ void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
 
     std::cout << "\n Pruned start, block to be kept: " << prune_size << "\n" << std::endl;
     auto pruned_node_stages{stagedsync::get_pruned_node_stages()};
-    for(auto stage: pruned_node_stages) {
-        stagedsync::success_or_throw(stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
+    for (auto stage : pruned_node_stages) {
+        stagedsync::success_or_throw(
+            stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
     }
 }
 
@@ -448,7 +451,8 @@ void do_tables(db::EnvConfig& config) {
     auto dbTablesInfo{get_tablesInfo(txn)};
     auto dbFreeInfo{get_freeInfo(txn)};
 
-    std::cout << "\n Database dbTablesInfo    : " << dbTablesInfo.tables.size() << "\n" << std::endl;
+    std::cout << "\n Database tables          : " << dbTablesInfo.tables.size() << std::endl;
+    std::cout << " Effective pruning        : " << db::read_prune_mode(txn).to_string() << "\n" << std::endl;
 
     if (!dbTablesInfo.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" % "Overflow" %
@@ -1033,11 +1037,12 @@ int main(int argc, char* argv[]) {
     auto cmd_extract_headers_step_opt = cmd_extract_headers->add_option("--step", "Step every this number of blocks")
                                             ->default_val("100000")
                                             ->check(CLI::Range(1u, UINT32_MAX));
-    // List migration keys
-    auto cmd_do_prunes = app_main.add_subcommand("do-prunes", "Prune the node");
-    auto cmd_do_prunes_size = cmd_do_prunes->add_option("--block-to-keep", "How many blocks of history to keep")
-                                  ->default_val("96000")
-                                  ->check(CLI::Range(1u, UINT32_MAX));
+    // Executes database prunings
+    // TODO(Andrea) eventually move to integration tool
+    auto cmd_do_prunings = app_main.add_subcommand("prune", "Prune the node");
+    auto cmd_do_prunings_size = cmd_do_prunings->add_option("--block-to-keep", "How many blocks of history to keep")
+                                    ->default_val("96000")
+                                    ->check(CLI::Range(1u, UINT32_MAX));
 
     /*
      * Parse arguments and validate
@@ -1116,8 +1121,8 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_extract_headers) {
             do_extract_headers(src_config, cmd_extract_headers_file_opt->as<std::string>(),
                                cmd_extract_headers_step_opt->as<uint32_t>());
-        } else if (*cmd_do_prunes) {
-            do_prunes(src_config, cmd_do_prunes_size->as<uint64_t>());
+        } else if (*cmd_do_prunings) {
+            do_prunings(src_config, cmd_do_prunings_size->as<uint64_t>());
         }
 
         return 0;

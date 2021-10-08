@@ -60,7 +60,6 @@ void write_schema_version(mdbx::txn& txn, VersionBase& schema_version) {
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
-
 std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
     auto src{db::open_cursor(txn, table::kHeaders)};
     auto key{block_key(block_number, hash)};
@@ -173,11 +172,18 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, uint64_t block_number, const 
 
     if (read_senders) {
         std::vector<evmc::address> senders{db::read_senders(txn, block_number, hash)};
-        if (senders.size() != out.transactions.size()) {
-            throw MissingSenders("senders count does not match transactions count");
-        }
-        for (size_t i{0}; i < senders.size(); ++i) {
-            out.transactions[i].from = senders[i];
+        // Might be empty due to pruning
+        if (!senders.empty()) {
+            if (senders.size() != out.transactions.size()) {
+                throw MissingSenders("senders count does not match transactions count");
+            }
+            for (size_t i{0}; i < senders.size(); ++i) {
+                out.transactions[i].from = senders[i];
+            }
+        } else {
+            for (auto& transaction : out.transactions) {
+                transaction.recover_sender();
+            }
         }
     }
 

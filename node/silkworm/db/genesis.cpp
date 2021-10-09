@@ -177,8 +177,9 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
             state_root_hash = hb.root_hash();
         }
 
-        // Fill Header
+        // Fill Header and Body
         BlockHeader header;
+        BlockBody body{};
 
         auto extra_data = from_hex(genesis_json["extraData"].get<std::string>());
         if (extra_data.has_value()) {
@@ -195,48 +196,31 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
                 std::memcpy(header.nonce.data(), nonce->data(), nonce->size());
             }
         }
+        if (genesis_json.contains("difficulty")) {
+            auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
+            header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
+        }
 
         header.ommers_hash = kEmptyListHash;
         header.state_root = state_root_hash;
         header.transactions_root = kEmptyRoot;
         header.receipts_root = kEmptyRoot;
-
-        if (genesis_json.contains("difficulty")) {
-            auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
-            header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
-        }
         header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>(), nullptr, 0);
         header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>(), nullptr, 0);
 
-        auto nonce = std::stoull(genesis_json["nonce"].get<std::string>(), nullptr, 0);
-        std::memcpy(&header.nonce[0], &nonce, 8);
-
-        // Write header
         auto block_hash{header.hash()};
-        auto block_key{db::block_key(0)};
+        auto block_hash_key{db::block_key(header.number, block_hash.bytes)};
+        db::write_header(txn, header, /*with_header_numbers=*/true);  // Write table::kHeaders and table::kHeaderNumbers
+        db::write_canonical_header_hash(txn, block_hash.bytes, header.number);  // Insert header hash as canonical
+        db::write_total_difficulty(txn, block_hash_key, header.difficulty);     // Write initial difficulty
+
+        db::write_body(txn, BlockBody(), block_hash.bytes, header.number);      // Write block body (empty)
+        db::write_head_header_hash(txn, block_hash.bytes);                      // Update head header in config
+
+        // TODO(Andrea) verify how receipts are stored (see buffer.cpp)
         const uint8_t genesis_null_receipts[] = {0xf6};  // <- cbor encoded
-
-        Bytes rlp_header;
-        rlp::encode(rlp_header, header);
-        Bytes rlp_body{195, 128, 128, 192};
-
-        Bytes key(8 + kHashLength, '\0');
-        std::memcpy(&key[8], block_hash.bytes, kHashLength);
-        db::open_cursor(txn, db::table::kHeaders).upsert(db::to_slice(key), db::to_slice(rlp_header));
-        db::open_cursor(txn, db::table::kCanonicalHashes)
-            .upsert(db::to_slice(block_key), db::to_slice(full_view(block_hash.bytes)));
-
-        // Write body
-        db::open_cursor(txn, db::table::kBlockBodies).upsert(db::to_slice(key), db::to_slice(rlp_body));
-        uint8_t difficulty_le[32];  // TODO (Andrew) Double check that difficulty is stored as little-endian
-        intx::le::store(difficulty_le, header.difficulty);
-        db::open_cursor(txn, db::table::kDifficulty).upsert(db::to_slice(key), mdbx::slice{difficulty_le, 32});
         db::open_cursor(txn, db::table::kBlockReceipts)
-            .upsert(db::to_slice(key).safe_middle(0, 8), db::to_slice(Bytes(genesis_null_receipts, 1)));
-        db::open_cursor(txn, db::table::kHeadHeader)
-            .upsert(mdbx::slice{db::table::kLastHeaderKey}, db::to_slice(full_view(block_hash.bytes)));
-        db::open_cursor(txn, db::table::kHeaderNumbers)
-            .upsert(db::to_slice(full_view(block_hash.bytes)), db::to_slice(key.substr(0, 8)));
+            .upsert(db::to_slice(block_hash_key).safe_middle(0, 8), db::to_slice(Bytes(genesis_null_receipts, 1)));
 
         // Write Chain Config
         auto config_data{genesis_json["config"].dump()};

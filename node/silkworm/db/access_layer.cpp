@@ -60,7 +60,7 @@ void write_schema_version(mdbx::txn& txn, VersionBase& schema_version) {
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
-std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength]) {
+std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
     auto src{db::open_cursor(txn, table::kHeaders)};
     auto key{block_key(block_number, hash)};
     auto data{src.find(to_slice(key), false)};
@@ -74,7 +74,25 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, uint64_t block_number, co
     return header;
 }
 
-std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, uint64_t block_number,
+void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_numbers) {
+    Bytes value{};
+    rlp::encode(value, header);
+    auto header_hash{header.hash()};
+    auto key{db::block_key(header.number, header_hash.bytes)};
+    auto tgt{db::open_cursor(txn, table::kHeaders)};
+    tgt.upsert(to_slice(key), to_slice(value));
+    if (with_header_numbers) {
+        write_header_number(txn, header_hash.bytes, header.number);
+    }
+}
+
+void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], const BlockNum number) {
+    auto tgt{db::open_cursor(txn, db::table::kHeaderNumbers)};
+    auto value{db::block_key(number)};
+    tgt.upsert({hash, kHashLength}, to_slice(value));
+}
+
+std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
                                                    const uint8_t (&hash)[kHashLength]) {
     auto src{db::open_cursor(txn, table::kDifficulty)};
     auto key{block_key(block_number, hash)};
@@ -86,6 +104,31 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, uint64_t bloc
     ByteView data_view{from_slice(data.value)};
     rlp::success_or_throw(rlp::decode(data_view, td));
     return td;
+}
+
+void write_total_difficulty(mdbx::txn& txn, Bytes& key, const intx::uint256& total_difficulty) {
+    assert(key.length() == sizeof(BlockNum) + kHashLength);
+    Bytes value{};
+    rlp::encode(value, total_difficulty);
+    auto tgt{db::open_cursor(txn, table::kDifficulty)};
+    tgt.upsert(to_slice(key), to_slice(value));
+}
+
+void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
+                            intx::uint256& total_difficulty) {
+    auto key{block_key(block_number, hash)};
+    write_total_difficulty(txn, key, total_difficulty);
+}
+
+void write_canonical_header(mdbx::txn& txn, const BlockHeader& header) {
+    write_canonical_header_hash(txn, header.hash().bytes, header.number);
+}
+
+void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number) {
+    auto tgt{db::open_cursor(txn, table::kCanonicalHashes)};
+    auto key{db::block_key(number)};
+    mdbx::slice value{hash, kHashLength};
+    tgt.upsert(to_slice(key), value);
 }
 
 // Erigon ReadTransactions
@@ -119,7 +162,7 @@ std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t bas
     return v;
 }
 
-std::optional<BlockWithHash> read_block(mdbx::txn& txn, uint64_t block_number, bool read_senders) {
+std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, bool read_senders) {
     // Locate canonical hash
     auto src{db::open_cursor(txn, table::kCanonicalHashes)};
     auto key{block_key(block_number)};
@@ -155,7 +198,7 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, uint64_t block_number, b
     return bh;
 }
 
-std::optional<BlockBody> read_body(mdbx::txn& txn, uint64_t block_number, const uint8_t (&hash)[kHashLength],
+std::optional<BlockBody> read_body(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
                                    bool read_senders) {
     auto src{db::open_cursor(txn, table::kBlockBodies)};
     auto key{block_key(block_number, hash)};
@@ -170,7 +213,7 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, uint64_t block_number, const 
     std::swap(out.ommers, body.ommers);
     out.transactions = read_transactions(txn, body.base_txn_id, body.txn_count);
 
-    if (read_senders) {
+    if (!out.transactions.empty() && read_senders) {
         std::vector<evmc::address> senders{db::read_senders(txn, block_number, hash)};
         // Might be empty due to pruning
         if (!senders.empty()) {
@@ -188,6 +231,17 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, uint64_t block_number, const 
     }
 
     return out;
+}
+
+void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
+    detail::BlockBodyForStorage body_for_storage{};
+    body_for_storage.ommers = body.ommers;
+    body_for_storage.txn_count = body.transactions.size();
+    // TODO(Andrea) build up the sequence for transactions and write transactions
+
+    Bytes value{body_for_storage.encode()};
+    auto key{db::block_key(number, hash)};
+    auto tgt{db::open_cursor(txn, table::kBlockBodies)};
 }
 
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
@@ -215,7 +269,7 @@ std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash
 }
 
 // Erigon FindByHistory for account
-static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::address& address, uint64_t block_number) {
+static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::address& address, BlockNum block_number) {
     auto history_table{db::open_cursor(txn, table::kAccountHistory)};
     const Bytes history_key{account_history_key(address, block_number)};
     const auto data{history_table.lower_bound(to_slice(history_key), /*throw_notfound=*/false)};
@@ -236,7 +290,7 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
 
 // Erigon FindByHistory for storage
 static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::address& address, uint64_t incarnation,
-                                                  const evmc::bytes32& location, uint64_t block_number) {
+                                                  const evmc::bytes32& location, BlockNum block_number) {
     auto history_table{db::open_cursor(txn, table::kStorageHistory)};
     const Bytes history_key{storage_history_key(address, location, block_number)};
     const auto data{history_table.lower_bound(to_slice(history_key), /*throw_notfound=*/false)};
@@ -261,7 +315,7 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
     return find_value_suffix(change_set_table, change_set_key, full_view(location));
 }
 
-std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address, std::optional<uint64_t> block_num) {
+std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address, std::optional<BlockNum> block_num) {
     std::optional<ByteView> encoded{block_num.has_value() ? historical_account(txn, address, block_num.value())
                                                           : std::nullopt};
 
@@ -292,7 +346,7 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
 }
 
 evmc::bytes32 read_storage(mdbx::txn& txn, const evmc::address& address, uint64_t incarnation,
-                           const evmc::bytes32& location, std::optional<uint64_t> block_num) {
+                           const evmc::bytes32& location, std::optional<BlockNum> block_num) {
     std::optional<ByteView> val{block_num.has_value()
                                     ? historical_storage(txn, address, incarnation, location, block_num.value())
                                     : std::nullopt};
@@ -318,7 +372,7 @@ static std::optional<uint64_t> historical_previous_incarnation() {
 }
 
 std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::address& address,
-                                                  std::optional<uint64_t> block_num) {
+                                                  std::optional<BlockNum> block_num) {
     if (block_num.has_value()) {
         return historical_previous_incarnation();
     }
@@ -331,7 +385,7 @@ std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::ad
     return std::nullopt;
 }
 
-AccountChanges read_account_changes(mdbx::txn& txn, uint64_t block_num) {
+AccountChanges read_account_changes(mdbx::txn& txn, BlockNum block_num) {
     AccountChanges changes;
 
     auto src{db::open_cursor(txn, table::kAccountChangeSet)};
@@ -350,7 +404,7 @@ AccountChanges read_account_changes(mdbx::txn& txn, uint64_t block_num) {
     return changes;
 }
 
-StorageChanges read_storage_changes(mdbx::txn& txn, uint64_t block_num) {
+StorageChanges read_storage_changes(mdbx::txn& txn, BlockNum block_num) {
     StorageChanges changes;
 
     const Bytes block_prefix{block_key(block_num)};
@@ -401,6 +455,13 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
     // https://github.com/nlohmann/json/issues/2204
     const auto json = nlohmann::json::parse(data.value.as_string(), nullptr, false);
     return ChainConfig::from_json(json);
+}
+
+void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]) {
+    auto tgt{db::open_cursor(txn, table::kConfig)};
+    mdbx::slice key{db::table::kLastHeaderKey};
+    mdbx::slice value{hash, kHashLength};
+    tgt.upsert(key, value);
 }
 
 }  // namespace silkworm::db

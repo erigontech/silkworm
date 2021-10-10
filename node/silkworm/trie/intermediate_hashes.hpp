@@ -181,7 +181,15 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesyst
 evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir, BlockNum from,
                                             const evmc::bytes32* expected_root = nullptr);
 
-// TODO (Andrew) doc + test case
+// Produces the next key of the same length.
+// It's essentially +1 in the hexadecimal (base 16) numeral system.
+// For example:
+// increment_key(120) = 121,
+// increment_key(12e) = 12f,
+// increment_key(12f) = 130.
+//
+// Returns std::optional if the key is the largest key of its length,
+// i.e. consists only of 0xF nibbles.
 std::optional<Bytes> increment_key(ByteView unpacked);
 
 }  // namespace silkworm::trie

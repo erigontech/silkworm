@@ -525,4 +525,16 @@ TEST_CASE("Incremental vs regeneration") {
     CHECK(fused_nodes == incremental_nodes);
 }
 
+TEST_CASE("increment_key") {
+    CHECK(increment_key({}) == std::nullopt);
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("12"))) == "13");
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("1F"))) == "20");
+    CHECK(increment_key(nibbles_from_hex("FF")) == std::nullopt);
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("120"))) == "121");
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("12E"))) == "12F");
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("12F"))) == "130");
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("1FF"))) == "200");
+    CHECK(increment_key(nibbles_from_hex("FFF")) == std::nullopt);
+}
+
 }  // namespace silkworm::trie

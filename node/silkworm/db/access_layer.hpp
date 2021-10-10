@@ -79,8 +79,14 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, b
 // See Erigon ReadSenders
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 
-// Overload
-std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, BlockNum base_id, uint64_t count);
+// See Erigon ReadTransactions
+std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count);
+std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count);
+
+//! \brief Persist transactions into db's bucket table::kEthTx. The key starts from base_id and is incremented by 1 for
+//! each transaction
+//! \remarks Before calling this ensure you got a proper base_id by incrementing sequence for  table::kEthTx
+void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transactions, uint64_t base_id);
 
 std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash);
 
@@ -106,6 +112,14 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn);
 
 //! \brief Updates highest header in table::Config
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]);
+
+//! \brief Gets/Increments the sequence value for a given map (bucket)
+//! \param [in] map_name : the name of the map to get a sequence for
+//! \param [in] increment : the value of increments to add to the sequence. Must be > 0
+//! \remarks Initial sequence for any key is 0. When function is invoked it returns the current value of the sequence
+//! and THEN increments and persists the sequence with applied increments so at next call we will start from new value.
+//! \remarks Changes to sequences are invisible until the transaction is committed
+uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t increment = 1u);
 
 }  // namespace silkworm::db
 

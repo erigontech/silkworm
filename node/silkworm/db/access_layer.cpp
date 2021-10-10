@@ -131,8 +131,7 @@ void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLeng
     tgt.upsert(to_slice(key), value);
 }
 
-// Erigon ReadTransactions
-static std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count) {
+std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count) {
     if (!count) {
         return {};
     }
@@ -140,8 +139,23 @@ static std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_
     return read_transactions(src, base_id, count);
 }
 
+void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transactions, uint64_t base_id) {
+    if (transactions.empty()) {
+        return;
+    }
+    auto tgt{db::open_cursor(txn, table::kEthTx)};
+    auto key{db::block_key(base_id)};
+    for (const auto& transaction : transactions) {
+        Bytes value{};
+        rlp::encode(value, transaction);
+        mdbx::slice value_slice{value.data(), value.length()};
+        tgt.put(to_slice(key), &value_slice, MDBX_APPEND);
+        ++base_id;
+    }
+}
+
 std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count) {
-    std::vector<Transaction> v;
+    std::vector<Transaction> v{};
     if (count == 0) {
         return v;
     }
@@ -234,14 +248,18 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, BlockNum block_number, const 
 }
 
 void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
+
     detail::BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
     body_for_storage.txn_count = body.transactions.size();
-    // TODO(Andrea) build up the sequence for transactions and write transactions
-
+    body_for_storage.base_txn_id =
+        body_for_storage.txn_count ? increment_map_sequence(txn, table::kEthTx.name, body.transactions.size()) : 0;
     Bytes value{body_for_storage.encode()};
     auto key{db::block_key(number, hash)};
     auto tgt{db::open_cursor(txn, table::kBlockBodies)};
+    tgt.upsert(to_slice(key), to_slice(value));
+
+    write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
 }
 
 std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
@@ -462,6 +480,22 @@ void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]) 
     mdbx::slice key{db::table::kLastHeaderKey};
     mdbx::slice value{hash, kHashLength};
     tgt.upsert(key, value);
+}
+
+uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t increment) {
+    assert(increment > 0);
+    uint64_t current_value{0};
+    auto tgt{db::open_cursor(txn, table::kSequence)};
+    mdbx::slice key{map_name};
+    auto data{tgt.find(key, /*throw_notfound=*/false)};
+    if (data) {
+        current_value = endian::load_big_u64(from_slice(data.value).data());
+    }
+    uint64_t new_value{current_value + increment};  // Note ! May overflow
+    Bytes new_data{sizeof(uint64_t), '\0'};
+    endian::store_big_u64(new_data.data(), new_value);
+    tgt.upsert(key, to_slice(new_data));
+    return current_value;
 }
 
 }  // namespace silkworm::db

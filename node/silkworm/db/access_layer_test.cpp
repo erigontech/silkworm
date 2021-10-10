@@ -20,7 +20,6 @@
 
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/endian.hpp>
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/storage.hpp>
@@ -165,6 +164,68 @@ namespace db {
         CHECK(v2 == v3);
     }
 
+    TEST_CASE("Sequences") {
+        test::Context context;
+        auto& txn{context.txn()};
+
+        auto val1{read_map_sequence(txn, table::kEthTx.name)};
+        REQUIRE(val1.has_value() == false);
+
+        auto val2{increment_map_sequence(txn, table::kEthTx.name, 5)};
+        REQUIRE(val2 == 0);
+        auto val3{read_map_sequence(txn, table::kEthTx.name)};
+        REQUIRE((val3.has_value() && val3.value() == 5));
+
+        bool thrown{false};
+        try {
+            (void)increment_map_sequence(txn, table::kEthTx.name, 0);
+        } catch (const std::exception& ex) {
+            REQUIRE(std::string(ex.what()) == "Increment must be >= 1");
+            thrown = true;
+        }
+        REQUIRE(thrown);
+
+        auto val4{increment_map_sequence(txn, table::kEthTx.name, 3)};
+        REQUIRE(val4 == 5);
+        auto val5{read_map_sequence(txn, table::kEthTx.name)};
+        REQUIRE((val5.has_value() && val5.value() == 8));
+
+        context.commit_and_renew_txn();
+        auto& txn2{context.txn()};
+
+        auto val6{read_map_sequence(txn2, table::kEthTx.name)};
+        REQUIRE((val6.has_value() && val6.value() == 8));
+
+
+        // Tamper with sequence
+        Bytes fake_value(sizeof(uint32_t), '\0');
+        mdbx::slice key(table::kEthTx.name);
+        auto tgt{db::open_cursor(txn2, table::kSequence)};
+        tgt.upsert(key, to_slice(fake_value));
+
+        thrown = false;
+        try {
+            (void)increment_map_sequence(txn, table::kEthTx.name);
+        } catch (const std::exception& ex) {
+            REQUIRE(std::string(ex.what()) == "Bad sequence value in db");
+            thrown = true;
+        }
+        REQUIRE(thrown);
+
+        thrown = false;
+        try {
+            (void)read_map_sequence(txn, table::kEthTx.name);
+        } catch (const std::exception& ex) {
+            REQUIRE(std::string(ex.what()) == "Bad sequence value in db");
+            thrown = true;
+        }
+        REQUIRE(thrown);
+
+
+
+
+    }
+
     TEST_CASE("Read schema Version") {
         test::Context context;
 
@@ -300,17 +361,11 @@ namespace db {
         CHECK(!read_header(txn, header.number, hash.bytes));
 
         // Write canonical header hash + header rlp
-        auto canonical_hashes_table{db::open_cursor(txn, table::kCanonicalHashes)};
-        auto k{block_key(block_num)};
-        Bytes v(hash.bytes, kHashLength);
-        canonical_hashes_table.upsert(to_slice(k), to_slice(v));
-
-        auto header_table{db::open_cursor(txn, table::kHeaders)};
-        Bytes key{block_key(header.number, hash.bytes)};
-        header_table.upsert(to_slice(key), to_slice(rlp));
+        CHECK_NOTHROW(write_canonical_header(txn, header));
+        CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
 
         std::optional<BlockHeader> header_from_db{read_header(txn, header.number, hash.bytes)};
-        REQUIRE(header_from_db);
+        REQUIRE(header_from_db.has_value());
         CHECK(*header_from_db == header);
 
         SECTION("read_block") {
@@ -318,24 +373,7 @@ namespace db {
             CHECK(!read_block(txn, block_num, read_senders));
 
             BlockBody body{sample_block_body()};
-
-            detail::BlockBodyForStorage storage_body;
-            storage_body.base_txn_id = 1687896;
-            storage_body.txn_count = body.transactions.size();
-            storage_body.ommers = body.ommers;
-
-            auto body_table{db::open_cursor(txn, table::kBlockBodies)};
-            auto body_data{storage_body.encode()};
-            body_table.upsert(to_slice(key), to_slice(body_data));
-
-            auto txn_table{db::open_cursor(txn, table::kEthTx)};
-            Bytes txn_key(8, '\0');
-            for (size_t i{0}; i < body.transactions.size(); ++i) {
-                endian::store_big_u64(txn_key.data(), storage_body.base_txn_id + i);
-                rlp.clear();
-                rlp::encode(rlp, body.transactions[i]);
-                txn_table.upsert(to_slice(txn_key), to_slice(rlp));
-            }
+            CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number));
 
             std::optional<BlockWithHash> bh{read_block(txn, block_num, read_senders)};
             REQUIRE(bh);
@@ -355,6 +393,7 @@ namespace db {
                           "941591b6ca8e8dd05c69efdec02b77c72dac1496")};
             REQUIRE(full_senders.length() == 2 * kAddressLength);
 
+            Bytes key{block_key(header.number, hash.bytes)};
             ByteView truncated_senders{full_senders.data(), kAddressLength};
             auto sender_table{db::open_cursor(txn, table::kSenders)};
             sender_table.upsert(to_slice(key), to_slice(truncated_senders));

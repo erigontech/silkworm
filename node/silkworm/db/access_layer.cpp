@@ -151,6 +151,7 @@ void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transact
         mdbx::slice value_slice{value.data(), value.length()};
         tgt.put(to_slice(key), &value_slice, MDBX_APPEND);
         ++base_id;
+        endian::store_big_u64(key.data(), base_id);
     }
 }
 
@@ -248,7 +249,6 @@ std::optional<BlockBody> read_body(mdbx::txn& txn, BlockNum block_number, const 
 }
 
 void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
-
     detail::BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
     body_for_storage.txn_count = body.transactions.size();
@@ -477,25 +477,43 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
 
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]) {
     auto tgt{db::open_cursor(txn, table::kConfig)};
-    mdbx::slice key{db::table::kLastHeaderKey};
-    mdbx::slice value{hash, kHashLength};
+    mdbx::slice key(db::table::kLastHeaderKey);
+    mdbx::slice value(hash, kHashLength);
     tgt.upsert(key, value);
 }
 
 uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t increment) {
-    assert(increment > 0);
+    if (increment < 1) {
+        throw std::invalid_argument("Increment must be >= 1");
+    }
     uint64_t current_value{0};
     auto tgt{db::open_cursor(txn, table::kSequence)};
-    mdbx::slice key{map_name};
+    mdbx::slice key(map_name);
     auto data{tgt.find(key, /*throw_notfound=*/false)};
-    if (data) {
+    if (data.done) {
+        if (data.value.length() != sizeof(uint64_t)) {
+            throw std::length_error("Bad sequence value in db");
+        }
         current_value = endian::load_big_u64(from_slice(data.value).data());
     }
     uint64_t new_value{current_value + increment};  // Note ! May overflow
-    Bytes new_data{sizeof(uint64_t), '\0'};
+    Bytes new_data(sizeof(uint64_t), '\0');
     endian::store_big_u64(new_data.data(), new_value);
     tgt.upsert(key, to_slice(new_data));
     return current_value;
+}
+
+std::optional<uint64_t> read_map_sequence(mdbx::txn& txn, const char* map_name) {
+    auto tgt{db::open_cursor(txn, table::kSequence)};
+    mdbx::slice key(map_name);
+    auto data{tgt.find(key, /*throw_notfound=*/false)};
+    if (!data.done) {
+        return std::nullopt;
+    }
+    if (data.value.length() != sizeof(uint64_t)) {
+        throw std::length_error("Bad sequence value in db");
+    }
+    return endian::load_big_u64(from_slice(data.value).data());
 }
 
 }  // namespace silkworm::db

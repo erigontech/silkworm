@@ -116,10 +116,15 @@ void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]);
 //! \brief Gets/Increments the sequence value for a given map (bucket)
 //! \param [in] map_name : the name of the map to get a sequence for
 //! \param [in] increment : the value of increments to add to the sequence. Must be > 0
-//! \remarks Initial sequence for any key is 0. When function is invoked it returns the current value of the sequence
-//! and THEN increments and persists the sequence with applied increments so at next call we will start from new value.
-//! \remarks Changes to sequences are invisible until the transaction is committed
+//! \returns The current value of the sequence AND internally increments the value for next call
+//! \throws std::invalid_argument on increment < 1
+//! \remarks Initial sequence for any key (also unset) is 0. Changes to sequences are invisible until the transaction is
+//! committed
 uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t increment = 1u);
+
+//! \brief Reads the sequence for a map_name
+//! \returns std::nullopt if never set, the value of the sequence otherwise
+std::optional<uint64_t> read_map_sequence(mdbx::txn& txn, const char* map_name);
 
 }  // namespace silkworm::db
 

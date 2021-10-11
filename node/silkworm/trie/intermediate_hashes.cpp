@@ -24,13 +24,14 @@
 
 namespace silkworm::trie {
 
-AccountTrieCursor::AccountTrieCursor(mdbx::txn& txn, const PrefixSet& changed)
+AccountTrieCursor::AccountTrieCursor(mdbx::txn& txn, PrefixSet& changed)
     : changed_{changed}, cursor_{db::open_cursor(txn, db::table::kTrieOfAccounts)} {}
 
 void AccountTrieCursor::consume_node(ByteView to) {
     const auto entry{cursor_.lower_bound(db::to_slice(to), /*throw_notfound=*/false)};
     if (!entry) {
         // end-of-tree
+        root_nibble_ = 16;
         return;
     }
 
@@ -41,33 +42,43 @@ void AccountTrieCursor::consume_node(ByteView to) {
     while ((node->state_mask() & (1u << nibble)) == 0) {
         ++nibble;
     }
-    stack_.push(SubNode{Bytes{db::from_slice(entry.key)}, *node, nibble});
+
+    const ByteView key{db::from_slice(entry.key)};
+    assert(!key.empty());
+    root_nibble_ = key[0];
+
+    stack_.push(SubNode{Bytes{key}, *node, nibble});
 
     cursor_.erase();
 }
 
-void AccountTrieCursor::next(bool skip_children) {
-    if (at_root_) {
-        consume_node({});
-        at_root_ = false;
-        return;
+void AccountTrieCursor::next() {
+    if (!can_skip_state_ && children_are_in_trie()) {
+        // go to the child node
+        consume_node(*key());
+    } else {
+        move_to_next_sibling();
     }
 
-    if (stack_.empty()) {
+    const std::optional<Bytes> k{key()};
+    if (k == std::nullopt || changed_.contains(*k)) {
+        can_skip_state_ = false;
+    } else {
+        can_skip_state_ = stack_.top().hash_flag();
+    }
+}
+
+void AccountTrieCursor::move_to_next_sibling() {
+    if (root_nibble_ == 16) {
         // end-of-tree
         return;
     }
 
-    if (!skip_children && children_are_in_trie()) {
-        consume_node(*key());
-        return;
-    }
-
-    move_to_next_sibling();
-}
-
-void AccountTrieCursor::move_to_next_sibling() {
     if (stack_.empty()) {
+        // we're at the root
+        ++root_nibble_;
+        const Bytes key(1, root_nibble_);
+        consume_node(key);
         return;
     }
 
@@ -107,7 +118,7 @@ const evmc::bytes32* AccountTrieCursor::SubNode::hash() const {
 }
 
 std::optional<Bytes> AccountTrieCursor::key() const {
-    if (at_root_) {
+    if (root_nibble_ == -1) {
         return Bytes{};
     }
     if (stack_.empty()) {
@@ -124,21 +135,24 @@ const evmc::bytes32* AccountTrieCursor::hash() const {
 }
 
 bool AccountTrieCursor::children_are_in_trie() const {
+    if (root_nibble_ == -1) {
+        return true;
+    }
     if (stack_.empty()) {
         return false;
     }
     return stack_.top().tree_flag();
 }
 
-bool AccountTrieCursor::can_skip_state() const {
-    if (at_root_) {
-        return false;
+std::optional<Bytes> AccountTrieCursor::first_uncovered_prefix() const {
+    std::optional<Bytes> k{key()};
+    if (can_skip_state_ && k != std::nullopt) {
+        k = increment_key(*k);
     }
-    const std::optional<Bytes> k{key()};
-    if (k == std::nullopt || changed_.contains(pack_nibbles(*k))) {
-        return false;
+    if (k == std::nullopt) {
+        return std::nullopt;
     }
-    return stack_.top().hash_flag();
+    return pack_nibbles(*k);
 }
 
 StorageTrieCursor::StorageTrieCursor(mdbx::txn&) {}
@@ -222,7 +236,7 @@ nil                  // db returned nil - means no more keys there, done
 In practice Trie is not full - it means that after account key `{30 zero bytes}0000` may come `{5 zero bytes}01` and
 amount of iterations will not be big.
 */
-evmc::bytes32 DbTrieLoader::calculate_root(const PrefixSet& changed) {
+evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
     auto acc_state{db::open_cursor(txn_, db::table::kHashedAccounts)};
     auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
 
@@ -230,14 +244,17 @@ evmc::bytes32 DbTrieLoader::calculate_root(const PrefixSet& changed) {
         if (acc_trie.can_skip_state()) {
             assert(acc_trie.hash() != nullptr);
             hb_.add_branch_node(*acc_trie.key(), *acc_trie.hash(), acc_trie.children_are_in_trie());
-            acc_trie.next(/*skip_children=*/true);
-            continue;
         }
 
-        const Bytes first_uncovered_prefix{pack_nibbles(*acc_trie.key())};
-        acc_trie.next(/*skip_children=*/false);
+        const std::optional<Bytes> uncovered{acc_trie.first_uncovered_prefix()};
+        if (uncovered == std::nullopt) {
+            // no more uncovered state
+            break;
+        }
 
-        for (auto acc{acc_state.lower_bound(db::to_slice(first_uncovered_prefix), /*throw_notfound=*/false)}; acc.done;
+        acc_trie.next();
+
+        for (auto acc{acc_state.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)}; acc.done;
              acc = acc_state.to_next(/*throw_notfound=*/false)) {
             const Bytes unpacked_key{unpack_nibbles(db::from_slice(acc.key))};
             if (acc_trie.key().has_value() && acc_trie.key().value() < unpacked_key) {
@@ -297,7 +314,7 @@ evmc::bytes32 DbTrieLoader::calculate_root(const PrefixSet& changed) {
 }
 
 static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir,
-                                                   const evmc::bytes32* expected_root, const PrefixSet& changed) {
+                                                   const evmc::bytes32* expected_root, PrefixSet& changed) {
     etl::Collector account_collector{etl_dir};
     etl::Collector storage_collector{etl_dir};
     DbTrieLoader loader{txn, account_collector, storage_collector};
@@ -328,7 +345,7 @@ static void changed_accounts(mdbx::txn& txn, BlockNum from, PrefixSet& out) {
     db::cursor_for_each(change_cursor, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
         const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};
         const auto hashed_address{keccak256(address)};
-        out.insert(ByteView{hashed_address.bytes, kHashLength});
+        out.insert(unpack_nibbles(ByteView{hashed_address.bytes, kHashLength}));
         return true;
     });
 }
@@ -345,7 +362,24 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesyst
                                              const evmc::bytes32* expected_root) {
     txn.clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
     txn.clear_map(db::open_map(txn, db::table::kTrieOfStorage));
-    return increment_intermediate_hashes(txn, etl_dir, expected_root, /*changed=*/{});
+    PrefixSet empty;
+    return increment_intermediate_hashes(txn, etl_dir, expected_root, /*changed=*/empty);
+}
+
+std::optional<Bytes> increment_key(ByteView unpacked) {
+    Bytes out{unpacked};
+    for (size_t i{out.size()}; i > 0; --i) {
+        uint8_t& nibble{out[i - 1]};
+        assert(nibble < 0x10);
+        if (nibble < 0xF) {
+            ++nibble;
+            return out;
+        } else {
+            nibble = 0;
+            // carry over
+        }
+    }
+    return std::nullopt;
 }
 
 }  // namespace silkworm::trie

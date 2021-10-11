@@ -49,7 +49,7 @@ void BlockProvider::send_status() {
     sentry::Protocol supported_protocol = reply.protocol();
     if (supported_protocol != sentry::Protocol::ETH66) {
         SILKWORM_LOG(LogLevel::Critical) << "BlockProvider: sentry do not support eth/66 protocol, is_stopping...\n";
-        sentry_.need_close();
+        sentry_.stop();
         throw BlockProviderException("BlockProvider exception, cause: sentry do not support eth/66 protocol");
     }
 }
@@ -68,7 +68,7 @@ void BlockProvider::execution_loop() {
         rpc::ReceiveMessages receive_messages(rpc::ReceiveMessages::Scope::BlockRequests);
         sentry_.exec_remotely(receive_messages);
 
-        while (!is_stopping() && !sentry_.closing() && receive_messages.receive_one_reply()) {
+        while (!is_stopping() && !sentry_.is_stopping() && receive_messages.receive_one_reply()) {
 
             auto message = InboundBlockRequestMessage::make(receive_messages.reply(), db_access_, sentry_);
 
@@ -80,7 +80,7 @@ void BlockProvider::execution_loop() {
     catch(const std::exception& e) {
         SILKWORM_LOG(LogLevel::Error) << "BlockProvider execution_loop is_stopping due to exception: " << e.what() << "\n";
         stop();
-        sentry_.need_close();
+        sentry_.stop();
     }
 }
 

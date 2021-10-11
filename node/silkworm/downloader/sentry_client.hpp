@@ -47,11 +47,11 @@ class SentryClient : public rpc::Client<sentry::Sentry> {
 
     void exec_remotely(SentryRpc& rpc);     // send a rpc request to the remote sentry
 
-    void need_close() { closing_.store(true); }
-    bool closing() { return closing_.load(); }
+    void stop() { stopping_.store(true); }
+    bool is_stopping() const { return stopping_.load(); }
 
   protected:
-    std::atomic<bool> closing_{false};
+    std::atomic<bool> stopping_{false};
 };
 
 

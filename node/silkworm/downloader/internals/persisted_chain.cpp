@@ -200,7 +200,7 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
     }
     auto td = *parent_td + header.difficulty;  // calculated total difficulty of this header
 
-    // Now we can decide weather this header will create a change in the canonical head
+    // Now we can decide whether this header will create a change in the canonical head
     if (td > local_td_) {
         new_canonical_ = true;
 
@@ -217,7 +217,7 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
         canonical_cache_.put(height, hash);
         local_td_ = td;  // this makes sure we end up choosing the chain with the max total difficulty - todo: what this mean?
 
-        if (forking_point < unwind_point_) {  // See if the forking point affects the unwind point (the block number to
+        if (forking_point < unwind_point_) {  // See if the forking point affects the unwind-point (the block number to
             unwind_point_ = forking_point;    // which other stages will need to unwind before the new canonical chain
             unwind_ = true;                   // is applied)
         }
@@ -227,7 +227,7 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
     tx_.write_total_difficulty(height, hash, td);
 
     // Save header
-    tx_.write_header(header);
+    tx_.write_header(header, true); // true = with_header_numbers
 
     SILKWORM_LOG(LogLevel::Info) << "PersistedChain: saved header height=" << height << " hash=" << hash << "\n";
 
@@ -328,16 +328,14 @@ func fixCanonicalChain(logPrefix string, logEvery *time.Ticker, height uint64, h
 
  */
 
-void PersistedChain::update_canonical_chain(BlockNum heigth, Hash hash) { // hash can be empty
-    if (heigth == 0) return;
+void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) { // hash can be empty
+    if (height == 0) return;
 
     auto ancestor_hash = hash;
-    auto ancestor_height = heigth;
+    auto ancestor_height = height;
 
-    std::optional<Hash> persisted_canon_hash;
-    while ((persisted_canon_hash = tx_.read_canonical_hash(ancestor_height)) &&
-           persisted_canon_hash != ancestor_hash) {
-
+    std::optional<Hash> persisted_canon_hash = tx_.read_canonical_hash(ancestor_height);
+    while (persisted_canon_hash != ancestor_hash) {     // todo: shouldn't the ancestor be in the canonical_cache? can we optimize here?
         tx_.write_canonical_hash(ancestor_height, ancestor_hash);
 
         auto ancestor = tx_.read_header(ancestor_height, ancestor_hash);
@@ -350,6 +348,8 @@ void PersistedChain::update_canonical_chain(BlockNum heigth, Hash hash) { // has
 
         ancestor_hash = ancestor->parent_hash;
         ancestor_height--;
+
+        persisted_canon_hash = tx_.read_canonical_hash(ancestor_height);
     }
 }
 

@@ -25,7 +25,7 @@ limitations under the License.
 
 namespace silkworm {
 
-    TEST_CASE("persisted_chain") {
+    TEST_CASE("header persistence") {
         test::Context context;
         auto& txn{context.txn()};
 
@@ -36,8 +36,13 @@ namespace silkworm {
         db::initialize_genesis(txn, genesis_json, allow_exceptions);
         context.commit_and_renew_txn();
 
-        SECTION("canonical hash") {
-            Db::ReadWriteAccess::Tx tx(txn);    // warning: sub transaction
+        /* status:
+         *         h0
+         * input:
+         *         h0 <----- h1
+         */
+        SECTION("one header after the genesis") {
+            Db::ReadWriteAccess::Tx tx(txn);    // sub transaction
 
             auto header0_hash = tx.read_canonical_hash(0);
             REQUIRE(header0_hash.has_value());
@@ -54,19 +59,63 @@ namespace silkworm {
             header1.number = 1;
             header1.difficulty = 17'171'480'576;
             header1.parent_hash = *header0_hash;
+            auto header1_hash = header1.hash();
 
             auto td = header0->difficulty + header1.difficulty;
 
-            pc.persist(header1);
+            pc.persist(header1); // here pc write the header on the db
 
+            // check internal status
             REQUIRE(pc.best_header_changed() == true);
             REQUIRE(pc.highest_height() == 1);
-            REQUIRE(pc.highest_hash() == header1.hash());
+            REQUIRE(pc.highest_hash() == header1_hash);
 
-            REQUIRE(tx.read_canonical_hash(1) == header1.hash());
+            // check db content
+            REQUIRE(tx.read_head_header_hash() == header1_hash);
             REQUIRE(tx.read_total_difficulty(1, header1.hash()) == td);
 
+            auto header1_in_db = tx.read_header(header1_hash);
+            REQUIRE(header1_in_db.has_value());
+            REQUIRE(header1_in_db == header1);
+
+            pc.close(); // here pc update the canonical chain on the db
+
+            REQUIRE(tx.read_canonical_hash(1) == header1_hash);
         }
+
+        /* status:
+         *         h0
+         * input:
+         *         h0 <----- h1 <----- h2
+         *               |-- h1'
+         */
+//        SECTION("some header after the genesis") {
+//            //Db::ReadWriteAccess::Tx tx(txn);    // sub transaction
+//
+//            //PersistedChain pc(tx);
+//            // todo
+//        }
+
+        /* status:
+         *        h0
+         * input:
+        *         h0 <----- h1  <----- h2
+        *               |-- h1' <----- h2' <----- h3' (new cononical)
+         */
+//        SECTION("a header in a secondary chain") {
+//            // todo
+//        }
+
+        /* status:
+         *         h0 <----- h1 <----- h2
+         *               |-- h1'
+         * input:
+        *         h0 <----- h1  <----- h2
+        *               |-- h1' <----- h2' <----- h3' (new cononical)
+         */
+//        SECTION("a forking point in the past") {
+//            // todo
+//        }
     }
 
 }

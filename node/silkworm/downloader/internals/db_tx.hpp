@@ -169,6 +169,7 @@ class Db::ReadOnlyAccess::Tx {
         return read_header(*block_num, h);
     }
 
+    // todo: is it better to replace this func with cursor_for_count(cursor, const WalkFunc&, size_t max_count, CursorMoveDirection) ?
     void read_headers_in_reverse_order(size_t limit, std::function<void (BlockHeader&&)> callback) {
         auto header_table = db::open_cursor(txn, db::table::kHeaders);
 
@@ -215,7 +216,7 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
     Tx(Tx&& source) noexcept: base(std::move(source.txn)) {} // only movable
     Tx(mdbx::txn& source): base{source} {} // to be more silkworm friendly
 
-    void write_header(const BlockHeader& header) {
+    void write_header(const BlockHeader& header, bool with_header_numbers) {
         Bytes encoded_header;
         rlp::encode(encoded_header, header);
 
@@ -227,6 +228,9 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
         auto headers_table = db::open_cursor(txn, db::table::kHeaders);
         headers_table.upsert(skey, svalue);
         headers_table.close();
+        if (with_header_numbers) {
+            db::write_header_number(txn, header_hash.bytes, header.number);
+        }
     }
 
     void write_head_header_hash(Hash h) {
@@ -239,7 +243,7 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
         head_header_table.close();
     }
 
-    void write_total_difficulty(BlockNum b, Hash h, intx::uint256 td) noexcept(false) {
+    void write_total_difficulty(BlockNum b, Hash h, intx::uint256 td) {
         Bytes encoded_td;
         rlp::encode(encoded_td, td);
 
@@ -262,7 +266,7 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
         hashes_table.close();
     }
 
-    void write_stage_progress(const char* stage_name, BlockNum height) noexcept(false) {
+    void write_stage_progress(const char* stage_name, BlockNum height) {
         db::stages::write_stage_progress(txn, stage_name, height);
     }
 };

@@ -45,7 +45,7 @@ namespace db {
         header.gas_used = 12'443'619;
 
         SECTION("read/write header") {
-            CHECK_NOTHROW(tx.write_header(header));
+            CHECK_NOTHROW(tx.write_header(header, false));
             auto read_header = tx.read_header(header.number, header.hash());
 
             REQUIRE(read_header != std::nullopt);                       // Warning: this is a limited test, we only test that

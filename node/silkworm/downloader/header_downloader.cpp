@@ -59,7 +59,7 @@ void HeaderDownloader::send_status() {
     sentry::Protocol supported_protocol = reply.protocol();
     if (supported_protocol != sentry::Protocol::ETH66) {
         SILKWORM_LOG(LogLevel::Critical) << "HeaderDownloader: sentry do not support eth/66 protocol, is_stopping...\n";
-        sentry_.need_close();
+        sentry_.stop();
         throw HeaderDownloaderException("HeaderDownloader exception, cause: sentry do not support eth/66 protocol");
     }
 }
@@ -75,7 +75,7 @@ void HeaderDownloader::receive_messages() {
     sentry_.exec_remotely(message_subscription);
 
     // receive messages
-    while (!is_stopping() && !sentry_.closing() && message_subscription.receive_one_reply()) {
+    while (!is_stopping() && !sentry_.is_stopping() && message_subscription.receive_one_reply()) {
 
         auto message = InboundBlockAnnouncementMessage::make(message_subscription.reply(), working_chain_, sentry_);
 
@@ -89,7 +89,7 @@ void HeaderDownloader::receive_messages() {
 void HeaderDownloader::execution_loop() {
     using namespace std::chrono_literals;
 
-    while (!is_stopping() && !sentry_.closing()) {
+    while (!is_stopping() && !sentry_.is_stopping()) {
         // pop a message from the queue
         std::shared_ptr<Message> message;
         bool present = messages_.timed_wait_and_pop(message, 1000ms);
@@ -286,7 +286,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         // message processing
         time_point_t last_request;
-        while (!new_height_reached && !sentry_.closing()) {
+        while (!new_height_reached && !sentry_.is_stopping()) {
 
             // at every minute...
             if (std::chrono::system_clock::now() - last_request > 60s) {

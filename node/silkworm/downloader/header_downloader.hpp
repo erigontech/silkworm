@@ -55,8 +55,8 @@ class HeaderDownloaderException: public std::runtime_error {
  */
 class HeaderDownloader : public Stage, public ActiveComponent {
 
-    ChainIdentity chain_identity_;                 // oppure un oggetto ha la workingQueue, riceve e processa msg e basta
-    Db::ReadWriteAccess db_access_;                // un altro oggetto ha la persistentQueue e i 2 metodi forward/unwind
+    ChainIdentity chain_identity_;
+    Db::ReadWriteAccess db_access_;
     SentryClient& sentry_;
 
   public:

@@ -169,32 +169,25 @@ namespace db {
         auto& txn{context.txn()};
 
         auto val1{read_map_sequence(txn, table::kEthTx.name)};
-        REQUIRE(val1.has_value() == false);
+        REQUIRE(val1 == 0);
 
         auto val2{increment_map_sequence(txn, table::kEthTx.name, 5)};
         REQUIRE(val2 == 0);
         auto val3{read_map_sequence(txn, table::kEthTx.name)};
-        REQUIRE((val3.has_value() && val3.value() == 5));
+        REQUIRE((val3 == 5));
 
-        bool thrown{false};
-        try {
-            (void)increment_map_sequence(txn, table::kEthTx.name, 0);
-        } catch (const std::exception& ex) {
-            REQUIRE(std::string(ex.what()) == "Increment must be >= 1");
-            thrown = true;
-        }
-        REQUIRE(thrown);
+
 
         auto val4{increment_map_sequence(txn, table::kEthTx.name, 3)};
         REQUIRE(val4 == 5);
         auto val5{read_map_sequence(txn, table::kEthTx.name)};
-        REQUIRE((val5.has_value() && val5.value() == 8));
+        REQUIRE((val5 == 8));
 
         context.commit_and_renew_txn();
         auto& txn2{context.txn()};
 
         auto val6{read_map_sequence(txn2, table::kEthTx.name)};
-        REQUIRE((val6.has_value() && val6.value() == 8));
+        REQUIRE((val6 == 8));
 
 
         // Tamper with sequence
@@ -203,7 +196,7 @@ namespace db {
         auto tgt{db::open_cursor(txn2, table::kSequence)};
         tgt.upsert(key, to_slice(fake_value));
 
-        thrown = false;
+        bool thrown{false};
         try {
             (void)increment_map_sequence(txn, table::kEthTx.name);
         } catch (const std::exception& ex) {
@@ -212,14 +205,14 @@ namespace db {
         }
         REQUIRE(thrown);
 
-        thrown = false;
-        try {
-            (void)read_map_sequence(txn, table::kEthTx.name);
-        } catch (const std::exception& ex) {
-            REQUIRE(std::string(ex.what()) == "Bad sequence value in db");
-            thrown = true;
-        }
-        REQUIRE(thrown);
+//        thrown = false;
+//        try {
+//            (void)read_map_sequence(txn, table::kEthTx.name);
+//        } catch (const std::exception& ex) {
+//            REQUIRE(std::string(ex.what()) == "Bad sequence value in db");
+//            thrown = true;
+//        }
+//        REQUIRE(thrown);
 
 
 

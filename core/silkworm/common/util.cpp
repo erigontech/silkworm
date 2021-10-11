@@ -96,18 +96,12 @@ std::string to_hex(const evmc::bytes32& hash) { return to_hex(full_view(hash)); 
 
 std::string to_hex(ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
-
-    std::string out{};
-    out.reserve(2 * bytes.length());
-
-    for (size_t i{0}; i < bytes.length(); ++i) {
-        uint8_t x{bytes[i]};
-        char lo{kHexDigits[x & 0x0f]};
-        char hi{kHexDigits[x >> 4]};
-        out.push_back(hi);
-        out.push_back(lo);
+    std::string out(bytes.length() * 2, '\0');
+    int offset{0};
+    for (auto& b : bytes) {
+        out[offset++] = kHexDigits[b >> 4];    // Hi
+        out[offset++] = kHexDigits[b & 0x0f];  // Lo
     }
-
     return out;
 }
 

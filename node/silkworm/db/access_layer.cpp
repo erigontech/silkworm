@@ -79,17 +79,17 @@ void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_nu
     rlp::encode(value, header);
     auto header_hash{header.hash()};
     auto key{db::block_key(header.number, header_hash.bytes)};
-    auto tgt{db::open_cursor(txn, table::kHeaders)};
-    tgt.upsert(to_slice(key), to_slice(value));
+    auto target{db::open_cursor(txn, table::kHeaders)};
+    target.upsert(to_slice(key), to_slice(value));
     if (with_header_numbers) {
         write_header_number(txn, header_hash.bytes, header.number);
     }
 }
 
 void write_header_number(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], const BlockNum number) {
-    auto tgt{db::open_cursor(txn, db::table::kHeaderNumbers)};
+    auto target{db::open_cursor(txn, db::table::kHeaderNumbers)};
     auto value{db::block_key(number)};
-    tgt.upsert({hash, kHashLength}, to_slice(value));
+    target.upsert({hash, kHashLength}, to_slice(value));
 }
 
 std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum block_number,
@@ -110,8 +110,8 @@ void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint25
     assert(key.length() == sizeof(BlockNum) + kHashLength);
     Bytes value{};
     rlp::encode(value, total_difficulty);
-    auto tgt{db::open_cursor(txn, table::kDifficulty)};
-    tgt.upsert(to_slice(key), to_slice(value));
+    auto target{db::open_cursor(txn, table::kDifficulty)};
+    target.upsert(to_slice(key), to_slice(value));
 }
 
 void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
@@ -125,10 +125,10 @@ void write_canonical_header(mdbx::txn& txn, const BlockHeader& header) {
 }
 
 void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number) {
-    auto tgt{db::open_cursor(txn, table::kCanonicalHashes)};
+    auto target{db::open_cursor(txn, table::kCanonicalHashes)};
     auto key{db::block_key(number)};
     mdbx::slice value{hash, kHashLength};
-    tgt.upsert(to_slice(key), value);
+    target.upsert(to_slice(key), value);
 }
 
 std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count) {
@@ -143,13 +143,13 @@ void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transact
     if (transactions.empty()) {
         return;
     }
-    auto tgt{db::open_cursor(txn, table::kEthTx)};
+    auto target{db::open_cursor(txn, table::kEthTx)};
     auto key{db::block_key(base_id)};
     for (const auto& transaction : transactions) {
         Bytes value{};
         rlp::encode(value, transaction);
         mdbx::slice value_slice{value.data(), value.length()};
-        tgt.put(to_slice(key), &value_slice, MDBX_APPEND);
+        target.put(to_slice(key), &value_slice, MDBX_APPEND);
         ++base_id;
         endian::store_big_u64(key.data(), base_id);
     }
@@ -256,8 +256,8 @@ void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHa
         body_for_storage.txn_count ? increment_map_sequence(txn, table::kEthTx.name, body.transactions.size()) : 0;
     Bytes value{body_for_storage.encode()};
     auto key{db::block_key(number, hash)};
-    auto tgt{db::open_cursor(txn, table::kBlockBodies)};
-    tgt.upsert(to_slice(key), to_slice(value));
+    auto target{db::open_cursor(txn, table::kBlockBodies)};
+    target.upsert(to_slice(key), to_slice(value));
 
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
 }
@@ -476,10 +476,10 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
 }
 
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]) {
-    auto tgt{db::open_cursor(txn, table::kConfig)};
+    auto target{db::open_cursor(txn, table::kConfig)};
     mdbx::slice key(db::table::kLastHeaderKey);
     mdbx::slice value(hash, kHashLength);
-    tgt.upsert(key, value);
+    target.upsert(key, value);
 }
 
 uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t increment) {
@@ -487,9 +487,9 @@ uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t i
         throw std::invalid_argument("Increment must be >= 1");
     }
     uint64_t current_value{0};
-    auto tgt{db::open_cursor(txn, table::kSequence)};
+    auto target{db::open_cursor(txn, table::kSequence)};
     mdbx::slice key(map_name);
-    auto data{tgt.find(key, /*throw_notfound=*/false)};
+    auto data{target.find(key, /*throw_notfound=*/false)};
     if (data.done) {
         if (data.value.length() != sizeof(uint64_t)) {
             throw std::length_error("Bad sequence value in db");
@@ -499,14 +499,14 @@ uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t i
     uint64_t new_value{current_value + increment};  // Note ! May overflow
     Bytes new_data(sizeof(uint64_t), '\0');
     endian::store_big_u64(new_data.data(), new_value);
-    tgt.upsert(key, to_slice(new_data));
+    target.upsert(key, to_slice(new_data));
     return current_value;
 }
 
 std::optional<uint64_t> read_map_sequence(mdbx::txn& txn, const char* map_name) {
-    auto tgt{db::open_cursor(txn, table::kSequence)};
+    auto target{db::open_cursor(txn, table::kSequence)};
     mdbx::slice key(map_name);
-    auto data{tgt.find(key, /*throw_notfound=*/false)};
+    auto data{target.find(key, /*throw_notfound=*/false)};
     if (!data.done) {
         return std::nullopt;
     }

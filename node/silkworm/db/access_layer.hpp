@@ -115,7 +115,7 @@ void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]);
 
 //! \brief Gets/Increments the sequence value for a given map (bucket)
 //! \param [in] map_name : the name of the map to get a sequence for
-//! \param [in] increment : the value of increments to add to the sequence. Must be > 0
+//! \param [in] increment : the value of increments to add to the sequence.
 //! \returns The current value of the sequence AND internally increments the value for next call
 //! \throws std::std::length_error on badly recorded value
 //! \remarks Initial sequence for any key (also unset) is 0. Changes to sequences are invisible until the transaction is

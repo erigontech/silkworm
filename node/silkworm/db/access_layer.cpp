@@ -106,7 +106,7 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum bloc
     return td;
 }
 
-void write_total_difficulty(mdbx::txn& txn, Bytes& key, const intx::uint256& total_difficulty) {
+void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint256& total_difficulty) {
     assert(key.length() == sizeof(BlockNum) + kHashLength);
     Bytes value{};
     rlp::encode(value, total_difficulty);

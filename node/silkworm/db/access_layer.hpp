@@ -68,7 +68,7 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum bloc
                                                    const uint8_t (&hash)[kHashLength]);
 
 // See Erigon WriteTd
-void write_total_difficulty(mdbx::txn& txn, Bytes& key, const intx::uint256& total_difficulty);
+void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint256& total_difficulty);
 void write_total_difficulty(mdbx::txn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength],
                             const intx::uint256& total_difficulty);
 

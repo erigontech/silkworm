@@ -84,11 +84,8 @@ evmc::bytes32 to_bytes32(ByteView bytes) {
 }
 
 ByteView zeroless_view(const ByteView& data) {
-    unsigned offset{0};
-    while (offset < data.length() && data[offset] == 0) {
-        ++offset;
-    }
-    return {data.data() + offset, data.length() - offset};
+    return data.substr(std::distance(
+        data.begin(), std::find_if_not(data.begin(), data.end(), [](const auto& b) { return b == 0x0; })));
 }
 
 ByteView zeroless_view(const evmc::bytes32& hash) { return zeroless_view(full_view(hash)); }
@@ -131,7 +128,7 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
     }
 
     Bytes out{};
-    auto pos{hex.length() & 1}; // "[0x]1" is legit and has to be treated as "[0x]01"
+    auto pos{hex.length() & 1};  // "[0x]1" is legit and has to be treated as "[0x]01"
     out.reserve(hex.length() + pos / 2);
 
     unsigned carry{0};

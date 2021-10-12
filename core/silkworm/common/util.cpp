@@ -118,8 +118,8 @@ evmc::bytes32 to_bytes32(ByteView bytes) {
 }
 
 ByteView zeroless_view(const ByteView& data) {
-    return data.substr(std::distance(
-        data.begin(), std::find_if_not(data.begin(), data.end(), [](const auto& b) { return b == 0x0; })));
+    return data.substr(static_cast<size_t>(std::distance(
+        data.begin(), std::find_if_not(data.begin(), data.end(), [](const auto& b) { return b == 0x0; }))));
 }
 
 ByteView zeroless_view(const evmc::bytes32& hash) { return zeroless_view(full_view(hash)); }
@@ -172,7 +172,7 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
         *dst++ = b;
     }
 
-    for (int i = (is_odd_len ? 1 : 0); i < out.length(); ++i) {
+    for (uint32_t i = (is_odd_len ? 1 : 0); i < out.length(); ++i) {
         auto a = static_cast<uint8_t>(*src++);
         auto b = static_cast<uint8_t>(*src++);
         a = unhex_lut4(a);

@@ -52,6 +52,8 @@ BlockNum PersistedChain::highest_height() { return highest_bn_; }
 
 Hash PersistedChain::highest_hash() { return highest_hash_; }
 
+BigInt PersistedChain::total_difficulty() { return local_td_; }
+
 BlockNum PersistedChain::unwind_point() { return unwind_point_; }
 
 /*
@@ -160,7 +162,7 @@ header.ParentHash, blockHeight-1, hash, blockHeight))
 
 */
 
-void PersistedChain::persist(Headers headers) {
+void PersistedChain::persist(const Headers& headers) {
     for(auto& header: headers) {
         persist(*header);
     }
@@ -173,12 +175,14 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
     if (hash == previous_hash_) {
         return;  // skip duplicates
     }
-    if (height < highest_bn_) {    // todo: in Erigon is "height < previous_height_" but previous_height_ is never updated - check!
-        std::string error_message = "PersistedChain: headers are unexpectedly unsorted, got " + std::to_string(height) +
-                                    " after " + std::to_string(highest_bn_);
-        SILKWORM_LOG(LogLevel::Error) << error_message;
-        throw std::logic_error(error_message);  // unexpected condition, bug?
-    }
+
+    // Important note: this test is wrong, cause error with certain sequence of headers that are corrects
+//    if (height < highest_bn_) {    // in Erigon is "height < previous_height_" but previous_height_ is never updated so the test fails always
+//        std::string error_message = "PersistedChain: headers are unexpectedly unsorted, got " + std::to_string(height) +
+//                                    " after " + std::to_string(highest_bn_);
+//        SILKWORM_LOG(LogLevel::Error) << error_message;
+//        throw std::logic_error(error_message);  // unexpected condition, bug?
+//    }
     if (tx_.read_header(height, hash).has_value()) {
         return;  // already inserted, skip
     }
@@ -205,7 +209,7 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
         new_canonical_ = true;
 
         // find the forking point - i.e. the latest header on the canonical chain which is an ancestor of this one
-        BlockNum forking_point = find_forking_point(tx_, header, height);
+        BlockNum forking_point = find_forking_point(tx_, header, height, *parent);
 
         // Save progress
         tx_.write_head_header_hash(hash);                           // can throw exception, todo: catch & rethrow?
@@ -234,7 +238,8 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
     previous_hash_ = hash;
 }
 
-BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const BlockHeader& header, BlockNum height) {
+BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const BlockHeader& header, BlockNum height,
+                                            const BlockHeader& parent) {
     BlockNum forking_point{};
 
     // Read canonical hash at height-1
@@ -260,7 +265,7 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
     }
     // Going further back
     else {
-        auto ancestor_hash = header.parent_hash;
+        auto ancestor_hash = parent.parent_hash;
         auto ancestor_height = height - 2;
 
         // look in the cache first

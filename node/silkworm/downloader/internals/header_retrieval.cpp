@@ -45,7 +45,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
         if (!reverse) {
             BlockNum current = header->number;
             BlockNum next = current + skip + 1;
-            if (next <= current) {
+            if (next <= current) {  // true only if there is an overflow
                 unknown = true;
                 SILKWORM_LOG(LogLevel::Warn)
                     << "GetBlockHeaders skip overflow attack:"
@@ -132,11 +132,11 @@ std::tuple<Hash,BigInt> HeaderRetrieval::head_hash_and_total_difficulty() {
     return {*head_hash, *head_td};
 }
 
-std::tuple<Hash,BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical) {
-    if (ancestor > blockNum)
+std::tuple<Hash,BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestorDelta, uint64_t& max_non_canonical) {
+    if (ancestorDelta > blockNum)
         return {Hash{},0};
 
-    if (ancestor == 1) {
+    if (ancestorDelta == 1) {
         auto header = db_tx_.read_header(blockNum, hash);
         if (header)
             return {header->parent_hash, blockNum-1};
@@ -144,20 +144,20 @@ std::tuple<Hash,BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum bloc
             return {Hash{},0};
     }
 
-    while (ancestor != 0) {
+    while (ancestorDelta != 0) {
         auto h = db_tx_.read_canonical_hash(blockNum);
         if (h == hash) {
-            auto ancestorHash = db_tx_.read_canonical_hash(blockNum - ancestor);
-            h = db_tx_.read_canonical_hash(blockNum);
-            if (h == hash) {
-                blockNum -= ancestor;
+            auto ancestorHash = db_tx_.read_canonical_hash(blockNum - ancestorDelta);   // todo: blockNum - ancestorDelta = constant, it is correct?
+            h = db_tx_.read_canonical_hash(blockNum);   // todo: dummy line, remove (also present in Erigon)
+            if (h == hash) {    // todo: dummy line, remove
+                blockNum -= ancestorDelta;
                 return {*ancestorHash, blockNum};   // ancestorHash can be empty
             }
         }
         if (max_non_canonical == 0)
             return {Hash{},0};
         max_non_canonical--;
-        ancestor--;
+        ancestorDelta--;
         auto header = db_tx_.read_header(blockNum, hash);
         if (!header)
             return {Hash{},0};

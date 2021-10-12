@@ -45,7 +45,7 @@ class PersistedChain {      // counterpart of Erigon HeaderInserter
   public:
     explicit PersistedChain(Db::ReadWriteAccess::Tx& tx);
 
-    void persist(Headers);
+    void persist(const Headers&);
     void persist(const BlockHeader&);
     void close();
 
@@ -59,9 +59,10 @@ class PersistedChain {      // counterpart of Erigon HeaderInserter
     BlockNum initial_height();
     BlockNum highest_height();
     Hash highest_hash();
-
+    BigInt total_difficulty();
   private:
-    BlockNum find_forking_point(Db::ReadWriteAccess::Tx&, const BlockHeader& header, BlockNum height);
+    BlockNum find_forking_point(Db::ReadWriteAccess::Tx&, const BlockHeader& header, BlockNum height, 
+                                const BlockHeader& parent);
     void update_canonical_chain(BlockNum heigth, Hash hash);
 
     Db::ReadWriteAccess::Tx& tx_;

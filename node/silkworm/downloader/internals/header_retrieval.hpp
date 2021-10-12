@@ -39,7 +39,7 @@ class HeaderRetrieval {
     std::tuple<Hash,BigInt> head_hash_and_total_difficulty();
 
     // Ancestor
-    std::tuple<Hash,BlockNum> get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestor, uint64_t& max_non_canonical);
+    std::tuple<Hash,BlockNum> get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestorDelta, uint64_t& max_non_canonical);
 
   protected:
     Db::ReadOnlyAccess::Tx db_tx_;

@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 #include "persisted_chain.hpp"
+#include "working_chain.hpp"
 
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/chain/genesis.hpp>
@@ -84,38 +85,73 @@ namespace silkworm {
         }
 
         /* status:
-         *         h0
+         *         h0 (persisted)
          * input:
-         *         h0 <----- h1 <----- h2
-         *               |-- h1'
+         *        (h0) <----- h1 <----- h2
+         *                |-- h1'
          */
-//        SECTION("some header after the genesis") {
-//            //Db::ReadWriteAccess::Tx tx(txn);    // sub transaction
-//
-//            //PersistedChain pc(tx);
-//            // todo
-//        }
+        SECTION("some header after the genesis") {
+            Db::ReadWriteAccess::Tx tx(txn);    // sub transaction
 
-        /* status:
-         *        h0
-         * input:
-        *         h0 <----- h1  <----- h2
-        *               |-- h1' <----- h2' <----- h3' (new cononical)
-         */
-//        SECTION("a header in a secondary chain") {
-//            // todo
-//        }
+            // starting from an initial status
+            auto header0 = tx.read_canonical_header(0);
+            auto header0_hash = header0->hash();
 
-        /* status:
-         *         h0 <----- h1 <----- h2
-         *               |-- h1'
-         * input:
-        *         h0 <----- h1  <----- h2
-        *               |-- h1' <----- h2' <----- h3' (new cononical)
-         */
-//        SECTION("a forking point in the past") {
-//            // todo
-//        }
+            // receiving 3 headers from a peer
+            BlockHeader header1;
+            header1.number = 1;
+            header1.difficulty = 1'000'000;
+            header1.parent_hash = header0_hash;
+            auto header1_hash = header1.hash();
+
+            BlockHeader header2;
+            header2.number = 2;
+            header2.difficulty = 1'100'000;
+            header2.parent_hash = header1_hash;
+            auto header2_hash = header2.hash();
+
+            BlockHeader header1b;
+            header1b.number = 1;
+            header1b.difficulty = 2'000'000;
+            header1b.parent_hash = header0_hash;
+            header1b.extra_data = string_to_bytes("I'm different");
+            auto header1b_hash = header1b.hash();
+
+            // saving the headers
+            PersistedChain pc(tx);
+            pc.persist(header1);
+            pc.persist(header2);
+            pc.persist(header1b);   // suppose it arrives after header2
+
+            // check internal status
+            BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
+
+            REQUIRE(pc.total_difficulty() == expected_td);
+            REQUIRE(pc.best_header_changed() == true);
+            REQUIRE(pc.highest_height() == 2);
+            REQUIRE(pc.highest_hash() == header2_hash);
+            REQUIRE(pc.unwind() == false);
+
+            // check db content
+            REQUIRE(tx.read_head_header_hash() == header2_hash);
+            REQUIRE(tx.read_total_difficulty(2, header2.hash()) == expected_td);
+
+            auto header1_in_db = tx.read_header(header1_hash);
+            REQUIRE(header1_in_db.has_value());
+            REQUIRE(header1_in_db == header1);
+            auto header2_in_db = tx.read_header(header2_hash);
+            REQUIRE(header2_in_db.has_value());
+            REQUIRE(header2_in_db == header2);
+            auto header1b_in_db = tx.read_header(header1b_hash);
+            REQUIRE(header1b_in_db.has_value());
+            REQUIRE(header1b_in_db == header1b);
+
+            pc.close(); // here pc update the canonical chain on the db
+
+            REQUIRE(tx.read_canonical_hash(1) == header1_hash);
+            REQUIRE(tx.read_canonical_hash(2) == header2_hash);
+        }
+
     }
 
 }

@@ -97,10 +97,10 @@ std::string to_hex(const evmc::bytes32& hash) { return to_hex(full_view(hash)); 
 std::string to_hex(ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
     std::string out(bytes.length() * 2, '\0');
-    int offset{0};
+    char* dest{&out[0]};
     for (auto& b : bytes) {
-        out[offset++] = kHexDigits[b >> 4];    // Hi
-        out[offset++] = kHexDigits[b & 0x0f];  // Lo
+        *dest++ = kHexDigits[b >> 4];    // Hi
+        *dest++ = kHexDigits[b & 0x0f];  // Lo
     }
     return out;
 }

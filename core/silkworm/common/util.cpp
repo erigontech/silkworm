@@ -136,7 +136,7 @@ std::string to_hex(ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
     std::string out(bytes.length() * 2, '\0');
     char* dest{&out[0]};
-    for (auto& b : bytes) {
+    for (const auto& b : bytes) {
         *dest++ = kHexDigits[b >> 4];    // Hi
         *dest++ = kHexDigits[b & 0x0f];  // Lo
     }
@@ -162,25 +162,22 @@ std::optional<Bytes> from_hex(std::string_view hex) noexcept {
         return Bytes{};
     }
 
-    bool is_odd_len(hex.length() & 1);  // "[0x]1" is legit and has to be treated as "[0x]01"
-    Bytes out((hex.length() + is_odd_len) / 2, '\0');
+    size_t pos(hex.length() & 1);  // "[0x]1" is legit and has to be treated as "[0x]01"
+    Bytes out((hex.length() + pos) / 2, '\0');
     char* src{const_cast<char*>(hex.data())};
     uint8_t* dst{&out[0]};
 
-    if (is_odd_len) {
-        auto b = static_cast<uint8_t>(*src++);
-        b = unhex_lut(b);
+    if (pos) {
+        auto b{unhex_lut(static_cast<uint8_t>(*src++))};
         if (b == 0xbc) {
             return std::nullopt;
         }
         *dst++ = b;
     }
 
-    for (uint32_t i = (is_odd_len ? 1 : 0); i < out.length(); ++i) {
-        auto a = static_cast<uint8_t>(*src++);
-        auto b = static_cast<uint8_t>(*src++);
-        a = unhex_lut4(a);
-        b = unhex_lut(b);
+    for (; pos < out.length(); ++pos) {
+        auto a{unhex_lut4(static_cast<uint8_t>(*src++))};
+        auto b{unhex_lut(static_cast<uint8_t>(*src++))};
         if (a == 0xbc || b == 0xbc) {
             return std::nullopt;
         }

@@ -188,9 +188,10 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
     }
     auto parent = tx_.read_header(height - 1, header.parent_hash);
     if (!parent) {
-        SILKWORM_LOG(LogLevel::Warn) << "Could not find parent with hash " << header.parent_hash << " and height "
-                                     << height - 1 << " for header " << hash << "\n";
-        return;  // skip headers without parents
+        std::string error_message = "Could not find parent with hash " + to_hex(header.parent_hash) + " and height "
+                                    + std::to_string(height - 1) + " for header " + hash.to_hex() + "\n";
+        SILKWORM_LOG(LogLevel::Error) << error_message;
+        throw std::logic_error(error_message);
     }
 
     // Calculate total difficulty

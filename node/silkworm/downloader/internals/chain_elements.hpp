@@ -89,19 +89,21 @@ struct Anchor {
 };
 
 // Binary relations to use in priority queues
-struct Link_Older_Than: public std::binary_function<std::shared_ptr<Link>, std::shared_ptr<Link>, bool>
+struct LinkOlderThan : public std::function<bool (std::shared_ptr<Link>, std::shared_ptr<Link>)>
 {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const
     { return x->blockHeight < y->blockHeight; }
 };
 
-struct Link_Younger_Than: public std::binary_function<std::shared_ptr<Link>, std::shared_ptr<Link>, bool>
+
+struct LinkYoungerThan : public std::function<bool (std::shared_ptr<Link>, std::shared_ptr<Link>)>
 {
     bool operator()(const std::shared_ptr<Link>& x, const std::shared_ptr<Link>& y) const
     { return x->blockHeight > y->blockHeight; }
 };
 
-struct Anchor_Younger_Than: public std::binary_function<std::shared_ptr<Anchor>, std::shared_ptr<Anchor>, bool>
+
+struct AnchorYoungerThan : public std::function<bool (std::shared_ptr<Link>, std::shared_ptr<Link>)>
 {
     bool operator()(const std::shared_ptr<Anchor>& x, const std::shared_ptr<Anchor>& y) const
     {
@@ -117,9 +119,9 @@ struct Anchor_Younger_Than: public std::binary_function<std::shared_ptr<Anchor>,
 // For non-persisted links, those with the highest block heights get evicted first. This is to prevent "holes" in the
 // block heights that may cause inability to insert headers in the ascending order of their block heights.
 
-using Oldest_First_Link_Queue  = std::priority_queue<std::shared_ptr<Link>,
+using OldestFirstLinkQueue = std::priority_queue<std::shared_ptr<Link>,
                                                      std::vector<std::shared_ptr<Link>>,
-                                                     Link_Younger_Than>; // c++ heap is a max heap, so we need the inverse
+                                                     LinkYoungerThan>; // c++ heap is a max heap, so we need the inverse
 
 // For the Youngest_First_Link_Queue, Erigon use an intrusive priority_queue with elements storing index in the queue
 // for low removal time. We can:
@@ -128,24 +130,24 @@ using Oldest_First_Link_Queue  = std::priority_queue<std::shared_ptr<Link>,
 // 3. implement an intrusive priority_queue as Erigon
 // 4. use a multi-index container
 /*
-using Youngest_First_Link_Queue = std::priority_queue<std::shared_ptr<Link>,
+using YoungestFirstLinkQueue = std::priority_queue<std::shared_ptr<Link>,
                                                       std::vector<std::shared_ptr<Link>>,
                                                       Link_Older_Than>;
 */
-using Youngest_First_Link_Queue = set_based_priority_queue<std::shared_ptr<Link>,
-                                                           Link_Younger_Than>;  // c++ set put min at the top
+using YoungestFirstLinkQueue = set_based_priority_queue<std::shared_ptr<Link>,
+                                                           LinkYoungerThan>;  // c++ set put min at the top
 // todo: verify if set_based_priority_queue has comparable performance with Erigon intrusive priority queue
 
 // For anchors, those that have been inserted in the queue before are requested first
 
-using Oldest_First_Anchor_Queue = heap_based_priority_queue<std::shared_ptr<Anchor>,
+using OldestFirstAnchorQueue = heap_based_priority_queue<std::shared_ptr<Anchor>,
                                                             std::vector<std::shared_ptr<Anchor>>,
-                                                            Anchor_Younger_Than>;   // c++ heap is a max heap (where go heap is a min heap)
+                                                            AnchorYoungerThan>;   // c++ heap is a max heap (where go heap is a min heap)
 // todo: find a better alternative of heap_based_priority_queue (we use the custom one because Oldest_First_Link_Queue need a fix when an anchor change externally)
 
 // Maps
-using Link_Map = std::map<Hash,std::shared_ptr<Link>>;     // hash = link hash
-using Anchor_Map = std::map<Hash,std::shared_ptr<Anchor>>; // hash = anchor *parent* hash
+using LinkMap = std::map<Hash,std::shared_ptr<Link>>;     // hash = link hash
+using AnchorMap = std::map<Hash,std::shared_ptr<Anchor>>; // hash = anchor *parent* hash
 
 // todo: Anchor_Map key = anchor *parent* hash, incapsulate this kwnowledge in a class
 // so we can write anchor_map.add(anchor) in place of anchor_map[anchor->parent_hash] = anchor
@@ -153,8 +155,8 @@ using Anchor_Map = std::map<Hash,std::shared_ptr<Anchor>>; // hash = anchor *par
 // todo: assess boost::multi-index-container to replace queue + map pair
 
 // Other containers
-using Link_List = std::vector<std::shared_ptr<Link>>;
-using Link_LIFO_Queue = std::stack<std::shared_ptr<Link>>;
+using LinkList = std::vector<std::shared_ptr<Link>>;
+using LinkLIFOQueue = std::stack<std::shared_ptr<Link>>;
 
 using Headers = std::vector<std::shared_ptr<BlockHeader>>;
 

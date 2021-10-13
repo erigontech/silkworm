@@ -102,16 +102,16 @@ class WorkingChain {  // tentative name - todo: improve!
     void extend_up(Segment::Slice);                                // throw segment_cut_and_paste_error
     auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders; // throw segment_cut_and_paste_error
 
-    Youngest_First_Link_Queue linkQueue_;        // Priority queue of non-persisted links used to limit their number
-    Oldest_First_Anchor_Queue anchorQueue_;      // Priority queue of anchors used to sequence the header requests
-    Link_Map links_;                             // Links by header hash
-    Anchor_Map anchors_;                         // Mapping from parentHash to collection of anchors
-    Oldest_First_Link_Queue persistedLinkQueue_; // Priority queue of persisted links used to limit their number
-    Link_LIFO_Queue insertList_;                 // List of non-persisted links that can be inserted (their parent is persisted)
+    YoungestFirstLinkQueue linkQueue_;        // Priority queue of non-persisted links used to limit their number
+    OldestFirstAnchorQueue anchorQueue_;      // Priority queue of anchors used to sequence the header requests
+    LinkMap links_;                           // Links by header hash
+    AnchorMap anchors_;                       // Mapping from parentHash to collection of anchors
+    OldestFirstLinkQueue persistedLinkQueue_; // Priority queue of persisted links used to limit their number
+    LinkLIFOQueue insertList_;                // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highestInDb_;
     BlockNum topSeenHeight_;
     std::set<Hash> badHeaders_;
-    std::set<Hash> preverifiedHashes_; // Set of hashes that are known to belong to canonical chain - todo: fill preverifiedHashes_!
+    std::set<Hash> preverifiedHashes_;        // Set of hashes that are known to belong to canonical chain
     BlockNum preverifiedHeight_{0};
     using Ignore = int;
     lru_cache<Hash, Ignore> seenAnnounces_;

@@ -19,10 +19,8 @@
 #include <functional>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/stages.hpp>
 
 #include "cpp20_backport.hpp"
-#include "header_retrieval.hpp"
 #include "random_number.hpp"
 
 namespace silkworm {
@@ -194,7 +192,7 @@ func (hd *HeaderDownload) InsertHeaders(hf func(header *types.Header, blockHeigh
 Headers WorkingChain::withdraw_stable_headers() {
     Headers stable_headers;
 
-    Link_List links_in_future; // here we accumulate links that fail validation as "in the future"
+    LinkList links_in_future; // here we accumulate links that fail validation as "in the future"
 
     while(!insertList_.empty()) {   // todo: insertList_ is a stack so we iterate it in reverse insertion order, is it correct?
         // Make sure long insertions do not appear as a stuck stage headers

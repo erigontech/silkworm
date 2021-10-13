@@ -41,7 +41,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
 
     // followings
     do {
-        // compute next hash & number - todo: understand
+        // compute next hash & number - todo: understand and improve readability
         if (!reverse) {
             BlockNum current = header->number;
             BlockNum next = current + skip + 1;
@@ -132,6 +132,7 @@ std::tuple<Hash,BigInt> HeaderRetrieval::head_hash_and_total_difficulty() {
     return {*head_hash, *head_td};
 }
 
+// todo: use optional<> here
 std::tuple<Hash,BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestorDelta, uint64_t& max_non_canonical) {
     if (ancestorDelta > blockNum)
         return {Hash{},0};

@@ -45,7 +45,7 @@ class Stage {
 // custom exception
 class HeaderDownloaderException: public std::runtime_error {
   public:
-    explicit HeaderDownloaderException(std::string cause): std::runtime_error(cause) {}
+    explicit HeaderDownloaderException(const std::string& cause): std::runtime_error(cause) {}
 };
 
 /*

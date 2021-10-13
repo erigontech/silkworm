@@ -48,7 +48,7 @@ namespace silkworm {
         BlockHeader dummy_header;
         time_point_t now = std::chrono::system_clock::now();
 
-        Oldest_First_Anchor_Queue queue;
+        OldestFirstAnchorQueue queue;
 
         auto anchor = std::make_shared<Anchor>(dummy_header, "dummy-peer-id");
         anchor->blockHeight = 1;
@@ -128,7 +128,7 @@ namespace silkworm {
         BlockHeader dummy_header;
         bool persisted = false;
 
-        Youngest_First_Link_Queue queue;
+        YoungestFirstLinkQueue queue;
 
         auto link = std::make_shared<Link>(dummy_header, persisted);
         link->blockHeight = 1;
@@ -184,7 +184,7 @@ namespace silkworm {
         BlockHeader dummy_header;
         bool persisted = true;
 
-        Oldest_First_Link_Queue queue;
+        OldestFirstLinkQueue queue;
 
         auto link = std::make_shared<Link>(dummy_header, persisted);
         link->blockHeight = 1;

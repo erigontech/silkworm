@@ -77,7 +77,7 @@ std::optional<BlockHeader> read_header(mdbx::txn& txn, BlockNum block_number, co
 void write_header(mdbx::txn& txn, const BlockHeader& header, bool with_header_numbers) {
     Bytes value{};
     rlp::encode(value, header);
-    auto header_hash{header.hash()};
+    auto header_hash = BlockHeader::hash(value);
     auto key{db::block_key(header.number, header_hash.bytes)};
     auto target{db::open_cursor(txn, table::kHeaders)};
     target.upsert(to_slice(key), to_slice(value));

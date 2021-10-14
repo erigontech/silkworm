@@ -20,10 +20,14 @@
 
 namespace silkworm {
 
+evmc::bytes32 BlockHeader::hash(ByteView rlp_encoded_header) {
+    return bit_cast<evmc_bytes32>(keccak256(rlp_encoded_header));
+}
+
 evmc::bytes32 BlockHeader::hash(bool for_sealing) const {
     Bytes rlp;
     rlp::encode(rlp, *this, for_sealing);
-    return bit_cast<evmc_bytes32>(keccak256(rlp));
+    return hash(rlp);
 }
 
 ethash::hash256 BlockHeader::boundary() const {

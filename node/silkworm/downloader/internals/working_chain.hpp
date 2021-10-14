@@ -120,11 +120,11 @@ class WorkingChain {  // tentative name - todo: improve!
 
 class ConsensusProto {  // todo: replace with correct implementation
   public:
-    enum VerificationResult {OK, FUTURE_BLOCK, ERROR};
+    enum VerificationResult {VERIFIED, FUTURE_BLOCK, VERIFICATION_ERROR};
 
     static VerificationResult verify(const BlockHeader&) {
         // todo: implement, use seal = true
-        return OK;
+        return VERIFIED;
     };
 };
 

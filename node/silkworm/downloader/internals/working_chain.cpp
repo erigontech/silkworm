@@ -210,7 +210,7 @@ Headers WorkingChain::withdraw_stable_headers() {
         if (!link->preverified) {
             if (contains(badHeaders_,link->hash))
                 skip = true;
-            else if (auto error = ConsensusProto::verify(*link->header); error != ConsensusProto::ERROR) {  // true = seal
+            else if (auto error = ConsensusProto::verify(*link->header); error != ConsensusProto::VERIFICATION_ERROR) {  // true = seal
                 if (error == ConsensusProto::FUTURE_BLOCK) {
                     links_in_future.push_back(link);
                     SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: added future link,"
@@ -881,7 +881,7 @@ func (hd *HeaderDownload) findAnchors(segment *ChainSegment) (found bool, start 
 // find_anchors tries to finds the highest link the in the new segment that can be attached to an existing anchor
 auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<Found, Start> { // todo: do we need a span?
     for (size_t i = 0; i < segment.size(); i++)
-        if (anchors_.find(segment[i]->hash()) != anchors_.end()) // todo: hash() compute the value
+        if (anchors_.find(segment[i]->hash()) != anchors_.end()) // todo: hash() compute the value, do we need to cache it?
             return {true, i};
 
     return {false, 0};
@@ -1305,7 +1305,7 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
     return !pre_existing;
 }
 
-/*
+    /*
 // addHeaderAsLink wraps header into a link and adds it to either queue of persisted links or queue of non-persisted links
 func (hd *HeaderDownload) addHeaderAsLink(header *types.Header, persisted bool) *Link {
 	height := header.Number.Uint64()
@@ -1348,7 +1348,7 @@ func (hd *HeaderDownload) markPreverified(link *Link) {
 
 // Mark a link and all its ancestors as preverified
 void WorkingChain::mark_as_preverified(std::shared_ptr<Link> link) {
-    while (link) {
+    while (link && !link->preverified) {  // todo: Erigon might have a bug related to the condition "!link->preverified", check!
         link->preverified = true;
         auto parent = links_.find(link->header->parent_hash);
         link = (parent != links_.end() ? parent->second : nullptr);

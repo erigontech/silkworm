@@ -151,8 +151,7 @@ std::tuple<Hash,BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum bloc
             auto ancestorHash = db_tx_.read_canonical_hash(blockNum - ancestorDelta);   // todo: blockNum - ancestorDelta = constant, it is correct?
             h = db_tx_.read_canonical_hash(blockNum);   // todo: dummy line, remove (also present in Erigon)
             if (h == hash) {    // todo: dummy line, remove
-                blockNum -= ancestorDelta;
-                return {*ancestorHash, blockNum};   // ancestorHash can be empty
+                return {*ancestorHash, blockNum - ancestorDelta};   // ancestorHash can be empty
             }
         }
         if (max_non_canonical == 0)

@@ -30,6 +30,34 @@
 namespace silkworm {
 
 // Auxiliary types needed to implement WorkingChain
+/*
+struct Knot {   // todo: evaluate if can use this as base class for Anchor and Link
+                // problem: add_header_as_link() is ok for Link but not for Anchor
+    Hash hash;
+    std::vector<std::shared_ptr<Knot>> children;    // Reverse of parentHash / Allows iteration over links in ascending block height order
+
+    Knot(const BlockHeader& header): hash(header.hash()) {}
+
+    // todo: use this method to remove similar block in methods connect(), extend_up(), extend_down(), new_anchor()
+    auto add(Segment::Slice segment_slice, Container& preverifiedHashes) {
+        std::shared_ptr<Knot> prev_link = std::make_shared>(this);
+        for(auto h = segment_slice.rbegin(); h != segment_slice.rend(); h++) {
+            auto header = *h;
+            bool persisted = false;
+            auto link = add_header_as_link(*header, persisted);
+            prev_link->children.push_back(link); // add link as next of the preceding
+            prev_link = link;
+            if (contains(preverifiedHashes_, link->hash))
+                mark_as_preverified(link);
+        }
+    }
+
+    void remove_child(std::shared_ptr<Knot> child) {
+        auto to_remove = std::remove_if(children.begin(), children.end(), [child](auto& link) {return (link->hash == child->hash);});
+        children.erase(to_remove, children.end());
+    }
+};
+*/
 
 // A link corresponds to a block header, links are connected to each other by reverse of parentHash relation
 struct Link {

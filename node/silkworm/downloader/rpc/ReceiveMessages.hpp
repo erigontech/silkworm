@@ -21,14 +21,13 @@
 
 namespace silkworm::rpc {
 
-class ReceiveMessages: public rpc::OutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
+class ReceiveMessages : public rpc::OutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
   public:
-    enum Scope {BlockRequests, BlockAnnouncements};
+    enum Scope { BlockRequests, BlockAnnouncements };
 
     ReceiveMessages(Scope scope);
 };
 
-}
-
+}  // namespace silkworm::rpc
 
 #endif  // SILKWORM_RECEIVEMESSAGES_HPP

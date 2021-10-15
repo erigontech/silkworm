@@ -18,11 +18,10 @@
 
 namespace silkworm::rpc {
 
-PeerMinBlock::PeerMinBlock(const std::string& peerId, BlockNum minBlock):
-    UnaryCall("PeerMinBlock", &sentry::Sentry::Stub::PeerMinBlock, {})
-{
+PeerMinBlock::PeerMinBlock(const std::string& peerId, BlockNum minBlock)
+    : UnaryCall("PeerMinBlock", &sentry::Sentry::Stub::PeerMinBlock, {}) {
     request_.set_allocated_peer_id(to_H512(peerId).release());
     request_.set_min_block(minBlock);  // take ownership
 }
 
-}
+}  // namespace silkworm::rpc

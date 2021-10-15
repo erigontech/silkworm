@@ -18,18 +18,14 @@
 
 #include <silkworm/common/log.hpp>
 
+#include "internals/header_retrieval.hpp"
 #include "rpc/ReceiveMessages.hpp"
 #include "rpc/SetStatus.hpp"
-#include "internals/header_retrieval.hpp"
 
 namespace silkworm {
 
-BlockProvider::BlockProvider(SentryClient& sentry, Db::ReadOnlyAccess db_access, ChainIdentity chain_identity):
-    chain_identity_(std::move(chain_identity)),
-    db_access_{db_access},
-    sentry_{sentry}
-{
-}
+BlockProvider::BlockProvider(SentryClient& sentry, Db::ReadOnlyAccess db_access, ChainIdentity chain_identity)
+    : chain_identity_(std::move(chain_identity)), db_access_{db_access}, sentry_{sentry} {}
 
 BlockProvider::~BlockProvider() {
     stop();
@@ -55,7 +51,6 @@ void BlockProvider::send_status() {
 }
 
 void BlockProvider::process_message(std::shared_ptr<InboundMessage> message) {
-
     SILKWORM_LOG(LogLevel::Info) << "BlockProvider processing message " << *message << "\n";
 
     message->execute();
@@ -69,20 +64,18 @@ void BlockProvider::execution_loop() {
         sentry_.exec_remotely(receive_messages);
 
         while (!is_stopping() && !sentry_.is_stopping() && receive_messages.receive_one_reply()) {
-
             auto message = InboundBlockRequestMessage::make(receive_messages.reply(), db_access_, sentry_);
 
             process_message(message);
         }
 
         SILKWORM_LOG(LogLevel::Warn) << "BlockProvider execution_loop is_stopping...\n";
-    }
-    catch(const std::exception& e) {
-        SILKWORM_LOG(LogLevel::Error) << "BlockProvider execution_loop is_stopping due to exception: " << e.what() << "\n";
+    } catch (const std::exception& e) {
+        SILKWORM_LOG(LogLevel::Error) << "BlockProvider execution_loop is_stopping due to exception: " << e.what()
+                                      << "\n";
         stop();
         sentry_.stop();
     }
 }
 
 }  // namespace silkworm
-

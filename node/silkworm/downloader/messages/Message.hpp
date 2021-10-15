@@ -26,13 +26,11 @@ class Message {
   public:
     virtual std::string name() const = 0;
 
-    virtual void execute() = 0;    // inbound message send a reply, outbound message send a request
+    virtual void execute() = 0;  // inbound message send a reply, outbound message send a request
 
     virtual ~Message() = default;
 };
 
-}
-
-
+}  // namespace silkworm
 
 #endif  // SILKWORM_MESSAGE_HPP

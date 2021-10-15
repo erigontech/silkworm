@@ -25,9 +25,8 @@
 
 namespace silkworm {
 
-InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s):
-    InboundMessage(), working_chain_(wc), sentry_(s)
-{
+InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s)
+    : InboundMessage(), working_chain_(wc), sentry_(s) {
     if (msg.id() != sentry::MessageId::NEW_BLOCK_66)
         throw std::logic_error("InboundNewBlock received wrong InboundMessage");
 
@@ -35,23 +34,21 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain
 
     peerId_ = string_from_H512(msg.peer_id());
 
-    ByteView data = string_view_to_byte_view(msg.data()); // copy for consumption
+    ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     rlp::DecodingResult err = rlp::decode(data, packet_);
-    if (err != rlp::DecodingResult::kOk)
-        throw rlp::rlp_error("rlp decoding error decoding NewBlock");
+    if (err != rlp::DecodingResult::kOk) throw rlp::rlp_error("rlp decoding error decoding NewBlock");
 
     SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
 }
 
 void InboundNewBlock::execute() {
-    // todo: Erigon header-downloader apparently processes this message even if it is not in a fetching phase - do we need the same?
+    // todo: Erigon header-downloader apparently processes this message even if it is not in a fetching phase - do we
+    // need the same?
 
     // todo: implement in the block-downloader
 }
 
-uint64_t InboundNewBlock::reqId() const {
-    return reqId_;
-}
+uint64_t InboundNewBlock::reqId() const { return reqId_; }
 
 std::string InboundNewBlock::content() const {
     std::stringstream content;
@@ -59,5 +56,4 @@ std::string InboundNewBlock::content() const {
     return content.str();
 }
 
-}
-
+}  // namespace silkworm

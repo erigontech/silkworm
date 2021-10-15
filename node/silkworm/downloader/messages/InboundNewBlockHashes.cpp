@@ -26,9 +26,8 @@
 
 namespace silkworm {
 
-InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s):
-    InboundMessage(), working_chain_(wc), sentry_(s)
-{
+InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s)
+    : InboundMessage(), working_chain_(wc), sentry_(s) {
     if (msg.id() != sentry::MessageId::NEW_BLOCK_HASHES_66)
         throw std::logic_error("InboundNewBlockHashes received wrong InboundMessage");
 
@@ -36,10 +35,9 @@ InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg, 
 
     peerId_ = string_from_H512(msg.peer_id());
 
-    ByteView data = string_view_to_byte_view(msg.data()); // copy for consumption
+    ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     rlp::DecodingResult err = rlp::decode(data, packet_);
-    if (err != rlp::DecodingResult::kOk)
-        throw rlp::rlp_error("rlp decoding error decoding NewBlockHashes");
+    if (err != rlp::DecodingResult::kOk) throw rlp::rlp_error("rlp decoding error decoding NewBlockHashes");
 
     SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
 }
@@ -47,17 +45,17 @@ InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg, 
 void InboundNewBlockHashes::execute() {
     using namespace std;
 
-    // todo: Erigon apparently processes this message even if it is not in a fetching phase BUT is in request-chaining mode - do we need the same?
+    // todo: Erigon apparently processes this message even if it is not in a fetching phase BUT is in request-chaining
+    // mode - do we need the same?
 
     BlockNum max = working_chain_.top_seen_block_height();
 
-    for(size_t i = 0; i < packet_.size(); i++) {
+    for (size_t i = 0; i < packet_.size(); i++) {
         Hash hash = packet_[i].hash;
 
         // save announcement
         working_chain_.save_external_announce(hash);
-        if (working_chain_.has_link(hash))
-            continue;
+        if (working_chain_.has_link(hash)) continue;
 
         // request header
         GetBlockHeadersPacket66 reply;
@@ -72,7 +70,7 @@ void InboundNewBlockHashes::execute() {
 
         auto msg_reply = std::make_unique<sentry::OutboundMessageData>();
         msg_reply->set_id(sentry::MessageId::GET_BLOCK_HEADERS_66);
-        msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length()); // copy
+        msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
         // send msg_reply
         SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " with send_message_by_id\n";
@@ -80,19 +78,17 @@ void InboundNewBlockHashes::execute() {
         sentry_.exec_remotely(send_message_by_id);
 
         [[maybe_unused]] sentry::SentPeers peers = send_message_by_id.reply();
-        SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*this) << ": " << std::to_string(peers.peers_size()) + " peer(s)\n";
+        SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*this) << ": "
+                                     << std::to_string(peers.peers_size()) + " peer(s)\n";
 
         // calculate top seen block height
         max = std::max(max, packet_[i].number);
     }
 
     working_chain_.top_seen_block_height(max);
-
 }
 
-uint64_t InboundNewBlockHashes::reqId() const {
-    return reqId_;
-}
+uint64_t InboundNewBlockHashes::reqId() const { return reqId_; }
 
 std::string InboundNewBlockHashes::content() const {
     std::stringstream content;
@@ -100,4 +96,4 @@ std::string InboundNewBlockHashes::content() const {
     return content.str();
 }
 
-}
+}  // namespace silkworm

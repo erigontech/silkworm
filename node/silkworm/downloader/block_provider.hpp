@@ -26,9 +26,9 @@
 
 namespace silkworm {
 
-class BlockProviderException: public std::runtime_error {
+class BlockProviderException : public std::runtime_error {
   public:
-    explicit BlockProviderException(std::string cause): std::runtime_error(cause) {}
+    explicit BlockProviderException(std::string cause) : std::runtime_error(cause) {}
 };
 
 /*
@@ -49,12 +49,11 @@ class BlockProvider : public ActiveComponent {  // an active component that must
     BlockProvider(BlockProvider&&) = delete;       // nor movable
     ~BlockProvider();
 
-    /*[[long_running]]*/ void execution_loop() override; // main loop, receive messages from sentry and process them
+    /*[[long_running]]*/ void execution_loop() override;  // main loop, receive messages from sentry and process them
 
   private:
     void send_status();
     void process_message(std::shared_ptr<InboundMessage> message);
-
 };
 
 }  // namespace silkworm

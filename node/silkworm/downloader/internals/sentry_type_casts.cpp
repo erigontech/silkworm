@@ -14,9 +14,9 @@
    limitations under the License.
 */
 
-#include <silkworm/common/endian.hpp>
-
 #include "sentry_type_casts.hpp"
+
+#include <silkworm/common/endian.hpp>
 
 namespace silkworm {
 

@@ -19,8 +19,8 @@
 
 #include <gsl/span>
 
-#include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
 #include <silkworm/common/lru_cache.hpp>
+#include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
 
 #include "chain_elements.hpp"
 #include "persisted_chain.hpp"
@@ -51,8 +51,8 @@ class WorkingChain {  // tentative name - todo: improve!
 
     // core functionalities: anchor extension
     // to complete a range of block chain we need to do a request of headers to extend up or down an anchor or a segment
-    auto request_more_headers(time_point_t tp, seconds_t timeout) -> std::tuple<std::optional<GetBlockHeadersPacket66>,
-                                                                                std::vector<PeerPenalization>>;
+    auto request_more_headers(time_point_t tp, seconds_t timeout)
+        -> std::tuple<std::optional<GetBlockHeadersPacket66>, std::vector<PeerPenalization>>;
     // also we need to know if the request issued was not delivered
     void request_nack(const GetBlockHeadersPacket66& packet);
 
@@ -60,7 +60,7 @@ class WorkingChain {  // tentative name - todo: improve!
     // when a remote peer satisfy our request we receive one or more header that will be processed to fill hole in the
     // block chain
     using RequestMoreHeaders = bool;
-    auto accept_headers(const std::vector<BlockHeader>&, PeerId) -> std::tuple<Penalty,RequestMoreHeaders>;
+    auto accept_headers(const std::vector<BlockHeader>&, PeerId) -> std::tuple<Penalty, RequestMoreHeaders>;
 
     // core functionalities: persist new headers that have persisted parent
     auto withdraw_stable_headers() -> Headers;
@@ -75,16 +75,18 @@ class WorkingChain {  // tentative name - todo: improve!
     static constexpr BlockNum max_len = 192;
     static constexpr BlockNum stride = 8 * max_len;
     static constexpr size_t anchor_limit = 512;
-    static constexpr size_t link_total = 1024*1024;
+    static constexpr size_t link_total = 1024 * 1024;
     static constexpr size_t persistent_link_limit = link_total / 16;
     static constexpr size_t link_limit = link_total - persistent_link_limit;
 
     auto process_segment(const Segment&, bool is_a_new_block, PeerId) -> RequestMoreHeaders;
 
-    using Found = bool; using Start = size_t; using End = size_t;
-    auto find_anchor(const Segment&)                         -> std::tuple<Found, Start>;
-    auto find_link(const Segment&, size_t start)             -> std::tuple<Found, End>;
-    auto get_link(Hash hash)                                 -> std::optional<std::shared_ptr<Link>>;
+    using Found = bool;
+    using Start = size_t;
+    using End = size_t;
+    auto find_anchor(const Segment&) -> std::tuple<Found, Start>;
+    auto find_link(const Segment&, size_t start) -> std::tuple<Found, End>;
+    auto get_link(Hash hash) -> std::optional<std::shared_ptr<Link>>;
 
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
@@ -97,21 +99,21 @@ class WorkingChain {  // tentative name - todo: improve!
     void set_preverified_hashes(std::set<Hash>&& preverifiedHashes, BlockNum preverifiedHeight);
 
     using Error = int;
-    void connect(Segment::Slice);                                 // throw segment_cut_and_paste_error
-    auto extend_down(Segment::Slice) -> RequestMoreHeaders;        // throw segment_cut_and_paste_error
-    void extend_up(Segment::Slice);                                // throw segment_cut_and_paste_error
-    auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders; // throw segment_cut_and_paste_error
+    void connect(Segment::Slice);                                   // throw segment_cut_and_paste_error
+    auto extend_down(Segment::Slice) -> RequestMoreHeaders;         // throw segment_cut_and_paste_error
+    void extend_up(Segment::Slice);                                 // throw segment_cut_and_paste_error
+    auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;  // throw segment_cut_and_paste_error
 
-    YoungestFirstLinkQueue linkQueue_;        // Priority queue of non-persisted links used to limit their number
-    OldestFirstAnchorQueue anchorQueue_;      // Priority queue of anchors used to sequence the header requests
-    LinkMap links_;                           // Links by header hash
-    AnchorMap anchors_;                       // Mapping from parentHash to collection of anchors
-    OldestFirstLinkQueue persistedLinkQueue_; // Priority queue of persisted links used to limit their number
-    LinkLIFOQueue insertList_;                // List of non-persisted links that can be inserted (their parent is persisted)
+    YoungestFirstLinkQueue linkQueue_;         // Priority queue of non-persisted links used to limit their number
+    OldestFirstAnchorQueue anchorQueue_;       // Priority queue of anchors used to sequence the header requests
+    LinkMap links_;                            // Links by header hash
+    AnchorMap anchors_;                        // Mapping from parentHash to collection of anchors
+    OldestFirstLinkQueue persistedLinkQueue_;  // Priority queue of persisted links used to limit their number
+    LinkLIFOQueue insertList_;  // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highestInDb_;
     BlockNum topSeenHeight_;
     std::set<Hash> badHeaders_;
-    std::set<Hash> preverifiedHashes_;        // Set of hashes that are known to belong to canonical chain
+    std::set<Hash> preverifiedHashes_;  // Set of hashes that are known to belong to canonical chain
     BlockNum preverifiedHeight_{0};
     using Ignore = int;
     lru_cache<Hash, Ignore> seenAnnounces_;
@@ -120,7 +122,7 @@ class WorkingChain {  // tentative name - todo: improve!
 
 class ConsensusProto {  // todo: replace with correct implementation
   public:
-    enum VerificationResult {VERIFIED, FUTURE_BLOCK, VERIFICATION_ERROR};
+    enum VerificationResult { VERIFIED, FUTURE_BLOCK, VERIFICATION_ERROR };
 
     static VerificationResult verify(const BlockHeader&) {
         // todo: implement, use seal = true
@@ -128,6 +130,6 @@ class ConsensusProto {  // todo: replace with correct implementation
     };
 };
 
-}
+}  // namespace silkworm
 
 #endif  // SILKWORM_WORKING_CHAIN_HPP

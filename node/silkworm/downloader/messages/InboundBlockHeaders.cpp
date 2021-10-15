@@ -18,25 +18,21 @@
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
-
 #include <silkworm/downloader/rpc/PeerMinBlock.hpp>
 #include <silkworm/downloader/rpc/PenalizePeer.hpp>
 
 namespace silkworm {
 
-
-InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s):
-    InboundMessage(), working_chain_(wc), sentry_(s)
-{
+InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s)
+    : InboundMessage(), working_chain_(wc), sentry_(s) {
     if (msg.id() != sentry::MessageId::BLOCK_HEADERS_66)
         throw std::logic_error("InboundBlockHeaders received wrong InboundMessage");
 
     peerId_ = string_from_H512(msg.peer_id());
 
-    ByteView data = string_view_to_byte_view(msg.data()); // copy for consumption
+    ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     rlp::DecodingResult err = rlp::decode(data, packet_);
-    if (err != rlp::DecodingResult::kOk)
-        throw rlp::rlp_error("rlp decoding error decoding BlockHeaders");
+    if (err != rlp::DecodingResult::kOk) throw rlp::rlp_error("rlp decoding error decoding BlockHeaders");
 
     SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
 }
@@ -84,17 +80,19 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, Work
 void InboundBlockHeaders::execute() {
     using namespace std;
 
-    // todo: PRIO - Erigon apparently processes this message even if it is not in a fetching phase - do we need the same?
+    // todo: PRIO - Erigon apparently processes this message even if it is not in a fetching phase - do we need the
+    // same?
 
     BlockNum highestBlock = 0;
-    for(BlockHeader& header: packet_.request) {
+    for (BlockHeader& header : packet_.request) {
         highestBlock = std::max(highestBlock, header.number);
     }
 
-    auto [penalty, requestMoreHeaders] = working_chain_.accept_headers(packet_.request, peerId_); // todo: provide WorkingChain as messages member
+    auto [penalty, requestMoreHeaders] =
+        working_chain_.accept_headers(packet_.request, peerId_);  // todo: provide WorkingChain as messages member
 
-    // Erigon here calls request_more_headers(). Do we have to do the same? What if header downloader is not in a forward phase?
-    // todo: take a decision here!
+    // Erigon here calls request_more_headers(). Do we have to do the same? What if header downloader is not in a
+    // forward phase? todo: take a decision here!
     /* If we need to implement as Erigon does:
     if (penalty == Penalty::NoPenalty && requestMoreHeaders) {
         OutboundGetBlockHeaders message(working_chain_, sentry_);
@@ -114,10 +112,7 @@ void InboundBlockHeaders::execute() {
     sentry_.exec_remotely(peer_min_block);
 }
 
-
-uint64_t InboundBlockHeaders::reqId() const {
-    return packet_.requestId;
-}
+uint64_t InboundBlockHeaders::reqId() const { return packet_.requestId; }
 
 std::string InboundBlockHeaders::content() const {
     std::stringstream content;
@@ -125,5 +120,4 @@ std::string InboundBlockHeaders::content() const {
     return content.str();
 }
 
-
-}
+}  // namespace silkworm

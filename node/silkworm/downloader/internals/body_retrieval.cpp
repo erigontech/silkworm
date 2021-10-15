@@ -14,31 +14,26 @@
    limitations under the License.
 */
 
-#include <silkworm/types/block.hpp>
-
 #include "body_retrieval.hpp"
+
+#include <silkworm/types/block.hpp>
 
 namespace silkworm {
 
-BodyRetrieval::BodyRetrieval(Db::ReadOnlyAccess db_access): db_tx_{db_access.start_ro_tx()} {
-
-}
+BodyRetrieval::BodyRetrieval(Db::ReadOnlyAccess db_access) : db_tx_{db_access.start_ro_tx()} {}
 
 std::vector<BlockBody> BodyRetrieval::recover(std::vector<Hash> request) {
     std::vector<BlockBody> response;
     size_t bytes = 0;
-    for(size_t i = 0; i <= request.size(); ++i) {
+    for (size_t i = 0; i <= request.size(); ++i) {
         Hash& hash = request[i];
         auto body = db_tx_.read_body(hash);
         if (!body) continue;
         response.push_back(*body);
         bytes += rlp::length(*body);
-        if (bytes >= soft_response_limit ||
-            response.size() >= max_bodies_serve ||
-            i >= 2 * max_bodies_serve)
-            break;
+        if (bytes >= soft_response_limit || response.size() >= max_bodies_serve || i >= 2 * max_bodies_serve) break;
     }
     return response;
 }
 
-}
+}  // namespace silkworm

@@ -48,8 +48,8 @@ namespace db {
             CHECK_NOTHROW(tx.write_header(header, false));
             auto read_header = tx.read_header(header.number, header.hash());
 
-            REQUIRE(read_header != std::nullopt);                       // Warning: this is a limited test, we only test that
-            REQUIRE(read_header->number == header.number);              // read and write are implemented in a symmetric way
+            REQUIRE(read_header != std::nullopt);           // Warning: this is a limited test, we only test that
+            REQUIRE(read_header->number == header.number);  // read and write are implemented in a symmetric way
             REQUIRE(read_header->beneficiary == header.beneficiary);
             REQUIRE(read_header->gas_limit == header.gas_limit);
             REQUIRE(read_header->gas_used == header.gas_used);
@@ -68,16 +68,16 @@ namespace db {
             CHECK_NOTHROW(tx.write_canonical_hash(header.number, header.hash()));
             auto read_hash = tx.read_canonical_hash(header.number);
 
-            REQUIRE(read_hash != std::nullopt);     // Warning: this is a limited test, we only test that
-            REQUIRE(read_hash == header.hash());    // read and write are implemented in a symmetric way
+            REQUIRE(read_hash != std::nullopt);   // Warning: this is a limited test, we only test that
+            REQUIRE(read_hash == header.hash());  // read and write are implemented in a symmetric way
         }
 
         SECTION("read/write total difficulty") {
             CHECK_NOTHROW(tx.write_total_difficulty(header.number, header.hash(), 1234));
             auto read_td = tx.read_total_difficulty(header.number, header.hash());
 
-            REQUIRE(read_td != std::nullopt);       // Warning: this is a limited test, we only test that
-            REQUIRE(read_td == 1234);               // read and write are implemented in a symmetric way
+            REQUIRE(read_td != std::nullopt);  // Warning: this is a limited test, we only test that
+            REQUIRE(read_td == 1234);          // read and write are implemented in a symmetric way
         }
 
         SECTION("read/write stage progress") {
@@ -89,6 +89,6 @@ namespace db {
         }
     }
 
-} // namespace db
+}  // namespace db
 
-} // namespace silkworm
+}  // namespace silkworm

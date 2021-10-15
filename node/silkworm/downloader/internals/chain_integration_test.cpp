@@ -14,15 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "persisted_chain.hpp"
-#include "working_chain.hpp"
+#include <algorithm>
 
-#include <silkworm/common/test_context.hpp>
+#include <catch2/catch.hpp>
+
 #include <silkworm/chain/genesis.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/db/genesis.hpp>
 
-#include <algorithm>
-#include <catch2/catch.hpp>
+#include "persisted_chain.hpp"
+#include "working_chain.hpp"
 
 namespace silkworm {
 
@@ -320,9 +321,9 @@ TEST_CASE("working/persistent-chain integration test") {
 
         REQUIRE(pc.total_difficulty() == expected_td_bis);
         REQUIRE(pc.best_header_changed() == true);
-        REQUIRE(pc.highest_height() == 1);                  // <-- NOTE! 1 not 2
+        REQUIRE(pc.highest_height() == 1);  // <-- NOTE! 1 not 2
         REQUIRE(pc.highest_hash() == header1b_hash);
-        REQUIRE(pc.unwind() == false);                      // because the prev canonical was not persisted
+        REQUIRE(pc.unwind() == false);  // because the prev canonical was not persisted
 
         REQUIRE(tx.read_head_header_hash() == header1b_hash);
         REQUIRE(tx.read_total_difficulty(1, header1b.hash()) == expected_td_bis);
@@ -459,9 +460,9 @@ TEST_CASE("working/persistent-chain integration test") {
      *         h0 <----- h1  <----- h2
      *               |-- h1' <----- h2' <----- h3' (new cononical) -> unwind?
      */
-//  SECTION("a header in a secondary chain") {
-//      // todo
-//  }
+    //  SECTION("a header in a secondary chain") {
+    //      // todo
+    //  }
 
     /* status:
      *         h0 <----- h1 <----- h2
@@ -470,10 +471,9 @@ TEST_CASE("working/persistent-chain integration test") {
      *         h0 <----- h1  <----- h2
      *               |-- h1' <----- h2' <----- h3' (new cononical) -> unwind?
      */
-//  SECTION("a forking point in the past") {
-//       // todo
-//  }
-
+    //  SECTION("a forking point in the past") {
+    //       // todo
+    //  }
 }
 
-}
+}  // namespace silkworm

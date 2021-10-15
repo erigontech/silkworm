@@ -25,5 +25,5 @@ class OutboundMessage : public Message {
     void execute() override = 0;
 };
 
-}
+}  // namespace silkworm
 #endif  // SILKWORM_OUTBOUNDMESSAGE_HPP

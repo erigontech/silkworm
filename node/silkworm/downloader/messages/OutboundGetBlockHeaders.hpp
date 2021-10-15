@@ -28,18 +28,18 @@ class OutboundGetBlockHeaders : public OutboundMessage {
   public:
     OutboundGetBlockHeaders(WorkingChain&, SentryClient&);
 
-    std::string name() const override {return "OutboundGetBlockHeaders";}
+    std::string name() const override { return "OutboundGetBlockHeaders"; }
 
-    void execute() override;    // headers_forward function in Erigon
+    void execute() override;  // headers_forward function in Erigon
 
   private:
     sentry::SentPeers send_packet(const GetBlockHeadersPacket66&, seconds_t timeout);
     void send_penalization(const PeerPenalization&, seconds_t timeout);
 
-    //GetBlockHeadersPacket66 packet_;
+    // GetBlockHeadersPacket66 packet_;
     WorkingChain& working_chain_;
     SentryClient& sentry_;
 };
 
-}
+}  // namespace silkworm
 #endif  // SILKWORM_OUTBOUNDGETBLOCKHEADERS_HPP

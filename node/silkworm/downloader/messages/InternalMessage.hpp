@@ -17,27 +17,27 @@ limitations under the License.
 #ifndef SILKWORM_INTERNALMESSAGE_HPP
 #define SILKWORM_INTERNALMESSAGE_HPP
 
-#include "Message.hpp"
-
-#include <silkworm/downloader/internals/working_chain.hpp>
-#include <silkworm/downloader/internals/persisted_chain.hpp>
-
 #include <future>
+
+#include <silkworm/downloader/internals/persisted_chain.hpp>
+#include <silkworm/downloader/internals/working_chain.hpp>
+
+#include "Message.hpp"
 
 namespace silkworm {
 
 template <class R>
 class InternalMessage : public Message {
   public:
-    using ExecutionFunc = std::function<R (WorkingChain&)>;
+    using ExecutionFunc = std::function<R(WorkingChain&)>;
 
     InternalMessage(WorkingChain&, ExecutionFunc);
 
-    std::string name() const override {return "InternalMessage";}
+    std::string name() const override { return "InternalMessage"; }
 
     void execute() override;
 
-    std::future<R> result() {return result_.get_future();}
+    std::future<R> result() { return result_.get_future(); }
 
   private:
     WorkingChain& working_chain_;
@@ -47,10 +47,7 @@ class InternalMessage : public Message {
 };
 
 template <class R>
-InternalMessage<R>::InternalMessage(WorkingChain& wc, ExecutionFunc exec):
-    working_chain_(wc), execution_impl_(exec)
-{
-}
+InternalMessage<R>::InternalMessage(WorkingChain& wc, ExecutionFunc exec) : working_chain_(wc), execution_impl_(exec) {}
 
 template <class R>
 void InternalMessage<R>::execute() {
@@ -66,5 +63,5 @@ inline void InternalMessage<void>::execute() {
     result_.set_value();
 }
 
-}
+}  // namespace silkworm
 #endif  // SILKWORM_INTERNALMESSAGE_HPP

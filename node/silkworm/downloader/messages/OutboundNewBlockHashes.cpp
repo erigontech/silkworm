@@ -22,10 +22,7 @@ limitations under the License.
 
 namespace silkworm {
 
-OutboundNewBlockHashes::OutboundNewBlockHashes(WorkingChain& wc, SentryClient& s):
-    working_chain_(wc), sentry_(s)
-{
-}
+OutboundNewBlockHashes::OutboundNewBlockHashes(WorkingChain& wc, SentryClient& s) : working_chain_(wc), sentry_(s) {}
 
 /*
 func (cs *ControlServerImpl) PropagateNewBlockHashes(ctx context.Context, announces []headerdownload.Announce) {
@@ -84,20 +81,21 @@ void OutboundNewBlockHashes::execute() {
 
     auto& announces_to_do = working_chain_.announces_to_do();
 
-    for(auto& announce: announces_to_do) {
-        //packet_.emplace_back(announce.hash, announce.number); // requires c++20
+    for (auto& announce : announces_to_do) {
+        // packet_.emplace_back(announce.hash, announce.number); // requires c++20
         packet_.push_back({announce.hash, announce.number});
     }
 
-    auto request = std::make_unique<sentry::OutboundMessageData>(); // create request
+    auto request = std::make_unique<sentry::OutboundMessageData>();  // create request
 
     request->set_id(sentry::MessageId::NEW_BLOCK_HASHES_66);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, packet_);
-    request->set_data(rlp_encoding.data(), rlp_encoding.length()); // copy
+    request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    SILKWORM_LOG(LogLevel::Info) << "Sending message OutboundNewBlockHashes with send_message_to_all, content:" << packet_ << " \n";
+    SILKWORM_LOG(LogLevel::Info) << "Sending message OutboundNewBlockHashes with send_message_to_all, content:"
+                                 << packet_ << " \n";
     rpc::SendMessageToAll rpc{std::move(request)};
 
     seconds_t timeout = 1s;
@@ -106,9 +104,10 @@ void OutboundNewBlockHashes::execute() {
     sentry_.exec_remotely(rpc);
 
     sentry::SentPeers peers = rpc.reply();
-    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of OutboundNewBlockHashes " << packet_ << ": " << std::to_string(peers.peers_size()) + " peer(s)\n";
+    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of OutboundNewBlockHashes " << packet_ << ": "
+                                 << std::to_string(peers.peers_size()) + " peer(s)\n";
 
-    announces_to_do.clear(); // clear announces from the queue
+    announces_to_do.clear();  // clear announces from the queue
 }
 
-}
+}  // namespace silkworm

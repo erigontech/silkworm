@@ -17,6 +17,8 @@
 #ifndef SILKWORM_DB_TX_HPP
 #define SILKWORM_DB_TX_HPP
 
+#include <functional>
+
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -25,8 +27,6 @@
 #include <silkworm/db/util.hpp>
 
 #include "types.hpp"
-
-#include <functional>
 
 using namespace silkworm;
 
@@ -38,11 +38,11 @@ class Db {
 
     explicit Db(std::string db_path) {
         db::EnvConfig db_config{db_path};
-        //db_config.readonly = false;
+        // db_config.readonly = false;
         env_ = db::open_env(db_config);
     }
 
-    Db(mdbx::env_managed&& env): env_{std::move(env)} {} // low level construction, more silkworm friendly
+    Db(mdbx::env_managed&& env) : env_{std::move(env)} {}  // low level construction, more silkworm friendly
 
   private:
     mdbx::env_managed env_;
@@ -53,29 +53,30 @@ class Db::ReadOnlyAccess {
   public:
     class Tx;
 
-    ReadOnlyAccess(Db& db): env_{db.env_} {}
-    ReadOnlyAccess(mdbx::env_managed& env): env_{env} {} // low level construction, more silkworm friendly
-    ReadOnlyAccess(const ReadOnlyAccess& copy): env_{copy.env_} {}
+    ReadOnlyAccess(Db& db) : env_{db.env_} {}
+    ReadOnlyAccess(mdbx::env_managed& env) : env_{env} {}  // low level construction, more silkworm friendly
+    ReadOnlyAccess(const ReadOnlyAccess& copy) : env_{copy.env_} {}
 
     Tx start_ro_tx();
 
   protected:
-    //auto start_read() {return env_.start_read();}
-    //auto start_write() {return env_.start_write();}
-    //auto abort(mdbx::txn_managed& txn) {return txn.abort();};
-    //auto commit(mdbx::txn_managed& txn) {return txn.commit();};
+    // auto start_read() {return env_.start_read();}
+    // auto start_write() {return env_.start_write();}
+    // auto abort(mdbx::txn_managed& txn) {return txn.abort();};
+    // auto commit(mdbx::txn_managed& txn) {return txn.commit();};
 
     mdbx::env_managed& env_;
 };
 
 // A read-write access to database - used to enforce in some method signatures the type of access
-class Db::ReadWriteAccess: public Db::ReadOnlyAccess {
+class Db::ReadWriteAccess : public Db::ReadOnlyAccess {
   public:
     class Tx;
 
-    ReadWriteAccess(Db& db): Db::ReadOnlyAccess{db} {}
-    ReadWriteAccess(mdbx::env_managed& env): Db::ReadOnlyAccess{env} {} // low level construction, more silkworm friendly
-    ReadWriteAccess(const ReadWriteAccess& copy): Db::ReadOnlyAccess{copy} {}
+    ReadWriteAccess(Db& db) : Db::ReadOnlyAccess{db} {}
+    ReadWriteAccess(mdbx::env_managed& env)
+        : Db::ReadOnlyAccess{env} {}  // low level construction, more silkworm friendly
+    ReadWriteAccess(const ReadWriteAccess& copy) : Db::ReadOnlyAccess{copy} {}
 
     Tx start_tx();
     // improvement: enforce a single read-write tx (as MDBX requires) at compilation time
@@ -86,20 +87,20 @@ class Db::ReadOnlyAccess::Tx {
   protected:
     mdbx::txn_managed txn;
 
-    Tx(mdbx::txn_managed&& source): txn{std::move(source)} {}
+    Tx(mdbx::txn_managed&& source) : txn{std::move(source)} {}
 
   public:
-    Tx(Db::ReadOnlyAccess& access): Tx{access.env_.start_read()} {}
-    Tx(const Tx&) = delete; // not copyable
-    Tx(Tx&& source) noexcept: txn(std::move(source.txn)) {} // only movable
-    Tx(mdbx::txn& source): txn{source.start_nested()} {} // to be more silkworm friendly
-    ~Tx() {} // destroying txn cause abort if not done
+    Tx(Db::ReadOnlyAccess& access) : Tx{access.env_.start_read()} {}
+    Tx(const Tx&) = delete;                                   // not copyable
+    Tx(Tx&& source) noexcept : txn(std::move(source.txn)) {}  // only movable
+    Tx(mdbx::txn& source) : txn{source.start_nested()} {}     // to be more silkworm friendly
+    ~Tx() {}                                                  // destroying txn cause abort if not done
 
-    void close() {txn.abort();}     // a more friendly name for a read-only tx
-    void abort() {txn.abort();}
-    void commit() {txn.commit();}
+    void close() { txn.abort(); }  // a more friendly name for a read-only tx
+    void abort() { txn.abort(); }
+    void commit() { txn.commit(); }
 
-    mdbx::txn_managed& raw() {return txn;}  // for compatibility reason with other modules
+    mdbx::txn_managed& raw() { return txn; }  // for compatibility reason with other modules
 
     std::optional<Hash> read_canonical_hash(BlockNum b) {  // throws db exceptions // todo: add to db::access_layer.hpp?
         auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
@@ -126,9 +127,7 @@ class Db::ReadOnlyAccess::Tx {
         return Hash(db::from_slice(data.value));
     }
 
-    std::optional<BlockHeader> read_header(BlockNum b, Hash h) {
-        return db::read_header(txn, b, h.bytes);
-    }
+    std::optional<BlockHeader> read_header(BlockNum b, Hash h) { return db::read_header(txn, b, h.bytes); }
 
     std::optional<BlockHeader> read_canonical_header(BlockNum b) {  // also known as read-header-by-number
         std::optional<Hash> h = read_canonical_hash(b);
@@ -170,7 +169,7 @@ class Db::ReadOnlyAccess::Tx {
     }
 
     // todo: is it better to replace this func with cursor_for_count(cursor, const WalkFunc&, size_t max_count, CursorMoveDirection) ?
-    void read_headers_in_reverse_order(size_t limit, std::function<void (BlockHeader&&)> callback) {
+    void read_headers_in_reverse_order(size_t limit, std::function<void(BlockHeader&&)> callback) {
         auto header_table = db::open_cursor(txn, db::table::kHeaders);
 
         bool throw_notfound = false;
@@ -202,25 +201,24 @@ class Db::ReadOnlyAccess::Tx {
         return db::read_total_difficulty(txn, b, h.bytes);
     }
 
-    BlockNum read_stage_progress(const char* stage_name) {
-        return db::stages::read_stage_progress(txn, stage_name);
-    }
+    BlockNum read_stage_progress(const char* stage_name) { return db::stages::read_stage_progress(txn, stage_name); }
 };
 
 // A db read-write transaction
 class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
     using base = Db::ReadOnlyAccess::Tx;
+
   public:
-    Tx(Db::ReadWriteAccess& access): base{access.env_.start_write()} {}
-    Tx(const Tx&) = delete; // not copyable
-    Tx(Tx&& source) noexcept: base(std::move(source.txn)) {} // only movable
-    Tx(mdbx::txn& source): base{source} {} // to be more silkworm friendly
+    Tx(Db::ReadWriteAccess& access) : base{access.env_.start_write()} {}
+    Tx(const Tx&) = delete;                                    // not copyable
+    Tx(Tx&& source) noexcept : base(std::move(source.txn)) {}  // only movable
+    Tx(mdbx::txn& source) : base{source} {}                    // to be more silkworm friendly
 
     void write_header(const BlockHeader& header, bool with_header_numbers) {
         Bytes encoded_header;
         rlp::encode(encoded_header, header);
 
-        auto header_hash = bit_cast<evmc_bytes32>(keccak256(encoded_header));   // avoid header.hash() re-do rlp encoding
+        auto header_hash = bit_cast<evmc_bytes32>(keccak256(encoded_header));  // avoid header.hash() re-do rlp encoding
         Bytes key = db::block_key(header.number, header_hash.bytes);
         auto skey = db::to_slice(key);
         auto svalue = db::to_slice(encoded_header);
@@ -271,15 +269,9 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
     }
 };
 
-
 // Implementation of some methods
-inline auto Db::ReadOnlyAccess::start_ro_tx() -> Tx {
-    return Tx(*this);
-}
+inline auto Db::ReadOnlyAccess::start_ro_tx() -> Tx { return Tx(*this); }
 
-inline auto Db::ReadWriteAccess::start_tx() -> Tx {
-    return Tx(*this);
-}
-
+inline auto Db::ReadWriteAccess::start_tx() -> Tx { return Tx(*this); }
 
 #endif  // SILKWORM_DB_TX_HPP

@@ -24,9 +24,9 @@ namespace silkworm {
 
 class HeaderRetrieval {
   public:
-    static const long soft_response_limit = 2 * 1024 * 1024; // Target maximum size of returned blocks, headers or node data.
-    static const long est_header_rlp_size = 500;             // Approximate size of an RLP encoded block header
-    static const long max_headers_serve = 1024;              // Amount of block headers to be fetched per retrieval request
+    static const long soft_response_limit = 2 * 1024 * 1024;  // Target maximum size of returned blocks
+    static const long est_header_rlp_size = 500;              // Approximate size of an RLP encoded block header
+    static const long max_headers_serve = 1024;  // Amount of block headers to be fetched per retrieval request
 
     explicit HeaderRetrieval(Db::ReadOnlyAccess db_access);
 
@@ -35,16 +35,17 @@ class HeaderRetrieval {
     std::vector<BlockHeader> recover_by_number(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse);
 
     // Node current status
-    BlockNum                head_height();
-    std::tuple<Hash,BigInt> head_hash_and_total_difficulty();
+    BlockNum head_height();
+    std::tuple<Hash, BigInt> head_hash_and_total_difficulty();
 
     // Ancestor
-    std::tuple<Hash,BlockNum> get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestorDelta, uint64_t& max_non_canonical);
+    std::tuple<Hash, BlockNum> get_ancestor(Hash hash, BlockNum blockNum, BlockNum ancestorDelta,
+                                            uint64_t& max_non_canonical);
 
   protected:
     Db::ReadOnlyAccess::Tx db_tx_;
 };
 
-}
+}  // namespace silkworm
 
 #endif  // SILKWORM_HEADER_RETRIEVAL_HPP

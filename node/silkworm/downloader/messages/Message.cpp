@@ -15,6 +15,7 @@
 */
 
 #include "Message.hpp"
+
 #include <silkworm/common/log.hpp>
 
 namespace silkworm {

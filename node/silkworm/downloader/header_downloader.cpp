@@ -13,32 +13,30 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+#include "header_downloader.hpp"
+
 #include <chrono>
 #include <thread>
 
 #include <silkworm/common/log.hpp>
 
-#include "header_downloader.hpp"
+#include "internals/header_retrieval.hpp"
 #include "messages/InboundGetBlockHeaders.hpp"
 #include "messages/InternalMessage.hpp"
 #include "messages/OutboundGetBlockHeaders.hpp"
 #include "messages/OutboundNewBlockHashes.hpp"
 #include "rpc/ReceiveMessages.hpp"
 #include "rpc/SetStatus.hpp"
-#include "internals/header_retrieval.hpp"
 
 // todo: implement sentry ready check before usage & sentry reconnect semantics
 
 namespace silkworm {
 
-HeaderDownloader::HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_access, ChainIdentity chain_identity):
-    chain_identity_(std::move(chain_identity)),
-    db_access_{db_access},
-    sentry_{sentry}
-{
+HeaderDownloader::HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_access, ChainIdentity chain_identity)
+    : chain_identity_(std::move(chain_identity)), db_access_{db_access}, sentry_{sentry} {
     auto tx = db_access_.start_ro_tx();
     working_chain_.recover_initial_state(tx);
-    //working_chain_.set_preverified_hashes(...); // todo: activate
+    // working_chain_.set_preverified_hashes(...); // todo: activate
 }
 
 HeaderDownloader::~HeaderDownloader() {
@@ -76,11 +74,9 @@ void HeaderDownloader::receive_messages() {
 
     // receive messages
     while (!is_stopping() && !sentry_.is_stopping() && message_subscription.receive_one_reply()) {
-
         auto message = InboundBlockAnnouncementMessage::make(message_subscription.reply(), working_chain_, sentry_);
 
         messages_.push(message);
-
     }
 
     SILKWORM_LOG(LogLevel::Warn) << "HeaderDownloader execution_loop is_stopping...\n";
@@ -93,14 +89,13 @@ void HeaderDownloader::execution_loop() {
         // pop a message from the queue
         std::shared_ptr<Message> message;
         bool present = messages_.timed_wait_and_pop(message, 1000ms);
-        if (!present) continue;   // timeout, needed to check exiting_
+        if (!present) continue;  // timeout, needed to check exiting_
 
         SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader processing message " << message->name() << "\n";
 
         // process the message (command pattern)
         message->execute();
     }
-
 }
 
 /*
@@ -260,7 +255,6 @@ func HeadersForward(
 */
 
 auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
-
     using std::shared_ptr;
     using namespace std::chrono_literals;
 
@@ -271,8 +265,8 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader forward operation started\n";
 
     try {
-        Db::ReadWriteAccess::Tx tx = db_access_.start_tx(); // this will start a new tx only if db_access has not an active tx
-
+        Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // this will start a new tx only if db_access has not
+                                                             // an active tx
         PersistedChain persisted_chain_(tx);
 
         if (persisted_chain_.unwind_detected()) {
@@ -282,12 +276,11 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         // sync status
         auto sync_command = sync_working_chain(persisted_chain_.initial_height());
-        sync_command->result().get(); // blocking
+        sync_command->result().get();  // blocking
 
         // message processing
         time_point_t last_request;
         while (!new_height_reached && !sentry_.is_stopping()) {
-
             // at every minute...
             if (std::chrono::system_clock::now() - last_request > 60s) {
                 last_request = std::chrono::system_clock::now();
@@ -314,10 +307,10 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 }
 
                 // todo: log progress - logProgressHeaders(logPrefix, prevProgress, progress)
-                SILKWORM_LOG(LogLevel::Debug) << "HeaderDownloader status: current persisted height="
-                                              << persisted_chain_.highest_height() << "\n";
-            }
-            else
+                SILKWORM_LOG(LogLevel::Debug)
+                    << "HeaderDownloader status: current persisted height=" << persisted_chain_.highest_height()
+                    << "\n";
+            } else
                 std::this_thread::sleep_for(1s);
 
             SILKWORM_LOG(LogLevel::Debug) << "WorkingChain status: " << working_chain_.human_readable_status() << "\n";
@@ -333,17 +326,17 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         persisted_chain_.close();
 
-        tx.commit(); // this will commit if the tx was started here
+        tx.commit();  // this will commit if the tx was started here
 
         SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader forward operation completed\n";
-    }
-    catch(const std::exception& e) {
-        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader forward operation is stopping due to an exception: " << e.what() << "\n";
+    } catch (const std::exception& e) {
+        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader forward operation is stopping due to an exception: "
+                                      << e.what() << "\n";
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
 
-    stop(); // todo: it is better to try to cancel the grpc call, do a message_subscription.try_cancel() or both
+    stop();  // todo: it is better to try to cancel the grpc call, do a message_subscription.try_cancel() or both
     message_receiving.join();
 
     SILKWORM_LOG(LogLevel::Debug) << "HeaderDownloader forward operation clean exit\n";
@@ -451,14 +444,14 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
 
         auto bad_headers = PersistedChain::remove_headers(new_height, bad_block, tx);
 
-        update_bad_headers(std::move(bad_headers));    // update working_chain bad headers list todo: activate
+        update_bad_headers(std::move(bad_headers));  // update working_chain bad headers list todo: activate
 
         tx.commit();
 
         SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader unwind operation completed\n";
-    }
-    catch(const std::exception& e) {
-        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader unwind operation is stopping due to an exception: " << e.what() << "\n";
+    } catch (const std::exception& e) {
+        SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader unwind operation is stopping due to an exception: "
+                                      << e.what() << "\n";
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
@@ -474,7 +467,6 @@ void HeaderDownloader::send_header_requests() {
 
     auto message = std::make_shared<OutboundGetBlockHeaders>(working_chain_, sentry_);
     messages_.push(message);
-
 }
 
 // New block hash announcements propagation
@@ -483,24 +475,21 @@ void HeaderDownloader::send_announcements() {
 
     auto message = std::make_shared<OutboundNewBlockHashes>(working_chain_, sentry_);
     messages_.push(message);
-
 }
 
 auto HeaderDownloader::sync_working_chain(BlockNum highest_in_db) -> std::shared_ptr<InternalMessage<void>> {
-
-    auto message = std::make_shared<InternalMessage<void>>(working_chain_, [highest_in_db](WorkingChain& wc){
-        wc.sync_current_state(highest_in_db);
-    });
+    auto message = std::make_shared<InternalMessage<void>>(
+        working_chain_, [highest_in_db](WorkingChain& wc) { wc.sync_current_state(highest_in_db); });
 
     messages_.push(message);
 
     return message;
 }
 
-auto HeaderDownloader::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers,bool>>> {
-    using result_t = std::tuple<Headers,bool>;
+auto HeaderDownloader::withdraw_stable_headers() -> std::shared_ptr<InternalMessage<std::tuple<Headers, bool>>> {
+    using result_t = std::tuple<Headers, bool>;
 
-    auto message = std::make_shared<InternalMessage<result_t>>(working_chain_, [](WorkingChain& wc){
+    auto message = std::make_shared<InternalMessage<result_t>>(working_chain_, [](WorkingChain& wc) {
         Headers headers = wc.withdraw_stable_headers();
         bool in_sync = wc.in_sync();
         return result_t{std::move(headers), in_sync};
@@ -512,9 +501,8 @@ auto HeaderDownloader::withdraw_stable_headers() -> std::shared_ptr<InternalMess
 }
 
 auto HeaderDownloader::update_bad_headers(std::set<Hash> bad_headers) -> std::shared_ptr<InternalMessage<void>> {
-    auto message = std::make_shared<InternalMessage<void>>(working_chain_, [bads = std::move(bad_headers)](WorkingChain& wc){
-        wc.add_bad_headers(bads);
-    });
+    auto message = std::make_shared<InternalMessage<void>>(
+        working_chain_, [bads = std::move(bad_headers)](WorkingChain& wc) { wc.add_bad_headers(bads); });
 
     messages_.push(message);
 
@@ -522,4 +510,3 @@ auto HeaderDownloader::update_bad_headers(std::set<Hash> bad_headers) -> std::sh
 }
 
 }  // namespace silkworm
-

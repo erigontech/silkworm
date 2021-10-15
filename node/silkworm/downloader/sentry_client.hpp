@@ -33,7 +33,7 @@ namespace silkworm {
 using SentryRpc = rpc::Call<sentry::Sentry>;
 
 /*
- * A client to connect to a remote sentry 
+ * A client to connect to a remote sentry
  * The remote sentry must implement the ethereum p2p protocol and must have an interface specified by sentry.proto
  * SentryClient uses gRPC/protobuf to communicate with the remote sentry.
  */
@@ -41,11 +41,11 @@ class SentryClient : public rpc::Client<sentry::Sentry> {
   public:
     using base_t = rpc::Client<sentry::Sentry>;
 
-    explicit SentryClient(std::string sentry_addr);     // connect to the remote sentry
+    explicit SentryClient(std::string sentry_addr);  // connect to the remote sentry
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
 
-    void exec_remotely(SentryRpc& rpc);     // send a rpc request to the remote sentry
+    void exec_remotely(SentryRpc& rpc);  // send a rpc request to the remote sentry
 
     void stop() { stopping_.store(true); }
     bool is_stopping() const { return stopping_.load(); }
@@ -54,6 +54,5 @@ class SentryClient : public rpc::Client<sentry::Sentry> {
     std::atomic<bool> stopping_{false};
 };
 
-
-}
+}  // namespace silkworm
 #endif  // SILKWORM_SENTRY_CLIENT_HPP

@@ -19,9 +19,9 @@ limitations under the License.
 
 #include <silkworm/common/lru_cache.hpp>
 
+#include "chain_elements.hpp"
 #include "db_tx.hpp"
 #include "types.hpp"
-#include "chain_elements.hpp"
 
 namespace silkworm {
 
@@ -41,7 +41,7 @@ type HeaderInserter struct {
 }
  */
 
-class PersistedChain {      // counterpart of Erigon HeaderInserter
+class PersistedChain {  // counterpart of Erigon HeaderInserter
   public:
     explicit PersistedChain(Db::ReadWriteAccess::Tx& tx);
 
@@ -52,7 +52,7 @@ class PersistedChain {      // counterpart of Erigon HeaderInserter
     static auto remove_headers(BlockNum new_height, Hash bad_block, Db::ReadWriteAccess::Tx& tx) -> std::set<Hash>;
 
     bool best_header_changed();
-    bool unwind_detected();     // todo: do we need both unwind() & unwind_detected() ?
+    bool unwind_detected();  // todo: do we need both unwind() & unwind_detected() ?
     bool unwind();
 
     BlockNum unwind_point();
@@ -60,8 +60,9 @@ class PersistedChain {      // counterpart of Erigon HeaderInserter
     BlockNum highest_height();
     Hash highest_hash();
     BigInt total_difficulty();
+
   private:
-    BlockNum find_forking_point(Db::ReadWriteAccess::Tx&, const BlockHeader& header, BlockNum height, 
+    BlockNum find_forking_point(Db::ReadWriteAccess::Tx&, const BlockHeader& header, BlockNum height,
                                 const BlockHeader& parent);
     void update_canonical_chain(BlockNum heigth, Hash hash);
 
@@ -71,17 +72,16 @@ class PersistedChain {      // counterpart of Erigon HeaderInserter
     BlockNum initial_height_{};
     BlockNum highest_bn_{};
     uint64_t highest_timestamp_{};
-    //BlockNum previous_height_{};
+    // BlockNum previous_height_{};
     BigInt local_td_;
     BlockNum unwind_point_{};
     bool unwind_{false};
     bool unwind_detected_{false};
     bool new_canonical_{false};
-    lru_cache<BlockNum,Hash> canonical_cache_;
+    lru_cache<BlockNum, Hash> canonical_cache_;
     bool closed_{false};
 };
 
-
-} // namespace silkworm
+}  // namespace silkworm
 
 #endif  // SILKWORM_PERSISTED_CHAIN_HPP

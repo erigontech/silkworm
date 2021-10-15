@@ -27,23 +27,23 @@ limitations under the License.
 template <typename T, typename CMP>
 class set_based_priority_queue {
     std::multiset<T, CMP> elements_;
+
   public:
-    const T& top() const            {return *elements_.begin();}
-    void pop()                      {elements_.erase(elements_.begin());}
-    void push(const T& element)     {elements_.insert(element);}
-    void erase(const T& element)    {elements_.erase(element);}
-    size_t size() const             {return elements_.size();}
-    bool contains(const T& element) {return elements_.template find(element) != elements_.end();}
+    const T& top() const { return *elements_.begin(); }
+    void pop() { elements_.erase(elements_.begin()); }
+    void push(const T& element) { elements_.insert(element); }
+    void erase(const T& element) { elements_.erase(element); }
+    size_t size() const { return elements_.size(); }
+    bool contains(const T& element) { return elements_.template find(element) != elements_.end(); }
 };
 
 /*
  * A custom priority queue that add erase and fix methods to the standard ones
- * For the implementation see here https://stackoverflow.com/questions/19467485/how-to-remove-element-not-at-top-from-priority-queue
+ * For the implementation see here
+ * https://stackoverflow.com/questions/19467485/how-to-remove-element-not-at-top-from-priority-queue
  */
-template<typename T, typename SEQ = std::vector<T>,
-    typename CMP = std::less<typename SEQ::value_type> >
-class heap_based_priority_queue : public std::priority_queue<T, SEQ, CMP>
-{
+template <typename T, typename SEQ = std::vector<T>, typename CMP = std::less<typename SEQ::value_type> >
+class heap_based_priority_queue : public std::priority_queue<T, SEQ, CMP> {
   public:
     // erase an element and restore the priority_queue invariant
     bool erase(const T& value) {
@@ -52,16 +52,13 @@ class heap_based_priority_queue : public std::priority_queue<T, SEQ, CMP>
             this->c.erase(it);
             std::make_heap(this->c.begin(), this->c.end(), this->comp);
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
 
     // restore the priority_queue invariant (e.g. after an item external modify)
-    void fix() {
-        std::make_heap(this->c.begin(), this->c.end(), this->comp);
-    }
+    void fix() { std::make_heap(this->c.begin(), this->c.end(), this->comp); }
 };
 
 // todo: add a test for erase & fix of heap_based_priority_queue

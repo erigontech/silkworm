@@ -28,7 +28,7 @@ class OutboundNewBlockHashes : public OutboundMessage {
   public:
     OutboundNewBlockHashes(WorkingChain&, SentryClient&);
 
-    std::string name() const override {return "OutboundNewBlockHashes";}
+    std::string name() const override { return "OutboundNewBlockHashes"; }
 
     void execute() override;
 
@@ -38,5 +38,5 @@ class OutboundNewBlockHashes : public OutboundMessage {
     SentryClient& sentry_;
 };
 
-}
+}  // namespace silkworm
 #endif  // SILKWORM_OUTBOUNDNEWBLOCKHASHES_HPP

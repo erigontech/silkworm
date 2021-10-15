@@ -21,12 +21,11 @@ limitations under the License.
 
 namespace silkworm::rpc {
 
-class SendMessageToAll: public rpc::UnaryCall<sentry::Sentry, sentry::OutboundMessageData, sentry::SentPeers> {
+class SendMessageToAll : public rpc::UnaryCall<sentry::Sentry, sentry::OutboundMessageData, sentry::SentPeers> {
   public:
     SendMessageToAll(std::unique_ptr<sentry::OutboundMessageData> message);
 };
 
-}
-
+}  // namespace silkworm::rpc
 
 #endif  // SILKWORM_SENDMESSAGETOALL_HPP

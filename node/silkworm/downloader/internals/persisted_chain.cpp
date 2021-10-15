@@ -21,7 +21,6 @@ limitations under the License.
 namespace silkworm {
 
 PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical_cache_(1000) {
-
     BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
     auto headers_head_hash = tx.read_canonical_hash(headers_height);
     if (!headers_head_hash) {
@@ -37,7 +36,7 @@ PersistedChain::PersistedChain(Db::ReadWriteAccess::Tx& tx) : tx_(tx), canonical
 
     local_td_ = *headers_head_td;
     unwind_point_ = headers_height;
-    initial_height_ = headers_height; // in Erigon is highest_in_db_
+    initial_height_ = headers_height;  // in Erigon is highest_in_db_
 }
 
 bool PersistedChain::best_header_changed() { return new_canonical_; }
@@ -163,12 +162,12 @@ header.ParentHash, blockHeight-1, hash, blockHeight))
 */
 
 void PersistedChain::persist(const Headers& headers) {
-    for(auto& header: headers) {
+    for (auto& header : headers) {
         persist(*header);
     }
 }
 
-void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modularize
+void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modularize
     // Admittance conditions
     auto height = header.number;
     Hash hash = header.hash();
@@ -177,19 +176,21 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
     }
 
     // Important note: this test is wrong, cause error with certain sequence of headers that are corrects
-//    if (height < highest_bn_) {    // in Erigon is "height < previous_height_" but previous_height_ is never updated so the test fails always
-//        std::string error_message = "PersistedChain: headers are unexpectedly unsorted, got " + std::to_string(height) +
-//                                    " after " + std::to_string(highest_bn_);
-//        SILKWORM_LOG(LogLevel::Error) << error_message;
-//        throw std::logic_error(error_message);  // unexpected condition, bug?
-//    }
+    //    if (height < highest_bn_) {    // in Erigon is "height < previous_height_" but previous_height_ is never
+    //    updated so the test fails always
+    //        std::string error_message = "PersistedChain: headers are unexpectedly unsorted, got " +
+    //        std::to_string(height) +
+    //                                    " after " + std::to_string(highest_bn_);
+    //        SILKWORM_LOG(LogLevel::Error) << error_message;
+    //        throw std::logic_error(error_message);  // unexpected condition, bug?
+    //    }
     if (tx_.read_header(height, hash).has_value()) {
         return;  // already inserted, skip
     }
     auto parent = tx_.read_header(height - 1, header.parent_hash);
     if (!parent) {
-        std::string error_message = "Could not find parent with hash " + to_hex(header.parent_hash) + " and height "
-                                    + std::to_string(height - 1) + " for header " + hash.to_hex() + "\n";
+        std::string error_message = "Could not find parent with hash " + to_hex(header.parent_hash) + " and height " +
+                                    std::to_string(height - 1) + " for header " + hash.to_hex() + "\n";
         SILKWORM_LOG(LogLevel::Error) << error_message;
         throw std::logic_error(error_message);
     }
@@ -220,7 +221,8 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
         highest_hash_ = hash;
         highest_timestamp_ = header.timestamp;
         canonical_cache_.put(height, hash);
-        local_td_ = td;  // this makes sure we end up choosing the chain with the max total difficulty - todo: what this mean?
+        local_td_ =
+            td;  // this makes sure we end up choosing the chain with the max total difficulty - todo: what this mean?
 
         if (forking_point < unwind_point_) {  // See if the forking point affects the unwind-point (the block number to
             unwind_point_ = forking_point;    // which other stages will need to unwind before the new canonical chain
@@ -232,7 +234,7 @@ void PersistedChain::persist(const BlockHeader& header) {   // todo: try to modu
     tx_.write_total_difficulty(height, hash, td);
 
     // Save header
-    tx_.write_header(header, true); // true = with_header_numbers
+    tx_.write_header(header, true);  // true = with_header_numbers
 
     SILKWORM_LOG(LogLevel::Info) << "PersistedChain: saved header height=" << height << " hash=" << hash << "\n";
 
@@ -245,12 +247,11 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
 
     // Read canonical hash at height-1
     Hash prev_canon_hash;
-    const Hash* cached_prev_hash = canonical_cache_.get(height - 1); // look in the cache first
+    const Hash* cached_prev_hash = canonical_cache_.get(height - 1);  // look in the cache first
     if (cached_prev_hash) {
         prev_canon_hash = *cached_prev_hash;
-    }
-    else {
-        auto persisted_prev_hash = tx.read_canonical_hash(height - 1); // then look in the db
+    } else {
+        auto persisted_prev_hash = tx.read_canonical_hash(height - 1);  // then look in the db
         if (!persisted_prev_hash) {
             std::string error_message =
                 "PersistedChain: error reading canonical hash for height " + std::to_string(height - 1);
@@ -271,8 +272,7 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
 
         // look in the cache first
         const Hash* cached_canon_hash;
-        while ((cached_canon_hash = canonical_cache_.get(ancestor_height))
-               && *cached_canon_hash != ancestor_hash) {
+        while ((cached_canon_hash = canonical_cache_.get(ancestor_height)) && *cached_canon_hash != ancestor_hash) {
             auto ancestor = tx.read_header(ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             ancestor_height--;
@@ -280,8 +280,8 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
 
         // now look in the db
         std::optional<Hash> persisted_canon_hash;
-        while ((persisted_canon_hash = tx.read_canonical_hash(ancestor_height))
-               && persisted_canon_hash != ancestor_hash) {
+        while ((persisted_canon_hash = tx.read_canonical_hash(ancestor_height)) &&
+               persisted_canon_hash != ancestor_hash) {
             auto ancestor = tx.read_header(ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             ancestor_height--;
@@ -292,7 +292,8 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
             SILKWORM_LOG(LogLevel::Error) << error_message;
             throw std::logic_error(error_message);  // unexpected condition, bug?
         }
-        // loop above terminates when probable_canonical_hash == ancestor_hash, therefore ancestor_height is our forking point
+        // loop above terminates when probable_canonical_hash == ancestor_hash, therefore ancestor_height is our forking
+        // point
         forking_point = ancestor_height;
     }
 
@@ -334,20 +335,20 @@ func fixCanonicalChain(logPrefix string, logEvery *time.Ticker, height uint64, h
 
  */
 
-void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) { // hash can be empty
+void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) {  // hash can be empty
     if (height == 0) return;
 
     auto ancestor_hash = hash;
     auto ancestor_height = height;
 
     std::optional<Hash> persisted_canon_hash = tx_.read_canonical_hash(ancestor_height);
-    while (persisted_canon_hash != ancestor_hash) {     // todo: shouldn't the ancestor be in the canonical_cache? can we optimize here?
+    while (persisted_canon_hash != ancestor_hash) {
         tx_.write_canonical_hash(ancestor_height, ancestor_hash);
 
         auto ancestor = tx_.read_header(ancestor_height, ancestor_hash);
         if (ancestor == std::nullopt) {
-            std::string msg = "PersistedChain: fix canonical chain failed at ancestor=" + std::to_string(ancestor_height) +
-                              " hash=" + ancestor_hash.to_hex();
+            std::string msg = "PersistedChain: fix canonical chain failed at ancestor=" +
+                              std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
             SILKWORM_LOG(LogLevel::Error) << msg;
             throw std::logic_error(msg);
         }
@@ -371,27 +372,29 @@ void PersistedChain::close() {
     closed_ = true;
 }
 
-std::set<Hash> PersistedChain::remove_headers([[maybe_unused]] BlockNum unwind_point, [[maybe_unused]] Hash bad_block, [[maybe_unused]] Db::ReadWriteAccess::Tx& tx) {
+std::set<Hash> PersistedChain::remove_headers([[maybe_unused]] BlockNum unwind_point,
+                                              [[maybe_unused]] Hash bad_block,
+                                              [[maybe_unused]] Db::ReadWriteAccess::Tx& tx) {
     std::set<Hash> bad_headers;
-/*
-    BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
+    /*
+        BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
 
-    bool is_bad_block = (bad_block != Hash{});
-    for(BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
-        if (is_bad_block) {
-            auto current_hash = tx.read_canonical_hash(current_height);
-            bad_headers.insert(current_hash);
+        bool is_bad_block = (bad_block != Hash{});
+        for(BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
+            if (is_bad_block) {
+                auto current_hash = tx.read_canonical_hash(current_height);
+                bad_headers.insert(current_hash);
+            }
+            tx.delete_canonical_hash(current_height);
         }
-        tx.delete_canonical_hash(current_height);
-    }
 
-    if (is_bad_block) {
-        bad_headers.insert(bad_block);
+        if (is_bad_block) {
+            bad_headers.insert(bad_block);
 
-        // todo: implement here
-    }
-*/
+            // todo: implement here
+        }
+    */
     return bad_headers;
 }
 
-}
+}  // namespace silkworm

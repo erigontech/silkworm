@@ -21,17 +21,17 @@
 
 namespace silkworm {
 
-    struct GetBlockHeadersPacket {
-        HashOrNumber origin;  // Block hash or block number from which to retrieve headers
-        uint64_t amount;      // Maximum number of headers to retrieve
-        uint64_t skip;        // Blocks to skip between consecutive headers
-        bool reverse;         // Query direction (false = rising towards latest, true = falling towards genesis)
-    };
+struct GetBlockHeadersPacket {
+    HashOrNumber origin;  // Block hash or block number from which to retrieve headers
+    uint64_t amount;      // Maximum number of headers to retrieve
+    uint64_t skip;        // Blocks to skip between consecutive headers
+    bool reverse;         // Query direction (false = rising towards latest, true = falling towards genesis)
+};
 
-    struct GetBlockHeadersPacket66 { // eth/66 version
-        uint64_t requestId;
-        GetBlockHeadersPacket request;
-    };
+struct GetBlockHeadersPacket66 {  // eth/66 version
+    uint64_t requestId;
+    GetBlockHeadersPacket request;
+};
 
 namespace rlp {
 
@@ -94,28 +94,22 @@ namespace rlp {
         return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
     }
 
-    // ... length(const GetBlockHeadersPacket66& from)            implemented by template <Eth66Packet T> size_t length(const T& from)
+    // ... length(const GetBlockHeadersPacket66& from)            impl. by template <Eth66Packet T> size_t length(...)
 
-    // ... encode(Bytes& to, const GetBlockHeadersPacket66& from) implemented by template <Eth66Packet T> void encode(Bytes& to, const T& from)
+    // ... encode(Bytes& to, const GetBlockHeadersPacket66& from) impl. by template <Eth66Packet T> void encode(...)
 
-    // ... decode(ByteView& from, GetBlockHeadersPacket66& to)    implemented by template <Eth66Packet T> rlp::DecodingResult decode(ByteView& from, T& to) --> No, it requires a c++20 compiler
+    // ... decode(ByteView& from, GetBlockHeadersPacket66& to)->template <Eth66Packet T> auto decode(...) requires c++20
     template <>
     rlp::DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to) noexcept;
 
-} // rlp namespace
+}  // namespace rlp
 
-    inline std::ostream& operator<<(std::ostream& os, const GetBlockHeadersPacket66& packet)
-    {
-        os <<   "reqId="  << packet.requestId
-           << " origin=" << packet.request.origin
-           << " amount=" << packet.request.amount
-           << " skip="   << packet.request.skip
-           << " reverse="<< packet.request.reverse;
-        return os;
-    }
+inline std::ostream& operator<<(std::ostream& os, const GetBlockHeadersPacket66& packet) {
+    os << "reqId=" << packet.requestId << " origin=" << packet.request.origin << " amount=" << packet.request.amount
+       << " skip=" << packet.request.skip << " reverse=" << packet.request.reverse;
+    return os;
+}
 
-} // silkworm namespace
-
-
+}  // namespace silkworm
 
 #endif  // SILKWORM_GETBLOCKHEADERSPACKET_HPP

@@ -25,54 +25,55 @@
 
 // generic implementations (must follow types)
 #include <silkworm/rlp/decode.hpp>
+
 #include "RLPVectorCoding.hpp"
 
 // specific implementations
 namespace silkworm::rlp {
 
-    rlp::DecodingResult decode(ByteView& from, Hash& to) noexcept {
-        return rlp::decode(from, dynamic_cast<evmc::bytes32&>(to));
-    }
-
-    template <>
-    rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket& to) noexcept {
-        return rlp::decode_vec(from, to);  // decode_vec
-    }
-
-    template <>
-    rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept {
-        return rlp::decode_vec(from, to); //decode_vec
-    }
-
-    template <>
-    rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket& to) noexcept {
-        return rlp::decode_vec(from, to); //decode_vec
-    }
-
-    template <>
-    rlp::DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept {
-        return rlp::decode_vec(from, to); // decode_vec
-    }
-
-    template <>
-    rlp::DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to) noexcept {
-        return rlp::decode_eth66(from, to);
-    }
-
-    template <>
-    rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket66& to) noexcept {
-        return rlp::decode_eth66(from, to);
-    }
-
-    template <>
-    rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept {
-        return rlp::decode_eth66(from, to);
-    }
-
-    template <>
-    rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept {
-        return rlp::decode_eth66(from, to);
-    }
+rlp::DecodingResult decode(ByteView& from, Hash& to) noexcept {
+    return rlp::decode(from, dynamic_cast<evmc::bytes32&>(to));
 }
+
+template <>
+rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket& to) noexcept {
+    return rlp::decode_vec(from, to);  // decode_vec
+}
+
+template <>
+rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept {
+    return rlp::decode_vec(from, to);  // decode_vec
+}
+
+template <>
+rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket& to) noexcept {
+    return rlp::decode_vec(from, to);  // decode_vec
+}
+
+template <>
+rlp::DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept {
+    return rlp::decode_vec(from, to);  // decode_vec
+}
+
+template <>
+rlp::DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to) noexcept {
+    return rlp::decode_eth66(from, to);
+}
+
+template <>
+rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket66& to) noexcept {
+    return rlp::decode_eth66(from, to);
+}
+
+template <>
+rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept {
+    return rlp::decode_eth66(from, to);
+}
+
+template <>
+rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept {
+    return rlp::decode_eth66(from, to);
+}
+}  // namespace silkworm::rlp
 
 #include "RLPEth66PacketCoding.hpp"

@@ -17,16 +17,17 @@
 #ifndef SILKWORM_INBOUNDNEWBLOCK_HPP
 #define SILKWORM_INBOUNDNEWBLOCK_HPP
 
-#include "InboundMessage.hpp"
 #include <silkworm/downloader/packets/NewBlockPacket.hpp>
+
+#include "InboundMessage.hpp"
 
 namespace silkworm {
 
-class InboundNewBlock: public InboundMessage {
+class InboundNewBlock : public InboundMessage {
   public:
     InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain& wc, SentryClient& s);
 
-    std::string name() const override {return "InboundNewBlock";}
+    std::string name() const override { return "InboundNewBlock"; }
     std::string content() const override;
     uint64_t reqId() const override;
 
@@ -40,7 +41,6 @@ class InboundNewBlock: public InboundMessage {
     [[maybe_unused]] SentryClient& sentry_;
 };
 
-}
-
+}  // namespace silkworm
 
 #endif  // SILKWORM_INBOUNDNEWBLOCK_HPP

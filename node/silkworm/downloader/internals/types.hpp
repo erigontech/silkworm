@@ -79,7 +79,7 @@ inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
 
 using PeerId = std::string;
 
-enum Penalty: int {
+enum Penalty : int {
     NoPenalty = 0,
     BadBlockPenalty,
     DuplicateHeaderPenalty,
@@ -95,7 +95,7 @@ struct PeerPenalization {
     Penalty penalty;
     PeerId peerId;
 
-    PeerPenalization(Penalty p, PeerId id):  penalty(p), peerId(id) {} // unnecessary with c++20
+    PeerPenalization(Penalty p, PeerId id) : penalty(p), peerId(id) {}  // unnecessary with c++20
 };
 
 struct Announce {
@@ -122,10 +122,9 @@ namespace rlp {
 namespace std {
 
 template <>
-struct hash<silkworm::Hash>: public std::hash<evmc::bytes32>    // to use Hash with std::unordered_set/map
-{
-};
+struct hash<silkworm::Hash> : public std::hash<evmc::bytes32>  // to use Hash with std::unordered_set/map
+{};
 
-} // namespace std
+}  // namespace std
 
 #endif  // SILKWORM_TYPES_HPP

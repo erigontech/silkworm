@@ -18,10 +18,9 @@ Licensed under the Apache License, Version 2.0 (the "License");
 
 namespace silkworm::rpc {
 
-SendMessageToAll::SendMessageToAll(std::unique_ptr<sentry::OutboundMessageData> message):
-    UnaryCall("SendMessageToAll", &sentry::Sentry::Stub::SendMessageToAll, {})
-{
+SendMessageToAll::SendMessageToAll(std::unique_ptr<sentry::OutboundMessageData> message)
+    : UnaryCall("SendMessageToAll", &sentry::Sentry::Stub::SendMessageToAll, {}) {
     request_.Swap(message.get());
 }
 
-}
+}  // namespace silkworm::rpc

@@ -21,12 +21,12 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/header_downloader.hpp>
 #include <silkworm/downloader/packets/RLPEth66PacketCoding.hpp>
-#include <silkworm/downloader/rpc/SendMessageByMinBlock.hpp>
 #include <silkworm/downloader/rpc/PenalizePeer.hpp>
+#include <silkworm/downloader/rpc/SendMessageByMinBlock.hpp>
 
 namespace silkworm {
 
-OutboundGetBlockHeaders::OutboundGetBlockHeaders(WorkingChain& wc, SentryClient& s): working_chain_(wc), sentry_(s) {}
+OutboundGetBlockHeaders::OutboundGetBlockHeaders(WorkingChain& wc, SentryClient& s) : working_chain_(wc), sentry_(s) {}
 
 /*
 // HeadersForward progresses Headers stage in the forward direction
@@ -119,18 +119,19 @@ void OutboundGetBlockHeaders::execute() {
 
     time_point_t now = std::chrono::system_clock::now();
     seconds_t timeout = 5s;
-    int max_requests = 64; // limit number of requests sent per round to let some headers to be inserted into the database
+    int max_requests =
+        64;  // limit number of requests sent per round to let some headers to be inserted into the database
 
     // anchor extension
     do {
         auto [packet, penalizations] = working_chain_.request_more_headers(now, timeout);
 
-        if (packet == std::nullopt)
-            break;
+        if (packet == std::nullopt) break;
 
         auto send_outcome = send_packet(*packet, timeout);
 
-        SILKWORM_LOG(LogLevel::Info) << "Headers request sent, received by " << send_outcome.peers_size() << " peer(s)\n";
+        SILKWORM_LOG(LogLevel::Info) << "Headers request sent, received by " << send_outcome.peers_size()
+                                     << " peer(s)\n";
 
         if (send_outcome.peers_size() == 0) {
             working_chain_.request_nack(*packet);
@@ -142,7 +143,7 @@ void OutboundGetBlockHeaders::execute() {
         }
 
         max_requests--;
-    } while(max_requests > 0); // && packet != std::nullopt && receiving_peers != nullptr
+    } while (max_requests > 0);  // && packet != std::nullopt && receiving_peers != nullptr
 
     // anchor collection
     auto packet = working_chain_.request_skeleton();
@@ -150,29 +151,30 @@ void OutboundGetBlockHeaders::execute() {
     if (packet != std::nullopt) {
         auto send_outcome = send_packet(*packet, timeout);
 
-        SILKWORM_LOG(LogLevel::Info) << "Headers skeleton request sent, received by " << send_outcome.peers_size() << " peer(s)\n";
+        SILKWORM_LOG(LogLevel::Info) << "Headers skeleton request sent, received by " << send_outcome.peers_size()
+                                     << " peer(s)\n";
     }
 }
 
 sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPacket66& packet_, seconds_t timeout) {
-    //packet_ = packet;
+    // packet_ = packet;
 
     if (std::holds_alternative<Hash>(packet_.request.origin))
-        throw std::logic_error("OutboundGetBlockHeaders expects block number not hash");    // todo: check!
+        throw std::logic_error("OutboundGetBlockHeaders expects block number not hash");  // todo: check!
 
-    BlockNum min_block = std::get<BlockNum>(packet_.request.origin); // choose target peer
-    if (!packet_.request.reverse)
-        min_block += packet_.request.amount * packet_.request.skip;
+    BlockNum min_block = std::get<BlockNum>(packet_.request.origin);  // choose target peer
+    if (!packet_.request.reverse) min_block += packet_.request.amount * packet_.request.skip;
 
-    auto request = std::make_unique<sentry::OutboundMessageData>(); // create header request
+    auto request = std::make_unique<sentry::OutboundMessageData>();  // create header request
 
     request->set_id(sentry::MessageId::GET_BLOCK_HEADERS_66);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, packet_);
-    request->set_data(rlp_encoding.data(), rlp_encoding.length()); // copy
+    request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    SILKWORM_LOG(LogLevel::Info) << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_ << " \n";
+    SILKWORM_LOG(LogLevel::Info) << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:"
+                                 << packet_ << " \n";
     rpc::SendMessageByMinBlock rpc{min_block, std::move(request)};
 
     rpc.timeout(timeout);
@@ -180,7 +182,8 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     sentry_.exec_remotely(rpc);
 
     sentry::SentPeers peers = rpc.reply();
-    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of OutboundGetBlockHeaders " << packet_ << ": " << std::to_string(peers.peers_size()) + " peer(s)\n";
+    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of OutboundGetBlockHeaders " << packet_ << ": "
+                                 << std::to_string(peers.peers_size()) + " peer(s)\n";
 
     return peers;
 }
@@ -193,5 +196,4 @@ void OutboundGetBlockHeaders::send_penalization(const PeerPenalization& penaliza
     sentry_.exec_remotely(rpc);
 }
 
-
-}
+}  // namespace silkworm

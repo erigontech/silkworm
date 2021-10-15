@@ -32,18 +32,17 @@ struct BlockHeadersPacket66 {  // eth/66 version
 
 namespace rlp {
 
-    // size_t length(const BlockHeadersPacket& from)           impl. by  rlp::length<T>(const std::vector<T>& v)
+    size_t length(const BlockHeadersPacket& from) noexcept;
 
-    // void encode(Bytes& to, const BlockHeadersPacket& from)  imp. by  rlp::encode(Bytes& to, const std::vector<T>& v)
+    void encode(Bytes& to, const BlockHeadersPacket& from);
 
     template <>
     rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept;
 
-    // ... length(const BlockHeadersPacket66& from)            impl. by template <Eth66Packet T> size_t length(...)
+    size_t length(const BlockHeadersPacket66& from) noexcept;
 
-    // ... encode(Bytes& to, const BlockHeadersPacket66& from) impl. by template <Eth66Packet T> void encode(...)
+    void encode(Bytes& to, const BlockHeadersPacket66& from);
 
-    // ... decode(ByteView& from, BlockHeadersPacket66& to) -> template <Eth66Packet T> auto decode(...) requires c++20
     template <>
     rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept;
 
@@ -63,7 +62,5 @@ inline std::ostream& operator<<(std::ostream& os, const BlockHeadersPacket66& pa
 }
 
 }  // namespace silkworm
-
-#include "RLPEth66PacketCoding.hpp"
 
 #endif  // SILKWORM_BLOCKHEADERSPACKET_HPP

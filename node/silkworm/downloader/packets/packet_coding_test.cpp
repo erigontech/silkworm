@@ -21,7 +21,6 @@
 #include "GetBlockHeadersPacket.hpp"
 #include "NewBlockHashesPacket.hpp"
 #include "NewBlockPacket.hpp"
-#include "RLPEth66PacketCoding.hpp"
 
 namespace silkworm {
 

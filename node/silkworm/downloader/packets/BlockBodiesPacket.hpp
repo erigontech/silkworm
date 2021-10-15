@@ -30,19 +30,20 @@ struct BlockBodiesPacket66 {  // eth/66 version
 
 namespace rlp {
 
-    // ... length(const BlockBodiesPacket& from)              impl. by length<T>(const std::vector<T>& v)
+    size_t length(const BlockBodiesPacket& from) noexcept;
 
-    // ... encode(Bytes& to, const BlockBodiesPacket& from)   impl. by encode(Bytes& to, const std::vector<T>& v)
+    void encode(Bytes& to, const BlockBodiesPacket& from);
+
     template <>
     rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket& to) noexcept;
 
-    // ... length(const BlockBodiesPacket66& from)            impl. by template <Eth66Packet T> size_t length(...)
+    size_t length(const BlockBodiesPacket66& from) noexcept;
 
-    // ... encode(Bytes& to, const BlockBodiesPacket66& from) impl. by template <Eth66Packet T> void encode(...)
+    void encode(Bytes& to, const BlockBodiesPacket66& from);
 
-    // ... decode(ByteView& from, BlockBodiesPacket66& to) ->template<Eth66Packet T> auto decode(...) but requires c++20
     template <>
     rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket66& to) noexcept;
+
 }  // namespace rlp
 
 inline std::ostream& operator<<(std::ostream& os, const BlockBodiesPacket66& packet) {
@@ -52,7 +53,5 @@ inline std::ostream& operator<<(std::ostream& os, const BlockBodiesPacket66& pac
 }
 
 }  // namespace silkworm
-
-#include "RLPEth66PacketCoding.hpp"
 
 #endif  // SILKWORM_BLOCKBODIESPACKET_HPP

@@ -30,18 +30,17 @@ struct GetBlockBodiesPacket66 {  // eth/66 version
 
 namespace rlp {
 
-    // size_t length(const GetBlockBodiesPacket& from)           impl. by  rlp::length<T>(const std::vector<T>& v)
+    size_t length(const GetBlockBodiesPacket& from) noexcept;
 
-    // void encode(Bytes& to, const GetBlockBodiesPacket& from)  impl. by  rlp::encode(Bytes& to, const std::vector<T>&)
+    void encode(Bytes& to, const GetBlockBodiesPacket& from);
 
     template <>
     rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket& to) noexcept;
 
-    // ... length(const GetBlockBodiesPacket66& from)            impl. by template <Eth66Packet T> size_t length(...)
+    size_t length(const GetBlockBodiesPacket66& from) noexcept;
 
-    // ... encode(Bytes& to, const GetBlockBodiesPacket66& from) impl. by template <Eth66Packet T> void encode(...)
+    void encode(Bytes& to, const GetBlockBodiesPacket66& from);
 
-    // ... decode(ByteView& from, GetBlockBodiesPacket66& to) ->template <Eth66Packet T> auto decode(...) requires c++20
     template <>
     rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept;
 

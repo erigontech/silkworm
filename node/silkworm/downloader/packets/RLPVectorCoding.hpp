@@ -28,6 +28,7 @@
  * in the middle. So we use this file in this module.
  */
 namespace silkworm::rlp {
+
 template <class T>
 inline void encode_vec(Bytes& to, const std::vector<T>& v) {
     Header h{true, 0};
@@ -72,6 +73,7 @@ inline DecodingResult decode_vec(ByteView& from, std::vector<T>& to) {
     from.remove_prefix(h.payload_length);
     return DecodingResult::kOk;
 }
+
 }  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLPVECTOR_HPP

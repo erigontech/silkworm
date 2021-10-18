@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 
     auto bodies_table{db::open_cursor(txn, db::table::kBlockBodies)};
     auto tx_lookup_table{db::open_cursor(txn, db::table::kTxLookup)};
-    auto transactions_table{db::open_cursor(txn, db::table::kEthTx)};
+    auto transactions_table{db::open_cursor(txn, db::table::kBlockTransactions)};
 
     uint64_t expected_block_number{0};
     Bytes buffer{};  // To extract compacted data
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
                     if (!transaction_data) {
                         SILKWORM_LOG(LogLevel::Error)
                             << "Block " << block_number << " transaction " << i << " not found in "
-                            << db::table::kEthTx.name << " table" << std::endl;
+                            << db::table::kBlockTransactions.name << " table" << std::endl;
                         continue;
                     }
 

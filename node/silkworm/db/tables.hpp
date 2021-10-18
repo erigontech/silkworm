@@ -50,7 +50,7 @@ constexpr db::MapConfig kCode{"Code"};
 constexpr db::MapConfig kConfig{"Config"};
 constexpr db::MapConfig kContractCode{"HashedCodeHash"};
 constexpr db::MapConfig kDatabaseInfo{"DbInfo"};
-constexpr db::MapConfig kEthTx{"BlockTransaction"};
+constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};
 constexpr db::MapConfig kHashedAccounts{"HashedAccount"};
 constexpr db::MapConfig kHashedStorage{"HashedStorage", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
 constexpr db::MapConfig kHeadBlock{"LastBlock"};
@@ -95,7 +95,7 @@ constexpr db::MapConfig kTables[]{
     kConfig,
     kContractCode,
     kDatabaseInfo,
-    kEthTx,
+    kBlockTransactions,
     kHashedAccounts,
     kHashedStorage,
     kHeadBlock,

@@ -168,55 +168,39 @@ namespace db {
         test::Context context;
         auto& txn{context.txn()};
 
-        auto val1{read_map_sequence(txn, table::kEthTx.name)};
+        auto val1{read_map_sequence(txn, table::kBlockTransactions.name)};
         REQUIRE(val1 == 0);
 
-        auto val2{increment_map_sequence(txn, table::kEthTx.name, 5)};
+        auto val2{increment_map_sequence(txn, table::kBlockTransactions.name, 5)};
         REQUIRE(val2 == 0);
-        auto val3{read_map_sequence(txn, table::kEthTx.name)};
+        auto val3{read_map_sequence(txn, table::kBlockTransactions.name)};
         REQUIRE((val3 == 5));
 
-
-
-        auto val4{increment_map_sequence(txn, table::kEthTx.name, 3)};
+        auto val4{increment_map_sequence(txn, table::kBlockTransactions.name, 3)};
         REQUIRE(val4 == 5);
-        auto val5{read_map_sequence(txn, table::kEthTx.name)};
+        auto val5{read_map_sequence(txn, table::kBlockTransactions.name)};
         REQUIRE((val5 == 8));
 
         context.commit_and_renew_txn();
         auto& txn2{context.txn()};
 
-        auto val6{read_map_sequence(txn2, table::kEthTx.name)};
+        auto val6{read_map_sequence(txn2, table::kBlockTransactions.name)};
         REQUIRE((val6 == 8));
-
 
         // Tamper with sequence
         Bytes fake_value(sizeof(uint32_t), '\0');
-        mdbx::slice key(table::kEthTx.name);
+        mdbx::slice key(table::kBlockTransactions.name);
         auto tgt{db::open_cursor(txn2, table::kSequence)};
         tgt.upsert(key, to_slice(fake_value));
 
         bool thrown{false};
         try {
-            (void)increment_map_sequence(txn, table::kEthTx.name);
+            (void)increment_map_sequence(txn, table::kBlockTransactions.name);
         } catch (const std::exception& ex) {
             REQUIRE(std::string(ex.what()) == "Bad sequence value in db");
             thrown = true;
         }
         REQUIRE(thrown);
-
-//        thrown = false;
-//        try {
-//            (void)read_map_sequence(txn, table::kEthTx.name);
-//        } catch (const std::exception& ex) {
-//            REQUIRE(std::string(ex.what()) == "Bad sequence value in db");
-//            thrown = true;
-//        }
-//        REQUIRE(thrown);
-
-
-
-
     }
 
     TEST_CASE("Read schema Version") {

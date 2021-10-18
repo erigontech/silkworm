@@ -83,9 +83,9 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, c
 std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count);
 std::vector<Transaction> read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count);
 
-//! \brief Persist transactions into db's bucket table::kEthTx. The key starts from base_id and is incremented by 1 for
+//! \brief Persist transactions into db's bucket table::kBlockTransactions. The key starts from base_id and is incremented by 1 for
 //! each transaction
-//! \remarks Before calling this ensure you got a proper base_id by incrementing sequence for  table::kEthTx
+//! \remarks Before calling this ensure you got a proper base_id by incrementing sequence for  table::kBlockTransactions
 void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transactions, uint64_t base_id);
 
 std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash);

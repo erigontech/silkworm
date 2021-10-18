@@ -19,12 +19,12 @@
 
 namespace silkworm::rlp {
 
-    class rlp_error : public std::runtime_error {
-      public:
-        rlp_error() : std::runtime_error("rlp encoding/decoding error") {}
-        rlp_error(const std::string& description) : std::runtime_error(description) {}
-    };
+class rlp_error : public std::runtime_error {
+  public:
+    rlp_error() : std::runtime_error("rlp encoding/decoding error") {}
+    rlp_error(const std::string& description) : std::runtime_error(description) {}
+};
 
-}
+}  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLPERROR_HPP

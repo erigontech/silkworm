@@ -21,77 +21,41 @@
 
 namespace silkworm {
 
-    struct NewBlockHash {     // one particular block being announced
-        Hash hash;        // hash of the block
-        BlockNum number;  // number of the block
-    };
+struct NewBlockHash {  // one particular block being announced
+    Hash hash;         // hash of the block
+    BlockNum number;   // number of the block
+};
 
-    using NewBlockHashesPacket = std::vector<NewBlockHash>;
+using NewBlockHashesPacket = std::vector<NewBlockHash>;
 
 namespace rlp {
 
-    inline void encode(Bytes& to, const NewBlockHash& from) noexcept {
-        rlp::Header rlp_head{true,
-                             rlp::length(from.hash) + rlp::length(from.number)};
+    void encode(Bytes& to, const NewBlockHash& from) noexcept;
 
-        rlp::encode_header(to, rlp_head);
-
-        rlp::encode(to, from.hash);
-        rlp::encode(to, from.number);
-    }
-
-    inline size_t length(const NewBlockHash& from) noexcept {
-        rlp::Header rlp_head{true,
-                             rlp::length(from.hash) + rlp::length(from.number)};
-
-        size_t rlp_head_len = rlp::length_of_length(rlp_head.payload_length);
-        return rlp_head_len + rlp_head.payload_length;
-    }
+    size_t length(const NewBlockHash& from) noexcept;
 
     template <>
-    inline rlp::DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
+    rlp::DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept;
 
-        auto [rlp_head, err0]{decode_header(from)};
-        if (err0 != DecodingResult::kOk) {
-            return err0;
-        }
-        if (!rlp_head.list) {
-            return DecodingResult::kUnexpectedString;
-        }
-
-        uint64_t leftover{from.length() - rlp_head.payload_length};
-
-        if (DecodingResult err{rlp::decode(from, to.hash)}; err != DecodingResult::kOk) {
-            return err;
-        }
-        if (DecodingResult err{rlp::decode(from, to.number)}; err != DecodingResult::kOk) {
-            return err;
-        }
-
-        return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
-    }
-
-    // size_t length(const NewBlockHashesPacket& from)           implemented by  rlp::length<T>(const std::vector<T>& v)
-    // void encode(Bytes& to, const NewBlockHashesPacket& from)  implemented by  rlp::encode<T>(Bytes& to, const std::vector<T>& v)
+    size_t length(const NewBlockHashesPacket& from) noexcept;
 
     void encode(Bytes& to, const NewBlockHashesPacket& from);
 
-    size_t length(const NewBlockHashesPacket& from);
+    size_t length(const NewBlockHashesPacket& from) noexcept;
 
     template <>
     rlp::DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept;
 
+}  // namespace rlp
+
+inline std::ostream& operator<<(std::ostream& os, const NewBlockHashesPacket& packet) {
+    if (packet.size() == 1)
+        os << "block num " << packet[0].number /* << " hash " << to_hex(packet[0].hash) */;
+    else
+        os << packet.size() << " new block hashes/nums";
+    return os;
 }
 
-    inline std::ostream& operator<<(std::ostream& os, const NewBlockHashesPacket& packet)
-    {
-        if (packet.size() == 1)
-            os << "block num " << packet[0].number /* << " hash " << to_hex(packet[0].hash) */;
-        else
-            os << packet.size() << " new block hashes/nums";
-        return os;
-    }
-
-} // silkworm namespace
+}  // namespace silkworm
 
 #endif  // SILKWORM_NEWBLOCKHASHPACKET_HPP

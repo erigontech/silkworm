@@ -19,7 +19,8 @@
 
 #include <memory>
 
-#include <silkworm/downloader/internals/DbTx.hpp>
+#include <silkworm/downloader/internals/db_tx.hpp>
+#include <silkworm/downloader/internals/working_chain.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
@@ -28,21 +29,27 @@
 
 namespace silkworm {
 
-
 class InboundMessage : public Message {
   public:
     void execute() override = 0;
+
+    virtual uint64_t reqId() const = 0;
+    virtual std::string content() const = 0;
 };
 
 std::ostream& operator<<(std::ostream&, const silkworm::InboundMessage&);
-
+std::string identify(const silkworm::InboundMessage& message);
 
 struct InboundBlockRequestMessage : public InboundMessage {
-    static std::shared_ptr<InboundMessage> make(const sentry::InboundMessage& msg, DbTx& db, SentryClient& sentry);
+    static std::shared_ptr<InboundMessage> make(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db,
+                                                SentryClient& sentry);
 };
 
+struct InboundBlockAnnouncementMessage : public InboundMessage {
+    static std::shared_ptr<InboundMessage> make(const sentry::InboundMessage& msg, WorkingChain& wc,
+                                                SentryClient& sentry);
+};
 
-
-}
+}  // namespace silkworm
 
 #endif  // SILKWORM_INBOUNDMESSAGE_HPP

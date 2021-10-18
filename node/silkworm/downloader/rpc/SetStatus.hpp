@@ -28,6 +28,6 @@ class SetStatus : public rpc::UnaryCall<sentry::Sentry, sentry::StatusData, sent
     SetStatus(const ChainIdentity& chain_identity, Hash best_hash, BigInt total_difficulty);
 };
 
-}
+}  // namespace silkworm::rpc
 
 #endif  // SILKWORM_SETSTATUS_HPP

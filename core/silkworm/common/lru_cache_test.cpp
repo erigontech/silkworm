@@ -70,4 +70,34 @@ TEST_CASE("KeepsAllValuesWithinCapacity") {
     CHECK(CACHE_CAPACITY == size);
 }
 
+TEST_CASE("DiscardStaleElement") {
+    lru_cache<int, int> cache_lru(3);
+    cache_lru.put(1, 111);
+    cache_lru.put(2, 222);
+    cache_lru.put(3, 333);
+    cache_lru.get(1); // refresh item 1
+    cache_lru.put(4, 444);  // will cause item 2 removal
+
+    REQUIRE(cache_lru.get(2) == nullptr);
+
+}
+
+TEST_CASE("RemoveElement") {
+    lru_cache<int, int> cache_lru(3);
+    cache_lru.put(1, 111);
+    cache_lru.put(2, 222);
+    cache_lru.put(3, 333);
+
+    REQUIRE(cache_lru.remove(2) == true);
+    REQUIRE(cache_lru.remove(4) == false);
+
+    REQUIRE(cache_lru.get(2) == nullptr);
+
+    cache_lru.put(4, 444);
+
+    REQUIRE(cache_lru.get(1) != nullptr);   // element 1 is still here because removal freed 1 slot
+    REQUIRE(cache_lru.get(3) != nullptr);
+    REQUIRE(cache_lru.get(4) != nullptr);
+}
+
 }  // namespace silkworm

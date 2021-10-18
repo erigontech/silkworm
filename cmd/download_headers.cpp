@@ -24,6 +24,7 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/block_provider.hpp>
+#include <silkworm/downloader/header_downloader.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
 using namespace silkworm;
@@ -55,6 +56,8 @@ int main(int argc, char* argv[]) {
     SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
 
     std::thread block_request_processing;
+    std::thread header_receiving;
+    std::thread header_processing;
     int return_value = 0;
 
     try {
@@ -73,38 +76,63 @@ int main(int argc, char* argv[]) {
              << "   hard-forks: " << chain_identity.distinct_fork_numbers().size() << "\n";
 
         // Database access
-        DbTx db{db_path};
+        Db db{db_path};
 
         // Node current status
-        HeaderRetrieval headers(db);
+        HeaderRetrieval headers(Db::ReadOnlyAccess{db});
         auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
-        cout << "   head_hash = " << head_hash.to_hex() << "\n";
-        cout << "   head_td   = " << intx::to_string(head_td) << "\n\n" << std::flush;
+        auto head_height = headers.head_height();
+        cout << "   head hash   = " << head_hash.to_hex() << "\n";
+        cout << "   head td     = " << intx::to_string(head_td) << "\n";
+        cout << "   head height = " << head_height << "\n\n" << std::flush;
 
         // Sentry client - connects to sentry
         SentryClient sentry{sentry_addr};
 
         // Block provider - provides headers and bodies to external peers
-        BlockProvider block_provider{sentry, db, chain_identity};
-        block_request_processing = std::thread( [&block_provider]() {  // todo: join in block_provider destructor
+        BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}, chain_identity};
+        block_request_processing = std::thread( [&block_provider]() {
             block_provider.execution_loop();
         });
 
         // Stage1 - Header downloader - example code
-        //BlockNum target_block = 13'000'000; // only for test
-        //HeaderDownloader header_downloader{sentry, db, chain_identity};
-        //header_downloader.wind(target_block);
+        bool first_sync = true; // = starting up silkworm
+        HeaderDownloader header_downloader{sentry, Db::ReadWriteAccess{db}, chain_identity};
+        header_receiving = std::thread( [&header_downloader]() {
+            header_downloader.receive_messages();
+        });
+        header_processing = std::thread( [&header_downloader]() {
+            header_downloader.execution_loop();
+        });
+
+        // Sample stage loop with 1 stage
+        Stage::Result stage_result{Stage::Result::Unknown};
+        do {
+            if (stage_result.status != Stage::Result::UnwindNeeded) {
+                stage_result = header_downloader.forward(first_sync);
+            }
+            else {
+                stage_result = header_downloader.unwind_to(*stage_result.unwind_point);
+            }
+        } while(stage_result.status != Stage::Result::Error);
 
         // Wait for user termination request
-        std::cin.get();         // wait for user press "enter"
-        block_provider.stop();  // signal exiting
+        std::cin.get();           // wait for user press "enter"
+        block_provider.stop();    // signal exiting
+        header_downloader.stop(); // signal exiting
     }
     catch(std::exception& e) {
         cerr << "Exception: " << e.what() << "\n";
         return_value = 1;
     }
 
+    // wait threads termination
     if (block_request_processing.joinable())
-        block_request_processing.join(); // wait thread termination
+        block_request_processing.join();
+    if (header_receiving.joinable())
+        header_receiving.join();
+    if (header_processing.joinable())
+        header_processing.join();
+
     return return_value;
 }

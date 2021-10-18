@@ -25,9 +25,8 @@
 
 namespace silkworm {
 
-InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, DbTx& db, SentryClient& s) :
-    InboundMessage(), db_(db), sentry_(s)
-{
+InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db, SentryClient& s)
+    : InboundMessage(), db_(db), sentry_(s) {
     if (msg.id() != sentry::MessageId::GET_BLOCK_BODIES_66) {
         throw std::logic_error("InboundGetBlockBodies received wrong InboundMessage");
     }
@@ -69,12 +68,15 @@ void InboundGetBlockBodies::execute() {
     msg_reply->set_id(sentry::MessageId::BLOCK_BODIES_66);
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " with send_message_by_id\n";
+    SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " using send_message_by_id with "
+                                 << reply.request.size() << " bodies\n";
+
     rpc::SendMessageById send_message_by_id(peerId_, std::move(msg_reply));
     sentry_.exec_remotely(send_message_by_id);
 
     [[maybe_unused]] sentry::SentPeers peers = send_message_by_id.reply();
-    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*this) << ": " << std::to_string(peers.peers_size()) + " peer(s)\n";
+    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*this) << ": "
+                                 << std::to_string(peers.peers_size()) + " peer(s)\n";
 }
 
 uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }

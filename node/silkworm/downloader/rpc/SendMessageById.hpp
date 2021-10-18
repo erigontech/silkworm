@@ -21,10 +21,10 @@
 
 namespace silkworm::rpc {
 
-class SendMessageById: public rpc::UnaryCall<sentry::Sentry, sentry::SendMessageByIdRequest, sentry::SentPeers> {
+class SendMessageById : public rpc::UnaryCall<sentry::Sentry, sentry::SendMessageByIdRequest, sentry::SentPeers> {
   public:
     SendMessageById(const std::string& peerId, std::unique_ptr<sentry::OutboundMessageData> message);
 };
 
-}
+}  // namespace silkworm::rpc
 #endif  // SILKWORM_SENDMESSAGEBYID_HPP

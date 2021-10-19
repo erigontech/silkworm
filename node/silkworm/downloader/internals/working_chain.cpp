@@ -266,15 +266,14 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
  * (anchor extension queries) to fill the gaps and so reduce the number of anchors.
  */
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
-    if (topSeenHeight_ < highestInDb_ + stride) return std::nullopt;
 
-    BlockNum length = (topSeenHeight_ - highestInDb_) / stride;
+    BlockNum lowest_anchor = lowest_anchor_from(topSeenHeight_);
+    if (lowest_anchor <= highestInDb_) return std::nullopt;
+
+    BlockNum length = (lowest_anchor - highestInDb_) / stride;
+
     if (length > max_len) length = max_len;
-
-    auto query_range = highestInDb_ + length * stride;  // the block range we want to download
-                                                        // it excludes the tip of the chain where new headers arrive
-    if (anchors_within_range(query_range) > 16)
-        return std::nullopt;
+    if (length == 0) return std::nullopt;
 
     GetBlockHeadersPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
@@ -294,6 +293,16 @@ size_t WorkingChain::anchors_within_range(BlockNum max) {
         }
     }
     return count;
+}
+
+BlockNum WorkingChain::lowest_anchor_from(BlockNum top_bn) {
+    BlockNum lowest_bn = top_bn;
+    for(const auto& anchor: anchors_) {
+        if (anchor.second->blockHeight < lowest_bn) {
+            lowest_bn = anchor.second->blockHeight;
+        }
+    }
+    return lowest_bn;
 }
 
 /*

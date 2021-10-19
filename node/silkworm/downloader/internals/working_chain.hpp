@@ -98,7 +98,7 @@ class WorkingChain {  // tentative name - todo: improve!
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
     void mark_as_preverified(std::shared_ptr<Link>);
     size_t anchors_within_range(BlockNum max);
-    
+    BlockNum lowest_anchor_from(BlockNum top_bn);
 
     using Error = int;
     void connect(Segment::Slice);                                   // throw segment_cut_and_paste_error

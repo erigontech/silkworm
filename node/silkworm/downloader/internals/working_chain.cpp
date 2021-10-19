@@ -31,7 +31,8 @@ class segment_cut_and_paste_error : public std::logic_error {
     segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
 };
 
-WorkingChain::WorkingChain() : highestInDb_(0), topSeenHeight_(0), seenAnnounces_(1000) {}
+WorkingChain::WorkingChain()
+    : highestInDb_(0), topSeenHeight_(0), preverifiedHashes_{&PreverifiedHashes::none}, seenAnnounces_(1000) {}
 
 BlockNum WorkingChain::highest_block_in_db() const { return highestInDb_; }
 
@@ -40,7 +41,7 @@ void WorkingChain::top_seen_block_height(BlockNum n) { topSeenHeight_ = n; }
 BlockNum WorkingChain::top_seen_block_height() const { return topSeenHeight_; }
 
 bool WorkingChain::in_sync() const {
-    return highestInDb_ >= preverifiedHeight_ && topSeenHeight_ > 0 && highestInDb_ >= topSeenHeight_;
+    return highestInDb_ >= preverifiedHashes_->height && topSeenHeight_ > 0 && highestInDb_ >= topSeenHeight_;
 }
 
 std::string WorkingChain::human_readable_status() const {
@@ -185,7 +186,7 @@ Headers WorkingChain::withdraw_stable_headers() {
 
         // Choose a link at top
         auto link = insertList_.top();  // is the last added
-        if (link->blockHeight <= preverifiedHeight_ && !link->preverified) {
+        if (link->blockHeight <= preverifiedHashes_->height && !link->preverified) {
             break;  // header should be preverified, but not yet, try again later
         }
 
@@ -971,7 +972,7 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
         auto link = add_header_as_link(*header, persisted);
         prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (contains(preverifiedHashes_, link->hash)) mark_as_preverified(link);
+        if (preverifiedHashes_->contains(link->hash)) mark_as_preverified(link);
     }
 
     if (attachment_link.value()->persisted) {
@@ -1116,7 +1117,7 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice)
         else
             prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (contains(preverifiedHashes_, link->hash)) mark_as_preverified(link);
+        if (preverifiedHashes_->contains(link->hash)) mark_as_preverified(link);
     }
 
     // todo: this block is also in "connect" method
@@ -1178,7 +1179,7 @@ void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_c
         auto link = add_header_as_link(*header, persisted);
         prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (contains(preverifiedHashes_, link->hash)) mark_as_preverified(link);
+        if (preverifiedHashes_->contains(link->hash)) mark_as_preverified(link);
     }
 
     if (attachment_link.value()->persisted) {
@@ -1268,7 +1269,7 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId)
         else
             prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (contains(preverifiedHashes_, link->hash)) mark_as_preverified(link);
+        if (preverifiedHashes_->contains(link->hash)) mark_as_preverified(link);
     }
 
     return !pre_existing;
@@ -1324,9 +1325,8 @@ void WorkingChain::mark_as_preverified(std::shared_ptr<Link> link) {
     }
 }
 
-void WorkingChain::set_preverified_hashes(std::set<Hash>&& preverifiedHashes, BlockNum preverifiedHeight) {
-    preverifiedHashes_ = std::move(preverifiedHashes);
-    preverifiedHeight_ = preverifiedHeight;
+void WorkingChain::set_preverified_hashes(const PreverifiedHashes* preverifiedHashes) {
+    preverifiedHashes_ = preverifiedHashes;
 }
 
 }  // namespace silkworm

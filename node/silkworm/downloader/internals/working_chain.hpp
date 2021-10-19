@@ -19,6 +19,7 @@
 
 #include <gsl/span>
 
+#include <silkworm/chain/preverified_hashes.hpp>
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
 
@@ -70,6 +71,7 @@ class WorkingChain {  // tentative name - todo: improve!
     bool has_link(Hash hash);
     std::vector<Announce>& announces_to_do();
     void add_bad_headers(std::set<Hash>);
+    void set_preverified_hashes(const PreverifiedHashes*);
 
   protected:
     static constexpr BlockNum max_len = 192;
@@ -96,8 +98,7 @@ class WorkingChain {  // tentative name - todo: improve!
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
     void mark_as_preverified(std::shared_ptr<Link>);
     size_t anchors_within_range(BlockNum max);
-
-    void set_preverified_hashes(std::set<Hash>&& preverifiedHashes, BlockNum preverifiedHeight);
+    
 
     using Error = int;
     void connect(Segment::Slice);                                   // throw segment_cut_and_paste_error
@@ -114,8 +115,7 @@ class WorkingChain {  // tentative name - todo: improve!
     BlockNum highestInDb_;
     BlockNum topSeenHeight_;
     std::set<Hash> badHeaders_;
-    std::set<Hash> preverifiedHashes_;  // Set of hashes that are known to belong to canonical chain
-    BlockNum preverifiedHeight_{0};
+    const PreverifiedHashes* preverifiedHashes_;  // Set of hashes that are known to belong to canonical chain
     using Ignore = int;
     lru_cache<Hash, Ignore> seenAnnounces_;
     std::vector<Announce> announcesToDo_;

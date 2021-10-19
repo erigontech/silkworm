@@ -265,12 +265,15 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
  * (anchor extension queries) to fill the gaps and so reduce the number of anchors.
  */
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
-    if (anchors_.size() > 16) return std::nullopt;
-
     if (topSeenHeight_ < highestInDb_ + stride) return std::nullopt;
 
     BlockNum length = (topSeenHeight_ - highestInDb_) / stride;
     if (length > max_len) length = max_len;
+
+    auto query_range = highestInDb_ + length * stride;  // the block range we want to download
+                                                        // it excludes the tip of the chain where new headers arrive
+    if (anchors_within_range(query_range) > 16)
+        return std::nullopt;
 
     GetBlockHeadersPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
@@ -280,6 +283,16 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     packet.request.reverse = false;
 
     return {packet};
+}
+
+size_t WorkingChain::anchors_within_range(BlockNum max) {
+    size_t count = 0;
+    for(const auto& anchor: anchors_) {
+        if (anchor.second->blockHeight < max) {
+            count++;
+        }
+    }
+    return count;
 }
 
 /*
@@ -1103,7 +1116,7 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice)
         else
             prev_link->next.push_back(link);  // add link as next of the preceding
         prev_link = link;
-        if (!anchor_preverified && contains(preverifiedHashes_, link->hash)) mark_as_preverified(link);
+        if (contains(preverifiedHashes_, link->hash)) mark_as_preverified(link);
     }
 
     // todo: this block is also in "connect" method
@@ -1304,8 +1317,7 @@ func (hd *HeaderDownload) markPreverified(link *Link) {
 
 // Mark a link and all its ancestors as preverified
 void WorkingChain::mark_as_preverified(std::shared_ptr<Link> link) {
-    while (link &&
-           !link->preverified) {  // todo: Erigon might have a bug related to the condition "!link->preverified", check!
+    while (link && !link->persisted) {
         link->preverified = true;
         auto parent = links_.find(link->header->parent_hash);
         link = (parent != links_.end() ? parent->second : nullptr);

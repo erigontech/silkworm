@@ -34,7 +34,7 @@ TEST_CASE("Stage Transaction Lookups") {
     stagedsync::TransactionManager txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};

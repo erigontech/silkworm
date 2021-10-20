@@ -87,7 +87,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
 
     SILKWORM_LOG(LogLevel::Trace) << "Begin read block bodies ... " << std::endl;
     auto bodies_table{db::open_cursor(db_transaction_, db::table::kBlockBodies)};
-    auto transactions_table{db::open_cursor(db_transaction_, db::table::kEthTx)};
+    auto transactions_table{db::open_cursor(db_transaction_, db::table::kBlockTransactions)};
 
     // Set to first block and read all in sequence
     auto bodies_initial_key{db::block_key(expected_block_num, headers_it_1_->bytes)};

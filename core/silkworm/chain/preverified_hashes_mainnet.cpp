@@ -28,7 +28,7 @@ PreverifiedHashes PreverifiedHashes::mainnet = {
         0x723899e82d352c6eabd21e34942f868687203ca14b3d5a23aeb47c555c123390_bytes32,
 
     },
-    12690240  // mainnet_preverified_height
+    192  // mainnet_preverified_height
 };
 
 }  // namespace silkworm

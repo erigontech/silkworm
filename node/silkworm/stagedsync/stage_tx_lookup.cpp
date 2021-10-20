@@ -36,7 +36,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
 
     // We take number from bodies table, and hash from transaction table
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transactions_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto transactions_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
 
     if (expected_block_number < prune_from) {
         expected_block_number = prune_from;
@@ -130,7 +130,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
     }
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transactions_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto transactions_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
 
     // Extract

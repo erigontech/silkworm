@@ -135,7 +135,7 @@ std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uin
     if (!count) {
         return {};
     }
-    auto src{db::open_cursor(txn, table::kEthTx)};
+    auto src{db::open_cursor(txn, table::kBlockTransactions)};
     return read_transactions(src, base_id, count);
 }
 
@@ -143,7 +143,7 @@ void write_transactions(mdbx::txn& txn, const std::vector<Transaction>& transact
     if (transactions.empty()) {
         return;
     }
-    auto target{db::open_cursor(txn, table::kEthTx)};
+    auto target{db::open_cursor(txn, table::kBlockTransactions)};
     auto key{db::block_key(base_id)};
     for (const auto& transaction : transactions) {
         Bytes value{};
@@ -252,7 +252,7 @@ void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHa
     detail::BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
     body_for_storage.txn_count = body.transactions.size();
-    body_for_storage.base_txn_id = increment_map_sequence(txn, table::kEthTx.name, body_for_storage.txn_count);
+    body_for_storage.base_txn_id = increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
     Bytes value{body_for_storage.encode()};
     auto key{db::block_key(number, hash)};
     auto target{db::open_cursor(txn, table::kBlockBodies)};

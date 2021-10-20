@@ -28,7 +28,7 @@ limitations under the License.
 
 namespace silkworm {
 
-TEST_CASE("header persistence") {
+TEST_CASE("PersistedChain - header persistence") {
     test::Context context;
     auto& txn{context.txn()};
 

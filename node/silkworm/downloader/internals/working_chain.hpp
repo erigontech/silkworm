@@ -88,12 +88,13 @@ class WorkingChain {  // tentative name - todo: improve!
     using End = size_t;
     auto find_anchor(const Segment&) -> std::tuple<Found, Start>;
     auto find_link(const Segment&, size_t start) -> std::tuple<Found, End>;
-    auto get_link(Hash hash) -> std::optional<std::shared_ptr<Link>>;
+    auto get_link(const Hash& hash) -> std::optional<std::shared_ptr<Link>>;
 
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
 
     void invalidate(Anchor&);
+    void remove_anchor(const BlockHeader& header);
     bool find_bad_header(const std::vector<BlockHeader>&);
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
     void mark_as_preverified(std::shared_ptr<Link>);

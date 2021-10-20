@@ -83,6 +83,15 @@ struct Link {
                                         [child](auto& link) { return (link->hash == child->hash); });
         next.erase(to_remove, next.end());
     }
+
+    auto find_child(Hash h) {
+        return std::find_if(next.begin(), next.end(),
+                            [h](auto& link) { return (link->hash == h); });
+    }
+
+    bool has_child(Hash h) {
+        return find_child(h) != next.end();
+    }
 };
 
 // An anchor is the bottom of a chain bundle that consists of one anchor and some chain links.
@@ -107,6 +116,15 @@ struct Anchor {
         auto to_remove = std::remove_if(links.begin(), links.end(),
                                         [child](auto& link) { return (link->hash == child->hash); });
         links.erase(to_remove, links.end());
+    }
+
+    auto find_child(Hash h) {
+        return std::find_if(links.begin(), links.end(),
+                            [h](auto& link) { return (link->hash == h); });
+    }
+
+    bool has_child(Hash h) {
+        return find_child(h) != links.end();
     }
 
     void update_timestamp(time_point_t time_point) {

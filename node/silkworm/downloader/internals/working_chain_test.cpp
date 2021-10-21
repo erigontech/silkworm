@@ -810,7 +810,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
  *                                                       |-- h6b<----- h7b
  *
  */
-TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes") {
+TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical chain") {
     using namespace std;
 
     WorkingChain_ForTest chain;
@@ -890,6 +890,68 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes") {
         auto link = chain.links_[header->hash()];
         REQUIRE(link != nullptr);
         REQUIRE(link->preverified == false);
+    }
+
+}
+
+/* chain:
+ *
+ *                         |-- h3a<----- h4a <---- h5b<----- h6b
+ *         h1 <----- h2 <----- h3 <----- h4 <----- h5
+ *
+ *
+ */
+TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonical chain change") {
+    using namespace std;
+
+    WorkingChain_ForTest chain;
+    chain.top_seen_block_height(1'000'000);
+
+    PeerId peerId = "1";
+
+    std::array<BlockHeader, 6> a_headers;
+
+    for (size_t i = 1; i < a_headers.size(); i++) {  // skip first header for simplicity
+        a_headers[i].number = i;
+        a_headers[i].difficulty = i * 100;
+        a_headers[i].parent_hash = a_headers[i - 1].hash();
+    }
+
+    std::array<BlockHeader, 7> b_headers;
+    b_headers[2] = a_headers[2];
+    for (size_t i = 3; i < b_headers.size(); i++) {  // skip first headers for simplicity
+        b_headers[i].number = i;
+        b_headers[i].difficulty = i * 100;
+        b_headers[i].parent_hash = b_headers[i - 1].hash();
+        b_headers[i].extra_data = string_to_bytes("alternate");  // so hash(a_headers[i]) != hash(b_headers[i])
+    }
+
+    PreverifiedHashes mynet_preverified_hashes = {
+        {b_headers[6].hash()}, // hashes
+        b_headers[6].number                   // height
+    };
+
+    chain.set_preverified_hashes(&mynet_preverified_hashes);
+
+    // building the first branch of the chain
+    chain.accept_headers({a_headers[1], a_headers[2], a_headers[3], a_headers[4], a_headers[5]}, peerId);
+
+    // adding the second branch that becomes canonical
+    chain.accept_headers({b_headers[3], b_headers[4], b_headers[5], b_headers[6]}, peerId);
+
+    // verify
+    for (size_t i = 1; i < a_headers.size(); i++) {
+        auto link = chain.links_[a_headers[i].hash()];
+        REQUIRE(link != nullptr);
+        if (i == 1 || i == 2)
+            REQUIRE(link->preverified == true);
+        else
+            REQUIRE(link->preverified == false);
+    }
+    for (size_t i = 3; i < b_headers.size(); i++) {
+        auto link = chain.links_[b_headers[i].hash()];
+        REQUIRE(link != nullptr);
+        REQUIRE(link->preverified == true);
     }
 
 }

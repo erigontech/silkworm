@@ -799,4 +799,99 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
     }
 }
 
+
+// TESTs related to WorkingChain::accept_headers (pre-verified hashes)
+// -------------------------------------------------------------------
+
+/* chain:
+ *
+ *                         |-- h3a<----- h4a             |-- h6a
+ *         h1 <----- h2 <----- h3 <----- h4 <----- h5 <----- h6 <----- h7 <----- h8 <----- h9
+ *                                                       |-- h6b<----- h7b
+ *
+ */
+TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes") {
+    using namespace std;
+
+    WorkingChain_ForTest chain;
+    chain.top_seen_block_height(1'000'000);
+
+    PeerId peerId = "1";
+
+    std::array<BlockHeader, 10> headers;
+
+    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+        headers[i].number = i;
+        headers[i].difficulty = i * 100;  // improve!
+        headers[i].parent_hash = headers[i - 1].hash();
+    }
+
+    BlockHeader h3a;
+    h3a.number = 3;
+    h3a.difficulty = 1030;
+    h3a.parent_hash = headers[2].hash();
+    h3a.extra_data = string_to_bytes("h3a");  // so hash(h3a) != hash(h3)
+
+    BlockHeader h4a;
+    h4a.number = 4;
+    h4a.difficulty = 1040;
+    h4a.parent_hash = h3a.hash();
+    h4a.extra_data = string_to_bytes("h4a");  // so hash(h4a) != hash(h4)
+
+    BlockHeader h6a;
+    h6a.number = 6;
+    h6a.difficulty = 1060;
+    h6a.parent_hash = headers[5].hash();
+    h6a.extra_data = string_to_bytes("h6a");  // so hash(h6a) != hash(h6) != hash(h6b)
+
+    BlockHeader h6b;
+    h6b.number = 6;
+    h6b.difficulty = 1065;
+    h6b.parent_hash = headers[5].hash();
+    h6b.extra_data = string_to_bytes("h6b");  // so hash(h6a) != hash(h6) != hash(h6b)
+
+    BlockHeader h7b;
+    h7b.number = 7;
+    h7b.difficulty = 1070;
+    h7b.parent_hash = h6b.hash();
+    h7b.extra_data = string_to_bytes("h7b");  // so hash(h7b) != hash(h7)
+
+    PreverifiedHashes mynet_preverified_hashes = {
+        {headers[8].hash(), headers[9].hash()}, // hashes
+        headers[9].number                       // height
+    };
+
+    chain.set_preverified_hashes(&mynet_preverified_hashes);
+
+    // building the first part of the chain
+    chain.accept_headers({headers[1], headers[2], headers[3], h3a, h4a}, peerId);
+
+    // adding the third part fo the chain, disconnected from the first, and that contains a pre-verified hash
+    chain.accept_headers({h7b, headers[8], headers[9]}, peerId);
+
+    auto link1 = chain.links_[headers[1].hash()];
+    REQUIRE(link1 != nullptr);
+    REQUIRE(link1->preverified == false);   // pre-verification can be propagated
+
+    // adding the connecting part of the chain - we expect that pre-verification will be propagated
+    chain.accept_headers({headers[4], headers[5], headers[6], h6a, h6b, headers[7]}, peerId);
+
+    // a simple test
+    REQUIRE(link1->preverified == true);    // verify propagation
+
+    // canonical chain headers must be pre-verified
+    for (size_t i = 1; i < headers.size(); i++) {
+        auto link = chain.links_[headers[i].hash()];
+        REQUIRE(link != nullptr);
+        REQUIRE(link->preverified == true);
+    }
+    // non canonical headers must be non pre-verified
+    for (auto header: {&h3a, &h4a, &h6a, &h6b, &h7b}) {
+        auto link = chain.links_[header->hash()];
+        REQUIRE(link != nullptr);
+        REQUIRE(link->preverified == false);
+    }
+
+}
+
 }  // namespace silkworm

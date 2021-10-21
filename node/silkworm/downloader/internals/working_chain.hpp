@@ -95,6 +95,7 @@ class WorkingChain {  // tentative name - todo: improve!
 
     void invalidate(Anchor&);
     void remove_anchor(const BlockHeader& header);
+    void remove_anchor(const Hash& hash);
     bool find_bad_header(const std::vector<BlockHeader>&);
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
     void mark_as_preverified(std::shared_ptr<Link>);

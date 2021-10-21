@@ -783,7 +783,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
         SILKWORM_LOG(LogLevel::Debug) << "WorkingChain: duplicate segment\n";
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
-        if (foundAnchor) remove_anchor(*segment[start]);
+        if (foundAnchor) remove_anchor(segment[start]->hash());    // note: hash and not parent_hash
         return false;
     }
 
@@ -1320,12 +1320,15 @@ auto WorkingChain::add_header_as_link(const BlockHeader& header, bool persisted)
 }
 
 void WorkingChain::remove_anchor(const BlockHeader& header) {
+    remove_anchor(header.parent_hash);
+}
+void WorkingChain::remove_anchor(const Hash& hash) {
     // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
     // But removal will happen anyway, in the function request_more_headers, if it disappears from the map
-    size_t erased = anchors_.erase(header.parent_hash);
+    size_t erased = anchors_.erase(hash);
     if (erased == 0) {
-        SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: removal of anchor failed, " << to_hex(header.hash()) << " not found\n";
+        SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: removal of anchor failed, " << to_hex(hash) << " not found\n";
     }
 }
 

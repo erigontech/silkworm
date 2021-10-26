@@ -475,7 +475,7 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
 }
 
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]) {
-    auto target{db::open_cursor(txn, table::kConfig)};
+    auto target{db::open_cursor(txn, table::kHeadHeader)};
     mdbx::slice key(db::table::kLastHeaderKey);
     mdbx::slice value(hash, kHashLength);
     target.upsert(key, value);

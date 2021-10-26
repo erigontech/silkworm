@@ -486,7 +486,7 @@ std::optional<evmc::bytes32> read_head_header_hash(mdbx::txn& txn) {
     auto source{db::open_cursor(txn, table::kHeadHeader)};
     mdbx::slice key(db::table::kLastHeaderKey);
     auto data{source.find(key, /*throw_notfound=*/false)};
-    if (!data) {
+    if (!data || data.value.length() != sizeof(evmc::bytes32)) {
         return std::nullopt;
     }
     return to_bytes32(from_slice(data.value));

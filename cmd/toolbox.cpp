@@ -913,11 +913,11 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
                << "PreverifiedHashes PreverifiedHashes::some-net = {\n"
                << "    {\n";
 
-    BlockNum block_num{0};
     BlockNum block_max{silkworm::db::stages::read_stage_progress(txn, db::stages::kHeadersKey)};
-
+    BlockNum max_height{0};
     auto hashes_table{db::open_cursor(txn, db::table::kCanonicalHashes)};
-    for (; block_num <= block_max; block_num += step) {
+
+    for (BlockNum block_num = 0; block_num <= block_max; block_num += step) {
         auto block_key{db::block_key(block_num)};
         auto data{hashes_table.find(db::to_slice(block_key), false)};
         if (!data.done) {
@@ -925,10 +925,11 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
         }
         std::string hash_hex = to_hex(db::from_slice(data.value));
         out_stream << "0x" << hash_hex << "_bytes32,\n";
+        max_height = block_num;
     }
 
     out_stream << "    },\n"
-               << "    " << block_num << " // preverified_height\n"
+               << "    " << max_height << " // preverified_height\n"
                << "};\n\n"
                << "} // namespace silkworm" << std::endl;
     out_stream.close();

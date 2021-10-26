@@ -28,7 +28,32 @@
 
 namespace silkworm {
 
-class WorkingChain {  // tentative name - todo: improve!
+/*
+ * WorkingChain represents the chain that we are downloading; it has these responsibilities:
+ *    - decide what headers request (to peers) to extend the chain
+ *    - collect headers,
+ *    - organize headers in segments
+ *    - extend/connect segments
+ *    - decide what headers can be persisted on the db
+ * A user of this class, i.e. the HeaderDownloader, must ask it for header requests (see request_skeleton(),
+ * request_more_headers()). WorkingChain doesn't know anything about the process that must be used to communicate with
+ * the peers that are outside, the downloader have the charge to do real requests to peers. And when the downloader
+ * receive headers from some peers, because it asked or because there is a new header announcement, it must provide
+ * headers to the WorkingChain (see accept_headers()). Also, the downloader periodically must call
+ * withdraw_stable_headers() to see if the WorkingChain has headers ready to persist. This happens when it has headers
+ * that: 1) are verified or pre-verified and 2) are connected with headers already persisted, so we are ready to extend
+ * the chain that is persisted on the db. The alter ego of WorkingChain is the PersistedChain.
+ *
+ * WorkingChain organizes headers in memory as collection of "chain bundles". Each chain bundle consists of one anchor
+ * and some chain links. Each link corresponds to a block header. Links are connected to each other by ParentHash
+ * fields. If ParentHash of some links do not point to another link in the same bundle, they all must point to the
+ * anchor of this bundle.
+ *
+ * WorkingChain has 2 logic to extend this collection of chain bundles:
+ * - Skeleton query: request headers in a wide range, as seed to grow later, they become anchor without links
+ * - Anchor extension query: request headers to extend anchors
+ */
+class WorkingChain {
   public:
     WorkingChain();
 

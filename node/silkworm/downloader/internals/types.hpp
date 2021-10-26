@@ -32,17 +32,19 @@ class Hash : public evmc::bytes32 {
   public:
     using evmc::bytes32::bytes32;
 
-    Hash() {}
-    Hash(ByteView bv) { std::memcpy(bytes, bv.data(), 32); }
+    Hash() = default;
+    Hash(ByteView bv) { std::memcpy(bytes, bv.data(), length()); }
 
-    operator Bytes() { return {bytes, 32}; }
-    operator ByteView() { return {bytes, 32}; }
+    operator Bytes() { return {bytes, length()}; }
+    operator ByteView() { return {bytes, length()}; }
 
     uint8_t* raw_bytes() { return bytes; }
-    int length() { return 32; }
+    constexpr size_t length() { return sizeof(evmc::bytes32); }
 
     std::string to_hex() { return silkworm::to_hex(*this); }
-    static Hash from_hex(std::string hex) { return Hash(evmc::literals::internal::from_hex<bytes32>(hex.c_str())); }
+    static Hash from_hex(const std::string& hex) {
+        return Hash(evmc::literals::internal::from_hex<bytes32>(hex.c_str()));
+    }
 
     static_assert(sizeof(evmc::bytes32) == 32);
 };

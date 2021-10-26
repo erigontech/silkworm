@@ -141,6 +141,11 @@ void sig_handler(int signum) {
 void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,
               bool drop) {
     config.readonly = false;
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Clear tool requires exclusive access to database");
+    }
+
     auto env{db::open_env(config)};
     auto txn{env.start_write()};
 
@@ -247,7 +252,6 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     ret.tables.push_back(*table);
 
     const auto& collect_func{[&ret, &txn](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
-
         auto named_map{txn.open_map(data.key.as_string())};
         auto stat2{txn.get_map_stat(named_map)};
         auto info2{txn.get_handle_info(named_map)};
@@ -259,12 +263,11 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
         ret.tables.push_back(*table2);
 
         return true;
-
     }};
 
     // Get all tables from the unnamed database
     auto main_crs{txn.open_cursor(main_map)};
-    (void) db::cursor_for_each(main_crs,collect_func);
+    (void)db::cursor_for_each(main_crs, collect_func);
     return ret;
 }
 
@@ -332,6 +335,8 @@ void do_scan(const db::EnvConfig& config) {
     }
 
     std::cout << "\n" << (shouldStop ? "Aborted" : "Done") << " !\n " << std::endl;
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_stages(db::EnvConfig& config) {
@@ -372,9 +377,17 @@ void do_stages(db::EnvConfig& config) {
     } else {
         std::cout << "\n There are no stages to list\n" << std::endl;
     }
+
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_prunings(db::EnvConfig& config, uint64_t prune_size) {
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Pruning tool requires exclusive access to database");
+    }
+
     auto env{silkworm::db::open_env(config)};
     stagedsync::TransactionManager txn{env};
 
@@ -418,10 +431,18 @@ void do_migrations(db::EnvConfig& config) {
     } else {
         std::cout << "\n There are no migrations to list\n" << std::endl;
     }
+
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_height, bool dry) {
     config.readonly = false;
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Stage set tool requires exclusive access to database");
+    }
+
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_write()};
     if (!db::stages::is_known_stage(stage_name.c_str())) {
@@ -483,6 +504,9 @@ void do_tables(db::EnvConfig& config) {
               << (boost::format("%13s") % human_size(dbTablesInfo.filesize - dbTablesInfo.size + dbFreeInfo.size))
               << " == A - B + C \n"
               << std::endl;
+
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_freelist(db::EnvConfig& config, bool detail) {
@@ -505,6 +529,9 @@ void do_freelist(db::EnvConfig& config, bool detail) {
     std::cout << "\n Free pages count     : " << boost::format("%13u") % dbFreeInfo.pages << "\n"
               << " Free pages size      : " << boost::format("%13s") % human_size(dbFreeInfo.size) << "\n"
               << std::endl;
+
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_schema(db::EnvConfig& config) {
@@ -518,9 +545,17 @@ void do_schema(db::EnvConfig& config) {
     std::cout << "\n"
               << "Database schema version : " << schema_version->to_string() << "\n"
               << std::endl;
+
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace, bool nobak) {
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Compact tool requires exclusive access to database");
+    }
+
     fs::path work_path{work_dir};
     if (work_path.has_filename()) {
         work_path += fs::path::preferred_separator;
@@ -588,6 +623,11 @@ void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace
 
 void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool create, bool noempty,
              std::vector<std::string>& names, std::vector<std::string>& xnames, bool dry) {
+
+    if (!src_config.exclusive) {
+        throw std::runtime_error("Copy tool requires exclusive access to source database");
+    }
+
     fs::path target_path{target_dir};
     if (target_path.has_filename()) {
         target_path += fs::path::preferred_separator;
@@ -819,6 +859,7 @@ void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uin
     } else {
         txn.abort();
     }
+    env.close();
 }
 
 void do_chainconfig(db::EnvConfig& config) {
@@ -832,10 +873,17 @@ void do_chainconfig(db::EnvConfig& config) {
     std::cout << "\n Chain id " << chain.chain_id << "\n Config (json) : \n"
               << chain.to_json().dump() << "\n"
               << std::endl;
+
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_first_byte_analysis(db::EnvConfig& config) {
     static std::string fmt_hdr{" %-24s %=50s "};
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Analysis tool requires exclusive access to database");
+    }
 
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_read()};
@@ -895,6 +943,11 @@ void do_first_byte_analysis(db::EnvConfig& config) {
 }
 
 void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uint32_t step) {
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Extract headers tool requires exclusive access to database");
+    }
+
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_read()};
 

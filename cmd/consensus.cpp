@@ -31,11 +31,8 @@
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/test_util.hpp>
-#include <silkworm/common/util.hpp>
 #include <silkworm/consensus/blockchain.hpp>
-#include <silkworm/rlp/decode.hpp>
 #include <silkworm/state/in_memory_state.hpp>
-#include <silkworm/types/block.hpp>
 
 // See https://ethereum-tests.readthedocs.io
 
@@ -543,7 +540,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
     Transaction txn;
     bool decoded{false};
 
-    std::optional<Bytes> rlp{from_hex(j["rlp"].get<std::string>())};
+    std::optional<Bytes> rlp{from_hex(j["txbytes"].get<std::string>())};
     if (rlp) {
         ByteView view{*rlp};
         if (rlp::decode(view, txn) == rlp::DecodingResult::kOk) {
@@ -551,12 +548,8 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
         }
     }
 
-    for (const auto& entry : j.items()) {
-        if (entry.key() == "rlp" || entry.key() == "_info") {
-            continue;
-        }
-
-        bool should_be_valid{entry.value().contains("sender")};
+    for (const auto& entry : j["result"].items()) {
+        const bool should_be_valid{!entry.value().contains("exception")};
 
         if (!decoded) {
             if (should_be_valid) {
@@ -569,12 +562,12 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 
         ChainConfig config{kNetworkConfig.at(entry.key())};
 
-        /* pre_validate_transaction checks for invalid signature only if from is empty which means sender's recovery phase
-         * (which btw also verifies signature) has not triggered yet. in the context of tests, instead, from is already
-         * valued from the json rlp payload: this makes pre_validate_transaction to incorrectly skip the validation
-         * signature. Hence we reset from to nullopt to allow proper validation flow. In any case sender recovery would
-         * be performed anyway immediately after this block
-         * */
+        /* pre_validate_transaction checks for invalid signature only if from is empty, which means sender recovery
+         * phase (which btw also verifies signature) was not triggered yet. In the context of tests, instead, from is
+         * already valued from the json rlp payload: this makes pre_validate_transaction to incorrectly skip the
+         * validation signature. Hence, we reset from to nullopt to allow proper validation flow. In any case, sender
+         * recovery would be performed anyway immediately after this block.
+         */
         txn.from.reset();
 
         if (ValidationResult err{
@@ -604,10 +597,10 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
             continue;
         }
 
-        std::string expected{entry.value()["sender"].get<std::string>()};
-        if (to_hex(*txn.from) != expected) {
+        const std::string expected_sender{entry.value()["sender"].get<std::string>()};
+        if (txn.from != to_address(*from_hex(expected_sender))) {
             std::cout << "Sender mismatch for " << entry.key() << ":\n"
-                      << to_hex(*txn.from) << " != " << expected << std::endl;
+                      << to_hex(*txn.from) << " != " << expected_sender << std::endl;
             return Status::kFailed;
         }
     }

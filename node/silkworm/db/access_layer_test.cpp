@@ -627,5 +627,16 @@ namespace db {
         CHECK(chain_config3 == kRopstenConfig);
     }
 
+    TEST_CASE("Head header") {
+
+        test::Context context;
+        auto& txn{context.txn()};
+
+        REQUIRE(db::read_head_header_hash(txn) == std::nullopt);
+        const auto ropsten_genesis_hash{0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d_bytes32};
+        REQUIRE_NOTHROW(db::write_head_header_hash(txn, ropsten_genesis_hash.bytes));
+        REQUIRE(db::read_head_header_hash(txn).value() == ropsten_genesis_hash);
+    }
+
 }  // namespace db
 }  // namespace silkworm

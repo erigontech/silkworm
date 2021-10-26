@@ -252,7 +252,8 @@ void write_body(mdbx::txn& txn, const BlockBody& body, const uint8_t (&hash)[kHa
     detail::BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
     body_for_storage.txn_count = body.transactions.size();
-    body_for_storage.base_txn_id = increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
+    body_for_storage.base_txn_id =
+        increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
     Bytes value{body_for_storage.encode()};
     auto key{db::block_key(number, hash)};
     auto target{db::open_cursor(txn, table::kBlockBodies)};
@@ -479,6 +480,16 @@ void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]) 
     mdbx::slice key(db::table::kLastHeaderKey);
     mdbx::slice value(hash, kHashLength);
     target.upsert(key, value);
+}
+
+std::optional<evmc::bytes32> read_head_header_hash(mdbx::txn& txn) {
+    auto source{db::open_cursor(txn, table::kHeadHeader)};
+    mdbx::slice key(db::table::kLastHeaderKey);
+    auto data{source.find(key, /*throw_notfound=*/false)};
+    if (!data) {
+        return std::nullopt;
+    }
+    return to_bytes32(from_slice(data.value));
 }
 
 uint64_t increment_map_sequence(mdbx::txn& txn, const char* map_name, uint64_t increment) {

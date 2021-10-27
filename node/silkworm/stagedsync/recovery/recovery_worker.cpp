@@ -28,6 +28,12 @@ RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id) {
     }
 }
 
+RecoveryWorker::~RecoveryWorker() {
+    if (context_) {
+        std::free(context_);
+    }
+}
+
 void RecoveryWorker::set_work(uint32_t batch_id, std::vector<RecoveryPackage>& farm_batch) {
     batch_id_ = batch_id;
     batch_.swap(farm_batch);
@@ -104,11 +110,6 @@ void RecoveryWorker::work() {
 
         // Raise finished event
         signal_completed(this);
-        batch_.resize(0);
     }
-
-    std::free(context_);
-    batch_.clear();
 }
-
 }  // namespace silkworm::stagedsync::recovery

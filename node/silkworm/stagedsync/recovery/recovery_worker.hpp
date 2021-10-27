@@ -58,6 +58,8 @@ class RecoveryWorker final : public silkworm::Worker {
     //! \remarks data_size is expressed as number of transactions to recover per batch times address size
     explicit RecoveryWorker(uint32_t id, size_t data_size);
 
+    ~RecoveryWorker();
+
     //! \brief Feed the worker with a new set of data to process
     //! \param [in] batch_id : identifier of work batch
     //! \param [in] batch : collection of work packages

@@ -108,7 +108,7 @@ bool operator==(const ChainConfig& a, const ChainConfig& b);
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 
-constexpr ChainConfig kMainnetConfig{
+inline constexpr ChainConfig kMainnetConfig{
     1,  // chain_id
     SealEngineType::kEthash,
     {
@@ -127,7 +127,7 @@ constexpr ChainConfig kMainnetConfig{
     1'920'000,  // dao_block
 };
 
-constexpr ChainConfig kRopstenConfig{
+inline constexpr ChainConfig kRopstenConfig{
     3,  // chain_id
     SealEngineType::kEthash,
     {
@@ -145,7 +145,7 @@ constexpr ChainConfig kRopstenConfig{
     7'117'117,  // muir_glacier_block
 };
 
-constexpr ChainConfig kRinkebyConfig{
+inline constexpr ChainConfig kRinkebyConfig{
     4,  // chain_id
     SealEngineType::kClique,
     {
@@ -161,7 +161,7 @@ constexpr ChainConfig kRinkebyConfig{
     },
 };
 
-constexpr ChainConfig kGoerliConfig{
+inline constexpr ChainConfig kGoerliConfig{
     5,  // chain_id
     SealEngineType::kClique,
     {

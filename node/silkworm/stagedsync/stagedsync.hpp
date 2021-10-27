@@ -28,8 +28,8 @@
 
 namespace silkworm::stagedsync {
 
-constexpr size_t kDefaultBatchSize = 512_Mebi;
-constexpr size_t kDefaultRecoverySenderBatch = 50'000;  // This a number of transactions not number of bytes
+inline constexpr size_t kDefaultBatchSize = 512_Mebi;
+inline constexpr size_t kDefaultRecoverySenderBatch = 50'000;  // This a number of transactions not number of bytes
 
 typedef StageResult (*StageFunc)(TransactionManager&, const std::filesystem::path& etl_path,  uint64_t prune_from);
 typedef StageResult (*UnwindFunc)(TransactionManager&, const std::filesystem::path& etl_path, uint64_t unwind_to );

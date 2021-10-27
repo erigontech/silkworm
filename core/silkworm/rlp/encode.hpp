@@ -46,8 +46,8 @@ namespace rlp {
         uint64_t payload_length{0};
     };
 
-    constexpr uint8_t kEmptyStringCode{0x80};
-    constexpr uint8_t kEmptyListCode{0xC0};
+    inline constexpr uint8_t kEmptyStringCode{0x80};
+    inline constexpr uint8_t kEmptyListCode{0xC0};
 
     void encode_header(Bytes& to, Header header);
 

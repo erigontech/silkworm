@@ -29,7 +29,7 @@
 
 namespace silkworm {
 /// <summary>
-/// This class mimimcs the behavior of a stopwatch to measure timings of operations
+/// This class mimics the behavior of a stopwatch to measure timings of operations
 /// </summary>
 class StopWatch {
   public:

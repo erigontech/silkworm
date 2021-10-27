@@ -25,7 +25,6 @@
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/storage.hpp>
 #include <silkworm/execution/processor.hpp>
 
 #include "stagedsync.hpp"
@@ -135,7 +134,7 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
             (void)sw.lap();
             SILKWORM_LOG(LogLevel::Info) << (block_num == max_block ? "All blocks" : "Blocks") << " <= " << block_num
                                          << " committed"
-                                         << " in " << sw.format(sw.laps().back().second) << std::endl;
+                                         << " in " << StopWatch::format(sw.laps().back().second) << std::endl;
         }
     } catch (const mdbx::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << "DB Error " << ex.what() << " in stage_execution" << std::endl;
@@ -168,7 +167,7 @@ static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state
                 auto [state_incarnation, err2]{extract_incarnation(db::from_slice(state_account_encoded.value))};
                 rlp::success_or_throw(err2);
                 // cleanup each code incarnation
-                for (uint64_t i = state_incarnation; i > account.incarnation && i > 0; --i) {
+                for (uint64_t i = state_incarnation; i > account.incarnation; --i) {
                     Bytes key_hash(kAddressLength + 8, '\0');
                     std::memcpy(&key_hash[0], key.data(), kAddressLength);
                     endian::store_big_u64(&key_hash[kAddressLength], i);

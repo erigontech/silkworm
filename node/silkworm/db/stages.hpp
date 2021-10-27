@@ -25,31 +25,59 @@
 
 namespace silkworm::db::stages {
 
-// clang-format off
+// Headers are downloaded, their Proof-Of-Work validity and chaining is verified
+inline constexpr const char* kHeadersKey{"Headers"};
 
-constexpr const char* kHeadersKey{"Headers"};                         // Headers are downloaded, their Proof-Of-Work validity and chaining is verified
-constexpr const char* kBlockHashesKey{"BlockHashes"};                 // Headers Number are written, fills blockHash => number bucket
-constexpr const char* kBlockBodiesKey{"Bodies"};                      // Block bodies are downloaded, TxHash and UncleHash are getting verified
-constexpr const char* kSendersKey{"Senders"};                         // "From" recovered from signatures
-constexpr const char* kExecutionKey{"Execution"};                     // Executing each block w/o building a trie
-constexpr const char* kIntermediateHashesKey{"IntermediateHashes"};   // Generate intermediate hashes, calculate the state root hash
-constexpr const char* kHashStateKey{"HashState"};                     // Apply Keccak256 to all the keys in the state
-constexpr const char* kAccountHistoryIndexKey{"AccountHistoryIndex"};      // Generating history index for accounts
-constexpr const char* kStorageHistoryIndexKey{"StorageHistoryIndex"}; // Generating history index for storage
-constexpr const char* kLogIndexKey{"LogIndex"};                       // Generating logs index (from receipts)
-constexpr const char* kCallTracesKey{"CallTraces"};                   // Generating call traces index
-constexpr const char* kTxLookupKey{"TxLookup"};                       // Generating transactions lookup index
-constexpr const char* kTxPoolKey{"TxPool"};                           // Starts Backend
-constexpr const char* kFinishKey{"Finish"};                           // Nominal stage after all other stages
+// Headers Number are written, fills blockHash => number bucket
+inline constexpr const char* kBlockHashesKey{"BlockHashes"};
 
-constexpr const char* kMiningCreateBlockKey{"MiningCreateBlock"};     // Create block for mining
-constexpr const char* kMiningExecutionKey{"MiningExecution"};         // Execute mining
-constexpr const char* kMiningFinishKey{"MiningFinish"};               // Mining completed
+// Block bodies are downloaded, TxHash and UncleHash are getting verified
+inline constexpr const char* kBlockBodiesKey{"Bodies"};
 
-// clang-format on
+// "From" recovered from signatures
+inline constexpr const char* kSendersKey{"Senders"};
+
+// Executing each block w/o building a trie
+inline constexpr const char* kExecutionKey{"Execution"};
+
+// Generate intermediate hashes, calculate the state root hash
+inline constexpr const char* kIntermediateHashesKey{"IntermediateHashes"};
+
+// Apply Keccak256 to all the keys in the state
+inline constexpr const char* kHashStateKey{"HashState"};
+
+// Generating history index for accounts
+inline constexpr const char* kAccountHistoryIndexKey{"AccountHistoryIndex"};
+
+// Generating history index for storage
+inline constexpr const char* kStorageHistoryIndexKey{"StorageHistoryIndex"};
+
+// Generating logs index (from receipts)
+inline constexpr const char* kLogIndexKey{"LogIndex"};
+
+// Generating call traces index
+inline constexpr const char* kCallTracesKey{"CallTraces"};
+
+// Generating transactions lookup index
+inline constexpr const char* kTxLookupKey{"TxLookup"};
+
+// Starts Backend
+inline constexpr const char* kTxPoolKey{"TxPool"};
+
+// Nominal stage after all other stages
+inline constexpr const char* kFinishKey{"Finish"};
+
+// Create block for mining
+inline constexpr const char* kMiningCreateBlockKey{"MiningCreateBlock"};
+
+//  Execute mining
+inline constexpr const char* kMiningExecutionKey{"MiningExecution"};
+
+// Mining completed
+inline constexpr const char* kMiningFinishKey{"MiningFinish"};
 
 //! \brief List of all known stages
-constexpr const char* kAllStages[]{
+inline constexpr const char* kAllStages[]{
     kHeadersKey,
     kBlockHashesKey,
     kBlockBodiesKey,

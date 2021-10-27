@@ -80,19 +80,16 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, Work
 void InboundBlockHeaders::execute() {
     using namespace std;
 
-    // todo: PRIO - Erigon apparently processes this message even if it is not in a fetching phase - do we need the
-    // same?
-
     BlockNum highestBlock = 0;
     for (BlockHeader& header : packet_.request) {
         highestBlock = std::max(highestBlock, header.number);
     }
 
     auto [penalty, requestMoreHeaders] =
-        working_chain_.accept_headers(packet_.request, peerId_);  // todo: provide WorkingChain as messages member
+        working_chain_.accept_headers(packet_.request, peerId_);
 
     // Erigon here calls request_more_headers(). Do we have to do the same? What if header downloader is not in a
-    // forward phase? todo: take a decision here!
+    // forward phase? todo: decide if we need to call request_more_headers() here
     /* If we need to implement as Erigon does:
     if (penalty == Penalty::NoPenalty && requestMoreHeaders) {
         OutboundGetBlockHeaders message(working_chain_, sentry_);

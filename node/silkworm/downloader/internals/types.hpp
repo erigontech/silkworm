@@ -39,7 +39,7 @@ class Hash : public evmc::bytes32 {
     operator ByteView() { return {bytes, length()}; }
 
     uint8_t* raw_bytes() { return bytes; }
-    constexpr size_t length() { return sizeof(evmc::bytes32); }
+    static constexpr size_t length() { return sizeof(evmc::bytes32); }
 
     std::string to_hex() { return silkworm::to_hex(*this); }
     static Hash from_hex(const std::string& hex) {

@@ -43,7 +43,7 @@ namespace silkworm {
  */
 struct PreverifiedHashes {
     std::set<evmc::bytes32> hashes;  // Set of hashes of headers that are known to belong to canonical chain
-    uint64_t height{0};              // Block height corresponding to the higher preverified header
+    uint64_t height{0};              // Block height corresponding to the highest preverified header
 
     bool contains(const evmc::bytes32& hash) const { return hashes.find(hash) != hashes.end(); }
 

@@ -54,43 +54,7 @@ void WorkingChain::add_bad_headers(std::set<Hash> bads) {
     badHeaders_.insert(bads.begin(), bads.end());  // todo: use set_union or merge?
 }
 
-/*
-func (hd *HeaderDownload) RecoverFromDb(db ethdb.RoKV) error {
-	hd.lock.Lock()
-	defer hd.lock.Unlock()
-	// Drain persistedLinksQueue and remove links
-	for hd.persistedLinkQueue.Len() > 0 {
-		link := heap.Pop(hd.persistedLinkQueue).(*Link)
-		delete(hd.links, link.hash)
-	}
-	err := db.View(context.Background(), func(tx ethdb.Tx) error {
-		c, err := tx.Cursor(dbutils.HeadersBucket)
-		if err != nil {
-			return err
-		}
-		// Take hd.persistedLinkLimit headers (with the highest heights) as links
-		for k, v, err := c.Last(); k != nil && hd.persistedLinkQueue.Len() < hd.persistedLinkLimit; k, v, err = c.Prev() {
-			if err != nil {
-				return err
-			}
-			var h types.Header
-			if err = rlp.DecodeBytes(v, &h); err != nil {
-				return err
-			}
-			hd.addHeaderAsLink(&h, true) // true = persisted
-		}
-		hd.highestInDb, err = stages.GetStageProgress(tx, stages.Headers)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-*/
+// See Erigon RecoverFromDb
 void WorkingChain::recover_initial_state(Db::ReadOnlyAccess::Tx& tx) {
     reduce_persisted_links_to(0);  // drain persistedLinksQueue and remove links
 
@@ -103,84 +67,13 @@ void WorkingChain::recover_initial_state(Db::ReadOnlyAccess::Tx& tx) {
 
 void WorkingChain::sync_current_state(BlockNum highest_in_db) { highestInDb_ = highest_in_db; }
 
-/*
-/ InsertHeaders attempts to insert headers into the database, verifying them first
-// It returns true in the first return value if the system is "in sync"
-func (hd *HeaderDownload) InsertHeaders(hf func(header *types.Header, blockHeight uint64) error, logPrefix string, logChannel <-chan time.Time) (bool, error) {
-	hd.lock.Lock()
-	defer hd.lock.Unlock()
-	var linksInFuture []*Link // Here we accumulate links that fail validation as "in the future"
-	for len(hd.insertList) > 0 {
-		// Make sure long insertions do not appear as a stuck stage 1
-		select {
-		case <-logChannel:
-			log.Info(fmt.Sprintf("[%s] Inserting headers", logPrefix), "progress", hd.highestInDb)
-		default:
-		}
-		link := hd.insertList[len(hd.insertList)-1]
-		if link.blockHeight <= hd.preverifiedHeight && !link.preverified {
-			// Header should be preverified, but not yet, try again later
-			break
-		}
-		hd.insertList = hd.insertList[:len(hd.insertList)-1]
-		skip := false
-		if !link.preverified {
-			if _, bad := hd.badHeaders[link.hash]; bad {
-				skip = true
-			} else if err := hd.engine.VerifyHeader(hd.headerReader, link.header, true); err != nil {  // true = seal
-				log.Warn("Verification failed for header", "hash", link.header.Hash(), "height", link.blockHeight, "error", err)
-				if errors.Is(err, consensus.ErrFutureBlock) {
-					// This may become valid later
-					linksInFuture = append(linksInFuture, link)
-					log.Warn("Added future link", "hash", link.header.Hash(), "height", link.blockHeight, "timestamp", link.header.Time)
-					continue // prevent removal of the link from the hd.linkQueue
-				} else {
-					skip = true
-				}
-			} else {
-				if hd.seenAnnounces.Pop(link.hash) {
-					hd.toAnnounce = append(hd.toAnnounce, Announce{Hash: link.hash, Number: link.blockHeight})
-				}
-			}
-		}
-		if _, ok := hd.links[link.hash]; ok {
-			heap.Remove(hd.linkQueue, link.idx)
-		}
-		if skip {
-			delete(hd.links, link.hash)
-			continue
-		}
-		if err := hf(link.header, link.blockHeight); err != nil {
-			return false, err
-		}
-		if link.blockHeight > hd.highestInDb {
-			hd.highestInDb = link.blockHeight
-		}
-		link.persisted = true
-		link.header = nil // Drop header reference to free memory, as we won't need it anymore
-		heap.Push(hd.persistedLinkQueue, link)
-		if len(link.next) > 0 {
-			hd.insertList = append(hd.insertList, link.next...)
-		}
-	}
-	for hd.persistedLinkQueue.Len() > hd.persistedLinkLimit {
-		link := heap.Pop(hd.persistedLinkQueue).(*Link)
-		delete(hd.links, link.hash)
-	}
-	if len(linksInFuture) > 0 {
-		hd.insertList = append(hd.insertList, linksInFuture...)
-		linksInFuture = nil //nolint
-	}
-	return hd.highestInDb >= hd.preverifiedHeight && hd.topSeenHeight > 0 && hd.highestInDb >= hd.topSeenHeight, nil
-}
-*/
-
 Headers WorkingChain::withdraw_stable_headers() {
     Headers stable_headers;
 
     LinkList links_in_future;  // here we accumulate links that fail validation as "in the future"
 
-    while (!insertList_.empty()) {  // todo: insertList_ is a stack so we iterate it in reverse insertion order, is it correct?
+    while (!insertList_
+                .empty()) {  // todo: insertList_ is a stack so we iterate it in reverse insertion order, is it correct?
         // Make sure long insertions do not appear as a stuck stage headers
         SILKWORM_LOG(LogLevel::Info) << "WorkingChain: inserting headers (" << highestInDb_ << ")\n";
 
@@ -266,7 +159,6 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
  * (anchor extension queries) to fill the gaps and so reduce the number of anchors.
  */
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
-
     BlockNum lowest_anchor = lowest_anchor_from(topSeenHeight_);
     if (lowest_anchor <= highestInDb_) return std::nullopt;
 
@@ -287,7 +179,7 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 
 size_t WorkingChain::anchors_within_range(BlockNum max) {
     size_t count = 0;
-    for(const auto& anchor: anchors_) {
+    for (const auto& anchor : anchors_) {
         if (anchor.second->blockHeight < max) {
             count++;
         }
@@ -297,44 +189,13 @@ size_t WorkingChain::anchors_within_range(BlockNum max) {
 
 BlockNum WorkingChain::lowest_anchor_from(BlockNum top_bn) {
     BlockNum lowest_bn = top_bn;
-    for(const auto& anchor: anchors_) {
+    for (const auto& anchor : anchors_) {
         if (anchor.second->blockHeight < lowest_bn) {
             lowest_bn = anchor.second->blockHeight;
         }
     }
     return lowest_bn;
 }
-
-/*
- func (hd *HeaderDownload) RequestMoreHeaders(currentTime uint64) (*HeaderRequest, []PenaltyItem) {
-	hd.lock.Lock()
-	defer hd.lock.Unlock()
-	var penalties []PenaltyItem
-	if hd.anchorQueue.Len() == 0 {
-		log.Debug("Empty anchor queue")
-		return nil, penalties
-	}
-	for hd.anchorQueue.Len() > 0 {
-		anchor := (*hd.anchorQueue)[0]
-		if _, ok := hd.anchors[anchor.parentHash]; ok {
-			if anchor.timestamp > currentTime {
-				// Anchor not ready for re-request yet
-				return nil, penalties
-			}
-			if anchor.timeouts < 10 {
-				return &HeaderRequest{Hash: anchor.parentHash, Number: anchor.blockHeight - 1, Length: 192, Skip: 0, Reverse: true}, penalties
-			} else {
-				// Ancestors of this anchor seem to be unavailable, invalidate and move on
-				hd.invalidateAnchor(anchor)
-				penalties = append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID: anchor.peerID})
-			}
-		}
-		// Anchor disappeared or unavailable, pop from the queue and move on
-		heap.Remove(hd.anchorQueue, 0)
-	}
-	return nil, penalties
-}
- */
 
 /*
  * Anchor extension query.
@@ -375,7 +236,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
 
             GetBlockHeadersPacket66 packet{RANDOM_NUMBER.generate_one(), {anchor->blockHeight, max_len, 0, true}};
             // todo: why we use blockHeight in place of parentHash?
-            return {packet, penalties};                    // try (again) to extend this anchor
+            return {packet, penalties};  // try (again) to extend this anchor
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
             SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: invalidating anchor for suspected unavailability, "
@@ -390,23 +251,6 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
     return {nullopt, penalties};
 }
 
-/*
-func (hd *HeaderDownload) invalidateAnchor(anchor *Anchor) {
-	log.Warn("Invalidating anchor for suspected unavailability", "height", anchor.blockHeight)
-	delete(hd.anchors, anchor.parentHash)
-	hd.removeUpwards(anchor.links)
-}
-
-func (hd *HeaderDownload) removeUpwards(toRemove []*Link) {
-	for len(toRemove) > 0 {
-		removal := toRemove[len(toRemove)-1]
-		toRemove = toRemove[:len(toRemove)-1]
-		delete(hd.links, removal.header.Hash())
-		heap.Remove(hd.linkQueue, removal.idx)
-		toRemove = append(toRemove, removal.next...)
-	}
-}
-*/
 void WorkingChain::invalidate(Anchor& anchor) {
     auto link_to_remove = anchor.links;
     while (!link_to_remove.empty()) {
@@ -422,20 +266,6 @@ void WorkingChain::invalidate(Anchor& anchor) {
 void WorkingChain::save_external_announce(Hash h) {
     seenAnnounces_.put(h, 0);  // we ignore the value in the map (zero here), we only need the key
 }
-
-/*
-func (hd *HeaderDownload) SentRequest(req *HeaderRequest, currentTime, timeout uint64) {
-    hd.lock.Lock()
-        defer hd.lock.Unlock()
-            anchor, ok := hd.anchors[req.Hash]
-               if !ok {
-                   return
-               }
-               anchor.timeouts++
-               anchor.timestamp = currentTime + timeout
-               heap.Fix(hd.anchorQueue, 0)
-}
-*/
 
 void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
     std::shared_ptr<Anchor> anchor;
@@ -512,52 +342,6 @@ std::tuple<bool, Penalty> HeaderList::childrenParentValidity(const std::vector<H
 }
 
 /*
-// SplitIntoSegments converts message containing headers into a collection of chain segments
-func (hd *HeaderDownload) SplitIntoSegments(headersRaw [][]byte, msg []*types.Header) ([]*ChainSegment, Penalty, error) {
-	hd.lock.RLock()
-	defer hd.lock.RUnlock()
-	sort.Sort(HeadersByBlockHeight(msg))
-	// Now all headers are order from the highest block height to the lowest
-	var segments []*ChainSegment                         // Segments being built
-	segmentMap := make(map[common.Hash]int)              // Mapping of the header hash to the index of the chain segment it belongs
-	childrenMap := make(map[common.Hash][]*types.Header) // Mapping parent hash to the children
-	dedupMap := make(map[common.Hash]struct{})           // Map used for detecting duplicate headers
-	for i, header := range msg {
-		headerHash := header.Hash()
-		if _, bad := hd.badHeaders[headerHash]; bad {
-			return nil, BadBlockPenalty, nil
-		}
-		if _, duplicate := dedupMap[headerHash]; duplicate {
-			return nil, DuplicateHeaderPenalty, nil
-		}
-		dedupMap[headerHash] = struct{}{}
-		var segmentIdx int
-		children := childrenMap[headerHash]
-		for _, child := range children {
-			if valid, penalty := hd.childParentValid(child, header); !valid {
-				return nil, penalty, nil
-			}
-		}
-		if len(children) == 1 {
-			// Single child, extract segmentIdx
-			segmentIdx = segmentMap[headerHash]
-		} else {
-			// No children, or more than one child, create new segment
-			segmentIdx = len(segments)
-			segments = append(segments, &ChainSegment{})
-		}
-		segments[segmentIdx].Headers = append(segments[segmentIdx].Headers, header)
-		segments[segmentIdx].HeadersRaw = append(segments[segmentIdx].HeadersRaw, headersRaw[i])
-		segmentMap[header.ParentHash] = segmentIdx
-		siblings := childrenMap[header.ParentHash]
-		siblings = append(siblings, header)
-		childrenMap[header.ParentHash] = siblings
-	}
-	return segments, NoPenalty, nil
-}
- */
-
-/*
  * SplitIntoSegments converts message containing headers into a collection of chain segments.
  * A message received from a peer may contain a collection of disparate headers (for example, in a response to the
  * skeleton query), or any branched chain bundle. So it needs to be split into chain segments.
@@ -612,169 +396,6 @@ auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penal
     return {segments, Penalty::NoPenalty};
 }
 
-/* implementation without Header_Ref
-std::tuple<bool,Penalty> childParentValidity(const BlockHeader& child, const BlockHeader& parent) {
-    if (parent.number + 1 != child.number)
-        return {false, Penalty::WrongChildBlockHeightPenalty};
-    return {true, NoPenalty};
-}
-
-std::tuple<bool,Penalty> childrenParentValidity(const std::vector<BlockHeader>& children, const BlockHeader& parent) {
-    for(auto& child: children) {
-        auto [valid, penalty] = childParentValidity(child, parent);
-        if (!valid)
-            return {false, penalty};
-    }
-    return {true, Penalty::NoPenalty};
-}
-
-auto WorkingChain::split_into_segments(const std::vector<BlockHeader>& headers) -> std::tuple<std::vector<Segment>, Penalty> {
-
-    std::sort(headers.begin(), headers.end(), [](auto& h1, auto& h2){return h1.number > h2.number;}); // sort headers from the highest block height to the lowest
-
-    std::vector<Segment> segments;
-    std::map<Hash, int> segmentMap;
-    std::map<Hash, std::vector<BlockHeader>> childrenMap;
-    std::set<Hash> dedupMap;
-    int segmentIdx = 0;
-
-    for(auto& header: headers) {
-        if (badHeaders_.contains(header.hash()))
-            return {{}, Penalty::BadBlockPenalty};
-        if (dedupMap.contains(header.hash()))
-            return {{}, Penalty::DuplicateHeaderPenalty};
-        dedupMap.insert(header.hash());
-        auto children = childrenMap[header.hash()];
-
-        auto [valid, penalty] = childrenParentValidity(children, header);
-        if (!valid) return {{}, penalty};
-
-        if (children.size() == 1) {
-            // Single child, extract segmentIdx
-            segmentIdx = segmentMap[header.hash()];
-        }
-        else {
-            // No children, or more than one child, create new segment
-            segmentIdx = segments.size();
-            segments.emplace_back();    // add a void segment
-        }
-
-        segments[segmentIdx].headers.push_back(header); // todo: copy o reference?
-        //segments[segmentIdx].headersRaw.push_back(headersRaw[i]); // todo: do we need this?
-
-        segmentMap[header.parent_hash] = segmentIdx;
-
-        auto& siblings = childrenMap[header.parent_hash];
-        siblings.push_back(header);     // todo: copy o reference?
-    }
-
-    return {segments, Penalty::NoPenalty};
-}
-*/
-
-/*
-// ProcessSegment - handling single segment.
-// If segment were processed by extendDown or newAnchor method, then it returns `requestMore=true`
-// it allows higher-level algo immediately request more headers without waiting all stages precessing,
-// speeds up visibility of new blocks
-// It remember peerID - then later - if anchors created from segments will abandoned - this peerID gonna get Penalty
-func (hd *HeaderDownload) ProcessSegment(segment *ChainSegment, newBlock bool, peerID string) (requestMore bool) {
-	log.Debug("processSegment", "from", segment.Headers[0].Number.Uint64(), "to", segment.Headers[len(segment.Headers)-1].Number.Uint64())
-	hd.lock.Lock()
-	defer hd.lock.Unlock()
-	foundAnchor, start := hd.findAnchors(segment)
-	foundTip, end := hd.findLink(segment, start) // We ignore penalty because we will check it as part of PoW check
-	if end == 0 {
-		log.Debug("Duplicate segment")
-		return
-	}
-	height := segment.Headers[len(segment.Headers)-1].Number.Uint64()
-	hash := segment.Headers[len(segment.Headers)-1].Hash()
-	if newBlock || hd.seenAnnounces.Seen(hash) {
-		if height > hd.topSeenHeight {
-			hd.topSeenHeight = height
-		}
-	}
-	startNum := segment.Headers[start].Number.Uint64()
-	endNum := segment.Headers[end-1].Number.Uint64()
-	// There are 4 cases
-	if foundAnchor {
-		if foundTip {
-			// Connect
-			if err := hd.connect(segment, start, end); err != nil {
-				log.Debug("Connect failed", "error", err)
-				return
-			}
-			log.Debug("Connected", "start", startNum, "end", endNum)
-		} else {
-			// ExtendDown
-			var err error
-			if requestMore, err = hd.extend_down(segment, start, end); err != nil {
-				log.Debug("ExtendDown failed", "error", err)
-				return
-			}
-			log.Debug("Extended Down", "start", startNum, "end", endNum)
-		}
-	} else if foundTip {
-		if end > 0 {
-			// ExtendUp
-			if err := hd.extendUp(segment, start, end); err != nil {
-				log.Debug("ExtendUp failed", "error", err)
-				return
-			}
-			log.Debug("Extended Up", "start", startNum, "end", endNum)
-		}
-	} else {
-		// NewAnchor
-		var err error
-		if requestMore, err = hd.newAnchor(segment, start, end, peerID); err != nil {
-			log.Debug("NewAnchor failed", "error", err)
-			return
-		}
-		log.Debug("NewAnchor", "start", startNum, "end", endNum)
-	}
-	//log.Info(hd.anchorState())
-	log.Debug("Link queue", "size", hd.linkQueue.Len())
-	if hd.linkQueue.Len() > hd.linkLimit {
-		log.Debug("Too many links, cutting down", "count", hd.linkQueue.Len(), "tried to add", end-start, "limit", hd.linkLimit)
-	}
-	for hd.linkQueue.Len() > hd.linkLimit {
-		link := heap.Pop(hd.linkQueue).(*Link)
-		delete(hd.links, link.hash)
-		if parentLink, ok := hd.links[link.header.ParentHash]; ok {
-			for i, n := range parentLink.next {
-				if n == link {
-					if i == len(parentLink.next)-1 {
-						parentLink.next = parentLink.next[:i]
-					} else {
-						parentLink.next = append(parentLink.next[:i], parentLink.next[i+1:]...)
-					}
-					break
-				}
-			}
-		}
-		if anchor, ok := hd.anchors[link.header.ParentHash]; ok {
-			for i, n := range anchor.links {
-				if n == link {
-					if i == len(anchor.links)-1 {
-						anchor.links = anchor.links[:i]
-					} else {
-						anchor.links = append(anchor.links[:i], anchor.links[i+1:]...)
-					}
-					break
-				}
-			}
-		}
-	}
-	select {
-	case hd.DeliveryNotify <- struct{}{}:
-	default:
-	}
-
-	return hd.requestChaining && requestMore
-}
-
-*/
 auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, PeerId peerId) -> RequestMoreHeaders {
     auto [foundAnchor, start] = find_anchor(segment);
     auto [foundTip, end] = find_link(segment, start);
@@ -783,7 +404,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
         SILKWORM_LOG(LogLevel::Debug) << "WorkingChain: duplicate segment\n";
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
-        if (foundAnchor) remove_anchor(segment[start]->hash());    // note: hash and not parent_hash
+        if (foundAnchor) remove_anchor(segment[start]->hash());  // note: hash and not parent_hash
         return false;
     }
 
@@ -853,20 +474,6 @@ void WorkingChain::reduce_links_to(size_t limit) {
     }
 }
 
-/*
-// FindAnchors attempts to find anchors to which given chain segment can be attached to
-func (hd *HeaderDownload) findAnchors(segment *ChainSegment) (found bool, start int) {
-	// Walk the segment from children towards parents
-	for i, header := range segment.Headers {
-		// Check if the header can be attached to an anchor of a working tree
-		if _, attaching := hd.anchors[header.Hash()]; attaching {
-			return true, i
-		}
-	}
-	return false, 0
-}
-*/
-
 // find_anchors tries to finds the highest link the in the new segment that can be attached to an existing anchor
 auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<Found, Start> {  // todo: do we need a span?
     for (size_t i = 0; i < segment.size(); i++)
@@ -876,22 +483,6 @@ auto WorkingChain::find_anchor(const Segment& segment) -> std::tuple<Found, Star
     return {false, 0};
 }
 
-/*
-// FindLink attempts to find a non-persisted link that given chain segment can be attached to.
-func (hd *HeaderDownload) findLink(segment *ChainSegment, start int) (found bool, end int) {
-	if _, duplicate := hd.getLink(segment.Headers[start].Hash()); duplicate {
-		return false, 0
-	}
-	// Walk the segment from children towards parents
-	for i, header := range segment.Headers[start:] {
-		// Check if the header can be attached to any links
-		if _, attaching := hd.getLink(header.ParentHash); attaching {
-			return true, start + i + 1
-		}
-	}
-	return false, len(segment.Headers)
-}
- */
 // find_link find the highest existing link (from start) that the new segment can be attached to
 auto WorkingChain::find_link(const Segment& segment, size_t start)
     -> std::tuple<Found, End> {  // todo: End o Header_Ref?
@@ -911,57 +502,6 @@ auto WorkingChain::get_link(const Hash& hash) -> std::optional<std::shared_ptr<L
     return {};
 }
 
-/*
-// Connect connects some working trees using anchors of some, and a link of another
-func (hd *HeaderDownload) connect(segment *ChainSegment, start, end int) error {
-	// Find attachment link again
-	linkHeader := segment.Headers[end-1]
-	// Find attachement anchors again
-	anchorHeader := segment.Headers[start]
-	attachmentLink, ok1 := hd.getLink(linkHeader.ParentHash)
-	if !ok1 {
-		return fmt.Errorf("connect attachment link not found for %x", linkHeader.ParentHash)
-	}
-	if attachmentLink.preverified && len(attachmentLink.next) > 0 {
-		return fmt.Errorf("cannot connect to preverified link %d with children", attachmentLink.blockHeight)
-	}
-	anchor, ok2 := hd.anchors[anchorHeader.Hash()]
-	if !ok2 {
-		return fmt.Errorf("connect attachment anchors not found for %x", anchorHeader.Hash())
-	}
-	anchorPreverified := false
-	for _, link := range anchor.links {
-		if link.preverified {
-			anchorPreverified = true
-			break
-		}
-	}
-	delete(hd.anchors, anchor.parentHash)
-	// Iterate over headers backwards (from parents towards children)
-	prevLink := attachmentLink
-	for i := end - 1; i >= start; i-- {
-		link := hd.addHeaderAsLink(segment.Headers[i], false ) // false = persisted
-		prevLink.next = append(prevLink.next, link)
-		prevLink = link
-		if !anchorPreverified {
-			if _, ok := hd.preverifiedHashes[link.hash]; ok {
-				hd.markPreverified(link)
-			}
-		}
-	}
-	prevLink.next = anchor.links
-	anchor.links = nil
-	if anchorPreverified {
-		// Mark the entire segment as preverified
-		hd.markPreverified(prevLink)
-	}
-	if attachmentLink.persisted {
-		link := hd.links[linkHeader.Hash()]
-		hd.insertList = append(hd.insertList, link)
-	}
-	return nil
-}
-*/
 void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut_and_paste_error
     using std::to_string;
 
@@ -993,8 +533,8 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     }
 
     // todo: modularize this, his block is the same in extend_down
-    auto header_to_anchor = *segment_slice.begin();  // highest header
-    auto a = anchors_.find(header_to_anchor->hash()); // header_to_anchor->hash() == anchor.parent_hash
+    auto header_to_anchor = *segment_slice.begin();    // highest header
+    auto a = anchors_.find(header_to_anchor->hash());  // header_to_anchor->hash() == anchor.parent_hash
     bool attaching = a != anchors_.end();
     if (!attaching)
         throw segment_cut_and_paste_error("segment cut&paste error, connect attachment anchors not found for " +
@@ -1020,66 +560,8 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
 }
 
-/*
-// ExtendDown extends some working trees down from the anchor, using given chain segment
-// it creates a new anchor and collects all the links from the attached anchors to it
-func (hd *HeaderDownload) extendDown(segment *ChainSegment, start, end int) (bool, error) {
-	// Find attachment anchor again
-	anchorHeader := segment.Headers[start]
-	if , attaching := hd.anchors[anchorHeader.Hash()]; attaching {
-		anchorPreverified := false
-		for _, link := range anchor.links {
-			if link.preverified {
-				anchorPreverified = true
-				break
-			}
-		}
-		newAnchorHeader := segment.Headers[end-1]
-		var newAnchor *Anchor
-		newAnchor, preExisting := hd.anchors[newAnchorHeader.ParentHash]
-		if !preExisting {
-			newAnchor = &Anchor{
-				parentHash:  newAnchorHeader.ParentHash,
-				timestamp:   0,
-				peerID:      anchor.peerID,
-				blockHeight: newAnchorHeader.Number.Uint64(),
-			}
-			if newAnchor.blockHeight > 0 {
-				hd.anchors[newAnchorHeader.ParentHash] = newAnchor
-				heap.Push(hd.anchorQueue, newAnchor)
-			}
-		}
-
-		delete(hd.anchors, anchor.parentHash)
-		// Add all headers in the segments as links to this anchor
-		var prevLink *Link
-		for i := end - 1; i >= start; i-- {
-			link := hd.addHeaderAsLink(segment.Headers[i], false ) // false = persisted
-			if prevLink == nil {
-				newAnchor.links = append(newAnchor.links, link)
-			} else {
-				prevLink.next = append(prevLink.next, link)
-			}
-			prevLink = link
-			if !anchorPreverified {
-				if _, ok := hd.preverifiedHashes[link.hash]; ok {
-					hd.markPreverified(link)
-				}
-			}
-		}
-		prevLink.next = anchor.links
-		anchor.links = nil
-		if anchorPreverified {
-			// Mark the entire segment as preverified
-			hd.markPreverified(prevLink)
-		}
-		return !preExisting, nil
-	}
-	return false, fmt.Errorf("extend_down attachment anchors not found for %x", anchorHeader.Hash())
-}
- */
 auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeaders {
-                                                                                  // throw segment_cut_and_paste_error
+    // throw segment_cut_and_paste_error
     using std::to_string;
 
     auto anchor_header = *segment_slice.begin();  // highest header
@@ -1113,9 +595,9 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
             anchors_[new_anchor_header->parent_hash] = new_anchor;
             anchorQueue_.push(new_anchor);
         }
-    }
-    else
+    } else {
         new_anchor = a->second;
+    }
 
     // todo: modularize this block
     // Iterate over headers backwards (from parents towards children)
@@ -1141,36 +623,6 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
     return !pre_existing;
 }
 
-/*
-// ExtendUp extends a working tree up from the link, using given chain segment
-func (hd *HeaderDownload) extendUp(segment *ChainSegment, start, end int) error {
-	// Find attachment link again
-	linkHeader := segment.Headers[end-1]
-	attachmentLink, attaching := hd.getLink(linkHeader.ParentHash)
-	if !attaching {
-		return fmt.Errorf("extendUp attachment link not found for %x", linkHeader.ParentHash)
-	}
-	if attachmentLink.preverified && len(attachmentLink.next) > 0 {
-		return fmt.Errorf("cannot extendUp from preverified link %d with children", attachmentLink.blockHeight)
-	}
-	// Iterate over headers backwards (from parents towards children)
-	prevLink := attachmentLink
-	for i := end - 1; i >= start; i-- {
-		link := hd.addHeaderAsLink(segment.Headers[i], false ) // false = persisted
-		prevLink.next = append(prevLink.next, link)
-		prevLink = link
-		if _, ok := hd.preverifiedHashes[link.hash]; ok {
-			hd.markPreverified(link)
-		}
-	}
-
-	if attachmentLink.persisted {
-		link := hd.links[linkHeader.Hash()]
-		hd.insertList = append(hd.insertList, link)
-	}
-	return nil
-}
-*/
 void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_cut_and_paste_error
     using std::to_string;
 
@@ -1202,49 +654,8 @@ void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_c
     }
 }
 
-/*
-// if anchor will be abandoned - given peerID will get Penalty
-func (hd *HeaderDownload) newAnchor(segment *ChainSegment, start, end int, peerID string) (bool, error) {
-	anchorHeader := segment.Headers[end-1]
-
-	var anchor *Anchor
-	anchor, preExisting := hd.anchors[anchorHeader.ParentHash]
-	if !preExisting {
-		if anchorHeader.Number.Uint64() < hd.highestInDb {
-			return false, fmt.Errorf("new anchor too far in the past: %d, latest header in db: %d", anchorHeader.Number.Uint64(), hd.highestInDb)
-		}
-		if len(hd.anchors) >= hd.anchorLimit {
-			return false, fmt.Errorf("too many anchors: %d, limit %d", len(hd.anchors), hd.anchorLimit)
-		}
-		anchor = &Anchor{
-			parentHash:  anchorHeader.ParentHash,
-			peerID:      peerID,
-			timestamp:   0,
-			blockHeight: anchorHeader.Number.Uint64(),
-		}
-		hd.anchors[anchorHeader.ParentHash] = anchor
-		heap.Push(hd.anchorQueue, anchor)
-	}
-	// Iterate over headers backwards (from parents towards children)
-	var prevLink *Link
-	for i := end - 1; i >= start; i-- {
-		header := segment.Headers[i]
-		link := hd.addHeaderAsLink(header, false ) // false = persisted
-		if prevLink == nil {
-			anchor.links = append(anchor.links, link)
-		} else {
-			prevLink.next = append(prevLink.next, link)
-		}
-		prevLink = link
-		if _, ok := hd.preverifiedHashes[link.hash]; ok {
-			hd.markPreverified(link)
-		}
-	}
-	return !preExisting, nil
-}
- */
 auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> RequestMoreHeaders {
-                                                                                  // throw segment_cut_and_paste_error
+    // throw segment_cut_and_paste_error
     using std::to_string;
 
     auto anchor_header = *segment_slice.rbegin();  // lowest header
@@ -1288,26 +699,6 @@ auto WorkingChain::new_anchor(Segment::Slice segment_slice, PeerId peerId) -> Re
     return !pre_existing;
 }
 
-    /*
-// addHeaderAsLink wraps header into a link and adds it to either queue of persisted links or queue of non-persisted links
-func (hd *HeaderDownload) addHeaderAsLink(header *types.Header, persisted bool) *Link {
-	height := header.Number.Uint64()
-	linkHash := header.Hash()
-	link := &Link{
-		blockHeight: height,
-		hash:        linkHash,
-		header:      header,
-		persisted:   persisted,
-	}
-	hd.links[linkHash] = link
-	if persisted {
-		heap.Push(hd.persistedLinkQueue, link)
-	} else {
-		heap.Push(hd.linkQueue, link)
-	}
-	return link
-}
-*/
 auto WorkingChain::add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link> {
     auto link = std::make_shared<Link>(header, persisted);
     links_[link->hash] = link;
@@ -1319,9 +710,7 @@ auto WorkingChain::add_header_as_link(const BlockHeader& header, bool persisted)
     return link;
 }
 
-void WorkingChain::remove_anchor(const BlockHeader& header) {
-    remove_anchor(header.parent_hash);
-}
+void WorkingChain::remove_anchor(const BlockHeader& header) { remove_anchor(header.parent_hash); }
 void WorkingChain::remove_anchor(const Hash& hash) {
     // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
@@ -1331,16 +720,6 @@ void WorkingChain::remove_anchor(const Hash& hash) {
         SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: removal of anchor failed, " << to_hex(hash) << " not found\n";
     }
 }
-
-/*
-func (hd *HeaderDownload) markPreverified(link *Link) {
-	// Go through all parent links that are not preveried and mark them too
-	for link != nil && !link.preverified {
-		link.preverified = true
-		link = hd.links[link.header.ParentHash]
-	}
-}
- */
 
 // Mark a link and all its ancestors as preverified
 void WorkingChain::mark_as_preverified(std::shared_ptr<Link> link) {

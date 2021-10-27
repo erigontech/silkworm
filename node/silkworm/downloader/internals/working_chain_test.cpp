@@ -44,7 +44,7 @@ class WorkingChain_ForTest : public WorkingChain {
 // TESTs related to HeaderList::split_into_segments
 // ----------------------------------------------------------------------------
 
-TEST_CASE("HeaderList::split_into_segments - No headers") {
+TEST_CASE("HeaderList - split_into_segments - No headers") {
     std::vector<BlockHeader> headers;
 
     auto headerList = HeaderList::make(headers);
@@ -55,7 +55,7 @@ TEST_CASE("HeaderList::split_into_segments - No headers") {
     REQUIRE(penalty == Penalty::NoPenalty);
 }
 
-TEST_CASE("HeaderList::split_into_segments - Single header") {
+TEST_CASE("HeaderList - split_into_segments - Single header") {
     std::vector<BlockHeader> headers;
     BlockHeader header;
     header.number = 5;
@@ -69,7 +69,7 @@ TEST_CASE("HeaderList::split_into_segments - Single header") {
     REQUIRE(penalty == Penalty::NoPenalty);
 }
 
-TEST_CASE("HeaderList::split_into_segments - Single header repeated twice") {
+TEST_CASE("HeaderList - split_into_segments - Single header repeated twice") {
     std::vector<BlockHeader> headers;
     BlockHeader header;
     header.number = 5;
@@ -84,7 +84,7 @@ TEST_CASE("HeaderList::split_into_segments - Single header repeated twice") {
     REQUIRE(penalty == Penalty::DuplicateHeaderPenalty);
 }
 
-TEST_CASE("HeaderList::split_into_segments - Two connected headers") {
+TEST_CASE("HeaderList - split_into_segments - Two connected headers") {
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -109,7 +109,7 @@ TEST_CASE("HeaderList::split_into_segments - Two connected headers") {
     REQUIRE(segments[0][1]->number == header1.number);
 }
 
-TEST_CASE("HeaderList::split_into_segments - Two connected headers with wrong numbers") {
+TEST_CASE("HeaderList - split_into_segments - Two connected headers with wrong numbers") {
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -161,7 +161,7 @@ TEST_CASE("HeaderList::split_into_segments - Two connected headers with wrong nu
  * output:
  *         3 segments: {h3}, {h2}, {h1}   (in this order)
  */
-TEST_CASE("HeaderList::split_into_segments - Two headers connected to the third header") {
+TEST_CASE("HeaderList - split_into_segments - Two headers connected to the third header") {
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -197,7 +197,7 @@ TEST_CASE("HeaderList::split_into_segments - Two headers connected to the third 
     REQUIRE(segments[0][0]->number == header3.number);
 }
 
-TEST_CASE("HeaderList::split_into_segments - Same three headers, but in a reverse order") {
+TEST_CASE("HeaderList - split_into_segments - Same three headers, but in a reverse order") {
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -238,7 +238,7 @@ TEST_CASE("HeaderList::split_into_segments - Same three headers, but in a revers
  * output:
  *         2 segments: {h3?}, {h2?}
  */
-TEST_CASE("HeaderList::split_into_segments - Two headers not connected to each other") {
+TEST_CASE("HeaderList - split_into_segments - Two headers not connected to each other") {
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -276,7 +276,7 @@ TEST_CASE("HeaderList::split_into_segments - Two headers not connected to each o
  * output:
  *        1 segment: {h3, h2, h1}   (with header in this order)
  */
-TEST_CASE("HeaderList::split_into_segments - Three headers connected") {
+TEST_CASE("HeaderList - split_into_segments - Three headers connected") {
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -315,7 +315,7 @@ TEST_CASE("HeaderList::split_into_segments - Three headers connected") {
  * output:
  *        3 segments: {h3?}, {h4?}, {h2, h1}
  */
-TEST_CASE("HeaderList::split_into_segments - Four headers connected") {
+TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -359,7 +359,7 @@ TEST_CASE("HeaderList::split_into_segments - Four headers connected") {
 // TESTs related to WorkingChain::accept_headers (segment manipulation: connect, extend_down, extend_up, new_anchor)
 // -----------------------------------------------------------------------------------------------------------------
 
-TEST_CASE("WorkingChain::process_segment - test1 - new_anchor / extend_up / extend_down / connect") {
+TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
     using namespace std;
 
     WorkingChain_ForTest chain;
@@ -534,6 +534,56 @@ TEST_CASE("WorkingChain::process_segment - test1 - new_anchor / extend_up / exte
     }
 }
 
+// TESTs related to WorkingChain in some tricky cases
+// --------------------------------------------------
+
+/* chain:
+ *
+ *               |-- h2b
+ *         h1 <----- h2
+ *
+ *         1st iteration: receive {h2, h2b} -> new_anchor(h2), new_anchor(h2b) [= 1 anchor with 2 links]
+ *         2nd iteration: receive {h1} -> extend_down(h2/h2b) => one anchor(h1) with a link to h1 with 2 link (h2 and h2b)
+ */
+TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings") {
+    using namespace std;
+
+    WorkingChain_ForTest chain;
+    chain.top_seen_block_height(1'000'000);
+
+    PeerId peerId = "1";
+
+    std::array<BlockHeader, 10> headers;
+
+    BlockHeader h1;
+    h1.number = 1;
+    h1.difficulty = 100;
+
+    BlockHeader h2;
+    h2.number = 2;
+    h2.difficulty = 200;
+    h2.parent_hash = h1.hash();
+
+    BlockHeader h2b;
+    h2b.number = 2;
+    h2b.difficulty = 20;
+    h2b.parent_hash = h1.hash();
+    h2b.extra_data = string_to_bytes("h2b");  // so hash(h2) != hash(h2b)
+
+    chain.accept_headers({h2, h2b}, peerId);
+
+    chain.accept_headers({h1}, peerId);
+
+    auto anchor = chain.anchors_[h1.parent_hash];
+    REQUIRE(anchor != nullptr);
+    REQUIRE(anchor->parentHash == h1.parent_hash);
+    REQUIRE(anchor->blockHeight == h1.number);
+
+    REQUIRE(anchor->links.size() == 1);
+    REQUIRE(anchor->links[0]->has_child(h2.hash()));
+    REQUIRE(anchor->links[0]->has_child(h2b.hash()));
+}
+
 // TESTs related to WorkingChain::accept_headers (segment manipulation with branches)
 // ---------------------------------------------------------------------------------
 
@@ -544,7 +594,7 @@ TEST_CASE("WorkingChain::process_segment - test1 - new_anchor / extend_up / exte
  *                                                       |-- h6b<----- h7b
  *
  */
-TEST_CASE("WorkingChain::process_segment - test2 - chain with branches") {
+TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
     using namespace std;
 
     WorkingChain_ForTest chain;
@@ -556,38 +606,38 @@ TEST_CASE("WorkingChain::process_segment - test2 - chain with branches") {
 
     for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
         headers[i].number = i;
-        headers[i].difficulty = i;  // improve!
+        headers[i].difficulty = i*100;  // improve!
         headers[i].parent_hash = headers[i - 1].hash();
     }
 
     BlockHeader h3a;
     h3a.number = 3;
-    h3a.difficulty = 1010;
+    h3a.difficulty = 1030;
     h3a.parent_hash = headers[2].hash();
     h3a.extra_data = string_to_bytes("h3a");  // so hash(h3a) != hash(h3)
 
     BlockHeader h4a;
     h4a.number = 4;
-    h4a.difficulty = 1010;
-    h4a.parent_hash = headers[3].hash();
+    h4a.difficulty = 1040;
+    h4a.parent_hash = h3a.hash();
     h4a.extra_data = string_to_bytes("h4a");  // so hash(h4a) != hash(h4)
 
     BlockHeader h6a;
     h6a.number = 6;
-    h6a.difficulty = 1010;
+    h6a.difficulty = 1060;
     h6a.parent_hash = headers[5].hash();
     h6a.extra_data = string_to_bytes("h6a");  // so hash(h6a) != hash(h6) != hash(h6b)
 
     BlockHeader h6b;
     h6b.number = 6;
-    h6b.difficulty = 1010;
+    h6b.difficulty = 1065;
     h6b.parent_hash = headers[5].hash();
     h6b.extra_data = string_to_bytes("h6b");  // so hash(h6a) != hash(h6) != hash(h6b)
 
     BlockHeader h7b;
-    h7b.number = 6;
-    h7b.difficulty = 1010;
-    h7b.parent_hash = headers[6].hash();
+    h7b.number = 7;
+    h7b.difficulty = 1070;
+    h7b.parent_hash = h6b.hash();
     h7b.extra_data = string_to_bytes("h7b");  // so hash(h7b) != hash(h7)
 
     /* chain status:
@@ -597,9 +647,9 @@ TEST_CASE("WorkingChain::process_segment - test2 - chain with branches") {
      *         h1
      *         - triggering new_anchor
      * output:
-     *         1 anchor, 1 links
+     *         1 anchor, 1 links -> triggering new_anchor
      */
-    INFO("new_anchor") {
+    INFO("creating first anchor") {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[1]}, peerId);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -624,14 +674,14 @@ TEST_CASE("WorkingChain::process_segment - test2 - chain with branches") {
      *         h1
      *
      * input:
-     *                           |-- h3a<----- h4a
+     *                           |-- h3a <----- h4a
      *         (h1) <----- h2 <----- h3
      *
-     *         - 3 segments (h3a,h4a), (h3), (h2),  triggering new_anchor, new_anchor, connect (check if correct!!!)
+     *         - 3 segments (h3a,h4a), (h3), (h2),  triggering new_anchor, new_anchor, connect
      * output:
-     *         1 anchor, 5 links ???
+     *         1 anchor, 5 links
      */
-    INFO("???") {
+    INFO("adding 3 segments") {
         auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[2], h3a, h4a, headers[3]}, peerId);
 
         REQUIRE(penalty == Penalty::NoPenalty);
@@ -648,6 +698,7 @@ TEST_CASE("WorkingChain::process_segment - test2 - chain with branches") {
         REQUIRE(anchor->peerId == peerId);
 
         REQUIRE(anchor->links.size() == 1);
+        REQUIRE(anchor->links[0]->hash == headers[1].hash());
         REQUIRE(anchor->links[0]->next.size() == 1);
         REQUIRE(anchor->links[0]->next[0]->hash == headers[2].hash());
         REQUIRE(anchor->links[0]->next[0]->next.size() == 2);
@@ -655,8 +706,254 @@ TEST_CASE("WorkingChain::process_segment - test2 - chain with branches") {
                  anchor->links[0]->next[0]->next[0]->hash == h3a.hash()));
         REQUIRE((anchor->links[0]->next[0]->next[1]->hash == headers[3].hash() ||
                  anchor->links[0]->next[0]->next[1]->hash == h3a.hash()));
-        // ...
+        REQUIRE((anchor->links[0]->next[0]->next[0]->next[0]->hash == h4a.hash() ||
+                 anchor->links[0]->next[0]->next[1]->next[0]->hash == h4a.hash()));
     }
+
+    /* chain status:
+     *                           |-- h3a <----- h4a
+     *          h1 <------ h2 <----- h3
+     *
+     * input:
+     *                             |-- (h3a) <----- (h4a)
+     *         (h1) <----- (h2) <----- (h3)                                      h7 <----- h8 <----- h9
+     *
+     *         - 1 segment (h7, h8, h9),  triggering new_anchor
+     * output:
+     *         2 anchor, 8 links
+     */
+    INFO("adding a disconnected segment") {
+        auto [penalty, requestMoreHeaders] = chain.accept_headers({headers[8], headers[9], headers[7]}, peerId);
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
+        REQUIRE(chain.anchorQueue_.size() == 3);  // there are old anchors
+        REQUIRE(chain.anchors_.size() == 2);
+        REQUIRE(chain.linkQueue_.size() == 8);
+        REQUIRE(chain.links_.size() == 8);
+
+        auto anchor = chain.anchors_[headers[7].parent_hash];
+        REQUIRE(anchor != nullptr);
+        REQUIRE(anchor->parentHash == headers[7].parent_hash);
+        REQUIRE(anchor->blockHeight == headers[7].number);
+        REQUIRE(anchor->peerId == peerId);
+
+        REQUIRE(anchor->links.size() == 1);
+        REQUIRE(anchor->links[0]->hash == headers[7].hash());
+        REQUIRE(anchor->links[0]->next.size() == 1);
+        REQUIRE(anchor->links[0]->next[0]->hash == headers[8].hash());
+        REQUIRE(anchor->links[0]->next[0]->next.size() == 1);
+        REQUIRE(anchor->links[0]->next[0]->next[0]->hash == headers[9].hash());
+    }
+
+    /* chain status:
+     *                           |-- h3a <----- h4a
+     *          h1 <------ h2 <----- h3                                           h7 <------ h8 <------- h9
+     *
+     * input:
+     *                             |-- (h3a) <----- (h4a)           |-- h6a
+     *         (h1) <----- (h2) <----- (h3)  <----- h4 <----- h5 <----- h6 <----- (h7) <----- (h8) <------ (h9)
+     *                                                              |-- h6b<----- h7b
+     *         - 4 segment (h7b, h6b)->new_anchor, (h6)->extend_down, (h6a)->new_anchor, (h5, h4)->connect
+     * output:
+     *         1 anchor, 14 links
+     */
+    INFO("adding 4 segments connecting chain") {
+        auto [penalty, requestMoreHeaders] =
+            chain.accept_headers({headers[5], headers[6], h6a, h6b, headers[4], h7b}, peerId);
+
+        REQUIRE(penalty == Penalty::NoPenalty);
+        REQUIRE(requestMoreHeaders == true);
+        REQUIRE(chain.anchorQueue_.size() == 4);  // there are old anchors
+        REQUIRE(chain.anchors_.size() == 1);
+        REQUIRE(chain.linkQueue_.size() == 14);
+        REQUIRE(chain.links_.size() == 14);
+
+        auto link3 = chain.links_[headers[3].hash()];
+        REQUIRE(link3 != nullptr);
+        REQUIRE(link3->has_child(headers[4].hash()));
+
+        auto link5 = link3->next[0]->next[0];
+        REQUIRE(link5->next.size() == 3);
+        REQUIRE(link5->has_child(headers[6].hash()));
+        REQUIRE(link5->has_child(h6a.hash()));
+        REQUIRE(link5->has_child(h6b.hash()));
+
+        auto link6 = chain.links_[headers[6].hash()];
+        REQUIRE(link6 != nullptr);
+        REQUIRE(link6->next.size() == 1);
+        REQUIRE(link6->has_child(headers[7].hash()));
+
+        auto link6b = chain.links_[h6b.hash()];
+        REQUIRE(link6b != nullptr);
+        REQUIRE(link6b->next.size() == 1);
+        REQUIRE(link6b->has_child(h7b.hash()));
+
+        auto anchor = chain.anchors_[headers[1].parent_hash];
+        auto curr_link = anchor->links[0];
+        for(size_t i = 2; i <= 9; i++) { // verify canonical chain
+            auto next_link = curr_link->find_child(headers[i].hash());
+            REQUIRE(next_link != curr_link->next.end());
+            curr_link = *next_link;
+        }
+    }
+}
+
+
+// TESTs related to WorkingChain::accept_headers (pre-verified hashes)
+// -------------------------------------------------------------------
+
+/* chain:
+ *
+ *                         |-- h3a<----- h4a             |-- h6a
+ *         h1 <----- h2 <----- h3 <----- h4 <----- h5 <----- h6 <----- h7 <----- h8 <----- h9
+ *                                                       |-- h6b<----- h7b
+ *
+ */
+TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical chain") {
+    using namespace std;
+
+    WorkingChain_ForTest chain;
+    chain.top_seen_block_height(1'000'000);
+
+    PeerId peerId = "1";
+
+    std::array<BlockHeader, 10> headers;
+
+    for (size_t i = 1; i < headers.size(); i++) {  // skip first header for simplicity
+        headers[i].number = i;
+        headers[i].difficulty = i * 100;  // improve!
+        headers[i].parent_hash = headers[i - 1].hash();
+    }
+
+    BlockHeader h3a;
+    h3a.number = 3;
+    h3a.difficulty = 1030;
+    h3a.parent_hash = headers[2].hash();
+    h3a.extra_data = string_to_bytes("h3a");  // so hash(h3a) != hash(h3)
+
+    BlockHeader h4a;
+    h4a.number = 4;
+    h4a.difficulty = 1040;
+    h4a.parent_hash = h3a.hash();
+    h4a.extra_data = string_to_bytes("h4a");  // so hash(h4a) != hash(h4)
+
+    BlockHeader h6a;
+    h6a.number = 6;
+    h6a.difficulty = 1060;
+    h6a.parent_hash = headers[5].hash();
+    h6a.extra_data = string_to_bytes("h6a");  // so hash(h6a) != hash(h6) != hash(h6b)
+
+    BlockHeader h6b;
+    h6b.number = 6;
+    h6b.difficulty = 1065;
+    h6b.parent_hash = headers[5].hash();
+    h6b.extra_data = string_to_bytes("h6b");  // so hash(h6a) != hash(h6) != hash(h6b)
+
+    BlockHeader h7b;
+    h7b.number = 7;
+    h7b.difficulty = 1070;
+    h7b.parent_hash = h6b.hash();
+    h7b.extra_data = string_to_bytes("h7b");  // so hash(h7b) != hash(h7)
+
+    PreverifiedHashes mynet_preverified_hashes = {
+        {headers[8].hash(), headers[9].hash()}, // hashes
+        headers[9].number                       // height
+    };
+
+    chain.set_preverified_hashes(&mynet_preverified_hashes);
+
+    // building the first part of the chain
+    chain.accept_headers({headers[1], headers[2], headers[3], h3a, h4a}, peerId);
+
+    // adding the third part fo the chain, disconnected from the first, and that contains a pre-verified hash
+    chain.accept_headers({h7b, headers[8], headers[9]}, peerId);
+
+    auto link1 = chain.links_[headers[1].hash()];
+    REQUIRE(link1 != nullptr);
+    REQUIRE(link1->preverified == false);   // pre-verification can be propagated
+
+    // adding the connecting part of the chain - we expect that pre-verification will be propagated
+    chain.accept_headers({headers[4], headers[5], headers[6], h6a, h6b, headers[7]}, peerId);
+
+    // a simple test
+    REQUIRE(link1->preverified == true);    // verify propagation
+
+    // canonical chain headers must be pre-verified
+    for (size_t i = 1; i < headers.size(); i++) {
+        auto link = chain.links_[headers[i].hash()];
+        REQUIRE(link != nullptr);
+        REQUIRE(link->preverified == true);
+    }
+    // non canonical headers must be non pre-verified
+    for (auto header: {&h3a, &h4a, &h6a, &h6b, &h7b}) {
+        auto link = chain.links_[header->hash()];
+        REQUIRE(link != nullptr);
+        REQUIRE(link->preverified == false);
+    }
+
+}
+
+/* chain:
+ *
+ *                         |-- h3a<----- h4a <---- h5b<----- h6b
+ *         h1 <----- h2 <----- h3 <----- h4 <----- h5
+ *
+ *
+ */
+TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonical chain change") {
+    using namespace std;
+
+    WorkingChain_ForTest chain;
+    chain.top_seen_block_height(1'000'000);
+
+    PeerId peerId = "1";
+
+    std::array<BlockHeader, 6> a_headers;
+
+    for (size_t i = 1; i < a_headers.size(); i++) {  // skip first header for simplicity
+        a_headers[i].number = i;
+        a_headers[i].difficulty = i * 100;
+        a_headers[i].parent_hash = a_headers[i - 1].hash();
+    }
+
+    std::array<BlockHeader, 7> b_headers;
+    b_headers[2] = a_headers[2];
+    for (size_t i = 3; i < b_headers.size(); i++) {  // skip first headers for simplicity
+        b_headers[i].number = i;
+        b_headers[i].difficulty = i * 100;
+        b_headers[i].parent_hash = b_headers[i - 1].hash();
+        b_headers[i].extra_data = string_to_bytes("alternate");  // so hash(a_headers[i]) != hash(b_headers[i])
+    }
+
+    PreverifiedHashes mynet_preverified_hashes = {
+        {b_headers[6].hash()}, // hashes
+        b_headers[6].number                   // height
+    };
+
+    chain.set_preverified_hashes(&mynet_preverified_hashes);
+
+    // building the first branch of the chain
+    chain.accept_headers({a_headers[1], a_headers[2], a_headers[3], a_headers[4], a_headers[5]}, peerId);
+
+    // adding the second branch that becomes canonical
+    chain.accept_headers({b_headers[3], b_headers[4], b_headers[5], b_headers[6]}, peerId);
+
+    // verify
+    for (size_t i = 1; i < a_headers.size(); i++) {
+        auto link = chain.links_[a_headers[i].hash()];
+        REQUIRE(link != nullptr);
+        if (i == 1 || i == 2)
+            REQUIRE(link->preverified == true);
+        else
+            REQUIRE(link->preverified == false);
+    }
+    for (size_t i = 3; i < b_headers.size(); i++) {
+        auto link = chain.links_[b_headers[i].hash()];
+        REQUIRE(link != nullptr);
+        REQUIRE(link->preverified == true);
+    }
+
 }
 
 }  // namespace silkworm

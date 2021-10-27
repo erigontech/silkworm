@@ -19,6 +19,7 @@
 
 #include <gsl/span>
 
+#include <silkworm/chain/preverified_hashes.hpp>
 #include <silkworm/common/lru_cache.hpp>
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
 
@@ -27,7 +28,32 @@
 
 namespace silkworm {
 
-class WorkingChain {  // tentative name - todo: improve!
+/*
+ * WorkingChain represents the chain that we are downloading; it has these responsibilities:
+ *    - decide what headers request (to peers) to extend the chain
+ *    - collect headers,
+ *    - organize headers in segments
+ *    - extend/connect segments
+ *    - decide what headers can be persisted on the db
+ * A user of this class, i.e. the HeaderDownloader, must ask it for header requests (see request_skeleton(),
+ * request_more_headers()). WorkingChain doesn't know anything about the process that must be used to communicate with
+ * the peers that are outside, the downloader have the charge to do real requests to peers. And when the downloader
+ * receive headers from some peers, because it asked or because there is a new header announcement, it must provide
+ * headers to the WorkingChain (see accept_headers()). Also, the downloader periodically must call
+ * withdraw_stable_headers() to see if the WorkingChain has headers ready to persist. This happens when it has headers
+ * that: 1) are verified or pre-verified and 2) are connected with headers already persisted, so we are ready to extend
+ * the chain that is persisted on the db. The alter ego of WorkingChain is the PersistedChain.
+ *
+ * WorkingChain organizes headers in memory as collection of "chain bundles". Each chain bundle consists of one anchor
+ * and some chain links. Each link corresponds to a block header. Links are connected to each other by ParentHash
+ * fields. If ParentHash of some links do not point to another link in the same bundle, they all must point to the
+ * anchor of this bundle.
+ *
+ * WorkingChain has 2 logic to extend this collection of chain bundles:
+ * - Skeleton query: request headers in a wide range, as seed to grow later, they become anchor without links
+ * - Anchor extension query: request headers to extend anchors
+ */
+class WorkingChain {
   public:
     WorkingChain();
 
@@ -70,6 +96,7 @@ class WorkingChain {  // tentative name - todo: improve!
     bool has_link(Hash hash);
     std::vector<Announce>& announces_to_do();
     void add_bad_headers(std::set<Hash>);
+    void set_preverified_hashes(const PreverifiedHashes*);
 
   protected:
     static constexpr BlockNum max_len = 192;
@@ -86,17 +113,19 @@ class WorkingChain {  // tentative name - todo: improve!
     using End = size_t;
     auto find_anchor(const Segment&) -> std::tuple<Found, Start>;
     auto find_link(const Segment&, size_t start) -> std::tuple<Found, End>;
-    auto get_link(Hash hash) -> std::optional<std::shared_ptr<Link>>;
+    auto get_link(const Hash& hash) -> std::optional<std::shared_ptr<Link>>;
 
     void reduce_links_to(size_t limit);
     void reduce_persisted_links_to(size_t limit);
 
     void invalidate(Anchor&);
+    void remove_anchor(const BlockHeader& header);
+    void remove_anchor(const Hash& hash);
     bool find_bad_header(const std::vector<BlockHeader>&);
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
     void mark_as_preverified(std::shared_ptr<Link>);
-
-    void set_preverified_hashes(std::set<Hash>&& preverifiedHashes, BlockNum preverifiedHeight);
+    size_t anchors_within_range(BlockNum max);
+    BlockNum lowest_anchor_from(BlockNum top_bn);
 
     using Error = int;
     void connect(Segment::Slice);                                   // throw segment_cut_and_paste_error
@@ -113,8 +142,7 @@ class WorkingChain {  // tentative name - todo: improve!
     BlockNum highestInDb_;
     BlockNum topSeenHeight_;
     std::set<Hash> badHeaders_;
-    std::set<Hash> preverifiedHashes_;  // Set of hashes that are known to belong to canonical chain
-    BlockNum preverifiedHeight_{0};
+    const PreverifiedHashes* preverifiedHashes_;  // Set of hashes that are known to belong to canonical chain
     using Ignore = int;
     lru_cache<Hash, Ignore> seenAnnounces_;
     std::vector<Announce> announcesToDo_;

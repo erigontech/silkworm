@@ -26,22 +26,23 @@ limitations under the License.
 namespace silkworm {
 
 /*
-type HeaderInserter struct {
-        localTd          *big.Int
-        logPrefix        string
-        prevHash         common.Hash // Hash of previously seen header - to filter out potential duplicates
-        highestHash      common.Hash
-        newCanonical     bool
-        unwind           bool
-        prevHeight       uint64
-        unwindPoint      uint64
-        highest          uint64
-        highestTimestamp uint64
-        canonicalCache   *lru.Cache
-}
+ * PersistedChain represents the chain on the db; it has these responsibilities:
+ *    - persist headers on the db
+ *    - update canonical chain
+ *    - detect unwind point
+ *    - do headers unwind
+ *    - signal (to other stages) to do an unwind operation
+ * It is the counterpart of Erigon's HeaderInserter. Ideally it has to encapsulate all the details of the db
+ * organization, but in practice this is not possible completely. Header downloader uses an instance of this class for
+ * each forward() operation. When it receives headers from WorkingChain, that are ready to persist, the downloader call
+ * persist() on PersistedChain. Conversely, in the unwind() operation the downloader call the PersistedChain's
+ * remove_headers() method.
+ *
+ * PersistedChain has also the responsibility to detect a change in the canonical chain that is already persisted. In
+ * this case the method unwind_point() reports the point to which we must return.
  */
 
-class PersistedChain {  // counterpart of Erigon HeaderInserter
+class PersistedChain {
   public:
     explicit PersistedChain(Db::ReadWriteAccess::Tx& tx);
 

@@ -23,13 +23,14 @@
 
 namespace silkworm::db {
 
-constexpr const char* kPruneModeHistoryKey{"pruneHistory"};
-constexpr const char* kPruneModeReceiptsKey{"pruneReceipts"};
-constexpr const char* kPruneModeTxIndexKey{"pruneTxIndex"};
-constexpr const char* kPruneModeCallTracesKey{"pruneCallTraces"};
+inline constexpr const char* kPruneModeHistoryKey{"pruneHistory"};
+inline constexpr const char* kPruneModeReceiptsKey{"pruneReceipts"};
+inline constexpr const char* kPruneModeTxIndexKey{"pruneTxIndex"};
+inline constexpr const char* kPruneModeCallTracesKey{"pruneCallTraces"};
 
 using PruneDistance = std::optional<BlockNum>;
-constexpr BlockNum kDefaultPruneThreshold{90'000};
+
+inline constexpr BlockNum kDefaultPruneThreshold{90'000};
 
 struct PruneMode {
     bool initialized{false};    // Whether db storage has been initialized
@@ -87,7 +88,7 @@ struct PruneMode {
     }
 };
 
-constexpr PruneMode kDefaultPruneMode{
+inline constexpr PruneMode kDefaultPruneMode{
     true,          // initialized
     std::nullopt,  // history
     std::nullopt,  // receipts

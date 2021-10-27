@@ -67,15 +67,15 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept;
 uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept;
 std::optional<Bytes> blake2_f_run(ByteView input) noexcept;
 
-constexpr Contract kContracts[]{
+inline constexpr Contract kContracts[]{
     {ecrec_gas, ecrec_run},   {sha256_gas, sha256_run}, {rip160_gas, rip160_run},
     {id_gas, id_run},         {expmod_gas, expmod_run}, {bn_add_gas, bn_add_run},
     {bn_mul_gas, bn_mul_run}, {snarkv_gas, snarkv_run}, {blake2_f_gas, blake2_f_run},
 };
 
-constexpr size_t kNumOfFrontierContracts{4};
-constexpr size_t kNumOfByzantiumContracts{8};
-constexpr size_t kNumOfIstanbulContracts{9};
+inline constexpr size_t kNumOfFrontierContracts{4};
+inline constexpr size_t kNumOfByzantiumContracts{8};
+inline constexpr size_t kNumOfIstanbulContracts{9};
 
 static_assert(std::size(kContracts) == kNumOfIstanbulContracts);
 

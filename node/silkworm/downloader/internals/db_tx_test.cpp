@@ -87,6 +87,52 @@ namespace db {
 
             REQUIRE(read_stage_progress == stage_progress);
         }
+
+        SECTION("write/read/delete canonical hash") {
+            CHECK_NOTHROW(tx.write_canonical_hash(header.number, header.hash()));
+            CHECK_NOTHROW(tx.delete_canonical_hash(header.number));
+
+            auto read_hash = tx.read_canonical_hash(header.number);
+
+            REQUIRE(read_hash == std::nullopt);
+        }
+
+        SECTION("header with biggest td") {
+            CHECK_NOTHROW(tx.write_total_difficulty(header.number, header.hash(), 1234));
+
+            header.number++;
+            CHECK_NOTHROW(tx.write_total_difficulty(header.number, header.hash(), 100'000'001'000'000));
+            auto expected_max_bn = header.number;
+            auto expected_max_hash = header.hash();
+
+            header.number++;
+            CHECK_NOTHROW(tx.write_total_difficulty(header.number, header.hash(), 34'000'000'000));
+
+            auto [max_bn, max_hash] = tx.header_with_biggest_td();
+
+            REQUIRE(max_bn == expected_max_bn);
+            REQUIRE(max_hash == expected_max_hash);
+        }
+
+        SECTION("header with biggest td having bad headers") {
+            std::set<Hash> bad_headers;
+
+            CHECK_NOTHROW(tx.write_total_difficulty(header.number, header.hash(), 1234));
+
+            header.number++;
+            CHECK_NOTHROW(tx.write_total_difficulty(header.number, header.hash(), 100'000'001'000'000));
+            bad_headers.insert(header.hash());
+
+            header.number++;
+            CHECK_NOTHROW(tx.write_total_difficulty(header.number, header.hash(), 34'000'000'000));
+            auto expected_max_bn = header.number;
+            auto expected_max_hash = header.hash();
+
+            auto [max_bn, max_hash] = tx.header_with_biggest_td(&bad_headers);
+
+            REQUIRE(max_bn == expected_max_bn);
+            REQUIRE(max_hash == expected_max_hash);
+        }
     }
 
 }  // namespace db

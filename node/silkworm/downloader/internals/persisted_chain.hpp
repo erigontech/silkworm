@@ -50,7 +50,8 @@ class PersistedChain {
     void persist(const BlockHeader&);
     void close();
 
-    static auto remove_headers(BlockNum new_height, Hash bad_block, Db::ReadWriteAccess::Tx& tx) -> std::set<Hash>;
+    static std::set<Hash> remove_headers(BlockNum new_height, Hash bad_block,
+                                         std::optional<BlockNum>& new_max_block_num, Db::ReadWriteAccess::Tx& tx);
 
     bool best_header_changed();
     bool unwind_detected();  // todo: do we need both unwind() & unwind_detected() ?

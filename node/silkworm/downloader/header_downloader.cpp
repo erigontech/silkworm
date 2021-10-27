@@ -161,7 +161,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         // see HeadersForward
         if (persisted_chain_.unwind()) {
-            result.status = Result::UnwindNeeded;
+            result.status = Result::UnwindNeeded; // todo: here Erigon does unwind_state.unwind(unwind_point), check!
             result.unwind_point = persisted_chain_.unwind_point();
         }
 
@@ -193,9 +193,19 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
 
-        auto bad_headers = PersistedChain::remove_headers(new_height, bad_block, tx);
+        std::optional<BlockNum> new_max_block_num;
+        std::set<Hash> bad_headers = PersistedChain::remove_headers(new_height, bad_block, new_max_block_num, tx);
+            // todo: do we need to save bad_headers in the state and pass old bad headers here?
 
-        update_bad_headers(std::move(bad_headers));  // update working_chain bad headers list todo: activate
+        if (new_max_block_num.has_value()) { // happens when bad_block has value
+            result.status = Result::DoneAndUpdated;
+            result.current_point = new_max_block_num;
+        }
+        else {
+            result.status = Result::SkipTx; // todo:  here Erigon does unwind_state.signal(skip_tx), check!
+        }
+
+        update_bad_headers(std::move(bad_headers));
 
         tx.commit();
 
@@ -206,8 +216,6 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
-
-    // todo: to implement
 
     return result;
 }

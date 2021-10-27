@@ -55,111 +55,7 @@ BigInt PersistedChain::total_difficulty() { return local_td_; }
 
 BlockNum PersistedChain::unwind_point() { return unwind_point_; }
 
-/*
-func (hi *HeaderInserter) FeedHeader(db ethdb.StatelessRwTx, header *types.Header, blockHeight uint64) error {
-        hash := header.Hash()
-        if hash == hi.prevHash {
-                // Skip duplicates
-                return nil
-        }
-        if blockHeight < hi.prevHeight {
-                return fmt.Errorf("[%s] headers are unexpectedly unsorted, got %d after %d", hi.logPrefix, blockHeight,
-hi.prevHeight)
-        }
-        if oldH := rawdb.ReadHeader(db, hash, blockHeight); oldH != nil {
-                // Already inserted, skip
-                return nil
-        }
-        // Load parent header
-        parent := rawdb.ReadHeader(db, header.ParentHash, blockHeight-1)
-        if parent == nil {
-                log.Warn(fmt.Sprintf("Could not find parent with hash %x and height %d for header %x %d",
-header.ParentHash, blockHeight-1, hash, blockHeight))
-                // Skip headers without parents
-                return nil
-        }
-        // Parent's total difficulty
-        parentTd, err := rawdb.ReadTd(db, header.ParentHash, blockHeight-1)
-        if err != nil || parentTd == nil {
-                return fmt.Errorf("[%s] parent's total difficulty not found with hash %x and height %d for header %x %d:
-%v", hi.logPrefix, header.ParentHash, blockHeight-1, hash, blockHeight, err)
-        }
-        // Calculate total difficulty of this header using parent's total difficulty
-        td := new(big.Int).Add(parentTd, header.Difficulty)
-        // Now we can decide wether this header will create a change in the canonical head
-        if td.Cmp(hi.localTd) > 0 {
-                hi.newCanonical = true
-                // Find the forking point - i.e. the latest header on the canonical chain which is an ancestor of this one
-                // Most common case - forking point is the height of the parent header
-                var forkingPoint uint64
-                var ch common.Hash
-                var err error
-                if fromCache, ok := hi.canonicalCache.Get(blockHeight - 1); ok {
-                        ch = fromCache.(common.Hash)
-                } else {
-                        if ch, err = rawdb.ReadCanonicalHash(db, blockHeight-1); err != nil {
-                                return fmt.Errorf("reading canonical hash for height %d: %w", blockHeight-1, err)
-                        }
-                }
-                if ch == header.ParentHash {
-                        forkingPoint = blockHeight - 1
-                } else {
-                        // Going further back
-                        ancestorHash := parent.ParentHash
-                        ancestorHeight := blockHeight - 2
-                        // Look in the cache first
-                        for fromCache, ok := hi.canonicalCache.Get(ancestorHeight); ok; fromCache, ok = hi.canonicalCache.Get(ancestorHeight) {
-                                ch = fromCache.(common.Hash)
-                                if ch == ancestorHash {
-                                    break
-                                }
-                                ancestor := rawdb.ReadHeader(db, ancestorHash, ancestorHeight)
-                                ancestorHash = ancestor.ParentHash
-                                ancestorHeight--
-                        }
-                        // Now look in the DB
-                        for ch, err = rawdb.ReadCanonicalHash(db, ancestorHeight); err == nil && ch != ancestorHash; ch, err = rawdb.ReadCanonicalHash(db, ancestorHeight) {
-                                ancestor := rawdb.ReadHeader(db, ancestorHash, ancestorHeight)
-                                ancestorHash = ancestor.ParentHash
-                                ancestorHeight--
-                        }
-                        if err != nil {
-                                return fmt.Errorf("[%s] reading canonical hash for %d: %w", hi.logPrefix, ancestorHeight, err)
-                        }
-                        // Loop above terminates when either err != nil (handled already) or ch == ancestorHash, therefore ancestorHeight is our forking point forkingPoint = ancestorHeight
-                }
-                if err = rawdb.WriteHeadHeaderHash(db, hash); err != nil {
-                        return fmt.Errorf("[%s] marking head header hash as %x: %w", hi.logPrefix, hash, err)
-                }
-                if err = stages.SaveStageProgress(db, stages.Headers, blockHeight); err != nil {
-                        return fmt.Errorf("[%s] saving Headers progress: %w", hi.logPrefix, err)
-                }
-                hi.highest = blockHeight
-                hi.highestHash = hash
-                hi.highestTimestamp = header.Time
-                hi.canonicalCache.Add(blockHeight, hash)
-                // See if the forking point affects the unwindPoint (the block number to which other stages will need to unwind before the new canonical chain is applied)
-                if forkingPoint < hi.unwindPoint { hi.unwindPoint = forkingPoint
-                        hi.unwind = true
-                }
-                // This makes sure we end up chosing the chain with the max total difficulty
-                hi.localTd.Set(td)
-        }
-        data, err2 := rlp.EncodeToBytes(header)
-        if err2 != nil {
-                return fmt.Errorf("[%s] failed to RLP encode header: %w", hi.logPrefix, err2)
-        }
-        if err = rawdb.WriteTd(db, hash, blockHeight, td); err != nil {
-                return fmt.Errorf("[%s] failed to WriteTd: %w", hi.logPrefix, err)
-        }
-        if err = db.Put(dbutils.HeadersBucket, dbutils.HeaderKey(blockHeight, hash), data); err != nil {
-                return fmt.Errorf("[%s] failed to store header: %w", hi.logPrefix, err)
-        }
-        hi.prevHash = hash
-        return nil
-}
-
-*/
+// Erigon's func (hi *HeaderInserter) FeedHeader
 
 void PersistedChain::persist(const Headers& headers) {
     std::for_each(headers.begin(), headers.end(), [this](const auto& header) { persist(*header); });
@@ -298,41 +194,7 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
     return forking_point;
 }
 
-/*
-func fixCanonicalChain(logPrefix string, logEvery *time.Ticker, height uint64, hash common.Hash, tx ethdb.StatelessRwTx) error {
-        if height == 0 {
-            return nil
-        }
-        ancestorHash := hash
-        ancestorHeight := height
-
-        var ch common.Hash
-        var err error
-        for ch, err = rawdb.ReadCanonicalHash(tx, ancestorHeight); err == nil && ch != ancestorHash; ch, err = rawdb.ReadCanonicalHash(tx, ancestorHeight) {
-                if err = rawdb.WriteCanonicalHash(tx, ancestorHash, ancestorHeight); err != nil {
-                    return fmt.Errorf("[%s] marking canonical header %d %x: %w", logPrefix, ancestorHeight, ancestorHash, err)
-                }
-                ancestor := rawdb.ReadHeader(tx, ancestorHash, ancestorHeight)
-                if ancestor == nil {
-                        return fmt.Errorf("ancestor is nil. height %d, hash %x", ancestorHeight, ancestorHash)
-                }
-
-                select {
-                case <-logEvery.C:
-                        log.Info("fix canonical", "ancestor", ancestorHeight, "hash", ancestorHash)
-                default:
-                }
-                ancestorHash = ancestor.ParentHash
-                ancestorHeight--
-        }
-        if err != nil {
-                return fmt.Errorf("[%s] reading canonical hash for %d: %w", logPrefix, ancestorHeight, err)
-        }
-        return nil
-}
-
- */
-
+// On Erigon is fixCanonicalChain
 void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) {  // hash can be empty
     if (height == 0) return;
 
@@ -345,8 +207,9 @@ void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) {  // ha
 
         auto ancestor = tx_.read_header(ancestor_height, ancestor_hash);
         if (ancestor == std::nullopt) {
-            std::string msg = "PersistedChain: fix canonical chain failed at ancestor=" +
-                              std::to_string(ancestor_height) + " hash=" + ancestor_hash.to_hex();
+            std::string msg =
+                "PersistedChain: fix canonical chain failed at ancestor=" + std::to_string(ancestor_height) +
+                " hash=" + ancestor_hash.to_hex();
             SILKWORM_LOG(LogLevel::Error) << msg;
             throw std::logic_error(msg);
         }
@@ -370,28 +233,32 @@ void PersistedChain::close() {
     closed_ = true;
 }
 
-std::set<Hash> PersistedChain::remove_headers([[maybe_unused]] BlockNum unwind_point,
-                                              [[maybe_unused]] Hash bad_block,
-                                              [[maybe_unused]] Db::ReadWriteAccess::Tx& tx) {
+std::set<Hash> PersistedChain::remove_headers(BlockNum unwind_point, Hash bad_block,
+                                              std::optional<BlockNum>& max_block_num_ok, Db::ReadWriteAccess::Tx& tx) {
     std::set<Hash> bad_headers;
-    /*
-        BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
+    max_block_num_ok.reset();
 
-        bool is_bad_block = (bad_block != Hash{});
-        for(BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
-            if (is_bad_block) {
-                auto current_hash = tx.read_canonical_hash(current_height);
-                bad_headers.insert(current_hash);
-            }
-            tx.delete_canonical_hash(current_height);
-        }
+    BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
 
+    bool is_bad_block = (bad_block != Hash{});
+    for (BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
         if (is_bad_block) {
-            bad_headers.insert(bad_block);
-
-            // todo: implement here
+            auto current_hash = tx.read_canonical_hash(current_height);
+            bad_headers.insert(*current_hash);
         }
-    */
+        tx.delete_canonical_hash(current_height);  // do not throw if not found
+    }
+
+    if (is_bad_block) {
+        bad_headers.insert(bad_block);
+
+        auto [max_block_num, max_hash] = tx.header_with_biggest_td(&bad_headers);
+
+        tx.write_head_header_hash(max_hash);
+
+        max_block_num_ok = max_block_num;
+    }
+
     return bad_headers;
 }
 

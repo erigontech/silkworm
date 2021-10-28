@@ -110,8 +110,11 @@ StorageChanges read_storage_changes(mdbx::txn& txn, BlockNum block_number);
 //! \see Erigon chainConfig / chainConfigWithGenesis
 std::optional<ChainConfig> read_chain_config(mdbx::txn& txn);
 
-//! \brief Updates highest header in table::Config
+//! \brief Updates highest header hash in table::kHeadHeader
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]);
+
+//! \brief Reads highest header hash from table::kHeadHeader
+std::optional<evmc::bytes32> read_head_header_hash(mdbx::txn& txn);
 
 //! \brief Gets/Increments the sequence value for a given map (bucket)
 //! \param [in] map_name : the name of the map to get a sequence for

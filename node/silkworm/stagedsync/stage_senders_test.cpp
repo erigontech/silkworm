@@ -20,9 +20,8 @@
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/directories.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/common/test_util.hpp>
-#include <silkworm/db/buffer.hpp>
 #include <silkworm/db/stages.hpp>
 
 using namespace evmc::literals;
@@ -36,17 +35,11 @@ constexpr evmc::bytes32 hash_2{0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f6
 using namespace silkworm;
 
 TEST_CASE("Stage Senders") {
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -100,7 +93,7 @@ TEST_CASE("Stage Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, data_dir.etl().path()));
+    stagedsync::success_or_throw(stagedsync::stage_senders(txn, context.dir().etl().path()));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
@@ -113,17 +106,11 @@ TEST_CASE("Stage Senders") {
 }
 
 TEST_CASE("Unwind Senders") {
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -176,8 +163,8 @@ TEST_CASE("Unwind Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
-    stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, tmp_dir.path(), 1));
+    stagedsync::success_or_throw(stagedsync::stage_senders(txn, context.dir().etl().path()));
+    stagedsync::success_or_throw(stagedsync::unwind_senders(txn, context.dir().etl().path(), 1));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
@@ -190,17 +177,11 @@ TEST_CASE("Unwind Senders") {
 }
 
 TEST_CASE("Prune Senders") {
-    TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
+    test::Context context;
+    stagedsync::TransactionManager txn{context.txn()};
 
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    stagedsync::TransactionManager txn{env};
-    db::table::create_all(*txn);
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -251,9 +232,9 @@ TEST_CASE("Prune Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, tmp_dir.path()));
+    stagedsync::success_or_throw(stagedsync::stage_senders(txn, context.dir().etl().path()));
     // We prune from Block 2, thus deleting block 1
-    stagedsync::check_stagedsync_error(stagedsync::prune_senders(txn, tmp_dir.path(), 2));
+    stagedsync::success_or_throw(stagedsync::prune_senders(txn, context.dir().etl().path(), 2));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_1{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(2))).value)};

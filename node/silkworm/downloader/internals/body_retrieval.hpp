@@ -17,23 +17,23 @@
 #ifndef SILKWORM_BODY_RETRIEVAL_HPP
 #define SILKWORM_BODY_RETRIEVAL_HPP
 
-#include "DbTx.hpp"
+#include "db_tx.hpp"
 #include "types.hpp"
 
 namespace silkworm {
 
 class BodyRetrieval {
   public:
-    static const long soft_response_limit = 2 * 1024 * 1024; // Target maximum size of returned blocks, headers or node data.
-    static const long max_bodies_serve = 1024;                // Amount of block bodies to be fetched per retrieval request
+    static const long soft_response_limit = 2 * 1024 * 1024;  // Target maximum size of returned blocks
+    static const long max_bodies_serve = 1024;  // Amount of block bodies to be fetched per retrieval request
 
-    explicit BodyRetrieval(DbTx& db);
+    explicit BodyRetrieval(Db::ReadOnlyAccess db_access);
 
     std::vector<BlockBody> recover(std::vector<Hash>);
 
   protected:
-    DbTx& db_;
+    Db::ReadOnlyAccess::Tx db_tx_;
 };
 
-}
+}  // namespace silkworm
 #endif  // SILKWORM_BODY_RETRIEVAL_HPP

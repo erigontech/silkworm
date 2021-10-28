@@ -28,7 +28,7 @@ void PrefixSet::insert(ByteView key) {
     sorted_ = false;
 }
 
-bool PrefixSet::contains(ByteView prefix) const {
+bool PrefixSet::contains(ByteView prefix) {
     if (keys_.empty()) {
         return false;
     }

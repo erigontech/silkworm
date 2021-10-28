@@ -27,56 +27,73 @@ see its common/dbutils/bucket.go.
 */
 namespace silkworm::db::table {
 
-constexpr const char* kLastHeaderKey = "LastHeader";
+inline constexpr const char* kLastHeaderKey{"LastHeader"};
 
 /* Canonical tables */
-constexpr db::MapConfig kAccountChangeSet{"AccountChangeSet", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
-constexpr db::MapConfig kAccountHistory{"AccountHistory"};
-constexpr db::MapConfig kBlockBodies{"BlockBody"};
 
-constexpr db::MapConfig kCanonicalHashes{"CanonicalHeader"};    // block_num_u64 (BE) -> header_hash
-constexpr db::MapConfig kHeaders{"Header"};                     // block_num_u64 (BE) + hash -> header (RLP)
-constexpr db::MapConfig kDifficulty{"HeadersTotalDifficulty"};  // block_num_u64 (BE) + hash -> total_difficulty (RLP)
+// block_num_u64 (BE) -> address + previous_account (encoded)
+inline constexpr db::MapConfig kAccountChangeSet{"AccountChangeSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
-constexpr db::MapConfig kBlockReceipts{"Receipt"};
-constexpr db::MapConfig kBloomBitsIndex{"BloomBitsIndex"};
-constexpr db::MapConfig kBloomBits{"BloomBits"};
-constexpr db::MapConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
-constexpr db::MapConfig kCallFromIndex{"CallFromIndex"};
-constexpr db::MapConfig kCallToIndex{"CallToIndex"};
-constexpr db::MapConfig kCallTraceSet{"CallTraceSet", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
-constexpr db::MapConfig kClique{"Clique"};
-constexpr db::MapConfig kCode{"Code"};
-constexpr db::MapConfig kConfig{"Config"};
-constexpr db::MapConfig kContractCode{"HashedCodeHash"};
-constexpr db::MapConfig kDatabaseInfo{"DbInfo"};
-constexpr db::MapConfig kEthTx{"BlockTransaction"};
-constexpr db::MapConfig kHashedAccounts{"HashedAccount"};
-constexpr db::MapConfig kHashedStorage{"HashedStorage", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
-constexpr db::MapConfig kHeadBlock{"LastBlock"};
-constexpr db::MapConfig kHeadHeader{"LastHeader"};
-constexpr db::MapConfig kHeaderNumbers{"HeaderNumber"};
-constexpr db::MapConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
-constexpr db::MapConfig kIncarnationMap{"IncarnationMap"};
-constexpr db::MapConfig kLogAddressIndex{"LogAddressIndex"};
-constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
-constexpr db::MapConfig kLogs{"TransactionLog"};
-constexpr db::MapConfig kMigrations{"Migration"};
-constexpr db::MapConfig kPlainContractCode{"PlainCodeHash"};
-constexpr db::MapConfig kPlainState{"PlainState", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
-constexpr db::MapConfig kSenders{"TxSender"};
-constexpr db::MapConfig kSequence{"Sequence"};
-constexpr db::MapConfig kSnapshotInfo{"SnapshotInfo"};
-constexpr db::MapConfig kStateSnapshotInfo{"StateSnapshotInfo"};
-constexpr db::MapConfig kStorageChangeSet{"StorageChangeSet", ::mdbx::key_mode::usual, ::mdbx::value_mode::multi};
-constexpr db::MapConfig kStorageHistory{"StorageHistory"};
-constexpr db::MapConfig kSyncStageProgress{"SyncStage"};      // Progress for stages
-constexpr db::MapConfig kSyncStageUnwind{"SyncStageUnwind"};  // Unwind point for stages
-constexpr db::MapConfig kTrieOfAccounts{"TrieAccount"};
-constexpr db::MapConfig kTrieOfStorage{"TrieStorage"};
-constexpr db::MapConfig kTxLookup{"BlockTransactionLookup"};
+inline constexpr db::MapConfig kAccountHistory{"AccountHistory"};
+inline constexpr db::MapConfig kBlockBodies{"BlockBody"};
 
-constexpr db::MapConfig kTables[]{
+// block_num_u64 (BE) -> header_hash
+inline constexpr db::MapConfig kCanonicalHashes{"CanonicalHeader"};
+
+// block_num_u64 (BE) + hash -> header (RLP)
+inline constexpr db::MapConfig kHeaders{"Header"};
+
+// block_num_u64 (BE) + hash -> total_difficulty (RLP)
+inline constexpr db::MapConfig kDifficulty{"HeadersTotalDifficulty"};
+
+inline constexpr db::MapConfig kBlockReceipts{"Receipt"};
+inline constexpr db::MapConfig kBloomBitsIndex{"BloomBitsIndex"};
+inline constexpr db::MapConfig kBloomBits{"BloomBits"};
+inline constexpr db::MapConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
+inline constexpr db::MapConfig kCallFromIndex{"CallFromIndex"};
+inline constexpr db::MapConfig kCallToIndex{"CallToIndex"};
+inline constexpr db::MapConfig kCallTraceSet{"CallTraceSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
+inline constexpr db::MapConfig kClique{"Clique"};
+inline constexpr db::MapConfig kCode{"Code"};
+inline constexpr db::MapConfig kConfig{"Config"};
+inline constexpr db::MapConfig kContractCode{"HashedCodeHash"};
+inline constexpr db::MapConfig kDatabaseInfo{"DbInfo"};
+inline constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};
+inline constexpr db::MapConfig kHashedAccounts{"HashedAccount"};
+inline constexpr db::MapConfig kHashedStorage{"HashedStorage", mdbx::key_mode::usual, mdbx::value_mode::multi};
+inline constexpr db::MapConfig kHeadBlock{"LastBlock"};
+inline constexpr db::MapConfig kHeadHeader{"LastHeader"};
+inline constexpr db::MapConfig kHeaderNumbers{"HeaderNumber"};
+inline constexpr db::MapConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
+inline constexpr db::MapConfig kIncarnationMap{"IncarnationMap"};
+inline constexpr db::MapConfig kLogAddressIndex{"LogAddressIndex"};
+inline constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
+inline constexpr db::MapConfig kLogs{"TransactionLog"};
+inline constexpr db::MapConfig kMigrations{"Migration"};
+inline constexpr db::MapConfig kPlainContractCode{"PlainCodeHash"};
+inline constexpr db::MapConfig kPlainState{"PlainState", mdbx::key_mode::usual, mdbx::value_mode::multi};
+inline constexpr db::MapConfig kSenders{"TxSender"};
+inline constexpr db::MapConfig kSequence{"Sequence"};
+inline constexpr db::MapConfig kSnapshotInfo{"SnapshotInfo"};
+inline constexpr db::MapConfig kStateSnapshotInfo{"StateSnapshotInfo"};
+
+// block_num_u64 (BE) + address + incarnation_u64 (BE) ->
+// plain_storage_location (32 bytes) + previous_value (no leading zeros)
+inline constexpr db::MapConfig kStorageChangeSet{"StorageChangeSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
+
+inline constexpr db::MapConfig kStorageHistory{"StorageHistory"};
+
+// Progress for stages
+inline constexpr db::MapConfig kSyncStageProgress{"SyncStage"};
+
+// Unwind point for stages
+inline constexpr db::MapConfig kSyncStageUnwind{"SyncStageUnwind"};
+
+inline constexpr db::MapConfig kTrieOfAccounts{"TrieAccount"};
+inline constexpr db::MapConfig kTrieOfStorage{"TrieStorage"};
+inline constexpr db::MapConfig kTxLookup{"BlockTransactionLookup"};
+
+inline constexpr db::MapConfig kTables[]{
     kAccountChangeSet,
     kAccountHistory,
     kBlockBodies,
@@ -95,7 +112,7 @@ constexpr db::MapConfig kTables[]{
     kConfig,
     kContractCode,
     kDatabaseInfo,
-    kEthTx,
+    kBlockTransactions,
     kHashedAccounts,
     kHashedStorage,
     kHeadBlock,

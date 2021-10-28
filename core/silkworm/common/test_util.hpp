@@ -23,7 +23,7 @@
 namespace silkworm::test {
 
 /// Enables London from genesis.
-constexpr ChainConfig kLondonConfig{
+inline constexpr ChainConfig kLondonConfig{
     1,  // chain_id
     SealEngineType::kNoProof,
     {0, 0, 0, 0, 0, 0, 0, 0, 0},

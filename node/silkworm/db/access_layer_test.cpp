@@ -18,10 +18,11 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/chain/protocol_param.hpp>
-#include <silkworm/common/directories.hpp>
-#include <silkworm/common/endian.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/db/buffer.hpp>
+#include <silkworm/db/storage.hpp>
 #include <silkworm/execution/execution.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 
@@ -127,19 +128,15 @@ namespace db {
     }
 
     TEST_CASE("Methods cursor_for_each/cursor_for_count") {
-        TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::Context context;
+        auto& txn{context.txn()};
 
         ::mdbx::map_handle main_map{1};
         auto main_stat{txn.get_map_stat(main_map)};
         auto main_crs{txn.open_cursor(main_map)};
         std::vector<std::string> table_names{};
 
-        const auto& walk_func{[&table_names](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
+        const auto& walk_func{[&table_names](::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
             table_names.push_back(data.key.as_string());
             return true;
         }};
@@ -167,86 +164,126 @@ namespace db {
         CHECK(v2 == v3);
     }
 
+    TEST_CASE("Sequences") {
+        test::Context context;
+        auto& txn{context.txn()};
+
+        auto val1{read_map_sequence(txn, table::kBlockTransactions.name)};
+        REQUIRE(val1 == 0);
+
+        auto val2{increment_map_sequence(txn, table::kBlockTransactions.name, 5)};
+        REQUIRE(val2 == 0);
+        auto val3{read_map_sequence(txn, table::kBlockTransactions.name)};
+        REQUIRE((val3 == 5));
+
+        auto val4{increment_map_sequence(txn, table::kBlockTransactions.name, 3)};
+        REQUIRE(val4 == 5);
+        auto val5{read_map_sequence(txn, table::kBlockTransactions.name)};
+        REQUIRE((val5 == 8));
+
+        context.commit_and_renew_txn();
+        auto& txn2{context.txn()};
+
+        auto val6{read_map_sequence(txn2, table::kBlockTransactions.name)};
+        REQUIRE((val6 == 8));
+
+        // Tamper with sequence
+        Bytes fake_value(sizeof(uint32_t), '\0');
+        mdbx::slice key(table::kBlockTransactions.name);
+        auto tgt{db::open_cursor(txn2, table::kSequence)};
+        tgt.upsert(key, to_slice(fake_value));
+
+        bool thrown{false};
+        try {
+            (void)increment_map_sequence(txn, table::kBlockTransactions.name);
+        } catch (const std::exception& ex) {
+            REQUIRE(std::string(ex.what()) == "Bad sequence value in db");
+            thrown = true;
+        }
+        REQUIRE(thrown);
+    }
+
     TEST_CASE("Read schema Version") {
-        TemporaryDirectory tmp_dir;
+        test::Context context;
 
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
-
-        auto version{db::read_schema_version(txn)};
+        auto version{db::read_schema_version(context.txn())};
         CHECK(version.has_value() == false);
 
         version = VersionBase{3, 0, 0};
-        CHECK_NOTHROW(db::write_schema_version(txn, version.value()));
-        version = db::read_schema_version(txn);
+        CHECK_NOTHROW(db::write_schema_version(context.txn(), version.value()));
+        version = db::read_schema_version(context.txn());
         CHECK(version.has_value() == true);
 
-        CHECK_NOTHROW(txn.commit());
-        txn = env.start_write();
+        context.commit_and_renew_txn();
 
-        auto version2{db::read_schema_version(txn)};
+        auto version2{db::read_schema_version(context.txn())};
         CHECK(version.value() == version2.value());
 
         version2 = VersionBase{2, 0, 0};
-        CHECK_THROWS(db::write_schema_version(txn, version2.value()));
+        CHECK_THROWS(db::write_schema_version(context.txn(), version2.value()));
 
         version2 = VersionBase{3, 1, 0};
-        CHECK_NOTHROW(db::write_schema_version(txn, version2.value()));
+        CHECK_NOTHROW(db::write_schema_version(context.txn(), version2.value()));
     }
 
-    TEST_CASE("Storage Mode") {
-        TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+    TEST_CASE("Storage and Prune Modes") {
+        test::Context context;
+        auto& txn{context.txn()};
 
-        StorageMode default_mode{};
-        CHECK(default_mode.to_string() == "default");
+        SECTION("Prune Mode") {
+            // Uninitialized mode
+            PruneMode default_mode{};
+            CHECK(default_mode.to_string() == "default");
 
-        StorageMode expected_mode{true, false, false, false, false, false};
-        auto actual_mode{db::read_storage_mode(txn)};
-        CHECK(expected_mode == actual_mode);
+            // No value in db -> no pruning
+            auto prune_mode{db::read_prune_mode(txn)};
+            CHECK(prune_mode.to_string() == "--prune=");
+            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
 
-        std::string mode_s1{};
-        auto actual_mode1{db::parse_storage_mode(mode_s1)};
-        CHECK(actual_mode1.to_string() == mode_s1);
+            // Cross-check we have the same value
+            prune_mode = db::read_prune_mode(txn);
+            CHECK(prune_mode.to_string() == "--prune=");
 
-        std::string mode_s2{"default"};
-        auto actual_mode2{db::parse_storage_mode(mode_s2)};
-        CHECK(actual_mode2.to_string() == kDefaultStorageMode.to_string());
+            // Set default prune value for History
+            prune_mode.history.emplace(kDefaultPruneThreshold);
+            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            CHECK(prune_mode.to_string() == "--prune=h");
 
-        std::string mode_s3{"x"};
-        CHECK_THROWS(db::parse_storage_mode(mode_s3));
+            // Set default prune value for receipts
+            prune_mode.receipts.emplace(kDefaultPruneThreshold);
+            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            CHECK(prune_mode.to_string() == "--prune=hr");
 
-        std::string mode_s4{"hrc"};
-        auto actual_mode4{db::parse_storage_mode(mode_s4)};
-        CHECK(actual_mode4.to_string() == mode_s4);
+            // Set default prune value for tx_index and CallTraces
+            prune_mode.tx_index.emplace(kDefaultPruneThreshold);
+            prune_mode.call_traces.emplace(kDefaultPruneThreshold);
+            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            CHECK(prune_mode.to_string() == "--prune=hrtc");
 
-        db::write_storage_mode(txn, actual_mode4);
-        CHECK_NOTHROW(txn.commit());
+            // Set non-default prune value for History
+            prune_mode.history.emplace(1'000u);
+            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            prune_mode = db::read_prune_mode(txn);
+            CHECK(prune_mode.to_string() == "--prune=rtc --prune.h.older=1000");
 
-        txn = env.start_read();
-        auto actual_mode5{db::read_storage_mode(txn)};
-        CHECK(actual_mode4.to_string() == actual_mode5.to_string());
+            // Parse from string with one discrete value
+            std::string mode_str{"hrtc"};
+            prune_mode = db::parse_prune_mode(mode_str, 1'000u);
+            CHECK(prune_mode.to_string() == "--prune=rtc --prune.h.older=1000");
 
-        std::string mode_s6{"hrtce"};
-        auto actual_mode6{db::parse_storage_mode(mode_s6)};
-        CHECK(actual_mode6.to_string() == mode_s6);
+            // Parse from string with all discrete values
+            prune_mode = db::parse_prune_mode(mode_str, 1'000u, 999u, 998u, 997u);
+            CHECK(prune_mode.to_string() ==
+                  "--prune= --prune.h.older=1000 --prune.r.older=999 --prune.t.older=998 --prune.c.older=997");
+        }
     }
 
     TEST_CASE("read_stages") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::Context context;
+        auto& txn{context.txn()};
 
         // Querying a non-existent stage name should throw
         CHECK_THROWS(stages::read_stage_progress(txn, "NonExistentStage"));
@@ -283,13 +320,8 @@ namespace db {
     }
 
     TEST_CASE("read_header") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::Context context;
+        auto& txn{context.txn()};
 
         uint64_t block_num{11'054'435};
 
@@ -306,17 +338,11 @@ namespace db {
         CHECK(!read_header(txn, header.number, hash.bytes));
 
         // Write canonical header hash + header rlp
-        auto canonical_hashes_table{db::open_cursor(txn, table::kCanonicalHashes)};
-        auto k{block_key(block_num)};
-        Bytes v(hash.bytes, kHashLength);
-        canonical_hashes_table.upsert(to_slice(k), to_slice(v));
-
-        auto header_table{db::open_cursor(txn, table::kHeaders)};
-        Bytes key{block_key(header.number, hash.bytes)};
-        header_table.upsert(to_slice(key), to_slice(rlp));
+        CHECK_NOTHROW(write_canonical_header(txn, header));
+        CHECK_NOTHROW(write_header(txn, header, /*with_header_numbers=*/true));
 
         std::optional<BlockHeader> header_from_db{read_header(txn, header.number, hash.bytes)};
-        REQUIRE(header_from_db);
+        REQUIRE(header_from_db.has_value());
         CHECK(*header_from_db == header);
 
         SECTION("read_block") {
@@ -324,24 +350,7 @@ namespace db {
             CHECK(!read_block(txn, block_num, read_senders));
 
             BlockBody body{sample_block_body()};
-
-            detail::BlockBodyForStorage storage_body;
-            storage_body.base_txn_id = 1687896;
-            storage_body.txn_count = body.transactions.size();
-            storage_body.ommers = body.ommers;
-
-            auto body_table{db::open_cursor(txn, table::kBlockBodies)};
-            auto body_data{storage_body.encode()};
-            body_table.upsert(to_slice(key), to_slice(body_data));
-
-            auto txn_table{db::open_cursor(txn, table::kEthTx)};
-            Bytes txn_key(8, '\0');
-            for (size_t i{0}; i < body.transactions.size(); ++i) {
-                endian::store_big_u64(txn_key.data(), storage_body.base_txn_id + i);
-                rlp.clear();
-                rlp::encode(rlp, body.transactions[i]);
-                txn_table.upsert(to_slice(txn_key), to_slice(rlp));
-            }
+            CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number));
 
             std::optional<BlockWithHash> bh{read_block(txn, block_num, read_senders)};
             REQUIRE(bh);
@@ -354,13 +363,14 @@ namespace db {
             CHECK(!bh->block.transactions[1].from);
 
             read_senders = true;
-            CHECK_THROWS_AS(read_block(txn, block_num, read_senders), MissingSenders);
+            CHECK_NOTHROW(read_block(txn, block_num, read_senders));
 
             Bytes full_senders{
                 *from_hex("5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4c"
                           "941591b6ca8e8dd05c69efdec02b77c72dac1496")};
             REQUIRE(full_senders.length() == 2 * kAddressLength);
 
+            Bytes key{block_key(header.number, hash.bytes)};
             ByteView truncated_senders{full_senders.data(), kAddressLength};
             auto sender_table{db::open_cursor(txn, table::kSenders)};
             sender_table.upsert(to_slice(key), to_slice(truncated_senders));
@@ -380,13 +390,8 @@ namespace db {
     }
 
     TEST_CASE("read_account") {
-        TemporaryDirectory tmp_dir;
-        DataDirectory data_dir{tmp_dir.path(), /*create=*/true};
-        EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::Context context;
+        auto& txn{context.txn()};
 
         Buffer buffer{txn, 0};
 
@@ -414,7 +419,7 @@ namespace db {
         buffer.write_to_db();
 
         stagedsync::TransactionManager tm{txn};
-        REQUIRE(stagedsync::stage_account_history(tm, data_dir.etl().path()) == stagedsync::StageResult::kSuccess);
+        REQUIRE(stagedsync::stage_account_history(tm, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());
@@ -426,13 +431,8 @@ namespace db {
     }
 
     TEST_CASE("read_storage") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::Context context;
+        auto& txn{context.txn()};
 
         auto table{db::open_cursor(txn, table::kPlainState)};
 
@@ -467,13 +467,8 @@ namespace db {
     }
 
     TEST_CASE("read_account_changes") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::Context context;
+        auto& txn{context.txn()};
 
         uint64_t block_num1{42};
         uint64_t block_num2{49};
@@ -531,13 +526,8 @@ namespace db {
     }
 
     TEST_CASE("read_storage_changes") {
-        TemporaryDirectory tmp_dir;
-
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::Context context;
+        auto& txn{context.txn()};
 
         uint64_t block_num1{42};
         uint64_t block_num2{49};
@@ -615,12 +605,8 @@ namespace db {
     }
 
     TEST_CASE("read_chain_config") {
-        TemporaryDirectory tmp_dir;
-        db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
-        auto env{db::open_env(db_config)};
-        auto txn{env.start_write()};
-        table::create_all(txn);
+        test::Context context;
+        auto& txn{context.txn()};
 
         const auto chain_config1{read_chain_config(txn)};
         CHECK(chain_config1 == std::nullopt);

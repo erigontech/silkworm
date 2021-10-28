@@ -30,7 +30,7 @@
 namespace silkworm::db::bitmap {
 
 // Erigon bitmapdb.ChunkLimit
-constexpr size_t kBitmapChunkLimit = 1950;
+inline constexpr size_t kBitmapChunkLimit = 1950;
 
 roaring::Roaring64Map read(ByteView serialized);
 

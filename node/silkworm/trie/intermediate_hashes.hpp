@@ -88,9 +88,9 @@ class AccountTrieCursor {
     AccountTrieCursor(const AccountTrieCursor&) = delete;
     AccountTrieCursor& operator=(const AccountTrieCursor&) = delete;
 
-    AccountTrieCursor(mdbx::txn& txn, const PrefixSet& changed);
+    AccountTrieCursor(mdbx::txn& txn, PrefixSet& changed);
 
-    void next(bool skip_children);
+    void next();
 
     // nullopt key signifies end-of-tree
     [[nodiscard]] std::optional<Bytes> key() const;
@@ -99,7 +99,9 @@ class AccountTrieCursor {
 
     [[nodiscard]] bool children_are_in_trie() const;
 
-    [[nodiscard]] bool can_skip_state() const;
+    [[nodiscard]] bool can_skip_state() const { return can_skip_state_; }
+
+    [[nodiscard]] std::optional<Bytes> first_uncovered_prefix() const;
 
   private:
     // TrieAccount node with a particular nibble selected
@@ -119,10 +121,11 @@ class AccountTrieCursor {
 
     void move_to_next_sibling();
 
-    const PrefixSet& changed_;
-    bool at_root_{true};
+    PrefixSet& changed_;
+    int root_nibble_{-1};  // -1 means the very beginning of trie traversal, before any actual nodes
     mdbx::cursor_managed cursor_;
     std::stack<SubNode> stack_;
+    bool can_skip_state_{false};
 };
 
 // Erigon StorageTrieCursor
@@ -152,7 +155,7 @@ class DbTrieLoader {
 
     DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector);
 
-    evmc::bytes32 calculate_root(const PrefixSet& changed);
+    evmc::bytes32 calculate_root(PrefixSet& changed);
 
   private:
     mdbx::txn& txn_;
@@ -177,6 +180,17 @@ evmc::bytes32 regenerate_intermediate_hashes(mdbx::txn& txn, const std::filesyst
 // returns the state root
 evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir, BlockNum from,
                                             const evmc::bytes32* expected_root = nullptr);
+
+// Produces the next key of the same length.
+// It's essentially +1 in the hexadecimal (base 16) numeral system.
+// For example:
+// increment_key(120) = 121,
+// increment_key(12e) = 12f,
+// increment_key(12f) = 130.
+//
+// Returns std::optional if the key is the largest key of its length,
+// i.e. consists only of 0xF nibbles.
+std::optional<Bytes> increment_key(ByteView unpacked);
 
 }  // namespace silkworm::trie
 

@@ -18,21 +18,19 @@
 
 namespace silkworm::rpc {
 
-SetStatus::SetStatus(const ChainIdentity& chain_identity, Hash best_hash, BigInt total_difficulty):
-    UnaryCall("SetStatus", &sentry::Sentry::Stub::SetStatus, {})
-{
+SetStatus::SetStatus(const ChainIdentity& chain_identity, Hash best_hash, BigInt total_difficulty)
+    : UnaryCall("SetStatus", &sentry::Sentry::Stub::SetStatus, {}) {
     request_.set_network_id(chain_identity.chain.chain_id);
 
-    request_.set_allocated_total_difficulty(to_H256(total_difficulty).release()); // remove trailing zeros???
+    request_.set_allocated_total_difficulty(to_H256(total_difficulty).release());  // remove trailing zeros???
 
     request_.set_allocated_best_hash(to_H256(best_hash).release());
 
     auto* forks = new sentry::Forks{};
     forks->set_allocated_genesis(to_H256(chain_identity.genesis_hash).release());
     auto hard_forks = chain_identity.distinct_fork_numbers();
-    for(uint64_t block: hard_forks)
-        forks->add_forks(block);
-    request_.set_allocated_fork_data(forks); // take ownership
+    for (uint64_t block : hard_forks) forks->add_forks(block);
+    request_.set_allocated_fork_data(forks);  // take ownership
 }
 
-}
+}  // namespace silkworm::rpc

@@ -43,7 +43,7 @@ namespace state {
     // Account created.
     class CreateDelta : public Delta {
       public:
-        explicit CreateDelta(evmc::address address) noexcept;
+        explicit CreateDelta(const evmc::address& address) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
@@ -54,20 +54,20 @@ namespace state {
     // Account updated.
     class UpdateDelta : public Delta {
       public:
-        UpdateDelta(evmc::address address, state::Object previous) noexcept;
+        UpdateDelta(const evmc::address& address, const Object& previous) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
       private:
         evmc::address address_;
-        state::Object previous_;
+        Object previous_;
     };
 
     // Account balance updated.
     // UpdateBalanceDelta is a special case of the more general UpdateDelta. It occupies less memory than UpdateDelta.
     class UpdateBalanceDelta : public Delta {
       public:
-        UpdateBalanceDelta(evmc::address address, intx::uint256 previous) noexcept;
+        UpdateBalanceDelta(const evmc::address& address, const intx::uint256& previous) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
@@ -79,7 +79,7 @@ namespace state {
     // Account recorded for self-destruction.
     class SuicideDelta : public Delta {
       public:
-        explicit SuicideDelta(evmc::address address) noexcept;
+        explicit SuicideDelta(const evmc::address& address) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
@@ -90,7 +90,7 @@ namespace state {
     // Account touched.
     class TouchDelta : public Delta {
       public:
-        explicit TouchDelta(evmc::address address) noexcept;
+        explicit TouchDelta(const evmc::address& address) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
@@ -101,7 +101,8 @@ namespace state {
     // Storage value changed.
     class StorageChangeDelta : public Delta {
       public:
-        StorageChangeDelta(evmc::address address, evmc::bytes32 key, evmc::bytes32 previous) noexcept;
+        StorageChangeDelta(const evmc::address& address, const evmc::bytes32& key,
+                           const evmc::bytes32& previous) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
@@ -114,19 +115,19 @@ namespace state {
     // Entire storage deleted.
     class StorageWipeDelta : public Delta {
       public:
-        StorageWipeDelta(evmc::address address, state::Storage storage) noexcept;
+        StorageWipeDelta(const evmc::address& address, Storage storage) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
       private:
         evmc::address address_;
-        state::Storage storage_;
+        Storage storage_;
     };
 
     // Storage created.
     class StorageCreateDelta : public Delta {
       public:
-        explicit StorageCreateDelta(evmc::address address) noexcept;
+        explicit StorageCreateDelta(const evmc::address& address) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
@@ -137,7 +138,7 @@ namespace state {
     // Storage accessed (see EIP-2929).
     class StorageAccessDelta : public Delta {
       public:
-        StorageAccessDelta(evmc::address address, evmc::bytes32 key) noexcept;
+        StorageAccessDelta(const evmc::address& address, const evmc::bytes32& key) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 
@@ -149,7 +150,7 @@ namespace state {
     // Account accessed (see EIP-2929).
     class AccountAccessDelta : public Delta {
       public:
-        explicit AccountAccessDelta(evmc::address address) noexcept;
+        explicit AccountAccessDelta(const evmc::address& address) noexcept;
 
         void revert(IntraBlockState& state) noexcept override;
 

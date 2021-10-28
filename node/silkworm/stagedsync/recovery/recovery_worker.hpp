@@ -58,6 +58,8 @@ class RecoveryWorker final : public silkworm::Worker {
     //! \remarks data_size is expressed as number of transactions to recover per batch times address size
     explicit RecoveryWorker(uint32_t id, size_t data_size);
 
+    ~RecoveryWorker();
+
     //! \brief Feed the worker with a new set of data to process
     //! \param [in] batch_id : identifier of work batch
     //! \param [in] batch : collection of work packages
@@ -87,10 +89,9 @@ class RecoveryWorker final : public silkworm::Worker {
 
   private:
     const uint32_t id_;                                     // Current worker identifier
-    size_t data_size_;                                      // Size of the recovery data buffer
     uint32_t batch_id_{0};                                  // Current batch identifier
     std::vector<RecoveryPackage> batch_;                    // Batch to process
-    uint8_t* data_{nullptr};                                // Pointer to data where results are stored
+    Bytes data_;                                            // Results data buffer
     secp256k1_context* context_;                            // Elliptic curve context;
     std::vector<std::pair<BlockNum, ByteView>> results_{};  // Results per block pointing to data area
     std::string last_error_{};                              // Description of last error occurrence

@@ -121,21 +121,21 @@ static Bytes node_ref(ByteView rlp) {
     return wrap_hash(hash.bytes);
 }
 
-void HashBuilder::add_leaf(ByteView key, ByteView value) {
+void HashBuilder::add_leaf(Bytes key, ByteView value) {
     assert(key > key_);
     if (!key_.empty()) {
         gen_struct_step(key_, key);
     }
-    key_ = key;
+    key_ = std::move(key);
     value_ = Bytes{value};
 }
 
-void HashBuilder::add_branch_node(ByteView key, const evmc::bytes32& value, bool is_in_db_trie) {
+void HashBuilder::add_branch_node(Bytes key, const evmc::bytes32& value, bool is_in_db_trie) {
     assert(key > key_);
     if (!key_.empty()) {
         gen_struct_step(key_, key);
     }
-    key_ = key;
+    key_ = std::move(key);
     value_ = value;
     is_in_db_trie_ = is_in_db_trie;
 }

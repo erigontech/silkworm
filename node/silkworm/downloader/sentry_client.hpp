@@ -19,7 +19,7 @@
 
 #include <interfaces/sentry.grpc.pb.h>
 
-#include "internals/gRPCClient.hpp"
+#include "internals/grpc_sync_client.hpp"
 #include "internals/sentry_type_casts.hpp"
 
 namespace silkworm {
@@ -32,26 +32,27 @@ namespace silkworm {
 // An rpc
 using SentryRpc = rpc::Call<sentry::Sentry>;
 
-// The client
+/*
+ * A client to connect to a remote sentry
+ * The remote sentry must implement the ethereum p2p protocol and must have an interface specified by sentry.proto
+ * SentryClient uses gRPC/protobuf to communicate with the remote sentry.
+ */
 class SentryClient : public rpc::Client<sentry::Sentry> {
   public:
     using base_t = rpc::Client<sentry::Sentry>;
 
-    explicit SentryClient(std::string sentry_addr);
+    explicit SentryClient(std::string sentry_addr);  // connect to the remote sentry
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
 
-    void exec_remotely(SentryRpc& rpc);
+    void exec_remotely(SentryRpc& rpc);  // send a rpc request to the remote sentry
 
-    // grpc::grpc_connectivity_state state() { return channel_->GetState(true); }
-
-    void need_close() { closing_.store(true); }
-    bool closing() { return closing_.load(); }
+    void stop() { stopping_.store(true); }
+    bool is_stopping() const { return stopping_.load(); }
 
   protected:
-    std::atomic<bool> closing_{false};
+    std::atomic<bool> stopping_{false};
 };
 
-
-}
+}  // namespace silkworm
 #endif  // SILKWORM_SENTRY_CLIENT_HPP

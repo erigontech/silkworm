@@ -18,7 +18,8 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/common/directories.hpp>
+#include <silkworm/common/endian.hpp>
+#include <silkworm/common/test_context.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/db/tables.hpp>
 
@@ -45,16 +46,9 @@ static std::string nibbles_to_hex(ByteView unpacked) {
     return out;
 }
 
-TEST_CASE("AccountTrieCursor traversal") {
-    const TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    data_dir.deploy();
-
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
+TEST_CASE("AccountTrieCursor traversal 1") {
+    test::Context context;
+    auto& txn{context.txn()};
 
     auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
 
@@ -83,24 +77,58 @@ TEST_CASE("AccountTrieCursor traversal") {
 
     CHECK((atc.key() != std::nullopt && atc.key()->empty()));  // root
 
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "10");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "10B1");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "10B3");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "11");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "12");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "131");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "132");
-    atc.next(/*skip_children=*/false);
+    atc.next();
     CHECK(nibbles_to_hex(*atc.key()) == "133");
 
-    atc.next(/*skip_children=*/false);
+    atc.next();
+    CHECK(atc.key() == std::nullopt);  // end of trie
+}
+
+TEST_CASE("AccountTrieCursor traversal 2") {
+    test::Context context;
+    auto& txn{context.txn()};
+
+    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+
+    const Bytes key1{nibbles_from_hex("4")};
+    const Node node1{/*state_mask=*/0b10100, /*tree_mask=*/0, /*hash_mask=*/0b00100,
+                     /*hashes=*/{0x0384e6e2c2b33c4eb911a08a7ff57f83dc3eb86d8d0c92ec112f3b416d6685a9_bytes32}};
+    account_trie.upsert(db::to_slice(key1), db::to_slice(marshal_node(node1)));
+
+    const Bytes key2{nibbles_from_hex("6")};
+    const Node node2{/*state_mask=*/0b10010, /*tree_mask=*/0, /*hash_mask=*/0b00010,
+                     /*hashes=*/{0x7f9a58b00625a6e725559acf327baf88d90e4a5b65a2003acd24f110c0441df1_bytes32}};
+    account_trie.upsert(db::to_slice(key2), db::to_slice(marshal_node(node2)));
+
+    PrefixSet changed;
+    AccountTrieCursor atc{txn, changed};
+
+    CHECK((atc.key() != std::nullopt && atc.key()->empty()));  // root
+
+    atc.next();
+    CHECK(nibbles_to_hex(*atc.key()) == "42");
+    atc.next();
+    CHECK(nibbles_to_hex(*atc.key()) == "44");
+    atc.next();
+    CHECK(nibbles_to_hex(*atc.key()) == "61");
+    atc.next();
+    CHECK(nibbles_to_hex(*atc.key()) == "64");
+
+    atc.next();
     CHECK(atc.key() == std::nullopt);  // end of trie
 }
 
@@ -149,7 +177,7 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
 }
 
 static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
-    cursor.to_first();
+    cursor.to_first(/*throw_notfound=*/false);
     std::map<Bytes, Node> out;
     const auto save_nodes{[&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
         const Node node{*unmarshal_node(db::from_slice(entry.value))};
@@ -161,16 +189,8 @@ static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
 }
 
 TEST_CASE("Account and storage trie") {
-    const TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    data_dir.deploy();
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
+    test::Context context;
+    auto& txn{context.txn()};
 
     // ----------------------------------------------------------------
     // Set up test accounts according to the example
@@ -227,7 +247,7 @@ TEST_CASE("Account and storage trie") {
     // ----------------------------------------------------------------
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    regenerate_intermediate_hashes(txn, data_dir.etl().path(), &expected_root);
+    regenerate_intermediate_hashes(txn, context.dir().etl().path(), &expected_root);
 
     // ----------------------------------------------------------------
     // Check account trie
@@ -289,7 +309,7 @@ TEST_CASE("Account and storage trie") {
     auto account_change_table{db::open_cursor(txn, db::table::kAccountChangeSet)};
     account_change_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(address4b));
 
-    increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/0);
+    increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/0);
 
     node_map = read_all_nodes(account_trie);
     CHECK(node_map.size() == 2);
@@ -311,11 +331,10 @@ TEST_CASE("Account and storage trie") {
     // TODO[Issue 179] storage
 
     SECTION("Delete an account") {
-        hashed_accounts.find(mdbx::slice{key2.bytes, kHashLength});
-        hashed_accounts.erase();
+        hashed_accounts.erase(mdbx::slice{key2.bytes, kHashLength});
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
 
-        increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/1);
+        increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/1);
 
         node_map = read_all_nodes(account_trie);
         CHECK(node_map.size() == 1);
@@ -334,15 +353,13 @@ TEST_CASE("Account and storage trie") {
     }
 
     SECTION("Delete several accounts") {
-        hashed_accounts.find(mdbx::slice{key2.bytes, kHashLength});
-        hashed_accounts.erase();
+        hashed_accounts.erase(mdbx::slice{key2.bytes, kHashLength});
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address2));
 
-        hashed_accounts.find(mdbx::slice{key3.bytes, kHashLength});
-        hashed_accounts.erase();
+        hashed_accounts.erase(mdbx::slice{key3.bytes, kHashLength});
         account_change_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(address3));
 
-        increment_intermediate_hashes(txn, data_dir.etl().path(), /*from=*/1);
+        increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/1);
 
         node_map = read_all_nodes(account_trie);
         CHECK(node_map.size() == 1);
@@ -372,16 +389,8 @@ TEST_CASE("Account trie around extension node") {
         0x3100000000000000000000000000000000000000000000000000000000000000_bytes32,
     };
 
-    const TemporaryDirectory tmp_dir;
-    DataDirectory data_dir{tmp_dir.path()};
-    data_dir.deploy();
-
-    // Initialize temporary Database
-    db::EnvConfig db_config{data_dir.chaindata().path().string(), /*create*/ true};
-    db_config.inmemory = true;
-    auto env{db::open_env(db_config)};
-    auto txn{env.start_write()};
-    db::table::create_all(txn);
+    test::Context context;
+    auto& txn{context.txn()};
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
     HashBuilder hb;
@@ -393,7 +402,7 @@ TEST_CASE("Account trie around extension node") {
     }
 
     const evmc::bytes32 expected_root{hb.root_hash()};
-    CHECK(regenerate_intermediate_hashes(txn, data_dir.etl().path()) == expected_root);
+    CHECK(regenerate_intermediate_hashes(txn, context.dir().etl().path()) == expected_root);
 
     auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
 
@@ -417,6 +426,115 @@ TEST_CASE("Account trie around extension node") {
 
     CHECK(node2.root_hash() == std::nullopt);
     CHECK(node2.hashes().size() == 1);
+}
+
+static evmc::address int_to_address(uint64_t i) {
+    uint8_t be[8];
+    endian::store_big_u64(be, i);
+    return to_address(full_view(be));
+}
+
+TEST_CASE("Incremental vs regeneration") {
+    test::Context context;
+    auto& txn{context.txn()};
+
+    static constexpr size_t n{10'000};
+
+    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
+    auto account_change_table{db::open_cursor(txn, db::table::kAccountChangeSet)};
+    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+
+    // ------------------------------------------------------------------------------
+    // Take A: create some genesis accounts and then apply some changes
+    // ------------------------------------------------------------------------------
+
+    // Start with 3n accounts at genesis, each holding 1 ETH
+    const Account one_eth{0, 1 * kEther};
+    for (size_t i{0}; i < 3 * n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(one_eth.encode_for_storage()));
+    }
+
+    regenerate_intermediate_hashes(txn, context.dir().etl().path());
+
+    const Bytes block_key{db::block_key(1)};
+
+    // Double the balance of the first third of the accounts
+    const Account two_eth{0, 2 * kEther};
+    for (size_t i{0}; i < n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(two_eth.encode_for_storage()));
+        account_change_table.upsert(db::to_slice(block_key), db::to_slice(address));
+    }
+
+    // Delete the second third of the accounts
+    for (size_t i{n}; i < 2 * n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.erase(mdbx::slice{hash.bytes, kHashLength});
+        account_change_table.upsert(db::to_slice(block_key), db::to_slice(address));
+    }
+
+    // Don't touch the last third of genesis accounts
+
+    // And add some new accounts, each holding 1 ETH
+    for (size_t i{3 * n}; i < 4 * n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(one_eth.encode_for_storage()));
+        account_change_table.upsert(db::to_slice(block_key), db::to_slice(address));
+    }
+
+    const auto incremental_root{increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/0)};
+
+    const std::map<Bytes, Node> incremental_nodes{read_all_nodes(account_trie)};
+
+    // ------------------------------------------------------------------------------
+    // Take B: generate intermediate hashes for the accounts as of Block 1 in one go,
+    // without increment_intermediate_hashes
+    // ------------------------------------------------------------------------------
+    txn.clear_map(db::open_map(txn, db::table::kHashedAccounts));
+    txn.clear_map(db::open_map(txn, db::table::kAccountChangeSet));
+
+    // Accounts [0,n) now hold 2 ETH
+    for (size_t i{0}; i < n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(two_eth.encode_for_storage()));
+    }
+
+    // Accounts [n,2n) are deleted
+
+    // Accounts [2n,4n) hold 1 ETH
+    for (size_t i{2 * n}; i < 4 * n; ++i) {
+        const evmc::address address{int_to_address(i)};
+        const auto hash{keccak256(full_view(address))};
+        hashed_accounts.upsert(mdbx::slice{hash.bytes, kHashLength}, db::to_slice(one_eth.encode_for_storage()));
+    }
+
+    const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+
+    const std::map<Bytes, Node> fused_nodes{read_all_nodes(account_trie)};
+
+    // ------------------------------------------------------------------------------
+    // A and B should yield the same result
+    // ------------------------------------------------------------------------------
+    CHECK(fused_root == incremental_root);
+    CHECK(fused_nodes == incremental_nodes);
+}
+
+TEST_CASE("increment_key") {
+    CHECK(increment_key({}) == std::nullopt);
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("12"))) == "13");
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("1F"))) == "20");
+    CHECK(increment_key(nibbles_from_hex("FF")) == std::nullopt);
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("120"))) == "121");
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("12E"))) == "12F");
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("12F"))) == "130");
+    CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("1FF"))) == "200");
+    CHECK(increment_key(nibbles_from_hex("FFF")) == std::nullopt);
 }
 
 }  // namespace silkworm::trie

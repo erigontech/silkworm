@@ -83,6 +83,8 @@ TEST_CASE("Config revision") {
     CHECK(kMainnetConfig.revision(12'965'000) == EVMC_LONDON);
     CHECK(kMainnetConfig.revision(12'965'001) == EVMC_LONDON);
     CHECK(kMainnetConfig.revision(13'000'000) == EVMC_LONDON);
+    CHECK(kMainnetConfig.revision(13'773'000) == EVMC_LONDON);  // Arrow Glacier doesn't have an evmc_revision
+    CHECK(kMainnetConfig.revision(14'000'000) == EVMC_LONDON);
 }
 
 TEST_CASE("JSON serialization") {
@@ -108,6 +110,7 @@ TEST_CASE("JSON serialization") {
             "muirGlacierBlock":9200000,
             "berlinBlock":12244000,
             "londonBlock":12965000,
+            "arrowGlacierBlock":13773000,
             "ethash":{}
         })");
 

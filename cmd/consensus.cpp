@@ -62,7 +62,7 @@ static const std::vector<fs::path> kExcludedTests{
     kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
 };
 
-constexpr size_t kColumnWidth{80};
+static constexpr size_t kColumnWidth{80};
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier",

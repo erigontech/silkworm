@@ -33,7 +33,7 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-constexpr size_t kBitmapBufferSizeLimit = 512_Mebi;
+static constexpr size_t kBitmapBufferSizeLimit = 512_Mebi;
 
 static void loader_function(const etl::Entry& entry, mdbx::cursor& target_table, MDBX_put_flags_t db_flags) {
     auto bm{roaring::Roaring::readSafe(byte_ptr_cast(entry.value.data()), entry.value.size())};

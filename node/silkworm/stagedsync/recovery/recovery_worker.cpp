@@ -18,16 +18,19 @@
 
 namespace silkworm::stagedsync::recovery {
 
-RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id), data_size_{data_size} {
-    // Try allocate enough memory to store results output
+RecoveryWorker::RecoveryWorker(uint32_t id, size_t data_size) : id_(id) {
+    // Allocate enough memory to store results output
     assert(data_size % kAddressLength == 0);
-    data_ = static_cast<uint8_t*>(std::calloc(1, data_size_));
-    if (!data_) {
-        throw std::runtime_error("Memory allocation failed");
-    }
+    data_.resize(data_size);
     context_ = ecdsa::create_context();
     if (!context_) {
         throw std::runtime_error("Could not create elliptic curve context");
+    }
+}
+
+RecoveryWorker::~RecoveryWorker() {
+    if (context_) {
+        std::free(context_);
     }
 }
 
@@ -107,12 +110,6 @@ void RecoveryWorker::work() {
 
         // Raise finished event
         signal_completed(this);
-        batch_.resize(0);
     }
-
-    std::free(data_);
-    std::free(context_);
-    batch_.clear();
 }
-
 }  // namespace silkworm::stagedsync::recovery

@@ -289,7 +289,7 @@ std::optional<Bytes> bn_mul_run(ByteView input) noexcept {
     return snark::encode_g1_element(product);
 }
 
-constexpr size_t kSnarkvStride{192};
+static constexpr size_t kSnarkvStride{192};
 
 uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
     uint64_t k{input.length() / kSnarkvStride};

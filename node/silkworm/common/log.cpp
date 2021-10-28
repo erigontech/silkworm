@@ -22,12 +22,12 @@
 
 namespace silkworm {
 
-teestream log_streams_{std::cerr, null_stream()};
+static teestream log_streams_{std::cerr, null_stream()};
 
 LogLevel log_verbosity_{LogLevel::Info};
 bool log_thread_enabled_{false};
 
-constexpr char const kLogTags_[7][6] = {
+static constexpr char const kLogTags_[7][6] = {
     "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",
 };
 

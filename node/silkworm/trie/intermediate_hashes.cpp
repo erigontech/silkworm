@@ -337,7 +337,6 @@ static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::fi
 
 // See Erigon (p *HashPromoter) Promote
 static void changed_accounts(mdbx::txn& txn, BlockNum from, PrefixSet& out) {
-    // TODO[Issue 179] delete TrieStorage for deleted accounts
     const Bytes starting_key{db::block_key(from + 1)};
 
     auto change_cursor{db::open_cursor(txn, db::table::kAccountChangeSet)};

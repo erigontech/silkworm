@@ -240,6 +240,8 @@ std::set<Hash> PersistedChain::remove_headers(BlockNum unwind_point, Hash bad_bl
 
     BlockNum headers_height = tx.read_stage_progress(db::stages::kHeadersKey);
 
+    // todo: the following code changed in Erigon, adeguate
+
     bool is_bad_block = (bad_block != Hash{});
     for (BlockNum current_height = headers_height; current_height > unwind_point; current_height--) {
         if (is_bad_block) {
@@ -256,7 +258,7 @@ std::set<Hash> PersistedChain::remove_headers(BlockNum unwind_point, Hash bad_bl
 
         tx.write_head_header_hash(max_hash);
 
-        max_block_num_ok = max_block_num;
+        max_block_num_ok = max_block_num ? max_block_num : unwind_point;
     }
 
     return bad_headers;

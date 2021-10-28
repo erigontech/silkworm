@@ -53,27 +53,28 @@ class ByteView : public std::basic_string_view<uint8_t> {
 
 using BlockNum = uint64_t;
 
-constexpr size_t kAddressLength{20};
+inline constexpr size_t kAddressLength{20};
 
-constexpr size_t kHashLength{32};
+inline constexpr size_t kHashLength{32};
 
 // Keccak-256 hash of an empty string, KEC("").
-constexpr evmc::bytes32 kEmptyHash{0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32};
+inline constexpr evmc::bytes32 kEmptyHash{0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32};
 
 // Keccak-256 hash of the RLP of an empty list, KEC("\xc0").
-constexpr evmc::bytes32 kEmptyListHash{0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes32};
+inline constexpr evmc::bytes32 kEmptyListHash{
+    0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes32};
 
 // Root hash of an empty trie.
-constexpr evmc::bytes32 kEmptyRoot{0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32};
+inline constexpr evmc::bytes32 kEmptyRoot{0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32};
 
 // https://en.wikipedia.org/wiki/Binary_prefix
-constexpr uint64_t kKibi{1024};
-constexpr uint64_t kMebi{1024 * kKibi};
-constexpr uint64_t kGibi{1024 * kMebi};
-constexpr uint64_t kTebi{1024 * kGibi};
+inline constexpr uint64_t kKibi{1024};
+inline constexpr uint64_t kMebi{1024 * kKibi};
+inline constexpr uint64_t kGibi{1024 * kMebi};
+inline constexpr uint64_t kTebi{1024 * kGibi};
 
-constexpr uint64_t kGiga{1'000'000'000};   // = 10^9
-constexpr uint64_t kEther{kGiga * kGiga};  // = 10^18
+inline constexpr uint64_t kGiga{1'000'000'000};   // = 10^9
+inline constexpr uint64_t kEther{kGiga * kGiga};  // = 10^18
 
 constexpr uint64_t operator"" _Kibi(unsigned long long x) { return x * kKibi; }
 constexpr uint64_t operator"" _Mebi(unsigned long long x) { return x * kMebi; }

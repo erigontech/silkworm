@@ -22,6 +22,9 @@
 
 namespace silkworm {
 
+/*
+ * HeaderRetrieval has the responsibility to retrieve BlockHeader from the db using the hash or the block number.
+ */
 class HeaderRetrieval {
   public:
     static const long soft_response_limit = 2 * 1024 * 1024;  // Target maximum size of returned blocks

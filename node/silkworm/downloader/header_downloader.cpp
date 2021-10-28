@@ -19,6 +19,7 @@
 #include <thread>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/chain/preverified_hashes.hpp>
 
 #include "internals/header_retrieval.hpp"
 #include "messages/InboundGetBlockHeaders.hpp"
@@ -28,15 +29,13 @@
 #include "rpc/ReceiveMessages.hpp"
 #include "rpc/SetStatus.hpp"
 
-// todo: implement sentry ready check before usage & sentry reconnect semantics
-
 namespace silkworm {
 
 HeaderDownloader::HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_access, ChainIdentity chain_identity)
     : chain_identity_(std::move(chain_identity)), db_access_{db_access}, sentry_{sentry} {
     auto tx = db_access_.start_ro_tx();
     working_chain_.recover_initial_state(tx);
-    // working_chain_.set_preverified_hashes(...); // todo: activate
+    working_chain_.set_preverified_hashes(&(PreverifiedHashes::per_chain.at(chain_identity.chain.chain_id)));
 }
 
 HeaderDownloader::~HeaderDownloader() {
@@ -97,162 +96,6 @@ void HeaderDownloader::execution_loop() {
         message->execute();
     }
 }
-
-/*
-// HeadersForward progresses Headers stage in the forward direction
-func HeadersForward(
-	s *StageState,
-	u Unwinder,
-	ctx context.Context,
-	tx ethdb.RwTx,
-	cfg HeadersCfg,
-	initialCycle bool,
-	test bool, // Set to true in tests, allows the stage to fail rather than wait indefinitely
-) error {
-	var headerProgress uint64
-	var err error
-	useExternalTx := tx != nil
-	if !useExternalTx {
-		tx, err = cfg.db.BeginRw(ctx)
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-	}
-	if err = cfg.hd.ReadProgressFromDb(tx); err != nil {
-		return err
-	}
-	cfg.hd.SetFetching(true)
-	defer cfg.hd.SetFetching(false)
-	headerProgress = cfg.hd.Progress()
-	logPrefix := s.LogPrefix()
-	// Check if this is called straight after the unwinds, which means we need to create new canonical markings
-	hash, err := rawdb.ReadCanonicalHash(tx, headerProgress)
-	if err != nil {
-		return err
-	}
-	logEvery := time.NewTicker(logInterval)
-	defer logEvery.Stop()
-	if hash == (common.Hash{}) {
-		headHash := rawdb.ReadHeadHeaderHash(tx)
-		if err = fixCanonicalChain(logPrefix, logEvery, headerProgress, headHash, tx); err != nil {
-			return err
-		}
-		if !useExternalTx {
-			if err = tx.Commit(); err != nil {
-				return err
-			}
-		}
-		s.Done()
-		return nil
-	}
-
-	log.Info(fmt.Sprintf("[%s] Waiting for headers...", logPrefix), "from", headerProgress)
-
-	localTd, err := rawdb.ReadTd(tx, hash, headerProgress)
-	if err != nil {
-		return err
-	}
-	headerInserter := headerdownload.NewHeaderInserter(logPrefix, localTd, headerProgress)
-	cfg.hd.SetHeaderReader(&chainReader{config: &cfg.chainConfig, tx: tx})
-
-	var peer []byte
-	stopped := false
-	prevProgress := headerProgress
-	for !stopped {
-		currentTime := uint64(time.Now().Unix())
-		req, penalties := cfg.hd.RequestMoreHeaders(currentTime)
-		if req != nil {
-			peer = cfg.headerReqSend(ctx, req)
-			if peer != nil {
-				cfg.hd.SentRequest(req, currentTime, 5 ) // 5 = timeout
-				log.Debug("Sent request", "height", req.Number)
-			}
-		}
-		cfg.penalize(ctx, penalties)
-		maxRequests := 64 // Limit number of requests sent per round to let some headers to be inserted into the database
-		for req != nil && peer != nil && maxRequests > 0 {
-			req, penalties = cfg.hd.RequestMoreHeaders(currentTime)
-			if req != nil {
-				peer = cfg.headerReqSend(ctx, req)
-				if peer != nil {
-					cfg.hd.SentRequest(req, currentTime, 5 ) // 5 = timeout
-					log.Debug("Sent request", "height", req.Number)
-				}
-			}
-			cfg.penalize(ctx, penalties)
-			maxRequests--
-		}
-
-		// Send skeleton request if required
-		req = cfg.hd.RequestSkeleton()
-		if req != nil {
-			peer = cfg.headerReqSend(ctx, req)
-			if peer != nil {
-				log.Debug("Sent skeleton request", "height", req.Number)
-			}
-		}
-		// Load headers into the database
-		var inSync bool
-		if inSync, err = cfg.hd.InsertHeaders(headerInserter.FeedHeaderFunc(tx), logPrefix, logEvery.C); err != nil {
-			return err
-		}
-		announces := cfg.hd.GrabAnnounces()
-		if len(announces) > 0 {
-			cfg.announceNewHashes(ctx, announces)
-		}
-		if headerInserter.BestHeaderChanged() { // We do not break unless there best header changed
-			if !initialCycle {
-				// if this is not an initial cycle, we need to react quickly when new headers are coming in
-				break
-			}
-			// if this is initial cycle, we want to make sure we insert all known headers (inSync)
-			if inSync {
-				break
-			}
-		}
-		if test {
-			break
-		}
-		timer := time.NewTimer(1 * time.Second)
-		select {
-		case <-ctx.Done():
-			stopped = true
-		case <-logEvery.C:
-			progress := cfg.hd.Progress()
-			logProgressHeaders(logPrefix, prevProgress, progress)
-			prevProgress = progress
-		case <-timer.C:
-			log.Trace("RequestQueueTime (header) ticked")
-		case <-cfg.hd.DeliveryNotify:
-			log.Debug("headerLoop woken up by the incoming request")
-		}
-		timer.Stop()
-	}
-	if headerInserter.Unwind() {
-		if err := u.UnwindTo(headerInserter.UnwindPoint(), tx, common.Hash{}); err != nil {
-			return fmt.Errorf("%s: failed to unwind to %d: %w", logPrefix, headerInserter.UnwindPoint(), err)
-		}
-	} else if headerInserter.GetHighest() != 0 {
-		if err := fixCanonicalChain(logPrefix, logEvery, headerInserter.GetHighest(), headerInserter.GetHighestHash(), tx); err != nil {
-			return fmt.Errorf("%s: failed to fix canonical chain: %w", logPrefix, err)
-		}
-	}
-	s.Done()
-	if !useExternalTx {
-		if err := tx.Commit(); err != nil {
-			return err
-		}
-	}
-	if stopped {
-		return common.ErrStopped
-	}
-	// We do not print the followin line if the stage was interrupted
-	log.Info(fmt.Sprintf("[%s] Processed", logPrefix), "highest inserted", headerInserter.GetHighest(), "age", common.PrettyAge(time.Unix(int64(headerInserter.GetHighestTimestamp()), 0)))
-	stageHeadersGauge.Update(int64(cfg.hd.Progress()))
-	return nil
-}
-*/
 
 auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     using std::shared_ptr;
@@ -343,97 +186,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     return result;
 }
 
-/*
-func HeadersUnwind(u *UnwindState, s *StageState, tx ethdb.RwTx, cfg HeadersCfg) error {
-	var err error
-	useExternalTx := tx != nil
-	if !useExternalTx {
-		tx, err = cfg.db.BeginRw(context.Background())
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback()
-	}
-	// Delete canonical hashes that are being unwound
-	var headerProgress uint64
-	headerProgress, err = stages.GetStageProgress(tx, stages.Headers)
-	if err != nil {
-		return err
-	}
-	badBlock := u.BadBlock != (common.Hash{})
-	for blockHeight := headerProgress; blockHeight > u.UnwindPoint; blockHeight-- {
-		if badBlock {
-			var hash common.Hash
-			if hash, err = rawdb.ReadCanonicalHash(tx, blockHeight); err != nil {
-				return err
-			}
-			cfg.hd.ReportBadHeader(hash)
-		}
-		if err = rawdb.DeleteCanonicalHash(tx, blockHeight); err != nil {
-			return err
-		}
-	}
-	if u.BadBlock != (common.Hash{}) {
-		cfg.hd.ReportBadHeader(u.BadBlock)
-		// Find header with biggest TD
-		tdCursor, cErr := tx.Cursor(dbutils.HeaderTDBucket)
-		if cErr != nil {
-			return cErr
-		}
-		defer tdCursor.Close()
-		var k, v []byte
-		k, v, err = tdCursor.Last()
-		if err != nil {
-			return err
-		}
-		var maxTd big.Int
-		var maxHash common.Hash
-		var maxNum uint64 = 0
-		for ; err == nil && k != nil; k, v, err = tdCursor.Prev() {
-			if len(k) != 40 {
-				return fmt.Errorf("key in TD table has to be 40 bytes long: %x", k)
-			}
-			var hash common.Hash
-			copy(hash[:], k[8:])
-			if cfg.hd.IsBadHeader(hash) {
-				continue
-			}
-			var td big.Int
-			if err = rlp.DecodeBytes(v, &td); err != nil {
-				return err
-			}
-			if td.Cmp(&maxTd) > 0 {
-				maxTd.Set(&td)
-				copy(maxHash[:], k[8:])
-				maxNum = binary.BigEndian.Uint64(k[:8])
-			}
-		}
-		if err != nil {
-			return err
-		}
-		if maxNum == 0 {
-			// Read genesis hash
-			if maxHash, err = rawdb.ReadCanonicalHash(tx, 0); err != nil {
-				return err
-			}
-		}
-		if err = rawdb.WriteHeadHeaderHash(tx, maxHash); err != nil {
-			return err
-		}
-		if err = s.DoneAndUpdate(tx, maxNum); err != nil {
-			return err
-		}
-	} else if err = u.Skip(tx); err != nil {
-		return err
-	}
-	if !useExternalTx {
-		if err := tx.Commit(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-*/
+
 auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
     Stage::Result result;
 

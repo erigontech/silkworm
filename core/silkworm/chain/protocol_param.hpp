@@ -27,49 +27,49 @@ namespace silkworm {
 // https://ethereum.github.io/yellowpaper/paper.pdf
 namespace fee {
 
-    constexpr uint64_t kGSLoadTangerineWhistle{200};
-    constexpr uint64_t kGSLoadIstanbul{800};
-    constexpr uint64_t kWarmStorageReadCost{100};         // EIP-2929
-    constexpr uint64_t kColdSloadCost{2'100};             // EIP-2929
-    constexpr uint64_t kAccessListStorageKeyCost{1'900};  // EIP-2930
-    constexpr uint64_t kAccessListAddressCost{2'400};     // EIP-2930
+    inline constexpr uint64_t kGSLoadTangerineWhistle{200};
+    inline constexpr uint64_t kGSLoadIstanbul{800};
+    inline constexpr uint64_t kWarmStorageReadCost{100};         // EIP-2929
+    inline constexpr uint64_t kColdSloadCost{2'100};             // EIP-2929
+    inline constexpr uint64_t kAccessListStorageKeyCost{1'900};  // EIP-2930
+    inline constexpr uint64_t kAccessListAddressCost{2'400};     // EIP-2930
 
-    constexpr uint64_t kGSSet{20'000};
-    constexpr uint64_t kGSReset{5'000};
+    inline constexpr uint64_t kGSSet{20'000};
+    inline constexpr uint64_t kGSReset{5'000};
 
-    constexpr uint64_t kRSClear{15'000};
-    constexpr uint64_t kRSelfDestruct{24'000};
+    inline constexpr uint64_t kRSClear{15'000};
+    inline constexpr uint64_t kRSelfDestruct{24'000};
 
-    constexpr uint64_t kGCodeDeposit{200};
+    inline constexpr uint64_t kGCodeDeposit{200};
 
-    constexpr uint64_t kGTxCreate{32'000};
-    constexpr uint64_t kGTxDataZero{4};
-    constexpr uint64_t kGTxDataNonZeroFrontier{68};
-    constexpr uint64_t kGTxDataNonZeroIstanbul{16};
-    constexpr uint64_t kGTransaction{21'000};
+    inline constexpr uint64_t kGTxCreate{32'000};
+    inline constexpr uint64_t kGTxDataZero{4};
+    inline constexpr uint64_t kGTxDataNonZeroFrontier{68};
+    inline constexpr uint64_t kGTxDataNonZeroIstanbul{16};
+    inline constexpr uint64_t kGTransaction{21'000};
 
 }  // namespace fee
 
 namespace param {
 
     // https://eips.ethereum.org/EIPS/eip-170
-    constexpr size_t kMaxCodeSize{0x6000};
+    inline constexpr size_t kMaxCodeSize{0x6000};
 
-    constexpr uint64_t kBlockRewardFrontier{5 * kEther};
-    constexpr uint64_t kBlockRewardByzantium{3 * kEther};
-    constexpr uint64_t kBlockRewardConstantinople{2 * kEther};
+    inline constexpr uint64_t kBlockRewardFrontier{5 * kEther};
+    inline constexpr uint64_t kBlockRewardByzantium{3 * kEther};
+    inline constexpr uint64_t kBlockRewardConstantinople{2 * kEther};
 
-    constexpr uint64_t kGQuadDivisorByzantium{20};  // EIP-198
-    constexpr uint64_t kGQuadDivisorBerlin{3};      // EIP-2565
+    inline constexpr uint64_t kGQuadDivisorByzantium{20};  // EIP-198
+    inline constexpr uint64_t kGQuadDivisorBerlin{3};      // EIP-2565
 
     // https://eips.ethereum.org/EIPS/eip-3529
-    constexpr uint64_t kMaxRefundQuotientFrontier{2};
-    constexpr uint64_t kMaxRefundQuotientLondon{5};
+    inline constexpr uint64_t kMaxRefundQuotientFrontier{2};
+    inline constexpr uint64_t kMaxRefundQuotientLondon{5};
 
     // https://eips.ethereum.org/EIPS/eip-1559
-    constexpr uint64_t kInitialBaseFee{1'000'000'000};
-    constexpr uint64_t kBaseFeeMaxChangeDenominator{8};
-    constexpr uint64_t kElasticityMultiplier{2};
+    inline constexpr uint64_t kInitialBaseFee{1'000'000'000};
+    inline constexpr uint64_t kBaseFeeMaxChangeDenominator{8};
+    inline constexpr uint64_t kElasticityMultiplier{2};
 
 }  // namespace param
 

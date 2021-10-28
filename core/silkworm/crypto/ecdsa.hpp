@@ -28,10 +28,10 @@
 
 namespace silkworm::ecdsa {
 
-constexpr auto kSecp256k1n{
+inline constexpr auto kSecp256k1n{
     intx::from_string<intx::uint256>("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141")};
 
-constexpr auto kSecp256k1Halfn{kSecp256k1n >> 1};
+inline constexpr auto kSecp256k1Halfn{kSecp256k1n >> 1};
 
 struct YParityAndChainId {
     bool odd{false};

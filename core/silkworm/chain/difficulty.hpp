@@ -23,7 +23,7 @@
 
 namespace silkworm {
 
-constexpr uint64_t kMinDifficulty{131072};
+inline constexpr uint64_t kMinDifficulty{131072};
 
 // Canonical difficulty of a block header in Frontier.
 // See https://eips.ethereum.org/EIPS/eip-2.

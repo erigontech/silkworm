@@ -35,8 +35,8 @@
 
 namespace silkworm::db {
 
-constexpr std::string_view kDbDataFileName{"mdbx.dat"};
-constexpr std::string_view kDbLockFileName{"mdbx.lck"};
+inline constexpr std::string_view kDbDataFileName{"mdbx.dat"};
+inline constexpr std::string_view kDbLockFileName{"mdbx.lck"};
 
 //! \brief Pointer to a processing function invoked by cursor_for_each & cursor_for_count on each record
 //! \param [in] _cursor : A reference to the cursor

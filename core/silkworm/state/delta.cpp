@@ -22,50 +22,51 @@
 
 namespace silkworm::state {
 
-CreateDelta::CreateDelta(evmc::address address) noexcept : address_{std::move(address)} {}
+CreateDelta::CreateDelta(const evmc::address& address) noexcept : address_{address} {}
 
 void CreateDelta::revert(IntraBlockState& state) noexcept { state.objects_.erase(address_); }
 
-UpdateDelta::UpdateDelta(evmc::address address, state::Object previous) noexcept
-    : address_{std::move(address)}, previous_{std::move(previous)} {}
+UpdateDelta::UpdateDelta(const evmc::address& address, const Object& previous) noexcept
+    : address_{address}, previous_{previous} {}
 
 void UpdateDelta::revert(IntraBlockState& state) noexcept { state.objects_[address_] = previous_; }
 
-UpdateBalanceDelta::UpdateBalanceDelta(evmc::address address, intx::uint256 previous) noexcept
-    : address_{std::move(address)}, previous_{std::move(previous)} {}
+UpdateBalanceDelta::UpdateBalanceDelta(const evmc::address& address, const intx::uint256& previous) noexcept
+    : address_{address}, previous_{previous} {}
 
 void UpdateBalanceDelta::revert(IntraBlockState& state) noexcept {
     state.objects_[address_].current->balance = previous_;
 }
 
-SuicideDelta::SuicideDelta(evmc::address address) noexcept : address_{std::move(address)} {}
+SuicideDelta::SuicideDelta(const evmc::address& address) noexcept : address_{address} {}
 
 void SuicideDelta::revert(IntraBlockState& state) noexcept { state.self_destructs_.erase(address_); }
 
-TouchDelta::TouchDelta(evmc::address address) noexcept : address_{std::move(address)} {}
+TouchDelta::TouchDelta(const evmc::address& address) noexcept : address_{address} {}
 
 void TouchDelta::revert(IntraBlockState& state) noexcept { state.touched_.erase(address_); }
 
-StorageChangeDelta::StorageChangeDelta(evmc::address address, evmc::bytes32 key, evmc::bytes32 previous) noexcept
-    : address_{std::move(address)}, key_{std::move(key)}, previous_{std::move(previous)} {}
+StorageChangeDelta::StorageChangeDelta(const evmc::address& address, const evmc::bytes32& key,
+                                       const evmc::bytes32& previous) noexcept
+    : address_{address}, key_{key}, previous_{previous} {}
 
 void StorageChangeDelta::revert(IntraBlockState& state) noexcept { state.storage_[address_].current[key_] = previous_; }
 
-StorageWipeDelta::StorageWipeDelta(evmc::address address, state::Storage storage) noexcept
-    : address_{std::move(address)}, storage_{std::move(storage)} {}
+StorageWipeDelta::StorageWipeDelta(const evmc::address& address, Storage storage) noexcept
+    : address_{address}, storage_{std::move(storage)} {}
 
 void StorageWipeDelta::revert(IntraBlockState& state) noexcept { state.storage_[address_] = storage_; }
 
-StorageCreateDelta::StorageCreateDelta(evmc::address address) noexcept : address_{std::move(address)} {}
+StorageCreateDelta::StorageCreateDelta(const evmc::address& address) noexcept : address_{address} {}
 
 void StorageCreateDelta::revert(IntraBlockState& state) noexcept { state.storage_.erase(address_); }
 
-StorageAccessDelta::StorageAccessDelta(evmc::address address, evmc::bytes32 key) noexcept
-    : address_{std::move(address)}, key_{std::move(key)} {}
+StorageAccessDelta::StorageAccessDelta(const evmc::address& address, const evmc::bytes32& key) noexcept
+    : address_{address}, key_{key} {}
 
 void StorageAccessDelta::revert(IntraBlockState& state) noexcept { state.accessed_storage_keys_[address_].erase(key_); }
 
-AccountAccessDelta::AccountAccessDelta(evmc::address address) noexcept : address_{std::move(address)} {}
+AccountAccessDelta::AccountAccessDelta(const evmc::address& address) noexcept : address_{address} {}
 
 void AccountAccessDelta::revert(IntraBlockState& state) noexcept { state.accessed_addresses_.erase(address_); }
 

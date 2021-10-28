@@ -25,9 +25,9 @@ namespace silkworm::dao {
 
 using namespace evmc::literals;
 
-constexpr evmc::address kWithdraw{0xbf4ed7b27f1d666546e30d74d50d173d20bca754_address};
+inline constexpr evmc::address kWithdraw{0xbf4ed7b27f1d666546e30d74d50d173d20bca754_address};
 
-constexpr evmc::address kChildren[]{
+inline constexpr evmc::address kChildren[]{
     0xd4fe7bc31cedb7bfb8a345f31e668033056b2728_address, 0xb3fb0e5aba0e20e5c49d252dfd30e102b171a425_address,
     0x2c19c7f9ae8b751e37aeb2d93a699722395ae18f_address, 0xecd135fa4f61a655311e86238c92adcd779555d2_address,
     0x1975bd06d486162d5dc297798dfc41edd5d160a7_address, 0xa3acf3a1e16b1d7c315e23510fdd7847b48234f6_address,

@@ -26,7 +26,7 @@
 
 namespace silkworm {
 
-constexpr size_t kBloomByteLength{256};
+inline constexpr size_t kBloomByteLength{256};
 
 using Bloom = std::array<uint8_t, kBloomByteLength>;
 

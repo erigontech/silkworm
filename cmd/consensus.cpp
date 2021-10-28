@@ -270,7 +270,7 @@ static void check_rlp_err(rlp::DecodingResult err) {
 }
 
 ExecutionStatePool state_pool;
-evmc_vm* evm{nullptr};
+evmc_vm* exo_evm{nullptr};
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
 void init_pre_state(const nlohmann::json& pre, State& state) {
@@ -410,7 +410,7 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfig>) {
+Status blockchain_test(const nlohmann::json& json_test, const std::optional<ChainConfig>&) {
     Bytes genesis_rlp{from_hex(json_test["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
@@ -431,7 +431,7 @@ Status blockchain_test(const nlohmann::json& json_test, std::optional<ChainConfi
 
     Blockchain blockchain{state, consensus_engine, config, genesis_block};
     blockchain.state_pool = &state_pool;
-    blockchain.exo_evm = evm;
+    blockchain.exo_evm = exo_evm;
 
     for (const auto& json_block : json_test["blocks"]) {
         Status status{run_block(json_block, blockchain)};
@@ -509,8 +509,9 @@ static constexpr RunResults kSkippedTest{
     1,  // skipped
 };
 
-RunResults run_test_file(const fs::path& file_path, Status (*runner)(const nlohmann::json&, std::optional<ChainConfig>),
-                         std::optional<ChainConfig> config = std::nullopt) {
+RunResults run_test_file(const fs::path& file_path,
+                         Status (*runner)(const nlohmann::json&, const std::optional<ChainConfig>&),
+                         const std::optional<ChainConfig>& config = std::nullopt) {
     std::ifstream in{file_path.string()};
     nlohmann::json json;
 
@@ -536,7 +537,7 @@ RunResults run_test_file(const fs::path& file_path, Status (*runner)(const nlohm
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/transaction_tests.html
-Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
+Status transaction_test(const nlohmann::json& j, const std::optional<ChainConfig>&) {
     Transaction txn;
     bool decoded{false};
 
@@ -609,7 +610,7 @@ Status transaction_test(const nlohmann::json& j, std::optional<ChainConfig>) {
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
-Status difficulty_test(const nlohmann::json& j, std::optional<ChainConfig> config) {
+Status difficulty_test(const nlohmann::json& j, const std::optional<ChainConfig>& config) {
     auto parent_timestamp{std::stoull(j["parentTimestamp"].get<std::string>(), nullptr, 0)};
     auto parent_difficulty{intx::from_string<intx::uint256>(j["parentDifficulty"].get<std::string>())};
     auto current_timestamp{std::stoull(j["currentTimestamp"].get<std::string>(), nullptr, 0)};
@@ -648,7 +649,7 @@ int main(int argc, char* argv[]) {
 
     if (!evm_path.empty()) {
         evmc_loader_error_code err;
-        evm = evmc_load_and_configure(evm_path.c_str(), &err);
+        exo_evm = evmc_load_and_configure(evm_path.c_str(), &err);
         if (err) {
             std::cerr << "Failed to load EVM: " << evmc_last_error_msg() << std::endl;
             return -1;

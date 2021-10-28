@@ -110,9 +110,10 @@ void IntraBlockState::create_contract(const evmc::address& address) noexcept {
 }
 
 void IntraBlockState::touch(const evmc::address& address) noexcept {
-    bool inserted{touched_.insert(address).second};
+    const bool inserted{touched_.insert(address).second};
 
     // See Yellow Paper, Appendix K "Anomalies on the Main Network"
+    // and https://github.com/ethereum/EIPs/issues/716
     static constexpr evmc::address kRipemdAddress{0x0000000000000000000000000000000000000003_address};
     if (inserted && address != kRipemdAddress) {
         journal_.emplace_back(new state::TouchDelta{address});
@@ -120,7 +121,7 @@ void IntraBlockState::touch(const evmc::address& address) noexcept {
 }
 
 void IntraBlockState::record_suicide(const evmc::address& address) noexcept {
-    bool inserted{self_destructs_.insert(address).second};
+    const bool inserted{self_destructs_.insert(address).second};
     if (inserted) {
         journal_.emplace_back(new state::SuicideDelta{address});
     }
@@ -140,7 +141,7 @@ void IntraBlockState::destruct_touched_dead() {
     }
 }
 
-// Doesn't create a delta since it's called at the end of a transcation,
+// Doesn't create a delta since it's called at the end of a transaction,
 // when we don't need snapshots anymore.
 void IntraBlockState::destruct(const evmc::address& address) {
     storage_.erase(address);

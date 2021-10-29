@@ -82,28 +82,28 @@ static Bytes encode_path(ByteView path, bool terminating) {
     return res;
 }
 
-static Bytes leaf_node_rlp(ByteView path, ByteView value) {
+ByteView HashBuilder::leaf_node_rlp(ByteView path, ByteView value) {
     Bytes encoded_path{encode_path(path, /*terminating=*/true)};
-    Bytes rlp;
+    rlp_buffer_.clear();
     rlp::Header h;
     h.list = true;
     h.payload_length = rlp::length(encoded_path) + rlp::length(value);
-    rlp::encode_header(rlp, h);
-    rlp::encode(rlp, encoded_path);
-    rlp::encode(rlp, value);
-    return rlp;
+    rlp::encode_header(rlp_buffer_, h);
+    rlp::encode(rlp_buffer_, encoded_path);
+    rlp::encode(rlp_buffer_, value);
+    return rlp_buffer_;
 }
 
-static Bytes extension_node_rlp(ByteView path, ByteView child_ref) {
+ByteView HashBuilder::extension_node_rlp(ByteView path, ByteView child_ref) {
     Bytes encoded_path{encode_path(path, /*terminating=*/false)};
-    Bytes rlp;
+    rlp_buffer_.clear();
     rlp::Header h;
     h.list = true;
     h.payload_length = rlp::length(encoded_path) + child_ref.length();
-    rlp::encode_header(rlp, h);
-    rlp::encode(rlp, encoded_path);
-    rlp.append(child_ref);
-    return rlp;
+    rlp::encode_header(rlp_buffer_, h);
+    rlp::encode(rlp_buffer_, encoded_path);
+    rlp_buffer_.append(child_ref);
+    return rlp_buffer_;
 }
 
 static Bytes wrap_hash(gsl::span<const uint8_t, kHashLength> hash) {
@@ -307,25 +307,25 @@ std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_ma
         }
     }
 
-    Bytes rlp{};
-    rlp::encode_header(rlp, h);
+    rlp_buffer_.clear();
+    rlp::encode_header(rlp_buffer_, h);
 
     for (size_t i{first_child_idx}, digit{0}; digit < 16; ++digit) {
         if (state_mask & (1u << digit)) {
             if (hash_mask & (1u << digit)) {
                 child_hashes.push_back(stack_[i]);
             }
-            rlp.append(stack_[i++]);
+            rlp_buffer_.append(stack_[i++]);
         } else {
-            rlp.push_back(rlp::kEmptyStringCode);
+            rlp_buffer_.push_back(rlp::kEmptyStringCode);
         }
     }
 
     // branch nodes with values are not supported
-    rlp.push_back(rlp::kEmptyStringCode);
+    rlp_buffer_.push_back(rlp::kEmptyStringCode);
 
     stack_.resize(first_child_idx + 1);
-    stack_.back() = node_ref(rlp);
+    stack_.back() = node_ref(rlp_buffer_);
 
     return child_hashes;
 }

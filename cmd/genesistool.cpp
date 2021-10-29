@@ -15,7 +15,6 @@
 */
 
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <regex>
 #include <string>
@@ -46,7 +45,7 @@ void to_byte_array(fs::path& in, fs::path& out) {
     while (std::getline(in_stream, line)) {
         // Remove leading trailing spaces
         boost::algorithm::trim(line);
-        // Condense (remove the beautyfication)
+        // Condense (remove the beautification)
         for (auto& [r, s] : replacements) {
             line = std::regex_replace(line, r, s);
         }
@@ -97,19 +96,19 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app_main, argc, argv);
 
     // Get genesis files in input directory
-    static const std::regex genesis_pattern{R"(^genesis\_(.*)?\.json$)", std::regex_constants::icase};
+    static const std::regex genesis_pattern{R"(^genesis_(.*)?\.json$)", std::regex_constants::icase};
     fs::path input_path{input_dir};
     if (input_path.has_filename()) {
         input_path += fs::path::preferred_separator;
     }
     std::vector<fs::directory_entry> input_entries{};
-    for (auto directory_entry : fs::directory_iterator(input_path)) {
+    for (const auto& directory_entry : fs::directory_iterator(input_path)) {
         std::string file_name{directory_entry.path().filename().string()};
         if (std::regex_match(file_name, genesis_pattern)) {
             input_entries.push_back(directory_entry);
         }
     }
-    if (!input_entries.size()) {
+    if (input_entries.empty()) {
         std::cerr << "\nNo files matching genesis pattern in input directory" << std::endl;
         return -1;
     }

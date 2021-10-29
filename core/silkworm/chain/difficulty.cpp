@@ -92,10 +92,13 @@ intx::uint256 canonical_difficulty(uint64_t block_number, uint64_t block_timesta
 
     if (rev >= EVMC_BYZANTIUM) {
         uint64_t bomb_delay{0};
-        if (rev >= EVMC_LONDON) {
+        if (config.arrow_glacier_block.has_value() && block_number >= config.arrow_glacier_block) {
+            // https://eips.ethereum.org/EIPS/eip-4345
+            bomb_delay = 10'700'000;
+        } else if (rev >= EVMC_LONDON) {
             // https://eips.ethereum.org/EIPS/eip-3554
             bomb_delay = 9'700'000;
-        } else if (config.muir_glacier_block && block_number >= config.muir_glacier_block) {
+        } else if (config.muir_glacier_block.has_value() && block_number >= config.muir_glacier_block) {
             // https://eips.ethereum.org/EIPS/eip-2384
             bomb_delay = 9'000'000;
         } else if (rev >= EVMC_CONSTANTINOPLE) {

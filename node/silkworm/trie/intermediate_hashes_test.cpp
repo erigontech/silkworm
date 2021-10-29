@@ -46,7 +46,7 @@ static std::string nibbles_to_hex(ByteView unpacked) {
     return out;
 }
 
-TEST_CASE("AccountTrieCursor traversal 1") {
+TEST_CASE("Cursor traversal 1") {
     test::Context context;
     auto& txn{context.txn()};
 
@@ -65,7 +65,7 @@ TEST_CASE("AccountTrieCursor traversal 1") {
     account_trie.upsert(db::to_slice(key3), db::to_slice(marshal_node(node3)));
 
     PrefixSet changed;
-    AccountTrieCursor atc{txn, changed};
+    Cursor cursor{account_trie, changed};
 
     // Traversal should be in pre-order:
     // 1. Visit the current node
@@ -75,30 +75,30 @@ TEST_CASE("AccountTrieCursor traversal 1") {
 
     // Only nibbles with state flag should be traversed.
 
-    CHECK((atc.key() != std::nullopt && atc.key()->empty()));  // root
+    CHECK((cursor.key() != std::nullopt && cursor.key()->empty()));  // root
 
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "10");
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "10B1");
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "10B3");
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "11");
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "12");
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "131");
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "132");
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "133");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "10");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "10B1");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "10B3");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "11");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "12");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "131");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "132");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "133");
 
-    atc.next();
-    CHECK(atc.key() == std::nullopt);  // end of trie
+    cursor.next();
+    CHECK(cursor.key() == std::nullopt);  // end of trie
 }
 
-TEST_CASE("AccountTrieCursor traversal 2") {
+TEST_CASE("Cursor traversal 2") {
     test::Context context;
     auto& txn{context.txn()};
 
@@ -115,21 +115,21 @@ TEST_CASE("AccountTrieCursor traversal 2") {
     account_trie.upsert(db::to_slice(key2), db::to_slice(marshal_node(node2)));
 
     PrefixSet changed;
-    AccountTrieCursor atc{txn, changed};
+    Cursor cursor{account_trie, changed};
 
-    CHECK((atc.key() != std::nullopt && atc.key()->empty()));  // root
+    CHECK((cursor.key() != std::nullopt && cursor.key()->empty()));  // root
 
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "42");
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "44");
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "61");
-    atc.next();
-    CHECK(nibbles_to_hex(*atc.key()) == "64");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "42");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "44");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "61");
+    cursor.next();
+    CHECK(nibbles_to_hex(*cursor.key()) == "64");
 
-    atc.next();
-    CHECK(atc.key() == std::nullopt);  // end of trie
+    cursor.next();
+    CHECK(cursor.key() == std::nullopt);  // end of trie
 }
 
 static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {

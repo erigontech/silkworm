@@ -76,19 +76,19 @@ the correct bit in tree_mask bitmap
 
 namespace silkworm::trie {
 
-// Traverses TrieAccount in pre-order:
+// Traverses TrieAccount or TrieStorage in pre-order:
 // 1. Visit the current node
 // 2. Recursively traverse the current node's left subtree.
 // 3. Recursively traverse the current node's right subtree.
 // See https://en.wikipedia.org/wiki/Tree_traversal#Pre-order,_NLR
 //
-// See also Erigon AccTrieCursor
-class AccountTrieCursor {
+// See also Erigon AccTrieCursor/StorageTrieCursor
+class Cursor {
   public:
-    AccountTrieCursor(const AccountTrieCursor&) = delete;
-    AccountTrieCursor& operator=(const AccountTrieCursor&) = delete;
+    Cursor(const Cursor&) = delete;
+    Cursor& operator=(const Cursor&) = delete;
 
-    AccountTrieCursor(mdbx::txn& txn, PrefixSet& changed);
+    Cursor(mdbx::cursor& cursor, PrefixSet& changed);
 
     void next();
 
@@ -104,7 +104,7 @@ class AccountTrieCursor {
     [[nodiscard]] std::optional<Bytes> first_uncovered_prefix() const;
 
   private:
-    // TrieAccount node with a particular nibble selected
+    // TrieAccount(TrieStorage) node with a particular nibble selected
     struct SubNode {
         Bytes key;
         Node node;
@@ -121,9 +121,11 @@ class AccountTrieCursor {
 
     void move_to_next_sibling();
 
+    mdbx::cursor cursor_;
+
     PrefixSet& changed_;
+
     int root_nibble_{-1};  // -1 means the very beginning of trie traversal, before any actual nodes
-    mdbx::cursor_managed cursor_;
     std::stack<SubNode> stack_;
     bool can_skip_state_{false};
 };

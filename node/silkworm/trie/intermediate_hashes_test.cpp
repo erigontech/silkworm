@@ -525,7 +525,7 @@ TEST_CASE("Incremental vs regeneration for storage") {
     test::Context context;
     auto& txn{context.txn()};
 
-    static constexpr size_t n{10};
+    static constexpr size_t n{10'000};
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
     auto hashed_storage{db::open_cursor(txn, db::table::kHashedStorage)};
@@ -563,6 +563,22 @@ TEST_CASE("Incremental vs regeneration for storage") {
     static const Bytes storage_prefix1{db::storage_prefix(full_view(hashed_address1.bytes), incarnation1)};
     static const Bytes storage_prefix2{db::storage_prefix(full_view(hashed_address2.bytes), incarnation2)};
 
+    static const Bytes storage_change_key1{db::storage_change_key(/*block_number=*/1, address1, incarnation1)};
+    static const Bytes storage_change_key2{db::storage_change_key(/*block_number=*/1, address2, incarnation2)};
+
+    const auto upsert_storage_for_two_test_accounts = [&](size_t i, ByteView value, bool register_change) {
+        const evmc::bytes32 plain_loc1{int_to_bytes32(2 * i)};
+        const evmc::bytes32 plain_loc2{int_to_bytes32(2 * i + 1)};
+        const auto hashed_loc1{keccak256(full_view(plain_loc1))};
+        const auto hashed_loc2{keccak256(full_view(plain_loc2))};
+        db::upsert_storage_value(hashed_storage, storage_prefix1, full_view(hashed_loc1.bytes), value);
+        db::upsert_storage_value(hashed_storage, storage_prefix2, full_view(hashed_loc2.bytes), value);
+        if (register_change) {
+            storage_change_table.upsert(db::to_slice(storage_change_key1), mdbx::slice{hashed_loc1.bytes, kHashLength});
+            storage_change_table.upsert(db::to_slice(storage_change_key2), mdbx::slice{hashed_loc2.bytes, kHashLength});
+        }
+    };
+
     // ------------------------------------------------------------------------------
     // Take A: create some storage at genesis and then apply some changes at Block 1
     // ------------------------------------------------------------------------------
@@ -570,31 +586,61 @@ TEST_CASE("Incremental vs regeneration for storage") {
     // Start with 3n storage slots per account at genesis, each with the same value
     static const Bytes value_x{*from_hex("42")};
     for (size_t i{0}; i < 6 * n; i += 2) {
-        const evmc::bytes32 plain_loc1{int_to_bytes32(2 * i)};
-        const evmc::bytes32 plain_loc2{int_to_bytes32(2 * i + 1)};
-        const auto hashed_loc1{keccak256(full_view(plain_loc1))};
-        const auto hashed_loc2{keccak256(full_view(plain_loc2))};
-        db::upsert_storage_value(hashed_storage, storage_prefix1, full_view(hashed_loc1.bytes), value_x);
-        db::upsert_storage_value(hashed_storage, storage_prefix2, full_view(hashed_loc2.bytes), value_x);
+        upsert_storage_for_two_test_accounts(i, value_x, false);
     }
 
     regenerate_intermediate_hashes(txn, context.dir().etl().path());
 
-    static const Bytes storage_change_key1{db::storage_change_key(/*block_number=*/1, address1, incarnation1)};
-    static const Bytes storage_change_key2{db::storage_change_key(/*block_number=*/1, address2, incarnation2)};
-
     // Change the value of the first third of the storage
     static const Bytes value_y{*from_hex("71f602b294119bf452f1923814f5c6de768221254d3056b1bd63e72dc3142a29")};
     for (size_t i{0}; i < 2 * n; i += 2) {
-        const evmc::bytes32 plain_loc1{int_to_bytes32(2 * i)};
-        const evmc::bytes32 plain_loc2{int_to_bytes32(2 * i + 1)};
-        const auto hashed_loc1{keccak256(full_view(plain_loc1))};
-        const auto hashed_loc2{keccak256(full_view(plain_loc2))};
-        db::upsert_storage_value(hashed_storage, storage_prefix1, full_view(hashed_loc1.bytes), value_y);
-        db::upsert_storage_value(hashed_storage, storage_prefix2, full_view(hashed_loc2.bytes), value_y);
-        storage_change_table.upsert(db::to_slice(storage_change_key1), mdbx::slice{hashed_loc1.bytes, kHashLength});
-        storage_change_table.upsert(db::to_slice(storage_change_key2), mdbx::slice{hashed_loc2.bytes, kHashLength});
+        upsert_storage_for_two_test_accounts(i, value_y, true);
     }
+
+    // Delete the second third of the storage
+    for (size_t i{2 * n}; i < 4 * n; i += 2) {
+        upsert_storage_for_two_test_accounts(i, {}, true);
+    }
+
+    // Don't touch the last third of genesis storage
+
+    // And add some new storage
+    for (size_t i{6 * n}; i < 8 * n; i += 2) {
+        upsert_storage_for_two_test_accounts(i, value_x, true);
+    }
+
+    const auto incremental_root{increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/0)};
+
+    const std::map<Bytes, Node> incremental_nodes{read_all_nodes(storage_trie)};
+
+    // ------------------------------------------------------------------------------
+    // Take B: generate intermediate hashes for the storage as of Block 1 in one go,
+    // without increment_intermediate_hashes
+    // ------------------------------------------------------------------------------
+    txn.clear_map(db::open_map(txn, db::table::kHashedStorage));
+    txn.clear_map(db::open_map(txn, db::table::kStorageChangeSet));
+
+    // The first third of the storage now has value_y
+    for (size_t i{0}; i < 2 * n; i += 2) {
+        upsert_storage_for_two_test_accounts(i, value_y, false);
+    }
+
+    // The second third of the storage is deleted
+
+    // The last third and the extra storage has value_x
+    for (size_t i{4 * n}; i < 8 * n; i += 2) {
+        upsert_storage_for_two_test_accounts(i, value_x, false);
+    }
+
+    const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
+
+    const std::map<Bytes, Node> fused_nodes{read_all_nodes(storage_trie)};
+
+    // ------------------------------------------------------------------------------
+    // A and B should yield the same result
+    // ------------------------------------------------------------------------------
+    CHECK(fused_root == incremental_root);
+    CHECK(fused_nodes == incremental_nodes);
 }
 
 TEST_CASE("increment_key") {

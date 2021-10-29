@@ -161,7 +161,6 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
              0,  // istanbul_block
              0,  // berlin_block
          },
-         0,  // muir_glacier_block
      }},
     {"London", test::kLondonConfig},
     {"FrontierToHomesteadAt5",
@@ -188,8 +187,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
          {
              0,  // homestead_block
          },
-         std::nullopt,  // muir_glacier_block
-         5,             // dao_block
+         5,  // dao_block
      }},
     {"EIP158ToByzantiumAt5",
      {
@@ -230,7 +228,6 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
              0,  // berlin_block
              5,  // london_block
          },
-         0,  // muir_glacier_block
      }},
     {"EIP2384",
      {
@@ -245,6 +242,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
              0,  // petersburg_block
              0,  // istanbul_block
          },
+         0,  // dao_block
          0,  // muir_glacier_block
      }},
 };

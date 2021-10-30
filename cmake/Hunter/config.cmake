@@ -17,10 +17,10 @@
 hunter_config(Boost VERSION 1.72.0-p1)
 
 hunter_config(
-    abseil
-    VERSION 20210324.2
-    URL https://github.com/abseil/abseil-cpp/archive/20210324.2.tar.gz
-    SHA1 2d46ae096bfbdab19de1d65079b95e0fae9efe2e
+  abseil
+  VERSION 20210324.2
+  URL https://github.com/abseil/abseil-cpp/archive/20210324.2.tar.gz
+  SHA1 2d46ae096bfbdab19de1d65079b95e0fae9efe2e
 )
 
 hunter_config(
@@ -46,9 +46,9 @@ hunter_config(
 
 hunter_config(
   ethash
-  VERSION 8fff2fedb250dccb8dd15b7607719cdbf34f9e01
-  URL https://github.com/chfast/ethash/archive/8fff2fedb250dccb8dd15b7607719cdbf34f9e01.tar.gz
-  SHA1 95791f242e4caef7464ce087f3537d66f7ce24cf
+  VERSION 3ee5e49090d216c6d1d442957a5e7b04d587343f
+  URL https://github.com/chfast/ethash/archive/3ee5e49090d216c6d1d442957a5e7b04d587343f.tar.gz
+  SHA1 4e0bd33c3eeabc77130d8f7c2446e061e13a7123
   CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
 )
 

@@ -54,11 +54,11 @@ struct BlockHeader {
 
     std::optional<intx::uint256> base_fee_per_gas{std::nullopt};  // EIP-1559
 
-    evmc::bytes32 hash(bool for_sealing = false) const;
+    [[nodiscard]] evmc::bytes32 hash(bool for_sealing = false) const;
 
     //! \brief Calculates header's boundary. This is described by Equation(50) by the yellow paper.
     //! \return A hash of 256 bits with big endian byte order
-    ethash::hash256 boundary() const;
+    [[nodiscard, maybe_unused]] ethash::hash256 boundary() const;
 
   private:
     friend rlp::DecodingResult rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to) noexcept;

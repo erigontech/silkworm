@@ -546,7 +546,6 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
 
 auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeaders {
     // throw segment_cut_and_paste_error
-    using std::to_string;
 
     auto anchor_header = *segment_slice.begin();  // highest header
     auto a = anchors_.find(anchor_header->hash());

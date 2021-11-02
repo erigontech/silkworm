@@ -176,8 +176,8 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 }
 
 size_t WorkingChain::anchors_within_range(BlockNum max) {
-    return std::count_if(anchors_.begin(), anchors_.end(),
-                         [&max](const auto& anchor) { return anchor.second->blockHeight < max; });
+    return static_cast<size_t>(std::count_if(anchors_.begin(), anchors_.end(),
+                                             [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
 }
 
 BlockNum WorkingChain::lowest_anchor_from(BlockNum top_bn) {

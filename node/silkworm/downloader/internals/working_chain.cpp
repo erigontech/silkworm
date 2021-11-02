@@ -293,11 +293,10 @@ void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
 bool WorkingChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }
 
 auto WorkingChain::find_bad_header(const std::vector<BlockHeader>& headers) -> bool {
-    for (auto& header : headers) {
-        Hash header_hash = header.hash();
-        if (contains(badHeaders_, header_hash)) return true;
-    }
-    return false;
+    return std::any_of(headers.begin(), headers.end(), [&](const BlockHeader& header) -> bool {
+        const Hash& hash{header.hash()};
+        return contains(badHeaders_, hash);
+    });
 }
 
 auto WorkingChain::accept_headers(const std::vector<BlockHeader>& headers, PeerId peerId)

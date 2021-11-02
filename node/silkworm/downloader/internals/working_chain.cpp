@@ -26,7 +26,7 @@ namespace silkworm {
 class segment_cut_and_paste_error : public std::logic_error {
   public:
     segment_cut_and_paste_error() : std::logic_error("segment cut&paste error, unknown reason") {}
-    segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
+    explicit segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
 };
 
 WorkingChain::WorkingChain()

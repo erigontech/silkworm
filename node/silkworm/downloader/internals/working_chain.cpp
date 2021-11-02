@@ -187,11 +187,8 @@ size_t WorkingChain::anchors_within_range(BlockNum max) {
 
 BlockNum WorkingChain::lowest_anchor_from(BlockNum top_bn) {
     BlockNum lowest_bn = top_bn;
-    for (const auto& anchor : anchors_) {
-        if (anchor.second->blockHeight < lowest_bn) {
-            lowest_bn = anchor.second->blockHeight;
-        }
-    }
+    std::for_each(anchors_.begin(), anchors_.end(),
+                  [&lowest_bn](const auto& anchor) { lowest_bn = std::min(lowest_bn, anchor.second->blockHeight); });
     return lowest_bn;
 }
 

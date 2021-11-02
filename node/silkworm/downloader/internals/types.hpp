@@ -62,10 +62,7 @@ using seconds_t = std::chrono::seconds;
 inline Bytes string_to_bytes(const std::string& s) { return Bytes(s.begin(), s.end()); }
 
 inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
-    for (const auto& b : bytes) {
-        out << std::hex << std::setw(2) << std::setfill('0') << int(b);
-    }
-    out << std::dec;
+    out << silkworm::to_hex(bytes);
     return out;
 }
 

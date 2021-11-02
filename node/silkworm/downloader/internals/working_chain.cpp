@@ -556,13 +556,8 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
                                           to_hex(anchor_header->hash()));
 
     auto old_anchor = a->second;
-    auto anchor_preverified = false;
-    for (auto& link : old_anchor->links) {  // todo: use find_if
-        if (link->preverified) {
-            anchor_preverified = true;
-            break;
-        }
-    }
+    auto anchor_preverified = std::any_of(old_anchor->links.begin(), old_anchor->links.end(),
+                                          [](const auto& link) -> bool { return link->preverified; });
 
     anchors_.erase(old_anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue

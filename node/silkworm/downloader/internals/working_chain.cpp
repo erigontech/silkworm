@@ -16,8 +16,6 @@
 
 #include "working_chain.hpp"
 
-#include <functional>
-
 #include <silkworm/common/log.hpp>
 
 #include "cpp20_backport.hpp"

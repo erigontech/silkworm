@@ -35,8 +35,7 @@ InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg, WorkingChain
     peerId_ = string_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
-    rlp::DecodingResult err = rlp::decode(data, packet_);
-    if (err != rlp::DecodingResult::kOk) throw rlp::rlp_error("rlp decoding error decoding NewBlock");
+    rlp::success_or_throw(rlp::decode(data, packet_));
 
     SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
 }

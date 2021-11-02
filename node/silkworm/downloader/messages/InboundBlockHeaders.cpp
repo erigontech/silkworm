@@ -31,8 +31,7 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, Work
     peerId_ = string_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
-    rlp::DecodingResult err = rlp::decode(data, packet_);
-    if (err != rlp::DecodingResult::kOk) throw rlp::rlp_error("rlp decoding error decoding BlockHeaders");
+    rlp::success_or_throw(rlp::decode(data, packet_));
 
     SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
 }
@@ -85,8 +84,7 @@ void InboundBlockHeaders::execute() {
         highestBlock = std::max(highestBlock, header.number);
     }
 
-    auto [penalty, requestMoreHeaders] =
-        working_chain_.accept_headers(packet_.request, peerId_);
+    auto [penalty, requestMoreHeaders] = working_chain_.accept_headers(packet_.request, peerId_);
 
     // Erigon here calls request_more_headers(). Do we have to do the same? What if header downloader is not in a
     // forward phase? todo: decide if we need to call request_more_headers() here

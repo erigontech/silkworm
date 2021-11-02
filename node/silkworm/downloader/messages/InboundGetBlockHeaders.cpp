@@ -34,10 +34,7 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg
     peerId_ = string_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());
-    rlp::DecodingResult err = rlp::decode(data, packet_);
-    if (err != rlp::DecodingResult::kOk) {
-        throw rlp::rlp_error("rlp decoding error decoding GetBlockHeaders");
-    }
+    rlp::success_or_throw(rlp::decode(data, packet_));
 
     SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
 }

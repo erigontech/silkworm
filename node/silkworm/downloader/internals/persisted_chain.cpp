@@ -162,9 +162,7 @@ header.ParentHash, blockHeight-1, hash, blockHeight))
 */
 
 void PersistedChain::persist(const Headers& headers) {
-    for (auto& header : headers) {
-        persist(*header);
-    }
+    std::for_each(headers.begin(), headers.end(), [this](const auto& header) { persist(*header); });
 }
 
 void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modularize

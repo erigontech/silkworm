@@ -18,7 +18,6 @@
 #define SILKWORM_TYPES_HPP
 
 #include <chrono>
-#include <iomanip>
 
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>

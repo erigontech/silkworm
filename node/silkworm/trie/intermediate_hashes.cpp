@@ -24,71 +24,103 @@
 
 namespace silkworm::trie {
 
-Cursor::Cursor(mdbx::cursor& cursor, PrefixSet& changed) : cursor_{cursor}, changed_{changed} {}
+Cursor::Cursor(mdbx::cursor& cursor, PrefixSet& changed, ByteView prefix)
+    : cursor_{cursor}, changed_{changed}, prefix_{prefix} {
+    consume_node(/*key=*/{}, /*exact=*/true);
+    update_skip_state();
+}
 
-void Cursor::consume_node(ByteView to) {
-    const auto entry{cursor_.lower_bound(db::to_slice(to), /*throw_notfound=*/false)};
-    if (!entry) {
+void Cursor::consume_node(ByteView to, bool exact) {
+    const Bytes db_key{prefix_ + Bytes{to}};
+    const auto entry{exact ? cursor_.find(db::to_slice(db_key), /*throw_notfound=*/false)
+                           : cursor_.lower_bound(db::to_slice(db_key), /*throw_notfound=*/false)};
+
+    if (!entry && !exact) {
         // end-of-tree
-        root_nibble_ = 16;
+        stack_.clear();
         return;
     }
 
-    const auto node{unmarshal_node(db::from_slice(entry.value))};
-    assert(node != std::nullopt);
-    assert(node->state_mask() != 0);
-    uint8_t nibble{0};
-    while ((node->state_mask() & (1u << nibble)) == 0) {
-        ++nibble;
+    ByteView key = to;
+    if (!exact) {
+        key = db::from_slice(entry.key);
+        if (!has_prefix(key, prefix_)) {
+            stack_.clear();
+            return;
+        }
+        key.remove_prefix(prefix_.length());
     }
 
-    const ByteView key{db::from_slice(entry.key)};
-    assert(!key.empty());
-    root_nibble_ = key[0];
+    std::optional<Node> node{std::nullopt};
+    if (entry) {
+        node = unmarshal_node(db::from_slice(entry.value));
+        assert(node != std::nullopt);
+        assert(node->state_mask() != 0);
+    }
 
-    stack_.push(SubNode{Bytes{key}, *node, nibble});
+    int nibble{0};
+    if (!node.has_value() || node->root_hash().has_value()) {
+        nibble = -1;
+    } else {
+        while ((node->state_mask() & (1u << nibble)) == 0) {
+            ++nibble;
+        }
+    }
 
-    cursor_.erase();
+    if (!key.empty() && !stack_.empty()) {
+        // the root might have nullopt node and thus no state bits, so we rely on the DB
+        stack_[0].nibble = key[0];
+    }
+
+    stack_.push_back(SubNode{Bytes{key}, node, nibble});
+
+    if (entry) {
+        cursor_.erase();
+    }
 }
 
 void Cursor::next() {
+    // TODO[Issue 179] double check
     if (!can_skip_state_ && children_are_in_trie()) {
         // go to the child node
-        consume_node(*key());
+        consume_node(*key(), /*exact=*/false);
     } else {
         move_to_next_sibling();
     }
 
+    update_skip_state();
+}
+
+void Cursor::update_skip_state() {
     const std::optional<Bytes> k{key()};
-    if (k == std::nullopt || changed_.contains(*k)) {
+    if (k == std::nullopt || changed_.contains(prefix_ + *k)) {
         can_skip_state_ = false;
     } else {
-        can_skip_state_ = stack_.top().hash_flag();
+        can_skip_state_ = stack_.back().hash_flag();
     }
 }
 
 void Cursor::move_to_next_sibling() {
-    if (root_nibble_ == 16) {
+    if (stack_.empty()) {
         // end-of-tree
         return;
     }
 
-    if (stack_.empty()) {
-        // we're at the root
-        ++root_nibble_;
-        const Bytes key(1, root_nibble_);
-        consume_node(key);
+    SubNode& sn{stack_.back()};
+
+    if (!sn.node.has_value()) {
+        // we can't rely on the state flag, so search in the DB
+        ++sn.nibble;
+        consume_node(*key(), /*exact=*/false);
         return;
     }
-
-    SubNode& sn{stack_.top()};
 
     assert(sn.nibble < 16);
     do {
         ++sn.nibble;
         if (sn.nibble == 16) {
             // this node is fully traversed
-            stack_.pop();
+            stack_.pop_back();
             move_to_next_sibling();  // on parent
             return;
         }
@@ -97,53 +129,75 @@ void Cursor::move_to_next_sibling() {
 
 Bytes Cursor::SubNode::full_key() const {
     Bytes out{key};
-    out.push_back(nibble);
+    if (nibble >= 0) {
+        out.push_back(nibble);
+    }
     return out;
 }
 
-bool Cursor::SubNode::state_flag() const { return node.state_mask() & (1u << nibble); }
+bool Cursor::SubNode::state_flag() const {
+    if (nibble < 0 || !node.has_value()) {
+        return true;
+    } else {
+        return node->state_mask() & (1u << nibble);
+    }
+}
 
-bool Cursor::SubNode::tree_flag() const { return node.tree_mask() & (1u << nibble); }
+bool Cursor::SubNode::tree_flag() const {
+    if (nibble < 0 || !node.has_value()) {
+        return true;
+    } else {
+        return node->tree_mask() & (1u << nibble);
+    }
+}
 
-bool Cursor::SubNode::hash_flag() const { return node.hash_mask() & (1u << nibble); }
+bool Cursor::SubNode::hash_flag() const {
+    if (!node.has_value()) {
+        return false;
+    } else if (nibble < 0) {
+        return node->root_hash().has_value();
+    } else {
+        return node->hash_mask() & (1u << nibble);
+    }
+}
 
 const evmc::bytes32* Cursor::SubNode::hash() const {
     if (!hash_flag()) {
         return nullptr;
     }
+
+    if (nibble < 0) {
+        return &node->root_hash().value();
+    }
+
     const unsigned first_nibbles_mask{(1u << nibble) - 1};
-    const size_t hash_idx{std::bitset<16>(node.hash_mask() & first_nibbles_mask).count()};
-    return &node.hashes()[hash_idx];
+    const size_t hash_idx{std::bitset<16>(node->hash_mask() & first_nibbles_mask).count()};
+    return &node->hashes()[hash_idx];
 }
 
 std::optional<Bytes> Cursor::key() const {
-    if (root_nibble_ == -1) {
-        return Bytes{};
-    }
     if (stack_.empty()) {
         return std::nullopt;
     }
-    return stack_.top().full_key();
+    return stack_.back().full_key();
 }
 
 const evmc::bytes32* Cursor::hash() const {
     if (stack_.empty()) {
         return nullptr;
     }
-    return stack_.top().hash();
+    return stack_.back().hash();
 }
 
 bool Cursor::children_are_in_trie() const {
-    if (root_nibble_ == -1) {
-        return true;
-    }
     if (stack_.empty()) {
         return false;
     }
-    return stack_.top().tree_flag();
+    return stack_.back().tree_flag();
 }
 
 std::optional<Bytes> Cursor::first_uncovered_prefix() const {
+    // TODO[Issue 179] double check
     std::optional<Bytes> k{key()};
     if (can_skip_state_ && k != std::nullopt) {
         k = increment_key(*k);
@@ -240,21 +294,21 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
     auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
     auto acc_trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfAccounts)};
 
-    for (Cursor acc_trie{acc_trie_db_cursor, changed}; acc_trie.key() != std::nullopt;) {
+    for (Cursor acc_trie{acc_trie_db_cursor, changed}; acc_trie.key().has_value();) {
         if (acc_trie.can_skip_state()) {
             assert(acc_trie.hash() != nullptr);
             hb_.add_branch_node(*acc_trie.key(), *acc_trie.hash(), acc_trie.children_are_in_trie());
         }
 
-        const std::optional<Bytes> uncovered{acc_trie.first_uncovered_prefix()};
-        if (uncovered == std::nullopt) {
+        const std::optional<Bytes> uncovered_acc{acc_trie.first_uncovered_prefix()};
+        if (uncovered_acc == std::nullopt) {
             // no more uncovered state
             break;
         }
 
         acc_trie.next();
 
-        for (auto acc{acc_state.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)}; acc.done;
+        for (auto acc{acc_state.lower_bound(db::to_slice(*uncovered_acc), /*throw_notfound=*/false)}; acc.done;
              acc = acc_state.to_next(/*throw_notfound=*/false)) {
             const Bytes unpacked_key{unpack_nibbles(db::from_slice(acc.key))};
             if (acc_trie.key().has_value() && acc_trie.key().value() < unpacked_key) {

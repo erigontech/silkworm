@@ -525,7 +525,8 @@ TEST_CASE("Incremental vs regeneration for storage") {
     test::Context context;
     auto& txn{context.txn()};
 
-    static constexpr size_t n{10'000};
+    // TODO[Issue 179] increase n
+    static constexpr size_t n{10};
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
     auto hashed_storage{db::open_cursor(txn, db::table::kHashedStorage)};

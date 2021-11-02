@@ -65,7 +65,6 @@ the correct bit in tree_mask bitmap
 
 #include <filesystem>
 #include <optional>
-#include <stack>
 #include <vector>
 
 #include <silkworm/common/base.hpp>
@@ -88,7 +87,7 @@ class Cursor {
     Cursor(const Cursor&) = delete;
     Cursor& operator=(const Cursor&) = delete;
 
-    Cursor(mdbx::cursor& cursor, PrefixSet& changed);
+    Cursor(mdbx::cursor& cursor, PrefixSet& changed, ByteView prefix = {});
 
     void next();
 
@@ -107,8 +106,8 @@ class Cursor {
     // TrieAccount(TrieStorage) node with a particular nibble selected
     struct SubNode {
         Bytes key;
-        Node node;
-        uint8_t nibble{0};
+        std::optional<Node> node;
+        int nibble{-1};  // -1 points to the node itself instead of a nibble
 
         [[nodiscard]] Bytes full_key() const;
         [[nodiscard]] bool state_flag() const;
@@ -117,16 +116,20 @@ class Cursor {
         [[nodiscard]] const evmc::bytes32* hash() const;
     };
 
-    void consume_node(ByteView lower_bound);
+    void consume_node(ByteView key, bool exact);
 
     void move_to_next_sibling();
+
+    void update_skip_state();
 
     mdbx::cursor cursor_;
 
     PrefixSet& changed_;
 
-    int root_nibble_{-1};  // -1 means the very beginning of trie traversal, before any actual nodes
-    std::stack<SubNode> stack_;
+    Bytes prefix_;
+
+    std::vector<SubNode> stack_;
+
     bool can_skip_state_{false};
 };
 

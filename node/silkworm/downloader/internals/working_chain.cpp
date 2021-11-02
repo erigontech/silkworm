@@ -508,7 +508,7 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     if (!attachment_link)
         throw segment_cut_and_paste_error("segment cut&paste error, connect attachment link not found for " +
                                           to_hex(link_header->parent_hash));
-    if (attachment_link.value()->preverified && attachment_link.value()->next.size() > 0)
+    if (attachment_link.value()->preverified && !attachment_link.value()->next.empty())
         throw segment_cut_and_paste_error("segment cut&paste error, cannot connect to preverified link " +
                                           to_string(attachment_link.value()->blockHeight) + " with children");
 
@@ -629,7 +629,7 @@ void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_c
     if (!attachment_link)
         throw segment_cut_and_paste_error("segment cut&paste error, extend up attachment link not found for " +
                                           to_hex(link_header->parent_hash));
-    if (attachment_link.value()->preverified && attachment_link.value()->next.size() > 0)
+    if (attachment_link.value()->preverified && !attachment_link.value()->next.empty())
         throw segment_cut_and_paste_error("segment cut&paste error, cannot extend up from preverified link " +
                                           to_string(attachment_link.value()->blockHeight) + " with children");
 

@@ -486,9 +486,10 @@ auto WorkingChain::find_link(const Segment& segment, size_t start)
 }
 
 auto WorkingChain::get_link(const Hash& hash) -> std::optional<std::shared_ptr<Link>> {
-    auto it = links_.find(hash);
-    if (it != links_.end()) return {it->second};
-    return {};
+    if (auto it = links_.find(hash); it != links_.end()) {
+        return it->second;
+    }
+    return std::nullopt;
 }
 
 void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut_and_paste_error

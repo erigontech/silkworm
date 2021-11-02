@@ -539,13 +539,8 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
 
     // todo: this block is the same in extend_down
     auto anchor = a->second;
-    auto anchor_preverified = false;
-    for (auto& link : anchor->links) {  // todo: use find_if
-        if (link->preverified) {
-            anchor_preverified = true;
-            break;
-        }
-    }
+    auto anchor_preverified = std::any_of(anchor->links.begin(), anchor->links.end(),
+                                          [](const auto& link) -> bool { return link->preverified; });
 
     anchors_.erase(anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue

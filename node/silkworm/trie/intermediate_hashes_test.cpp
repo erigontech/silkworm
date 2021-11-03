@@ -50,22 +50,22 @@ TEST_CASE("Cursor traversal 1") {
     test::Context context;
     auto& txn{context.txn()};
 
-    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+    auto trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
 
     const Bytes key1{nibbles_from_hex("1")};
-    const Node node1{/*state_mask=*/0b111, /*tree_mask=*/0b101, /*hash_mask=*/0, /*hashes=*/{}};
-    account_trie.upsert(db::to_slice(key1), db::to_slice(marshal_node(node1)));
+    const Node node1{/*state_mask=*/0b1011, /*tree_mask=*/0b1001, /*hash_mask=*/0, /*hashes=*/{}};
+    trie.upsert(db::to_slice(key1), db::to_slice(marshal_node(node1)));
 
     const Bytes key2{nibbles_from_hex("10B")};
     const Node node2{/*state_mask=*/0b1010, /*tree_mask=*/0, /*hash_mask=*/0, /*hashes=*/{}};
-    account_trie.upsert(db::to_slice(key2), db::to_slice(marshal_node(node2)));
+    trie.upsert(db::to_slice(key2), db::to_slice(marshal_node(node2)));
 
     const Bytes key3{nibbles_from_hex("13")};
     const Node node3{/*state_mask=*/0b1110, /*tree_mask=*/0, /*hash_mask=*/0, /*hashes=*/{}};
-    account_trie.upsert(db::to_slice(key3), db::to_slice(marshal_node(node3)));
+    trie.upsert(db::to_slice(key3), db::to_slice(marshal_node(node3)));
 
     PrefixSet changed;
-    Cursor cursor{account_trie, changed};
+    Cursor cursor{trie, changed};
 
     // Traversal should be in pre-order:
     // 1. Visit the current node
@@ -86,7 +86,7 @@ TEST_CASE("Cursor traversal 1") {
     cursor.next();
     CHECK(nibbles_to_hex(*cursor.key()) == "11");
     cursor.next();
-    CHECK(nibbles_to_hex(*cursor.key()) == "12");
+    CHECK(nibbles_to_hex(*cursor.key()) == "13");
     cursor.next();
     CHECK(nibbles_to_hex(*cursor.key()) == "131");
     cursor.next();
@@ -102,20 +102,20 @@ TEST_CASE("Cursor traversal 2") {
     test::Context context;
     auto& txn{context.txn()};
 
-    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+    auto trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
 
     const Bytes key1{nibbles_from_hex("4")};
     const Node node1{/*state_mask=*/0b10100, /*tree_mask=*/0, /*hash_mask=*/0b00100,
                      /*hashes=*/{0x0384e6e2c2b33c4eb911a08a7ff57f83dc3eb86d8d0c92ec112f3b416d6685a9_bytes32}};
-    account_trie.upsert(db::to_slice(key1), db::to_slice(marshal_node(node1)));
+    trie.upsert(db::to_slice(key1), db::to_slice(marshal_node(node1)));
 
     const Bytes key2{nibbles_from_hex("6")};
     const Node node2{/*state_mask=*/0b10010, /*tree_mask=*/0, /*hash_mask=*/0b00010,
                      /*hashes=*/{0x7f9a58b00625a6e725559acf327baf88d90e4a5b65a2003acd24f110c0441df1_bytes32}};
-    account_trie.upsert(db::to_slice(key2), db::to_slice(marshal_node(node2)));
+    trie.upsert(db::to_slice(key2), db::to_slice(marshal_node(node2)));
 
     PrefixSet changed;
-    Cursor cursor{account_trie, changed};
+    Cursor cursor{trie, changed};
 
     CHECK((cursor.key() != std::nullopt && cursor.key()->empty()));  // root
 
@@ -130,6 +130,62 @@ TEST_CASE("Cursor traversal 2") {
 
     cursor.next();
     CHECK(cursor.key() == std::nullopt);  // end of trie
+}
+
+TEST_CASE("Cursor traversal within prefix") {
+    test::Context context;
+    auto& txn{context.txn()};
+
+    auto trie{db::open_cursor(txn, db::table::kTrieOfStorage)};
+
+    static const Bytes prefix_a{*from_hex("aa02")};
+    static const Bytes prefix_b{*from_hex("bb05")};
+    static const Bytes prefix_c{*from_hex("cc01")};
+
+    static const Node node_a{/*state_mask=*/0b10100, /*tree_mask=*/0, /*hash_mask=*/0, /*hashes=*/{},
+                             /*root_hash=*/0x2e1b81393448317fc1834241119c23f9e1763f7a662f8078949accc35b0d3b13_bytes32};
+    trie.upsert(db::to_slice(prefix_a), db::to_slice(marshal_node(node_a)));
+
+    static const Node node_b1{/*state_mask=*/0b10100, /*tree_mask=*/0b00100, /*hash_mask=*/0, /*hashes=*/{},
+                              /*root_hash=*/0xc570b66136e99d07c6c6360769de1d9397805849879dd7c79cf0b8e6694bfb0e_bytes32};
+    static const Node node_b2{/*state_mask=*/0b00010, /*tree_mask=*/0, /*hash_mask=*/0b00010,
+                              /*hashes=*/{0x6fc81f58df057a25ca6b687a6db54aaa12fbea1baf03aa3db44d499fb8a7af65_bytes32},
+                              /*root_hash=*/std::nullopt};
+    trie.upsert(db::to_slice(prefix_b), db::to_slice(marshal_node(node_b1)));
+    trie.upsert(db::to_slice(prefix_b + nibbles_from_hex("2")), db::to_slice(marshal_node(node_b2)));
+
+    static const Node node_c{/*state_mask=*/0b11110, /*tree_mask=*/0, /*hash_mask=*/0, /*hashes=*/{},
+                             /*root_hash=*/0x0f12bed8e3cc4cce692d234e69a4d79c0e74ab05ecb808dad588212eab788c31_bytes32};
+    trie.upsert(db::to_slice(prefix_c), db::to_slice(marshal_node(node_c)));
+
+    SECTION("No changes") {
+        PrefixSet changed;
+        Cursor cursor{trie, changed, prefix_b};
+
+        CHECK((cursor.key() != std::nullopt && cursor.key()->empty()));  // root
+        CHECK(cursor.can_skip_state());                                  // due to root_hash
+        cursor.next();                                                   // skips to end of trie
+        CHECK(cursor.key() == std::nullopt);
+    }
+
+    SECTION("Some  changes") {
+        PrefixSet changed;
+        changed.insert(prefix_b + nibbles_from_hex("D5"));
+        changed.insert(prefix_c + nibbles_from_hex("B8"));
+        Cursor cursor{trie, changed, prefix_b};
+
+        CHECK((cursor.key() != std::nullopt && cursor.key()->empty()));  // root
+        CHECK(!cursor.can_skip_state());
+        cursor.next();
+        CHECK(nibbles_to_hex(*cursor.key()) == "2");
+        cursor.next();
+        CHECK(nibbles_to_hex(*cursor.key()) == "21");
+        cursor.next();
+        CHECK(nibbles_to_hex(*cursor.key()) == "4");
+
+        cursor.next();
+        CHECK(cursor.key() == std::nullopt);  // end of trie
+    }
 }
 
 static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {

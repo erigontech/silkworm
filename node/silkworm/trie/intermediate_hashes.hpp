@@ -87,6 +87,7 @@ class Cursor {
     Cursor(const Cursor&) = delete;
     Cursor& operator=(const Cursor&) = delete;
 
+    // Ignores DB entries whose keys don't start with the prefix
     Cursor(mdbx::cursor& cursor, PrefixSet& changed, ByteView prefix = {});
 
     void next();
@@ -118,7 +119,7 @@ class Cursor {
 
     void consume_node(ByteView key, bool exact);
 
-    void move_to_next_sibling();
+    void move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode);
 
     void update_skip_state();
 

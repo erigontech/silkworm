@@ -80,12 +80,21 @@ void Cursor::consume_node(ByteView to, bool exact) {
 }
 
 void Cursor::next() {
-    // TODO[Issue 179] double check
+    if (stack_.empty()) {
+        // end-of-tree
+        return;
+    }
+
     if (!can_skip_state_ && children_are_in_trie()) {
         // go to the child node
-        consume_node(*key(), /*exact=*/false);
+        SubNode& sn{stack_.back()};
+        if (sn.nibble < 0) {
+            move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/true);
+        } else {
+            consume_node(*key(), /*exact=*/false);
+        }
     } else {
-        move_to_next_sibling();
+        move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/false);
     }
 
     update_skip_state();
@@ -100,7 +109,7 @@ void Cursor::update_skip_state() {
     }
 }
 
-void Cursor::move_to_next_sibling() {
+void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode) {
     if (stack_.empty()) {
         // end-of-tree
         return;
@@ -108,23 +117,30 @@ void Cursor::move_to_next_sibling() {
 
     SubNode& sn{stack_.back()};
 
+    if (sn.nibble >= 15 || (sn.nibble < 0 && !allow_root_to_child_nibble_within_subnode)) {
+        // this node is fully traversed
+        stack_.pop_back();
+        move_to_next_sibling(false);  // on parent
+        return;
+    }
+
+    ++sn.nibble;
+
     if (!sn.node.has_value()) {
         // we can't rely on the state flag, so search in the DB
-        ++sn.nibble;
         consume_node(*key(), /*exact=*/false);
         return;
     }
 
-    assert(sn.nibble < 16);
-    do {
-        ++sn.nibble;
-        if (sn.nibble == 16) {
-            // this node is fully traversed
-            stack_.pop_back();
-            move_to_next_sibling();  // on parent
+    for (; sn.nibble < 16; ++sn.nibble) {
+        if (sn.state_flag()) {
             return;
         }
-    } while (!sn.state_flag());
+    }
+
+    // this node is fully traversed
+    stack_.pop_back();
+    move_to_next_sibling(false);  // on parent
 }
 
 Bytes Cursor::SubNode::full_key() const {

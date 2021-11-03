@@ -130,7 +130,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     // Save header
     tx_.write_header(header, true);  // true = with_header_numbers
 
-    SILKWORM_LOG(LogLevel::Info) << "PersistedChain: saved header height=" << height << " hash=" << hash << "\n";
+    SILKWORM_LOG(LogLevel::Trace) << "PersistedChain: saved header height=" << height << " hash=" << hash << "\n";
 
     previous_hash_ = hash;
 }

@@ -48,7 +48,7 @@ std::string WorkingChain::human_readable_status() const {
 std::string WorkingChain::human_readable_verbose_status() const {
     std::string verbose_status;
     verbose_status += std::to_string(links_.size()) + " links, " + std::to_string(anchors_.size()) + " anchors (";
-    for (auto& anchor: anchors_) {
+    for (auto& anchor : anchors_) {
         verbose_status += std::to_string(anchor.second->blockHeight) + ",";
     }
     verbose_status += ")";
@@ -81,7 +81,7 @@ Headers WorkingChain::withdraw_stable_headers() {
 
     while (!insertList_.empty()) {
         // Make sure long insertions do not appear as a stuck stage headers
-        SILKWORM_LOG(LogLevel::Info) << "WorkingChain: inserting headers (" << highestInDb_ << ")\n";
+        SILKWORM_LOG(LogLevel::Info) << "WorkingChain: persisting headers (on top of " << highestInDb_ << ")\n";
 
         // Choose a link at top
         auto link = insertList_.top();  // is the last added
@@ -117,9 +117,14 @@ Headers WorkingChain::withdraw_stable_headers() {
         }
         if (skip) {
             links_.erase(link->hash);
+            continue;
         }
 
-        stable_headers.push_back(link->header); // will be persisted by PersistedChain
+        stable_headers.push_back(link->header);  // will be persisted by PersistedChain
+
+        if (link->blockHeight > highestInDb_) {
+            highestInDb_ = link->blockHeight;
+        }
 
         link->persisted = true;
         link->header = nullptr;  // drop header reference to free memory, as we won't need it anymore
@@ -184,7 +189,7 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 size_t WorkingChain::anchors_within_range(BlockNum max) {
     return static_cast<size_t>(std::count_if(anchors_.begin(), anchors_.end(),
                                              [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
-        }
+}
 
 BlockNum WorkingChain::lowest_unsaved_anchor_from(BlockNum top_bn) {
     BlockNum lowest_bn = top_bn;
@@ -298,7 +303,7 @@ auto WorkingChain::find_bad_header(const std::vector<BlockHeader>& headers) -> b
         const Hash& hash{header.hash()};
         return contains(badHeaders_, hash);
     });
-    }
+}
 
 auto WorkingChain::accept_headers(const std::vector<BlockHeader>& headers, PeerId peerId)
     -> std::tuple<Penalty, RequestMoreHeaders> {
@@ -497,7 +502,7 @@ auto WorkingChain::find_link(const Segment& segment, size_t start)
 auto WorkingChain::get_link(const Hash& hash) -> std::optional<std::shared_ptr<Link>> {
     if (auto it = links_.find(hash); it != links_.end()) {
         return it->second;
-}
+    }
     return std::nullopt;
 }
 
@@ -549,9 +554,9 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
 
     if (contains(badHeaders_, attachment_link.value()->hash)) {
         invalidate(*anchor);
-        //todo: add & return penalties: []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty, PeerID: anchor.peerID})
-    }
-    else if (attachment_link.value()->persisted) {
+        // todo: add & return penalties: []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty,
+        // PeerID: anchor.peerID})
+    } else if (attachment_link.value()->persisted) {
         auto link = links_.find(link_header->hash());
         if (link != links_.end())  // todo: Erigon code assume true always, check!
             insertList_.push(link->second);

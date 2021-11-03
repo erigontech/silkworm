@@ -118,13 +118,12 @@ class Db::ReadOnlyAccess::Tx {
         return key;
     }
 
-    std::optional<Hash> read_head_header_hash() {  // todo: add to db::access_layer.hpp?
-        auto head_header_table = db::open_cursor(txn, db::table::kHeadHeader);
-        auto key = head_header_key();
-        auto data = head_header_table.find(db::to_slice(key), /*throw_notfound*/ false);
-        if (!data) return std::nullopt;
-        assert(data.value.length() == kHashLength);
-        return Hash(db::from_slice(data.value));
+    std::optional<Hash> read_head_header_hash() {
+        auto ret{db::read_head_header_hash(txn)};
+        if (!ret.has_value()) {
+            return std::nullopt;
+        }
+        return Hash(ret.value());
     }
 
     std::optional<BlockHeader> read_header(BlockNum b, Hash h) { return db::read_header(txn, b, h.bytes); }
@@ -168,7 +167,8 @@ class Db::ReadOnlyAccess::Tx {
         return read_header(*block_num, h);
     }
 
-    // todo: is it better to replace this func with cursor_for_count(cursor, const WalkFunc&, size_t max_count, CursorMoveDirection) ?
+    // todo: is it better to replace this func with cursor_for_count(cursor, const WalkFunc&, size_t max_count,
+    // CursorMoveDirection) ?
     void read_headers_in_reverse_order(size_t limit, std::function<void(BlockHeader&&)> callback) {
         auto header_table = db::open_cursor(txn, db::table::kHeaders);
 

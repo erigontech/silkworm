@@ -16,11 +16,9 @@
 
 #include "InboundGetBlockBodies.hpp"
 
-#include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/body_retrieval.hpp>
 #include <silkworm/downloader/packets/BlockBodiesPacket.hpp>
-#include <silkworm/downloader/packets/RLPError.hpp>
 #include <silkworm/downloader/rpc/SendMessageById.hpp>
 
 namespace silkworm {
@@ -34,10 +32,7 @@ InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, 
     peerId_ = string_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());
-    rlp::DecodingResult err = rlp::decode(data, packet_);
-    if (err != rlp::DecodingResult::kOk) {
-        throw rlp::rlp_error("rlp decoding error decoding GetBlockBodies");
-    }
+    rlp::success_or_throw(rlp::decode(data, packet_));
 
     SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
 }

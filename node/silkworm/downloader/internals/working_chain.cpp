@@ -16,8 +16,6 @@
 
 #include "working_chain.hpp"
 
-#include <functional>
-
 #include <silkworm/common/log.hpp>
 
 #include "cpp20_backport.hpp"
@@ -28,7 +26,7 @@ namespace silkworm {
 class segment_cut_and_paste_error : public std::logic_error {
   public:
     segment_cut_and_paste_error() : std::logic_error("segment cut&paste error, unknown reason") {}
-    segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
+    explicit segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
 };
 
 WorkingChain::WorkingChain()
@@ -178,22 +176,14 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 }
 
 size_t WorkingChain::anchors_within_range(BlockNum max) {
-    size_t count = 0;
-    for (const auto& anchor : anchors_) {
-        if (anchor.second->blockHeight < max) {
-            count++;
-        }
-    }
-    return count;
+    return static_cast<size_t>(std::count_if(anchors_.begin(), anchors_.end(),
+                                             [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
 }
 
 BlockNum WorkingChain::lowest_anchor_from(BlockNum top_bn) {
     BlockNum lowest_bn = top_bn;
-    for (const auto& anchor : anchors_) {
-        if (anchor.second->blockHeight < lowest_bn) {
-            lowest_bn = anchor.second->blockHeight;
-        }
-    }
+    std::for_each(anchors_.begin(), anchors_.end(),
+                  [&lowest_bn](const auto& anchor) { lowest_bn = std::min(lowest_bn, anchor.second->blockHeight); });
     return lowest_bn;
 }
 
@@ -295,11 +285,10 @@ void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
 bool WorkingChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }
 
 auto WorkingChain::find_bad_header(const std::vector<BlockHeader>& headers) -> bool {
-    for (auto& header : headers) {
-        Hash header_hash = header.hash();
-        if (contains(badHeaders_, header_hash)) return true;
-    }
-    return false;
+    return std::any_of(headers.begin(), headers.end(), [&](const BlockHeader& header) -> bool {
+        const Hash& hash{header.hash()};
+        return contains(badHeaders_, hash);
+    });
 }
 
 auto WorkingChain::accept_headers(const std::vector<BlockHeader>& headers, PeerId peerId)
@@ -497,9 +486,10 @@ auto WorkingChain::find_link(const Segment& segment, size_t start)
 }
 
 auto WorkingChain::get_link(const Hash& hash) -> std::optional<std::shared_ptr<Link>> {
-    auto it = links_.find(hash);
-    if (it != links_.end()) return {it->second};
-    return {};
+    if (auto it = links_.find(hash); it != links_.end()) {
+        return it->second;
+    }
+    return std::nullopt;
 }
 
 void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut_and_paste_error
@@ -511,7 +501,7 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     if (!attachment_link)
         throw segment_cut_and_paste_error("segment cut&paste error, connect attachment link not found for " +
                                           to_hex(link_header->parent_hash));
-    if (attachment_link.value()->preverified && attachment_link.value()->next.size() > 0)
+    if (attachment_link.value()->preverified && !attachment_link.value()->next.empty())
         throw segment_cut_and_paste_error("segment cut&paste error, cannot connect to preverified link " +
                                           to_string(attachment_link.value()->blockHeight) + " with children");
 
@@ -542,13 +532,8 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
 
     // todo: this block is the same in extend_down
     auto anchor = a->second;
-    auto anchor_preverified = false;
-    for (auto& link : anchor->links) {  // todo: use find_if
-        if (link->preverified) {
-            anchor_preverified = true;
-            break;
-        }
-    }
+    auto anchor_preverified = std::any_of(anchor->links.begin(), anchor->links.end(),
+                                          [](const auto& link) -> bool { return link->preverified; });
 
     anchors_.erase(anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
@@ -562,7 +547,6 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
 
 auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeaders {
     // throw segment_cut_and_paste_error
-    using std::to_string;
 
     auto anchor_header = *segment_slice.begin();  // highest header
     auto a = anchors_.find(anchor_header->hash());
@@ -572,13 +556,8 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
                                           to_hex(anchor_header->hash()));
 
     auto old_anchor = a->second;
-    auto anchor_preverified = false;
-    for (auto& link : old_anchor->links) {  // todo: use find_if
-        if (link->preverified) {
-            anchor_preverified = true;
-            break;
-        }
-    }
+    auto anchor_preverified = std::any_of(old_anchor->links.begin(), old_anchor->links.end(),
+                                          [](const auto& link) -> bool { return link->preverified; });
 
     anchors_.erase(old_anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
@@ -632,7 +611,7 @@ void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_c
     if (!attachment_link)
         throw segment_cut_and_paste_error("segment cut&paste error, extend up attachment link not found for " +
                                           to_hex(link_header->parent_hash));
-    if (attachment_link.value()->preverified && attachment_link.value()->next.size() > 0)
+    if (attachment_link.value()->preverified && !attachment_link.value()->next.empty())
         throw segment_cut_and_paste_error("segment cut&paste error, cannot extend up from preverified link " +
                                           to_string(attachment_link.value()->blockHeight) + " with children");
 

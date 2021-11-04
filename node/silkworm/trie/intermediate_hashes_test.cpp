@@ -631,8 +631,8 @@ TEST_CASE("Incremental vs regeneration for storage") {
         db::upsert_storage_value(hashed_storage, storage_prefix1, full_view(hashed_loc1.bytes), value);
         db::upsert_storage_value(hashed_storage, storage_prefix2, full_view(hashed_loc2.bytes), value);
         if (register_change) {
-            storage_change_table.upsert(db::to_slice(storage_change_key1), mdbx::slice{hashed_loc1.bytes, kHashLength});
-            storage_change_table.upsert(db::to_slice(storage_change_key2), mdbx::slice{hashed_loc2.bytes, kHashLength});
+            storage_change_table.upsert(db::to_slice(storage_change_key1), mdbx::slice{plain_loc1.bytes, kHashLength});
+            storage_change_table.upsert(db::to_slice(storage_change_key2), mdbx::slice{plain_loc2.bytes, kHashLength});
         }
     };
 

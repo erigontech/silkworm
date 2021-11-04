@@ -18,6 +18,7 @@
 
 #include <bitset>
 
+#include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/db/tables.hpp>
@@ -26,11 +27,11 @@ namespace silkworm::trie {
 
 Cursor::Cursor(mdbx::cursor& cursor, PrefixSet& changed, ByteView prefix)
     : cursor_{cursor}, changed_{changed}, prefix_{prefix} {
-    consume_node(/*key=*/{}, /*exact=*/true);
+    consume_node(/*key=*/{}, /*exact=*/true, /*delete_entry=*/false);
     update_skip_state();
 }
 
-void Cursor::consume_node(ByteView to, bool exact) {
+void Cursor::consume_node(ByteView to, bool exact, bool delete_entry) {
     const Bytes db_key{prefix_ + Bytes{to}};
     const auto entry{exact ? cursor_.find(db::to_slice(db_key), /*throw_notfound=*/false)
                            : cursor_.lower_bound(db::to_slice(db_key), /*throw_notfound=*/false)};
@@ -74,7 +75,7 @@ void Cursor::consume_node(ByteView to, bool exact) {
 
     stack_.push_back(SubNode{Bytes{key}, node, nibble});
 
-    if (entry) {
+    if (entry && delete_entry) {
         cursor_.erase();
     }
 }
@@ -91,7 +92,7 @@ void Cursor::next() {
         if (sn.nibble < 0) {
             move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/true);
         } else {
-            consume_node(*key(), /*exact=*/false);
+            consume_node(*key(), /*exact=*/false, /*delete_entry=*/true);
         }
     } else {
         move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/false);
@@ -128,7 +129,7 @@ void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode
 
     if (!sn.node.has_value()) {
         // we can't rely on the state flag, so search in the DB
-        consume_node(*key(), /*exact=*/false);
+        consume_node(*key(), /*exact=*/false, /*delete_entry=*/true);
         return;
     }
 
@@ -213,7 +214,6 @@ bool Cursor::children_are_in_trie() const {
 }
 
 std::optional<Bytes> Cursor::first_uncovered_prefix() const {
-    // TODO[Issue 179] double check
     std::optional<Bytes> k{key()};
     if (can_skip_state_ && k != std::nullopt) {
         k = increment_key(*k);
@@ -222,32 +222,6 @@ std::optional<Bytes> Cursor::first_uncovered_prefix() const {
         return std::nullopt;
     }
     return pack_nibbles(*k);
-}
-
-StorageTrieCursor::StorageTrieCursor(mdbx::txn&) {}
-
-Bytes StorageTrieCursor::seek_to_account(ByteView) {
-    // TODO[Issue 179] implement
-    return {};
-}
-
-Bytes StorageTrieCursor::first_uncovered_prefix() {
-    // TODO[Issue 179] implement
-    return Bytes(1, '\0');
-}
-
-std::optional<Bytes> StorageTrieCursor::key() const {
-    // TODO[Issue 179] implement
-    return std::nullopt;
-}
-
-void StorageTrieCursor::next() {
-    // TODO[Issue 179] implement
-}
-
-bool StorageTrieCursor::can_skip_state() const {
-    // TODO[Issue 179] implement
-    return false;
 }
 
 DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
@@ -309,6 +283,7 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
     auto acc_state{db::open_cursor(txn_, db::table::kHashedAccounts)};
     auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
     auto acc_trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfAccounts)};
+    auto storage_trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfStorage)};
 
     for (Cursor acc_trie{acc_trie_db_cursor, changed}; acc_trie.key().has_value();) {
         if (acc_trie.can_skip_state()) {
@@ -318,13 +293,13 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
 
         const std::optional<Bytes> uncovered_acc{acc_trie.first_uncovered_prefix()};
         if (uncovered_acc == std::nullopt) {
-            // no more uncovered state
+            // no more uncovered accounts
             break;
         }
 
         acc_trie.next();
 
-        for (auto acc{acc_state.lower_bound(db::to_slice(*uncovered_acc), /*throw_notfound=*/false)}; acc.done;
+        for (auto acc{acc_state.lower_bound(db::to_slice(*uncovered_acc), /*throw_notfound=*/false)}; acc;
              acc = acc_state.to_next(/*throw_notfound=*/false)) {
             const Bytes unpacked_key{unpack_nibbles(db::from_slice(acc.key))};
             if (acc_trie.key().has_value() && acc_trie.key().value() < unpacked_key) {
@@ -344,33 +319,36 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
                     storage_collector_.collect(std::move(e));
                 };
 
-                StorageTrieCursor storage_trie{txn_};
-                for (storage_trie.seek_to_account(key_with_inc);; storage_trie.next()) {
+                for (Cursor storage_trie{storage_trie_db_cursor, changed, key_with_inc};
+                     storage_trie.key().has_value();) {
                     if (storage_trie.can_skip_state()) {
-                        goto use_storage_trie;
+                        assert(storage_trie.hash() != nullptr);
+                        storage_hb.add_branch_node(*storage_trie.key(), *storage_trie.hash(),
+                                                   storage_trie.children_are_in_trie());
                     }
 
-                    for (auto storage{storage_state.lower_bound_multivalue(
-                             db::to_slice(key_with_inc), db::to_slice(storage_trie.first_uncovered_prefix()),
-                             /*throw_notfound=*/false)};
-                         storage.done; storage = storage_state.to_current_next_multi(/*throw_notfound=*/false)) {
+                    const std::optional<Bytes> uncovered_storage{storage_trie.first_uncovered_prefix()};
+                    if (uncovered_storage == std::nullopt) {
+                        // no more uncovered storage
+                        break;
+                    }
+
+                    storage_trie.next();
+
+                    for (auto storage{storage_state.lower_bound_multivalue(db::to_slice(key_with_inc),
+                                                                           db::to_slice(*uncovered_storage),
+                                                                           /*throw_notfound=*/false)};
+                         storage; storage = storage_state.to_current_next_multi(/*throw_notfound=*/false)) {
                         const Bytes unpacked_loc{unpack_nibbles(db::from_slice(storage.value).substr(0, kHashLength))};
-                        const ByteView value{db::from_slice(storage.value).substr(kHashLength)};
                         if (storage_trie.key().has_value() && storage_trie.key().value() < unpacked_loc) {
                             break;
                         }
 
+                        const ByteView value{db::from_slice(storage.value).substr(kHashLength)};
                         rlp_.clear();
                         rlp::encode(rlp_, value);
                         storage_hb.add_leaf(unpacked_loc, rlp_);
                     }
-
-                use_storage_trie:
-                    if (storage_trie.key() == std::nullopt) {
-                        break;
-                    }
-
-                    // TODO[Issue 179] use storage trie
                 }
 
                 storage_root = storage_hb.root_hash();
@@ -406,24 +384,43 @@ static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::fi
 }
 
 // See Erigon (p *HashPromoter) Promote
-static void changed_accounts(mdbx::txn& txn, BlockNum from, PrefixSet& out) {
+static PrefixSet gather_changes(mdbx::txn& txn, BlockNum from) {
     const Bytes starting_key{db::block_key(from + 1)};
 
-    auto change_cursor{db::open_cursor(txn, db::table::kAccountChangeSet)};
-    change_cursor.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false);
-    db::cursor_for_each(change_cursor, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
+    PrefixSet out;
+
+    auto account_changes{db::open_cursor(txn, db::table::kAccountChangeSet)};
+    account_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false);
+    db::cursor_for_each(account_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
         const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};
         const auto hashed_address{keccak256(address)};
-        out.insert(unpack_nibbles(ByteView{hashed_address.bytes, kHashLength}));
+        out.insert(unpack_nibbles(full_view(hashed_address.bytes)));
         return true;
     });
+
+    auto storage_changes{db::open_cursor(txn, db::table::kStorageChangeSet)};
+    storage_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false);
+    // TODO[Issue 179] what happens if there are no storage changes? Will cursor_for_each start from the beginning?
+    db::cursor_for_each(storage_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
+        const ByteView address{db::from_slice(entry.key).substr(sizeof(BlockNum), kAddressLength)};
+        const ByteView incarnation{db::from_slice(entry.key).substr(sizeof(BlockNum) + kAddressLength)};
+        const ByteView location{db::from_slice(entry.value).substr(0, kHashLength)};
+        const auto hashed_address{keccak256(address)};
+        const auto hashed_location{keccak256(location)};
+
+        Bytes hashed_key{full_view(hashed_address.bytes)};
+        hashed_key.append(incarnation);
+        hashed_key.append(unpack_nibbles(full_view(hashed_location.bytes)));
+        out.insert(hashed_key);
+        return true;
+    });
+
+    return out;
 }
 
 evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir, BlockNum from,
                                             const evmc::bytes32* expected_root) {
-    PrefixSet changed;
-    changed_accounts(txn, from, changed);
-    // TODO[Issue 179] changed storage
+    PrefixSet changed{gather_changes(txn, from)};
     return increment_intermediate_hashes(txn, etl_dir, expected_root, changed);
 }
 

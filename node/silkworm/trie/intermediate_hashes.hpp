@@ -117,7 +117,7 @@ class Cursor {
         [[nodiscard]] const evmc::bytes32* hash() const;
     };
 
-    void consume_node(ByteView key, bool exact);
+    void consume_node(ByteView key, bool exact, bool delete_entry);
 
     void move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode);
 
@@ -132,25 +132,6 @@ class Cursor {
     std::vector<SubNode> stack_;
 
     bool can_skip_state_{false};
-};
-
-// Erigon StorageTrieCursor
-class StorageTrieCursor {
-  public:
-    StorageTrieCursor(const StorageTrieCursor&) = delete;
-    StorageTrieCursor& operator=(const StorageTrieCursor&) = delete;
-
-    explicit StorageTrieCursor(mdbx::txn& txn);
-
-    Bytes seek_to_account(ByteView hashed_address_with_incarnation);
-
-    Bytes first_uncovered_prefix();
-
-    [[nodiscard]] std::optional<Bytes> key() const;
-
-    void next();
-
-    [[nodiscard]] bool can_skip_state() const;
 };
 
 // Erigon FlatDBTrieLoader

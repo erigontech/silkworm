@@ -20,6 +20,7 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/as_range.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 
@@ -213,7 +214,7 @@ void RecoveryFarm::wait_workers_completion() {
     if (!workers_.empty()) {
         uint32_t attempts{0};
         do {
-            auto it = std::find_if(workers_.begin(), workers_.end(), [](const worker_pair& w) {
+            auto it = as_range::find_if(workers_, [](const worker_pair& w) {
                 return w.first->get_status() == RecoveryWorker::Status::Working;
             });
             if (it == workers_.end()) {
@@ -389,7 +390,7 @@ bool RecoveryFarm::dispatch_batch() {
 
     // Locate first available worker
     while (!should_stop()) {
-        auto it = std::find_if(workers_.begin(), workers_.end(), [](const worker_pair& w) {
+        auto it = as_range::find_if(workers_, [](const worker_pair& w) {
             return w.first->get_status() == RecoveryWorker::Status::Idle;
         });
 
@@ -401,7 +402,7 @@ bool RecoveryFarm::dispatch_batch() {
             return true;
         } else {
             // Do we have ready results from workers that we need to harvest ?
-            it = std::find_if(workers_.begin(), workers_.end(), [](const worker_pair& w) {
+            it = as_range::find_if(workers_, [](const worker_pair& w) {
                 auto s = static_cast<int>(w.first->get_status());
                 return (s >= 2);
             });

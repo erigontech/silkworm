@@ -31,6 +31,7 @@
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/test_util.hpp>
+#include <silkworm/common/as_range.hpp>
 #include <silkworm/consensus/blockchain.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 
@@ -633,8 +634,7 @@ Status difficulty_test(const nlohmann::json& j, const std::optional<ChainConfig>
 }
 
 bool exclude_test(const fs::path& p, const fs::path& root_dir) {
-    return std::any_of(kExcludedTests.begin(), kExcludedTests.end(),
-                       [&p, &root_dir](const std::filesystem::path& e) -> bool { return root_dir / e == p; });
+    return as_range::any_of(kExcludedTests, [&p, &root_dir](const std::filesystem::path& e) -> bool { return root_dir / e == p; });
 }
 
 int main(int argc, char* argv[]) {

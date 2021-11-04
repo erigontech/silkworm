@@ -19,11 +19,9 @@
 #include <thread>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/chain/preverified_hashes.hpp>
 
 #include "internals/header_retrieval.hpp"
 #include "messages/InboundGetBlockHeaders.hpp"
-#include "messages/InternalMessage.hpp"
 #include "messages/OutboundGetBlockHeaders.hpp"
 #include "messages/OutboundNewBlockHashes.hpp"
 #include "rpc/ReceiveMessages.hpp"

@@ -20,16 +20,14 @@
 
 #include <CLI/CLI.hpp>
 #include <ethash/ethash.hpp>
-#include <ethash/keccak.hpp>
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/util.hpp>
-#include <silkworm/types/block.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;
@@ -107,6 +105,8 @@ int main(int argc, char* argv[]) {
         auto canonical_hashes{db::open_cursor(txn, db::table::kCanonicalHashes)};
 
         // Loop blocks
+        StopWatch sw;
+        sw.start();
         for (uint32_t block_num{options.block_from}; block_num <= options.block_to && !g_should_stop; block_num++) {
             if (epoch_context->epoch_number != static_cast<int>(block_num / ethash::epoch_length)) {
                 epoch_num = (block_num / ethash::epoch_length);
@@ -129,24 +129,29 @@ int main(int argc, char* argv[]) {
             // Verify Proof of Work
             uint64_t nonce{endian::load_big_u64(header->nonce.data())};
 
-            auto boundary256{header->boundary()};
             auto seal_hash(header->hash(/*for_sealing =*/true));
-            ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
-            ethash::hash256 mixh256{*reinterpret_cast<ethash::hash256*>(header->mix_hash.bytes)};
-            if (!ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256)) {
+            const auto diff256{intx::be::store<ethash::hash256>(header->difficulty)};
+            const auto sealh256{ethash::hash256_from_bytes(seal_hash.bytes)};
+            const auto mixh256{ethash::hash256_from_bytes(header->mix_hash.bytes)};
+            if (const auto ec = ethash::verify_against_difficulty(*epoch_context, sealh256, mixh256, nonce, diff256);
+                ec) {
+                auto boundary256{header->boundary()};
                 auto result{ethash::hash(*epoch_context, sealh256, nonce)};
                 auto b{to_bytes32({boundary256.bytes, 32})};
                 auto f{to_bytes32({result.final_hash.bytes, 32})};
                 auto m{to_bytes32({result.mix_hash.bytes, 32})};
 
                 std::cout << "\n Pow Verification error on block " << block_num << " : \n"
+                          << "Error: " << ec << "\n"
                           << "Final hash " << to_hex(f) << " expected below " << to_hex(b) << "\n"
-                          << "Mix   hash " << to_hex(m) << " expected mix" << to_hex(m) << std::endl;
+                          << "Mix   hash " << to_hex(m) << " expected mix " << to_hex(m) << std::endl;
                 break;
             }
 
             if (!(block_num % 1000)) {
-                SILKWORM_LOG(LogLevel::Info) << "At block height " << block_num << std::endl;
+                const auto interval{sw.lap()};
+                SILKWORM_LOG(LogLevel::Info)
+                    << "At block height " << block_num << " in " << sw.format(interval.second) << std::endl;
             }
         }
 

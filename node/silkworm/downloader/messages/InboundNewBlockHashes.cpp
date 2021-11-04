@@ -18,7 +18,6 @@
 
 #include <algorithm>
 
-#include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/internals/random_number.hpp>
 #include <silkworm/downloader/packets/RLPEth66PacketCoding.hpp>
@@ -36,8 +35,7 @@ InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg, 
     peerId_ = string_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
-    rlp::DecodingResult err = rlp::decode(data, packet_);
-    if (err != rlp::DecodingResult::kOk) throw rlp::rlp_error("rlp decoding error decoding NewBlockHashes");
+    rlp::success_or_throw(rlp::decode(data, packet_));
 
     SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
 }

@@ -49,14 +49,13 @@ ValidationResult ConsensusEngineEthash::validate_seal(const BlockHeader& header)
     auto epoch_number{header.number / ethash::epoch_length};
     auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_number))};
 
-    auto boundary256{header.boundary()};
-    auto seal_hash(header.hash(/*for_sealing =*/true));
-    ethash::hash256 sealh256{*reinterpret_cast<ethash::hash256*>(seal_hash.bytes)};
-    ethash::hash256 mixh256{};
-    std::memcpy(mixh256.bytes, header.mix_hash.bytes, 32);
+    const auto nonce{endian::load_big_u64(header.nonce.data())};
+    const auto seal_hash(header.hash(/*for_sealing =*/true));
+    const auto diff256{intx::be::store<ethash::hash256>(header.difficulty)};
+    const auto sealh256{ethash::hash256_from_bytes(seal_hash.bytes)};
+    const auto mixh256{ethash::hash256_from_bytes(header.mix_hash.bytes)};
 
-    uint64_t nonce{endian::load_big_u64(header.nonce.data())};
-    return ethash::verify(*epoch_context, sealh256, mixh256, nonce, boundary256) ? ValidationResult::kOk
-                                                                                 : ValidationResult::kInvalidSeal;
+    const auto ec{ethash::verify_against_difficulty(*epoch_context, sealh256, mixh256, nonce, diff256)};
+    return ec ? ValidationResult::kInvalidSeal : ValidationResult::kOk;
 }
 }  // namespace silkworm::consensus

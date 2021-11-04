@@ -54,9 +54,11 @@ Bytes unpack_nibbles(ByteView packed) {
     return out;
 }
 
-static Bytes encode_path(ByteView path, bool terminating) {
-    Bytes res(path.length() / 2 + 1, '\0');
-    const bool odd{path.length() % 2 != 0};
+// See "Specification: Compact encoding of hex sequence with optional terminator"
+// at https://eth.wiki/fundamentals/patricia-tree
+static Bytes encode_path(ByteView nibbles, bool terminating) {
+    Bytes res(nibbles.length() / 2 + 1, '\0');
+    const bool odd{nibbles.length() % 2 != 0};
 
     if (!terminating && !odd) {
         res[0] = 0x00;
@@ -69,13 +71,13 @@ static Bytes encode_path(ByteView path, bool terminating) {
     }
 
     if (odd) {
-        res[0] |= path[0];
+        res[0] |= nibbles[0];
         for (size_t i{1}; i < res.length(); ++i) {
-            res[i] = (path[2 * i - 1] << 4) + path[2 * i];
+            res[i] = (nibbles[2 * i - 1] << 4) + nibbles[2 * i];
         }
     } else {
         for (size_t i{1}; i < res.length(); ++i) {
-            res[i] = (path[2 * i - 2] << 4) + path[2 * i - 1];
+            res[i] = (nibbles[2 * i - 2] << 4) + nibbles[2 * i - 1];
         }
     }
 
@@ -131,9 +133,12 @@ void HashBuilder::add_leaf(Bytes key, ByteView value) {
 }
 
 void HashBuilder::add_branch_node(Bytes key, const evmc::bytes32& value, bool is_in_db_trie) {
-    assert(key > key_);
+    assert(key > key_ || (key_.empty() && key.empty()));
     if (!key_.empty()) {
         gen_struct_step(key_, key);
+    } else if (key.empty()) {
+        // known root hash
+        stack_.push_back(wrap_hash(value.bytes));
     }
     key_ = std::move(key);
     value_ = value;

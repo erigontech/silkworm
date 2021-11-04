@@ -582,7 +582,7 @@ TEST_CASE("Incremental vs regeneration for storage") {
     auto& txn{context.txn()};
 
     // TODO[Issue 179] increase n
-    static constexpr size_t n{10};
+    static constexpr size_t n{2};
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
     auto hashed_storage{db::open_cursor(txn, db::table::kHashedStorage)};
@@ -642,7 +642,7 @@ TEST_CASE("Incremental vs regeneration for storage") {
 
     // Start with 3n storage slots per account at genesis, each with the same value
     static const Bytes value_x{*from_hex("42")};
-    for (size_t i{0}; i < 6 * n; i += 2) {
+    for (size_t i{0}; i < 3 * n; ++i) {
         upsert_storage_for_two_test_accounts(i, value_x, false);
     }
 
@@ -650,19 +650,19 @@ TEST_CASE("Incremental vs regeneration for storage") {
 
     // Change the value of the first third of the storage
     static const Bytes value_y{*from_hex("71f602b294119bf452f1923814f5c6de768221254d3056b1bd63e72dc3142a29")};
-    for (size_t i{0}; i < 2 * n; i += 2) {
+    for (size_t i{0}; i < n; ++i) {
         upsert_storage_for_two_test_accounts(i, value_y, true);
     }
 
     // Delete the second third of the storage
-    for (size_t i{2 * n}; i < 4 * n; i += 2) {
+    for (size_t i{n}; i < 2 * n; ++i) {
         upsert_storage_for_two_test_accounts(i, {}, true);
     }
 
     // Don't touch the last third of genesis storage
 
     // And add some new storage
-    for (size_t i{6 * n}; i < 8 * n; i += 2) {
+    for (size_t i{3 * n}; i < 4 * n; ++i) {
         upsert_storage_for_two_test_accounts(i, value_x, true);
     }
 
@@ -678,14 +678,14 @@ TEST_CASE("Incremental vs regeneration for storage") {
     txn.clear_map(db::open_map(txn, db::table::kStorageChangeSet));
 
     // The first third of the storage now has value_y
-    for (size_t i{0}; i < 2 * n; i += 2) {
+    for (size_t i{0}; i < n; ++i) {
         upsert_storage_for_two_test_accounts(i, value_y, false);
     }
 
     // The second third of the storage is deleted
 
     // The last third and the extra storage has value_x
-    for (size_t i{4 * n}; i < 8 * n; i += 2) {
+    for (size_t i{2 * n}; i < 4 * n; ++i) {
         upsert_storage_for_two_test_accounts(i, value_x, false);
     }
 

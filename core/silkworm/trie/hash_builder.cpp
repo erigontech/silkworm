@@ -255,7 +255,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
                     hash_masks_[len - 1] |= 1u << current[len - 1];
                 }
 
-                bool store_in_db_trie{tree_masks_[len] || hash_masks_[len]};
+                const bool store_in_db_trie{len == 0 || tree_masks_[len] || hash_masks_[len]};
                 if (store_in_db_trie) {
                     if (len > 0) {
                         tree_masks_[len - 1] |= 1u << current[len - 1];  // register myself in parent bitmap

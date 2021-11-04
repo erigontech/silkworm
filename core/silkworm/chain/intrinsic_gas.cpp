@@ -19,6 +19,7 @@
 #include <algorithm>
 
 #include "protocol_param.hpp"
+#include <silkworm/common/as_range.hpp>
 
 namespace silkworm {
 
@@ -39,7 +40,7 @@ intx::uint128 intrinsic_gas(const Transaction& txn, bool homestead, bool istanbu
         return gas;
     }
 
-    intx::uint128 non_zero_bytes{std::count_if(txn.data.begin(), txn.data.end(), [](char c) { return c != 0; })};
+    intx::uint128 non_zero_bytes{as_range::count_if(txn.data, [](char c) { return c != 0; })};
 
     uint64_t nonZeroGas{istanbul ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
     gas += non_zero_bytes * nonZeroGas;

@@ -15,6 +15,7 @@
 */
 
 #include "util.hpp"
+#include <silkworm/common/as_range.hpp>
 
 #include <cassert>
 #include <regex>
@@ -123,7 +124,7 @@ evmc::bytes32 to_bytes32(ByteView bytes) {
 
 ByteView zeroless_view(const ByteView& data) {
     return data.substr(static_cast<size_t>(std::distance(
-        data.begin(), std::find_if_not(data.begin(), data.end(), [](const auto& b) { return b == 0x0; }))));
+        data.begin(), as_range::find_if_not(data, [](const auto& b) { return b == 0x0; }))));
 }
 
 ByteView zeroless_view(const evmc::bytes32& hash) { return zeroless_view(full_view(hash)); }

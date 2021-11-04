@@ -17,6 +17,7 @@
 #include "persisted_chain.hpp"
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/as_range.hpp>
 
 namespace silkworm {
 
@@ -162,7 +163,7 @@ header.ParentHash, blockHeight-1, hash, blockHeight))
 */
 
 void PersistedChain::persist(const Headers& headers) {
-    std::for_each(headers.begin(), headers.end(), [this](const auto& header) { persist(*header); });
+    as_range::for_each(headers, [this](const auto& header) { persist(*header); });
 }
 
 void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modularize

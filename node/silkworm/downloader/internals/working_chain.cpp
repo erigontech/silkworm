@@ -17,6 +17,7 @@
 #include "working_chain.hpp"
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/as_range.hpp>
 
 #include "cpp20_backport.hpp"
 #include "random_number.hpp"
@@ -176,14 +177,14 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 }
 
 size_t WorkingChain::anchors_within_range(BlockNum max) {
-    return static_cast<size_t>(std::count_if(anchors_.begin(), anchors_.end(),
-                                             [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
+    return static_cast<size_t>(as_range::count_if(anchors_,
+                                                  [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
 }
 
 BlockNum WorkingChain::lowest_anchor_from(BlockNum top_bn) {
     BlockNum lowest_bn = top_bn;
-    std::for_each(anchors_.begin(), anchors_.end(),
-                  [&lowest_bn](const auto& anchor) { lowest_bn = std::min(lowest_bn, anchor.second->blockHeight); });
+    as_range::for_each(anchors_,
+                       [&lowest_bn](const auto& anchor) { lowest_bn = std::min(lowest_bn, anchor.second->blockHeight); });
     return lowest_bn;
 }
 
@@ -285,7 +286,7 @@ void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
 bool WorkingChain::has_link(Hash hash) { return (links_.find(hash) != links_.end()); }
 
 auto WorkingChain::find_bad_header(const std::vector<BlockHeader>& headers) -> bool {
-    return std::any_of(headers.begin(), headers.end(), [&](const BlockHeader& header) -> bool {
+    return as_range::any_of(headers, [&](const BlockHeader& header) -> bool {
         const Hash& hash{header.hash()};
         return contains(badHeaders_, hash);
     });
@@ -344,7 +345,7 @@ std::tuple<bool, Penalty> HeaderList::childrenParentValidity(const std::vector<H
  */
 auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penalty> {
     std::vector<Header_Ref> headers = to_ref();
-    std::sort(headers.begin(), headers.end(), [](auto& h1, auto& h2) {
+    as_range::sort(headers, [](auto& h1, auto& h2) {
         return h1->number > h2->number;
     });  // sort headers from the highest block height to the lowest
 
@@ -532,8 +533,8 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
 
     // todo: this block is the same in extend_down
     auto anchor = a->second;
-    auto anchor_preverified = std::any_of(anchor->links.begin(), anchor->links.end(),
-                                          [](const auto& link) -> bool { return link->preverified; });
+    bool anchor_preverified = as_range::any_of(anchor->links,
+                                               [](const auto& link) -> bool { return link->preverified; });
 
     anchors_.erase(anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
@@ -556,8 +557,8 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
                                           to_hex(anchor_header->hash()));
 
     auto old_anchor = a->second;
-    auto anchor_preverified = std::any_of(old_anchor->links.begin(), old_anchor->links.end(),
-                                          [](const auto& link) -> bool { return link->preverified; });
+    bool anchor_preverified = as_range::any_of(old_anchor->links,
+                                               [](const auto& link) -> bool { return link->preverified; });
 
     anchors_.erase(old_anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue

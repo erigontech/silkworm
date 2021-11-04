@@ -55,8 +55,9 @@ nlohmann::json ChainConfig::to_json() const noexcept {
         member_to_json(ret, kJsonForkNames[i], fork_blocks[i]);
     }
 
-    member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
     member_to_json(ret, "daoForkBlock", dao_block);
+    member_to_json(ret, "muirGlacierBlock", muir_glacier_block);
+    member_to_json(ret, "arrowGlacierBlock", arrow_glacier_block);
 
     return ret;
 }
@@ -75,14 +76,17 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
         config.seal_engine = SealEngineType::kClique;
     } else if (json.contains("aura")) {
         config.seal_engine = SealEngineType::kAuRA;
+    } else {
+        config.seal_engine = SealEngineType::kNoProof;
     }
 
     for (size_t i{0}; i < EVMC_MAX_REVISION; ++i) {
         read_json_config_member(json, kJsonForkNames[i], config.fork_blocks[i]);
     }
 
-    read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
     read_json_config_member(json, "daoForkBlock", config.dao_block);
+    read_json_config_member(json, "muirGlacierBlock", config.muir_glacier_block);
+    read_json_config_member(json, "arrowGlacierBlock", config.arrow_glacier_block);
 
     return config;
 }

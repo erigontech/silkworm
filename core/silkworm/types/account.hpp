@@ -27,7 +27,7 @@ namespace silkworm {
 // Default incarnation for smart contracts is 1;
 // contracts that were previously destructed and then re-created will have an incarnation greater than 1.
 // The incarnation of non-contracts (externally owned accounts) is always 0.
-constexpr uint64_t kDefaultIncarnation{1};
+inline constexpr uint64_t kDefaultIncarnation{1};
 
 struct Account {
     uint64_t nonce{0};
@@ -46,7 +46,7 @@ struct Account {
 
 bool operator==(const Account& a, const Account& b);
 
- /*
+/*
  * Extract the incarnation from an encoded account object without fully decoding it.
  */
 std::pair<uint64_t, rlp::DecodingResult> extract_incarnation(ByteView);

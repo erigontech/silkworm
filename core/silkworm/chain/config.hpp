@@ -44,8 +44,9 @@ struct ChainConfig {
         "petersburgBlock",      // EVMC_PETERSBURG
         "istanbulBlock",        // EVMC_ISTANBUL
         // there's no evmc_revision for muirGlacierBlock
-        "berlinBlock",    // EVMC_BERLIN
-        "londonBlock",    // EVMC_LONDON
+        "berlinBlock",  // EVMC_BERLIN
+        "londonBlock",  // EVMC_LONDON
+        // there's no evmc_revision for arrowGlacierBlock
         "shanghaiBlock",  // EVMC_SHANGHAI
     };
 
@@ -59,11 +60,14 @@ struct ChainConfig {
     // Block numbers of forks that have an evmc_revision value
     std::array<std::optional<uint64_t>, EVMC_MAX_REVISION> fork_blocks{};
 
+    // https://eips.ethereum.org/EIPS/eip-779
+    std::optional<uint64_t> dao_block{std::nullopt};
+
     // https://eips.ethereum.org/EIPS/eip-2387
     std::optional<uint64_t> muir_glacier_block{std::nullopt};
 
-    // https://eips.ethereum.org/EIPS/eip-779
-    std::optional<uint64_t> dao_block{std::nullopt};
+    // https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/arrow-glacier.md
+    std::optional<uint64_t> arrow_glacier_block{std::nullopt};
 
     // Returns the revision level at given block number
     // In other words, on behalf of Json chain config data
@@ -108,7 +112,7 @@ bool operator==(const ChainConfig& a, const ChainConfig& b);
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 
-constexpr ChainConfig kMainnetConfig{
+inline constexpr ChainConfig kMainnetConfig{
     1,  // chain_id
     SealEngineType::kEthash,
     {
@@ -123,11 +127,12 @@ constexpr ChainConfig kMainnetConfig{
         12'965'000,  // London
     },
 
-    9'200'000,  // muir_glacier_block
-    1'920'000,  // dao_block
+    1'920'000,   // dao_block
+    9'200'000,   // muir_glacier_block
+    13'773'000,  // arrow_glacier_block
 };
 
-constexpr ChainConfig kRopstenConfig{
+inline constexpr ChainConfig kRopstenConfig{
     3,  // chain_id
     SealEngineType::kEthash,
     {
@@ -142,10 +147,11 @@ constexpr ChainConfig kRopstenConfig{
         10'499'401,  // London
     },
 
-    7'117'117,  // muir_glacier_block
+    std::nullopt,  // dao_block
+    7'117'117,     // muir_glacier_block
 };
 
-constexpr ChainConfig kRinkebyConfig{
+inline constexpr ChainConfig kRinkebyConfig{
     4,  // chain_id
     SealEngineType::kClique,
     {
@@ -161,7 +167,7 @@ constexpr ChainConfig kRinkebyConfig{
     },
 };
 
-constexpr ChainConfig kGoerliConfig{
+inline constexpr ChainConfig kGoerliConfig{
     5,  // chain_id
     SealEngineType::kClique,
     {

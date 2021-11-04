@@ -23,29 +23,32 @@ namespace owning {
 template <class T>
 class Singleton {
     static inline std::unique_ptr<T> instance_;
+
   public:
-    static void instance(std::unique_ptr<T> instance) {instance_ = instance;}
-    static T& instance() {return *instance_;}
+    static void instance(std::unique_ptr<T> instance) { instance_ = instance; }
+    static T& instance() { return *instance_; }
 };
-}
+}  // namespace owning
 
 namespace non_owning {
 template <class T>
 class Singleton {
     static inline T* instance_;
+
   public:
-    static void instance(T* instance) {instance_ = instance;}
-    static T& instance() {return *instance_;}
+    static void instance(T* instance) { instance_ = instance; }
+    static T& instance() { return *instance_; }
 };
-}
+}  // namespace non_owning
 
 namespace default_instantiating {
 template <class T>
 class Singleton {
     static inline T instance_;
+
   public:
-    static T& instance() {return instance_;}
+    static T& instance() { return instance_; }
 };
-}
+}  // namespace default_instantiating
 
 #endif  // SILKWORM_SINGLETON_HPP

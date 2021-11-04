@@ -24,10 +24,9 @@
 
 namespace silkworm {
 
-InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg, DbTx& db, SentryClient& sentry) :
-    InboundMessage(), db_(db), sentry_(sentry)
-{
-
+InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg, Db::ReadOnlyAccess db,
+                                               SentryClient& sentry)
+    : InboundMessage(), db_(db), sentry_(sentry) {
     if (msg.id() != sentry::MessageId::GET_BLOCK_HEADERS_66) {
         throw std::logic_error("InboundGetBlockHeaders received wrong InboundMessage");
     }
@@ -35,10 +34,7 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg
     peerId_ = string_from_H512(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());
-    rlp::DecodingResult err = rlp::decode(data, packet_);
-    if (err != rlp::DecodingResult::kOk) {
-        throw rlp::rlp_error("rlp decoding error decoding GetBlockHeaders");
-    }
+    rlp::success_or_throw(rlp::decode(data, packet_));
 
     SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
 }
@@ -52,10 +48,11 @@ void InboundGetBlockHeaders::execute() {
     reply.requestId = packet_.requestId;
     if (holds_alternative<Hash>(packet_.request.origin)) {
         reply.request = header_retrieval.recover_by_hash(get<Hash>(packet_.request.origin), packet_.request.amount,
-                                                     packet_.request.skip, packet_.request.reverse);
+                                                         packet_.request.skip, packet_.request.reverse);
     } else {
-        reply.request = header_retrieval.recover_by_number(get<BlockNum>(packet_.request.origin), packet_.request.amount,
-                                                       packet_.request.skip, packet_.request.reverse);
+        reply.request =
+            header_retrieval.recover_by_number(get<BlockNum>(packet_.request.origin), packet_.request.amount,
+                                               packet_.request.skip, packet_.request.reverse);
     }
 
     Bytes rlp_encoding;
@@ -65,18 +62,15 @@ void InboundGetBlockHeaders::execute() {
     msg_reply->set_id(sentry::MessageId::BLOCK_HEADERS_66);
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " with send_message_by_id\n";
+    SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " using send_message_by_id with "
+                                 << reply.request.size() << " headers\n";
 
     rpc::SendMessageById rpc{peerId_, std::move(msg_reply)};
     sentry_.exec_remotely(rpc);
 
     sentry::SentPeers peers = rpc.reply();
-    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*this) << ": " << std::to_string(peers.peers_size()) + " peer(s)\n";
-
-
-
-
-
+    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of " << identify(*this) << ": "
+                                 << std::to_string(peers.peers_size()) + " peer(s)\n";
 }
 
 uint64_t InboundGetBlockHeaders::reqId() const { return packet_.requestId; }

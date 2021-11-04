@@ -14,18 +14,15 @@
    limitations under the License.
 */
 
-#include <silkworm/common/log.hpp>
-
 #include "sentry_client.hpp"
+
+#include <silkworm/common/log.hpp>
 
 namespace silkworm {
 
-SentryClient::SentryClient(std::string sentry_addr): base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {
+SentryClient::SentryClient(std::string sentry_addr)
+    : base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {}
 
-    }
+void SentryClient::exec_remotely(SentryRpc& rpc) { base_t::exec_remotely(rpc); }
 
-void SentryClient::exec_remotely(SentryRpc& rpc) {
-    base_t::exec_remotely(rpc);
-}
-
-} // namespace silkworm
+}  // namespace silkworm

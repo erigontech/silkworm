@@ -37,12 +37,13 @@ class PrefixSet {
 
     void insert(ByteView key);
 
-    bool contains(ByteView prefix) const;
+    // Doesn't change the set logically, but is not marked const since it's not safe to call this method concurrently.
+    bool contains(ByteView prefix);
 
   private:
-    mutable std::vector<Bytes> keys_;
-    mutable bool sorted_{false};
-    mutable size_t index_{0};
+    std::vector<Bytes> keys_;
+    bool sorted_{false};
+    size_t index_{0};
 };
 
 }  // namespace silkworm::trie

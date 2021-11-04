@@ -24,19 +24,23 @@
 namespace silkworm::rlp {
 
 /*
- * This concepts recognizes an eth66 packet and enable us to write generic encode/decode functions but require a c++20 compiler
+ * This concepts recognizes an eth66 packet and enable us to write generic encode/decode functions but require a c++20
+ * compiler
+ *
+ * template <class T>
+ * concept Eth66Packet = requires(T p) {
+ *     p.requestId;
+ *     p.request;
+ * };
+ *
+ * So we can write generic functions like:
+ *
+ * template <Eth66Packet T>
+ * inline void encode(Bytes& to, const T& from) noexcept { ... }
  */
-//template <class T>
-//concept Eth66Packet = requires(T p) {
-//    p.requestId;
-//    p.request;
-//};
 
-
-//template <Eth66Packet T> // we will use this definition when we will have a c++20 compiler
-template<typename T, typename std::enable_if_t<std::is_integral<decltype(T::requestId)>::value &&
-                                               std::is_class<decltype(T::request)>::value, bool> = true >
-inline void encode(Bytes& to, const T& from) noexcept {
+template <typename T>
+inline void encode_eth66_packet(Bytes& to, const T& from) noexcept {
     rlp::Header rlp_head{true, 0};
 
     rlp_head.payload_length += rlp::length(from.requestId);
@@ -48,10 +52,8 @@ inline void encode(Bytes& to, const T& from) noexcept {
     rlp::encode(to, from.request);
 }
 
-//template <Eth66Packet T> // we will use this definition when we will have a c++20 compiler
-template<typename T, typename std::enable_if_t<std::is_integral<decltype(T::requestId)>::value &&
-                                               std::is_class<decltype(T::request)>::value, bool> = true >
-inline size_t length(const T& from) noexcept {
+template <typename T>
+inline size_t length_eth66_packet(const T& from) noexcept {
     rlp::Header rlp_head{true, 0};
 
     rlp_head.payload_length += rlp::length(from.requestId);
@@ -62,18 +64,8 @@ inline size_t length(const T& from) noexcept {
     return rlp_head_len + rlp_head.payload_length;
 }
 
-/*
- * The constrained generic decode function below clashes with decode<T> defined in silkworm/core/rlp packet:
- *  - using concepts template<Eth66Packet T> decode(...) compiler resolves ambiguity because the concept version is more constrained of template<typename T> decode(...)
- *  - using enable_if doesn't work because the compiler doesn't resolve the clash with decode<T> defined in silkworm/core/rlp packet
- */
-//template <Eth66Packet T>
-//template<typename T, typename std::enable_if_t<std::is_integral<decltype(T::requestId)>::value &&
-//                                               std::is_class<decltype(T::request)>::value, bool> = true >
-//inline rlp::DecodingResult decode(ByteView& from, T& to) noexcept;
-
 template <typename T>
-inline rlp::DecodingResult decode_eth66(ByteView& from, T& to) noexcept {
+inline rlp::DecodingResult decode_eth66_packet(ByteView& from, T& to) noexcept {
     using namespace rlp;
 
     auto [rlp_head, err0]{decode_header(from)};
@@ -96,6 +88,6 @@ inline rlp::DecodingResult decode_eth66(ByteView& from, T& to) noexcept {
     return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
 }
 
-}
+}  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLPETH66PACKETS_HPP

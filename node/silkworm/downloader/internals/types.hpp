@@ -18,7 +18,6 @@
 #define SILKWORM_TYPES_HPP
 
 #include <chrono>
-#include <iomanip>
 
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
@@ -32,17 +31,19 @@ class Hash : public evmc::bytes32 {
   public:
     using evmc::bytes32::bytes32;
 
-    Hash() {}
-    Hash(ByteView bv) { std::memcpy(bytes, bv.data(), 32); }
+    Hash() = default;
+    Hash(ByteView bv) { std::memcpy(bytes, bv.data(), length()); }
 
-    operator Bytes() { return {bytes, 32}; }
-    operator ByteView() { return {bytes, 32}; }
+    operator Bytes() { return {bytes, length()}; }
+    operator ByteView() { return {bytes, length()}; }
 
     uint8_t* raw_bytes() { return bytes; }
-    int length() { return 32; }
+    static constexpr size_t length() { return sizeof(evmc::bytes32); }
 
     std::string to_hex() { return silkworm::to_hex(*this); }
-    static Hash from_hex(std::string hex) { return Hash(evmc::literals::internal::from_hex<bytes32>(hex.c_str())); }
+    static Hash from_hex(const std::string& hex) {
+        return Hash(evmc::literals::internal::from_hex<bytes32>(hex.c_str()));
+    }
 
     static_assert(sizeof(evmc::bytes32) == 32);
 };
@@ -54,16 +55,13 @@ using BigInt = intx::uint256;  // use intx::to_string, from_string, ...
 // using std::optional<Bytes> from_hex(std::string_view hex) noexcept;
 
 using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
-using time_dur_t = std::chrono::duration<std::chrono::system_clock>;
+using seconds_t = std::chrono::seconds;
 
 // defined elsewhere: ByteView string_view_to_byte_view(std::string_view sv)
 inline Bytes string_to_bytes(const std::string& s) { return Bytes(s.begin(), s.end()); }
 
 inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
-    for (const auto& b : bytes) {
-        out << std::hex << std::setw(2) << std::setfill('0') << int(b);
-    }
-    out << std::dec;
+    out << silkworm::to_hex(bytes);
     return out;
 }
 
@@ -77,7 +75,9 @@ inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
     return out;
 }
 
-enum Penalty: int {
+using PeerId = std::string;
+
+enum Penalty : int {
     NoPenalty = 0,
     BadBlockPenalty,
     DuplicateHeaderPenalty,
@@ -89,7 +89,17 @@ enum Penalty: int {
     AbandonedAnchorPenalty
 };
 
-using PeerId = std::string;
+struct PeerPenalization {
+    Penalty penalty;
+    PeerId peerId;
+
+    PeerPenalization(Penalty p, PeerId id) : penalty(p), peerId(id) {}  // unnecessary with c++20
+};
+
+struct Announce {
+    Hash hash;
+    BlockNum number;
+};
 
 namespace rlp {
     void encode(Bytes& to, const Hash& h);
@@ -106,5 +116,13 @@ namespace rlp {
 }  // namespace rlp
 
 }  // namespace silkworm
+
+namespace std {
+
+template <>
+struct hash<silkworm::Hash> : public std::hash<evmc::bytes32>  // to use Hash with std::unordered_set/map
+{};
+
+}  // namespace std
 
 #endif  // SILKWORM_TYPES_HPP

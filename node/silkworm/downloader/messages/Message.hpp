@@ -24,22 +24,13 @@ namespace silkworm {
 
 class Message {
   public:
-
     virtual std::string name() const = 0;
-    virtual std::string content() const = 0;
-    virtual uint64_t    reqId() const = 0;
 
-    virtual void execute() = 0;    // inbound message send a reply, outbound message send a request
-
+    virtual void execute() = 0;  // inbound message send a reply, outbound message send a request
 
     virtual ~Message() = default;
 };
 
-std::ostream& operator<<(std::ostream&, const silkworm::Message&);
-std::string identify(const silkworm::Message& message);
-
-}
-
-
+}  // namespace silkworm
 
 #endif  // SILKWORM_MESSAGE_HPP

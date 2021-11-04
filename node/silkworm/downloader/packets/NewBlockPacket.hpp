@@ -21,61 +21,27 @@
 
 namespace silkworm {
 
-    struct NewBlockPacket {
-        Block block;
-        BigInt td; // total difficulty
-    };
+struct NewBlockPacket {
+    Block block;
+    BigInt td;  // total difficulty
+};
 
 namespace rlp {
-    inline void encode(Bytes& to, const NewBlockPacket& from) noexcept {
-        rlp::Header rlp_head{true,
-                             rlp::length(from.block) + rlp::length(from.td)};
 
-        rlp::encode_header(to, rlp_head);
+    void encode(Bytes& to, const NewBlockPacket& from) noexcept;
 
-        rlp::encode(to, from.block);
-        rlp::encode(to, from.td);
-    }
-
-    inline size_t length(const NewBlockPacket& from) noexcept {
-        rlp::Header rlp_head{true,
-                             rlp::length(from.block) + rlp::length(from.td)};
-
-        size_t rlp_head_len = rlp::length_of_length(rlp_head.payload_length);
-        return rlp_head_len + rlp_head.payload_length;
-    }
+    size_t length(const NewBlockPacket& from) noexcept;
 
     template <>
-    inline rlp::DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept {
+    rlp::DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept;
 
-        auto [rlp_head, err0]{decode_header(from)};
-        if (err0 != DecodingResult::kOk) {
-            return err0;
-        }
-        if (!rlp_head.list) {
-            return DecodingResult::kUnexpectedString;
-        }
+}  // namespace rlp
 
-        uint64_t leftover{from.length() - rlp_head.payload_length};
-
-        if (DecodingResult err{rlp::decode(from, to.block)}; err != DecodingResult::kOk) {
-            return err;
-        }
-        if (DecodingResult err{rlp::decode(from, to.td)}; err != DecodingResult::kOk) {
-            return err;
-        }
-
-        return from.length() == leftover ? DecodingResult::kOk : DecodingResult::kListLengthMismatch;
-    }
-
+inline std::ostream& operator<<(std::ostream& os, const NewBlockPacket& packet) {
+    os << "block num " << packet.block.header.number;
+    return os;
 }
 
-    inline std::ostream& operator<<(std::ostream& os, const NewBlockPacket& packet)
-    {
-        os << "block num " << packet.block.header.number;
-        return os;
-    }
-
-}
+}  // namespace silkworm
 
 #endif  // SILKWORM_NEWBLOCKPACKET_HPP

@@ -47,7 +47,7 @@ enum class [[nodiscard]] StageResult {
 };
 // clang-format on
 
-void check_stagedsync_error(StageResult code);
+void success_or_throw(StageResult code);
 
 }  // namespace silkworm::stagedsync
 

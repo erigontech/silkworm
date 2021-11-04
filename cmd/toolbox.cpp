@@ -30,9 +30,9 @@
 #include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/db/storage.hpp>
 #include <silkworm/stagedsync/stagedsync.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 #include <silkworm/trie/hash_builder.hpp>
@@ -141,6 +141,11 @@ void sig_handler(int signum) {
 void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,
               bool drop) {
     config.readonly = false;
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Clear tool requires exclusive access to database");
+    }
+
     auto env{db::open_env(config)};
     auto txn{env.start_write()};
 
@@ -202,22 +207,20 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     dbFreeInfo ret{};
 
     ::mdbx::map_handle free_map{0};
-    auto free_stat{txn.get_map_stat(free_map)};
-    auto free_crs{txn.open_cursor(free_map)};
+    auto page_size{txn.get_map_stat(free_map).ms_psize};
 
-    const auto& collect_func{[&ret, &free_stat](::mdbx::cursor, ::mdbx::cursor::move_result data) -> bool {
+    const auto& collect_func{[&ret, &page_size](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
         size_t txId = *(static_cast<size_t*>(data.key.iov_base));
         size_t pagesCount = *(static_cast<uint32_t*>(data.value.iov_base));
-        size_t pagesSize = pagesCount * free_stat.ms_psize;
+        size_t pagesSize = pagesCount * page_size;
         ret.pages += pagesCount;
         ret.size += pagesSize;
         ret.entries.push_back({txId, pagesCount, pagesSize});
         return true;
     }};
 
-    if (free_crs.to_first(/*throw_notfound =*/false)) {
-        (void)db::cursor_for_each(free_crs, collect_func);
-    }
+    auto free_crs{txn.open_cursor(free_map)};
+    (void)db::cursor_for_each(free_crs, collect_func);
 
     return ret;
 }
@@ -248,22 +251,23 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
     ret.size += table->size();
     ret.tables.push_back(*table);
 
+    const auto& collect_func{[&ret, &txn](const ::mdbx::cursor&, ::mdbx::cursor::move_result& data) -> bool {
+        auto named_map{txn.open_map(data.key.as_string())};
+        auto stat2{txn.get_map_stat(named_map)};
+        auto info2{txn.get_handle_info(named_map)};
+        dbTableEntry* table2 = new dbTableEntry{named_map.dbi, data.key.as_string(), stat2, info2};
+
+        ret.pageSize += table2->stat.ms_psize;
+        ret.pages += table2->pages();
+        ret.size += table2->size();
+        ret.tables.push_back(*table2);
+
+        return true;
+    }};
+
     // Get all tables from the unnamed database
     auto main_crs{txn.open_cursor(main_map)};
-    auto result{main_crs.to_first(/*throw_notfound =*/false)};
-    while (result) {
-        auto named_map{txn.open_map(result.key.as_string())};
-        stat = txn.get_map_stat(named_map);
-        info = txn.get_handle_info(named_map);
-        table = new dbTableEntry{named_map.dbi, result.key.as_string(), stat, info};
-
-        ret.pageSize += table->stat.ms_psize;
-        ret.pages += table->pages();
-        ret.size += table->size();
-        ret.tables.push_back(*table);
-        result = main_crs.to_next(/*throw_notfound =*/false);
-    }
-
+    (void)db::cursor_for_each(main_crs, collect_func);
     return ret;
 }
 
@@ -331,6 +335,8 @@ void do_scan(const db::EnvConfig& config) {
     }
 
     std::cout << "\n" << (shouldStop ? "Aborted" : "Done") << " !\n " << std::endl;
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_stages(db::EnvConfig& config) {
@@ -360,7 +366,7 @@ void do_stages(db::EnvConfig& config) {
             if (std::memcmp(result.key.iov_base, prune_prefix, 6) == 0) {
                 offset = 6;
             }
-            
+
             bool Known{db::stages::is_known_stage(result.key.char_ptr() + offset)};
             std::cout << (boost::format(fmt_row) % result.key.as_string() % height %
                           (Known ? std::string(8, ' ') : "Unknown"))
@@ -371,9 +377,17 @@ void do_stages(db::EnvConfig& config) {
     } else {
         std::cout << "\n There are no stages to list\n" << std::endl;
     }
+
+    txn.commit();
+    env.close(config.shared);
 }
 
-void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
+void do_prunings(db::EnvConfig& config, uint64_t prune_size) {
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Pruning tool requires exclusive access to database");
+    }
+
     auto env{silkworm::db::open_env(config)};
     stagedsync::TransactionManager txn{env};
 
@@ -385,7 +399,7 @@ void do_prunes(db::EnvConfig& config, uint64_t prune_size) {
     std::cout << "\n Pruned start, block to be kept: " << prune_size << "\n" << std::endl;
     auto pruned_node_stages{stagedsync::get_pruned_node_stages()};
     for (auto stage : pruned_node_stages) {
-        stagedsync::check_stagedsync_error(
+        stagedsync::success_or_throw(
             stage.prune_func(txn, DataDirectory::from_chaindata(config.path).etl().path(), prune_from));
     }
 }
@@ -417,10 +431,18 @@ void do_migrations(db::EnvConfig& config) {
     } else {
         std::cout << "\n There are no migrations to list\n" << std::endl;
     }
+
+    txn.commit();
+    env.close(config.shared);
 }
 
-void do_stage_set(db::EnvConfig& config, std::string stage_name, uint32_t new_height, bool dry) {
+void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_height, bool dry) {
     config.readonly = false;
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Stage set tool requires exclusive access to database");
+    }
+
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_write()};
     if (!db::stages::is_known_stage(stage_name.c_str())) {
@@ -450,7 +472,8 @@ void do_tables(db::EnvConfig& config) {
     auto dbTablesInfo{get_tablesInfo(txn)};
     auto dbFreeInfo{get_freeInfo(txn)};
 
-    std::cout << "\n Database dbTablesInfo    : " << dbTablesInfo.tables.size() << "\n" << std::endl;
+    std::cout << "\n Database tables          : " << dbTablesInfo.tables.size() << std::endl;
+    std::cout << " Effective pruning        : " << db::read_prune_mode(txn).to_string() << "\n" << std::endl;
 
     if (!dbTablesInfo.tables.empty()) {
         std::cout << (boost::format(fmt_hdr) % "Dbi" % "Table name" % "Records" % "D" % "Branch" % "Leaf" % "Overflow" %
@@ -481,6 +504,9 @@ void do_tables(db::EnvConfig& config) {
               << (boost::format("%13s") % human_size(dbTablesInfo.filesize - dbTablesInfo.size + dbFreeInfo.size))
               << " == A - B + C \n"
               << std::endl;
+
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_freelist(db::EnvConfig& config, bool detail) {
@@ -503,6 +529,9 @@ void do_freelist(db::EnvConfig& config, bool detail) {
     std::cout << "\n Free pages count     : " << boost::format("%13u") % dbFreeInfo.pages << "\n"
               << " Free pages size      : " << boost::format("%13s") % human_size(dbFreeInfo.size) << "\n"
               << std::endl;
+
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_schema(db::EnvConfig& config) {
@@ -516,9 +545,17 @@ void do_schema(db::EnvConfig& config) {
     std::cout << "\n"
               << "Database schema version : " << schema_version->to_string() << "\n"
               << std::endl;
+
+    txn.commit();
+    env.close(config.shared);
 }
 
-void do_compact(db::EnvConfig& config, std::string work_dir, bool replace, bool nobak) {
+void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace, bool nobak) {
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Compact tool requires exclusive access to database");
+    }
+
     fs::path work_path{work_dir};
     if (work_path.has_filename()) {
         work_path += fs::path::preferred_separator;
@@ -584,8 +621,13 @@ void do_compact(db::EnvConfig& config, std::string work_dir, bool replace, bool 
     }
 }
 
-void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, bool noempty,
+void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool create, bool noempty,
              std::vector<std::string>& names, std::vector<std::string>& xnames, bool dry) {
+
+    if (!src_config.exclusive) {
+        throw std::runtime_error("Copy tool requires exclusive access to source database");
+    }
+
     fs::path target_path{target_dir};
     if (target_path.has_filename()) {
         target_path += fs::path::preferred_separator;
@@ -776,7 +818,7 @@ void do_copy(db::EnvConfig& src_config, std::string target_dir, bool create, boo
  * \param bool dry : whether or not commit data or run in simulation
  *
  */
-void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t chain_id, bool dry) {
+void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uint32_t chain_id, bool dry) {
     // Check datadir does not exist
     if (data_dir.exists()) {
         throw std::runtime_error("Provided data directory already exist");
@@ -799,163 +841,14 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
 
     // Parse Json data
     // N.B. = instead of {} initialization due to https://github.com/nlohmann/json/issues/2204
-    auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ true);
-
-    // Sanity checks over collected data
-    std::string err{};
-    if (!genesis_json.contains("difficulty")) err.append("* Missing difficulty member\n");
-    if (!genesis_json.contains("nonce")) err.append("* Missing nonce member\n;");
-    if (!genesis_json.contains("gasLimit")) err.append("* Missing gasLimit member\n;");
-    if (!genesis_json.contains("timestamp")) err.append("* Missing timestamp member\n;");
-    if (!genesis_json.contains("extraData")) err.append("* Missing extraData member\n;");
-    if (!genesis_json.contains("config")) {
-        err.append("* Missing config member\n;");
-    } else {
-        if (!genesis_json["config"].is_object()) {
-            err.append("* Member config is not object");
-        } else {
-            if (genesis_json["config"].contains("ethash") &&
-                (!genesis_json.contains("mixhash") || !genesis_json["mixhash"].is_string())) {
-                err.append("* Missing mixhash member for ethash PoW chain");
-            }
-            const auto chain_config = ChainConfig::from_json(genesis_json["config"]);
-            if (!chain_config.has_value()) {
-                err.append("* Incomplete / Wrong genesis [config] member");
-            }
-        }
-    }
-    if (genesis_json.contains("alloc") && !genesis_json["alloc"].is_object()) {
-        err.append("* alloc member is not object");
-    }
-
-    if (!err.empty()) {
-        throw std::runtime_error("Parsing of json data failed. Examine following errors:\n" + err);
-    }
+    auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
 
     // Prime database
     db::EnvConfig config{data_dir.chaindata().path().string(), /*create*/ true};
     auto env{db::open_env(config)};
     auto txn{env.start_write()};
     db::table::create_all(txn);
-
-    // Initialize state_buffer for allocations (if any)
-    // and get root_hash
-    InMemoryState state_buffer{};
-    evmc::bytes32 state_root_hash{kEmptyRoot};
-
-    // Allocate accounts
-    if (genesis_json.contains("alloc")) {
-        auto expected_allocations{genesis_json["alloc"].size()};
-
-        for (auto& item : genesis_json["alloc"].items()) {
-            if (!item.value().is_object() || !item.value().contains("balance") ||
-                !item.value()["balance"].is_string()) {
-                throw std::invalid_argument("alloc address " + item.key() + " has badly formatted allocation");
-            }
-
-            auto address_bytes{from_hex(item.key())};
-            if (address_bytes == std::nullopt || address_bytes.value().length() != kAddressLength) {
-                throw std::invalid_argument("alloc address " + item.key() + " is not valid. Either not hex or not " +
-                                            std::to_string(kAddressLength) + " bytes");
-            }
-
-            evmc::address account_address = to_address(*address_bytes);
-            auto balance_str{item.value()["balance"].get<std::string>()};
-            Account account{0, intx::from_string<intx::uint256>(balance_str)};
-            state_buffer.update_account(account_address, std::nullopt, account);
-        }
-
-        auto applied_allocations{static_cast<size_t>(state_buffer.account_changes().at(0).size())};
-        if (applied_allocations != expected_allocations) {
-            // Maybe some account alloc has been inserted twice ?
-            std::cout << "Allocations expected " << expected_allocations << " applied " << applied_allocations
-                      << std::endl;
-            throw std::logic_error("Allocations mismatch. Check uniqueness of accounts");
-        }
-
-        // Write allocations to db - no changes only accounts
-        // Also compute state_root_hash in a single pass
-        std::map<evmc::bytes32, Bytes> account_rlp;
-        auto state_table{db::open_cursor(txn, db::table::kPlainState)};
-        for (const auto& [address, account] : state_buffer.accounts()) {
-            auto address_view{full_view(address)};
-
-            // Store account plain state
-            Bytes encoded{account.encode_for_storage()};
-            state_table.upsert(db::to_slice(address_view), db::to_slice(encoded));
-
-            // First pass for state_root_hash
-            ethash::hash256 hash{keccak256(address_view)};
-            account_rlp[to_bytes32(full_view(hash.bytes))] = account.rlp(kEmptyRoot);
-        }
-
-        trie::HashBuilder hb;
-        for (const auto& [hash, rlp] : account_rlp) {
-            hb.add_leaf(trie::unpack_nibbles(full_view(hash)), rlp);
-        }
-        state_root_hash = hb.root_hash();
-    }
-
-    // Fill Header
-    BlockHeader header;
-
-    auto extra_data = from_hex(genesis_json["extraData"].get<std::string>());
-    if (extra_data.has_value()) {
-        header.extra_data = extra_data.value();
-    }
-
-    if (genesis_json.contains("mixhash")) {
-        auto mixhash = from_hex(genesis_json["mixhash"].get<std::string>());
-        if (!mixhash.has_value() || mixhash->size() != kHashLength) {
-            throw std::invalid_argument("mixhash is not an hex hash");
-        }
-        std::memcpy(header.mix_hash.bytes, mixhash->data(), mixhash->size());
-    }
-
-    header.ommers_hash = kEmptyListHash;
-    header.state_root = state_root_hash;
-    header.transactions_root = kEmptyRoot;
-    header.receipts_root = kEmptyRoot;
-
-    auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
-    header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
-    header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>(), nullptr, 0);
-    header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>(), nullptr, 0);
-
-    auto nonce = std::stoull(genesis_json["nonce"].get<std::string>(), nullptr, 0);
-    std::memcpy(&header.nonce[0], &nonce, 8);
-
-    // Write header
-    auto block_hash{header.hash()};
-    auto block_key{db::block_key(0)};
-    const uint8_t genesis_null_receipts[] = {0xf6};  // <- cbor encoded
-
-    Bytes rlp_header;
-    rlp::encode(rlp_header, header);
-    Bytes rlp_body{195, 128, 128, 192};
-
-    Bytes key(8 + kHashLength, '\0');
-    std::memcpy(&key[8], block_hash.bytes, kHashLength);
-    db::open_cursor(txn, db::table::kHeaders).upsert(db::to_slice(key), db::to_slice(rlp_header));
-    db::open_cursor(txn, db::table::kCanonicalHashes)
-        .upsert(db::to_slice(block_key), db::to_slice(full_view(block_hash.bytes)));
-
-    // Write body
-    db::open_cursor(txn, db::table::kBlockBodies).upsert(db::to_slice(key), db::to_slice(rlp_body));
-    uint8_t difficulty_le[32];  // TODO (Andrew) Double check that difficulty is stored as little-endian
-    intx::le::store(difficulty_le, header.difficulty);
-    db::open_cursor(txn, db::table::kDifficulty).upsert(db::to_slice(key), mdbx::slice{difficulty_le, 32});
-    db::open_cursor(txn, db::table::kBlockReceipts)
-        .upsert(db::to_slice(key).safe_middle(0, 8), db::to_slice(Bytes(genesis_null_receipts, 1)));
-    db::open_cursor(txn, db::table::kHeadHeader)
-        .upsert(mdbx::slice{db::table::kLastHeaderKey}, db::to_slice(full_view(block_hash.bytes)));
-    db::open_cursor(txn, db::table::kHeaderNumbers)
-        .upsert(db::to_slice(full_view(block_hash.bytes)), db::to_slice(key.substr(0, 8)));
-
-    // Write Chain Config
-    auto config_data{genesis_json["config"].dump()};
-    db::open_cursor(txn, db::table::kConfig)
-        .upsert(db::to_slice(full_view(block_hash.bytes)), mdbx::slice{config_data.c_str()});
+    db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true);
 
     // Set schema version
     silkworm::db::VersionBase v{3, 0, 0};
@@ -966,6 +859,7 @@ void do_init_genesis(DataDirectory& data_dir, std::string json_file, uint32_t ch
     } else {
         txn.abort();
     }
+    env.close();
 }
 
 void do_chainconfig(db::EnvConfig& config) {
@@ -979,10 +873,17 @@ void do_chainconfig(db::EnvConfig& config) {
     std::cout << "\n Chain id " << chain.chain_id << "\n Config (json) : \n"
               << chain.to_json().dump() << "\n"
               << std::endl;
+
+    txn.commit();
+    env.close(config.shared);
 }
 
 void do_first_byte_analysis(db::EnvConfig& config) {
     static std::string fmt_hdr{" %-24s %=50s "};
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Analysis tool requires exclusive access to database");
+    }
 
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_read()};
@@ -1001,18 +902,19 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     size_t batch_size{progress.get_increment_count()};
 
     code_cursor.to_first();
-    db::cursor_for_each(code_cursor, [&histogram, &batch_size, &progress](::mdbx::cursor, mdbx::cursor::move_result& entry) {
-        if (entry.value.length() > 0) {
-            uint8_t first_byte{entry.value.at(0)};
-            ++histogram[first_byte];
-        }
-        if (!--batch_size) {
-            progress.set_current(progress.get_current() + progress.get_increment_count());
-            std::cout << progress.print_interval('.') << std::flush;
-            batch_size = progress.get_increment_count();
-        }
-        return true;
-    });
+    db::cursor_for_each(code_cursor,
+                        [&histogram, &batch_size, &progress](const ::mdbx::cursor&, mdbx::cursor::move_result& entry) {
+                            if (entry.value.length() > 0) {
+                                uint8_t first_byte{entry.value.at(0)};
+                                ++histogram[first_byte];
+                            }
+                            if (!--batch_size) {
+                                progress.set_current(progress.get_current() + progress.get_increment_count());
+                                std::cout << progress.print_interval('.') << std::flush;
+                                batch_size = progress.get_increment_count();
+                            }
+                            return true;
+                        });
 
     BlockNum last_block{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
     progress.set_current(total_entries);
@@ -1040,7 +942,12 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     std::cout << "\n" << std::endl;
 }
 
-void do_extract_headers(db::EnvConfig& config, std::string file_name, uint32_t step) {
+void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uint32_t step) {
+
+    if (!config.exclusive) {
+        throw std::runtime_error("Extract headers tool requires exclusive access to database");
+    }
+
     auto env{silkworm::db::open_env(config)};
     auto txn{env.start_read()};
 
@@ -1052,32 +959,32 @@ void do_extract_headers(db::EnvConfig& config, std::string file_name, uint32_t s
     /// Open the output file
     std::ofstream out_stream{file_name};
     out_stream << "/* Generated by Silkworm toolbox's extract headers */\n"
-               << "#include <cassert>\n"
-               << "#include <stddef.h>\n"
-               << "static const char headers_data_internal[] = {\n";
+               << "#include <silkworm/common/base.hpp>\n"
+               << "#include \"preverified_hashes.hpp\"\n\n"
+               << "namespace silkworm {\n"
+               << "using namespace evmc::literals;\n\n"
+               << "PreverifiedHashes PreverifiedHashes::some-net = {\n"
+               << "    {\n";
 
-    BlockNum block_num{0};
     BlockNum block_max{silkworm::db::stages::read_stage_progress(txn, db::stages::kHeadersKey)};
-
+    BlockNum max_height{0};
     auto hashes_table{db::open_cursor(txn, db::table::kCanonicalHashes)};
-    for (; block_num <= block_max; block_num += step) {
+
+    for (BlockNum block_num = 0; block_num <= block_max; block_num += step) {
         auto block_key{db::block_key(block_num)};
         auto data{hashes_table.find(db::to_slice(block_key), false)};
         if (!data.done) {
             break;
         }
-        /// Print all bytes of hash into stream
-        auto value_bytes{static_cast<uint8_t*>(data.value.iov_base)};
-        for (size_t i{0}; i < data.value.length(); ++i) {
-            out_stream << "0x" << std::hex << static_cast<uint32_t>(value_bytes[i]) << ",";
-        }
-        out_stream << "\n";  // Close line
+        std::string hash_hex = to_hex(db::from_slice(data.value));
+        out_stream << "0x" << hash_hex << "_bytes32,\n";
+        max_height = block_num;
     }
 
-    out_stream << "};\n"
-               << "const char* headers_data() { return &headers_data_internal[0]; }\n"
-               << "const sizeof_headers_data() { return sizeof(headers_data_internal); )\n"
-               << "static_assert(sizeof(headers_data_internal) % 32 == 0);" << std::endl;
+    out_stream << "    },\n"
+               << "    " << max_height << " // preverified_height\n"
+               << "};\n\n"
+               << "} // namespace silkworm" << std::endl;
     out_stream.close();
 }
 
@@ -1183,11 +1090,12 @@ int main(int argc, char* argv[]) {
     auto cmd_extract_headers_step_opt = cmd_extract_headers->add_option("--step", "Step every this number of blocks")
                                             ->default_val("100000")
                                             ->check(CLI::Range(1u, UINT32_MAX));
-    // List migration keys
-    auto cmd_do_prunes = app_main.add_subcommand("do-prunes", "Prune the node");
-    auto cmd_do_prunes_size = cmd_do_prunes->add_option("--block-to-keep", "How many blocks of history to keep")
-                                  ->default_val("96000")
-                                  ->check(CLI::Range(1u, UINT32_MAX));
+    // Executes database prunings
+    // TODO(Andrea) eventually move to integration tool
+    auto cmd_do_prunings = app_main.add_subcommand("prune", "Prune the node");
+    auto cmd_do_prunings_size = cmd_do_prunings->add_option("--block-to-keep", "How many blocks of history to keep")
+                                    ->default_val("96000")
+                                    ->check(CLI::Range(1u, UINT32_MAX));
 
     /*
      * Parse arguments and validate
@@ -1266,8 +1174,8 @@ int main(int argc, char* argv[]) {
         } else if (*cmd_extract_headers) {
             do_extract_headers(src_config, cmd_extract_headers_file_opt->as<std::string>(),
                                cmd_extract_headers_step_opt->as<uint32_t>());
-        } else if (*cmd_do_prunes) {
-            do_prunes(src_config, cmd_do_prunes_size->as<uint64_t>());
+        } else if (*cmd_do_prunings) {
+            do_prunings(src_config, cmd_do_prunings_size->as<uint64_t>());
         }
 
         return 0;

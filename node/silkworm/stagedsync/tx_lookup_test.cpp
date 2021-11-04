@@ -24,8 +24,8 @@ using namespace evmc::literals;
 
 #include "stagedsync.hpp"
 
-constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
-constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
+static constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
+static constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
 
 using namespace silkworm;
 
@@ -34,7 +34,7 @@ TEST_CASE("Stage Transaction Lookups") {
     stagedsync::TransactionManager txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};

@@ -1,7 +1,7 @@
 /*
    Copyright 2021 The Silkworm Authors
 
-   Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
@@ -14,17 +14,13 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RLPERROR_HPP
-#define SILKWORM_RLPERROR_HPP
+#include "SendMessageToAll.hpp"
 
-namespace silkworm::rlp {
+namespace silkworm::rpc {
 
-    class rlp_error : public std::runtime_error {
-      public:
-        rlp_error() : std::runtime_error("rlp encoding/decoding error") {}
-        rlp_error(const std::string& description) : std::runtime_error(description) {}
-    };
-
+SendMessageToAll::SendMessageToAll(std::unique_ptr<sentry::OutboundMessageData> message)
+    : UnaryCall("SendMessageToAll", &sentry::Sentry::Stub::SendMessageToAll, {}) {
+    request_.Swap(message.get());
 }
 
-#endif  // SILKWORM_RLPERROR_HPP
+}  // namespace silkworm::rpc

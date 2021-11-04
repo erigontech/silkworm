@@ -28,9 +28,9 @@ using namespace evmc::literals;
 
 #include "stagedsync.hpp"
 
-constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
-constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
-constexpr evmc::bytes32 hash_2{0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
+static constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
+static constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
+static constexpr evmc::bytes32 hash_2{0x0b42b6393c1f53060fe3ddbfcd7aadcca894465a5a438f69c87d790b2299b9b2_bytes32};
 
 using namespace silkworm;
 
@@ -39,7 +39,7 @@ TEST_CASE("Stage Senders") {
     stagedsync::TransactionManager txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -93,7 +93,7 @@ TEST_CASE("Stage Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, context.dir().etl().path()));
+    stagedsync::success_or_throw(stagedsync::stage_senders(txn, context.dir().etl().path()));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
@@ -110,7 +110,7 @@ TEST_CASE("Unwind Senders") {
     stagedsync::TransactionManager txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -163,8 +163,8 @@ TEST_CASE("Unwind Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, context.dir().path()));
-    stagedsync::check_stagedsync_error(stagedsync::unwind_senders(txn, context.dir().path(), 1));
+    stagedsync::success_or_throw(stagedsync::stage_senders(txn, context.dir().etl().path()));
+    stagedsync::success_or_throw(stagedsync::unwind_senders(txn, context.dir().etl().path(), 1));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_0{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(1))).value)};
@@ -181,7 +181,7 @@ TEST_CASE("Prune Senders") {
     stagedsync::TransactionManager txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
-    auto transaction_table{db::open_cursor(*txn, db::table::kEthTx)};
+    auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -232,9 +232,9 @@ TEST_CASE("Prune Senders") {
     canonical_table.upsert(db::to_slice(db::block_key(3)), db::to_slice(hash_2));
     db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3);
 
-    stagedsync::check_stagedsync_error(stagedsync::stage_senders(txn, context.dir().path()));
+    stagedsync::success_or_throw(stagedsync::stage_senders(txn, context.dir().etl().path()));
     // We prune from Block 2, thus deleting block 1
-    stagedsync::check_stagedsync_error(stagedsync::prune_senders(txn, context.dir().path(), 2));
+    stagedsync::success_or_throw(stagedsync::prune_senders(txn, context.dir().etl().path(), 2));
 
     auto sender_table{db::open_cursor(*txn, db::table::kSenders)};
     auto got_sender_1{db::from_slice(sender_table.lower_bound(db::to_slice(db::block_key(2))).value)};

@@ -15,6 +15,7 @@
 */
 
 #include "Message.hpp"
+
 #include <silkworm/common/log.hpp>
 
 namespace silkworm {
@@ -24,14 +25,5 @@ Message::~Message() {
     SILKWORM_LOG(LogDebug) << "Message destroyed\n";
 }
 */
-
-std::ostream& operator<<(std::ostream& os, const silkworm::Message& msg) {
-    os << msg.name() << ", content: " << msg.content();
-    return os;
-}
-
-std::string identify(const silkworm::Message& message) {
-    return message.name() + " reqId=" + std::to_string(message.reqId());
-}
 
 }

@@ -25,9 +25,10 @@ namespace silkworm {
 //! \brief Handler with static storage for signals sig
 class SignalHandler {
   public:
-    static void init();
-    static void handle(int sig_code);
-    [[nodiscard]] static bool signalled() { return signalled_; }
+    static void init();                                           // Enable the hooks
+    static void handle(int sig_code);                             // Handles incoming signal
+    [[nodiscard]] static bool signalled() { return signalled_; }  // Whether a signal has been intercepted
+    static void reset();                                          // Reset to un-signalled (see tests coverage)
 
   private:
     static uint32_t sig_count_;

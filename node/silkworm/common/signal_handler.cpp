@@ -122,5 +122,9 @@ void SignalHandler::handle(int sig_code) {
     }
     signal(sig_code, &SignalHandler::handle);  // Re-enable the hook
 }
+void SignalHandler::reset() {
+    signalled_ = false;
+    sig_count_ = 0;
+}
 
 }  // namespace silkworm

@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
+#include <csignal>
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <thread>
-#include <csignal>
 
 #include <catch2/catch.hpp>
 
@@ -132,11 +132,11 @@ TEST_CASE("DataDirectory") {
 }
 
 TEST_CASE("Signal Handler") {
-
     SignalHandler::init();
     raise(SIGINT);
     CHECK(SignalHandler::signalled());
-
+    SignalHandler::reset();
+    CHECK(SignalHandler::signalled() == false);
 }
 
 }  // namespace db

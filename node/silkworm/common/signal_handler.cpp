@@ -77,8 +77,6 @@ static const char* sig_name(int sig_code) {
             return "SIGXCPU";
         case SIGHUP:
             return "SIGHUP";
-        case SIGFPE:
-            return "SIGFPE";
         case SIGALRM:
             return "SIGALRM";
         case SIGUSR1:

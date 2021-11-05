@@ -217,7 +217,7 @@ class Db::ReadOnlyAccess::Tx {
             ByteView key = db::from_slice(result.key);
             ByteView value = db::from_slice(result.value);
 
-            if (key.size() != 40) {
+            if (key.size() != sizeof(uint64_t) + kHashLength) {
                 throw std::logic_error("key in td table has to be 40 bytes long: " + result.key.as_hex_string());
             }
 

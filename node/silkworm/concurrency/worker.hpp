@@ -56,12 +56,12 @@ class Worker {
      * Returns True if the kick has been received and should go ahead
      * otherwise False (i.e. the thread has been asked to stop)
      *
-     * @param [in] timeout: Timeout for conditional variable wait (seconds). Defaults to 1 second
+     * @param [in] timeout: Timeout for conditional variable wait (milliseconds). Defaults to 100 ms
      */
-    bool wait_for_kick(uint32_t timeout_seconds = 1);  // Puts a thread in non-busy wait for data to process
-    std::atomic_bool kicked_{false};                   // Whether the kick has been received
-    std::condition_variable kicked_cv_{};              // Condition variable to wait for kick
-    std::mutex kick_mtx_{};                            // Mutex for conditional wait of kick
+    bool wait_for_kick(uint32_t timeout_milliseconds = 100);  // Puts a thread in non-busy wait for data to process
+    std::atomic_bool kicked_{false};                          // Whether the kick has been received
+    std::condition_variable kicked_cv_{};                     // Condition variable to wait for kick
+    std::mutex kick_mtx_{};                                   // Mutex for conditional wait of kick
 
   private:
     std::atomic<WorkerState> state_{WorkerState::kStopped};

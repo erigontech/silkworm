@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <csignal>
 #include <filesystem>
 #include <string>
 
@@ -25,6 +24,7 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/signal_handler.hpp>
 #include <silkworm/common/stopwatch.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
@@ -32,20 +32,12 @@
 namespace fs = std::filesystem;
 using namespace silkworm;
 
-std::atomic_bool g_should_stop{false};  // Request for stop from user or OS
-
 struct app_options_t {
     std::string datadir{};          // Provided database path
     uint32_t block_from{1u};        // Initial block number to start from
     uint32_t block_to{UINT32_MAX};  // Final block number to process
     bool debug{false};              // Whether to display some debug info
 };
-
-void sig_handler(int signum) {
-    (void)signum;
-    std::cout << std::endl << " Got interrupt. Stopping ..." << std::endl << std::endl;
-    g_should_stop.store(true);
-}
 
 int main(int argc, char* argv[]) {
     // Init command line parser
@@ -71,8 +63,7 @@ int main(int argc, char* argv[]) {
 
     if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions
 
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
+    SignalHandler::init();
 
     // Invoke proper action
     int rc{0};
@@ -107,7 +98,8 @@ int main(int argc, char* argv[]) {
         // Loop blocks
         StopWatch sw;
         sw.start();
-        for (uint32_t block_num{options.block_from}; block_num <= options.block_to && !g_should_stop; block_num++) {
+        for (uint32_t block_num{options.block_from}; block_num <= options.block_to && !SignalHandler::signalled();
+             block_num++) {
             if (epoch_context->epoch_number != static_cast<int>(block_num / ethash::epoch_length)) {
                 epoch_num = (block_num / ethash::epoch_length);
                 SILKWORM_LOG(LogLevel::Info) << "Initializing Light Cache for DAG epoch " << epoch_num << std::endl;

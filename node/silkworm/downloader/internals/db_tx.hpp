@@ -313,17 +313,10 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
     }
 
     void delete_canonical_hash(BlockNum b) {
+        auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
         Bytes key = db::block_key(b);
         auto skey = db::to_slice(key);
-
-        auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
-
-        bool throw_notfound = false;
-        auto result = hashes_table.find(skey, throw_notfound);
-        if (!result) return;
-
-        hashes_table.erase(false);  // false = no all duplicates
-        hashes_table.close();
+        (void)hashes_table.erase(skey);
     }
 };
 

@@ -18,6 +18,7 @@
 #ifndef SILKWORM_SIGNAL_HANDLER_HPP_
 #define SILKWORM_SIGNAL_HANDLER_HPP_
 
+#include <atomic>
 #include <cstdint>
 
 namespace silkworm {
@@ -31,8 +32,8 @@ class SignalHandler {
     static void reset();                                          // Reset to un-signalled (see tests coverage)
 
   private:
-    static uint32_t sig_count_;
-    static bool signalled_;
+    inline static std::atomic_uint32_t sig_count_{0};
+    inline static std::atomic_bool signalled_{false};
 };
 
 }  // namespace silkworm

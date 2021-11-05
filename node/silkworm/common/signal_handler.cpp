@@ -21,9 +21,6 @@
 
 namespace silkworm {
 
-uint32_t SignalHandler::sig_count_{0};
-bool SignalHandler::signalled_{false};
-
 static const char* sig_name(int sig_code) {
     switch (sig_code) {
         case SIGSEGV:

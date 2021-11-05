@@ -16,6 +16,8 @@
 
 #include "worker.hpp"
 
+#include <memory>
+
 namespace silkworm {
 
 Worker::~Worker() {
@@ -32,7 +34,7 @@ void Worker::start(bool wait) {
         return;
     }
 
-    thread_.reset(new std::thread([&]() {
+    thread_ = std::make_unique<std::thread>([&]() {
         WorkerState expected_state2{WorkerState::kStarting};
         if (state_.compare_exchange_strong(expected_state2, WorkerState::kStarted)) {
             try {
@@ -43,7 +45,7 @@ void Worker::start(bool wait) {
             }
         }
         state_.store(WorkerState::kStopped);
-    }));
+    });
 
     while (wait) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -69,12 +71,12 @@ void Worker::kick() {
     kicked_cv_.notify_all();
 }
 
-bool Worker::wait_for_kick(uint32_t timeout_seconds) {
-    while (true) {
+bool Worker::wait_for_kick(uint32_t timeout_milliseconds) {
+    while (!SignalHandler::signalled()) {
         bool expected_kick_value{true};
         if (!kicked_.compare_exchange_strong(expected_kick_value, false)) {
             std::unique_lock l(kick_mtx_);
-            (void)kicked_cv_.wait_for(l, std::chrono::seconds(timeout_seconds));
+            (void)kicked_cv_.wait_for(l, std::chrono::milliseconds(timeout_milliseconds));
             continue;
         }
         break;

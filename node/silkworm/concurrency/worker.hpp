@@ -22,6 +22,8 @@
 #include <iostream>
 #include <thread>
 
+#include <silkworm/common/signal_handler.hpp>
+
 namespace silkworm {
 
 // If you only need stoppability, use ActiveComponent instead.
@@ -42,7 +44,7 @@ class Worker {
     void kick();                   // Kicks worker thread if waiting
 
     // Whether this worker/thread has received a stop request
-    bool is_stopping() const { return state_.load() == WorkerState::kStopping; }
+    bool is_stopping() const { return state_.load() == WorkerState::kStopping || SignalHandler::signalled(); }
 
     // Retrieves current state of thread
     WorkerState get_state() { return state_.load(); }

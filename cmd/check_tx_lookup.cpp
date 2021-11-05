@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include <csignal>
-#include <filesystem>
 #include <iostream>
 
 #include <CLI/CLI.hpp>
@@ -24,28 +22,16 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/signal_handler.hpp>
 #include <silkworm/common/util.hpp>
-#include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/tables.hpp>
-#include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
-#include <silkworm/types/transaction.hpp>
 
 using namespace silkworm;
 
-std::atomic_bool should_stop_{false};  // Request for stop from user or OS
-
-void sig_handler(int signum) {
-    (void)signum;
-    std::cout << std::endl << " Got interrupt. Stopping ..." << std::endl << std::endl;
-    should_stop_.store(true);
-}
-
 int main(int argc, char* argv[]) {
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
+    SignalHandler::init();
 
     namespace fs = std::filesystem;
 
@@ -90,7 +76,7 @@ int main(int argc, char* argv[]) {
 
                 uint64_t i{0};
                 auto transaction_data{transactions_table.find(db::to_slice(transaction_key), false)};
-                for (; i < body.txn_count && transaction_data.done == true;
+                for (; i < body.txn_count && transaction_data.done;
                      i++, transaction_data = transactions_table.to_next(false)) {
                     if (!transaction_data) {
                         SILKWORM_LOG(LogLevel::Error)
@@ -131,7 +117,7 @@ int main(int argc, char* argv[]) {
                 SILKWORM_LOG(LogLevel::Info) << "Scanned blocks " << expected_block_number << std::endl;
             }
 
-            if (should_stop_) {
+            if (SignalHandler::signalled()) {
                 break;
             }
 
@@ -139,7 +125,7 @@ int main(int argc, char* argv[]) {
             bodies_data = bodies_table.to_next(false);
         }
 
-        SILKWORM_LOG(LogLevel::Info) << "Check " << (should_stop_ ? "aborted" : "completed") << std::endl;
+        SILKWORM_LOG(LogLevel::Info) << "Check " << (SignalHandler::signalled() ? "aborted" : "completed") << std::endl;
 
     } catch (const std::exception& ex) {
         SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;

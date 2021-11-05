@@ -49,8 +49,10 @@ static const char* sig_name(int sig_code) {
 #if defined(__linux__) || defined(__APPLE__)
         case SIGQUIT:
             return "SIGQUIT";
+#if defined(SIGSTP)
         case SIGSTP:
             return "SIGSTP";
+#endif
         case SIGSTOP:
             return "SIGSTOP";
         case SIGKILL:
@@ -75,8 +77,8 @@ static const char* sig_name(int sig_code) {
             return "SIGXCPU";
         case SIGHUP:
             return "SIGHUP";
-        case SIGIPE:
-            return "SIGIPE";
+        case SIGFPE:
+            return "SIGFPE";
         case SIGALRM:
             return "SIGALRM";
         case SIGUSR1:

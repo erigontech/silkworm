@@ -221,8 +221,8 @@ class Db::ReadOnlyAccess::Tx {
                 throw std::logic_error("key in td table has to be 40 bytes long: " + result.key.as_hex_string());
             }
 
-            Hash hash{key.substr(8)};
-            ByteView block_num = key.substr(0, 8);
+            Hash hash{key.substr(sizeof(BlockNum))};
+            ByteView block_num = key.substr(0, sizeof(BlockNum));
 
             if (bad_headers && contains(*bad_headers, hash)) return true;  // = continue loop
 
@@ -239,10 +239,6 @@ class Db::ReadOnlyAccess::Tx {
         };
 
         db::cursor_for_each(td_cursor, find_max, db::CursorMoveDirection::Reverse);
-
-        if (max_block_num == 0) {
-            max_hash = *read_canonical_hash(0);
-        }
 
         return {max_block_num, max_hash};
     }

@@ -257,9 +257,12 @@ std::set<Hash> PersistedChain::remove_headers(BlockNum unwind_point, Hash bad_bl
 
         auto [max_block_num, max_hash] = tx.header_with_biggest_td(&bad_headers);
 
-        tx.write_head_header_hash(max_hash);
+        if (max_block_num == 0) {
+            max_block_num = unwind_point;
+            max_hash = *tx.read_canonical_hash(max_block_num);
+        }
 
-        max_block_num_ok = max_block_num ? max_block_num : unwind_point;
+        tx.write_head_header_hash(max_hash);
     }
 
     return bad_headers;

@@ -14,10 +14,7 @@
    limitations under the License.
 */
 
-#include <atomic>
 #include <csignal>
-#include <filesystem>
-#include <queue>
 #include <string>
 #include <thread>
 
@@ -31,23 +28,13 @@
 #include <silkworm/concurrency/worker.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/db/mdbx.hpp>
 #include <silkworm/db/stages.hpp>
-#include <silkworm/db/util.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/recovery/recovery_farm.hpp>
-#include <silkworm/types/block.hpp>
 
 using namespace silkworm;
 
 std::unique_ptr<stagedsync::recovery::RecoveryFarm> farm;
-
-void sig_handler(int) {
-    std::cout << std::endl << " Got interrupt. Stopping ..." << std::endl << std::endl;
-    if (farm) {
-        farm->stop();
-    }
-}
 
 struct app_options_t {
     std::string datadir{};  // Provided database path
@@ -61,6 +48,9 @@ struct app_options_t {
 };
 
 int main(int argc, char* argv[]) {
+
+    SignalHandler::init();
+
     namespace fs = std::filesystem;
     // Init command line parser
     CLI::App app("Senders recovery tool.");
@@ -115,9 +105,6 @@ int main(int argc, char* argv[]) {
         auto txn{env.start_write()};
 
         stagedsync::StageResult result{stagedsync::StageResult::kSuccess};
-
-        signal(SIGINT, sig_handler);
-        signal(SIGTERM, sig_handler);
 
         if (app_recover) {
             // Create farm instance and do work

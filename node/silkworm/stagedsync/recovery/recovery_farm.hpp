@@ -21,6 +21,7 @@
 #include <atomic>
 #include <queue>
 
+#include <silkworm/common/signal_handler.hpp>
 #include <silkworm/etl/collector.hpp>
 #include <silkworm/stagedsync/recovery/recovery_worker.hpp>
 #include <silkworm/stagedsync/util.hpp>
@@ -56,7 +57,7 @@ class RecoveryFarm {
 
   private:
     //! \brief Whether running tasks should stop
-    bool should_stop() { return should_stop_.load(); }
+    bool should_stop() { return should_stop_.load() || SignalHandler::signalled(); }
 
     //! \brief Commands every threaded recovery worker to stop
     //! \param [in] wait : whether to wait for worker stopped

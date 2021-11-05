@@ -77,6 +77,9 @@ bool Worker::wait_for_kick(uint32_t timeout_seconds) {
         if (!kicked_.compare_exchange_strong(expected_kick_value, false)) {
             std::unique_lock l(kick_mtx_);
             (void)kicked_cv_.wait_for(l, std::chrono::seconds(timeout_seconds));
+            if (SignalHandler::signalled()) {
+                return false;
+            }
             continue;
         }
         break;

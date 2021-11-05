@@ -18,10 +18,12 @@
 #include <fstream>
 #include <string>
 #include <thread>
+#include <csignal>
 
 #include <catch2/catch.hpp>
 
 #include "directories.hpp"
+#include "signal_handler.hpp"
 #include "stopwatch.hpp"
 
 namespace db {
@@ -57,7 +59,7 @@ TEST_CASE("Stop Watch") {
         CHECK(t >= start_time);
     }
 
-    CHECK(sw1.format(duration3) != "");
+    CHECK(!sw1.format(duration3).empty());
     CHECK(sw1.format(918734032564785ns) == "10d 15h:12m:14.032s");
     CHECK(sw1.format(432034ms) == "7m:12.034s");
     CHECK(sw1.format(1ms) == "1ms");
@@ -127,6 +129,14 @@ TEST_CASE("DataDirectory") {
         data_dir.etl().clear();
         REQUIRE(data_dir.etl().is_pristine() == true);
     }
+}
+
+TEST_CASE("Signal Handler") {
+
+    SignalHandler::init();
+    raise(SIGINT);
+    CHECK(SignalHandler::signalled());
+
 }
 
 }  // namespace db

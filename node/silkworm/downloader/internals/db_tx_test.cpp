@@ -89,8 +89,8 @@ namespace db {
         }
 
         SECTION("write/read/delete canonical hash") {
-            CHECK_NOTHROW(tx.write_canonical_hash(header.number, header.hash()));
-            CHECK_NOTHROW(tx.delete_canonical_hash(header.number));
+            REQUIRE_NOTHROW(tx.write_canonical_hash(header.number, header.hash()));
+            REQUIRE_NOTHROW(tx.delete_canonical_hash(header.number));
 
             auto read_hash = tx.read_canonical_hash(header.number);
 

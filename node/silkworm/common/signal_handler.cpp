@@ -100,6 +100,9 @@ inline constexpr int kHandleableCodes[] {
         SIGTERM  // Termination request (kill/killall default)
 };
 
+std::atomic_uint32_t SignalHandler::sig_count_{0};
+std::atomic_bool SignalHandler::signalled_{false};
+
 void SignalHandler::init() {
     for (const int sig_code : kHandleableCodes) {
         signal(sig_code, &SignalHandler::handle);

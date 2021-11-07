@@ -32,8 +32,8 @@ class SignalHandler {
     static void reset();                                          // Reset to un-signalled (see tests coverage)
 
   private:
-    inline static std::atomic_uint32_t sig_count_{0};
-    inline static std::atomic_bool signalled_{false};
+    static std::atomic_uint32_t sig_count_;
+    static std::atomic_bool signalled_;
 };
 
 }  // namespace silkworm

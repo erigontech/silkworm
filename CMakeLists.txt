@@ -158,6 +158,7 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/execution.hpp
                    evmone/lib/evmone/instruction_traits.hpp
                    evmone/lib/evmone/instructions_calls.cpp
+                   evmone/lib/evmone/instructions_op2fn.hpp
                    evmone/lib/evmone/instructions.cpp
                    evmone/lib/evmone/instructions.hpp
                    evmone/lib/evmone/limits.hpp
@@ -166,7 +167,7 @@ add_library(evmone evmone/lib/evmone/analysis.cpp
                    evmone/lib/evmone/tracing.hpp
                    evmone/lib/evmone/vm.cpp
                    evmone/lib/evmone/vm.hpp)
-set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.8.1")
+set_source_files_properties(evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.9.0-dev")
 target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions evmc::hex)
 

@@ -41,6 +41,9 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
   target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
+  add_executable(silkworm silkworm.cpp)
+  target_link_libraries(silkworm PRIVATE silkworm_node CLI11::CLI11)
+
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
 

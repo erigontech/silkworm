@@ -27,11 +27,10 @@ namespace silkworm::trie {
 
 Cursor::Cursor(mdbx::cursor& cursor, PrefixSet& changed, ByteView prefix)
     : cursor_{cursor}, changed_{changed}, prefix_{prefix} {
-    consume_node(/*key=*/{}, /*exact=*/true, /*delete_entry=*/false);
-    update_skip_state();
+    consume_node(/*key=*/{}, /*exact=*/true);
 }
 
-void Cursor::consume_node(ByteView to, bool exact, bool delete_entry) {
+void Cursor::consume_node(ByteView to, bool exact) {
     const Bytes db_key{prefix_ + Bytes{to}};
     const auto entry{exact ? cursor_.find(db::to_slice(db_key), /*throw_notfound=*/false)
                            : cursor_.lower_bound(db::to_slice(db_key), /*throw_notfound=*/false)};
@@ -75,7 +74,10 @@ void Cursor::consume_node(ByteView to, bool exact, bool delete_entry) {
 
     stack_.push_back(SubNode{Bytes{key}, node, nibble});
 
-    if (entry && delete_entry) {
+    update_skip_state();
+
+    // don't erase nodes with valid root hashes
+    if (entry && (!can_skip_state_ || nibble != -1)) {
         cursor_.erase();
     }
 }
@@ -92,7 +94,7 @@ void Cursor::next() {
         if (sn.nibble < 0) {
             move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/true);
         } else {
-            consume_node(*key(), /*exact=*/false, /*delete_entry=*/true);
+            consume_node(*key(), /*exact=*/false);
         }
     } else {
         move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/false);
@@ -129,7 +131,7 @@ void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode
 
     if (!sn.node.has_value()) {
         // we can't rely on the state flag, so search in the DB
-        consume_node(*key(), /*exact=*/false, /*delete_entry=*/true);
+        consume_node(*key(), /*exact=*/false);
         return;
     }
 

@@ -117,7 +117,7 @@ class Cursor {
         [[nodiscard]] const evmc::bytes32* hash() const;
     };
 
-    void consume_node(ByteView key, bool exact, bool delete_entry);
+    void consume_node(ByteView key, bool exact);
 
     void move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode);
 

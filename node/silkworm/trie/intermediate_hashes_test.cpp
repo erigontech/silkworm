@@ -700,6 +700,74 @@ TEST_CASE("Incremental vs regeneration for storage") {
     CHECK(fused_nodes == incremental_nodes);
 }
 
+TEST_CASE("Storage deletion") {
+    test::Context context;
+    auto& txn{context.txn()};
+
+    static constexpr auto address{0x1000000000000000000000000000000000000000_address};
+    static const auto hashed_address{keccak256(full_view(address))};
+
+    static constexpr Account account{
+        1,                                                                           // nonce
+        15 * kEther,                                                                 // balance
+        0x7792ad513ce4d8f49163e21b25bf27ce6c8a0fa1e78c564e7d20a2d303303ba0_bytes32,  // code_hash
+        kDefaultIncarnation,                                                         // incarnation
+    };
+
+    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
+    auto hashed_storage{db::open_cursor(txn, db::table::kHashedStorage)};
+    auto storage_change_table{db::open_cursor(txn, db::table::kStorageChangeSet)};
+    auto storage_trie{db::open_cursor(txn, db::table::kTrieOfStorage)};
+
+    hashed_accounts.upsert(mdbx::slice{hashed_address.bytes, kHashLength}, db::to_slice(account.encode_for_storage()));
+
+    static constexpr auto plain_location1{0x1000000000000000000000000000000000000000000000000000000000000000_bytes32};
+    static constexpr auto plain_location2{0x1A00000000000000000000000000000000000000000000000000000000000000_bytes32};
+    static constexpr auto plain_location3{0x1E00000000000000000000000000000000000000000000000000000000000000_bytes32};
+
+    static const auto hashed_location1{keccak256(full_view(plain_location1))};
+    static const auto hashed_location2{keccak256(full_view(plain_location2))};
+    static const auto hashed_location3{keccak256(full_view(plain_location3))};
+
+    static const Bytes value1{*from_hex("0xABCD")};
+    static const Bytes value2{*from_hex("0x4321")};
+    static const Bytes value3{*from_hex("0x4444")};
+
+    static const Bytes storage_prefix{db::storage_prefix(full_view(hashed_address.bytes), kDefaultIncarnation)};
+
+    db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location1.bytes), value1);
+    db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location2.bytes), value2);
+    db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location3.bytes), value3);
+
+    regenerate_intermediate_hashes(txn, context.dir().etl().path());
+
+    // There should be one root node in storage trie
+    const std::map<Bytes, Node> nodes_a{read_all_nodes(storage_trie)};
+    CHECK(nodes_a.size() == 1);
+
+    SECTION("Increment the trie without any changes") {
+        increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/0);
+        const std::map<Bytes, Node> nodes_b{read_all_nodes(storage_trie)};
+        CHECK(nodes_b == nodes_a);
+    }
+
+    SECTION("Delete storage and increment the trie") {
+        db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location1.bytes), {});
+        db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location2.bytes), {});
+        db::upsert_storage_value(hashed_storage, storage_prefix, full_view(hashed_location3.bytes), {});
+
+        static const Bytes storage_change_key{db::storage_change_key(/*block_number=*/1, address, kDefaultIncarnation)};
+
+        storage_change_table.upsert(db::to_slice(storage_change_key), mdbx::slice{plain_location1.bytes, kHashLength});
+        storage_change_table.upsert(db::to_slice(storage_change_key), mdbx::slice{plain_location2.bytes, kHashLength});
+        storage_change_table.upsert(db::to_slice(storage_change_key), mdbx::slice{plain_location3.bytes, kHashLength});
+
+        increment_intermediate_hashes(txn, context.dir().etl().path(), /*from=*/0);
+        const std::map<Bytes, Node> nodes_b{read_all_nodes(storage_trie)};
+        CHECK(nodes_b.empty());
+    }
+}
+
 TEST_CASE("increment_key") {
     CHECK(increment_key({}) == std::nullopt);
     CHECK(nibbles_to_hex(*increment_key(nibbles_from_hex("12"))) == "13");

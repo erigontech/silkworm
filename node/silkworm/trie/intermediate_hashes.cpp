@@ -18,6 +18,7 @@
 
 #include <bitset>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/rlp_err.hpp>
@@ -54,8 +55,8 @@ void Cursor::consume_node(ByteView to, bool exact) {
     std::optional<Node> node{std::nullopt};
     if (entry) {
         node = unmarshal_node(db::from_slice(entry.value));
-        assert(node != std::nullopt);
-        assert(node->state_mask() != 0);
+        SILKWORM_ASSERT(node.has_value());
+        SILKWORM_ASSERT(node->state_mask() != 0);
     }
 
     int nibble{0};
@@ -287,7 +288,7 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
 
     for (Cursor trie{trie_db_cursor, changed}; trie.key().has_value();) {
         if (trie.can_skip_state()) {
-            assert(trie.hash() != nullptr);
+            SILKWORM_ASSERT(trie.hash() != nullptr);
             hb_.add_branch_node(*trie.key(), *trie.hash(), trie.children_are_in_trie());
         }
 
@@ -335,7 +336,7 @@ evmc::bytes32 DbTrieLoader::calculate_storage_root(const Bytes& key_with_inc, Pr
 
     for (Cursor trie{trie_db_cursor, changed, key_with_inc}; trie.key().has_value();) {
         if (trie.can_skip_state()) {
-            assert(trie.hash() != nullptr);
+            SILKWORM_ASSERT(trie.hash() != nullptr);
             hb.add_branch_node(*trie.key(), *trie.hash(), trie.children_are_in_trie());
         }
 
@@ -441,7 +442,7 @@ std::optional<Bytes> increment_key(ByteView unpacked) {
     Bytes out{unpacked};
     for (size_t i{out.size()}; i > 0; --i) {
         uint8_t& nibble{out[i - 1]};
-        assert(nibble < 0x10);
+        SILKWORM_ASSERT(nibble < 0x10);
         if (nibble < 0xF) {
             ++nibble;
             return out;

@@ -35,13 +35,18 @@ Bytes pack_nibbles(ByteView nibbles) {
     if (n == 0) {
         return out;
     }
-    for (size_t i{0}; i < n - 1; ++i) {
-        out[i] = (nibbles[2 * i] << 4) + nibbles[2 * i + 1];
+
+    auto out_it{out.begin()};
+    while (!nibbles.empty()) {
+        *out_it = nibbles[0] << 4;
+        nibbles.remove_prefix(1);
+        if (!nibbles.empty()) {
+            *out_it += nibbles[0];
+            nibbles.remove_prefix(1);
+            std::advance(out_it, 1);
+        }
     }
-    out[n - 1] = nibbles[2 * (n - 1)] << 4;
-    if (nibbles.length() % 2 == 0) {
-        out[n - 1] += nibbles[2 * n - 1];
-    }
+
     return out;
 }
 

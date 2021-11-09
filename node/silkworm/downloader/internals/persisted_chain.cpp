@@ -109,15 +109,14 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
         BlockNum forking_point = find_forking_point(tx_, header, height, *parent);
 
         // Save progress
-        tx_.write_head_header_hash(hash);                           // can throw exception, todo: catch & rethrow?
-        tx_.write_stage_progress(db::stages::kHeadersKey, height);  // can throw exception, todo: catch & rethrow?
+        tx_.write_head_header_hash(hash);                           // can throw exception
+        tx_.write_stage_progress(db::stages::kHeadersKey, height);  // can throw exception
 
         highest_bn_ = height;
         highest_hash_ = hash;
         highest_timestamp_ = header.timestamp;
         canonical_cache_.put(height, hash);
-        local_td_ =
-            td;  // this makes sure we end up choosing the chain with the max total difficulty - todo: what this mean?
+        local_td_ = td;  // this makes sure we end up choosing the chain with the max total difficulty
 
         if (forking_point < unwind_point_) {  // See if the forking point affects the unwind-point (the block number to
             unwind_point_ = forking_point;    // which other stages will need to unwind before the new canonical chain

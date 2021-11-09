@@ -96,7 +96,7 @@ Headers WorkingChain::withdraw_stable_headers() {
         if (!link->preverified) {
             if (contains(badHeaders_, link->hash))
                 skip = true;
-            else if (auto error = ConsensusProto::verify(*link->header); error != ConsensusProto::VERIFICATION_ERROR) {
+            else if (auto error = ConsensusProto::verify(*link->header); error == ConsensusProto::VERIFICATION_ERROR) {
                 if (error == ConsensusProto::FUTURE_BLOCK) {
                     links_in_future.push_back(link);
                     SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: added future link,"

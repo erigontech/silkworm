@@ -65,13 +65,16 @@ static Bytes encode_path(ByteView nibbles, bool terminating) {
 
     if (odd) {
         res[0] |= nibbles[0];
-        for (size_t i{1}; i < res.length(); ++i) {
-            res[i] = (nibbles[2 * i - 1] << 4) + nibbles[2 * i];
-        }
-    } else {
-        for (size_t i{1}; i < res.length(); ++i) {
-            res[i] = (nibbles[2 * i - 2] << 4) + nibbles[2 * i - 1];
-        }
+        nibbles.remove_prefix(1);
+        assert(nibbles.length() % 2 == 0);
+    }
+
+    auto it1 = nibbles.begin();
+    auto it2 = std::next(it1, 1);
+    for (size_t i{1}; i < res.length(); ++i) {
+        res[i] = (*it1 << 4) + *it2;
+        std::advance(it1, 2);
+        std::advance(it2, 2);
     }
 
     return res;

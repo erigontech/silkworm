@@ -347,6 +347,7 @@ evmc::bytes32 DbTrieLoader::calculate_storage_root(const Bytes& key_with_inc, Pr
 
         storage_trie.next();
 
+        // TODO (Andrew) consider replacing with cursor_for_each(_multi?)
         for (auto storage{storage_state.lower_bound_multivalue(db::to_slice(key_with_inc),
                                                                db::to_slice(*uncovered_storage),
                                                                /*throw_notfound=*/false)};

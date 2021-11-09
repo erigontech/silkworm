@@ -52,9 +52,10 @@ Bytes pack_nibbles(ByteView nibbles) {
 
 Bytes unpack_nibbles(ByteView packed) {
     Bytes out(2 * packed.length(), '\0');
-    for (size_t i{0}; i < packed.length(); ++i) {
-        out[2 * i] = packed[i] >> 4;
-        out[2 * i + 1] = packed[i] & 0xF;
+    auto out_it{out.begin()};
+    for (const auto& b : packed) {
+        *out_it++ = b >> 4;
+        *out_it++ = b & 0xF;
     }
     return out;
 }

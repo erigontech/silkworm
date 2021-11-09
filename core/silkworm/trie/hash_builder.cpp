@@ -60,15 +60,8 @@ static Bytes encode_path(ByteView nibbles, bool terminating) {
     Bytes res(nibbles.length() / 2 + 1, '\0');
     const bool odd{nibbles.length() % 2 != 0};
 
-    if (!terminating && !odd) {
-        res[0] = 0x00;
-    } else if (!terminating && odd) {
-        res[0] = 0x10;
-    } else if (terminating && !odd) {
-        res[0] = 0x20;
-    } else if (terminating && odd) {
-        res[0] = 0x30;
-    }
+    res[0] = terminating ? 0x20 : 0x00;
+    res[0] += odd ? 0x10 : 0x00;
 
     if (odd) {
         res[0] |= nibbles[0];

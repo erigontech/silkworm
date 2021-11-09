@@ -1,0 +1,130 @@
+/*
+    Copyright 2021 The Silkworm Authors
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+#include "signal_handler.hpp"
+
+#include <csignal>
+#include <iostream>
+
+namespace silkworm {
+
+static const char* sig_name(int sig_code) {
+    switch (sig_code) {
+        case SIGSEGV:
+            return "SIGSEGV";
+#if defined(__linux__) || defined(__APPLE__)
+        case SIGBUS:
+            return "SIGBUS";
+        case SIGSYS:
+            return "SIGSYS";
+#endif
+        case SIGFPE:
+            return "SIGFPE";
+        case SIGILL:
+            return "SIGILL";
+#if defined(__linux__) || defined(__APPLE__)
+        case SIGTRAP:
+            return "SIGTRAP";
+#endif
+#if defined(SIGBREAK)
+        case SIGBREAK:
+            return "SIGBREAK";
+#endif
+#if defined(__linux__) || defined(__APPLE__)
+        case SIGQUIT:
+            return "SIGQUIT";
+#if defined(SIGSTP)
+        case SIGSTP:
+            return "SIGSTP";
+#endif
+        case SIGSTOP:
+            return "SIGSTOP";
+        case SIGKILL:
+            return "SIGKILL";
+#endif
+        case SIGABRT:
+            return "SIGABRT";
+#if defined(SIGABRT_COMPAT)
+        case SIGABRT_COMPAT:
+            return "SIGABRT_COMPAT";
+#endif
+        case SIGINT:
+            return "SIGINT";
+        case SIGTERM:
+            return "SIGTERM";
+#if defined(__linux__) || defined(__APPLE__)
+        case SIGVTALRM:
+            return "SIGVTALRM";
+        case SIGXFSZ:
+            return "SIGXFZS";
+        case SIGXCPU:
+            return "SIGXCPU";
+        case SIGHUP:
+            return "SIGHUP";
+        case SIGALRM:
+            return "SIGALRM";
+        case SIGUSR1:
+            return "SIGUSR1";
+        case SIGUSR2:
+            return "SIGUSR2";
+#endif
+        default:
+            return "Unknown";
+    }
+}
+
+inline constexpr int kHandleableCodes[] {
+#if defined(SIGBREAK)
+    SIGBREAK,  // Windows keyboard CTRL+Break
+#endif
+#if defined(__linux__) || defined(__APPLE__)
+        SIGQUIT,  // CTRL+\ (like CTRL+C but also generates a coredump)
+        SIGTSTP,  // CTRL+Z to interrupt a process
+        SIGSTOP,  // interrupt a process (not ignoreable)
+        SIGKILL,  // kill (not catchable nor ignorable)
+#endif
+        SIGINT,  // Keyboard CTRL+C
+        SIGTERM  // Termination request (kill/killall default)
+};
+
+std::atomic_uint32_t SignalHandler::sig_count_{0};
+std::atomic_bool SignalHandler::signalled_{false};
+
+void SignalHandler::init() {
+    for (const int sig_code : kHandleableCodes) {
+        signal(sig_code, &SignalHandler::handle);
+    }
+}
+
+void SignalHandler::handle(int sig_code) {
+    if (!signalled_) {
+        std::cout << "\n  Got " << sig_name(sig_code) << ". Shutting down ..." << std::endl;
+    }
+    signalled_ = true;
+    if (++sig_count_ >= 10) {
+        abort();
+    }
+    if (sig_count_ > 1) {
+        std::cout << "  Already shutting down. Interrupt more to panic. " << (10 - sig_count_) << std::endl;
+    }
+    signal(sig_code, &SignalHandler::handle);  // Re-enable the hook
+}
+void SignalHandler::reset() {
+    signalled_ = false;
+    sig_count_ = 0;
+}
+
+}  // namespace silkworm

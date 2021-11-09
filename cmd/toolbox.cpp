@@ -28,9 +28,10 @@
 
 #include <silkworm/chain/config.hpp>
 #include <silkworm/chain/genesis.hpp>
+#include <silkworm/common/as_range.hpp>
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/endian.hpp>
-#include <silkworm/common/as_range.hpp>
+#include <silkworm/common/signal_handler.hpp>
 #include <silkworm/db/genesis.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/db/storage.hpp>
@@ -40,8 +41,6 @@
 
 namespace fs = std::filesystem;
 using namespace silkworm;
-
-bool shouldStop{false};
 
 class Progress {
   public:
@@ -132,12 +131,6 @@ struct dbFreeInfo {
     size_t size{0};
     std::vector<dbFreeEntry> entries{};
 };
-
-void sig_handler(int signum) {
-    (void)signum;
-    std::cout << "\n Request for termination intercepted. Stopping ..." << std::endl;
-    shouldStop = true;
-}
 
 void do_clear(db::EnvConfig& config, bool dry, bool always_yes, const std::vector<std::string>& table_names,
               bool drop) {
@@ -256,7 +249,7 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
         auto named_map{txn.open_map(data.key.as_string())};
         auto stat2{txn.get_map_stat(named_map)};
         auto info2{txn.get_handle_info(named_map)};
-        dbTableEntry* table2 = new dbTableEntry{named_map.dbi, data.key.as_string(), stat2, info2};
+        auto* table2 = new dbTableEntry{named_map.dbi, data.key.as_string(), stat2, info2};
 
         ret.pageSize += table2->stat.ms_psize;
         ret.pages += table2->pages();
@@ -313,7 +306,7 @@ void do_scan(const db::EnvConfig& config) {
                 key_size += result.key.size();
                 data_size += result.value.size();
                 if (!--batch_size) {
-                    if (shouldStop) {
+                    if (SignalHandler::signalled()) {
                         break;
                     }
                     progress.set_current(progress.get_current() + progress.get_increment_count());
@@ -323,7 +316,7 @@ void do_scan(const db::EnvConfig& config) {
                 result = tbl_crs.to_next(/*throw_notfound =*/false);
             }
 
-            if (!shouldStop) {
+            if (!SignalHandler::signalled()) {
                 progress.set_current(item.stat.ms_entries);
                 std::cout << progress.print_interval('.') << std::flush;
                 std::cout << (boost::format(" %13s %13s %13s") % human_size(key_size) % human_size(data_size) %
@@ -335,7 +328,7 @@ void do_scan(const db::EnvConfig& config) {
         }
     }
 
-    std::cout << "\n" << (shouldStop ? "Aborted" : "Done") << " !\n " << std::endl;
+    std::cout << "\n" << (SignalHandler::signalled() ? "Aborted" : "Done") << " !\n " << std::endl;
     txn.commit();
     env.close(config.shared);
 }
@@ -384,7 +377,6 @@ void do_stages(db::EnvConfig& config) {
 }
 
 void do_prunings(db::EnvConfig& config, uint64_t prune_size) {
-
     if (!config.exclusive) {
         throw std::runtime_error("Pruning tool requires exclusive access to database");
     }
@@ -552,7 +544,6 @@ void do_schema(db::EnvConfig& config) {
 }
 
 void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace, bool nobak) {
-
     if (!config.exclusive) {
         throw std::runtime_error("Compact tool requires exclusive access to database");
     }
@@ -588,10 +579,10 @@ void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace
     std::cout << "\n Compacting database from " << config.path << "\n into " << target_file_path
               << "\n Please be patient as there is no progress report ..." << std::endl;
     env.copy(/*destination*/ target_file_path.string(), /*compactify*/ true, /*forcedynamic*/ true);
-    std::cout << "\n Database compaction " << (shouldStop ? "aborted !" : "completed ...") << std::endl;
+    std::cout << "\n Database compaction " << (SignalHandler::signalled() ? "aborted !" : "completed ...") << std::endl;
     env.close();
 
-    if (!shouldStop) {
+    if (!SignalHandler::signalled()) {
         // Do we have a valid compacted file on disk ?
         // replace source with target
         if (!fs::exists(target_file_path)) {
@@ -624,7 +615,6 @@ void do_compact(db::EnvConfig& config, const std::string& work_dir, bool replace
 
 void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool create, bool noempty,
              std::vector<std::string>& names, std::vector<std::string>& xnames, bool dry) {
-
     if (!src_config.exclusive) {
         throw std::runtime_error("Copy tool requires exclusive access to source database");
     }
@@ -675,7 +665,7 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
 
     // Loop source tables
     for (auto& src_table : src_tableInfo.tables) {
-        if (shouldStop) {
+        if (SignalHandler::signalled()) {
             break;
         }
         std::cout << "\n " << boost::format("%-24s ") % src_table.name << std::flush;
@@ -714,8 +704,8 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
         bool exists_on_target{false};
         bool populated_on_target{false};
         if (!tgt_tableInfo.tables.empty()) {
-            auto it = as_range::find_if(tgt_tableInfo.tables,
-                                        [&src_table](dbTableEntry& item) -> bool { return item.name == src_table.name; });
+            auto it = as_range::find_if(
+                tgt_tableInfo.tables, [&src_table](dbTableEntry& item) -> bool { return item.name == src_table.name; });
             if (it != tgt_tableInfo.tables.end()) {
                 exists_on_target = true;
                 populated_on_target = (it->stat.ms_entries > 0);
@@ -777,7 +767,7 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
             }
 
             if (!--batch_size) {
-                if (shouldStop) {
+                if (SignalHandler::signalled()) {
                     break;
                 }
                 progress.set_current(progress.get_current() + progress.get_increment_count());
@@ -790,7 +780,7 @@ void do_copy(db::EnvConfig& src_config, const std::string& target_dir, bool crea
         }
 
         // Close all
-        if (!shouldStop && bytesWritten) {
+        if (!SignalHandler::signalled() && bytesWritten) {
             if (!dry) {
                 tgt_txn.commit();
             } else {
@@ -944,7 +934,6 @@ void do_first_byte_analysis(db::EnvConfig& config) {
 }
 
 void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uint32_t step) {
-
     if (!config.exclusive) {
         throw std::runtime_error("Extract headers tool requires exclusive access to database");
     }
@@ -990,8 +979,8 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
 }
 
 int main(int argc, char* argv[]) {
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
+
+    SignalHandler::init();
 
     CLI::App app_main("Silkworm db tool");
     app_main.require_subcommand(1);  // At least 1 subcommand is required

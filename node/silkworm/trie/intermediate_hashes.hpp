@@ -145,6 +145,8 @@ class DbTrieLoader {
     evmc::bytes32 calculate_root(PrefixSet& changed);
 
   private:
+    evmc::bytes32 calculate_storage_root(const Bytes& key_with_inc, PrefixSet& changed);
+
     mdbx::txn& txn_;
     HashBuilder hb_;
     etl::Collector& storage_collector_;

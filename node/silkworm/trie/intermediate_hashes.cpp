@@ -283,9 +283,7 @@ amount of iterations will not be big.
 */
 evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
     auto acc_state{db::open_cursor(txn_, db::table::kHashedAccounts)};
-    auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
     auto acc_trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfAccounts)};
-    auto storage_trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfStorage)};
 
     for (Cursor acc_trie{acc_trie_db_cursor, changed}; acc_trie.key().has_value();) {
         if (acc_trie.can_skip_state()) {
@@ -314,46 +312,7 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
 
             if (account.incarnation) {
                 const Bytes key_with_inc{db::storage_prefix(db::from_slice(acc.key), account.incarnation)};
-                HashBuilder storage_hb;
-                storage_hb.node_collector = [&](ByteView unpacked_storage_key, const Node& node) {
-                    etl::Entry e{key_with_inc, marshal_node(node)};
-                    e.key.append(unpacked_storage_key);
-                    storage_collector_.collect(std::move(e));
-                };
-
-                for (Cursor storage_trie{storage_trie_db_cursor, changed, key_with_inc};
-                     storage_trie.key().has_value();) {
-                    if (storage_trie.can_skip_state()) {
-                        assert(storage_trie.hash() != nullptr);
-                        storage_hb.add_branch_node(*storage_trie.key(), *storage_trie.hash(),
-                                                   storage_trie.children_are_in_trie());
-                    }
-
-                    const std::optional<Bytes> uncovered_storage{storage_trie.first_uncovered_prefix()};
-                    if (uncovered_storage == std::nullopt) {
-                        // no more uncovered storage
-                        break;
-                    }
-
-                    storage_trie.next();
-
-                    for (auto storage{storage_state.lower_bound_multivalue(db::to_slice(key_with_inc),
-                                                                           db::to_slice(*uncovered_storage),
-                                                                           /*throw_notfound=*/false)};
-                         storage; storage = storage_state.to_current_next_multi(/*throw_notfound=*/false)) {
-                        const Bytes unpacked_loc{unpack_nibbles(db::from_slice(storage.value).substr(0, kHashLength))};
-                        if (storage_trie.key().has_value() && storage_trie.key().value() < unpacked_loc) {
-                            break;
-                        }
-
-                        const ByteView value{db::from_slice(storage.value).substr(kHashLength)};
-                        rlp_.clear();
-                        rlp::encode(rlp_, value);
-                        storage_hb.add_leaf(unpacked_loc, rlp_);
-                    }
-                }
-
-                storage_root = storage_hb.root_hash();
+                storage_root = calculate_storage_root(key_with_inc, changed);
             }
 
             hb_.add_leaf(unpacked_key, account.rlp(storage_root));
@@ -361,6 +320,50 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
     }
 
     return hb_.root_hash();
+}
+
+evmc::bytes32 DbTrieLoader::calculate_storage_root(const Bytes& key_with_inc, PrefixSet& changed) {
+    auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
+    auto storage_trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfStorage)};
+
+    HashBuilder storage_hb;
+    storage_hb.node_collector = [&](ByteView unpacked_storage_key, const Node& node) {
+        etl::Entry e{key_with_inc, marshal_node(node)};
+        e.key.append(unpacked_storage_key);
+        storage_collector_.collect(std::move(e));
+    };
+
+    for (Cursor storage_trie{storage_trie_db_cursor, changed, key_with_inc}; storage_trie.key().has_value();) {
+        if (storage_trie.can_skip_state()) {
+            assert(storage_trie.hash() != nullptr);
+            storage_hb.add_branch_node(*storage_trie.key(), *storage_trie.hash(), storage_trie.children_are_in_trie());
+        }
+
+        const std::optional<Bytes> uncovered_storage{storage_trie.first_uncovered_prefix()};
+        if (uncovered_storage == std::nullopt) {
+            // no more uncovered storage
+            break;
+        }
+
+        storage_trie.next();
+
+        for (auto storage{storage_state.lower_bound_multivalue(db::to_slice(key_with_inc),
+                                                               db::to_slice(*uncovered_storage),
+                                                               /*throw_notfound=*/false)};
+             storage; storage = storage_state.to_current_next_multi(/*throw_notfound=*/false)) {
+            const Bytes unpacked_loc{unpack_nibbles(db::from_slice(storage.value).substr(0, kHashLength))};
+            if (storage_trie.key().has_value() && storage_trie.key().value() < unpacked_loc) {
+                break;
+            }
+
+            const ByteView value{db::from_slice(storage.value).substr(kHashLength)};
+            rlp_.clear();
+            rlp::encode(rlp_, value);
+            storage_hb.add_leaf(unpacked_loc, rlp_);
+        }
+    }
+
+    return storage_hb.root_hash();
 }
 
 static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir,

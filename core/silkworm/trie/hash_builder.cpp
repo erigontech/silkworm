@@ -69,12 +69,9 @@ static Bytes encode_path(ByteView nibbles, bool terminating) {
         assert(nibbles.length() % 2 == 0);
     }
 
-    auto it1 = nibbles.begin();
-    auto it2 = std::next(it1, 1);
-    for (size_t i{1}; i < res.length(); ++i) {
-        res[i] = (*it1 << 4) + *it2;
-        std::advance(it1, 2);
-        std::advance(it2, 2);
+    for (auto it{std::next(res.begin(), 1)}; it != res.end(); std::advance(it, 1)) {
+        *it = (nibbles[0] << 4) + nibbles[1];
+        nibbles.remove_prefix(2);
     }
 
     return res;

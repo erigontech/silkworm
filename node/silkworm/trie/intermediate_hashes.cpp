@@ -18,133 +18,201 @@
 
 #include <bitset>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/db/tables.hpp>
 
 namespace silkworm::trie {
 
-AccountTrieCursor::AccountTrieCursor(mdbx::txn& txn, PrefixSet& changed)
-    : changed_{changed}, cursor_{db::open_cursor(txn, db::table::kTrieOfAccounts)} {}
-
-void AccountTrieCursor::consume_node(ByteView to) {
-    const auto entry{cursor_.lower_bound(db::to_slice(to), /*throw_notfound=*/false)};
-    if (!entry) {
-        // end-of-tree
-        root_nibble_ = 16;
-        return;
-    }
-
-    const auto node{unmarshal_node(db::from_slice(entry.value))};
-    assert(node != std::nullopt);
-    assert(node->state_mask() != 0);
-    uint8_t nibble{0};
-    while ((node->state_mask() & (1u << nibble)) == 0) {
-        ++nibble;
-    }
-
-    const ByteView key{db::from_slice(entry.key)};
-    assert(!key.empty());
-    root_nibble_ = key[0];
-
-    stack_.push(SubNode{Bytes{key}, *node, nibble});
-
-    cursor_.erase();
+Cursor::Cursor(mdbx::cursor& cursor, PrefixSet& changed, ByteView prefix)
+    : cursor_{cursor}, changed_{changed}, prefix_{prefix} {
+    consume_node(/*key=*/{}, /*exact=*/true);
 }
 
-void AccountTrieCursor::next() {
-    if (!can_skip_state_ && children_are_in_trie()) {
-        // go to the child node
-        consume_node(*key());
-    } else {
-        move_to_next_sibling();
-    }
+void Cursor::consume_node(ByteView to, bool exact) {
+    const Bytes db_key{prefix_ + Bytes{to}};
+    const auto entry{exact ? cursor_.find(db::to_slice(db_key), /*throw_notfound=*/false)
+                           : cursor_.lower_bound(db::to_slice(db_key), /*throw_notfound=*/false)};
 
-    const std::optional<Bytes> k{key()};
-    if (k == std::nullopt || changed_.contains(*k)) {
-        can_skip_state_ = false;
-    } else {
-        can_skip_state_ = stack_.top().hash_flag();
-    }
-}
-
-void AccountTrieCursor::move_to_next_sibling() {
-    if (root_nibble_ == 16) {
+    if (!entry && !exact) {
         // end-of-tree
+        stack_.clear();
         return;
     }
 
-    if (stack_.empty()) {
-        // we're at the root
-        ++root_nibble_;
-        const Bytes key(1, root_nibble_);
-        consume_node(key);
-        return;
-    }
-
-    SubNode& sn{stack_.top()};
-
-    assert(sn.nibble < 16);
-    do {
-        ++sn.nibble;
-        if (sn.nibble == 16) {
-            // this node is fully traversed
-            stack_.pop();
-            move_to_next_sibling();  // on parent
+    ByteView key = to;
+    if (!exact) {
+        key = db::from_slice(entry.key);
+        if (!has_prefix(key, prefix_)) {
+            stack_.clear();
             return;
         }
-    } while (!sn.state_flag());
+        key.remove_prefix(prefix_.length());
+    }
+
+    std::optional<Node> node{std::nullopt};
+    if (entry) {
+        node = unmarshal_node(db::from_slice(entry.value));
+        SILKWORM_ASSERT(node.has_value());
+        SILKWORM_ASSERT(node->state_mask() != 0);
+    }
+
+    int nibble{0};
+    if (!node.has_value() || node->root_hash().has_value()) {
+        nibble = -1;
+    } else {
+        while ((node->state_mask() & (1u << nibble)) == 0) {
+            ++nibble;
+        }
+    }
+
+    if (!key.empty() && !stack_.empty()) {
+        // the root might have nullopt node and thus no state bits, so we rely on the DB
+        stack_[0].nibble = key[0];
+    }
+
+    stack_.push_back(SubNode{Bytes{key}, node, nibble});
+
+    update_skip_state();
+
+    // don't erase nodes with valid root hashes
+    if (entry && (!can_skip_state_ || nibble != -1)) {
+        cursor_.erase();
+    }
 }
 
-Bytes AccountTrieCursor::SubNode::full_key() const {
+void Cursor::next() {
+    if (stack_.empty()) {
+        // end-of-tree
+        return;
+    }
+
+    if (!can_skip_state_ && children_are_in_trie()) {
+        // go to the child node
+        SubNode& sn{stack_.back()};
+        if (sn.nibble < 0) {
+            move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/true);
+        } else {
+            consume_node(*key(), /*exact=*/false);
+        }
+    } else {
+        move_to_next_sibling(/*allow_root_to_child_nibble_within_subnode=*/false);
+    }
+
+    update_skip_state();
+}
+
+void Cursor::update_skip_state() {
+    const std::optional<Bytes> k{key()};
+    if (k == std::nullopt || changed_.contains(prefix_ + *k)) {
+        can_skip_state_ = false;
+    } else {
+        can_skip_state_ = stack_.back().hash_flag();
+    }
+}
+
+void Cursor::move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode) {
+    if (stack_.empty()) {
+        // end-of-tree
+        return;
+    }
+
+    SubNode& sn{stack_.back()};
+
+    if (sn.nibble >= 15 || (sn.nibble < 0 && !allow_root_to_child_nibble_within_subnode)) {
+        // this node is fully traversed
+        stack_.pop_back();
+        move_to_next_sibling(false);  // on parent
+        return;
+    }
+
+    ++sn.nibble;
+
+    if (!sn.node.has_value()) {
+        // we can't rely on the state flag, so search in the DB
+        consume_node(*key(), /*exact=*/false);
+        return;
+    }
+
+    for (; sn.nibble < 16; ++sn.nibble) {
+        if (sn.state_flag()) {
+            return;
+        }
+    }
+
+    // this node is fully traversed
+    stack_.pop_back();
+    move_to_next_sibling(false);  // on parent
+}
+
+Bytes Cursor::SubNode::full_key() const {
     Bytes out{key};
-    out.push_back(nibble);
+    if (nibble >= 0) {
+        out.push_back(nibble);
+    }
     return out;
 }
 
-bool AccountTrieCursor::SubNode::state_flag() const { return node.state_mask() & (1u << nibble); }
+bool Cursor::SubNode::state_flag() const {
+    if (nibble < 0 || !node.has_value()) {
+        return true;
+    }
+    return node->state_mask() & (1u << nibble);
+}
 
-bool AccountTrieCursor::SubNode::tree_flag() const { return node.tree_mask() & (1u << nibble); }
+bool Cursor::SubNode::tree_flag() const {
+    if (nibble < 0 || !node.has_value()) {
+        return true;
+    }
+    return node->tree_mask() & (1u << nibble);
+}
 
-bool AccountTrieCursor::SubNode::hash_flag() const { return node.hash_mask() & (1u << nibble); }
+bool Cursor::SubNode::hash_flag() const {
+    if (!node.has_value()) {
+        return false;
+    } else if (nibble < 0) {
+        return node->root_hash().has_value();
+    }
+    return node->hash_mask() & (1u << nibble);
+}
 
-const evmc::bytes32* AccountTrieCursor::SubNode::hash() const {
+const evmc::bytes32* Cursor::SubNode::hash() const {
     if (!hash_flag()) {
         return nullptr;
     }
+
+    if (nibble < 0) {
+        return &node->root_hash().value();
+    }
+
     const unsigned first_nibbles_mask{(1u << nibble) - 1};
-    const size_t hash_idx{std::bitset<16>(node.hash_mask() & first_nibbles_mask).count()};
-    return &node.hashes()[hash_idx];
+    const size_t hash_idx{std::bitset<16>(node->hash_mask() & first_nibbles_mask).count()};
+    return &node->hashes()[hash_idx];
 }
 
-std::optional<Bytes> AccountTrieCursor::key() const {
-    if (root_nibble_ == -1) {
-        return Bytes{};
-    }
+std::optional<Bytes> Cursor::key() const {
     if (stack_.empty()) {
         return std::nullopt;
     }
-    return stack_.top().full_key();
+    return stack_.back().full_key();
 }
 
-const evmc::bytes32* AccountTrieCursor::hash() const {
+const evmc::bytes32* Cursor::hash() const {
     if (stack_.empty()) {
         return nullptr;
     }
-    return stack_.top().hash();
+    return stack_.back().hash();
 }
 
-bool AccountTrieCursor::children_are_in_trie() const {
-    if (root_nibble_ == -1) {
-        return true;
-    }
+bool Cursor::children_are_in_trie() const {
     if (stack_.empty()) {
         return false;
     }
-    return stack_.top().tree_flag();
+    return stack_.back().tree_flag();
 }
 
-std::optional<Bytes> AccountTrieCursor::first_uncovered_prefix() const {
+std::optional<Bytes> Cursor::first_uncovered_prefix() const {
     std::optional<Bytes> k{key()};
     if (can_skip_state_ && k != std::nullopt) {
         k = increment_key(*k);
@@ -153,32 +221,6 @@ std::optional<Bytes> AccountTrieCursor::first_uncovered_prefix() const {
         return std::nullopt;
     }
     return pack_nibbles(*k);
-}
-
-StorageTrieCursor::StorageTrieCursor(mdbx::txn&) {}
-
-Bytes StorageTrieCursor::seek_to_account(ByteView) {
-    // TODO[Issue 179] implement
-    return {};
-}
-
-Bytes StorageTrieCursor::first_uncovered_prefix() {
-    // TODO[Issue 179] implement
-    return Bytes(1, '\0');
-}
-
-std::optional<Bytes> StorageTrieCursor::key() const {
-    // TODO[Issue 179] implement
-    return std::nullopt;
-}
-
-void StorageTrieCursor::next() {
-    // TODO[Issue 179] implement
-}
-
-bool StorageTrieCursor::can_skip_state() const {
-    // TODO[Issue 179] implement
-    return false;
 }
 
 DbTrieLoader::DbTrieLoader(mdbx::txn& txn, etl::Collector& account_collector, etl::Collector& storage_collector)
@@ -237,27 +279,27 @@ In practice Trie is not full - it means that after account key `{30 zero bytes}0
 amount of iterations will not be big.
 */
 evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
-    auto acc_state{db::open_cursor(txn_, db::table::kHashedAccounts)};
-    auto storage_state{db::open_cursor(txn_, db::table::kHashedStorage)};
+    auto state{db::open_cursor(txn_, db::table::kHashedAccounts)};
+    auto trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfAccounts)};
 
-    for (AccountTrieCursor acc_trie{txn_, changed}; acc_trie.key() != std::nullopt;) {
-        if (acc_trie.can_skip_state()) {
-            assert(acc_trie.hash() != nullptr);
-            hb_.add_branch_node(*acc_trie.key(), *acc_trie.hash(), acc_trie.children_are_in_trie());
+    for (Cursor trie{trie_db_cursor, changed}; trie.key().has_value();) {
+        if (trie.can_skip_state()) {
+            SILKWORM_ASSERT(trie.hash() != nullptr);
+            hb_.add_branch_node(*trie.key(), *trie.hash(), trie.children_are_in_trie());
         }
 
-        const std::optional<Bytes> uncovered{acc_trie.first_uncovered_prefix()};
+        const std::optional<Bytes> uncovered{trie.first_uncovered_prefix()};
         if (uncovered == std::nullopt) {
-            // no more uncovered state
+            // no more uncovered accounts
             break;
         }
 
-        acc_trie.next();
+        trie.next();
 
-        for (auto acc{acc_state.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)}; acc.done;
-             acc = acc_state.to_next(/*throw_notfound=*/false)) {
+        for (auto acc{state.lower_bound(db::to_slice(*uncovered), /*throw_notfound=*/false)}; acc;
+             acc = state.to_next(/*throw_notfound=*/false)) {
             const Bytes unpacked_key{unpack_nibbles(db::from_slice(acc.key))};
-            if (acc_trie.key().has_value() && acc_trie.key().value() < unpacked_key) {
+            if (trie.key().has_value() && trie.key().value() < unpacked_key) {
                 break;
             }
             const auto [account, err]{decode_account_from_storage(db::from_slice(acc.value))};
@@ -267,43 +309,7 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
 
             if (account.incarnation) {
                 const Bytes key_with_inc{db::storage_prefix(db::from_slice(acc.key), account.incarnation)};
-                HashBuilder storage_hb;
-                storage_hb.node_collector = [&](ByteView unpacked_storage_key, const Node& node) {
-                    etl::Entry e{key_with_inc, marshal_node(node)};
-                    e.key.append(unpacked_storage_key);
-                    storage_collector_.collect(std::move(e));
-                };
-
-                StorageTrieCursor storage_trie{txn_};
-                for (storage_trie.seek_to_account(key_with_inc);; storage_trie.next()) {
-                    if (storage_trie.can_skip_state()) {
-                        goto use_storage_trie;
-                    }
-
-                    for (auto storage{storage_state.lower_bound_multivalue(
-                             db::to_slice(key_with_inc), db::to_slice(storage_trie.first_uncovered_prefix()),
-                             /*throw_notfound=*/false)};
-                         storage.done; storage = storage_state.to_current_next_multi(/*throw_notfound=*/false)) {
-                        const Bytes unpacked_loc{unpack_nibbles(db::from_slice(storage.value).substr(0, kHashLength))};
-                        const ByteView value{db::from_slice(storage.value).substr(kHashLength)};
-                        if (storage_trie.key().has_value() && storage_trie.key().value() < unpacked_loc) {
-                            break;
-                        }
-
-                        rlp_.clear();
-                        rlp::encode(rlp_, value);
-                        storage_hb.add_leaf(unpacked_loc, rlp_);
-                    }
-
-                use_storage_trie:
-                    if (storage_trie.key() == std::nullopt) {
-                        break;
-                    }
-
-                    // TODO[Issue 179] use storage trie
-                }
-
-                storage_root = storage_hb.root_hash();
+                storage_root = calculate_storage_root(key_with_inc, changed);
             }
 
             hb_.add_leaf(unpacked_key, account.rlp(storage_root));
@@ -311,6 +317,50 @@ evmc::bytes32 DbTrieLoader::calculate_root(PrefixSet& changed) {
     }
 
     return hb_.root_hash();
+}
+
+evmc::bytes32 DbTrieLoader::calculate_storage_root(const Bytes& key_with_inc, PrefixSet& changed) {
+    auto state{db::open_cursor(txn_, db::table::kHashedStorage)};
+    auto trie_db_cursor{db::open_cursor(txn_, db::table::kTrieOfStorage)};
+
+    HashBuilder hb;
+    hb.node_collector = [&](ByteView unpacked_storage_key, const Node& node) {
+        etl::Entry e{key_with_inc, marshal_node(node)};
+        e.key.append(unpacked_storage_key);
+        storage_collector_.collect(std::move(e));
+    };
+
+    for (Cursor trie{trie_db_cursor, changed, key_with_inc}; trie.key().has_value();) {
+        if (trie.can_skip_state()) {
+            SILKWORM_ASSERT(trie.hash() != nullptr);
+            hb.add_branch_node(*trie.key(), *trie.hash(), trie.children_are_in_trie());
+        }
+
+        const std::optional<Bytes> uncovered{trie.first_uncovered_prefix()};
+        if (uncovered == std::nullopt) {
+            // no more uncovered storage
+            break;
+        }
+
+        trie.next();
+
+        // TODO (Andrew) consider replacing with cursor_for_each(_multi?)
+        for (auto storage{state.lower_bound_multivalue(db::to_slice(key_with_inc), db::to_slice(*uncovered),
+                                                       /*throw_notfound=*/false)};
+             storage; storage = state.to_current_next_multi(/*throw_notfound=*/false)) {
+            const Bytes unpacked_loc{unpack_nibbles(db::from_slice(storage.value).substr(0, kHashLength))};
+            if (trie.key().has_value() && trie.key().value() < unpacked_loc) {
+                break;
+            }
+
+            const ByteView value{db::from_slice(storage.value).substr(kHashLength)};
+            rlp_.clear();
+            rlp::encode(rlp_, value);
+            hb.add_leaf(unpacked_loc, rlp_);
+        }
+    }
+
+    return hb.root_hash();
 }
 
 static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir,
@@ -336,25 +386,44 @@ static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::fi
 }
 
 // See Erigon (p *HashPromoter) Promote
-static void changed_accounts(mdbx::txn& txn, BlockNum from, PrefixSet& out) {
-    // TODO[Issue 179] delete TrieStorage for deleted accounts
+static PrefixSet gather_changes(mdbx::txn& txn, BlockNum from) {
     const Bytes starting_key{db::block_key(from + 1)};
 
-    auto change_cursor{db::open_cursor(txn, db::table::kAccountChangeSet)};
-    change_cursor.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false);
-    db::cursor_for_each(change_cursor, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
-        const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};
-        const auto hashed_address{keccak256(address)};
-        out.insert(unpack_nibbles(ByteView{hashed_address.bytes, kHashLength}));
-        return true;
-    });
+    PrefixSet out;
+
+    auto account_changes{db::open_cursor(txn, db::table::kAccountChangeSet)};
+    if (account_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)) {
+        db::cursor_for_each(account_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
+            const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};
+            const auto hashed_address{keccak256(address)};
+            out.insert(unpack_nibbles(full_view(hashed_address.bytes)));
+            return true;
+        });
+    }
+
+    auto storage_changes{db::open_cursor(txn, db::table::kStorageChangeSet)};
+    if (storage_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)) {
+        db::cursor_for_each(storage_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
+            const ByteView address{db::from_slice(entry.key).substr(sizeof(BlockNum), kAddressLength)};
+            const ByteView incarnation{db::from_slice(entry.key).substr(sizeof(BlockNum) + kAddressLength)};
+            const ByteView location{db::from_slice(entry.value).substr(0, kHashLength)};
+            const auto hashed_address{keccak256(address)};
+            const auto hashed_location{keccak256(location)};
+
+            Bytes hashed_key{full_view(hashed_address.bytes)};
+            hashed_key.append(incarnation);
+            hashed_key.append(unpack_nibbles(full_view(hashed_location.bytes)));
+            out.insert(hashed_key);
+            return true;
+        });
+    }
+
+    return out;
 }
 
 evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::filesystem::path& etl_dir, BlockNum from,
                                             const evmc::bytes32* expected_root) {
-    PrefixSet changed;
-    changed_accounts(txn, from, changed);
-    // TODO[Issue 179] changed storage
+    PrefixSet changed{gather_changes(txn, from)};
     return increment_intermediate_hashes(txn, etl_dir, expected_root, changed);
 }
 
@@ -370,7 +439,7 @@ std::optional<Bytes> increment_key(ByteView unpacked) {
     Bytes out{unpacked};
     for (size_t i{out.size()}; i > 0; --i) {
         uint8_t& nibble{out[i - 1]};
-        assert(nibble < 0x10);
+        SILKWORM_ASSERT(nibble < 0x10);
         if (nibble < 0xF) {
             ++nibble;
             return out;

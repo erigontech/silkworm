@@ -17,8 +17,8 @@ limitations under the License.
 #include "OutboundNewBlockHashes.hpp"
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/header_downloader.hpp>
 #include <silkworm/downloader/rpc/SendMessageToAll.hpp>
+#include <silkworm/rlp/encode_vector.hpp>
 
 namespace silkworm {
 
@@ -26,53 +26,53 @@ OutboundNewBlockHashes::OutboundNewBlockHashes(WorkingChain& wc, SentryClient& s
 
 /*
 func (cs *ControlServerImpl) PropagateNewBlockHashes(ctx context.Context, announces []headerdownload.Announce) {
-	cs.lock.RLock()
-	defer cs.lock.RUnlock()
-	typedRequest := make(eth.NewBlockHashesPacket, len(announces))
-	for i := range announces {
-		typedRequest[i].Hash = announces[i].Hash
-		typedRequest[i].Number = announces[i].Number
-	}
-	data, err := rlp.EncodeToBytes(&typedRequest)
-	if err != nil {
-		log.Error("propagateNewBlockHashes", "error", err)
-		return
-	}
-	var req66, req65 *proto_sentry.OutboundMessageData
-	for _, sentry := range cs.sentries {
-		if !sentry.Ready() {
-			continue
-		}
+        cs.lock.RLock()
+        defer cs.lock.RUnlock()
+        typedRequest := make(eth.NewBlockHashesPacket, len(announces))
+        for i := range announces {
+                typedRequest[i].Hash = announces[i].Hash
+                typedRequest[i].Number = announces[i].Number
+        }
+        data, err := rlp.EncodeToBytes(&typedRequest)
+        if err != nil {
+                log.Error("propagateNewBlockHashes", "error", err)
+                return
+        }
+        var req66, req65 *proto_sentry.OutboundMessageData
+        for _, sentry := range cs.sentries {
+                if !sentry.Ready() {
+                        continue
+                }
 
-		switch sentry.Protocol() {
-		case eth.ETH65:
-			if req65 == nil {
-				req65 = &proto_sentry.OutboundMessageData{
-					Id:   proto_sentry.MessageId_NEW_BLOCK_HASHES_65,
-					Data: data,
-				}
-			}
+                switch sentry.Protocol() {
+                case eth.ETH65:
+                        if req65 == nil {
+                                req65 = &proto_sentry.OutboundMessageData{
+                                        Id:   proto_sentry.MessageId_NEW_BLOCK_HASHES_65,
+                                        Data: data,
+                                }
+                        }
 
-			_, err = sentry.SendMessageToAll(ctx, req65, &grpc.EmptyCallOption{})
-			if err != nil {
-				log.Error("propagateNewBlockHashes", "error", err)
-			}
-		case eth.ETH66:
-			if req66 == nil {
-				req66 = &proto_sentry.OutboundMessageData{
-					Id:   proto_sentry.MessageId_NEW_BLOCK_HASHES_66,
-					Data: data,
-				}
+                        _, err = sentry.SendMessageToAll(ctx, req65, &grpc.EmptyCallOption{})
+                        if err != nil {
+                                log.Error("propagateNewBlockHashes", "error", err)
+                        }
+                case eth.ETH66:
+                        if req66 == nil {
+                                req66 = &proto_sentry.OutboundMessageData{
+                                        Id:   proto_sentry.MessageId_NEW_BLOCK_HASHES_66,
+                                        Data: data,
+                                }
 
-				_, err = sentry.SendMessageToAll(ctx, req66, &grpc.EmptyCallOption{})
-				if err != nil {
-					log.Error("propagateNewBlockHashes", "error", err)
-				}
-			}
-		default:
-			//??
-		}
-	}
+                                _, err = sentry.SendMessageToAll(ctx, req66, &grpc.EmptyCallOption{})
+                                if err != nil {
+                                        log.Error("propagateNewBlockHashes", "error", err)
+                                }
+                        }
+                default:
+                        //??
+                }
+        }
 }
  */
 

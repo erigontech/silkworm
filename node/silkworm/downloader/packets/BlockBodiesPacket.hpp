@@ -30,10 +30,6 @@ struct BlockBodiesPacket66 {  // eth/66 version
 
 namespace rlp {
 
-    size_t length(const BlockBodiesPacket& from) noexcept;
-
-    void encode(Bytes& to, const BlockBodiesPacket& from);
-
     template <>
     rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket& to) noexcept;
 

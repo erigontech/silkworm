@@ -28,28 +28,28 @@
 #include <silkworm/rlp/decode.hpp>
 
 #include "RLPEth66PacketCoding.hpp"
-#include "RLPVectorCoding.hpp"
 
 // specific implementations
 namespace silkworm::rlp {
 
+template <>
 rlp::DecodingResult decode(ByteView& from, Hash& to) noexcept {
     return rlp::decode(from, dynamic_cast<evmc::bytes32&>(to));
 }
 
 template <>
 rlp::DecodingResult decode(ByteView& from, BlockBodiesPacket& to) noexcept {
-    return rlp::decode_vec(from, to);  // decode_vec
+    return rlp::decode_vector(from, to);
 }
 
 template <>
 rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept {
-    return rlp::decode_vec(from, to);  // decode_vec
+    return rlp::decode_vector(from, to);
 }
 
 template <>
 rlp::DecodingResult decode(ByteView& from, GetBlockBodiesPacket& to) noexcept {
-    return rlp::decode_vec(from, to);  // decode_vec
+    return rlp::decode_vector(from, to);
 }
 
 template <>
@@ -76,7 +76,7 @@ rlp::DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
 
 template <>
 rlp::DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept {
-    return rlp::decode_vec(from, to);  // decode_vec
+    return rlp::decode_vector(from, to);
 }
 
 template <>

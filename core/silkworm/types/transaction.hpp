@@ -62,7 +62,7 @@ struct Transaction {
 
     std::optional<evmc::address> from{std::nullopt};  // sender recovered from the signature
 
-    intx::uint256 v() const;  // EIP-155
+    [[nodiscard]] intx::uint256 v() const;  // EIP-155
 
     //! \brief Returns false if v is not acceptable (v != 27 && v != 28 && v < 35, see EIP-155)
     [[nodiscard]] bool set_v(const intx::uint256& v);
@@ -74,13 +74,19 @@ struct Transaction {
     //! If recovery fails the from field is set to null.
     void recover_sender();
 
-    intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
-    intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
+    [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
+    [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
 };
 
 bool operator==(const Transaction& a, const Transaction& b);
 
 namespace rlp {
+    size_t length(const AccessListEntry&);
+    size_t length(const Transaction&);
+
+    void encode(Bytes& to, const AccessListEntry&);
+    void encode(Bytes& to, const Transaction&);
+
     // According to EIP-2718, serialized transactions are prepended with 1 byte containing the type
     // (0x01 for EIP-2930 transactions); the same goes for receipts. This is true for signing and
     // transaction root calculation. However, in block body RLP serialized EIP-2718 transactions

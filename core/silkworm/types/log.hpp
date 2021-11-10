@@ -29,6 +29,11 @@ struct Log {
     Bytes data;
 };
 
+namespace rlp {
+    size_t length(const Log&);
+    void encode(Bytes& to, const Log&);
+}  // namespace rlp
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_TYPES_LOG_HPP_

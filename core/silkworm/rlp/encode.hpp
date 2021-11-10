@@ -29,95 +29,48 @@
 
 #include <silkworm/common/base.hpp>
 
-namespace silkworm {
+namespace silkworm::rlp {
 
-struct BlockBody;
-struct BlockHeader;
-struct Block;
-struct Log;
-struct Receipt;
-struct AccessListEntry;
-struct Transaction;
+struct Header {
+    bool list{false};
+    uint64_t payload_length{0};
+};
 
-namespace rlp {
+inline constexpr uint8_t kEmptyStringCode{0x80};
+inline constexpr uint8_t kEmptyListCode{0xC0};
 
-    struct Header {
-        bool list{false};
-        uint64_t payload_length{0};
-    };
+void encode_header(Bytes& to, Header header);
 
-    inline constexpr uint8_t kEmptyStringCode{0x80};
-    inline constexpr uint8_t kEmptyListCode{0xC0};
+void encode(Bytes& to, const evmc::bytes32&);
+void encode(Bytes& to, ByteView);
+void encode(Bytes& to, uint64_t);
+void encode(Bytes& to, const intx::uint256&);
 
-    void encode_header(Bytes& to, Header header);
+template <size_t N>
+void encode(Bytes& to, gsl::span<const uint8_t, N> bytes) {
+    static_assert(N <= 55, "Complex RLP length encoding not supported");
+    to.push_back(kEmptyStringCode + N);
+    to.append(bytes.data(), N);
+}
 
-    void encode(Bytes& to, const evmc::bytes32&);
-    void encode(Bytes& to, ByteView);
-    void encode(Bytes& to, uint64_t);
-    void encode(Bytes& to, const intx::uint256&);
+template <size_t N>
+void encode(Bytes& to, const uint8_t (&bytes)[N]) {
+    encode<N>(to, gsl::span<const uint8_t, N>{bytes});
+}
 
-    template <size_t N>
-    void encode(Bytes& to, gsl::span<const uint8_t, N> bytes) {
-        static_assert(N <= 55, "Complex RLP length encoding not supported");
-        to.push_back(kEmptyStringCode + N);
-        to.append(bytes.data(), N);
-    }
+template <size_t N>
+void encode(Bytes& to, const std::array<uint8_t, N>& bytes) {
+    encode<N>(to, gsl::span<const uint8_t, N>{bytes});
+}
 
-    template <size_t N>
-    void encode(Bytes& to, const uint8_t (&bytes)[N]) {
-        encode<N>(to, gsl::span<const uint8_t, N>{bytes});
-    }
+size_t length_of_length(uint64_t payload_length);
 
-    template <size_t N>
-    void encode(Bytes& to, const std::array<uint8_t, N>& bytes) {
-        encode<N>(to, gsl::span<const uint8_t, N>{bytes});
-    }
+inline size_t length(const evmc::bytes32&) { return kHashLength + 1; }
 
-    void encode(Bytes& to, const BlockBody&);
-    void encode(Bytes& to, const BlockHeader&, bool for_sealing = false);
-    void encode(Bytes& to, const Block&);
-    void encode(Bytes& to, const Log&);
-    void encode(Bytes& to, const Receipt&);
-    void encode(Bytes& to, const AccessListEntry&);
-    void encode(Bytes& to, const Transaction&);
+size_t length(ByteView);
+size_t length(uint64_t) noexcept;
+size_t length(const intx::uint256&);
 
-    size_t length_of_length(uint64_t payload_length);
-
-    inline size_t length(const evmc::bytes32&) { return kHashLength + 1; }
-
-    size_t length(ByteView);
-    size_t length(uint64_t) noexcept;
-    size_t length(const intx::uint256&);
-
-    size_t length(const BlockHeader&);
-    size_t length(const BlockBody&);
-    size_t length(const Block&);
-    size_t length(const Log&);
-    size_t length(const AccessListEntry&);
-    size_t length(const Transaction&);
-
-    template <class T>
-    size_t length(const std::vector<T>& v) {
-        size_t payload_length{0};
-        for (const T& x : v) {
-            payload_length += length(x);
-        }
-        return length_of_length(payload_length) + payload_length;
-    }
-
-    template <class T>
-    void encode(Bytes& to, const std::vector<T>& v) {
-        Header h{true, 0};
-        for (const T& x : v) {
-            h.payload_length += length(x);
-        }
-        encode_header(to, h);
-        for (const T& x : v) {
-            encode(to, x);
-        }
-    }
-}  // namespace rlp
-
-}  // namespace silkworm
+}  // namespace silkworm::rlp
 
 #endif  // SILKWORM_RLP_ENCODE_HPP_

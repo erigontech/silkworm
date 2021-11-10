@@ -89,6 +89,14 @@ struct BlockWithHash {
 };
 
 namespace rlp {
+    size_t length(const BlockHeader&);
+    size_t length(const BlockBody&);
+    size_t length(const Block&);
+
+    void encode(Bytes& to, const BlockBody&);
+    void encode(Bytes& to, const BlockHeader&, bool for_sealing = false);
+    void encode(Bytes& to, const Block&);
+
     template <>
     DecodingResult decode(ByteView& from, BlockBody& to) noexcept;
 

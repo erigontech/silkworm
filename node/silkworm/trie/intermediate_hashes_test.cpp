@@ -581,7 +581,7 @@ TEST_CASE("Incremental vs regeneration for storage") {
     test::Context context;
     auto& txn{context.txn()};
 
-    // TODO[Issue 179] n = 2000 triggers AddressSanitizer: use-after-poison in MDBX
+    // TODO (Andrew) n = 2000 triggers AddressSanitizer: use-after-poison in MDBX
     static constexpr size_t n{1'000};
 
     auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};

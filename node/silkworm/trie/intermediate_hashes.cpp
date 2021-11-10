@@ -392,30 +392,31 @@ static PrefixSet gather_changes(mdbx::txn& txn, BlockNum from) {
     PrefixSet out;
 
     auto account_changes{db::open_cursor(txn, db::table::kAccountChangeSet)};
-    account_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false);
-    db::cursor_for_each(account_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
-        const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};
-        const auto hashed_address{keccak256(address)};
-        out.insert(unpack_nibbles(full_view(hashed_address.bytes)));
-        return true;
-    });
+    if (account_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)) {
+        db::cursor_for_each(account_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
+            const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};
+            const auto hashed_address{keccak256(address)};
+            out.insert(unpack_nibbles(full_view(hashed_address.bytes)));
+            return true;
+        });
+    }
 
     auto storage_changes{db::open_cursor(txn, db::table::kStorageChangeSet)};
-    storage_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false);
-    // TODO[Issue 179] what happens if there are no storage changes? Will cursor_for_each start from the beginning?
-    db::cursor_for_each(storage_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
-        const ByteView address{db::from_slice(entry.key).substr(sizeof(BlockNum), kAddressLength)};
-        const ByteView incarnation{db::from_slice(entry.key).substr(sizeof(BlockNum) + kAddressLength)};
-        const ByteView location{db::from_slice(entry.value).substr(0, kHashLength)};
-        const auto hashed_address{keccak256(address)};
-        const auto hashed_location{keccak256(location)};
+    if (storage_changes.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)) {
+        db::cursor_for_each(storage_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
+            const ByteView address{db::from_slice(entry.key).substr(sizeof(BlockNum), kAddressLength)};
+            const ByteView incarnation{db::from_slice(entry.key).substr(sizeof(BlockNum) + kAddressLength)};
+            const ByteView location{db::from_slice(entry.value).substr(0, kHashLength)};
+            const auto hashed_address{keccak256(address)};
+            const auto hashed_location{keccak256(location)};
 
-        Bytes hashed_key{full_view(hashed_address.bytes)};
-        hashed_key.append(incarnation);
-        hashed_key.append(unpack_nibbles(full_view(hashed_location.bytes)));
-        out.insert(hashed_key);
-        return true;
-    });
+            Bytes hashed_key{full_view(hashed_address.bytes)};
+            hashed_key.append(incarnation);
+            hashed_key.append(unpack_nibbles(full_view(hashed_location.bytes)));
+            out.insert(hashed_key);
+            return true;
+        });
+    }
 
     return out;
 }

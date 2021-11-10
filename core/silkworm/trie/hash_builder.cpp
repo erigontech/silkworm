@@ -35,75 +35,72 @@ Bytes pack_nibbles(ByteView nibbles) {
     if (n == 0) {
         return out;
     }
-    for (size_t i{0}; i < n - 1; ++i) {
-        out[i] = (nibbles[2 * i] << 4) + nibbles[2 * i + 1];
+
+    auto out_it{out.begin()};
+    while (!nibbles.empty()) {
+        *out_it = nibbles[0] << 4;
+        nibbles.remove_prefix(1);
+        if (!nibbles.empty()) {
+            *out_it += nibbles[0];
+            nibbles.remove_prefix(1);
+            std::advance(out_it, 1);
+        }
     }
-    out[n - 1] = nibbles[2 * (n - 1)] << 4;
-    if (nibbles.length() % 2 == 0) {
-        out[n - 1] += nibbles[2 * n - 1];
-    }
+
     return out;
 }
 
 Bytes unpack_nibbles(ByteView packed) {
     Bytes out(2 * packed.length(), '\0');
-    for (size_t i{0}; i < packed.length(); ++i) {
-        out[2 * i] = packed[i] >> 4;
-        out[2 * i + 1] = packed[i] & 0xF;
+    auto out_it{out.begin()};
+    for (const auto& b : packed) {
+        *out_it++ = b >> 4;
+        *out_it++ = b & 0xF;
     }
     return out;
 }
 
-static Bytes encode_path(ByteView path, bool terminating) {
-    Bytes res(path.length() / 2 + 1, '\0');
-    const bool odd{path.length() % 2 != 0};
+// See "Specification: Compact encoding of hex sequence with optional terminator"
+// at https://eth.wiki/fundamentals/patricia-tree
+static Bytes encode_path(ByteView nibbles, bool terminating) {
+    Bytes res(nibbles.length() / 2 + 1, '\0');
+    const bool odd{nibbles.length() % 2 != 0};
 
-    if (!terminating && !odd) {
-        res[0] = 0x00;
-    } else if (!terminating && odd) {
-        res[0] = 0x10;
-    } else if (terminating && !odd) {
-        res[0] = 0x20;
-    } else if (terminating && odd) {
-        res[0] = 0x30;
-    }
+    res[0] = terminating ? 0x20 : 0x00;
+    res[0] += odd ? 0x10 : 0x00;
 
     if (odd) {
-        res[0] |= path[0];
-        for (size_t i{1}; i < res.length(); ++i) {
-            res[i] = (path[2 * i - 1] << 4) + path[2 * i];
-        }
-    } else {
-        for (size_t i{1}; i < res.length(); ++i) {
-            res[i] = (path[2 * i - 2] << 4) + path[2 * i - 1];
-        }
+        res[0] |= nibbles[0];
+        nibbles.remove_prefix(1);
+        assert(nibbles.length() % 2 == 0);
+    }
+
+    for (auto it{std::next(res.begin(), 1)}; it != res.end(); std::advance(it, 1)) {
+        *it = (nibbles[0] << 4) + nibbles[1];
+        nibbles.remove_prefix(2);
     }
 
     return res;
 }
 
-static Bytes leaf_node_rlp(ByteView path, ByteView value) {
+ByteView HashBuilder::leaf_node_rlp(ByteView path, ByteView value) {
     Bytes encoded_path{encode_path(path, /*terminating=*/true)};
-    Bytes rlp;
-    rlp::Header h;
-    h.list = true;
-    h.payload_length = rlp::length(encoded_path) + rlp::length(value);
-    rlp::encode_header(rlp, h);
-    rlp::encode(rlp, encoded_path);
-    rlp::encode(rlp, value);
-    return rlp;
+    rlp_buffer_.clear();
+    rlp::Header h{/*list=*/true, /*payload_length=*/rlp::length(encoded_path) + rlp::length(value)};
+    rlp::encode_header(rlp_buffer_, h);
+    rlp::encode(rlp_buffer_, encoded_path);
+    rlp::encode(rlp_buffer_, value);
+    return rlp_buffer_;
 }
 
-static Bytes extension_node_rlp(ByteView path, ByteView child_ref) {
+ByteView HashBuilder::extension_node_rlp(ByteView path, ByteView child_ref) {
     Bytes encoded_path{encode_path(path, /*terminating=*/false)};
-    Bytes rlp;
-    rlp::Header h;
-    h.list = true;
-    h.payload_length = rlp::length(encoded_path) + child_ref.length();
-    rlp::encode_header(rlp, h);
-    rlp::encode(rlp, encoded_path);
-    rlp.append(child_ref);
-    return rlp;
+    rlp_buffer_.clear();
+    rlp::Header h{/*list=*/true, /*payload_length=*/rlp::length(encoded_path) + child_ref.length()};
+    rlp::encode_header(rlp_buffer_, h);
+    rlp::encode(rlp_buffer_, encoded_path);
+    rlp_buffer_.append(child_ref);
+    return rlp_buffer_;
 }
 
 static Bytes wrap_hash(gsl::span<const uint8_t, kHashLength> hash) {
@@ -131,9 +128,12 @@ void HashBuilder::add_leaf(Bytes key, ByteView value) {
 }
 
 void HashBuilder::add_branch_node(Bytes key, const evmc::bytes32& value, bool is_in_db_trie) {
-    assert(key > key_);
+    assert(key > key_ || (key_.empty() && key.empty()));
     if (!key_.empty()) {
         gen_struct_step(key_, key);
+    } else if (key.empty()) {
+        // known root hash
+        stack_.push_back(wrap_hash(value.bytes));
     }
     key_ = std::move(key);
     value_ = value;
@@ -250,7 +250,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
                     hash_masks_[len - 1] |= 1u << current[len - 1];
                 }
 
-                bool store_in_db_trie{tree_masks_[len] || hash_masks_[len]};
+                const bool store_in_db_trie{tree_masks_[len] || hash_masks_[len]};
                 if (store_in_db_trie) {
                     if (len > 0) {
                         tree_masks_[len - 1] |= 1u << current[len - 1];  // register myself in parent bitmap
@@ -295,9 +295,8 @@ std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_ma
 
     const size_t first_child_idx{stack_.size() - std::bitset<16>(state_mask).count()};
 
-    rlp::Header h;
-    h.list = true;
-    h.payload_length = 1;  // for the nil value added below
+    // Length for the nil value added below
+    rlp::Header h{/*list=*/true, /*payload_length=*/1};
 
     for (size_t i{first_child_idx}, digit{0}; digit < 16; ++digit) {
         if (state_mask & (1u << digit)) {
@@ -307,25 +306,25 @@ std::vector<Bytes> HashBuilder::branch_ref(uint16_t state_mask, uint16_t hash_ma
         }
     }
 
-    Bytes rlp{};
-    rlp::encode_header(rlp, h);
+    rlp_buffer_.clear();
+    rlp::encode_header(rlp_buffer_, h);
 
     for (size_t i{first_child_idx}, digit{0}; digit < 16; ++digit) {
         if (state_mask & (1u << digit)) {
             if (hash_mask & (1u << digit)) {
                 child_hashes.push_back(stack_[i]);
             }
-            rlp.append(stack_[i++]);
+            rlp_buffer_.append(stack_[i++]);
         } else {
-            rlp.push_back(rlp::kEmptyStringCode);
+            rlp_buffer_.push_back(rlp::kEmptyStringCode);
         }
     }
 
     // branch nodes with values are not supported
-    rlp.push_back(rlp::kEmptyStringCode);
+    rlp_buffer_.push_back(rlp::kEmptyStringCode);
 
     stack_.resize(first_child_idx + 1);
-    stack_.back() = node_ref(rlp);
+    stack_.back() = node_ref(rlp_buffer_);
 
     return child_hashes;
 }

@@ -68,6 +68,10 @@ class HashBuilder {
 
     std::vector<Bytes> branch_ref(uint16_t state_mask, uint16_t hash_mask);
 
+    ByteView leaf_node_rlp(ByteView path, ByteView value);
+
+    ByteView extension_node_rlp(ByteView path, ByteView child_ref);
+
     Bytes key_;                                 // unpacked – one nibble per byte
     std::variant<Bytes, evmc::bytes32> value_;  // leaf value or node hash
     bool is_in_db_trie_{false};
@@ -76,6 +80,8 @@ class HashBuilder {
     std::vector<uint16_t> tree_masks_;
     std::vector<uint16_t> hash_masks_;
     std::vector<Bytes> stack_;  // node references: hashes or embedded RLPs
+
+    Bytes rlp_buffer_;
 };
 
 // Erigon CompressNibbles

@@ -65,7 +65,6 @@ the correct bit in tree_mask bitmap
 
 #include <filesystem>
 #include <optional>
-#include <stack>
 #include <vector>
 
 #include <silkworm/common/base.hpp>
@@ -76,19 +75,20 @@ the correct bit in tree_mask bitmap
 
 namespace silkworm::trie {
 
-// Traverses TrieAccount in pre-order:
+// Traverses TrieAccount or TrieStorage in pre-order:
 // 1. Visit the current node
 // 2. Recursively traverse the current node's left subtree.
 // 3. Recursively traverse the current node's right subtree.
 // See https://en.wikipedia.org/wiki/Tree_traversal#Pre-order,_NLR
 //
-// See also Erigon AccTrieCursor
-class AccountTrieCursor {
+// See also Erigon AccTrieCursor/StorageTrieCursor
+class Cursor {
   public:
-    AccountTrieCursor(const AccountTrieCursor&) = delete;
-    AccountTrieCursor& operator=(const AccountTrieCursor&) = delete;
+    Cursor(const Cursor&) = delete;
+    Cursor& operator=(const Cursor&) = delete;
 
-    AccountTrieCursor(mdbx::txn& txn, PrefixSet& changed);
+    // Ignores DB entries whose keys don't start with the prefix
+    Cursor(mdbx::cursor& cursor, PrefixSet& changed, ByteView prefix = {});
 
     void next();
 
@@ -104,11 +104,11 @@ class AccountTrieCursor {
     [[nodiscard]] std::optional<Bytes> first_uncovered_prefix() const;
 
   private:
-    // TrieAccount node with a particular nibble selected
+    // TrieAccount(TrieStorage) node with a particular nibble selected
     struct SubNode {
         Bytes key;
-        Node node;
-        uint8_t nibble{0};
+        std::optional<Node> node;
+        int nibble{-1};  // -1 points to the node itself instead of a nibble
 
         [[nodiscard]] Bytes full_key() const;
         [[nodiscard]] bool state_flag() const;
@@ -117,34 +117,21 @@ class AccountTrieCursor {
         [[nodiscard]] const evmc::bytes32* hash() const;
     };
 
-    void consume_node(ByteView lower_bound);
+    void consume_node(ByteView key, bool exact);
 
-    void move_to_next_sibling();
+    void move_to_next_sibling(bool allow_root_to_child_nibble_within_subnode);
+
+    void update_skip_state();
+
+    mdbx::cursor cursor_;
 
     PrefixSet& changed_;
-    int root_nibble_{-1};  // -1 means the very beginning of trie traversal, before any actual nodes
-    mdbx::cursor_managed cursor_;
-    std::stack<SubNode> stack_;
+
+    Bytes prefix_;
+
+    std::vector<SubNode> stack_;
+
     bool can_skip_state_{false};
-};
-
-// Erigon StorageTrieCursor
-class StorageTrieCursor {
-  public:
-    StorageTrieCursor(const StorageTrieCursor&) = delete;
-    StorageTrieCursor& operator=(const StorageTrieCursor&) = delete;
-
-    explicit StorageTrieCursor(mdbx::txn& txn);
-
-    Bytes seek_to_account(ByteView hashed_address_with_incarnation);
-
-    Bytes first_uncovered_prefix();
-
-    [[nodiscard]] std::optional<Bytes> key() const;
-
-    void next();
-
-    [[nodiscard]] bool can_skip_state() const;
 };
 
 // Erigon FlatDBTrieLoader
@@ -158,6 +145,8 @@ class DbTrieLoader {
     evmc::bytes32 calculate_root(PrefixSet& changed);
 
   private:
+    evmc::bytes32 calculate_storage_root(const Bytes& key_with_inc, PrefixSet& changed);
+
     mdbx::txn& txn_;
     HashBuilder hb_;
     etl::Collector& storage_collector_;

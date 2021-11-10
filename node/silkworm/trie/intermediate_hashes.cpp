@@ -157,17 +157,15 @@ Bytes Cursor::SubNode::full_key() const {
 bool Cursor::SubNode::state_flag() const {
     if (nibble < 0 || !node.has_value()) {
         return true;
-    } else {
-        return node->state_mask() & (1u << nibble);
     }
+    return node->state_mask() & (1u << nibble);
 }
 
 bool Cursor::SubNode::tree_flag() const {
     if (nibble < 0 || !node.has_value()) {
         return true;
-    } else {
-        return node->tree_mask() & (1u << nibble);
     }
+    return node->tree_mask() & (1u << nibble);
 }
 
 bool Cursor::SubNode::hash_flag() const {
@@ -175,9 +173,8 @@ bool Cursor::SubNode::hash_flag() const {
         return false;
     } else if (nibble < 0) {
         return node->root_hash().has_value();
-    } else {
-        return node->hash_mask() & (1u << nibble);
     }
+    return node->hash_mask() & (1u << nibble);
 }
 
 const evmc::bytes32* Cursor::SubNode::hash() const {

@@ -93,8 +93,6 @@ inline constexpr int kHandleableCodes[] {
 #if defined(__linux__) || defined(__APPLE__)
         SIGQUIT,  // CTRL+\ (like CTRL+C but also generates a coredump)
         SIGTSTP,  // CTRL+Z to interrupt a process
-        SIGSTOP,  // interrupt a process (not ignoreable)
-        SIGKILL,  // kill (not catchable nor ignorable)
 #endif
         SIGINT,  // Keyboard CTRL+C
         SIGTERM  // Termination request (kill/killall default)

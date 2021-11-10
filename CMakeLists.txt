@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.16.2)
 
 if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/evmone/evmc/.git)
   message(FATAL_ERROR "Git submodules not initialized, execute:\n  git submodule update --init --recursive")

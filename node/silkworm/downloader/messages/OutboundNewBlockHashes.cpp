@@ -94,8 +94,8 @@ void OutboundNewBlockHashes::execute() {
     rlp::encode(rlp_encoding, packet_);
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    SILKWORM_LOG(LogLevel::Info) << "Sending message OutboundNewBlockHashes with send_message_to_all, content:"
-                                 << packet_ << " \n";
+    SILKWORM_LOG(LogLevel::Trace) << "Sending message OutboundNewBlockHashes with send_message_to_all, content:"
+                                  << packet_ << " \n";
     rpc::SendMessageToAll rpc{std::move(request)};
 
     seconds_t timeout = 1s;
@@ -104,10 +104,16 @@ void OutboundNewBlockHashes::execute() {
     sentry_.exec_remotely(rpc);
 
     sentry::SentPeers peers = rpc.reply();
-    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of OutboundNewBlockHashes " << packet_ << ": "
-                                 << std::to_string(peers.peers_size()) + " peer(s)\n";
+    SILKWORM_LOG(LogLevel::Trace) << "Received rpc result of OutboundNewBlockHashes " << packet_ << ": "
+                                  << std::to_string(peers.peers_size()) + " peer(s)\n";
 
     announces_to_do.clear();  // clear announces from the queue
+}
+
+std::string OutboundNewBlockHashes::content() const {
+    std::stringstream content;
+    content << packet_;
+    return content.str();
 }
 
 }  // namespace silkworm

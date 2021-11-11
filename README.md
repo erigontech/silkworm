@@ -5,6 +5,8 @@ C++ implementation of the Ethereum protocol based on the [Erigon architecture].
 [![CircleCI](https://circleci.com/gh/torquem-ch/silkworm.svg?style=svg)](https://circleci.com/gh/torquem-ch/silkworm)
 [![AppVeyor](https://ci.appveyor.com/api/projects/status/8npida1piyqw1844/branch/master?svg=true)](https://ci.appveyor.com/project/torquem/silkworm)
 [![CodeCov](https://codecov.io/gh/torquem-ch/silkworm/branch/master/graph/badge.svg)](https://codecov.io/gh/torquem-ch/silkworm)
+[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/torquem-ch/silkworm.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/torquem-ch/silkworm/context:cpp)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/torquem-ch/silkworm.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/torquem-ch/silkworm/alerts/)
 
 ## Table of Contents
 
@@ -71,6 +73,10 @@ Then run the build itself
 ```
 make -j
 ```
+_Note about parallel builds using `-j` : if not specified the exact number of parallel tasks the compiler will spawn as many
+as the cores available. This may cause OOM errors if build is executed on a host with a large number of cores but a relatively
+small amount of RAM. To workaround this either specify `-jn` where `n` is the number of parallel tasks you want to allow or
+remove `-j` completely._
 
 Now you can run the unit tests
 ```

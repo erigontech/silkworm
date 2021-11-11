@@ -107,6 +107,7 @@ void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, B
     if (find_value_suffix(state_cursor, storage_prefix, location)) {
         state_cursor.erase();
     }
+    value = zeroless_view(value);
     if (!value.empty()) {
         Bytes data{location};
         data.append(value);

@@ -28,10 +28,10 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/chain/difficulty.hpp>
+#include <silkworm/common/as_range.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/test_util.hpp>
-#include <silkworm/common/as_range.hpp>
 #include <silkworm/consensus/blockchain.hpp>
 #include <silkworm/state/in_memory_state.hpp>
 
@@ -619,7 +619,7 @@ Status difficulty_test(const nlohmann::json& j, const std::optional<ChainConfig>
     bool parent_has_uncles{false};
     if (j.contains("parentUncles")) {
         auto parent_uncles{j["parentUncles"].get<std::string>()};
-        parent_has_uncles = from_hex(parent_uncles).value() != full_view(kEmptyListHash);
+        parent_has_uncles = from_hex(parent_uncles).value() != ByteView{kEmptyListHash};
     }
 
     intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp, parent_difficulty,
@@ -634,7 +634,8 @@ Status difficulty_test(const nlohmann::json& j, const std::optional<ChainConfig>
 }
 
 bool exclude_test(const fs::path& p, const fs::path& root_dir) {
-    return as_range::any_of(kExcludedTests, [&p, &root_dir](const std::filesystem::path& e) -> bool { return root_dir / e == p; });
+    return as_range::any_of(kExcludedTests,
+                            [&p, &root_dir](const std::filesystem::path& e) -> bool { return root_dir / e == p; });
 }
 
 int main(int argc, char* argv[]) {

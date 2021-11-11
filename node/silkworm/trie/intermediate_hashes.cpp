@@ -396,7 +396,7 @@ static PrefixSet gather_changes(mdbx::txn& txn, BlockNum from) {
         db::cursor_for_each(account_changes, [&out](mdbx::cursor&, mdbx::cursor::move_result& entry) {
             const ByteView address{db::from_slice(entry.value).substr(0, kAddressLength)};
             const auto hashed_address{keccak256(address)};
-            out.insert(unpack_nibbles(full_view(hashed_address.bytes)));
+            out.insert(unpack_nibbles(hashed_address.bytes));
             return true;
         });
     }
@@ -410,9 +410,9 @@ static PrefixSet gather_changes(mdbx::txn& txn, BlockNum from) {
             const auto hashed_address{keccak256(address)};
             const auto hashed_location{keccak256(location)};
 
-            Bytes hashed_key{full_view(hashed_address.bytes)};
+            Bytes hashed_key{ByteView{hashed_address.bytes}};
             hashed_key.append(incarnation);
-            hashed_key.append(unpack_nibbles(full_view(hashed_location.bytes)));
+            hashed_key.append(unpack_nibbles(hashed_location.bytes));
             out.insert(hashed_key);
             return true;
         });

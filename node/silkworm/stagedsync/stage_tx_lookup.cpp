@@ -18,7 +18,6 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/etl/collector.hpp>
 
@@ -91,7 +90,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
     SILKWORM_LOG(LogLevel::Info) << "Entries Collected << " << collector.size() << std::endl;
 
     // Proceed only if we've done something
-    if (collector.size()) {
+    if (!collector.empty()) {
         SILKWORM_LOG(LogLevel::Info) << "Started tx Hashes Loading" << std::endl;
 
         /*
@@ -155,7 +154,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
             while (tx_data && tx_count < body.txn_count) {
                 auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
-                if (lookup_table.seek(mdbx::slice{hash.bytes, kHashLength})) {
+                if (lookup_table.seek(db::to_slice(hash.bytes))) {
                     lookup_table.erase();
                 }
                 ++tx_count;

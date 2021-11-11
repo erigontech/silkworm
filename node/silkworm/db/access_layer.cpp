@@ -127,8 +127,7 @@ void write_canonical_header(mdbx::txn& txn, const BlockHeader& header) {
 void write_canonical_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength], BlockNum number) {
     auto target{db::open_cursor(txn, table::kCanonicalHashes)};
     auto key{db::block_key(number)};
-    mdbx::slice value{hash, kHashLength};
-    target.upsert(to_slice(key), value);
+    target.upsert(to_slice(key), db::to_slice(hash));
 }
 
 std::vector<Transaction> read_transactions(mdbx::txn& txn, uint64_t base_id, uint64_t count) {
@@ -278,7 +277,7 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, c
 
 std::optional<ByteView> read_code(mdbx::txn& txn, const evmc::bytes32& code_hash) {
     auto src{db::open_cursor(txn, table::kCode)};
-    auto key{to_slice(full_view(code_hash))};
+    auto key{to_slice(code_hash)};
     auto data{src.find(key, /*throw_notfound=*/false)};
     if (!data) {
         return std::nullopt;
@@ -303,7 +302,7 @@ static std::optional<ByteView> historical_account(mdbx::txn& txn, const evmc::ad
 
     auto change_set_table{db::open_cursor(txn, table::kAccountChangeSet)};
     const Bytes change_set_key{block_key(*change_block)};
-    return find_value_suffix(change_set_table, change_set_key, full_view(address));
+    return find_value_suffix(change_set_table, change_set_key, address);
 }
 
 // Erigon FindByHistory for storage
@@ -317,8 +316,8 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
     }
 
     const ByteView k{from_slice(data.key)};
-    if (k.substr(0, kAddressLength) != full_view(address) ||
-        k.substr(kAddressLength, kHashLength) != full_view(location)) {
+    if (k.substr(0, kAddressLength) != ByteView{address} ||
+        k.substr(kAddressLength, kHashLength) != ByteView{location}) {
         return std::nullopt;
     }
 
@@ -330,7 +329,7 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
 
     auto change_set_table{db::open_cursor(txn, table::kStorageChangeSet)};
     const Bytes change_set_key{storage_change_key(*change_block, address, incarnation)};
-    return find_value_suffix(change_set_table, change_set_key, full_view(location));
+    return find_value_suffix(change_set_table, change_set_key, location);
 }
 
 std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address, std::optional<BlockNum> block_num) {
@@ -353,7 +352,7 @@ std::optional<Account> read_account(mdbx::txn& txn, const evmc::address& address
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash
         auto src{db::open_cursor(txn, table::kPlainContractCode)};
-        auto key{storage_prefix(full_view(address), acc.incarnation)};
+        auto key{storage_prefix(address, acc.incarnation)};
         if (auto data{src.find(to_slice(key), /*throw_notfound*/ false)};
             data.done && data.value.length() == kHashLength) {
             std::memcpy(acc.code_hash.bytes, data.value.iov_base, kHashLength);
@@ -370,8 +369,8 @@ evmc::bytes32 read_storage(mdbx::txn& txn, const evmc::address& address, uint64_
                                     : std::nullopt};
     if (!val.has_value()) {
         auto src{db::open_cursor(txn, table::kPlainState)};
-        auto key{storage_prefix(full_view(address), incarnation)};
-        val = find_value_suffix(src, key, full_view(location));
+        auto key{storage_prefix(address, incarnation)};
+        val = find_value_suffix(src, key, location);
     }
 
     if (!val.has_value()) {
@@ -396,7 +395,7 @@ std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::ad
     }
 
     auto src{db::open_cursor(txn, table::kIncarnationMap)};
-    if (auto data{src.find(mdbx::slice{address.bytes, sizeof(evmc::address)}, /*throw_notfound*/ false)}; data.done) {
+    if (auto data{src.find(to_slice(address), /*throw_notfound=*/false)}; data.done) {
         assert(data.value.length() == 8);
         return endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base));
     }
@@ -409,14 +408,14 @@ AccountChanges read_account_changes(mdbx::txn& txn, BlockNum block_num) {
     auto src{db::open_cursor(txn, table::kAccountChangeSet)};
     auto key{block_key(block_num)};
 
-    auto data{src.find(to_slice(key), /*throw_notfound*/ false)};
+    auto data{src.find(to_slice(key), /*throw_notfound=*/false)};
     while (data) {
         assert(data.value.length() >= kAddressLength);
         evmc::address address;
         std::memcpy(address.bytes, data.value.iov_base, kAddressLength);
         data.value.remove_prefix(kAddressLength);
         changes[address] = Bytes{static_cast<uint8_t*>(data.value.iov_base), data.value.iov_len};
-        data = src.to_current_next_multi(/*throw_not_found*/ false);
+        data = src.to_current_next_multi(/*throw_not_found=*/false);
     }
 
     return changes;
@@ -478,8 +477,7 @@ std::optional<ChainConfig> read_chain_config(mdbx::txn& txn) {
 void write_head_header_hash(mdbx::txn& txn, const uint8_t (&hash)[kHashLength]) {
     auto target{db::open_cursor(txn, table::kHeadHeader)};
     mdbx::slice key(db::table::kLastHeaderKey);
-    mdbx::slice value(hash, kHashLength);
-    target.upsert(key, value);
+    target.upsert(key, to_slice(hash));
 }
 
 std::optional<evmc::bytes32> read_head_header_hash(mdbx::txn& txn) {

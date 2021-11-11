@@ -15,10 +15,11 @@
 */
 
 #include "util.hpp"
-#include <silkworm/common/as_range.hpp>
 
 #include <cassert>
 #include <regex>
+
+#include <silkworm/common/as_range.hpp>
 
 namespace silkworm {
 
@@ -122,16 +123,10 @@ evmc::bytes32 to_bytes32(ByteView bytes) {
     return out;
 }
 
-ByteView zeroless_view(const ByteView& data) {
-    return data.substr(static_cast<size_t>(std::distance(
-        data.begin(), as_range::find_if_not(data, [](const auto& b) { return b == 0x0; }))));
+ByteView zeroless_view(ByteView data) {
+    return data.substr(static_cast<size_t>(
+        std::distance(data.begin(), as_range::find_if_not(data, [](const auto& b) { return b == 0x0; }))));
 }
-
-ByteView zeroless_view(const evmc::bytes32& hash) { return zeroless_view(full_view(hash)); }
-
-std::string to_hex(const evmc::address& address) { return to_hex(full_view(address)); }
-
-std::string to_hex(const evmc::bytes32& hash) { return to_hex(full_view(hash)); }
 
 std::string to_hex(ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
@@ -250,7 +245,7 @@ std::string human_size(uint64_t bytes) {
     }
     static char output[64];
     sprintf(output, "%.02lf %s", value, suffix[index]);
-    return std::string(output);
+    return output;
 }
 
 size_t prefix_length(ByteView a, ByteView b) {

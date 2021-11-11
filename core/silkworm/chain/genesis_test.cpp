@@ -30,7 +30,6 @@
 namespace silkworm {
 
 TEST_CASE("genesis config") {
-
     std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
@@ -61,11 +60,9 @@ TEST_CASE("genesis config") {
     genesis_data = read_genesis_data(1'000u);
     genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json.is_discarded());
-
 }
 
 TEST_CASE("mainnet_genesis") {
-
     // Parse genesis data
     std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
@@ -76,7 +73,7 @@ TEST_CASE("mainnet_genesis") {
     CHECK(genesis_json.contains("gasLimit"));
     CHECK(genesis_json.contains("timestamp"));
     CHECK(genesis_json.contains("extraData"));
-    CHECK((genesis_json.contains("alloc") && genesis_json["alloc"].is_object() && genesis_json["alloc"].size()));
+    CHECK((genesis_json.contains("alloc") && genesis_json["alloc"].is_object() && !genesis_json["alloc"].empty()));
 
     InMemoryState state;
 
@@ -95,9 +92,7 @@ TEST_CASE("mainnet_genesis") {
     SECTION("state_root") {
         auto expected_state_root{0xd7f8974fb5ac78d9ac099b9ad5018bedc2ce0a72dad1827a1709da30580f0544_bytes32};
         auto actual_state_root{state.state_root_hash()};
-        auto a = full_view(expected_state_root);
-        auto b = full_view(actual_state_root);
-        CHECK(to_hex(a) == to_hex(b));
+        CHECK(to_hex(expected_state_root) == to_hex(actual_state_root));
     }
 
     // Fill Header
@@ -114,8 +109,8 @@ TEST_CASE("mainnet_genesis") {
     auto difficulty_str{genesis_json["difficulty"].get<std::string>()};
     header.difficulty = intx::from_string<intx::uint256>(difficulty_str);
     header.number = 0;
-    header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>().c_str(), nullptr, 0);
-    header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>().c_str(), nullptr, 0);
+    header.gas_limit = std::stoull(genesis_json["gasLimit"].get<std::string>(), nullptr, 0);
+    header.timestamp = std::stoull(genesis_json["timestamp"].get<std::string>(), nullptr, 0);
 
     auto extra_data = from_hex(genesis_json["extraData"].get<std::string>());
     if (extra_data.has_value()) {
@@ -126,7 +121,7 @@ TEST_CASE("mainnet_genesis") {
     CHECK((mix_data.has_value() && mix_data->size() == kHashLength));
     header.mix_hash = to_bytes32(*mix_data);
 
-    auto nonce = std::stoull(genesis_json["nonce"].get<std::string>().c_str(), nullptr, 0);
+    auto nonce = std::stoull(genesis_json["nonce"].get<std::string>(), nullptr, 0);
     endian::store_big_u64(header.nonce.data(), nonce);
 
     // Verify our RLP encoding produces the same result

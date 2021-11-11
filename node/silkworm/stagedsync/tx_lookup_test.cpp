@@ -20,16 +20,16 @@
 #include <silkworm/common/test_context.hpp>
 #include <silkworm/common/test_util.hpp>
 
-using namespace evmc::literals;
-
 #include "stagedsync.hpp"
 
-static constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
-static constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
+using namespace evmc::literals;
 
-using namespace silkworm;
+namespace silkworm {
 
 TEST_CASE("Stage Transaction Lookups") {
+    static constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
+    static constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
+
     test::Context context;
     stagedsync::TransactionManager txn{context.txn()};
 
@@ -68,8 +68,8 @@ TEST_CASE("Stage Transaction Lookups") {
     SECTION("Forward checks and unwind") {
         auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
         // Retrieve numbers associated with hashes
-        auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_1.bytes))).value)};
-        auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_2.bytes))).value)};
+        auto got_block_0{db::from_slice(lookup_table.find(db::to_slice(tx_hash_1.bytes)).value)};
+        auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(tx_hash_2.bytes)).value)};
         // Keys must be compact and equivalent to block number
         CHECK(got_block_0.compare(ByteView({1})) == 0);
         CHECK(got_block_1.compare(ByteView({2})) == 0);
@@ -79,10 +79,10 @@ TEST_CASE("Stage Transaction Lookups") {
 
         lookup_table = db::open_cursor(*txn, db::table::kTxLookup);
         // Unwind block should be still there
-        got_block_0 = db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_1.bytes))).value);
+        got_block_0 = db::from_slice(lookup_table.find(db::to_slice(tx_hash_1.bytes)).value);
         REQUIRE(got_block_0.compare(ByteView({1})) == 0);
         // Block 2 must be absent due to unwind
-        CHECK(!lookup_table.seek(db::to_slice(full_view(tx_hash_2.bytes))));
+        CHECK(!lookup_table.seek(db::to_slice(tx_hash_2.bytes)));
     }
 
     SECTION("Prune") {
@@ -91,9 +91,11 @@ TEST_CASE("Stage Transaction Lookups") {
 
         auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
         // Unwind block should be still there
-        auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(full_view(tx_hash_2.bytes))).value)};
+        auto got_block_1{db::from_slice(lookup_table.find(db::to_slice(tx_hash_2.bytes)).value)};
         REQUIRE(got_block_1.compare(ByteView({2})) == 0);
         // Block 2 must be absent due to unwind
-        CHECK(!lookup_table.seek(db::to_slice(full_view(tx_hash_1.bytes))));
+        CHECK(!lookup_table.seek(db::to_slice(tx_hash_1.bytes)));
     }
 }
+
+}  // namespace silkworm

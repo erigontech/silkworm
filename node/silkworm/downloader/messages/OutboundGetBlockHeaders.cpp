@@ -30,87 +30,84 @@ OutboundGetBlockHeaders::OutboundGetBlockHeaders(WorkingChain& wc, SentryClient&
 
 /*
 // HeadersForward progresses Headers stage in the forward direction
-func HeadersForward(s *StageState, u Unwinder, ctx context.Context, tx ethdb.RwTx, cfg HeadersCfg, initialCycle bool,...) error {
+func HeadersForward(s *StageState, u Unwinder, ctx context.Context, tx ethdb.RwTx, cfg HeadersCfg, initialCycle
+bool,...) error {
 
         [...]
 
-	var peer []byte
-	stopped := false
-	prevProgress := headerProgress
-	for !stopped {
-		currentTime := uint64(time.Now().Unix())
-		req, penalties := cfg.hd.RequestMoreHeaders(currentTime)
-		if req != nil {
-			peer = cfg.headerReqSend(ctx, req)
-			if peer != nil {
-				cfg.hd.SentRequest(req, currentTime, 5 ) // 5 = timeout
-				log.Debug("Sent request", "height", req.Number)
-			}
-		}
-		cfg.penalize(ctx, penalties)
-		maxRequests := 64 // Limit number of requests sent per round to let some headers to be inserted into the database
-		for req != nil && peer != nil && maxRequests > 0 {
-			req, penalties = cfg.hd.RequestMoreHeaders(currentTime)
-			if req != nil {
-				peer = cfg.headerReqSend(ctx, req)
-				if peer != nil {
-					cfg.hd.SentRequest(req, currentTime, 5 ) // 5 = timeout
-					log.Debug("Sent request", "height", req.Number)
-				}
-			}
-			cfg.penalize(ctx, penalties)
-			maxRequests--
-		}
+        var peer []byte
+        stopped := false
+        prevProgress := headerProgress
+        for !stopped {
+                currentTime := uint64(time.Now().Unix())
+                req, penalties := cfg.hd.RequestMoreHeaders(currentTime)
+                if req != nil {
+                        peer = cfg.headerReqSend(ctx, req)
+                        if peer != nil {
+                                cfg.hd.SentRequest(req, currentTime, 5 ) // 5 = timeout
+                                log.Debug("Sent request", "height", req.Number)
+                        }
+                }
+                cfg.penalize(ctx, penalties)
+                maxRequests := 64 // Limit number of requests sent per round to let some headers to be inserted into the
+database for req != nil && peer != nil && maxRequests > 0 { req, penalties = cfg.hd.RequestMoreHeaders(currentTime) if
+req != nil { peer = cfg.headerReqSend(ctx, req) if peer != nil { cfg.hd.SentRequest(req, currentTime, 5 ) // 5 = timeout
+                                        log.Debug("Sent request", "height", req.Number)
+                                }
+                        }
+                        cfg.penalize(ctx, penalties)
+                        maxRequests--
+                }
 
-		// Send skeleton request if required
-		req = cfg.hd.RequestSkeleton()
-		if req != nil {
-			peer = cfg.headerReqSend(ctx, req)
-			if peer != nil {
-				log.Debug("Sent skeleton request", "height", req.Number)
-			}
-		}
-		// Load headers into the database
-		var inSync bool
-		if inSync, err = cfg.hd.InsertHeaders(headerInserter.FeedHeaderFunc(tx), logPrefix, logEvery.C); err != nil {
-			return err
-		}
-		announces := cfg.hd.GrabAnnounces()
-		if len(announces) > 0 {
-			cfg.announceNewHashes(ctx, announces)
-		}
-		if headerInserter.BestHeaderChanged() { // We do not break unless there best header changed
-			if !initialCycle {
-				// if this is not an initial cycle, we need to react quickly when new headers are coming in
-				break
-			}
-			// if this is initial cycle, we want to make sure we insert all known headers (inSync)
-			if inSync {
-				break
-			}
-		}
-		if test {
-			break
-		}
-		timer := time.NewTimer(1 * time.Second)
-		select {
-		case <-ctx.Done():
-			stopped = true
-		case <-logEvery.C:
-			progress := cfg.hd.Progress()
-			logProgressHeaders(logPrefix, prevProgress, progress)
-			prevProgress = progress
-		case <-timer.C:
-			log.Trace("RequestQueueTime (header) ticked")
-		case <-cfg.hd.DeliveryNotify:
-			log.Debug("headerLoop woken up by the incoming request")
-		}
-		timer.Stop()
-	}
+                // Send skeleton request if required
+                req = cfg.hd.RequestSkeleton()
+                if req != nil {
+                        peer = cfg.headerReqSend(ctx, req)
+                        if peer != nil {
+                                log.Debug("Sent skeleton request", "height", req.Number)
+                        }
+                }
+                // Load headers into the database
+                var inSync bool
+                if inSync, err = cfg.hd.InsertHeaders(headerInserter.FeedHeaderFunc(tx), logPrefix, logEvery.C); err !=
+nil { return err
+                }
+                announces := cfg.hd.GrabAnnounces()
+                if len(announces) > 0 {
+                        cfg.announceNewHashes(ctx, announces)
+                }
+                if headerInserter.BestHeaderChanged() { // We do not break unless there best header changed
+                        if !initialCycle {
+                                // if this is not an initial cycle, we need to react quickly when new headers are coming
+in break
+                        }
+                        // if this is initial cycle, we want to make sure we insert all known headers (inSync)
+                        if inSync {
+                                break
+                        }
+                }
+                if test {
+                        break
+                }
+                timer := time.NewTimer(1 * time.Second)
+                select {
+                case <-ctx.Done():
+                        stopped = true
+                case <-logEvery.C:
+                        progress := cfg.hd.Progress()
+                        logProgressHeaders(logPrefix, prevProgress, progress)
+                        prevProgress = progress
+                case <-timer.C:
+                        log.Trace("RequestQueueTime (header) ticked")
+                case <-cfg.hd.DeliveryNotify:
+                        log.Debug("headerLoop woken up by the incoming request")
+                }
+                timer.Stop()
+        }
 
         [...]
 
-	return nil
+        return nil
 }
 */
 
@@ -130,8 +127,9 @@ void OutboundGetBlockHeaders::execute() {
 
         auto send_outcome = send_packet(*packet, timeout);
 
-        SILKWORM_LOG(LogLevel::Info) << "Headers request sent, received by " << send_outcome.peers_size()
-                                     << " peer(s)\n";
+        packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ","; // todo: log level?
+        SILKWORM_LOG(LogLevel::Trace) << "Headers request sent (" << *packet << "), received by "
+                                      << send_outcome.peers_size() << " peer(s)\n";
 
         if (send_outcome.peers_size() == 0) {
             working_chain_.request_nack(*packet);
@@ -151,8 +149,9 @@ void OutboundGetBlockHeaders::execute() {
     if (packet != std::nullopt) {
         auto send_outcome = send_packet(*packet, timeout);
 
-        SILKWORM_LOG(LogLevel::Info) << "Headers skeleton request sent, received by " << send_outcome.peers_size()
-                                     << " peer(s)\n";
+        packets_ += "SK o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ","; // todo: log level?
+        SILKWORM_LOG(LogLevel::Trace) << "Headers skeleton request sent (" << *packet << "), received by "
+                                      << send_outcome.peers_size() << " peer(s)\n";
     }
 }
 
@@ -173,8 +172,8 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     rlp::encode(rlp_encoding, packet_);
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    SILKWORM_LOG(LogLevel::Info) << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:"
-                                 << packet_ << " \n";
+    SILKWORM_LOG(LogLevel::Trace) << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:"
+                                  << packet_ << " \n";
     rpc::SendMessageByMinBlock rpc{min_block, std::move(request)};
 
     rpc.timeout(timeout);
@@ -182,8 +181,8 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     sentry_.exec_remotely(rpc);
 
     sentry::SentPeers peers = rpc.reply();
-    SILKWORM_LOG(LogLevel::Info) << "Received rpc result of OutboundGetBlockHeaders " << packet_ << ": "
-                                 << std::to_string(peers.peers_size()) + " peer(s)\n";
+    SILKWORM_LOG(LogLevel::Trace) << "Received rpc result of OutboundGetBlockHeaders " << packet_ << ": "
+                                  << std::to_string(peers.peers_size()) + " peer(s)\n";
 
     return peers;
 }
@@ -194,6 +193,12 @@ void OutboundGetBlockHeaders::send_penalization(const PeerPenalization& penaliza
     rpc.timeout(timeout);
 
     sentry_.exec_remotely(rpc);
+}
+
+std::string OutboundGetBlockHeaders::content() const {
+    std::stringstream content;
+    content << "GetBlockHeadersPackets " << packets_;
+    return content.str();
 }
 
 }  // namespace silkworm

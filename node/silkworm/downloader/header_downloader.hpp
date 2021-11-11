@@ -34,7 +34,8 @@ namespace silkworm {
 class Stage {
   public:
     struct Result {
-        enum Status { Unknown, Done, UnwindNeeded, Error } status;
+        enum Status { Unknown, Done, DoneAndUpdated, UnwindNeeded, SkipTx, Error } status;
+        std::optional<BlockNum> current_point; // todo: do we need this?
         std::optional<BlockNum> unwind_point;
     };
 

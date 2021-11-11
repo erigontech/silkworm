@@ -19,6 +19,7 @@
 
 #include <functional>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/db/access_layer.hpp>
@@ -26,6 +27,7 @@
 #include <silkworm/db/tables.hpp>
 #include <silkworm/db/util.hpp>
 
+#include "cpp20_backport.hpp"
 #include "types.hpp"
 
 using namespace silkworm;
@@ -202,6 +204,43 @@ class Db::ReadOnlyAccess::Tx {
     }
 
     BlockNum read_stage_progress(const char* stage_name) { return db::stages::read_stage_progress(txn, stage_name); }
+
+    // see Erigon's HeadersUnwind method for the implementation
+    std::tuple<BlockNum, Hash> header_with_biggest_td(const std::set<Hash>* bad_headers = nullptr) {
+        BlockNum max_block_num = 0;
+        Hash max_hash;
+        BigInt max_td = 0;
+
+        auto td_cursor = db::open_cursor(txn, db::table::kDifficulty);
+
+        auto find_max = [bad_headers, &max_block_num, &max_hash, &max_td](mdbx::cursor&,
+                                                                          mdbx::cursor::move_result& result) -> bool {
+            ByteView key = db::from_slice(result.key);
+            ByteView value = db::from_slice(result.value);
+
+            SILKWORM_ASSERT(key.size() == sizeof(BlockNum) + kHashLength);
+
+            Hash hash{key.substr(sizeof(BlockNum))};
+            ByteView block_num = key.substr(0, sizeof(BlockNum));
+
+            if (bad_headers && contains(*bad_headers, hash)) return true;  // = continue loop
+
+            BigInt td = 0;
+            rlp::success_or_throw(rlp::decode(value, td));
+
+            if (td > max_td) {
+                max_td = td;
+                max_hash = hash;
+                max_block_num = endian::load_big_u64(block_num.data());
+            }
+
+            return true;  // = continue loop
+        };
+
+        db::cursor_for_each(td_cursor, find_max, db::CursorMoveDirection::Reverse);
+
+        return {max_block_num, max_hash};
+    }
 };
 
 // A db read-write transaction
@@ -266,6 +305,13 @@ class Db::ReadWriteAccess::Tx : public Db::ReadOnlyAccess::Tx {
 
     void write_stage_progress(const char* stage_name, BlockNum height) {
         db::stages::write_stage_progress(txn, stage_name, height);
+    }
+
+    void delete_canonical_hash(BlockNum b) {
+        auto hashes_table = db::open_cursor(txn, db::table::kCanonicalHashes);
+        Bytes key = db::block_key(b);
+        auto skey = db::to_slice(key);
+        (void)hashes_table.erase(skey);
     }
 };
 

@@ -29,6 +29,7 @@ class OutboundNewBlockHashes : public OutboundMessage {
     OutboundNewBlockHashes(WorkingChain&, SentryClient&);
 
     std::string name() const override { return "OutboundNewBlockHashes"; }
+    std::string content() const override;
 
     void execute() override;
 

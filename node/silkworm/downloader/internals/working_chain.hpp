@@ -69,6 +69,7 @@ class WorkingChain {
     BlockNum top_seen_block_height() const;
     void top_seen_block_height(BlockNum);
     std::string human_readable_status() const;
+    std::string human_readable_verbose_status() const;
 
     // core functionalities: anchor collection
     // to collect anchor more quickly we do a skeleton request i.e. a request of many headers equally distributed in a
@@ -119,13 +120,13 @@ class WorkingChain {
     void reduce_persisted_links_to(size_t limit);
 
     void invalidate(Anchor&);
-    void remove_anchor(const BlockHeader& header);
+    void remove(Anchor& anchor);
     void remove_anchor(const Hash& hash);
     bool find_bad_header(const std::vector<BlockHeader>&);
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
     void mark_as_preverified(std::shared_ptr<Link>);
     size_t anchors_within_range(BlockNum max);
-    BlockNum lowest_anchor_from(BlockNum top_bn);
+    BlockNum lowest_unsaved_anchor_from(BlockNum top_bn);
 
     using Error = int;
     void connect(Segment::Slice);                                   // throw segment_cut_and_paste_error

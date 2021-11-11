@@ -18,6 +18,7 @@
 #include <chrono>
 #include <thread>
 
+#include <silkworm/chain/preverified_hashes.hpp>
 #include <silkworm/common/log.hpp>
 
 #include "internals/header_retrieval.hpp"
@@ -73,10 +74,12 @@ void HeaderDownloader::receive_messages() {
     while (!is_stopping() && !sentry_.is_stopping() && message_subscription.receive_one_reply()) {
         auto message = InboundBlockAnnouncementMessage::make(message_subscription.reply(), working_chain_, sentry_);
 
+        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader received message " << *message << "\n";
+
         messages_.push(message);
     }
 
-    SILKWORM_LOG(LogLevel::Warn) << "HeaderDownloader execution_loop is_stopping...\n";
+    SILKWORM_LOG(LogLevel::Warn) << "HeaderDownloader execution loop is stopping...\n";
 }
 
 void HeaderDownloader::execution_loop() {
@@ -90,8 +93,15 @@ void HeaderDownloader::execution_loop() {
 
         SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader processing message " << message->name() << "\n";
 
+        SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader status: " << working_chain_.human_readable_verbose_status() << "\n";
+
         // process the message (command pattern)
         message->execute();
+
+        auto out_message = std::dynamic_pointer_cast<OutboundMessage>(message);
+        if (out_message) {
+            SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader sent message " << *out_message << "\n";
+        }
     }
 }
 
@@ -111,7 +121,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         PersistedChain persisted_chain_(tx);
 
         if (persisted_chain_.unwind_detected()) {
-            result.status = Stage::Result::Done;
+            result.status = Stage::Result::Unknown; // todo: Erigon does not change stage-state here, what can we do?
             return result;
         }
 
@@ -132,6 +142,8 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 // check if it needs to persist some headers
                 auto command = withdraw_stable_headers();
                 auto [stable_headers, in_sync] = command->result().get();  // blocking
+                SILKWORM_LOG(LogLevel::Trace)
+                    << "HeaderDownloader persisting " << stable_headers.size() << " headers\n";
                 persisted_chain_.persist(stable_headers);
 
                 // do announcements
@@ -148,13 +160,12 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 }
 
                 // todo: log progress - logProgressHeaders(logPrefix, prevProgress, progress)
-                SILKWORM_LOG(LogLevel::Debug)
+                SILKWORM_LOG(LogLevel::Trace)
                     << "HeaderDownloader status: current persisted height=" << persisted_chain_.highest_height()
                     << "\n";
-            } else
+            } else {
                 std::this_thread::sleep_for(1s);
-
-            SILKWORM_LOG(LogLevel::Debug) << "WorkingChain status: " << working_chain_.human_readable_status() << "\n";
+            }
         }
 
         result.status = Stage::Result::Done;
@@ -184,7 +195,6 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     return result;
 }
 
-
 auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
     Stage::Result result;
 
@@ -193,9 +203,18 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
 
-        auto bad_headers = PersistedChain::remove_headers(new_height, bad_block, tx);
+        std::optional<BlockNum> new_max_block_num;
+        std::set<Hash> bad_headers = PersistedChain::remove_headers(new_height, bad_block, new_max_block_num, tx);
+        // todo: do we need to save bad_headers in the state and pass old bad headers here?
 
-        update_bad_headers(std::move(bad_headers));  // update working_chain bad headers list todo: activate
+        if (new_max_block_num.has_value()) {  // happens when bad_block has value
+            result.status = Result::DoneAndUpdated;
+            result.current_point = new_max_block_num;
+        } else {
+            result.status = Result::SkipTx;  // todo:  here Erigon does unwind_state.signal(skip_tx), check!
+        }
+
+        update_bad_headers(std::move(bad_headers));
 
         tx.commit();
 
@@ -207,8 +226,6 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
         result.status = Stage::Result::Error;
     }
 
-    // todo: to implement
-
     return result;
 }
 
@@ -217,6 +234,9 @@ void HeaderDownloader::send_header_requests() {
     // if (!sentry_.ready()) return;
 
     auto message = std::make_shared<OutboundGetBlockHeaders>(working_chain_, sentry_);
+
+    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader sending message " << *message << "\n";
+
     messages_.push(message);
 }
 
@@ -225,6 +245,9 @@ void HeaderDownloader::send_announcements() {
     // if (!sentry_.ready()) return;
 
     auto message = std::make_shared<OutboundNewBlockHashes>(working_chain_, sentry_);
+
+    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader sending announcements\n";
+
     messages_.push(message);
 }
 

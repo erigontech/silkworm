@@ -14,6 +14,7 @@
    limitations under the License.
 ]]
 
+# ethash requires cmake 3.16.2
 cmake_minimum_required(VERSION 3.16.2)
 
 if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/evmone/evmc/.git)

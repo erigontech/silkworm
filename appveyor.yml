@@ -16,7 +16,6 @@ image: Visual Studio 2019
 platform: x64
 configuration:
   - Debug
-  - Release
 
 matrix:
   fast_finish: true
@@ -47,4 +46,4 @@ test_script:
   - cd Build
   - cmd\%CONFIGURATION%\core_test.exe
   - cmd\%CONFIGURATION%\node_test.exe
-  - IF "%CONFIGURATION%" == "Release" cmd\%CONFIGURATION%\consensus.exe
+  - cmd\%CONFIGURATION%\consensus.exe

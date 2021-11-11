@@ -69,8 +69,7 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
             return ValidationResult::kNotAnOmmer;
         }
 
-        if (as_range::any_of(old_ommers,
-                             [&ommer](const BlockHeader& old_ommer) -> bool { return old_ommer == ommer; })) {
+        if (as_range::find(old_ommers, ommer) != old_ommers.end()) {
             return ValidationResult::kDuplicateOmmer;
         }
     }

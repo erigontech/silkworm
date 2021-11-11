@@ -49,6 +49,7 @@ void encode(Bytes& to, const intx::uint256&);
 template <size_t N>
 void encode(Bytes& to, gsl::span<const uint8_t, N> bytes) {
     static_assert(N <= 55, "Complex RLP length encoding not supported");
+    to.reserve(to.size() + N + 1);
     to.push_back(kEmptyStringCode + N);
     to.append(bytes.data(), N);
 }

@@ -39,6 +39,7 @@ void encode(Bytes& to, const std::vector<T>& v) {
         h.payload_length += length(x);
     }
     encode_header(to, h);
+    to.reserve(to.size() + h.payload_length);
     for (const T& x : v) {
         encode(to, x);
     }

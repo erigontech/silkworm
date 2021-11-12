@@ -33,6 +33,10 @@ struct Receipt {
     std::vector<Log> logs;
 };
 
+namespace rlp {
+    void encode(Bytes& to, const Receipt&);
+}
+
 }  // namespace silkworm
 
 #endif  // SILKWORM_TYPES_RECEIPT_HPP_

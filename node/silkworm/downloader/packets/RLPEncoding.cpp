@@ -25,37 +25,21 @@
 #include "NewBlockPacket.hpp"
 
 // generic implementations (must follow types)
-#include <silkworm/rlp/encode.hpp>
+#include <silkworm/rlp/encode_vector.hpp>
 
 #include "RLPEth66PacketCoding.hpp"
-#include "RLPVectorCoding.hpp"
 
 namespace silkworm::rlp {
 
 void encode(Bytes& to, const Hash& h) { rlp::encode(to, dynamic_cast<const evmc::bytes32&>(h)); }
 
-// BlockBodiesPacket
-size_t length(const BlockBodiesPacket& from) noexcept { return rlp::length_vec(from); }
-
-void encode(Bytes& to, const BlockBodiesPacket& from) { return rlp::encode_vec(to, from); }
-
 size_t length(const BlockBodiesPacket66& from) noexcept { return rlp::length_eth66_packet(from); }
 
 void encode(Bytes& to, const BlockBodiesPacket66& from) { return rlp::encode_eth66_packet(to, from); }
 
-// BlockHeadersPacket
-size_t length(const BlockHeadersPacket& from) noexcept { return rlp::length_vec(from); }
-
-void encode(Bytes& to, const BlockHeadersPacket& from) { return rlp::encode_vec(to, from); }
-
 size_t length(const BlockHeadersPacket66& from) noexcept { return rlp::length_eth66_packet(from); }
 
 void encode(Bytes& to, const BlockHeadersPacket66& from) { return rlp::encode_eth66_packet(to, from); }
-
-// GetBlockBodiesPacket
-size_t length(const GetBlockBodiesPacket& from) noexcept { return rlp::length_vec(from); }
-
-void encode(Bytes& to, const GetBlockBodiesPacket& from) { return rlp::encode_vec(to, from); }
 
 size_t length(const GetBlockBodiesPacket66& from) noexcept { return rlp::length_eth66_packet(from); }
 
@@ -77,11 +61,6 @@ void encode(Bytes& to, const NewBlockHash& from) noexcept {
     rlp::encode(to, from.hash);
     rlp::encode(to, from.number);
 }
-
-// NewBlockHashPacket
-size_t length(const NewBlockHashesPacket& from) noexcept { return rlp::length_vec(from); }
-
-void encode(Bytes& to, const NewBlockHashesPacket& from) { rlp::encode_vec(to, from); }
 
 // NewBlockPacket
 void encode(Bytes& to, const NewBlockPacket& from) noexcept {

@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#include "encode.hpp"
-
 #include <catch2/catch.hpp>
 
 #include <silkworm/common/util.hpp>
+
+#include "encode_vector.hpp"
 
 namespace silkworm {
 

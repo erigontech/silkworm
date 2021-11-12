@@ -130,7 +130,7 @@ class WorkingChain {
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
     void mark_as_preverified(std::shared_ptr<Link>);
     size_t anchors_within_range(BlockNum max);
-    BlockNum lowest_unsaved_anchor_from(BlockNum top_bn);
+    BlockNum lowest_anchor_within_range(BlockNum bottom, BlockNum top);
 
     enum VerificationResult {Preverified, Skip, Postpone, Accept};
     VerificationResult verify(const Link& link);

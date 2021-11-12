@@ -196,28 +196,32 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
 /*
  * Skeleton query.
  * Request "seed" headers that can became anchors.
- * It requests N headers starting at highestInDb with step = stride up to topSeenHeight.
- * Note that skeleton queries are only generated when current number of non-persisted chain bundles (which is equal
- * to number of anchors) is below certain threshold (currently 16). This is because processing an answer to a skeleton
- * request would normally create up to 192 new anchors, and then it will take some time for the second type of queries
- * (anchor extension queries) to fill the gaps and so reduce the number of anchors.
+ * It requests N headers starting at highestInDb + stride up to topSeenHeight.
+ * If there is an anchor at height < topSeenHeight this will be the top limit: this way we prioritize the fill of a big
+ * hole near the bottom. If the lowest hole is not so big we do not need a skeleton query yet.
  */
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
-    BlockNum lowest_anchor = lowest_unsaved_anchor_from(topSeenHeight_);
+    BlockNum top = topSeenHeight_;
+    BlockNum bottom = highestInDb_ + stride;
+    if (top < bottom) {
+        return std::nullopt;
+    }
 
-    BlockNum length = (lowest_anchor - highestInDb_) / stride;
+    BlockNum lowest_anchor = lowest_anchor_within_range(bottom, top);
+
+    BlockNum length = (lowest_anchor - bottom) / stride;
 
     if (length > max_len) length = max_len;
     if (length == 0) {
-        SILKWORM_LOG(LogLevel::Debug) << "WorkingChain, no skeleton request (lowest_anchor = " << lowest_anchor << ", highest_in_db = " << highestInDb_ << ")\n";
+        SILKWORM_LOG(LogLevel::Debug) << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor << ", highest_in_db = " << highestInDb_ << ")\n";
         return std::nullopt;
     }
 
     GetBlockHeadersPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
-    packet.request.origin = highestInDb_ + stride;
+    packet.request.origin = bottom;
     packet.request.amount = length;
-    packet.request.skip = stride;
+    packet.request.skip = stride - 1;
     packet.request.reverse = false;
 
     return {packet};
@@ -228,15 +232,16 @@ size_t WorkingChain::anchors_within_range(BlockNum max) {
                                                   [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
 }
 
-BlockNum WorkingChain::lowest_unsaved_anchor_from(BlockNum top_bn) {
-    BlockNum lowest_bn = top_bn;
+BlockNum WorkingChain::lowest_anchor_within_range(BlockNum bottom, BlockNum top) {
+    BlockNum lowest = top;
     for (const auto& anchor : anchors_) {
-        if (anchor.second->blockHeight > highestInDb_ && anchor.second->blockHeight < lowest_bn) {
-            lowest_bn = anchor.second->blockHeight;
+        if (anchor.second->blockHeight > bottom && anchor.second->blockHeight < lowest) {
+            lowest = anchor.second->blockHeight;
         }
     }
-    return lowest_bn;
+    return lowest;
 }
+
 
 /*
  * Anchor extension query.

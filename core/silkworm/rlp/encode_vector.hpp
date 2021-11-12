@@ -23,23 +23,28 @@
 
 namespace silkworm::rlp {
 
+namespace detail {
+    template <class T>
+    Header rlp_header(const std::vector<T>& v) {
+        Header h{/*list=*/true, /*payload_length=*/0};
+        for (const T& x : v) {
+            h.payload_length += length(x);
+        }
+        return h;
+    }
+}  // namespace detail
+
 template <class T>
 size_t length(const std::vector<T>& v) {
-    size_t payload_length{0};
-    for (const T& x : v) {
-        payload_length += length(x);
-    }
+    const size_t payload_length{detail::rlp_header(v).payload_length};
     return length_of_length(payload_length) + payload_length;
 }
 
 template <class T>
 void encode(Bytes& to, const std::vector<T>& v) {
-    Header h{true, 0};
-    for (const T& x : v) {
-        h.payload_length += length(x);
-    }
+    const Header h{detail::rlp_header(v)};
+    to.reserve(to.size() + length_of_length(h.payload_length) + h.payload_length);
     encode_header(to, h);
-    to.reserve(to.size() + h.payload_length);
     for (const T& x : v) {
         encode(to, x);
     }

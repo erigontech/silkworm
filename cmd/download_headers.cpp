@@ -54,6 +54,9 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
+    std::ofstream log_file("downloader.log", std::ios::out | std::ios::app);
+    SILKWORM_LOG_STREAMS(cerr, log_file);
+    SILKWORM_LOG(LogLevel::Info) << "STARTING\n";
 
     std::thread block_request_processing;
     std::thread header_receiving;

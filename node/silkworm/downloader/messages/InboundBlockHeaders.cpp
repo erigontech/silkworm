@@ -33,7 +33,7 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, Work
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     rlp::success_or_throw(rlp::decode(data, packet_));
 
-    SILKWORM_LOG(LogLevel::Info) << "Received message " << *this << "\n";
+    SILKWORM_LOG(LogLevel::Trace) << "Received message " << *this << "\n";
 }
 
 /* blockHeaders66 processing from Erigon
@@ -97,12 +97,12 @@ void InboundBlockHeaders::execute() {
     SILKWORM_LOG(LogLevel::Warn) << "Handling of " << identify(*this) << " is incomplete\n";
 
     if (penalty != Penalty::NoPenalty) {
-        SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " with penalize_peer\n";
+        SILKWORM_LOG(LogLevel::Trace) << "Replying to " << identify(*this) << " with penalize_peer\n";
         rpc::PenalizePeer penalize_peer(peerId_, penalty);
         sentry_.exec_remotely(penalize_peer);
     }
 
-    SILKWORM_LOG(LogLevel::Info) << "Replying to " << identify(*this) << " with peer_min_block\n";
+    SILKWORM_LOG(LogLevel::Trace) << "Replying to " << identify(*this) << " with peer_min_block\n";
     rpc::PeerMinBlock peer_min_block(peerId_, highestBlock);
     sentry_.exec_remotely(peer_min_block);
 }

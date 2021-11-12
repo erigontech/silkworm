@@ -19,7 +19,6 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/as_range.hpp>
 
-#include "cpp20_backport.hpp"
 #include "random_number.hpp"
 
 namespace silkworm {
@@ -47,6 +46,16 @@ std::string WorkingChain::human_readable_status() const {
     return std::to_string(anchors_.size()) + " anchors, " + std::to_string(links_.size()) + " links";
 }
 
+std::string WorkingChain::human_readable_verbose_status() const {
+    std::string verbose_status;
+    verbose_status += std::to_string(links_.size()) + " links, " + std::to_string(anchors_.size()) + " anchors (";
+    for (auto& anchor : anchors_) {
+        verbose_status += std::to_string(anchor.second->blockHeight) + ",";
+    }
+    verbose_status += ")";
+    return verbose_status;
+}
+
 std::vector<Announce>& WorkingChain::announces_to_do() { return announcesToDo_; }
 
 void WorkingChain::add_bad_headers(std::set<Hash> bads) {
@@ -71,10 +80,9 @@ Headers WorkingChain::withdraw_stable_headers() {
 
     LinkList links_in_future;  // here we accumulate links that fail validation as "in the future"
 
-    while (!insertList_
-                .empty()) {  // todo: insertList_ is a stack so we iterate it in reverse insertion order, is it correct?
+    while (!insertList_.empty()) {
         // Make sure long insertions do not appear as a stuck stage headers
-        SILKWORM_LOG(LogLevel::Info) << "WorkingChain: inserting headers (" << highestInDb_ << ")\n";
+        SILKWORM_LOG(LogLevel::Info) << "WorkingChain: persisting headers (on top of " << highestInDb_ << ")\n";
 
         // Choose a link at top
         auto link = insertList_.top();  // is the last added
@@ -88,7 +96,7 @@ Headers WorkingChain::withdraw_stable_headers() {
         if (!link->preverified) {
             if (contains(badHeaders_, link->hash))
                 skip = true;
-            else if (auto error = ConsensusProto::verify(*link->header); error != ConsensusProto::VERIFICATION_ERROR) {
+            else if (auto error = ConsensusProto::verify(*link->header); error == ConsensusProto::VERIFICATION_ERROR) {
                 if (error == ConsensusProto::FUTURE_BLOCK) {
                     links_in_future.push_back(link);
                     SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: added future link,"
@@ -110,10 +118,14 @@ Headers WorkingChain::withdraw_stable_headers() {
         }
         if (skip) {
             links_.erase(link->hash);
+            continue;
         }
 
-        // persisted_chain.persist_header(*link->header, link->blockHeight);
-        stable_headers.push_back(link->header);
+        stable_headers.push_back(link->header);  // will be persisted by PersistedChain
+
+        if (link->blockHeight > highestInDb_) {
+            highestInDb_ = link->blockHeight;
+        }
 
         link->persisted = true;
         link->header = nullptr;  // drop header reference to free memory, as we won't need it anymore
@@ -158,8 +170,7 @@ void WorkingChain::reduce_persisted_links_to(size_t limit) {
  * (anchor extension queries) to fill the gaps and so reduce the number of anchors.
  */
 std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
-    BlockNum lowest_anchor = lowest_anchor_from(topSeenHeight_);
-    if (lowest_anchor <= highestInDb_) return std::nullopt;
+    BlockNum lowest_anchor = lowest_unsaved_anchor_from(topSeenHeight_);
 
     BlockNum length = (lowest_anchor - highestInDb_) / stride;
 
@@ -181,10 +192,13 @@ size_t WorkingChain::anchors_within_range(BlockNum max) {
                                                   [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
 }
 
-BlockNum WorkingChain::lowest_anchor_from(BlockNum top_bn) {
+BlockNum WorkingChain::lowest_unsaved_anchor_from(BlockNum top_bn) {
     BlockNum lowest_bn = top_bn;
-    as_range::for_each(anchors_,
-                       [&lowest_bn](const auto& anchor) { lowest_bn = std::min(lowest_bn, anchor.second->blockHeight); });
+    for (const auto& anchor : anchors_) {
+        if (anchor.second->blockHeight > highestInDb_ && anchor.second->blockHeight < lowest_bn) {
+            lowest_bn = anchor.second->blockHeight;
+        }
+    }
     return lowest_bn;
 }
 
@@ -517,12 +531,6 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
         if (preverifiedHashes_->contains(link->hash)) mark_as_preverified(link);
     }
 
-    if (attachment_link.value()->persisted) {
-        auto link = links_.find(link_header->hash());
-        if (link != links_.end())  // todo: Erigon code assume true always, check!
-            insertList_.push(link->second);
-    }
-
     // todo: modularize this, his block is the same in extend_down
     auto header_to_anchor = *segment_slice.begin();    // highest header
     auto a = anchors_.find(header_to_anchor->hash());  // header_to_anchor->hash() == anchor.parent_hash
@@ -544,6 +552,16 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
     prev_link->next = std::move(anchor->links);
     anchor->links.clear();
     if (anchor_preverified) mark_as_preverified(prev_link);  // Mark the entire segment as preverified
+
+    if (contains(badHeaders_, attachment_link.value()->hash)) {
+        invalidate(*anchor);
+        // todo: add & return penalties: []PenaltyItem := append(penalties, PenaltyItem{Penalty: AbandonedAnchorPenalty,
+        // PeerID: anchor.peerID})
+    } else if (attachment_link.value()->persisted) {
+        auto link = links_.find(link_header->hash());
+        if (link != links_.end())  // todo: Erigon code assume true always, check!
+            insertList_.push(link->second);
+    }
 }
 
 auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeaders {
@@ -627,7 +645,7 @@ void WorkingChain::extend_up(Segment::Slice segment_slice) {  // throw segment_c
         if (preverifiedHashes_->contains(link->hash)) mark_as_preverified(link);
     }
 
-    if (attachment_link.value()->persisted) {
+    if (attachment_link.value()->persisted && !contains(badHeaders_, attachment_link.value()->hash)) {
         auto link = links_.find(link_header->hash());
         if (link != links_.end())  // todo: Erigon code assume true always, check!
             insertList_.push(link->second);
@@ -690,7 +708,7 @@ auto WorkingChain::add_header_as_link(const BlockHeader& header, bool persisted)
     return link;
 }
 
-void WorkingChain::remove_anchor(const BlockHeader& header) { remove_anchor(header.parent_hash); }
+void WorkingChain::remove(Anchor& anchor) { remove_anchor(anchor.parentHash); }
 void WorkingChain::remove_anchor(const Hash& hash) {
     // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue

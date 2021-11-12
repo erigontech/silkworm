@@ -23,7 +23,14 @@ namespace silkworm {
 class OutboundMessage : public Message {
   public:
     void execute() override = 0;
+
+    virtual std::string content() const = 0;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const silkworm::OutboundMessage& msg) {
+    os << msg.name() << " content: " << msg.content();
+    return os;
+}
 
 }  // namespace silkworm
 #endif  // SILKWORM_OUTBOUNDMESSAGE_HPP

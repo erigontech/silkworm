@@ -1,3 +1,13 @@
+path_classifiers:
+  docs:
+    - README.md
+queries:
+  - exclude: "*"
+  - include:
+      tags:
+        - "security"
+        - "correctness"
+      severity: "error"
 extraction:
   cpp:
     after_prepare:

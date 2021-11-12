@@ -66,30 +66,37 @@ ByteView HeaderOnlyChainStateBase::read_code(const evmc::bytes32&) const noexcep
 evmc::bytes32 HeaderOnlyChainStateBase::read_storage(const evmc::address&, uint64_t,
                                                      const evmc::bytes32&) const noexcept {
     assert(false);  // not implemented
+    return {};
 }
 
 uint64_t HeaderOnlyChainStateBase::previous_incarnation(const evmc::address&) const noexcept {
     assert(false);  // not implemented
+    return {};
 }
 
 std::optional<BlockBody> HeaderOnlyChainStateBase::read_body(uint64_t, const evmc::bytes32&) const noexcept {
     assert(false);  // not implemented
+    return {};
 }
 
 std::optional<intx::uint256> HeaderOnlyChainStateBase::total_difficulty(uint64_t, const evmc::bytes32&) const noexcept {
     assert(false);  // not implemented
+    return {};
 }
 
 evmc::bytes32 HeaderOnlyChainStateBase::state_root_hash() const {
     assert(false);  // not implemented
+    return {};
 }
 
 uint64_t HeaderOnlyChainStateBase::current_canonical_block() const {
     assert(false);  // not implemented
+    return {};
 }
 
 std::optional<evmc::bytes32> HeaderOnlyChainStateBase::canonical_hash(uint64_t) const {
     assert(false);  // not implemented
+    return {};
 }
 
 void HeaderOnlyChainStateBase::insert_block(const Block&, const evmc::bytes32&) {

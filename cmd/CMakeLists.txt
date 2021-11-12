@@ -36,13 +36,14 @@ endif()
 if(NOT SILKWORM_CORE_ONLY)
 
   find_package(absl CONFIG REQUIRED)
+  find_package(Boost CONFIG REQUIRED COMPONENTS log)
 
   file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/node/silkworm/*_test.cpp")
   add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
   target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
   add_executable(silkworm silkworm.cpp)
-  target_link_libraries(silkworm PRIVATE silkworm_node CLI11::CLI11)
+  target_link_libraries(silkworm PRIVATE silkworm_node CLI11::CLI11 Boost::log)
 
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)

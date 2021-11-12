@@ -81,7 +81,7 @@ jobs:
       CLANG_COVERAGE: ON
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
-    resource_class: large
+    resource_class: xlarge
     steps:
       - checkout_with_submodules
       - build

@@ -20,6 +20,7 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
+#include <silkworm/rlp/encode_vector.hpp>
 
 namespace silkworm::db {
 

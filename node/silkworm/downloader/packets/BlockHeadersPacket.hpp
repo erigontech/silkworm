@@ -32,10 +32,6 @@ struct BlockHeadersPacket66 {  // eth/66 version
 
 namespace rlp {
 
-    size_t length(const BlockHeadersPacket& from) noexcept;
-
-    void encode(Bytes& to, const BlockHeadersPacket& from);
-
     template <>
     rlp::DecodingResult decode(ByteView& from, BlockHeadersPacket& to) noexcept;
 

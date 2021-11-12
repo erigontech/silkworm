@@ -31,6 +31,8 @@ class WorkingChain_ForTest : public WorkingChain {
     using WorkingChain::linkQueue_;
     using WorkingChain::links_;
     using WorkingChain::WorkingChain;
+
+    WorkingChain_ForTest(): WorkingChain(consensus::engine_factory(ChainIdentity::mainnet.chain)) {}
 };
 
 /*

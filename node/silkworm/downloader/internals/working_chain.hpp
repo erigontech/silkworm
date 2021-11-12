@@ -21,9 +21,11 @@
 
 #include <silkworm/chain/preverified_hashes.hpp>
 #include <silkworm/common/lru_cache.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
 
 #include "chain_elements.hpp"
+#include "header_only_state.hpp"
 #include "persisted_chain.hpp"
 
 namespace silkworm {
@@ -55,12 +57,14 @@ namespace silkworm {
  */
 class WorkingChain {
   public:
-    WorkingChain();
+    using ConsensusEngine = std::unique_ptr<consensus::IConsensusEngine>;
 
-    // load initial state from db
+    WorkingChain(ConsensusEngine);
+
+    // load initial state from db - this must be done at creation time
     void recover_initial_state(Db::ReadOnlyAccess::Tx&);
 
-    // sync current state
+    // sync current state - this must be done at header forward
     void sync_current_state(BlockNum highest_in_db);
 
     // status
@@ -128,6 +132,9 @@ class WorkingChain {
     size_t anchors_within_range(BlockNum max);
     BlockNum lowest_unsaved_anchor_from(BlockNum top_bn);
 
+    enum VerificationResult {Preverified, Skip, Postpone, Accept};
+    VerificationResult verify(const Link& link);
+
     using Error = int;
     void connect(Segment::Slice);                                   // throw segment_cut_and_paste_error
     auto extend_down(Segment::Slice) -> RequestMoreHeaders;         // throw segment_cut_and_paste_error
@@ -147,16 +154,8 @@ class WorkingChain {
     using Ignore = int;
     lru_cache<Hash, Ignore> seenAnnounces_;
     std::vector<Announce> announcesToDo_;
-};
-
-class ConsensusProto {  // todo: replace with correct implementation
-  public:
-    enum VerificationResult { VERIFIED, FUTURE_BLOCK, VERIFICATION_ERROR };
-
-    static VerificationResult verify(const BlockHeader&) {
-        // todo: implement, use seal = true
-        return VERIFIED;
-    };
+    ConsensusEngine consensus_engine_;
+    HeaderOnlyChainState chain_state_;
 };
 
 }  // namespace silkworm

@@ -29,8 +29,18 @@ class segment_cut_and_paste_error : public std::logic_error {
     explicit segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
 };
 
-WorkingChain::WorkingChain()
-    : highestInDb_(0), topSeenHeight_(0), preverifiedHashes_{&PreverifiedHashes::none}, seenAnnounces_(1000) {}
+WorkingChain::WorkingChain(ConsensusEngine engine)
+    : highestInDb_(0),
+      topSeenHeight_(0),
+      preverifiedHashes_{&PreverifiedHashes::none},
+      seenAnnounces_(1000),
+      consensus_engine_{std::move(engine)},
+      chain_state_(persistedLinkQueue_) { // Erigon reads them from db, we hope to find them all in the persistent queue
+    if (!consensus_engine_) {
+        throw std::logic_error("WorkingChain exception, cause: unknown consensus engine");
+        // or must the downloader go on and return StageResult::kUnknownConsensusEngine?
+    }
+}
 
 BlockNum WorkingChain::highest_block_in_db() const { return highestInDb_; }
 
@@ -62,7 +72,7 @@ void WorkingChain::add_bad_headers(std::set<Hash> bads) {
     badHeaders_.insert(bads.begin(), bads.end());  // todo: use set_union or merge?
 }
 
-// See Erigon RecoverFromDb
+// See Erigon RecoverFromDb - todo: check if this method (& persistedLinkQueue_) is really useful
 void WorkingChain::recover_initial_state(Db::ReadOnlyAccess::Tx& tx) {
     reduce_persisted_links_to(0);  // drain persistedLinksQueue and remove links
 
@@ -70,10 +80,15 @@ void WorkingChain::recover_initial_state(Db::ReadOnlyAccess::Tx& tx) {
         this->add_header_as_link(header, true);  // todo: optimize add_header_as_link to use Header&&
     });
 
-    // highestInDb_ = tx.read_stage_progress(db::stages::kHeadersKey); // will be done by sync_with
+    //highestInDb_ = tx.read_stage_progress(db::stages::kHeadersKey); // will be done by sync_current_state
 }
 
-void WorkingChain::sync_current_state(BlockNum highest_in_db) { highestInDb_ = highest_in_db; }
+void WorkingChain::sync_current_state(BlockNum highest_in_db) {
+    highestInDb_ = highest_in_db;
+
+    // we also need here all the headers with height == highest_in_db to init chain_state_
+    // currently chain_state_ find them in persistedLinkQueue_ but it is not clear if it will find them all
+}
 
 Headers WorkingChain::withdraw_stable_headers() {
     Headers stable_headers;
@@ -92,33 +107,34 @@ Headers WorkingChain::withdraw_stable_headers() {
 
         insertList_.pop();
 
-        bool skip = false;
+        // Verify if not
+        VerificationResult assessment = Preverified;
         if (!link->preverified) {
-            if (contains(badHeaders_, link->hash))
-                skip = true;
-            else if (auto error = ConsensusProto::verify(*link->header); error == ConsensusProto::VERIFICATION_ERROR) {
-                if (error == ConsensusProto::FUTURE_BLOCK) {
+            assessment = verify(*link);
+        }
+
+        if (assessment == Postpone) {
                     links_in_future.push_back(link);
                     SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: added future link,"
                                                  << " hash=" << link->hash << " height=" << link->blockHeight
                                                  << " timestamp=" << link->header->timestamp << ")\n";
                     continue;
-                } else {
-                    skip = true;
-                }
-            } else {
-                if (seenAnnounces_.get(link->hash)) {
-                    seenAnnounces_.remove(link->hash);
-                    announcesToDo_.push_back({link->hash, link->blockHeight});
-                }
             }
-        }
+
         if (contains(links_, link->hash)) {
             linkQueue_.erase(link);
         }
-        if (skip) {
+
+        if (assessment == Skip) {
             links_.erase(link->hash);
             continue;
+        }
+
+        // assessment == accept
+
+        if (seenAnnounces_.get(link->hash)) {
+            seenAnnounces_.remove(link->hash);
+            announcesToDo_.push_back({link->hash, link->blockHeight});
         }
 
         stable_headers.push_back(link->header);  // will be persisted by PersistedChain
@@ -148,6 +164,23 @@ Headers WorkingChain::withdraw_stable_headers() {
     return stable_headers;  // RVO
 }
 
+auto WorkingChain::verify(const Link& link) -> VerificationResult {
+    if (contains(badHeaders_, link.hash))
+        return Skip;
+
+    bool with_future_timestamp_check = true;
+    auto result = consensus_engine_->validate_block_header(*link.header, chain_state_, with_future_timestamp_check);
+
+    if (result != ValidationResult::kOk) {
+        if (result == ValidationResult::kFutureBlock) {
+            return Postpone;
+        }
+        return Skip;
+    }
+
+    return Accept;
+}
+
 // reduce persistedLinksQueue and remove links
 void WorkingChain::reduce_persisted_links_to(size_t limit) {
     while (persistedLinkQueue_.size() > limit) {
@@ -175,7 +208,10 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     BlockNum length = (lowest_anchor - highestInDb_) / stride;
 
     if (length > max_len) length = max_len;
-    if (length == 0) return std::nullopt;
+    if (length == 0) {
+        SILKWORM_LOG(LogLevel::Debug) << "WorkingChain, no skeleton request (lowest_anchor = " << lowest_anchor << ", highest_in_db = " << highestInDb_ << ")\n";
+        return std::nullopt;
+    }
 
     GetBlockHeadersPacket66 packet;
     packet.requestId = RANDOM_NUMBER.generate_one();
@@ -237,7 +273,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
 
         if (anchor->timeouts < 10) {
             anchor->update_timestamp(time_point + timeout);
-            anchorQueue_.fix();
+            anchorQueue_.fix(); // re-sort
 
             GetBlockHeadersPacket66 packet{RANDOM_NUMBER.generate_one(), {anchor->blockHeight, max_len, 0, true}};
             // todo: why we use blockHeight in place of parentHash?

@@ -26,7 +26,8 @@
  */
 template <typename T, typename CMP>
 class set_based_priority_queue {
-    std::multiset<T, CMP> elements_;
+    using impl_t = std::multiset<T, CMP>;
+    impl_t elements_;
 
   public:
     const T& top() const { return *elements_.begin(); }
@@ -35,6 +36,11 @@ class set_based_priority_queue {
     void erase(const T& element) { elements_.erase(element); }
     [[nodiscard]] size_t size() const { return elements_.size(); }
     bool contains(const T& element) { return elements_.template find(element) != elements_.end(); }
+
+    typename impl_t::iterator begin() { return elements_.begin(); }
+    typename impl_t::iterator end() { return elements_.end(); }
+    typename impl_t::const_iterator begin() const { return elements_.begin(); }
+    typename impl_t::const_iterator end() const { return elements_.end(); }
 };
 
 /*

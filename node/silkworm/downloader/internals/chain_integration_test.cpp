@@ -53,7 +53,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc;
+        WorkingChain wc(consensus::engine_factory(ChainIdentity::mainnet.chain));
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
 
@@ -135,7 +135,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc;
+        WorkingChain wc(consensus::engine_factory(ChainIdentity::mainnet.chain));
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
 
@@ -247,7 +247,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc;
+        WorkingChain wc(consensus::engine_factory(ChainIdentity::mainnet.chain));
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
 
@@ -362,7 +362,7 @@ TEST_CASE("working/persistent-chain integration test") {
         BlockNum highest_in_db = 0;
 
         // creating the working chain as the downloader does at its construction
-        WorkingChain wc;
+        WorkingChain wc(consensus::engine_factory(ChainIdentity::mainnet.chain));
         wc.recover_initial_state(tx);
         wc.sync_current_state(highest_in_db);
 

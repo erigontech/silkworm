@@ -22,6 +22,9 @@
 #include "NewBlockHashesPacket.hpp"
 #include "NewBlockPacket.hpp"
 
+// generic implementations (must follow types)
+#include <silkworm/rlp/encode_vector.hpp>
+
 namespace silkworm {
 
 // TESTs related to NewBlockHashesPacket encoding/decoding

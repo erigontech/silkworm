@@ -37,7 +37,6 @@ class Hash : public evmc::bytes32 {
     operator Bytes() { return {bytes, length()}; }
     operator ByteView() { return {bytes, length()}; }
 
-    uint8_t* raw_bytes() { return bytes; }
     static constexpr size_t length() { return sizeof(evmc::bytes32); }
 
     std::string to_hex() { return silkworm::to_hex(*this); }
@@ -103,16 +102,10 @@ struct Announce {
 
 namespace rlp {
     void encode(Bytes& to, const Hash& h);
-    rlp::DecodingResult decode(ByteView& from, Hash& to) noexcept;
 
-    template <class T>
-    void encode_vec(Bytes& to, const std::vector<T>& v);
+    template <>
+    DecodingResult decode(ByteView& from, Hash& to) noexcept;
 
-    template <class T>
-    size_t length_vec(const std::vector<T>& v);
-
-    template <class T>
-    DecodingResult decode_vec(ByteView& from, std::vector<T>& to);
 }  // namespace rlp
 
 }  // namespace silkworm

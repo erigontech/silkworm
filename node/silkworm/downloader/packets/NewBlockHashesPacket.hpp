@@ -21,9 +21,9 @@
 
 namespace silkworm {
 
-struct NewBlockHash {  // one particular block being announced
-    Hash hash;         // hash of the block
-    BlockNum number;   // number of the block
+struct NewBlockHash {    // one particular block being announced
+    Hash hash;           // hash of the block
+    BlockNum number{0};  // number of the block
 };
 
 using NewBlockHashesPacket = std::vector<NewBlockHash>;
@@ -36,12 +36,6 @@ namespace rlp {
 
     template <>
     rlp::DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept;
-
-    size_t length(const NewBlockHashesPacket& from) noexcept;
-
-    void encode(Bytes& to, const NewBlockHashesPacket& from);
-
-    size_t length(const NewBlockHashesPacket& from) noexcept;
 
     template <>
     rlp::DecodingResult decode(ByteView& from, NewBlockHashesPacket& to) noexcept;

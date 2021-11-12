@@ -17,6 +17,7 @@
 #include "block.hpp"
 
 #include <silkworm/common/cast.hpp>
+#include <silkworm/rlp/encode_vector.hpp>
 
 namespace silkworm {
 

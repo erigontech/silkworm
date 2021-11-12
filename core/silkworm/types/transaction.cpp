@@ -23,7 +23,7 @@
 
 #include <silkworm/common/util.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
-#include <silkworm/rlp/encode.hpp>
+#include <silkworm/rlp/encode_vector.hpp>
 
 namespace silkworm {
 
@@ -387,10 +387,7 @@ void Transaction::recover_sender() {
     intx::be::unsafe::store(signature + kHashLength, s);
 
     // Might still return std::nullopt if the recovery fails
-    auto recovered_address{ecdsa::recover_address(full_view(hash.bytes), full_view(signature), odd_y_parity)};
-    if (recovered_address.has_value()){
-        from.emplace(std::move(recovered_address.value()));
-    }
+    from = ecdsa::recover_address(full_view(hash.bytes), full_view(signature), odd_y_parity);
 }
 
 intx::uint256 Transaction::priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const {

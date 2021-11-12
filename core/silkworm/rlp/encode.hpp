@@ -33,7 +33,7 @@ namespace silkworm::rlp {
 
 struct Header {
     bool list{false};
-    uint64_t payload_length{0};
+    size_t payload_length{0};
 };
 
 inline constexpr uint8_t kEmptyStringCode{0x80};

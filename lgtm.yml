@@ -1,15 +1,3 @@
-path_classifiers:
-  library:
-    - cbor-cpp
-    - CRoaring
-    - evmone
-    - libff
-    - libmdbx
-    - magic_enum
-    - secp256k1
-  tests:
-    - tests
-    - "**/*_test"
 extraction:
   cpp:
     after_prepare:

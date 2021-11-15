@@ -73,27 +73,34 @@ namespace silkworm::endian {
 
 #if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
 struct LE {
-    static inline uint16_t load(uint16_t value) noexcept { return value; }
-    static inline uint32_t load(uint32_t value) noexcept { return value; }
-    static inline uint64_t load(uint64_t value) noexcept { return value; }
-    static inline intx::uint256 load(const intx::uint256& value) noexcept { return value; }
+    template <class UnsignedInteger>
+    static constexpr UnsignedInteger load(UnsignedInteger value) noexcept {
+        return value;
+    }
 };
 struct BE {
-    static inline uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
-    static inline uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
-    static inline uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
-    static inline intx::uint256 load(const intx::uint256& value) noexcept { return intx::bswap(value); }
+    static constexpr uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
+    static constexpr uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
+    static constexpr uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+
+    template <unsigned N>
+    static constexpr intx::uint<N> load(const intx::uint<N>& value) noexcept {
+        return intx::bswap(value);
+    }
 };
 #elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
 struct LE {
-    static inline uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
-    static inline uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
-    static inline uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+    static constexpr uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
+    static constexpr uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
+    static constexpr uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+
+    // intx::uint not defined here since its words are little-endian.
+    // In any case, Silkworm is currently untested on big-endian plaforms.
 };
 struct BE {
-    static inline uint16_t load(uint16_t value) noexcept { return value; }
-    static inline uint32_t load(uint32_t value) noexcept { return value; }
-    static inline uint64_t load(uint64_t value) noexcept { return value; }
+    static constexpr uint16_t load(uint16_t value) noexcept { return value; }
+    static constexpr uint32_t load(uint32_t value) noexcept { return value; }
+    static constexpr uint64_t load(uint64_t value) noexcept { return value; }
 };
 #else
 #error "byte order not supported"

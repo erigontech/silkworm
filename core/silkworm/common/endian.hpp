@@ -72,36 +72,37 @@ as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers resp
 namespace silkworm::endian {
 
 #if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-struct LE {
+namespace le {
     template <class UnsignedInteger>
-    static constexpr UnsignedInteger load(UnsignedInteger value) noexcept {
+    static inline UnsignedInteger load(UnsignedInteger value) noexcept {
         return value;
     }
-};
-struct BE {
-    static constexpr uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
-    static constexpr uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
-    static constexpr uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+}  // namespace le
+namespace be {
+    static inline uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
+    static inline uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
+    static inline uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
 
     template <unsigned N>
-    static constexpr intx::uint<N> load(const intx::uint<N>& value) noexcept {
+    static inline intx::uint<N> load(const intx::uint<N>& value) noexcept {
         return intx::bswap(value);
     }
-};
-#elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
-struct LE {
-    static constexpr uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
-    static constexpr uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
-    static constexpr uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+}  // namespace be
 
+#elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
+namespace le {
+    static inline uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
+    static inline uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
+    static inline uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
     // intx::uint not defined here since its words are little-endian.
     // In any case, Silkworm is currently untested on big-endian plaforms.
-};
-struct BE {
-    static constexpr uint16_t load(uint16_t value) noexcept { return value; }
-    static constexpr uint32_t load(uint32_t value) noexcept { return value; }
-    static constexpr uint64_t load(uint64_t value) noexcept { return value; }
-};
+}  // namespace le
+namespace be {
+    static inline uint16_t load(uint16_t value) noexcept { return value; }
+    static inline uint32_t load(uint32_t value) noexcept { return value; }
+    static inline uint64_t load(uint64_t value) noexcept { return value; }
+}  // namespace be
+
 #else
 #error "byte order not supported"
 #endif
@@ -110,59 +111,59 @@ struct BE {
 inline uint16_t load_big_u16(const uint8_t* bytes) noexcept {
     uint16_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return BE::load(x);
+    return be::load(x);
 }
 
 // Similar to boost::endian::load_big_u32
 inline uint32_t load_big_u32(const uint8_t* bytes) noexcept {
     uint32_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return BE::load(x);
+    return be::load(x);
 }
 
 // Similar to boost::endian::load_big_u64
 inline uint64_t load_big_u64(const uint8_t* bytes) noexcept {
     uint64_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return BE::load(x);
+    return be::load(x);
 }
 
 // Similar to boost::endian::load_little_u16
 inline uint16_t load_little_u16(const uint8_t* bytes) noexcept {
     uint16_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return LE::load(x);
+    return le::load(x);
 }
 
 // Similar to boost::endian::load_little_u32
 inline uint32_t load_little_u32(const uint8_t* bytes) noexcept {
     uint32_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return LE::load(x);
+    return le::load(x);
 }
 
 // Similar to boost::endian::load_little_u64
 inline uint64_t load_little_u64(const uint8_t* bytes) noexcept {
     uint64_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return LE::load(x);
+    return le::load(x);
 }
 
 // Similar to boost::endian::store_big_u16
 inline void store_big_u16(uint8_t* bytes, const uint16_t value) {
-    uint16_t x{BE::load(value)};
+    uint16_t x{be::load(value)};
     std::memcpy(bytes, &x, sizeof(x));
 }
 
 // Similar to boost::endian::store_big_u32
 inline void store_big_u32(uint8_t* bytes, const uint32_t value) {
-    uint32_t x{BE::load(value)};
+    uint32_t x{be::load(value)};
     std::memcpy(bytes, &x, sizeof(x));
 }
 
 // Similar to boost::endian::store_big_u64
 inline void store_big_u64(uint8_t* bytes, const uint64_t value) {
-    uint64_t x{BE::load(value)};
+    uint64_t x{be::load(value)};
     std::memcpy(bytes, &x, sizeof(x));
 }
 
@@ -204,7 +205,7 @@ static std::optional<UnsignedInteger> from_big_compact(ByteView data, bool allow
     auto* ptr{reinterpret_cast<uint8_t*>(&x)};
     std::memcpy(ptr + (sizeof(UnsignedInteger) - data.length()), &data[0], data.length());
 
-    return BE::load(x);
+    return be::load(x);
 }
 
 }  // namespace silkworm::endian

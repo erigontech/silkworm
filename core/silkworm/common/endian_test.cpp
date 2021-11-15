@@ -139,4 +139,13 @@ TEST_CASE("Block as key and compact form") {
     }
 }
 
+TEST_CASE("from_big_compact with leading zeros") {
+    const Bytes non_compact_be{*from_hex("00AB")};
+    const auto x{from_big_compact<uint32_t>(non_compact_be, /*allow_leading_zeros=*/false)};
+    CHECK(x == std::nullopt);
+    const auto y{from_big_compact<uint32_t>(non_compact_be, /*allow_leading_zeros=*/true)};
+    REQUIRE(y != std::nullopt);
+    CHECK(y == 0xAB);
+}
+
 }  // namespace silkworm::endian

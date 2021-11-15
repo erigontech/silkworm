@@ -162,7 +162,7 @@ inline void store_big_u64(uint8_t* bytes, const uint64_t value) {
 //! \return A string of bytes
 //! \remarks See Erigon TxIndex value
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-Bytes to_big_compact(const uint64_t value);
+Bytes to_big_compact(uint64_t value);
 
 //! \brief Transforms a uint256 stored in memory with native endianness to it's compacted big endian byte form
 //! \param [in] value : the value to be transformed
@@ -171,19 +171,36 @@ Bytes to_big_compact(const uint64_t value);
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 Bytes to_big_compact(const intx::uint256& value);
 
-//! \brief Parses uint64_t from a compacted big endian byte form
-//! \param [in] data : byte view of memory allocation for compacted value. Length must be <= sizeof(uint64_t)
-//! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (not compact)
-//! \return A uint64_t with native endianness; std::nullopt if data is invalid
+//! \brief Parses unsigned integer from a compacted big endian byte form
+//! \param [in] data : byte view of compacted value. Length must be <= sizeof(UnsignedInteger)
+//! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (i.e. not compact)
+//! \return The corresponding integer with native endianness; std::nullopt if data is invalid
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-std::optional<uint64_t> from_big_compact_u64(const ByteView& data, bool allow_leading_zeros = false);
+template <typename UnsignedInteger>
+static std::optional<UnsignedInteger> from_big_compact(ByteView data, bool allow_leading_zeros = false) {
+    if (data.length() > sizeof(UnsignedInteger)) {
+        return std::nullopt;
+    }
 
-//! \brief Parses uint256 from a compacted big endian byte form
-//! \param [in] data : byte view of memory allocation for compacted value. Length must be <= sizeof(uint256)
-//! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (not compact)
-//! \return A uint256 with native endianness; std::nullopt if data is invalid
-//! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-std::optional<intx::uint256> from_big_compact_u256(const ByteView& data, bool allow_leading_zeros = false);
+    UnsignedInteger x{0};
+
+    if (data.empty()) {
+        return x;
+    }
+
+    if (data[0] == 0 && !allow_leading_zeros) {
+        return std::nullopt;
+    }
+
+    auto* ptr{reinterpret_cast<uint8_t*>(&x)};
+    std::memcpy(ptr + (sizeof(UnsignedInteger) - data.length()), &data[0], data.length());
+
+#if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
+    x = intx::bswap(x);
+#endif
+
+    return x;
+}
 
 }  // namespace silkworm::endian
 

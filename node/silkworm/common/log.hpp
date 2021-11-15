@@ -29,7 +29,7 @@ namespace silkworm {
 #define SILKWORM_LOG(level_)                   \
     if ((level_) < silkworm::log_verbosity_) { \
     } else                                     \
-        log_(level_) << " "
+        silkworm::log_(level_) << " "
 
 // change the logging verbosity level - default level is LogInfo
 //

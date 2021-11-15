@@ -28,7 +28,7 @@ LogLevel log_verbosity_{LogLevel::Info};
 bool log_thread_enabled_{false};
 
 static constexpr char const kLogTags_[7][6] = {
-    "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",
+    "TRACE", "DEBUG", " INFO", " WARN", "ERROR", " CRIT", /*none = silence*/ "     ",
 };
 
 // Log to one or two output streams - typically the console and optional log file.
@@ -37,8 +37,11 @@ void log_set_streams_(std::ostream& o1, std::ostream& o2) { log_streams_.set_str
 std::mutex log_::log_mtx_;
 
 std::ostream& log_::header_(LogLevel level) {
-    log_streams_ << kLogTags_[static_cast<int>(level)] << "["
-                 << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "]";
+    absl::Time now{absl::Now()};
+
+    log_streams_ << kLogTags_[static_cast<int>(level)] << " ["
+                 << absl::FormatTime("%m-%d|%H:%M:%E3S", now, absl::LocalTimeZone()) << "]";
+    //    log_streams_ << kLogTags_[static_cast<int>(level)] << " [" << now << "]";
     if (log_thread_enabled_) {
         log_streams_ << " " << std::this_thread::get_id();
     }

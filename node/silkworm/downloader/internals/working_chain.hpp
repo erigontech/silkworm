@@ -155,7 +155,7 @@ class WorkingChain {
     lru_cache<Hash, Ignore> seenAnnounces_;
     std::vector<Announce> announcesToDo_;
     ConsensusEngine consensus_engine_;
-    HeaderOnlyChainState chain_state_;
+    CustomHeaderOnlyChainState chain_state_;
 };
 
 }  // namespace silkworm

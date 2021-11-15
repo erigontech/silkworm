@@ -14,89 +14,47 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#ifndef SILKWORM_HEADER_ONLY_STATE_HPP
-#define SILKWORM_HEADER_ONLY_STATE_HPP
+#ifndef SILKWORM_CUSTOM_HEADER_ONLY_CHAIN_STATE_HPP
+#define SILKWORM_CUSTOM_HEADER_ONLY_CHAIN_STATE_HPP
 
-#include <silkworm/state/state.hpp>
+#include <silkworm/state/block_state.hpp>
+
 #include "chain_elements.hpp"
 #include "types.hpp"
 
 namespace silkworm {
 
-class HeaderOnlyChainStateBase : public State {
-  public:
-    std::optional<BlockHeader> read_header(uint64_t block_number,
-                                           const evmc::bytes32& block_hash) const noexcept override =0;
-
-    // methods we don't want to implement
-    std::optional<Account> read_account(const evmc::address&) const noexcept override;
-
-    ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
-
-    evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation,
-                               const evmc::bytes32& location) const noexcept override;
-
-    uint64_t previous_incarnation(const evmc::address& address) const noexcept override;
-
-    std::optional<BlockBody> read_body(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept override;
-
-    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
-                                                  const evmc::bytes32& block_hash) const noexcept override;
-
-    evmc::bytes32 state_root_hash() const override;
-
-    uint64_t current_canonical_block() const override;
-
-    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
-
-    void insert_block(const Block& block, const evmc::bytes32& hash) override;
-
-    void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override;
-
-    void decanonize_block(uint64_t block_number) override;
-
-    void insert_receipts(uint64_t block_number, const std::vector<Receipt>& receipts) override;
-
-    void begin_block(uint64_t block_number) override;
-
-    void update_account(const evmc::address& address, std::optional<Account> initial,
-                        std::optional<Account> current) override;
-
-    void update_account_code(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& code_hash,
-                             ByteView code) override;
-
-    void update_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location,
-                        const evmc::bytes32& initial, const evmc::bytes32& current) override;
-
-    void unwind_state_changes(uint64_t block_number) override;
-
-};
-
 // A Chain_State implementation tied to WorkingChain needs
 
-class HeaderOnlyChainState : public HeaderOnlyChainStateBase {
+class CustomHeaderOnlyChainState : public BlockState {
     OldestFirstLinkQueue& persistedLinkQueue_;  // not nice
 
   public:
-    HeaderOnlyChainState(OldestFirstLinkQueue& persistedLinkQueue);
+    CustomHeaderOnlyChainState(OldestFirstLinkQueue& persistedLinkQueue);
 
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
+
+    std::optional<BlockBody> read_body(BlockNum block_number,
+                                       const evmc::bytes32& block_hash) const noexcept override;
 };
 
 // A better Chain_State implementation
 
-class HeaderOnlyChainStateNew : public HeaderOnlyChainStateBase {
-    using BlockNumHashPair = std::pair<BlockNum,Hash>;
-    std::map<BlockNumHashPair, BlockHeader> headers_;    // (block number, hash) -> header
+class SimpleHeaderOnlyChainState : public BlockState {
+    using BlockNumHashPair = std::pair<BlockNum, Hash>;
+    std::map<BlockNumHashPair, BlockHeader> headers_;  // (block number, hash) -> header
 
   public:
     void insert_header(const BlockHeader& header, const evmc::bytes32& hash);
 
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
+
+    std::optional<BlockBody> read_body(BlockNum block_number,
+                                       const evmc::bytes32& block_hash) const noexcept override;
 };
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_HEADER_ONLY_STATE_HPP
+#endif  // SILKWORM_CUSTOM_HEADER_ONLY_CHAIN_STATE_HPP

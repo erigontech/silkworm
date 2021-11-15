@@ -17,16 +17,14 @@
 #ifndef SILKWORM_STATE_STATE_HPP_
 #define SILKWORM_STATE_STATE_HPP_
 
-#include <optional>
-
-#include <silkworm/common/base.hpp>
 #include <silkworm/types/account.hpp>
-#include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
+
+#include "block_state.hpp"
 
 namespace silkworm {
 
-class State {
+class State : public BlockState {
   public:
     State() = default;
 

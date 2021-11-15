@@ -180,6 +180,9 @@ auto WorkingChain::verify(const Link& link) -> VerificationResult {
     auto result = consensus_engine_->validate_block_header(*link.header, chain_state_, with_future_timestamp_check);
 
     if (result != ValidationResult::kOk) {
+        if (result == ValidationResult::kUnknownParent) {
+            SILKWORM_ASSERT(false);
+        }
         if (result == ValidationResult::kFutureBlock) {
             return Postpone;
         }

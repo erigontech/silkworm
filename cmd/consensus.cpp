@@ -279,10 +279,10 @@ void init_pre_state(const nlohmann::json& pre, State& state) {
 
         Account account;
         const Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
-        const auto balance{endian::from_big_compact_u256(balance_str, /*allow_leading_zeros=*/true)};
+        const auto balance{endian::from_big_compact<intx::uint256>(balance_str, /*allow_leading_zeros=*/true)};
         account.balance = *balance;
         const Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
-        const auto nonce{endian::from_big_compact_u64(nonce_str, /*allow_leading_zeros=*/true)};
+        const auto nonce{endian::from_big_compact<uint64_t>(nonce_str, /*allow_leading_zeros=*/true)};
         account.nonce = *nonce;
 
         const Bytes code{from_hex(j["code"].get<std::string>()).value()};
@@ -363,7 +363,7 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
         }
 
         const Bytes balance_str{from_hex(j["balance"].get<std::string>()).value()};
-        const auto expected_balance{endian::from_big_compact_u256(balance_str, /*allow_leading_zeros=*/true)};
+        const auto expected_balance{endian::from_big_compact<intx::uint256>(balance_str, /*allow_leading_zeros=*/true)};
         if (account->balance != expected_balance) {
             std::cout << "Balance mismatch for " << entry.key() << ":\n"
                       << to_string(account->balance, 16) << " != " << j["balance"] << std::endl;
@@ -371,7 +371,7 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
         }
 
         const Bytes nonce_str{from_hex(j["nonce"].get<std::string>()).value()};
-        const auto expected_nonce{endian::from_big_compact_u64(nonce_str, /*allow_leading_zeros=*/true)};
+        const auto expected_nonce{endian::from_big_compact<uint64_t>(nonce_str, /*allow_leading_zeros=*/true)};
         if (account->nonce != expected_nonce) {
             std::cout << "Nonce mismatch for " << entry.key() << ":\n"
                       << account->nonce << " != " << *expected_nonce << std::endl;

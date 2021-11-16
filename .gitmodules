@@ -23,3 +23,6 @@
 [submodule "libmdbx"]
 	path = libmdbx
 	url = https://github.com/erthink/libmdbx.git
+[submodule "thread-pool"]
+	path = thread-pool
+	url = https://github.com/bshoshany/thread-pool.git

@@ -25,11 +25,12 @@ CustomHeaderOnlyChainState::CustomHeaderOnlyChainState(OldestFirstLinkQueue& per
 
 std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum block_number,
                                                                    const evmc::bytes32& hash) const noexcept {
-    // todo: very slow implementation, improve it!
 
-    for (auto& link : persistedLinkQueue_) {
-        if (link->blockHeight == block_number && hash == link->hash) {
-            return *link->header;
+    auto [initial_link, final_link] = persistedLinkQueue_.equal_range(block_number);
+
+    for (auto link = initial_link; link != final_link; link++) {
+        if (link->second->blockHeight == block_number && link->second->hash == hash) {
+            return *link->second->header;
         }
     }
 

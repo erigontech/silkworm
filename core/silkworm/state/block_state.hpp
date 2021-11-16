@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_HEADER_ONLY_CHAIN_STATE_HPP_
-#define SILKWORM_HEADER_ONLY_CHAIN_STATE_HPP_
+#ifndef SILKWORM_STATE_BLOCK_STATE_HPP_
+#define SILKWORM_STATE_BLOCK_STATE_HPP_
 
 #include <optional>
 
@@ -37,4 +37,4 @@ class BlockState {
 
 }  // namespace silkworm
 
-#endif  // SILKWORM_HEADER_ONLY_CHAIN_STATE_HPP_
+#endif  // SILKWORM_STATE_BLOCK_STATE_HPP_

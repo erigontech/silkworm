@@ -31,14 +31,14 @@ namespace silkworm {
 
 // Auxiliary types needed to implement WorkingChain
 /*
-struct Knot {   // todo: evaluate if can use this as base class for Anchor and Link
+struct Knot {   // todo: evaluate if Knot can be used as base class for Anchor and Link
                 // problem: add_header_as_link() is ok for Link but not for Anchor
     Hash hash;
     std::vector<std::shared_ptr<Knot>> children;    // Reverse of parentHash, allows iteration over links
                                                     // in ascending block height order
     Knot(const BlockHeader& header): hash(header.hash()) {}
 
-    // todo: use this method to remove similar block in methods connect(), extend_up(), extend_down(), new_anchor()
+    // use this method to remove similar block in methods connect(), extend_up(), extend_down(), new_anchor()
     auto add(Segment::Slice segment_slice, Container& preverifiedHashes) {
         std::shared_ptr<Knot> prev_link = std::make_shared>(this);
         for(auto h = segment_slice.rbegin(); h != segment_slice.rend(); h++) {
@@ -153,6 +153,10 @@ struct AnchorYoungerThan : public std::function<bool(std::shared_ptr<Link>, std:
     }
 };
 
+struct BlockOlderThan : public std::function<bool(BlockNum, BlockNum)> {
+    bool operator()(const BlockNum& x, const BlockNum& y) const { return x < y; }
+};
+
 // Priority queue types
 
 // For persisted links, those with the lower block heights get evicted first. This means that more recently persisted
@@ -160,39 +164,45 @@ struct AnchorYoungerThan : public std::function<bool(std::shared_ptr<Link>, std:
 // For non-persisted links, those with the highest block heights get evicted first. This is to prevent "holes" in the
 // block heights that may cause inability to insert headers in the ascending order of their block heights.
 
-using OldestFirstLinkQueue = set_based_priority_queue<std::shared_ptr<Link>,
-                                                      LinkOlderThan>; // c++ set put min at the top
-// we do not use std::priority_queue<shared_ptr...,vector...,LinkYoungerThan> because it is not iterable
-// priority_queue requires LinkYoungerThan because c++ heap is a max heap, so we need the inverse, c++ set no
+// We need a queue for persisted links to
+// - get older links to evict when we need to free memory
+// - get parent header when we need to verify a new one
+// using OldestFirstLinkQueue = std::multimap<BlockNum, std::shared_ptr<Link>, BlockOlderThan>;
 
-// For the Youngest_First_Link_Queue, Erigon use an intrusive priority_queue with elements storing index in the queue
-// for low removal time. We can:
-// 1. use std priority_queue, implementing erase with find (->custom_priority_queue)
-// 2. use std set (->Set_Based_Priority_Queue)
-// 3. implement an intrusive priority_queue as Erigon
-// 4. use a multi-index container
+} // close namespace to define mbpq_key - I do not like this
+template <>
+struct mbpq_key<std::shared_ptr<Link>> {    // extract key type and value
+    using type = BlockNum;   // type of the key
+    static type value(const std::shared_ptr<Link>& l) {return l->blockHeight;} // value of the key
+};
+namespace silkworm { // reopen namespace
 
+using OldestFirstLinkQueue = map_based_priority_queue<std::shared_ptr<Link>, BlockOlderThan>;
+
+
+// We need a queue for all links to
+// - store the links
+// - get younger links to evict when we need to free memory
 using YoungestFirstLinkQueue = set_based_priority_queue<std::shared_ptr<Link>,
                                                         LinkYoungerThan>;  // c++ set put min at the top
-// todo: verify if set_based_priority_queue has comparable performance with Erigon intrusive priority queue
 
-// For anchors, those that have been inserted in the queue before are requested first
-
+// We need a queue for anchors to get anchors in reverse order respect to timestamp
+// (that is the time at which we asked peers for ancestor of the anchor)
 using OldestFirstAnchorQueue = heap_based_priority_queue<std::shared_ptr<Anchor>,
                                                          std::vector<std::shared_ptr<Anchor>>,  // inner impl
                                                          AnchorYoungerThan>;  // c++ heap is a max heap
                                                                               // (note that go heap is a min heap)
-// todo: find a better alternative of heap_based_priority_queue
-// (we use the custom one because Oldest_First_Link_Queue need a fix when an anchor change externally)
 
 // Maps
 using LinkMap = std::map<Hash, std::shared_ptr<Link>>;      // hash = link hash
 using AnchorMap = std::map<Hash, std::shared_ptr<Anchor>>;  // hash = anchor *parent* hash
 
-// todo: Anchor_Map key = anchor *parent* hash, incapsulate this kwnowledge in a class
-// so we can write anchor_map.add(anchor) in place of anchor_map[anchor->parent_hash] = anchor
-// todo: anchorQueue and anchorMap should be encapsulated because if one change an anchor anchorQueue must be fixed
-// todo: assess boost::multi-index-container to replace queue + map pair
+/* todo: improve encapsulation
+ * AnchorMap key is the anchor parent hash, note 'parent', so it is better to encapsulate this knowledge in a class
+ * so we can write anchor_map.add(anchor) in place of anchor_map[anchor->parent_hash] = anchor
+ * Also anchorQueue and anchorMap should be encapsulated because if one change an anchor then anchorQueue must be
+ * fixed (= re-ordered). For this purpose assess boost::multi-index-container to replace the queue + map pair
+ */
 
 // Other containers
 using LinkList = std::vector<std::shared_ptr<Link>>;

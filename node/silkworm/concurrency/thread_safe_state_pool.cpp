@@ -26,12 +26,12 @@
 namespace silkworm {
 
 std::unique_ptr<evmone::AdvancedExecutionState> ThreadSafeExecutionStatePool::acquire() noexcept {
-    const std::lock_guard<std::mutex> lock{mutex_};
+    const std::lock_guard lock{mutex_};
     return ExecutionStatePool::acquire();
 }
 
 void ThreadSafeExecutionStatePool::release(std::unique_ptr<evmone::AdvancedExecutionState> obj) noexcept {
-    const std::lock_guard<std::mutex> lock{mutex_};
+    const std::lock_guard lock{mutex_};
     ExecutionStatePool::release(std::move(obj));
 }
 

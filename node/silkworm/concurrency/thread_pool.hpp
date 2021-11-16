@@ -1,4 +1,6 @@
 #pragma once
+#ifndef SILKWORM_CONCURRENCY_THREAD_POOL_HPP_
+#define SILKWORM_CONCURRENCY_THREAD_POOL_HPP_
 
 /**
  * @file thread_pool.hpp
@@ -23,8 +25,6 @@
  * updates, or to submit feature requests and bug reports.
  */
 
-#define THREAD_POOL_VERSION "v2.0.0 (2021-08-14)"
-
 #include <atomic>       // std::atomic
 #include <chrono>       // std::chrono
 #include <cstdint>      // std::int_fast64_t, std::uint_fast32_t
@@ -37,6 +37,8 @@
 #include <thread>       // std::this_thread, std::thread
 #include <type_traits>  // std::common_type_t, std::decay_t, std::enable_if_t, std::is_void_v, std::invoke_result_t
 #include <utility>      // std::move
+
+namespace silkworm {
 
 // ============================================================================================= //
 //                                    Begin class thread_pool                                    //
@@ -87,9 +89,9 @@ class thread_pool {
      *
      * @return The number of queued tasks.
      */
-    ui64 get_tasks_queued() const {
+    ui32 get_tasks_queued() const {
         const std::scoped_lock lock(queue_mutex);
-        return tasks.size();
+        return static_cast<ui32>(tasks.size());
     }
 
     /**
@@ -97,7 +99,7 @@ class thread_pool {
      *
      * @return The number of running tasks.
      */
-    ui32 get_tasks_running() const { return tasks_total - (ui32)get_tasks_queued(); }
+    ui32 get_tasks_running() const { return tasks_total - get_tasks_queued(); }
 
     /**
      * @brief Get the total number of unfinished tasks - either still in the queue, or running in a thread.
@@ -136,8 +138,8 @@ class thread_pool {
     template <typename T1, typename T2, typename F>
     void parallelize_loop(const T1& first_index, const T2& index_after_last, const F& loop, ui32 num_blocks = 0) {
         typedef std::common_type_t<T1, T2> T;
-        T the_first_index = (T)first_index;
-        T last_index = (T)index_after_last;
+        T the_first_index = first_index;
+        T last_index = index_after_last;
         if (the_first_index == last_index) return;
         if (last_index < the_first_index) {
             T temp = last_index;
@@ -146,16 +148,16 @@ class thread_pool {
         }
         last_index--;
         if (num_blocks == 0) num_blocks = thread_count;
-        ui64 total_size = (ui64)(last_index - the_first_index + 1);
-        ui64 block_size = (ui64)(total_size / num_blocks);
+        ui64 total_size = last_index - the_first_index + 1;
+        ui64 block_size = total_size / num_blocks;
         if (block_size == 0) {
             block_size = 1;
-            num_blocks = (ui32)total_size > 1 ? (ui32)total_size : 1;
+            num_blocks = total_size > 1 ? static_cast<ui32>(total_size) : 1;
         }
         std::atomic<ui32> blocks_running = 0;
         for (ui32 t = 0; t < num_blocks; t++) {
-            T start = ((T)(t * block_size) + the_first_index);
-            T end = (t == num_blocks - 1) ? last_index + 1 : ((T)((t + 1) * block_size) + the_first_index);
+            T start = static_cast<T>(t * block_size) + the_first_index;
+            T end = (t == num_blocks - 1) ? last_index + 1 : (static_cast<T>((t + 1) * block_size) + the_first_index);
             blocks_running++;
             push_task([start, end, &loop, &blocks_running] {
                 loop(start, end);
@@ -519,3 +521,7 @@ class timer {
 
 //                                        End class timer                                        //
 // ============================================================================================= //
+
+}  // namespace silkworm
+
+#endif  // SILKWORM_CONCURRENCY_THREAD_POOL_HPP_

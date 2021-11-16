@@ -35,14 +35,10 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/common/test_util.hpp>
+#include <silkworm/concurrency/thread_pool.hpp>
 #include <silkworm/concurrency/thread_safe_state_pool.hpp>
 #include <silkworm/consensus/blockchain.hpp>
 #include <silkworm/state/in_memory_state.hpp>
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#include <thread_pool.hpp>
-#pragma GCC diagnostic pop
 
 // See https://ethereum-tests.readthedocs.io
 

@@ -48,7 +48,7 @@ target_include_directories(silkworm_node PUBLIC
 
 set(SILKWORM_NODE_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring
         nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf)
-set(SILKWORM_NODE_PRIVATE_LIBS cborcpp)
+set(SILKWORM_NODE_PRIVATE_LIBS cborcpp evmone)
 
 if(MSVC)
   list(APPEND SILKWORM_NODE_PRIVATE_LIBS ntdll.lib)

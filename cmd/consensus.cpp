@@ -21,7 +21,6 @@
 #include <map>
 #include <string>
 #include <string_view>
-#include <thread>
 #include <vector>
 
 #include <CLI/CLI.hpp>
@@ -53,10 +52,12 @@ static const fs::path kBlockchainDir{"BlockchainTests"};
 
 static const fs::path kTransactionDir{"TransactionTests"};
 
-static const std::vector<fs::path> kExcludedTests{
-    // Very slow tests
+static const std::vector<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
+    kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance" / "loopMul.json",
+};
 
+static const std::vector<fs::path> kFailingTests{
     // Nonce >= 2^64 is not supported.
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L40
@@ -626,21 +627,25 @@ Status difficulty_test(const nlohmann::json& j, const std::optional<ChainConfig>
     }
 }
 
-bool exclude_test(const fs::path& p, const fs::path& root_dir) {
-    return as_range::any_of(kExcludedTests,
-                            [&p, &root_dir](const std::filesystem::path& e) -> bool { return root_dir / e == p; });
+bool exclude_test(const fs::path& p, const fs::path& root_dir, bool include_slow_tests) {
+    const auto path_fits = [&p, &root_dir](const fs::path& e) { return root_dir / e == p; };
+    return as_range::any_of(kFailingTests, path_fits) ||
+           (!include_slow_tests && as_range::any_of(kSlowTests, path_fits));
 }
 
 int main(int argc, char* argv[]) {
     const auto begin{std::chrono::steady_clock::now()};
 
     CLI::App app{"Run Ethereum consensus tests"};
+
     std::string evm_path{};
     app.add_option("--evm", evm_path, "Path to EVMC-compliant VM");
     std::string tests_path{SILKWORM_CONSENSUS_TEST_DIR};
     app.add_option("--tests", tests_path, "Path to consensus tests", /*defaulted=*/true)->check(CLI::ExistingDirectory);
     unsigned num_threads{std::thread::hardware_concurrency()};
     app.add_option("--threads", num_threads, "Number of parallel threads", /*defaulted=*/true);
+    bool include_slow_tests{false};
+    app.add_flag("--slow", include_slow_tests, "Run slow tests");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -665,7 +670,7 @@ int main(int argc, char* argv[]) {
 
     for (auto i = fs::recursive_directory_iterator(root_dir / kBlockchainDir); i != fs::recursive_directory_iterator{};
          ++i) {
-        if (exclude_test(*i, root_dir)) {
+        if (exclude_test(*i, root_dir, include_slow_tests)) {
             ++total_skipped;
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {
@@ -676,7 +681,7 @@ int main(int argc, char* argv[]) {
 
     for (auto i = fs::recursive_directory_iterator(root_dir / kTransactionDir); i != fs::recursive_directory_iterator{};
          ++i) {
-        if (exclude_test(*i, root_dir)) {
+        if (exclude_test(*i, root_dir, include_slow_tests)) {
             ++total_skipped;
             i.disable_recursion_pending();
         } else if (fs::is_regular_file(i->path())) {

@@ -5,24 +5,22 @@
 /**
  * @file thread_pool.hpp
  * @author Barak Shoshany (baraksh@gmail.com) (http://baraksh.com)
- * @version 2.0.0
- * @date 2021-08-14
  * @copyright Copyright (c) 2021 Barak Shoshany. Licensed under the MIT license. If you use this library in published
  * research, please cite it as follows:
  *  - Barak Shoshany, "A C++17 Thread Pool for High-Performance Scientific Computing", doi:10.5281/zenodo.4742687,
  * arXiv:2105.00613 (May 2021)
  *
+ * Modified for Silkworm.
+ *
  * @brief A C++17 thread pool for high-performance scientific computing.
  * @details A modern C++17-compatible thread pool implementation, built from scratch with high-performance scientific
- * computing in mind. The thread pool is implemented as a single lightweight and self-contained class, and does not have
- * any dependencies other than the C++17 standard library, thus allowing a great degree of portability. In particular,
- * this implementation does not utilize OpenMP or any other high-level multithreading APIs, and thus gives the
- * programmer precise low-level control over the details of the parallelization, which permits more robust
- * optimizations. The thread pool was extensively tested on both AMD and Intel CPUs with up to 40 cores and 80 threads.
- * Other features include automatic generation of futures and easy parallelization of loops. Two helper classes enable
- * synchronizing printing to an output stream by different threads and measuring execution time for benchmarking
+ * computing in mind. The thread pool was extensively tested on both AMD and Intel CPUs with up to 40 cores and 80
+ * threads. Other features include automatic generation of futures and easy parallelization of loops. Two helper classes
+ * enable synchronizing printing to an output stream by different threads and measuring execution time for benchmarking
  * purposes. Please visit the GitHub repository at https://github.com/bshoshany/thread-pool for documentation and
  * updates, or to submit feature requests and bug reports.
+ * The thread pool uses boost::thread instead of std::thread because the latter does not support setting custom stack
+ * sizes. See also http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p2019r0.pdf
  */
 
 #include <atomic>       // std::atomic
@@ -34,9 +32,11 @@
 #include <memory>       // std::shared_ptr, std::unique_ptr
 #include <mutex>        // std::mutex, std::scoped_lock
 #include <queue>        // std::queue
-#include <thread>       // std::this_thread, std::thread
+#include <thread>       // std::this_thread
 #include <type_traits>  // std::common_type_t, std::decay_t, std::enable_if_t, std::is_void_v, std::invoke_result_t
 #include <utility>      // std::move
+
+#include <boost/thread/thread.hpp>  // boost::thread
 
 namespace silkworm {
 
@@ -66,7 +66,7 @@ class thread_pool {
      */
     thread_pool(const ui32& _thread_count = std::thread::hardware_concurrency())
         : thread_count(_thread_count ? _thread_count : std::thread::hardware_concurrency()),
-          threads(new std::thread[_thread_count ? _thread_count : std::thread::hardware_concurrency()]) {
+          threads(new boost::thread[_thread_count ? _thread_count : std::thread::hardware_concurrency()]) {
         create_threads();
     }
 
@@ -217,7 +217,7 @@ class thread_pool {
         running = false;
         destroy_threads();
         thread_count = _thread_count ? _thread_count : std::thread::hardware_concurrency();
-        threads.reset(new std::thread[thread_count]);
+        threads.reset(new boost::thread[thread_count]);
         paused = was_paused;
         running = true;
         create_threads();
@@ -327,7 +327,7 @@ class thread_pool {
      */
     void create_threads() {
         for (ui32 i = 0; i < thread_count; i++) {
-            threads[i] = std::thread(&thread_pool::worker, this);
+            threads[i] = boost::thread(&thread_pool::worker, this);
         }
     }
 
@@ -412,7 +412,7 @@ class thread_pool {
     /**
      * @brief A smart pointer to manage the memory allocated for the threads.
      */
-    std::unique_ptr<std::thread[]> threads;
+    std::unique_ptr<boost::thread[]> threads;
 
     /**
      * @brief An atomic variable to keep track of the total number of unfinished tasks - either still in the queue, or

@@ -109,4 +109,17 @@ class map_based_priority_queue {
     };
 };
 
+/* Note
+  Alternative implementation (by greg7mdp)
+
+  using HMap = btree_map<std::pair<BlockNum, Hash>, Link>;
+
+  - ordering:
+      sorted first by BlockNum, then by the Hash (default lexicographical comparison by std::pair)
+  - lookup:
+      map[HMap::key_type(block_number, hash)]
+  - erase:
+      map.erase(map.begin(), map.lower_bound(HMap::key_type(x,0)));
+ */
+
 #endif  // SILKWORM_PRIORITY_QUEUE_HPP

@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <chrono>
 #include <exception>
 #include <filesystem>
 #include <iostream>
@@ -639,6 +640,8 @@ bool exclude_test(const fs::path& p, const fs::path& root_dir) {
 }
 
 int main(int argc, char* argv[]) {
+    const auto begin{std::chrono::steady_clock::now()};
+
     CLI::App app{"Run Ethereum consensus tests"};
     std::string evm_path{};
     app.add_option("--evm", evm_path, "Path to EVMC-compliant VM");
@@ -691,7 +694,10 @@ int main(int argc, char* argv[]) {
     if (res.failed) {
         std::cout << "\033[0m";
     }
-    std::cout << ", " << res.skipped << " skipped" << std::endl;
+    std::cout << ", " << res.skipped << " skipped";
+
+    const auto end{std::chrono::steady_clock::now()};
+    std::cout << " in " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << " sec\n";
 
     return static_cast<int>(res.failed);
 }

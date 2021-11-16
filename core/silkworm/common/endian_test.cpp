@@ -113,7 +113,7 @@ TEST_CASE("Block as key and compact form") {
 #else
         CHECK(block_number_from_key == block_number);
 #endif
-        CHECK(endian::be::uint64(block_number_from_key) == block_number);
+        CHECK(be::load(block_number_from_key) == block_number);
     }
 
     SECTION("Block number as compact") {
@@ -121,22 +121,31 @@ TEST_CASE("Block as key and compact form") {
         auto block_number_compact_bytes{to_big_compact(block_number)};
         CHECK(to_hex(block_number_compact_bytes) == "5485ffde");
         // Convert back and check
-        auto block_number_from_compact{from_big_compact_u64(block_number_compact_bytes)};
+        auto block_number_from_compact{from_big_compact<uint64_t>(block_number_compact_bytes)};
         CHECK(block_number_from_compact == block_number);
         // Try compact empty bytes
         Bytes empty_bytes{};
-        CHECK(zeroless_view(empty_bytes).empty() == true);
+        CHECK(zeroless_view(empty_bytes).empty());
         // Try compact zeroed bytes
         Bytes zeroed_bytes(2, 0);
-        CHECK(zeroless_view(zeroed_bytes).empty() == true);
+        CHECK(zeroless_view(zeroed_bytes).empty());
         // Compact block == 0
-        CHECK(to_big_compact(0).empty() == true);
+        CHECK(to_big_compact(0).empty());
         // Try retrieve a compacted value from an empty Byte string
-        CHECK(from_big_compact_u64(Bytes()) == 0u);
+        CHECK(from_big_compact<uint64_t>(Bytes()) == 0u);
         // Try retrieve a compacted value from a too large Byte string
         Bytes extra_long_bytes(sizeof(uint64_t) + 1, 0);
-        CHECK(from_big_compact_u64(extra_long_bytes) == std::nullopt);
+        CHECK(from_big_compact<uint64_t>(extra_long_bytes) == std::nullopt);
     }
+}
+
+TEST_CASE("from_big_compact with leading zeros") {
+    const Bytes non_compact_be{*from_hex("00AB")};
+    const auto x{from_big_compact<uint32_t>(non_compact_be, /*allow_leading_zeros=*/false)};
+    CHECK(x == std::nullopt);
+    const auto y{from_big_compact<uint32_t>(non_compact_be, /*allow_leading_zeros=*/true)};
+    REQUIRE(y != std::nullopt);
+    CHECK(y == 0xAB);
 }
 
 }  // namespace silkworm::endian

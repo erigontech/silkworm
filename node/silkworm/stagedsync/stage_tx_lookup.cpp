@@ -18,7 +18,6 @@
 
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 #include <silkworm/etl/collector.hpp>
 
@@ -91,7 +90,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
     SILKWORM_LOG(LogLevel::Info) << "Entries Collected << " << collector.size() << std::endl;
 
     // Proceed only if we've done something
-    if (collector.size()) {
+    if (!collector.empty()) {
         SILKWORM_LOG(LogLevel::Info) << "Started tx Hashes Loading" << std::endl;
 
         /*
@@ -184,7 +183,7 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
     while (lookup_data) {
         // Check current lookup block number
         auto block_number_view{db::from_slice(lookup_data.value)};
-        auto current_block{endian::from_big_compact_u64(block_number_view)};
+        auto current_block{endian::from_big_compact<uint64_t>(block_number_view)};
         // Filter out all of the lookups with invalid block numbers
         if (current_block < prune_from) {
             lookup_table.erase(/*whole_multivalue*/ false);

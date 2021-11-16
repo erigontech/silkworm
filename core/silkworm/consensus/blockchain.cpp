@@ -130,8 +130,8 @@ void Blockchain::re_execute_canonical_chain(uint64_t ancestor, uint64_t tip) {
 
         Block block;
         block.header = header.value();
-        block.transactions = body->transactions;
-        block.ommers = body->ommers;
+        block.transactions = std::move(body->transactions);
+        block.ommers = std::move(body->ommers);
 
         [[maybe_unused]] ValidationResult err{execute_block(block, /*check_state_root=*/false)};
         assert(err == ValidationResult::kOk);
@@ -158,8 +158,8 @@ std::vector<BlockWithHash> Blockchain::intermediate_chain(uint64_t block_number,
         assert(header != std::nullopt);
 
         x.block.header = *header;
-        x.block.transactions = body->transactions;
-        x.block.ommers = body->ommers;
+        x.block.transactions = std::move(body->transactions);
+        x.block.ommers = std::move(body->ommers);
         x.hash = hash;
 
         hash = header->parent_hash;

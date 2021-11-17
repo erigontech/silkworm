@@ -47,7 +47,7 @@ struct Knot {   // todo: evaluate if Knot can be used as base class for Anchor a
             auto link = add_header_as_link(*header, persisted);
             prev_link->children.push_back(link); // add link as next of the preceding
             prev_link = link;
-            if (contains(preverifiedHashes_, link->hash))
+            if (contains(preverified_hashes_, link->hash))
                 mark_as_preverified(link);
         }
     }

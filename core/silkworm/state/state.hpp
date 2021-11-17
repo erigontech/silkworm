@@ -36,14 +36,6 @@ class State : public BlockState {
     /** @name Readers */
     ///@{
 
-    // methods from BlockState
-    virtual std::optional<BlockHeader> read_header(uint64_t block_number,
-                                                   const evmc::bytes32& block_hash) const noexcept override = 0;
-
-    virtual std::optional<BlockBody> read_body(uint64_t block_number,
-                                               const evmc::bytes32& block_hash) const noexcept override = 0;
-
-    // full state methods
     virtual std::optional<Account> read_account(const evmc::address& address) const noexcept = 0;
 
     virtual ByteView read_code(const evmc::bytes32& code_hash) const noexcept = 0;

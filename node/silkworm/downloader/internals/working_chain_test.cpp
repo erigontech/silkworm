@@ -26,9 +26,9 @@ namespace silkworm {
 
 class WorkingChain_ForTest : public WorkingChain {
   public:  // publication of internal members to test methods functioning
-    using WorkingChain::anchorQueue_;
+    using WorkingChain::anchor_queue_;
     using WorkingChain::anchors_;
-    using WorkingChain::linkQueue_;
+    using WorkingChain::link_queue_;
     using WorkingChain::links_;
     using WorkingChain::WorkingChain;
 
@@ -391,9 +391,9 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchorQueue_.size() == 1);
+        REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.linkQueue_.size() == 2);
+        REQUIRE(chain.link_queue_.size() == 2);
         REQUIRE(chain.links_.size() == 2);
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
@@ -422,9 +422,9 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == false);
-        REQUIRE(chain.anchorQueue_.size() == 1);
+        REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.linkQueue_.size() == 4);
+        REQUIRE(chain.link_queue_.size() == 4);
         REQUIRE(chain.links_.size() == 4);
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
@@ -457,9 +457,9 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchorQueue_.size() == 2);
+        REQUIRE(chain.anchor_queue_.size() == 2);
         REQUIRE(chain.anchors_.size() == 2);
-        REQUIRE(chain.linkQueue_.size() == 6);
+        REQUIRE(chain.link_queue_.size() == 6);
         REQUIRE(chain.links_.size() == 6);
 
         auto anchor1 = chain.anchors_[headers[1].parent_hash];
@@ -505,8 +505,8 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
         REQUIRE(chain.anchors_.size() == 2);
-        REQUIRE(chain.anchorQueue_.size() == 3);  // (there is 1 old anchor that will be erased later)
-        REQUIRE(chain.linkQueue_.size() == 8);
+        REQUIRE(chain.anchor_queue_.size() == 3);  // (there is 1 old anchor that will be erased later)
+        REQUIRE(chain.link_queue_.size() == 8);
         REQUIRE(chain.links_.size() == 8);
 
         // todo: test on link chain
@@ -528,8 +528,8 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == false);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.anchorQueue_.size() == 3);  // (there are 2 old anchors that will be erased later)
-        REQUIRE(chain.linkQueue_.size() == 9);
+        REQUIRE(chain.anchor_queue_.size() == 3);  // (there are 2 old anchors that will be erased later)
+        REQUIRE(chain.link_queue_.size() == 9);
         REQUIRE(chain.links_.size() == 9);
 
         // todo: test on link chain
@@ -656,9 +656,9 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchorQueue_.size() == 1);
+        REQUIRE(chain.anchor_queue_.size() == 1);
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.linkQueue_.size() == 1);
+        REQUIRE(chain.link_queue_.size() == 1);
         REQUIRE(chain.links_.size() == 1);
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
@@ -688,9 +688,9 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchorQueue_.size() == 2);  // there are old anchors
+        REQUIRE(chain.anchor_queue_.size() == 2);  // there are old anchors
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.linkQueue_.size() == 5);
+        REQUIRE(chain.link_queue_.size() == 5);
         REQUIRE(chain.links_.size() == 5);
 
         auto anchor = chain.anchors_[headers[1].parent_hash];
@@ -729,9 +729,9 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchorQueue_.size() == 3);  // there are old anchors
+        REQUIRE(chain.anchor_queue_.size() == 3);  // there are old anchors
         REQUIRE(chain.anchors_.size() == 2);
-        REQUIRE(chain.linkQueue_.size() == 8);
+        REQUIRE(chain.link_queue_.size() == 8);
         REQUIRE(chain.links_.size() == 8);
 
         auto anchor = chain.anchors_[headers[7].parent_hash];
@@ -766,9 +766,9 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
 
         REQUIRE(penalty == Penalty::NoPenalty);
         REQUIRE(requestMoreHeaders == true);
-        REQUIRE(chain.anchorQueue_.size() == 4);  // there are old anchors
+        REQUIRE(chain.anchor_queue_.size() == 4);  // there are old anchors
         REQUIRE(chain.anchors_.size() == 1);
-        REQUIRE(chain.linkQueue_.size() == 14);
+        REQUIRE(chain.link_queue_.size() == 14);
         REQUIRE(chain.links_.size() == 14);
 
         auto link3 = chain.links_[headers[3].hash()];

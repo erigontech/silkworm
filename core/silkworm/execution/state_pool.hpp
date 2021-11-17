@@ -26,18 +26,19 @@ struct AdvancedExecutionState;
 
 namespace silkworm {
 
-/// Object pool of EVM execution states.
+// Object pool of EVM execution states.
+// This implementation is not thread-safe; use ThreadSafeExecutionStatePool instead!
 class ExecutionStatePool {
   public:
     ExecutionStatePool();
-    ~ExecutionStatePool();
+    virtual ~ExecutionStatePool();
 
     ExecutionStatePool(const ExecutionStatePool&) = delete;
     ExecutionStatePool& operator=(const ExecutionStatePool&) = delete;
 
-    std::unique_ptr<evmone::AdvancedExecutionState> acquire() noexcept;
+    virtual std::unique_ptr<evmone::AdvancedExecutionState> acquire() noexcept;
 
-    void release(std::unique_ptr<evmone::AdvancedExecutionState> obj) noexcept;
+    virtual void release(std::unique_ptr<evmone::AdvancedExecutionState> obj) noexcept;
 
   private:
     std::stack<std::unique_ptr<evmone::AdvancedExecutionState>> pool_;

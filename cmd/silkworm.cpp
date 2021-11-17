@@ -36,22 +36,27 @@ struct LogConfig {
 void init_logging(LogConfig& config) {
     switch (config.log_level) {
         case 1:
-            SILKWORM_LOG_VERBOSITY(LogLevel::Critical);
+            log::set_verbosity(log::LogLevel::Critical);
             break;
         case 2:
-            SILKWORM_LOG_VERBOSITY(LogLevel::Error);
+            log::set_verbosity(log::LogLevel::Error);
+            ;
             break;
         case 3:
-            SILKWORM_LOG_VERBOSITY(LogLevel::Warn);
+            log::set_verbosity(log::LogLevel::Warn);
+            ;
             break;
         case 4:
-            SILKWORM_LOG_VERBOSITY(LogLevel::Info);
+            log::set_verbosity(log::LogLevel::Info);
+            ;
             break;
         case 5:
-            SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
+            log::set_verbosity(log::LogLevel::Debug);
+            ;
             break;
         case 6:
-            SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
+            log::set_verbosity(log::LogLevel::Trace);
+            ;
             break;
         default:
             /* Should not happen but removes warning about potentially uncovered pattern */
@@ -60,7 +65,6 @@ void init_logging(LogConfig& config) {
 }
 
 int main(int argc, char* argv[]) {
-
     LogConfig log_config;
 
     CLI::App cli("Silkworm node");
@@ -89,13 +93,15 @@ int main(int argc, char* argv[]) {
 
     init_logging(log_config);
 
-    SILKWORM_LOG(LogLevel::Critical) << "This is a critical message" << std::endl;
-    SILKWORM_LOG(LogLevel::Error) << "This is a error message" << std::endl;
-    SILKWORM_LOG(LogLevel::Warn) << "This is a warning message" << std::endl;
-    SILKWORM_LOG(LogLevel::Info) << "This is a info message" << std::endl;
-    SILKWORM_LOG(LogLevel::Debug) << "This is a debug message" << std::endl;
-    SILKWORM_LOG(LogLevel::Trace) << "This is a trace message" << std::endl;
-    SILKWORM_LOG(LogLevel::None) << "This is a none message" << std::endl;
+    log::CriticalChannel() << "This is a critical message";
+    log::ErrorChannel() << "This is a error message";
+    log::WarningChannel() << "This is a warning message";
+    log::InfoChannel() << "This is a info message";
+    log::DebugChannel() << "This is a debug message";
+    log::TraceChannel() << "This is a trace message";
+    SILKWORM_LOG(LogLevel::None) << "This is a none message";
+
+    TraceChannel() << "This is a trace message";
 
     return 0;
 }

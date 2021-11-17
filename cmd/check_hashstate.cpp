@@ -67,12 +67,12 @@ void check(mdbx::txn& txn, Operation operation) {
 
             auto actual_value{target_table.find(db::to_slice(key))};
             if (!actual_value) {
-                SILKWORM_LOG(LogLevel::Error) << "key: " << to_hex(key) << ", does not exist." << std::endl;
+                log::ErrorChannel() << "key: " << to_hex(key) << ", does not exist.";
                 return;
             }
             if (actual_value.value != data.value) {
-                SILKWORM_LOG(LogLevel::Error) << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
-                                              << to_hex(db::from_slice(actual_value.value)) << std::endl;
+                log::ErrorChannel() << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
+                                    << to_hex(db::from_slice(actual_value.value));
                 return;
             }
             data = source_table.to_next(false);
@@ -92,7 +92,7 @@ void check(mdbx::txn& txn, Operation operation) {
 
             auto target_data{target_table.find_multivalue(db::to_slice(key), data.value, /*throw_notfound*/ false)};
             if (!target_data) {
-                SILKWORM_LOG(LogLevel::Error) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
+                log::ErrorChannel() << "Key: " << to_hex(key) << ", does not exist.";
                 return;
             }
             data = source_table.to_next(false);
@@ -108,13 +108,13 @@ void check(mdbx::txn& txn, Operation operation) {
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
             auto actual_value{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
             if (!actual_value) {
-                SILKWORM_LOG(LogLevel::Error) << "Key: " << to_hex(key) << ", does not exist." << std::endl;
+                log::ErrorChannel() << "Key: " << to_hex(key) << ", does not exist.";
                 data = source_table.to_next(false);
                 continue;
             }
             if (actual_value.value != data.value) {
-                SILKWORM_LOG(LogLevel::Error) << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
-                                              << to_hex(db::from_slice(actual_value.value)) << std::endl;
+                log::ErrorChannel() << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
+                                    << to_hex(db::from_slice(actual_value.value));
                 return;
             }
             data = source_table.to_next(false);
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
-    SILKWORM_LOG(LogLevel::Info) << "Checking HashState" << std::endl;
+    log::InfoChannel() << "Checking HashState";
 
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
@@ -138,15 +138,15 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 
-        SILKWORM_LOG(LogLevel::Info) << "Checking Accounts" << std::endl;
+        log::InfoChannel() << "Checking Accounts";
         check(txn, HashAccount);
-        SILKWORM_LOG(LogLevel::Info) << "Checking Storage" << std::endl;
+        log::InfoChannel() << "Checking Storage";
         check(txn, HashStorage);
-        SILKWORM_LOG(LogLevel::Info) << "Checking Code Keys" << std::endl;
+        log::InfoChannel() << "Checking Code Keys";
         check(txn, Code);
-        SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
+        log::InfoChannel() << "All Done!";
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::ErrorChannel() << ex.what();
         return -5;
     }
 }

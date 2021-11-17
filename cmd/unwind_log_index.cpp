@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
         stagedsync::TransactionManager tm{env};
         stagedsync::success_or_throw(stagedsync::unwind_log_index(tm, data_dir.etl().path(), unwind_to));
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::ErrorChannel() << ex.what();
         return -5;
     }
     return 0;

@@ -16,8 +16,8 @@
 
 #include "persisted_chain.hpp"
 
-#include <silkworm/common/log.hpp>
 #include <silkworm/common/as_range.hpp>
+#include <silkworm/common/log.hpp>
 
 namespace silkworm {
 
@@ -76,7 +76,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     //        std::string error_message = "PersistedChain: headers are unexpectedly unsorted, got " +
     //        std::to_string(height) +
     //                                    " after " + std::to_string(highest_bn_);
-    //        SILKWORM_LOG(LogLevel::Error) << error_message;
+    //        log::ErrorChannel() << error_message;
     //        throw std::logic_error(error_message);  // unexpected condition, bug?
     //    }
     if (tx_.read_header(height, hash).has_value()) {
@@ -86,7 +86,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     if (!parent) {
         std::string error_message = "Could not find parent with hash " + to_hex(header.parent_hash) + " and height " +
                                     std::to_string(height - 1) + " for header " + hash.to_hex() + "\n";
-        SILKWORM_LOG(LogLevel::Error) << error_message;
+        log::ErrorChannel() << error_message;
         throw std::logic_error(error_message);
     }
 
@@ -96,7 +96,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
         std::string error_message = "PersistedChain: parent's total difficulty not found with hash " +
                                     to_hex(header.parent_hash) + " and height " + std::to_string(height - 1) +
                                     " for header " + hash.to_hex();
-        SILKWORM_LOG(LogLevel::Error) << error_message;
+        log::ErrorChannel() << error_message;
         throw std::logic_error(error_message);  // unexpected condition, bug?
     }
     auto td = *parent_td + header.difficulty;  // calculated total difficulty of this header
@@ -130,7 +130,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     // Save header
     tx_.write_header(header, true);  // true = with_header_numbers
 
-    SILKWORM_LOG(LogLevel::Trace) << "PersistedChain: saved header height=" << height << " hash=" << hash << "\n";
+    log::TraceChannel() << "PersistedChain: saved header height=" << height << " hash=" << hash << "\n";
 
     previous_hash_ = hash;
 }
@@ -149,7 +149,7 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
         if (!persisted_prev_hash) {
             std::string error_message =
                 "PersistedChain: error reading canonical hash for height " + std::to_string(height - 1);
-            SILKWORM_LOG(LogLevel::Error) << error_message;
+            log::ErrorChannel() << error_message;
             throw std::logic_error(error_message);  // unexpected condition, bug?
         }
         prev_canon_hash = *persisted_prev_hash;
@@ -183,7 +183,7 @@ BlockNum PersistedChain::find_forking_point(Db::ReadWriteAccess::Tx& tx, const B
         if (persisted_canon_hash == std::nullopt) {
             std::string error_message =
                 "PersistedChain: error reading canonical hash for height " + std::to_string(ancestor_height);
-            SILKWORM_LOG(LogLevel::Error) << error_message;
+            log::ErrorChannel() << error_message;
             throw std::logic_error(error_message);  // unexpected condition, bug?
         }
         // loop above terminates when probable_canonical_hash == ancestor_hash, therefore ancestor_height is our forking
@@ -210,7 +210,7 @@ void PersistedChain::update_canonical_chain(BlockNum height, Hash hash) {  // ha
             std::string msg =
                 "PersistedChain: fix canonical chain failed at ancestor=" + std::to_string(ancestor_height) +
                 " hash=" + ancestor_hash.to_hex();
-            SILKWORM_LOG(LogLevel::Error) << msg;
+            log::ErrorChannel() << msg;
             throw std::logic_error(msg);
         }
 

@@ -33,7 +33,7 @@ Collector::~Collector() {
 
 void Collector::flush_buffer() {
     if (buffer_.size()) {
-        SILKWORM_LOG(LogLevel::Info) << "Flushing Buffer File..." << std::endl;
+        log::InfoChannel() << "Flushing Buffer File...";
         buffer_.sort();
 
         /* Build a unique file name to pass FileProvider */
@@ -43,7 +43,7 @@ void Collector::flush_buffer() {
         file_providers_.emplace_back(new FileProvider(new_file_path.string(), file_providers_.size()));
         file_providers_.back()->flush(buffer_);
         buffer_.clear();
-        SILKWORM_LOG(LogLevel::Info) << "Buffer Flushed" << std::endl;
+        log::InfoChannel() << "Buffer Flushed";
     }
 }
 
@@ -67,7 +67,7 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
     const auto overall_size{size()};  // Amount of work
 
     if (!overall_size) {
-        SILKWORM_LOG(LogLevel::Info) << "ETL Load called without data to process" << std::endl;
+        log::InfoChannel() << "ETL Load called without data to process";
         return;
     }
 
@@ -99,8 +99,8 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
             if (!--dummy_counter) {
                 actual_progress += progress_step;
                 dummy_counter = progress_increment_count;
-                SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
-                                             << " << " << actual_progress << "%" << std::endl;
+                log::InfoChannel() << "ETL Load Progress "
+                                   << " << " << actual_progress << "%";
             }
         }
 
@@ -145,8 +145,8 @@ void Collector::load(mdbx::cursor& target, LoadFunc load_func, MDBX_put_flags_t 
         if (!--dummy_counter) {
             actual_progress += progress_step;
             dummy_counter = progress_increment_count;
-            SILKWORM_LOG(LogLevel::Info) << "ETL Load Progress "
-                                         << " << " << actual_progress << "%" << std::endl;
+            log::InfoChannel() << "ETL Load Progress "
+                               << " << " << actual_progress << "%";
         }
 
         // From the provider which has served the current key

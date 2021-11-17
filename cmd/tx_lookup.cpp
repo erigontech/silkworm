@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
         stagedsync::success_or_throw(stagedsync::stage_tx_lookup(tm, data_dir.etl().path()));
 
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::ErrorChannel() << ex.what();
         return -5;
     }
     return 0;

@@ -20,8 +20,8 @@
 #include <silkworm/common/directories.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/db/access_layer.hpp>
-#include <silkworm/stagedsync/stagedsync.hpp>
 #include <silkworm/db/stages.hpp>
+#include <silkworm/stagedsync/stagedsync.hpp>
 
 int main(int argc, char* argv[]) {
     using namespace silkworm;
@@ -47,13 +47,13 @@ int main(int argc, char* argv[]) {
 
     auto batch_size{parse_size(batch_size_str)};
     if (!batch_size.has_value()) {
-        SILKWORM_LOG(LogLevel::Error) << "Invalid --batch value provided : " << batch_size_str << std::endl;
+        log::ErrorChannel() << "Invalid --batch value provided : " << batch_size_str;
         return -3;
     }
 
-    SILKWORM_LOG(LogLevel::Info) << "Starting block execution. DB: " << chaindata << std::endl;
+    log::InfoChannel() << "Starting block execution. DB: " << chaindata;
 
-    SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
+    log::set_verbosity(log::LogLevel::Debug);
 
     uint64_t prune_from{0};
     auto data_dir{DataDirectory::from_chaindata(chaindata)};
@@ -65,13 +65,11 @@ int main(int argc, char* argv[]) {
 
     if (prune) {
         prune_from = db::stages::read_stage_progress(*tm, db::stages::kSendersKey) - blocks_to_keep;
-
     }
     auto res{stagedsync::stage_execution(tm, data_dir.etl().path(), batch_size.value(), prune_from)};
 
     if (res != stagedsync::StageResult::kSuccess) {
-        SILKWORM_LOG(LogLevel::Info) << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res)
-                                     << std::endl;
+        log::InfoChannel() << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res);
     }
     return magic_enum::enum_integer<stagedsync::StageResult>(res);
 }

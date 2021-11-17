@@ -16,9 +16,7 @@
 
 #include "log.hpp"
 
-#include <iostream>
 #include <regex>
-#include <sstream>
 #include <string>
 
 #include <catch2/catch.hpp>
@@ -26,8 +24,11 @@
 namespace silkworm {
 
 namespace {
+
     std::ostringstream stream1, stream2;
-    const std::string kInfix(R"(\[\d\d-\d\d\|\d\d:\d\d:\d\d\.\d{3}\] )");
+
+    const std::regex colorPattern("(\\\x1b\\[[0-9;]{1,}m)");
+    const std::string kInfix(R"(\[\d\d-\d\d\|\d\d:\d\d:\d\d\.\d{3} [A-Z]{3}\])");
 
     bool test_log(std::string prefix, std::string infix, std::string suffix) {
         std::string string1(stream1.str());
@@ -39,9 +40,12 @@ namespace {
         if (string1 != string2) {
             return false;
         }
-
-        const std::string pattern = prefix + infix + suffix;
+        if (string1.empty() && suffix.empty()) {
+            return true;
+        }
+        const std::string pattern = " " + prefix + " " + infix + " " + suffix;
         const std::regex rx(pattern);
+        string1 = std::regex_replace(string1, colorPattern, "");
         return std::regex_search(string1, rx);
     }
 }  // namespace
@@ -50,23 +54,23 @@ TEST_CASE("Logging") {
     SILKWORM_LOG_STREAMS(stream1, stream2);
 
     // test true branch of macro
-    SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
-    SILKWORM_LOG(LogLevel::Critical) << "LogCritical" << std::endl;
-    CHECK(test_log("CRIT ", kInfix, "LogCritical"));
-    SILKWORM_LOG(LogLevel::Error) << "LogError" << std::endl;
+    log::set_verbosity(log::LogLevel::Trace);
+    log::CriticalChannel() << "LogCritical";
+    CHECK(test_log(" CRIT", kInfix, "LogCritical"));
+    log::ErrorChannel() << "LogError";
     CHECK(test_log("ERROR", kInfix, "LogError"));
-    SILKWORM_LOG(LogLevel::Warn) << "LogWarn" << std::endl;
-    CHECK(test_log("WARN ", kInfix, "LogWarn"));
-    SILKWORM_LOG(LogLevel::Info) << "LogInfo" << std::endl;
-    CHECK(test_log("INFO ", kInfix, "LogInfo"));
-    SILKWORM_LOG(LogLevel::Debug) << "LogDebug" << std::endl;
+    log::WarningChannel() << "LogWarn";
+    CHECK(test_log(" WARN", kInfix, "LogWarn"));
+    log::InfoChannel() << "LogInfo";
+    CHECK(test_log(" INFO", kInfix, "LogInfo"));
+    log::DebugChannel() << "LogDebug";
     CHECK(test_log("DEBUG", kInfix, "LogDebug"));
-    SILKWORM_LOG(LogLevel::Trace) << "LogTrace" << std::endl;
+    log::TraceChannel() << "LogTrace";
     CHECK(test_log("TRACE", kInfix, "LogTrace"));
 
     // test false branch of macro
-    SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
-    SILKWORM_LOG(LogLevel::Trace) << "LogTrace" << std::endl;
+    log::set_verbosity(log::LogLevel::Debug);
+    log::TraceChannel() << "LogTrace";
     CHECK(test_log("", "", ""));
 }
 

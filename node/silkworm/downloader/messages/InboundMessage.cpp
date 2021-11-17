@@ -36,8 +36,8 @@ std::shared_ptr<InboundMessage> InboundBlockRequestMessage::make(const sentry::I
     else if (raw_message.id() == sentry::MessageId::GET_BLOCK_BODIES_66)
         message = std::make_shared<InboundGetBlockBodies>(raw_message, db, sentry);
     else
-        SILKWORM_LOG(LogLevel::Warn) << "InboundMessage " << sentry::MessageId_Name(raw_message.id())
-                                     << " received but ignored\n";
+        log::WarningChannel() << "InboundMessage " << sentry::MessageId_Name(raw_message.id())
+                              << " received but ignored\n";
     return message;
 }
 
@@ -51,8 +51,8 @@ std::shared_ptr<InboundMessage> InboundBlockAnnouncementMessage::make(const sent
     else if (raw_message.id() == sentry::MessageId::BLOCK_HEADERS_66)
         message = std::make_shared<InboundBlockHeaders>(raw_message, wc, sentry);
     else
-        SILKWORM_LOG(LogLevel::Warn) << "InboundMessage " << sentry::MessageId_Name(raw_message.id())
-                                     << " received but ignored\n";
+        log::WarningChannel() << "InboundMessage " << sentry::MessageId_Name(raw_message.id())
+                              << " received but ignored\n";
     return message;
 }
 

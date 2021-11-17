@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    SILKWORM_LOG(LogLevel::Info) << "Regenerating account & storage tries. DB: " << chaindata << std::endl;
+    log::InfoChannel() << "Regenerating account & storage tries. DB: " << chaindata;
 
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
@@ -52,11 +52,11 @@ int main(int argc, char* argv[]) {
         auto txn{env.start_write()};
         evmc::bytes32 state_root{trie::regenerate_intermediate_hashes(txn, data_dir.etl().path().string().c_str())};
 
-        SILKWORM_LOG(LogLevel::Info) << "State root " << to_hex(state_root) << std::endl;
+        log::InfoChannel() << "State root " << to_hex(state_root);
         txn.commit();
 
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::ErrorChannel() << ex.what();
         return -5;
     }
 

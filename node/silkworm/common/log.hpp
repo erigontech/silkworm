@@ -17,30 +17,26 @@
 #ifndef SILKWORM_COMMON_LOG_HPP_
 #define SILKWORM_COMMON_LOG_HPP_
 
-#include <mutex>
+#include <sstream>
+#include <filesystem>
 
 #include <silkworm/common/tee.hpp>
 
-namespace silkworm {
+namespace silkworm::log {
 
-// stream labeled logging output - e.g.
-//	  SILKWORM_LOG(LogInfo) << "All your " << num_bases << " base are belong to us\n";
-//
-#define SILKWORM_LOG(level_)                   \
-    if ((level_) < silkworm::log_verbosity_) { \
-    } else                                     \
-        silkworm::log_(level_) << " "
+// available verbosity levels
+enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, None };
 
-// change the logging verbosity level - default level is LogInfo
-//
-#define SILKWORM_LOG_VERBOSITY(level_) (silkworm::log_verbosity_ = (level_))
+//! \brief Sets logging verbosity
+void set_verbosity(LogLevel level);
+
+//! \brief Sets a file path where to tee log messages
+void set_tee(std::filesystem::path file);
 
 // change if thread is logged (true) or not (false) - default is false
 //
 #define SILKWORM_LOG_THREAD(log_thread_) (silkworm::log_thread_enabled_ = (log_thread_))
 
-// available verbosity levels
-enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, None };
 
 // change the logging output streams - default is (cerr, null_stream())
 //
@@ -49,28 +45,48 @@ enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, None };
 // silence
 std::ostream& null_stream();
 
-//
-// Below are for access via macros ONLY.
-// Placing them in detail namespace prevents use of macros in nested namespaces of silkworm :(
-//
-extern LogLevel log_verbosity_;
-extern bool log_thread_enabled_;
+
 void log_set_streams_(std::ostream& o1, std::ostream& o2);
-class log_ {
+
+class LogBufferBase {
   public:
-    explicit log_(LogLevel level) : level_(level) { log_mtx_.lock(); }
-    ~log_() { log_mtx_.unlock(); }
-    std::ostream& header_(LogLevel);
-    template <class T>
-    std::ostream& operator<<(const T& message) {
-        return header_(level_) << message;
+    explicit LogBufferBase(LogLevel level);
+    ~LogBufferBase() {
+        flush();
     }
 
-  private:
+    // Accumulators
+    template <class T>
+    inline void append(T const& t) {
+        ss_ << t;
+    }
+    template <class T>
+    LogBufferBase& operator<<(T const& t) {
+        append(t);
+        return *this;
+    }
+
+  protected:
+    void flush();
     LogLevel level_;
-    static std::mutex log_mtx_;
+    std::stringstream ss_;
 };
 
-}  // namespace silkworm
+template <LogLevel level>
+class LogBuffer : public LogBufferBase {
+  public:
+    LogBuffer() : LogBufferBase(level){};
+};
+
+using TraceChannel = LogBuffer<LogLevel::Trace>;
+using DebugChannel = LogBuffer<LogLevel::Debug>;
+using InfoChannel = LogBuffer<LogLevel::Info>;
+using WarningChannel = LogBuffer<LogLevel::Warn>;
+using ErrorChannel = LogBuffer<LogLevel::Error>;
+using CriticalChannel = LogBuffer<LogLevel::Critical>;
+using MessageChannel = LogBuffer<LogLevel::None>;
+
+
+}  // namespace silkworm::log
 
 #endif  // !SILKWORM_COMMON_LOG_HPP_

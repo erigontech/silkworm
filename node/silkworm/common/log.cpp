@@ -20,33 +20,9 @@
 
 #include <silkworm/common/log.hpp>
 
-namespace silkworm {
+#include "terminal.hpp"
 
-static teestream log_streams_{std::cerr, null_stream()};
-
-LogLevel log_verbosity_{LogLevel::Info};
-bool log_thread_enabled_{false};
-
-static constexpr char const kLogTags_[7][6] = {
-    "TRACE", "DEBUG", " INFO", " WARN", "ERROR", " CRIT", /*none = silence*/ "     ",
-};
-
-// Log to one or two output streams - typically the console and optional log file.
-void log_set_streams_(std::ostream& o1, std::ostream& o2) { log_streams_.set_streams(o1.rdbuf(), o2.rdbuf()); }
-
-std::mutex log_::log_mtx_;
-
-std::ostream& log_::header_(LogLevel level) {
-    absl::Time now{absl::Now()};
-
-    log_streams_ << kLogTags_[static_cast<int>(level)] << " ["
-                 << absl::FormatTime("%m-%d|%H:%M:%E3S", now, absl::LocalTimeZone()) << "]";
-    //    log_streams_ << kLogTags_[static_cast<int>(level)] << " [" << now << "]";
-    if (log_thread_enabled_) {
-        log_streams_ << " " << std::this_thread::get_id();
-    }
-    return log_streams_;
-}
+namespace silkworm::log {
 
 std::ostream& null_stream() {
     static struct null_buf : public std::streambuf {
@@ -58,4 +34,55 @@ std::ostream& null_stream() {
     return null_strm;
 }
 
-}  // namespace silkworm
+static TeeStream log_streams_{std::clog, null_stream()};
+
+LogLevel log_verbosity_{LogLevel::Info};
+bool log_thread_enabled_{false};
+bool log_utc_{false};
+
+// Log to one or two output streams - typically the console and optional log file.
+void log_set_streams_(std::ostream& o1, std::ostream& o2) { log_streams_.set_streams(o1.rdbuf(), o2.rdbuf()); }
+void set_verbosity(LogLevel level) { log_verbosity_ = level; }
+
+static inline std::pair<const char*, const char*> get_channel_settings(LogLevel level) {
+    switch (level) {
+        case LogLevel::Trace:
+            return {"TRACE", kColorCoal};
+        case LogLevel::Debug:
+            return {"DEBUG", kBackgroundPurple};
+        case LogLevel::Info:
+            return {" INFO", kColorGreen};
+        case LogLevel::Warn:
+            return {" WARN", kColorOrangeHigh};
+        case LogLevel::Error:
+            return {"ERROR", kColorRed};
+        case LogLevel::Critical:
+            return {" CRIT", kBackgroundRed};
+        default:
+            return {"     ", kColorReset};
+    }
+}
+
+LogBufferBase::LogBufferBase(LogLevel level) : level_(level) {
+    auto [prefix, color] = get_channel_settings(level);
+    // Prefix
+    ss_ << kColorReset << " " << color << prefix << kColorReset << " ";
+
+    // TimeStamp
+    static const absl::TimeZone tz{log_utc_ ? absl::LocalTimeZone() : absl::UTCTimeZone()};
+    absl::Time now{absl::Now()};
+    ss_ << kColorCyan << "[" << absl::FormatTime("%m-%d|%H:%M:%E3S", now, tz) << " " << tz << "] " << kColorReset;
+
+    // ThreadId
+    if (log_thread_enabled_) {
+        ss_ << " [" << std::this_thread::get_id() << "] ";
+    }
+}
+
+void LogBufferBase::flush() {
+    if (level_ >= log_verbosity_) {
+        log_streams_ << ss_.str() << std::endl;
+    }
+}
+
+}  // namespace silkworm::log

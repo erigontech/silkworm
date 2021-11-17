@@ -29,7 +29,7 @@ BlockProvider::BlockProvider(SentryClient& sentry, Db::ReadOnlyAccess db_access,
 
 BlockProvider::~BlockProvider() {
     stop();
-    SILKWORM_LOG(LogLevel::Error) << "BlockProvider destroyed\n";
+    log::ErrorChannel() << "BlockProvider destroyed\n";
 }
 
 void BlockProvider::send_status() {
@@ -39,19 +39,19 @@ void BlockProvider::send_status() {
     rpc::SetStatus set_status(chain_identity_, head_hash, head_td);
     sentry_.exec_remotely(set_status);
 
-    SILKWORM_LOG(LogLevel::Trace) << "BlockProvider, send_status ok\n";
+    log::TraceChannel() << "BlockProvider, send_status ok\n";
     sentry::SetStatusReply reply = set_status.reply();
 
     sentry::Protocol supported_protocol = reply.protocol();
     if (supported_protocol != sentry::Protocol::ETH66) {
-        SILKWORM_LOG(LogLevel::Critical) << "BlockProvider: sentry do not support eth/66 protocol, is_stopping...\n";
+        log::CriticalChannel() << "BlockProvider: sentry do not support eth/66 protocol, is_stopping...\n";
         sentry_.stop();
         throw BlockProviderException("BlockProvider exception, cause: sentry do not support eth/66 protocol");
     }
 }
 
 void BlockProvider::process_message(std::shared_ptr<InboundMessage> message) {
-    SILKWORM_LOG(LogLevel::Info) << "BlockProvider processing message " << *message << "\n";
+    log::InfoChannel() << "BlockProvider processing message " << *message << "\n";
 
     message->execute();
 }
@@ -69,10 +69,9 @@ void BlockProvider::execution_loop() {
             process_message(message);
         }
 
-        SILKWORM_LOG(LogLevel::Warn) << "BlockProvider execution_loop is_stopping...\n";
+        log::WarningChannel() << "BlockProvider execution_loop is_stopping...\n";
     } catch (const std::exception& e) {
-        SILKWORM_LOG(LogLevel::Error) << "BlockProvider execution_loop is_stopping due to exception: " << e.what()
-                                      << "\n";
+        log::ErrorChannel() << "BlockProvider execution_loop is_stopping due to exception: " << e.what() << "\n";
         stop();
         sentry_.stop();
     }

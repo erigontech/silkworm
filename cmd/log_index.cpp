@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-
-
 #include <CLI/CLI.hpp>
 
 #include <silkworm/common/directories.hpp>
@@ -60,7 +58,7 @@ int main(int argc, char* argv[]) {
         stagedsync::TransactionManager tm{env};
         stagedsync::success_or_throw(stagedsync::stage_log_index(tm, data_dir.etl().path()));
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::ErrorChannel() << ex.what();
         return -5;
     }
     return 0;

@@ -72,27 +72,37 @@ as compiler intrinsics to swap bytes in 16-bit, 32-bit, and 64-bit integers resp
 namespace silkworm::endian {
 
 #if SILKWORM_BYTE_ORDER == SILKWORM_LITTLE_ENDIAN
-struct le {
-    static inline uint16_t uint16(uint16_t value) noexcept { return value; }
-    static inline uint32_t uint32(uint32_t value) noexcept { return value; }
-    static inline uint64_t uint64(uint64_t value) noexcept { return value; }
-};
-struct be {
-    static inline uint16_t uint16(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
-    static inline uint32_t uint32(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
-    static inline uint64_t uint64(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
-};
+namespace le {
+    template <class UnsignedInteger>
+    static inline UnsignedInteger load(UnsignedInteger value) noexcept {
+        return value;
+    }
+}  // namespace le
+namespace be {
+    static inline uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
+    static inline uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
+    static inline uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+
+    template <unsigned N>
+    static inline intx::uint<N> load(const intx::uint<N>& value) noexcept {
+        return intx::bswap(value);
+    }
+}  // namespace be
+
 #elif SILKWORM_BYTE_ORDER == SILKWORM_BIG_ENDIAN
-struct le {
-    static inline uint16_t uint16(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
-    static inline uint32_t uint32(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
-    static inline uint64_t uint64(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
-};
-struct be {
-    static inline uint16_t uint16(uint16_t value) noexcept { return value; }
-    static inline uint32_t uint32(uint32_t value) noexcept { return value; }
-    static inline uint64_t uint64(uint64_t value) noexcept { return value; }
-};
+namespace le {
+    static inline uint16_t load(uint16_t value) noexcept { return SILKWORM_BSWAP16(value); }
+    static inline uint32_t load(uint32_t value) noexcept { return SILKWORM_BSWAP32(value); }
+    static inline uint64_t load(uint64_t value) noexcept { return SILKWORM_BSWAP64(value); }
+    // intx::uint not defined here since its words are little-endian.
+    // In any case, Silkworm is currently untested on big-endian plaforms.
+}  // namespace le
+namespace be {
+    static inline uint16_t load(uint16_t value) noexcept { return value; }
+    static inline uint32_t load(uint32_t value) noexcept { return value; }
+    static inline uint64_t load(uint64_t value) noexcept { return value; }
+}  // namespace be
+
 #else
 #error "byte order not supported"
 #endif
@@ -101,59 +111,59 @@ struct be {
 inline uint16_t load_big_u16(const uint8_t* bytes) noexcept {
     uint16_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return be::uint16(x);
+    return be::load(x);
 }
 
 // Similar to boost::endian::load_big_u32
 inline uint32_t load_big_u32(const uint8_t* bytes) noexcept {
     uint32_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return be::uint32(x);
+    return be::load(x);
 }
 
 // Similar to boost::endian::load_big_u64
 inline uint64_t load_big_u64(const uint8_t* bytes) noexcept {
     uint64_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return be::uint64(x);
+    return be::load(x);
 }
 
 // Similar to boost::endian::load_little_u16
 inline uint16_t load_little_u16(const uint8_t* bytes) noexcept {
     uint16_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return le::uint16(x);
+    return le::load(x);
 }
 
 // Similar to boost::endian::load_little_u32
 inline uint32_t load_little_u32(const uint8_t* bytes) noexcept {
     uint32_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return le::uint32(x);
+    return le::load(x);
 }
 
 // Similar to boost::endian::load_little_u64
 inline uint64_t load_little_u64(const uint8_t* bytes) noexcept {
     uint64_t x;
     std::memcpy(&x, bytes, sizeof(x));
-    return le::uint64(x);
+    return le::load(x);
 }
 
 // Similar to boost::endian::store_big_u16
 inline void store_big_u16(uint8_t* bytes, const uint16_t value) {
-    uint16_t x{be::uint16(value)};
+    uint16_t x{be::load(value)};
     std::memcpy(bytes, &x, sizeof(x));
 }
 
 // Similar to boost::endian::store_big_u32
 inline void store_big_u32(uint8_t* bytes, const uint32_t value) {
-    uint32_t x{be::uint32(value)};
+    uint32_t x{be::load(value)};
     std::memcpy(bytes, &x, sizeof(x));
 }
 
 // Similar to boost::endian::store_big_u64
 inline void store_big_u64(uint8_t* bytes, const uint64_t value) {
-    uint64_t x{be::uint64(value)};
+    uint64_t x{be::load(value)};
     std::memcpy(bytes, &x, sizeof(x));
 }
 
@@ -162,7 +172,7 @@ inline void store_big_u64(uint8_t* bytes, const uint64_t value) {
 //! \return A string of bytes
 //! \remarks See Erigon TxIndex value
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-Bytes to_big_compact(const uint64_t value);
+Bytes to_big_compact(uint64_t value);
 
 //! \brief Transforms a uint256 stored in memory with native endianness to it's compacted big endian byte form
 //! \param [in] value : the value to be transformed
@@ -171,19 +181,32 @@ Bytes to_big_compact(const uint64_t value);
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
 Bytes to_big_compact(const intx::uint256& value);
 
-//! \brief Parses uint64_t from a compacted big endian byte form
-//! \param [in] data : byte view of memory allocation for compacted value. Length must be <= sizeof(uint64_t)
-//! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (not compact)
-//! \return A uint64_t with native endianness; std::nullopt if data is invalid
+//! \brief Parses unsigned integer from a compacted big endian byte form
+//! \param [in] data : byte view of compacted value. Length must be <= sizeof(UnsignedInteger)
+//! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (i.e. not compact)
+//! \return The corresponding integer with native endianness; std::nullopt if data is invalid
 //! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-std::optional<uint64_t> from_big_compact_u64(const ByteView& data, bool allow_leading_zeros = false);
+template <typename UnsignedInteger>
+static std::optional<UnsignedInteger> from_big_compact(ByteView data, bool allow_leading_zeros = false) {
+    if (data.length() > sizeof(UnsignedInteger)) {
+        return std::nullopt;
+    }
 
-//! \brief Parses uint256 from a compacted big endian byte form
-//! \param [in] data : byte view of memory allocation for compacted value. Length must be <= sizeof(uint256)
-//! \param [in] allow_leading_zeros : when false, return std::nullopt if data starts with a 0 byte (not compact)
-//! \return A uint256 with native endianness; std::nullopt if data is invalid
-//! \remarks A "compact" big endian form strips leftmost bytes valued to zero
-std::optional<intx::uint256> from_big_compact_u256(const ByteView& data, bool allow_leading_zeros = false);
+    UnsignedInteger x{0};
+
+    if (data.empty()) {
+        return x;
+    }
+
+    if (data[0] == 0 && !allow_leading_zeros) {
+        return std::nullopt;
+    }
+
+    auto* ptr{reinterpret_cast<uint8_t*>(&x)};
+    std::memcpy(ptr + (sizeof(UnsignedInteger) - data.length()), &data[0], data.length());
+
+    return be::load(x);
+}
 
 }  // namespace silkworm::endian
 

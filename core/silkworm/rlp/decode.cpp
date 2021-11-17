@@ -49,7 +49,7 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         if (from.length() < len_of_len) {
             return {h, DecodingResult::kInputTooShort};
         }
-        const auto len{endian::from_big_compact_u64(from.substr(0, len_of_len))};
+        const auto len{endian::from_big_compact<uint64_t>(from.substr(0, len_of_len))};
         if (len == std::nullopt) {
             return {h, DecodingResult::kLeadingZero};
         }
@@ -69,7 +69,7 @@ std::pair<Header, DecodingResult> decode_header(ByteView& from) noexcept {
         if (from.length() < len_of_len) {
             return {h, DecodingResult::kInputTooShort};
         }
-        const auto len{endian::from_big_compact_u64(from.substr(0, len_of_len))};
+        const auto len{endian::from_big_compact<uint64_t>(from.substr(0, len_of_len))};
         if (len == std::nullopt) {
             return {h, DecodingResult::kLeadingZero};
         }
@@ -119,8 +119,8 @@ DecodingResult decode(ByteView& from, bool& to) noexcept {
     return DecodingResult::kOk;
 }
 
-template <>
-DecodingResult decode(ByteView& from, uint64_t& to) noexcept {
+template <typename UnsignedInteger>
+static DecodingResult decode_integer(ByteView& from, UnsignedInteger& to) noexcept {
     const auto [h, err]{decode_header(from)};
     if (err != DecodingResult::kOk) {
         return err;
@@ -128,37 +128,25 @@ DecodingResult decode(ByteView& from, uint64_t& to) noexcept {
     if (h.list) {
         return DecodingResult::kUnexpectedList;
     }
-    if (h.payload_length > sizeof(uint64_t)) {
+    if (h.payload_length > sizeof(UnsignedInteger)) {
         return DecodingResult::kOverflow;
     }
-    const std::optional<uint64_t> res{endian::from_big_compact_u64(from.substr(0, h.payload_length))};
+    const auto res{endian::from_big_compact<UnsignedInteger>(from.substr(0, h.payload_length))};
     if (res == std::nullopt) {
         return DecodingResult::kLeadingZero;
     }
     to = *res;
     from.remove_prefix(h.payload_length);
     return DecodingResult::kOk;
+}
+
+template <>
+DecodingResult decode(ByteView& from, uint64_t& to) noexcept {
+    return decode_integer<uint64_t>(from, to);
 }
 
 template <>
 DecodingResult decode(ByteView& from, intx::uint256& to) noexcept {
-    const auto [h, err]{decode_header(from)};
-    if (err != DecodingResult::kOk) {
-        return err;
-    }
-    if (h.list) {
-        return DecodingResult::kUnexpectedList;
-    }
-    if (h.payload_length > sizeof(intx::uint256)) {
-        return DecodingResult::kOverflow;
-    }
-    const std::optional<intx::uint256> res{endian::from_big_compact_u256(from.substr(0, h.payload_length))};
-    if (res == std::nullopt) {
-        return DecodingResult::kLeadingZero;
-    }
-    to = *res;
-    from.remove_prefix(h.payload_length);
-    return DecodingResult::kOk;
+    return decode_integer<intx::uint256>(from, to);
 }
-
 }  // namespace silkworm::rlp

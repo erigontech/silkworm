@@ -97,7 +97,7 @@ std::pair<uint64_t, rlp::DecodingResult> extract_incarnation(ByteView encoded) {
     if (field_set & 4) {
         // Incarnation has been found.
         uint8_t len = encoded[pos++];
-        const std::optional<uint64_t> incarnation{endian::from_big_compact_u64(encoded.substr(pos, len))};
+        const std::optional<uint64_t> incarnation{endian::from_big_compact<uint64_t>(encoded.substr(pos, len))};
         if (incarnation == std::nullopt) {
             return {0, rlp::DecodingResult::kOverflow};
         }
@@ -120,7 +120,7 @@ std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView enc
         if (encoded.length() < pos + len) {
             return {a, rlp::DecodingResult::kInputTooShort};
         }
-        const std::optional<uint64_t> nonce{endian::from_big_compact_u64(encoded.substr(pos, len))};
+        const std::optional<uint64_t> nonce{endian::from_big_compact<uint64_t>(encoded.substr(pos, len))};
         if (nonce == std::nullopt) {
             return {a, rlp::DecodingResult::kOverflow};
         }
@@ -143,7 +143,7 @@ std::pair<Account, rlp::DecodingResult> decode_account_from_storage(ByteView enc
         if (encoded.length() < pos + len) {
             return {a, rlp::DecodingResult::kInputTooShort};
         }
-        const std::optional<uint64_t> incarnation{endian::from_big_compact_u64(encoded.substr(pos, len))};
+        const std::optional<uint64_t> incarnation{endian::from_big_compact<uint64_t>(encoded.substr(pos, len))};
         if (incarnation == std::nullopt) {
             return {a, rlp::DecodingResult::kOverflow};
         }

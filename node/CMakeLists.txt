@@ -15,7 +15,7 @@
 ]]
 
 find_package(absl CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED)
+find_package(Boost CONFIG REQUIRED thread)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 
@@ -47,8 +47,8 @@ target_include_directories(silkworm_node PUBLIC
         ${SILKWORM_MAIN_DIR}/magic_enum/include)
 
 set(SILKWORM_NODE_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring
-        nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf)
-set(SILKWORM_NODE_PRIVATE_LIBS cborcpp)
+        nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf Boost::thread)
+set(SILKWORM_NODE_PRIVATE_LIBS cborcpp evmone)
 
 if(MSVC)
   list(APPEND SILKWORM_NODE_PRIVATE_LIBS ntdll.lib)

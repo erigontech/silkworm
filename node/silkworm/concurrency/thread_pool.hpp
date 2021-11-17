@@ -60,13 +60,16 @@ class thread_pool {
     /**
      * @brief Construct a new thread pool.
      *
-     * @param _thread_count The number of threads to use. The default value is the total number of hardware threads
+     * @param thread_count The number of threads to use. The default value is the total number of hardware threads
      * available, as reported by the implementation. With a hyperthreaded CPU, this will be twice the number of CPU
-     * cores. If the argument is zero, the default value will be used instead.
+     * cores.
+     * @param stack_size The stack size to set for each created thread. If the argument is zero, the default OS value
+     * will be used instead.
      */
-    thread_pool(const ui32& _thread_count = std::thread::hardware_concurrency())
-        : thread_count(_thread_count ? _thread_count : std::thread::hardware_concurrency()),
-          threads(new boost::thread[_thread_count ? _thread_count : std::thread::hardware_concurrency()]) {
+    explicit thread_pool(ui32 thread_count = std::thread::hardware_concurrency(), std::size_t stack_size = 0)
+        : thread_count_(thread_count ? thread_count : 1),
+          threads_(new boost::thread[thread_count_]),
+          stack_size_(stack_size) {
         create_threads();
     }
 
@@ -76,7 +79,7 @@ class thread_pool {
      */
     ~thread_pool() {
         wait_for_tasks();
-        running = false;
+        running_ = false;
         destroy_threads();
     }
 
@@ -90,8 +93,8 @@ class thread_pool {
      * @return The number of queued tasks.
      */
     ui32 get_tasks_queued() const {
-        const std::scoped_lock lock(queue_mutex);
-        return static_cast<ui32>(tasks.size());
+        const std::scoped_lock lock(queue_mutex_);
+        return static_cast<ui32>(tasks_.size());
     }
 
     /**
@@ -99,21 +102,21 @@ class thread_pool {
      *
      * @return The number of running tasks.
      */
-    ui32 get_tasks_running() const { return tasks_total - get_tasks_queued(); }
+    ui32 get_tasks_running() const { return tasks_total_ - get_tasks_queued(); }
 
     /**
      * @brief Get the total number of unfinished tasks - either still in the queue, or running in a thread.
      *
      * @return The total number of tasks.
      */
-    ui32 get_tasks_total() const { return tasks_total; }
+    ui32 get_tasks_total() const { return tasks_total_; }
 
     /**
      * @brief Get the number of threads in the pool.
      *
      * @return The number of threads.
      */
-    ui32 get_thread_count() const { return thread_count; }
+    ui32 get_thread_count() const { return thread_count_; }
 
     /**
      * @brief Parallelize a loop by splitting it into blocks, submitting each block separately to the thread pool, and
@@ -147,7 +150,9 @@ class thread_pool {
             the_first_index = temp;
         }
         last_index--;
-        if (num_blocks == 0) num_blocks = thread_count;
+        if (num_blocks == 0) {
+            num_blocks = thread_count_;
+        }
         ui64 total_size = last_index - the_first_index + 1;
         ui64 block_size = total_size / num_blocks;
         if (block_size == 0) {
@@ -177,10 +182,10 @@ class thread_pool {
      */
     template <typename F>
     void push_task(const F& task) {
-        tasks_total++;
+        ++tasks_total_;
         {
-            const std::scoped_lock lock(queue_mutex);
-            tasks.push(std::function<void()>(task));
+            const std::scoped_lock lock(queue_mutex_);
+            tasks_.push(std::function<void()>(task));
         }
     }
 
@@ -206,20 +211,20 @@ class thread_pool {
      * were waiting in the queue before the pool was reset will then be executed by the new threads. If the pool was
      * paused before resetting it, the new pool will be paused as well.
      *
-     * @param _thread_count The number of threads to use. The default value is the total number of hardware threads
+     * @param thread_count The number of threads to use. The default value is the total number of hardware threads
      * available, as reported by the implementation. With a hyperthreaded CPU, this will be twice the number of CPU
-     * cores. If the argument is zero, the default value will be used instead.
+     * cores.
      */
-    void reset(const ui32& _thread_count = std::thread::hardware_concurrency()) {
+    void reset(ui32 thread_count = std::thread::hardware_concurrency()) {
         bool was_paused = paused;
         paused = true;
         wait_for_tasks();
-        running = false;
+        running_ = false;
         destroy_threads();
-        thread_count = _thread_count ? _thread_count : std::thread::hardware_concurrency();
-        threads.reset(new boost::thread[thread_count]);
+        thread_count_ = thread_count ? thread_count : 1;
+        threads_.reset(new boost::thread[thread_count_]);
         paused = was_paused;
-        running = true;
+        running_ = true;
         create_threads();
     }
 
@@ -291,7 +296,7 @@ class thread_pool {
     void wait_for_tasks() {
         while (true) {
             if (!paused) {
-                if (tasks_total == 0) break;
+                if (tasks_total_ == 0) break;
             } else {
                 if (get_tasks_running() == 0) break;
             }
@@ -326,8 +331,12 @@ class thread_pool {
      * @brief Create the threads in the pool and assign a worker to each thread.
      */
     void create_threads() {
-        for (ui32 i = 0; i < thread_count; i++) {
-            threads[i] = boost::thread(&thread_pool::worker, this);
+        boost::thread::attributes attrs;
+        if (stack_size_) {
+            attrs.set_stack_size(stack_size_);
+        }
+        for (ui32 i = 0; i < thread_count_; i++) {
+            threads_[i] = boost::thread(attrs, boost::bind(&thread_pool::worker, this));
         }
     }
 
@@ -335,8 +344,8 @@ class thread_pool {
      * @brief Destroy the threads in the pool by joining them.
      */
     void destroy_threads() {
-        for (ui32 i = 0; i < thread_count; i++) {
-            threads[i].join();
+        for (ui32 i = 0; i < thread_count_; i++) {
+            threads_[i].join();
         }
     }
 
@@ -347,12 +356,12 @@ class thread_pool {
      * @return true if a task was found, false if the queue is empty.
      */
     bool pop_task(std::function<void()>& task) {
-        const std::scoped_lock lock(queue_mutex);
-        if (tasks.empty())
+        const std::scoped_lock lock(queue_mutex_);
+        if (tasks_.empty()) {
             return false;
-        else {
-            task = std::move(tasks.front());
-            tasks.pop();
+        } else {
+            task = std::move(tasks_.front());
+            tasks_.pop();
             return true;
         }
     }
@@ -373,11 +382,11 @@ class thread_pool {
      * executes them, as long as the atomic variable running is set to true.
      */
     void worker() {
-        while (running) {
+        while (running_) {
             std::function<void()> task;
             if (!paused && pop_task(task)) {
                 task();
-                tasks_total--;
+                --tasks_total_;
             } else {
                 sleep_or_yield();
             }
@@ -391,135 +400,42 @@ class thread_pool {
     /**
      * @brief A mutex to synchronize access to the task queue by different threads.
      */
-    mutable std::mutex queue_mutex = {};
+    mutable std::mutex queue_mutex_ = {};
 
     /**
      * @brief An atomic variable indicating to the workers to keep running. When set to false, the workers permanently
      * stop working.
      */
-    std::atomic<bool> running = true;
+    std::atomic<bool> running_ = true;
 
     /**
      * @brief A queue of tasks to be executed by the threads.
      */
-    std::queue<std::function<void()>> tasks = {};
+    std::queue<std::function<void()>> tasks_ = {};
 
     /**
      * @brief The number of threads in the pool.
      */
-    ui32 thread_count;
+    ui32 thread_count_;
 
     /**
      * @brief A smart pointer to manage the memory allocated for the threads.
      */
-    std::unique_ptr<boost::thread[]> threads;
+    std::unique_ptr<boost::thread[]> threads_;
 
     /**
      * @brief An atomic variable to keep track of the total number of unfinished tasks - either still in the queue, or
      * running in a thread.
      */
-    std::atomic<ui32> tasks_total = 0;
+    std::atomic<ui32> tasks_total_ = 0;
+
+    /**
+     * @brief The stack size of created threads. 0 means default OS value.
+     */
+    std::size_t stack_size_ = 0;
 };
 
 //                                     End class thread_pool                                     //
-// ============================================================================================= //
-
-// ============================================================================================= //
-//                                   Begin class synced_stream                                   //
-
-/**
- * @brief A helper class to synchronize printing to an output stream by different threads.
- */
-class synced_stream {
-  public:
-    /**
-     * @brief Construct a new synced stream.
-     *
-     * @param _out_stream The output stream to print to. The default value is std::cout.
-     */
-    synced_stream(std::ostream& _out_stream = std::cout) : out_stream(_out_stream){};
-
-    /**
-     * @brief Print any number of items into the output stream. Ensures that no other threads print to this stream
-     * simultaneously, as long as they all exclusively use this synced_stream object to print.
-     *
-     * @tparam T The types of the items
-     * @param items The items to print.
-     */
-    template <typename... T>
-    void print(const T&... items) {
-        const std::scoped_lock lock(stream_mutex);
-        (out_stream << ... << items);
-    }
-
-    /**
-     * @brief Print any number of items into the output stream, followed by a newline character. Ensures that no other
-     * threads print to this stream simultaneously, as long as they all exclusively use this synced_stream object to
-     * print.
-     *
-     * @tparam T The types of the items
-     * @param items The items to print.
-     */
-    template <typename... T>
-    void println(const T&... items) {
-        print(items..., '\n');
-    }
-
-  private:
-    /**
-     * @brief A mutex to synchronize printing.
-     */
-    mutable std::mutex stream_mutex = {};
-
-    /**
-     * @brief The output stream to print to.
-     */
-    std::ostream& out_stream;
-};
-
-//                                    End class synced_stream                                    //
-// ============================================================================================= //
-
-// ============================================================================================= //
-//                                       Begin class timer                                       //
-
-/**
- * @brief A helper class to measure execution time for benchmarking purposes.
- */
-class timer {
-    typedef std::int_fast64_t i64;
-
-  public:
-    /**
-     * @brief Start (or restart) measuring time.
-     */
-    void start() { start_time = std::chrono::steady_clock::now(); }
-
-    /**
-     * @brief Stop measuring time and store the elapsed time since start().
-     */
-    void stop() { elapsed_time = std::chrono::steady_clock::now() - start_time; }
-
-    /**
-     * @brief Get the number of milliseconds that have elapsed between start() and stop().
-     *
-     * @return The number of milliseconds.
-     */
-    i64 ms() const { return (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time)).count(); }
-
-  private:
-    /**
-     * @brief The time point when measuring started.
-     */
-    std::chrono::time_point<std::chrono::steady_clock> start_time = std::chrono::steady_clock::now();
-
-    /**
-     * @brief The duration that has elapsed between start() and stop().
-     */
-    std::chrono::duration<double> elapsed_time = std::chrono::duration<double>::zero();
-};
-
-//                                        End class timer                                        //
 // ============================================================================================= //
 
 }  // namespace silkworm

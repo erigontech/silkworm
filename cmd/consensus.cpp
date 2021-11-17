@@ -54,7 +54,7 @@ static const fs::path kTransactionDir{"TransactionTests"};
 
 static const std::vector<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "stTimeConsuming",
-    kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance" / "loopMul.json",
+    kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
 };
 
 static const std::vector<fs::path> kFailingTests{
@@ -658,7 +658,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    thread_pool thread_pool{num_threads};
+    thread_pool thread_pool{num_threads, /*stack_size=*/16 * kMebi};
 
     const fs::path root_dir{tests_path};
 

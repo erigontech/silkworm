@@ -15,7 +15,6 @@
 */
 
 #include <atomic>
-#include <chrono>
 #include <filesystem>
 #include <iostream>
 #include <map>
@@ -33,6 +32,7 @@
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
+#include <silkworm/common/stopwatch.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/concurrency/thread_pool.hpp>
 #include <silkworm/concurrency/thread_safe_state_pool.hpp>
@@ -634,7 +634,8 @@ bool exclude_test(const fs::path& p, const fs::path& root_dir, bool include_slow
 }
 
 int main(int argc, char* argv[]) {
-    const auto begin{std::chrono::steady_clock::now()};
+    StopWatch sw;
+    sw.start();
 
     CLI::App app{"Run Ethereum consensus tests"};
 
@@ -702,8 +703,8 @@ int main(int argc, char* argv[]) {
     }
     std::cout << ", " << total_skipped << " skipped";
 
-    const auto end{std::chrono::steady_clock::now()};
-    std::cout << " in " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << " sec\n";
+    const auto [_, duration] = sw.lap();
+    std::cout << " in " << StopWatch::format(duration) << std::endl;
 
     return total_failed != 0;
 }

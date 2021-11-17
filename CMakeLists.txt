@@ -33,8 +33,8 @@ if(NOT SILKWORM_HAS_PARENT)
 
   include(evmone/cmake/cable/HunterGate.cmake)
   HunterGate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.23.297.tar.gz"
-    SHA1 "3319fe6a3b08090df7df98dee75134d68e2ef5a3"
+    URL "https://github.com/cpp-pm/hunter/archive/v0.23.317.tar.gz"
+    SHA1 "fbdd94b1966d351384e27b02c8d134915b1131d6"
     LOCAL
     )
 endif()
@@ -48,8 +48,8 @@ set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/silkworm/cmake/toolchain.cmake CACH
 
 include(silkworm/evmone/cmake/cable/HunterGate.cmake)
 HunterGate(
-  URL "https://github.com/cpp-pm/hunter/archive/v0.23.297.tar.gz"
-  SHA1 "3319fe6a3b08090df7df98dee75134d68e2ef5a3"
+  URL "https://github.com/cpp-pm/hunter/archive/v0.23.317.tar.gz"
+  SHA1 "fbdd94b1966d351384e27b02c8d134915b1131d6"
   FILEPATH "${CMAKE_SOURCE_DIR}/silkworm/cmake/Hunter/config.cmake"
 )
 -----------------------------------------------------------------------------------------------------

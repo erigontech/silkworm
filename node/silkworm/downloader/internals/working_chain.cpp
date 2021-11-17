@@ -16,8 +16,8 @@
 
 #include "working_chain.hpp"
 
-#include <silkworm/common/log.hpp>
 #include <silkworm/common/as_range.hpp>
+#include <silkworm/common/log.hpp>
 
 #include "random_number.hpp"
 
@@ -188,8 +188,8 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 }
 
 size_t WorkingChain::anchors_within_range(BlockNum max) {
-    return static_cast<size_t>(as_range::count_if(anchors_,
-                                                  [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
+    return static_cast<size_t>(
+        as_range::count_if(anchors_, [&max](const auto& anchor) { return anchor.second->blockHeight < max; }));
 }
 
 BlockNum WorkingChain::lowest_unsaved_anchor_from(BlockNum top_bn) {
@@ -372,12 +372,16 @@ auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penal
     for (auto& header : headers) {
         Hash header_hash = header->hash();
 
-        if (contains(dedupMap, header_hash)) return {{}, Penalty::DuplicateHeaderPenalty};
+        if (contains(dedupMap, header_hash)) {
+            return {std::vector<Segment>{}, Penalty::DuplicateHeaderPenalty};
+        }
 
         dedupMap.insert(header_hash);
         auto children = childrenMap[header_hash];
         auto [valid, penalty] = HeaderList::childrenParentValidity(children, header);
-        if (!valid) return {{}, penalty};
+        if (!valid) {
+            return {std::vector<Segment>{}, penalty};
+        }
 
         if (children.size() == 1) {
             // Single child, extract segmentIdx
@@ -541,8 +545,8 @@ void WorkingChain::connect(Segment::Slice segment_slice) {  // throw segment_cut
 
     // todo: this block is the same in extend_down
     auto anchor = a->second;
-    bool anchor_preverified = as_range::any_of(anchor->links,
-                                               [](const auto& link) -> bool { return link->preverified; });
+    bool anchor_preverified =
+        as_range::any_of(anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
     anchors_.erase(anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue
@@ -575,8 +579,8 @@ auto WorkingChain::extend_down(Segment::Slice segment_slice) -> RequestMoreHeade
                                           to_hex(anchor_header->hash()));
 
     auto old_anchor = a->second;
-    bool anchor_preverified = as_range::any_of(old_anchor->links,
-                                               [](const auto& link) -> bool { return link->preverified; });
+    bool anchor_preverified =
+        as_range::any_of(old_anchor->links, [](const auto& link) -> bool { return link->preverified; });
 
     anchors_.erase(old_anchor->parentHash);  // Anchor is removed from the map, but not from the anchorQueue
     // This is because it is hard to find the index under which the anchor is stored in the anchorQueue

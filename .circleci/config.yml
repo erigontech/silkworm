@@ -75,6 +75,18 @@ jobs:
       - build
       - test
 
+  linux-gcc-11:
+    environment:
+      BUILD_TYPE: Debug
+      CLANG_COVERAGE: OFF
+    docker:
+      - image: ethereum/cpp-build-env:17-gcc-11
+    resource_class: xlarge
+    steps:
+      - checkout_with_submodules
+      - build
+      - test
+
   linux-clang-coverage:
     environment:
       BUILD_TYPE: Debug
@@ -170,5 +182,6 @@ workflows:
   silkworm:
     jobs:
       - linux-gcc-9
+      - linux-gcc-11
       - linux-clang-coverage
       - linux-wasm-build

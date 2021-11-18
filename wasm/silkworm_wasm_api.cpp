@@ -150,7 +150,7 @@ uint8_t* state_root_hash_new(const InMemoryState* state) {
     return static_cast<uint8_t*>(out);
 }
 
-static evmc::address address_from_ptr(const uint8_t* ptr) { return to_address({ptr, kAddressLength}); }
+static evmc::address address_from_ptr(const uint8_t* ptr) { return to_evmc_address({ptr, kAddressLength}); }
 
 static evmc::bytes32 bytes32_from_ptr(const uint8_t* ptr) { return to_bytes32({ptr, kHashLength}); }
 

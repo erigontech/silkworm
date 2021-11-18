@@ -180,12 +180,12 @@ TEST_CASE("Youngest_First_Link_Queue") {
     }
 }
 
-TEST_CASE("Oldest_First_Link_Queue") {
+TEST_CASE("Oldest_First_Link_Queue (old impl)") {
     using namespace std::literals::chrono_literals;
     BlockHeader dummy_header;
     bool persisted = true;
 
-    OldestFirstLinkQueue queue;
+    set_based_priority_queue<std::shared_ptr<Link>, LinkOlderThan> queue;
 
     auto link = std::make_shared<Link>(dummy_header, persisted);
     link->blockHeight = 1;
@@ -234,5 +234,45 @@ TEST_CASE("Oldest_First_Link_Queue") {
         REQUIRE(queue.top()->blockHeight == 1);
     }
     */
+}
+
+TEST_CASE("Oldest_First_Link_Queue") {
+    using namespace std::literals::chrono_literals;
+    BlockHeader dummy_header;
+    bool persisted = true;
+
+    OldestFirstLinkQueue queue;
+
+    auto link = std::make_shared<Link>(dummy_header, persisted);
+    link->blockHeight = 1;
+    queue.push(link);
+
+    link = std::make_shared<Link>(dummy_header, persisted);
+    link->blockHeight = 4;
+    queue.push(link);
+
+    link = std::make_shared<Link>(dummy_header, persisted);
+    link->blockHeight = 3;
+    queue.push(link);
+
+    link = std::make_shared<Link>(dummy_header, persisted);
+    link->blockHeight = 2;
+    queue.push(link);
+
+    SECTION("element ordering") {
+        REQUIRE(queue.size() == 4);
+
+        REQUIRE(queue.top()->blockHeight == 1);  // top
+        queue.pop();
+        REQUIRE(queue.top()->blockHeight == 2);
+        queue.pop();
+        REQUIRE(queue.top()->blockHeight == 3);
+        queue.pop();
+        REQUIRE(queue.top()->blockHeight == 4);
+        queue.pop();
+
+        REQUIRE(queue.size() == 0);
+    }
+
 }
 }  // namespace silkworm

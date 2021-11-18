@@ -26,15 +26,21 @@
  */
 template <typename T, typename CMP>
 class set_based_priority_queue {
-    std::multiset<T, CMP> elements_;
+    using impl_t = std::multiset<T, CMP>;
+    impl_t elements_;
 
   public:
-    const T& top() const { return *elements_.begin(); }
+    [[nodiscard]] const T& top() const { return *elements_.begin(); }
     void pop() { elements_.erase(elements_.begin()); }
     void push(const T& element) { elements_.insert(element); }
     void erase(const T& element) { elements_.erase(element); }
     [[nodiscard]] size_t size() const { return elements_.size(); }
-    bool contains(const T& element) { return elements_.template find(element) != elements_.end(); }
+    [[nodiscard]] bool contains(const T& element) { return elements_.template find(element) != elements_.end(); }
+
+    typename impl_t::iterator begin() { return elements_.begin(); }
+    typename impl_t::iterator end() { return elements_.end(); }
+    typename impl_t::const_iterator begin() const { return elements_.begin(); }
+    typename impl_t::const_iterator end() const { return elements_.end(); }
 };
 
 /*
@@ -59,7 +65,61 @@ class heap_based_priority_queue : public std::priority_queue<T, SEQ, CMP> {
     void fix() { std::make_heap(this->c.begin(), this->c.end(), this->comp); }
 };
 
-// todo: add a test for erase & fix of heap_based_priority_queue
-// todo: assess set_based_priority_queue & heap_based_priority_queue performances
+/*
+ * A multimap based priority_queue for ease removal of elements
+ *
+ * Sample usage:
+ *   template <>
+ *   struct key<Link> {
+ *        using type = BlockNum;
+ *        static auto value(const Link& l) -> BlockNum {return l.blockHeight;}
+ *   };
+ *
+ *   map_based_priority_queue<Link, BlockOlderThan> queue;
+ */
+template <typename T>
+struct mbpq_key {
+    using type = int;  // type of the key
+    static type value(const T&);
+};
+
+template <typename T, typename CMP>
+class map_based_priority_queue {
+    using impl_t = std::multimap<typename mbpq_key<T>::type, T, CMP>;
+    impl_t elements_;
+
+  public:
+    [[nodiscard]] const T& top() const { return elements_.begin()->second; }
+    void pop() { elements_.erase(elements_.begin()); }
+    void push(const T& element) { elements_.insert({mbpq_key<T>::value(element), element}); }
+    void erase(const T& element) { elements_.erase(mbpq_key<T>::value(element)); }
+    [[nodiscard]] size_t size() const { return elements_.size(); }
+    [[nodiscard]] bool contains(const T& element) {
+        return elements_.template find(mbpq_key<T>::value(element)) != elements_.end();
+    }
+
+    typename impl_t::iterator begin() { return elements_.begin(); }
+    typename impl_t::iterator end() { return elements_.end(); }
+    typename impl_t::const_iterator begin() const { return elements_.begin(); }
+    typename impl_t::const_iterator end() const { return elements_.end(); }
+
+    // the following is not so beautiful, also it exposes pair used as internal impl
+    std::pair<typename impl_t::iterator, typename impl_t::iterator> equal_range(const typename mbpq_key<T>::type& key) {
+        return elements_.equal_range(key);
+    };
+};
+
+/* Note
+  Alternative implementation (by greg7mdp)
+
+  using HMap = btree_map<std::pair<BlockNum, Hash>, Link>;
+
+  - ordering:
+      sorted first by BlockNum, then by the Hash (default lexicographical comparison by std::pair)
+  - lookup:
+      map[HMap::key_type(block_number, hash)]
+  - erase:
+      map.erase(map.begin(), map.lower_bound(HMap::key_type(x,0)));
+ */
 
 #endif  // SILKWORM_PRIORITY_QUEUE_HPP

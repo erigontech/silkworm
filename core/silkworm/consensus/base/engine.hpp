@@ -33,14 +33,14 @@ class ConsensusEngineBase : public IConsensusEngine {
     //! \param [in] block: block to pre-validate.
     //! \param [in] state: current state.
     //! \note Shouldn't be used for genesis block.
-    ValidationResult pre_validate_block(const Block& block, State& state) override;
+    ValidationResult pre_validate_block(const Block& block, BlockState& state) override;
 
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.
     //! \param [in] with_future_timestamp_check : whether to check header timestamp is in the future wrt host current
     //! time \see https://github.com/torquem-ch/silkworm/issues/448
     //! \note Shouldn't be used for genesis block.
-    ValidationResult validate_block_header(const BlockHeader& header, State& state, bool with_future_timestamp_check) override;
+    ValidationResult validate_block_header(const BlockHeader& header, BlockState& state, bool with_future_timestamp_check) override;
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) override;
@@ -50,14 +50,14 @@ class ConsensusEngineBase : public IConsensusEngine {
     evmc::address get_beneficiary(const BlockHeader& header) override;
 
     //! \brief Returns parent header (if any) of provided header
-    std::optional<BlockHeader> get_parent_header(const State& state, const BlockHeader& header);
+    std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header);
 
   protected:
     const ChainConfig& chain_config_;
 
     //! \brief See [YP] Section 11.1 "Ommer Validation"
     bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                const evmc::bytes32& mainline_hash, unsigned n, const State& state,
+                const evmc::bytes32& mainline_hash, unsigned n, const BlockState& state,
                 std::vector<BlockHeader>& old_ommers);
 
     //! \brief See https://eips.ethereum.org/EIPS/eip-1559

@@ -79,7 +79,7 @@ jobs:
   linux-gcc-11-cpp20:
     environment:
       BUILD_TYPE: Debug
-      TOOLCHAIN: cpp20.cmake
+      TOOLCHAIN: cxx20.cmake
       CLANG_COVERAGE: OFF
     docker:
       - image: ethereum/cpp-build-env:17-gcc-11

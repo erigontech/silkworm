@@ -30,8 +30,8 @@ enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, None };
 //! \brief Sets logging verbosity
 void set_verbosity(LogLevel level);
 
-//! \brief Sets a file path where to tee log messages
-void set_tee(std::filesystem::path file);
+//! \brief Sets the streams
+void log_set_streams_(std::ostream& o1, std::ostream& o2);
 
 // change if thread is logged (true) or not (false) - default is false
 //
@@ -46,7 +46,7 @@ void set_tee(std::filesystem::path file);
 std::ostream& null_stream();
 
 
-void log_set_streams_(std::ostream& o1, std::ostream& o2);
+
 
 class LogBufferBase {
   public:

@@ -43,6 +43,13 @@ hunter_config(
   CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
 )
 
+hunter_config(
+  re2
+  VERSION 2021.11.01
+  URL https://github.com/google/re2/archive/2021-11-01.tar.gz
+  SHA1 4c18662f103ef53f106f8f98d7b46b723615e14f
+)
+
 hunter_config(Protobuf VERSION 3.14.0-4a09d77-p0)
 
 hunter_config(

@@ -37,7 +37,7 @@ commands:
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE
+          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/$TOOLCHAIN -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -66,6 +66,7 @@ jobs:
   linux-gcc-9:
     environment:
       BUILD_TYPE: Release
+      TOOLCHAIN: toolchain.cmake
       CLANG_COVERAGE: OFF
     machine:
       image: ubuntu-2004:202010-01
@@ -75,9 +76,10 @@ jobs:
       - build
       - test
 
-  linux-gcc-11:
+  linux-gcc-11-cpp20:
     environment:
       BUILD_TYPE: Debug
+      TOOLCHAIN: cpp20.cmake
       CLANG_COVERAGE: OFF
     docker:
       - image: ethereum/cpp-build-env:17-gcc-11
@@ -90,6 +92,7 @@ jobs:
   linux-clang-coverage:
     environment:
       BUILD_TYPE: Debug
+      TOOLCHAIN: toolchain.cmake
       CLANG_COVERAGE: ON
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
@@ -182,6 +185,6 @@ workflows:
   silkworm:
     jobs:
       - linux-gcc-9
-      - linux-gcc-11
+      - linux-gcc-11-cpp20
       - linux-clang-coverage
       - linux-wasm-build

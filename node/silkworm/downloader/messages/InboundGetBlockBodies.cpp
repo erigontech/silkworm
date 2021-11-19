@@ -66,12 +66,19 @@ void InboundGetBlockBodies::execute() {
     SILKWORM_LOG(LogLevel::Trace) << "Replying to " << identify(*this) << " using send_message_by_id with "
                                   << reply.request.size() << " bodies\n";
 
-    rpc::SendMessageById send_message_by_id(peerId_, std::move(msg_reply));
-    sentry_.exec_remotely(send_message_by_id);
+    rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
+    rpc.do_not_throw_on_failure();
+    sentry_.exec_remotely(rpc);
 
-    [[maybe_unused]] sentry::SentPeers peers = send_message_by_id.reply();
+    if (!rpc.status().ok()) {
+        [[maybe_unused]] sentry::SentPeers peers = rpc.reply();
     SILKWORM_LOG(LogLevel::Trace) << "Received rpc result of " << identify(*this) << ": "
                                   << std::to_string(peers.peers_size()) + " peer(s)\n";
+    }
+    else {
+        SILKWORM_LOG(LogLevel::Trace) << "Failure of rpc " << identify(*this) << ": "
+                                      << rpc.status().error_message() + "\n";
+    }
 }
 
 uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }

@@ -29,6 +29,7 @@ class Directory {
     //! \param [in] directory_path : the path of the directory
     //! \param [in] must_create : whether the directory must be created on filesystem should not exist
     explicit Directory(const std::filesystem::path& directory_path, bool must_create = false);
+    virtual ~Directory() = default;
 
     // Not copyable nor movable
     Directory(const Directory&) = delete;
@@ -60,7 +61,7 @@ class Directory {
 //! The full path of the directory starts from a given path plus the discovery of a unique non-existent sub-path
 //! through a linear search. Should no initial path be given, TemporaryDirectory is built from the path indicated
 //! for temporary files storage by host OS environment variables
-class TemporaryDirectory : public Directory {
+class TemporaryDirectory final : public Directory {
   public:
     //! \brief Creates an instance of a TemporaryDirectory from a user provided path
     //! \param [in] base_path :  A path where to append this instance to
@@ -70,7 +71,7 @@ class TemporaryDirectory : public Directory {
     //! \brief Creates an instance of a TemporaryDirectory from OS temporary path
     explicit TemporaryDirectory() : Directory(TemporaryDirectory::get_unique_temporary_path(), true){};
 
-    ~TemporaryDirectory() {
+    ~TemporaryDirectory() final {
         Directory::clear();
         std::filesystem::remove_all(path_);
     }
@@ -89,7 +90,7 @@ class TemporaryDirectory : public Directory {
 //! ├───chaindata   <-- Where main database is stored
 //! ├───etl-temp    <-- Where temporary files from etl collector are stored
 //! └───nodes       <-- Where database(s) for discovered nodes are stored
-class DataDirectory : public Directory {
+class DataDirectory final : public Directory {
   public:
     //! \brief Creates an instance of Silkworm's data directory given an initial base path
     //! \param [in] base_path : the actual path of base directory
@@ -111,6 +112,8 @@ class DataDirectory : public Directory {
     //! \param [in] create : whether the directory itself and the underlying tree should be created
     explicit DataDirectory(const char* base_path, bool create = false)
         : DataDirectory::DataDirectory(std::filesystem::path(base_path), create) {}
+
+    ~DataDirectory() final = default;
 
     // Not copyable nor movable
     DataDirectory(const DataDirectory&) = delete;

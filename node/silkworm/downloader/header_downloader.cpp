@@ -43,7 +43,7 @@ HeaderDownloader::HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_
 
 HeaderDownloader::~HeaderDownloader() {
     stop();
-    log::ErrorChannel() << "HeaderDownloader destroyed\n";
+    log::ErrorChannel() << "HeaderDownloader destroyed";
 }
 
 void HeaderDownloader::send_status() {
@@ -53,12 +53,12 @@ void HeaderDownloader::send_status() {
     rpc::SetStatus set_status(chain_identity_, head_hash, head_td);
     sentry_.exec_remotely(set_status);
 
-    log::InfoChannel() << "HeaderDownloader, set_status sent\n";
+    log::InfoChannel() << "HeaderDownloader, set_status sent";
     sentry::SetStatusReply reply = set_status.reply();
 
     sentry::Protocol supported_protocol = reply.protocol();
     if (supported_protocol != sentry::Protocol::ETH66) {
-        log::CriticalChannel() << "HeaderDownloader: sentry do not support eth/66 protocol, is_stopping...\n";
+        log::CriticalChannel() << "HeaderDownloader: sentry do not support eth/66 protocol, is_stopping...";
         sentry_.stop();
         throw HeaderDownloaderException("HeaderDownloader exception, cause: sentry do not support eth/66 protocol");
     }
@@ -78,12 +78,12 @@ void HeaderDownloader::receive_messages() {
     while (!is_stopping() && !sentry_.is_stopping() && message_subscription.receive_one_reply()) {
         auto message = InboundBlockAnnouncementMessage::make(message_subscription.reply(), working_chain_, sentry_);
 
-        log::InfoChannel() << "HeaderDownloader received message " << *message << "\n";
+        log::InfoChannel() << "HeaderDownloader received message " << *message;
 
         messages_.push(message);
     }
 
-    log::WarningChannel() << "HeaderDownloader execution loop is stopping...\n";
+    log::WarningChannel() << "HeaderDownloader execution loop is stopping...";
 }
 
 void HeaderDownloader::execution_loop() {
@@ -95,16 +95,15 @@ void HeaderDownloader::execution_loop() {
         bool present = messages_.timed_wait_and_pop(message, 1000ms);
         if (!present) continue;  // timeout, needed to check exiting_
 
-        log::TraceChannel() << "HeaderDownloader processing message " << message->name() << "\n";
-
-        log::TraceChannel() << "HeaderDownloader status: " << working_chain_.human_readable_verbose_status() << "\n";
+        log::TraceChannel() << "HeaderDownloader processing message " << message->name() << " "
+                            << "Status: " << working_chain_.human_readable_verbose_status();
 
         // process the message (command pattern)
         message->execute();
 
         auto out_message = std::dynamic_pointer_cast<OutboundMessage>(message);
         if (out_message) {
-            log::InfoChannel() << "HeaderDownloader sent message " << *out_message << "\n";
+            log::InfoChannel() << "HeaderDownloader sent message " << *out_message;
         }
     }
 }
@@ -117,7 +116,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     bool new_height_reached = false;
     std::thread message_receiving;
 
-    log::InfoChannel() << "HeaderDownloader forward operation started\n";
+    log::InfoChannel() << "HeaderDownloader forward operation started";
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();  // this will start a new tx only if db_access has not
@@ -146,7 +145,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
                 // check if it needs to persist some headers
                 auto command = withdraw_stable_headers();
                 auto [stable_headers, in_sync] = command->result().get();  // blocking
-                log::TraceChannel() << "HeaderDownloader persisting " << stable_headers.size() << " headers\n";
+                log::TraceChannel() << "HeaderDownloader persisting " << stable_headers.size() << " headers";
                 persisted_chain_.persist(stable_headers);
 
                 // do announcements
@@ -164,7 +163,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
                 // todo: log progress - logProgressHeaders(logPrefix, prevProgress, progress)
                 log::TraceChannel() << "HeaderDownloader status: current persisted height="
-                                    << persisted_chain_.highest_height() << "\n";
+                                    << persisted_chain_.highest_height();
             } else {
                 std::this_thread::sleep_for(1s);
             }
@@ -182,10 +181,9 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         tx.commit();  // this will commit if the tx was started here
 
-        log::InfoChannel() << "HeaderDownloader forward operation completed\n";
+        log::InfoChannel() << "HeaderDownloader forward operation completed";
     } catch (const std::exception& e) {
-        log::ErrorChannel() << "HeaderDownloader forward operation is stopping due to an exception: " << e.what()
-                            << "\n";
+        log::ErrorChannel() << "HeaderDownloader forward operation is stopping due to an exception: " << e.what();
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
@@ -193,14 +191,14 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
     stop();  // todo: it is better to try to cancel the grpc call, do a message_subscription.try_cancel() or both
     message_receiving.join();
 
-    log::DebugChannel() << "HeaderDownloader forward operation clean exit\n";
+    log::DebugChannel() << "HeaderDownloader forward operation clean exit";
     return result;
 }
 
 auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::Result {
     Stage::Result result;
 
-    log::InfoChannel() << "HeaderDownloader unwind operation started\n";
+    log::InfoChannel() << "HeaderDownloader unwind operation started";
 
     try {
         Db::ReadWriteAccess::Tx tx = db_access_.start_tx();
@@ -220,10 +218,9 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
 
         tx.commit();
 
-        log::InfoChannel() << "HeaderDownloader unwind operation completed\n";
+        log::InfoChannel() << "HeaderDownloader unwind operation completed";
     } catch (const std::exception& e) {
-        log::ErrorChannel() << "HeaderDownloader unwind operation is stopping due to an exception: " << e.what()
-                            << "\n";
+        log::ErrorChannel() << "HeaderDownloader unwind operation is stopping due to an exception: " << e.what();
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
@@ -237,7 +234,7 @@ void HeaderDownloader::send_header_requests() {
 
     auto message = std::make_shared<OutboundGetBlockHeaders>(working_chain_, sentry_);
 
-    log::InfoChannel() << "HeaderDownloader sending message " << *message << "\n";
+    log::InfoChannel() << "HeaderDownloader sending message " << *message;
 
     messages_.push(message);
 }
@@ -248,7 +245,7 @@ void HeaderDownloader::send_announcements() {
 
     auto message = std::make_shared<OutboundNewBlockHashes>(working_chain_, sentry_);
 
-    log::InfoChannel() << "HeaderDownloader sending announcements\n";
+    log::InfoChannel() << "HeaderDownloader sending announcements";
 
     messages_.push(message);
 }

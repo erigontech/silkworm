@@ -63,14 +63,14 @@ void InboundGetBlockHeaders::execute() {
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     log::TraceChannel() << "Replying to " << identify(*this) << " using send_message_by_id with "
-                        << reply.request.size() << " headers\n";
+                        << reply.request.size() << " headers";
 
     rpc::SendMessageById rpc{peerId_, std::move(msg_reply)};
     sentry_.exec_remotely(rpc);
 
     sentry::SentPeers peers = rpc.reply();
     log::TraceChannel() << "Received rpc result of " << identify(*this) << ": "
-                        << std::to_string(peers.peers_size()) + " peer(s)\n";
+                        << std::to_string(peers.peers_size()) + " peer(s)";
 }
 
 uint64_t InboundGetBlockHeaders::reqId() const { return packet_.requestId; }

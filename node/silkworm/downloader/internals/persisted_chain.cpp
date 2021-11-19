@@ -85,7 +85,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     auto parent = tx_.read_header(height - 1, header.parent_hash);
     if (!parent) {
         std::string error_message = "Could not find parent with hash " + to_hex(header.parent_hash) + " and height " +
-                                    std::to_string(height - 1) + " for header " + hash.to_hex() + "\n";
+                                    std::to_string(height - 1) + " for header " + hash.to_hex();
         log::ErrorChannel() << error_message;
         throw std::logic_error(error_message);
     }

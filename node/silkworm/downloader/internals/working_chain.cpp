@@ -121,7 +121,7 @@ Headers WorkingChain::withdraw_stable_headers() {
             links_in_future.push_back(link);
             log::WarningChannel() << "WorkingChain: added future link,"
                                   << " hash=" << link->hash << " height=" << link->blockHeight
-                                  << " timestamp=" << link->header->timestamp << ")\n";
+                                  << " timestamp=" << link->header->timestamp << ")";
             continue;
         }
 
@@ -224,8 +224,8 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 
     if (length > max_len) length = max_len;
     if (length == 0) {
-        SILKWORM_LOG(LogLevel::Debug) << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
-                                      << ", highest_in_db = " << highest_in_db_ << ")\n";
+        log::DebugChannel() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
+                            << ", highest_in_db = " << highest_in_db_ << ")";
         return std::nullopt;
     }
 
@@ -327,7 +327,7 @@ void WorkingChain::save_external_announce(Hash h) {
 void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
     std::shared_ptr<Anchor> anchor;
 
-    log::WarningChannel() << "WorkingChain: restoring some timestamp due to request nack\n";
+    log::WarningChannel() << "WorkingChain: restoring some timestamp due to request nack";
 
     if (std::holds_alternative<Hash>(packet.request.origin)) {
         Hash hash = std::get<Hash>(packet.request.origin);
@@ -502,9 +502,9 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        log::DebugChannel() << "Segment: " << op << " start=" << startNum << " end=" << endNum << "\n";
+        log::DebugChannel() << "Segment: " << op << " start=" << startNum << " end=" << endNum;
     } catch (segment_cut_and_paste_error& e) {
-        log::DebugChannel() << "Segment: " << op << " failure, reason:" << e.what() << "\n";
+        log::DebugChannel() << "Segment: " << op << " failure, reason:" << e.what();
         return false;
     }
 
@@ -773,7 +773,7 @@ void WorkingChain::remove_anchor(const Hash& hash) {
     // But removal will happen anyway, in the function request_more_headers, if it disappears from the map
     size_t erased = anchors_.erase(hash);
     if (erased == 0) {
-        log::WarningChannel() << "WorkingChain: removal of anchor failed, " << to_hex(hash) << " not found\n";
+        log::WarningChannel() << "WorkingChain: removal of anchor failed, " << to_hex(hash) << " not found";
     }
 }
 

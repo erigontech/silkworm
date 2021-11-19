@@ -156,6 +156,6 @@ int main(int argc, char* argv[]) {
     }
 
     t1 = absl::Now();
-    log::InfoChannel() << " Blocks [" << from << "; " << block_num << ") have been checked\n";
+    log::InfoChannel() << " Blocks [" << from << "; " << block_num << ") have been checked";
     return 0;
 }

@@ -34,7 +34,7 @@ InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, 
     ByteView data = string_view_to_byte_view(msg.data());
     rlp::success_or_throw(rlp::decode(data, packet_));
 
-    log::TraceChannel() << "Received message " << *this << "\n";
+    log::TraceChannel() << "Received message " << *this;
 }
 
 /*
@@ -64,14 +64,14 @@ void InboundGetBlockBodies::execute() {
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     log::TraceChannel() << "Replying to " << identify(*this) << " using send_message_by_id with "
-                        << reply.request.size() << " bodies\n";
+                        << reply.request.size() << " bodies";
 
     rpc::SendMessageById send_message_by_id(peerId_, std::move(msg_reply));
     sentry_.exec_remotely(send_message_by_id);
 
     [[maybe_unused]] sentry::SentPeers peers = send_message_by_id.reply();
     log::TraceChannel() << "Received rpc result of " << identify(*this) << ": "
-                        << std::to_string(peers.peers_size()) + " peer(s)\n";
+                        << std::to_string(peers.peers_size()) + " peer(s)";
 }
 
 uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }

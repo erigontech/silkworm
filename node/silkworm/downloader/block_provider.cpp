@@ -16,9 +16,13 @@
 
 #include "block_provider.hpp"
 
+#include <chrono>
+#include <thread>
+
 #include <silkworm/common/log.hpp>
 
 #include "internals/header_retrieval.hpp"
+#include "messages/InboundMessage.hpp"
 #include "rpc/ReceiveMessages.hpp"
 #include "rpc/SetStatus.hpp"
 
@@ -32,50 +36,32 @@ BlockProvider::~BlockProvider() {
     SILKWORM_LOG(LogLevel::Error) << "BlockProvider destroyed\n";
 }
 
-void BlockProvider::send_status() {
-    HeaderRetrieval headers(db_access_);
-    auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
+void BlockProvider::receive_message(const sentry::InboundMessage& raw_message) {
+    auto message = InboundBlockRequestMessage::make(raw_message, db_access_, sentry_);
 
-    rpc::SetStatus set_status(chain_identity_, head_hash, head_td);
-    sentry_.exec_remotely(set_status);
+    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader received message " << *message << "\n";
 
-    SILKWORM_LOG(LogLevel::Trace) << "BlockProvider, send_status ok\n";
-    sentry::SetStatusReply reply = set_status.reply();
-
-    sentry::Protocol supported_protocol = reply.protocol();
-    if (supported_protocol != sentry::Protocol::ETH66) {
-        SILKWORM_LOG(LogLevel::Critical) << "BlockProvider: sentry do not support eth/66 protocol, is_stopping...\n";
-        sentry_.stop();
-        throw BlockProviderException("BlockProvider exception, cause: sentry do not support eth/66 protocol");
-    }
-}
-
-void BlockProvider::process_message(std::shared_ptr<InboundMessage> message) {
-    SILKWORM_LOG(LogLevel::Info) << "BlockProvider processing message " << *message << "\n";
-
-    message->execute();
+    messages_.push(message);
 }
 
 void BlockProvider::execution_loop() {
-    try {
-        send_status();
+    using namespace std::chrono_literals;
 
-        rpc::ReceiveMessages receive_messages(rpc::ReceiveMessages::Scope::BlockRequests);
-        sentry_.exec_remotely(receive_messages);
+    sentry_.subscribe(SentryClient::Scope::BlockRequests,
+                      [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
-        while (!is_stopping() && !sentry_.is_stopping() && receive_messages.receive_one_reply()) {
-            auto message = InboundBlockRequestMessage::make(receive_messages.reply(), db_access_, sentry_);
+    while (!is_stopping() && !sentry_.is_stopping()) {
+        // pop a message from the queue
+        std::shared_ptr<InboundMessage> message;
+        bool present = messages_.timed_wait_and_pop(message, 1000ms);
+        if (!present) continue;  // timeout, needed to check exiting_
 
-            process_message(message);
-        }
-
-        SILKWORM_LOG(LogLevel::Warn) << "BlockProvider execution_loop is_stopping...\n";
-    } catch (const std::exception& e) {
-        SILKWORM_LOG(LogLevel::Error) << "BlockProvider execution_loop is_stopping due to exception: " << e.what()
-                                      << "\n";
-        stop();
-        sentry_.stop();
+        // process the message (command pattern)
+        SILKWORM_LOG(LogLevel::Info) << "BlockProvider processing message " << *message << "\n";
+        message->execute();
     }
+
+    SILKWORM_LOG(LogLevel::Warn) << "BlockProvider execution_loop is_stopping...\n";
 }
 
 }  // namespace silkworm

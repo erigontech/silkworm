@@ -18,16 +18,11 @@
 #include <chrono>
 #include <thread>
 
-#include <silkworm/chain/preverified_hashes.hpp>
-#include <silkworm/consensus/engine.hpp>
 #include <silkworm/common/log.hpp>
 
-#include "internals/header_retrieval.hpp"
-#include "messages/InboundGetBlockHeaders.hpp"
+#include "messages/InboundMessage.hpp"
 #include "messages/OutboundGetBlockHeaders.hpp"
 #include "messages/OutboundNewBlockHashes.hpp"
-#include "rpc/ReceiveMessages.hpp"
-#include "rpc/SetStatus.hpp"
 
 namespace silkworm {
 
@@ -46,48 +41,19 @@ HeaderDownloader::~HeaderDownloader() {
     SILKWORM_LOG(LogLevel::Error) << "HeaderDownloader destroyed\n";
 }
 
-void HeaderDownloader::send_status() {
-    HeaderRetrieval headers(db_access_);
-    auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
+void HeaderDownloader::receive_message(const sentry::InboundMessage& raw_message) {
+    auto message = InboundBlockAnnouncementMessage::make(raw_message, working_chain_, sentry_);
 
-    rpc::SetStatus set_status(chain_identity_, head_hash, head_td);
-    sentry_.exec_remotely(set_status);
+    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader received message " << *message << "\n";
 
-    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader, set_status sent\n";
-    sentry::SetStatusReply reply = set_status.reply();
-
-    sentry::Protocol supported_protocol = reply.protocol();
-    if (supported_protocol != sentry::Protocol::ETH66) {
-        SILKWORM_LOG(LogLevel::Critical) << "HeaderDownloader: sentry do not support eth/66 protocol, is_stopping...\n";
-        sentry_.stop();
-        throw HeaderDownloaderException("HeaderDownloader exception, cause: sentry do not support eth/66 protocol");
-    }
-}
-
-void HeaderDownloader::receive_messages() {
-    // todo: handle connection loss and retry (at each re-connect re-send status)
-
-    // send status to sentry
-    send_status();
-
-    // send a message subscription
-    rpc::ReceiveMessages message_subscription(rpc::ReceiveMessages::Scope::BlockAnnouncements);
-    sentry_.exec_remotely(message_subscription);
-
-    // receive messages
-    while (!is_stopping() && !sentry_.is_stopping() && message_subscription.receive_one_reply()) {
-        auto message = InboundBlockAnnouncementMessage::make(message_subscription.reply(), working_chain_, sentry_);
-
-        SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader received message " << *message << "\n";
-
-        messages_.push(message);
-    }
-
-    SILKWORM_LOG(LogLevel::Warn) << "HeaderDownloader execution loop is stopping...\n";
+    messages_.push(message);
 }
 
 void HeaderDownloader::execution_loop() {
     using namespace std::chrono_literals;
+
+    sentry_.subscribe(SentryClient::Scope::BlockAnnouncements,
+                      [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
     while (!is_stopping() && !sentry_.is_stopping()) {
         // pop a message from the queue
@@ -97,7 +63,8 @@ void HeaderDownloader::execution_loop() {
 
         SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader processing message " << message->name() << "\n";
 
-        SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader status: " << working_chain_.human_readable_verbose_status() << "\n";
+        SILKWORM_LOG(LogLevel::Trace) << "HeaderDownloader status: " << working_chain_.human_readable_verbose_status()
+                                      << "\n";
 
         // process the message (command pattern)
         message->execute();
@@ -125,7 +92,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
         PersistedChain persisted_chain_(tx);
 
         if (persisted_chain_.unwind_detected()) {
-            result.status = Stage::Result::Unknown; // todo: Erigon does not change stage-state here, what can we do?
+            result.status = Stage::Result::Unknown;  // todo: Erigon does not change stage-state here, what can we do?
             return result;
         }
 

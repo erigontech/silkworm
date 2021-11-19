@@ -72,8 +72,8 @@ void InboundGetBlockBodies::execute() {
 
     if (!rpc.status().ok()) {
         [[maybe_unused]] sentry::SentPeers peers = rpc.reply();
-    SILKWORM_LOG(LogLevel::Trace) << "Received rpc result of " << identify(*this) << ": "
-                                  << std::to_string(peers.peers_size()) + " peer(s)\n";
+        SILKWORM_LOG(LogLevel::Trace) << "Received rpc result of " << identify(*this) << ": "
+                                      << std::to_string(peers.peers_size()) + " peer(s)\n";
     }
     else {
         SILKWORM_LOG(LogLevel::Trace) << "Failure of rpc " << identify(*this) << ": "

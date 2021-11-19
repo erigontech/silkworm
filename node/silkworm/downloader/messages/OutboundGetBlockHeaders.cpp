@@ -19,8 +19,6 @@
 #include <sstream>
 
 #include <silkworm/common/log.hpp>
-#include <silkworm/downloader/header_downloader.hpp>
-#include <silkworm/downloader/packets/RLPEth66PacketCoding.hpp>
 #include <silkworm/downloader/rpc/PenalizePeer.hpp>
 #include <silkworm/downloader/rpc/SendMessageByMinBlock.hpp>
 

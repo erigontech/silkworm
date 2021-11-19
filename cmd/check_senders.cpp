@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     if (options.debug) {
-        log::set_verbosity(log::LogLevel::Trace);
+        log::set_verbosity(log::Level::Trace);
     }
 
     if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions

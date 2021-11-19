@@ -20,7 +20,7 @@
 
 namespace silkworm {
 
-TEST_CASE("Config lookup") {
+TEST_CASE("Settings lookup") {
     CHECK(lookup_chain_config(0) == nullptr);
     CHECK(lookup_chain_config(1) == &kMainnetConfig);
     CHECK(lookup_chain_config(3) == &kRopstenConfig);
@@ -29,7 +29,7 @@ TEST_CASE("Config lookup") {
     CHECK(lookup_chain_config(12345) == nullptr);
 }
 
-TEST_CASE("Config revision") {
+TEST_CASE("Settings revision") {
     CHECK(kMainnetConfig.revision_block(EVMC_FRONTIER) == 0);
     CHECK(kMainnetConfig.revision_block(EVMC_HOMESTEAD) == 1'150'000);
     CHECK(kMainnetConfig.revision_block(EVMC_TANGERINE_WHISTLE) == 2'463'000);

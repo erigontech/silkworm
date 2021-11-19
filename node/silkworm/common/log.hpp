@@ -17,43 +17,47 @@
 #ifndef SILKWORM_COMMON_LOG_HPP_
 #define SILKWORM_COMMON_LOG_HPP_
 
-#include <sstream>
 #include <filesystem>
+#include <sstream>
 
-#include <silkworm/common/tee.hpp>
+#include <silkworm/common/terminal.hpp>
 
 namespace silkworm::log {
 
-// available verbosity levels
-enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, None };
+//! \brief Available verbosity levels
+enum class Level {
+    None,      // Simple logging line with no severity (eg. build info)
+    Critical,  // An error there's no way we can recover from
+    Error,     // We encountered an error which we might be able to recover from
+    Warn,      // Something happened and user might have the possibility to amend the situation
+    Info,      // Info messages on regular operations
+    Debug,     // Debug information
+    Trace      // Trace calls to functions
+};
+
+//! \brief Holds logging configuration
+struct Settings {
+    bool log_std_out{false};    // Whether console logging goes to std::cout or std::cerr (default)
+    bool log_utc{false};        // Whether timestamps should be in UTC or imbue local timezone
+    bool log_nocolor{false};    // Whether to disable colorized output
+    bool log_threads{false};    // Whether to print thread ids in log lines
+    unsigned log_verbosity{4};  // Log verbosity level
+    std::string log_file;       // Log to file
+};
+
+//! \brief Initializes logging facilities
+void init(Settings& settings);
 
 //! \brief Sets logging verbosity
-void set_verbosity(LogLevel level);
+void set_verbosity(Level level);
 
-//! \brief Sets the streams
-void log_set_streams_(std::ostream& o1, std::ostream& o2);
+//! \brief Sets a file output for log teeing
+void tee_file(std::filesystem::path path);
 
-// change if thread is logged (true) or not (false) - default is false
-//
-#define SILKWORM_LOG_THREAD(log_thread_) (silkworm::log_thread_enabled_ = (log_thread_))
-
-
-// change the logging output streams - default is (cerr, null_stream())
-//
-#define SILKWORM_LOG_STREAMS(stream1_, stream2_) silkworm::log_set_streams_((stream1_), (stream2_));
-
-// silence
-std::ostream& null_stream();
-
-
-
-
-class LogBufferBase {
+class BufferBase {
   public:
-    explicit LogBufferBase(LogLevel level);
-    ~LogBufferBase() {
-        flush();
-    }
+    explicit BufferBase(Level level);
+    ~BufferBase() { flush(); }
 
     // Accumulators
     template <class T>
@@ -61,31 +65,30 @@ class LogBufferBase {
         ss_ << t;
     }
     template <class T>
-    LogBufferBase& operator<<(T const& t) {
+    BufferBase& operator<<(T const& t) {
         append(t);
         return *this;
     }
 
   protected:
     void flush();
-    LogLevel level_;
+    Level level_;
     std::stringstream ss_;
 };
 
-template <LogLevel level>
-class LogBuffer : public LogBufferBase {
+template <Level level>
+class LogBuffer : public BufferBase {
   public:
-    LogBuffer() : LogBufferBase(level){};
+    LogBuffer() : BufferBase(level){};
 };
 
-using TraceChannel = LogBuffer<LogLevel::Trace>;
-using DebugChannel = LogBuffer<LogLevel::Debug>;
-using InfoChannel = LogBuffer<LogLevel::Info>;
-using WarningChannel = LogBuffer<LogLevel::Warn>;
-using ErrorChannel = LogBuffer<LogLevel::Error>;
-using CriticalChannel = LogBuffer<LogLevel::Critical>;
-using MessageChannel = LogBuffer<LogLevel::None>;
-
+using TraceChannel = LogBuffer<Level::Trace>;
+using DebugChannel = LogBuffer<Level::Debug>;
+using InfoChannel = LogBuffer<Level::Info>;
+using WarningChannel = LogBuffer<Level::Warn>;
+using ErrorChannel = LogBuffer<Level::Error>;
+using CriticalChannel = LogBuffer<Level::Critical>;
+using MessageChannel = LogBuffer<Level::None>;
 
 }  // namespace silkworm::log
 

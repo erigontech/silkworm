@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
 
     log::InfoChannel() << "Starting block execution. DB: " << chaindata;
 
-    log::set_verbosity(log::LogLevel::Debug);
+    log::set_verbosity(log::Level::Debug);
 
     uint64_t prune_from{0};
     auto data_dir{DataDirectory::from_chaindata(chaindata)};

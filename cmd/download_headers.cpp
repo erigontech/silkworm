@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -25,7 +25,6 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/block_provider.hpp>
 #include <silkworm/downloader/header_downloader.hpp>
-#include <silkworm/downloader/sentry_client.hpp>
 
 using namespace silkworm;
 
@@ -51,9 +50,8 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    log::set_verbosity(log::LogLevel::Trace);
-    std::ofstream log_file("downloader.log", std::ios::out | std::ios::app);
-    SILKWORM_LOG_STREAMS(cerr, log_file);
+    log::set_verbosity(log::Level::Trace);
+    log::tee_file(std::filesystem::path("downloader.log"));
     log::InfoChannel() << "STARTING";
 
     std::thread block_request_processing;

@@ -45,7 +45,7 @@ commands:
             - ~/.hunter
       - run:
           name: "Build"
-          command: cmake --build ~/build -j
+          command: cmake --build ~/build -j4 # each compiler job requires 4GB of RAM
 
   test:
     steps:

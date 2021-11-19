@@ -14,20 +14,11 @@
    limitations under the License.
 ]]
 
-hunter_config(Boost VERSION 1.72.0-p1)
-
-hunter_config(
-  abseil
-  VERSION 20210324.2
-  URL https://github.com/abseil/abseil-cpp/archive/20210324.2.tar.gz
-  SHA1 2d46ae096bfbdab19de1d65079b95e0fae9efe2e
-)
-
 hunter_config(
   Catch
-  VERSION 2.13.4
-  URL https://github.com/catchorg/Catch2/archive/v2.13.4.tar.gz
-  SHA1 b8417c5c87ab385c9f56576aefbcc098fb923e57
+  VERSION 2.13.7
+  URL https://github.com/catchorg/Catch2/archive/v2.13.7.tar.gz
+  SHA1 fa8f14ccf852413d3c6d3999145ada934d37d773
 )
 
 hunter_config(
@@ -50,6 +41,13 @@ hunter_config(
   URL https://github.com/chfast/ethash/archive/refs/tags/v0.8.0.tar.gz
   SHA1 41fd440f70b6a8dfc3fd29b20f471dcbd1345ad0
   CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=NO ETHASH_BUILD_TESTS=OFF
+)
+
+hunter_config(
+  re2
+  VERSION 2021.11.01
+  URL https://github.com/google/re2/archive/2021-11-01.tar.gz
+  SHA1 4c18662f103ef53f106f8f98d7b46b723615e14f
 )
 
 hunter_config(Protobuf VERSION 3.14.0-4a09d77-p0)

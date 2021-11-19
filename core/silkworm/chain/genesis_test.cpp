@@ -83,7 +83,7 @@ TEST_CASE("mainnet_genesis") {
         auto address_bytes{from_hex(item.key())};
         REQUIRE((address_bytes != std::nullopt && address_bytes.value().length() == kAddressLength));
 
-        evmc::address account_address = silkworm::to_address(*address_bytes);
+        evmc::address account_address = silkworm::to_evmc_address(*address_bytes);
         auto balance_str{item.value()["balance"].get<std::string>()};
         Account account{0, intx::from_string<intx::uint256>(balance_str)};
         state.update_account(account_address, std::nullopt, account);

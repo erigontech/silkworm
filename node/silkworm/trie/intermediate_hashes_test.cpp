@@ -476,7 +476,7 @@ TEST_CASE("Account trie around extension node") {
 static evmc::address int_to_address(uint64_t i) {
     uint8_t be[8];
     endian::store_big_u64(be, i);
-    return to_address(be);
+    return to_evmc_address(be);
 }
 
 static evmc::bytes32 int_to_bytes32(uint64_t i) {

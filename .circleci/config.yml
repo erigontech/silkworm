@@ -33,11 +33,11 @@ commands:
             sudo apt-get install -y libgmp3-dev
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum ".circleci/config.yml"}}-{{checksum "cmake/toolchain.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}-{{checksum "cmake/Hunter/extra_packages.cmake"}}
+          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum ".circleci/config.yml"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/Hunter/core_packages.cmake"}}-{{checksum "cmake/Hunter/extra_packages.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE
+          command: cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -66,6 +66,7 @@ jobs:
   linux-gcc-9:
     environment:
       BUILD_TYPE: Release
+      TOOLCHAIN: cxx17.cmake
       CLANG_COVERAGE: OFF
     machine:
       image: ubuntu-2004:202010-01
@@ -75,9 +76,23 @@ jobs:
       - build
       - test
 
+  linux-gcc-11-cpp20:
+    environment:
+      BUILD_TYPE: Debug
+      TOOLCHAIN: cxx20.cmake
+      CLANG_COVERAGE: OFF
+    docker:
+      - image: ethereum/cpp-build-env:17-gcc-11
+    resource_class: xlarge
+    steps:
+      - checkout_with_submodules
+      - build
+      - test
+
   linux-clang-coverage:
     environment:
       BUILD_TYPE: Debug
+      TOOLCHAIN: cxx17.cmake
       CLANG_COVERAGE: ON
     docker:
       - image: ethereum/cpp-build-env:14-clang-10
@@ -156,7 +171,7 @@ jobs:
           name: "Cmake"
           working_directory: ~/build
           command: |
-            cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DSILKWORM_WASM_API=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a -DCMAKE_BUILD_TYPE=Release
+            cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/wasi.cmake -DSILKWORM_CORE_ONLY=ON -DSILKWORM_WASM_API=ON -DGMP_INCLUDE_DIR=$HOME/opt-wasm/include -DGMP_LIBRARY=$HOME/opt-wasm/lib/libgmp.a -DCMAKE_BUILD_TYPE=Release
       - run:
           name: "Build"
           command: cmake --build ~/build -j
@@ -170,5 +185,6 @@ workflows:
   silkworm:
     jobs:
       - linux-gcc-9
+      - linux-gcc-11-cpp20
       - linux-clang-coverage
       - linux-wasm-build

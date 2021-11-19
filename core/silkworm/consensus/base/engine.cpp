@@ -25,7 +25,7 @@
 
 namespace silkworm::consensus {
 
-ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& block, silkworm::State& state) {
+ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& block, silkworm::BlockState& state) {
     const BlockHeader& header{block.header};
 
     if (ValidationResult err{validate_block_header(header, state, /*with_future_timestamp_check=*/true)};
@@ -84,7 +84,7 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
     return ValidationResult::kOk;
 }
 
-ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& header, State& state,
+ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& header, BlockState& state,
                                                             bool with_future_timestamp_check) {
     if (with_future_timestamp_check) {
         const std::time_t now{std::time(nullptr)};
@@ -154,7 +154,7 @@ ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& h
     return validate_seal(header);
 }
 
-std::optional<BlockHeader> ConsensusEngineBase::get_parent_header(const State& state, const BlockHeader& header) {
+std::optional<BlockHeader> ConsensusEngineBase::get_parent_header(const BlockState& state, const BlockHeader& header) {
     if (header.number == 0) {
         return std::nullopt;
     }
@@ -162,7 +162,7 @@ std::optional<BlockHeader> ConsensusEngineBase::get_parent_header(const State& s
 }
 
 bool ConsensusEngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                                 const evmc::bytes32& mainline_hash, unsigned int n, const State& state,
+                                 const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
                                  std::vector<BlockHeader>& old_ommers) {
     if (n == 0 || branch_header == mainline_header) {
         return false;

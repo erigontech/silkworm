@@ -105,7 +105,7 @@ ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer) {
     return buffer;
 }
 
-evmc::address to_address(ByteView bytes) {
+evmc::address to_evmc_address(ByteView bytes) {
     evmc::address out;
     if (!bytes.empty()) {
         size_t n{std::min(bytes.length(), kAddressLength)};

@@ -274,7 +274,7 @@ evmc_vm* exo_evm{nullptr};
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section
 void init_pre_state(const nlohmann::json& pre, State& state) {
     for (const auto& entry : pre.items()) {
-        const evmc::address address{to_address(from_hex(entry.key()).value())};
+        const evmc::address address{to_evmc_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};
 
         Account account;
@@ -353,7 +353,7 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
     }
 
     for (const auto& entry : expected.items()) {
-        const evmc::address address{to_address(from_hex(entry.key()).value())};
+        const evmc::address address{to_evmc_address(from_hex(entry.key()).value())};
         const nlohmann::json& j{entry.value()};
 
         std::optional<Account> account{state.read_account(address)};
@@ -592,7 +592,7 @@ Status transaction_test(const nlohmann::json& j, const std::optional<ChainConfig
         }
 
         const std::string expected_sender{entry.value()["sender"].get<std::string>()};
-        if (txn.from != to_address(*from_hex(expected_sender))) {
+        if (txn.from != to_evmc_address(*from_hex(expected_sender))) {
             std::cout << "Sender mismatch for " << entry.key() << ":\n"
                       << to_hex(*txn.from) << " != " << expected_sender << std::endl;
             return Status::kFailed;

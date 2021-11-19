@@ -17,16 +17,14 @@
 #ifndef SILKWORM_STATE_STATE_HPP_
 #define SILKWORM_STATE_STATE_HPP_
 
-#include <optional>
-
-#include <silkworm/common/base.hpp>
 #include <silkworm/types/account.hpp>
-#include <silkworm/types/block.hpp>
 #include <silkworm/types/receipt.hpp>
+
+#include <silkworm/state/block_state.hpp>
 
 namespace silkworm {
 
-class State {
+class State : public BlockState {
   public:
     State() = default;
 
@@ -47,12 +45,6 @@ class State {
 
     /** Previous non-zero incarnation of an account; 0 if none exists. */
     virtual uint64_t previous_incarnation(const evmc::address& address) const noexcept = 0;
-
-    virtual std::optional<BlockHeader> read_header(uint64_t block_number,
-                                                   const evmc::bytes32& block_hash) const noexcept = 0;
-
-    virtual std::optional<BlockBody> read_body(uint64_t block_number,
-                                               const evmc::bytes32& block_hash) const noexcept = 0;
 
     virtual std::optional<intx::uint256> total_difficulty(uint64_t block_number,
                                                           const evmc::bytes32& block_hash) const noexcept = 0;

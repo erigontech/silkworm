@@ -14,6 +14,8 @@
     limitations under the License.
 */
 
+#include <optional>
+
 #include <CLI/CLI.hpp>
 
 #include <silkworm/common/log.hpp>
@@ -23,11 +25,21 @@
 using namespace silkworm;
 
 struct HumanSizeParserValidator : public CLI::Validator {
-    HumanSizeParserValidator() {
-        func_ = [](const std::string& value) -> std::string {
+    template <typename T>
+    explicit HumanSizeParserValidator(T min, std::optional<T> max = std::nullopt) {
+        std::stringstream out;
+        out << " in [" << min << " - " << (max.has_value() ? max.value() : "∞") << "]";
+        description(out.str());
+
+        func_ = [min, max](const std::string& value) -> std::string {
             auto parsed_size{parse_size(value)};
             if (!parsed_size.has_value()) {
                 return std::string("Value " + value + " is not a parseable size");
+            }
+            auto min_size{parse_size(min).value()};
+            auto max_size{max.has_value() ? parse_size(max.value()).value() : UINT64_MAX};
+            if (parsed_size.value() < min_size || parsed_size.value() > max_size) {
+                return "Value " + value + " not in range " + min + " to " + (max.has_value() ? max.value() : "∞");
             }
             return {};
         };
@@ -38,16 +50,16 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
                         NodeSettings& node_settings) {
     // Node settings
     std::string datadir{DataDirectory::get_default_storage_path().string()};
-    std::string chaindata_max_size{"2TB"};
-    std::string batch_size{"512MB"};
-    std::string etl_buffer_size{"256MB"};
+    std::string chaindata_max_size{human_size(node_settings.chaindata_max_size)};
+    std::string batch_size{human_size(node_settings.batch_size)};
+    std::string etl_buffer_size{human_size(node_settings.etl_buffer_size)};
     cli.add_option("--datadir", datadir, "Path to data directory", true);
-    cli.add_option("--chaindata.maxsize", chaindata_max_size, "Max chaindata database size (>= 64MB)", true)
-        ->check(HumanSizeParserValidator());
-    cli.add_option("--batchsize", batch_size, "Batch size for stage execution (>= 64MB)", true)
-        ->check(HumanSizeParserValidator());
-    cli.add_option("--etl.buffersize", etl_buffer_size, "Buffer size for ETL operations (>= 64MB)", true)
-        ->check(HumanSizeParserValidator());
+    cli.add_option("--chaindata.maxsize", chaindata_max_size, "Max chaindata database size", true)
+        ->check(HumanSizeParserValidator("64MB"));
+    cli.add_option("--batchsize", batch_size, "Batch size for stage execution", true)
+        ->check(HumanSizeParserValidator("64MB", {"1GB"}));
+    cli.add_option("--etl.buffersize", etl_buffer_size, "Buffer size for ETL operations", true)
+        ->check(HumanSizeParserValidator("64MB", {"1GB"}));
 
     // Logging options
     auto& log_opts = *cli.add_option_group("Log", "Logging options");
@@ -61,17 +73,9 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
 
     cli.parse(argc, argv);
 
-    // Extra validations
+    // Assign settings
     node_settings.chaindata_max_size = parse_size(chaindata_max_size).value();
-    if(node_settings.chaindata_max_size < 64_Mebi){
-        throw std::invalid_argument("--chaindata.maxsize must be greater equal 64MB");
-    }
-
     node_settings.batch_size = parse_size(batch_size).value();
-    if(node_settings.batch_size < 64_Mebi){
-        throw std::invalid_argument("--batchsize must be greater equal 64MB");
-    }
-
 }
 
 int main(int argc, char* argv[]) {

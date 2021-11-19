@@ -15,8 +15,10 @@
 */
 
 #include <optional>
+#include <regex>
 
 #include <CLI/CLI.hpp>
+#include <boost/asio/ip/address.hpp>
 
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
@@ -46,6 +48,44 @@ struct HumanSizeParserValidator : public CLI::Validator {
     }
 };
 
+struct PruneModeValidator : public CLI::Validator {
+    PruneModeValidator() {
+        func_ = [](const std::string& value) -> std::string {
+            if (value.find_first_not_of("hrtc") != std::string::npos) {
+                return "Value " + value + " contains other characters other than h r t c";
+            }
+            return {};
+        };
+    }
+};
+
+struct EndPointValidator : public CLI::Validator {
+    EndPointValidator() {
+        func_ = [](const std::string& value) -> std::string {
+            const std::regex pattern(R"(([\da-fA-F\.\:]*)\:([\d]*))");
+            std::smatch matches;
+            if (!std::regex_match(value, matches, pattern)) {
+                return "Value " + value + " is not a valid endpoint";
+            }
+
+            // Validate IP address
+            boost::system::error_code err;
+            std::string ip_address{boost::asio::ip::address::from_string(matches[1], err).to_string()};
+            if (err) {
+                return "Value " + std::string(matches[1]) + " is not a valid ip address";
+            }
+
+            // Validate port
+            int port{std::stoi(matches[2])};
+            if (port < 1 || port > 65535) {
+                return "Value " + std::string(matches[2]) + " is not a valid listening port";
+            }
+
+            return {};
+        };
+    }
+};
+
 void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& log_settings,
                         NodeSettings& node_settings) {
     // Node settings
@@ -54,12 +94,30 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     std::string batch_size{human_size(node_settings.batch_size)};
     std::string etl_buffer_size{human_size(node_settings.etl_buffer_size)};
     cli.add_option("--datadir", datadir, "Path to data directory", true);
+    cli.add_option("--prune", node_settings.prune_mode,
+                   "Choose which ancient data delete from DB : \n"
+                   "h - prune history (ChangeSets, HistoryIndices - used by historical state access)\n"
+                   "r - prune receipts (Receipts, Logs, LogTopicIndex, LogAddressIndex - used by eth_getLogs and "
+                   "similar RPC methods)\n"
+                   "t - prune transaction by it's hash index\n"
+                   "c - prune call traces (used by trace_* methods)\n"
+                   "Does delete data older than 90K block (can set another value by '--prune.*.older' flags)\n"
+                   "If item is NOT in the list - means NO pruning for this data.s\n"
+                   "Example: --prune=hrtc (default: none)",
+                   true)
+        ->check(PruneModeValidator());
     cli.add_option("--chaindata.maxsize", chaindata_max_size, "Max chaindata database size", true)
         ->check(HumanSizeParserValidator("64MB"));
     cli.add_option("--batchsize", batch_size, "Batch size for stage execution", true)
         ->check(HumanSizeParserValidator("64MB", {"1GB"}));
     cli.add_option("--etl.buffersize", etl_buffer_size, "Buffer size for ETL operations", true)
         ->check(HumanSizeParserValidator("64MB", {"1GB"}));
+    cli.add_option("--private.api.addr", node_settings.private_api_addr,
+                   "Private API network address to serve remote database interface\n"
+                   "An empty string means to not start the listener\n"
+                   "Use the endpoint form i.e. ip-address:port\n"
+                   "DO NOT EXPOSE TO THE INTERNET",
+                   true)->check(EndPointValidator());
 
     // Logging options
     auto& log_opts = *cli.add_option_group("Log", "Logging options");

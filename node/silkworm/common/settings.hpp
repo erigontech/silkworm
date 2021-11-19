@@ -25,10 +25,12 @@
 namespace silkworm {
 
 struct NodeSettings {
-    std::unique_ptr<DataDirectory> data_directory;  // Pointer to data folder
-    size_t chaindata_max_size{2_Tebi};              // Max MDBX map size for chaindata
-    size_t batch_size{512_Mebi};                    // Batch size to use in stages
-    size_t etl_buffer_size{256_Mebi};               // Buffer size for ETL operations
+    std::unique_ptr<DataDirectory> data_directory;   // Pointer to data folder
+    size_t chaindata_max_size{2_Tebi};               // Max MDBX map size for chaindata
+    size_t batch_size{512_Mebi};                     // Batch size to use in stages
+    size_t etl_buffer_size{256_Mebi};                // Buffer size for ETL operations
+    std::string prune_mode{};                        // Prune mode
+    std::string private_api_addr{"127.0.0.1:9090"};  // Default API listener
 };
 
 }  // namespace silkworm

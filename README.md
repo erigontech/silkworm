@@ -73,10 +73,11 @@ Then run the build itself
 ```
 make -j
 ```
-_Note about parallel builds using `-j` : if not specified the exact number of parallel tasks the compiler will spawn as many
-as the cores available. This may cause OOM errors if build is executed on a host with a large number of cores but a relatively
-small amount of RAM. To workaround this either specify `-jn` where `n` is the number of parallel tasks you want to allow or
-remove `-j` completely._
+_Note about parallel builds using `-j`: if not specified the exact number of parallel tasks, the compiler will spawn as many
+as the cores available. That may cause OOM errors if the build is executed on a host with a large number of cores but a relatively
+small amount of RAM. To work around this, either specify `-jn` where `n` is the number of parallel tasks you want to allow or
+remove `-j` completely. Typically for Silkworm, each compiler job requires 4GB of RAM. So, if your total RAM is 16GB, for example,
+then `-j4` should be OK, while `-j8` is probably not. It also means that you need a machine with at least 4GB RAM to compile Silkworm._
 
 Now you can run the unit tests
 ```

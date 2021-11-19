@@ -48,7 +48,7 @@ ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer);
 
 // Converts bytes to evmc::address; input is cropped if necessary.
 // Short inputs are left-padded with 0s.
-evmc::address to_address(ByteView bytes);
+evmc::address to_evmc_address(ByteView bytes);
 
 // Converts bytes to evmc::bytes32; input is cropped if necessary.
 // Short inputs are left-padded with 0s.

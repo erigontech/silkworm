@@ -16,11 +16,13 @@
 
 #include "recovery_farm.hpp"
 
+#include <functional>
+
 #include <boost/format.hpp>
 
+#include <silkworm/common/as_range.hpp>
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/log.hpp>
-#include <silkworm/common/as_range.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/stages.hpp>
 
@@ -390,9 +392,8 @@ bool RecoveryFarm::dispatch_batch() {
 
     // Locate first available worker
     while (!should_stop()) {
-        auto it = as_range::find_if(workers_, [](const worker_pair& w) {
-            return w.first->get_status() == RecoveryWorker::Status::Idle;
-        });
+        auto it = as_range::find_if(
+            workers_, [](const worker_pair& w) { return w.first->get_status() == RecoveryWorker::Status::Idle; });
 
         if (it != workers_.end()) {
             SILKWORM_LOG(LogLevel::Trace) << "Dispatching package to worker #" << it->first->get_id() << std::endl;
@@ -433,10 +434,10 @@ bool RecoveryFarm::dispatch_batch() {
 
 bool RecoveryFarm::initialize_new_worker() {
     SILKWORM_LOG(LogLevel::Trace) << "Launching worker #" << workers_.size() << std::endl;
+    using namespace std::placeholders;
     try {
         auto worker{std::make_unique<RecoveryWorker>(workers_.size(), max_batch_size_ * kAddressLength)};
-        auto connector{
-            worker->signal_completed.connect(boost::bind(&RecoveryFarm::worker_completed_handler, this, _1))};
+        auto connector{worker->signal_completed.connect(std::bind(&RecoveryFarm::worker_completed_handler, this, _1))};
         workers_.emplace_back(std::move(worker), std::move(connector));
         workers_.back().first->start(/*wait=*/true);
         return workers_.back().first->get_state() == Worker::WorkerState::kStarted;

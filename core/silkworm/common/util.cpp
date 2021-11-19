@@ -15,10 +15,11 @@
 */
 
 #include "util.hpp"
-#include <silkworm/common/as_range.hpp>
 
 #include <cassert>
 #include <regex>
+
+#include <silkworm/common/as_range.hpp>
 
 namespace silkworm {
 
@@ -104,7 +105,7 @@ ByteView right_pad(ByteView view, size_t min_size, Bytes& buffer) {
     return buffer;
 }
 
-evmc::address to_address(ByteView bytes) {
+evmc::address to_evmc_address(ByteView bytes) {
     evmc::address out;
     if (!bytes.empty()) {
         size_t n{std::min(bytes.length(), kAddressLength)};
@@ -123,8 +124,8 @@ evmc::bytes32 to_bytes32(ByteView bytes) {
 }
 
 ByteView zeroless_view(const ByteView& data) {
-    return data.substr(static_cast<size_t>(std::distance(
-        data.begin(), as_range::find_if_not(data, [](const auto& b) { return b == 0x0; }))));
+    return data.substr(static_cast<size_t>(
+        std::distance(data.begin(), as_range::find_if_not(data, [](const auto& b) { return b == 0x0; }))));
 }
 
 ByteView zeroless_view(const evmc::bytes32& hash) { return zeroless_view(full_view(hash)); }

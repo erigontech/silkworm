@@ -16,6 +16,8 @@
 
 #include "recovery_farm.hpp"
 
+#include <functional>
+
 #include <boost/format.hpp>
 
 #include <silkworm/common/as_range.hpp>
@@ -59,7 +61,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
             // Something bad had happened. Not possible sender stage is ahead of bodies
             // Maybe we need to unwind ?
             log::ErrorChannel() << "Bad progress sequence. Sender stage progress " << senders_stage_progress
-                                          << " while Bodies stage " << bodies_stage_progress;
+                                << " while Bodies stage " << bodies_stage_progress;
             return StageResult::kInvalidProgress;
         }
         to = std::min(bodies_stage_progress, to);
@@ -105,8 +107,8 @@ StageResult RecoveryFarm::recover(BlockNum to) {
             // We surpassed the expected block which means
             // either the db misses a block or blocks are not persisted
             // in sequence
-            log::ErrorChannel() << "Senders' recovery : Bad block sequence expected " << expected_block_num
-                                          << " got " << reached_block_num;
+            log::ErrorChannel() << "Senders' recovery : Bad block sequence expected " << expected_block_num << " got "
+                                << reached_block_num;
             stage_result = StageResult::kBadChainSequence;
             break;
         }
@@ -162,12 +164,10 @@ StageResult RecoveryFarm::recover(BlockNum to) {
                 db::stages::write_stage_progress(db_transaction_, db::stages::kSendersKey, reached_block_num);
 
             } catch (const mdbx::exception& ex) {
-                log::ErrorChannel()
-                    << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+                log::ErrorChannel() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
                 stage_result = StageResult::kDbError;
             } catch (const std::exception& ex) {
-                log::ErrorChannel()
-                    << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
+                log::ErrorChannel() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
                 stage_result = StageResult::kUnexpectedError;
             } catch (...) {
                 log::ErrorChannel() << "Unknown error in " << std::string(__FUNCTION__);
@@ -427,10 +427,10 @@ bool RecoveryFarm::dispatch_batch() {
 
 bool RecoveryFarm::initialize_new_worker() {
     log::TraceChannel() << "Launching worker #" << workers_.size();
+    using namespace std::placeholders;
     try {
         auto worker{std::make_unique<RecoveryWorker>(workers_.size(), max_batch_size_ * kAddressLength)};
-        auto connector{
-            worker->signal_completed.connect(boost::bind(&RecoveryFarm::worker_completed_handler, this, _1))};
+        auto connector{worker->signal_completed.connect(std::bind(&RecoveryFarm::worker_completed_handler, this, _1))};
         workers_.emplace_back(std::move(worker), std::move(connector));
         workers_.back().first->start(/*wait=*/true);
         return workers_.back().first->get_state() == Worker::WorkerState::kStarted;

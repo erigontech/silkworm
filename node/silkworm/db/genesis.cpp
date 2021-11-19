@@ -142,7 +142,7 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
 
             for (auto& item : genesis_json["alloc"].items()) {
                 auto address_bytes{from_hex(item.key())};
-                evmc::address account_address = to_address(*address_bytes);
+                evmc::address account_address = to_evmc_address(*address_bytes);
                 auto balance_str{item.value()["balance"].get<std::string>()};
                 Account account{0, intx::from_string<intx::uint256>(balance_str)};
                 state_buffer.update_account(account_address, std::nullopt, account);
@@ -214,8 +214,8 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
         db::write_canonical_header_hash(txn, block_hash.bytes, header.number);  // Insert header hash as canonical
         db::write_total_difficulty(txn, block_hash_key, header.difficulty);     // Write initial difficulty
 
-        db::write_body(txn, BlockBody(), block_hash.bytes, header.number);      // Write block body (empty)
-        db::write_head_header_hash(txn, block_hash.bytes);                      // Update head header in config
+        db::write_body(txn, BlockBody(), block_hash.bytes, header.number);  // Write block body (empty)
+        db::write_head_header_hash(txn, block_hash.bytes);                  // Update head header in config
 
         // TODO(Andrea) verify how receipts are stored (see buffer.cpp)
         const uint8_t genesis_null_receipts[] = {0xf6};  // <- cbor encoded

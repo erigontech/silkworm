@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@
    limitations under the License.
 ]]
 
-set(CMAKE_C_COMPILER /opt/wasi-sdk/bin/clang)
-set(CMAKE_CXX_COMPILER /opt/wasi-sdk/bin/clang++)
+include(${CMAKE_CURRENT_LIST_DIR}/base.cmake)
 
-add_definitions(-DCATCH_CONFIG_NO_POSIX_SIGNALS)
-
-include(${CMAKE_CURRENT_LIST_DIR}/toolchain.cmake)
+set(CMAKE_CXX_STANDARD 20)

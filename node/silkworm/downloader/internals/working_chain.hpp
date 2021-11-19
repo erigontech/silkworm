@@ -21,9 +21,11 @@
 
 #include <silkworm/chain/preverified_hashes.hpp>
 #include <silkworm/common/lru_cache.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/downloader/packets/GetBlockHeadersPacket.hpp>
 
 #include "chain_elements.hpp"
+#include "header_only_state.hpp"
 #include "persisted_chain.hpp"
 
 namespace silkworm {
@@ -55,12 +57,14 @@ namespace silkworm {
  */
 class WorkingChain {
   public:
-    WorkingChain();
+    using ConsensusEngine = std::unique_ptr<consensus::IConsensusEngine>;
 
-    // load initial state from db
+    explicit WorkingChain(ConsensusEngine);
+
+    // load initial state from db - this must be done at creation time
     void recover_initial_state(Db::ReadOnlyAccess::Tx&);
 
-    // sync current state
+    // sync current state - this must be done at header forward
     void sync_current_state(BlockNum highest_in_db);
 
     // status
@@ -87,7 +91,7 @@ class WorkingChain {
     // when a remote peer satisfy our request we receive one or more header that will be processed to fill hole in the
     // block chain
     using RequestMoreHeaders = bool;
-    auto accept_headers(const std::vector<BlockHeader>&, PeerId) -> std::tuple<Penalty, RequestMoreHeaders>;
+    auto accept_headers(const std::vector<BlockHeader>&, const PeerId&) -> std::tuple<Penalty, RequestMoreHeaders>;
 
     // core functionalities: persist new headers that have persisted parent
     auto withdraw_stable_headers() -> Headers;
@@ -107,7 +111,7 @@ class WorkingChain {
     static constexpr size_t persistent_link_limit = link_total / 16;
     static constexpr size_t link_limit = link_total - persistent_link_limit;
 
-    auto process_segment(const Segment&, bool is_a_new_block, PeerId) -> RequestMoreHeaders;
+    auto process_segment(const Segment&, bool is_a_new_block, const PeerId&) -> RequestMoreHeaders;
 
     using Found = bool;
     using Start = size_t;
@@ -126,7 +130,10 @@ class WorkingChain {
     auto add_header_as_link(const BlockHeader& header, bool persisted) -> std::shared_ptr<Link>;
     void mark_as_preverified(std::shared_ptr<Link>);
     size_t anchors_within_range(BlockNum max);
-    BlockNum lowest_unsaved_anchor_from(BlockNum top_bn);
+    BlockNum lowest_anchor_within_range(BlockNum bottom, BlockNum top);
+
+    enum VerificationResult {Preverified, Skip, Postpone, Accept};
+    VerificationResult verify(const Link& link);
 
     using Error = int;
     void connect(Segment::Slice);                                   // throw segment_cut_and_paste_error
@@ -134,29 +141,21 @@ class WorkingChain {
     void extend_up(Segment::Slice);                                 // throw segment_cut_and_paste_error
     auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;  // throw segment_cut_and_paste_error
 
-    YoungestFirstLinkQueue linkQueue_;         // Priority queue of non-persisted links used to limit their number
-    OldestFirstAnchorQueue anchorQueue_;       // Priority queue of anchors used to sequence the header requests
+    YoungestFirstLinkQueue link_queue_;         // Priority queue of non-persisted links used to limit their number
+    OldestFirstAnchorQueue anchor_queue_;       // Priority queue of anchors used to sequence the header requests
     LinkMap links_;                            // Links by header hash
     AnchorMap anchors_;                        // Mapping from parentHash to collection of anchors
-    OldestFirstLinkQueue persistedLinkQueue_;  // Priority queue of persisted links used to limit their number
-    LinkLIFOQueue insertList_;  // List of non-persisted links that can be inserted (their parent is persisted)
-    BlockNum highestInDb_;
-    BlockNum topSeenHeight_;
-    std::set<Hash> badHeaders_;
-    const PreverifiedHashes* preverifiedHashes_;  // Set of hashes that are known to belong to canonical chain
+    OldestFirstLinkQueue persisted_link_queue_;  // Priority queue of persisted links used to limit their number
+    LinkLIFOQueue insert_list_;  // List of non-persisted links that can be inserted (their parent is persisted)
+    BlockNum highest_in_db_;
+    BlockNum top_seen_height_;
+    std::set<Hash> bad_headers_;
+    const PreverifiedHashes* preverified_hashes_;  // Set of hashes that are known to belong to canonical chain
     using Ignore = int;
-    lru_cache<Hash, Ignore> seenAnnounces_;
-    std::vector<Announce> announcesToDo_;
-};
-
-class ConsensusProto {  // todo: replace with correct implementation
-  public:
-    enum VerificationResult { VERIFIED, FUTURE_BLOCK, VERIFICATION_ERROR };
-
-    static VerificationResult verify(const BlockHeader&) {
-        // todo: implement, use seal = true
-        return VERIFIED;
-    };
+    lru_cache<Hash, Ignore> seen_announces_;
+    std::vector<Announce> announces_to_do_;
+    ConsensusEngine consensus_engine_;
+    CustomHeaderOnlyChainState chain_state_;
 };
 
 }  // namespace silkworm

@@ -14,9 +14,9 @@
    limitations under the License.
 ]]
 
-hunter_add_package(abseil)
-hunter_add_package(benchmark)
-hunter_add_package(Boost COMPONENTS thread)
-hunter_add_package(CLI11)
-hunter_add_package(gRPC)
-hunter_add_package(Protobuf)
+set(CMAKE_C_COMPILER /opt/wasi-sdk/bin/clang)
+set(CMAKE_CXX_COMPILER /opt/wasi-sdk/bin/clang++)
+
+add_definitions(-DCATCH_CONFIG_NO_POSIX_SIGNALS)
+
+include(${CMAKE_CURRENT_LIST_DIR}/cxx17.cmake)

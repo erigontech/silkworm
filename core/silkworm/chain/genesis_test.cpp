@@ -30,7 +30,6 @@
 namespace silkworm {
 
 TEST_CASE("genesis config") {
-
     std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK_FALSE(genesis_json.is_discarded());
@@ -61,11 +60,9 @@ TEST_CASE("genesis config") {
     genesis_data = read_genesis_data(1'000u);
     genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
     CHECK(genesis_json.is_discarded());
-
 }
 
 TEST_CASE("mainnet_genesis") {
-
     // Parse genesis data
     std::string genesis_data = read_genesis_data(static_cast<uint32_t>(kMainnetConfig.chain_id));
     nlohmann::json genesis_json = nlohmann::json::parse(genesis_data, nullptr, /* allow_exceptions = */ false);
@@ -86,7 +83,7 @@ TEST_CASE("mainnet_genesis") {
         auto address_bytes{from_hex(item.key())};
         REQUIRE((address_bytes != std::nullopt && address_bytes.value().length() == kAddressLength));
 
-        evmc::address account_address = silkworm::to_address(*address_bytes);
+        evmc::address account_address = silkworm::to_evmc_address(*address_bytes);
         auto balance_str{item.value()["balance"].get<std::string>()};
         Account account{0, intx::from_string<intx::uint256>(balance_str)};
         state.update_account(account_address, std::nullopt, account);

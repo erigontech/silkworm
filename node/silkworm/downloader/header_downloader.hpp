@@ -117,16 +117,23 @@ class HeaderDownloader : public Stage, public ActiveComponent {
     WorkingChain working_chain_;
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry
 
-    /* todo: to better enforce mono-thread usage of WorkingChain, put WorkingChain and MessageQueue here, add here the
-    message-execution loop and use messages with a execute(working_chain) method class Background_Processing {
+    // todo: put a barrier around WorkingChain & MessageQueue using this class
+    /* Background_Processing runs forever and processes messages arriving from the outside (peers) via Sentry;
+     * Messages carries data & code to update the WorkingChain so Background_Processing only responsibility is
+     * to provide a thead and to put a barrier around WorkingChain enforcing that it is accessed only in this thread.
+     * It also communicates with the downloader using the same mechanism: downloader creates a message and put it in the
+     * MessageQueue waiting for message processing (and results).
+     /
+    class Background_Processing {
         MessageQueue messages;
         WorkingChain working_chain_;
+        IConsensusEngine consensus_engine_;
       public:
         void receive_message(shared_ptr<Message>); // put message in the queue; call it from sentry (pub/sub) and from
-    the downloader
+                                                   // the downloader
 
         [[long_running]] void process_messages(); // wait for a message, pop and process it; provide a thread from the
-    outside
+                                                   // outside
     };
     */
 };

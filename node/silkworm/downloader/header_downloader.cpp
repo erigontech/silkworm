@@ -19,6 +19,7 @@
 #include <thread>
 
 #include <silkworm/chain/preverified_hashes.hpp>
+#include <silkworm/consensus/engine.hpp>
 #include <silkworm/common/log.hpp>
 
 #include "internals/header_retrieval.hpp"
@@ -31,7 +32,10 @@
 namespace silkworm {
 
 HeaderDownloader::HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_access, ChainIdentity chain_identity)
-    : chain_identity_(std::move(chain_identity)), db_access_{db_access}, sentry_{sentry} {
+    : chain_identity_(std::move(chain_identity)),
+      db_access_{db_access},
+      sentry_{sentry},
+      working_chain_(consensus::engine_factory(chain_identity.chain)) {
     auto tx = db_access_.start_ro_tx();
     working_chain_.recover_initial_state(tx);
     working_chain_.set_preverified_hashes(&(PreverifiedHashes::per_chain.at(chain_identity.chain.chain_id)));

@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020-2021 The Silkworm Authors
+   Copyright 2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@
    limitations under the License.
 ]]
 
-hunter_add_package(abseil)
-hunter_add_package(benchmark)
-hunter_add_package(Boost COMPONENTS thread)
-hunter_add_package(CLI11)
-hunter_add_package(gRPC)
-hunter_add_package(Protobuf)
+include(${CMAKE_CURRENT_LIST_DIR}/base.cmake)
+
+set(CMAKE_CXX_STANDARD 17)

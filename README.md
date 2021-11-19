@@ -5,8 +5,6 @@ C++ implementation of the Ethereum protocol based on the [Erigon architecture].
 [![CircleCI](https://circleci.com/gh/torquem-ch/silkworm.svg?style=svg)](https://circleci.com/gh/torquem-ch/silkworm)
 [![AppVeyor](https://ci.appveyor.com/api/projects/status/8npida1piyqw1844/branch/master?svg=true)](https://ci.appveyor.com/project/torquem/silkworm)
 [![CodeCov](https://codecov.io/gh/torquem-ch/silkworm/branch/master/graph/badge.svg)](https://codecov.io/gh/torquem-ch/silkworm)
-[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/torquem-ch/silkworm.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/torquem-ch/silkworm/context:cpp)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/torquem-ch/silkworm.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/torquem-ch/silkworm/alerts/)
 
 ## Table of Contents
 

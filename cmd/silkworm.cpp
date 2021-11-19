@@ -17,10 +17,38 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/common/log.hpp>
+#include <silkworm/common/settings.hpp>
+#include <silkworm/common/util.hpp>
 
 using namespace silkworm;
 
-void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& log_settings) {
+struct HumanSizeParserValidator : public CLI::Validator {
+    HumanSizeParserValidator() {
+        func_ = [](const std::string& value) -> std::string {
+            auto parsed_size{parse_size(value)};
+            if (!parsed_size.has_value()) {
+                return std::string("Value " + value + " is not a parseable size");
+            }
+            return {};
+        };
+    }
+};
+
+void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& log_settings,
+                        NodeSettings& node_settings) {
+    // Node settings
+    std::string datadir{DataDirectory::get_default_storage_path().string()};
+    std::string chaindata_max_size{"2TB"};
+    std::string batch_size{"512MB"};
+    std::string etl_buffer_size{"256MB"};
+    cli.add_option("--datadir", datadir, "Path to data directory", true);
+    cli.add_option("--chaindata.maxsize", chaindata_max_size, "Max chaindata database size (>= 64MB)", true)
+        ->check(HumanSizeParserValidator());
+    cli.add_option("--batchsize", batch_size, "Batch size for stage execution (>= 64MB)", true)
+        ->check(HumanSizeParserValidator());
+    cli.add_option("--etl.buffersize", etl_buffer_size, "Buffer size for ETL operations (>= 64MB)", true)
+        ->check(HumanSizeParserValidator());
+
     // Logging options
     auto& log_opts = *cli.add_option_group("Log", "Logging options");
     log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity", true)
@@ -32,25 +60,36 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     log_opts.add_option("--log.file", log_settings.log_file, "Tee all log lines to given file name");
 
     cli.parse(argc, argv);
+
+    // Extra validations
+    node_settings.chaindata_max_size = parse_size(chaindata_max_size).value();
+    if(node_settings.chaindata_max_size < 64_Mebi){
+        throw std::invalid_argument("--chaindata.maxsize must be greater equal 64MB");
+    }
+
+    node_settings.batch_size = parse_size(batch_size).value();
+    if(node_settings.batch_size < 64_Mebi){
+        throw std::invalid_argument("--batchsize must be greater equal 64MB");
+    }
+
 }
 
 int main(int argc, char* argv[]) {
-
     CLI::App cli("Silkworm node");
     cli.get_formatter()->column_width(50);
 
     try {
         log::Settings log_settings{};  // Holds logging settings
+        NodeSettings node_settings{};  // Holds node settings
 
-        parse_command_line(cli, argc, argv, log_settings);
+        parse_command_line(cli, argc, argv, log_settings, node_settings);
 
         log::init(log_settings);  // Initialize logging with cli settings
-
 
     } catch (const CLI::ParseError& ex) {
         return cli.exit(ex);
     } catch (const std::exception& ex) {
-        std::cerr << "Unexpecter error : " << ex.what() << "\n" << std::endl;
+        std::cerr << "Unexpected error : " << ex.what() << "\n" << std::endl;
         return -4;
     } catch (...) {
         std::cerr << "\nUnexpected undefined error\n" << std::endl;

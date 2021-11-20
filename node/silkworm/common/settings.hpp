@@ -22,15 +22,20 @@
 
 #include <silkworm/common/base.hpp>
 #include <silkworm/common/directories.hpp>
+#include <silkworm/db/mdbx.hpp>
+#include <silkworm/db/storage.hpp>
+
 namespace silkworm {
 
 struct NodeSettings {
-    std::unique_ptr<DataDirectory> data_directory;   // Pointer to data folder
-    size_t chaindata_max_size{2_Tebi};               // Max MDBX map size for chaindata
-    size_t batch_size{512_Mebi};                     // Batch size to use in stages
-    size_t etl_buffer_size{256_Mebi};                // Buffer size for ETL operations
-    std::string prune_mode{};                        // Prune mode
-    std::string private_api_addr{"127.0.0.1:9090"};  // Default API listener
+    std::unique_ptr<DataDirectory> data_directory;    // Pointer to data folder
+    db::EnvConfig chaindata_config{};                 // Chaindata db config
+    uint64_t network_id{1};                           // Network/Chain id
+    size_t batch_size{512_Mebi};                      // Batch size to use in stages
+    size_t etl_buffer_size{256_Mebi};                 // Buffer size for ETL operations
+    std::string private_api_addr{"127.0.0.1:9090"};   // Default API listener
+    bool fake_pow{false};                             // Whether to check for PoW or not
+    db::PruneMode prune_mode{db::kDefaultPruneMode};  // Prune mode
 };
 
 }  // namespace silkworm

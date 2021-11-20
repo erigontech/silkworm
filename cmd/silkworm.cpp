@@ -14,15 +14,16 @@
     limitations under the License.
 */
 
+#include <map>
 #include <optional>
 #include <regex>
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/ip/address.hpp>
 
+#include <silkworm/chain/config.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
-#include <silkworm/common/util.hpp>
 
 using namespace silkworm;
 
@@ -90,23 +91,14 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
                         NodeSettings& node_settings) {
     // Node settings
     std::string datadir{DataDirectory::get_default_storage_path().string()};
-    std::string chaindata_max_size{human_size(node_settings.chaindata_max_size)};
+    std::string chaindata_max_size{human_size(node_settings.chaindata_config.max_size)};
+    std::string chaindata_growth_size{human_size(node_settings.chaindata_config.growth_size)};
     std::string batch_size{human_size(node_settings.batch_size)};
     std::string etl_buffer_size{human_size(node_settings.etl_buffer_size)};
     cli.add_option("--datadir", datadir, "Path to data directory", true);
-    cli.add_option("--prune", node_settings.prune_mode,
-                   "Choose which ancient data delete from DB : \n"
-                   "h - prune history (ChangeSets, HistoryIndices - used by historical state access)\n"
-                   "r - prune receipts (Receipts, Logs, LogTopicIndex, LogAddressIndex - used by eth_getLogs and "
-                   "similar RPC methods)\n"
-                   "t - prune transaction by it's hash index\n"
-                   "c - prune call traces (used by trace_* methods)\n"
-                   "Does delete data older than 90K block (can set another value by '--prune.*.older' flags)\n"
-                   "If item is NOT in the list - means NO pruning for this data.s\n"
-                   "Example: --prune=hrtc (default: none)",
-                   true)
-        ->check(PruneModeValidator());
-    cli.add_option("--chaindata.maxsize", chaindata_max_size, "Max chaindata database size", true)
+    cli.add_option("--chaindata.maxsize", chaindata_max_size, "Chaindata database max size", true)
+        ->check(HumanSizeParserValidator("64MB"));
+    cli.add_option("--chaindata.growthsize", chaindata_growth_size, "Chaindata database growth size", true)
         ->check(HumanSizeParserValidator("64MB"));
     cli.add_option("--batchsize", batch_size, "Batch size for stage execution", true)
         ->check(HumanSizeParserValidator("64MB", {"1GB"}));
@@ -117,7 +109,54 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
                    "An empty string means to not start the listener\n"
                    "Use the endpoint form i.e. ip-address:port\n"
                    "DO NOT EXPOSE TO THE INTERNET",
-                   true)->check(EndPointValidator());
+                   true)
+        ->check(EndPointValidator());
+    cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
+
+    // Chain options
+    std::map<std::string, uint32_t> chains_map{{"mainnet", 1}, {"ropsten", 3}, {"rinkeby", 4}, {"goerli", 5}};
+    auto& chain_opts = *cli.add_option_group("Chain", "Chain selection options");
+    auto chain_opts_chain_name = chain_opts.add_option("--chain", "Name of the testnet to join (default: \"mainnet\")")
+                                     ->transform(CLI::Transformer(chains_map, CLI::ignore_case));
+    chain_opts
+        .add_option("--networkid", node_settings.network_id,
+                    "Explicitly set network id\n"
+                    "For known networks: use --chain <testnet_name> instead) (default: 1)",
+                    true)
+        ->excludes(chain_opts_chain_name);
+
+    // Prune options
+    std::string prune_mode;
+    auto& prune_opts = *cli.add_option_group("Prune", "Prune options to delete ancient data from DB");
+    prune_opts
+        .add_option("--prune", prune_mode,
+                    "Delete data older than 90K blocks (see \"--prune.*.older\" for different height)\n"
+                    "h - prune history (ChangeSets, HistoryIndices - used by historical state access)\n"
+                    "r - prune receipts (Receipts, Logs, LogTopicIndex, LogAddressIndex - used by eth_getLogs and "
+                    "similar RPC methods)\n"
+                    "t - prune transaction by it's hash index\n"
+                    "c - prune call traces (used by trace_* methods)\n"
+                    "If item is NOT in the list - means NO pruning for this data.\n"
+                    "Example: --prune=hrtc (default: none)",
+                    true)
+        ->check(PruneModeValidator());
+
+    prune_opts.add_option("--prune.h.older", "Override default 90k blocks of history to prune")
+        ->check(CLI::Range(0u, UINT32_MAX));
+    prune_opts.add_option("--prune.r.older", "Override default 90k blocks of receipts to prune")
+        ->check(CLI::Range(0u, UINT32_MAX));
+    prune_opts.add_option("--prune.t.older", "Override default 90k blocks of transactions to prune")
+        ->check(CLI::Range(0u, UINT32_MAX));
+    prune_opts.add_option("--prune.c.older", "Override default 90k blocks of call traces to prune")
+        ->check(CLI::Range(0u, UINT32_MAX));
+    prune_opts.add_option("--prune.h.before", "Prune history data before this block")
+        ->check(CLI::Range(0u, UINT32_MAX));
+    prune_opts.add_option("--prune.r.before", "Prune receipts data before this block")
+        ->check(CLI::Range(0u, UINT32_MAX));
+    prune_opts.add_option("--prune.t.before", "Prune transactions data before this block")
+        ->check(CLI::Range(0u, UINT32_MAX));
+    prune_opts.add_option("--prune.c.before", "Prune call traces data before this block")
+        ->check(CLI::Range(0u, UINT32_MAX));
 
     // Logging options
     auto& log_opts = *cli.add_option_group("Log", "Logging options");
@@ -132,8 +171,28 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     cli.parse(argc, argv);
 
     // Assign settings
-    node_settings.chaindata_max_size = parse_size(chaindata_max_size).value();
+    node_settings.data_directory = std::make_unique<DataDirectory>(datadir, /*create=*/true);
+    node_settings.chaindata_config.max_size = parse_size(chaindata_max_size).value();
+    node_settings.chaindata_config.growth_size = parse_size(chaindata_growth_size).value();
+    if (node_settings.chaindata_config.growth_size > node_settings.chaindata_config.max_size / 2) {
+        throw std::invalid_argument("--chaindata.growthsize too wide");
+    }
     node_settings.batch_size = parse_size(batch_size).value();
+    node_settings.etl_buffer_size = parse_size(etl_buffer_size).value();
+    node_settings.prune_mode = db::parse_prune_mode(prune_mode);
+    if (cli["--prune.h.older"]->count()) node_settings.prune_mode.history = cli["--prune.h.older"]->as<BlockNum>();
+    if (cli["--prune.r.older"]->count()) node_settings.prune_mode.receipts = cli["--prune.r.older"]->as<BlockNum>();
+    if (cli["--prune.t.older"]->count()) node_settings.prune_mode.tx_index = cli["--prune.t.older"]->as<BlockNum>();
+    if (cli["--prune.c.older"]->count()) node_settings.prune_mode.call_traces = cli["--prune.c.older"]->as<BlockNum>();
+    // TODO (Andrea) - Prune before
+
+    // Set chain
+    if (chain_opts_chain_name->count()) {
+        node_settings.network_id = lookup_chain_id_by_name(chain_opts_chain_name->as<std::string>());
+        if (!node_settings.network_id) {
+            throw std::invalid_argument("Unknown chain " + chain_opts_chain_name->as<std::string>());
+        }
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -146,15 +205,27 @@ int main(int argc, char* argv[]) {
 
         parse_command_line(cli, argc, argv, log_settings, node_settings);
 
-        log::init(log_settings);  // Initialize logging with cli settings
+        log::init(log_settings);                      // Initialize logging with cli settings
+        node_settings.data_directory->etl().clear();  // Clear previous etl files (if any)
+        node_settings.chaindata_config.path = node_settings.data_directory->chaindata().path().string();
+        auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_config)};
+        if(!chaindata_env.is_empty()) {
+            // Todo(Andrea) check db compatibility and proper initialization of chain config
+        } else {
+            auto tx{chaindata_env.start_write()};
+            db::table::create_all(tx);
+        }
 
     } catch (const CLI::ParseError& ex) {
         return cli.exit(ex);
+    } catch (const std::invalid_argument& ex) {
+        std::cerr << "Invalid argument :" << ex.what() << "\n" << std::endl;
+        return -3;
     } catch (const std::exception& ex) {
         std::cerr << "Unexpected error : " << ex.what() << "\n" << std::endl;
         return -4;
     } catch (...) {
-        std::cerr << "\nUnexpected undefined error\n" << std::endl;
+        std::cerr << "Unexpected undefined error\n" << std::endl;
         return -99;
     }
 

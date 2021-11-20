@@ -24,6 +24,8 @@
 #include <evmc/evmc.h>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/common/util.hpp>
+
 namespace silkworm {
 
 enum class SealEngineType {
@@ -196,6 +198,15 @@ inline const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept {
         default:
             return nullptr;
     }
+}
+
+inline uint64_t lookup_chain_id_by_name(const std::string& name) noexcept {
+    uint64_t ret{0};
+    if (iequals(name, "mainnet")) ret = kMainnetConfig.chain_id;
+    if (iequals(name, "ropsten")) ret = kRopstenConfig.chain_id;
+    if (iequals(name, "rinkeby")) ret = kRinkebyConfig.chain_id;
+    if (iequals(name, "goerli")) ret = kGoerliConfig.chain_id;
+    return ret;
 }
 
 }  // namespace silkworm

@@ -55,7 +55,7 @@ inline constexpr db::MapConfig kCallToIndex{"CallToIndex"};
 inline constexpr db::MapConfig kCallTraceSet{"CallTraceSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
 inline constexpr db::MapConfig kClique{"Clique"};
 inline constexpr db::MapConfig kCode{"Code"};
-inline constexpr db::MapConfig kConfig{"Settings"};
+inline constexpr db::MapConfig kConfig{"Config"};
 inline constexpr db::MapConfig kContractCode{"HashedCodeHash"};
 inline constexpr db::MapConfig kDatabaseInfo{"DbInfo"};
 inline constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};

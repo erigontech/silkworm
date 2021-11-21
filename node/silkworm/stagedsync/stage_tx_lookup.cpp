@@ -44,7 +44,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], expected_block_number);
 
-    SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Extraction" << std::endl;
+    log::Info() << "Started Tx Lookup Extraction";
 
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
 
@@ -81,17 +81,17 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
 
         // Save last processed block_number and expect next in sequence
         if (block_number % 100000 == 0) {
-            SILKWORM_LOG(LogLevel::Info) << "Tx Lookup Extraction Progress << " << block_number << std::endl;
+            log::Info() << "Tx Lookup Extraction Progress << " << block_number;
         }
 
         bodies_data = bodies_table.to_next(/*throw_notfound*/ false);
     }
 
-    SILKWORM_LOG(LogLevel::Info) << "Entries Collected << " << collector.size() << std::endl;
+    log::Info() << "Entries Collected << " << collector.size();
 
     // Proceed only if we've done something
     if (!collector.empty()) {
-        SILKWORM_LOG(LogLevel::Info) << "Started tx Hashes Loading" << std::endl;
+        log::Info() << "Started tx Hashes Loading";
 
         /*
          * If we're on first sync then we shouldn't have any records in target
@@ -115,10 +115,10 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
         txn.commit();
 
     } else {
-        SILKWORM_LOG(LogLevel::Info) << "Nothing to process" << std::endl;
+        log::Info() << "Nothing to process";
     }
 
-    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+    log::Info() << "All Done";
 
     return StageResult::kSuccess;
 }
@@ -136,9 +136,8 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], unwind_to + 1);
 
-    SILKWORM_LOG(LogLevel::Info) << "Started Tx Lookup Unwind, from: "
-                                 << db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey)
-                                 << " to: " << unwind_to << std::endl;
+    log::Info() << "Started Tx Lookup Unwind, from: "
+                       << db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey) << " to: " << unwind_to;
 
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
     while (bodies_data) {
@@ -165,7 +164,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
         bodies_data = bodies_table.to_next(/*throw_notfound*/ false);
     }
 
-    SILKWORM_LOG(LogLevel::Info) << "All Done" << std::endl;
+    log::Info() << "All Done";
     db::stages::write_stage_progress(*txn, db::stages::kTxLookupKey, unwind_to);
 
     txn.commit();
@@ -176,7 +175,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
 StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
 
-    SILKWORM_LOG(LogLevel::Info) << "Pruning Transaction Lookup from: " << prune_from << std::endl;
+    log::Info() << "Pruning Transaction Lookup from: " << prune_from;
 
     auto lookup_data{lookup_table.to_first(/*throw_notfound*/ false)};
 
@@ -193,7 +192,7 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
 
     txn.commit();
 
-    SILKWORM_LOG(LogLevel::Info) << "Pruning Transaction Lookup finished..." << std::endl;
+    log::Info() << "Pruning Transaction Lookup finished...";
 
     return StageResult::kSuccess;
 }

@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     if (options.debug) {
-        SILKWORM_LOG_VERBOSITY(LogLevel::Debug);
+        log::set_verbosity(log::Level::kDebug);
     }
 
     if (!options.block_from) options.block_from = 1u;  // Block 0 (genesis) has no transactions
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
 
         // Initialize epoch
         auto epoch_num{options.block_from / ethash::epoch_length};
-        SILKWORM_LOG(LogLevel::Info) << "Initializing Light Cache for DAG epoch " << epoch_num << std::endl;
+        log::Info() << "Initializing Light Cache for DAG epoch " << epoch_num;
         auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_num))};
 
         auto canonical_hashes{db::open_cursor(txn, db::table::kCanonicalHashes)};
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
              block_num++) {
             if (epoch_context->epoch_number != static_cast<int>(block_num / ethash::epoch_length)) {
                 epoch_num = (block_num / ethash::epoch_length);
-                SILKWORM_LOG(LogLevel::Info) << "Initializing Light Cache for DAG epoch " << epoch_num << std::endl;
+                log::Info() << "Initializing Light Cache for DAG epoch " << epoch_num;
                 epoch_context = ethash::create_epoch_context(static_cast<int>(epoch_num));
             }
 
@@ -142,17 +142,16 @@ int main(int argc, char* argv[]) {
 
             if (!(block_num % 1000)) {
                 const auto interval{sw.lap()};
-                SILKWORM_LOG(LogLevel::Info)
-                    << "At block height " << block_num << " in " << sw.format(interval.second) << std::endl;
+                log::Info() << "At block height " << block_num << " in " << sw.format(interval.second);
             }
         }
 
-        SILKWORM_LOG(LogLevel::Info) << "Complete !" << std::endl;
+        log::Info() << "Complete !";
 
     } catch (const fs::filesystem_error& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << " Check your filesystem permissions" << std::endl;
+        log::Error() << ex.what() << " Check your filesystem permissions";
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::Error() << ex.what();
     }
 
     return rc;

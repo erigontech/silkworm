@@ -46,9 +46,8 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
             BlockNum next = current + skip + 1;
             if (next <= current) {  // true only if there is an overflow
                 unknown = true;
-                SILKWORM_LOG(LogLevel::Warn)
-                    << "GetBlockHeaders skip overflow attack:"
-                    << " current=" << current << ", skip=" << skip << ", next=" << next << std::endl;
+                log::Warning() << "GetBlockHeaders skip overflow attack:"
+                                      << " current=" << current << ", skip=" << skip << ", next=" << next;
             } else {
                 header = db_tx_.read_canonical_header(next);
                 if (!header)
@@ -143,9 +142,9 @@ std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blo
         auto h = db_tx_.read_canonical_hash(blockNum);
         if (h == hash) {
             auto ancestorHash = db_tx_.read_canonical_hash(blockNum - ancestorDelta);
-                                                       // todo: blockNum - ancestorDelta = constant, it is correct?
-            h = db_tx_.read_canonical_hash(blockNum);  // todo: dummy line, remove (also present in Erigon)
-            if (h == hash) {                           // todo: dummy line, remove
+            // todo: blockNum - ancestorDelta = constant, it is correct?
+            h = db_tx_.read_canonical_hash(blockNum);              // todo: dummy line, remove (also present in Erigon)
+            if (h == hash) {                                       // todo: dummy line, remove
                 return {*ancestorHash, blockNum - ancestorDelta};  // ancestorHash can be empty
             }
         }

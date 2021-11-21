@@ -14,45 +14,117 @@
    limitations under the License.
 */
 
+#include <fstream>
+#include <iostream>
+#include <ostream>
+#include <regex>
 #include <thread>
 
 #include <absl/time/clock.h>
 
 #include <silkworm/common/log.hpp>
 
-namespace silkworm {
+#if defined(_WIN32)
+#include <windows.h>
+#if !defined(ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
+#endif
 
-static teestream log_streams_{std::cerr, null_stream()};
+namespace silkworm::log {
 
-LogLevel log_verbosity_{LogLevel::Info};
-bool log_thread_enabled_{false};
+static Settings settings_{};
 
-static constexpr char const kLogTags_[7][6] = {
-    "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",
-};
+static std::unique_ptr<std::fstream> file_{nullptr};
 
-// Log to one or two output streams - typically the console and optional log file.
-void log_set_streams_(std::ostream& o1, std::ostream& o2) { log_streams_.set_streams(o1.rdbuf(), o2.rdbuf()); }
-
-std::mutex log_::log_mtx_;
-
-std::ostream& log_::header_(LogLevel level) {
-    log_streams_ << kLogTags_[static_cast<int>(level)] << "["
-                 << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "]";
-    if (log_thread_enabled_) {
-        log_streams_ << " " << std::this_thread::get_id();
+void init(Settings& settings) {
+    settings_ = settings;
+    if (!settings_.log_file.empty()) {
+        tee_file(std::filesystem::path(settings.log_file));
     }
-    return log_streams_;
+
+#if defined(_WIN32)
+    // Change code page to UTF-8 so log characters are displayed correctly in console
+    // and also support virtual terminal processing for coloring output
+    SetConsoleOutputCP(CP_UTF8);
+    HANDLE output_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (output_handle != INVALID_HANDLE_VALUE) {
+        DWORD mode = 0;
+        if (GetConsoleMode(output_handle, &mode)) {
+            mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+            SetConsoleMode(output_handle, mode);
+        }
+    }
+#endif
 }
 
-std::ostream& null_stream() {
-    static struct null_buf : public std::streambuf {
-        int overflow(int c) override { return c; }
-    } null_buf;
-    static struct null_strm : public std::ostream {
-        null_strm() : std::ostream(&null_buf) {}
-    } null_strm;
-    return null_strm;
+void tee_file(std::filesystem::path path) {
+    file_ = std::make_unique<std::fstream>(path.string(), std::ios::out | std::ios::app);
+    if (!file_->is_open()) {
+        file_.reset();
+        throw std::runtime_error("Could not open file " + path.string());
+    }
 }
 
-}  // namespace silkworm
+void set_verbosity(Level level) { settings_.log_verbosity = level; }
+
+static inline std::pair<const char*, const char*> get_channel_settings(Level level) {
+    switch (level) {
+        case Level::kTrace:
+            return {"TRACE", kColorCoal};
+        case Level::kDebug:
+            return {"DEBUG", kBackgroundPurple};
+        case Level::kInfo:
+            return {" INFO", kColorGreen};
+        case Level::kWarning:
+            return {" WARN", kColorOrangeHigh};
+        case Level::kError:
+            return {"ERROR", kColorRed};
+        case Level::kCritical:
+            return {" CRIT", kBackgroundRed};
+        default:
+            return {"     ", kColorReset};
+    }
+}
+
+BufferBase::BufferBase(Level level) : level_(level) {
+    auto [prefix, color] = get_channel_settings(level);
+    // Prefix
+    ss_ << kColorReset << " " << color << prefix << kColorReset << " ";
+
+    // TimeStamp
+    static const absl::TimeZone tz{settings_.log_utc ? absl::LocalTimeZone() : absl::UTCTimeZone()};
+    absl::Time now{absl::Now()};
+    ss_ << kColorCyan << "[" << absl::FormatTime("%m-%d|%H:%M:%E3S", now, tz) << " " << tz << "] " << kColorReset;
+
+    // ThreadId
+    if (settings_.log_threads) {
+        ss_ << "[" << std::this_thread::get_id() << "] ";
+    }
+}
+
+void BufferBase::flush() {
+    if (level_ > settings_.log_verbosity) {
+        return;
+    }
+
+    // Pattern to identify colorization
+    static const std::regex color_pattern("(\\\x1b\\[[0-9;]{1,}m)");
+
+    bool colorized{true};
+    std::string line{ss_.str()};
+    if (settings_.log_nocolor) {
+        line = std::regex_replace(line, color_pattern, "");
+        colorized = false;
+    }
+    auto& out = settings_.log_std_out ? std::cout : std::cerr;
+    out << line << std::endl;
+    if (file_ && file_->is_open()) {
+        if (colorized) {
+            line = std::regex_replace(line, color_pattern, "");
+        }
+        *file_ << line << std::endl;
+    }
+}
+
+}  // namespace silkworm::log

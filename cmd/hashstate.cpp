@@ -55,20 +55,20 @@ int main(int argc, char* argv[]) {
             txn.clear_map(db::open_map(txn, db::table::kContractCode));
             db::stages::write_stage_progress(txn, db::stages::kHashStateKey, 0);
             if (reset) {
-                SILKWORM_LOG(LogLevel::Info) << "Reset Complete!" << std::endl;
+                log::Info() << "Reset Complete!";
                 txn.commit();
                 return 0;
             }
         }
-        SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
+        log::Info() << "Starting HashState";
 
         auto last_processed_block_number{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
         if (last_processed_block_number != 0 || incrementally) {
-            SILKWORM_LOG(LogLevel::Info) << "Starting Account Hashing" << std::endl;
+            log::Info() << "Starting Account Hashing";
             stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::HashAccount);
-            SILKWORM_LOG(LogLevel::Info) << "Starting Storage Hashing" << std::endl;
+            log::Info() << "Starting Storage Hashing";
             stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::HashStorage);
-            SILKWORM_LOG(LogLevel::Info) << "Hashing Code Keys" << std::endl;
+            log::Info() << "Hashing Code Keys";
             stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::Code);
         } else {
             stagedsync::hashstate_promote_clean_state(txn, data_dir.etl().path().string());
@@ -76,11 +76,11 @@ int main(int argc, char* argv[]) {
         }
         // Update progress height with last processed block
         db::stages::write_stage_progress(txn, db::stages::kHashStateKey,
-                                       db::stages::read_stage_progress(txn, db::stages::kExecutionKey));
+                                         db::stages::read_stage_progress(txn, db::stages::kExecutionKey));
         txn.commit();
-        SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
+        log::Info() << "All Done!";
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::Error() << ex.what();
         return -5;
     }
 }

@@ -46,12 +46,15 @@ struct Settings {
 };
 
 //! \brief Initializes logging facilities
+//! \note This function is not thread safe as it's meant to be used at start of process and never called again
 void init(Settings& settings);
 
 //! \brief Sets logging verbosity
+//! \note This function is not thread safe as it's meant to be used at start of process and never called again
 void set_verbosity(Level level);
 
 //! \brief Sets a file output for log teeing
+//! \note This function is not thread safe as it's meant to be used at start of process and never called again
 void tee_file(std::filesystem::path path);
 
 class BufferBase {

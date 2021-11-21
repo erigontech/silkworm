@@ -66,7 +66,7 @@ void tee_file(std::filesystem::path path) {
     }
 }
 
-void set_verbosity(Level level) { settings_.log_verbosity = static_cast<unsigned>(level); }
+void set_verbosity(Level level) { settings_.log_verbosity = level; }
 
 static inline std::pair<const char*, const char*> get_channel_settings(Level level) {
     switch (level) {
@@ -104,7 +104,7 @@ BufferBase::BufferBase(Level level) : level_(level) {
 }
 
 void BufferBase::flush() {
-    if (static_cast<unsigned>(level_) > settings_.log_verbosity) {
+    if (level_ > settings_.log_verbosity) {
         return;
     }
 

@@ -37,12 +37,12 @@ enum class Level {
 
 //! \brief Holds logging configuration
 struct Settings {
-    bool log_std_out{false};    // Whether console logging goes to std::cout or std::cerr (default)
-    bool log_utc{false};        // Whether timestamps should be in UTC or imbue local timezone
-    bool log_nocolor{false};    // Whether to disable colorized output
-    bool log_threads{false};    // Whether to print thread ids in log lines
-    unsigned log_verbosity{4};  // Log verbosity level
-    std::string log_file;       // Log to file
+    bool log_std_out{false};           // Whether console logging goes to std::cout or std::cerr (default)
+    bool log_utc{false};               // Whether timestamps should be in UTC or imbue local timezone
+    bool log_nocolor{false};           // Whether to disable colorized output
+    bool log_threads{false};           // Whether to print thread ids in log lines
+    Level log_verbosity{Level::Info};  // Log verbosity level
+    std::string log_file;              // Log to file
 };
 
 //! \brief Initializes logging facilities

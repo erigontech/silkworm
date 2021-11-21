@@ -161,7 +161,8 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     // Logging options
     auto& log_opts = *cli.add_option_group("Log", "Logging options");
     log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity", true)
-        ->check(CLI::Range(1u, 6u));
+        ->check(CLI::Range(static_cast<uint32_t>(log::Level::Critical), static_cast<uint32_t>(log::Level::Trace)))
+        ->default_val(std::to_string(static_cast<uint32_t>(log_settings.log_verbosity)));
     log_opts.add_flag("--log.stdout", log_settings.log_std_out, "Outputs to std::out instead of std::err");
     log_opts.add_flag("--log.nocolor", log_settings.log_nocolor, "Disable colors on log lines");
     log_opts.add_flag("--log.utc", log_settings.log_utc, "Prints log timings in UTC");
@@ -221,7 +222,7 @@ int main(int argc, char* argv[]) {
             db::table::create_all(tx);
         }
         chaindata_env.close();
-        return 0;
+
     } catch (const CLI::ParseError& ex) {
         return cli.exit(ex);
     } catch (const std::invalid_argument& ex) {

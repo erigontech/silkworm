@@ -121,7 +121,7 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     chain_opts
         .add_option("--networkid", node_settings.network_id,
                     "Explicitly set network id\n"
-                    "For known networks: use --chain <testnet_name> instead) (default: 1)",
+                    "For known networks: use --chain <testnet_name> instead",
                     true)
         ->excludes(chain_opts_chain_name);
 

@@ -26,23 +26,23 @@ namespace silkworm::log {
 
 //! \brief Available verbosity levels
 enum class Level {
-    None,      // Simple logging line with no severity (eg. build info)
-    Critical,  // An error there's no way we can recover from
-    Error,     // We encountered an error which we might be able to recover from
-    Warn,      // Something happened and user might have the possibility to amend the situation
-    Info,      // Info messages on regular operations
-    Debug,     // Debug information
-    Trace      // Trace calls to functions
+    kNone,      // Simple logging line with no severity (eg. build info)
+    kCritical,  // An error there's no way we can recover from
+    kError,     // We encountered an error which we might be able to recover from
+    kWarning,   // Something happened and user might have the possibility to amend the situation
+    kInfo,      // Info messages on regular operations
+    kDebug,     // Debug information
+    kTrace      // Trace calls to functions
 };
 
 //! \brief Holds logging configuration
 struct Settings {
-    bool log_std_out{false};           // Whether console logging goes to std::cout or std::cerr (default)
-    bool log_utc{false};               // Whether timestamps should be in UTC or imbue local timezone
-    bool log_nocolor{false};           // Whether to disable colorized output
-    bool log_threads{false};           // Whether to print thread ids in log lines
-    Level log_verbosity{Level::Info};  // Log verbosity level
-    std::string log_file;              // Log to file
+    bool log_std_out{false};            // Whether console logging goes to std::cout or std::cerr (default)
+    bool log_utc{false};                // Whether timestamps should be in UTC or imbue local timezone
+    bool log_nocolor{false};            // Whether to disable colorized output
+    bool log_threads{false};            // Whether to print thread ids in log lines
+    Level log_verbosity{Level::kInfo};  // Log verbosity level
+    std::string log_file;               // Log to file
 };
 
 //! \brief Initializes logging facilities
@@ -85,13 +85,13 @@ class LogBuffer : public BufferBase {
     LogBuffer() : BufferBase(level){};
 };
 
-using TraceChannel = LogBuffer<Level::Trace>;
-using DebugChannel = LogBuffer<Level::Debug>;
-using InfoChannel = LogBuffer<Level::Info>;
-using WarningChannel = LogBuffer<Level::Warn>;
-using ErrorChannel = LogBuffer<Level::Error>;
-using CriticalChannel = LogBuffer<Level::Critical>;
-using MessageChannel = LogBuffer<Level::None>;
+using TraceChannel = LogBuffer<Level::kTrace>;
+using DebugChannel = LogBuffer<Level::kDebug>;
+using InfoChannel = LogBuffer<Level::kInfo>;
+using WarningChannel = LogBuffer<Level::kWarning>;
+using ErrorChannel = LogBuffer<Level::kError>;
+using CriticalChannel = LogBuffer<Level::kCritical>;
+using MessageChannel = LogBuffer<Level::kNone>;
 
 }  // namespace silkworm::log
 

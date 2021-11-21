@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    log::set_verbosity(log::Level::Trace);
+    log::set_verbosity(log::Level::kTrace);
     log::tee_file(std::filesystem::path("downloader.log"));
     log::InfoChannel() << "STARTING";
 

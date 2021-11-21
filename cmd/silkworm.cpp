@@ -161,7 +161,7 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     // Logging options
     auto& log_opts = *cli.add_option_group("Log", "Logging options");
     log_opts.add_option("--log.verbosity", log_settings.log_verbosity, "Sets log verbosity", true)
-        ->check(CLI::Range(static_cast<uint32_t>(log::Level::Critical), static_cast<uint32_t>(log::Level::Trace)))
+        ->check(CLI::Range(static_cast<uint32_t>(log::Level::kCritical), static_cast<uint32_t>(log::Level::kTrace)))
         ->default_val(std::to_string(static_cast<uint32_t>(log_settings.log_verbosity)));
     log_opts.add_flag("--log.stdout", log_settings.log_std_out, "Outputs to std::out instead of std::err");
     log_opts.add_flag("--log.nocolor", log_settings.log_nocolor, "Disable colors on log lines");
@@ -242,7 +242,7 @@ int main(int argc, char* argv[]) {
     log::InfoChannel() << "This is a info message";
     log::DebugChannel() << "This is a debug message";
     log::TraceChannel() << "This is a trace message";
-    log::set_verbosity(log::Level::None);
+    log::set_verbosity(log::Level::kNone);
     log::TraceChannel() << "This is a trace message";
     log::MessageChannel() << "Simple message";
 

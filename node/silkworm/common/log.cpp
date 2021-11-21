@@ -70,17 +70,17 @@ void set_verbosity(Level level) { settings_.log_verbosity = level; }
 
 static inline std::pair<const char*, const char*> get_channel_settings(Level level) {
     switch (level) {
-        case Level::Trace:
+        case Level::kTrace:
             return {"TRACE", kColorCoal};
-        case Level::Debug:
+        case Level::kDebug:
             return {"DEBUG", kBackgroundPurple};
-        case Level::Info:
+        case Level::kInfo:
             return {" INFO", kColorGreen};
-        case Level::Warn:
+        case Level::kWarning:
             return {" WARN", kColorOrangeHigh};
-        case Level::Error:
+        case Level::kError:
             return {"ERROR", kColorRed};
-        case Level::Critical:
+        case Level::kCritical:
             return {" CRIT", kBackgroundRed};
         default:
             return {"     ", kColorReset};

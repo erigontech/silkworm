@@ -33,6 +33,7 @@
 #include <silkworm/common/endian.hpp>
 #include <silkworm/common/rlp_err.hpp>
 #include <silkworm/common/stopwatch.hpp>
+#include <silkworm/common/terminal.hpp>
 #include <silkworm/common/test_util.hpp>
 #include <silkworm/concurrency/thread_pool.hpp>
 #include <silkworm/concurrency/thread_safe_state_pool.hpp>
@@ -693,13 +694,13 @@ int main(int argc, char* argv[]) {
 
     thread_pool.wait_for_tasks();
 
-    std::cout << "\033[0;32m" << total_passed << " tests passed\033[0m, ";
+    std::cout << kColorGreen << total_passed << " tests passed" << kColorReset << ", ";
     if (total_failed != 0) {
-        std::cout << "\033[1;31m";
+        std::cout << kColorMaroonHigh;
     }
     std::cout << total_failed << " failed";
     if (total_failed != 0) {
-        std::cout << "\033[0m";
+        std::cout << kColorReset;
     }
     std::cout << ", " << total_skipped << " skipped";
 

@@ -36,7 +36,7 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg
     ByteView data = string_view_to_byte_view(msg.data());
     rlp::success_or_throw(rlp::decode(data, packet_));
 
-    SILKWORM_LOG(LogLevel::Trace) << "Received message " << *this << "\n";
+    log::Trace() << "Received message " << *this << "\n";
 }
 
 void InboundGetBlockHeaders::execute() {
@@ -62,15 +62,15 @@ void InboundGetBlockHeaders::execute() {
     msg_reply->set_id(sentry::MessageId::BLOCK_HEADERS_66);
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    SILKWORM_LOG(LogLevel::Trace) << "Replying to " << identify(*this) << " using send_message_by_id with "
-                                  << reply.request.size() << " headers\n";
+    log::Trace() << "Replying to " << identify(*this) << " using send_message_by_id with "
+                        << reply.request.size() << " headers";
 
     rpc::SendMessageById rpc{peerId_, std::move(msg_reply)};
     sentry_.exec_remotely(rpc);
 
     sentry::SentPeers peers = rpc.reply();
-    SILKWORM_LOG(LogLevel::Trace) << "Received rpc result of " << identify(*this) << ": "
-                                  << std::to_string(peers.peers_size()) + " peer(s)\n";
+    log::Trace() << "Received rpc result of " << identify(*this) << ": "
+                        << std::to_string(peers.peers_size()) + " peer(s)";
 }
 
 uint64_t InboundGetBlockHeaders::reqId() const { return packet_.requestId; }

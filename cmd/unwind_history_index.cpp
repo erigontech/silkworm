@@ -48,14 +48,12 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         stagedsync::TransactionManager tm{env};
         if (storage) {
-            stagedsync::success_or_throw(
-                stagedsync::unwind_storage_history(tm, data_dir.etl().path(), unwind_to));
+            stagedsync::success_or_throw(stagedsync::unwind_storage_history(tm, data_dir.etl().path(), unwind_to));
         } else {
-            stagedsync::success_or_throw(
-                stagedsync::unwind_account_history(tm, data_dir.etl().path(), unwind_to));
+            stagedsync::success_or_throw(stagedsync::unwind_account_history(tm, data_dir.etl().path(), unwind_to));
         }
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::Error() << ex.what();
         return -5;
     }
     return 0;

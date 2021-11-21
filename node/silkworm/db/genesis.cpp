@@ -222,7 +222,7 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
         db::open_cursor(txn, db::table::kBlockReceipts)
             .upsert(db::to_slice(block_hash_key).safe_middle(0, 8), db::to_slice(Bytes(genesis_null_receipts, 1)));
 
-        // Write Chain Config
+        // Write Chain Settings
         auto config_data{genesis_json["config"].dump()};
         db::open_cursor(txn, db::table::kConfig)
             .upsert(db::to_slice(full_view(block_hash.bytes)), mdbx::slice{config_data.c_str()});

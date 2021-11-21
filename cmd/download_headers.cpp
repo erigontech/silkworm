@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -25,7 +25,6 @@
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/block_provider.hpp>
 #include <silkworm/downloader/header_downloader.hpp>
-#include <silkworm/downloader/sentry_client.hpp>
 
 using namespace silkworm;
 
@@ -42,21 +41,18 @@ int main(int argc, char* argv[]) {
     string temporary_file_path = ".";
     string sentry_addr = "127.0.0.1:9091";
 
-    app.add_option("--chaindata", db_path, "Path to the chain database", true)
-        ->check(CLI::ExistingDirectory);
-    app.add_option("--chain", chain_name, "Network name", true)
-        ->needs("--chaindata");
+    app.add_option("--chaindata", db_path, "Path to the chain database", true)->check(CLI::ExistingDirectory);
+    app.add_option("--chain", chain_name, "Network name", true)->needs("--chaindata");
     app.add_option("-s,--sentryaddr", sentry_addr, "address:port of sentry", true);
-        //  todo ->check?
+    //  todo ->check?
     app.add_option("-f,--filesdir", temporary_file_path, "Path to a temp files dir", true)
         ->check(CLI::ExistingDirectory);
 
     CLI11_PARSE(app, argc, argv);
 
-    SILKWORM_LOG_VERBOSITY(LogLevel::Trace);
-    std::ofstream log_file("downloader.log", std::ios::out | std::ios::app);
-    SILKWORM_LOG_STREAMS(cerr, log_file);
-    SILKWORM_LOG(LogLevel::Info) << "STARTING\n";
+    log::set_verbosity(log::Level::kTrace);
+    log::tee_file(std::filesystem::path("downloader.log"));
+    log::Info() << "STARTING";
 
     std::thread block_request_processing;
     std::thread header_receiving;

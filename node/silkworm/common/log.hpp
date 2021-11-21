@@ -26,7 +26,7 @@ namespace silkworm::log {
 
 //! \brief Available verbosity levels
 enum class Level {
-    kNone,      // Simple logging line with no severity (eg. build info)
+    kNone,      // Simple logging line with no severity (e.g. build info)
     kCritical,  // An error there's no way we can recover from
     kError,     // We encountered an error which we might be able to recover from
     kWarning,   // Something happened and user might have the possibility to amend the situation

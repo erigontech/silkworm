@@ -97,7 +97,7 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     std::string etl_buffer_size{human_size(node_settings.etl_buffer_size)};
     cli.add_option("--datadir", datadir, "Path to data directory", true);
     cli.add_option("--chaindata.maxsize", chaindata_max_size, "Chaindata database max size", true)
-        ->check(HumanSizeParserValidator("64MB"));
+        ->check(HumanSizeParserValidator("64MB", {"4TB"}));
     cli.add_option("--chaindata.growthsize", chaindata_growth_size, "Chaindata database growth size", true)
         ->check(HumanSizeParserValidator("64MB"));
     cli.add_option("--batchsize", batch_size, "Batch size for stage execution", true)
@@ -207,15 +207,21 @@ int main(int argc, char* argv[]) {
 
         log::init(log_settings);                      // Initialize logging with cli settings
         node_settings.data_directory->etl().clear();  // Clear previous etl files (if any)
-        node_settings.chaindata_config.path = node_settings.data_directory->chaindata().path().string();
+        {
+            auto& config = node_settings.chaindata_config;
+            config.path = node_settings.data_directory->chaindata().path().string();
+            config.create =
+                !std::filesystem::exists(db::get_datafile_path(node_settings.data_directory->chaindata().path()));
+        }
         auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_config)};
-        if(!chaindata_env.is_empty()) {
+        if (!chaindata_env.is_empty()) {
             // Todo(Andrea) check db compatibility and proper initialization of chain config
         } else {
             auto tx{chaindata_env.start_write()};
             db::table::create_all(tx);
         }
-
+        chaindata_env.close();
+        return 0;
     } catch (const CLI::ParseError& ex) {
         return cli.exit(ex);
     } catch (const std::invalid_argument& ex) {

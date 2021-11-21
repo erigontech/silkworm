@@ -60,7 +60,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
         if (senders_stage_progress > bodies_stage_progress) {
             // Something bad had happened. Not possible sender stage is ahead of bodies
             // Maybe we need to unwind ?
-            log::ErrorChannel() << "Bad progress sequence. Sender stage progress " << senders_stage_progress
+            log::Error() << "Bad progress sequence. Sender stage progress " << senders_stage_progress
                                 << " while Bodies stage " << bodies_stage_progress;
             return StageResult::kInvalidProgress;
         }
@@ -80,7 +80,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
     }
 
     if (headers_.size() > 16) {
-        log::InfoChannel() << "Collected " << headers_.size() << " canonical headers";
+        log::Info() << "Collected " << headers_.size() << " canonical headers";
     }
 
     // Load block bodies
@@ -88,7 +88,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
     uint64_t expected_block_num{from};  // Expected block number in sequence
     header_index_offset_ = from;        // See collect_workers_results
 
-    log::TraceChannel() << "Begin read block bodies ... ";
+    log::Trace() << "Begin read block bodies ... ";
     auto bodies_table{db::open_cursor(db_transaction_, db::table::kBlockBodies)};
     auto transactions_table{db::open_cursor(db_transaction_, db::table::kBlockTransactions)};
 
@@ -107,7 +107,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
             // We surpassed the expected block which means
             // either the db misses a block or blocks are not persisted
             // in sequence
-            log::ErrorChannel() << "Senders' recovery : Bad block sequence expected " << expected_block_num << " got "
+            log::Error() << "Senders' recovery : Bad block sequence expected " << expected_block_num << " got "
                                 << reached_block_num;
             stage_result = StageResult::kBadChainSequence;
             break;
@@ -145,7 +145,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
         && stage_result == StageResult::kSuccess  // Previous steps ok
         && dispatch_batch()                       // Residual batch dispatched
     ) {
-        log::TraceChannel() << "End   read block bodies ... ";
+        log::Trace() << "End   read block bodies ... ";
         wait_workers_completion();
 
         // If everything ok from previous steps wait for all workers to complete
@@ -156,7 +156,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
             try {
                 // Prepare target table
                 auto target_table{db::open_cursor(db_transaction_, db::table::kSenders)};
-                log::InfoChannel() << "ETL Load [2/2] : Loading data into " << db::table::kSenders.name;
+                log::Info() << "ETL Load [2/2] : Loading data into " << db::table::kSenders.name;
                 collector_.load(target_table, nullptr, MDBX_put_flags_t::MDBX_APPEND,
                                 /* log_every_percent = */ (total_recovered_transactions_ <= max_batch_size_ ? 50 : 10));
 
@@ -164,13 +164,13 @@ StageResult RecoveryFarm::recover(BlockNum to) {
                 db::stages::write_stage_progress(db_transaction_, db::stages::kSendersKey, reached_block_num);
 
             } catch (const mdbx::exception& ex) {
-                log::ErrorChannel() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+                log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
                 stage_result = StageResult::kDbError;
             } catch (const std::exception& ex) {
-                log::ErrorChannel() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
+                log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
                 stage_result = StageResult::kUnexpectedError;
             } catch (...) {
-                log::ErrorChannel() << "Unknown error in " << std::string(__FUNCTION__);
+                log::Error() << "Unknown error in " << std::string(__FUNCTION__);
                 stage_result = StageResult::kUnexpectedError;
             }
         }
@@ -181,7 +181,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
 }
 
 StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height) {
-    log::InfoChannel() << "Unwinding Senders' table to height " << new_height;
+    log::Info() << "Unwinding Senders' table to height " << new_height;
     try {
         auto unwind_table{db::open_cursor(db_transaction, db::table::kSenders)};
         auto unwind_point{db::block_key(new_height + 1)};
@@ -193,16 +193,16 @@ StageResult RecoveryFarm::unwind(mdbx::txn& db_transaction, BlockNum new_height)
         return StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {
-        log::ErrorChannel() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
         return StageResult::kDbError;
     } catch (...) {
-        log::ErrorChannel() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
         return StageResult::kUnexpectedError;
     }
 }
 
 void RecoveryFarm::stop_all_workers(bool wait) {
-    log::DebugChannel() << "Stopping workers ... ";
+    log::Debug() << "Stopping workers ... ";
     for (const auto& item : workers_) {
         item.first->stop(wait);
     }
@@ -220,7 +220,7 @@ void RecoveryFarm::wait_workers_completion() {
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             if (!(++attempts % 60)) {
-                log::InfoChannel() << "Waiting for workers to complete ...";
+                log::Info() << "Waiting for workers to complete ...";
             }
         } while (true);
     }
@@ -240,23 +240,23 @@ bool RecoveryFarm::collect_workers_results() {
 
         // Select worker and pop the queue
         auto& worker{workers_.at(harvest_pairs_.front().first)};
-        log::TraceChannel() << "Collecting  results from worker " << worker.first->get_id();
+        log::Trace() << "Collecting  results from worker " << worker.first->get_id();
         harvest_pairs_.pop();
         l.unlock();
 
         auto status = worker.first->get_status();
         switch (status) {
             case RecoveryWorker::Status::Error:
-                log::ErrorChannel()
+                log::Error()
                     << "Got error from worker #" << worker.first->get_id() << " : " << worker.first->get_error();
                 ret = false;
                 break;
             case RecoveryWorker::Status::Aborted:
-                log::TraceChannel() << "Got aborted from worker #" << worker.first->get_id();
+                log::Trace() << "Got aborted from worker #" << worker.first->get_id();
                 ret = false;
                 break;
             case RecoveryWorker::Status::ResultsReady:
-                log::TraceChannel() << "Collecting results from worker #" << worker.first->get_id();
+                log::Trace() << "Collecting results from worker #" << worker.first->get_id();
                 if (worker.first->pull_results(worker_results)) {
                     try {
                         for (const auto& [block_num, data] : worker_results) {
@@ -266,18 +266,18 @@ bool RecoveryFarm::collect_workers_results() {
                             Bytes etl_data(data.data(), data.length());
                             collector_.collect(etl::Entry{etl_key, etl_data});
                         }
-                        log::InfoChannel() << "ETL Load [1/2] : "
+                        log::Info() << "ETL Load [1/2] : "
                                                      << (boost::format(fmt_row) % worker_results.back().first %
                                                          total_recovered_transactions_ % workers_in_flight_.load());
                         worker_results.resize(0);
 
                     } catch (const std::exception& ex) {
-                        log::ErrorChannel()
+                        log::Error()
                             << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
                         ret = false;
                     }
                 } else {
-                    log::ErrorChannel() << "Unexpected error in " << std::string(__FUNCTION__) << " : "
+                    log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : "
                                                   << "could not pull results from worker #" << worker.first->get_id();
                     ret = false;
                 }
@@ -285,7 +285,7 @@ bool RecoveryFarm::collect_workers_results() {
 
             default:
                 // Should not happen
-                log::ErrorChannel() << "Got not ready status for harvest worker ";
+                log::Error() << "Got not ready status for harvest worker ";
                 ret = false;
         }
     }
@@ -323,7 +323,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
                 break;
             case Transaction::Type::kEip2930:
                 if (!has_berlin) {
-                    log::ErrorChannel()
+                    log::Error()
                         << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
                         << " for transaction #" << tx_id << " in block #" << block_num << " before Berlin";
                     return StageResult::kInvalidTransaction;
@@ -331,7 +331,7 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
                 break;
             case Transaction::Type::kEip1559:
                 if (!has_london) {
-                    log::ErrorChannel()
+                    log::Error()
                         << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
                         << " for transaction #" << tx_id << " in block #" << block_num << " before London";
                     return StageResult::kInvalidTransaction;
@@ -340,18 +340,18 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
         }
 
         if (!silkworm::ecdsa::is_valid_signature(transaction.r, transaction.s, has_homestead)) {
-            log::ErrorChannel()
+            log::Error()
                 << "Got invalid signature for transaction #" << tx_id << " in block #" << block_num;
             return StageResult::kInvalidTransaction;
         }
 
         if (transaction.chain_id.has_value()) {
             if (!has_spurious_dragon) {
-                log::ErrorChannel() << "EIP-155 signature for transaction #" << tx_id << " in block #"
+                log::Error() << "EIP-155 signature for transaction #" << tx_id << " in block #"
                                               << block_num << " before Spurious Dragon";
                 return StageResult::kInvalidTransaction;
             } else if (transaction.chain_id.value() != config.chain_id) {
-                log::ErrorChannel()
+                log::Error()
                     << "EIP-155 invalid signature for transaction #" << tx_id << " in block #" << block_num;
                 return StageResult::kInvalidTransaction;
             }
@@ -389,7 +389,7 @@ bool RecoveryFarm::dispatch_batch() {
             workers_, [](const worker_pair& w) { return w.first->get_status() == RecoveryWorker::Status::Idle; });
 
         if (it != workers_.end()) {
-            log::TraceChannel() << "Dispatching package to worker #" << it->first->get_id();
+            log::Trace() << "Dispatching package to worker #" << it->first->get_id();
             it->first->set_work(batch_id_++, batch_);  // Worker will swap contents
             batch_.resize(0);
             workers_in_flight_++;
@@ -413,7 +413,7 @@ bool RecoveryFarm::dispatch_batch() {
                 if (initialize_new_worker()) {
                     continue;
                 }
-                log::InfoChannel()
+                log::Info()
                     << "Max recovery workers adjusted " << max_workers_ << " -> " << workers_.size();
                 max_workers_ = workers_.size();  // Don't try to spawn new workers. Maybe we're OOM
             }
@@ -426,7 +426,7 @@ bool RecoveryFarm::dispatch_batch() {
 }
 
 bool RecoveryFarm::initialize_new_worker() {
-    log::TraceChannel() << "Launching worker #" << workers_.size();
+    log::Trace() << "Launching worker #" << workers_.size();
     using namespace std::placeholders;
     try {
         auto worker{std::make_unique<RecoveryWorker>(workers_.size(), max_batch_size_ * kAddressLength)};
@@ -435,14 +435,14 @@ bool RecoveryFarm::initialize_new_worker() {
         workers_.back().first->start(/*wait=*/true);
         return workers_.back().first->get_state() == Worker::WorkerState::kStarted;
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << "Unable to initialize new recovery worker : " << ex.what();
+        log::Error() << "Unable to initialize new recovery worker : " << ex.what();
         return false;
     }
 }
 
 StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noexcept {
     if ((to - from) > 16) {
-        log::InfoChannel() << "Loading canonical headers [" << from << " .. " << to << "]";
+        log::Info() << "Loading canonical headers [" << from << " .. " << to << "]";
     }
 
     // Locate starting canonical header selected
@@ -458,13 +458,13 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         while (data.done) {
             reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
             if (reached_block_num != expected_block_num) {
-                log::ErrorChannel()
+                log::Error()
                     << "Bad block number sequence ! Expected " << expected_block_num << " got " << reached_block_num;
                 return StageResult::kBadChainSequence;
             }
 
             if (data.value.length() != kHashLength) {
-                log::ErrorChannel()
+                log::Error()
                     << "Bad header hash at height " << reached_block_num << " (hash len == " << data.value.length()
                     << " - should be " << kHashLength << ")";
                 return StageResult::kBadBlockHash;
@@ -481,7 +481,7 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
 
         // If we've not reached block_to something is wrong
         if (reached_block_num != to) {
-            log::ErrorChannel() << "Should have reached block " << to << " got " << reached_block_num;
+            log::Error() << "Should have reached block " << to << " got " << reached_block_num;
             return StageResult::kBadChainSequence;
         }
 
@@ -490,14 +490,14 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         return StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {
-        log::ErrorChannel() << "Unexpected database error in " << std::string(__FUNCTION__) << " : "
+        log::Error() << "Unexpected database error in " << std::string(__FUNCTION__) << " : "
                                       << ex.what();
         return StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
         return StageResult::kUnexpectedError;
     } catch (...) {
-        log::ErrorChannel() << "Unexpected error in " << std::string(__FUNCTION__) << " : unknown error";
+        log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : unknown error";
         return StageResult::kUnexpectedError;
     }
 }

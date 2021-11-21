@@ -45,7 +45,7 @@ void OutboundGetBlockHeaders::execute() {
         auto send_outcome = send_packet(*packet, timeout);
 
         packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";  // todo: log level?
-        log::TraceChannel() << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size()
+        log::Trace() << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size()
                             << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
@@ -67,7 +67,7 @@ void OutboundGetBlockHeaders::execute() {
         auto send_outcome = send_packet(*packet, timeout);
 
         packets_ += "SK o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";  // todo: log level?
-        log::TraceChannel() << "Headers skeleton request sent (" << *packet << "), received by "
+        log::Trace() << "Headers skeleton request sent (" << *packet << "), received by "
                             << send_outcome.peers_size() << " peer(s)";
     }
 }
@@ -89,7 +89,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     rlp::encode(rlp_encoding, packet_);
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    log::TraceChannel() << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_;
+    log::Trace() << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_;
 	
     rpc::SendMessageByMinBlock rpc{min_block, std::move(request)};
 
@@ -98,7 +98,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     sentry_.exec_remotely(rpc);
 
     sentry::SentPeers peers = rpc.reply();
-    log::TraceChannel() << "Received rpc result of OutboundGetBlockHeaders " << packet_ << ": "
+    log::Trace() << "Received rpc result of OutboundGetBlockHeaders " << packet_ << ": "
                         << std::to_string(peers.peers_size()) + " peer(s)";
 
     return peers;

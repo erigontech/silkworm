@@ -37,7 +37,7 @@ InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg, 
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     rlp::success_or_throw(rlp::decode(data, packet_));
 
-    log::TraceChannel() << "Received message " << *this;
+    log::Trace() << "Received message " << *this;
 }
 
 void InboundNewBlockHashes::execute() {
@@ -71,12 +71,12 @@ void InboundNewBlockHashes::execute() {
         msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
         // send msg_reply
-        log::TraceChannel() << "Replying to " << identify(*this) << " with send_message_by_id";
+        log::Trace() << "Replying to " << identify(*this) << " with send_message_by_id";
         rpc::SendMessageById send_message_by_id(peerId_, std::move(msg_reply));
         sentry_.exec_remotely(send_message_by_id);
 
         [[maybe_unused]] sentry::SentPeers peers = send_message_by_id.reply();
-        log::TraceChannel() << "Received rpc result of " << identify(*this) << ": "
+        log::Trace() << "Received rpc result of " << identify(*this) << ": "
                             << std::to_string(peers.peers_size()) + " peer(s)";
 
         // calculate top seen block height

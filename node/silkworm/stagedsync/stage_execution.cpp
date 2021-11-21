@@ -54,7 +54,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
             processor.evm().state_pool = &state_pool;
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                log::ErrorChannel() << "Validation error " << magic_enum::enum_name<ValidationResult>(res)
+                log::Error() << "Validation error " << magic_enum::enum_name<ValidationResult>(res)
                                     << " at block " << block_num;
                 return StageResult::kInvalidBlock;
             }
@@ -63,7 +63,7 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
             buffer.insert_receipts(block_num, receipts);
 
             if (block_num % 1000 == 0) {
-                log::DebugChannel() << "Blocks <= " << block_num << " executed";
+                log::Debug() << "Blocks <= " << block_num << " executed";
             }
 
             if (buffer.current_batch_size() >= batch_size || block_num >= max_block) {
@@ -74,19 +74,19 @@ static StageResult execute_batch_of_blocks(mdbx::txn& txn, const ChainConfig& co
             ++block_num;
         }
     } catch (const mdbx::exception& ex) {
-        log::ErrorChannel() << "DB error " << ex.what() << " at block " << block_num;
+        log::Error() << "DB error " << ex.what() << " at block " << block_num;
         return StageResult::kDbError;
     } catch (const db::MissingSenders&) {
-        log::ErrorChannel() << "Missing or incorrect senders at block " << block_num;
+        log::Error() << "Missing or incorrect senders at block " << block_num;
         return StageResult::kMissingSenders;
     } catch (const rlp::DecodingError& ex) {
-        log::ErrorChannel() << ex.what() << " at block " << block_num;
+        log::Error() << ex.what() << " at block " << block_num;
         return StageResult::kDecodingError;
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << "Unexpected error " << ex.what() << " at block " << block_num;
+        log::Error() << "Unexpected error " << ex.what() << " at block " << block_num;
         return StageResult::kUnexpectedError;
     } catch (...) {
-        log::ErrorChannel() << "Unknown error at block " << block_num;
+        log::Error() << "Unknown error at block " << block_num;
         return StageResult::kUnknownError;
     }
 }
@@ -104,7 +104,7 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
         const BlockNum max_block{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
         BlockNum block_num{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey) + 1};
         if (block_num > max_block) {
-            log::ErrorChannel() << "Stage progress is " << (block_num - 1) << " which is <= than requested block_to "
+            log::Error() << "Stage progress is " << (block_num - 1) << " which is <= than requested block_to "
                                 << max_block;
             return StageResult::kInvalidRange;
         }
@@ -113,7 +113,7 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
         // at least at max_block as set above
         const BlockNum max_block_senders{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
         if (max_block > max_block_senders) {
-            log::ErrorChannel() << "Sender's stage progress is " << (max_block_senders)
+            log::Error() << "Sender's stage progress is " << (max_block_senders)
                                 << " which is <= than requested block_to " << max_block;
             return StageResult::kMissingSenders;
         }
@@ -132,15 +132,15 @@ StageResult stage_execution(TransactionManager& txn, const std::filesystem::path
             txn.commit();
 
             (void)sw.lap();
-            log::InfoChannel() << (block_num == max_block ? "All blocks" : "Blocks") << " <= " << block_num
+            log::Info() << (block_num == max_block ? "All blocks" : "Blocks") << " <= " << block_num
                                << " committed"
                                << " in " << StopWatch::format(sw.laps().back().second);
         }
     } catch (const mdbx::exception& ex) {
-        log::ErrorChannel() << "DB Error " << ex.what() << " in stage_execution";
+        log::Error() << "DB Error " << ex.what() << " in stage_execution";
         return StageResult::kDbError;
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << "Unexpected error " << ex.what() << " in stage execution";
+        log::Error() << "Unexpected error " << ex.what() << " in stage execution";
         return StageResult::kUnexpectedError;
     }
 
@@ -223,7 +223,7 @@ StageResult unwind_execution(TransactionManager& txn, const std::filesystem::pat
         return StageResult::kSuccess;
     }
 
-    log::InfoChannel() << "Unwind Execution from " << execution_progress << " to " << unwind_to;
+    log::Info() << "Unwind Execution from " << execution_progress << " to " << unwind_to;
 
     static const db::MapConfig unwind_tables[7] = {
         db::table::kPlainState,         //
@@ -258,17 +258,17 @@ StageResult unwind_execution(TransactionManager& txn, const std::filesystem::pat
             for (int i = 2; i < 7; ++i) {
                 auto unwind_cursor{db::open_cursor(*txn, unwind_tables[i])};
                 auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
-                log::InfoChannel() << "Erased " << erased << " records from " << unwind_tables[i].name;
+                log::Info() << "Erased " << erased << " records from " << unwind_tables[i].name;
                 unwind_cursor.close();
             }
         }
         txn.commit();
         return StageResult::kSuccess;
     } catch (const mdbx::exception& ex) {
-        log::ErrorChannel() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
         return StageResult::kDbError;
     } catch (...) {
-        log::ErrorChannel() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
         return StageResult::kUnexpectedError;
     }
 }
@@ -287,16 +287,16 @@ StageResult prune_execution(TransactionManager& txn, const std::filesystem::path
         for (const auto& prune_table : prune_tables) {
             auto prune_cursor{db::open_cursor(*txn, prune_table)};
             auto erased{db::cursor_erase(prune_cursor, prune_point, db::CursorMoveDirection::Reverse)};
-            log::InfoChannel() << "Erased " << erased << " records from " << prune_table.name;
+            log::Info() << "Erased " << erased << " records from " << prune_table.name;
             prune_cursor.close();
         }
         txn.commit();  // TODO(Giulio) Should we commit here or at return of stage ?
         return StageResult::kSuccess;
     } catch (const mdbx::exception& ex) {
-        log::ErrorChannel() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
+        log::Error() << "Unexpected db error in " << std::string(__FUNCTION__) << " : " << ex.what();
         return StageResult::kDbError;
     } catch (...) {
-        log::ErrorChannel() << "Unexpected unknown error in " << std::string(__FUNCTION__);
+        log::Error() << "Unexpected unknown error in " << std::string(__FUNCTION__);
         return StageResult::kUnexpectedError;
     }
 }

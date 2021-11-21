@@ -370,7 +370,7 @@ static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, const std::fi
     DbTrieLoader loader{txn, account_collector, storage_collector};
     const evmc::bytes32 root{loader.calculate_root(changed)};
     if (expected_root != nullptr && root != *expected_root) {
-        log::ErrorChannel() << "Wrong trie root: " << to_hex(root) << ", expected: " << to_hex(*expected_root) << "\n";
+        log::Error() << "Wrong trie root: " << to_hex(root) << ", expected: " << to_hex(*expected_root) << "\n";
         throw WrongRoot{};
     }
     auto target{db::open_cursor(txn, db::table::kTrieOfAccounts)};

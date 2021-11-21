@@ -79,7 +79,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kLogIndexKey)};
 
     // Extract
-    log::InfoChannel() << "Started Log Index Extraction";
+    log::Info() << "Started Log Index Extraction";
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], last_processed_block_number);
 
@@ -104,13 +104,13 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
         // Flushes
         if (topics_allocated_space > kBitmapBufferSizeLimit) {
             flush_bitmaps(topic_collector, topic_bitmaps);
-            log::InfoChannel() << "Current Block: " << block_number;
+            log::Info() << "Current Block: " << block_number;
             topics_allocated_space = 0;
         }
 
         if (addresses_allocated_space > kBitmapBufferSizeLimit) {
             flush_bitmaps(addresses_collector, addresses_bitmaps);
-            log::InfoChannel() << "Current Block: " << block_number;
+            log::Info() << "Current Block: " << block_number;
             addresses_allocated_space = 0;
         }
 
@@ -122,9 +122,9 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
     flush_bitmaps(topic_collector, topic_bitmaps);
     flush_bitmaps(addresses_collector, addresses_bitmaps);
 
-    log::InfoChannel() << "Latest Block: " << block_number;
+    log::Info() << "Latest Block: " << block_number;
     // Proceed only if we've done something
-    log::InfoChannel() << "Started Topics Loading";
+    log::Info() << "Started Topics Loading";
     // if stage has never been touched then appending is safe
     MDBX_put_flags_t db_flags{last_processed_block_number ? MDBX_put_flags_t::MDBX_UPSERT
                                                           : MDBX_put_flags_t::MDBX_APPEND};
@@ -136,7 +136,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
                          /* log_every_percent = */ 10);
     target.close();
     target = db::open_cursor(*txn, db::table::kLogAddressIndex);
-    log::InfoChannel() << "Started Address Loading";
+    log::Info() << "Started Address Loading";
     addresses_collector.load(target, loader_function, db_flags,
                              /* log_every_percent = */ 10);
 
@@ -145,7 +145,7 @@ StageResult stage_log_index(TransactionManager& txn, const std::filesystem::path
 
     txn.commit();
 
-    log::InfoChannel() << "All Done";
+    log::Info() << "All Done";
 
     return StageResult::kSuccess;
 }
@@ -198,20 +198,20 @@ static StageResult unwind_log_index(TransactionManager& txn, etl::Collector& col
 StageResult unwind_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
 
-    log::InfoChannel() << "Started Topic Index Unwind";
+    log::Info() << "Started Topic Index Unwind";
     auto result{unwind_log_index(txn, collector, unwind_to, true)};
     collector.clear();
     if (result != StageResult::kSuccess) {
         return result;
     }
-    log::InfoChannel() << "Started Address Index Unwind";
+    log::Info() << "Started Address Index Unwind";
     result = unwind_log_index(txn, collector, unwind_to, false);
     collector.clear();
     if (result != StageResult::kSuccess) {
         return result;
     }
     db::stages::write_stage_progress(*txn, db::stages::kLogIndexKey, unwind_to);
-    log::InfoChannel() << "All Done";
+    log::Info() << "All Done";
     return StageResult::kSuccess;
 }
 
@@ -256,13 +256,13 @@ void prune_log_index(TransactionManager& txn, etl::Collector& collector, uint64_
 StageResult prune_log_index(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     etl::Collector collector(etl_path, /* flush size */ 256_Mebi);
 
-    log::InfoChannel() << "Pruning Log Index from: " << prune_from;
+    log::Info() << "Pruning Log Index from: " << prune_from;
     prune_log_index(txn, collector, prune_from, true);
     collector.clear();
     prune_log_index(txn, collector, prune_from, false);
     collector.clear();
 
-    log::InfoChannel() << "Pruning Log Index finished...";
+    log::Info() << "Pruning Log Index finished...";
     return StageResult::kSuccess;
 }
 

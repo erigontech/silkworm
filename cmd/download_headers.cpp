@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
 
     log::set_verbosity(log::Level::kTrace);
     log::tee_file(std::filesystem::path("downloader.log"));
-    log::InfoChannel() << "STARTING";
+    log::Info() << "STARTING";
 
     std::thread block_request_processing;
     std::thread header_receiving;

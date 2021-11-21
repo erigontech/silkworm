@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
     Bytes buffer{};  // To extract compacted data
 
     try {
-        log::InfoChannel() << "Checking Transaction Lookups...";
+        log::Info() << "Checking Transaction Lookups...";
 
         auto bodies_data{bodies_table.to_first(false)};
         while (bodies_data) {
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
                 for (; i < body.txn_count && transaction_data.done;
                      i++, transaction_data = transactions_table.to_next(false)) {
                     if (!transaction_data) {
-                        log::ErrorChannel() << "Block " << block_number << " transaction " << i << " not found in "
+                        log::Error() << "Block " << block_number << " transaction " << i << " not found in "
                                             << db::table::kBlockTransactions.name << " table";
                         continue;
                     }
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
                     auto transaction_view{full_view(transaction_hash.bytes)};
                     auto lookup_data{tx_lookup_table.find(db::to_slice(transaction_view), false)};
                     if (!lookup_data) {
-                        log::ErrorChannel()
+                        log::Error()
                             << "Block " << block_number << " transaction " << i << " with hash "
                             << to_hex(transaction_view) << " not found in " << db::table::kTxLookup.name << " table";
                         continue;
@@ -100,20 +100,20 @@ int main(int argc, char* argv[]) {
                     auto actual_block_number{endian::load_big_u64(lookup_block_value.data())};
 
                     if (actual_block_number != expected_block_number) {
-                        log::ErrorChannel()
+                        log::Error()
                             << "Mismatch: Expected block number for tx with hash: " << to_hex(transaction_view)
                             << " is " << expected_block_number << ", but got: " << actual_block_number;
                     }
                 }
 
                 if (i != body.txn_count) {
-                    log::ErrorChannel() << "Block " << block_number << " claims " << body.txn_count
+                    log::Error() << "Block " << block_number << " claims " << body.txn_count
                                         << " transactions but only " << i << " read";
                 }
             }
 
             if (expected_block_number % 100000 == 0) {
-                log::InfoChannel() << "Scanned blocks " << expected_block_number;
+                log::Info() << "Scanned blocks " << expected_block_number;
             }
 
             if (SignalHandler::signalled()) {
@@ -124,10 +124,10 @@ int main(int argc, char* argv[]) {
             bodies_data = bodies_table.to_next(false);
         }
 
-        log::InfoChannel() << "Check " << (SignalHandler::signalled() ? "aborted" : "completed");
+        log::Info() << "Check " << (SignalHandler::signalled() ? "aborted" : "completed");
 
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << ex.what();
+        log::Error() << ex.what();
         return -5;
     }
     return 0;

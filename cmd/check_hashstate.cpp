@@ -67,11 +67,11 @@ void check(mdbx::txn& txn, Operation operation) {
 
             auto actual_value{target_table.find(db::to_slice(key))};
             if (!actual_value) {
-                log::ErrorChannel() << "key: " << to_hex(key) << ", does not exist.";
+                log::Error() << "key: " << to_hex(key) << ", does not exist.";
                 return;
             }
             if (actual_value.value != data.value) {
-                log::ErrorChannel() << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
+                log::Error() << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
                                     << to_hex(db::from_slice(actual_value.value));
                 return;
             }
@@ -92,7 +92,7 @@ void check(mdbx::txn& txn, Operation operation) {
 
             auto target_data{target_table.find_multivalue(db::to_slice(key), data.value, /*throw_notfound*/ false)};
             if (!target_data) {
-                log::ErrorChannel() << "Key: " << to_hex(key) << ", does not exist.";
+                log::Error() << "Key: " << to_hex(key) << ", does not exist.";
                 return;
             }
             data = source_table.to_next(false);
@@ -108,12 +108,12 @@ void check(mdbx::txn& txn, Operation operation) {
             std::memcpy(&key[kHashLength], &mdb_key_as_bytes[kAddressLength], db::kIncarnationLength);
             auto actual_value{target_table.find(db::to_slice(key), /*throw_notfound*/ false)};
             if (!actual_value) {
-                log::ErrorChannel() << "Key: " << to_hex(key) << ", does not exist.";
+                log::Error() << "Key: " << to_hex(key) << ", does not exist.";
                 data = source_table.to_next(false);
                 continue;
             }
             if (actual_value.value != data.value) {
-                log::ErrorChannel() << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
+                log::Error() << "Expected: " << to_hex(db::from_slice(data.value)) << ", Actual: << "
                                     << to_hex(db::from_slice(actual_value.value));
                 return;
             }
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
     app.add_option("--chaindata", chaindata, "Path to a database populated by Erigon", true)
         ->check(CLI::ExistingDirectory);
     CLI11_PARSE(app, argc, argv);
-    log::InfoChannel() << "Checking HashState";
+    log::Info() << "Checking HashState";
 
     try {
         auto data_dir{DataDirectory::from_chaindata(chaindata)};
@@ -138,15 +138,15 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         auto txn{env.start_write()};
 
-        log::InfoChannel() << "Checking Accounts";
+        log::Info() << "Checking Accounts";
         check(txn, HashAccount);
-        log::InfoChannel() << "Checking Storage";
+        log::Info() << "Checking Storage";
         check(txn, HashStorage);
-        log::InfoChannel() << "Checking Code Keys";
+        log::Info() << "Checking Code Keys";
         check(txn, Code);
-        log::InfoChannel() << "All Done!";
+        log::Info() << "All Done!";
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << ex.what();
+        log::Error() << ex.what();
         return -5;
     }
 }

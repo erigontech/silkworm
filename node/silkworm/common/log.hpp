@@ -85,13 +85,13 @@ class LogBuffer : public BufferBase {
     LogBuffer() : BufferBase(level){};
 };
 
-using TraceChannel = LogBuffer<Level::kTrace>;
-using DebugChannel = LogBuffer<Level::kDebug>;
-using InfoChannel = LogBuffer<Level::kInfo>;
-using WarningChannel = LogBuffer<Level::kWarning>;
-using ErrorChannel = LogBuffer<Level::kError>;
-using CriticalChannel = LogBuffer<Level::kCritical>;
-using MessageChannel = LogBuffer<Level::kNone>;
+using Trace = LogBuffer<Level::kTrace>;
+using Debug = LogBuffer<Level::kDebug>;
+using Info = LogBuffer<Level::kInfo>;
+using Warning = LogBuffer<Level::kWarning>;
+using Error = LogBuffer<Level::kError>;
+using Critical = LogBuffer<Level::kCritical>;
+using Message = LogBuffer<Level::kNone>;
 
 }  // namespace silkworm::log
 

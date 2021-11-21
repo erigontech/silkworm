@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
         stagedsync::TransactionManager tm{env};
         stagedsync::success_or_throw(stagedsync::stage_log_index(tm, data_dir.etl().path()));
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << ex.what();
+        log::Error() << ex.what();
         return -5;
     }
     return 0;

@@ -47,11 +47,11 @@ int main(int argc, char* argv[]) {
 
     auto batch_size{parse_size(batch_size_str)};
     if (!batch_size.has_value()) {
-        log::ErrorChannel() << "Invalid --batch value provided : " << batch_size_str;
+        log::Error() << "Invalid --batch value provided : " << batch_size_str;
         return -3;
     }
 
-    log::InfoChannel() << "Starting block execution. DB: " << chaindata;
+    log::Info() << "Starting block execution. DB: " << chaindata;
 
     log::set_verbosity(log::Level::kDebug);
 
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
     auto res{stagedsync::stage_execution(tm, data_dir.etl().path(), batch_size.value(), prune_from)};
 
     if (res != stagedsync::StageResult::kSuccess) {
-        log::InfoChannel() << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res);
+        log::Info() << "Execution returned : " << magic_enum::enum_name<stagedsync::StageResult>(res);
     }
     return magic_enum::enum_integer<stagedsync::StageResult>(res);
 }

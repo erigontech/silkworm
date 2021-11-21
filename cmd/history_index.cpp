@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
         }
 
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << ex.what();
+        log::Error() << ex.what();
         return -5;
     }
     return 0;

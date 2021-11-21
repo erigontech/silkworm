@@ -115,19 +115,19 @@ int main(int argc, char* argv[]) {
         }
 
         if (rc = static_cast<int>(result), rc) {
-            log::ErrorChannel() << (app_recover ? "Recovery" : "Unwind") << " returned "
+            log::Error() << (app_recover ? "Recovery" : "Unwind") << " returned "
                                 << magic_enum::enum_name(result);
         } else {
             if (!options.dry) {
-                log::InfoChannel() << "Committing";
+                log::Info() << "Committing";
                 txn.commit();
             } else {
-                log::InfoChannel() << "Not committing (--dry)";
+                log::Info() << "Not committing (--dry)";
             }
         }
 
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << ex.what();
+        log::Error() << ex.what();
         return -1;
     }
 

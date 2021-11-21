@@ -99,7 +99,7 @@ Headers WorkingChain::withdraw_stable_headers() {
 
     while (!insert_list_.empty()) {
         // Make sure long insertions do not appear as a stuck stage headers
-        log::InfoChannel() << "WorkingChain: persisting headers (on top of " << highest_in_db_ << ")";
+        log::Info() << "WorkingChain: persisting headers (on top of " << highest_in_db_ << ")";
 
         // Choose a link at top
         auto link = insert_list_.top();  // connect or extend-up added one (or some if it has siblings)
@@ -119,7 +119,7 @@ Headers WorkingChain::withdraw_stable_headers() {
 
         if (assessment == Postpone) {
             links_in_future.push_back(link);
-            log::WarningChannel() << "WorkingChain: added future link,"
+            log::Warning() << "WorkingChain: added future link,"
                                   << " hash=" << link->hash << " height=" << link->blockHeight
                                   << " timestamp=" << link->header->timestamp << ")";
             continue;
@@ -224,7 +224,7 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 
     if (length > max_len) length = max_len;
     if (length == 0) {
-        log::DebugChannel() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
+        log::Debug() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
                             << ", highest_in_db = " << highest_in_db_ << ")";
         return std::nullopt;
     }
@@ -270,7 +270,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
     using std::nullopt;
 
     if (anchor_queue_.empty()) {
-        log::DebugChannel() << "WorkingChain, no more headers to request: empty anchor queue";
+        log::Debug() << "WorkingChain, no more headers to request: empty anchor queue";
         return {};
     }
 
@@ -296,7 +296,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
             return {packet, penalties};  // try (again) to extend this anchor
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
-            log::WarningChannel() << "WorkingChain: invalidating anchor for suspected unavailability, "
+            log::Warning() << "WorkingChain: invalidating anchor for suspected unavailability, "
                                   << "height=" << anchor->blockHeight << "\n";
             invalidate(*anchor);
             anchors_.erase(anchor->parentHash);
@@ -327,7 +327,7 @@ void WorkingChain::save_external_announce(Hash h) {
 void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
     std::shared_ptr<Anchor> anchor;
 
-    log::WarningChannel() << "WorkingChain: restoring some timestamp due to request nack";
+    log::Warning() << "WorkingChain: restoring some timestamp due to request nack";
 
     if (std::holds_alternative<Hash>(packet.request.origin)) {
         Hash hash = std::get<Hash>(packet.request.origin);
@@ -462,7 +462,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
     auto [foundTip, end] = find_link(segment, start);
 
     if (end == 0) {
-        log::DebugChannel() << "WorkingChain: duplicate segment";
+        log::Debug() << "WorkingChain: duplicate segment";
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
         if (foundAnchor) remove_anchor(segment[start]->hash());  // note: hash and not parent_hash
@@ -502,9 +502,9 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        log::DebugChannel() << "Segment: " << op << " start=" << startNum << " end=" << endNum;
+        log::Debug() << "Segment: " << op << " start=" << startNum << " end=" << endNum;
     } catch (segment_cut_and_paste_error& e) {
-        log::DebugChannel() << "Segment: " << op << " failure, reason:" << e.what();
+        log::Debug() << "Segment: " << op << " failure, reason:" << e.what();
         return false;
     }
 
@@ -518,7 +518,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
 void WorkingChain::reduce_links_to(size_t limit) {
     if (link_queue_.size() <= limit) return;  // does nothing
 
-    log::DebugChannel() << "LinkQueue: too many links, cutting down from " << link_queue_.size() << " to "
+    log::Debug() << "LinkQueue: too many links, cutting down from " << link_queue_.size() << " to "
                         << link_limit;
 
     while (link_queue_.size() > limit) {
@@ -773,7 +773,7 @@ void WorkingChain::remove_anchor(const Hash& hash) {
     // But removal will happen anyway, in the function request_more_headers, if it disappears from the map
     size_t erased = anchors_.erase(hash);
     if (erased == 0) {
-        log::WarningChannel() << "WorkingChain: removal of anchor failed, " << to_hex(hash) << " not found";
+        log::Warning() << "WorkingChain: removal of anchor failed, " << to_hex(hash) << " not found";
     }
 }
 

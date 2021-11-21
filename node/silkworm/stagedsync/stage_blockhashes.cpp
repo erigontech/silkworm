@@ -46,7 +46,7 @@ StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::pa
     uint32_t blocks_processed_count{0};
 
     // Extract
-    log::InfoChannel() << "Started BlockHashes Extraction";
+    log::Info() << "Started BlockHashes Extraction";
 
     auto header_key{db::block_key(expected_block_number)};
     auto header_data{canonical_hashes_table.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
@@ -56,13 +56,13 @@ StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::pa
             // Something wrong with db
             // Blocks are out of sequence for any reason
             // Should not happen but you never know
-            log::ErrorChannel() << "Bad headers sequence. Expected " << expected_block_number << " got "
+            log::Error() << "Bad headers sequence. Expected " << expected_block_number << " got "
                                 << reached_block_number;
             return StageResult::kBadChainSequence;
         }
 
         if (header_data.value.length() != kHashLength) {
-            log::ErrorChannel() << "Bad header hash for block " << expected_block_number;
+            log::Error() << "Bad header hash for block " << expected_block_number;
             return StageResult::kBadBlockHash;
         }
 
@@ -77,11 +77,11 @@ StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::pa
     }
     canonical_hashes_table.close();
 
-    log::InfoChannel() << "Entries Collected << " << blocks_processed_count;
+    log::Info() << "Entries Collected << " << blocks_processed_count;
 
     // Proceed only if we've done something
     if (blocks_processed_count) {
-        log::InfoChannel() << "Started BlockHashes Loading";
+        log::Info() << "Started BlockHashes Loading";
 
         /*
          * If we're on first sync then we shouldn't have any records in target
@@ -105,10 +105,10 @@ StageResult stage_blockhashes(TransactionManager& txn, const std::filesystem::pa
         txn.commit();
 
     } else {
-        log::InfoChannel() << "Nothing to process";
+        log::Info() << "Nothing to process";
     }
 
-    log::InfoChannel() << "All Done";
+    log::Info() << "All Done";
 
     return StageResult::kSuccess;
 }
@@ -118,7 +118,7 @@ StageResult unwind_blockhashes(TransactionManager& txn, const std::filesystem::p
     auto canonical_hashes_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     auto blockhashes_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
     // Extract
-    log::InfoChannel() << "Started BlockHashes Extraction";
+    log::Info() << "Started BlockHashes Extraction";
 
     auto header_key{db::block_key(unwind_to + 1)};
     auto header_data{canonical_hashes_table.lower_bound(db::to_slice(header_key), /*throw_notfound*/ false)};
@@ -129,7 +129,7 @@ StageResult unwind_blockhashes(TransactionManager& txn, const std::filesystem::p
         header_data = canonical_hashes_table.to_next(/*throw_notfound*/ false);
     }
     txn.commit();
-    log::InfoChannel() << "All Done";
+    log::Info() << "All Done";
 
     return StageResult::kSuccess;
 }

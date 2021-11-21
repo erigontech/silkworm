@@ -42,7 +42,7 @@ void OutboundNewBlockHashes::execute() {
     rlp::encode(rlp_encoding, packet_);
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    log::TraceChannel() << "Sending message OutboundNewBlockHashes with send_message_to_all, content:" << packet_;
+    log::Trace() << "Sending message OutboundNewBlockHashes with send_message_to_all, content:" << packet_;
 
     rpc::SendMessageToAll rpc{std::move(request)};
 
@@ -52,7 +52,7 @@ void OutboundNewBlockHashes::execute() {
     sentry_.exec_remotely(rpc);
 
     sentry::SentPeers peers = rpc.reply();
-    log::TraceChannel() << "Received rpc result of OutboundNewBlockHashes " << packet_ << ": "
+    log::Trace() << "Received rpc result of OutboundNewBlockHashes " << packet_ << ": "
                         << std::to_string(peers.peers_size()) + " peer(s)";
 
     announces_to_do.clear();  // clear announces from the queue

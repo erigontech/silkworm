@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
         stagedsync::success_or_throw(stagedsync::unwind_tx_lookup(tm, data_dir.etl().path(), unwind_to));
 
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << ex.what();
+        log::Error() << ex.what();
         return -5;
     }
     return 0;

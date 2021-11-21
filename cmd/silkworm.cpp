@@ -236,15 +236,15 @@ int main(int argc, char* argv[]) {
         return -99;
     }
 
-    log::CriticalChannel() << "This is a critical message";
-    log::ErrorChannel() << "This is a error message";
-    log::WarningChannel() << "This is a warning message";
-    log::InfoChannel() << "This is a info message";
-    log::DebugChannel() << "This is a debug message";
-    log::TraceChannel() << "This is a trace message";
+    log::Critical() << "This is a critical message";
+    log::Error() << "This is a error message";
+    log::Warning() << "This is a warning message";
+    log::Info() << "This is a info message";
+    log::Debug() << "This is a debug message";
+    log::Trace() << "This is a trace message";
     log::set_verbosity(log::Level::kNone);
-    log::TraceChannel() << "This is a trace message";
-    log::MessageChannel() << "Simple message";
+    log::Trace() << "This is a trace message";
+    log::Message() << "Simple message";
 
     return 0;
 }

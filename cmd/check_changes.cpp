@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
 
     absl::Time t1{absl::Now()};
 
-    log::InfoChannel() << " Checking change sets in " << chaindata << "\n";
+    log::Info() << " Checking change sets in " << chaindata << "\n";
 
     uint64_t block_num{from};
 
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
             processor.evm().state_pool = &state_pool;
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {
-                log::ErrorChannel() << "Failed to execute block " << block_num;
+                log::Error() << "Failed to execute block " << block_num;
                 continue;
             }
 
@@ -108,11 +108,11 @@ int main(int argc, char* argv[]) {
                 for (const auto& e : db_account_changes) {
                     if (!calculated_account_changes.contains(e.first)) {
                         if (!kPhantomAccounts.contains(e.first)) {
-                            log::ErrorChannel() << to_hex(e.first) << " is missing";
+                            log::Error() << to_hex(e.first) << " is missing";
                             mismatch = true;
                         }
                     } else if (Bytes val{calculated_account_changes.at(e.first)}; val != e.second) {
-                        log::ErrorChannel() << "Value mismatch for " << to_hex(e.first) << ":\n"
+                        log::Error() << "Value mismatch for " << to_hex(e.first) << ":\n"
                                             << to_hex(val) << "\n"
                                             << "vs DB\n"
                                             << to_hex(e.second);
@@ -121,13 +121,13 @@ int main(int argc, char* argv[]) {
                 }
                 for (const auto& e : calculated_account_changes) {
                     if (!db_account_changes.contains(e.first)) {
-                        log::ErrorChannel() << to_hex(e.first) << " is not in DB";
+                        log::Error() << to_hex(e.first) << " is not in DB";
                         mismatch = true;
                     }
                 }
 
                 if (mismatch) {
-                    log::ErrorChannel() << "Account change mismatch for block " << block_num << " 😲";
+                    log::Error() << "Account change mismatch for block " << block_num << " 😲";
                 }
             }
 
@@ -137,7 +137,7 @@ int main(int argc, char* argv[]) {
                 calculated_storage_changes = buffer.storage_changes().at(block_num);
             }
             if (calculated_storage_changes != db_storage_changes) {
-                log::ErrorChannel() << "Storage change mismatch for block " << block_num << " 😲";
+                log::Error() << "Storage change mismatch for block " << block_num << " 😲";
                 print_storage_changes(calculated_storage_changes);
                 std::cout << "vs\n";
                 print_storage_changes(db_storage_changes);
@@ -145,17 +145,17 @@ int main(int argc, char* argv[]) {
 
             if (block_num % 1000 == 0) {
                 absl::Time t2{absl::Now()};
-                log::InfoChannel() << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1)
+                log::Info() << " Checked blocks ≤ " << block_num << " in " << absl::ToDoubleSeconds(t2 - t1)
                                    << " s";
                 t1 = t2;
             }
         }
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << ex.what();
+        log::Error() << ex.what();
         return -5;
     }
 
     t1 = absl::Now();
-    log::InfoChannel() << " Blocks [" << from << "; " << block_num << ") have been checked";
+    log::Info() << " Blocks [" << from << "; " << block_num << ") have been checked";
     return 0;
 }

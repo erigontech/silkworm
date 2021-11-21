@@ -46,9 +46,9 @@ int main(int argc, char* argv[]) {
         stagedsync::TransactionManager tm{env};
         stagedsync::success_or_throw(stagedsync::unwind_execution(tm, data_dir.etl().path(), unwind_to));
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << ex.what();
+        log::Error() << ex.what();
         return -5;
     }
-    log::InfoChannel() << "All Done!";
+    log::Info() << "All Done!";
     return 0;
 }

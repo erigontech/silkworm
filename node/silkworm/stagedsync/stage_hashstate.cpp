@@ -65,7 +65,7 @@ static void storage_load(const etl::Entry& entry, mdbx::cursor& cursor, MDBX_put
  *  This is way faster than using changeset because it uses less database reads.
  */
 void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
-    log::InfoChannel() << "Hashing state";
+    log::Info() << "Hashing state";
 
     fs::create_directories(etl_path);
     etl::Collector collector_account(etl_path, 512_Mebi);
@@ -77,7 +77,7 @@ void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
     uint8_t next_start_byte{0};
     while (data) {
         if (data.key.at(0) >= next_start_byte) {
-            log::InfoChannel() << "Progress: " << percent << "%";
+            log::Info() << "Progress: " << percent << "%";
             percent += 10;
             next_start_byte += 25;
         }
@@ -116,17 +116,17 @@ void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
         data = src.to_next(/*throw_notfound=*/false);
     }
 
-    log::InfoChannel() << "Started Account Loading";
+    log::Info() << "Started Account Loading";
     auto target{db::open_cursor(txn, db::table::kHashedAccounts)};
     collector_account.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
 
-    log::InfoChannel() << "Started Storage Loading";
+    log::Info() << "Started Storage Loading";
     target = db::open_cursor(txn, db::table::kHashedStorage);
     collector_storage.load(target, storage_load, MDBX_put_flags_t::MDBX_APPENDDUP, 10);
 }
 
 void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
-    log::InfoChannel() << "Hashing code keys";
+    log::Info() << "Hashing code keys";
 
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path, 512_Mebi);
@@ -144,7 +144,7 @@ void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
     }
     tbl.close();
 
-    log::InfoChannel() << "Started Code Loading";
+    log::Info() << "Started Code Loading";
     tbl = db::open_cursor(txn, db::table::kContractCode);
     collector.load(tbl, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
 }
@@ -243,15 +243,15 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
 }
 
 StageResult stage_hashstate(TransactionManager& txn, const fs::path& etl_path, uint64_t) {
-    log::InfoChannel() << "Starting HashState";
+    log::Info() << "Starting HashState";
 
     auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
     if (last_processed_block_number != 0) {
-        log::InfoChannel() << "Starting Account Hashing";
+        log::Info() << "Starting Account Hashing";
         hashstate_promote(*txn, HashstateOperation::HashAccount);
-        log::InfoChannel() << "Starting Storage Hashing";
+        log::Info() << "Starting Storage Hashing";
         hashstate_promote(*txn, HashstateOperation::HashStorage);
-        log::InfoChannel() << "Hashing Code Keys";
+        log::Info() << "Hashing Code Keys";
         hashstate_promote(*txn, HashstateOperation::Code);
     } else {
         hashstate_promote_clean_state(*txn, etl_path.string());
@@ -262,7 +262,7 @@ StageResult stage_hashstate(TransactionManager& txn, const fs::path& etl_path, u
                                      db::stages::read_stage_progress(*txn, db::stages::kExecutionKey));
     txn.commit();
 
-    log::InfoChannel() << "All Done!";
+    log::Info() << "All Done!";
     return StageResult::kSuccess;
 }
 
@@ -389,32 +389,32 @@ StageResult unwind_hashstate(TransactionManager& txn, const fs::path&, uint64_t 
     try {
         auto stage_height{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
         if (unwind_to >= stage_height) {
-            log::ErrorChannel() << "Stage progress is " << stage_height << " which is <= than requested unwind_to";
+            log::Error() << "Stage progress is " << stage_height << " which is <= than requested unwind_to";
             return StageResult::kAborted;
         }
 
-        log::InfoChannel() << "Unwinding HashState from " << stage_height << " to " << unwind_to << " ...";
+        log::Info() << "Unwinding HashState from " << stage_height << " to " << unwind_to << " ...";
 
-        log::InfoChannel() << "[1/3] Hashed accounts ... ";
+        log::Info() << "[1/3] Hashed accounts ... ";
         hashstate_unwind(*txn, unwind_to, HashstateOperation::HashAccount);
 
-        log::InfoChannel() << "[2/3] Hashed storage ... ";
+        log::Info() << "[2/3] Hashed storage ... ";
         hashstate_unwind(*txn, unwind_to, HashstateOperation::HashStorage);
 
-        log::InfoChannel() << "[3/3] Code ... ";
+        log::Info() << "[3/3] Code ... ";
         hashstate_unwind(*txn, unwind_to, HashstateOperation::Code);
 
         // Update progress height with last processed block
         db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, unwind_to);
 
-        log::InfoChannel() << "Committing ... ";
+        log::Info() << "Committing ... ";
         txn.commit();
 
-        log::InfoChannel() << "All Done!";
+        log::Info() << "All Done!";
         return StageResult::kSuccess;
 
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << "Unexpected error : " << ex.what();
+        log::Error() << "Unexpected error : " << ex.what();
         return StageResult::kAborted;
     }
 }

@@ -55,20 +55,20 @@ int main(int argc, char* argv[]) {
             txn.clear_map(db::open_map(txn, db::table::kContractCode));
             db::stages::write_stage_progress(txn, db::stages::kHashStateKey, 0);
             if (reset) {
-                log::InfoChannel() << "Reset Complete!";
+                log::Info() << "Reset Complete!";
                 txn.commit();
                 return 0;
             }
         }
-        log::InfoChannel() << "Starting HashState";
+        log::Info() << "Starting HashState";
 
         auto last_processed_block_number{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
         if (last_processed_block_number != 0 || incrementally) {
-            log::InfoChannel() << "Starting Account Hashing";
+            log::Info() << "Starting Account Hashing";
             stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::HashAccount);
-            log::InfoChannel() << "Starting Storage Hashing";
+            log::Info() << "Starting Storage Hashing";
             stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::HashStorage);
-            log::InfoChannel() << "Hashing Code Keys";
+            log::Info() << "Hashing Code Keys";
             stagedsync::hashstate_promote(txn, stagedsync::HashstateOperation::Code);
         } else {
             stagedsync::hashstate_promote_clean_state(txn, data_dir.etl().path().string());
@@ -78,9 +78,9 @@ int main(int argc, char* argv[]) {
         db::stages::write_stage_progress(txn, db::stages::kHashStateKey,
                                          db::stages::read_stage_progress(txn, db::stages::kExecutionKey));
         txn.commit();
-        log::InfoChannel() << "All Done!";
+        log::Info() << "All Done!";
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << ex.what();
+        log::Error() << ex.what();
         return -5;
     }
 }

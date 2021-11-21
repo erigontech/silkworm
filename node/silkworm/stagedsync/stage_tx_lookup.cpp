@@ -44,7 +44,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], expected_block_number);
 
-    log::InfoChannel() << "Started Tx Lookup Extraction";
+    log::Info() << "Started Tx Lookup Extraction";
 
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
 
@@ -81,17 +81,17 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
 
         // Save last processed block_number and expect next in sequence
         if (block_number % 100000 == 0) {
-            log::InfoChannel() << "Tx Lookup Extraction Progress << " << block_number;
+            log::Info() << "Tx Lookup Extraction Progress << " << block_number;
         }
 
         bodies_data = bodies_table.to_next(/*throw_notfound*/ false);
     }
 
-    log::InfoChannel() << "Entries Collected << " << collector.size();
+    log::Info() << "Entries Collected << " << collector.size();
 
     // Proceed only if we've done something
     if (!collector.empty()) {
-        log::InfoChannel() << "Started tx Hashes Loading";
+        log::Info() << "Started tx Hashes Loading";
 
         /*
          * If we're on first sync then we shouldn't have any records in target
@@ -115,10 +115,10 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
         txn.commit();
 
     } else {
-        log::InfoChannel() << "Nothing to process";
+        log::Info() << "Nothing to process";
     }
 
-    log::InfoChannel() << "All Done";
+    log::Info() << "All Done";
 
     return StageResult::kSuccess;
 }
@@ -136,7 +136,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], unwind_to + 1);
 
-    log::InfoChannel() << "Started Tx Lookup Unwind, from: "
+    log::Info() << "Started Tx Lookup Unwind, from: "
                        << db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey) << " to: " << unwind_to;
 
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
@@ -164,7 +164,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
         bodies_data = bodies_table.to_next(/*throw_notfound*/ false);
     }
 
-    log::InfoChannel() << "All Done";
+    log::Info() << "All Done";
     db::stages::write_stage_progress(*txn, db::stages::kTxLookupKey, unwind_to);
 
     txn.commit();
@@ -175,7 +175,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
 StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
 
-    log::InfoChannel() << "Pruning Transaction Lookup from: " << prune_from;
+    log::Info() << "Pruning Transaction Lookup from: " << prune_from;
 
     auto lookup_data{lookup_table.to_first(/*throw_notfound*/ false)};
 
@@ -192,7 +192,7 @@ StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path
 
     txn.commit();
 
-    log::InfoChannel() << "Pruning Transaction Lookup finished...";
+    log::Info() << "Pruning Transaction Lookup finished...";
 
     return StageResult::kSuccess;
 }

@@ -57,7 +57,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     Bytes start{db::block_key(last_processed_block_number + 1)};
 
     // Extract
-    log::InfoChannel() << "Started " << (storage ? "Storage" : "Account")
+    log::Info() << "Started " << (storage ? "Storage" : "Account")
                        << " Index Extraction. From: " << (last_processed_block_number + 1);
 
     size_t allocated_space{0};
@@ -90,7 +90,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         if (64 * bitmaps.size() + allocated_space > kBitmapBufferSizeLimit) {
             flush_bitmaps_to_etl();
             allocated_space = 0;
-            log::InfoChannel() << "Current Block: " << block_number;
+            log::Info() << "Current Block: " << block_number;
         }
         data = changeset_table.to_next(/*throw_notfound*/ false);
     }
@@ -99,11 +99,11 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         flush_bitmaps_to_etl();
     }
 
-    log::InfoChannel() << "Latest Block: " << block_number;
+    log::Info() << "Latest Block: " << block_number;
 
     // Proceed only if we've done something
     if (!collector.empty()) {
-        log::InfoChannel() << "Started Loading";
+        log::Info() << "Started Loading";
 
         MDBX_put_flags_t db_flags{last_processed_block_number ? MDBX_put_flags_t::MDBX_UPSERT
                                                               : MDBX_put_flags_t::MDBX_APPEND};
@@ -150,10 +150,10 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
         txn.commit();
 
     } else {
-        log::InfoChannel() << "Nothing to process";
+        log::Info() << "Nothing to process";
     }
 
-    log::InfoChannel() << "All Done";
+    log::Info() << "All Done";
 
     return StageResult::kSuccess;
 }
@@ -168,7 +168,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
 
     auto index_table{db::open_cursor(*txn, index_config)};
     // Extract
-    log::InfoChannel() << "Started " << (storage ? "Storage" : "Account") << " Index Unwind";
+    log::Info() << "Started " << (storage ? "Storage" : "Account") << " Index Unwind";
     if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
         while (data) {
@@ -202,7 +202,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     db::stages::write_stage_progress(*txn, stage_key, unwind_to);
     collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
     txn.commit();
-    log::InfoChannel() << "All Done";
+    log::Info() << "All Done";
 
     return StageResult::kSuccess;
 }
@@ -217,7 +217,7 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
     auto last_processed_block{db::stages::read_stage_progress(*txn, stage_key)};
 
     auto index_table{db::open_cursor(*txn, index_config)};
-    log::InfoChannel() << "Pruning " << (storage ? "Storage" : "Account") << " History from: " << prune_from;
+    log::Info() << "Pruning " << (storage ? "Storage" : "Account") << " History from: " << prune_from;
 
     if (index_table.to_first(/* throw_notfound = */ false)) {
         auto data{index_table.current()};
@@ -249,7 +249,7 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
 
     collector.load(index_table, nullptr, MDBX_put_flags_t::MDBX_UPSERT, /* log_every_percent = */ 100);
     txn.commit();
-    log::InfoChannel() << "Pruning " << (storage ? "Storage" : "Account") << " History finished...";
+    log::Info() << "Pruning " << (storage ? "Storage" : "Account") << " History finished...";
 
     return StageResult::kSuccess;
 }

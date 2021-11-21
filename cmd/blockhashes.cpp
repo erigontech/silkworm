@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         auto result_code{stagedsync::stage_blockhashes(tm, data_dir.etl().path())};
         success_or_throw(result_code);
     } catch (const std::exception& ex) {
-        log::ErrorChannel() << ex.what();
+        log::Error() << ex.what();
         return -5;
     }
     return 0;

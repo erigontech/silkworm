@@ -18,7 +18,7 @@
 
 namespace silkworm::db::table {
 
-void deploy_chaindata_tables(mdbx::txn& txn) {
+void check_or_create_chaindata_tables(mdbx::txn& txn) {
     for (const auto& config : kChainDataTables) {
         if (db::has_map(txn, config.name)) {
             auto table_map{txn.open_map(config.name)};

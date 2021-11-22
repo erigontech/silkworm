@@ -138,7 +138,7 @@ inline constexpr db::MapConfig kChainDataTables[]{
 };
 
 //! \brief Ensures all defined tables are present in db with consistent flags. Should a table not exist it gets created
-void deploy_chaindata_tables(mdbx::txn& txn);
+void check_or_create_chaindata_tables(mdbx::txn& txn);
 
 }  // namespace silkworm::db::table
 

@@ -28,7 +28,7 @@ Context::Context() : tmp_dir_{}, data_dir_{tmp_dir_.path()} {
 
     env_ = db::open_env(config);
     txn_ = env_.start_write();
-    db::table::deploy_chaindata_tables(txn_);
+    db::table::check_or_create_chaindata_tables(txn_);
 }
 
 }  // namespace silkworm::test

@@ -223,7 +223,7 @@ int main(int argc, char* argv[]) {
         // Deploy and check tables
         {
             auto tx{chaindata_env.start_write()};
-            db::table::deploy_chaindata_tables(tx);
+            db::table::check_or_create_chaindata_tables(tx);
             tx.commit();
         }
 

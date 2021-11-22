@@ -650,6 +650,7 @@ int main(int argc, char* argv[]) {
     app.add_flag("--slow", include_slow_tests, "Run slow tests");
 
     CLI11_PARSE(app, argc, argv);
+    init_terminal();
 
     if (!evm_path.empty()) {
         evmc_loader_error_code err;

@@ -72,10 +72,12 @@ void InboundNewBlockHashes::execute() {
 
         // send msg_reply
         SILKWORM_LOG(LogLevel::Trace) << "Replying to " << identify(*this) << " with send_message_by_id\n";
-        rpc::SendMessageById send_message_by_id(peerId_, std::move(msg_reply));
-        sentry_.exec_remotely(send_message_by_id);
+        rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
+        rpc.do_not_throw_on_failure();
 
-        [[maybe_unused]] sentry::SentPeers peers = send_message_by_id.reply();
+        sentry_.exec_remotely(rpc);
+
+        [[maybe_unused]] sentry::SentPeers peers = rpc.reply();
         SILKWORM_LOG(LogLevel::Trace) << "Received rpc result of " << identify(*this) << ": "
                                       << std::to_string(peers.peers_size()) + " peer(s)\n";
 

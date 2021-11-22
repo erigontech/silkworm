@@ -69,7 +69,7 @@ void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainIdentit
 
 void SentryClient::execution_loop() {
     // send a message subscription
-    rpc::ReceiveMessages message_subscription(Scope::BlockAnnouncements & Scope::BlockRequests);
+    rpc::ReceiveMessages message_subscription(Scope::BlockAnnouncements | Scope::BlockRequests);
     exec_remotely(message_subscription);
 
     // receive messages

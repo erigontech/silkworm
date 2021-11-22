@@ -53,7 +53,6 @@ inline constexpr db::MapConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
 inline constexpr db::MapConfig kCallFromIndex{"CallFromIndex"};
 inline constexpr db::MapConfig kCallToIndex{"CallToIndex"};
 inline constexpr db::MapConfig kCallTraceSet{"CallTraceSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
-inline constexpr db::MapConfig kClique{"Clique"};
 inline constexpr db::MapConfig kCode{"Code"};
 inline constexpr db::MapConfig kConfig{"Config"};
 inline constexpr db::MapConfig kContractCode{"HashedCodeHash"};
@@ -107,7 +106,6 @@ inline constexpr db::MapConfig kTables[]{
     kCanonicalHashes,
     kHeaders,
     kDifficulty,
-    kClique,
     kCode,
     kConfig,
     kContractCode,

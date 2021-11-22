@@ -62,9 +62,6 @@ class RWTxn {
         if (external_txn_ == nullptr) {
             managed_txn_.commit();
             managed_txn_ = env_->start_write();  // renew transaction
-        } else {
-            // external_txn is useful for running several stages on a handful of blocks atomically.
-            // The code that invokes the stages is responsible for committing external_txn_ later on.
         }
     }
 

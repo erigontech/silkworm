@@ -214,16 +214,12 @@ int main(int argc, char* argv[]) {
             config.create =
                 !std::filesystem::exists(db::get_datafile_path(node_settings.data_directory->chaindata().path()));
         }
+
+        // Open chaindata environment and check tables are consistent
         auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_config)};
-
-        // Create schema if needed
-        if (chaindata_env.is_pristine() || chaindata_env.is_empty()) {
-            auto tx{chaindata_env.start_write()};
-            db::table::deploy_chaindata_tables(tx);
-            tx.commit();
-        }
-
-        // Todo(Andrea) check db compatibility and proper initialization of chain config
+        auto tx{chaindata_env.start_write()};
+        db::table::deploy_chaindata_tables(tx);
+        tx.commit();
 
 
         chaindata_env.close();

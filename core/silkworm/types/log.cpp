@@ -1,5 +1,5 @@
 /*
-   Copyright 2020 The Silkworm Authors
+   Copyright 2020-2021 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 #include "log.hpp"
 
-#include <silkworm/common/util.hpp>
 #include <silkworm/rlp/encode_vector.hpp>
 
 namespace silkworm ::rlp {
@@ -37,7 +36,7 @@ size_t length(const Log& l) {
 
 void encode(Bytes& to, const Log& l) {
     encode_header(to, header(l));
-    encode(to, full_view(l.address));
+    encode(to, l.address);
     encode(to, l.topics);
     encode(to, l.data);
 }

@@ -136,8 +136,8 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], unwind_to + 1);
 
-    log::Info() << "Started Tx Lookup Unwind, from: "
-                       << db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey) << " to: " << unwind_to;
+    log::Info() << "Started Tx Lookup Unwind, from: " << db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey)
+                << " to: " << unwind_to;
 
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
     while (bodies_data) {
@@ -153,9 +153,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
             while (tx_data && tx_count < body.txn_count) {
                 auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
-                if (lookup_table.seek(mdbx::slice{hash.bytes, kHashLength})) {
-                    lookup_table.erase();
-                }
+                lookup_table.erase(db::to_slice(hash.bytes));
                 ++tx_count;
                 tx_data = transactions_table.to_next(/*throw_notfound*/ false);
             }

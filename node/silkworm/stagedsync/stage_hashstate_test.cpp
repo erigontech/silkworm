@@ -90,7 +90,7 @@ TEST_CASE("Stage Hashstate") {
     block.transactions[0].value = 1000;
 
     block.transactions[0].to = contract_address;
-    block.transactions[0].data = full_view(new_val);
+    block.transactions[0].data = ByteView{new_val};
 
     REQUIRE(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
 
@@ -108,7 +108,7 @@ TEST_CASE("Stage Hashstate") {
     block.transactions[0].value = 1000;
 
     block.transactions[0].to = contract_address;
-    block.transactions[0].data = full_view(new_val);
+    block.transactions[0].data = ByteView{new_val};
 
     REQUIRE(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
     REQUIRE_NOTHROW(buffer.write_to_db());
@@ -125,8 +125,8 @@ TEST_CASE("Stage Hashstate") {
     // ---------------------------------------
 
     auto hashed_address_table{db::open_cursor(*txn, db::table::kHashedAccounts)};
-    auto sender_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
-    REQUIRE(hashed_address_table.seek(db::to_slice(sender_keccak)));
+    auto sender_keccak{keccak256(sender)};
+    REQUIRE(hashed_address_table.seek(db::to_slice(sender_keccak.bytes)));
     {
         auto account_encoded{db::from_slice(hashed_address_table.current().value)};
         auto [acc, _]{decode_account_from_storage(account_encoded)};
@@ -139,8 +139,8 @@ TEST_CASE("Stage Hashstate") {
     // ---------------------------------------
 
     auto hashed_storage_cursor{db::open_cursor(*txn, db::table::kHashedStorage)};
-    auto contract_keccak{Bytes(keccak256(full_view(contract_address.bytes)).bytes, kHashLength)};
-    Bytes storage_key{db::storage_prefix(contract_keccak, kDefaultIncarnation)};
+    auto contract_keccak{keccak256(contract_address)};
+    Bytes storage_key{db::storage_prefix(contract_keccak.bytes, kDefaultIncarnation)};
 
     hashed_storage_cursor.find(db::to_slice(storage_key));
 
@@ -148,18 +148,18 @@ TEST_CASE("Stage Hashstate") {
     CHECK(hashed_storage_cursor.count_multivalue() == 2);
 
     // location 0
-    auto hashed_loc0{keccak256(full_view(0x0000000000000000000000000000000000000000000000000000000000000000_bytes32))};
+    auto hashed_loc0{keccak256(0x0000000000000000000000000000000000000000000000000000000000000000_bytes32)};
     hashed_storage_cursor.to_current_first_multi();
     mdbx::slice db_val{hashed_storage_cursor.current().value};
-    CHECK(db_val.starts_with(mdbx::slice{hashed_loc0.bytes, kHashLength}));
+    CHECK(db_val.starts_with(db::to_slice(hashed_loc0.bytes)));
     ByteView value{db::from_slice(db_val).substr(kHashLength)};
     CHECK(to_hex(value) == to_hex(zeroless_view(new_val)));
 
     // location 1
-    auto hashed_loc1{keccak256(full_view(0x0000000000000000000000000000000000000000000000000000000000000001_bytes32))};
+    auto hashed_loc1{keccak256(0x0000000000000000000000000000000000000000000000000000000000000001_bytes32)};
     hashed_storage_cursor.to_current_next_multi();
     db_val = hashed_storage_cursor.current().value;
-    CHECK(db_val.starts_with(mdbx::slice{hashed_loc1.bytes, kHashLength}));
+    CHECK(db_val.starts_with(db::to_slice(hashed_loc1.bytes)));
     value = db::from_slice(db_val).substr(kHashLength);
     CHECK(to_hex(value) == "01c9");
 
@@ -167,9 +167,9 @@ TEST_CASE("Stage Hashstate") {
     REQUIRE(stagedsync::unwind_hashstate(txn, context.dir().etl().path(), 1) == stagedsync::StageResult::kSuccess);
 
     hashed_address_table = db::open_cursor(*txn, db::table::kHashedAccounts);
-    auto address_keccak{Bytes(keccak256(full_view(sender.bytes)).bytes, kHashLength)};
+    auto address_keccak{keccak256(sender)};
 
-    REQUIRE(hashed_address_table.seek(db::to_slice(address_keccak)));
+    REQUIRE(hashed_address_table.seek(db::to_slice(address_keccak.bytes)));
     {
         auto account_encoded{db::from_slice(hashed_address_table.current().value)};
         auto [acc, _]{decode_account_from_storage(account_encoded)};

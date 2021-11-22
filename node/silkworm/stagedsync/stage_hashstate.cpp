@@ -181,7 +181,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             }
             // Hashing
             auto hash{keccak256(db_key)};
-            target_table.upsert(mdbx::slice{hash.bytes, kHashLength}, plainstate_data.value);
+            target_table.upsert(db::to_slice(hash.bytes), plainstate_data.value);
             changeset_data = changeset_table.to_next(false);
 
         } else if (operation == HashstateOperation::HashStorage) {
@@ -204,7 +204,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             auto hashed_location{keccak256(db::from_slice(plainstate_data.value).substr(0, kHashLength))};
             ByteView value{db::from_slice(plainstate_data.value).substr(kHashLength)};
 
-            db::upsert_storage_value(target_table, hashed_key, ByteView{hashed_location.bytes, kHashLength}, value);
+            db::upsert_storage_value(target_table, hashed_key, hashed_location.bytes, value);
 
             changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
 
@@ -293,7 +293,7 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                     db::change_set_to_plain_state_format(db::from_slice(data.key), db::from_slice(data.value))};
 
                 auto hash{keccak256(db_key)};
-                auto new_key{mdbx::slice{hash.bytes, kHashLength}};
+                auto new_key{db::to_slice(hash.bytes)};
                 if (db_value.empty()) {
                     if (target_table.seek(new_key)) {
                         target_table.erase();
@@ -341,8 +341,7 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
 
                 auto hashed_location{keccak256(db_key.substr(db::kPlainStoragePrefixLength))};
 
-                db::upsert_storage_value(target_table, hashed_key, ByteView{hashed_location.bytes, kHashLength},
-                                         db_value);
+                db::upsert_storage_value(target_table, hashed_key, hashed_location.bytes, db_value);
 
                 return true;
             };

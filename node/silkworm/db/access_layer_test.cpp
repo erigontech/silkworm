@@ -143,7 +143,7 @@ namespace db {
 
         main_crs.to_first();
         db::cursor_for_each(main_crs, walk_func);
-        CHECK(table_names.size() == sizeof(db::table::kTables) / sizeof(db::table::kTables[0]));
+        CHECK(table_names.size() == sizeof(db::table::kChainDataTables) / sizeof(db::table::kChainDataTables[0]));
         CHECK(table_names.size() == main_stat.ms_entries);
 
         main_crs.to_first();

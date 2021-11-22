@@ -92,7 +92,7 @@ inline constexpr db::MapConfig kTrieOfAccounts{"TrieAccount"};
 inline constexpr db::MapConfig kTrieOfStorage{"TrieStorage"};
 inline constexpr db::MapConfig kTxLookup{"BlockTransactionLookup"};
 
-inline constexpr db::MapConfig kTables[]{
+inline constexpr db::MapConfig kChainDataTables[]{
     kAccountChangeSet,
     kAccountHistory,
     kBlockBodies,

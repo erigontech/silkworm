@@ -215,12 +215,17 @@ int main(int argc, char* argv[]) {
                 !std::filesystem::exists(db::get_datafile_path(node_settings.data_directory->chaindata().path()));
         }
         auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_config)};
-        if (!chaindata_env.is_empty()) {
-            // Todo(Andrea) check db compatibility and proper initialization of chain config
-        } else {
+
+        // Create schema if needed
+        if (chaindata_env.is_pristine() || chaindata_env.is_empty()) {
             auto tx{chaindata_env.start_write()};
             db::table::create_all(tx);
+            tx.commit();
         }
+
+        // Todo(Andrea) check db compatibility and proper initialization of chain config
+
+
         chaindata_env.close();
 
     } catch (const CLI::ParseError& ex) {

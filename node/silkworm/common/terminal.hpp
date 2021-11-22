@@ -15,8 +15,8 @@
 */
 
 #pragma once
-#ifndef SILKWORM_TERMINAL_HPP_
-#define SILKWORM_TERMINAL_HPP_
+#ifndef SILKWORM_COMMON_TERMINAL_HPP_
+#define SILKWORM_COMMON_TERMINAL_HPP_
 
 namespace silkworm {
 
@@ -87,6 +87,10 @@ inline constexpr const char* kColorNavyUnderline = "\x1b[4;34m";    // Blue
 inline constexpr const char* kColorVioletUnderline = "\x1b[4;35m";  // Purple
 inline constexpr const char* kColorTealUnderline = "\x1b[4;36m";    // Cyan
 
+//! \brief Initializes terminal code page to UTF-8 and enables control escape sequences
+//! \remarks Is actually needed on Windows only
+void init_terminal();
+
 }  // namespace silkworm
 
-#endif  // SILKWORM_TERMINAL_HPP_
+#endif  // SILKWORM_COMMON_TERMINAL_HPP_

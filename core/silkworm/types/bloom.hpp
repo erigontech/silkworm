@@ -30,8 +30,6 @@ inline constexpr size_t kBloomByteLength{256};
 
 using Bloom = std::array<uint8_t, kBloomByteLength>;
 
-inline ByteView full_view(const Bloom& bloom) { return {bloom.data(), kBloomByteLength}; }
-
 Bloom logs_bloom(const std::vector<Log>& logs);
 
 inline void join(Bloom& sum, const Bloom& addend) {

@@ -95,7 +95,7 @@ namespace rlp {
         encode(to, header.state_root.bytes);
         encode(to, header.transactions_root.bytes);
         encode(to, header.receipts_root.bytes);
-        encode(to, full_view(header.logs_bloom));
+        encode(to, header.logs_bloom);
         encode(to, header.difficulty);
         encode(to, header.number);
         encode(to, header.gas_limit);

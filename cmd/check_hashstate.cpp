@@ -63,7 +63,7 @@ void check(mdbx::txn& txn, Operation operation) {
                 continue;
             }
             auto hash{keccak256(mdb_key_as_bytes)};
-            auto key{full_view(hash.bytes)};
+            ByteView key{hash.bytes};
 
             auto actual_value{target_table.find(db::to_slice(key))};
             if (!actual_value) {

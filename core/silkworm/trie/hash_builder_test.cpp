@@ -29,7 +29,7 @@ namespace silkworm::trie {
 
 TEST_CASE("Empty trie") {
     HashBuilder hb;
-    CHECK(to_hex(hb.root_hash()) == to_hex(full_view(kEmptyRoot)));
+    CHECK(to_hex(hb.root_hash()) == to_hex(kEmptyRoot));
 }
 
 TEST_CASE("HashBuilder1") {
@@ -40,8 +40,8 @@ TEST_CASE("HashBuilder1") {
     const auto val2{*from_hex("02")};
 
     HashBuilder hb;
-    hb.add_leaf(unpack_nibbles(full_view(key1)), val1);
-    hb.add_leaf(unpack_nibbles(full_view(key2)), val2);
+    hb.add_leaf(unpack_nibbles(key1), val1);
+    hb.add_leaf(unpack_nibbles(key2), val2);
 
     // even terminating
     const Bytes encoded_empty_terminating_path{*from_hex("20")};
@@ -82,7 +82,7 @@ TEST_CASE("HashBuilder1") {
 
     const ethash::hash256 hash{keccak256(extension_rlp)};
     const auto root_hash{hb.root_hash()};
-    CHECK(to_hex(root_hash) == to_hex(full_view(hash.bytes)));
+    CHECK(to_hex(root_hash) == to_hex(hash.bytes));
 }
 
 TEST_CASE("HashBuilder2") {
@@ -97,7 +97,7 @@ TEST_CASE("HashBuilder2") {
 
     HashBuilder hb0;
     hb0.add_leaf(unpack_nibbles(key0), val0);
-    CHECK(to_hex(hb0.root_hash()) == to_hex(full_view(hash0.bytes)));
+    CHECK(to_hex(hb0.root_hash()) == to_hex(hash0.bytes));
 
     // ------------------------------------------------------------------------------------------
     // Add the second entry
@@ -127,20 +127,20 @@ TEST_CASE("HashBuilder2") {
     HashBuilder hb1;
     hb1.add_leaf(unpack_nibbles(key0), val0);
     hb1.add_leaf(unpack_nibbles(key1), val1);
-    CHECK(to_hex(hb1.root_hash()) == to_hex(full_view(hash1.bytes)));
+    CHECK(to_hex(hb1.root_hash()) == to_hex(hash1.bytes));
 
     // ------------------------------------------------------------------------------------------
     // Now add the branch node directly
     HashBuilder hb2;
     hb2.add_branch_node(*from_hex("06"), hash1_2);
-    CHECK(to_hex(hb2.root_hash()) == to_hex(full_view(hash1.bytes)));
+    CHECK(to_hex(hb2.root_hash()) == to_hex(hash1.bytes));
 }
 
 TEST_CASE("Known root hash") {
     static constexpr auto root_hash{0x9fa752911d55c3a1246133fe280785afbdba41f357e9cae1131d5f5b0a078b9c_bytes32};
     HashBuilder hb;
     hb.add_branch_node({}, root_hash);
-    CHECK(to_hex(hb.root_hash()) == to_hex(full_view(root_hash.bytes)));
+    CHECK(to_hex(hb.root_hash()) == to_hex(root_hash.bytes));
 }
 
 TEST_CASE("pack_nibbles") {

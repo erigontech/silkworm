@@ -34,7 +34,7 @@ class InboundNewBlock : public InboundMessage {
     void execute() override;
 
   private:
-    std::string peerId_;
+    PeerId peerId_;
     NewBlockPacket packet_;
     uint64_t reqId_;
     [[maybe_unused]] WorkingChain& working_chain_;

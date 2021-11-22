@@ -38,6 +38,43 @@ namespace silkworm::db {
 inline constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 inline constexpr std::string_view kDbLockFileName{"mdbx.lck"};
 
+//! \brief This class manages mdbx transactions across stages.
+//! It either creates new mdbx transaction as need be or uses an externally provided transaction.
+//! The external transaction mode is handy for running several stages on a handful of blocks atomically.
+class RWTxn {
+  public:
+    // This variant creates new mdbx transactions as need be.
+    explicit RWTxn(mdbx::env& env) : env_{&env} { managed_txn_ = env_->start_write(); }
+
+    // This variant is just a wrapper over an external transaction.
+    // Useful in staged sync for running several stages on a handful of blocks atomically.
+    // The code that invokes the stages is responsible for committing the external txn later on.
+    explicit RWTxn(mdbx::txn& external_txn) : external_txn_{&external_txn} {}
+
+    // Not copyable nor movable
+    RWTxn(const RWTxn&) = delete;
+    RWTxn& operator=(const RWTxn&) = delete;
+
+    mdbx::txn& operator*() { return external_txn_ ? *external_txn_ : managed_txn_; }
+    mdbx::txn* operator->() { return external_txn_ ? external_txn_ : &managed_txn_; }
+
+    void commit() {
+        if (external_txn_ == nullptr) {
+            managed_txn_.commit();
+            managed_txn_ = env_->start_write();  // renew transaction
+        } else {
+            // external_txn is useful for running several stages on a handful of blocks atomically.
+            // The code that invokes the stages is responsible for committing external_txn_ later on.
+        }
+    }
+
+  private:
+    mdbx::txn* external_txn_{nullptr};
+    mdbx::env* env_{nullptr};
+    mdbx::txn_managed managed_txn_;
+};
+
+
 //! \brief Pointer to a processing function invoked by cursor_for_each & cursor_for_count on each record
 //! \param [in] _cursor : A reference to the cursor
 //! \param [in] _data : The result of recent move operation on the cursor

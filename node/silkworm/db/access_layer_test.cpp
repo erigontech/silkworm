@@ -418,7 +418,7 @@ namespace db {
 
         buffer.write_to_db();
 
-        stagedsync::TransactionManager tm{txn};
+        db::RWTxn tm{txn};
         REQUIRE(stagedsync::stage_account_history(tm, context.dir().etl().path()) == stagedsync::StageResult::kSuccess);
 
         std::optional<Account> current_account{read_account(txn, miner_a)};

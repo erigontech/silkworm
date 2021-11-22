@@ -382,7 +382,7 @@ void do_prunings(db::EnvConfig& config, uint64_t prune_size) {
     }
 
     auto env{silkworm::db::open_env(config)};
-    stagedsync::TransactionManager txn{env};
+    db::RWTxn txn{env};
 
     auto current_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
 

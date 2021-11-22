@@ -27,6 +27,7 @@
 #include <silkworm/common/settings.hpp>
 #include <silkworm/db/access_layer.hpp>
 #include <silkworm/db/genesis.hpp>
+#include <silkworm/db/stages.hpp>
 
 using namespace silkworm;
 
@@ -218,6 +219,8 @@ int main(int argc, char* argv[]) {
         // Open chaindata environment and check tables are consistent
         log::Message() << "Opening Database chaindata path " << node_settings.data_directory->chaindata().path();
         auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_config)};
+
+        // Deploy and check tables
         {
             auto tx{chaindata_env.start_write()};
             db::table::deploy_chaindata_tables(tx);
@@ -244,14 +247,34 @@ int main(int argc, char* argv[]) {
 
             log::Message() << "Chain configuration " << db_chain_config.value().to_json().dump();
             if (db_chain_config.value().chain_id != node_settings.network_id) {
-                throw std::invalid_argument("Network Id incompatible. Expected " +
-                                            std::to_string(node_settings.network_id) + " got " +
-                                            std::to_string(db_chain_config.value().chain_id));
+                throw std::runtime_error("Network Id incompatible. Expected " +
+                                         std::to_string(node_settings.network_id) + " got " +
+                                         std::to_string(db_chain_config.value().chain_id));
             }
         }
 
-        // Do sync stuff here
+        // Detect prune-mode and verify is compatible
+        {
+            auto tx{chaindata_env.start_write()};
+            auto db_prune_mode{db::read_prune_mode(tx)};
+            if (db_prune_mode != node_settings.prune_mode) {
+                // In case we have mismatching modes (cli != db) we prevent
+                // further execution ONLY if we've already synced something
+                auto header_download_progress{db::stages::read_stage_progress(tx, db::stages::kHeadersKey)};
+                if (header_download_progress) {
+                    throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
+                                             node_settings.prune_mode.to_string() + " got " +
+                                             db_prune_mode.to_string());
+                }
+                db::write_prune_mode(tx, node_settings.prune_mode);
+                tx.commit();
+                tx = chaindata_env.start_read();
+                db_prune_mode = db::read_prune_mode(tx);
+            }
+            log::Message() << "Prune mode " << db_prune_mode.to_string();
+        }
 
+        // Do sync stuff here
 
         log::Message() << "Closing Database chaindata path " << node_settings.data_directory->chaindata().path();
         chaindata_env.close();

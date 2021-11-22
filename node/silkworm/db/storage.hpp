@@ -86,6 +86,7 @@ struct PruneMode {
         return history == other.history && receipts == other.receipts && tx_index == other.tx_index &&
                call_traces == other.call_traces;
     }
+    bool operator!=(const PruneMode& other) const { return !(this->operator==(other)); }
 };
 
 inline constexpr PruneMode kDefaultPruneMode{

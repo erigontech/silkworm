@@ -22,8 +22,11 @@
 #include <boost/asio/ip/address.hpp>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/genesis.hpp>
 
 using namespace silkworm;
 
@@ -189,10 +192,7 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
 
     // Set chain
     if (chain_opts_chain_name->count()) {
-        node_settings.network_id = lookup_chain_id_by_name(chain_opts_chain_name->as<std::string>());
-        if (!node_settings.network_id) {
-            throw std::invalid_argument("Unknown chain " + chain_opts_chain_name->as<std::string>());
-        }
+        node_settings.network_id = chain_opts_chain_name->as<uint32_t>();
     }
 }
 
@@ -216,36 +216,61 @@ int main(int argc, char* argv[]) {
         }
 
         // Open chaindata environment and check tables are consistent
+        log::Message() << "Opening Database chaindata path " << node_settings.data_directory->chaindata().path();
         auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_config)};
-        auto tx{chaindata_env.start_write()};
-        db::table::deploy_chaindata_tables(tx);
-        tx.commit();
+        {
+            auto tx{chaindata_env.start_write()};
+            db::table::deploy_chaindata_tables(tx);
+            tx.commit();
+        }
+
+        // Check db is initialized with chain config
+        {
+            auto tx{chaindata_env.start_write()};
+            auto db_chain_config{db::read_chain_config(tx)};
+            while (!db_chain_config.has_value()) {
+                auto source_data{read_genesis_data(node_settings.network_id)};
+                auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
+                if (genesis_json.is_discarded()) {
+                    throw std::runtime_error("Could not initialize db for chain id " +
+                                             std::to_string(node_settings.network_id) + " : unknown network");
+                }
+                log::Message() << "Initializing db for chain_id " << node_settings.network_id;
+                db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
+                tx.commit();
+                tx = chaindata_env.start_write();
+                db_chain_config = db::read_chain_config(tx);
+            }
+
+            log::Message() << "Chain configuration " << db_chain_config.value().to_json().dump();
+            if (db_chain_config.value().chain_id != node_settings.network_id) {
+                throw std::invalid_argument("Network Id incompatible. Expected " +
+                                            std::to_string(node_settings.network_id) + " got " +
+                                            std::to_string(db_chain_config.value().chain_id));
+            }
+        }
+
+        // Do sync stuff here
 
 
+        log::Message() << "Closing Database chaindata path " << node_settings.data_directory->chaindata().path();
         chaindata_env.close();
 
     } catch (const CLI::ParseError& ex) {
         return cli.exit(ex);
+    } catch (const std::runtime_error& ex) {
+        log::Error() << ex.what();
+        return -1;
     } catch (const std::invalid_argument& ex) {
-        std::cerr << "Invalid argument :" << ex.what() << "\n" << std::endl;
+        std::cerr << "\tInvalid argument :" << ex.what() << "\n" << std::endl;
         return -3;
     } catch (const std::exception& ex) {
-        std::cerr << "Unexpected error : " << ex.what() << "\n" << std::endl;
+        std::cerr << "\tUnexpected error : " << ex.what() << "\n" << std::endl;
         return -4;
     } catch (...) {
-        std::cerr << "Unexpected undefined error\n" << std::endl;
+        std::cerr << "\tUnexpected undefined error\n" << std::endl;
         return -99;
     }
-
-    log::Critical() << "This is a critical message";
-    log::Error() << "This is a error message";
-    log::Warning() << "This is a warning message";
-    log::Info() << "This is a info message";
-    log::Debug() << "This is a debug message";
-    log::Trace() << "This is a trace message";
-    log::set_verbosity(log::Level::kNone);
-    log::Trace() << "This is a trace message";
-    log::Message() << "Simple message";
 
     return 0;
 }

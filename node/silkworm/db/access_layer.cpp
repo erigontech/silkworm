@@ -16,8 +16,7 @@
 
 #include "access_layer.hpp"
 
-#include <cassert>
-
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/endian.hpp>
 
 #include "bitmap.hpp"
@@ -32,7 +31,7 @@ std::optional<VersionBase> read_schema_version(mdbx::txn& txn) noexcept {
     }
 
     auto data{src.current()};
-    assert(data.value.length() == 12);
+    SILKWORM_ASSERT(data.value.length() == 12);
     auto Major{endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
     data.value.remove_prefix(sizeof(uint32_t));
     auto Minor{endian::load_big_u32(static_cast<uint8_t*>(data.value.iov_base))};
@@ -107,7 +106,7 @@ std::optional<intx::uint256> read_total_difficulty(mdbx::txn& txn, BlockNum bloc
 }
 
 void write_total_difficulty(mdbx::txn& txn, const Bytes& key, const intx::uint256& total_difficulty) {
-    assert(key.length() == sizeof(BlockNum) + kHashLength);
+    SILKWORM_ASSERT(key.length() == sizeof(BlockNum) + kHashLength);
     Bytes value{};
     rlp::encode(value, total_difficulty);
     auto target{db::open_cursor(txn, table::kDifficulty)};
@@ -186,7 +185,7 @@ std::optional<BlockWithHash> read_block(mdbx::txn& txn, BlockNum block_number, b
     }
 
     BlockWithHash bh{};
-    assert(data.value.length() == kHashLength);
+    SILKWORM_ASSERT(data.value.length() == kHashLength);
     std::memcpy(bh.hash.bytes, data.value.iov_base, kHashLength);
 
     // Locate header
@@ -268,7 +267,7 @@ std::vector<evmc::address> read_senders(mdbx::txn& txn, BlockNum block_number, c
     auto key{block_key(block_number, hash)};
     auto data{src.find(to_slice(key), /*throw_notfound = */ false)};
     if (data) {
-        assert(data.value.length() % kAddressLength == 0);
+        SILKWORM_ASSERT(data.value.length() % kAddressLength == 0);
         senders.resize(data.value.length() / kAddressLength);
         std::memcpy(senders.data(), data.value.iov_base, data.value.length());
     }
@@ -316,6 +315,8 @@ static std::optional<ByteView> historical_storage(mdbx::txn& txn, const evmc::ad
     }
 
     const ByteView k{from_slice(data.key)};
+    SILKWORM_ASSERT(k.length() == kAddressLength + kHashLength + sizeof(BlockNum));
+
     if (k.substr(0, kAddressLength) != ByteView{address} ||
         k.substr(kAddressLength, kHashLength) != ByteView{location}) {
         return std::nullopt;
@@ -378,7 +379,7 @@ evmc::bytes32 read_storage(mdbx::txn& txn, const evmc::address& address, uint64_
     }
 
     evmc::bytes32 res{};
-    assert(val->length() <= kHashLength);
+    SILKWORM_ASSERT(val->length() <= kHashLength);
     std::memcpy(res.bytes + kHashLength - val->length(), val->data(), val->length());
     return res;
 }
@@ -396,7 +397,7 @@ std::optional<uint64_t> read_previous_incarnation(mdbx::txn& txn, const evmc::ad
 
     auto src{db::open_cursor(txn, table::kIncarnationMap)};
     if (auto data{src.find(to_slice(address), /*throw_notfound=*/false)}; data.done) {
-        assert(data.value.length() == 8);
+        SILKWORM_ASSERT(data.value.length() == 8);
         return endian::load_big_u64(static_cast<uint8_t*>(data.value.iov_base));
     }
     return std::nullopt;
@@ -410,7 +411,7 @@ AccountChanges read_account_changes(mdbx::txn& txn, BlockNum block_num) {
 
     auto data{src.find(to_slice(key), /*throw_notfound=*/false)};
     while (data) {
-        assert(data.value.length() >= kAddressLength);
+        SILKWORM_ASSERT(data.value.length() >= kAddressLength);
         evmc::address address;
         std::memcpy(address.bytes, data.value.iov_base, kAddressLength);
         data.value.remove_prefix(kAddressLength);
@@ -436,14 +437,14 @@ StorageChanges read_storage_changes(mdbx::txn& txn, BlockNum block_num) {
         }
 
         data.key.remove_prefix(key_prefix.length());
-        assert(data.key.length() == kPlainStoragePrefixLength);
+        SILKWORM_ASSERT(data.key.length() == kPlainStoragePrefixLength);
 
         evmc::address address;
         std::memcpy(address.bytes, data.key.iov_base, kAddressLength);
         data.key.remove_prefix(kAddressLength);
         uint64_t incarnation{endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base))};
 
-        assert(data.value.length() >= kHashLength);
+        SILKWORM_ASSERT(data.value.length() >= kHashLength);
         evmc::bytes32 location;
         std::memcpy(location.bytes, data.value.iov_base, kHashLength);
         data.value.remove_prefix(kHashLength);

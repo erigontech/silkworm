@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
         // Create schema if needed
         if (chaindata_env.is_pristine() || chaindata_env.is_empty()) {
             auto tx{chaindata_env.start_write()};
-            db::table::create_all(tx);
+            db::table::deploy_chaindata_tables(tx);
             tx.commit();
         }
 

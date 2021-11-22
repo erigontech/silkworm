@@ -138,7 +138,7 @@ inline constexpr db::MapConfig kChainDataTables[]{
 };
 
 // Create all tables that do not yet exist.
-void create_all(mdbx::txn& txn);
+void deploy_chaindata_tables(mdbx::txn& txn);
 
 }  // namespace silkworm::db::table
 

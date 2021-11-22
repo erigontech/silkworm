@@ -34,7 +34,7 @@ namespace db {
         Db::ReadWriteAccess rw_access(db);
         Db::ReadWriteAccess::Tx tx(rw_access);
 
-        table::create_all(tx.raw());
+        table::deploy_chaindata_tables(tx.raw());
 
         uint64_t block_num{11'054'435};
 

@@ -75,7 +75,7 @@ TEST_CASE("RWTxn") {
         auto ext_tx{env.start_write()};
         {
             auto tx{db::RWTxn(ext_tx)};
-            const auto handle{tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single)};
+            (void)tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single);
             tx.commit(); // Does not have any effect
         }
         ext_tx.abort();

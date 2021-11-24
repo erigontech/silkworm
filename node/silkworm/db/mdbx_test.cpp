@@ -72,21 +72,15 @@ TEST_CASE("RWTxn") {
    
     SECTION("External") {
         static const char* table_name{"GeneticCode"};
-        auto t{env.start_write()};
+        auto ext_tx{env.start_write()};
         {
-            auto tx{db::RWTxn(t)};
+            auto tx{db::RWTxn(ext_tx)};
             const auto handle{tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single)};
-            auto table_cursor{tx->open_cursor(handle)};
-
-            // populate table
-            for (const auto& [key, value] : kGeneticCode) {
-                table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
-            }
-
-            tx.commit();
+            tx.commit(); // Does not have any effect
         }
-
-        REQUIRE(db::has_map(t, table_name) == false);
+        ext_tx.abort();
+        ext_tx = env.start_write();
+        REQUIRE(db::has_map(ext_tx, table_name) == false);
     }
 }
 

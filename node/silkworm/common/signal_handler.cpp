@@ -19,6 +19,8 @@
 #include <csignal>
 #include <iostream>
 
+#include <silkworm/common/log.hpp>
+
 namespace silkworm {
 
 static const char* sig_name(int sig_code) {
@@ -109,14 +111,14 @@ void SignalHandler::init() {
 
 void SignalHandler::handle(int sig_code) {
     if (!signalled_) {
-        std::cout << "\n  Got " << sig_name(sig_code) << ". Shutting down ..." << std::endl;
+        log::Message() << kColorYellow << "Got " << sig_name(sig_code) << ". Shutting down ...";
     }
     signalled_ = true;
     if (++sig_count_ >= 10) {
         abort();
     }
     if (sig_count_ > 1) {
-        std::cout << "  Already shutting down. Interrupt more to panic. " << (10 - sig_count_) << std::endl;
+        log::Message() << kColorYellow << "Already shutting down. Interrupt more to panic. " << (10 - sig_count_);
     }
     signal(sig_code, &SignalHandler::handle);  // Re-enable the hook
 }

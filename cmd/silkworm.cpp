@@ -229,8 +229,8 @@ int main(int argc, char* argv[]) {
 
         // Check db is initialized with chain config
         {
-            auto tx{chaindata_env.start_write()};
-            auto db_chain_config{db::read_chain_config(tx)};
+            db::RWTxn tx(chaindata_env);
+            auto db_chain_config{db::read_chain_config(*tx)};
             while (!db_chain_config.has_value()) {
                 auto source_data{read_genesis_data(node_settings.network_id)};
                 auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
@@ -239,10 +239,9 @@ int main(int argc, char* argv[]) {
                                              std::to_string(node_settings.network_id) + " : unknown network");
                 }
                 log::Message() << "Initializing chain configuration for chain id " << node_settings.network_id;
-                db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
+                db::initialize_genesis(*tx, genesis_json, /*allow_exceptions=*/true);
                 tx.commit();
-                tx = chaindata_env.start_write();
-                db_chain_config = db::read_chain_config(tx);
+                db_chain_config = db::read_chain_config(*tx);
             }
 
             if (db_chain_config.value().chain_id != node_settings.network_id) {
@@ -255,21 +254,20 @@ int main(int argc, char* argv[]) {
 
         // Detect prune-mode and verify is compatible
         {
-            auto tx{chaindata_env.start_write()};
-            auto db_prune_mode{db::read_prune_mode(tx)};
+            db::RWTxn tx(chaindata_env);
+            auto db_prune_mode{db::read_prune_mode(*tx)};
             if (db_prune_mode != node_settings.prune_mode) {
                 // In case we have mismatching modes (cli != db) we prevent
                 // further execution ONLY if we've already synced something
-                auto header_download_progress{db::stages::read_stage_progress(tx, db::stages::kHeadersKey)};
+                auto header_download_progress{db::stages::read_stage_progress(*tx, db::stages::kHeadersKey)};
                 if (header_download_progress) {
                     throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
                                              node_settings.prune_mode.to_string() + " got " +
                                              db_prune_mode.to_string());
                 }
-                db::write_prune_mode(tx, node_settings.prune_mode);
+                db::write_prune_mode(*tx, node_settings.prune_mode);
                 tx.commit();
-                tx = chaindata_env.start_read();
-                db_prune_mode = db::read_prune_mode(tx);
+                db_prune_mode = db::read_prune_mode(*tx);
             }
             log::Message() << "Prune mode " << db_prune_mode.to_string();
         }

@@ -32,7 +32,7 @@ namespace silkworm {
 
 TEST_CASE("Prune Execution") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     // ---------------------------------------
     // Prepare

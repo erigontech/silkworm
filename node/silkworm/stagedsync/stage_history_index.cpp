@@ -31,7 +31,7 @@ static constexpr size_t kBitmapBufferSizeLimit = 256_Mebi;
 
 namespace fs = std::filesystem;
 
-static StageResult history_index_stage(TransactionManager& txn, const std::filesystem::path& etl_path, bool storage) {
+static StageResult history_index_stage(db::RWTxn& txn, const std::filesystem::path& etl_path, bool storage) {
     fs::create_directories(etl_path);
 
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
@@ -158,7 +158,7 @@ static StageResult history_index_stage(TransactionManager& txn, const std::files
     return StageResult::kSuccess;
 }
 
-StageResult history_index_unwind(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to,
+StageResult history_index_unwind(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to,
                                  bool storage) {
     // We take data from header table and transform it and put it in blockhashes table
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
@@ -207,7 +207,7 @@ StageResult history_index_unwind(TransactionManager& txn, const std::filesystem:
     return StageResult::kSuccess;
 }
 
-StageResult history_index_prune(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from,
+StageResult history_index_prune(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from,
                                 bool storage) {
     db::MapConfig index_config = storage ? db::table::kStorageHistory : db::table::kAccountHistory;
     const char* stage_key = storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey;
@@ -254,25 +254,25 @@ StageResult history_index_prune(TransactionManager& txn, const std::filesystem::
     return StageResult::kSuccess;
 }
 
-StageResult stage_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
+StageResult stage_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, false);
 }
-StageResult stage_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t) {
+StageResult stage_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t) {
     return history_index_stage(txn, etl_path, true);
 }
 
-StageResult unwind_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
+StageResult unwind_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     return history_index_unwind(txn, etl_path, unwind_to, false);
 }
 
-StageResult unwind_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
+StageResult unwind_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t unwind_to) {
     return history_index_unwind(txn, etl_path, unwind_to, true);
 }
 
-StageResult prune_account_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+StageResult prune_account_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     return history_index_prune(txn, etl_path, prune_from, false);
 }
-StageResult prune_storage_history(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+StageResult prune_storage_history(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     return history_index_prune(txn, etl_path, prune_from, true);
 }
 

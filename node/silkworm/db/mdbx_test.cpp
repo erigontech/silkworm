@@ -43,6 +43,47 @@ static const std::map<std::string, std::string> kGeneticCode{
 
 namespace silkworm::db {
 
+TEST_CASE("RWTxn") {
+    const TemporaryDirectory tmp_dir;
+    db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
+    db_config.inmemory = true;
+    auto env{db::open_env(db_config)};
+
+    SECTION("Managed") {
+        static const char* table_name{"GeneticCode"};
+        {
+            auto tx{db::RWTxn(env)};
+            const auto handle{tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single)};
+            auto table_cursor{tx->open_cursor(handle)};
+
+            // populate table
+            for (const auto& [key, value] : kGeneticCode) {
+                table_cursor.upsert(mdbx::slice{key}, mdbx::slice{value});
+            }
+
+            tx.commit();
+        }
+
+        auto tx{env.start_read()};
+        REQUIRE(db::has_map(tx, table_name));
+        const auto handle{tx.open_map(table_name)};
+        REQUIRE(tx.get_map_stat(handle).ms_entries == kGeneticCode.size());
+    }
+   
+    SECTION("External") {
+        static const char* table_name{"GeneticCode"};
+        auto ext_tx{env.start_write()};
+        {
+            auto tx{db::RWTxn(ext_tx)};
+            (void)tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single);
+            tx.commit(); // Does not have any effect
+        }
+        ext_tx.abort();
+        ext_tx = env.start_write();
+        REQUIRE(db::has_map(ext_tx, table_name) == false);
+    }
+}
+
 TEST_CASE("Cursor walk") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
@@ -256,7 +297,6 @@ TEST_CASE("Cursor walk") {
         data_map.clear();
         cursor_for_each(table_cursor, save_all_data_map);
         REQUIRE(data_map.rbegin()->second == "Valine");
-
     }
 }
 

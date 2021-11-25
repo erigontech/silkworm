@@ -382,7 +382,7 @@ void do_prunings(db::EnvConfig& config, uint64_t prune_size) {
     }
 
     auto env{silkworm::db::open_env(config)};
-    stagedsync::TransactionManager txn{env};
+    db::RWTxn txn{env};
 
     auto current_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
 
@@ -838,7 +838,7 @@ void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uin
     db::EnvConfig config{data_dir.chaindata().path().string(), /*create*/ true};
     auto env{db::open_env(config)};
     auto txn{env.start_write()};
-    db::table::create_all(txn);
+    db::table::check_or_create_chaindata_tables(txn);
     db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true);
 
     // Set schema version

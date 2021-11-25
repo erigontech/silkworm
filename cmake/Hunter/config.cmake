@@ -50,7 +50,12 @@ hunter_config(
   SHA1 4c18662f103ef53f106f8f98d7b46b723615e14f
 )
 
-hunter_config(Protobuf VERSION 3.14.0-4a09d77-p0)
+hunter_config(
+  OpenSSL
+  VERSION 1.1.1l
+  URL https://github.com/openssl/openssl/archive/OpenSSL_1_1_1l.tar.gz
+  SHA1 8ef8e71af7f07e2dfe204ce298ac0ff224205f1c
+)
 
 hunter_config(
   gRPC

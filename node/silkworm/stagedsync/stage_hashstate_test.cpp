@@ -32,7 +32,7 @@ TEST_CASE("Stage Hashstate") {
     using namespace silkworm;
 
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     // ---------------------------------------
     // Prepare

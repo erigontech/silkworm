@@ -31,7 +31,7 @@ TEST_CASE("Stage Transaction Lookups") {
     static constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
 
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};

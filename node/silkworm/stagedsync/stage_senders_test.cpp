@@ -36,7 +36,7 @@ using namespace silkworm;
 
 TEST_CASE("Stage Senders") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
@@ -107,7 +107,7 @@ TEST_CASE("Stage Senders") {
 
 TEST_CASE("Unwind Senders") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
@@ -178,7 +178,7 @@ TEST_CASE("Unwind Senders") {
 
 TEST_CASE("Prune Senders") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};

@@ -36,7 +36,7 @@ using namespace silkworm::consensus;
 
 TEST_CASE("Stage History") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     // ---------------------------------------
     // Prepare
@@ -180,7 +180,7 @@ TEST_CASE("Stage History") {
 
 TEST_CASE("Prune History Index") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     // ---------------------------------------
     // Prepare

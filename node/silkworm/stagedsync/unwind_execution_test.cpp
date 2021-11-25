@@ -36,7 +36,7 @@ using namespace silkworm::consensus;
 
 TEST_CASE("Unwind Execution") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     // ---------------------------------------
     // Prepare

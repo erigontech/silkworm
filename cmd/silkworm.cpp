@@ -238,19 +238,19 @@ int main(int argc, char* argv[]) {
                     throw std::runtime_error("Could not initialize db for chain id " +
                                              std::to_string(node_settings.network_id) + " : unknown network");
                 }
-                log::Message() << "Initializing db for chain_id " << node_settings.network_id;
+                log::Message() << "Initializing chain configuration for chain id " << node_settings.network_id;
                 db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
                 tx.commit();
                 tx = chaindata_env.start_write();
                 db_chain_config = db::read_chain_config(tx);
             }
 
-            log::Message() << "Chain configuration " << db_chain_config.value().to_json().dump();
             if (db_chain_config.value().chain_id != node_settings.network_id) {
-                throw std::runtime_error("Network Id incompatible. Expected " +
+                throw std::runtime_error("Incompatible network id incompatible. Expected " +
                                          std::to_string(node_settings.network_id) + " got " +
-                                         std::to_string(db_chain_config.value().chain_id));
+                                         std::to_string(db_chain_config.value().chain_id) + " from database");
             }
+            log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
         }
 
         // Detect prune-mode and verify is compatible

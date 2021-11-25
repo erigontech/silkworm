@@ -18,6 +18,8 @@
 
 #include <memory>
 
+#include <silkworm/common/log.hpp>
+
 namespace silkworm {
 
 Worker::~Worker() {
@@ -41,7 +43,7 @@ void Worker::start(bool wait) {
                 kicked_.store(false);
                 work();
             } catch (const std::exception& ex) {
-                std::cerr << "Exception thrown in worker thread : " << ex.what() << std::endl;
+                log::Error() << "Exception thrown in worker thread : " << ex.what();
             }
         }
         state_.store(WorkerState::kStopped);

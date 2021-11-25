@@ -110,10 +110,10 @@ void SignalHandler::init() {
 }
 
 void SignalHandler::handle(int sig_code) {
-    if (!signalled_) {
+    bool expected{false};
+    if (signalled_.compare_exchange_strong(expected, true)) {
         log::Message() << kColorYellow << "Got " << sig_name(sig_code) << ". Shutting down ...";
     }
-    signalled_ = true;
     if (++sig_count_ >= 10) {
         abort();
     }

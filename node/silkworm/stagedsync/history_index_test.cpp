@@ -31,8 +31,7 @@
 
 using namespace evmc::literals;
 
-using namespace silkworm;
-using namespace silkworm::consensus;
+namespace silkworm {
 
 TEST_CASE("Stage History") {
     test::Context context;
@@ -297,3 +296,5 @@ TEST_CASE("Prune History Index") {
     CHECK(bitmap_storage_contract.cardinality() == 2);
     CHECK(bitmap_storage_contract.toString() == "{2,3}");
 }
+
+}  // namespace silkworm

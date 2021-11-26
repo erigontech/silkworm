@@ -57,7 +57,7 @@ class IConsensusEngine {
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
     //! \remarks For Ethash See [YP] Section 11.3 "Reward Application".
-    virtual void finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision);
+    virtual void finalize(IntraBlockState& state, const Block& block, evmc_revision revision);
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from

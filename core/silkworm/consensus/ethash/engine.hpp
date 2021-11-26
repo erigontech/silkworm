@@ -37,7 +37,7 @@ class ConsensusEngineEthash : public ConsensusEngineBase {
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
-    void finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
+    void finalize(IntraBlockState& state, const Block& block, evmc_revision revision) override;
 };
 
 }  // namespace silkworm::consensus

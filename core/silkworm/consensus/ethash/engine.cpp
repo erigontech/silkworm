@@ -24,7 +24,7 @@
 
 namespace silkworm::consensus {
 
-void ConsensusEngineEthash::finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision) {
+void ConsensusEngineEthash::finalize(IntraBlockState& state, const Block& block, const evmc_revision revision) {
     intx::uint256 block_reward;
     if (revision >= EVMC_CONSTANTINOPLE) {
         block_reward = param::kBlockRewardConstantinople;

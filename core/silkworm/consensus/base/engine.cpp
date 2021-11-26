@@ -114,7 +114,7 @@ ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& h
         return ValidationResult::kInvalidGasLimit;
     }
 
-    if (header.extra_data.length() > 32) {
+    if (header.extra_data.length() > param::kMaxExtraDataBytes) {
         return ValidationResult::kExtraDataTooLong;
     }
 

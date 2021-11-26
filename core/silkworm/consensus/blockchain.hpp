@@ -40,7 +40,7 @@ class Blockchain {
     /// Creates a new instance of Blockchain providing an existing consensus engine
     /// In the beginning the state must have the genesis allocation.
     /// Later on the state may only be modified by the created instance of Blockchain.
-    explicit Blockchain(State& state, std::unique_ptr<IConsensusEngine>& engine, const ChainConfig& config,
+    explicit Blockchain(State& state, std::unique_ptr<IEngine>& engine, const ChainConfig& config,
                         const Block& genesis_block);
 
     // Not copyable nor movable
@@ -69,7 +69,7 @@ class Blockchain {
 
     State& state_;
     const ChainConfig& config_;
-    std::unique_ptr<IConsensusEngine> engine_;
+    std::unique_ptr<IEngine> engine_;
     std::unordered_map<evmc::bytes32, ValidationResult> bad_blocks_;
     std::vector<Receipt> receipts_;
 };

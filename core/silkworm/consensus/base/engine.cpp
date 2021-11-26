@@ -24,7 +24,7 @@
 
 namespace silkworm::consensus {
 
-ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& block, silkworm::BlockState& state) {
+ValidationResult EngineBase::pre_validate_block(const silkworm::Block& block, silkworm::BlockState& state) {
     const BlockHeader& header{block.header};
 
     if (ValidationResult err{validate_block_header(header, state, /*with_future_timestamp_check=*/true)};
@@ -91,8 +91,8 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
     return ValidationResult::kOk;
 }
 
-ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& header, BlockState& state,
-                                                            bool with_future_timestamp_check) {
+ValidationResult EngineBase::validate_block_header(const BlockHeader& header, BlockState& state,
+                                                   bool with_future_timestamp_check) {
     if (with_future_timestamp_check) {
         const std::time_t now{std::time(nullptr)};
         if (header.timestamp > static_cast<uint64_t>(now)) {
@@ -162,16 +162,16 @@ ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& h
     return validate_seal(header);
 }
 
-std::optional<BlockHeader> ConsensusEngineBase::get_parent_header(const BlockState& state, const BlockHeader& header) {
+std::optional<BlockHeader> EngineBase::get_parent_header(const BlockState& state, const BlockHeader& header) {
     if (header.number == 0) {
         return std::nullopt;
     }
     return state.read_header(header.number - 1, header.parent_hash);
 }
 
-bool ConsensusEngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                                 const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
-                                 std::vector<BlockHeader>& old_ommers) {
+bool EngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                        const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
+                        std::vector<BlockHeader>& old_ommers) {
     if (n == 0 || branch_header == mainline_header) {
         return false;
     }
@@ -196,10 +196,10 @@ bool ConsensusEngineBase::is_kin(const BlockHeader& branch_header, const BlockHe
     return is_kin(branch_header, mainline_parent.value(), mainline_header.parent_hash, n - 1, state, old_ommers);
 }
 
-evmc::address ConsensusEngineBase::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
+evmc::address EngineBase::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
-std::optional<intx::uint256> ConsensusEngineBase::expected_base_fee_per_gas(const BlockHeader& header,
-                                                                            const BlockHeader& parent) {
+std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHeader& header,
+                                                                   const BlockHeader& parent) {
     if (chain_config_.revision(header.number) < EVMC_LONDON) {
         return std::nullopt;
     }

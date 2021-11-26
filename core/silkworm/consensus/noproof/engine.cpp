@@ -18,5 +18,6 @@
 
 namespace silkworm::consensus {
 
-ValidationResult ConsensusEngineNoproof::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
+ValidationResult NoProofEngine::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
+
 }  // namespace silkworm::consensus

@@ -24,7 +24,7 @@
 
 namespace silkworm::consensus {
 
-void ConsensusEngineEthash::finalize(IntraBlockState& state, const Block& block, const evmc_revision revision) {
+void EthashEngine::finalize(IntraBlockState& state, const Block& block, const evmc_revision revision) {
     intx::uint256 block_reward;
     if (revision >= EVMC_CONSTANTINOPLE) {
         block_reward = param::kBlockRewardConstantinople;
@@ -45,7 +45,7 @@ void ConsensusEngineEthash::finalize(IntraBlockState& state, const Block& block,
     state.add_to_balance(block.header.beneficiary, miner_reward);
 }
 
-ValidationResult ConsensusEngineEthash::validate_seal(const BlockHeader& header) {
+ValidationResult EthashEngine::validate_seal(const BlockHeader& header) {
     // Ethash ProofOfWork verification
     auto epoch_number{header.number / ethash::epoch_length};
     auto epoch_context{ethash::create_epoch_context(static_cast<int>(epoch_number))};
@@ -60,7 +60,7 @@ ValidationResult ConsensusEngineEthash::validate_seal(const BlockHeader& header)
     return ec ? ValidationResult::kInvalidSeal : ValidationResult::kOk;
 }
 
-ValidationResult ConsensusEngineEthash::validate_difficulty(const BlockHeader& header, const BlockHeader& parent) {
+ValidationResult EthashEngine::validate_difficulty(const BlockHeader& header, const BlockHeader& parent) {
     const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
     const intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent.difficulty,
                                                         parent.timestamp, parent_has_uncles, chain_config_)};

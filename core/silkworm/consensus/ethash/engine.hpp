@@ -21,12 +21,11 @@
 #include <silkworm/consensus/base/engine.hpp>
 
 namespace silkworm::consensus {
-// Proof of Work implementation
-class ConsensusEngineEthash : public ConsensusEngineBase {
-    using base = ConsensusEngineBase;
 
+// Proof of Work implementation
+class EthashEngine : public EngineBase {
   public:
-    explicit ConsensusEngineEthash(const ChainConfig& chain_config) : base(chain_config, /*prohibit_ommers=*/false) {}
+    explicit EthashEngine(const ChainConfig& chain_config) : EngineBase(chain_config, /*prohibit_ommers=*/false) {}
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) override;

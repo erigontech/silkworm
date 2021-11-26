@@ -57,7 +57,7 @@ namespace silkworm {
  */
 class WorkingChain {
   public:
-    using ConsensusEngine = std::unique_ptr<consensus::IConsensusEngine>;
+    using ConsensusEngine = std::unique_ptr<consensus::IEngine>;
 
     explicit WorkingChain(ConsensusEngine);
 
@@ -132,7 +132,7 @@ class WorkingChain {
     size_t anchors_within_range(BlockNum max);
     BlockNum lowest_anchor_within_range(BlockNum bottom, BlockNum top);
 
-    enum VerificationResult {Preverified, Skip, Postpone, Accept};
+    enum VerificationResult { Preverified, Skip, Postpone, Accept };
     VerificationResult verify(const Link& link);
 
     using Error = int;
@@ -141,10 +141,10 @@ class WorkingChain {
     void extend_up(Segment::Slice);                                 // throw segment_cut_and_paste_error
     auto new_anchor(Segment::Slice, PeerId) -> RequestMoreHeaders;  // throw segment_cut_and_paste_error
 
-    YoungestFirstLinkQueue link_queue_;         // Priority queue of non-persisted links used to limit their number
-    OldestFirstAnchorQueue anchor_queue_;       // Priority queue of anchors used to sequence the header requests
-    LinkMap links_;                            // Links by header hash
-    AnchorMap anchors_;                        // Mapping from parentHash to collection of anchors
+    YoungestFirstLinkQueue link_queue_;          // Priority queue of non-persisted links used to limit their number
+    OldestFirstAnchorQueue anchor_queue_;        // Priority queue of anchors used to sequence the header requests
+    LinkMap links_;                              // Links by header hash
+    AnchorMap anchors_;                          // Mapping from parentHash to collection of anchors
     OldestFirstLinkQueue persisted_link_queue_;  // Priority queue of persisted links used to limit their number
     LinkLIFOQueue insert_list_;  // List of non-persisted links that can be inserted (their parent is persisted)
     BlockNum highest_in_db_;

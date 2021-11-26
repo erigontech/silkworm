@@ -29,7 +29,7 @@
 
 namespace silkworm {
 
-class DummyConsensusEngine : public consensus::IConsensusEngine {
+class DummyConsensusEngine : public consensus::IEngine {
   public:
     ValidationResult pre_validate_block(const Block&, BlockState&) override { return ValidationResult::kOk; }
 

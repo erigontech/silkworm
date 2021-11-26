@@ -23,7 +23,7 @@
 
 namespace silkworm::consensus {
 
-void IConsensusEngine::finalize(IntraBlockState&, const Block&, evmc_revision) {}
+void IEngine::finalize(IntraBlockState&, const Block&, evmc_revision) {}
 
 ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block_number, const ChainConfig& config,
                                           const std::optional<intx::uint256>& base_fee_per_gas) {
@@ -71,12 +71,12 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
     return ValidationResult::kOk;
 }
 
-std::unique_ptr<IConsensusEngine> engine_factory(const ChainConfig& chain_config) {
+std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config) {
     switch (chain_config.seal_engine) {
         case SealEngineType::kEthash:
-            return std::make_unique<ConsensusEngineEthash>(chain_config);
+            return std::make_unique<EthashEngine>(chain_config);
         case SealEngineType::kNoProof:
-            return std::make_unique<ConsensusEngineNoproof>(chain_config);
+            return std::make_unique<NoProofEngine>(chain_config);
         default:
             return {};
     }

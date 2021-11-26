@@ -23,10 +23,9 @@ namespace silkworm::consensus {
 
 // Consensus engine applicable to Proof-of-Stake blocks.
 // See EIP-3675: Upgrade consensus to Proof-of-Stake.
-class ProofOfStakeEngine : public ConsensusEngineBase {
+class ProofOfStakeEngine : public EngineBase {
   public:
-    explicit ProofOfStakeEngine(const ChainConfig& chain_config)
-        : ConsensusEngineBase(chain_config, /*prohibit_ommers=*/true) {}
+    explicit ProofOfStakeEngine(const ChainConfig& chain_config) : EngineBase(chain_config, /*prohibit_ommers=*/true) {}
 
     ValidationResult validate_seal(const BlockHeader& header) override;
 

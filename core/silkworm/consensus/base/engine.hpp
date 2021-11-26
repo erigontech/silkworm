@@ -22,11 +22,9 @@
 
 namespace silkworm::consensus {
 
-class ConsensusEngineBase : public IConsensusEngine {
-    using base = IConsensusEngine;
-
+class EngineBase : public IEngine {
   public:
-    explicit ConsensusEngineBase(const ChainConfig& chain_config, bool prohibit_ommers)
+    explicit EngineBase(const ChainConfig& chain_config, bool prohibit_ommers)
         : chain_config_{chain_config}, prohibit_ommers_{prohibit_ommers} {}
 
     //! \brief Performs validation of block header & body that can be done prior to sender recovery and execution.

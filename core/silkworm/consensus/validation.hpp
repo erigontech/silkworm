@@ -42,7 +42,6 @@ enum class [[nodiscard]] ValidationResult{
     kWrongDaoExtraData,  // see EIP-779
     kWrongBaseFee,       // see EIP-1559
     kInvalidSeal,        // Nonce or mix_hash (invalid Proof of Work)
-    kInvalidMixHash,     // Invalid mix_hash (Clique, EIP-225)
 
     // See [YP] Section 6.2 "Execution", Eq (58)
     kMissingSender,          // S(T) = ∅
@@ -67,14 +66,6 @@ enum class [[nodiscard]] ValidationResult{
 
     // See [YP] Section 11.2 "Transaction Validation", Eq (160)
     kWrongBlockGas,  // BHg ≠ l(BR)u
-
-    // Clique (EIP-225)
-    kUnauthorizedSigner,  // Handling an unauthorized voting signer
-    kMissingSigner,       // Missing Signer in extra_data
-    kRecentlySigned,      // Signer has already recently signed
-    kInvalidVote,         // Non-Existing vote option
-    kInvalidCheckpointBeneficiary,
-    kMissingVanity,  // ‖Hx‖ < 32+65
 };
 
 }  // namespace silkworm

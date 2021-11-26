@@ -99,7 +99,7 @@ Headers WorkingChain::withdraw_stable_headers() {
 
     while (!insert_list_.empty()) {
         // Make sure long insertions do not appear as a stuck stage headers
-        SILKWORM_LOG(LogLevel::Info) << "WorkingChain: persisting headers (on top of " << highest_in_db_ << ")\n";
+        log::Info() << "WorkingChain: persisting headers (on top of " << highest_in_db_ << ")";
 
         // Choose a link at top
         auto link = insert_list_.top();  // connect or extend-up added one (or some if it has siblings)
@@ -119,9 +119,9 @@ Headers WorkingChain::withdraw_stable_headers() {
 
         if (assessment == Postpone) {
             links_in_future.push_back(link);
-            SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: added future link,"
-                                         << " hash=" << link->hash << " height=" << link->blockHeight
-                                         << " timestamp=" << link->header->timestamp << ")\n";
+            log::Warning() << "WorkingChain: added future link,"
+                                  << " hash=" << link->hash << " height=" << link->blockHeight
+                                  << " timestamp=" << link->header->timestamp << ")";
             continue;
         }
 
@@ -224,8 +224,8 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
 
     if (length > max_len) length = max_len;
     if (length == 0) {
-        SILKWORM_LOG(LogLevel::Debug) << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
-                                      << ", highest_in_db = " << highest_in_db_ << ")\n";
+        log::Debug() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
+                            << ", highest_in_db = " << highest_in_db_ << ")";
         return std::nullopt;
     }
 
@@ -270,7 +270,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
     using std::nullopt;
 
     if (anchor_queue_.empty()) {
-        SILKWORM_LOG(LogLevel::Debug) << "WorkingChain, no more headers to request: empty anchor queue\n";
+        log::Debug() << "WorkingChain, no more headers to request: empty anchor queue";
         return {};
     }
 
@@ -296,8 +296,8 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
             return {packet, penalties};  // try (again) to extend this anchor
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
-            SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: invalidating anchor for suspected unavailability, "
-                                         << "height=" << anchor->blockHeight << "\n";
+            log::Warning() << "WorkingChain: invalidating anchor for suspected unavailability, "
+                                  << "height=" << anchor->blockHeight << "\n";
             invalidate(*anchor);
             anchors_.erase(anchor->parentHash);
             anchor_queue_.pop();
@@ -327,7 +327,7 @@ void WorkingChain::save_external_announce(Hash h) {
 void WorkingChain::request_nack(const GetBlockHeadersPacket66& packet) {
     std::shared_ptr<Anchor> anchor;
 
-    SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: restoring some timestamp due to request nack\n";
+    log::Warning() << "WorkingChain: restoring some timestamp due to request nack";
 
     if (std::holds_alternative<Hash>(packet.request.origin)) {
         Hash hash = std::get<Hash>(packet.request.origin);
@@ -462,7 +462,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
     auto [foundTip, end] = find_link(segment, start);
 
     if (end == 0) {
-        SILKWORM_LOG(LogLevel::Debug) << "WorkingChain: duplicate segment\n";
+        log::Debug() << "WorkingChain: duplicate segment";
         // If duplicate segment is extending from the anchor, the anchor needs to be deleted,
         // otherwise it will keep producing requests that will be found duplicate
         if (foundAnchor) remove_anchor(segment[start]->hash());  // note: hash and not parent_hash
@@ -502,9 +502,9 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        SILKWORM_LOG(LogLevel::Debug) << "Segment: " << op << " start=" << startNum << " end=" << endNum << "\n";
+        log::Debug() << "Segment: " << op << " start=" << startNum << " end=" << endNum;
     } catch (segment_cut_and_paste_error& e) {
-        SILKWORM_LOG(LogLevel::Debug) << "Segment: " << op << " failure, reason:" << e.what() << "\n";
+        log::Debug() << "Segment: " << op << " failure, reason:" << e.what();
         return false;
     }
 
@@ -518,8 +518,8 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
 void WorkingChain::reduce_links_to(size_t limit) {
     if (link_queue_.size() <= limit) return;  // does nothing
 
-    SILKWORM_LOG(LogLevel::Debug) << "LinkQueue: too many links, cutting down from " << link_queue_.size() << " to "
-                                  << link_limit << "\n";
+    log::Debug() << "LinkQueue: too many links, cutting down from " << link_queue_.size() << " to "
+                        << link_limit;
 
     while (link_queue_.size() > limit) {
         auto link = link_queue_.top();
@@ -773,7 +773,7 @@ void WorkingChain::remove_anchor(const Hash& hash) {
     // But removal will happen anyway, in the function request_more_headers, if it disappears from the map
     size_t erased = anchors_.erase(hash);
     if (erased == 0) {
-        SILKWORM_LOG(LogLevel::Warn) << "WorkingChain: removal of anchor failed, " << to_hex(hash) << " not found\n";
+        log::Warning() << "WorkingChain: removal of anchor failed, " << to_hex(hash) << " not found";
     }
 }
 

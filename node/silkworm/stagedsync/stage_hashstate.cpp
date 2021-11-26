@@ -65,7 +65,7 @@ static void storage_load(const etl::Entry& entry, mdbx::cursor& cursor, MDBX_put
  *  This is way faster than using changeset because it uses less database reads.
  */
 void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
-    SILKWORM_LOG(LogLevel::Info) << "Hashing state" << std::endl;
+    log::Info() << "Hashing state";
 
     fs::create_directories(etl_path);
     etl::Collector collector_account(etl_path, 512_Mebi);
@@ -77,7 +77,7 @@ void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
     uint8_t next_start_byte{0};
     while (data) {
         if (data.key.at(0) >= next_start_byte) {
-            SILKWORM_LOG(LogLevel::Info) << "Progress: " << percent << "%" << std::endl;
+            log::Info() << "Progress: " << percent << "%";
             percent += 10;
             next_start_byte += 25;
         }
@@ -116,17 +116,17 @@ void hashstate_promote_clean_state(mdbx::txn& txn, const fs::path& etl_path) {
         data = src.to_next(/*throw_notfound=*/false);
     }
 
-    SILKWORM_LOG(LogLevel::Info) << "Started Account Loading" << std::endl;
+    log::Info() << "Started Account Loading";
     auto target{db::open_cursor(txn, db::table::kHashedAccounts)};
     collector_account.load(target, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
 
-    SILKWORM_LOG(LogLevel::Info) << "Started Storage Loading" << std::endl;
+    log::Info() << "Started Storage Loading";
     target = db::open_cursor(txn, db::table::kHashedStorage);
     collector_storage.load(target, storage_load, MDBX_put_flags_t::MDBX_APPENDDUP, 10);
 }
 
 void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
-    SILKWORM_LOG(LogLevel::Info) << "Hashing code keys" << std::endl;
+    log::Info() << "Hashing code keys";
 
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path, 512_Mebi);
@@ -144,7 +144,7 @@ void hashstate_promote_clean_code(mdbx::txn& txn, const fs::path& etl_path) {
     }
     tbl.close();
 
-    SILKWORM_LOG(LogLevel::Info) << "Started Code Loading" << std::endl;
+    log::Info() << "Started Code Loading";
     tbl = db::open_cursor(txn, db::table::kContractCode);
     collector.load(tbl, nullptr, MDBX_put_flags_t::MDBX_APPEND, 10);
 }
@@ -181,7 +181,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             }
             // Hashing
             auto hash{keccak256(db_key)};
-            target_table.upsert(mdbx::slice{hash.bytes, kHashLength}, plainstate_data.value);
+            target_table.upsert(db::to_slice(hash.bytes), plainstate_data.value);
             changeset_data = changeset_table.to_next(false);
 
         } else if (operation == HashstateOperation::HashStorage) {
@@ -204,7 +204,7 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
             auto hashed_location{keccak256(db::from_slice(plainstate_data.value).substr(0, kHashLength))};
             ByteView value{db::from_slice(plainstate_data.value).substr(kHashLength)};
 
-            db::upsert_storage_value(target_table, hashed_key, ByteView{hashed_location.bytes, kHashLength}, value);
+            db::upsert_storage_value(target_table, hashed_key, hashed_location.bytes, value);
 
             changeset_data = changeset_table.to_next(/*throw_notfound=*/false);
 
@@ -242,16 +242,16 @@ void hashstate_promote(mdbx::txn& txn, HashstateOperation operation) {
     }
 }
 
-StageResult stage_hashstate(TransactionManager& txn, const fs::path& etl_path, uint64_t) {
-    SILKWORM_LOG(LogLevel::Info) << "Starting HashState" << std::endl;
+StageResult stage_hashstate(db::RWTxn& txn, const fs::path& etl_path, uint64_t) {
+    log::Info() << "Starting HashState";
 
     auto last_processed_block_number{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
     if (last_processed_block_number != 0) {
-        SILKWORM_LOG(LogLevel::Info) << "Starting Account Hashing" << std::endl;
+        log::Info() << "Starting Account Hashing";
         hashstate_promote(*txn, HashstateOperation::HashAccount);
-        SILKWORM_LOG(LogLevel::Info) << "Starting Storage Hashing" << std::endl;
+        log::Info() << "Starting Storage Hashing";
         hashstate_promote(*txn, HashstateOperation::HashStorage);
-        SILKWORM_LOG(LogLevel::Info) << "Hashing Code Keys" << std::endl;
+        log::Info() << "Hashing Code Keys";
         hashstate_promote(*txn, HashstateOperation::Code);
     } else {
         hashstate_promote_clean_state(*txn, etl_path.string());
@@ -262,7 +262,7 @@ StageResult stage_hashstate(TransactionManager& txn, const fs::path& etl_path, u
                                      db::stages::read_stage_progress(*txn, db::stages::kExecutionKey));
     txn.commit();
 
-    SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
+    log::Info() << "All Done!";
     return StageResult::kSuccess;
 }
 
@@ -293,7 +293,7 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
                     db::change_set_to_plain_state_format(db::from_slice(data.key), db::from_slice(data.value))};
 
                 auto hash{keccak256(db_key)};
-                auto new_key{mdbx::slice{hash.bytes, kHashLength}};
+                auto new_key{db::to_slice(hash.bytes)};
                 if (db_value.empty()) {
                     if (target_table.seek(new_key)) {
                         target_table.erase();
@@ -341,8 +341,7 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
 
                 auto hashed_location{keccak256(db_key.substr(db::kPlainStoragePrefixLength))};
 
-                db::upsert_storage_value(target_table, hashed_key, ByteView{hashed_location.bytes, kHashLength},
-                                         db_value);
+                db::upsert_storage_value(target_table, hashed_key, hashed_location.bytes, db_value);
 
                 return true;
             };
@@ -385,38 +384,36 @@ static void hashstate_unwind(mdbx::txn& txn, BlockNum unwind_to, HashstateOperat
     (void)db::cursor_for_each(changeset_table, unwind_func);
 }
 
-StageResult unwind_hashstate(TransactionManager& txn, const fs::path&, uint64_t unwind_to) {
+StageResult unwind_hashstate(db::RWTxn& txn, const fs::path&, uint64_t unwind_to) {
     try {
         auto stage_height{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
         if (unwind_to >= stage_height) {
-            SILKWORM_LOG(LogLevel::Error)
-                << "Stage progress is " << stage_height << " which is <= than requested unwind_to" << std::endl;
+            log::Error() << "Stage progress is " << stage_height << " which is <= than requested unwind_to";
             return StageResult::kAborted;
         }
 
-        SILKWORM_LOG(LogLevel::Info) << "Unwinding HashState from " << stage_height << " to " << unwind_to << " ..."
-                                     << std::endl;
+        log::Info() << "Unwinding HashState from " << stage_height << " to " << unwind_to << " ...";
 
-        SILKWORM_LOG(LogLevel::Info) << "[1/3] Hashed accounts ... " << std::endl;
+        log::Info() << "[1/3] Hashed accounts ... ";
         hashstate_unwind(*txn, unwind_to, HashstateOperation::HashAccount);
 
-        SILKWORM_LOG(LogLevel::Info) << "[2/3] Hashed storage ... " << std::endl;
+        log::Info() << "[2/3] Hashed storage ... ";
         hashstate_unwind(*txn, unwind_to, HashstateOperation::HashStorage);
 
-        SILKWORM_LOG(LogLevel::Info) << "[3/3] Code ... " << std::endl;
+        log::Info() << "[3/3] Code ... ";
         hashstate_unwind(*txn, unwind_to, HashstateOperation::Code);
 
         // Update progress height with last processed block
         db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, unwind_to);
 
-        SILKWORM_LOG(LogLevel::Info) << "Committing ... " << std::endl;
+        log::Info() << "Committing ... ";
         txn.commit();
 
-        SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
+        log::Info() << "All Done!";
         return StageResult::kSuccess;
 
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << "Unexpected error : " << ex.what() << std::endl;
+        log::Error() << "Unexpected error : " << ex.what();
         return StageResult::kAborted;
     }
 }

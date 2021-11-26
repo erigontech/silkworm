@@ -159,20 +159,18 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
             std::map<evmc::bytes32, Bytes> account_rlp;
             auto state_table{db::open_cursor(txn, db::table::kPlainState)};
             for (const auto& [address, account] : state_buffer.accounts()) {
-                auto address_view{full_view(address)};
-
                 // Store account plain state
                 Bytes encoded{account.encode_for_storage()};
-                state_table.upsert(db::to_slice(address_view), db::to_slice(encoded));
+                state_table.upsert(db::to_slice(address), db::to_slice(encoded));
 
                 // First pass for state_root_hash
-                ethash::hash256 hash{keccak256(address_view)};
-                account_rlp[to_bytes32(full_view(hash.bytes))] = account.rlp(kEmptyRoot);
+                ethash::hash256 hash{keccak256(address)};
+                account_rlp[to_bytes32(hash.bytes)] = account.rlp(kEmptyRoot);
             }
 
             trie::HashBuilder hb;
             for (const auto& [hash, rlp] : account_rlp) {
-                hb.add_leaf(trie::unpack_nibbles(full_view(hash)), rlp);
+                hb.add_leaf(trie::unpack_nibbles(hash), rlp);
             }
             state_root_hash = hb.root_hash();
         }
@@ -222,10 +220,10 @@ bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool
         db::open_cursor(txn, db::table::kBlockReceipts)
             .upsert(db::to_slice(block_hash_key).safe_middle(0, 8), db::to_slice(Bytes(genesis_null_receipts, 1)));
 
-        // Write Chain Config
+        // Write Chain Settings
         auto config_data{genesis_json["config"].dump()};
         db::open_cursor(txn, db::table::kConfig)
-            .upsert(db::to_slice(full_view(block_hash.bytes)), mdbx::slice{config_data.c_str()});
+            .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.c_str()});
 
         return true;
 

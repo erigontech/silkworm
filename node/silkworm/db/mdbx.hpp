@@ -38,6 +38,40 @@ namespace silkworm::db {
 inline constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 inline constexpr std::string_view kDbLockFileName{"mdbx.lck"};
 
+//! \brief This class manages mdbx transactions across stages.
+//! It either creates new mdbx transaction as need be or uses an externally provided transaction.
+//! The external transaction mode is handy for running several stages on a handful of blocks atomically.
+class RWTxn {
+  public:
+    // This variant creates new mdbx transactions as need be.
+    explicit RWTxn(mdbx::env& env) : env_{&env} { managed_txn_ = env_->start_write(); }
+
+    // This variant is just a wrapper over an external transaction.
+    // Useful in staged sync for running several stages on a handful of blocks atomically.
+    // The code that invokes the stages is responsible for committing the external txn later on.
+    explicit RWTxn(mdbx::txn& external_txn) : external_txn_{&external_txn} {}
+
+    // Not copyable nor movable
+    RWTxn(const RWTxn&) = delete;
+    RWTxn& operator=(const RWTxn&) = delete;
+
+    mdbx::txn& operator*() { return external_txn_ ? *external_txn_ : managed_txn_; }
+    mdbx::txn* operator->() { return external_txn_ ? external_txn_ : &managed_txn_; }
+
+    void commit() {
+        if (external_txn_ == nullptr) {
+            managed_txn_.commit();
+            managed_txn_ = env_->start_write();  // renew transaction
+        }
+    }
+
+  private:
+    mdbx::txn* external_txn_{nullptr};
+    mdbx::env* env_{nullptr};
+    mdbx::txn_managed managed_txn_;
+};
+
+
 //! \brief Pointer to a processing function invoked by cursor_for_each & cursor_for_count on each record
 //! \param [in] _cursor : A reference to the cursor
 //! \param [in] _data : The result of recent move operation on the cursor
@@ -47,13 +81,15 @@ using WalkFunc = std::function<bool(::mdbx::cursor& _cursor, ::mdbx::cursor::mov
 //! \brief Essential environment settings
 struct EnvConfig {
     std::string path{};
-    bool create{false};         // Whether db file must be created
-    bool readonly{false};       // Whether db should be opened in RO mode
-    bool exclusive{false};      // Whether this process has exclusive access
-    bool inmemory{false};       // Whether this db is in memory
-    bool shared{false};         // Whether this process opens a db already opened by another process
-    uint32_t max_tables{128};   // Default max number of named tables
-    uint32_t max_readers{100};  // Default max number of readers
+    bool create{false};          // Whether db file must be created
+    bool readonly{false};        // Whether db should be opened in RO mode
+    bool exclusive{false};       // Whether this process has exclusive access
+    bool inmemory{false};        // Whether this db is in memory
+    bool shared{false};          // Whether this process opens a db already opened by another process
+    size_t max_size{2_Tebi};     // Max mdbx map size
+    size_t growth_size{2_Gibi};  // Increment size for each extension
+    uint32_t max_tables{128};    // Default max number of named tables
+    uint32_t max_readers{100};   // Default max number of readers
 };
 
 //! \brief Configuration settings for a "map" (aka a table)

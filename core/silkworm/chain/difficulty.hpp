@@ -25,22 +25,6 @@ namespace silkworm {
 
 inline constexpr uint64_t kMinDifficulty{131072};
 
-// Canonical difficulty of a block header in Frontier.
-// See https://eips.ethereum.org/EIPS/eip-2.
-intx::uint256 canonical_difficulty_frontier(uint64_t block_number, uint64_t block_timestamp,
-                                            const intx::uint256& parent_difficulty, uint64_t parent_timestamp);
-
-// Canonical difficulty of a block header in Homestead.
-// See https://eips.ethereum.org/EIPS/eip-2.
-intx::uint256 canonical_difficulty_homestead(uint64_t block_number, uint64_t block_timestamp,
-                                             const intx::uint256& parent_difficulty, uint64_t parent_timestamp);
-
-// Canonical difficulty of a block header in Byzantium and later.
-// See Section 4.3.4 "Block Header Validity" of the Yellow Paper, EIP-100 and EIP-649.
-intx::uint256 canonical_difficulty_byzantium(uint64_t block_number, uint64_t block_timestamp,
-                                             const intx::uint256& parent_difficulty, uint64_t parent_timestamp,
-                                             bool parent_has_uncles, uint64_t bomb_delay = 3'000'000);
-
 // Canonical difficulty of a block header.
 // See Section 4.3.4 "Block Header Validity" of the Yellow Paper and also
 // EIP-2, EIP-100, EIP-649, EIP-1234, EIP-2387.

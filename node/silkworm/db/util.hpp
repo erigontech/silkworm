@@ -129,10 +129,6 @@ std::pair<Bytes, Bytes> change_set_to_plain_state_format(ByteView key, ByteView 
 
 inline mdbx::slice to_slice(ByteView value) { return {value.data(), value.length()}; }
 
-inline mdbx::slice to_slice(const evmc::address& value) { return {value.bytes, sizeof(evmc::address)}; }
-
-inline mdbx::slice to_slice(const evmc::bytes32& value) { return {value.bytes, sizeof(evmc::bytes32)}; }
-
 inline ByteView from_slice(const mdbx::slice slice) { return {static_cast<uint8_t*>(slice.iov_base), slice.iov_len}; }
 
 // If there exists an entry in a multivalue table with a given key and a value starting with a given prefix,

@@ -33,13 +33,13 @@ BlockProvider::BlockProvider(SentryClient& sentry, Db::ReadOnlyAccess db_access,
 
 BlockProvider::~BlockProvider() {
     stop();
-    SILKWORM_LOG(LogLevel::Error) << "BlockProvider destroyed\n";
+    log::Error() << "BlockProvider destroyed";
 }
 
 void BlockProvider::receive_message(const sentry::InboundMessage& raw_message) {
     auto message = InboundBlockRequestMessage::make(raw_message, db_access_, sentry_);
 
-    SILKWORM_LOG(LogLevel::Info) << "HeaderDownloader received message " << *message << "\n";
+    log::Info() << "HeaderDownloader received message " << *message << "\n";
 
     messages_.push(message);
 }
@@ -57,11 +57,11 @@ void BlockProvider::execution_loop() {
         if (!present) continue;  // timeout, needed to check exiting_
 
         // process the message (command pattern)
-        SILKWORM_LOG(LogLevel::Info) << "BlockProvider processing message " << *message << "\n";
+        log::Info()  << "BlockProvider processing message " << *message << "\n";
         message->execute();
     }
 
-    SILKWORM_LOG(LogLevel::Warn) << "BlockProvider execution_loop is stopping...\n";
+    log::Warn() << "BlockProvider execution_loop is stopping...\n";
 }
 
 }  // namespace silkworm

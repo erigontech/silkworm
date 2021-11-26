@@ -38,9 +38,6 @@ class Hash : public evmc::bytes32 {
         SILKWORM_ASSERT(bv.length() == length());
     }
 
-    operator Bytes() { return {bytes, length()}; }
-    operator ByteView() { return {bytes, length()}; }
-
     static constexpr size_t length() { return sizeof(evmc::bytes32); }
 
     std::string to_hex() { return silkworm::to_hex(*this); }
@@ -105,6 +102,8 @@ struct Announce {
 };
 
 namespace rlp {
+    inline size_t length(const Hash&) { return kHashLength + 1; }
+
     void encode(Bytes& to, const Hash& h);
 
     template <>

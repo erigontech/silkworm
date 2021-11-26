@@ -43,12 +43,12 @@ int main(int argc, char* argv[]) {
         data_dir.deploy();
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
-        stagedsync::TransactionManager tm{env};
+        db::RWTxn tm{env};
         stagedsync::success_or_throw(stagedsync::unwind_execution(tm, data_dir.etl().path(), unwind_to));
     } catch (const std::exception& ex) {
-        SILKWORM_LOG(LogLevel::Error) << ex.what() << std::endl;
+        log::Error() << ex.what();
         return -5;
     }
-    SILKWORM_LOG(LogLevel::Info) << "All Done!" << std::endl;
+    log::Info() << "All Done!";
     return 0;
 }

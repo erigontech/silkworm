@@ -33,7 +33,7 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, Work
     ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     rlp::success_or_throw(rlp::decode(data, packet_));
 
-    SILKWORM_LOG(LogLevel::Trace) << "Received message " << *this << "\n";
+    log::Trace() << "Received message " << *this;
 }
 
 void InboundBlockHeaders::execute() {
@@ -54,25 +54,24 @@ void InboundBlockHeaders::execute() {
         message.execute();
     }
     */
-    SILKWORM_LOG(LogLevel::Warn) << "Handling of " << identify(*this) << " is incomplete\n";
+    log::Warning() << "Handling of " << identify(*this) << " is incomplete";
 
     if (penalty != Penalty::NoPenalty) {
-        SILKWORM_LOG(LogLevel::Trace) << "Replying to " << identify(*this) << " with penalize_peer\n";
+        log::Trace() << "Replying to " << identify(*this) << " with penalize_peer";
         rpc::PenalizePeer penalize_peer(peerId_, penalty);
         penalize_peer.do_not_throw_on_failure();
         sentry_.exec_remotely(penalize_peer);
     }
 
-    SILKWORM_LOG(LogLevel::Trace) << "Replying to " << identify(*this) << " with peer_min_block\n";
+    log::Trace() << "Replying to " << identify(*this) << " with peer_min_block\n";
     rpc::PeerMinBlock rpc(peerId_, highestBlock);
     rpc.do_not_throw_on_failure();
     sentry_.exec_remotely(rpc);
 
     if (!rpc.status().ok()) {
-        SILKWORM_LOG(LogLevel::Trace) << "Failure of the replay to rpc " << identify(*this) << ": "
-                                      << rpc.status().error_message() + "\n";
+        log::Trace() << "Failure of the replay to rpc " << identify(*this) << ": "
+                     << rpc.status().error_message() + "\n";
     }
-
 }
 
 uint64_t InboundBlockHeaders::reqId() const { return packet_.requestId; }

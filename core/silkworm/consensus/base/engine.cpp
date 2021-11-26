@@ -32,10 +32,24 @@ ValidationResult EngineBase::pre_validate_block(const silkworm::Block& block, si
         return err;
     }
 
-    if (block.ommers.empty()) {
-        if (header.ommers_hash != kEmptyListHash) {
-            return ValidationResult::kWrongOmmersHash;
+    static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
+        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/false);
+    };
+
+    evmc::bytes32 txn_root{trie::root_hash(block.transactions, kEncoder)};
+    if (txn_root != header.transactions_root) {
+        return ValidationResult::kWrongTransactionsRoot;
+    }
+
+    for (const Transaction& txn : block.transactions) {
+        if (ValidationResult err{pre_validate_transaction(txn, header.number, chain_config_, header.base_fee_per_gas)};
+            err != ValidationResult::kOk) {
+            return err;
         }
+    }
+
+    if (block.ommers.empty()) {
+        return header.ommers_hash == kEmptyListHash ? ValidationResult::kOk : ValidationResult::kWrongOmmersHash;
     } else if (prohibit_ommers_) {
         return ValidationResult::kTooManyOmmers;
     } else {
@@ -45,15 +59,6 @@ ValidationResult EngineBase::pre_validate_block(const silkworm::Block& block, si
         if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
             return ValidationResult::kWrongOmmersHash;
         }
-    }
-
-    static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
-        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_array=*/false);
-    };
-
-    evmc::bytes32 txn_root{trie::root_hash(block.transactions, kEncoder)};
-    if (txn_root != header.transactions_root) {
-        return ValidationResult::kWrongTransactionsRoot;
     }
 
     if (block.ommers.size() > 2) {
@@ -78,13 +83,6 @@ ValidationResult EngineBase::pre_validate_block(const silkworm::Block& block, si
 
         if (as_range::find(old_ommers, ommer) != old_ommers.end()) {
             return ValidationResult::kDuplicateOmmer;
-        }
-    }
-
-    for (const Transaction& txn : block.transactions) {
-        ValidationResult err{pre_validate_transaction(txn, header.number, chain_config_, header.base_fee_per_gas)};
-        if (err != ValidationResult::kOk) {
-            return err;
         }
     }
 

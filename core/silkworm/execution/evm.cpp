@@ -490,7 +490,7 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
         intx::be::store(context.block_difficulty.bytes, header.difficulty);
     } else {
         // EIP-4399: Supplant DIFFICULTY opcode with RANDOM
-        // We use 0 header difficulty as the telltale of POS blocks
+        // We use 0 header difficulty as the telltale of PoS blocks
         std::memcpy(context.block_difficulty.bytes, header.mix_hash.bytes, kHashLength);
     }
     intx::be::store(context.chain_id.bytes, intx::uint256{evm_.config().chain_id});

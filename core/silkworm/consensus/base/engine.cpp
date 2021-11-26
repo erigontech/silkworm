@@ -36,6 +36,8 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
         if (header.ommers_hash != kEmptyListHash) {
             return ValidationResult::kWrongOmmersHash;
         }
+    } else if (prohibit_ommers_) {
+        return ValidationResult::kTooManyOmmers;
     } else {
         Bytes ommers_rlp;
         rlp::encode(ommers_rlp, block.ommers);
@@ -114,6 +116,10 @@ ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& h
 
     if (header.extra_data.length() > 32) {
         return ValidationResult::kExtraDataTooLong;
+    }
+
+    if (prohibit_ommers_ && header.ommers_hash != kEmptyListHash) {
+        return ValidationResult::kWrongOmmersHash;
     }
 
     const std::optional<BlockHeader> parent{get_parent_header(state, header)};

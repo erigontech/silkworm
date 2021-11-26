@@ -26,7 +26,7 @@ class ConsensusEngineEthash : public ConsensusEngineBase {
     using base = ConsensusEngineBase;
 
   public:
-    explicit ConsensusEngineEthash(const ChainConfig& chain_config) : base(chain_config) {}
+    explicit ConsensusEngineEthash(const ChainConfig& chain_config) : base(chain_config, /*prohibit_ommers=*/false) {}
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) override;

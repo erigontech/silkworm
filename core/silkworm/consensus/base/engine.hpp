@@ -26,7 +26,8 @@ class ConsensusEngineBase : public IConsensusEngine {
     using base = IConsensusEngine;
 
   public:
-    explicit ConsensusEngineBase(const ChainConfig& chain_config) : chain_config_{chain_config} {}
+    explicit ConsensusEngineBase(const ChainConfig& chain_config, bool prohibit_ommers)
+        : chain_config_{chain_config}, prohibit_ommers_{prohibit_ommers} {}
 
     //! \brief Performs validation of block header & body that can be done prior to sender recovery and execution.
     //! \brief See [YP] Sections 4.3.2 "Holistic Validity", 4.3.4 "Block Header Validity", and 11.1 "Ommer Validation".
@@ -55,6 +56,7 @@ class ConsensusEngineBase : public IConsensusEngine {
 
   protected:
     const ChainConfig& chain_config_;
+    bool prohibit_ommers_{false};
 
     //! \brief See [YP] Section 11.1 "Ommer Validation"
     bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,

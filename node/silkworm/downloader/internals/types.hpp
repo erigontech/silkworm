@@ -19,6 +19,7 @@
 
 #include <chrono>
 
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
@@ -32,7 +33,10 @@ class Hash : public evmc::bytes32 {
     using evmc::bytes32::bytes32;
 
     Hash() = default;
-    Hash(ByteView bv) { std::memcpy(bytes, bv.data(), length()); }
+    Hash(ByteView bv) {
+        std::memcpy(bytes, bv.data(), length());
+        SILKWORM_ASSERT(bv.length() == length());
+    }
 
     operator Bytes() { return {bytes, length()}; }
     operator ByteView() { return {bytes, length()}; }

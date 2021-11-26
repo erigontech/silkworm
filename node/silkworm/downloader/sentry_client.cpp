@@ -26,8 +26,6 @@ namespace silkworm {
 SentryClient::SentryClient(std::string sentry_addr)
     : base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {}
 
-void SentryClient::exec_remotely(SentryRpc& rpc) { base_t::exec_remotely(rpc); }
-
 SentryClient::Scope SentryClient::scope(const sentry::InboundMessage& message) {
     switch (message.id()) {
         case sentry::MessageId::BLOCK_HEADERS_66:
@@ -43,7 +41,7 @@ SentryClient::Scope SentryClient::scope(const sentry::InboundMessage& message) {
     }
 }
 
-void SentryClient::subscribe(Scope scope, subscriber_t callback) { subscribers_[scope].push_back(callback); }
+void SentryClient::subscribe(Scope scope, subscriber_t callback) { subscribers_[scope].push_back(std::move(callback)); }
 
 void SentryClient::publish(const sentry::InboundMessage& message) {
     auto subscribers = subscribers_[scope(message)];

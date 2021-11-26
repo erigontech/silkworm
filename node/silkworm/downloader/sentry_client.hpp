@@ -51,14 +51,14 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
 
     void set_status(Hash head_hash, BigInt head_td, const ChainIdentity&);  // init the remote sentry
 
-    void exec_remotely(SentryRpc& rpc);  // send a rpc request to the remote sentry
+    using base_t::exec_remotely; // exec_remotely(SentryRpc& rpc) sends a rpc request to the remote sentry
 
     enum Scope { BlockRequests = 0x01, BlockAnnouncements = 0x02, Other = 0x04 };
     // enum values enable bit masking, for example: cope = BlockRequests & BlockAnnouncements
 
     void subscribe(Scope, subscriber_t callback);  // subscribe with sentry to receive messages
 
-    /*[[long_running]]*/ void execution_loop();  // do a long-running loop to wait for messages
+    /*[[long_running]]*/ void execution_loop() override;  // do a long-running loop to wait for messages
 
     static Scope scope(const sentry::InboundMessage& message);  // find the scope of the message
 

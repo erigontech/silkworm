@@ -22,7 +22,8 @@
 
 namespace silkworm::consensus {
 
-// Used in the consensus tests
+// This consensus engine does not validate PoW seal.
+// It is used in the consensus tests.
 class NoProofEngine : public EthashEngine {
   public:
     explicit NoProofEngine(const ChainConfig& chain_config) : EthashEngine(chain_config) {}

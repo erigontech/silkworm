@@ -40,8 +40,6 @@ class DummyConsensusEngine : public consensus::IConsensusEngine {
     ValidationResult validate_seal(const BlockHeader&) override { return ValidationResult::kOk; }
 
     evmc::address get_beneficiary(const BlockHeader&) override { return {}; }
-
-    std::optional<BlockHeader> get_parent_header(const BlockState&, const BlockHeader&) { return {}; }
 };
 
 TEST_CASE("working/persistent-chain integration test") {

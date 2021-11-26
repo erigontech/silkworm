@@ -54,12 +54,12 @@ void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainIdentit
     rpc::SetStatus set_status{chain_identity, head_hash, head_td};
     exec_remotely(set_status);
 
-    SILKWORM_LOG(LogLevel::Info) << "SentryClient, set_status sent\n";
+    log::Info() << "SentryClient, set_status sent";
     sentry::SetStatusReply reply = set_status.reply();
 
     sentry::Protocol supported_protocol = reply.protocol();
     if (supported_protocol != sentry::Protocol::ETH66) {
-        SILKWORM_LOG(LogLevel::Critical) << "SentryClient: sentry do not support eth/66 protocol, is_stopping...\n";
+        log::Critical() << "SentryClient: sentry do not support eth/66 protocol, is_stopping...";
         stop();
         throw SentryClientException("SentryClient exception, cause: sentry do not support eth/66 protocol");
     }
@@ -74,14 +74,14 @@ void SentryClient::execution_loop() {
     while (!is_stopping() && message_subscription.receive_one_reply()) {
         const auto& message = message_subscription.reply();
 
-        // SILKWORM_LOG(LogLevel::Trace) << "SentryClient received message " << *message << "\n";
+        // log::Trace() << "SentryClient received message " << *message;
 
         publish(message);
     }
 
     // note: do we need to handle connection loss retrying re-connect? (we would redo set_status too)
 
-    SILKWORM_LOG(LogLevel::Warn) << "SentryClient execution loop is stopping...\n";
+    log::Warning() << "SentryClient execution loop is stopping...";
 }
 
 }  // namespace silkworm

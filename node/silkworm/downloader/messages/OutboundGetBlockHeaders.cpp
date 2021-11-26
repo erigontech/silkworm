@@ -44,7 +44,7 @@ void OutboundGetBlockHeaders::execute() {
 
         packets_ += "o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";  // todo: log level?
         log::Trace() << "Headers request sent (" << *packet << "), received by " << send_outcome.peers_size()
-                            << " peer(s)";
+                     << " peer(s)";
 
         if (send_outcome.peers_size() == 0) {
             working_chain_.request_nack(*packet);
@@ -65,8 +65,8 @@ void OutboundGetBlockHeaders::execute() {
         auto send_outcome = send_packet(*packet, timeout);
 
         packets_ += "SK o=" + std::to_string(std::get<BlockNum>(packet->request.origin)) + ",";  // todo: log level?
-        log::Trace() << "Headers skeleton request sent (" << *packet << "), received by "
-                            << send_outcome.peers_size() << " peer(s)";
+        log::Trace() << "Headers skeleton request sent (" << *packet << "), received by " << send_outcome.peers_size()
+                     << " peer(s)";
     }
 }
 
@@ -88,7 +88,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     log::Trace() << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_;
-	
+
     rpc::SendMessageByMinBlock rpc{min_block, std::move(request)};
 
     rpc.timeout(timeout);
@@ -97,14 +97,13 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     sentry_.exec_remotely(rpc);
 
     if (!rpc.status().ok()) {
-        SILKWORM_LOG(LogLevel::Trace) << "Failure of rpc OutboundNewBlockHashes " << packet_ << ": "
-                                      << rpc.status().error_message() + "\n";
+        log::Trace() << "Failure of rpc OutboundNewBlockHashes " << packet_ << ": " << rpc.status().error_message();
         return {};
     }
 
     sentry::SentPeers peers = rpc.reply();
     log::Trace() << "Received rpc result of OutboundGetBlockHeaders " << packet_ << ": "
-                        << std::to_string(peers.peers_size()) + " peer(s)";
+                 << std::to_string(peers.peers_size()) + " peer(s)";
 
     return peers;
 }

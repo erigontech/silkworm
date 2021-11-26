@@ -39,7 +39,7 @@ BlockProvider::~BlockProvider() {
 void BlockProvider::receive_message(const sentry::InboundMessage& raw_message) {
     auto message = InboundBlockRequestMessage::make(raw_message, db_access_, sentry_);
 
-    log::Info() << "HeaderDownloader received message " << *message << "\n";
+    log::Info() << "HeaderDownloader received message " << *message;
 
     messages_.push(message);
 }
@@ -57,11 +57,11 @@ void BlockProvider::execution_loop() {
         if (!present) continue;  // timeout, needed to check exiting_
 
         // process the message (command pattern)
-        log::Info()  << "BlockProvider processing message " << *message << "\n";
+        log::Info()  << "BlockProvider processing message " << *message;
         message->execute();
     }
 
-    log::Warn() << "BlockProvider execution_loop is stopping...\n";
+    log::Warning() << "BlockProvider execution_loop is stopping...";
 }
 
 }  // namespace silkworm

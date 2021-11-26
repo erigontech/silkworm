@@ -45,6 +45,9 @@ class Hash : public evmc::bytes32 {
         return Hash(evmc::literals::internal::from_hex<bytes32>(hex.c_str()));
     }
 
+    // conversion to ByteView is handled in ByteView class,
+    // conversion operator Byte() { return {bytes, length()}; } is handled elsewhere
+
     static_assert(sizeof(evmc::bytes32) == 32);
 };
 

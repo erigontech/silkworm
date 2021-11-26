@@ -56,14 +56,14 @@ void HeaderDownloader::execution_loop() {
                       [this](const sentry::InboundMessage& msg) { receive_message(msg); });
 
     while (!is_stopping() && !sentry_.is_stopping()) {
-        log::Trace() << "HeaderDownloader status: " << working_chain_.human_readable_status() << "\n";
+        log::Trace() << "HeaderDownloader status: " << working_chain_.human_readable_status();
 
         // pop a message from the queue
         std::shared_ptr<Message> message;
         bool present = messages_.timed_wait_and_pop(message, 1000ms);
         if (!present) continue;  // timeout, needed to check exiting_
 
-        log::Trace() << "HeaderDownloader processing message " << message->name() << "\n";
+        log::Trace() << "HeaderDownloader processing message " << message->name();
 
         // process the message (command pattern)
         message->execute();
@@ -74,7 +74,7 @@ void HeaderDownloader::execution_loop() {
         }
     }
 
-    SILKWORM_LOG(LogLevel::Warn) << "HeaderDownloader execution_loop is stopping...\n";
+    log::Warning() << "HeaderDownloader execution_loop is stopping...";
 }
 
 auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
@@ -132,7 +132,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
                 // todo: log progress - logProgressHeaders(logPrefix, prevProgress, progress)
                 log::Trace() << "HeaderDownloader status: current persisted height="
-                                    << persisted_chain_.highest_height();
+                             << persisted_chain_.highest_height();
             } else {
                 std::this_thread::sleep_for(1s);
             }

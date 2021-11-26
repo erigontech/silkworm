@@ -53,14 +53,13 @@ void OutboundNewBlockHashes::execute() {
     sentry_.exec_remotely(rpc);
 
     if (!rpc.status().ok()) {
-        SILKWORM_LOG(LogLevel::Trace) << "Failure of rpc OutboundNewBlockHashes " << packet_ << ": "
-                                      << rpc.status().error_message() + "\n";
+        log::Trace() << "Failure of rpc OutboundNewBlockHashes " << packet_ << ": " << rpc.status().error_message();
         return;
     }
 
     sentry::SentPeers peers = rpc.reply();
     log::Trace() << "Received rpc result of OutboundNewBlockHashes " << packet_ << ": "
-                        << std::to_string(peers.peers_size()) + " peer(s)";
+                 << std::to_string(peers.peers_size()) + " peer(s)";
 
     announces_to_do.clear();  // clear announces from the queue
 }

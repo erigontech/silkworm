@@ -42,6 +42,7 @@ enum class [[nodiscard]] ValidationResult{
     kWrongDaoExtraData,  // see EIP-779
     kWrongBaseFee,       // see EIP-1559
     kInvalidSeal,        // Nonce or mix_hash (invalid Proof of Work)
+    kInvalidNonce,       // Hn != 0 (Proof of State, EIP-3675)
 
     // See [YP] Section 6.2 "Execution", Eq (58)
     kMissingSender,          // S(T) = ∅

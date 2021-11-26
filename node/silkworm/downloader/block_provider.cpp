@@ -61,7 +61,7 @@ void BlockProvider::execution_loop() {
         message->execute();
     }
 
-    SILKWORM_LOG(LogLevel::Warn) << "BlockProvider execution_loop is_stopping...\n";
+    SILKWORM_LOG(LogLevel::Warn) << "BlockProvider execution_loop is stopping...\n";
 }
 
 }  // namespace silkworm

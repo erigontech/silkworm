@@ -55,7 +55,7 @@ bool WorkingChain::in_sync() const {
 }
 
 std::string WorkingChain::human_readable_status() const {
-    return std::to_string(anchors_.size()) + " anchors, " + std::to_string(links_.size()) + " links";
+    return std::to_string(links_.size()) + " links, " + std::to_string(anchors_.size()) + " anchors";
 }
 
 std::string WorkingChain::human_readable_verbose_status() const {

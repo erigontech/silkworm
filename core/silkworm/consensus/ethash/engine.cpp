@@ -18,6 +18,7 @@
 
 #include <ethash/ethash.hpp>
 
+#include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/endian.hpp>
 
@@ -58,4 +59,12 @@ ValidationResult ConsensusEngineEthash::validate_seal(const BlockHeader& header)
     const auto ec{ethash::verify_against_difficulty(*epoch_context, sealh256, mixh256, nonce, diff256)};
     return ec ? ValidationResult::kInvalidSeal : ValidationResult::kOk;
 }
+
+ValidationResult ConsensusEngineEthash::validate_difficulty(const BlockHeader& header, const BlockHeader& parent) {
+    const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
+    const intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent.difficulty,
+                                                        parent.timestamp, parent_has_uncles, chain_config_)};
+    return difficulty == header.difficulty ? ValidationResult::kOk : ValidationResult::kWrongDifficulty;
+}
+
 }  // namespace silkworm::consensus

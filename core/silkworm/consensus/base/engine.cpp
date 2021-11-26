@@ -16,7 +16,6 @@
 
 #include "engine.hpp"
 
-#include <silkworm/chain/difficulty.hpp>
 #include <silkworm/chain/protocol_param.hpp>
 #include <silkworm/common/as_range.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
@@ -137,11 +136,8 @@ ValidationResult ConsensusEngineBase::validate_block_header(const BlockHeader& h
         return ValidationResult::kInvalidGasLimit;
     }
 
-    const bool parent_has_uncles{parent->ommers_hash != kEmptyListHash};
-    const intx::uint256 difficulty{canonical_difficulty(header.number, header.timestamp, parent->difficulty,
-                                                        parent->timestamp, parent_has_uncles, chain_config_)};
-    if (difficulty != header.difficulty) {
-        return ValidationResult::kWrongDifficulty;
+    if (ValidationResult res{validate_difficulty(header, *parent)}; res != ValidationResult::kOk) {
+        return res;
     }
 
     // https://eips.ethereum.org/EIPS/eip-779
@@ -234,6 +230,5 @@ std::optional<intx::uint256> ConsensusEngineBase::expected_base_fee_per_gas(cons
         }
     }
 }
-ValidationResult ConsensusEngineBase::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
 
 }  // namespace silkworm::consensus

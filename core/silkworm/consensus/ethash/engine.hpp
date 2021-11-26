@@ -26,18 +26,20 @@ class ConsensusEngineEthash : public ConsensusEngineBase {
     using base = ConsensusEngineBase;
 
   public:
-    explicit ConsensusEngineEthash(const ChainConfig& chain_config) : base(chain_config){};
+    explicit ConsensusEngineEthash(const ChainConfig& chain_config) : base(chain_config) {}
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) override;
+
+    ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) override;
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
     void finalize(IntraBlockState& state, const Block& block, const evmc_revision& revision) override;
-
 };
 
 }  // namespace silkworm::consensus
+
 #endif  // SILKWORM_CONSENSUS_ETHASH_ENGINE_HPP_

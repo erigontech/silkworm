@@ -69,7 +69,7 @@ void InboundGetBlockHeaders::execute() {
     rpc.do_not_throw_on_failure();
     sentry_.exec_remotely(rpc);
 
-    if (!rpc.status().ok()) {
+    if (rpc.status().ok()) {
         sentry::SentPeers peers = rpc.reply();
         SILKWORM_LOG(LogLevel::Trace) << "Received rpc result of " << identify(*this) << ": "
                                       << std::to_string(peers.peers_size()) + " peer(s)\n";

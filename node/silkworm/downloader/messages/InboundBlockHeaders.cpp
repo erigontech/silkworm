@@ -36,46 +36,6 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, Work
     SILKWORM_LOG(LogLevel::Trace) << "Received message " << *this << "\n";
 }
 
-/* blockHeaders66 processing from Erigon
- if segments, penalty, err := cs.Hd.SplitIntoSegments(headersRaw, headers); err == nil {
-     if penalty == headerdownload.NoPenalty {
-         var canRequestMore bool
-         for _, segment := range segments {
-             newBlock = false;
-             requestMore := cs.Hd.ProcessSegment(segment, newBlock, string(gointerfaces.ConvertH512ToBytes(in.PeerId)))
-             canRequestMore = canRequestMore || requestMore
-         }
-
-         if canRequestMore {
-                 currentTime := uint64(time.Now().Unix())
-                 req, penalties := cs.Hd.RequestMoreHeaders(currentTime)
-                 if req != nil {
-                     if peer := cs.SendHeaderRequest(ctx, req); peer != nil {
-                         timeOut = 5;
-                         cs.Hd.SentRequest(req, currentTime, timeOut)
-                         log.Debug("Sent request", "height", req.Number)
-                     }
-                 }
-                 cs.Penalize(ctx, penalties)
-             }
-     } else {
-         outreq := proto_sentry.PenalizePeerRequest{
-             PeerId:  in.PeerId,
-             Penalty: proto_sentry.PenaltyKind_Kick,
-         }
-         if _, err1 := sentry.PenalizePeer(ctx, &outreq, &grpc.EmptyCallOption{}); err1 != nil {
-             log.Error("Could not send penalty", "err", err1)
-         }
-     }
- } else {
-     return fmt.Errorf("singleHeaderAsSegment failed: %v", err)
- }
- outreq := proto_sentry.PeerMinBlockRequest{
-     PeerId:   in.PeerId,
-     MinBlock: heighestBlock,
- }
- */
-
 void InboundBlockHeaders::execute() {
     using namespace std;
 
@@ -99,12 +59,20 @@ void InboundBlockHeaders::execute() {
     if (penalty != Penalty::NoPenalty) {
         SILKWORM_LOG(LogLevel::Trace) << "Replying to " << identify(*this) << " with penalize_peer\n";
         rpc::PenalizePeer penalize_peer(peerId_, penalty);
+        penalize_peer.do_not_throw_on_failure();
         sentry_.exec_remotely(penalize_peer);
     }
 
     SILKWORM_LOG(LogLevel::Trace) << "Replying to " << identify(*this) << " with peer_min_block\n";
-    rpc::PeerMinBlock peer_min_block(peerId_, highestBlock);
-    sentry_.exec_remotely(peer_min_block);
+    rpc::PeerMinBlock rpc(peerId_, highestBlock);
+    rpc.do_not_throw_on_failure();
+    sentry_.exec_remotely(rpc);
+
+    if (!rpc.status().ok()) {
+        SILKWORM_LOG(LogLevel::Trace) << "Failure of the replay to rpc " << identify(*this) << ": "
+                                      << rpc.status().error_message() + "\n";
+    }
+
 }
 
 uint64_t InboundBlockHeaders::reqId() const { return packet_.requestId; }

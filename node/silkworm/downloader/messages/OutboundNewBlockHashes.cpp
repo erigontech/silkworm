@@ -48,8 +48,15 @@ void OutboundNewBlockHashes::execute() {
 
     seconds_t timeout = 1s;
     rpc.timeout(timeout);
+    rpc.do_not_throw_on_failure();
 
     sentry_.exec_remotely(rpc);
+
+    if (!rpc.status().ok()) {
+        SILKWORM_LOG(LogLevel::Trace) << "Failure of rpc OutboundNewBlockHashes " << packet_ << ": "
+                                      << rpc.status().error_message() + "\n";
+        return;
+    }
 
     sentry::SentPeers peers = rpc.reply();
     SILKWORM_LOG(LogLevel::Trace) << "Received rpc result of OutboundNewBlockHashes " << packet_ << ": "

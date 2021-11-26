@@ -33,11 +33,17 @@ ValidationResult ConsensusEngineBase::pre_validate_block(const silkworm::Block& 
         return err;
     }
 
-    Bytes ommers_rlp;
-    rlp::encode(ommers_rlp, block.ommers);
-    ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
-    if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
-        return ValidationResult::kWrongOmmersHash;
+    if (block.ommers.empty()) {
+        if (header.ommers_hash != kEmptyListHash) {
+            return ValidationResult::kWrongOmmersHash;
+        }
+    } else {
+        Bytes ommers_rlp;
+        rlp::encode(ommers_rlp, block.ommers);
+        ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
+        if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
+            return ValidationResult::kWrongOmmersHash;
+        }
     }
 
     static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {

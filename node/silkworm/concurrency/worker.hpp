@@ -29,7 +29,7 @@ namespace silkworm {
 // If you only need stoppability, use ActiveComponent instead.
 class Worker {
   public:
-    enum class WorkerState { kStopped, kStarting, kStarted, kStopping };
+    enum class WorkerState { kStopped, kStarting, kStarted, kStopping, kExceptionThrown };
 
     Worker() = default;
 
@@ -43,11 +43,33 @@ class Worker {
     void stop(bool wait = false);  // Stops worker thread (optionally wait for complete stop)
     void kick();                   // Kicks worker thread if waiting
 
-    // Whether this worker/thread has received a stop request
+    //! \brief Whether this worker/thread has received a stop request
     bool is_stopping() const { return state_.load() == WorkerState::kStopping || SignalHandler::signalled(); }
 
-    // Retrieves current state of thread
+    //! \brief Retrieves current state of thread
     WorkerState get_state() { return state_.load(); }
+
+    //! \brief Whether this worker/thread has encountered an exception
+    bool has_exception() const { return exception_ptr_.operator bool(); }
+
+    //! \brief Returns the message of occurred exception (if any)
+    std::string what() {
+        std::string ret{};
+        if (has_exception()) {
+            try {
+                std::rethrow_exception(exception_ptr_);
+            } catch (const std::exception& ex) {
+                ret = ex.what();
+            } catch (const std::string& ex) {
+                ret = ex;
+            } catch (const char* ex){
+                ret = ex;
+            } catch (...) {
+                ret = "Undefined error";
+            }
+        }
+        return ret;
+    }
 
   protected:
     /**
@@ -66,6 +88,7 @@ class Worker {
   private:
     std::atomic<WorkerState> state_{WorkerState::kStopped};
     std::unique_ptr<std::thread> thread_{nullptr};
+    std::exception_ptr exception_ptr_{nullptr};
     virtual void work() = 0;  // Derived classes must override
 };
 

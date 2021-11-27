@@ -31,22 +31,29 @@ Worker::~Worker() {
 }
 
 void Worker::start(bool wait) {
-    WorkerState expected_state1{WorkerState::kStopped};
-    if (!state_.compare_exchange_strong(expected_state1, WorkerState::kStarting)) {
-        return;
+    WorkerState expected_stopped{WorkerState::kStopped};
+    if (!state_.compare_exchange_strong(expected_stopped, WorkerState::kStarting)) {
+        WorkerState expected_exception_thrown{WorkerState::kExceptionThrown};
+        if (!state_.compare_exchange_strong(expected_exception_thrown, WorkerState::kStarting)){
+            return;
+        }
     }
 
+    exception_ptr_ = nullptr;
+    kicked_.store(false);
+
     thread_ = std::make_unique<std::thread>([&]() {
-        WorkerState expected_state2{WorkerState::kStarting};
-        if (state_.compare_exchange_strong(expected_state2, WorkerState::kStarted)) {
+        WorkerState expected_starting{WorkerState::kStarting};
+        if (state_.compare_exchange_strong(expected_starting, WorkerState::kStarted)) {
             try {
-                kicked_.store(false);
                 work();
+                state_.store(WorkerState::kStopped);
             } catch (const std::exception& ex) {
                 log::Error() << "Exception thrown in worker thread : " << ex.what();
+                exception_ptr_ = std::current_exception();
+                state_.store(WorkerState::kExceptionThrown);
             }
         }
-        state_.store(WorkerState::kStopped);
     });
 
     while (wait) {

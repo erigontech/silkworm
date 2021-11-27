@@ -245,9 +245,9 @@ int main(int argc, char* argv[]) {
             }
 
             if (db_chain_config.value().chain_id != node_settings.network_id) {
-                throw std::runtime_error("Incompatible network id incompatible. Expected " +
-                                         std::to_string(node_settings.network_id) + " got " +
-                                         std::to_string(db_chain_config.value().chain_id) + " from database");
+                throw std::runtime_error("Incompatible network id. Command line expects " +
+                                         std::to_string(node_settings.network_id) + "; db has " +
+                                         std::to_string(db_chain_config.value().chain_id));
             }
             log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
         }

@@ -27,6 +27,20 @@ TEST_CASE("Config lookup") {
     CHECK(lookup_chain_config(4) == &kRinkebyConfig);
     CHECK(lookup_chain_config(5) == &kGoerliConfig);
     CHECK(lookup_chain_config(12345) == nullptr);
+    CHECK(lookup_chain_config("mainnet") == &kMainnetConfig);
+    CHECK(lookup_chain_config("ropsten") == &kRopstenConfig);
+    CHECK(lookup_chain_config("Rinkeby") == &kRinkebyConfig);
+    CHECK(lookup_chain_config("goErli") == &kGoerliConfig);
+    CHECK(lookup_chain_config("xxxx") == nullptr);
+
+    auto chains_map{get_known_chains_map()};
+    CHECK(chains_map.empty() == false);
+    for (auto& [name, id] : chains_map) {
+        REQUIRE(lookup_chain_config(name) != nullptr);
+        REQUIRE(lookup_chain_config(id) != nullptr);
+        REQUIRE(lookup_chain_config(name) == lookup_chain_config(id));
+        REQUIRE(lookup_chain_config(name)->chain_id == id);
+    }
 }
 
 TEST_CASE("Config revision") {

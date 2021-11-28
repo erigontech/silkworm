@@ -118,9 +118,9 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
 
     // Chain options
-    std::map<std::string, uint32_t> chains_map{{"mainnet", 1}, {"ropsten", 3}, {"rinkeby", 4}, {"goerli", 5}};
+    auto chains_map{get_known_chains_map()};
     auto& chain_opts = *cli.add_option_group("Chain", "Chain selection options");
-    auto chain_opts_chain_name = chain_opts.add_option("--chain", "Name of the testnet to join (default: \"mainnet\")")
+    auto chain_opts_chain_name = chain_opts.add_option("--chain", "Name of the network to join (default: \"mainnet\")")
                                      ->transform(CLI::Transformer(chains_map, CLI::ignore_case));
     chain_opts
         .add_option("--networkid", node_settings.network_id,
@@ -241,15 +241,24 @@ int main(int argc, char* argv[]) {
                 log::Message() << "Initializing chain configuration for chain id " << node_settings.network_id;
                 db::initialize_genesis(*tx, genesis_json, /*allow_exceptions=*/true);
                 tx.commit();
+                log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
                 db_chain_config = db::read_chain_config(*tx);
             }
 
             if (db_chain_config.value().chain_id != node_settings.network_id) {
                 throw std::runtime_error("Incompatible network id. Command line expects " +
-                                         std::to_string(node_settings.network_id) + "; db has " +
+                                         std::to_string(node_settings.network_id) + "; Database has " +
                                          std::to_string(db_chain_config.value().chain_id));
             }
-            log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
+            std::string chain_name{" unknown/custom network"};
+            auto chains_map{get_known_chains_map()};
+            for (auto& [name, id] : chains_map) {
+                if (id == db_chain_config.value().chain_id) {
+                    chain_name = name;
+                    break;
+                }
+            }
+            log::Message() << "Starting Silkworm on " << chain_name;
         }
 
         // Detect prune-mode and verify is compatible

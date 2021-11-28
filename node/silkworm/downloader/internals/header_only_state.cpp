@@ -25,7 +25,6 @@ CustomHeaderOnlyChainState::CustomHeaderOnlyChainState(OldestFirstLinkQueue& per
 
 std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum block_number,
                                                                    const evmc::bytes32& hash) const noexcept {
-
     auto [initial_link, final_link] = persistedLinkQueue_.equal_range(block_number);
 
     for (auto link = initial_link; link != final_link; link++) {
@@ -38,6 +37,12 @@ std::optional<BlockHeader> CustomHeaderOnlyChainState::read_header(BlockNum bloc
 }
 
 std::optional<BlockBody> CustomHeaderOnlyChainState::read_body(BlockNum, const evmc::bytes32&) const noexcept {
+    assert(false);  // not implemented
+    return {};
+}
+
+std::optional<intx::uint256> CustomHeaderOnlyChainState::total_difficulty(uint64_t,
+                                                                          const evmc::bytes32&) const noexcept {
     assert(false);  // not implemented
     return {};
 }
@@ -60,6 +65,12 @@ std::optional<BlockHeader> SimpleHeaderOnlyChainState::read_header(BlockNum bloc
 }
 
 std::optional<BlockBody> SimpleHeaderOnlyChainState::read_body(BlockNum, const evmc::bytes32&) const noexcept {
+    assert(false);  // not implemented
+    return {};
+}
+
+std::optional<intx::uint256> SimpleHeaderOnlyChainState::total_difficulty(uint64_t,
+                                                                          const evmc::bytes32&) const noexcept {
     assert(false);  // not implemented
     return {};
 }

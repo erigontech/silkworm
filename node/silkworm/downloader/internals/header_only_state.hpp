@@ -35,8 +35,10 @@ class CustomHeaderOnlyChainState : public BlockState {
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
 
-    std::optional<BlockBody> read_body(BlockNum block_number,
-                                       const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<BlockBody> read_body(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept override;
+
+    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
+                                                  const evmc::bytes32& block_hash) const noexcept override;
 };
 
 // A better Chain_State implementation
@@ -51,8 +53,10 @@ class SimpleHeaderOnlyChainState : public BlockState {
     std::optional<BlockHeader> read_header(uint64_t block_number,
                                            const evmc::bytes32& block_hash) const noexcept override;
 
-    std::optional<BlockBody> read_body(BlockNum block_number,
-                                       const evmc::bytes32& block_hash) const noexcept override;
+    std::optional<BlockBody> read_body(BlockNum block_number, const evmc::bytes32& block_hash) const noexcept override;
+
+    std::optional<intx::uint256> total_difficulty(uint64_t block_number,
+                                                  const evmc::bytes32& block_hash) const noexcept override;
 };
 
 }  // namespace silkworm

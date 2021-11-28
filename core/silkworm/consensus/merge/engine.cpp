@@ -23,14 +23,60 @@ MergeEngine::MergeEngine(const ChainConfig& chain_config)
       ethash_engine_{chain_config},
       pos_engine_{chain_config} {}
 
-ValidationResult MergeEngine::pre_validate_block(const Block&, BlockState&) {
-    // TODO (Andrew) implement
-    return ValidationResult::kUnknownConsensusEngine;
+ValidationResult MergeEngine::pre_validate_block(const Block& block, const BlockState& state) {
+    if (block.header.difficulty != 0) {
+        return ethash_engine_.pre_validate_block(block, state);
+    } else {
+        return pos_engine_.pre_validate_block(block, state);
+    }
 }
 
-ValidationResult MergeEngine::validate_block_header(const BlockHeader&, BlockState&, bool) {
-    // TODO (Andrew) implement
-    return ValidationResult::kUnknownConsensusEngine;
+ValidationResult MergeEngine::validate_block_header(const BlockHeader& header, const BlockState& state,
+                                                    bool with_future_timestamp_check) {
+    // TODO (Andrew) how will all this work with backwards sync?
+
+    const std::optional<BlockHeader> parent{EngineBase::get_parent_header(state, header)};
+    if (!parent.has_value()) {
+        return ValidationResult::kUnknownParent;
+    }
+
+    if (header.difficulty != 0) {
+        const std::optional<intx::uint256> parent_total_difficulty{
+            state.total_difficulty(parent->number, header.parent_hash)};
+        if (parent_total_difficulty == std::nullopt) {
+            return ValidationResult::kUnknownParentTotalDifficulty;
+        }
+        if (parent_total_difficulty >= terminal_total_difficulty_) {
+            return ValidationResult::kPoWBlockAfterMerge;
+        }
+        return ethash_engine_.validate_block_header(header, state, with_future_timestamp_check);
+    } else {
+        if (parent->difficulty != 0 && !terminal_pow_block(*parent, state)) {
+            return ValidationResult::kPoSBlockBeforeMerge;
+        }
+        return pos_engine_.validate_block_header(header, state, with_future_timestamp_check);
+    }
+}
+
+bool MergeEngine::terminal_pow_block(const BlockHeader& header, const BlockState& state) const {
+    if (header.difficulty == 0) {
+        return false;  // PoS block
+    }
+
+    const std::optional<BlockHeader> parent{EngineBase::get_parent_header(state, header)};
+    if (parent == std::nullopt) {
+        return false;
+    }
+
+    const std::optional<intx::uint256> parent_total_difficulty{
+        state.total_difficulty(parent->number, header.parent_hash)};
+    if (parent_total_difficulty == std::nullopt) {
+        // TODO (Andrew) should return kUnknownParentTotalDifficulty instead
+        return false;
+    }
+
+    return parent_total_difficulty < terminal_total_difficulty_ &&
+           *parent_total_difficulty + header.difficulty >= terminal_total_difficulty_;
 }
 
 ValidationResult MergeEngine::validate_seal(const BlockHeader& header) {

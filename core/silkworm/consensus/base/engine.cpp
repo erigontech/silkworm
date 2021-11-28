@@ -24,14 +24,7 @@
 
 namespace silkworm::consensus {
 
-static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header) {
-    if (header.number == 0) {
-        return std::nullopt;
-    }
-    return state.read_header(header.number - 1, header.parent_hash);
-}
-
-ValidationResult EngineBase::pre_validate_block(const silkworm::Block& block, silkworm::BlockState& state) {
+ValidationResult EngineBase::pre_validate_block(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
 
     if (ValidationResult err{validate_block_header(header, state, /*with_future_timestamp_check=*/true)};
@@ -96,7 +89,7 @@ ValidationResult EngineBase::pre_validate_block(const silkworm::Block& block, si
     return ValidationResult::kOk;
 }
 
-ValidationResult EngineBase::validate_block_header(const BlockHeader& header, BlockState& state,
+ValidationResult EngineBase::validate_block_header(const BlockHeader& header, const BlockState& state,
                                                    bool with_future_timestamp_check) {
     if (with_future_timestamp_check) {
         const std::time_t now{std::time(nullptr)};
@@ -165,6 +158,13 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, Bl
     }
 
     return validate_seal(header);
+}
+
+std::optional<BlockHeader> EngineBase::get_parent_header(const BlockState& state, const BlockHeader& header) {
+    if (header.number == 0) {
+        return std::nullopt;
+    }
+    return state.read_header(header.number - 1, header.parent_hash);
 }
 
 bool EngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,

@@ -32,14 +32,14 @@ class EngineBase : public IEngine {
     //! \param [in] block: block to pre-validate.
     //! \param [in] state: current state.
     //! \note Shouldn't be used for genesis block.
-    ValidationResult pre_validate_block(const Block& block, BlockState& state) override;
+    ValidationResult pre_validate_block(const Block& block, const BlockState& state) override;
 
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.
     //! \param [in] with_future_timestamp_check : whether to check header timestamp is in the future wrt host current
     //! time \see https://github.com/torquem-ch/silkworm/issues/448
     //! \note Shouldn't be used for genesis block.
-    ValidationResult validate_block_header(const BlockHeader& header, BlockState& state,
+    ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                            bool with_future_timestamp_check) override;
 
     //! \brief See [YP] Section 11.3 "Reward Application".
@@ -51,6 +51,9 @@ class EngineBase : public IEngine {
 
     //! \brief See https://eips.ethereum.org/EIPS/eip-1559
     std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent);
+
+    //! \brief Returns parent header (if any) of provided header
+    static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header);
 
   protected:
     const ChainConfig& chain_config_;

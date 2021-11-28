@@ -28,9 +28,9 @@ class MergeEngine : public IEngine {
   public:
     explicit MergeEngine(const ChainConfig& chain_config);
 
-    ValidationResult pre_validate_block(const Block& block, BlockState& state) override;
+    ValidationResult pre_validate_block(const Block& block, const BlockState& state) override;
 
-    ValidationResult validate_block_header(const BlockHeader& header, BlockState& state,
+    ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                            bool with_future_timestamp_check) override;
 
     ValidationResult validate_seal(const BlockHeader& header) override;
@@ -40,6 +40,8 @@ class MergeEngine : public IEngine {
     evmc::address get_beneficiary(const BlockHeader& header) override;
 
   private:
+    bool terminal_pow_block(const BlockHeader& header, const BlockState& state) const;
+
     intx::uint256 terminal_total_difficulty_;
     EthashEngine ethash_engine_;
     ProofOfStakeEngine pos_engine_;

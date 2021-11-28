@@ -31,9 +31,9 @@ namespace silkworm {
 
 class DummyConsensusEngine : public consensus::IEngine {
   public:
-    ValidationResult pre_validate_block(const Block&, BlockState&) override { return ValidationResult::kOk; }
+    ValidationResult pre_validate_block(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
-    ValidationResult validate_block_header(const BlockHeader&, BlockState&, bool) override {
+    ValidationResult validate_block_header(const BlockHeader&, const BlockState&, bool) override {
         return ValidationResult::kOk;
     }
 

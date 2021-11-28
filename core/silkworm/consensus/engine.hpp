@@ -37,7 +37,7 @@ class IEngine {
     //! \param [in] block: block to pre-validate.
     //! \param [in] state: current state.
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult pre_validate_block(const Block& block, BlockState& state) = 0;
+    virtual ValidationResult pre_validate_block(const Block& block, const BlockState& state) = 0;
 
     //! \brief See [YP] Section 4.3.4 "Block Header Validity".
     //! \param [in] header: header to validate.
@@ -45,7 +45,7 @@ class IEngine {
     //! \param [in] with_future_timestamp_check : whether to check header timestamp is in the future wrt host current
     //! time \see https://github.com/torquem-ch/silkworm/issues/448
     //! \note Shouldn't be used for genesis block.
-    virtual ValidationResult validate_block_header(const BlockHeader& header, BlockState& state,
+    virtual ValidationResult validate_block_header(const BlockHeader& header, const BlockState& state,
                                                    bool with_future_timestamp_check) = 0;
 
     //! \brief Validates the seal of the header

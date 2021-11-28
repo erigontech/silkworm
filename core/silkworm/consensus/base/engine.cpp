@@ -24,6 +24,13 @@
 
 namespace silkworm::consensus {
 
+static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header) {
+    if (header.number == 0) {
+        return std::nullopt;
+    }
+    return state.read_header(header.number - 1, header.parent_hash);
+}
+
 ValidationResult EngineBase::pre_validate_block(const silkworm::Block& block, silkworm::BlockState& state) {
     const BlockHeader& header{block.header};
 
@@ -52,13 +59,13 @@ ValidationResult EngineBase::pre_validate_block(const silkworm::Block& block, si
         return header.ommers_hash == kEmptyListHash ? ValidationResult::kOk : ValidationResult::kWrongOmmersHash;
     } else if (prohibit_ommers_) {
         return ValidationResult::kTooManyOmmers;
-    } else {
-        Bytes ommers_rlp;
-        rlp::encode(ommers_rlp, block.ommers);
-        ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
-        if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
-            return ValidationResult::kWrongOmmersHash;
-        }
+    }
+
+    Bytes ommers_rlp;
+    rlp::encode(ommers_rlp, block.ommers);
+    ethash::hash256 ommers_hash{keccak256(ommers_rlp)};
+    if (ByteView{ommers_hash.bytes} != ByteView{header.ommers_hash}) {
+        return ValidationResult::kWrongOmmersHash;
     }
 
     if (block.ommers.size() > 2) {
@@ -158,13 +165,6 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, Bl
     }
 
     return validate_seal(header);
-}
-
-std::optional<BlockHeader> EngineBase::get_parent_header(const BlockState& state, const BlockHeader& header) {
-    if (header.number == 0) {
-        return std::nullopt;
-    }
-    return state.read_header(header.number - 1, header.parent_hash);
 }
 
 bool EngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,

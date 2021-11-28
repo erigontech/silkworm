@@ -49,8 +49,8 @@ class EngineBase : public IEngine {
     //! \brief Validates the difficulty of the header
     virtual ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) = 0;
 
-    //! \brief Returns parent header (if any) of provided header
-    static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header);
+    //! \brief See https://eips.ethereum.org/EIPS/eip-1559
+    std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent);
 
   protected:
     const ChainConfig& chain_config_;
@@ -60,9 +60,6 @@ class EngineBase : public IEngine {
     bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
                 const evmc::bytes32& mainline_hash, unsigned n, const BlockState& state,
                 std::vector<BlockHeader>& old_ommers);
-
-    //! \brief See https://eips.ethereum.org/EIPS/eip-1559
-    std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent);
 };
 
 }  // namespace silkworm::consensus

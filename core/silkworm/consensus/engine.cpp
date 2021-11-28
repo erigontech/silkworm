@@ -18,6 +18,7 @@
 
 #include <silkworm/chain/intrinsic_gas.hpp>
 #include <silkworm/consensus/ethash/engine.hpp>
+#include <silkworm/consensus/merge/engine.hpp>
 #include <silkworm/consensus/noproof/engine.hpp>
 #include <silkworm/crypto/ecdsa.hpp>
 
@@ -72,6 +73,10 @@ ValidationResult pre_validate_transaction(const Transaction& txn, uint64_t block
 }
 
 std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config) {
+    if (chain_config.terminal_total_difficulty.has_value()) {
+        return std::make_unique<MergeEngine>(chain_config);
+    }
+
     switch (chain_config.seal_engine) {
         case SealEngineType::kEthash:
             return std::make_unique<EthashEngine>(chain_config);

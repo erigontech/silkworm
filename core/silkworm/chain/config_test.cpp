@@ -21,12 +21,12 @@
 namespace silkworm {
 
 TEST_CASE("Config lookup") {
-    CHECK(lookup_chain_config(0) == nullptr);
-    CHECK(lookup_chain_config(1) == &kMainnetConfig);
-    CHECK(lookup_chain_config(3) == &kRopstenConfig);
-    CHECK(lookup_chain_config(4) == &kRinkebyConfig);
-    CHECK(lookup_chain_config(5) == &kGoerliConfig);
-    CHECK(lookup_chain_config(12345) == nullptr);
+    CHECK(lookup_chain_config(0u) == nullptr);
+    CHECK(lookup_chain_config(1u) == &kMainnetConfig);
+    CHECK(lookup_chain_config(3u) == &kRopstenConfig);
+    CHECK(lookup_chain_config(4u) == &kRinkebyConfig);
+    CHECK(lookup_chain_config(5u) == &kGoerliConfig);
+    CHECK(lookup_chain_config(12345u) == nullptr);
     CHECK(lookup_chain_config("mainnet") == &kMainnetConfig);
     CHECK(lookup_chain_config("ropsten") == &kRopstenConfig);
     CHECK(lookup_chain_config("Rinkeby") == &kRinkebyConfig);

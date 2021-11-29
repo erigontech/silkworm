@@ -44,7 +44,7 @@ HeaderDownloader::~HeaderDownloader() {
 void HeaderDownloader::receive_message(const sentry::InboundMessage& raw_message) {
     auto message = InboundBlockAnnouncementMessage::make(raw_message, working_chain_, sentry_);
 
-    log::Info() << "HeaderDownloader received message " << *message << "\n";
+    log::Info() << "HeaderDownloader received message " << *message;
 
     messages_.push(message);
 }

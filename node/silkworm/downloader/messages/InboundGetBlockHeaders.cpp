@@ -36,7 +36,7 @@ InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg
     ByteView data = string_view_to_byte_view(msg.data());
     rlp::success_or_throw(rlp::decode(data, packet_));
 
-    log::Trace() << "Received message " << *this << "\n";
+    log::Trace() << "Received message " << *this;
 }
 
 void InboundGetBlockHeaders::execute() {
@@ -53,6 +53,11 @@ void InboundGetBlockHeaders::execute() {
         reply.request =
             header_retrieval.recover_by_number(get<BlockNum>(packet_.request.origin), packet_.request.amount,
                                                packet_.request.skip, packet_.request.reverse);
+    }
+
+    if (reply.request.empty()) {
+        log::Warning() << "Not replying to " << identify(*this) << ", no headers found";
+        return;
     }
 
     Bytes rlp_encoding;
@@ -72,11 +77,11 @@ void InboundGetBlockHeaders::execute() {
     if (rpc.status().ok()) {
         sentry::SentPeers peers = rpc.reply();
         log::Trace() << "Received rpc result of " << identify(*this) << ": "
-                     << std::to_string(peers.peers_size()) + " peer(s)\n";
+                     << std::to_string(peers.peers_size()) + " peer(s)";
     }
     else {
         log::Trace() << "Failure of rpc " << identify(*this) << ": "
-                     << rpc.status().error_message() + "\n";
+                     << rpc.status().error_message();
     }
 }
 

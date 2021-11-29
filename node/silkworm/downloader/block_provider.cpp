@@ -39,7 +39,7 @@ BlockProvider::~BlockProvider() {
 void BlockProvider::receive_message(const sentry::InboundMessage& raw_message) {
     auto message = InboundBlockRequestMessage::make(raw_message, db_access_, sentry_);
 
-    log::Info() << "HeaderDownloader received message " << *message;
+    log::Info() << "BlockProvider received message " << *message;
 
     messages_.push(message);
 }

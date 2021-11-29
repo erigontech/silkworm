@@ -130,7 +130,7 @@ void PersistedChain::persist(const BlockHeader& header) {  // todo: try to modul
     // Save header
     tx_.write_header(header, true);  // true = with_header_numbers
 
-    log::Trace() << "PersistedChain: saved header height=" << height << " hash=" << hash << "\n";
+    log::Trace() << "PersistedChain: saved header height=" << height << " hash=" << hash;
 
     previous_hash_ = hash;
 }

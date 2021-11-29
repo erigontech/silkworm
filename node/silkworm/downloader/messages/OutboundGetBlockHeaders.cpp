@@ -31,8 +31,7 @@ void OutboundGetBlockHeaders::execute() {
 
     time_point_t now = std::chrono::system_clock::now();
     seconds_t timeout = 5s;
-    int max_requests =
-        64;  // limit number of requests sent per round to let some headers to be inserted into the database
+    int max_requests = 64;  // limit the number of requests sent per round
 
     // anchor extension
     do {
@@ -74,7 +73,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     // packet_ = packet;
 
     if (std::holds_alternative<Hash>(packet_.request.origin))
-        throw std::logic_error("OutboundGetBlockHeaders expects block number not hash");  // todo: check!
+        throw std::logic_error("OutboundGetBlockHeaders expects block number not hash");
 
     BlockNum min_block = std::get<BlockNum>(packet_.request.origin);  // choose target peer
     if (!packet_.request.reverse) min_block += packet_.request.amount * packet_.request.skip;
@@ -102,7 +101,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(const GetBlockHeadersPack
     }
 
     sentry::SentPeers peers = rpc.reply();
-    log::Trace() << "Received rpc result of OutboundGetBlockHeaders " << packet_ << ": "
+    log::Trace() << "Received rpc result of OutboundGetBlockHeaders reqId=" << packet_.requestId << ": "
                  << std::to_string(peers.peers_size()) + " peer(s)";
 
     return peers;

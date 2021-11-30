@@ -118,9 +118,9 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
 
     // Chain options
-    std::map<std::string, uint32_t> chains_map{{"mainnet", 1}, {"ropsten", 3}, {"rinkeby", 4}, {"goerli", 5}};
+    auto chains_map{get_known_chains_map()};
     auto& chain_opts = *cli.add_option_group("Chain", "Chain selection options");
-    auto chain_opts_chain_name = chain_opts.add_option("--chain", "Name of the testnet to join (default: \"mainnet\")")
+    auto chain_opts_chain_name = chain_opts.add_option("--chain", "Name of the network to join (default: \"mainnet\")")
                                      ->transform(CLI::Transformer(chains_map, CLI::ignore_case));
     chain_opts
         .add_option("--networkid", node_settings.network_id,
@@ -229,8 +229,8 @@ int main(int argc, char* argv[]) {
 
         // Check db is initialized with chain config
         {
-            auto tx{chaindata_env.start_write()};
-            auto db_chain_config{db::read_chain_config(tx)};
+            db::RWTxn tx(chaindata_env);
+            auto db_chain_config{db::read_chain_config(*tx)};
             while (!db_chain_config.has_value()) {
                 auto source_data{read_genesis_data(node_settings.network_id)};
                 auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
@@ -238,38 +238,45 @@ int main(int argc, char* argv[]) {
                     throw std::runtime_error("Could not initialize db for chain id " +
                                              std::to_string(node_settings.network_id) + " : unknown network");
                 }
-                log::Message() << "Initializing db for chain_id " << node_settings.network_id;
-                db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
+                log::Message() << "Initializing chain configuration for chain id " << node_settings.network_id;
+                db::initialize_genesis(*tx, genesis_json, /*allow_exceptions=*/true);
                 tx.commit();
-                tx = chaindata_env.start_write();
-                db_chain_config = db::read_chain_config(tx);
+                log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
+                db_chain_config = db::read_chain_config(*tx);
             }
 
-            log::Message() << "Chain configuration " << db_chain_config.value().to_json().dump();
             if (db_chain_config.value().chain_id != node_settings.network_id) {
-                throw std::runtime_error("Network Id incompatible. Expected " +
-                                         std::to_string(node_settings.network_id) + " got " +
+                throw std::runtime_error("Incompatible network id. Command line expects " +
+                                         std::to_string(node_settings.network_id) + "; Database has " +
                                          std::to_string(db_chain_config.value().chain_id));
             }
+            std::string chain_name{" unknown/custom network"};
+            auto chains_map{get_known_chains_map()};
+            for (auto& [name, id] : chains_map) {
+                if (id == db_chain_config.value().chain_id) {
+                    chain_name = name;
+                    break;
+                }
+            }
+            log::Message() << "Starting Silkworm on " << chain_name;
         }
 
         // Detect prune-mode and verify is compatible
         {
-            auto tx{chaindata_env.start_write()};
-            auto db_prune_mode{db::read_prune_mode(tx)};
+            db::RWTxn tx(chaindata_env);
+            auto db_prune_mode{db::read_prune_mode(*tx)};
             if (db_prune_mode != node_settings.prune_mode) {
                 // In case we have mismatching modes (cli != db) we prevent
                 // further execution ONLY if we've already synced something
-                auto header_download_progress{db::stages::read_stage_progress(tx, db::stages::kHeadersKey)};
+                auto header_download_progress{db::stages::read_stage_progress(*tx, db::stages::kHeadersKey)};
                 if (header_download_progress) {
                     throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
                                              node_settings.prune_mode.to_string() + " got " +
                                              db_prune_mode.to_string());
                 }
-                db::write_prune_mode(tx, node_settings.prune_mode);
+                db::write_prune_mode(*tx, node_settings.prune_mode);
                 tx.commit();
-                tx = chaindata_env.start_read();
-                db_prune_mode = db::read_prune_mode(tx);
+                db_prune_mode = db::read_prune_mode(*tx);
             }
             log::Message() << "Prune mode " << db_prune_mode.to_string();
         }

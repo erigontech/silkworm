@@ -51,6 +51,7 @@ void OutboundGetBlockHeaders::execute() {
         }
 
         for (auto& penalization : penalizations) {
+            log::Trace() << "Penalizing " << penalization;
             send_penalization(penalization, 1s);
         }
 

@@ -58,6 +58,7 @@ void InboundBlockHeaders::execute() {
     // Reply
     if (penalty != Penalty::NoPenalty) {
         log::Trace() << "Replying to " << identify(*this) << " with penalize_peer";
+        log::Trace() << "Penalizing " << PeerPenalization(penalty, peerId_);
         rpc::PenalizePeer penalize_peer(peerId_, penalty);
         penalize_peer.do_not_throw_on_failure();
         sentry_.exec_remotely(penalize_peer);

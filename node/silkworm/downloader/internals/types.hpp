@@ -99,6 +99,40 @@ struct PeerPenalization {
     PeerPenalization(Penalty p, PeerId id) : penalty(p), peerId(id) {}  // unnecessary with c++20
 };
 
+inline std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization) {
+    os << "peerId=" << penalization.peerId << " cause=";
+    switch(penalization.penalty) {
+        case BadBlockPenalty:
+            os << "BadBlockPenalty";
+            break;
+        case DuplicateHeaderPenalty:
+            os << "DuplicateHeaderPenalty";
+            break;
+        case WrongChildBlockHeightPenalty:
+            os << "WrongChildBlockHeightPenalty";
+            break;
+        case WrongChildDifficultyPenalty:
+            os << "WrongChildDifficultyPenalty";
+            break;
+        case InvalidSealPenalty:
+            os << "InvalidSealPenalty";
+            break;
+        case TooFarFuturePenalty:
+            os << "TooFarFuturePenalty";
+            break;
+        case TooFarPastPenalty:
+            os << "TooFarPastPenalty";
+            break;
+        case AbandonedAnchorPenalty:
+            os << "AbandonedAnchorPenalty";
+            break;
+        default:
+            os << "UnknownPenalty";
+            break;
+    }
+    return os;
+}
+
 struct Announce {
     Hash hash;
     BlockNum number;

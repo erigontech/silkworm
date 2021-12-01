@@ -18,8 +18,8 @@
 
 namespace silkworm::stagedsync {
 
-StageResult no_unwind(TransactionManager&, const std::filesystem::path&, uint64_t) { return StageResult::kSuccess; }
-StageResult no_prune(TransactionManager&, const std::filesystem::path&, uint64_t)  { return StageResult::kSuccess; }
+StageResult no_unwind(db::RWTxn&, const std::filesystem::path&, uint64_t) { return StageResult::kSuccess; }
+StageResult no_prune(db::RWTxn&, const std::filesystem::path&, uint64_t)  { return StageResult::kSuccess; }
 
 std::vector<Stage> get_archive_node_stages() {
     return {

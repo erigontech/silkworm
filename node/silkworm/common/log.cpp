@@ -38,7 +38,7 @@ void init(Settings& settings) {
     init_terminal();
 }
 
-void tee_file(std::filesystem::path path) {
+void tee_file(const std::filesystem::path& path) {
     file_ = std::make_unique<std::fstream>(path.string(), std::ios::out | std::ios::app);
     if (!file_->is_open()) {
         file_.reset();

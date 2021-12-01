@@ -54,8 +54,8 @@ int main(int argc, char* argv[]) {
     log::tee_file(std::filesystem::path("downloader.log"));
     log::Info() << "STARTING";
 
+    std::thread message_receiving;
     std::thread block_request_processing;
-    std::thread header_receiving;
     std::thread header_processing;
     int return_value = 0;
 
@@ -87,15 +87,16 @@ int main(int argc, char* argv[]) {
 
         // Sentry client - connects to sentry
         SentryClient sentry{sentry_addr};
+        sentry.set_status(head_hash, head_td, chain_identity);
+        message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
 
         // Block provider - provides headers and bodies to external peers
-        BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}, chain_identity};
+        BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}};
         block_request_processing = std::thread([&block_provider]() { block_provider.execution_loop(); });
 
         // Stage1 - Header downloader - example code
         bool first_sync = true;  // = starting up silkworm
         HeaderDownloader header_downloader{sentry, Db::ReadWriteAccess{db}, chain_identity};
-        header_receiving = std::thread([&header_downloader]() { header_downloader.receive_messages(); });
         header_processing = std::thread([&header_downloader]() { header_downloader.execution_loop(); });
 
         // Sample stage loop with 1 stage
@@ -104,7 +105,7 @@ int main(int argc, char* argv[]) {
             if (stage_result.status != Stage::Result::UnwindNeeded) {
                 stage_result = header_downloader.forward(first_sync);
             } else {
-                stage_result = header_downloader.unwind_to(*stage_result.unwind_point);
+                stage_result = header_downloader.unwind_to(*stage_result.unwind_point, /*bad_block=*/{});
             }
         } while (stage_result.status != Stage::Result::Error);
 
@@ -118,8 +119,8 @@ int main(int argc, char* argv[]) {
     }
 
     // wait threads termination
+    if (message_receiving.joinable()) message_receiving.join();
     if (block_request_processing.joinable()) block_request_processing.join();
-    if (header_receiving.joinable()) header_receiving.join();
     if (header_processing.joinable()) header_processing.join();
 
     return return_value;

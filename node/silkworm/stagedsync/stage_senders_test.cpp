@@ -36,7 +36,7 @@ using namespace silkworm;
 
 TEST_CASE("Stage Senders") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
@@ -84,7 +84,7 @@ TEST_CASE("Stage Senders") {
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
+    config_table.upsert(db::to_slice(hash_0.bytes), mdbx::slice{config_data.c_str()});
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
@@ -107,7 +107,7 @@ TEST_CASE("Stage Senders") {
 
 TEST_CASE("Unwind Senders") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
@@ -154,7 +154,7 @@ TEST_CASE("Unwind Senders") {
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
+    config_table.upsert(db::to_slice(hash_0.bytes), mdbx::slice{config_data.c_str()});
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));
@@ -178,7 +178,7 @@ TEST_CASE("Unwind Senders") {
 
 TEST_CASE("Prune Senders") {
     test::Context context;
-    stagedsync::TransactionManager txn{context.txn()};
+    db::RWTxn txn{context.txn()};
 
     auto bodies_table{db::open_cursor(*txn, db::table::kBlockBodies)};
     auto transaction_table{db::open_cursor(*txn, db::table::kBlockTransactions)};
@@ -223,7 +223,7 @@ TEST_CASE("Prune Senders") {
     auto config_data{genesis_json["config"].dump()};
 
     auto config_table{db::open_cursor(*txn, db::table::kConfig)};
-    config_table.upsert(db::to_slice(full_view(hash_0.bytes)), mdbx::slice{config_data.c_str()});
+    config_table.upsert(db::to_slice(hash_0.bytes), mdbx::slice{config_data.c_str()});
 
     auto canonical_table{db::open_cursor(*txn, db::table::kCanonicalHashes)};
     canonical_table.upsert(db::to_slice(db::block_key(0)), db::to_slice(hash_0));

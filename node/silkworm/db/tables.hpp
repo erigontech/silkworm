@@ -53,7 +53,6 @@ inline constexpr db::MapConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
 inline constexpr db::MapConfig kCallFromIndex{"CallFromIndex"};
 inline constexpr db::MapConfig kCallToIndex{"CallToIndex"};
 inline constexpr db::MapConfig kCallTraceSet{"CallTraceSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
-inline constexpr db::MapConfig kClique{"Clique"};
 inline constexpr db::MapConfig kCode{"Code"};
 inline constexpr db::MapConfig kConfig{"Config"};
 inline constexpr db::MapConfig kContractCode{"HashedCodeHash"};
@@ -93,7 +92,7 @@ inline constexpr db::MapConfig kTrieOfAccounts{"TrieAccount"};
 inline constexpr db::MapConfig kTrieOfStorage{"TrieStorage"};
 inline constexpr db::MapConfig kTxLookup{"BlockTransactionLookup"};
 
-inline constexpr db::MapConfig kTables[]{
+inline constexpr db::MapConfig kChainDataTables[]{
     kAccountChangeSet,
     kAccountHistory,
     kBlockBodies,
@@ -107,7 +106,6 @@ inline constexpr db::MapConfig kTables[]{
     kCanonicalHashes,
     kHeaders,
     kDifficulty,
-    kClique,
     kCode,
     kConfig,
     kContractCode,
@@ -139,8 +137,8 @@ inline constexpr db::MapConfig kTables[]{
     kTxLookup,
 };
 
-// Create all tables that do not yet exist.
-void create_all(mdbx::txn& txn);
+//! \brief Ensures all defined tables are present in db with consistent flags. Should a table not exist it gets created
+void check_or_create_chaindata_tables(mdbx::txn& txn);
 
 }  // namespace silkworm::db::table
 

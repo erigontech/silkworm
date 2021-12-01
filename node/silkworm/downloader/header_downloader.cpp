@@ -18,24 +18,17 @@
 #include <chrono>
 #include <thread>
 
-#include <silkworm/chain/preverified_hashes.hpp>
-#include <silkworm/consensus/engine.hpp>
 #include <silkworm/common/log.hpp>
 
-#include "internals/header_retrieval.hpp"
-#include "messages/InboundGetBlockHeaders.hpp"
+#include "messages/InboundMessage.hpp"
 #include "messages/OutboundGetBlockHeaders.hpp"
 #include "messages/OutboundNewBlockHashes.hpp"
-#include "rpc/ReceiveMessages.hpp"
-#include "rpc/SetStatus.hpp"
 
 namespace silkworm {
 
-HeaderDownloader::HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_access, ChainIdentity chain_identity)
-    : chain_identity_(std::move(chain_identity)),
-      db_access_{db_access},
-      sentry_{sentry},
-      working_chain_(consensus::engine_factory(chain_identity.chain)) {
+HeaderDownloader::HeaderDownloader(SentryClient& sentry, const Db::ReadWriteAccess& db_access,
+                                   const ChainIdentity& chain_identity)
+    : db_access_{db_access}, sentry_{sentry}, working_chain_(consensus::engine_factory(chain_identity.chain)) {
     auto tx = db_access_.start_ro_tx();
     working_chain_.recover_initial_state(tx);
     working_chain_.set_preverified_hashes(&(PreverifiedHashes::per_chain.at(chain_identity.chain.chain_id)));
@@ -46,57 +39,29 @@ HeaderDownloader::~HeaderDownloader() {
     log::Error() << "HeaderDownloader destroyed";
 }
 
-void HeaderDownloader::send_status() {
-    HeaderRetrieval headers(db_access_);
-    auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
+void HeaderDownloader::receive_message(const sentry::InboundMessage& raw_message) {
+    auto message = InboundBlockAnnouncementMessage::make(raw_message, working_chain_, sentry_);
 
-    rpc::SetStatus set_status(chain_identity_, head_hash, head_td);
-    sentry_.exec_remotely(set_status);
+    log::Info() << "HeaderDownloader received message " << *message;
 
-    log::Info() << "HeaderDownloader, set_status sent";
-    sentry::SetStatusReply reply = set_status.reply();
-
-    sentry::Protocol supported_protocol = reply.protocol();
-    if (supported_protocol != sentry::Protocol::ETH66) {
-        log::Critical() << "HeaderDownloader: sentry do not support eth/66 protocol, is_stopping...";
-        sentry_.stop();
-        throw HeaderDownloaderException("HeaderDownloader exception, cause: sentry do not support eth/66 protocol");
-    }
-}
-
-void HeaderDownloader::receive_messages() {
-    // todo: handle connection loss and retry (at each re-connect re-send status)
-
-    // send status to sentry
-    send_status();
-
-    // send a message subscription
-    rpc::ReceiveMessages message_subscription(rpc::ReceiveMessages::Scope::BlockAnnouncements);
-    sentry_.exec_remotely(message_subscription);
-
-    // receive messages
-    while (!is_stopping() && !sentry_.is_stopping() && message_subscription.receive_one_reply()) {
-        auto message = InboundBlockAnnouncementMessage::make(message_subscription.reply(), working_chain_, sentry_);
-
-        log::Info() << "HeaderDownloader received message " << *message;
-
-        messages_.push(message);
-    }
-
-    log::Warning() << "HeaderDownloader execution loop is stopping...";
+    messages_.push(message);
 }
 
 void HeaderDownloader::execution_loop() {
     using namespace std::chrono_literals;
 
+    sentry_.subscribe(SentryClient::Scope::BlockAnnouncements,
+                      [this](const sentry::InboundMessage& msg) { receive_message(msg); });
+
     while (!is_stopping() && !sentry_.is_stopping()) {
+        log::Trace() << "HeaderDownloader status: " << working_chain_.human_readable_status();
+
         // pop a message from the queue
         std::shared_ptr<Message> message;
         bool present = messages_.timed_wait_and_pop(message, 1000ms);
         if (!present) continue;  // timeout, needed to check exiting_
 
-        log::Trace() << "HeaderDownloader processing message " << message->name() << " "
-                            << "Status: " << working_chain_.human_readable_verbose_status();
+        log::Trace() << "HeaderDownloader processing message " << message->name();
 
         // process the message (command pattern)
         message->execute();
@@ -106,6 +71,8 @@ void HeaderDownloader::execution_loop() {
             log::Info() << "HeaderDownloader sent message " << *out_message;
         }
     }
+
+    log::Warning() << "HeaderDownloader execution_loop is stopping...";
 }
 
 auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
@@ -163,7 +130,7 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
                 // todo: log progress - logProgressHeaders(logPrefix, prevProgress, progress)
                 log::Trace() << "HeaderDownloader status: current persisted height="
-                                    << persisted_chain_.highest_height();
+                             << persisted_chain_.highest_height();
             } else {
                 std::this_thread::sleep_for(1s);
             }

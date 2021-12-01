@@ -22,8 +22,12 @@
 #include <boost/asio/ip/address.hpp>
 
 #include <silkworm/chain/config.hpp>
+#include <silkworm/chain/genesis.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/common/settings.hpp>
+#include <silkworm/db/access_layer.hpp>
+#include <silkworm/db/genesis.hpp>
+#include <silkworm/db/stages.hpp>
 
 using namespace silkworm;
 
@@ -114,9 +118,9 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
 
     // Chain options
-    std::map<std::string, uint32_t> chains_map{{"mainnet", 1}, {"ropsten", 3}, {"rinkeby", 4}, {"goerli", 5}};
+    auto chains_map{get_known_chains_map()};
     auto& chain_opts = *cli.add_option_group("Chain", "Chain selection options");
-    auto chain_opts_chain_name = chain_opts.add_option("--chain", "Name of the testnet to join (default: \"mainnet\")")
+    auto chain_opts_chain_name = chain_opts.add_option("--chain", "Name of the network to join (default: \"mainnet\")")
                                      ->transform(CLI::Transformer(chains_map, CLI::ignore_case));
     chain_opts
         .add_option("--networkid", node_settings.network_id,
@@ -189,10 +193,7 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
 
     // Set chain
     if (chain_opts_chain_name->count()) {
-        node_settings.network_id = lookup_chain_id_by_name(chain_opts_chain_name->as<std::string>());
-        if (!node_settings.network_id) {
-            throw std::invalid_argument("Unknown chain " + chain_opts_chain_name->as<std::string>());
-        }
+        node_settings.network_id = chain_opts_chain_name->as<uint32_t>();
     }
 }
 
@@ -214,37 +215,92 @@ int main(int argc, char* argv[]) {
             config.create =
                 !std::filesystem::exists(db::get_datafile_path(node_settings.data_directory->chaindata().path()));
         }
+
+        // Open chaindata environment and check tables are consistent
+        log::Message() << "Opening Database chaindata path " << node_settings.data_directory->chaindata().path();
         auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_config)};
-        if (!chaindata_env.is_empty()) {
-            // Todo(Andrea) check db compatibility and proper initialization of chain config
-        } else {
+
+        // Deploy and check tables
+        {
             auto tx{chaindata_env.start_write()};
-            db::table::create_all(tx);
+            db::table::check_or_create_chaindata_tables(tx);
+            tx.commit();
         }
+
+        // Check db is initialized with chain config
+        {
+            db::RWTxn tx(chaindata_env);
+            auto db_chain_config{db::read_chain_config(*tx)};
+            while (!db_chain_config.has_value()) {
+                auto source_data{read_genesis_data(node_settings.network_id)};
+                auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
+                if (genesis_json.is_discarded()) {
+                    throw std::runtime_error("Could not initialize db for chain id " +
+                                             std::to_string(node_settings.network_id) + " : unknown network");
+                }
+                log::Message() << "Initializing chain configuration for chain id " << node_settings.network_id;
+                db::initialize_genesis(*tx, genesis_json, /*allow_exceptions=*/true);
+                tx.commit();
+                log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
+                db_chain_config = db::read_chain_config(*tx);
+            }
+
+            if (db_chain_config.value().chain_id != node_settings.network_id) {
+                throw std::runtime_error("Incompatible network id. Command line expects " +
+                                         std::to_string(node_settings.network_id) + "; Database has " +
+                                         std::to_string(db_chain_config.value().chain_id));
+            }
+            std::string chain_name{" unknown/custom network"};
+            auto chains_map{get_known_chains_map()};
+            for (auto& [name, id] : chains_map) {
+                if (id == db_chain_config.value().chain_id) {
+                    chain_name = name;
+                    break;
+                }
+            }
+            log::Message() << "Starting Silkworm on " << chain_name;
+        }
+
+        // Detect prune-mode and verify is compatible
+        {
+            db::RWTxn tx(chaindata_env);
+            auto db_prune_mode{db::read_prune_mode(*tx)};
+            if (db_prune_mode != node_settings.prune_mode) {
+                // In case we have mismatching modes (cli != db) we prevent
+                // further execution ONLY if we've already synced something
+                auto header_download_progress{db::stages::read_stage_progress(*tx, db::stages::kHeadersKey)};
+                if (header_download_progress) {
+                    throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
+                                             node_settings.prune_mode.to_string() + " got " +
+                                             db_prune_mode.to_string());
+                }
+                db::write_prune_mode(*tx, node_settings.prune_mode);
+                tx.commit();
+                db_prune_mode = db::read_prune_mode(*tx);
+            }
+            log::Message() << "Prune mode " << db_prune_mode.to_string();
+        }
+
+        // Do sync stuff here
+
+        log::Message() << "Closing Database chaindata path " << node_settings.data_directory->chaindata().path();
         chaindata_env.close();
 
     } catch (const CLI::ParseError& ex) {
         return cli.exit(ex);
+    } catch (const std::runtime_error& ex) {
+        log::Error() << ex.what();
+        return -1;
     } catch (const std::invalid_argument& ex) {
-        std::cerr << "Invalid argument :" << ex.what() << "\n" << std::endl;
+        std::cerr << "\tInvalid argument :" << ex.what() << "\n" << std::endl;
         return -3;
     } catch (const std::exception& ex) {
-        std::cerr << "Unexpected error : " << ex.what() << "\n" << std::endl;
+        std::cerr << "\tUnexpected error : " << ex.what() << "\n" << std::endl;
         return -4;
     } catch (...) {
-        std::cerr << "Unexpected undefined error\n" << std::endl;
+        std::cerr << "\tUnexpected undefined error\n" << std::endl;
         return -99;
     }
-
-    log::Critical() << "This is a critical message";
-    log::Error() << "This is a error message";
-    log::Warning() << "This is a warning message";
-    log::Info() << "This is a info message";
-    log::Debug() << "This is a debug message";
-    log::Trace() << "This is a trace message";
-    log::set_verbosity(log::Level::kNone);
-    log::Trace() << "This is a trace message";
-    log::Message() << "Simple message";
 
     return 0;
 }

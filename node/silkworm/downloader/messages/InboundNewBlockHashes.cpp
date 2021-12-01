@@ -71,13 +71,15 @@ void InboundNewBlockHashes::execute() {
         msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
         // send msg_reply
-        log::Trace() << "Replying to " << identify(*this) << " with send_message_by_id";
-        rpc::SendMessageById send_message_by_id(peerId_, std::move(msg_reply));
-        sentry_.exec_remotely(send_message_by_id);
+        log::Trace() << "Replying to " << identify(*this) << " with send_message_by_id, content: " << reply;
+        rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
+        rpc.do_not_throw_on_failure();
 
-        [[maybe_unused]] sentry::SentPeers peers = send_message_by_id.reply();
+        sentry_.exec_remotely(rpc);
+
+        [[maybe_unused]] sentry::SentPeers peers = rpc.reply();
         log::Trace() << "Received rpc result of " << identify(*this) << ": "
-                            << std::to_string(peers.peers_size()) + " peer(s)";
+                     << std::to_string(peers.peers_size()) + " peer(s)";
 
         // calculate top seen block height
         max = std::max(max, packet_[i].number);

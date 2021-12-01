@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
             txn.commit();
         }
 
-        stagedsync::TransactionManager tm{env};
+        db::RWTxn tm{env};
         stagedsync::success_or_throw(stagedsync::stage_log_index(tm, data_dir.etl().path()));
     } catch (const std::exception& ex) {
         log::Error() << ex.what();

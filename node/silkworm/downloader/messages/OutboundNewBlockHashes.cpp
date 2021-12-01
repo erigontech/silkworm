@@ -29,6 +29,11 @@ void OutboundNewBlockHashes::execute() {
 
     auto& announces_to_do = working_chain_.announces_to_do();
 
+    if (announces_to_do.empty()) {
+        log::Trace() << "No OutboundNewBlockHashes (announcements) message to send";
+        return;
+    }
+
     for (auto& announce : announces_to_do) {
         // packet_.emplace_back(announce.hash, announce.number); // requires c++20
         packet_.push_back({announce.hash, announce.number});
@@ -42,23 +47,31 @@ void OutboundNewBlockHashes::execute() {
     rlp::encode(rlp_encoding, packet_);
     request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
-    log::Trace() << "Sending message OutboundNewBlockHashes with send_message_to_all, content:" << packet_;
+    log::Trace() << "Sending message OutboundNewBlockHashes (announcements) with send_message_to_all, content:"
+                 << packet_;
 
     rpc::SendMessageToAll rpc{std::move(request)};
 
     seconds_t timeout = 1s;
     rpc.timeout(timeout);
+    rpc.do_not_throw_on_failure();
 
     sentry_.exec_remotely(rpc);
 
+    if (!rpc.status().ok()) {
+        log::Trace() << "Failure of rpc OutboundNewBlockHashes " << packet_ << ": " << rpc.status().error_message();
+        return;
+    }
+
     sentry::SentPeers peers = rpc.reply();
-    log::Trace() << "Received rpc result of OutboundNewBlockHashes " << packet_ << ": "
-                        << std::to_string(peers.peers_size()) + " peer(s)";
+    log::Trace() << "Received rpc result of OutboundNewBlockHashes: "
+                 << std::to_string(peers.peers_size()) + " peer(s)";
 
     announces_to_do.clear();  // clear announces from the queue
 }
 
 std::string OutboundNewBlockHashes::content() const {
+    if (packet_.empty()) return "- no announcements to do, not sent -";
     std::stringstream content;
     content << packet_;
     return content.str();

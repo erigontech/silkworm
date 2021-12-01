@@ -27,7 +27,7 @@ namespace silkworm::stagedsync {
 
 namespace fs = std::filesystem;
 
-StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
+StageResult stage_tx_lookup(db::RWTxn& txn, const std::filesystem::path& etl_path, uint64_t prune_from) {
     fs::create_directories(etl_path);
     etl::Collector collector(etl_path, /* flush size */ 512_Mebi);
 
@@ -123,7 +123,7 @@ StageResult stage_tx_lookup(TransactionManager& txn, const std::filesystem::path
     return StageResult::kSuccess;
 }
 
-StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::path&, uint64_t unwind_to) {
+StageResult unwind_tx_lookup(db::RWTxn& txn, const std::filesystem::path&, uint64_t unwind_to) {
     if (unwind_to >= db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey)) {
         return StageResult::kSuccess;
     }
@@ -136,8 +136,8 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
     Bytes start(8, '\0');
     endian::store_big_u64(&start[0], unwind_to + 1);
 
-    log::Info() << "Started Tx Lookup Unwind, from: "
-                       << db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey) << " to: " << unwind_to;
+    log::Info() << "Started Tx Lookup Unwind, from: " << db::stages::read_stage_progress(*txn, db::stages::kTxLookupKey)
+                << " to: " << unwind_to;
 
     auto bodies_data{bodies_table.lower_bound(db::to_slice(start), /*throw_notfound*/ false)};
     while (bodies_data) {
@@ -153,9 +153,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
             while (tx_data && tx_count < body.txn_count) {
                 auto tx_view{db::from_slice(tx_data.value)};
                 auto hash{keccak256(tx_view)};
-                if (lookup_table.seek(mdbx::slice{hash.bytes, kHashLength})) {
-                    lookup_table.erase();
-                }
+                lookup_table.erase(db::to_slice(hash.bytes));
                 ++tx_count;
                 tx_data = transactions_table.to_next(/*throw_notfound*/ false);
             }
@@ -172,7 +170,7 @@ StageResult unwind_tx_lookup(TransactionManager& txn, const std::filesystem::pat
     return StageResult::kSuccess;
 }
 
-StageResult prune_tx_lookup(TransactionManager& txn, const std::filesystem::path&, uint64_t prune_from) {
+StageResult prune_tx_lookup(db::RWTxn& txn, const std::filesystem::path&, uint64_t prune_from) {
     auto lookup_table{db::open_cursor(*txn, db::table::kTxLookup)};
 
     log::Info() << "Pruning Transaction Lookup from: " << prune_from;

@@ -39,16 +39,24 @@ class ByteView : public std::basic_string_view<uint8_t> {
   public:
     constexpr ByteView() noexcept = default;
 
-    constexpr ByteView(const std::basic_string_view<uint8_t>& other)
+    constexpr ByteView(const std::basic_string_view<uint8_t>& other) noexcept
         : std::basic_string_view<uint8_t>{other.data(), other.length()} {}
 
-    ByteView(const Bytes& str) : std::basic_string_view<uint8_t>{str.data(), str.length()} {}
+    ByteView(const Bytes& str) noexcept : std::basic_string_view<uint8_t>{str.data(), str.length()} {}
 
-    constexpr ByteView(const uint8_t* data, size_type length) : std::basic_string_view<uint8_t>{data, length} {}
+    constexpr ByteView(const uint8_t* data, size_type length) noexcept
+        : std::basic_string_view<uint8_t>{data, length} {}
 
-    constexpr ByteView(const uint8_t*) = delete;  // provide explicit length instead
+    template <std::size_t N>
+    constexpr ByteView(const uint8_t (&array)[N]) noexcept : std::basic_string_view<uint8_t>{array, N} {}
 
-    constexpr ByteView(std::nullptr_t) = delete;
+    template <std::size_t N>
+    constexpr ByteView(const std::array<uint8_t, N>& array) noexcept
+        : std::basic_string_view<uint8_t>{array.data(), N} {}
+
+    constexpr ByteView(const evmc::address& address) noexcept : ByteView{address.bytes} {}
+
+    constexpr ByteView(const evmc::bytes32& hash) noexcept : ByteView{hash.bytes} {}
 };
 
 using BlockNum = uint64_t;

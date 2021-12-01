@@ -61,7 +61,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
             // Something bad had happened. Not possible sender stage is ahead of bodies
             // Maybe we need to unwind ?
             log::Error() << "Bad progress sequence. Sender stage progress " << senders_stage_progress
-                                << " while Bodies stage " << bodies_stage_progress;
+                         << " while Bodies stage " << bodies_stage_progress;
             return StageResult::kInvalidProgress;
         }
         to = std::min(bodies_stage_progress, to);
@@ -108,7 +108,7 @@ StageResult RecoveryFarm::recover(BlockNum to) {
             // either the db misses a block or blocks are not persisted
             // in sequence
             log::Error() << "Senders' recovery : Bad block sequence expected " << expected_block_num << " got "
-                                << reached_block_num;
+                         << reached_block_num;
             stage_result = StageResult::kBadChainSequence;
             break;
         }
@@ -247,8 +247,8 @@ bool RecoveryFarm::collect_workers_results() {
         auto status = worker.first->get_status();
         switch (status) {
             case RecoveryWorker::Status::Error:
-                log::Error()
-                    << "Got error from worker #" << worker.first->get_id() << " : " << worker.first->get_error();
+                log::Error() << "Got error from worker #" << worker.first->get_id() << " : "
+                             << worker.first->get_error();
                 ret = false;
                 break;
             case RecoveryWorker::Status::Aborted:
@@ -267,18 +267,17 @@ bool RecoveryFarm::collect_workers_results() {
                             collector_.collect(etl::Entry{etl_key, etl_data});
                         }
                         log::Info() << "ETL Load [1/2] : "
-                                                     << (boost::format(fmt_row) % worker_results.back().first %
-                                                         total_recovered_transactions_ % workers_in_flight_.load());
+                                    << (boost::format(fmt_row) % worker_results.back().first %
+                                        total_recovered_transactions_ % workers_in_flight_.load());
                         worker_results.resize(0);
 
                     } catch (const std::exception& ex) {
-                        log::Error()
-                            << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
+                        log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();
                         ret = false;
                     }
                 } else {
                     log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : "
-                                                  << "could not pull results from worker #" << worker.first->get_id();
+                                 << "could not pull results from worker #" << worker.first->get_id();
                     ret = false;
                 }
                 break;
@@ -323,36 +322,32 @@ StageResult RecoveryFarm::transform_and_fill_batch(const ChainConfig& config, ui
                 break;
             case Transaction::Type::kEip2930:
                 if (!has_berlin) {
-                    log::Error()
-                        << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
-                        << " for transaction #" << tx_id << " in block #" << block_num << " before Berlin";
+                    log::Error() << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
+                                 << " for transaction #" << tx_id << " in block #" << block_num << " before Berlin";
                     return StageResult::kInvalidTransaction;
                 }
                 break;
             case Transaction::Type::kEip1559:
                 if (!has_london) {
-                    log::Error()
-                        << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
-                        << " for transaction #" << tx_id << " in block #" << block_num << " before London";
+                    log::Error() << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
+                                 << " for transaction #" << tx_id << " in block #" << block_num << " before London";
                     return StageResult::kInvalidTransaction;
                 }
                 break;
         }
 
         if (!silkworm::ecdsa::is_valid_signature(transaction.r, transaction.s, has_homestead)) {
-            log::Error()
-                << "Got invalid signature for transaction #" << tx_id << " in block #" << block_num;
+            log::Error() << "Got invalid signature for transaction #" << tx_id << " in block #" << block_num;
             return StageResult::kInvalidTransaction;
         }
 
         if (transaction.chain_id.has_value()) {
             if (!has_spurious_dragon) {
-                log::Error() << "EIP-155 signature for transaction #" << tx_id << " in block #"
-                                              << block_num << " before Spurious Dragon";
+                log::Error() << "EIP-155 signature for transaction #" << tx_id << " in block #" << block_num
+                             << " before Spurious Dragon";
                 return StageResult::kInvalidTransaction;
             } else if (transaction.chain_id.value() != config.chain_id) {
-                log::Error()
-                    << "EIP-155 invalid signature for transaction #" << tx_id << " in block #" << block_num;
+                log::Error() << "EIP-155 invalid signature for transaction #" << tx_id << " in block #" << block_num;
                 return StageResult::kInvalidTransaction;
             }
         }
@@ -394,33 +389,32 @@ bool RecoveryFarm::dispatch_batch() {
             batch_.resize(0);
             workers_in_flight_++;
             return true;
-        } else {
-            // Do we have ready results from workers that we need to harvest ?
-            it = as_range::find_if(workers_, [](const worker_pair& w) {
-                auto s = static_cast<int>(w.first->get_status());
-                return (s >= 2);
-            });
-            if (it != workers_.end()) {
-                if (!collect_workers_results()) {
-                    return false;
-                }
+        }
+
+        // Do we have ready results from workers that we need to harvest ?
+        it = as_range::find_if(workers_, [](const worker_pair& w) {
+            auto s = static_cast<int>(w.first->get_status());
+            return (s >= 2);
+        });
+        if (it != workers_.end()) {
+            if (!collect_workers_results()) {
+                return false;
+            }
+            continue;
+        }
+
+        // We don't have a worker available
+        // Maybe we can create a new one if available
+        if (workers_.size() != max_workers_) {
+            if (initialize_new_worker()) {
                 continue;
             }
-
-            // We don't have a worker available
-            // Maybe we can create a new one if available
-            if (workers_.size() != max_workers_) {
-                if (initialize_new_worker()) {
-                    continue;
-                }
-                log::Info()
-                    << "Max recovery workers adjusted " << max_workers_ << " -> " << workers_.size();
-                max_workers_ = workers_.size();  // Don't try to spawn new workers. Maybe we're OOM
-            }
-
-            // No other option than wait a while and retry
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            log::Info() << "Max recovery workers adjusted " << max_workers_ << " -> " << workers_.size();
+            max_workers_ = workers_.size();  // Don't try to spawn new workers. Maybe we're OOM
         }
+
+        // No other option than wait a while and retry
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     return false;
 }
@@ -458,15 +452,14 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         while (data.done) {
             reached_block_num = endian::load_big_u64(static_cast<uint8_t*>(data.key.iov_base));
             if (reached_block_num != expected_block_num) {
-                log::Error()
-                    << "Bad block number sequence ! Expected " << expected_block_num << " got " << reached_block_num;
+                log::Error() << "Bad block number sequence ! Expected " << expected_block_num << " got "
+                             << reached_block_num;
                 return StageResult::kBadChainSequence;
             }
 
             if (data.value.length() != kHashLength) {
-                log::Error()
-                    << "Bad header hash at height " << reached_block_num << " (hash len == " << data.value.length()
-                    << " - should be " << kHashLength << ")";
+                log::Error() << "Bad header hash at height " << reached_block_num
+                             << " (hash len == " << data.value.length() << " - should be " << kHashLength << ")";
                 return StageResult::kBadBlockHash;
             }
 
@@ -490,8 +483,7 @@ StageResult RecoveryFarm::fill_canonical_headers(BlockNum from, BlockNum to) noe
         return StageResult::kSuccess;
 
     } catch (const mdbx::exception& ex) {
-        log::Error() << "Unexpected database error in " << std::string(__FUNCTION__) << " : "
-                                      << ex.what();
+        log::Error() << "Unexpected database error in " << std::string(__FUNCTION__) << " : " << ex.what();
         return StageResult::kDbError;
     } catch (const std::exception& ex) {
         log::Error() << "Unexpected error in " << std::string(__FUNCTION__) << " : " << ex.what();

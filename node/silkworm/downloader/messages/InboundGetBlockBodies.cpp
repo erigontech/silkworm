@@ -56,6 +56,11 @@ void InboundGetBlockBodies::execute() {
     reply.requestId = packet_.requestId;
     reply.request = body_retrieval.recover(packet_.request);
 
+    if (reply.request.empty()) {
+        log::Warning() << "Not replying to " << identify(*this) << ", no blocks found";
+        return;
+    }
+
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, reply);
 
@@ -64,14 +69,22 @@ void InboundGetBlockBodies::execute() {
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     log::Trace() << "Replying to " << identify(*this) << " using send_message_by_id with "
-                        << reply.request.size() << " bodies";
+                 << reply.request.size() << " bodies";
 
-    rpc::SendMessageById send_message_by_id(peerId_, std::move(msg_reply));
-    sentry_.exec_remotely(send_message_by_id);
+    rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
+    rpc.do_not_throw_on_failure();
+    sentry_.exec_remotely(rpc);
 
-    [[maybe_unused]] sentry::SentPeers peers = send_message_by_id.reply();
-    log::Trace() << "Received rpc result of " << identify(*this) << ": "
-                        << std::to_string(peers.peers_size()) + " peer(s)";
+    if (rpc.status().ok()) {
+        sentry::SentPeers peers = rpc.reply();
+        log::Trace() << "Received rpc result of " << identify(*this) << ": "
+                     << std::to_string(peers.peers_size()) + " peer(s)";
+    }
+    else {
+        log::Trace() << "Failure of rpc " << identify(*this) << ": "
+                     << rpc.status().error_message();
+    }
+
 }
 
 uint64_t InboundGetBlockBodies::reqId() const { return packet_.requestId; }

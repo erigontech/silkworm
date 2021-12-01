@@ -22,6 +22,7 @@
 #include <cstring>
 
 #include <ethash/keccak.hpp>
+#include <gsl/span>
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/util.hpp>

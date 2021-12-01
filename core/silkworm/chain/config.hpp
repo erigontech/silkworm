@@ -20,6 +20,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <variant>
 
 #include <evmc/evmc.h>
 #include <nlohmann/json.hpp>
@@ -185,29 +186,11 @@ inline constexpr ChainConfig kGoerliConfig{
     },
 };
 
-inline const ChainConfig* lookup_chain_config(uint64_t chain_id) noexcept {
-    switch (chain_id) {
-        case kMainnetConfig.chain_id:
-            return &kMainnetConfig;
-        case kRopstenConfig.chain_id:
-            return &kRopstenConfig;
-        case kRinkebyConfig.chain_id:
-            return &kRinkebyConfig;
-        case kGoerliConfig.chain_id:
-            return &kGoerliConfig;
-        default:
-            return nullptr;
-    }
-}
+//! \brief Looksup a chain config provided its network id or its common name
+const ChainConfig* lookup_chain_config(std::variant<uint64_t, std::string> identifier) noexcept;
 
-inline uint64_t lookup_chain_id_by_name(const std::string& name) noexcept {
-    uint64_t ret{0};
-    if (iequals(name, "mainnet")) ret = kMainnetConfig.chain_id;
-    if (iequals(name, "ropsten")) ret = kRopstenConfig.chain_id;
-    if (iequals(name, "rinkeby")) ret = kRinkebyConfig.chain_id;
-    if (iequals(name, "goerli")) ret = kGoerliConfig.chain_id;
-    return ret;
-}
+//! \brief Returns a map known chains names mapped to their respective chain ids
+std::map<std::string, uint64_t> get_known_chains_map() noexcept;
 
 }  // namespace silkworm
 

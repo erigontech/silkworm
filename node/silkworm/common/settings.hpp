@@ -29,14 +29,14 @@
 namespace silkworm {
 
 struct NodeSettings {
-    std::unique_ptr<DataDirectory> data_directory;    // Pointer to data folder
-    db::EnvConfig chaindata_config{};                 // Chaindata db config
-    uint64_t network_id{kMainnetConfig.chain_id};     // Network/Chain id
-    size_t batch_size{512_Mebi};                      // Batch size to use in stages
-    size_t etl_buffer_size{256_Mebi};                 // Buffer size for ETL operations
-    std::string private_api_addr{"127.0.0.1:9090"};   // Default API listener
-    bool fake_pow{false};                             // Whether to check for PoW or not
-    db::PruneMode prune_mode{db::kDefaultPruneMode};  // Prune mode
+    std::unique_ptr<DataDirectory> data_directory;   // Pointer to data folder
+    db::EnvConfig chaindata_config{};                // Chaindata db config
+    uint64_t network_id{kMainnetConfig.chain_id};    // Network/Chain id
+    size_t batch_size{512_Mebi};                     // Batch size to use in stages
+    size_t etl_buffer_size{256_Mebi};                // Buffer size for ETL operations
+    std::string private_api_addr{"127.0.0.1:9090"};  // Default API listener
+    bool fake_pow{false};                            // Whether to check for PoW or not
+    std::unique_ptr<db::PruneMode> prune_mode;       // Prune mode
 };
 
 }  // namespace silkworm

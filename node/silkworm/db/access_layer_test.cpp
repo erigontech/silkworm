@@ -236,48 +236,88 @@ namespace db {
             CHECK(default_mode.to_string() == "default");
 
             // No value in db -> no pruning
-            auto prune_mode{db::read_prune_mode(txn)};
-            CHECK(prune_mode.to_string() == "--prune=");
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            {
+                auto prune_mode{db::read_prune_mode(txn)};
+                CHECK(prune_mode.to_string() == "--prune=");
+                CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+            }
 
             // Cross-check we have the same value
-            prune_mode = db::read_prune_mode(txn);
-            CHECK(prune_mode.to_string() == "--prune=");
+            {
+                auto prune_mode = db::read_prune_mode(txn);
+                CHECK(prune_mode.to_string() == "--prune=");
+            }
 
-            // Set default prune value for History
-            prune_mode.history.emplace(kDefaultPruneThreshold);
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
-            CHECK(prune_mode.to_string() == "--prune=h");
+            // Provide different combinations of cli arguments
+            std::string prune, expected;
+            std::optional<BlockNum> olderHistory, olderReceipts, olderTxIndex, olderCallTraces;
+            std::optional<BlockNum> beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces;
 
-            // Set default prune value for receipts
-            prune_mode.receipts.emplace(kDefaultPruneThreshold);
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
-            CHECK(prune_mode.to_string() == "--prune=hr");
+            prune = "hrtc";
+            expected = "--prune=hrtc";
+            {
+                auto prune_mode = db::parse_prune_mode(prune,  //
+                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
+                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
+                prune_mode = std::make_unique<db::PruneMode>(std::move(db::read_prune_mode(txn)));
+                REQUIRE(prune_mode->to_string() == expected);
+            }
 
-            // Set default prune value for tx_index and CallTraces
-            prune_mode.tx_index.emplace(kDefaultPruneThreshold);
-            prune_mode.call_traces.emplace(kDefaultPruneThreshold);
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
-            CHECK(prune_mode.to_string() == "--prune=hrtc");
+            prune = "htc";
+            olderHistory.emplace(8000);
+            beforeReceipts.emplace(10000);
+            expected = "--prune=tc --prune.h.older=8000 --prune.r.before=10000";
+            {
+                auto prune_mode = db::parse_prune_mode(prune,  //
+                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
+                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
+                prune_mode = std::make_unique<db::PruneMode>(std::move(db::read_prune_mode(txn)));
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE(prune_mode->history() != prune_mode->receipts());
+                REQUIRE(prune_mode->tx_index() == prune_mode->call_traces());
+            }
 
-            // Set non-default prune value for History
-            prune_mode.history.emplace(1'000u);
-            CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
-            prune_mode = db::read_prune_mode(txn);
-            CHECK(prune_mode.to_string() == "--prune=rtc --prune.h.older=1000");
+            prune = "htc";
+            olderHistory.emplace(kFullImmutabilityThreshold);
+            beforeReceipts.emplace(10000);
+            expected = "--prune=htc --prune.r.before=10000";
+            {
+                auto prune_mode = db::parse_prune_mode(prune,  //
+                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
+                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
+                prune_mode = std::make_unique<db::PruneMode>(std::move(db::read_prune_mode(txn)));
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE(prune_mode->receipts().value() == 10000);
+                REQUIRE(prune_mode->history().value() == kFullImmutabilityThreshold);
+            }
 
-            // Parse from string with one discrete value
-            std::string mode_str{"hrtc"};
-            prune_mode = db::parse_prune_mode(mode_str, 1'000u);
-            CHECK(prune_mode.to_string() == "--prune=rtc --prune.h.older=1000");
-
-            // Parse from string with all discrete values
-            prune_mode = db::parse_prune_mode(mode_str, 1'000u, 999u, 998u, 997u);
-            CHECK(prune_mode.to_string() ==
-                  "--prune= --prune.h.older=1000 --prune.r.older=999 --prune.t.older=998 --prune.c.older=997");
+            prune = "hrtc";
+            olderHistory.emplace(kFullImmutabilityThreshold + 5);
+            beforeReceipts.reset();
+            beforeCallTraces.emplace(10000);
+            expected = "--prune=rt --prune.h.older=90005 --prune.c.before=10000";
+            {
+                auto prune_mode = db::parse_prune_mode(prune,  //
+                                                       olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
+                                                       beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
+                prune_mode = std::make_unique<db::PruneMode>(std::move(db::read_prune_mode(txn)));
+                REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE(prune_mode->receipts().value() == kFullImmutabilityThreshold);
+                REQUIRE(prune_mode->tx_index().value() == kFullImmutabilityThreshold);
+                REQUIRE(prune_mode->call_traces().type() == BlockAmount::Type::kBefore);
+                REQUIRE(prune_mode->history().value_from_head(1'000'000) == 909'995);
+                REQUIRE(prune_mode->receipts().value_from_head(1'000'000) == 910'000);
+                REQUIRE(prune_mode->tx_index().value_from_head(1'000'000) == 910'000);
+                REQUIRE(prune_mode->call_traces().value_from_head(1'000'000) == 989'999);
+            }
         }
     }
 

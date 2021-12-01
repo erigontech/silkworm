@@ -19,6 +19,9 @@
 
 #include <chrono>
 
+#include <magic_enum.hpp>
+
+#include <silkworm/common/assert.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
 #include <silkworm/rlp/encode.hpp>
@@ -32,7 +35,10 @@ class Hash : public evmc::bytes32 {
     using evmc::bytes32::bytes32;
 
     Hash() = default;
-    Hash(ByteView bv) { std::memcpy(bytes, bv.data(), length()); }
+    Hash(ByteView bv) {
+        std::memcpy(bytes, bv.data(), length());
+        SILKWORM_ASSERT(bv.length() == length());
+    }
 
     static constexpr size_t length() { return sizeof(evmc::bytes32); }
 
@@ -40,6 +46,9 @@ class Hash : public evmc::bytes32 {
     static Hash from_hex(const std::string& hex) {
         return Hash(evmc::literals::internal::from_hex<bytes32>(hex.c_str()));
     }
+
+    // conversion to ByteView is handled in ByteView class,
+    // conversion operator Byte() { return {bytes, length()}; } is handled elsewhere
 
     static_assert(sizeof(evmc::bytes32) == 32);
 };
@@ -92,9 +101,14 @@ struct PeerPenalization {
     PeerPenalization(Penalty p, PeerId id) : penalty(p), peerId(id) {}  // unnecessary with c++20
 };
 
+inline std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization) {
+    os << "peerId=" << penalization.peerId << " cause=" << magic_enum::enum_name(penalization.penalty);
+    return os;
+}
+
 struct Announce {
     Hash hash;
-    BlockNum number;
+    BlockNum number = 0;
 };
 
 namespace rlp {

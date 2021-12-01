@@ -18,6 +18,7 @@
 
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
+#include <silkworm/downloader/messages/OutboundGetBlockHeaders.hpp>
 #include <silkworm/downloader/rpc/PeerMinBlock.hpp>
 #include <silkworm/downloader/rpc/PenalizePeer.hpp>
 
@@ -36,46 +37,6 @@ InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg, Work
     log::Trace() << "Received message " << *this;
 }
 
-/* blockHeaders66 processing from Erigon
- if segments, penalty, err := cs.Hd.SplitIntoSegments(headersRaw, headers); err == nil {
-     if penalty == headerdownload.NoPenalty {
-         var canRequestMore bool
-         for _, segment := range segments {
-             newBlock = false;
-             requestMore := cs.Hd.ProcessSegment(segment, newBlock, string(gointerfaces.ConvertH512ToBytes(in.PeerId)))
-             canRequestMore = canRequestMore || requestMore
-         }
-
-         if canRequestMore {
-                 currentTime := uint64(time.Now().Unix())
-                 req, penalties := cs.Hd.RequestMoreHeaders(currentTime)
-                 if req != nil {
-                     if peer := cs.SendHeaderRequest(ctx, req); peer != nil {
-                         timeOut = 5;
-                         cs.Hd.SentRequest(req, currentTime, timeOut)
-                         log.Debug("Sent request", "height", req.Number)
-                     }
-                 }
-                 cs.Penalize(ctx, penalties)
-             }
-     } else {
-         outreq := proto_sentry.PenalizePeerRequest{
-             PeerId:  in.PeerId,
-             Penalty: proto_sentry.PenaltyKind_Kick,
-         }
-         if _, err1 := sentry.PenalizePeer(ctx, &outreq, &grpc.EmptyCallOption{}); err1 != nil {
-             log.Error("Could not send penalty", "err", err1)
-         }
-     }
- } else {
-     return fmt.Errorf("singleHeaderAsSegment failed: %v", err)
- }
- outreq := proto_sentry.PeerMinBlockRequest{
-     PeerId:   in.PeerId,
-     MinBlock: heighestBlock,
- }
- */
-
 void InboundBlockHeaders::execute() {
     using namespace std;
 
@@ -84,27 +45,33 @@ void InboundBlockHeaders::execute() {
         highestBlock = std::max(highestBlock, header.number);
     }
 
+    // Save the headers
     auto [penalty, requestMoreHeaders] = working_chain_.accept_headers(packet_.request, peerId_);
 
-    // Erigon here calls request_more_headers(). Do we have to do the same? What if header downloader is not in a
-    // forward phase? todo: decide if we need to call request_more_headers() here
-    /* If we need to implement as Erigon does:
+    // If the working chain need more headers we issue an header request here (header downloader issues this request
+    // periodically, but it could not be in a forward phase at this moment)
     if (penalty == Penalty::NoPenalty && requestMoreHeaders) {
         OutboundGetBlockHeaders message(working_chain_, sentry_);
         message.execute();
     }
-    */
-    log::Warning() << "Handling of " << identify(*this) << " is incomplete";
 
+    // Reply
     if (penalty != Penalty::NoPenalty) {
         log::Trace() << "Replying to " << identify(*this) << " with penalize_peer";
+        log::Trace() << "Penalizing " << PeerPenalization(penalty, peerId_);
         rpc::PenalizePeer penalize_peer(peerId_, penalty);
+        penalize_peer.do_not_throw_on_failure();
         sentry_.exec_remotely(penalize_peer);
     }
 
     log::Trace() << "Replying to " << identify(*this) << " with peer_min_block";
-    rpc::PeerMinBlock peer_min_block(peerId_, highestBlock);
-    sentry_.exec_remotely(peer_min_block);
+    rpc::PeerMinBlock rpc(peerId_, highestBlock);
+    rpc.do_not_throw_on_failure();
+    sentry_.exec_remotely(rpc);
+
+    if (!rpc.status().ok()) {
+        log::Trace() << "Failure of the replay to rpc " << identify(*this) << ": " << rpc.status().error_message();
+    }
 }
 
 uint64_t InboundBlockHeaders::reqId() const { return packet_.requestId; }

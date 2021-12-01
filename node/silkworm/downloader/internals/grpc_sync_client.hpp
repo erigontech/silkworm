@@ -137,9 +137,13 @@ class UnaryCall : public Call<STUB> {
     using base_t::status_, base_t::context_, base_t::terminated_;
 
     UnaryCall(std::string name, procedure_t proc, request_t request)
-        : base_t{std::move(name)}, procedure_{proc}, request_{std::move(request)} {}
+        : base_t{std::move(name)}, procedure_{proc}, request_{std::move(request)} {
+        context_.set_wait_for_ready(true); // not fail if the channel is in TRANSIENT_FAILURE, instead queue the RPCs
+                                           // until the channel is READY.
+    }                                      // When channel is in CONNECTING, READY, or IDLE it doesn't fail anyway
 
     void deadline(time_point_t tp) { context_.set_deadline(tp); }
+    void do_not_throw_on_failure() { not_throw_on_failure_ = true; }
 
     void timeout(seconds_t delta) {
         time_point_t deadline = std::chrono::system_clock::now() + delta;
@@ -155,9 +159,11 @@ class UnaryCall : public Call<STUB> {
     void execute(typename STUB::Stub* stub) override {
         status_ = (stub->*procedure_)(&context_, request_, &reply_);  // invoke remotely
 
-        if (!status_.ok()) throw CallException("UnaryCall exception, cause: " + status_.error_message());
-
         terminated_ = true;
+
+        if (!not_throw_on_failure_ && !status_.ok()) {
+            throw CallException("UnaryCall exception, cause: " + status_.error_message());
+        }
 
         base_t::reply_received();
     }
@@ -167,6 +173,8 @@ class UnaryCall : public Call<STUB> {
     request_t request_;  // Container for the request we send to the server
 
     reply_t reply_;  // Container for the data we expect from the server.
+
+    bool not_throw_on_failure_{false};
 };
 
 // OutStreamingCall ----------------------------------------------------------------------------------------------

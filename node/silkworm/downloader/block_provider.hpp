@@ -18,18 +18,13 @@
 
 #include <silkworm/chain/identity.hpp>
 #include <silkworm/concurrency/active_component.hpp>
-
-#include "internals/db_tx.hpp"
-#include "internals/types.hpp"
-#include "messages/InboundMessage.hpp"
-#include "sentry_client.hpp"
+#include <silkworm/concurrency/containers.hpp>
+#include <silkworm/downloader/internals/db_tx.hpp>
+#include <silkworm/downloader/internals/types.hpp>
+#include <silkworm/downloader/messages/InboundMessage.hpp>
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm {
-
-class BlockProviderException : public std::runtime_error {
-  public:
-    explicit BlockProviderException(std::string cause) : std::runtime_error(cause) {}
-};
 
 /*
  * BlockProvider
@@ -38,13 +33,8 @@ class BlockProviderException : public std::runtime_error {
  * BlockProvider depends upon a SentryClient to connect to the remote sentry to receive requests and send responses.
  */
 class BlockProvider : public ActiveComponent {  // an active component that must run always
-
-    ChainIdentity chain_identity_;
-    Db::ReadOnlyAccess db_access_;
-    SentryClient& sentry_;
-
   public:
-    BlockProvider(SentryClient& sentry, Db::ReadOnlyAccess db_access, ChainIdentity chain_identity);
+    BlockProvider(SentryClient& sentry, const Db::ReadOnlyAccess& db_access);
     BlockProvider(const BlockProvider&) = delete;  // not copyable
     BlockProvider(BlockProvider&&) = delete;       // nor movable
     ~BlockProvider();
@@ -52,8 +42,13 @@ class BlockProvider : public ActiveComponent {  // an active component that must
     /*[[long_running]]*/ void execution_loop() override;  // main loop, receive messages from sentry and process them
 
   private:
-    void send_status();
-    void process_message(std::shared_ptr<InboundMessage> message);
+    using MessageQueue = ConcurrentQueue<std::shared_ptr<InboundMessage>>;  // used internally to store new messages
+
+    void receive_message(const sentry::InboundMessage&);
+
+    Db::ReadOnlyAccess db_access_;
+    SentryClient& sentry_;
+    MessageQueue messages_{};  // thread safe queue where to receive messages from sentry
 };
 
 }  // namespace silkworm

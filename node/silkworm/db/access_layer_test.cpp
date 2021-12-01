@@ -261,7 +261,7 @@ namespace db {
                                                        beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
-                prune_mode = std::make_unique<db::PruneMode>(std::move(db::read_prune_mode(txn)));
+                prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
                 REQUIRE(prune_mode->to_string() == expected);
             }
 
@@ -275,7 +275,7 @@ namespace db {
                                                        beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
-                prune_mode = std::make_unique<db::PruneMode>(std::move(db::read_prune_mode(txn)));
+                prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE(prune_mode->history() != prune_mode->receipts());
                 REQUIRE(prune_mode->tx_index() == prune_mode->call_traces());
@@ -291,7 +291,7 @@ namespace db {
                                                        beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
-                prune_mode = std::make_unique<db::PruneMode>(std::move(db::read_prune_mode(txn)));
+                prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE(prune_mode->receipts().value() == 10000);
                 REQUIRE(prune_mode->history().value() == kFullImmutabilityThreshold);
@@ -308,7 +308,7 @@ namespace db {
                                                        beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
-                prune_mode = std::make_unique<db::PruneMode>(std::move(db::read_prune_mode(txn)));
+                prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
                 REQUIRE(prune_mode->to_string() == expected);
                 REQUIRE(prune_mode->receipts().value() == kFullImmutabilityThreshold);
                 REQUIRE(prune_mode->tx_index().value() == kFullImmutabilityThreshold);
@@ -316,7 +316,8 @@ namespace db {
                 REQUIRE(prune_mode->history().value_from_head(1'000'000) == 909'995);
                 REQUIRE(prune_mode->receipts().value_from_head(1'000'000) == 910'000);
                 REQUIRE(prune_mode->tx_index().value_from_head(1'000'000) == 910'000);
-                REQUIRE(prune_mode->call_traces().value_from_head(1'000'000) == 989'999);
+                REQUIRE(prune_mode->call_traces().type() == BlockAmount::Type::kBefore);
+                REQUIRE(prune_mode->call_traces().value_from_head(1'000'000) == 9'999);
             }
         }
     }

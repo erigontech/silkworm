@@ -19,6 +19,8 @@
 
 #include <chrono>
 
+#include <magic_enum.hpp>
+
 #include <silkworm/common/assert.hpp>
 #include <silkworm/common/util.hpp>
 #include <silkworm/rlp/decode.hpp>
@@ -100,42 +102,13 @@ struct PeerPenalization {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization) {
-    os << "peerId=" << penalization.peerId << " cause=";
-    switch(penalization.penalty) {
-        case BadBlockPenalty:
-            os << "BadBlockPenalty";
-            break;
-        case DuplicateHeaderPenalty:
-            os << "DuplicateHeaderPenalty";
-            break;
-        case WrongChildBlockHeightPenalty:
-            os << "WrongChildBlockHeightPenalty";
-            break;
-        case WrongChildDifficultyPenalty:
-            os << "WrongChildDifficultyPenalty";
-            break;
-        case InvalidSealPenalty:
-            os << "InvalidSealPenalty";
-            break;
-        case TooFarFuturePenalty:
-            os << "TooFarFuturePenalty";
-            break;
-        case TooFarPastPenalty:
-            os << "TooFarPastPenalty";
-            break;
-        case AbandonedAnchorPenalty:
-            os << "AbandonedAnchorPenalty";
-            break;
-        default:
-            os << "UnknownPenalty";
-            break;
-    }
+    os << "peerId=" << penalization.peerId << " cause=" << magic_enum::enum_name(penalization.penalty);
     return os;
 }
 
 struct Announce {
     Hash hash;
-    BlockNum number;
+    BlockNum number = 0;
 };
 
 namespace rlp {

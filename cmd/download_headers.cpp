@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
         message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
 
         // Block provider - provides headers and bodies to external peers
-        BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}, chain_identity};
+        BlockProvider block_provider{sentry, Db::ReadOnlyAccess{db}};
         block_request_processing = std::thread([&block_provider]() { block_provider.execution_loop(); });
 
         // Stage1 - Header downloader - example code

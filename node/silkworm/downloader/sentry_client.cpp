@@ -18,12 +18,12 @@
 
 #include <silkworm/common/log.hpp>
 
-#include "rpc/SetStatus.hpp"
 #include "rpc/ReceiveMessages.hpp"
+#include "rpc/SetStatus.hpp"
 
 namespace silkworm {
 
-SentryClient::SentryClient(std::string sentry_addr)
+SentryClient::SentryClient(const std::string& sentry_addr)
     : base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {}
 
 SentryClient::Scope SentryClient::scope(const sentry::InboundMessage& message) {

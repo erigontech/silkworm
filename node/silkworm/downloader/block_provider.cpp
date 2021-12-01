@@ -24,12 +24,11 @@
 #include "internals/header_retrieval.hpp"
 #include "messages/InboundMessage.hpp"
 #include "rpc/ReceiveMessages.hpp"
-#include "rpc/SetStatus.hpp"
 
 namespace silkworm {
 
-BlockProvider::BlockProvider(SentryClient& sentry, Db::ReadOnlyAccess db_access, ChainIdentity chain_identity)
-    : chain_identity_(std::move(chain_identity)), db_access_{db_access}, sentry_{sentry} {}
+BlockProvider::BlockProvider(SentryClient& sentry, const Db::ReadOnlyAccess& db_access)
+    : db_access_{db_access}, sentry_{sentry} {}
 
 BlockProvider::~BlockProvider() {
     stop();
@@ -57,7 +56,7 @@ void BlockProvider::execution_loop() {
         if (!present) continue;  // timeout, needed to check exiting_
 
         // process the message (command pattern)
-        log::Info()  << "BlockProvider processing message " << *message;
+        log::Info() << "BlockProvider processing message " << *message;
         message->execute();
     }
 

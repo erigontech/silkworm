@@ -34,7 +34,7 @@ namespace silkworm {
  */
 class BlockProvider : public ActiveComponent {  // an active component that must run always
   public:
-    BlockProvider(SentryClient& sentry, Db::ReadOnlyAccess db_access, ChainIdentity chain_identity);
+    BlockProvider(SentryClient& sentry, const Db::ReadOnlyAccess& db_access);
     BlockProvider(const BlockProvider&) = delete;  // not copyable
     BlockProvider(BlockProvider&&) = delete;       // nor movable
     ~BlockProvider();
@@ -46,15 +46,9 @@ class BlockProvider : public ActiveComponent {  // an active component that must
 
     void receive_message(const sentry::InboundMessage&);
 
-    ChainIdentity chain_identity_;
     Db::ReadOnlyAccess db_access_;
     SentryClient& sentry_;
     MessageQueue messages_{};  // thread safe queue where to receive messages from sentry
-};
-
-class BlockProviderException : public std::runtime_error {
-  public:
-    explicit BlockProviderException(std::string cause) : std::runtime_error(cause) {}
 };
 
 }  // namespace silkworm

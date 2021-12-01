@@ -32,9 +32,6 @@ namespace silkworm {
  * It connects to the Sentry, send rpc and receive reply.
  */
 
-// An rpc
-using SentryRpc = rpc::Call<sentry::Sentry>;
-
 /*
  * A client to connect to a remote sentry
  * The remote sentry must implement the ethereum p2p protocol and must have an interface specified by sentry.proto
@@ -45,13 +42,13 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     using base_t = rpc::Client<sentry::Sentry>;
     using subscriber_t = std::function<void(const sentry::InboundMessage&)>;
 
-    explicit SentryClient(std::string sentry_addr);  // connect to the remote sentry
+    explicit SentryClient(const std::string& sentry_addr);  // connect to the remote sentry
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
 
     void set_status(Hash head_hash, BigInt head_td, const ChainIdentity&);  // init the remote sentry
 
-    using base_t::exec_remotely; // exec_remotely(SentryRpc& rpc) sends a rpc request to the remote sentry
+    using base_t::exec_remotely;  // exec_remotely(SentryRpc& rpc) sends a rpc request to the remote sentry
 
     enum Scope { BlockRequests = 0x01, BlockAnnouncements = 0x02, Other = 0x04 };
     // enum values enable bit masking, for example: cope = BlockRequests & BlockAnnouncements

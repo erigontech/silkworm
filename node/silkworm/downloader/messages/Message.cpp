@@ -22,7 +22,7 @@ namespace silkworm {
 
 /*
 Message::~Message() {
-    SILKWORM_LOG(LogDebug) << "Message destroyed\n";
+    SILKWORM_LOG(LogDebug) << "Message destroyed";
 }
 */
 

@@ -23,9 +23,9 @@ namespace silkworm::rpc {
 
 class ReceiveMessages : public rpc::OutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
   public:
-    enum Scope { BlockRequests, BlockAnnouncements };
+    ReceiveMessages(int scope);
 
-    ReceiveMessages(Scope scope);
+    static SentryClient::Scope scope(const sentry::InboundMessage&);
 };
 
 }  // namespace silkworm::rpc

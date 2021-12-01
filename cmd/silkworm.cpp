@@ -289,7 +289,7 @@ int main(int argc, char* argv[]) {
                 }
                 db::write_prune_mode(*tx, *node_settings.prune_mode);
                 tx.commit();
-                node_settings.prune_mode = std::make_unique<db::PruneMode>(std::move(db::read_prune_mode(*tx)));
+                node_settings.prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(*tx));
             }
             log::Message() << "Prune mode " << db_prune_mode.to_string();
         }

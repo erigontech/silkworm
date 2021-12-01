@@ -108,18 +108,18 @@ BlockNum BlockAmount::value_from_head(BlockNum stage_head) const {
     if (!enabled_ || !value_) {
         return 0;
     }
-    // See Erigon prune mode Distance interface
-    if (type_ == Type::kOlder) {
-        if (value_.value() > stage_head) {
-            return 0;
-        }
-        return stage_head - value_.value();
-    }
-    // See Erigon prune mode Before interface
-    if (value_.value() == 0) {
+    BlockNum tmpVal{value()};
+    if (tmpVal >= stage_head) {
         return 0;
     }
-    return stage_head - value_.value() - 1;
+    switch (type_) {
+        case Type::kOlder:  // See Erigon prune mode Distance interface
+            return stage_head - tmpVal;
+        case Type::kBefore:  // See Erigon prune mode Before interface
+            return tmpVal - 1;
+        default:
+            return 0;  // Should not happen
+    }
 }
 
 std::string PruneMode::to_string() const {
@@ -156,10 +156,11 @@ void write_prune_mode(mdbx::txn& txn, const PruneMode& value) {
     write_block_amount_for_key(target, kPruneModeCallTracesKey, value.call_traces());
 }
 
-std::unique_ptr<PruneMode> parse_prune_mode(std::string& mode, PruneDistance olderHistory, PruneDistance olderReceipts,
-                                            PruneDistance olderTxIndex, PruneDistance olderCallTraces,
-                                            PruneThreshold beforeHistory, PruneThreshold beforeReceipts,
-                                            PruneThreshold beforeTxIndex, PruneThreshold beforeCallTraces) {
+std::unique_ptr<PruneMode> parse_prune_mode(const std::string& mode, const PruneDistance& olderHistory,
+                                            const PruneDistance& olderReceipts, const PruneDistance& olderTxIndex,
+                                            const PruneDistance& olderCallTraces, const PruneThreshold& beforeHistory,
+                                            const PruneThreshold& beforeReceipts, const PruneThreshold& beforeTxIndex,
+                                            const PruneThreshold& beforeCallTraces) {
     std::unique_ptr<BlockAmount> history, receipts, tx_index, call_traces = std::make_unique<BlockAmount>();
 
     if (!mode.empty() && !(iequals(mode, "default") || iequals(mode, "disabled"))) {

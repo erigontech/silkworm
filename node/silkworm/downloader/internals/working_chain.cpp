@@ -55,7 +55,7 @@ bool WorkingChain::in_sync() const {
 }
 
 std::string WorkingChain::human_readable_status() const {
-    return std::to_string(anchors_.size()) + " anchors, " + std::to_string(links_.size()) + " links";
+    return std::to_string(links_.size()) + " links, " + std::to_string(anchors_.size()) + " anchors";
 }
 
 std::string WorkingChain::human_readable_verbose_status() const {
@@ -95,12 +95,12 @@ void WorkingChain::sync_current_state(BlockNum highest_in_db) {
 Headers WorkingChain::withdraw_stable_headers() {
     Headers stable_headers;
 
+    auto initial_highest_in_db = highest_in_db_;
+    log::Trace() << "WorkingChain: finding headers to persist on top of " << highest_in_db_;
+
     LinkList links_in_future;  // here we accumulate links that fail validation as "in the future"
 
     while (!insert_list_.empty()) {
-        // Make sure long insertions do not appear as a stuck stage headers
-        log::Info() << "WorkingChain: persisting headers (on top of " << highest_in_db_ << ")";
-
         // Choose a link at top
         auto link = insert_list_.top();  // connect or extend-up added one (or some if it has siblings)
 
@@ -120,8 +120,8 @@ Headers WorkingChain::withdraw_stable_headers() {
         if (assessment == Postpone) {
             links_in_future.push_back(link);
             log::Warning() << "WorkingChain: added future link,"
-                                  << " hash=" << link->hash << " height=" << link->blockHeight
-                                  << " timestamp=" << link->header->timestamp << ")";
+                           << " hash=" << link->hash << " height=" << link->blockHeight
+                           << " timestamp=" << link->header->timestamp << ")";
             continue;
         }
 
@@ -159,6 +159,18 @@ Headers WorkingChain::withdraw_stable_headers() {
         if (!link->next.empty()) {
             push_all(insert_list_, link->next);
         }
+
+        // Make sure long insertions do not appear as a stuck stage headers
+        if (stable_headers.size() % 1000 == 0) {
+            log::Info() << "WorkingChain: " << stable_headers.size() << " headers persisted on top of "
+                        << initial_highest_in_db << " (cont.)";
+        }
+    }
+
+    if (!stable_headers.empty()) {
+        log::Info() << "WorkingChain: " << stable_headers.size() << " headers persisted on top of "
+                    << initial_highest_in_db << " (from " << header_at(stable_headers.begin()).number << " to "
+                    << header_at(stable_headers.cbegin()).number << ")";
     }
 
     // Save memory
@@ -225,7 +237,7 @@ std::optional<GetBlockHeadersPacket66> WorkingChain::request_skeleton() {
     if (length > max_len) length = max_len;
     if (length == 0) {
         log::Debug() << "WorkingChain, no need for skeleton request (lowest_anchor = " << lowest_anchor
-                            << ", highest_in_db = " << highest_in_db_ << ")";
+                     << ", highest_in_db = " << highest_in_db_ << ")";
         return std::nullopt;
     }
 
@@ -297,7 +309,7 @@ auto WorkingChain::request_more_headers(time_point_t time_point, seconds_t timeo
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
             log::Warning() << "WorkingChain: invalidating anchor for suspected unavailability, "
-                                  << "height=" << anchor->blockHeight << "\n";
+                           << "height=" << anchor->blockHeight;
             invalidate(*anchor);
             anchors_.erase(anchor->parentHash);
             anchor_queue_.pop();
@@ -518,8 +530,7 @@ auto WorkingChain::process_segment(const Segment& segment, bool is_a_new_block, 
 void WorkingChain::reduce_links_to(size_t limit) {
     if (link_queue_.size() <= limit) return;  // does nothing
 
-    log::Debug() << "LinkQueue: too many links, cutting down from " << link_queue_.size() << " to "
-                        << link_limit;
+    log::Debug() << "LinkQueue: too many links, cutting down from " << link_queue_.size() << " to " << link_limit;
 
     while (link_queue_.size() > limit) {
         auto link = link_queue_.top();

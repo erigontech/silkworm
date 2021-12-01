@@ -210,6 +210,10 @@ using LinkLIFOQueue = std::stack<std::shared_ptr<Link>>;
 
 using Headers = std::vector<std::shared_ptr<BlockHeader>>;
 
+inline BlockHeader& header_at(Headers::iterator it) { return *it->get(); }
+inline const BlockHeader& header_at(Headers::const_iterator it) { return *it->get(); }
+
+
 struct Segment;  // forward declaration
 
 // A list of (possibly unrelated) headers

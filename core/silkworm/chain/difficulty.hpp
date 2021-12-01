@@ -23,7 +23,7 @@
 
 namespace silkworm {
 
-inline constexpr uint64_t kMinDifficulty{131072};
+inline constexpr uint64_t kMinDifficulty{0x20000};
 
 // Canonical difficulty of a block header.
 // See Section 4.3.4 "Block Header Validity" of the Yellow Paper and also

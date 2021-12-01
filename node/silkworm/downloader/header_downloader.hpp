@@ -78,19 +78,18 @@ class Stage {
  *
  */
 class HeaderDownloader : public Stage, public ActiveComponent {
-    ChainIdentity chain_identity_;
     Db::ReadWriteAccess db_access_;
     SentryClient& sentry_;
 
   public:
-    HeaderDownloader(SentryClient& sentry, Db::ReadWriteAccess db_access, ChainIdentity chain_identity);
+    HeaderDownloader(SentryClient& sentry, const Db::ReadWriteAccess& db_access, const ChainIdentity& chain_identity);
     HeaderDownloader(const HeaderDownloader&) = delete;  // not copyable
     HeaderDownloader(HeaderDownloader&&) = delete;       // nor movable
     ~HeaderDownloader();
 
     Stage::Result forward(bool first_sync) override;  // go forward, downloading headers
     Stage::Result unwind_to(BlockNum new_height,
-                            Hash bad_block = {}) override;  // go backward, unwinding headers to new_height
+                            Hash bad_block) override;  // go backward, unwinding headers to new_height
 
     /*[[long_running]]*/ void execution_loop() override;  // process messages popping them from the queue
 
@@ -126,12 +125,6 @@ class HeaderDownloader : public Stage, public ActiveComponent {
                                                    // outside
     };
     */
-};
-
-// custom exception
-class HeaderDownloaderException : public std::runtime_error {
-  public:
-    explicit HeaderDownloaderException(const std::string& cause) : std::runtime_error(cause) {}
 };
 
 }  // namespace silkworm

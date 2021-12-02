@@ -47,6 +47,7 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     SentryClient(SentryClient&&) = delete;
 
     void set_status(Hash head_hash, BigInt head_td, const ChainIdentity&);  // init the remote sentry
+    void hand_shake(); // needed by the remote sentry, also check the protocol version
 
     using base_t::exec_remotely;  // exec_remotely(SentryRpc& rpc) sends a rpc request to the remote sentry
 
@@ -61,7 +62,6 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
 
   protected:
     void publish(const sentry::InboundMessage&);  // notifying registered subscribers
-    void hand_shake(); // needed by the remote sentry, also check the protocol version
 
     std::map<Scope, std::list<subscriber_t>> subscribers_;  // todo: optimize
 };

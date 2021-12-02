@@ -88,6 +88,7 @@ int main(int argc, char* argv[]) {
         // Sentry client - connects to sentry
         SentryClient sentry{sentry_addr};
         sentry.set_status(head_hash, head_td, chain_identity);
+        sentry.hand_shake();
         message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
 
         // Block provider - provides headers and bodies to external peers

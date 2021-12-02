@@ -233,7 +233,7 @@ namespace db {
         SECTION("Prune Mode") {
             // Uninitialized mode
             PruneMode default_mode{};
-            CHECK(default_mode.to_string() == "default");
+            CHECK(default_mode.to_string() == "--prune=");
 
             // No value in db -> no pruning
             {

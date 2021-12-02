@@ -23,7 +23,7 @@
 
 namespace silkworm::db {
 
-inline constexpr const BlockNum kFullImmutabilityThreshold{90'000};
+inline constexpr BlockNum kFullImmutabilityThreshold{90'000};
 
 // TODO(Andrea) Prune mode persistence (as in Erigon) is excessively convoluted
 // Need refactoring when/if Erigon db compatibility can be broken
@@ -65,16 +65,13 @@ class BlockAmount {
 
 class PruneMode {
   public:
-    explicit PruneMode() : initialized_{false}, history_(), receipts_(), tx_index_(), call_traces_(){};
-    explicit PruneMode(bool initialized)
-        : initialized_{initialized}, history_(), receipts_(), tx_index_(), call_traces_(){};
+    explicit PruneMode() : history_(), receipts_(), tx_index_(), call_traces_(){};
     explicit PruneMode(BlockAmount& history, BlockAmount& receipts, BlockAmount& tx_index, BlockAmount& call_traces)
-        : initialized_{true},
-          history_{std::move(history)},
+        : history_{std::move(history)},
           receipts_{std::move(receipts)},
           tx_index_{std::move(tx_index)},
           call_traces_{std::move(call_traces)} {};
-    [[nodiscard]] bool initialized() const { return initialized_; }
+
     [[nodiscard]] const BlockAmount& history() const { return history_; }
     [[nodiscard]] const BlockAmount& receipts() const { return receipts_; }
     [[nodiscard]] const BlockAmount& tx_index() const { return tx_index_; }
@@ -89,15 +86,12 @@ class PruneMode {
     bool operator!=(const PruneMode& other) const { return !(this->operator==(other)); }
 
   private:
-    const bool initialized_;         // Whether this class is initialized or default
     const BlockAmount history_;      // Holds the pruning threshold for history
     const BlockAmount receipts_;     // Holds the pruning threshold for receipts
     const BlockAmount tx_index_;     // Holds the pruning threshold for tx_index
     const BlockAmount call_traces_;  // Holds the pruning threshold for call traces
 };
 
-//! \brief Default PruneMode
-inline static const PruneMode kDefaultPruneMode(true);
 
 //! \brief Reads pruning mode from db
 //! \param [in] txn : a db transaction

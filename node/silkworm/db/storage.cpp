@@ -123,9 +123,6 @@ BlockNum BlockAmount::value_from_head(BlockNum stage_head) const {
 }
 
 std::string PruneMode::to_string() const {
-    if (!initialized_) {
-        return "default";
-    }
 
     std::string short_form{"--prune="};
     std::string long_form{};

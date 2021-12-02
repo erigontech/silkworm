@@ -507,7 +507,9 @@ std::atomic<size_t> total_passed{0};
 std::atomic<size_t> total_failed{0};
 std::atomic<size_t> total_skipped{0};
 
-void run_test_file(const fs::path& file_path, RunResults (*runner)(const nlohmann::json&)) {
+using RunnerFunc = RunResults (*)(const nlohmann::json&);
+
+void run_test_file(const fs::path& file_path, RunnerFunc runner) {
     std::ifstream in{file_path.string()};
     nlohmann::json json;
 
@@ -696,35 +698,24 @@ int main(int argc, char* argv[]) {
 
     const fs::path root_dir{tests_path};
 
-    // TODO(yperbasis) unify the 3 loops
+    static const std::map<fs::path, RunnerFunc> kTestTypes{
+        {kDifficultyDir, difficulty_tests},
+        {kBlockchainDir, blockchain_test},
+        {kTransactionDir, transaction_test},
+    };
 
-    for (auto i = fs::recursive_directory_iterator(root_dir / kDifficultyDir); i != fs::recursive_directory_iterator{};
-         ++i) {
-        if (fs::is_regular_file(i->path())) {
-            const fs::path path{*i};
-            thread_pool.push_task([path]() { run_test_file(path, difficulty_tests); });
-        }
-    }
+    for (const auto& entry : kTestTypes) {
+        const fs::path& dir{entry.first};
+        const RunnerFunc runner{entry.second};
 
-    for (auto i = fs::recursive_directory_iterator(root_dir / kBlockchainDir); i != fs::recursive_directory_iterator{};
-         ++i) {
-        if (exclude_test(*i, root_dir, include_slow_tests)) {
-            ++total_skipped;
-            i.disable_recursion_pending();
-        } else if (fs::is_regular_file(i->path())) {
-            const fs::path path{*i};
-            thread_pool.push_task([path]() { run_test_file(path, blockchain_test); });
-        }
-    }
-
-    for (auto i = fs::recursive_directory_iterator(root_dir / kTransactionDir); i != fs::recursive_directory_iterator{};
-         ++i) {
-        if (exclude_test(*i, root_dir, include_slow_tests)) {
-            ++total_skipped;
-            i.disable_recursion_pending();
-        } else if (fs::is_regular_file(i->path())) {
-            const fs::path path{*i};
-            thread_pool.push_task([path]() { run_test_file(path, transaction_test); });
+        for (auto i = fs::recursive_directory_iterator(root_dir / dir); i != fs::recursive_directory_iterator{}; ++i) {
+            if (exclude_test(*i, root_dir, include_slow_tests)) {
+                ++total_skipped;
+                i.disable_recursion_pending();
+            } else if (fs::is_regular_file(i->path())) {
+                const fs::path path{*i};
+                thread_pool.push_task([path, runner]() { run_test_file(path, runner); });
+            }
         }
     }
 

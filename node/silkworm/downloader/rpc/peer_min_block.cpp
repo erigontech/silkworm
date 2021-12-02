@@ -14,20 +14,14 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SETSTATUS_HPP
-#define SILKWORM_SETSTATUS_HPP
-
-#include <silkworm/chain/identity.hpp>
-#include <silkworm/downloader/internals/types.hpp>
-#include <silkworm/downloader/sentry_client.hpp>
+#include "peer_min_block.hpp"
 
 namespace silkworm::rpc {
 
-class SetStatus : public rpc::UnaryCall<sentry::Sentry, sentry::StatusData, sentry::SetStatusReply> {
-  public:
-    SetStatus(const ChainIdentity& chain_identity, Hash best_hash, BigInt total_difficulty);
-};
+PeerMinBlock::PeerMinBlock(const std::string& peerId, BlockNum minBlock)
+    : UnaryCall("PeerMinBlock", &sentry::Sentry::Stub::PeerMinBlock, {}) {
+    request_.set_allocated_peer_id(to_H512(peerId).release());
+    request_.set_min_block(minBlock);  // take ownership
+}
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_SETSTATUS_HPP

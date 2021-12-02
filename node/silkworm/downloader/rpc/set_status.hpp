@@ -14,19 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
-#define SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
+#ifndef SILKWORM_SET_STATUS_HPP
+#define SILKWORM_SET_STATUS_HPP
 
+#include <silkworm/chain/identity.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-class SendMessageByMinBlock
-    : public rpc::UnaryCall<sentry::Sentry, sentry::SendMessageByMinBlockRequest, sentry::SentPeers> {
+class SetStatus : public rpc::UnaryCall<sentry::Sentry, sentry::StatusData, sentry::SetStatusReply> {
   public:
-    SendMessageByMinBlock(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message);
+    SetStatus(const ChainIdentity& chain_identity, Hash best_hash, BigInt total_difficulty);
 };
 
 }  // namespace silkworm::rpc
 
-#endif  // SILKWORM_SENDMESSAGEBYMINBLOCK_HPP
+#endif  // SILKWORM_SET_STATUS_HPP

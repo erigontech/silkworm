@@ -61,6 +61,7 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
 
   protected:
     void publish(const sentry::InboundMessage&);  // notifying registered subscribers
+    void hand_shake(); // needed by the remote sentry, also check the protocol version
 
     std::map<Scope, std::list<subscriber_t>> subscribers_;  // todo: optimize
 };

@@ -14,16 +14,19 @@
    limitations under the License.
 */
 
-#include "PenalizePeer.hpp"
+#ifndef SILKWORM_SEND_MESSAGE_BY_MIN_BLOCK_HPP
+#define SILKWORM_SEND_MESSAGE_BY_MIN_BLOCK_HPP
+
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-PenalizePeer::PenalizePeer(const std::string& peerId, Penalty penalty)
-    : UnaryCall("PenalizePeer", &sentry::Sentry::Stub::PenalizePeer, {}) {
-    request_.set_allocated_peer_id(to_H512(peerId).release());
-
-    sentry::PenaltyKind raw_penalty = static_cast<sentry::PenaltyKind>(penalty);
-    request_.set_penalty(raw_penalty);
-}
+class SendMessageByMinBlock
+    : public rpc::UnaryCall<sentry::Sentry, sentry::SendMessageByMinBlockRequest, sentry::SentPeers> {
+  public:
+    SendMessageByMinBlock(BlockNum min_block, std::unique_ptr<sentry::OutboundMessageData> message);
+};
 
 }  // namespace silkworm::rpc
+
+#endif  // SILKWORM_SEND_MESSAGE_BY_MIN_BLOCK_HPP

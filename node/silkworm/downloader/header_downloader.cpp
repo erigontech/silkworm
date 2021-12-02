@@ -148,15 +148,14 @@ auto HeaderDownloader::forward(bool first_sync) -> Stage::Result {
 
         tx.commit();  // this will commit if the tx was started here
 
+        // todo: do we need a sentry.set_status() here?
+
         log::Info() << "HeaderDownloader forward operation completed";
     } catch (const std::exception& e) {
         log::Error() << "HeaderDownloader forward operation is stopping due to an exception: " << e.what();
         // tx rollback executed automatically if needed
         result.status = Stage::Result::Error;
     }
-
-    stop();  // todo: it is better to try to cancel the grpc call, do a message_subscription.try_cancel() or both
-    message_receiving.join();
 
     log::Debug() << "HeaderDownloader forward operation clean exit";
     return result;
@@ -184,6 +183,8 @@ auto HeaderDownloader::unwind_to(BlockNum new_height, Hash bad_block) -> Stage::
         update_bad_headers(std::move(bad_headers));
 
         tx.commit();
+
+        // todo: do we need a sentry.set_status() here?
 
         log::Info() << "HeaderDownloader unwind operation completed";
     } catch (const std::exception& e) {

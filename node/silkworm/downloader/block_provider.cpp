@@ -23,7 +23,7 @@
 
 #include "internals/header_retrieval.hpp"
 #include "messages/InboundMessage.hpp"
-#include "rpc/ReceiveMessages.hpp"
+#include "rpc/receive_messages.hpp"
 
 namespace silkworm {
 

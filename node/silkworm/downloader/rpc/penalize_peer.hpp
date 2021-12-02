@@ -1,7 +1,7 @@
 /*
    Copyright 2021 The Silkworm Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
+   Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
@@ -14,13 +14,18 @@ Licensed under the Apache License, Version 2.0 (the "License");
    limitations under the License.
 */
 
-#include "SendMessageToAll.hpp"
+#ifndef SILKWORM_PENALIZE_PEER_HPP
+#define SILKWORM_PENALIZE_PEER_HPP
+
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-SendMessageToAll::SendMessageToAll(std::unique_ptr<sentry::OutboundMessageData> message)
-    : UnaryCall("SendMessageToAll", &sentry::Sentry::Stub::SendMessageToAll, {}) {
-    request_.Swap(message.get());
-}
+class PenalizePeer : public rpc::UnaryCall<sentry::Sentry, sentry::PenalizePeerRequest, google::protobuf::Empty> {
+  public:
+    PenalizePeer(const std::string& peerId, Penalty penalty);
+};
 
 }  // namespace silkworm::rpc
+
+#endif  // SILKWORM_PENALIZE_PEER_HPP

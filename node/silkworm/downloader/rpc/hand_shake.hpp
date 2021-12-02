@@ -14,20 +14,20 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_RECEIVEMESSAGES_HPP
-#define SILKWORM_RECEIVEMESSAGES_HPP
+#ifndef SILKWORM_HAND_SHAKE_HPP
+#define SILKWORM_HAND_SHAKE_HPP
 
+#include <silkworm/chain/identity.hpp>
+#include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-class ReceiveMessages : public rpc::OutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
+  class HandShake : public rpc::UnaryCall<sentry::Sentry, google::protobuf::Empty, sentry::HandShakeReply> {
   public:
-    ReceiveMessages(int scope);
-
-    static SentryClient::Scope scope(const sentry::InboundMessage&);
+      HandShake();
 };
 
 }  // namespace silkworm::rpc
 
-#endif  // SILKWORM_RECEIVEMESSAGES_HPP
+#endif  // SILKWORM_HAND_SHAKE_HPP

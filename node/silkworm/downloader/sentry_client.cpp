@@ -20,6 +20,7 @@
 
 #include "rpc/hand_shake.hpp"
 #include "rpc/receive_messages.hpp"
+#include "rpc/receive_peer_stats.hpp"
 #include "rpc/set_status.hpp"
 
 namespace silkworm {
@@ -90,6 +91,33 @@ void SentryClient::execution_loop() {
     // note: do we need to handle connection loss with an outer loop that wait and than re-try hand_shake and so on? (we would redo set_status too)
 
     log::Warning() << "SentryClient execution loop is stopping...";
+}
+
+void SentryClient::stats_receiving_loop() {
+    // send a stats subscription
+    rpc::ReceivePeerStats receive_peer_stats;
+    exec_remotely(receive_peer_stats);
+
+    // receive stats
+    int active_peers = 0;
+    while (!is_stopping() && receive_peer_stats.receive_one_reply()) {
+        const sentry::PeersReply& stat = receive_peer_stats.reply();
+
+        auto peerId = hash_from_H256(stat.peer_id());
+        const char* event = "";
+        if (stat.event() == sentry::PeersReply::Connect) {
+            event = "connected";
+            active_peers++;
+        }
+        else {
+            event = "disconnected";
+            active_peers--;
+        }
+
+        log::Trace() << "SentryClient: peer " << peerId << " " << event << ", active " << active_peers;
+    }
+
+    log::Warning() << "SentryClient stats loop is stopping...";
 }
 
 }  // namespace silkworm

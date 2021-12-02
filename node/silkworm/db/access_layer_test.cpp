@@ -231,6 +231,11 @@ namespace db {
         auto& txn{context.txn()};
 
         SECTION("Prune Mode") {
+
+            BlockAmount blockAmount;
+            REQUIRE(blockAmount.value() == 0);
+            REQUIRE(blockAmount.value_from_head(1'000'000) == 0);
+
             // Uninitialized mode
             PruneMode default_mode{};
             CHECK(default_mode.to_string() == "--prune=");
@@ -248,6 +253,23 @@ namespace db {
                 CHECK(prune_mode.to_string() == "--prune=");
             }
 
+            // Write rubbish to prune mode
+            {
+                auto target{db::open_cursor(txn, table::kDatabaseInfo)};
+                std::string db_key{"pruneHistoryType"};
+                std::string db_value{"random"};
+                target.upsert(mdbx::slice(db_key), mdbx::slice(db_value));
+                bool hasThrown{false};
+                try {
+                    auto prune_mode = db::read_prune_mode(txn);
+                } catch (const std::runtime_error& ) {
+                    hasThrown = true;
+                }
+                REQUIRE(hasThrown);
+                db_value = "older";
+                target.upsert(mdbx::slice(db_key), mdbx::slice(db_value));
+            }
+
             // Provide different combinations of cli arguments
             std::string prune, expected;
             std::optional<BlockNum> olderHistory, olderReceipts, olderTxIndex, olderCallTraces;
@@ -263,6 +285,7 @@ namespace db {
                 REQUIRE_NOTHROW(db::write_prune_mode(txn, *prune_mode));
                 prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
                 REQUIRE(prune_mode->to_string() == expected);
+                REQUIRE(prune_mode->history().value_from_head(10) == 0);
             }
 
             prune = "htc";

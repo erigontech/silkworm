@@ -23,7 +23,7 @@ namespace silkworm::rpc {
 
 class PeerMinBlock : public rpc::UnaryCall<sentry::Sentry, sentry::PeerMinBlockRequest, google::protobuf::Empty> {
   public:
-    PeerMinBlock(const std::string& peerId, BlockNum minBlock);
+    PeerMinBlock(const PeerId& peerId, BlockNum minBlock);
 };
 
 }  // namespace silkworm::rpc

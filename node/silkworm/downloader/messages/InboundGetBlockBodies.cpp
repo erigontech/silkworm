@@ -29,7 +29,7 @@ InboundGetBlockBodies::InboundGetBlockBodies(const sentry::InboundMessage& msg, 
         throw std::logic_error("InboundGetBlockBodies received wrong InboundMessage");
     }
 
-    peerId_ = string_from_H512(msg.peer_id());
+    peerId_ = hash_from_H256(msg.peer_id());
 
     ByteView data = string_view_to_byte_view(msg.data());
     rlp::success_or_throw(rlp::decode(data, packet_));

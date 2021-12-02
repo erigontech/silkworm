@@ -150,10 +150,10 @@ jobs:
             tar xvf wasi-sdk-12.0-linux.tar.gz
             sudo mv wasi-sdk-12.0 /opt/wasi-sdk
       - run:
-          name: "Install texinfo"
+          name: "Install dependencies"
           command: |
             sudo apt-get update
-            sudo apt-get install -y texinfo
+            sudo apt-get install -y texinfo libtinfo5
       - run:
           name: "Install Wasmer"
           working_directory: ~/tmp2

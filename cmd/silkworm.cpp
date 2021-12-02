@@ -203,7 +203,6 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
                                                     olderHistory, olderReceipts, olderTxIndex, olderCallTraces,
                                                     beforeHistory, beforeReceipts, beforeTxIndex, beforeCallTraces);
 
-
     // Set chain
     if (chain_opts_chain_name->count()) {
         node_settings.network_id = chain_opts_chain_name->as<uint32_t>();
@@ -220,7 +219,8 @@ int main(int argc, char* argv[]) {
 
         parse_command_line(cli, argc, argv, log_settings, node_settings);
 
-        log::init(log_settings);                      // Initialize logging with cli settings
+        log::init(log_settings);  // Initialize logging with cli settings
+
         node_settings.data_directory->etl().clear();  // Clear previous etl files (if any)
         {
             auto& config = node_settings.chaindata_env_config;
@@ -254,8 +254,8 @@ int main(int argc, char* argv[]) {
                 log::Message() << "Initializing chain configuration for chain id " << node_settings.network_id;
                 db::initialize_genesis(*tx, genesis_json, /*allow_exceptions=*/true);
                 tx.commit();
-                log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
                 db_chain_config = db::read_chain_config(*tx);
+                log::Message() << "Initialized chain configuration " << db_chain_config.value().to_json().dump();
             }
 
             if (db_chain_config.value().chain_id != node_settings.network_id) {

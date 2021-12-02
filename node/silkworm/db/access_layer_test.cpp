@@ -261,7 +261,7 @@ namespace db {
                 target.upsert(mdbx::slice(db_key), mdbx::slice(db_value));
                 bool hasThrown{false};
                 try {
-                    auto prune_mode = db::read_prune_mode(txn);
+                    (void)db::read_prune_mode(txn);
                 } catch (const std::runtime_error& ) {
                     hasThrown = true;
                 }

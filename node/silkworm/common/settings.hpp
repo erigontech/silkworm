@@ -30,7 +30,7 @@ namespace silkworm {
 
 struct NodeSettings {
     std::unique_ptr<DataDirectory> data_directory;    // Pointer to data folder
-    db::EnvConfig chaindata_config{};                 // Chaindata db config
+    db::EnvConfig chaindata_env_config{};             // Chaindata db env config
     uint64_t network_id{kMainnetConfig.chain_id};     // Network/Chain id
     size_t batch_size{512_Mebi};                      // Batch size to use in stages
     size_t etl_buffer_size{256_Mebi};                 // Buffer size for ETL operations

@@ -95,8 +95,8 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
                         NodeSettings& node_settings) {
     // Node settings
     std::string datadir{DataDirectory::get_default_storage_path().string()};
-    std::string chaindata_max_size{human_size(node_settings.chaindata_config.max_size)};
-    std::string chaindata_growth_size{human_size(node_settings.chaindata_config.growth_size)};
+    std::string chaindata_max_size{human_size(node_settings.chaindata_env_config.max_size)};
+    std::string chaindata_growth_size{human_size(node_settings.chaindata_env_config.growth_size)};
     std::string batch_size{human_size(node_settings.batch_size)};
     std::string etl_buffer_size{human_size(node_settings.etl_buffer_size)};
     cli.add_option("--datadir", datadir, "Path to data directory", true);
@@ -177,9 +177,9 @@ void parse_command_line(CLI::App& cli, int argc, char* argv[], log::Settings& lo
 
     // Assign settings
     node_settings.data_directory = std::make_unique<DataDirectory>(datadir, /*create=*/true);
-    node_settings.chaindata_config.max_size = parse_size(chaindata_max_size).value();
-    node_settings.chaindata_config.growth_size = parse_size(chaindata_growth_size).value();
-    if (node_settings.chaindata_config.growth_size > node_settings.chaindata_config.max_size / 2) {
+    node_settings.chaindata_env_config.max_size = parse_size(chaindata_max_size).value();
+    node_settings.chaindata_env_config.growth_size = parse_size(chaindata_growth_size).value();
+    if (node_settings.chaindata_env_config.growth_size > node_settings.chaindata_env_config.max_size / 2) {
         throw std::invalid_argument("--chaindata.growthsize too wide");
     }
     node_settings.batch_size = parse_size(batch_size).value();
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
         log::init(log_settings);                      // Initialize logging with cli settings
         node_settings.data_directory->etl().clear();  // Clear previous etl files (if any)
         {
-            auto& config = node_settings.chaindata_config;
+            auto& config = node_settings.chaindata_env_config;
             config.path = node_settings.data_directory->chaindata().path().string();
             config.create =
                 !std::filesystem::exists(db::get_datafile_path(node_settings.data_directory->chaindata().path()));
@@ -218,7 +218,7 @@ int main(int argc, char* argv[]) {
 
         // Open chaindata environment and check tables are consistent
         log::Message() << "Opening Database chaindata path " << node_settings.data_directory->chaindata().path();
-        auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_config)};
+        auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_env_config)};
 
         // Deploy and check tables
         {

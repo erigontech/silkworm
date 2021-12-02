@@ -47,7 +47,7 @@ using namespace silkworm::consensus;
 
 namespace fs = std::filesystem;
 
-static const fs::path kDifficultyDir{"BasicTests"};
+static const fs::path kDifficultyDir{"DifficultyTests"};
 
 static const fs::path kBlockchainDir{"BlockchainTests"};
 
@@ -169,6 +169,8 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
              0,  // istanbul_block
              0,  // berlin_block
          },
+         std::nullopt,  // dao_block
+         0,             // muir_glacier_block
      }},
     {"London", test::kLondonConfig},
     {"FrontierToHomesteadAt5",
@@ -250,23 +252,28 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
              0,  // petersburg_block
              0,  // istanbul_block
          },
-         0,  // dao_block
-         0,  // muir_glacier_block
+         std::nullopt,  // dao_block
+         0,             // muir_glacier_block
      }},
-};
-
-static const std::map<std::string, ChainConfig> kDifficultyConfig{
-    {"difficulty.json", kMainnetConfig},
-    {"difficultyByzantium.json", kNetworkConfig.at("Byzantium")},
-    {"difficultyConstantinople.json", kNetworkConfig.at("Constantinople")},
-    {"difficultyCustomMainNetwork.json", kMainnetConfig},
-    {"difficultyEIP2384_random_to20M.json", kNetworkConfig.at("EIP2384")},
-    {"difficultyEIP2384_random.json", kNetworkConfig.at("EIP2384")},
-    {"difficultyEIP2384.json", kNetworkConfig.at("EIP2384")},
-    {"difficultyFrontier.json", kNetworkConfig.at("Frontier")},
-    {"difficultyHomestead.json", kNetworkConfig.at("Homestead")},
-    {"difficultyMainNetwork.json", kMainnetConfig},
-    {"difficultyRopsten.json", kRopstenConfig},
+    {"ArrowGlacier",
+     {
+         1,  // chain_id
+         SealEngineType::kNoProof,
+         {
+             0,  // homestead_block
+             0,  // tangerine_whistle_block
+             0,  // spurious_dragon_block
+             0,  // byzantium_block
+             0,  // constantinople_block
+             0,  // petersburg_block
+             0,  // istanbul_block
+             0,  // berlin_block
+             0,  // london_block
+         },
+         std::nullopt,  // dao_block
+         0,             // muir_glacier_block
+         0,             // arrow_glacier_block
+     }},
 };
 
 ThreadSafeExecutionStatePool execution_state_pool;
@@ -409,8 +416,37 @@ bool post_check(const InMemoryState& state, const nlohmann::json& expected) {
     return true;
 }
 
+struct [[nodiscard]] RunResults {
+    size_t passed{0};
+    size_t failed{0};
+    size_t skipped{0};
+
+    constexpr RunResults() = default;
+
+    constexpr RunResults(Status status) {
+        switch (status) {
+            case Status::kPassed:
+                passed = 1;
+                return;
+            case Status::kFailed:
+                failed = 1;
+                return;
+            case Status::kSkipped:
+                skipped = 1;
+                return;
+        }
+    }
+
+    RunResults& operator+=(const RunResults& rhs) {
+        passed += rhs.passed;
+        failed += rhs.failed;
+        skipped += rhs.skipped;
+        return *this;
+    }
+};
+
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html
-Status blockchain_test(const nlohmann::json& json_test, const std::optional<ChainConfig>&) {
+RunResults blockchain_test(const nlohmann::json& json_test) {
     Bytes genesis_rlp{from_hex(json_test["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
@@ -418,7 +454,7 @@ Status blockchain_test(const nlohmann::json& json_test, const std::optional<Chai
 
     InMemoryState state;
     std::string network{json_test["network"].get<std::string>()};
-    ChainConfig config{kNetworkConfig.at(network)};
+    const ChainConfig& config{kNetworkConfig.at(network)};
 
     auto consensus_engine{consensus::engine_factory(config)};
     if (!consensus_engine) {
@@ -458,51 +494,25 @@ Status blockchain_test(const nlohmann::json& json_test, const std::optional<Chai
     }
 }
 
-static void print_test_status(std::string_view key, Status status) {
+static void print_test_status(std::string_view key, const RunResults& res) {
     std::cout << key << " ";
     for (size_t i{key.length() + 1}; i < kColumnWidth; ++i) {
         std::cout << '.';
     }
-    switch (status) {
-        case Status::kPassed:
-            std::cout << "\033[0;32m  Passed\033[0m" << std::endl;
-            break;
-        case Status::kFailed:
-            std::cout << "\033[1;31m  Failed\033[0m" << std::endl;
-            break;
-        case Status::kSkipped:
-            std::cout << " Skipped" << std::endl;
-            break;
+    if (res.failed) {
+        std::cout << kColorMaroonHigh << "  Failed" << kColorReset << std::endl;
+    } else if (res.skipped) {
+        std::cout << " Skipped" << std::endl;
+    } else {
+        std::cout << kColorGreen << "  Passed" << kColorReset << std::endl;
     }
 }
-
-struct [[nodiscard]] RunResults {
-    size_t passed{0};
-    size_t failed{0};
-    size_t skipped{0};
-
-    void add(Status status) {
-        switch (status) {
-            case Status::kPassed:
-                ++passed;
-                break;
-            case Status::kFailed:
-                ++failed;
-                break;
-            case Status::kSkipped:
-                ++skipped;
-                break;
-        }
-    }
-};
 
 std::atomic<size_t> total_passed{0};
 std::atomic<size_t> total_failed{0};
 std::atomic<size_t> total_skipped{0};
 
-void run_test_file(const fs::path& file_path,
-                   Status (*runner)(const nlohmann::json&, const std::optional<ChainConfig>&),
-                   const std::optional<ChainConfig>& config = std::nullopt) {
+void run_test_file(const fs::path& file_path, RunResults (*runner)(const nlohmann::json&)) {
     std::ifstream in{file_path.string()};
     nlohmann::json json;
 
@@ -515,23 +525,23 @@ void run_test_file(const fs::path& file_path,
         return;
     }
 
-    RunResults res{};
+    RunResults total;
 
     for (const auto& test : json.items()) {
-        Status status{runner(test.value(), config)};
-        res.add(status);
-        if (status != Status::kPassed) {
-            print_test_status(test.key(), status);
+        const RunResults r{runner(test.value())};
+        total += r;
+        if (r.failed || r.skipped) {
+            print_test_status(test.key(), r);
         }
     }
 
-    total_passed += res.passed;
-    total_failed += res.failed;
-    total_skipped += res.skipped;
+    total_passed += total.passed;
+    total_failed += total.failed;
+    total_skipped += total.skipped;
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/transaction_tests.html
-Status transaction_test(const nlohmann::json& j, const std::optional<ChainConfig>&) {
+RunResults transaction_test(const nlohmann::json& j) {
     Transaction txn;
     bool decoded{false};
 
@@ -555,7 +565,7 @@ Status transaction_test(const nlohmann::json& j, const std::optional<ChainConfig
             }
         }
 
-        ChainConfig config{kNetworkConfig.at(entry.key())};
+        const ChainConfig& config{kNetworkConfig.at(entry.key())};
 
         /* pre_validate_transaction checks for invalid signature only if from is empty, which means sender recovery
          * phase (which btw also verifies signature) was not triggered yet. In the context of tests, instead, from is
@@ -604,7 +614,7 @@ Status transaction_test(const nlohmann::json& j, const std::optional<ChainConfig
 }
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/difficulty_tests.html
-Status difficulty_test(const nlohmann::json& j, const std::optional<ChainConfig>& config) {
+Status individual_difficulty_test(const nlohmann::json& j, const ChainConfig& config) {
     auto parent_timestamp{std::stoull(j["parentTimestamp"].get<std::string>(), nullptr, 0)};
     auto parent_difficulty{intx::from_string<intx::uint256>(j["parentDifficulty"].get<std::string>())};
     auto current_timestamp{std::stoull(j["currentTimestamp"].get<std::string>(), nullptr, 0)};
@@ -614,11 +624,18 @@ Status difficulty_test(const nlohmann::json& j, const std::optional<ChainConfig>
     bool parent_has_uncles{false};
     if (j.contains("parentUncles")) {
         auto parent_uncles{j["parentUncles"].get<std::string>()};
-        parent_has_uncles = from_hex(parent_uncles).value() != ByteView{kEmptyListHash};
+        if (parent_uncles == "0x00") {
+            parent_has_uncles = false;
+        } else if (parent_uncles == "0x01") {
+            parent_has_uncles = true;
+        } else {
+            std::cout << "Invalid parentUncles " << parent_uncles << std::endl;
+            return Status::kFailed;
+        }
     }
 
     intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp, parent_difficulty,
-                                                             parent_timestamp, parent_has_uncles, *config)};
+                                                             parent_timestamp, parent_has_uncles, config)};
     if (calculated_difficulty == current_difficulty) {
         return Status::kPassed;
     } else {
@@ -626,6 +643,25 @@ Status difficulty_test(const nlohmann::json& j, const std::optional<ChainConfig>
                   << hex(calculated_difficulty) << " != " << hex(current_difficulty) << std::endl;
         return Status::kFailed;
     }
+}
+
+RunResults difficulty_tests(const nlohmann::json& outer) {
+    RunResults res;
+
+    for (const auto& network : outer.items()) {
+        if (network.key() == "_info") {
+            continue;
+        }
+
+        const ChainConfig& config{kNetworkConfig.at(network.key())};
+
+        for (const auto& test : network.value().items()) {
+            const Status status{individual_difficulty_test(test.value(), config)};
+            res += status;
+        }
+    }
+
+    return res;
 }
 
 bool exclude_test(const fs::path& p, const fs::path& root_dir, bool include_slow_tests) {
@@ -665,10 +701,14 @@ int main(int argc, char* argv[]) {
 
     const fs::path root_dir{tests_path};
 
-    for (const auto& entry : kDifficultyConfig) {
-        const fs::path path{root_dir / kDifficultyDir / entry.first};
-        const ChainConfig config{entry.second};
-        thread_pool.push_task([path, config]() { run_test_file(path, difficulty_test, config); });
+    // TODO(yperbasis) unify the 3 loops
+
+    for (auto i = fs::recursive_directory_iterator(root_dir / kDifficultyDir); i != fs::recursive_directory_iterator{};
+         ++i) {
+        if (fs::is_regular_file(i->path())) {
+            const fs::path path{*i};
+            thread_pool.push_task([path]() { run_test_file(path, difficulty_tests); });
+        }
     }
 
     for (auto i = fs::recursive_directory_iterator(root_dir / kBlockchainDir); i != fs::recursive_directory_iterator{};

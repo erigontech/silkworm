@@ -74,9 +74,6 @@ void SentryClient::hand_shake() {
 }
 
 void SentryClient::execution_loop() {
-    // handshake
-    hand_shake();
-
     // send a message subscription
     rpc::ReceiveMessages message_subscription(Scope::BlockAnnouncements | Scope::BlockRequests);
     exec_remotely(message_subscription);

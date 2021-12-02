@@ -18,13 +18,14 @@
 
 #include <silkworm/common/log.hpp>
 
-#include "rpc/ReceiveMessages.hpp"
-#include "rpc/SetStatus.hpp"
+#include "rpc/hand_shake.hpp"
+#include "rpc/receive_messages.hpp"
+#include "rpc/set_status.hpp"
 
 namespace silkworm {
 
 SentryClient::SentryClient(const std::string& sentry_addr)
-    : base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {}
+        : base_t(grpc::CreateChannel(sentry_addr, grpc::InsecureChannelCredentials())) {}
 
 SentryClient::Scope SentryClient::scope(const sentry::InboundMessage& message) {
     switch (message.id()) {
@@ -45,7 +46,7 @@ void SentryClient::subscribe(Scope scope, subscriber_t callback) { subscribers_[
 
 void SentryClient::publish(const sentry::InboundMessage& message) {
     auto subscribers = subscribers_[scope(message)];
-    for (auto& subscriber : subscribers) {
+    for (auto& subscriber: subscribers) {
         subscriber(message);
     }
 }
@@ -53,19 +54,29 @@ void SentryClient::publish(const sentry::InboundMessage& message) {
 void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainIdentity& chain_identity) {
     rpc::SetStatus set_status{chain_identity, head_hash, head_td};
     exec_remotely(set_status);
-
     log::Info() << "SentryClient, set_status sent";
-    sentry::SetStatusReply reply = set_status.reply();
+}
+
+
+void SentryClient::hand_shake() {
+    rpc::HandShake hand_shake;
+    exec_remotely(hand_shake);
+
+    log::Info() << "SentryClient, hand_shake sent";
+    sentry::HandShakeReply reply = hand_shake.reply();
 
     sentry::Protocol supported_protocol = reply.protocol();
     if (supported_protocol != sentry::Protocol::ETH66) {
-        log::Critical() << "SentryClient: sentry do not support eth/66 protocol, is_stopping...";
+        log::Critical() << "SentryClient: sentry do not support eth/66 protocol, is stopping...";
         stop();
         throw SentryClientException("SentryClient exception, cause: sentry do not support eth/66 protocol");
     }
 }
 
 void SentryClient::execution_loop() {
+    // handshake
+    hand_shake();
+
     // send a message subscription
     rpc::ReceiveMessages message_subscription(Scope::BlockAnnouncements | Scope::BlockRequests);
     exec_remotely(message_subscription);
@@ -79,7 +90,7 @@ void SentryClient::execution_loop() {
         publish(message);
     }
 
-    // note: do we need to handle connection loss retrying re-connect? (we would redo set_status too)
+    // note: do we need to handle connection loss with an outer loop that wait and than re-try hand_shake and so on? (we would redo set_status too)
 
     log::Warning() << "SentryClient execution loop is stopping...";
 }

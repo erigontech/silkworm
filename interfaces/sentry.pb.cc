@@ -62,10 +62,30 @@ class SetStatusReplyDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<SetStatusReply> _instance;
 } _SetStatusReply_default_instance_;
+class HandShakeReplyDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<HandShakeReply> _instance;
+} _HandShakeReply_default_instance_;
 class MessagesRequestDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<MessagesRequest> _instance;
 } _MessagesRequest_default_instance_;
+class PeerCountRequestDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeerCountRequest> _instance;
+} _PeerCountRequest_default_instance_;
+class PeerCountReplyDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeerCountReply> _instance;
+} _PeerCountReply_default_instance_;
+class PeersRequestDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeersRequest> _instance;
+} _PeersRequest_default_instance_;
+class PeersReplyDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeersReply> _instance;
+} _PeersReply_default_instance_;
 }  // namespace sentry
 static void InitDefaultsscc_info_Forks_sentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -80,6 +100,19 @@ static void InitDefaultsscc_info_Forks_sentry_2eproto() {
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_Forks_sentry_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_Forks_sentry_2eproto}, {
       &scc_info_H256_types_2eproto.base,}};
+
+static void InitDefaultsscc_info_HandShakeReply_sentry_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::sentry::_HandShakeReply_default_instance_;
+    new (ptr) ::sentry::HandShakeReply();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_HandShakeReply_sentry_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_HandShakeReply_sentry_2eproto}, {}};
 
 static void InitDefaultsscc_info_InboundMessage_sentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -121,6 +154,32 @@ static void InitDefaultsscc_info_OutboundMessageData_sentry_2eproto() {
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_OutboundMessageData_sentry_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_OutboundMessageData_sentry_2eproto}, {}};
 
+static void InitDefaultsscc_info_PeerCountReply_sentry_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::sentry::_PeerCountReply_default_instance_;
+    new (ptr) ::sentry::PeerCountReply();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PeerCountReply_sentry_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PeerCountReply_sentry_2eproto}, {}};
+
+static void InitDefaultsscc_info_PeerCountRequest_sentry_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::sentry::_PeerCountRequest_default_instance_;
+    new (ptr) ::sentry::PeerCountRequest();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PeerCountRequest_sentry_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PeerCountRequest_sentry_2eproto}, {}};
+
 static void InitDefaultsscc_info_PeerMinBlockRequest_sentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -134,6 +193,33 @@ static void InitDefaultsscc_info_PeerMinBlockRequest_sentry_2eproto() {
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PeerMinBlockRequest_sentry_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PeerMinBlockRequest_sentry_2eproto}, {
       &scc_info_H256_types_2eproto.base,}};
+
+static void InitDefaultsscc_info_PeersReply_sentry_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::sentry::_PeersReply_default_instance_;
+    new (ptr) ::sentry::PeersReply();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PeersReply_sentry_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PeersReply_sentry_2eproto}, {
+      &scc_info_H256_types_2eproto.base,}};
+
+static void InitDefaultsscc_info_PeersRequest_sentry_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::sentry::_PeersRequest_default_instance_;
+    new (ptr) ::sentry::PeersRequest();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PeersRequest_sentry_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PeersRequest_sentry_2eproto}, {}};
 
 static void InitDefaultsscc_info_PenalizePeerRequest_sentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -234,8 +320,8 @@ static void InitDefaultsscc_info_StatusData_sentry_2eproto() {
       &scc_info_H256_types_2eproto.base,
       &scc_info_Forks_sentry_2eproto.base,}};
 
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_sentry_2eproto[12];
-static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* file_level_enum_descriptors_sentry_2eproto[3];
+static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_sentry_2eproto[17];
+static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* file_level_enum_descriptors_sentry_2eproto[4];
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_sentry_2eproto = nullptr;
 
 const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_sentry_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -317,13 +403,41 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_sentry_2eproto::offsets[] PROT
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::sentry::SetStatusReply, protocol_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::sentry::HandShakeReply, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::sentry::HandShakeReply, protocol_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::sentry::MessagesRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   PROTOBUF_FIELD_OFFSET(::sentry::MessagesRequest, ids_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::sentry::PeerCountRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::sentry::PeerCountReply, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::sentry::PeerCountReply, count_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::sentry::PeersRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::sentry::PeersReply, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::sentry::PeersReply, peer_id_),
+  PROTOBUF_FIELD_OFFSET(::sentry::PeersReply, event_),
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::sentry::OutboundMessageData)},
@@ -337,7 +451,12 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 56, -1, sizeof(::sentry::Forks)},
   { 63, -1, sizeof(::sentry::StatusData)},
   { 73, -1, sizeof(::sentry::SetStatusReply)},
-  { 79, -1, sizeof(::sentry::MessagesRequest)},
+  { 78, -1, sizeof(::sentry::HandShakeReply)},
+  { 84, -1, sizeof(::sentry::MessagesRequest)},
+  { 90, -1, sizeof(::sentry::PeerCountRequest)},
+  { 95, -1, sizeof(::sentry::PeerCountReply)},
+  { 101, -1, sizeof(::sentry::PeersRequest)},
+  { 106, -1, sizeof(::sentry::PeersReply)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -352,7 +471,12 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_Forks_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_StatusData_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_SetStatusReply_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_HandShakeReply_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_MessagesRequest_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeerCountRequest_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeerCountReply_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeersRequest_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeersReply_default_instance_),
 };
 
 const char descriptor_table_protodef_sentry_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -379,55 +503,72 @@ const char descriptor_table_protodef_sentry_2eproto[] PROTOBUF_SECTION_VARIABLE(
   "id\030\001 \001(\004\022%\n\020total_difficulty\030\002 \001(\0132\013.typ"
   "es.H256\022\036\n\tbest_hash\030\003 \001(\0132\013.types.H256\022"
   " \n\tfork_data\030\004 \001(\0132\r.sentry.Forks\022\021\n\tmax"
-  "_block\030\005 \001(\004\"4\n\016SetStatusReply\022\"\n\010protoc"
-  "ol\030\001 \001(\0162\020.sentry.Protocol\"1\n\017MessagesRe"
-  "quest\022\036\n\003ids\030\001 \003(\0162\021.sentry.MessageId*\332\005"
-  "\n\tMessageId\022\r\n\tSTATUS_65\020\000\022\030\n\024GET_BLOCK_"
-  "HEADERS_65\020\001\022\024\n\020BLOCK_HEADERS_65\020\002\022\023\n\017BL"
-  "OCK_HASHES_65\020\003\022\027\n\023GET_BLOCK_BODIES_65\020\004"
-  "\022\023\n\017BLOCK_BODIES_65\020\005\022\024\n\020GET_NODE_DATA_6"
-  "5\020\006\022\020\n\014NODE_DATA_65\020\007\022\023\n\017GET_RECEIPTS_65"
-  "\020\010\022\017\n\013RECEIPTS_65\020\t\022\027\n\023NEW_BLOCK_HASHES_"
-  "65\020\n\022\020\n\014NEW_BLOCK_65\020\013\022\023\n\017TRANSACTIONS_6"
-  "5\020\014\022$\n NEW_POOLED_TRANSACTION_HASHES_65\020"
-  "\r\022\036\n\032GET_POOLED_TRANSACTIONS_65\020\016\022\032\n\026POO"
-  "LED_TRANSACTIONS_65\020\017\022\r\n\tSTATUS_66\020\021\022\027\n\023"
-  "NEW_BLOCK_HASHES_66\020\022\022\020\n\014NEW_BLOCK_66\020\023\022"
-  "\023\n\017TRANSACTIONS_66\020\024\022$\n NEW_POOLED_TRANS"
-  "ACTION_HASHES_66\020\025\022\030\n\024GET_BLOCK_HEADERS_"
-  "66\020\026\022\027\n\023GET_BLOCK_BODIES_66\020\027\022\024\n\020GET_NOD"
-  "E_DATA_66\020\030\022\023\n\017GET_RECEIPTS_66\020\031\022\036\n\032GET_"
-  "POOLED_TRANSACTIONS_66\020\032\022\024\n\020BLOCK_HEADER"
-  "S_66\020\033\022\023\n\017BLOCK_BODIES_66\020\034\022\020\n\014NODE_DATA"
-  "_66\020\035\022\017\n\013RECEIPTS_66\020\036\022\032\n\026POOLED_TRANSAC"
-  "TIONS_66\020\037*\027\n\013PenaltyKind\022\010\n\004Kick\020\000* \n\010P"
-  "rotocol\022\t\n\005ETH65\020\000\022\t\n\005ETH66\020\0012\276\004\n\006Sentry"
-  "\022C\n\014PenalizePeer\022\033.sentry.PenalizePeerRe"
-  "quest\032\026.google.protobuf.Empty\022C\n\014PeerMin"
-  "Block\022\033.sentry.PeerMinBlockRequest\032\026.goo"
-  "gle.protobuf.Empty\022P\n\025SendMessageByMinBl"
-  "ock\022$.sentry.SendMessageByMinBlockReques"
-  "t\032\021.sentry.SentPeers\022D\n\017SendMessageById\022"
-  "\036.sentry.SendMessageByIdRequest\032\021.sentry"
-  ".SentPeers\022V\n\030SendMessageToRandomPeers\022\'"
-  ".sentry.SendMessageToRandomPeersRequest\032"
-  "\021.sentry.SentPeers\022B\n\020SendMessageToAll\022\033"
-  ".sentry.OutboundMessageData\032\021.sentry.Sen"
-  "tPeers\0227\n\tSetStatus\022\022.sentry.StatusData\032"
-  "\026.sentry.SetStatusReply\022=\n\010Messages\022\027.se"
+  "_block\030\005 \001(\004\"\020\n\016SetStatusReply\"4\n\016HandSh"
+  "akeReply\022\"\n\010protocol\030\001 \001(\0162\020.sentry.Prot"
+  "ocol\"1\n\017MessagesRequest\022\036\n\003ids\030\001 \003(\0162\021.s"
+  "entry.MessageId\"\022\n\020PeerCountRequest\"\037\n\016P"
+  "eerCountReply\022\r\n\005count\030\001 \001(\004\"\016\n\014PeersReq"
+  "uest\"\201\001\n\nPeersReply\022\034\n\007peer_id\030\001 \001(\0132\013.t"
+  "ypes.H256\022+\n\005event\030\002 \001(\0162\034.sentry.PeersR"
+  "eply.PeerEvent\"(\n\tPeerEvent\022\013\n\007Connect\020\000"
+  "\022\016\n\nDisconnect\020\001*\332\005\n\tMessageId\022\r\n\tSTATUS"
+  "_65\020\000\022\030\n\024GET_BLOCK_HEADERS_65\020\001\022\024\n\020BLOCK"
+  "_HEADERS_65\020\002\022\023\n\017BLOCK_HASHES_65\020\003\022\027\n\023GE"
+  "T_BLOCK_BODIES_65\020\004\022\023\n\017BLOCK_BODIES_65\020\005"
+  "\022\024\n\020GET_NODE_DATA_65\020\006\022\020\n\014NODE_DATA_65\020\007"
+  "\022\023\n\017GET_RECEIPTS_65\020\010\022\017\n\013RECEIPTS_65\020\t\022\027"
+  "\n\023NEW_BLOCK_HASHES_65\020\n\022\020\n\014NEW_BLOCK_65\020"
+  "\013\022\023\n\017TRANSACTIONS_65\020\014\022$\n NEW_POOLED_TRA"
+  "NSACTION_HASHES_65\020\r\022\036\n\032GET_POOLED_TRANS"
+  "ACTIONS_65\020\016\022\032\n\026POOLED_TRANSACTIONS_65\020\017"
+  "\022\r\n\tSTATUS_66\020\021\022\027\n\023NEW_BLOCK_HASHES_66\020\022"
+  "\022\020\n\014NEW_BLOCK_66\020\023\022\023\n\017TRANSACTIONS_66\020\024\022"
+  "$\n NEW_POOLED_TRANSACTION_HASHES_66\020\025\022\030\n"
+  "\024GET_BLOCK_HEADERS_66\020\026\022\027\n\023GET_BLOCK_BOD"
+  "IES_66\020\027\022\024\n\020GET_NODE_DATA_66\020\030\022\023\n\017GET_RE"
+  "CEIPTS_66\020\031\022\036\n\032GET_POOLED_TRANSACTIONS_6"
+  "6\020\032\022\024\n\020BLOCK_HEADERS_66\020\033\022\023\n\017BLOCK_BODIE"
+  "S_66\020\034\022\020\n\014NODE_DATA_66\020\035\022\017\n\013RECEIPTS_66\020"
+  "\036\022\032\n\026POOLED_TRANSACTIONS_66\020\037*\027\n\013Penalty"
+  "Kind\022\010\n\004Kick\020\000* \n\010Protocol\022\t\n\005ETH65\020\000\022\t\n"
+  "\005ETH66\020\0012\251\006\n\006Sentry\0227\n\tSetStatus\022\022.sentr"
+  "y.StatusData\032\026.sentry.SetStatusReply\022C\n\014"
+  "PenalizePeer\022\033.sentry.PenalizePeerReques"
+  "t\032\026.google.protobuf.Empty\022C\n\014PeerMinBloc"
+  "k\022\033.sentry.PeerMinBlockRequest\032\026.google."
+  "protobuf.Empty\022;\n\tHandShake\022\026.google.pro"
+  "tobuf.Empty\032\026.sentry.HandShakeReply\022P\n\025S"
+  "endMessageByMinBlock\022$.sentry.SendMessag"
+  "eByMinBlockRequest\032\021.sentry.SentPeers\022D\n"
+  "\017SendMessageById\022\036.sentry.SendMessageByI"
+  "dRequest\032\021.sentry.SentPeers\022V\n\030SendMessa"
+  "geToRandomPeers\022\'.sentry.SendMessageToRa"
+  "ndomPeersRequest\032\021.sentry.SentPeers\022B\n\020S"
+  "endMessageToAll\022\033.sentry.OutboundMessage"
+  "Data\032\021.sentry.SentPeers\022=\n\010Messages\022\027.se"
   "ntry.MessagesRequest\032\026.sentry.InboundMes"
-  "sage0\001B\021Z\017./sentry;sentryb\006proto3"
+  "sage0\001\022=\n\tPeerCount\022\030.sentry.PeerCountRe"
+  "quest\032\026.sentry.PeerCountReply\0223\n\005Peers\022\024"
+  ".sentry.PeersRequest\032\022.sentry.PeersReply"
+  "0\001\0228\n\010NodeInfo\022\026.google.protobuf.Empty\032\024"
+  ".types.NodeInfoReplyB\021Z\017./sentry;sentryb"
+  "\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_sentry_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
   &::descriptor_table_types_2eproto,
 };
-static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_sentry_2eproto_sccs[12] = {
+static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_sentry_2eproto_sccs[17] = {
   &scc_info_Forks_sentry_2eproto.base,
+  &scc_info_HandShakeReply_sentry_2eproto.base,
   &scc_info_InboundMessage_sentry_2eproto.base,
   &scc_info_MessagesRequest_sentry_2eproto.base,
   &scc_info_OutboundMessageData_sentry_2eproto.base,
+  &scc_info_PeerCountReply_sentry_2eproto.base,
+  &scc_info_PeerCountRequest_sentry_2eproto.base,
   &scc_info_PeerMinBlockRequest_sentry_2eproto.base,
+  &scc_info_PeersReply_sentry_2eproto.base,
+  &scc_info_PeersRequest_sentry_2eproto.base,
   &scc_info_PenalizePeerRequest_sentry_2eproto.base,
   &scc_info_SendMessageByIdRequest_sentry_2eproto.base,
   &scc_info_SendMessageByMinBlockRequest_sentry_2eproto.base,
@@ -438,18 +579,39 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_sen
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_sentry_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_sentry_2eproto = {
-  false, false, descriptor_table_protodef_sentry_2eproto, "sentry.proto", 2433,
-  &descriptor_table_sentry_2eproto_once, descriptor_table_sentry_2eproto_sccs, descriptor_table_sentry_2eproto_deps, 12, 2,
+  false, false, descriptor_table_protodef_sentry_2eproto, "sentry.proto", 2887,
+  &descriptor_table_sentry_2eproto_once, descriptor_table_sentry_2eproto_sccs, descriptor_table_sentry_2eproto_deps, 17, 2,
   schemas, file_default_instances, TableStruct_sentry_2eproto::offsets,
-  file_level_metadata_sentry_2eproto, 12, file_level_enum_descriptors_sentry_2eproto, file_level_service_descriptors_sentry_2eproto,
+  file_level_metadata_sentry_2eproto, 17, file_level_enum_descriptors_sentry_2eproto, file_level_service_descriptors_sentry_2eproto,
 };
 
 // Force running AddDescriptors() at dynamic initialization time.
 static bool dynamic_init_dummy_sentry_2eproto = (static_cast<void>(::PROTOBUF_NAMESPACE_ID::internal::AddDescriptors(&descriptor_table_sentry_2eproto)), true);
 namespace sentry {
-const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* MessageId_descriptor() {
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* PeersReply_PeerEvent_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_sentry_2eproto);
   return file_level_enum_descriptors_sentry_2eproto[0];
+}
+bool PeersReply_PeerEvent_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+      return true;
+    default:
+      return false;
+  }
+}
+
+#if (__cplusplus < 201703) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
+constexpr PeersReply_PeerEvent PeersReply::Connect;
+constexpr PeersReply_PeerEvent PeersReply::Disconnect;
+constexpr PeersReply_PeerEvent PeersReply::PeerEvent_MIN;
+constexpr PeersReply_PeerEvent PeersReply::PeerEvent_MAX;
+constexpr int PeersReply::PeerEvent_ARRAYSIZE;
+#endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* MessageId_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_sentry_2eproto);
+  return file_level_enum_descriptors_sentry_2eproto[1];
 }
 bool MessageId_IsValid(int value) {
   switch (value) {
@@ -492,7 +654,7 @@ bool MessageId_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* PenaltyKind_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_sentry_2eproto);
-  return file_level_enum_descriptors_sentry_2eproto[1];
+  return file_level_enum_descriptors_sentry_2eproto[2];
 }
 bool PenaltyKind_IsValid(int value) {
   switch (value) {
@@ -505,7 +667,7 @@ bool PenaltyKind_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Protocol_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_sentry_2eproto);
-  return file_level_enum_descriptors_sentry_2eproto[2];
+  return file_level_enum_descriptors_sentry_2eproto[3];
 }
 bool Protocol_IsValid(int value) {
   switch (value) {
@@ -3114,12 +3276,10 @@ SetStatusReply::SetStatusReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 SetStatusReply::SetStatusReply(const SetStatusReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  protocol_ = from.protocol_;
   // @@protoc_insertion_point(copy_constructor:sentry.SetStatusReply)
 }
 
 void SetStatusReply::SharedCtor() {
-  protocol_ = 0;
 }
 
 SetStatusReply::~SetStatusReply() {
@@ -3153,11 +3313,175 @@ void SetStatusReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  protocol_ = 0;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* SetStatusReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* SetStatusReply::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:sentry.SetStatusReply)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sentry.SetStatusReply)
+  return target;
+}
+
+size_t SetStatusReply::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sentry.SetStatusReply)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void SetStatusReply::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sentry.SetStatusReply)
+  GOOGLE_DCHECK_NE(&from, this);
+  const SetStatusReply* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<SetStatusReply>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sentry.SetStatusReply)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sentry.SetStatusReply)
+    MergeFrom(*source);
+  }
+}
+
+void SetStatusReply::MergeFrom(const SetStatusReply& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sentry.SetStatusReply)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+}
+
+void SetStatusReply::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sentry.SetStatusReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void SetStatusReply::CopyFrom(const SetStatusReply& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sentry.SetStatusReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool SetStatusReply::IsInitialized() const {
+  return true;
+}
+
+void SetStatusReply::InternalSwap(SetStatusReply* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata SetStatusReply::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
+class HandShakeReply::_Internal {
+ public:
+};
+
+HandShakeReply::HandShakeReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:sentry.HandShakeReply)
+}
+HandShakeReply::HandShakeReply(const HandShakeReply& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  protocol_ = from.protocol_;
+  // @@protoc_insertion_point(copy_constructor:sentry.HandShakeReply)
+}
+
+void HandShakeReply::SharedCtor() {
+  protocol_ = 0;
+}
+
+HandShakeReply::~HandShakeReply() {
+  // @@protoc_insertion_point(destructor:sentry.HandShakeReply)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void HandShakeReply::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+}
+
+void HandShakeReply::ArenaDtor(void* object) {
+  HandShakeReply* _this = reinterpret_cast< HandShakeReply* >(object);
+  (void)_this;
+}
+void HandShakeReply::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void HandShakeReply::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const HandShakeReply& HandShakeReply::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_HandShakeReply_sentry_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void HandShakeReply::Clear() {
+// @@protoc_insertion_point(message_clear_start:sentry.HandShakeReply)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  protocol_ = 0;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* HandShakeReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
@@ -3194,9 +3518,9 @@ failure:
 #undef CHK_
 }
 
-::PROTOBUF_NAMESPACE_ID::uint8* SetStatusReply::_InternalSerialize(
+::PROTOBUF_NAMESPACE_ID::uint8* HandShakeReply::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:sentry.SetStatusReply)
+  // @@protoc_insertion_point(serialize_to_array_start:sentry.HandShakeReply)
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -3211,12 +3535,12 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:sentry.SetStatusReply)
+  // @@protoc_insertion_point(serialize_to_array_end:sentry.HandShakeReply)
   return target;
 }
 
-size_t SetStatusReply::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:sentry.SetStatusReply)
+size_t HandShakeReply::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sentry.HandShakeReply)
   size_t total_size = 0;
 
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
@@ -3238,23 +3562,23 @@ size_t SetStatusReply::ByteSizeLong() const {
   return total_size;
 }
 
-void SetStatusReply::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:sentry.SetStatusReply)
+void HandShakeReply::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sentry.HandShakeReply)
   GOOGLE_DCHECK_NE(&from, this);
-  const SetStatusReply* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<SetStatusReply>(
+  const HandShakeReply* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<HandShakeReply>(
           &from);
   if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sentry.SetStatusReply)
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sentry.HandShakeReply)
     ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
   } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:sentry.SetStatusReply)
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sentry.HandShakeReply)
     MergeFrom(*source);
   }
 }
 
-void SetStatusReply::MergeFrom(const SetStatusReply& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:sentry.SetStatusReply)
+void HandShakeReply::MergeFrom(const HandShakeReply& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sentry.HandShakeReply)
   GOOGLE_DCHECK_NE(&from, this);
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
@@ -3265,31 +3589,31 @@ void SetStatusReply::MergeFrom(const SetStatusReply& from) {
   }
 }
 
-void SetStatusReply::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:sentry.SetStatusReply)
+void HandShakeReply::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sentry.HandShakeReply)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-void SetStatusReply::CopyFrom(const SetStatusReply& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:sentry.SetStatusReply)
+void HandShakeReply::CopyFrom(const HandShakeReply& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sentry.HandShakeReply)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool SetStatusReply::IsInitialized() const {
+bool HandShakeReply::IsInitialized() const {
   return true;
 }
 
-void SetStatusReply::InternalSwap(SetStatusReply* other) {
+void HandShakeReply::InternalSwap(HandShakeReply* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   swap(protocol_, other->protocol_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata SetStatusReply::GetMetadata() const {
+::PROTOBUF_NAMESPACE_ID::Metadata HandShakeReply::GetMetadata() const {
   return GetMetadataStatic();
 }
 
@@ -3504,6 +3828,774 @@ void MessagesRequest::InternalSwap(MessagesRequest* other) {
 }
 
 
+// ===================================================================
+
+class PeerCountRequest::_Internal {
+ public:
+};
+
+PeerCountRequest::PeerCountRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:sentry.PeerCountRequest)
+}
+PeerCountRequest::PeerCountRequest(const PeerCountRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:sentry.PeerCountRequest)
+}
+
+void PeerCountRequest::SharedCtor() {
+}
+
+PeerCountRequest::~PeerCountRequest() {
+  // @@protoc_insertion_point(destructor:sentry.PeerCountRequest)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void PeerCountRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+}
+
+void PeerCountRequest::ArenaDtor(void* object) {
+  PeerCountRequest* _this = reinterpret_cast< PeerCountRequest* >(object);
+  (void)_this;
+}
+void PeerCountRequest::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void PeerCountRequest::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const PeerCountRequest& PeerCountRequest::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_PeerCountRequest_sentry_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void PeerCountRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:sentry.PeerCountRequest)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* PeerCountRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* PeerCountRequest::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:sentry.PeerCountRequest)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sentry.PeerCountRequest)
+  return target;
+}
+
+size_t PeerCountRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sentry.PeerCountRequest)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void PeerCountRequest::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sentry.PeerCountRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PeerCountRequest* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<PeerCountRequest>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sentry.PeerCountRequest)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sentry.PeerCountRequest)
+    MergeFrom(*source);
+  }
+}
+
+void PeerCountRequest::MergeFrom(const PeerCountRequest& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sentry.PeerCountRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+}
+
+void PeerCountRequest::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sentry.PeerCountRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PeerCountRequest::CopyFrom(const PeerCountRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sentry.PeerCountRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PeerCountRequest::IsInitialized() const {
+  return true;
+}
+
+void PeerCountRequest::InternalSwap(PeerCountRequest* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata PeerCountRequest::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
+class PeerCountReply::_Internal {
+ public:
+};
+
+PeerCountReply::PeerCountReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:sentry.PeerCountReply)
+}
+PeerCountReply::PeerCountReply(const PeerCountReply& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  count_ = from.count_;
+  // @@protoc_insertion_point(copy_constructor:sentry.PeerCountReply)
+}
+
+void PeerCountReply::SharedCtor() {
+  count_ = PROTOBUF_ULONGLONG(0);
+}
+
+PeerCountReply::~PeerCountReply() {
+  // @@protoc_insertion_point(destructor:sentry.PeerCountReply)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void PeerCountReply::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+}
+
+void PeerCountReply::ArenaDtor(void* object) {
+  PeerCountReply* _this = reinterpret_cast< PeerCountReply* >(object);
+  (void)_this;
+}
+void PeerCountReply::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void PeerCountReply::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const PeerCountReply& PeerCountReply::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_PeerCountReply_sentry_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void PeerCountReply::Clear() {
+// @@protoc_insertion_point(message_clear_start:sentry.PeerCountReply)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  count_ = PROTOBUF_ULONGLONG(0);
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* PeerCountReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // uint64 count = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* PeerCountReply::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:sentry.PeerCountReply)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 count = 1;
+  if (this->count() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_count(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sentry.PeerCountReply)
+  return target;
+}
+
+size_t PeerCountReply::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sentry.PeerCountReply)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // uint64 count = 1;
+  if (this->count() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_count());
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void PeerCountReply::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sentry.PeerCountReply)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PeerCountReply* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<PeerCountReply>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sentry.PeerCountReply)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sentry.PeerCountReply)
+    MergeFrom(*source);
+  }
+}
+
+void PeerCountReply::MergeFrom(const PeerCountReply& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sentry.PeerCountReply)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.count() != 0) {
+    _internal_set_count(from._internal_count());
+  }
+}
+
+void PeerCountReply::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sentry.PeerCountReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PeerCountReply::CopyFrom(const PeerCountReply& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sentry.PeerCountReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PeerCountReply::IsInitialized() const {
+  return true;
+}
+
+void PeerCountReply::InternalSwap(PeerCountReply* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  swap(count_, other->count_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata PeerCountReply::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
+class PeersRequest::_Internal {
+ public:
+};
+
+PeersRequest::PeersRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:sentry.PeersRequest)
+}
+PeersRequest::PeersRequest(const PeersRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:sentry.PeersRequest)
+}
+
+void PeersRequest::SharedCtor() {
+}
+
+PeersRequest::~PeersRequest() {
+  // @@protoc_insertion_point(destructor:sentry.PeersRequest)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void PeersRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+}
+
+void PeersRequest::ArenaDtor(void* object) {
+  PeersRequest* _this = reinterpret_cast< PeersRequest* >(object);
+  (void)_this;
+}
+void PeersRequest::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void PeersRequest::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const PeersRequest& PeersRequest::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_PeersRequest_sentry_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void PeersRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:sentry.PeersRequest)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* PeersRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* PeersRequest::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:sentry.PeersRequest)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sentry.PeersRequest)
+  return target;
+}
+
+size_t PeersRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sentry.PeersRequest)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void PeersRequest::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sentry.PeersRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PeersRequest* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<PeersRequest>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sentry.PeersRequest)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sentry.PeersRequest)
+    MergeFrom(*source);
+  }
+}
+
+void PeersRequest::MergeFrom(const PeersRequest& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sentry.PeersRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+}
+
+void PeersRequest::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sentry.PeersRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PeersRequest::CopyFrom(const PeersRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sentry.PeersRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PeersRequest::IsInitialized() const {
+  return true;
+}
+
+void PeersRequest::InternalSwap(PeersRequest* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata PeersRequest::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
+class PeersReply::_Internal {
+ public:
+  static const ::types::H256& peer_id(const PeersReply* msg);
+};
+
+const ::types::H256&
+PeersReply::_Internal::peer_id(const PeersReply* msg) {
+  return *msg->peer_id_;
+}
+void PeersReply::clear_peer_id() {
+  if (GetArena() == nullptr && peer_id_ != nullptr) {
+    delete peer_id_;
+  }
+  peer_id_ = nullptr;
+}
+PeersReply::PeersReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:sentry.PeersReply)
+}
+PeersReply::PeersReply(const PeersReply& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_peer_id()) {
+    peer_id_ = new ::types::H256(*from.peer_id_);
+  } else {
+    peer_id_ = nullptr;
+  }
+  event_ = from.event_;
+  // @@protoc_insertion_point(copy_constructor:sentry.PeersReply)
+}
+
+void PeersReply::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_PeersReply_sentry_2eproto.base);
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&peer_id_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&event_) -
+      reinterpret_cast<char*>(&peer_id_)) + sizeof(event_));
+}
+
+PeersReply::~PeersReply() {
+  // @@protoc_insertion_point(destructor:sentry.PeersReply)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void PeersReply::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+  if (this != internal_default_instance()) delete peer_id_;
+}
+
+void PeersReply::ArenaDtor(void* object) {
+  PeersReply* _this = reinterpret_cast< PeersReply* >(object);
+  (void)_this;
+}
+void PeersReply::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void PeersReply::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const PeersReply& PeersReply::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_PeersReply_sentry_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void PeersReply::Clear() {
+// @@protoc_insertion_point(message_clear_start:sentry.PeersReply)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArena() == nullptr && peer_id_ != nullptr) {
+    delete peer_id_;
+  }
+  peer_id_ = nullptr;
+  event_ = 0;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* PeersReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // .types.H256 peer_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_peer_id(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .sentry.PeersReply.PeerEvent event = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
+          ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_event(static_cast<::sentry::PeersReply_PeerEvent>(val));
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* PeersReply::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:sentry.PeersReply)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .types.H256 peer_id = 1;
+  if (this->has_peer_id()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        1, _Internal::peer_id(this), target, stream);
+  }
+
+  // .sentry.PeersReply.PeerEvent event = 2;
+  if (this->event() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
+      2, this->_internal_event(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sentry.PeersReply)
+  return target;
+}
+
+size_t PeersReply::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sentry.PeersReply)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .types.H256 peer_id = 1;
+  if (this->has_peer_id()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *peer_id_);
+  }
+
+  // .sentry.PeersReply.PeerEvent event = 2;
+  if (this->event() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_event());
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void PeersReply::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sentry.PeersReply)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PeersReply* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<PeersReply>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sentry.PeersReply)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sentry.PeersReply)
+    MergeFrom(*source);
+  }
+}
+
+void PeersReply::MergeFrom(const PeersReply& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sentry.PeersReply)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.has_peer_id()) {
+    _internal_mutable_peer_id()->::types::H256::MergeFrom(from._internal_peer_id());
+  }
+  if (from.event() != 0) {
+    _internal_set_event(from._internal_event());
+  }
+}
+
+void PeersReply::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sentry.PeersReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PeersReply::CopyFrom(const PeersReply& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sentry.PeersReply)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PeersReply::IsInitialized() const {
+  return true;
+}
+
+void PeersReply::InternalSwap(PeersReply* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(PeersReply, event_)
+      + sizeof(PeersReply::event_)
+      - PROTOBUF_FIELD_OFFSET(PeersReply, peer_id_)>(
+          reinterpret_cast<char*>(&peer_id_),
+          reinterpret_cast<char*>(&other->peer_id_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata PeersReply::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace sentry
 PROTOBUF_NAMESPACE_OPEN
@@ -3540,8 +4632,23 @@ template<> PROTOBUF_NOINLINE ::sentry::StatusData* Arena::CreateMaybeMessage< ::
 template<> PROTOBUF_NOINLINE ::sentry::SetStatusReply* Arena::CreateMaybeMessage< ::sentry::SetStatusReply >(Arena* arena) {
   return Arena::CreateMessageInternal< ::sentry::SetStatusReply >(arena);
 }
+template<> PROTOBUF_NOINLINE ::sentry::HandShakeReply* Arena::CreateMaybeMessage< ::sentry::HandShakeReply >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::sentry::HandShakeReply >(arena);
+}
 template<> PROTOBUF_NOINLINE ::sentry::MessagesRequest* Arena::CreateMaybeMessage< ::sentry::MessagesRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::sentry::MessagesRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::sentry::PeerCountRequest* Arena::CreateMaybeMessage< ::sentry::PeerCountRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::sentry::PeerCountRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::sentry::PeerCountReply* Arena::CreateMaybeMessage< ::sentry::PeerCountReply >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::sentry::PeerCountReply >(arena);
+}
+template<> PROTOBUF_NOINLINE ::sentry::PeersRequest* Arena::CreateMaybeMessage< ::sentry::PeersRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::sentry::PeersRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::sentry::PeersReply* Arena::CreateMaybeMessage< ::sentry::PeersReply >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::sentry::PeersReply >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

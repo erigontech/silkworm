@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "SendMessageByMinBlock.hpp"
+#include "send_message_by_min_block.hpp"
 
 namespace silkworm::rpc {
 

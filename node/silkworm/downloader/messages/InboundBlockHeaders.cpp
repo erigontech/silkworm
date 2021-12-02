@@ -19,8 +19,8 @@
 #include <silkworm/common/cast.hpp>
 #include <silkworm/common/log.hpp>
 #include <silkworm/downloader/messages/OutboundGetBlockHeaders.hpp>
-#include <silkworm/downloader/rpc/PeerMinBlock.hpp>
-#include <silkworm/downloader/rpc/PenalizePeer.hpp>
+#include <silkworm/downloader/rpc/peer_min_block.hpp>
+#include <silkworm/downloader/rpc/penalize_peer.hpp>
 
 namespace silkworm {
 

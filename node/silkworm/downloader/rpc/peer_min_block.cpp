@@ -14,18 +14,14 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_PEERMINBLOCK_HPP
-#define SILKWORM_PEERMINBLOCK_HPP
-
-#include <silkworm/downloader/sentry_client.hpp>
+#include "peer_min_block.hpp"
 
 namespace silkworm::rpc {
 
-class PeerMinBlock : public rpc::UnaryCall<sentry::Sentry, sentry::PeerMinBlockRequest, google::protobuf::Empty> {
-  public:
-    PeerMinBlock(const PeerId& peerId, BlockNum minBlock);
-};
+PeerMinBlock::PeerMinBlock(const PeerId& peerId, BlockNum minBlock)
+    : UnaryCall("PeerMinBlock", &sentry::Sentry::Stub::PeerMinBlock, {}) {
+    request_.set_allocated_peer_id(to_H256(peerId).release());
+    request_.set_min_block(minBlock);  // take ownership
+}
 
 }  // namespace silkworm::rpc
-
-#endif  // SILKWORM_PEERMINBLOCK_HPP

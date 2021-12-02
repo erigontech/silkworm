@@ -14,14 +14,17 @@
    limitations under the License.
 */
 
-#include "PeerMinBlock.hpp"
+#ifndef SILKWORM_SEND_MESSAGE_BY_ID_HPP
+#define SILKWORM_SEND_MESSAGE_BY_ID_HPP
+
+#include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-PeerMinBlock::PeerMinBlock(const PeerId& peerId, BlockNum minBlock)
-    : UnaryCall("PeerMinBlock", &sentry::Sentry::Stub::PeerMinBlock, {}) {
-    request_.set_allocated_peer_id(to_H256(peerId).release());
-    request_.set_min_block(minBlock);  // take ownership
-}
+class SendMessageById : public rpc::UnaryCall<sentry::Sentry, sentry::SendMessageByIdRequest, sentry::SentPeers> {
+  public:
+    SendMessageById(const PeerId& peerId, std::unique_ptr<sentry::OutboundMessageData> message);
+};
 
 }  // namespace silkworm::rpc
+#endif  // SILKWORM_SEND_MESSAGE_BY_ID_HPP

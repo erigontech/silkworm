@@ -47,7 +47,7 @@ struct TableStruct_types_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxiliaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[5]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[10]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -55,27 +55,47 @@ struct TableStruct_types_2eproto {
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_types_2eproto;
 namespace types {
+class ExecutionPayload;
+class ExecutionPayloadDefaultTypeInternal;
+extern ExecutionPayloadDefaultTypeInternal _ExecutionPayload_default_instance_;
+class H1024;
+class H1024DefaultTypeInternal;
+extern H1024DefaultTypeInternal _H1024_default_instance_;
 class H128;
 class H128DefaultTypeInternal;
 extern H128DefaultTypeInternal _H128_default_instance_;
 class H160;
 class H160DefaultTypeInternal;
 extern H160DefaultTypeInternal _H160_default_instance_;
+class H2048;
+class H2048DefaultTypeInternal;
+extern H2048DefaultTypeInternal _H2048_default_instance_;
 class H256;
 class H256DefaultTypeInternal;
 extern H256DefaultTypeInternal _H256_default_instance_;
 class H512;
 class H512DefaultTypeInternal;
 extern H512DefaultTypeInternal _H512_default_instance_;
+class NodeInfoPorts;
+class NodeInfoPortsDefaultTypeInternal;
+extern NodeInfoPortsDefaultTypeInternal _NodeInfoPorts_default_instance_;
+class NodeInfoReply;
+class NodeInfoReplyDefaultTypeInternal;
+extern NodeInfoReplyDefaultTypeInternal _NodeInfoReply_default_instance_;
 class VersionReply;
 class VersionReplyDefaultTypeInternal;
 extern VersionReplyDefaultTypeInternal _VersionReply_default_instance_;
 }  // namespace types
 PROTOBUF_NAMESPACE_OPEN
+template<> ::types::ExecutionPayload* Arena::CreateMaybeMessage<::types::ExecutionPayload>(Arena*);
+template<> ::types::H1024* Arena::CreateMaybeMessage<::types::H1024>(Arena*);
 template<> ::types::H128* Arena::CreateMaybeMessage<::types::H128>(Arena*);
 template<> ::types::H160* Arena::CreateMaybeMessage<::types::H160>(Arena*);
+template<> ::types::H2048* Arena::CreateMaybeMessage<::types::H2048>(Arena*);
 template<> ::types::H256* Arena::CreateMaybeMessage<::types::H256>(Arena*);
 template<> ::types::H512* Arena::CreateMaybeMessage<::types::H512>(Arena*);
+template<> ::types::NodeInfoPorts* Arena::CreateMaybeMessage<::types::NodeInfoPorts>(Arena*);
+template<> ::types::NodeInfoReply* Arena::CreateMaybeMessage<::types::NodeInfoReply>(Arena*);
 template<> ::types::VersionReply* Arena::CreateMaybeMessage<::types::VersionReply>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 namespace types {
@@ -715,6 +735,336 @@ class H512 PROTOBUF_FINAL :
 };
 // -------------------------------------------------------------------
 
+class H1024 PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.H1024) */ {
+ public:
+  inline H1024() : H1024(nullptr) {}
+  virtual ~H1024();
+
+  H1024(const H1024& from);
+  H1024(H1024&& from) noexcept
+    : H1024() {
+    *this = ::std::move(from);
+  }
+
+  inline H1024& operator=(const H1024& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline H1024& operator=(H1024&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const H1024& default_instance();
+
+  static inline const H1024* internal_default_instance() {
+    return reinterpret_cast<const H1024*>(
+               &_H1024_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    4;
+
+  friend void swap(H1024& a, H1024& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(H1024* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(H1024* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline H1024* New() const final {
+    return CreateMaybeMessage<H1024>(nullptr);
+  }
+
+  H1024* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<H1024>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const H1024& from);
+  void MergeFrom(const H1024& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(H1024* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "types.H1024";
+  }
+  protected:
+  explicit H1024(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_types_2eproto);
+    return ::descriptor_table_types_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kHiFieldNumber = 1,
+    kLoFieldNumber = 2,
+  };
+  // .types.H512 hi = 1;
+  bool has_hi() const;
+  private:
+  bool _internal_has_hi() const;
+  public:
+  void clear_hi();
+  const ::types::H512& hi() const;
+  ::types::H512* release_hi();
+  ::types::H512* mutable_hi();
+  void set_allocated_hi(::types::H512* hi);
+  private:
+  const ::types::H512& _internal_hi() const;
+  ::types::H512* _internal_mutable_hi();
+  public:
+  void unsafe_arena_set_allocated_hi(
+      ::types::H512* hi);
+  ::types::H512* unsafe_arena_release_hi();
+
+  // .types.H512 lo = 2;
+  bool has_lo() const;
+  private:
+  bool _internal_has_lo() const;
+  public:
+  void clear_lo();
+  const ::types::H512& lo() const;
+  ::types::H512* release_lo();
+  ::types::H512* mutable_lo();
+  void set_allocated_lo(::types::H512* lo);
+  private:
+  const ::types::H512& _internal_lo() const;
+  ::types::H512* _internal_mutable_lo();
+  public:
+  void unsafe_arena_set_allocated_lo(
+      ::types::H512* lo);
+  ::types::H512* unsafe_arena_release_lo();
+
+  // @@protoc_insertion_point(class_scope:types.H1024)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::types::H512* hi_;
+  ::types::H512* lo_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_types_2eproto;
+};
+// -------------------------------------------------------------------
+
+class H2048 PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.H2048) */ {
+ public:
+  inline H2048() : H2048(nullptr) {}
+  virtual ~H2048();
+
+  H2048(const H2048& from);
+  H2048(H2048&& from) noexcept
+    : H2048() {
+    *this = ::std::move(from);
+  }
+
+  inline H2048& operator=(const H2048& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline H2048& operator=(H2048&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const H2048& default_instance();
+
+  static inline const H2048* internal_default_instance() {
+    return reinterpret_cast<const H2048*>(
+               &_H2048_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    5;
+
+  friend void swap(H2048& a, H2048& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(H2048* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(H2048* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline H2048* New() const final {
+    return CreateMaybeMessage<H2048>(nullptr);
+  }
+
+  H2048* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<H2048>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const H2048& from);
+  void MergeFrom(const H2048& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(H2048* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "types.H2048";
+  }
+  protected:
+  explicit H2048(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_types_2eproto);
+    return ::descriptor_table_types_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kHiFieldNumber = 1,
+    kLoFieldNumber = 2,
+  };
+  // .types.H1024 hi = 1;
+  bool has_hi() const;
+  private:
+  bool _internal_has_hi() const;
+  public:
+  void clear_hi();
+  const ::types::H1024& hi() const;
+  ::types::H1024* release_hi();
+  ::types::H1024* mutable_hi();
+  void set_allocated_hi(::types::H1024* hi);
+  private:
+  const ::types::H1024& _internal_hi() const;
+  ::types::H1024* _internal_mutable_hi();
+  public:
+  void unsafe_arena_set_allocated_hi(
+      ::types::H1024* hi);
+  ::types::H1024* unsafe_arena_release_hi();
+
+  // .types.H1024 lo = 2;
+  bool has_lo() const;
+  private:
+  bool _internal_has_lo() const;
+  public:
+  void clear_lo();
+  const ::types::H1024& lo() const;
+  ::types::H1024* release_lo();
+  ::types::H1024* mutable_lo();
+  void set_allocated_lo(::types::H1024* lo);
+  private:
+  const ::types::H1024& _internal_lo() const;
+  ::types::H1024* _internal_mutable_lo();
+  public:
+  void unsafe_arena_set_allocated_lo(
+      ::types::H1024* lo);
+  ::types::H1024* unsafe_arena_release_lo();
+
+  // @@protoc_insertion_point(class_scope:types.H2048)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::types::H1024* hi_;
+  ::types::H1024* lo_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_types_2eproto;
+};
+// -------------------------------------------------------------------
+
 class VersionReply PROTOBUF_FINAL :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.VersionReply) */ {
  public:
@@ -756,7 +1106,7 @@ class VersionReply PROTOBUF_FINAL :
                &_VersionReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    4;
+    6;
 
   friend void swap(VersionReply& a, VersionReply& b) {
     a.Swap(&b);
@@ -868,6 +1218,781 @@ class VersionReply PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::uint32 major_;
   ::PROTOBUF_NAMESPACE_ID::uint32 minor_;
   ::PROTOBUF_NAMESPACE_ID::uint32 patch_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_types_2eproto;
+};
+// -------------------------------------------------------------------
+
+class ExecutionPayload PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.ExecutionPayload) */ {
+ public:
+  inline ExecutionPayload() : ExecutionPayload(nullptr) {}
+  virtual ~ExecutionPayload();
+
+  ExecutionPayload(const ExecutionPayload& from);
+  ExecutionPayload(ExecutionPayload&& from) noexcept
+    : ExecutionPayload() {
+    *this = ::std::move(from);
+  }
+
+  inline ExecutionPayload& operator=(const ExecutionPayload& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ExecutionPayload& operator=(ExecutionPayload&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const ExecutionPayload& default_instance();
+
+  static inline const ExecutionPayload* internal_default_instance() {
+    return reinterpret_cast<const ExecutionPayload*>(
+               &_ExecutionPayload_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    7;
+
+  friend void swap(ExecutionPayload& a, ExecutionPayload& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ExecutionPayload* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ExecutionPayload* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ExecutionPayload* New() const final {
+    return CreateMaybeMessage<ExecutionPayload>(nullptr);
+  }
+
+  ExecutionPayload* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<ExecutionPayload>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const ExecutionPayload& from);
+  void MergeFrom(const ExecutionPayload& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ExecutionPayload* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "types.ExecutionPayload";
+  }
+  protected:
+  explicit ExecutionPayload(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_types_2eproto);
+    return ::descriptor_table_types_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTransactionsFieldNumber = 14,
+    kParentHashFieldNumber = 1,
+    kCoinbaseFieldNumber = 2,
+    kStateRootFieldNumber = 3,
+    kReceiptRootFieldNumber = 4,
+    kLogsBloomFieldNumber = 5,
+    kRandomFieldNumber = 6,
+    kExtraDataFieldNumber = 11,
+    kBaseFeePerGasFieldNumber = 12,
+    kBlockHashFieldNumber = 13,
+    kBlockNumberFieldNumber = 7,
+    kGasLimitFieldNumber = 8,
+    kGasUsedFieldNumber = 9,
+    kTimestampFieldNumber = 10,
+  };
+  // repeated bytes transactions = 14;
+  int transactions_size() const;
+  private:
+  int _internal_transactions_size() const;
+  public:
+  void clear_transactions();
+  const std::string& transactions(int index) const;
+  std::string* mutable_transactions(int index);
+  void set_transactions(int index, const std::string& value);
+  void set_transactions(int index, std::string&& value);
+  void set_transactions(int index, const char* value);
+  void set_transactions(int index, const void* value, size_t size);
+  std::string* add_transactions();
+  void add_transactions(const std::string& value);
+  void add_transactions(std::string&& value);
+  void add_transactions(const char* value);
+  void add_transactions(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& transactions() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_transactions();
+  private:
+  const std::string& _internal_transactions(int index) const;
+  std::string* _internal_add_transactions();
+  public:
+
+  // .types.H256 parentHash = 1;
+  bool has_parenthash() const;
+  private:
+  bool _internal_has_parenthash() const;
+  public:
+  void clear_parenthash();
+  const ::types::H256& parenthash() const;
+  ::types::H256* release_parenthash();
+  ::types::H256* mutable_parenthash();
+  void set_allocated_parenthash(::types::H256* parenthash);
+  private:
+  const ::types::H256& _internal_parenthash() const;
+  ::types::H256* _internal_mutable_parenthash();
+  public:
+  void unsafe_arena_set_allocated_parenthash(
+      ::types::H256* parenthash);
+  ::types::H256* unsafe_arena_release_parenthash();
+
+  // .types.H160 coinbase = 2;
+  bool has_coinbase() const;
+  private:
+  bool _internal_has_coinbase() const;
+  public:
+  void clear_coinbase();
+  const ::types::H160& coinbase() const;
+  ::types::H160* release_coinbase();
+  ::types::H160* mutable_coinbase();
+  void set_allocated_coinbase(::types::H160* coinbase);
+  private:
+  const ::types::H160& _internal_coinbase() const;
+  ::types::H160* _internal_mutable_coinbase();
+  public:
+  void unsafe_arena_set_allocated_coinbase(
+      ::types::H160* coinbase);
+  ::types::H160* unsafe_arena_release_coinbase();
+
+  // .types.H256 stateRoot = 3;
+  bool has_stateroot() const;
+  private:
+  bool _internal_has_stateroot() const;
+  public:
+  void clear_stateroot();
+  const ::types::H256& stateroot() const;
+  ::types::H256* release_stateroot();
+  ::types::H256* mutable_stateroot();
+  void set_allocated_stateroot(::types::H256* stateroot);
+  private:
+  const ::types::H256& _internal_stateroot() const;
+  ::types::H256* _internal_mutable_stateroot();
+  public:
+  void unsafe_arena_set_allocated_stateroot(
+      ::types::H256* stateroot);
+  ::types::H256* unsafe_arena_release_stateroot();
+
+  // .types.H256 receiptRoot = 4;
+  bool has_receiptroot() const;
+  private:
+  bool _internal_has_receiptroot() const;
+  public:
+  void clear_receiptroot();
+  const ::types::H256& receiptroot() const;
+  ::types::H256* release_receiptroot();
+  ::types::H256* mutable_receiptroot();
+  void set_allocated_receiptroot(::types::H256* receiptroot);
+  private:
+  const ::types::H256& _internal_receiptroot() const;
+  ::types::H256* _internal_mutable_receiptroot();
+  public:
+  void unsafe_arena_set_allocated_receiptroot(
+      ::types::H256* receiptroot);
+  ::types::H256* unsafe_arena_release_receiptroot();
+
+  // .types.H2048 logsBloom = 5;
+  bool has_logsbloom() const;
+  private:
+  bool _internal_has_logsbloom() const;
+  public:
+  void clear_logsbloom();
+  const ::types::H2048& logsbloom() const;
+  ::types::H2048* release_logsbloom();
+  ::types::H2048* mutable_logsbloom();
+  void set_allocated_logsbloom(::types::H2048* logsbloom);
+  private:
+  const ::types::H2048& _internal_logsbloom() const;
+  ::types::H2048* _internal_mutable_logsbloom();
+  public:
+  void unsafe_arena_set_allocated_logsbloom(
+      ::types::H2048* logsbloom);
+  ::types::H2048* unsafe_arena_release_logsbloom();
+
+  // .types.H256 random = 6;
+  bool has_random() const;
+  private:
+  bool _internal_has_random() const;
+  public:
+  void clear_random();
+  const ::types::H256& random() const;
+  ::types::H256* release_random();
+  ::types::H256* mutable_random();
+  void set_allocated_random(::types::H256* random);
+  private:
+  const ::types::H256& _internal_random() const;
+  ::types::H256* _internal_mutable_random();
+  public:
+  void unsafe_arena_set_allocated_random(
+      ::types::H256* random);
+  ::types::H256* unsafe_arena_release_random();
+
+  // .types.H256 extraData = 11;
+  bool has_extradata() const;
+  private:
+  bool _internal_has_extradata() const;
+  public:
+  void clear_extradata();
+  const ::types::H256& extradata() const;
+  ::types::H256* release_extradata();
+  ::types::H256* mutable_extradata();
+  void set_allocated_extradata(::types::H256* extradata);
+  private:
+  const ::types::H256& _internal_extradata() const;
+  ::types::H256* _internal_mutable_extradata();
+  public:
+  void unsafe_arena_set_allocated_extradata(
+      ::types::H256* extradata);
+  ::types::H256* unsafe_arena_release_extradata();
+
+  // .types.H256 baseFeePerGas = 12;
+  bool has_basefeepergas() const;
+  private:
+  bool _internal_has_basefeepergas() const;
+  public:
+  void clear_basefeepergas();
+  const ::types::H256& basefeepergas() const;
+  ::types::H256* release_basefeepergas();
+  ::types::H256* mutable_basefeepergas();
+  void set_allocated_basefeepergas(::types::H256* basefeepergas);
+  private:
+  const ::types::H256& _internal_basefeepergas() const;
+  ::types::H256* _internal_mutable_basefeepergas();
+  public:
+  void unsafe_arena_set_allocated_basefeepergas(
+      ::types::H256* basefeepergas);
+  ::types::H256* unsafe_arena_release_basefeepergas();
+
+  // .types.H256 blockHash = 13;
+  bool has_blockhash() const;
+  private:
+  bool _internal_has_blockhash() const;
+  public:
+  void clear_blockhash();
+  const ::types::H256& blockhash() const;
+  ::types::H256* release_blockhash();
+  ::types::H256* mutable_blockhash();
+  void set_allocated_blockhash(::types::H256* blockhash);
+  private:
+  const ::types::H256& _internal_blockhash() const;
+  ::types::H256* _internal_mutable_blockhash();
+  public:
+  void unsafe_arena_set_allocated_blockhash(
+      ::types::H256* blockhash);
+  ::types::H256* unsafe_arena_release_blockhash();
+
+  // uint64 blockNumber = 7;
+  void clear_blocknumber();
+  ::PROTOBUF_NAMESPACE_ID::uint64 blocknumber() const;
+  void set_blocknumber(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_blocknumber() const;
+  void _internal_set_blocknumber(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 gasLimit = 8;
+  void clear_gaslimit();
+  ::PROTOBUF_NAMESPACE_ID::uint64 gaslimit() const;
+  void set_gaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_gaslimit() const;
+  void _internal_set_gaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 gasUsed = 9;
+  void clear_gasused();
+  ::PROTOBUF_NAMESPACE_ID::uint64 gasused() const;
+  void set_gasused(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_gasused() const;
+  void _internal_set_gasused(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 timestamp = 10;
+  void clear_timestamp();
+  ::PROTOBUF_NAMESPACE_ID::uint64 timestamp() const;
+  void set_timestamp(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_timestamp() const;
+  void _internal_set_timestamp(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:types.ExecutionPayload)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> transactions_;
+  ::types::H256* parenthash_;
+  ::types::H160* coinbase_;
+  ::types::H256* stateroot_;
+  ::types::H256* receiptroot_;
+  ::types::H2048* logsbloom_;
+  ::types::H256* random_;
+  ::types::H256* extradata_;
+  ::types::H256* basefeepergas_;
+  ::types::H256* blockhash_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 blocknumber_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 gaslimit_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 gasused_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 timestamp_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_types_2eproto;
+};
+// -------------------------------------------------------------------
+
+class NodeInfoPorts PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.NodeInfoPorts) */ {
+ public:
+  inline NodeInfoPorts() : NodeInfoPorts(nullptr) {}
+  virtual ~NodeInfoPorts();
+
+  NodeInfoPorts(const NodeInfoPorts& from);
+  NodeInfoPorts(NodeInfoPorts&& from) noexcept
+    : NodeInfoPorts() {
+    *this = ::std::move(from);
+  }
+
+  inline NodeInfoPorts& operator=(const NodeInfoPorts& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline NodeInfoPorts& operator=(NodeInfoPorts&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const NodeInfoPorts& default_instance();
+
+  static inline const NodeInfoPorts* internal_default_instance() {
+    return reinterpret_cast<const NodeInfoPorts*>(
+               &_NodeInfoPorts_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    8;
+
+  friend void swap(NodeInfoPorts& a, NodeInfoPorts& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(NodeInfoPorts* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(NodeInfoPorts* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline NodeInfoPorts* New() const final {
+    return CreateMaybeMessage<NodeInfoPorts>(nullptr);
+  }
+
+  NodeInfoPorts* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<NodeInfoPorts>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const NodeInfoPorts& from);
+  void MergeFrom(const NodeInfoPorts& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(NodeInfoPorts* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "types.NodeInfoPorts";
+  }
+  protected:
+  explicit NodeInfoPorts(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_types_2eproto);
+    return ::descriptor_table_types_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kDiscoveryFieldNumber = 1,
+    kListenerFieldNumber = 2,
+  };
+  // uint32 discovery = 1;
+  void clear_discovery();
+  ::PROTOBUF_NAMESPACE_ID::uint32 discovery() const;
+  void set_discovery(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_discovery() const;
+  void _internal_set_discovery(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint32 listener = 2;
+  void clear_listener();
+  ::PROTOBUF_NAMESPACE_ID::uint32 listener() const;
+  void set_listener(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_listener() const;
+  void _internal_set_listener(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:types.NodeInfoPorts)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 discovery_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 listener_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_types_2eproto;
+};
+// -------------------------------------------------------------------
+
+class NodeInfoReply PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:types.NodeInfoReply) */ {
+ public:
+  inline NodeInfoReply() : NodeInfoReply(nullptr) {}
+  virtual ~NodeInfoReply();
+
+  NodeInfoReply(const NodeInfoReply& from);
+  NodeInfoReply(NodeInfoReply&& from) noexcept
+    : NodeInfoReply() {
+    *this = ::std::move(from);
+  }
+
+  inline NodeInfoReply& operator=(const NodeInfoReply& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline NodeInfoReply& operator=(NodeInfoReply&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const NodeInfoReply& default_instance();
+
+  static inline const NodeInfoReply* internal_default_instance() {
+    return reinterpret_cast<const NodeInfoReply*>(
+               &_NodeInfoReply_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    9;
+
+  friend void swap(NodeInfoReply& a, NodeInfoReply& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(NodeInfoReply* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(NodeInfoReply* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline NodeInfoReply* New() const final {
+    return CreateMaybeMessage<NodeInfoReply>(nullptr);
+  }
+
+  NodeInfoReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<NodeInfoReply>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const NodeInfoReply& from);
+  void MergeFrom(const NodeInfoReply& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(NodeInfoReply* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "types.NodeInfoReply";
+  }
+  protected:
+  explicit NodeInfoReply(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_types_2eproto);
+    return ::descriptor_table_types_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kIdFieldNumber = 1,
+    kNameFieldNumber = 2,
+    kEnodeFieldNumber = 3,
+    kEnrFieldNumber = 4,
+    kListenerAddrFieldNumber = 6,
+    kProtocolsFieldNumber = 7,
+    kPortsFieldNumber = 5,
+  };
+  // string id = 1;
+  void clear_id();
+  const std::string& id() const;
+  void set_id(const std::string& value);
+  void set_id(std::string&& value);
+  void set_id(const char* value);
+  void set_id(const char* value, size_t size);
+  std::string* mutable_id();
+  std::string* release_id();
+  void set_allocated_id(std::string* id);
+  private:
+  const std::string& _internal_id() const;
+  void _internal_set_id(const std::string& value);
+  std::string* _internal_mutable_id();
+  public:
+
+  // string name = 2;
+  void clear_name();
+  const std::string& name() const;
+  void set_name(const std::string& value);
+  void set_name(std::string&& value);
+  void set_name(const char* value);
+  void set_name(const char* value, size_t size);
+  std::string* mutable_name();
+  std::string* release_name();
+  void set_allocated_name(std::string* name);
+  private:
+  const std::string& _internal_name() const;
+  void _internal_set_name(const std::string& value);
+  std::string* _internal_mutable_name();
+  public:
+
+  // string enode = 3;
+  void clear_enode();
+  const std::string& enode() const;
+  void set_enode(const std::string& value);
+  void set_enode(std::string&& value);
+  void set_enode(const char* value);
+  void set_enode(const char* value, size_t size);
+  std::string* mutable_enode();
+  std::string* release_enode();
+  void set_allocated_enode(std::string* enode);
+  private:
+  const std::string& _internal_enode() const;
+  void _internal_set_enode(const std::string& value);
+  std::string* _internal_mutable_enode();
+  public:
+
+  // string enr = 4;
+  void clear_enr();
+  const std::string& enr() const;
+  void set_enr(const std::string& value);
+  void set_enr(std::string&& value);
+  void set_enr(const char* value);
+  void set_enr(const char* value, size_t size);
+  std::string* mutable_enr();
+  std::string* release_enr();
+  void set_allocated_enr(std::string* enr);
+  private:
+  const std::string& _internal_enr() const;
+  void _internal_set_enr(const std::string& value);
+  std::string* _internal_mutable_enr();
+  public:
+
+  // string listenerAddr = 6;
+  void clear_listeneraddr();
+  const std::string& listeneraddr() const;
+  void set_listeneraddr(const std::string& value);
+  void set_listeneraddr(std::string&& value);
+  void set_listeneraddr(const char* value);
+  void set_listeneraddr(const char* value, size_t size);
+  std::string* mutable_listeneraddr();
+  std::string* release_listeneraddr();
+  void set_allocated_listeneraddr(std::string* listeneraddr);
+  private:
+  const std::string& _internal_listeneraddr() const;
+  void _internal_set_listeneraddr(const std::string& value);
+  std::string* _internal_mutable_listeneraddr();
+  public:
+
+  // bytes protocols = 7;
+  void clear_protocols();
+  const std::string& protocols() const;
+  void set_protocols(const std::string& value);
+  void set_protocols(std::string&& value);
+  void set_protocols(const char* value);
+  void set_protocols(const void* value, size_t size);
+  std::string* mutable_protocols();
+  std::string* release_protocols();
+  void set_allocated_protocols(std::string* protocols);
+  private:
+  const std::string& _internal_protocols() const;
+  void _internal_set_protocols(const std::string& value);
+  std::string* _internal_mutable_protocols();
+  public:
+
+  // .types.NodeInfoPorts ports = 5;
+  bool has_ports() const;
+  private:
+  bool _internal_has_ports() const;
+  public:
+  void clear_ports();
+  const ::types::NodeInfoPorts& ports() const;
+  ::types::NodeInfoPorts* release_ports();
+  ::types::NodeInfoPorts* mutable_ports();
+  void set_allocated_ports(::types::NodeInfoPorts* ports);
+  private:
+  const ::types::NodeInfoPorts& _internal_ports() const;
+  ::types::NodeInfoPorts* _internal_mutable_ports();
+  public:
+  void unsafe_arena_set_allocated_ports(
+      ::types::NodeInfoPorts* ports);
+  ::types::NodeInfoPorts* unsafe_arena_release_ports();
+
+  // @@protoc_insertion_point(class_scope:types.NodeInfoReply)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr id_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr enode_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr enr_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr listeneraddr_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr protocols_;
+  ::types::NodeInfoPorts* ports_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_types_2eproto;
 };
@@ -1383,6 +2508,346 @@ inline void H512::set_allocated_lo(::types::H256* lo) {
 
 // -------------------------------------------------------------------
 
+// H1024
+
+// .types.H512 hi = 1;
+inline bool H1024::_internal_has_hi() const {
+  return this != internal_default_instance() && hi_ != nullptr;
+}
+inline bool H1024::has_hi() const {
+  return _internal_has_hi();
+}
+inline void H1024::clear_hi() {
+  if (GetArena() == nullptr && hi_ != nullptr) {
+    delete hi_;
+  }
+  hi_ = nullptr;
+}
+inline const ::types::H512& H1024::_internal_hi() const {
+  const ::types::H512* p = hi_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H512&>(
+      ::types::_H512_default_instance_);
+}
+inline const ::types::H512& H1024::hi() const {
+  // @@protoc_insertion_point(field_get:types.H1024.hi)
+  return _internal_hi();
+}
+inline void H1024::unsafe_arena_set_allocated_hi(
+    ::types::H512* hi) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(hi_);
+  }
+  hi_ = hi;
+  if (hi) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.H1024.hi)
+}
+inline ::types::H512* H1024::release_hi() {
+  
+  ::types::H512* temp = hi_;
+  hi_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H512* H1024::unsafe_arena_release_hi() {
+  // @@protoc_insertion_point(field_release:types.H1024.hi)
+  
+  ::types::H512* temp = hi_;
+  hi_ = nullptr;
+  return temp;
+}
+inline ::types::H512* H1024::_internal_mutable_hi() {
+  
+  if (hi_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H512>(GetArena());
+    hi_ = p;
+  }
+  return hi_;
+}
+inline ::types::H512* H1024::mutable_hi() {
+  // @@protoc_insertion_point(field_mutable:types.H1024.hi)
+  return _internal_mutable_hi();
+}
+inline void H1024::set_allocated_hi(::types::H512* hi) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete hi_;
+  }
+  if (hi) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(hi);
+    if (message_arena != submessage_arena) {
+      hi = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, hi, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  hi_ = hi;
+  // @@protoc_insertion_point(field_set_allocated:types.H1024.hi)
+}
+
+// .types.H512 lo = 2;
+inline bool H1024::_internal_has_lo() const {
+  return this != internal_default_instance() && lo_ != nullptr;
+}
+inline bool H1024::has_lo() const {
+  return _internal_has_lo();
+}
+inline void H1024::clear_lo() {
+  if (GetArena() == nullptr && lo_ != nullptr) {
+    delete lo_;
+  }
+  lo_ = nullptr;
+}
+inline const ::types::H512& H1024::_internal_lo() const {
+  const ::types::H512* p = lo_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H512&>(
+      ::types::_H512_default_instance_);
+}
+inline const ::types::H512& H1024::lo() const {
+  // @@protoc_insertion_point(field_get:types.H1024.lo)
+  return _internal_lo();
+}
+inline void H1024::unsafe_arena_set_allocated_lo(
+    ::types::H512* lo) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(lo_);
+  }
+  lo_ = lo;
+  if (lo) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.H1024.lo)
+}
+inline ::types::H512* H1024::release_lo() {
+  
+  ::types::H512* temp = lo_;
+  lo_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H512* H1024::unsafe_arena_release_lo() {
+  // @@protoc_insertion_point(field_release:types.H1024.lo)
+  
+  ::types::H512* temp = lo_;
+  lo_ = nullptr;
+  return temp;
+}
+inline ::types::H512* H1024::_internal_mutable_lo() {
+  
+  if (lo_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H512>(GetArena());
+    lo_ = p;
+  }
+  return lo_;
+}
+inline ::types::H512* H1024::mutable_lo() {
+  // @@protoc_insertion_point(field_mutable:types.H1024.lo)
+  return _internal_mutable_lo();
+}
+inline void H1024::set_allocated_lo(::types::H512* lo) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete lo_;
+  }
+  if (lo) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(lo);
+    if (message_arena != submessage_arena) {
+      lo = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, lo, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  lo_ = lo;
+  // @@protoc_insertion_point(field_set_allocated:types.H1024.lo)
+}
+
+// -------------------------------------------------------------------
+
+// H2048
+
+// .types.H1024 hi = 1;
+inline bool H2048::_internal_has_hi() const {
+  return this != internal_default_instance() && hi_ != nullptr;
+}
+inline bool H2048::has_hi() const {
+  return _internal_has_hi();
+}
+inline void H2048::clear_hi() {
+  if (GetArena() == nullptr && hi_ != nullptr) {
+    delete hi_;
+  }
+  hi_ = nullptr;
+}
+inline const ::types::H1024& H2048::_internal_hi() const {
+  const ::types::H1024* p = hi_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H1024&>(
+      ::types::_H1024_default_instance_);
+}
+inline const ::types::H1024& H2048::hi() const {
+  // @@protoc_insertion_point(field_get:types.H2048.hi)
+  return _internal_hi();
+}
+inline void H2048::unsafe_arena_set_allocated_hi(
+    ::types::H1024* hi) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(hi_);
+  }
+  hi_ = hi;
+  if (hi) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.H2048.hi)
+}
+inline ::types::H1024* H2048::release_hi() {
+  
+  ::types::H1024* temp = hi_;
+  hi_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H1024* H2048::unsafe_arena_release_hi() {
+  // @@protoc_insertion_point(field_release:types.H2048.hi)
+  
+  ::types::H1024* temp = hi_;
+  hi_ = nullptr;
+  return temp;
+}
+inline ::types::H1024* H2048::_internal_mutable_hi() {
+  
+  if (hi_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H1024>(GetArena());
+    hi_ = p;
+  }
+  return hi_;
+}
+inline ::types::H1024* H2048::mutable_hi() {
+  // @@protoc_insertion_point(field_mutable:types.H2048.hi)
+  return _internal_mutable_hi();
+}
+inline void H2048::set_allocated_hi(::types::H1024* hi) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete hi_;
+  }
+  if (hi) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(hi);
+    if (message_arena != submessage_arena) {
+      hi = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, hi, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  hi_ = hi;
+  // @@protoc_insertion_point(field_set_allocated:types.H2048.hi)
+}
+
+// .types.H1024 lo = 2;
+inline bool H2048::_internal_has_lo() const {
+  return this != internal_default_instance() && lo_ != nullptr;
+}
+inline bool H2048::has_lo() const {
+  return _internal_has_lo();
+}
+inline void H2048::clear_lo() {
+  if (GetArena() == nullptr && lo_ != nullptr) {
+    delete lo_;
+  }
+  lo_ = nullptr;
+}
+inline const ::types::H1024& H2048::_internal_lo() const {
+  const ::types::H1024* p = lo_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H1024&>(
+      ::types::_H1024_default_instance_);
+}
+inline const ::types::H1024& H2048::lo() const {
+  // @@protoc_insertion_point(field_get:types.H2048.lo)
+  return _internal_lo();
+}
+inline void H2048::unsafe_arena_set_allocated_lo(
+    ::types::H1024* lo) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(lo_);
+  }
+  lo_ = lo;
+  if (lo) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.H2048.lo)
+}
+inline ::types::H1024* H2048::release_lo() {
+  
+  ::types::H1024* temp = lo_;
+  lo_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H1024* H2048::unsafe_arena_release_lo() {
+  // @@protoc_insertion_point(field_release:types.H2048.lo)
+  
+  ::types::H1024* temp = lo_;
+  lo_ = nullptr;
+  return temp;
+}
+inline ::types::H1024* H2048::_internal_mutable_lo() {
+  
+  if (lo_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H1024>(GetArena());
+    lo_ = p;
+  }
+  return lo_;
+}
+inline ::types::H1024* H2048::mutable_lo() {
+  // @@protoc_insertion_point(field_mutable:types.H2048.lo)
+  return _internal_mutable_lo();
+}
+inline void H2048::set_allocated_lo(::types::H1024* lo) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete lo_;
+  }
+  if (lo) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(lo);
+    if (message_arena != submessage_arena) {
+      lo = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, lo, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  lo_ = lo;
+  // @@protoc_insertion_point(field_set_allocated:types.H2048.lo)
+}
+
+// -------------------------------------------------------------------
+
 // VersionReply
 
 // uint32 major = 1;
@@ -1445,9 +2910,1421 @@ inline void VersionReply::set_patch(::PROTOBUF_NAMESPACE_ID::uint32 value) {
   // @@protoc_insertion_point(field_set:types.VersionReply.patch)
 }
 
+// -------------------------------------------------------------------
+
+// ExecutionPayload
+
+// .types.H256 parentHash = 1;
+inline bool ExecutionPayload::_internal_has_parenthash() const {
+  return this != internal_default_instance() && parenthash_ != nullptr;
+}
+inline bool ExecutionPayload::has_parenthash() const {
+  return _internal_has_parenthash();
+}
+inline void ExecutionPayload::clear_parenthash() {
+  if (GetArena() == nullptr && parenthash_ != nullptr) {
+    delete parenthash_;
+  }
+  parenthash_ = nullptr;
+}
+inline const ::types::H256& ExecutionPayload::_internal_parenthash() const {
+  const ::types::H256* p = parenthash_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
+      ::types::_H256_default_instance_);
+}
+inline const ::types::H256& ExecutionPayload::parenthash() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.parentHash)
+  return _internal_parenthash();
+}
+inline void ExecutionPayload::unsafe_arena_set_allocated_parenthash(
+    ::types::H256* parenthash) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(parenthash_);
+  }
+  parenthash_ = parenthash;
+  if (parenthash) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayload.parentHash)
+}
+inline ::types::H256* ExecutionPayload::release_parenthash() {
+  
+  ::types::H256* temp = parenthash_;
+  parenthash_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::unsafe_arena_release_parenthash() {
+  // @@protoc_insertion_point(field_release:types.ExecutionPayload.parentHash)
+  
+  ::types::H256* temp = parenthash_;
+  parenthash_ = nullptr;
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::_internal_mutable_parenthash() {
+  
+  if (parenthash_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    parenthash_ = p;
+  }
+  return parenthash_;
+}
+inline ::types::H256* ExecutionPayload::mutable_parenthash() {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.parentHash)
+  return _internal_mutable_parenthash();
+}
+inline void ExecutionPayload::set_allocated_parenthash(::types::H256* parenthash) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete parenthash_;
+  }
+  if (parenthash) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(parenthash);
+    if (message_arena != submessage_arena) {
+      parenthash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, parenthash, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  parenthash_ = parenthash;
+  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayload.parentHash)
+}
+
+// .types.H160 coinbase = 2;
+inline bool ExecutionPayload::_internal_has_coinbase() const {
+  return this != internal_default_instance() && coinbase_ != nullptr;
+}
+inline bool ExecutionPayload::has_coinbase() const {
+  return _internal_has_coinbase();
+}
+inline void ExecutionPayload::clear_coinbase() {
+  if (GetArena() == nullptr && coinbase_ != nullptr) {
+    delete coinbase_;
+  }
+  coinbase_ = nullptr;
+}
+inline const ::types::H160& ExecutionPayload::_internal_coinbase() const {
+  const ::types::H160* p = coinbase_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H160&>(
+      ::types::_H160_default_instance_);
+}
+inline const ::types::H160& ExecutionPayload::coinbase() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.coinbase)
+  return _internal_coinbase();
+}
+inline void ExecutionPayload::unsafe_arena_set_allocated_coinbase(
+    ::types::H160* coinbase) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(coinbase_);
+  }
+  coinbase_ = coinbase;
+  if (coinbase) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayload.coinbase)
+}
+inline ::types::H160* ExecutionPayload::release_coinbase() {
+  
+  ::types::H160* temp = coinbase_;
+  coinbase_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H160* ExecutionPayload::unsafe_arena_release_coinbase() {
+  // @@protoc_insertion_point(field_release:types.ExecutionPayload.coinbase)
+  
+  ::types::H160* temp = coinbase_;
+  coinbase_ = nullptr;
+  return temp;
+}
+inline ::types::H160* ExecutionPayload::_internal_mutable_coinbase() {
+  
+  if (coinbase_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H160>(GetArena());
+    coinbase_ = p;
+  }
+  return coinbase_;
+}
+inline ::types::H160* ExecutionPayload::mutable_coinbase() {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.coinbase)
+  return _internal_mutable_coinbase();
+}
+inline void ExecutionPayload::set_allocated_coinbase(::types::H160* coinbase) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete coinbase_;
+  }
+  if (coinbase) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(coinbase);
+    if (message_arena != submessage_arena) {
+      coinbase = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, coinbase, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  coinbase_ = coinbase;
+  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayload.coinbase)
+}
+
+// .types.H256 stateRoot = 3;
+inline bool ExecutionPayload::_internal_has_stateroot() const {
+  return this != internal_default_instance() && stateroot_ != nullptr;
+}
+inline bool ExecutionPayload::has_stateroot() const {
+  return _internal_has_stateroot();
+}
+inline void ExecutionPayload::clear_stateroot() {
+  if (GetArena() == nullptr && stateroot_ != nullptr) {
+    delete stateroot_;
+  }
+  stateroot_ = nullptr;
+}
+inline const ::types::H256& ExecutionPayload::_internal_stateroot() const {
+  const ::types::H256* p = stateroot_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
+      ::types::_H256_default_instance_);
+}
+inline const ::types::H256& ExecutionPayload::stateroot() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.stateRoot)
+  return _internal_stateroot();
+}
+inline void ExecutionPayload::unsafe_arena_set_allocated_stateroot(
+    ::types::H256* stateroot) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(stateroot_);
+  }
+  stateroot_ = stateroot;
+  if (stateroot) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayload.stateRoot)
+}
+inline ::types::H256* ExecutionPayload::release_stateroot() {
+  
+  ::types::H256* temp = stateroot_;
+  stateroot_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::unsafe_arena_release_stateroot() {
+  // @@protoc_insertion_point(field_release:types.ExecutionPayload.stateRoot)
+  
+  ::types::H256* temp = stateroot_;
+  stateroot_ = nullptr;
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::_internal_mutable_stateroot() {
+  
+  if (stateroot_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    stateroot_ = p;
+  }
+  return stateroot_;
+}
+inline ::types::H256* ExecutionPayload::mutable_stateroot() {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.stateRoot)
+  return _internal_mutable_stateroot();
+}
+inline void ExecutionPayload::set_allocated_stateroot(::types::H256* stateroot) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete stateroot_;
+  }
+  if (stateroot) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(stateroot);
+    if (message_arena != submessage_arena) {
+      stateroot = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, stateroot, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  stateroot_ = stateroot;
+  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayload.stateRoot)
+}
+
+// .types.H256 receiptRoot = 4;
+inline bool ExecutionPayload::_internal_has_receiptroot() const {
+  return this != internal_default_instance() && receiptroot_ != nullptr;
+}
+inline bool ExecutionPayload::has_receiptroot() const {
+  return _internal_has_receiptroot();
+}
+inline void ExecutionPayload::clear_receiptroot() {
+  if (GetArena() == nullptr && receiptroot_ != nullptr) {
+    delete receiptroot_;
+  }
+  receiptroot_ = nullptr;
+}
+inline const ::types::H256& ExecutionPayload::_internal_receiptroot() const {
+  const ::types::H256* p = receiptroot_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
+      ::types::_H256_default_instance_);
+}
+inline const ::types::H256& ExecutionPayload::receiptroot() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.receiptRoot)
+  return _internal_receiptroot();
+}
+inline void ExecutionPayload::unsafe_arena_set_allocated_receiptroot(
+    ::types::H256* receiptroot) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(receiptroot_);
+  }
+  receiptroot_ = receiptroot;
+  if (receiptroot) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayload.receiptRoot)
+}
+inline ::types::H256* ExecutionPayload::release_receiptroot() {
+  
+  ::types::H256* temp = receiptroot_;
+  receiptroot_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::unsafe_arena_release_receiptroot() {
+  // @@protoc_insertion_point(field_release:types.ExecutionPayload.receiptRoot)
+  
+  ::types::H256* temp = receiptroot_;
+  receiptroot_ = nullptr;
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::_internal_mutable_receiptroot() {
+  
+  if (receiptroot_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    receiptroot_ = p;
+  }
+  return receiptroot_;
+}
+inline ::types::H256* ExecutionPayload::mutable_receiptroot() {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.receiptRoot)
+  return _internal_mutable_receiptroot();
+}
+inline void ExecutionPayload::set_allocated_receiptroot(::types::H256* receiptroot) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete receiptroot_;
+  }
+  if (receiptroot) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(receiptroot);
+    if (message_arena != submessage_arena) {
+      receiptroot = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, receiptroot, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  receiptroot_ = receiptroot;
+  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayload.receiptRoot)
+}
+
+// .types.H2048 logsBloom = 5;
+inline bool ExecutionPayload::_internal_has_logsbloom() const {
+  return this != internal_default_instance() && logsbloom_ != nullptr;
+}
+inline bool ExecutionPayload::has_logsbloom() const {
+  return _internal_has_logsbloom();
+}
+inline void ExecutionPayload::clear_logsbloom() {
+  if (GetArena() == nullptr && logsbloom_ != nullptr) {
+    delete logsbloom_;
+  }
+  logsbloom_ = nullptr;
+}
+inline const ::types::H2048& ExecutionPayload::_internal_logsbloom() const {
+  const ::types::H2048* p = logsbloom_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H2048&>(
+      ::types::_H2048_default_instance_);
+}
+inline const ::types::H2048& ExecutionPayload::logsbloom() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.logsBloom)
+  return _internal_logsbloom();
+}
+inline void ExecutionPayload::unsafe_arena_set_allocated_logsbloom(
+    ::types::H2048* logsbloom) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(logsbloom_);
+  }
+  logsbloom_ = logsbloom;
+  if (logsbloom) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayload.logsBloom)
+}
+inline ::types::H2048* ExecutionPayload::release_logsbloom() {
+  
+  ::types::H2048* temp = logsbloom_;
+  logsbloom_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H2048* ExecutionPayload::unsafe_arena_release_logsbloom() {
+  // @@protoc_insertion_point(field_release:types.ExecutionPayload.logsBloom)
+  
+  ::types::H2048* temp = logsbloom_;
+  logsbloom_ = nullptr;
+  return temp;
+}
+inline ::types::H2048* ExecutionPayload::_internal_mutable_logsbloom() {
+  
+  if (logsbloom_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H2048>(GetArena());
+    logsbloom_ = p;
+  }
+  return logsbloom_;
+}
+inline ::types::H2048* ExecutionPayload::mutable_logsbloom() {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.logsBloom)
+  return _internal_mutable_logsbloom();
+}
+inline void ExecutionPayload::set_allocated_logsbloom(::types::H2048* logsbloom) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete logsbloom_;
+  }
+  if (logsbloom) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(logsbloom);
+    if (message_arena != submessage_arena) {
+      logsbloom = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, logsbloom, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  logsbloom_ = logsbloom;
+  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayload.logsBloom)
+}
+
+// .types.H256 random = 6;
+inline bool ExecutionPayload::_internal_has_random() const {
+  return this != internal_default_instance() && random_ != nullptr;
+}
+inline bool ExecutionPayload::has_random() const {
+  return _internal_has_random();
+}
+inline void ExecutionPayload::clear_random() {
+  if (GetArena() == nullptr && random_ != nullptr) {
+    delete random_;
+  }
+  random_ = nullptr;
+}
+inline const ::types::H256& ExecutionPayload::_internal_random() const {
+  const ::types::H256* p = random_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
+      ::types::_H256_default_instance_);
+}
+inline const ::types::H256& ExecutionPayload::random() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.random)
+  return _internal_random();
+}
+inline void ExecutionPayload::unsafe_arena_set_allocated_random(
+    ::types::H256* random) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(random_);
+  }
+  random_ = random;
+  if (random) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayload.random)
+}
+inline ::types::H256* ExecutionPayload::release_random() {
+  
+  ::types::H256* temp = random_;
+  random_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::unsafe_arena_release_random() {
+  // @@protoc_insertion_point(field_release:types.ExecutionPayload.random)
+  
+  ::types::H256* temp = random_;
+  random_ = nullptr;
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::_internal_mutable_random() {
+  
+  if (random_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    random_ = p;
+  }
+  return random_;
+}
+inline ::types::H256* ExecutionPayload::mutable_random() {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.random)
+  return _internal_mutable_random();
+}
+inline void ExecutionPayload::set_allocated_random(::types::H256* random) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete random_;
+  }
+  if (random) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(random);
+    if (message_arena != submessage_arena) {
+      random = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, random, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  random_ = random;
+  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayload.random)
+}
+
+// uint64 blockNumber = 7;
+inline void ExecutionPayload::clear_blocknumber() {
+  blocknumber_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ExecutionPayload::_internal_blocknumber() const {
+  return blocknumber_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ExecutionPayload::blocknumber() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.blockNumber)
+  return _internal_blocknumber();
+}
+inline void ExecutionPayload::_internal_set_blocknumber(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  blocknumber_ = value;
+}
+inline void ExecutionPayload::set_blocknumber(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_blocknumber(value);
+  // @@protoc_insertion_point(field_set:types.ExecutionPayload.blockNumber)
+}
+
+// uint64 gasLimit = 8;
+inline void ExecutionPayload::clear_gaslimit() {
+  gaslimit_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ExecutionPayload::_internal_gaslimit() const {
+  return gaslimit_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ExecutionPayload::gaslimit() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.gasLimit)
+  return _internal_gaslimit();
+}
+inline void ExecutionPayload::_internal_set_gaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  gaslimit_ = value;
+}
+inline void ExecutionPayload::set_gaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_gaslimit(value);
+  // @@protoc_insertion_point(field_set:types.ExecutionPayload.gasLimit)
+}
+
+// uint64 gasUsed = 9;
+inline void ExecutionPayload::clear_gasused() {
+  gasused_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ExecutionPayload::_internal_gasused() const {
+  return gasused_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ExecutionPayload::gasused() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.gasUsed)
+  return _internal_gasused();
+}
+inline void ExecutionPayload::_internal_set_gasused(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  gasused_ = value;
+}
+inline void ExecutionPayload::set_gasused(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_gasused(value);
+  // @@protoc_insertion_point(field_set:types.ExecutionPayload.gasUsed)
+}
+
+// uint64 timestamp = 10;
+inline void ExecutionPayload::clear_timestamp() {
+  timestamp_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ExecutionPayload::_internal_timestamp() const {
+  return timestamp_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 ExecutionPayload::timestamp() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.timestamp)
+  return _internal_timestamp();
+}
+inline void ExecutionPayload::_internal_set_timestamp(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  timestamp_ = value;
+}
+inline void ExecutionPayload::set_timestamp(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_timestamp(value);
+  // @@protoc_insertion_point(field_set:types.ExecutionPayload.timestamp)
+}
+
+// .types.H256 extraData = 11;
+inline bool ExecutionPayload::_internal_has_extradata() const {
+  return this != internal_default_instance() && extradata_ != nullptr;
+}
+inline bool ExecutionPayload::has_extradata() const {
+  return _internal_has_extradata();
+}
+inline void ExecutionPayload::clear_extradata() {
+  if (GetArena() == nullptr && extradata_ != nullptr) {
+    delete extradata_;
+  }
+  extradata_ = nullptr;
+}
+inline const ::types::H256& ExecutionPayload::_internal_extradata() const {
+  const ::types::H256* p = extradata_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
+      ::types::_H256_default_instance_);
+}
+inline const ::types::H256& ExecutionPayload::extradata() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.extraData)
+  return _internal_extradata();
+}
+inline void ExecutionPayload::unsafe_arena_set_allocated_extradata(
+    ::types::H256* extradata) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(extradata_);
+  }
+  extradata_ = extradata;
+  if (extradata) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayload.extraData)
+}
+inline ::types::H256* ExecutionPayload::release_extradata() {
+  
+  ::types::H256* temp = extradata_;
+  extradata_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::unsafe_arena_release_extradata() {
+  // @@protoc_insertion_point(field_release:types.ExecutionPayload.extraData)
+  
+  ::types::H256* temp = extradata_;
+  extradata_ = nullptr;
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::_internal_mutable_extradata() {
+  
+  if (extradata_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    extradata_ = p;
+  }
+  return extradata_;
+}
+inline ::types::H256* ExecutionPayload::mutable_extradata() {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.extraData)
+  return _internal_mutable_extradata();
+}
+inline void ExecutionPayload::set_allocated_extradata(::types::H256* extradata) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete extradata_;
+  }
+  if (extradata) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(extradata);
+    if (message_arena != submessage_arena) {
+      extradata = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, extradata, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  extradata_ = extradata;
+  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayload.extraData)
+}
+
+// .types.H256 baseFeePerGas = 12;
+inline bool ExecutionPayload::_internal_has_basefeepergas() const {
+  return this != internal_default_instance() && basefeepergas_ != nullptr;
+}
+inline bool ExecutionPayload::has_basefeepergas() const {
+  return _internal_has_basefeepergas();
+}
+inline void ExecutionPayload::clear_basefeepergas() {
+  if (GetArena() == nullptr && basefeepergas_ != nullptr) {
+    delete basefeepergas_;
+  }
+  basefeepergas_ = nullptr;
+}
+inline const ::types::H256& ExecutionPayload::_internal_basefeepergas() const {
+  const ::types::H256* p = basefeepergas_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
+      ::types::_H256_default_instance_);
+}
+inline const ::types::H256& ExecutionPayload::basefeepergas() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.baseFeePerGas)
+  return _internal_basefeepergas();
+}
+inline void ExecutionPayload::unsafe_arena_set_allocated_basefeepergas(
+    ::types::H256* basefeepergas) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(basefeepergas_);
+  }
+  basefeepergas_ = basefeepergas;
+  if (basefeepergas) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayload.baseFeePerGas)
+}
+inline ::types::H256* ExecutionPayload::release_basefeepergas() {
+  
+  ::types::H256* temp = basefeepergas_;
+  basefeepergas_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::unsafe_arena_release_basefeepergas() {
+  // @@protoc_insertion_point(field_release:types.ExecutionPayload.baseFeePerGas)
+  
+  ::types::H256* temp = basefeepergas_;
+  basefeepergas_ = nullptr;
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::_internal_mutable_basefeepergas() {
+  
+  if (basefeepergas_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    basefeepergas_ = p;
+  }
+  return basefeepergas_;
+}
+inline ::types::H256* ExecutionPayload::mutable_basefeepergas() {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.baseFeePerGas)
+  return _internal_mutable_basefeepergas();
+}
+inline void ExecutionPayload::set_allocated_basefeepergas(::types::H256* basefeepergas) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete basefeepergas_;
+  }
+  if (basefeepergas) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(basefeepergas);
+    if (message_arena != submessage_arena) {
+      basefeepergas = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, basefeepergas, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  basefeepergas_ = basefeepergas;
+  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayload.baseFeePerGas)
+}
+
+// .types.H256 blockHash = 13;
+inline bool ExecutionPayload::_internal_has_blockhash() const {
+  return this != internal_default_instance() && blockhash_ != nullptr;
+}
+inline bool ExecutionPayload::has_blockhash() const {
+  return _internal_has_blockhash();
+}
+inline void ExecutionPayload::clear_blockhash() {
+  if (GetArena() == nullptr && blockhash_ != nullptr) {
+    delete blockhash_;
+  }
+  blockhash_ = nullptr;
+}
+inline const ::types::H256& ExecutionPayload::_internal_blockhash() const {
+  const ::types::H256* p = blockhash_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
+      ::types::_H256_default_instance_);
+}
+inline const ::types::H256& ExecutionPayload::blockhash() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.blockHash)
+  return _internal_blockhash();
+}
+inline void ExecutionPayload::unsafe_arena_set_allocated_blockhash(
+    ::types::H256* blockhash) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(blockhash_);
+  }
+  blockhash_ = blockhash;
+  if (blockhash) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayload.blockHash)
+}
+inline ::types::H256* ExecutionPayload::release_blockhash() {
+  
+  ::types::H256* temp = blockhash_;
+  blockhash_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::unsafe_arena_release_blockhash() {
+  // @@protoc_insertion_point(field_release:types.ExecutionPayload.blockHash)
+  
+  ::types::H256* temp = blockhash_;
+  blockhash_ = nullptr;
+  return temp;
+}
+inline ::types::H256* ExecutionPayload::_internal_mutable_blockhash() {
+  
+  if (blockhash_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H256>(GetArena());
+    blockhash_ = p;
+  }
+  return blockhash_;
+}
+inline ::types::H256* ExecutionPayload::mutable_blockhash() {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.blockHash)
+  return _internal_mutable_blockhash();
+}
+inline void ExecutionPayload::set_allocated_blockhash(::types::H256* blockhash) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete blockhash_;
+  }
+  if (blockhash) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(blockhash);
+    if (message_arena != submessage_arena) {
+      blockhash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, blockhash, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  blockhash_ = blockhash;
+  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayload.blockHash)
+}
+
+// repeated bytes transactions = 14;
+inline int ExecutionPayload::_internal_transactions_size() const {
+  return transactions_.size();
+}
+inline int ExecutionPayload::transactions_size() const {
+  return _internal_transactions_size();
+}
+inline void ExecutionPayload::clear_transactions() {
+  transactions_.Clear();
+}
+inline std::string* ExecutionPayload::add_transactions() {
+  // @@protoc_insertion_point(field_add_mutable:types.ExecutionPayload.transactions)
+  return _internal_add_transactions();
+}
+inline const std::string& ExecutionPayload::_internal_transactions(int index) const {
+  return transactions_.Get(index);
+}
+inline const std::string& ExecutionPayload::transactions(int index) const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.transactions)
+  return _internal_transactions(index);
+}
+inline std::string* ExecutionPayload::mutable_transactions(int index) {
+  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.transactions)
+  return transactions_.Mutable(index);
+}
+inline void ExecutionPayload::set_transactions(int index, const std::string& value) {
+  // @@protoc_insertion_point(field_set:types.ExecutionPayload.transactions)
+  transactions_.Mutable(index)->assign(value);
+}
+inline void ExecutionPayload::set_transactions(int index, std::string&& value) {
+  // @@protoc_insertion_point(field_set:types.ExecutionPayload.transactions)
+  transactions_.Mutable(index)->assign(std::move(value));
+}
+inline void ExecutionPayload::set_transactions(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  transactions_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:types.ExecutionPayload.transactions)
+}
+inline void ExecutionPayload::set_transactions(int index, const void* value, size_t size) {
+  transactions_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:types.ExecutionPayload.transactions)
+}
+inline std::string* ExecutionPayload::_internal_add_transactions() {
+  return transactions_.Add();
+}
+inline void ExecutionPayload::add_transactions(const std::string& value) {
+  transactions_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:types.ExecutionPayload.transactions)
+}
+inline void ExecutionPayload::add_transactions(std::string&& value) {
+  transactions_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:types.ExecutionPayload.transactions)
+}
+inline void ExecutionPayload::add_transactions(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  transactions_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:types.ExecutionPayload.transactions)
+}
+inline void ExecutionPayload::add_transactions(const void* value, size_t size) {
+  transactions_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:types.ExecutionPayload.transactions)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+ExecutionPayload::transactions() const {
+  // @@protoc_insertion_point(field_list:types.ExecutionPayload.transactions)
+  return transactions_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+ExecutionPayload::mutable_transactions() {
+  // @@protoc_insertion_point(field_mutable_list:types.ExecutionPayload.transactions)
+  return &transactions_;
+}
+
+// -------------------------------------------------------------------
+
+// NodeInfoPorts
+
+// uint32 discovery = 1;
+inline void NodeInfoPorts::clear_discovery() {
+  discovery_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 NodeInfoPorts::_internal_discovery() const {
+  return discovery_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 NodeInfoPorts::discovery() const {
+  // @@protoc_insertion_point(field_get:types.NodeInfoPorts.discovery)
+  return _internal_discovery();
+}
+inline void NodeInfoPorts::_internal_set_discovery(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  discovery_ = value;
+}
+inline void NodeInfoPorts::set_discovery(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_discovery(value);
+  // @@protoc_insertion_point(field_set:types.NodeInfoPorts.discovery)
+}
+
+// uint32 listener = 2;
+inline void NodeInfoPorts::clear_listener() {
+  listener_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 NodeInfoPorts::_internal_listener() const {
+  return listener_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 NodeInfoPorts::listener() const {
+  // @@protoc_insertion_point(field_get:types.NodeInfoPorts.listener)
+  return _internal_listener();
+}
+inline void NodeInfoPorts::_internal_set_listener(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  listener_ = value;
+}
+inline void NodeInfoPorts::set_listener(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_listener(value);
+  // @@protoc_insertion_point(field_set:types.NodeInfoPorts.listener)
+}
+
+// -------------------------------------------------------------------
+
+// NodeInfoReply
+
+// string id = 1;
+inline void NodeInfoReply::clear_id() {
+  id_.ClearToEmpty();
+}
+inline const std::string& NodeInfoReply::id() const {
+  // @@protoc_insertion_point(field_get:types.NodeInfoReply.id)
+  return _internal_id();
+}
+inline void NodeInfoReply::set_id(const std::string& value) {
+  _internal_set_id(value);
+  // @@protoc_insertion_point(field_set:types.NodeInfoReply.id)
+}
+inline std::string* NodeInfoReply::mutable_id() {
+  // @@protoc_insertion_point(field_mutable:types.NodeInfoReply.id)
+  return _internal_mutable_id();
+}
+inline const std::string& NodeInfoReply::_internal_id() const {
+  return id_.Get();
+}
+inline void NodeInfoReply::_internal_set_id(const std::string& value) {
+  
+  id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+}
+inline void NodeInfoReply::set_id(std::string&& value) {
+  
+  id_.Set(
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:types.NodeInfoReply.id)
+}
+inline void NodeInfoReply::set_id(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:types.NodeInfoReply.id)
+}
+inline void NodeInfoReply::set_id(const char* value,
+    size_t size) {
+  
+  id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:types.NodeInfoReply.id)
+}
+inline std::string* NodeInfoReply::_internal_mutable_id() {
+  
+  return id_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+}
+inline std::string* NodeInfoReply::release_id() {
+  // @@protoc_insertion_point(field_release:types.NodeInfoReply.id)
+  return id_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void NodeInfoReply::set_allocated_id(std::string* id) {
+  if (id != nullptr) {
+    
+  } else {
+    
+  }
+  id_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), id,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:types.NodeInfoReply.id)
+}
+
+// string name = 2;
+inline void NodeInfoReply::clear_name() {
+  name_.ClearToEmpty();
+}
+inline const std::string& NodeInfoReply::name() const {
+  // @@protoc_insertion_point(field_get:types.NodeInfoReply.name)
+  return _internal_name();
+}
+inline void NodeInfoReply::set_name(const std::string& value) {
+  _internal_set_name(value);
+  // @@protoc_insertion_point(field_set:types.NodeInfoReply.name)
+}
+inline std::string* NodeInfoReply::mutable_name() {
+  // @@protoc_insertion_point(field_mutable:types.NodeInfoReply.name)
+  return _internal_mutable_name();
+}
+inline const std::string& NodeInfoReply::_internal_name() const {
+  return name_.Get();
+}
+inline void NodeInfoReply::_internal_set_name(const std::string& value) {
+  
+  name_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+}
+inline void NodeInfoReply::set_name(std::string&& value) {
+  
+  name_.Set(
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:types.NodeInfoReply.name)
+}
+inline void NodeInfoReply::set_name(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  name_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:types.NodeInfoReply.name)
+}
+inline void NodeInfoReply::set_name(const char* value,
+    size_t size) {
+  
+  name_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:types.NodeInfoReply.name)
+}
+inline std::string* NodeInfoReply::_internal_mutable_name() {
+  
+  return name_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+}
+inline std::string* NodeInfoReply::release_name() {
+  // @@protoc_insertion_point(field_release:types.NodeInfoReply.name)
+  return name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void NodeInfoReply::set_allocated_name(std::string* name) {
+  if (name != nullptr) {
+    
+  } else {
+    
+  }
+  name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), name,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:types.NodeInfoReply.name)
+}
+
+// string enode = 3;
+inline void NodeInfoReply::clear_enode() {
+  enode_.ClearToEmpty();
+}
+inline const std::string& NodeInfoReply::enode() const {
+  // @@protoc_insertion_point(field_get:types.NodeInfoReply.enode)
+  return _internal_enode();
+}
+inline void NodeInfoReply::set_enode(const std::string& value) {
+  _internal_set_enode(value);
+  // @@protoc_insertion_point(field_set:types.NodeInfoReply.enode)
+}
+inline std::string* NodeInfoReply::mutable_enode() {
+  // @@protoc_insertion_point(field_mutable:types.NodeInfoReply.enode)
+  return _internal_mutable_enode();
+}
+inline const std::string& NodeInfoReply::_internal_enode() const {
+  return enode_.Get();
+}
+inline void NodeInfoReply::_internal_set_enode(const std::string& value) {
+  
+  enode_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+}
+inline void NodeInfoReply::set_enode(std::string&& value) {
+  
+  enode_.Set(
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:types.NodeInfoReply.enode)
+}
+inline void NodeInfoReply::set_enode(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  enode_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:types.NodeInfoReply.enode)
+}
+inline void NodeInfoReply::set_enode(const char* value,
+    size_t size) {
+  
+  enode_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:types.NodeInfoReply.enode)
+}
+inline std::string* NodeInfoReply::_internal_mutable_enode() {
+  
+  return enode_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+}
+inline std::string* NodeInfoReply::release_enode() {
+  // @@protoc_insertion_point(field_release:types.NodeInfoReply.enode)
+  return enode_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void NodeInfoReply::set_allocated_enode(std::string* enode) {
+  if (enode != nullptr) {
+    
+  } else {
+    
+  }
+  enode_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), enode,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:types.NodeInfoReply.enode)
+}
+
+// string enr = 4;
+inline void NodeInfoReply::clear_enr() {
+  enr_.ClearToEmpty();
+}
+inline const std::string& NodeInfoReply::enr() const {
+  // @@protoc_insertion_point(field_get:types.NodeInfoReply.enr)
+  return _internal_enr();
+}
+inline void NodeInfoReply::set_enr(const std::string& value) {
+  _internal_set_enr(value);
+  // @@protoc_insertion_point(field_set:types.NodeInfoReply.enr)
+}
+inline std::string* NodeInfoReply::mutable_enr() {
+  // @@protoc_insertion_point(field_mutable:types.NodeInfoReply.enr)
+  return _internal_mutable_enr();
+}
+inline const std::string& NodeInfoReply::_internal_enr() const {
+  return enr_.Get();
+}
+inline void NodeInfoReply::_internal_set_enr(const std::string& value) {
+  
+  enr_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+}
+inline void NodeInfoReply::set_enr(std::string&& value) {
+  
+  enr_.Set(
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:types.NodeInfoReply.enr)
+}
+inline void NodeInfoReply::set_enr(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  enr_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:types.NodeInfoReply.enr)
+}
+inline void NodeInfoReply::set_enr(const char* value,
+    size_t size) {
+  
+  enr_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:types.NodeInfoReply.enr)
+}
+inline std::string* NodeInfoReply::_internal_mutable_enr() {
+  
+  return enr_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+}
+inline std::string* NodeInfoReply::release_enr() {
+  // @@protoc_insertion_point(field_release:types.NodeInfoReply.enr)
+  return enr_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void NodeInfoReply::set_allocated_enr(std::string* enr) {
+  if (enr != nullptr) {
+    
+  } else {
+    
+  }
+  enr_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), enr,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:types.NodeInfoReply.enr)
+}
+
+// .types.NodeInfoPorts ports = 5;
+inline bool NodeInfoReply::_internal_has_ports() const {
+  return this != internal_default_instance() && ports_ != nullptr;
+}
+inline bool NodeInfoReply::has_ports() const {
+  return _internal_has_ports();
+}
+inline void NodeInfoReply::clear_ports() {
+  if (GetArena() == nullptr && ports_ != nullptr) {
+    delete ports_;
+  }
+  ports_ = nullptr;
+}
+inline const ::types::NodeInfoPorts& NodeInfoReply::_internal_ports() const {
+  const ::types::NodeInfoPorts* p = ports_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::NodeInfoPorts&>(
+      ::types::_NodeInfoPorts_default_instance_);
+}
+inline const ::types::NodeInfoPorts& NodeInfoReply::ports() const {
+  // @@protoc_insertion_point(field_get:types.NodeInfoReply.ports)
+  return _internal_ports();
+}
+inline void NodeInfoReply::unsafe_arena_set_allocated_ports(
+    ::types::NodeInfoPorts* ports) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(ports_);
+  }
+  ports_ = ports;
+  if (ports) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.NodeInfoReply.ports)
+}
+inline ::types::NodeInfoPorts* NodeInfoReply::release_ports() {
+  
+  ::types::NodeInfoPorts* temp = ports_;
+  ports_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::types::NodeInfoPorts* NodeInfoReply::unsafe_arena_release_ports() {
+  // @@protoc_insertion_point(field_release:types.NodeInfoReply.ports)
+  
+  ::types::NodeInfoPorts* temp = ports_;
+  ports_ = nullptr;
+  return temp;
+}
+inline ::types::NodeInfoPorts* NodeInfoReply::_internal_mutable_ports() {
+  
+  if (ports_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::NodeInfoPorts>(GetArena());
+    ports_ = p;
+  }
+  return ports_;
+}
+inline ::types::NodeInfoPorts* NodeInfoReply::mutable_ports() {
+  // @@protoc_insertion_point(field_mutable:types.NodeInfoReply.ports)
+  return _internal_mutable_ports();
+}
+inline void NodeInfoReply::set_allocated_ports(::types::NodeInfoPorts* ports) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete ports_;
+  }
+  if (ports) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(ports);
+    if (message_arena != submessage_arena) {
+      ports = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, ports, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  ports_ = ports;
+  // @@protoc_insertion_point(field_set_allocated:types.NodeInfoReply.ports)
+}
+
+// string listenerAddr = 6;
+inline void NodeInfoReply::clear_listeneraddr() {
+  listeneraddr_.ClearToEmpty();
+}
+inline const std::string& NodeInfoReply::listeneraddr() const {
+  // @@protoc_insertion_point(field_get:types.NodeInfoReply.listenerAddr)
+  return _internal_listeneraddr();
+}
+inline void NodeInfoReply::set_listeneraddr(const std::string& value) {
+  _internal_set_listeneraddr(value);
+  // @@protoc_insertion_point(field_set:types.NodeInfoReply.listenerAddr)
+}
+inline std::string* NodeInfoReply::mutable_listeneraddr() {
+  // @@protoc_insertion_point(field_mutable:types.NodeInfoReply.listenerAddr)
+  return _internal_mutable_listeneraddr();
+}
+inline const std::string& NodeInfoReply::_internal_listeneraddr() const {
+  return listeneraddr_.Get();
+}
+inline void NodeInfoReply::_internal_set_listeneraddr(const std::string& value) {
+  
+  listeneraddr_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+}
+inline void NodeInfoReply::set_listeneraddr(std::string&& value) {
+  
+  listeneraddr_.Set(
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:types.NodeInfoReply.listenerAddr)
+}
+inline void NodeInfoReply::set_listeneraddr(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  listeneraddr_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:types.NodeInfoReply.listenerAddr)
+}
+inline void NodeInfoReply::set_listeneraddr(const char* value,
+    size_t size) {
+  
+  listeneraddr_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:types.NodeInfoReply.listenerAddr)
+}
+inline std::string* NodeInfoReply::_internal_mutable_listeneraddr() {
+  
+  return listeneraddr_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+}
+inline std::string* NodeInfoReply::release_listeneraddr() {
+  // @@protoc_insertion_point(field_release:types.NodeInfoReply.listenerAddr)
+  return listeneraddr_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void NodeInfoReply::set_allocated_listeneraddr(std::string* listeneraddr) {
+  if (listeneraddr != nullptr) {
+    
+  } else {
+    
+  }
+  listeneraddr_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), listeneraddr,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:types.NodeInfoReply.listenerAddr)
+}
+
+// bytes protocols = 7;
+inline void NodeInfoReply::clear_protocols() {
+  protocols_.ClearToEmpty();
+}
+inline const std::string& NodeInfoReply::protocols() const {
+  // @@protoc_insertion_point(field_get:types.NodeInfoReply.protocols)
+  return _internal_protocols();
+}
+inline void NodeInfoReply::set_protocols(const std::string& value) {
+  _internal_set_protocols(value);
+  // @@protoc_insertion_point(field_set:types.NodeInfoReply.protocols)
+}
+inline std::string* NodeInfoReply::mutable_protocols() {
+  // @@protoc_insertion_point(field_mutable:types.NodeInfoReply.protocols)
+  return _internal_mutable_protocols();
+}
+inline const std::string& NodeInfoReply::_internal_protocols() const {
+  return protocols_.Get();
+}
+inline void NodeInfoReply::_internal_set_protocols(const std::string& value) {
+  
+  protocols_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+}
+inline void NodeInfoReply::set_protocols(std::string&& value) {
+  
+  protocols_.Set(
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:types.NodeInfoReply.protocols)
+}
+inline void NodeInfoReply::set_protocols(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  protocols_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:types.NodeInfoReply.protocols)
+}
+inline void NodeInfoReply::set_protocols(const void* value,
+    size_t size) {
+  
+  protocols_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:types.NodeInfoReply.protocols)
+}
+inline std::string* NodeInfoReply::_internal_mutable_protocols() {
+  
+  return protocols_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+}
+inline std::string* NodeInfoReply::release_protocols() {
+  // @@protoc_insertion_point(field_release:types.NodeInfoReply.protocols)
+  return protocols_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void NodeInfoReply::set_allocated_protocols(std::string* protocols) {
+  if (protocols != nullptr) {
+    
+  } else {
+    
+  }
+  protocols_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), protocols,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:types.NodeInfoReply.protocols)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

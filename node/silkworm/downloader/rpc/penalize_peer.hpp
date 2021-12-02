@@ -14,20 +14,18 @@
    limitations under the License.
 */
 
-#ifndef SILKWORM_SETSTATUS_HPP
-#define SILKWORM_SETSTATUS_HPP
+#ifndef SILKWORM_PENALIZE_PEER_HPP
+#define SILKWORM_PENALIZE_PEER_HPP
 
-#include <silkworm/chain/identity.hpp>
-#include <silkworm/downloader/internals/types.hpp>
 #include <silkworm/downloader/sentry_client.hpp>
 
 namespace silkworm::rpc {
 
-class SetStatus : public rpc::UnaryCall<sentry::Sentry, sentry::StatusData, sentry::SetStatusReply> {
+class PenalizePeer : public rpc::UnaryCall<sentry::Sentry, sentry::PenalizePeerRequest, google::protobuf::Empty> {
   public:
-    SetStatus(const ChainIdentity& chain_identity, Hash best_hash, BigInt total_difficulty);
+    PenalizePeer(const PeerId& peerId, Penalty penalty);
 };
 
 }  // namespace silkworm::rpc
 
-#endif  // SILKWORM_SETSTATUS_HPP
+#endif  // SILKWORM_PENALIZE_PEER_HPP

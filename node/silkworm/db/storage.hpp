@@ -86,12 +86,11 @@ class PruneMode {
     bool operator!=(const PruneMode& other) const { return !(this->operator==(other)); }
 
   private:
-    const BlockAmount history_;      // Holds the pruning threshold for history
-    const BlockAmount receipts_;     // Holds the pruning threshold for receipts
-    const BlockAmount tx_index_;     // Holds the pruning threshold for tx_index
-    const BlockAmount call_traces_;  // Holds the pruning threshold for call traces
+    BlockAmount history_;      // Holds the pruning threshold for history
+    BlockAmount receipts_;     // Holds the pruning threshold for receipts
+    BlockAmount tx_index_;     // Holds the pruning threshold for tx_index
+    BlockAmount call_traces_;  // Holds the pruning threshold for call traces
 };
-
 
 //! \brief Reads pruning mode from db
 //! \param [in] txn : a db transaction

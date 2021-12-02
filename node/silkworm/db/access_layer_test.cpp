@@ -245,6 +245,8 @@ namespace db {
                 auto prune_mode{db::read_prune_mode(txn)};
                 CHECK(prune_mode.to_string() == "--prune=");
                 CHECK_NOTHROW(db::write_prune_mode(txn, prune_mode));
+                auto db_prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(txn));
+                REQUIRE(prune_mode == *db_prune_mode);
             }
 
             // Cross-check we have the same value

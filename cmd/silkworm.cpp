@@ -291,7 +291,7 @@ int main(int argc, char* argv[]) {
                 tx.commit();
                 node_settings.prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(*tx));
             }
-            log::Message() << "Prune mode " << db_prune_mode.to_string();
+            log::Message() << "Prune mode " << node_settings.prune_mode->to_string();
         }
 
         // Do sync stuff here

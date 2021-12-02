@@ -36,8 +36,6 @@ inline constexpr const char* kPruneModeCallTracesKey{"pruneCallTraces"};
 using PruneDistance = std::optional<BlockNum>;   // for 'older' type
 using PruneThreshold = std::optional<BlockNum>;  // for 'before' type
 
-inline constexpr BlockNum kDefaultPruneThreshold{90'000};
-
 class BlockAmount {
   public:
     enum Type {

@@ -367,7 +367,7 @@ TEST_CASE("WorkingChain - process_segment - (1) simple chain") {
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
 
-    PeerId peerId = "1";
+    PeerId peerId{1};
 
     std::array<BlockHeader, 10> headers;
 
@@ -553,7 +553,7 @@ TEST_CASE("WorkingChain - process_segment - (2) extending down with 2 siblings")
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
 
-    PeerId peerId = "1";
+    PeerId peerId{1};
 
     std::array<BlockHeader, 10> headers;
 
@@ -602,7 +602,7 @@ TEST_CASE("WorkingChain - process_segment - (3) chain with branches") {
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
 
-    PeerId peerId = "1";
+    PeerId peerId{1};
 
     std::array<BlockHeader, 10> headers;
 
@@ -818,7 +818,7 @@ TEST_CASE("WorkingChain - process_segment - (4) pre-verified hashes on canonical
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
 
-    PeerId peerId = "1";
+    PeerId peerId{1};
 
     std::array<BlockHeader, 10> headers;
 
@@ -909,7 +909,7 @@ TEST_CASE("WorkingChain - process_segment - (5) pre-verified hashes with canonic
     WorkingChain_ForTest chain;
     chain.top_seen_block_height(1'000'000);
 
-    PeerId peerId = "1";
+    PeerId peerId{1};
 
     std::array<BlockHeader, 6> a_headers;
 

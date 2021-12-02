@@ -59,11 +59,6 @@ static const std::vector<fs::path> kSlowTests{
 };
 
 static const std::vector<fs::path> kFailingTests{
-    // Nonce >= 2^64 is not supported.
-    // Geth excludes this test as well:
-    // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L40
-    kTransactionDir / "ttNonce" / "TransactionWithHighNonce256.json",
-
     // Gas limit >= 2^64 is not supported; see EIP-1985.
     // Geth excludes this test as well:
     // https://github.com/ethereum/go-ethereum/blob/v1.9.25/tests/transaction_test.go#L31
